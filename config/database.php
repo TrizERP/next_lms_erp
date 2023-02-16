@@ -63,6 +63,19 @@ return [
             ]) : [],
         ],
 
+        "information_schema" => [
+            'driver' => 'mysql',
+#            'host'      =>  '202.47.117.131',
+            'host' => '127.0.0.1',
+            'database' => 'triz_lms',
+            'username' => 'dev_db',
+            'password' => 'Triz@2020',
+            'charset' => 'utf8',
+            'collation' => 'utf8_unicode_ci',
+            'prefix' => '',
+            'strict' => false,
+        ],
+
         'pgsql' => [
             'driver' => 'pgsql',
             'url' => env('DATABASE_URL'),
