@@ -1,0 +1,12 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+
+class errLog extends Model
+{
+    protected $table = "ERR_LOG"; 
+    protected $fillable = ['user_id' , 'code' , 'file' , 'line' , 'message' , 'screen_short' ];
+    public $timestamps = false;    
+}

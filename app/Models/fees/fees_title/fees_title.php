@@ -1,0 +1,22 @@
+<?php
+
+namespace App\Models\fees\fees_title;
+
+use Illuminate\Database\Eloquent\Model;
+
+class fees_title extends Model {
+
+    protected $table = "fees_title";
+    protected $fillable = [
+        'fees_title_id',
+        'fees_title',
+        'display_name',
+        'cumulative_name',
+        'append_name',
+        'mandatory',
+        'syear',
+        'sub_institute_id',
+        'other_fee_id',
+    ];
+
+}

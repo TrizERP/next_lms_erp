@@ -1,0 +1,121 @@
+<?php
+
+namespace App\Http\Controllers\admission;
+
+use App\Http\Controllers\Controller;
+use App\Models\admission\admissionEnquiryModel;
+use App\Models\admission\admissionFollowUpModel;
+use function App\Helpers\is_mobile;
+use Illuminate\Http\Request;
+
+class admissionFollowUpController extends Controller
+{
+    /**
+     * Display a listing of the resource.
+     *
+     * @return \Illuminate\Http\Response
+     */
+    public function index(Request $request)
+    {
+        $type = $request->input('type');
+        $enquiry_id = $request->input('enquiry_id');
+        $module = $request->input('module');
+
+        $data = admissionEnquiryModel::where(['id' => $enquiry_id])->get()->toArray();
+
+        $follow_up_data = admissionFollowUpModel::where(['enquiry_id' => $enquiry_id])->get()->toArray();
+
+        $res['status_code'] = 1;
+        $res['message'] = "Success";
+        $res['data'] = $data['0'];
+        $res['enquiry_id'] = $enquiry_id;
+        $res['module'] = $module;
+        if(count($follow_up_data) > 0)
+        {
+            $res['followUpData'] = $follow_up_data;
+        }
+        return is_mobile($type, 'admission/follow_up/show_admission_follow_up', $res, 'view');
+    }
+
+    /**
+     * Show the form for creating a new resource.
+     *
+     * @return \Illuminate\Http\Response
+     */
+    public function create()
+    {
+        //
+    }
+
+    /**
+     * Store a newly created resource in storage.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\Response
+     */
+    public function store(Request $request)
+    {       
+        $type = $request->input("type");
+        $sub_institute_id = $request->session()->get("sub_institute_id");
+        $user_id = $request->session()->get("user_id");
+        $syear = $request->session()->get("syear");
+        $data = $request->except(['_method', '_token', 'submit']);
+
+        // $data['syear'] = $syear;
+        $data['created_on'] = date('Y-m-d H:i:s');
+        $data['created_ip'] =  \Request::getClientIp();
+        $data['sub_institute_id'] = $sub_institute_id;
+
+        admissionFollowUpModel::insert($data);
+
+        $res['status_code'] = "1";
+        $res['message'] = "Follow Up Added successfully";
+
+        return is_mobile($type, "admission_enquiry.index", $res);
+    }
+
+    /**
+     * Display the specified resource.
+     *
+     * @param  int  $id
+     * @return \Illuminate\Http\Response
+     */
+    public function show($id)
+    {
+        //
+    }
+
+    /**
+     * Show the form for editing the specified resource.
+     *
+     * @param  int  $id
+     * @return \Illuminate\Http\Response
+     */
+    public function edit($id)
+    {
+        //
+    }
+
+    /**
+     * Update the specified resource in storage.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @param  int  $id
+     * @return \Illuminate\Http\Response
+     */
+    public function update(Request $request, $id)
+    {
+        //
+    }
+
+    /**
+     * Remove the specified resource from storage.
+     *
+     * @param  int  $id
+     * @return \Illuminate\Http\Response
+     */
+    public function destroy($id)
+    {
+        //
+    }
+}

@@ -1,0 +1,1799 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use Illuminate\Http\Request;
+use App\Http\Requests;
+use DB;
+//use function App\Helpers\FeeBreakoffHeadWise;
+use function App\Helpers\is_mobile;
+use function App\Helpers\FeeMonthId;
+use function App\Helpers\FeeBreackoff;
+use function App\Helpers\FeeBreakoffHeadWise;
+use function App\Helpers\OtherBreackOff;
+use function App\Helpers\OtherBreackOffHead;
+use function App\Helpers\OtherBreackOfMonth;
+use PHPMailer\PHPMailer;
+use function App\Helpers\htmlToPDF;
+use function App\Helpers\htmlToPDFLandscape;
+use function App\Helpers\htmlToPDFPortrait;
+use function App\Helpers\htmlToPDFLandscapeCertificate;
+use App\Http\Controllers\fees\fees_report\otherNewfeesReportController;
+use App\Models\tblmenumasterModel;
+
+class AJAXController extends Controller
+{
+    /**
+     * GET Exam By Search
+     * @field grade_id, standard, division, subject, sub_institute_id, syear
+     */
+    public function getExamsList(Request $request) {
+        // echo "<pre>"; print_r($request->all()); exit;
+        $grade = $request->grade_id;
+        $standard = $request->standard_id;
+        $division = $request->division_id;
+        $subject = $request->subject_id;
+        $sub_institute_id = $request->sub_institute_id;
+        $syear = $request->syear;
+
+        // Query To fetch exam
+        $where = "where std.grade_id = $grade
+            and std.id = $standard
+            and divi.id = $division
+            and sub.id = $subject
+            and ts.sub_institute_id = $sub_institute_id
+            and ay.syear = $syear
+            and ay.sub_institute_id = $sub_institute_id
+        ";
+
+        // DB::enableQueryLog();
+        $queryResult = DB::select("
+        select
+            qp.id,
+            am.online_exam_id AS online_exam_ids,
+            qp.paper_name AS question_paper_name
+        from
+            tblstudent as ts
+            inner join tblstudent_enrollment as tse on tse.student_id = ts.id
+            inner join academic_year as ay on ay.term_id = tse.term_id
+            inner join standard as std on std.id = tse.standard_id
+            inner join std_div_map as sdm on sdm.standard_id = std.id
+            inner join division as divi on divi.id = sdm.division_id
+            inner join sub_std_map as ssm on ssm.standard_id = sdm.standard_id
+            inner join subject as sub on sub.id = ssm.subject_id
+            inner join question_paper as qp on qp.subject_id = ssm.subject_id
+            and qp.standard_id = sdm.standard_id
+            inner join lms_question_master as lqm on lqm.subject_id = ssm.subject_id
+            and lqm.standard_id = sdm.standard_id
+            and lqm.id in (
+                SELECT
+                    lqm.id
+                FROM
+                    lms_question_master as lqm,
+                    question_paper as qp2
+                WHERE
+                    qp.id = qp2.id
+                    AND FIND_IN_SET(lqm.id, qp.question_ids)
+            )
+            inner join lms_online_exam_answer as am on am.question_paper_id = qp.id
+            and am.student_id = ts.id
+            and am.question_id = lqm.id
+            $where
+            group by qp.id
+        ");
+        
+        // DB::enableQueryLog();
+        //  echo ('<pre>');print_r(DB::getQueryLog());exit;
+        //  echo ('<pre>');print_r($queryResult);exit;
+        
+        return response()->json($queryResult);
+    }
+
+    /**
+     * get Subject name by Create Exam 
+     */
+    public function getSubjectByCreateExam(Request $request) {
+        $grade = $request->grade_id;
+        $standard = $request->standard_id;
+        $division = $request->division_id;
+        $sub_institute_id = $request->sub_institute_id;
+        $syear = $request->syear;
+
+        // Query To fetch Subject
+        $where = "where std.grade_id = $grade
+            and std.id = $standard
+            and divi.id = $division
+            and ts.sub_institute_id = $sub_institute_id
+            and ay.syear = $syear
+            and ay.sub_institute_id = $sub_institute_id
+        ";
+
+        // DB::enableQueryLog();
+        $queryResult = DB::select("
+            SELECT sub.subject_name as subject_name,rce.subject_id as subject_id
+            FROM tblstudent AS ts
+            INNER JOIN tblstudent_enrollment AS tse ON tse.student_id = ts.id
+            INNER JOIN academic_year AS ay ON ay.term_id = tse.term_id
+            INNER JOIN standard AS std ON std.id = tse.standard_id
+            INNER JOIN std_div_map AS sdm ON sdm.standard_id = std.id
+            INNER JOIN division AS divi ON divi.id = sdm.division_id
+            INNER JOIN result_create_exam AS rce ON rce.standard_id = sdm.standard_id
+            INNER JOIN subject AS sub ON sub.id = rce.subject_id
+        $where
+        GROUP BY rce.subject_id
+        ");
+        //DB::enableQueryLog();
+
+        return response()->json($queryResult);
+    }
+
+    /**
+     * get Exam name by Create Exam 
+     */
+    public function getExamByCreateExam(Request $request) {
+        $grade = $request->grade_id;
+        $standard = $request->standard_id;
+        $subject = $request->subject_id;
+        $division = $request->division_id;
+        $sub_institute_id = $request->sub_institute_id;
+        $syear = $request->syear;
+
+        // Query To fetch Subject
+        $where = "where std.grade_id = $grade
+            and std.id = $standard
+            and divi.id = $division
+            and rce.subject_id = $subject
+            and ts.sub_institute_id = $sub_institute_id
+            and ay.syear = $syear
+            and ay.sub_institute_id = $sub_institute_id
+        ";
+
+        // DB::enableQueryLog();
+        $queryResult = DB::select("
+            SELECT
+                rem.id, 
+                rem.ExamTitle
+            FROM
+                tblstudent AS ts 
+                INNER JOIN  tblstudent_enrollment AS tse ON tse.student_id = ts.id 
+                INNER JOIN  academic_year AS ay ON ay.term_id = tse.term_id 
+                INNER JOIN  standard AS std ON std.id = tse.standard_id 
+                INNER JOIN  std_div_map AS sdm ON sdm.standard_id = std.id 
+                INNER JOIN  division AS divi ON divi.id = sdm.division_id 
+                INNER JOIN  result_create_exam AS rce ON rce.standard_id = sdm.standard_id 
+                INNER JOIN  subject AS sub ON sub.id = rce.subject_id 
+                inner join  result_exam_master as rem on rem.id = rce.exam_id
+            $where
+            group by rce.exam_id
+        ");
+        //DB::enableQueryLog();
+
+        return response()->json($queryResult);
+    }
+    
+    public function getStandardList(Request $request)
+    {
+        $path = $_SERVER['HTTP_REFERER'];
+        preg_match("/[^\/]+$/", $path, $matches);
+        $module_name = $matches[0];
+
+        $module_array = array(
+            '1' => 'student_homework'
+        );
+
+        $explode = explode(',', $request->grade_id);
+
+        if (count($explode) > 1) {
+            $query  = DB::table('standard');
+            $query->whereIn('grade_id', $explode)->get();
+            
+            //START Check for class teacher assigned standards
+            $classTeacherStdArr = session()->get('classTeacherStdArr');
+            if ($classTeacherStdArr != "" && !in_array($module_name, $module_array))
+            {
+                $query->whereIn('id',$classTeacherStdArr);          
+            }
+            //END Check for class teacher assigned standards
+
+            //START Check for subject teacher assigned
+            $subjectTeacherStdArr = session()->get('subjectTeacherStdArr');
+            if ($subjectTeacherStdArr != "" && ($classTeacherStdArr == "" || in_array($module_name, $module_array)))
+            {
+                $query->whereIn('id',$subjectTeacherStdArr);          
+            }
+            //END Check for subject teacher assigned
+
+            $standard = $query->pluck("name", "id");
+            
+            // $standard = DB::table("standard")
+                // ->whereIn('grade_id', $explode)->get()
+                // ->pluck("name", "id");
+        } else {
+            $query  = DB::table('standard');
+            $query->where("grade_id", $request->grade_id);
+            
+            //START Check for class teacher assigned standards
+            $classTeacherStdArr = session()->get('classTeacherStdArr');
+            if ($classTeacherStdArr != "" && !in_array($module_name, $module_array))
+            {
+                $query->whereIn('id',$classTeacherStdArr);          
+            }
+            //END Check for class teacher assigned standards
+
+            //START Check for subject teacher assigned
+            $subjectTeacherStdArr = session()->get('subjectTeacherStdArr');
+            if ($subjectTeacherStdArr != "" && ($classTeacherStdArr == "" || in_array($module_name, $module_array)))
+            {
+                $query->whereIn('id',$subjectTeacherStdArr);          
+            }
+            //END Check for subject teacher assigned
+
+            $standard = $query->pluck("name", "id");
+            
+            // $standard = DB::table("standard")
+                // ->where("grade_id", $request->grade_id)
+                // ->pluck("name", "id");
+        }
+
+        return response()->json($standard);
+    }
+
+    public function getDivisionList(Request $request)
+    {
+        // echo "<pre>"; print_r($request->standard_id); exit;
+        $path = $_SERVER['HTTP_REFERER'];
+        preg_match("/[^\/]+$/", $path, $matches);
+        $module_name = $matches[0];
+
+        $module_array = array(
+            '1' => 'student_homework'
+        );
+
+        $standard_id = $request->standard_id;
+
+        $explode = explode(',', $request->standard_id);
+        if (count($explode) > 1) { 
+            $query = DB::table('std_div_map');
+            $query->join('division', 'division.id', '=', 'std_div_map.division_id');
+            $query->whereIn("std_div_map.standard_id", $explode);
+            //START Check for class teacher assigned standards
+            $classTeacherDivArr = session()->get('classTeacherDivArr');
+            if ($classTeacherDivArr != "" && !in_array($module_name, $module_array))
+            {
+                $query->whereIn('division.id',$classTeacherDivArr);         
+            }
+            //END Check for class teacher assigned standards
+
+            //START Check for subject teacher assigned
+            $subjectTeacherDivArr = session()->get('subjectTeacherDivArr');
+            if ($subjectTeacherDivArr != "" && ($classTeacherDivArr == "" || in_array($module_name, $module_array)))
+            {
+                $query->orwhereIn('division.id',$subjectTeacherDivArr);         
+            }
+            //END Check for subject teacher assigned
+
+            $std_div_map = $query->pluck('division.name', 'division.id');
+            
+            // $std_div_map = DB::table('std_div_map')
+                // ->join('division', 'division.id', '=', 'std_div_map.division_id')
+                // ->whereIn("std_div_map.standard_id", $explode)
+                // ->pluck('division.name', 'division.id');
+        } else {
+            // DB::enableQueryLog();
+            $query = DB::table('std_div_map');
+            $query->join('division', 'division.id', '=', 'std_div_map.division_id');
+            $query->where("std_div_map.standard_id", $request->standard_id);
+            //START Check for class teacher assigned standards
+            $classTeacherDivArr = session()->get('classTeacherDivArr');
+            
+            if ($classTeacherDivArr != "" && !in_array($module_name, $module_array))
+            {
+                $query->whereIn('division.id',$classTeacherDivArr);         
+            }
+            //END Check for class teacher assigned standards
+            //START Check for class teacher assigned standards
+            $subjectTeacherDivArr = session()->get('subjectTeacherDivArr');
+            if ($subjectTeacherDivArr != "" && ($classTeacherDivArr == "" || in_array($module_name, $module_array)))
+            {
+                // if( session()->get('user_profile_name') == 'Teacher' ) {
+                    $query->whereIn('division.id', function ($sub_query) use ($standard_id) {
+                        $sub_query->select('division_id')
+                            ->from('timetable')
+                            ->where('teacher_id', session()->get('user_id'))
+                            ->where('standard_id', $standard_id);
+                    });         
+                // } else {
+                //     $query->orwhereIn('division.id',$subjectTeacherDivArr);         
+                // }
+            }
+            //END Check for class teacher assigned standards
+
+            $std_div_map = $query->pluck('division.name', 'division.id');
+            // echo "<pre>";
+            // print_r(DB::getQueryLog()); exit;
+            // $std_div_map = DB::table('std_div_map')
+                // ->join('division', 'division.id', '=', 'std_div_map.division_id')
+                // ->where("std_div_map.standard_id", $request->standard_id)
+                // ->pluck('division.name', 'division.id');
+        }
+
+        return response()->json($std_div_map);
+    }
+
+    public function getSubjectList(Request $request)
+    {
+        // echo ('<pre>');print_r($_REQUEST);exit;
+        $standard_id = $request->standard_id;
+        $explode = explode(',', $request->standard_id);
+
+        $arr = $request->server;
+        $HTTP_REFERER = "";
+        foreach ($arr as $id => $val) {
+            if ($id == 'HTTP_REFERER')
+                $HTTP_REFERER = $val;
+        }
+        $refer_arr = explode('/', $HTTP_REFERER);
+        // echo ('<pre>');print_r($refer_arr);exit;
+        // if ($refer_arr[count($refer_arr) - 2] == 'exam_creation' || $refer_arr[count($refer_arr) - 1] == 'marks_entry') {
+        if ($refer_arr[count($refer_arr) - 2] == 'exam_creation' || in_array('marks_entry', $refer_arr)) {
+            $where = array(
+                "sub_std_map.sub_institute_id" => session()->get('sub_institute_id'),
+                "sub_std_map.allow_grades" => "Yes",
+            );
+        } else {
+            $where = array(
+                "sub_std_map.sub_institute_id" => session()->get('sub_institute_id'),
+            );
+        }
+        if (count($explode) > 1) {
+            $std_sub_map = DB::table('subject')
+                ->join('sub_std_map', 'subject.id', '=', 'sub_std_map.subject_id')
+                ->whereIn("sub_std_map.standard_id", $explode)
+                ->where($where)
+                ->orderBy('sub_std_map.sort_order')
+                ->pluck('sub_std_map.display_name', 'subject.id');
+            // echo ('<pre>');print_r($_REQUEST);exit;
+        } else {
+            if( session()->get('user_profile_name') == 'Teacher' ) {
+                # Get subjects by teacher, standard and division
+                $std_sub_map = DB::table('subject as sub')
+                    ->whereIn('sub.id', function ($sub_query) use ( $request ) {
+                        $sub_query->select('subject_id')
+                        ->from('timetable')
+                        ->where('teacher_id', session()->get('user_id'))
+                        ->where('standard_id', $request->standard_id)
+                        ->where('division_id', $request->division_id);
+                    })
+                    ->pluck('sub.subject_name as display_name', 'sub.id');
+            } else {
+                $where['sub_std_map.standard_id'] = $request->standard_id;
+                //DB::enableQueryLog();
+                $std_sub_map = DB::table('subject')
+                    ->join('sub_std_map', 'subject.id', '=', 'sub_std_map.subject_id')
+                    ->where($where)
+                    ->orderBy('sub_std_map.sort_order')
+                    ->pluck('sub_std_map.display_name', 'subject.id');
+                //  echo ('<pre>');print_r(DB::getQueryLog());exit;
+            }
+        }
+
+        return response()->json($std_sub_map);
+    }
+
+    public function getChapterList(Request $request)
+    {                
+        $explode = explode(',', $request->subject_id);
+        $standard_id = $request->standard_id;
+
+        if (count($explode) > 1) {
+             $chapter_list = DB::table('chapter_master')               
+                ->where(['sub_institute_id'=>session()->get('sub_institute_id'),"standard_id"=>$standard_id])
+                ->wherein('subject_id',$explode)               
+                ->pluck('chapter_name', 'id');                            
+        } else {
+            $chapter_list = DB::table('chapter_master')               
+                ->where(['sub_institute_id'=>session()->get('sub_institute_id'),'subject_id'=>$request->subject_id,"standard_id"=>$standard_id])                
+                ->pluck('chapter_name', 'id');            
+        }
+       
+        return response()->json($chapter_list);
+    }
+
+    public function getTopicList(Request $request)
+    {                
+        $explode = explode(',', $request->chapter_id);       
+
+        if (count($explode) > 1) {
+             $topic_list = DB::table('topic_master')               
+                ->where(['sub_institute_id'=>session()->get('sub_institute_id')])
+                ->wherein('chapter_id',$explode)               
+                ->pluck('name', 'id');                            
+        } else {
+            $topic_list = DB::table('topic_master')               
+                ->where(['sub_institute_id'=>session()->get('sub_institute_id'),'chapter_id'=>$request->chapter_id])                
+                ->pluck('name', 'id');            
+        }
+       
+        return response()->json($topic_list);
+    }
+    
+    public function getExamList(Request $request)
+    {
+
+        $where = array(
+            "re.sub_institute_id" => session()->get('sub_institute_id'),
+            "re.syear" => session()->get('syear'),
+            "re.term_id" => $request->term_id,
+            "re.standard_id" => $request->standard_id,
+            "re.subject_id" => $request->subject_id,
+        );
+
+        $std_sub_map = DB::table('result_create_exam as re')
+            ->where($where)
+            ->pluck('re.title', 're.id');
+
+        return response()->json($std_sub_map);
+    }
+
+    public function getCoScholasticParentList(Request $request)
+    {
+
+        $where = array(
+            "re.sub_institute_id" => session()->get('sub_institute_id'),
+        );
+
+        $co_scholastic_parent = DB::table('result_co_scholastic_parent as re')
+            ->where($where)
+            ->pluck('re.title', 're.id');
+
+        return response()->json($co_scholastic_parent);
+    }
+
+    public function getCoScholasticList(Request $request)
+    {
+
+        $where = array(
+            "re.sub_institute_id" => session()->get('sub_institute_id'),
+            "re.parent_id" => $request->co_scholastic_parent_id,
+            "re.term_id" => $request->term_id            
+        );
+
+        $co_scholastic_parent = DB::table('result_co_scholastic as re')
+            ->where($where)
+            ->pluck('re.title', 're.id');
+
+        return response()->json($co_scholastic_parent);
+    }
+
+    public function getBusList(Request $request)
+    {
+
+        $where = array(
+            "tv.sub_institute_id" => session()->get('sub_institute_id'),
+            "tv.school_shift" => $request->shift_id,
+        );
+
+        $bus = DB::table('transport_vehicle as tv')
+            ->where($where)
+            ->pluck('tv.title', 'tv.id');
+
+        return response()->json($bus);
+    }
+
+    public function getStopList(Request $request)
+    {
+
+        $school_shift = $request->shift_id;
+        $vehicle_id = $request->bus_id;
+
+        $where = array(
+            "ss.id" => $school_shift,
+            "tv.id" => $vehicle_id,
+        );
+
+        $bus = DB::table('transport_stop as ts')
+            ->join('transport_route_stop as rs', 'rs.stop_id', '=', 'ts.id')
+            ->join('transport_route as tr', 'tr.id', '=', 'rs.route_id')
+            ->join('transport_route_bus as rb', 'rb.route_id', '=', 'tr.id')
+            ->join('transport_vehicle as tv', 'tv.id', '=', 'rb.bus_id')
+            ->join('transport_school_shift as ss', 'ss.id', '=', 'tv.school_shift')
+            ->where($where)
+            ->groupBy('ts.id')
+            ->pluck('ts.stop_name', 'ts.id');
+
+        return response()->json($bus);
+    }
+
+    public function getFees(Request $request)
+    {
+
+        // dd($request);
+        $months = $request->checkedMonths;
+        $student_id = $request->student_id;
+
+        if (empty($months)) {
+            return "";
+            exit;
+        }
+
+        $stu_arr = array(
+            "0" => $student_id
+        );
+        $search_ids = $months;
+        $reg_bk_off = FeeBreackoff($stu_arr);
+        // echo ('<pre>');print_r($reg_bk_off);exit;
+        $other_bk_off = OtherBreackOff($stu_arr, $search_ids);
+        $other_bk_off_month_wise = OtherBreackOfMonth($stu_arr);
+        $year_arr = FeeMonthId();
+
+        $head_wise_fees = FeeBreakoffHeadWise($stu_arr);
+        // echo ('<pre>');print_r($head_wise_fees);exit;
+        $till_now_breckoff = array();
+        foreach ($search_ids as $id => $val) {
+            foreach ($head_wise_fees as $temp_id => $arr) {
+                foreach ($head_wise_fees[$temp_id]['breakoff'] as $month_id => $fees_detail) {
+                    if ($month_id == $val) {
+                        $till_now_breckoff[$month_id] = $fees_detail;
+                    }
+                }
+            }
+        }
+
+        $reg_bk_month_wise = array();
+        $final_bk_name = array();
+        $total = 0;
+
+        foreach ($till_now_breckoff as $month_id => $fees_detail) {
+            foreach ($fees_detail as $head_name => $arr) {
+                if (!isset($reg_bk_month_wise[$arr['title']]))
+                    $reg_bk_month_wise[$arr['title']] = 0;
+                $reg_bk_month_wise[$arr['title']] += $arr['amount'];
+                $final_bk_name[$arr['title']] = $head_name;
+                //                $total = $total + $arr['amount'];
+            }
+        }
+
+        // echo ('<pre>');print_r($final_bk_name);exit;
+
+        $full_bk = array_merge($reg_bk_month_wise, $other_bk_off);
+
+        foreach ($full_bk as $id => $val) {
+            $total = $total + $val;
+        }
+
+        $other_fee_title = OtherBreackOffHead();
+        //echo "<pre>";
+        //print_r($other_fee_title);
+        //print_r($full_bk);
+        //exit;
+
+        foreach ($other_fee_title as $id => $arr) {
+            foreach ($full_bk as $title => $val) {
+                if ($title == $arr->display_name) {
+                    $final_bk_name[$title] = $arr->other_fee_id;
+                }
+            }
+        }
+        //        echo "<pre>";
+        //        print_r($final_bk_name);
+        //        exit;
+        //        
+        $full_bk["Total"] = $total;
+
+        $response = "";
+        $response .= ' <tr class="spaceUnder">
+                        <!--<th colspan="2" align="center" style="width: 40%;align-content: center;">Particular</th>-->
+                        <th  align="center" style="width: 30%;align-content: center;">Particular</th>
+                        <th style="width: 10%;padding-left: 15px;">Amount</th>
+                        <th style="width: 20%;padding-left: 15px;">Collection Amount</th>
+                        <th style="width: 20%;padding-left: 15px;">Discount</th>
+                        <th style="width: 20%;padding-left: 15px;">Fine</th>
+                    </tr>';
+        foreach ($full_bk as $id => $val) {
+            $response .= "
+                 <tr>
+                    
+                    <td style='width: 20%'>$id</td>
+                    <td style='width: 20%'>$val</td>
+            ";
+            if ($id != 'Total') {
+                $response .= "<td style='width: 20%'><input type='number' min=0 max=$val  value='" . $val . "' name='fees_data[" . $final_bk_name[$id] . "]' class='form-control allField1'></td>";
+                $response .= "<input type='hidden' value='" . $val . "' name='hid_fees_data[" . $final_bk_name[$id] . "]' class='hid_allField1'>";
+                $response .= "<td style='width: 20%'><input type='number' value='0' name='discount_data[" . $final_bk_name[$id] . "]' class='form-control allDisField' style='min-width:150px;'></td>"; // min=0 max=$val  
+                $response .= "<td style='width: 20%'><input type='number'  min=0 value=0 name='fine_data[" . $final_bk_name[$id] . "]' class='form-control allFinField' style='min-width:150px;'></td>";
+            } else {
+                $response .= "<td style='width: 25%'><input type='text' id='totalVal' name='total' value='" . $total . "' class='form-control'></td>";
+                $response .= "<td style='width: 25%'><input type='text' id='totalDis' name='totalDis' value='0' class='form-control directdiscount'></td>";
+                $response .= "<td style='width: 25%'><input id='totalFin' type='text' name='totalFin' value='0' class='form-control directfine'></td>";
+            }
+            $response .= "</tr>";
+        }
+
+        return $response;
+        //        echo "<pre>";
+        //        print_r($final_bk);
+        //        print_r($final_bk_name);
+        //        exit;
+    }
+    public function getOnlineFees(Request $request)
+    {
+
+        $months = $request->checkedMonths;
+        $student_id = $request->student_id;
+        $fees_type = $request->fees_type;
+
+        if (empty($months)) {
+            return "";
+            exit;
+        }
+
+        $stu_arr = array(
+            "0" => $student_id
+        );
+        $search_ids = $months;
+        $reg_bk_off = FeeBreackoff($stu_arr);
+        // echo ('<pre>');print_r($reg_bk_off);exit;
+        $other_bk_off = OtherBreackOff($stu_arr, $search_ids);
+        $other_bk_off_month_wise = OtherBreackOfMonth($stu_arr);
+        $year_arr = FeeMonthId();
+
+        $head_wise_fees = FeeBreakoffHeadWise($stu_arr);
+        // echo ('<pre>');print_r($head_wise_fees);exit;
+        $till_now_breckoff = array();
+        foreach ($search_ids as $id => $val) {
+            foreach ($head_wise_fees as $temp_id => $arr) {
+                foreach ($head_wise_fees[$temp_id]['breakoff'] as $month_id => $fees_detail) {
+                    if ($month_id == $val) {
+                        $till_now_breckoff[$month_id] = $fees_detail;
+                    }
+                }
+            }
+        }
+
+        $reg_bk_month_wise = array();
+        $final_bk_name = array();
+        $total = 0;
+
+        foreach ($till_now_breckoff as $month_id => $fees_detail) {
+            foreach ($fees_detail as $head_name => $arr) {
+                if (!isset($reg_bk_month_wise[$arr['title']]))
+                    $reg_bk_month_wise[$arr['title']] = 0;
+                $reg_bk_month_wise[$arr['title']] += $arr['amount'];
+                $final_bk_name[$arr['title']] = $head_name;
+                //                $total = $total + $arr['amount'];
+            }
+        }
+
+        // echo ('<pre>');print_r($final_bk_name);exit;
+
+        $full_bk = array_merge($reg_bk_month_wise, $other_bk_off);
+
+        foreach ($full_bk as $id => $val) {
+            $total = $total + $val;
+        }
+
+        $other_fee_title = OtherBreackOffHead();
+        //echo "<pre>";
+        //print_r($other_fee_title);
+        //print_r($full_bk);
+        //exit;
+
+        foreach ($other_fee_title as $id => $arr) {
+            foreach ($full_bk as $title => $val) {
+                if ($title == $arr->display_name) {
+                    $final_bk_name[$title] = $arr->other_fee_id;
+                }
+            }
+        }
+        //        echo "<pre>";
+        //        print_r($final_bk_name);
+        //        exit;
+        //        
+        $full_bk["Total"] = $total;
+
+        $response = "";
+        $response .= ' <tr class="spaceUnder">
+                        <!--<th colspan="2" align="center" style="width: 40%;align-content: center;">Particular</th>-->
+                        <th  align="center" style="width: 30%;align-content: center;">Particular</th>
+                        <th style="width: 10%;padding-left: 15px;">Amount</th>
+                    </tr>';
+        foreach ($full_bk as $id => $val) {
+            $response .= "
+                 <tr>
+                    
+                    <td style='width: 20%'>$id</td>
+                    <td style='width: 20%'>$val</td>
+            ";
+            if ($id == 'Total') {
+                $response .= "<input type='hidden' id='totalVal' name='total' value='" . $total . "' class='form-control'>";
+            } 
+            
+            $response .= "</tr>";
+            
+        }
+
+        return $response;
+        //        echo "<pre>";
+        //        print_r($final_bk);
+        //        print_r($final_bk_name);
+        //        exit;
+    }
+    public function getOnlineFeesMonth($arr)
+    {
+
+        $months = $arr["months"];
+        $student_id = $arr["student_id"];
+        
+
+        if (empty($months)) {
+            return "";
+            exit;
+        }
+
+        $stu_arr = array(
+            "0" => $student_id
+        );
+        $search_ids = $months;
+        $reg_bk_off = FeeBreackoff($stu_arr);
+        // echo ('<pre>');print_r($reg_bk_off);exit;
+        $other_bk_off = OtherBreackOff($stu_arr, $search_ids);
+        $other_bk_off_month_wise = OtherBreackOfMonth($stu_arr);
+        $year_arr = FeeMonthId();
+
+        $head_wise_fees = FeeBreakoffHeadWise($stu_arr);
+        // echo ('<pre>');print_r($head_wise_fees);exit;
+        $till_now_breckoff = array();
+        foreach ($search_ids as $id => $val) {
+            foreach ($head_wise_fees as $temp_id => $arr) {
+                foreach ($head_wise_fees[$temp_id]['breakoff'] as $month_id => $fees_detail) {
+                    if ($month_id == $val) {
+                        $till_now_breckoff[$month_id] = $fees_detail;
+                    }
+                }
+            }
+        }
+
+        $reg_bk_month_wise = array();
+        $final_bk_name = array();
+        $total = 0;
+
+        foreach ($till_now_breckoff as $month_id => $fees_detail) {
+            foreach ($fees_detail as $head_name => $arr) {
+                if (!isset($reg_bk_month_wise[$arr['title']]))
+                    $reg_bk_month_wise[$arr['title']] = 0;
+                $reg_bk_month_wise[$arr['title']] += $arr['amount'];
+                $final_bk_name[$arr['title']] = $head_name;
+                //                $total = $total + $arr['amount'];
+            }
+        }
+
+        // echo ('<pre>');print_r($final_bk_name);exit;
+
+        $full_bk = array_merge($reg_bk_month_wise, $other_bk_off);
+
+        foreach ($full_bk as $id => $val) {
+            $total = $total + $val;
+        }
+
+        $other_fee_title = OtherBreackOffHead();
+        //echo "<pre>";
+        //print_r($other_fee_title);
+        //print_r($full_bk);
+        //exit;
+
+        foreach ($other_fee_title as $id => $arr) {
+            foreach ($full_bk as $title => $val) {
+                if ($title == $arr->display_name) {
+                    $final_bk_name[$title] = $arr->other_fee_id;
+                }
+            }
+        }
+        //        echo "<pre>";
+        //        print_r($final_bk_name);
+        //        exit;
+        //        
+        $full_bk["Total"] = $total;
+
+        // $return_arr = array();
+        // foreach ($full_bk as $id => $val) {
+        //     $return_arr
+        //     $response .= "
+        //          <tr>
+                    
+        //             <td style='width: 20%'>$id</td>
+        //             <td style='width: 20%'>$val</td>
+        //     ";
+        //     if ($id == 'Total') {
+        //         $response .= "<input type='hidden' id='totalVal' name='total' value='" . $total . "' class='form-control'>";
+        //     } 
+            
+        //     $response .= "</tr>";
+            
+        // }
+
+        return $full_bk;
+        //        echo "<pre>";
+        //        print_r($final_bk);
+        //        print_r($final_bk_name);
+        //        exit;
+    }
+    public function getLOSubjectList(Request $request)
+    {
+        // echo 'her';
+        // exit;
+
+        $standard = $request->standard_id;
+        $medium = $request->medium_id;
+
+        $where = array(
+            'learning_outcome_pdf.standard' => $standard,
+            'learning_outcome_pdf.medium' => $medium,
+        );
+
+        $std_sub_map = DB::table('learning_outcome_pdf')
+            ->where($where)
+            ->pluck('learning_outcome_pdf.DISPLAY_SUBJECT', 'learning_outcome_pdf.SUBJECTS');
+
+        return response()->json($std_sub_map);
+    }
+    public function getLOList(Request $request)
+    {
+        // echo 'her';
+        // exit;
+
+        $standard = $request->standard_id;
+        $medium = $request->medium_id;
+        $subject = $request->subject_id;
+
+        $where = array(
+            'learning_outcome_indicator.standard' => $standard,
+            'learning_outcome_indicator.medium' => $medium,
+            'learning_outcome_indicator.subject' => $subject,
+        );
+
+        $std_sub_map = DB::table('learning_outcome_indicator')
+            ->where($where)
+            ->pluck('learning_outcome_indicator.INDICATOR', 'learning_outcome_indicator.ID');
+
+        return response()->json($std_sub_map);
+    }
+    public function getSubModuleList(Request $request)
+    {
+
+        $main_module_name = DB::table("report_module")
+            ->where("id", $request->main_module_id)
+            ->get();
+
+
+        $all_sub_module = DB::table("report_module")
+            ->where("main_module", $main_module_name[0]->main_module)
+            ->pluck("sub_module", "id");
+
+        foreach ($all_sub_module as $id => $val) {
+            if ($val == "") {
+                unset($all_sub_module[$id]);
+            }
+        }
+
+        return response()->json($all_sub_module);
+    }
+    public function getStudentFromMobile(Request $request)
+    {
+        $mobile = $_REQUEST["mobile_number"];
+        // $sub_institute_id = $request->session()->get('sub_institute_id');
+        
+        $all_student = DB::table("tblstudent as s")
+            ->join('fees_online_maping as fo', 'fo.sub_institute_id', '=', 's.sub_institute_id')
+            ->select(
+                DB::raw("CONCAT(s.first_name,' ',s.last_name) AS name"),
+                's.id','fo.bank_name','s.sub_institute_id'
+            )
+            ->where(['mobile'=>$mobile]) //,'fo.sub_institute_id' => $sub_institute_id
+            ->get();
+            
+        return response()->json($all_student);
+    }
+
+    public function ajax_checkFeesBreakoff(Request $request)
+    {
+        $student_id = $_REQUEST["student_id"];
+        
+        $get_enrollment_data = DB::select("SELECT * FROM tblstudent_enrollment WHERE student_id = '".$student_id."' ORDER BY syear DESC LIMIT 1");
+        $get_enrollment_data = $get_enrollment_data[0];
+
+        $bf_data = DB::select("SELECT SUM(IFNULL(fb.amount,0)) AS total_amount
+                                FROM tblstudent s
+                                LEFT JOIN fees_breackoff fb ON fb.sub_institute_id = s.sub_institute_id AND fb.admission_year = s.admission_year 
+                                AND fb.quota = '".$get_enrollment_data->student_quota."' AND fb.grade_id = '".$get_enrollment_data->grade_id."' AND fb.syear = '".$get_enrollment_data->syear."' AND fb.standard_id = '".$get_enrollment_data->standard_id."'
+                                WHERE s.id = '".$student_id."' ");
+
+        $medium_data = DB::select("SELECT medium FROM academic_section WHERE id = '".$get_enrollment_data->grade_id."' ");                
+        
+        $return = $bf_data[0]->total_amount.'####'.$medium_data[0]->medium;
+
+        return $return;
+    }
+
+    public function ajax_load_rightSideMenu(Request $request){  
+             
+        $sub_institute_id = $request->session()->get('sub_institute_id');
+        $user_id = $request->session()->get('user_id');
+        $main_menu_id = $request->menu_id;
+
+        $RightSideMenu = $RS_Menu = $RS_ChildMenu = array();            
+        $RSMainQuery = "SELECT * FROM rightside_menumaster m 
+                        WHERE FIND_IN_SET('" . $sub_institute_id . "', m.sub_institute_id) AND m.parent_menu_id = 0 
+                        AND main_menu_id = '" . $main_menu_id . "'
+                        ORDER BY sort_order";
+        $RSMainQuery = DB::select($RSMainQuery);       
+        $RSMainQuery = json_decode(json_encode($RSMainQuery),true);          
+
+        if(count($RSMainQuery) > 0)
+        {
+            foreach ($RSMainQuery as $key => $value) {
+                $RS_Menu[$value['id']] = $value; 
+            }           
+        }
+
+        $RSChildQuery = "SELECT distinct(m.id),m.*,mm.link
+                        FROM tbluser u
+                        LEFT JOIN tblindividual_rights i ON u.id = i.user_id AND u.sub_institute_id = i.sub_institute_id
+                        LEFT JOIN tblgroupwise_rights g ON u.user_profile_id = g.profile_id AND u.sub_institute_id = g.sub_institute_id
+                        INNER JOIN rightside_menumaster m ON (i.menu_id = m.tblmenu_master_id OR g.menu_id = m.tblmenu_master_id) 
+                        INNER JOIN tblmenumaster mm on mm.id = m.tblmenu_master_id
+                        AND FIND_IN_SET('" . $sub_institute_id . "', m.sub_institute_id)
+                        WHERE u.sub_institute_id = '" . $sub_institute_id . "' AND u.id = '" . $user_id . "'
+                        AND m.main_menu_id = '" . $main_menu_id . "'";
+        
+        $RSChildQuery = DB::select($RSChildQuery);
+        $RSChildQuery = json_decode(json_encode($RSChildQuery),true);            
+
+        if(count($RSChildQuery) > 0)
+        {
+            foreach ($RSChildQuery as $key1 => $value1) {
+                $RS_ChildMenu[$value1['parent_menu_id']][] = $value1; 
+            }           
+        }
+        
+        $i=1;
+        $main_menu = $child_menu = "";
+
+        // echo '<pre>';
+        // print_r($RS_Menu);
+        // print_r($RS_ChildMenu);
+        // die;
+
+        foreach($RS_Menu as $key => $val)
+        {
+            if(isset($RS_ChildMenu[$val['id']]))
+            {
+                if($i == 1)
+                {
+                    $active = "active";
+                }
+                else{
+                    $active = "";   
+                }
+                $main_menu .= '<li class="nav-item" role="presentation" data-toggle="tooltip" data-placement="top" 
+                title="'.$val['name'].'"><a class="nav-link '.$active.'" data-toggle="tab" href="#right-tab-'.$i.'" 
+                role="tab" aria-controls="right-tab-'.$i.'" aria-selected="false"><img class="icon-nrml" 
+                src="http://'.$_SERVER['HTTP_HOST'].'/admin_dep/images/side-'.$val['icon'].'.png" alt="">
+                <img class="icon-hvr" src="https://'.$_SERVER['HTTP_HOST'].'/admin_dep/images/side-'.$val['icon'].'-white.png" 
+                alt=""></a></li>';
+                
+                $child_arr = $RS_ChildMenu[$val['id']];
+                $child_li = "";            
+                foreach($child_arr as $ckey => $cval)
+                {                
+                    $child_li .= '<li class="d-flex align-items-center"><i class="fa fa-angle-right" style="margin-right: 8px;">
+                    </i><a href="'.route($cval['link']).'" onclick="sessionMenu('.$cval['tblmenu_master_id'].');" >'.$cval['name'].'</a></li>';
+                    if($cval['name'] == 'Field Settings')
+                    {
+                        $export_import_link = "window.open('https://erp.triz.co.in/excel_upload/export_xlsx.php?sub_institute_iderp=".$sub_institute_id."','scrollbars=yes,resizable=no,status=no,location=no,toolbar=no,menubar=no','width=600,height=300,left=100,top=100')";
+                        $child_li .= '<li><i class="fa fa-angle-right" style="margin-right: 8px;">
+                    </i><a href="javascript:void(0);" onclick="'.$export_import_link.'" class="waves-effect">Excel Import/Export</a></li>';
+                        $child_li .= '<li><i class="fa fa-angle-right" style="margin-right: 8px;">
+                    </i><a href="'.route('workflow.index').'">Workflow</a></li>';
+                    }
+                }
+                $child_menu .= '<div class="tab-pane show '.$active.'" id="right-tab-'.$i.'" 
+                role="tabpanel"><div class="acc-panel"><div class="acc-header d-flex align-items-center">
+                <span><i class="fa fa-angle-down" style="margin-right: 8px;"></i></span><h4 class="m-0">'.$val['name'].'</h4>
+                </div><div class="acc-body" style="display: block;"><ul class="list-unstyled activity-checks">'.$child_li.'</ul>
+                <div class="activity-accordian"></div></div></div></div>';
+                $i++;
+            }
+        }
+        
+        return $main_menu."####".$child_menu;      
+        // return 'jinl';
+    }
+
+    public function ajax_load_helpguide(Request $request)
+    {
+
+        $sub_institute_id = $request->session()->get('sub_institute_id');
+        $user_id = $request->session()->get('user_id');
+        $main_menu_id = $request->menu_id;
+
+        $helpguide = array();            
+
+        $data = DB::select('SELECT * FROM tblmenumaster where id = "'.$main_menu_id.'"');
+        
+        $data = json_decode(json_encode($data),true);             
+        $data = $data[0];  
+        if($data['youtube_link'] != "")
+        {
+                      
+            return $data['youtube_link']."####".$data['pdf_link'];
+        }
+        else
+        {
+            return "0";   
+        }
+
+    }
+
+    public function ajax_sendmail(Request $request)
+    {        
+        require_once('mailer/class.phpmailer.php');
+        $sub_institute_id = $request->session()->get('sub_institute_id');
+
+        $sql = "SELECT * FROM smtp_details WHERE sub_institute_id = '".$sub_institute_id."'";
+        $mail = DB::select($sql);
+        $mail = json_decode(json_encode($mail),true);       
+        $smtp_details = $mail[0];
+        
+        if(count($mail) > 0)
+        {
+            $from = $smtp_details['gmail'];
+            $from_pass = $smtp_details['password'];
+            $subject = $request->get('subject');         
+            $send_to = $request->get('email');  
+            $message = $request->get('message');
+
+                        
+            $mail = new PHPMailer\PHPMailer();
+            $mail->IsSMTP();            
+            $mail->isHTML(true);
+            $mail->SMTPDebug = 0;
+            $mail->SMTPAuth = true;
+            $mail->SMTPSecure = "ssl";
+            $mail->Host = $smtp_details['server_address'];
+            $mail->Port = $smtp_details['port'];
+            /*foreach ($to_arr as $id => $val) {
+                $mail->AddAddress($val);
+            }*/
+            
+            $mail->AddAddress($send_to);
+            $mail->Username = $from;
+            $mail->Password = $from_pass;
+            $mail->SetFrom($from, $from);
+            $mail->AddReplyTo($from, $from);
+
+            if(!empty($request->get('attachment'))){
+                $attachment = $request->get('attachment');
+                $mail->addAttachment($attachment);
+            }
+            
+            $mail->Subject = $subject;
+            $mail->Body = $message;
+            $mail->AltBody = $message;
+            $mail->Send();
+            // if($mail->Send())
+            // {
+            //     echo "done";
+            // }else
+            // {
+            //     echo "error".$mail->ErrorInfo;
+            // }
+            // die;
+
+        }
+        return redirect()->back();
+
+    }
+
+    public function ajax_sendEmailFeesReceipt(Request $request)
+    {
+        // dd($request);
+        $sub_institute_id = session()->get('sub_institute_id');
+        $syear = session()->get('syear');
+        $student_id = $request->input('student_id');
+        $receipt_id = $request->input('receipt_id_html');
+        $action = $request->input('action');
+
+        $fees_receipt_html = $this->get_FeesHtml($student_id,$action,$receipt_id);
+        $fees_css = $this->get_FeesCss($action);
+        $fees_receipt_css = "<style>".$fees_css."</style>";
+        
+        if ($fees_receipt_html != '') 
+        {
+            $dom = '<!DOCTYPE html>
+                    <html>
+                        <head>
+                           <title></title>
+                           <meta charset="UTF-8">
+                           <meta name="viewport" content="width=erpice-width, initial-scale=1.0">';
+            $dom .= $fees_receipt_css;       
+            $dom .= '</head>
+                        <body>
+                            <div>
+                                ##HTML_SEC##
+                            </div>
+                        </body>
+                    </html>';
+            
+            $getEmailAddress = DB::select("SELECT id,email,enrollment_no,mobile 
+                                           FROM tblstudent 
+                                           WHERE sub_institute_id = '".$sub_institute_id."' AND id = '".$student_id."' ");
+
+            $getEmails = json_decode(json_encode($getEmailAddress),true);
+            $getEmails = $getEmails[0];
+            
+            $to_arr = $getEmails['email'];   
+
+            $save_path = $_SERVER['DOCUMENT_ROOT'] . '/storage/mail_receipt_pdf';
+
+            $CUR_TIME = date('YmdHis');
+            $html_filename = $student_id.'_'.$CUR_TIME . ".html";
+            $pdf_filename = $student_id.'_'.$CUR_TIME . ".pdf";
+
+            $html = '';
+            $html .= $fees_receipt_html;
+            $path = 'src="http://' . $_SERVER['HTTP_HOST'];
+            $html = str_replace('src="', $path, $html);
+            $html = str_replace('##HTML_SEC##', $html, $dom);
+
+            $html_file_path = $save_path . '/' . $html_filename;
+            $pdf_file_path = $save_path . '/' . $pdf_filename;
+            file_put_contents($html_file_path, $html);
+            htmlToPDF($html_file_path, $pdf_file_path);
+
+            if($action == 'imprest_ledger_view')
+            {
+                $EMAIL_TEXT = "Dear Parents,
+                     <br/>
+                     <br/>
+                        Kindly see the attachment for Imprest Ledger.
+                     <br/>
+                     <br/>
+                     Regards,
+                     <br/>
+                    ";
+            }else{
+                $EMAIL_TEXT = "Dear Parents,
+                     <br/>
+                     <br/>
+                        Kindly see the attachment for Fees Receipt.
+                     <br/>
+                     <br/>
+                     Regards,
+                     <br/>
+                    ";
+            }        
+
+            if($action == 'imprest_ledger_view')
+            {
+                $request->request->add(['subject' => 'Imprest Ledger Sheet']);
+            }else{
+                $request->request->add(['subject' => 'Fees Receipt']);
+            }     
+            $request->request->add(['email' => $to_arr]);
+            $request->request->add(['message' => $EMAIL_TEXT]);
+            $request->request->add(['attachment' => $pdf_file_path]);
+
+            $this->ajax_sendmail($request);
+            unlink($html_file_path);
+            unlink($pdf_file_path);
+
+            if($action == 'imprest_ledger_view')
+            {
+                return '2';
+            }else{
+                return '1';
+            }
+        }
+    }
+
+    public function ajax_sendBulkEmailFeesReceipt(Request $request)
+    {
+        // dd($request);
+        $sub_institute_id = session()->get('sub_institute_id');
+        $syear = session()->get('syear');
+        $last_inserted_ids = $request->input('inserted_ids');
+        $action = $request->input('action');
+
+        $inserted_ids_arr = explode(',',$last_inserted_ids);
+
+        foreach ($inserted_ids_arr as $key => $value) 
+        { 
+
+           $html_data = $this->get_FeesHtmlForBulk($action,$value);
+           $student_id = $html_data['student_id'];
+           $fees_receipt_html = $html_data['fees_receipt_html'];
+           // dd($html_data);
+
+           if ($fees_receipt_html != '') 
+           {
+                 $dom = '<!DOCTYPE html>
+                        <html>
+                            <head>
+                               <title></title>
+                               <meta charset="UTF-8">
+                               <meta name="viewport" content="width=erpice-width, initial-scale=1.0">                           
+                            </head>
+                            <body>
+                                <div>
+                                    ##HTML_SEC##
+                                </div>
+                            </body>
+                        </html>';
+                
+                $getEmailAddress = DB::select("SELECT id,email,enrollment_no,mobile 
+                                               FROM tblstudent 
+                                               WHERE sub_institute_id = '".$sub_institute_id."' AND id = '".$student_id."' ");
+
+                $getEmails = json_decode(json_encode($getEmailAddress),true);
+                $getEmails = $getEmails[0];
+                
+                $to_arr = $getEmails['email'];
+                // $to_arr[2] ='no-reply@themillenniumschoolsurat.org';     
+
+                $save_path = $_SERVER['DOCUMENT_ROOT'] . '/storage/mail_receipt_pdf';
+
+                $CUR_TIME = date('YmdHis');
+                $html_filename = $student_id.'_'.$CUR_TIME . ".html";
+                $pdf_filename = $student_id.'_'.$CUR_TIME . ".pdf";
+
+                $html = '';
+                $html .= $fees_receipt_html;
+                $path = 'src="http://' . $_SERVER['HTTP_HOST'];
+                $html = str_replace('src="', $path, $html);
+                $html = str_replace('##HTML_SEC##', $html, $dom);
+
+                $html_file_path = $save_path . '/' . $html_filename;
+                $pdf_file_path = $save_path . '/' . $pdf_filename;
+                file_put_contents($html_file_path, $html);
+                if($action == 'fees_circular')
+                {
+                    htmlToPDFLandscape($html_file_path, $pdf_file_path);
+                }else{                    
+                    htmlToPDF($html_file_path, $pdf_file_path);
+                }    
+
+                if($action == 'fees_circular')
+                {
+                    $EMAIL_TEXT = "Dear Parents,
+                         <br/>
+                         <br/>
+                            Kindly see the attachment for Fees Circular.
+                         <br/>
+                         <br/>
+                         Regards,
+                         <br/>
+                         <br/>
+                         TMS-Surat
+                        ";
+                }else{
+                    $EMAIL_TEXT = "Dear Parents,
+                         <br/>
+                         <br/>
+                            Kindly see the attachment for Other Fees Receipt.
+                         <br/>
+                         <br/>
+                         Regards,
+                         <br/>
+                         <br/>
+                         TMS-Surat
+                        ";
+                }        
+
+                if($action == 'fees_circular')
+                {
+                    $request->request->add(['subject' => 'Fees Circular']);
+                }else{
+                    $request->request->add(['subject' => 'Other Fees Receipt']);
+                }
+                $request->request->add(['email' => $to_arr]);
+                $request->request->add(['message' => $EMAIL_TEXT]);
+                $request->request->add(['attachment' => $pdf_file_path]);
+
+                $this->ajax_sendmail($request);
+                unlink($html_file_path);
+                unlink($pdf_file_path);
+                
+            }
+        }
+        if($action == 'fees_circular')
+        {
+            return '2';
+        }else{
+            return '1';
+        }
+    }
+
+    public function ajax_PDF_FeesReceipt(Request $request)
+    {
+        
+        //Start For Empty folder before creating new PDF
+        $folder_path = $_SERVER['DOCUMENT_ROOT'] . '/storage/print_receipt_pdf/*';
+        $files = glob($folder_path); // get all file names
+        foreach($files as $file){ // iterate files
+          if(is_file($file)) {
+            unlink($file); // delete file
+          }
+        }
+        //END For Empty folder before creating new PDF
+
+        $sub_institute_id = session()->get('sub_institute_id');
+        $syear = session()->get('syear');
+        $student_id = $request->input('student_id');
+        $receipt_id = $request->input('receipt_id_html');
+        $action = $request->input('action');
+        $paper_size = $request->input('paper_size');
+
+        //echo $student_id."***".$action."***".$receipt_id;
+        //die();
+
+        $fees_receipt_html = $this->get_FeesHtml($student_id,$action,$receipt_id);
+        $fees_css = $this->get_FeesCss($action);
+        $fees_receipt_css = "<style>".$fees_css."</style>";
+        
+        if ($fees_receipt_html != '') 
+        {
+            $dom = '<!DOCTYPE html>
+                    <html>
+                        <head>
+                           <title></title>
+                           <meta charset="UTF-8">
+                           <meta name="viewport" content="width=erpice-width, initial-scale=1.0">';
+            $dom .= $fees_receipt_css;
+            $dom .= '</head>
+                        <body>';
+
+            $dom .= $this->get_PageSetup($paper_size);
+
+            $dom .= '</body>
+                </html>';
+
+            $save_path = $_SERVER['DOCUMENT_ROOT'] . '/storage/print_receipt_pdf';
+
+            $CUR_TIME = date('YmdHis');
+            $html_filename = $student_id.'_'.$CUR_TIME . ".html";
+            $pdf_filename = $student_id.'_'.$CUR_TIME . ".pdf";
+
+            $html = '';
+            if(is_array($fees_receipt_html) == 1)
+            {
+                foreach ($fees_receipt_html as $key => $val) 
+                {
+                    $html .= $val['fees_html'];
+                }
+            }
+            else
+            {
+                $html .= $fees_receipt_html;
+            }
+            
+            if($action != 'certificate_re_receipt')
+            {
+                $path = 'src="http://' . $_SERVER['HTTP_HOST'];
+                $html = str_replace('src="', $path, $html);
+            }
+            
+            $html = str_replace('##HTML_SEC##', $html, $dom);
+
+            $html_file_path = $save_path . '/' . $html_filename;
+            $pdf_file_path = $save_path . '/' . $pdf_filename;
+            file_put_contents($html_file_path, $html);
+
+            $htmlToPDF = $this->htmlToPDF_making($paper_size,$html_file_path, $pdf_file_path);
+
+            unlink($html_file_path);
+
+            $PDF_path_for_open = "http://".$_SERVER['HTTP_HOST'].'/storage/print_receipt_pdf/'.$pdf_filename;
+
+            return $PDF_path_for_open;
+
+        }
+    }
+ 
+    public function ajax_PDF_Bulk_OtherFeesReceipt(Request $request)
+    {
+        
+        //Start For Empty folder before creating new PDF
+        $folder_path = $_SERVER['DOCUMENT_ROOT'] . '/storage/print_receipt_pdf/*';
+        $files = glob($folder_path); // get all file names
+        foreach($files as $file){ // iterate files
+          if(is_file($file)) {
+            unlink($file); // delete file
+          }
+        }
+        //END For Empty folder before creating new PDF
+
+        $sub_institute_id = session()->get('sub_institute_id');
+        $syear = session()->get('syear');
+        $last_inserted_ids = $request->input('inserted_ids');
+        $action = $request->input('action');
+
+        $inserted_ids_arr = explode(',',$last_inserted_ids);
+
+        $html = '';
+        foreach ($inserted_ids_arr as $key => $value) 
+        { 
+
+           $html_data = $this->get_FeesHtmlForBulk($action,$value);
+           $student_id = $html_data['student_id'];
+           $fees_receipt_html = $html_data['fees_receipt_html'];
+           // dd($html_data);
+
+           if($fees_receipt_html != '') 
+           {
+                 $dom = '<!DOCTYPE html>
+                        <html>
+                            <head>
+                               <title></title>
+                               <meta charset="UTF-8">
+                               <meta name="viewport" content="width=erpice-width, initial-scale=1.0">                           
+                            </head>
+                            <style>
+                                .last_page:last-child {
+                                     page-break-after: auto;
+                                }
+                            </style>
+                            <body>
+                                <div>
+                                    ##HTML_SEC##
+                                </div>
+                            </body>
+                        </html>';
+
+                $save_path = $_SERVER['DOCUMENT_ROOT'] . '/storage/print_receipt_pdf';
+
+                $CUR_TIME = date('YmdHis');
+                $html_filename = $student_id.'_'.$CUR_TIME . ".html";
+                $pdf_filename = $student_id.'_'.$CUR_TIME . ".pdf";
+
+                // $html = '';
+                $html .= $fees_receipt_html.'<div class="last_page" style="page-break-before: always !important;"></div>';
+                $html = str_replace('##HTML_SEC##', $html, $dom);
+
+                $html_file_path = $save_path . '/' . $html_filename;
+                $pdf_file_path = $save_path . '/' . $pdf_filename;
+                file_put_contents($html_file_path, $html);
+
+                if($action == 'Bonafide' || $action == 'Character Certificate' || $action == 'other_fees_collect_receipt' || $action == 'imprest_fees_cancel_refund_receipt')
+                {
+                    htmlToPDFLandscapeCertificate($html_file_path, $pdf_file_path);
+                }else{
+                    htmlToPDF($html_file_path, $pdf_file_path);
+                }
+    
+         
+                unlink($html_file_path);
+
+                $PDF_path_for_open = "http://".$_SERVER['HTTP_HOST'].'/storage/print_receipt_pdf/'.$pdf_filename;
+            }
+        }
+        return $PDF_path_for_open;
+
+    }
+
+    public function get_FeesHtml($student_id,$action,$receipt_id)
+    {
+
+        $sub_institute_id = session()->get('sub_institute_id');
+        $syear = session()->get('syear');
+
+        if($action == 'imprest_ledger_view')
+        {
+            $NewRequest = new Request();
+            $NewRequest->request->add(['student_id' => $student_id]);
+
+            $get_controller = new otherNewfeesReportController;
+            $fees_receipt_html = $get_controller->ajax_ledgerData($NewRequest);
+        }
+        elseif($action == 'other_fees_re_receipt')
+        {
+            $get_data = DB::select("SELECT *
+                                    FROM fees_other_collection fc
+                                    WHERE fc.sub_institute_id = '".$sub_institute_id."' AND fc.syear = '".$syear."' 
+                                    AND fc.receipt_id = '".$receipt_id."' AND fc.student_id = '".$student_id."'
+                                    ");
+
+            $other_fees_collection_data = json_decode(json_encode($get_data),true);
+            $other_fees_collection_data = $other_fees_collection_data[0];
+            $fees_receipt_html = $other_fees_collection_data['paid_fees_html'];
+        }
+        elseif($action == 'certificate_re_receipt')
+        {
+            $get_data = DB::select("SELECT *
+                                    FROM certificate_history
+                                    WHERE sub_institute_id = '".$sub_institute_id."' AND syear = '".$syear."' 
+                                    AND id = '".$receipt_id."' AND student_id = '".$student_id."'
+                                    ");
+
+            $certificate_data = json_decode(json_encode($get_data),true);
+            $certificate_data = $certificate_data[0];
+            $fees_receipt_html = $certificate_data['certificate_html'];
+        }
+        elseif($action == 'fees_refund_receipt')
+        {
+            $fees_refund_data = DB::select("SELECT *
+                                    FROM fees_refund
+                                    WHERE sub_institute_id = '".$sub_institute_id."' AND syear = '".$syear."' 
+                                    AND id = '".$receipt_id."' AND student_id = '".$student_id."'
+                                    ");
+
+            $fees_refund_data = json_decode(json_encode($fees_refund_data),true);
+            $fees_refund_data = $fees_refund_data[0];
+            $fees_receipt_html = $fees_refund_data['fees_html'];
+        }
+        else
+        {
+            $sql = "SELECT fc.id,fc.student_id,fc.receipt_no,fc.fees_html
+                    FROM fees_collect fc
+                    INNER JOIN fees_receipt fr ON FIND_IN_SET(fc.id,fr.FEES_ID) AND fr.SUB_INSTITUTE_ID = fc.sub_institute_id
+                    WHERE fc.sub_institute_id = '".$sub_institute_id."' AND fc.syear = '".$syear."' 
+                    AND fc.student_id = '".$student_id."' AND (fr.RECEIPT_ID_1 = '".$receipt_id."' OR fr.RECEIPT_ID_2 = '".$receipt_id."' OR fr.RECEIPT_ID_3 = '".$receipt_id."' OR fr.RECEIPT_ID_4 = '".$receipt_id."' OR fr.RECEIPT_ID_5 = '".$receipt_id."' OR fr.RECEIPT_ID_6 = '".$receipt_id."')
+                    GROUP BY fc.fees_html
+                    UNION
+                    SELECT fo.id,fo.student_id,fo.reciept_id AS receipt_no,fo.paid_fees_html AS fees_html
+                    FROM fees_paid_other fo
+                    INNER JOIN fees_receipt fro ON FIND_IN_SET(fo.id,fro.OTHER_FEES_ID) AND fro.SUB_INSTITUTE_ID = fo.sub_institute_id
+                    WHERE fo.sub_institute_id = '".$sub_institute_id."' AND fo.syear = '".$syear."' 
+                    AND fo.student_id = '".$student_id."' AND (fro.RECEIPT_ID_1 = '".$receipt_id."' OR fro.RECEIPT_ID_2 = '".$receipt_id."' OR fro.RECEIPT_ID_3 = '".$receipt_id."' OR fro.RECEIPT_ID_4 = '".$receipt_id."' OR fro.RECEIPT_ID_5 = '".$receipt_id."' OR fro.RECEIPT_ID_6 = '".$receipt_id."')
+                    GROUP BY fo.paid_fees_html";
+                    //ORDER BY id DESC fo.reciept_id = '".$receipt_id."' AND fc.receipt_no = '".$receipt_id."'
+                //echo "<pre>";
+                //echo $sql;
+                //die();
+            $get_data = DB::select($sql);
+
+            $fees_collection_data = json_decode(json_encode($get_data),true);
+            if(count($fees_collection_data) > 1)
+            {
+                $fees_receipt_html = $fees_collection_data;
+            }else{
+                $fees_collection_data = $fees_collection_data[0];
+                $fees_receipt_html = $fees_collection_data['fees_html'];
+            }
+        }
+
+        return $fees_receipt_html;
+    }
+
+    public function get_FeesHtmlForBulk($action,$inserted_id)
+    {
+
+        $sub_institute_id = session()->get('sub_institute_id');
+        $syear = session()->get('syear');
+        $html_array = array();
+
+        if($action == 'other_fees_collect_receipt')
+        {
+            $get_data = DB::select("SELECT * FROM fees_other_collection WHERE sub_institute_id = '".$sub_institute_id."' AND  syear = '".$syear."' AND id = '".$inserted_id."' ");
+
+           $fees_other_collection_data = json_decode(json_encode($get_data),true);
+           $fees_other_collection_data = $fees_other_collection_data[0];
+
+           $html_array['student_id'] = $fees_other_collection_data['student_id'];
+           $html_array['fees_receipt_html'] = $fees_other_collection_data['paid_fees_html'];
+        }
+
+        if($action == 'imprest_fees_cancel_refund_receipt')
+        {
+            $get_data = DB::select("SELECT * FROM imprest_fees_cancel WHERE sub_institute_id = '".$sub_institute_id."' AND  syear = '".$syear."' AND id = '".$inserted_id."' ");
+
+           $imprest_fees_cancel_data = json_decode(json_encode($get_data),true);
+           $imprest_fees_cancel_data = $imprest_fees_cancel_data[0];
+
+           $html_array['student_id'] = $imprest_fees_cancel_data['student_id'];
+           $html_array['fees_receipt_html'] = $imprest_fees_cancel_data['cancel_fees_html'];
+        }
+
+        if($action == 'fees_circular')
+        {
+            $get_data = DB::select("SELECT * FROM fees_circular_log WHERE sub_institute_id = '".$sub_institute_id."' AND  syear = '".$syear."' AND id = '".$inserted_id."' ");
+
+            $fees_circular_data = json_decode(json_encode($get_data),true);
+            $fees_circular_data = $fees_circular_data[0];
+
+            $html_array['student_id'] = $fees_circular_data['STUDENT_ID'];
+            $html_array['fees_receipt_html'] = $fees_circular_data['FEES_CIRCULAR_HTML'];
+        }
+
+        if($action == 'Bonafide' || $action == 'Character Certificate' || $action == 'Transfer Certificate')
+        {
+            $get_data = DB::select("SELECT * FROM certificate_history WHERE sub_institute_id = '".$sub_institute_id."' AND  syear = '".$syear."' AND id = '".$inserted_id."' ");
+
+           $student_certificate_data = json_decode(json_encode($get_data),true);
+           $student_certificate_data = $student_certificate_data[0];
+
+           $html_array['student_id'] = $student_certificate_data['student_id'];
+           $html_array['fees_receipt_html'] = $student_certificate_data['certificate_html'];
+        }
+
+        return $html_array;
+    }
+
+    public function get_FeesCss($action)
+    {
+        $sub_institute_id = session()->get('sub_institute_id');
+        $syear = session()->get('syear');
+
+        $sql = "select fc.* ,frc.css
+            from  fees_config_master fc
+            inner join fees_receipt_css frc on frc.receipt_id = fc.fees_receipt_template
+            where fc.sub_institute_id = '".$sub_institute_id."' AND fc.syear = '".$syear."' ";
+        $sql = preg_replace('/\n+/', '', $sql);
+        $fees_config = DB::select($sql);
+
+        if (count($fees_config) > 0) 
+        {
+            $receipt_css = $fees_config[0]->css;
+        }else{
+            $sql = "select frc.css from fees_receipt_css frc where frc.receipt_id = 'A5' ";
+            $sql = preg_replace('/\n+/', '', $sql);
+            $fees_config = DB::select($sql);
+            $receipt_css = $fees_config[0]->css;
+        }
+
+        if($action == 'imprest_ledger_view' || $action == 'Bonafide' || $action == 'Character Certificate' || $action == 'Transfer Certificate' || $action == 'certificate_re_receipt' || $action == 'other_fees_re_receipt')
+        {
+            $fees_receipt_css = '';
+        }else{
+            $fees_receipt_css = $receipt_css;
+        }
+
+        return $fees_receipt_css;
+    }
+
+    public function get_PageSetup($paper_size)
+    {
+        $sub_institute_id = session()->get('sub_institute_id');
+        $syear = session()->get('syear');
+
+        $extra_html = '';
+        if($paper_size == "A5")
+        {
+            $extra_html = ' <div>
+                                <page size="A5" layout="landscape">
+                                   ##HTML_SEC##                           
+                                </page>
+                            </div>';
+        }
+        elseif($paper_size == "A5DB")
+        {
+            $extra_html = ' <div>
+                                <page size="A5" layout="landscape">
+                                    <table width="100%">
+                                        <tr>
+                                            <td style="width:50%">
+                                                ##HTML_SEC##
+                                            </td>
+                                            <td style="width:50%;">
+                                                 ##HTML_SEC##
+                                            </td>
+                                        </tr>
+                                    </table>
+                                </page>
+                            </div>';
+        }
+        elseif($paper_size == "A4")
+        {
+            $extra_html = ' <div>
+                                <page size="A4" layout="landscape">
+                                   ##HTML_SEC##                           
+                                </page>
+                            </div>';
+        }
+        elseif($paper_size == "A4DB")
+        {
+            $extra_html = ' <div>
+                                <page size="A4">
+                                   ##HTML_SEC##
+                                   ##HTML_SEC##                          
+                                </page>
+                            </div>';
+        }
+        else
+        {
+            $extra_html = '<div>
+                                ##HTML_SEC##
+                           </div>';
+        }
+
+        return $extra_html;
+    }
+
+    public function htmlToPDF_making($paper_size,$html_file_path, $pdf_file_path)
+    {
+        if($paper_size == "A5" || $paper_size == "A4")
+        {
+            htmlToPDFLandscapeCertificate($html_file_path, $pdf_file_path);
+        }
+        elseif($paper_size == "A5DB")
+        {
+            htmlToPDFLandscape($html_file_path, $pdf_file_path);
+        }
+        elseif($paper_size == "A4DB")
+        {
+            htmlToPDFPortrait($html_file_path, $pdf_file_path);
+        }
+        else
+        {
+            htmlToPDF($html_file_path, $pdf_file_path);
+        }
+    }
+
+    public function searchMenu(Request $request)
+    {        
+        $searchValue = $request->input('value');
+        $sub_institute_id = $request->session()->get('sub_institute_id');
+        $user_id = $request->session()->get('user_id');
+
+        $rightsQuery = "SELECT GROUP_CONCAT(distinct m.id) AS MID
+        FROM tbluser u LEFT JOIN tblindividual_rights i ON u.id = i.user_id AND u.sub_institute_id = i.sub_institute_id 
+        LEFT JOIN tblgroupwise_rights g ON u.user_profile_id = g.profile_id AND u.sub_institute_id = g.sub_institute_id 
+        INNER JOIN tblmenumaster m ON (i.menu_id = m.id OR g.menu_id = m.id) AND FIND_IN_SET(" . $sub_institute_id . ", m.sub_institute_id) 
+        WHERE u.sub_institute_id = '" . $sub_institute_id . "' AND u.id = '" . $user_id . "'";
+
+        $rightsQuery = DB::select($rightsQuery);
+
+        $rightsQuery = array_map(function ($value) {
+            return (array) $value;
+        }, $rightsQuery);
+
+        $rightsMenusIds = 0;
+
+        if (isset($rightsQuery['0']['MID'])) {
+            $rightsMenusIds = $rightsQuery['0']['MID'];
+        }
+
+        $subChildMenuData = tblmenumasterModel::where('parent_menu_id', '!=', 0)
+                            ->whereRaw("find_in_set('$sub_institute_id',sub_institute_id) AND LEVEL IN (2,3) AND link != 'javascript:void(0);' AND id IN (" . $rightsMenusIds . ") AND status = 1 AND NAME LIKE '%".$searchValue."%' ")
+                            ->orderBy('sort_order')
+                            ->get()
+                            ->toArray();    
+        return $subChildMenuData; 
+    }
+
+    public function get_search_url(Request $request)
+    {                
+        $url = route($_REQUEST['value']);        
+        return $url;
+    } 
+    public function get_bloom_texonomy(Request $request) {
+        $question = $request->question;
+
+        if ( $question ) {
+            $url = 'https://getbloomslevel-gyzqqaohja-el.a.run.app';
+            $headers = ['Accept: application/json'];
+
+            $fields = [ 'str' => $question ];
+            
+            $ch = curl_init ();
+            curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 0);
+            curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, 0);
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($ch, CURLOPT_URL, $url);
+            curl_setopt($ch, CURLOPT_POST, true);
+            curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+            curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($fields));
+
+            $result = curl_exec($ch);
+            // echo '$result : '.$result;
+            // echo '<pre>';
+            // print_r(curl_getinfo($ch));
+            // die();
+            curl_close ($ch);
+
+
+
+            return $result;
+        }
+    }
+
+}

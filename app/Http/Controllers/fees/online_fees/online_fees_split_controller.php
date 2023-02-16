@@ -1,0 +1,248 @@
+<?php
+
+namespace App\Http\Controllers\fees\online_fees;
+
+use Illuminate\Http\Request;
+use App\Http\Controllers\Controller;
+use Illuminate\Support\Facades\Schema;
+//use Illuminate\Http\Request;
+use App\Models\fees\fees_title\fees_title;
+use DB;
+
+class online_fees_split_controller  extends Controller
+{
+
+    /**
+     * Display a listing of the resource.
+     *
+     * @return \Illuminate\Http\Response
+     */
+    public function index(Request $request)
+    {
+        if (session()->has('data')) { // check if it exists
+            $data_arr = session('data'); // to retrieve value
+            if (isset($data_arr['message'])) {
+                $school_data['message'] = $data_arr['message'];
+            }
+        }
+
+        $school_data['data'] = $this->getData();
+//        $school_data['data'] = array();
+        $type = $request->input('type');
+        return \App\Helpers\is_mobile($type, "fees/online_fees_split/show", $school_data, "view");
+    }
+
+    public function getData()
+    {
+        $data = DB::table("fees_online_split as fos")
+                        ->select('fos.id', 'ft.display_name', 'fos.bank_split_name')
+                        ->join('fees_title as ft', 'ft.id', '=', 'fos.fees_title_id')
+                        ->where([
+                            'fos.sub_institute_id' => session()->get('sub_institute_id'),
+                        ])->get();
+        $responce_arr = array();
+        $data = json_encode($data);
+        $responce_arr = json_decode($data,true);
+        // if (count($data) > 0) {
+        //     foreach ($data as $id => $arr) {
+        //         if ($arr['mandatory'] == '1') {
+        //             $arr['mandatory'] = 'Yes';
+        //         } else {
+        //             $arr['mandatory'] = 'No';
+        //         }
+        //         if ($arr['other_fee_id'] == '0') {
+        //             $arr['other_fee_id'] = 'Regular Fee';
+        //         } else {
+        //             $arr['other_fee_id'] = 'Other Fee';
+        //         }
+        //         $responce_arr[$id] = $arr;
+        //     }
+        // }
+//        echo "<pre>";
+//        print_r($responce_arr);
+//        exit;
+
+        return $responce_arr;
+    }
+
+    /**
+     * Show the form for creating a new resource.
+     *
+     * @return \Illuminate\Http\Response
+     */
+    
+    public function create(Request $request)
+    {
+        $type = $request->input('type');
+//        $dataStore = array();
+        $dataStore['data']['ddTtitle'] = $this->ddTtitle();
+        return \App\Helpers\is_mobile($type, 'fees/online_fees_split/add', $dataStore, "view");
+    }
+
+    public function ddTtitle()
+    {
+        // $std_div_map = DB::table('fees_title_master')
+        //         ->select('fees_title_master.title', 'fees_title_master.id')
+        //         ->pluck('title', 'id');
+
+        $data = fees_title::
+                select('id', 'display_name')
+                ->where([
+                    'sub_institute_id' => session()->get('sub_institute_id'),
+                    'syear' => session()->get('syear')
+                ])->pluck("display_name","id");
+        
+        // foreach ($data as $id=>$arr) {
+        //     if($arr["fees_title_id"] == 1){
+        //         continue;
+        //     }else{
+        //         unset($std_div_map[$arr["fees_title_id"]]);
+        //     }
+        // }
+        return $data;
+    }
+
+    /**
+     * Store a newly created resource in storage.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\Response
+     */
+    public function store(Request $request)
+    {
+
+
+//        echo "<pre>";
+//        print_r($columns);
+//        exit;
+        // logic if it was other fee
+        // if ($request->get('fees_title_id') == 1) {
+        //     $sub_institute_id = session()->get('sub_institute_id');
+        //     $id = DB::select(DB::raw("SELECT ifnull(max(other_fee_id),0) max_id FROM fees_title WHERE sub_institute_id = '$sub_institute_id'"));
+        //     $id = $id[0]->max_id + 1;
+
+        //     //checking if coloum exist or not
+        //     $columns = Schema::getColumnListing('fees_paid_other');
+        //     if (!in_array($id, $columns)) {
+        //         $type = "decimal";
+        //         $length = "5";
+        //         $fieldName = $id;
+        //         Schema::table('fees_paid_other', function ($table) use ($type, $length, $fieldName) {
+        //             $table->$type($fieldName, $length);
+        //         });
+        //     }
+
+        //     $exam = new fees_title([
+        //         'fees_title_id' => $request->get('fees_title_id'),
+        //         'fees_title' => $id,
+        //         'display_name' => $request->get('display_name'),
+        //         'mandatory' => $request->get('mandatory'),
+        //         'syear' => session()->get('syear'),
+        //         'sub_institute_id' => session()->get('sub_institute_id'),
+        //         'other_fee_id' => $id,
+        //     ]);
+        //     $exam->save();
+        // } else {
+            // $fees_title_id = $request->get('fees_title_id');
+            // $fees_title = DB::select(DB::raw("
+            //         SELECT fee_paid_title 
+            //         FROM fees_title_master 
+            //         WHERE id = '$fees_title_id'"));
+            // $fees_title = $fees_title[0]->fee_paid_title;
+
+            $exam = DB::table("fees_online_split")
+            ->insert([
+                'fees_title_id' => $request->get('fees_title_id'),
+                'bank_split_name' => $request->get('bank_split_name'),
+                'sub_institute_id' => session()->get('sub_institute_id'),
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+            // $exam->save();
+        // }
+        $res = array(
+            "status_code" => 1,
+            "message" => "Data Saved",
+        );
+
+        $type = $request->input('type');
+        return \App\Helpers\is_mobile($type, "online_fees_split.index", $res, "redirect");
+    }
+
+    /**
+     * Display the specified resource.
+     *
+     * @param  int  $id
+     * @return \Illuminate\Http\Response
+     */
+    public function show($id)
+    {
+        //
+    }
+
+    /**
+     * Show the form for editing the specified resource.
+     *
+     * @param  int  $id
+     * @return \Illuminate\Http\Response
+     */
+    public function edit(Request $request, $id)
+    {
+        $type = $request->input('type');
+        $data = DB::table("fees_online_split")->find($id);
+        $data = json_encode($data);
+        $data = json_decode($data,true);
+
+        $data['data']['ddTtitle'] = $this->ddTtitle();
+        return \App\Helpers\is_mobile($type, "fees/online_fees_split/edit", $data, "view");
+    }
+
+    /**
+     * Update the specified resource in storage.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @param  int  $id
+     * @return \Illuminate\Http\Response
+     */
+    public function update(Request $request, $id)
+    {
+        // fees_title::where(["id" => $id])->delete();
+        // logic if it was other fee
+
+            $exam = DB::table("fees_online_split")
+            ->where(["id"=>$id])
+            ->update([
+                'fees_title_id' => $request->get('fees_title_id'),
+                'bank_split_name' => $request->get('bank_split_name'),
+                'updated_at' => now(),
+            ])
+            ;
+            // $exam->save();
+
+        $res = array(
+            "status_code" => 1,
+            "message" => "Data Saved",
+        );
+        $type = $request->input('type');
+
+        return \App\Helpers\is_mobile($type, "online_fees_split.index", $res, "redirect");
+    }
+
+    /**
+     * Remove the specified resource from storage.
+     *
+     * @param  int  $id
+     * @return \Illuminate\Http\Response
+     */
+    public function destroy(Request $request, $id)
+    {
+        $type = $request->input('type');
+        $exam = DB::table("fees_online_split")->where(["id" => $id])->delete();
+        $res = array(
+            "status_code" => 1,
+            "message" => "Data Deleted",
+        );
+
+        return \App\Helpers\is_mobile($type, "online_fees_split.index", $res, "redirect");
+    }
+}
