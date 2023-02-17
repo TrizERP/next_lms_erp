@@ -1,0 +1,560 @@
+@include('includes.lmsheadcss')
+<link href="/plugins/bower_components/clockpicker/dist/jquery-clockpicker.min.css" rel="stylesheet">
+<style>
+.tooltip-inner {
+    max-width: 1100px !important;
+}
+br{
+    display:  block !important;
+}
+</style>
+@include('includes.header')
+@include('includes.sideNavigation')
+<!-- Content main Section -->
+<div class="content-main flex-fill">
+    <div class="row">
+        <div class="col-md-6">
+            <h1 class="h4 mb-3"> 
+            @if(!isset($data['questionpaper_data']))
+            Add Exam
+            @else
+            Edit Exam
+            @endif </h1>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb bg-transparent p-0">
+                    <li class="breadcrumb-item"><a href="{{route('course_master.index')}}">LMS</a></li>                                 
+                    <li class="breadcrumb-item">Exam</li>                                 
+                    <li class="breadcrumb-item active" aria-current="page">Add Exam</li>
+                </ol>
+            </nav>
+        </div>
+        
+    </div>
+
+    <div class="container-fluid mb-5">
+        <div class="card border-0">
+            <div class="card-body">
+                @if ($message = Session::get('success'))
+                <div class="alert alert-success alert-block">
+                    <button type="button" class="close" data-dismiss="alert">×</button>
+                    <strong>{{ $message }}</strong>
+                </div>
+                @endif
+               <form action="@if (isset($data['questionpaper_data']))
+                    {{ route('question_paper.update',['div_id'=>$data['questionpaper_data']['id']])}}
+                    @else
+                    {{ route('question_paper.store') }}
+                    @endif" method="post" enctype='multipart/form-data' onsubmit="return check_validation();">                          
+                        @if(!isset($data['questionpaper_data']))
+                        {{ method_field("POST") }}
+                        @else
+                        {{ method_field("PUT") }}
+                        @endif
+                        @csrf
+                                      
+
+                    <div class="row align-items-center">
+                        <div class="col-md-12 form-group">
+                            <div class="row align-items-center">
+                                @if(isset($data['questionpaper_data']))
+                                {{ App\Helpers\SearchChain('4','','grade,std',$data['questionpaper_data']['grade_id'],$data['questionpaper_data']['standard_id']) }}
+                                @else
+                                {{ App\Helpers\SearchChain('4','','grade,std') }}
+                                @endif 
+                                <div class="col-md-4 form-group">                        
+                                    <label for="subject">Select Subject:</label>
+                                    <select name="subject" id="subject" class="form-control mb-0" required>
+                                        <option value="">Select Subject</option> 
+                                        @if(isset($data['questionpaper_data'])) 
+                                        @foreach($data['subjects'] as $key => $value)
+                                        <option value="{{$value['subject_id']}}" @if(isset($data['questionpaper_data']['subject_id'])) @if($data['questionpaper_data']['subject_id']==$value['subject_id']) selected='selected' @endif @endif>{{$value['display_name']}}</option>
+                                        @endforeach                      
+                                    @endif                                                        
+                                    </select>                        
+                                </div>     
+                            </div> 
+                        </div> 
+
+                        <div class="col-md-12 form-group">
+                            <div class="row mt-4">
+                                <div class="col-md-3 form-group">                                                                
+                                    <select name="search_chapter" id="search_chapter" class="form-control mb-0" multiple="multiple">
+                                        <option value="">Search By Chapter</option>                                                                                        
+                                    </select>
+                                </div>
+                                <div class="col-md-3 form-group">                                                                
+                                    <select name="search_topic" id="search_topic" class="form-control mb-0" multiple="multiple">
+                                        <option value="">Search By Topic</option>                                                                                        
+                                    </select>
+                                </div>
+                                <div class="col-md-3 form-group">
+                                    <select name="search_mapping_type" id="search_mapping_type" class="form-control mb-0" multiple="multiple">
+                                        <option value="">Search By Mapping Type</option>
+                                        @if(isset($data['lms_mapping_type']))
+                                            @foreach($data['lms_mapping_type'] as $key => $val)
+                                                <option value="{{$val['id']}}">{{$val['name']}}</option>
+                                            @endforeach
+                                        @endif
+                                    </select>               
+                                </div>
+                                <div class="col-md-2 form-group">
+                                    <select name="search_mapping_value" id="search_mapping_value" class="form-control mb-0" multiple="multiple">
+                                        <option value="">Search By Mapping Value</option>
+                                    </select>               
+                                </div> 
+                                <div class="col-md-1 form-group">
+                                    <input type="button" name="search" value="Search" class="btn btn-success" onclick="search_questionList();">
+                                </div> 
+
+                            </div>
+                        </div>
+                    
+                        <div class="col-md-4 form-group">
+                            <label>Exam Name / Paper Name</label>
+                            <input type="text" id='paper_name' name="paper_name" value="@if(isset($data['questionpaper_data']['paper_name'])){{$data['questionpaper_data']['paper_name']}}@endif" class="form-control mb-0" required>
+                        </div>
+                                                                                                           
+                        <div class="col-md-4 form-group">
+                            <label>Exam Description / Paper Description</label>
+                            <input type="text" id='paper_desc' name="paper_desc" value="@if(isset($data['questionpaper_data']['paper_desc'])){{$data['questionpaper_data']['paper_desc']}}@endif" class="form-control mb-0" required>
+                        </div> 
+                        
+                        <div class="col-md-4 form-group">
+                            <label for="subject">Attempt Allowed:</label>
+                            <select name="attempt_allowed" id="attempt_allowed" class="form-control mb-0" required onchange="show_ans(this.value);">
+                                <option value="">Select Attempt Allowed</option>                                 
+                                    <option value="unlimited" @if(isset($data['questionpaper_data']['attempt_allowed'])) @if($data['questionpaper_data']['attempt_allowed']=='unlimited') selected='selected' @endif @endif>Unlimited</option>
+                                    @for($i=1;$i<=10;$i++)
+                                    <option value="{{$i}}" @if(isset($data['questionpaper_data']['attempt_allowed'])) @if($data['questionpaper_data']['attempt_allowed']==$i) selected='selected' @endif @endif>{{$i}}</option>
+                                    @endfor                                                      
+                            </select>                        
+                        </div>                               
+                           
+                        <div class="col-md-4 form-group">
+                            <label>Open Date</label>
+                            <div class="input-daterange input-group" id="date-range">
+                                <input type="text" class="form-control mydatepicker mb-0 text-left" placeholder="dd/mm/yyyy" value="@if(isset($data['questionpaper_data']['open_date']) && $data['questionpaper_data']['open_date'] !=""){{date('Y-m-d', strtotime($data['questionpaper_data']['open_date']))}}@endif" name="open_date" autocomplete="off">
+                                <span class="input-group-addon"><i class="icon-calender"></i></span> 
+                            </div>                                                      
+                        </div>
+                            
+                        <div class="col-md-4 form-group">
+                            <label>Close Date</label>                            
+                            <div class="input-daterange input-group" id="date-range">
+                                <input type="text" class="form-control mydatepicker mb-0 text-left" placeholder="dd/mm/yyyy" value="@if(isset($data['questionpaper_data']['close_date']) && $data['questionpaper_data']['close_date'] !="" ){{date('Y-m-d', strtotime($data['questionpaper_data']['close_date']))}}@endif" name="close_date" autocomplete="off">
+                                <span class="input-group-addon"><i class="icon-calender"></i></span> 
+                            </div>                                                        
+                        </div>
+                        
+                        <div class="col-md-2 form-group">
+                            <label for="timelimit_enable">Enable Timelimit</label>
+                            <input type="checkbox" id="timelimit_enable" name="timelimit_enable" value="1" onchange="show_time_allowed();"
+                            @if( isset($data['questionpaper_data']['timelimit_enable']) && $data['questionpaper_data']['timelimit_enable'] == 1) 
+                            checked 
+                            @elseif(!isset($data['questionpaper_data']))
+                            checked 
+                            @endif
+                            >
+                        </div>
+
+                        <div class="col-md-2 form-group">                            
+                            <label for='time_allowed'>Allowed Time (mins)</label>
+                            <input type="number" id='time_allowed' name="time_allowed" 
+                            value="@if(isset($data['questionpaper_data']['time_allowed'])){{$data['questionpaper_data']['time_allowed']}}@endif" 
+                            @if( isset($data['questionpaper_data']['timelimit_enable']) && $data['questionpaper_data']['timelimit_enable'] == 0) 
+                            readonly
+                            @endif
+                            class="form-control" style="width: 100px;" required><b></b>
+                        </div>
+
+                        <div class="col-md-4 form-group">
+                            <label class="control-label">Exam Type</label>
+                            <div class="radio-list">
+                                <label class="radio-inline p-0">
+                                    <div class="radio radio-success">
+                                        <input type="radio" name="exam_type" value="online" required 
+                                        @if( isset($data['questionpaper_data']['exam_type']) && $data['questionpaper_data']['exam_type'] == "online") 
+                                        checked
+                                        @else if( !isset($data['questionpaper_data']['exam_type']) )
+                                        checked
+                                        @endif>
+                                        <label for="online">Online</label>
+                                    </div>
+                                </label>
+                                <label class="radio-inline">
+                                    <div class="radio radio-success">
+                                        <input type="radio" name="exam_type" value="offline" required 
+                                        @if( isset($data['questionpaper_data']['exam_type']) && $data['questionpaper_data']['exam_type'] == "offline") 
+                                        checked                                        
+                                        @endif>                                        
+                                        <label for="offline">Offline</label>
+                                    </div>
+                                </label>
+                            </div>
+                        </div>                          
+                        
+                        <div class="col-md-2 form-group">
+                            <label for="shuffle_question">Shuffle Question</label>
+                            <input type="checkbox" id="shuffle_question" name="shuffle_question" value="1"
+                            @if( isset($data['questionpaper_data']['shuffle_question']) && $data['questionpaper_data']['shuffle_question'] == 1) 
+                            checked 
+                            @elseif(!isset($data['questionpaper_data']))
+                            checked 
+                            @endif
+                            >
+                        </div>
+                        
+                        <div class="col-md-2 form-group">
+                            <label for="show_feedback">Show Feedback</label>
+                            <input type="checkbox" id="show_feedback" name="show_feedback" value="1"
+                            @if( isset($data['questionpaper_data']['show_feedback']) && $data['questionpaper_data']['show_feedback'] == 1) 
+                            checked 
+                            @elseif(!isset($data['questionpaper_data']))
+                            checked 
+                            @endif
+                            >
+                        </div>
+
+                        <div class="col-md-2 form-group">
+                            <label for="show_hide">Show</label>
+                            <input type="checkbox" id="show_hide" name="show_hide" value="1"
+                            @if( isset($data['questionpaper_data']['show_hide']) && $data['questionpaper_data']['show_hide'] == 1) 
+                            checked 
+                            @elseif(!isset($data['questionpaper_data']))
+                            checked 
+                            @endif
+                            >
+                        </div>
+
+                        <div class="col-md-2 form-group">
+                            <label for="show_hide">Show Right Answer after Result</label>
+                            <input type="checkbox" id="result_show_ans" name="result_show_ans" value="1"
+                            @if( isset($data['questionpaper_data']['result_show_ans']) && $data['questionpaper_data']['result_show_ans'] == 1) 
+                            checked 
+                            @elseif(!isset($data['questionpaper_data']))
+                            checked 
+                            @endif
+                            >
+                        </div>                                             
+
+                        <div class="col-md-3 form-group">
+                            <label for='total_ques'>Total Question</label>
+                            <input type="text" id='total_ques' name="total_ques" value="@if(isset($data['questionpaper_data']['total_ques'])){{$data['questionpaper_data']['total_ques']}}@endif" class="form-control mb-0" readonly>
+                        </div>                         
+
+                        <div class="col-md-3 form-group">
+                            <label for='total_marks'>Total Marks</label>
+                            <input type="text" id='total_marks' name="total_marks" value="@if(isset($data['questionpaper_data']['total_marks'])){{$data['questionpaper_data']['total_marks']}}@endif" class="form-control mb-0" readonly>
+                        </div>  
+
+                        <div class="col-md-12 form-group border border-dark" id="questiondiv" style="display:none;">
+                            <table id="questiontable" class="table table-striped table-bordered mb-0" style="width:100%">
+                                
+                                <thead>
+                                    <tr>
+                                        <th></th>
+                                        <th>Question Title</th>
+                                        <th>Chapter</th>
+                                        <th>Chapter No</th>
+                                        <th>Topic</th>
+                                        <th>Question Type</th>
+                                        <th>Correct Answer</th>
+                                        <th>Marks</th>
+                                        <th>Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="questiontable_tbody">                                    
+                                </tbody>
+                            </table>
+                        </div> 
+                        @php
+                        $question_ids = "";
+                        if( isset($data['questionpaper_data']['question_ids']) )
+                        {
+                           $question_ids = $data['questionpaper_data']['question_ids'];                           
+                        }    
+                        @endphp
+                        <input type="hidden" id="hidden_question_ids" name="hidden_question_ids" value={{$question_ids}}>
+                        <div class="col-md-12 form-group">
+                            <center>
+                                <input type="submit" name="submit" value="Save" class="btn btn-success" >
+                            </center>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+
+
+<!--START Modal -->
+<div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+                <h4 class="modal-title" id="myModalLabel">LMS Mapping</h4>
+            </div>
+            <div class="modal-body" id="modal-body">
+                
+            </div>
+          <!--   <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary">Save changes</button>
+            </div>
+ -->        </div>
+    </div>
+</div>
+<!--END Modal -->
+
+@include('includes.lmsfooterJs')
+<script src="//cdnjs.cloudflare.com/ajax/libs/moment.js/2.9.0/moment-with-locales.js"></script>
+<script src="//cdn.rawgit.com/Eonasdan/bootstrap-datetimepicker/e8bddc60e73c1ec2475f827be36e1957af72e2ea/src/js/bootstrap-datetimepicker.js"></script>
+
+<script src="//cdn.mathjax.org/mathjax/latest/MathJax.js"> 
+ MathJax.Hub.Config({ 
+   extensions: ["mml2jax.js"], 
+   jax: ["input/MathML", "output/HTML-CSS"] 
+ }); 
+</script> 
+
+<script type="text/javascript">
+$(function () {    
+    $('#datetimepicker').datetimepicker({  
+        //format: 'DD/MM/YYYY hh:SS A'              
+    });
+    $('#datetimepicker1').datetimepicker({           
+        //format: 'DD/MM/YYYY hh:SS A'                     
+    });
+     
+});    
+
+function getStandardwiseDivision(std_id){   
+    var path = "{{ route('ajax_StandardwiseDivision') }}";
+    $('#division_id').find('option').remove().end().append('<option value="">Select Division</option>').val('');
+    $.ajax({url: path,data:'standard_id='+std_id, success: function(result){
+        for(var i=0;i < result.length;i++){                   
+            $("#division_id").append($("<option></option>").val(result[i]['division_id']).html(result[i]['name']));  
+        } 
+    }
+    });
+}
+
+$( document ).ready(function() {    
+    //START Load question on edit question paper
+    var hid = $("#hidden_question_ids").val(); 
+    if(hid != "")
+    {
+        $("#subject").trigger("change");            
+    }
+    //END Load question on edit question paper
+
+    $('#timelimit_enable').click(function(){
+        if($(this).prop("checked") == true){
+            $('#time_allowed').attr('readonly', false);
+            $('#time_allowed').val('');
+        }
+        else if($(this).prop("checked") == false){
+            $('#time_allowed').attr('readonly', true);
+            $('#time_allowed').val('');
+        }
+    });
+          
+    $("#standard").change(function(){
+        var std_id = $("#standard").val();
+        var path = "{{ route('ajax_LMS_StandardwiseSubject') }}";
+        $('#subject').find('option').remove().end().append('<option value="">Select Subject</option>').val('');
+        $.ajax({url: path,data:'std_id='+std_id, success: function(result){
+            for(var i=0;i < result.length;i++){
+                $("#subject").append($("<option></option>").val(result[i]['subject_id']).html(result[i]['display_name']));
+            }
+        }
+        });
+    })
+
+    $("#search_mapping_type").change(function(){
+        var mapping_type = $("#search_mapping_type").val();
+        var path = "{{ route('ajax_LMS_MappingValue') }}";
+
+        $('#search_mapping_value').find('option').remove().end().append('<option value="">Search By Mapping Value</option>').val('');
+        
+        $.ajax({
+            url: path,
+            data:'mapping_type='+mapping_type, 
+            success: function(result){
+            for(var i=0;i < result.length;i++){
+                $("#search_mapping_value").append($("<option></option>").val(result[i]['id']).html(result[i]['name']));
+            }
+        }
+        });
+    })
+
+    $("#search_chapter").change(function(){
+        var chapter_id = $("#search_chapter").val();
+        var path = "{{ route('ajax_LMS_ChapterwiseTopic') }}";
+
+        $('#search_topic').find('option').remove().end().append('<option value="">Search By Topic</option>').val('');
+        
+        $.ajax({
+            url: path,
+            data:'chapter_id='+chapter_id, 
+            success: function(result){
+            for(var i=0;i < result.length;i++){
+                $("#search_topic").append($("<option></option>").val(result[i]['id']).html(result[i]['name']));
+            }
+        }
+        });
+    })
+
+});
+
+function show_mappings(id)
+{                   
+    var data_html = $("#mapping_data_"+id).val();    
+    $('#modal-body').html(data_html);
+    $('#myModal').modal('show');
+}
+
+//START Load Questions
+$("#subject").change(function(){
+    var subject = $("#subject").val();        
+    var standard = $("#standard").val();            
+
+    // START Bind subject-wise chapter
+    var getchapter_path = "{{ route('ajax_LMS_SubjectwiseChapter') }}"; 
+    $('#search_chapter').find('option').remove().end().append('<option value="">Search By Chapter</option>').val('');
+    $.ajax({
+        url:getchapter_path,
+        data:'sub_id='+subject+'&std_id='+standard,
+        success:function(result)
+        {
+            for(var i=0;i < result.length;i++){
+                $("#search_chapter").append($("<option></option>").val(result[i]['id']).html(result[i]['chapter_name']));
+            }
+        }
+    });     
+    // END Bind subject-wise chapter   
+
+
+    get_questionList(); //Bind Question List
+})
+//END Load Questions
+
+function search_questionList()
+{
+    get_questionList(); //Bind Question List
+}
+
+function get_questionList()
+{
+    var subject = $("#subject").val();        
+    var standard = $("#standard").val(); 
+    var search_chapter = $("#search_chapter").val(); 
+    var search_topic = $("#search_topic").val(); 
+    var search_mapping_type = $("#search_mapping_type").val(); 
+    var search_mapping_value = $("#search_mapping_value").val(); 
+
+    var extra_search = "";
+    if(search_chapter != "")
+    {
+        extra_search += "&search_chapter="+search_chapter;
+    }
+    if(search_topic != "")
+    {
+        extra_search += "&search_topic="+search_topic;
+    }
+    if(search_mapping_type != "")
+    {
+        extra_search += "&search_mapping_type="+search_mapping_type;
+    }
+    if(search_mapping_value != "")
+    {
+        extra_search += "&search_mapping_value="+search_mapping_value;
+    }
+
+    var path = "{{ route('ajax_SubjectwiseQuestion') }}";  
+    $.ajax({
+        url:path,
+        data:'sub_id='+subject+'&std_id='+standard+extra_search,
+        success:function(result){             
+            $("#questiondiv").css("display", "block")           
+            $("#questiontable_tbody").empty();                        
+
+            var hidden_question_ids = $("#hidden_question_ids").val();   
+            for(var i=0;i <= result.length ;i++)
+            {
+                //console.log(result[i]['question_title']);
+                var sel = "";
+                     
+                if(hidden_question_ids != "")
+                {        
+                    edit_question_ids = hidden_question_ids.split(",");        
+                    for (j = 0; j < edit_question_ids.length; j++) {                       
+                        if(result[i]['id'] == edit_question_ids[j])
+                        {
+                            sel = "checked";
+                        }
+                    }
+                } 
+
+                $("#questiontable_tbody").append('<tr class="child"><td><input type="checkbox" '+sel+' onclick="add_question();" name="questions[]" title="'+result[i]['points']+'" value="'+result[i]['id']+'"></td><td>'+result[i]['question_title']+'</td><td>'+result[i]['chapter_name']+'</td><td>'+result[i]['sort_order']+'</td><td>'+result[i]['topic_name']+'</td><td>'+result[i]['question_type']+'</td><td>'+result[i]['correct_answer']+'</td><td>'+result[i]['points']+'</td><td><input type="hidden" name="mapping_data_'+result[i]['id']+'" id="mapping_data_'+result[i]['id']+'" value="'+result[i]['LMS_MAPPING_DATA']+'"><button class="btn btn-primary btn-lg" data-toggle="modal" onclick="show_mappings('+result[i]['id']+');">Show Mappings</button></td></tr>');            
+                  MathJax.Hub.Queue(["Typeset",MathJax.Hub,"questiontable_tbody"]);                
+            }
+
+            if(result.length == 0)
+            {
+                $("#questiontable_tbody").append('<tr class="child"><td colspan="9">No Questions Found</td>');
+            }
+        }         
+    });
+}
+
+function add_question(points){
+    var checked_questions = total_marks = 0;
+    $("input[name='questions[]']:checked").each(function ()
+    {
+        var val = $(this).attr('title');
+        total_marks = parseInt(total_marks) + parseInt(val);
+        checked_questions = checked_questions + 1;
+    });
+    $("#total_ques").val(checked_questions);   
+    $("#total_marks").val(total_marks);       
+}
+
+function check_validation()
+{        
+    var checked_questions = err = 0;
+    $("input[name='questions[]']:checked").each(function ()
+    {             
+        checked_questions = checked_questions + 1;
+    });
+    if(checked_questions == 0)
+    {
+        alert("Please Select Atleast one question in paper");
+        err = 1;
+    }
+
+    var open_date = $("#open_date").val();
+    var close_date = $("#close_date").val(); 
+    if(open_date != "" && close_date != "")
+    {  
+        if(Date.parse(open_date) > Date.parse(close_date))
+        {
+            alert("Please select proper Open Date and Close Date");
+            err = 1;    
+        }
+    }
+
+    if(err == 1)
+    {
+        return false;
+    }else{
+        return true;
+    }
+}
+</script>
+
+@include('includes.footer')

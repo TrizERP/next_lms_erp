@@ -1,0 +1,207 @@
+@include('../includes.headcss')
+<link rel="stylesheet" href="../../../plugins/bower_components/dropify/dist/css/dropify.min.css">
+@include('../includes.header')
+@include('../includes.sideNavigation')
+
+
+<div id="page-wrapper">
+    <div class="container-fluid">        
+            <div class="card">
+                @if ($message = Session::get('success'))
+                <div class="alert alert-success alert-block">
+                    <button type="button" class="close" data-dismiss="alert">×</button>
+                    <strong>{{ $message }}</strong>
+                </div>
+                @endif
+                <div class="col-lg-12 col-sm-12 col-xs-12">
+                    <form action="{{ route('exam_creation.update', $data['id']) }}" enctype="multipart/form-data" method="post">
+                        {{ method_field("PUT") }}
+                        {{csrf_field()}}
+                        <div class="row">
+                            {{ App\Helpers\TermDD($data['term_id']) }}
+                        
+                            <div class="col-md-4 form-group">
+                                <label>Medium : </label>
+                                <select name="medium" class="form-control">
+                                    <option value="">Select</option>
+                                    <option
+                                        @if ($data['medium'] == "CBSE")
+                                        selected="selected"
+                                        @endif
+                                        value="CBSE">CBSE</option>
+                                    <option
+                                        @if ($data['medium'] == "GSEB")
+                                        selected="selected"
+                                        @endif
+                                        value="GSEB">GSEB</option>
+                                </select>
+                            </div>
+
+                            <div class="col-md-4 form-group">
+                                <label>Exam Type : </label>
+                                <select name="exam_id" class="form-control">
+                                    <option value="">Select</option>
+                                    @foreach ($data['exams'] as $key => $value)
+                                    <option value="{{ $key }}"
+                                            @if ($data['exam_id'] == $key)
+                                            selected="selected"
+                                            @endif
+                                            >{{ $value }}</option>
+                                    @endforeach
+
+                                </select>
+                            </div>
+                           
+                            <div class="col-md-12 form-group">
+                                {{ App\Helpers\SearchChainSubject('4','single','grade,std,sub',$data['grade'],$data['standard_id'],$data['subject_id']) }}
+                            </div>
+                            
+                            <div class="col-md-4 form-group ml-0 mr-0">
+                                <label>Convert Marks: </label>
+                                <input type="text" name="con_point" value="{{$data['con_point']}}" class="form-control">
+                            </div>
+
+                            <div class="col-md-4 form-group ml-0">
+                                <label>App Status : </label>
+                                <input type="radio" name="app_disp_status" value="Y" {{ ($data['app_disp_status']=="Y")? "checked" : "" }}> Yes
+                                <input type="radio" name="app_disp_status" value="N" {{ ($data['app_disp_status']=="N")? "checked" : "" }}> No
+                            </div>
+
+                                <div class="col-md-12 form-group">
+                                <table id="myTable" class="table table-striped table-bordered">
+                                <thead>
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Marks</th>
+                                        <th>Marks/Grade</th>
+                                        <th>Report Card Status</th>
+                                        <th>Sort Order</th>
+                                        <th>Exam Date</th>
+                                                <!--<td>Action</td>-->
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>
+                                            <input type="text" name="title" value="{{ $data['title'] }}" class="form-control" />
+                                        </td>
+                                        <td>
+                                            <input type="text" name="points" value="{{ $data['points'] }}" class="form-control" />
+                                        </td>
+                                        <td>
+                                            <select name="marks_type" class="form-control">
+                                                <option value="">Select</option>
+                                                <option 
+                                                    @if ($data['marks_type'] == "MARKS" )
+                                                    selected="selected"
+                                                    @endif
+                                                    value="MARKS">MARKS</option>
+                                                <option 
+                                                    @if ($data['marks_type'] == "GRADE" )
+                                                    selected="selected"
+                                                    @endif
+                                                    value="GRADE">GRADE</option>
+                                            </select>
+
+                                        </td>
+                                        <td>
+                                            <select name="report_card_status" class="form-control">
+                                                <option value="">Select</option>
+                                                <option 
+                                                    @if ($data['report_card_status'] == "Y" )
+                                                    selected="selected"
+                                                    @endif
+                                                    value="Y">Yes</option>
+                                                <option 
+                                                    @if ($data['report_card_status'] == "N" )
+                                                    selected="selected"
+                                                    @endif
+                                                    value="N">No</option>
+                                            </select>
+                                        </td>
+                                        <td>
+                                            <input type="text" name="sort_order" value="{{ $data['sort_order'] }}" class="form-control" />
+                                        </td>
+                                        <td>
+                                            <input type="text" name="exam_date" value="{{ $data['exam_date'] }}" class="form-control mydatepicker" autocomplete="off" />
+                                        </td>
+<!--                                        <td class="col-sm-2"><a class="deleteRow"></a>
+                                            <input type="button" class="addRow btn btn-md btn-success "  value="+">
+                                        </td>-->
+                                    </tr>
+                                </tbody>
+                                <tfoot>
+                                <tr>
+<!--                                        <td colspan="5" style="text-align: left;">
+                                        <input type="button" class="addRow btn btn-lg btn-block " id="addrow" value="Add Row" />
+                                    </td>-->
+                                </tr>
+                                <tr>
+                                </tr>
+                            </tfoot>
+                        </table>
+                        </div>
+
+                        <div class="col-md-12 form-group">
+                            <center>
+                                <input type="submit" name="submit" value="Save" class="btn btn-success" >
+                            </center>
+                        </div>
+
+                        </form>
+                        </div>
+                        @if (count($errors) > 0)
+                        <div class="alert alert-danger">
+                            <strong>Whoops!</strong> There were some problems with your input.<br><br>
+                            <ul>
+                                @foreach ($errors->all() as $error)
+                                <li>{{ $error }}</li>
+                                @endforeach
+                            </ul>
+                        </div>
+                        @endif
+                        </div>                        
+                    </div>
+                </div>
+
+
+@include('includes.footerJs')
+<script src="../../../plugins/bower_components/dropify/dist/js/dropify.min.js"></script>
+<script>
+$(document).ready(function () {
+    // Basic
+    $('.dropify').dropify();
+    // Translated
+    $('.dropify-fr').dropify({
+        messages: {
+            default: 'Glissez-déposez un fichier ici ou cliquez',
+            replace: 'Glissez-déposez un fichier ou cliquez pour remplacer',
+            remove: 'Supprimer',
+            error: 'Désolé, le fichier trop volumineux'
+        }
+    });
+    // Used events
+    var drEvent = $('#input-file-events').dropify();
+    drEvent.on('dropify.beforeClear', function (event, element) {
+        return confirm("Do you really want to delete \"" + element.file.name + "\" ?");
+    });
+    drEvent.on('dropify.afterClear', function (event, element) {
+        alert('File deleted');
+    });
+    drEvent.on('dropify.errors', function (event, element) {
+        console.log('Has Errors');
+    });
+    var drDestroy = $('#input-file-to-destroy').dropify();
+    drDestroy = drDestroy.data('dropify')
+    $('#toggleDropify').on('click', function (e) {
+        e.preventDefault();
+        if (drDestroy.isDropified()) {
+            drDestroy.destroy();
+        } else {
+            drDestroy.init();
+        }
+    })
+});
+</script>
+
+@include('includes.footer')
