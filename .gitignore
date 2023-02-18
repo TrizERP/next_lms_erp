@@ -13,3 +13,7 @@ npm-debug.log
 yarn-error.log
 /.idea
 /.vscode
+/public/admin_dep/
+/public/captcha/
+/public/css/
+/public/excel_upload/

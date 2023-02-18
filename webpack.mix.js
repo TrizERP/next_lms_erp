@@ -15,3 +15,8 @@ mix.js('resources/js/app.js', 'public/js')
     .postCss('resources/css/app.css', 'public/css', [
         //
     ]);
+
+mix.copyDirectory('resources/public_js_css/admin_dep', 'public/admin_dep');
+mix.copyDirectory('resources/public_js_css/captcha', 'public/captcha');
+mix.copyDirectory('resources/public_js_css/css', 'public/css');
+mix.copyDirectory('resources/public_js_css/excel_upload', 'public/excel_upload');

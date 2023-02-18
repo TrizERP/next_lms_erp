@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\general_dataModel;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 /*
