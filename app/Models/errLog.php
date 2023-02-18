@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class errLog extends Model
 {
-    protected $table = "ERR_LOG"; 
+    protected $table = "err_log"; 
     protected $fillable = ['user_id' , 'code' , 'file' , 'line' , 'message' , 'screen_short' ];
     public $timestamps = false;    
 }

@@ -8,5 +8,5 @@ class castModel extends Model
 {
     public $timestamps = false;
 
-	protected $table = "caste";
+	protected $table = "cast";
 }
