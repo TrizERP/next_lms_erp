@@ -1,23 +1,36 @@
 <?php
-Route::group(['prefix' => 'frontdesk', 'middleware' => ['session', 'menu','logRoute']], function () {
-	Route::resource('frontdesk', 'frontdesk\frontdeskController');
-	Route::resource('task', 'frontdesk\taskController');
-	Route::resource('complaint', 'frontdesk\complaintController');
-	Route::resource('pettycashmaster', 'frontdesk\PettyCashMasterController');
-	Route::resource('pettycash', 'frontdesk\PettyCashController');
 
-	Route::GET('frontdesk_report_index', 'frontdesk\frontdeskController@frontDeskReportIndex')->name("frontdesk_report_index");
 
-	Route::POST('frontdesk_report', 'frontdesk\frontdeskController@frontDeskReport')->name("frontdesk_report");
+use App\Http\Controllers\front_desk\book_list\book_listController;
+use App\Http\Controllers\front_desk\school_detail\schooldetailController;
+use App\Http\Controllers\front_desk\syllabus\syllabusController;
+use App\Http\Controllers\front_desk\user_log\user_logController;
+use App\Http\Controllers\frontdesk\complaintController;
+use App\Http\Controllers\frontdesk\frontdeskController;
+use App\Http\Controllers\frontdesk\PettyCashController;
+use App\Http\Controllers\frontdesk\PettyCashMasterController;
+use App\Http\Controllers\frontdesk\PettyCashReportController;
+use App\Http\Controllers\frontdesk\taskController;
+use Illuminate\Support\Facades\Route;
 
-	Route::resource('syllabus', 'front_desk\syllabus\syllabusController');
-	Route::resource('user_log', 'front_desk\user_log\user_logController');
-	Route::resource('book_list', 'front_desk\book_list\book_listController');
-	Route::resource('schooldetail', 'front_desk\school_detail\schooldetailController');
-	Route::GET('task_report', 'frontdesk\taskController@taskReportIndex')->name("task_report_index");
-	Route::GET('complaint_report', 'frontdesk\complaintController@complaintReportIndex')->name("complaint_report_index");
-	Route::resource('pettycashreport', 'frontdesk\PettyCashReportController');
-	Route::POST('ajax_getpettycashreport', 'frontdesk\PettyCashReportController@getpettycashreport')->name('ajax_getpettycashreport');
+Route::group(['prefix' => 'frontdesk', 'middleware' => ['session', 'menu', 'logRoute']], function () {
+	Route::resource('frontdesk', frontdeskController::class);
+	Route::resource('task', taskController::class);
+	Route::resource('complaint', complaintController::class);
+	Route::resource('pettycashmaster', PettyCashMasterController::class);
+	Route::resource('pettycash', PettyCashController::class);
+
+	Route::get('frontdesk_report_index', [frontdeskController::class, 'frontDeskReportIndex'])->name("frontdesk_report_index");
+
+	Route::post('frontdesk_report', [frontdeskController::class, 'frontDeskReport'])->name("frontdesk_report");
+
+	Route::resource('syllabus', syllabusController::class);
+	Route::resource('user_log', user_logController::class);
+	Route::resource('book_list', book_listController::class);
+	Route::resource('schooldetail', schooldetailController::class);
+	Route::get('task_report', [taskController::class, 'taskReportIndex'])->name("task_report_index");
+	Route::get('complaint_report', [complaintController::class, 'complaintReportIndex'])->name("complaint_report_index");
+	Route::resource('pettycashreport', PettyCashReportController::class);
+	Route::post('ajax_getpettycashreport', [PettyCashReportController::class, 'getpettycashreport'])->name('ajax_getpettycashreport');
 });
 
-?>

@@ -1,15 +1,13 @@
 <?php
 
-namespace App\Http\Controllers\frontdesk;
+namespace App\Http\Controllers\implementation\frontdesk;
 
 use App\Http\Controllers\Controller;
 use App\Models\frontdesk\frontdeskModel;
 use App\Models\user\tbluserModel;
-use function App\Helpers\is_mobile;
 use Illuminate\Http\Request;
-use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\View;
+use function App\Helpers\is_mobile;
 
 class frontdeskController extends Controller {
 	/**

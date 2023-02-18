@@ -1,48 +1,98 @@
 <?php
-Route::group(['prefix' => 'fees','middleware' => ['session','menu','logRoute']], function() {
-    Route::resource('fees_config_master', 'fees\tblfeesConfigController');
-    Route::resource('fees_circular_master', 'fees\fees_circular\feesCircularMasterController');    
-    Route::resource('fees_late_master', 'fees\tblfeesLateController');    
-    Route::resource('fees_head_type_master', 'fees\tblfeesHeadTypeMasterController');    
-    Route::resource('fees_receipt_book_master', 'fees\feesReceiptBookMasterController');    
-    Route::resource('fees_circular', 'fees\fees_circular\feesCircularController');    
-    Route::resource('fees_collection_report', 'fees\fees_report\feesReportController');    
-    Route::resource('other_fees_report', 'fees\fees_report\otherfeesReportController');    
-    Route::resource('otherNew_fees_report', 'fees\fees_report\otherNewfeesReportController');
-    Route::resource('NACH_s1excel_export', 'fees\NACH\s1excel_exportController');
-    Route::resource('NACH_s2excel_import', 'fees\NACH\s2excel_importController');
-    Route::resource('NACH_s3excel_export', 'fees\NACH\s3excel_exportController');
-    Route::resource('NACH_s4excel_import', 'fees\NACH\s4excel_importController');
-    Route::resource('daily_voucher', 'fees\fees_report\daily_voucherController');
 
-    Route::GET('ajax_ledgerData', 'fees\fees_report\otherNewfeesReportController@ajax_ledgerData')->name('ajax_ledgerData');
 
-    Route::resource('otherNew_cancel_fees_report', 'fees\fees_report\otherNew_CancelFeesReportController');    
-    Route::resource('fees_type_wise_report', 'fees\fees_report\feesTypewiseReportController');    
-    Route::resource('tally_export_fees_report', 'fees\fees_report\tallyExportReportController');    
-    Route::resource('fees_overall_headwise_report', 'fees\fees_report\feesOverallHeadwiseReportController');    
-    Route::resource('fees_headwise_pending_report', 'fees\fees_report\feesOverallHeadwisePendingReportController');    
-    Route::resource('fees_overall_report', 'fees\fees_report\feesOverallReportController');    
-    Route::resource('fees_status_report', 'fees\fees_report\feesStatusController'); 
+use App\Http\Controllers\AJAXController;
+use App\Http\Controllers\fees\bank_master\bank_master_controller;
+use App\Http\Controllers\fees\cheque_cash\cheque_cash_controller;
+use App\Http\Controllers\fees\college_fees_collect\college_fees_collect_controller;
+use App\Http\Controllers\fees\fees_breackoff\fees_breackoff_controller;
+use App\Http\Controllers\fees\fees_cancel\feesCancelController;
+use App\Http\Controllers\fees\fees_cancel\feesRefundController;
+use App\Http\Controllers\fees\fees_circular\feesCircularController;
+use App\Http\Controllers\fees\fees_circular\feesCircularMasterController;
+use App\Http\Controllers\fees\fees_collect\fees_collect_controller;
+use App\Http\Controllers\fees\fees_report\daily_voucherController;
+use App\Http\Controllers\fees\fees_report\feesCancelReportController;
+use App\Http\Controllers\fees\fees_report\feesFineDiscountReportController;
+use App\Http\Controllers\fees\fees_report\feesInstituteWiseFeesReportController;
+use App\Http\Controllers\fees\fees_report\feesMonthlyReportController;
+use App\Http\Controllers\fees\fees_report\feesOverallHeadwisePendingReportController;
+use App\Http\Controllers\fees\fees_report\feesOverallHeadwiseReportController;
+use App\Http\Controllers\fees\fees_report\feesOverallReportController;
+use App\Http\Controllers\fees\fees_report\feesReportController;
+use App\Http\Controllers\fees\fees_report\feesStatusController;
+use App\Http\Controllers\fees\fees_report\feesStructureReportController;
+use App\Http\Controllers\fees\fees_report\feesTypewiseReportController;
+use App\Http\Controllers\fees\fees_report\imprestRefundReportController;
+use App\Http\Controllers\fees\fees_report\otherfeesReportController;
+use App\Http\Controllers\fees\fees_report\otherNew_CancelFeesReportController;
+use App\Http\Controllers\fees\fees_report\otherNewfeesReportController;
+use App\Http\Controllers\fees\fees_report\tallyExportReportController;
+use App\Http\Controllers\fees\fees_title\fees_title_controller;
+use App\Http\Controllers\fees\feesReceiptBookMasterController;
+use App\Http\Controllers\fees\imprest_fees_cancel\imprestFeesCancelController;
+use App\Http\Controllers\fees\map_year\map_year_controller;
+use App\Http\Controllers\fees\NACH\s1excel_exportController;
+use App\Http\Controllers\fees\NACH\s2excel_importController;
+use App\Http\Controllers\fees\NACH\s3excel_exportController;
+use App\Http\Controllers\fees\NACH\s4excel_importController;
+use App\Http\Controllers\fees\online_fees\online_fees_collect_controller;
+use App\Http\Controllers\fees\online_fees\online_fees_settigs_controller;
+use App\Http\Controllers\fees\online_fees\online_fees_split_controller;
+use App\Http\Controllers\fees\other_fee_map\other_fee_map_controller;
+use App\Http\Controllers\fees\other_fees_cancel\other_fees_cancel_controller;
+use App\Http\Controllers\fees\other_fees_collect\other_fees_collect_controller;
+use App\Http\Controllers\fees\other_fees_title\other_fees_title_controller;
+use App\Http\Controllers\fees\tblfeesConfigController;
+use App\Http\Controllers\fees\tblfeesHeadTypeMasterController;
+use App\Http\Controllers\fees\tblfeesLateController;
+use App\Http\Controllers\fees\update_fees_breackoff\update_fees_breackoff_controller;
+use Illuminate\Support\Facades\Route;
+
+Route::group(['prefix' => 'fees', 'middleware' => ['session', 'menu', 'logRoute']], function() {
+    Route::resource('fees_config_master', tblfeesConfigController::class);
+    Route::resource('fees_circular_master', feesCircularMasterController::class);    
+    Route::resource('fees_late_master', tblfeesLateController::class);    
+    Route::resource('fees_head_type_master', tblfeesHeadTypeMasterController::class);    
+    Route::resource('fees_receipt_book_master', feesReceiptBookMasterController::class);    
+    Route::resource('fees_circular', feesCircularController::class);    
+    Route::resource('fees_collection_report', feesReportController::class);    
+    Route::resource('other_fees_report', otherfeesReportController::class);    
+    Route::resource('otherNew_fees_report', otherNewfeesReportController::class);
+    Route::resource('NACH_s1excel_export', s1excel_exportController::class);
+    Route::resource('NACH_s2excel_import', s2excel_importController::class);
+    Route::resource('NACH_s3excel_export', s3excel_exportController::class);
+    Route::resource('NACH_s4excel_import', s4excel_importController::class);
+    Route::resource('daily_voucher', daily_voucherController::class);
+
+    Route::get('ajax_ledgerData', [otherNewfeesReportController::class, 'ajax_ledgerData'])->name('ajax_ledgerData');
+
+    Route::resource('otherNew_cancel_fees_report', otherNew_CancelFeesReportController::class);    
+    Route::resource('fees_type_wise_report', feesTypewiseReportController::class);    
+    Route::resource('tally_export_fees_report', tallyExportReportController::class);    
+    Route::resource('fees_overall_headwise_report', feesOverallHeadwiseReportController::class);    
+    Route::resource('fees_headwise_pending_report', feesOverallHeadwisePendingReportController::class);    
+    Route::resource('fees_overall_report', feesOverallReportController::class);    
+    Route::resource('fees_status_report', feesStatusController::class); 
 
     // Remain fees send SMS
-    Route::post('fees_remain_sms', 'fees\fees_report\feesStatusController@ajaxRemainFeesSMSsend')->name('remainFeesNotification');    
+    Route::post('fees_remain_sms', [feesStatusController::class, 'ajaxRemainFeesSMSsend'])->name('remainFeesNotification');    
     
-    Route::resource('fees_title', 'fees\fees_title\fees_title_controller');
+    Route::resource('fees_title', fees_title_controller::class);
 
-    Route::resource('other_fees_title', 'fees\other_fees_title\other_fees_title_controller');
-    Route::resource('other_fees_collect', 'fees\other_fees_collect\other_fees_collect_controller');
-    Route::resource('other_fees_cancel', 'fees\other_fees_cancel\other_fees_cancel_controller');
+    Route::resource('other_fees_title', other_fees_title_controller::class);
+    Route::resource('other_fees_collect', other_fees_collect_controller::class);
+    Route::resource('other_fees_cancel', other_fees_cancel_controller::class);
 
-    Route::resource('other_fee_map', 'fees\other_fee_map\other_fee_map_controller');
-    Route::resource('cheque_cash', 'fees\cheque_cash\cheque_cash_controller');
-    Route::resource('map_year', 'fees\map_year\map_year_controller');
-    Route::resource('fees_breackoff', 'fees\fees_breackoff\fees_breackoff_controller');
-    Route::resource('bank_master', 'fees\bank_master\bank_master_controller');
-    Route::resource('fees_collect', 'fees\fees_collect\fees_collect_controller');
-    Route::resource('college_fees_collect', 'fees\college_fees_collect\college_fees_collect_controller');
-    Route::resource('online_fees', 'fees\online_fees\online_fees_settigs_controller');
-    Route::resource('online_fees_split', 'fees\online_fees\online_fees_split_controller');
+    Route::resource('other_fee_map', other_fee_map_controller::class);
+    Route::resource('cheque_cash', cheque_cash_controller::class);
+    Route::resource('map_year', map_year_controller::class);
+    Route::resource('fees_breackoff', fees_breackoff_controller::class);
+    Route::resource('bank_master', bank_master_controller::class);
+    Route::resource('fees_collect', fees_collect_controller::class);
+    Route::resource('college_fees_collect', college_fees_collect_controller::class);
+    Route::resource('online_fees', online_fees_settigs_controller::class);
+    Route::resource('online_fees_split', online_fees_split_controller::class);
     // Route::get('online_fees\show_online_type', 'fees\online_fees\online_fees_collect_controller@showTypes')->name('online_show_type');
     
     Route::get('hdfcpayment', function ($id=null) {
@@ -62,101 +112,124 @@ Route::group(['prefix' => 'fees','middleware' => ['session','menu','logRoute']],
     })->name('razorpay');
 
     
-    Route::POST('api/get-fees-list', 'AJAXController@getFees')->name('get-fees-list');
-    Route::resource('update_fees_breackoff', 'fees\update_fees_breackoff\update_fees_breackoff_controller');
+    Route::post('api/get-fees-list', ['AJAXController', 'getFees'])->name('get-fees-list');
+    Route::resource('update_fees_breackoff', update_fees_breackoff_controller::class);
     
     Route::post('fees_collect/show_student', ['as' => 'fees_collect.show_student', 'uses' => 'fees\fees_collect\fees_collect_controller@show_student']);
     Route::post('college_fees_collect/show_student', ['as' => 'college_fees_collect.show_student', 'uses' => 'fees\college_fees_collect\college_fees_collect_controller@show_student']);
 
-    Route::post('fees_circular/show_student', ['as' => 'fees_circular.show_student', 'uses' => 'fees\fees_circular\feesCircularController@showStudent']);
+    Route::controller(feesCircularController::class)->group(function () {
+        Route::post('fees_circular/show_student', 'showStudent')->name('fees_circular.show_student');
+//    Route::post('fees_circular/show_student', ['as' => 'fees_circular.show_student', 'uses' => 'fees\fees_circular\feesCircularController@showStudent']);
 
-    Route::post('fees_circular/show_circular', 'fees\fees_circular\feesCircularController@showCircular')->name('show_circular');
+        Route::post('fees_circular/show_circular', 'showCircular')->name('show_circular'); 
+    });
     
 
-    Route::resource('fees_cancel', 'fees\fees_cancel\feesCancelController'); 
-    Route::post('fees/fees_cancel', 'fees\fees_cancel\feesCancelController@showFees')->name('show_cancel_fees');
-    Route::post('fees/cancel_fees', 'fees\fees_cancel\feesCancelController@cancelFees')->name('cancel_fees');
+    Route::resource('fees_cancel', feesCancelController::class);
+    Route::controller(feesCancelController::class)->group(function () {
+        Route::post('fees/fees_cancel', 'showFees')->name('show_cancel_fees');
+        Route::post('fees/cancel_fees', 'cancelFees')->name('cancel_fees');
+    });
 
-    Route::resource('fees_refund', 'fees\fees_cancel\feesRefundController');
-    Route::post('fees/fees_refund', 'fees\fees_cancel\feesRefundController@showFees')->name('show_fees');
-    Route::post('fees/save_fees_refund', 'fees\fees_cancel\feesRefundController@saveFeesRefund')->name('save_fees_refund');
+    Route::resource('fees_refund', feesRefundController::class);
+    Route::controller(feesRefundController::class)->group(function () {
+        Route::post('fees/fees_refund', 'showFees')->name('show_fees');
+        Route::post('fees/save_fees_refund', 'saveFeesRefund')->name('save_fees_refund');
+    });
 
 
-    Route::resource('imprest_fees_cancel', 'fees\imprest_fees_cancel\imprestFeesCancelController'); 
-    Route::post('show_imprest_cancel_fees', 'fees\imprest_fees_cancel\imprestFeesCancelController@showImprestFees')->name('show_imprest_cancel_fees');
-    Route::post('cancel_imprest_fees', 'fees\imprest_fees_cancel\imprestFeesCancelController@cancelImprestFees')->name('cancel_imprest_fees');
+    Route::resource('imprest_fees_cancel', imprestFeesCancelController::class);
+    Route::controller(imprestFeesCancelController::class)->group(function () {
+        Route::post('show_imprest_cancel_fees', 'showImprestFees')->name('show_imprest_cancel_fees');
+        Route::post('cancel_imprest_fees', 'cancelImprestFees')->name('cancel_imprest_fees');
+    });
 
-    Route::post('fees/fees_collection_report', 'fees\fees_report\feesReportController@showFees')->name('show_fees_collection_report');
+    Route::post('fees/fees_collection_report', [feesReportController::class, 'showFees'])->name('show_fees_collection_report');
 
-    Route::post('fees/fees_overall_report', 'fees\fees_report\feesOverallReportController@showFeesOverall')->name('show_fees_overall_report');
+    Route::post('fees/fees_overall_report', [feesOverallReportController::class, 'showFeesOverall'])->name('show_fees_overall_report');
 
-    Route::post('fees/fees_status_report', 'fees\fees_report\feesStatusController@feesStatusReport')->name('show_fees_status_report');
+    Route::post('fees/fees_status_report', [feesStatusController::class, 'feesStatusReport'])->name('show_fees_status_report');
     
     Route::get('pdfview',array('as'=>'pdfview','uses'=>'ItemController@pdfview'));
 
-    Route::GET('fees_structure_report_index', 'fees\fees_report\feesStructureReportController@feesStructureReportIndex')->name("fees_structure_report_index");
-    Route::POST('fees_structure_report', 'fees\fees_report\feesStructureReportController@feesStructureReport')->name("fees_structure_report");
+    Route::controller(feesStructureReportController::class)->group(function () {
+        Route::get('fees_structure_report_index', 'feesStructureReportIndex')->name("fees_structure_report_index");
+        Route::post('fees_structure_report', 'feesStructureReport')->name("fees_structure_report");
+    });
 
-    Route::GET('fees_cancel_report_index', 'fees\fees_report\feesCancelReportController@feesCancelReportIndex')->name("fees_cancel_report_index");
-    Route::POST('fees_cancel_report', 'fees\fees_report\feesCancelReportController@feesCancelReport')->name("fees_cancel_report");
+    Route::controller(feesCancelReportController::class)->group(function () {
+        Route::get('fees_cancel_report_index', 'feesCancelReportIndex')->name("fees_cancel_report_index");
+        Route::post('fees_cancel_report', 'feesCancelReport')->name("fees_cancel_report");
+    });
 
-    Route::GET('fees_refund_report_index', 'fees\fees_report\feesRefundReportController@feesRefundReportIndex')->name("fees_refund_report_index");
-    Route::POST('fees_refund_report', 'fees\fees_report\feesRefundReportController@feesRefundReport')->name("fees_refund_report");
+    
+    Route::get('fees_refund_report_index', 'fees\fees_report\feesRefundReportController@feesRefundReportIndex')->name("fees_refund_report_index");
+    Route::post('fees_refund_report', 'fees\fees_report\feesRefundReportController@feesRefundReport')->name("fees_refund_report");
 
-	Route::resource('fees_monthly_report', 'fees\fees_report\feesMonthlyReportController');
-	Route::POST('getfeesMonthlyReport', 'fees\fees_report\feesMonthlyReportController@getfeesMonthlyReport')->name('getfeesMonthlyReport');
+	Route::resource('fees_monthly_report', feesMonthlyReportController::class);
+	Route::post('getfeesMonthlyReport', [feesMonthlyReportController::class, 'getfeesMonthlyReport'])->name('getfeesMonthlyReport');
 
-      Route::GET('institute_wise_fees_paid_report_index', 'fees\fees_report\feesInstituteWiseFeesReportController@instituteWiseFeesPaidReportIndex')->name("institute_wise_fees_paid_report_index");
-    Route::POST('institute_wise_fees_paid_report', 'fees\fees_report\feesInstituteWiseFeesReportController@instituteWiseFeesPaidReport')->name("institute_wise_fees_paid_report");
 
-    Route::GET('fees_fine_discount_report_index', 'fees\fees_report\feesFineDiscountReportController@feesFineDiscountReportIndex')->name("fees_fine_discount_report_index");
-    Route::POST('fees_fine_discount_report', 'fees\fees_report\feesFineDiscountReportController@feesFineDiscountReport')->name("fees_fine_discount_report");
+    Route::controller(feesInstituteWiseFeesReportController::class)->group(function () {
+        Route::get('institute_wise_fees_paid_report_index', 'instituteWiseFeesPaidReportIndex')->name("institute_wise_fees_paid_report_index");
+        Route::post('institute_wise_fees_paid_report', 'instituteWiseFeesPaidReport')->name("institute_wise_fees_paid_report");
+    });
 
-    Route::resource('imprest_refund_report', 'fees\fees_report\imprestRefundReportController');
+    Route::controller(feesFineDiscountReportController::class)->group(function () {
+        Route::get('fees_fine_discount_report_index', 'feesFineDiscountReportIndex')->name("fees_fine_discount_report_index");
+        Route::post('fees_fine_discount_report', 'feesFineDiscountReport')->name("fees_fine_discount_report");
+    });
+
+    Route::resource('imprest_refund_report', imprestRefundReportController::class);
     
 });
 
-Route::POST('api/get-online-fees-list', 'AJAXController@getOnlineFees')->name('get-online-fees-list');
-	Route::POST('fees/PaidUnpaid', 'fees\fees_collect\fees_collect_controller@PaidUnpaid');
-	Route::POST('fees/PaidUnpaidTeacher', 'fees\fees_collect\fees_collect_controller@PaidUnpaidTeacher');
+    Route::post('api/get-online-fees-list', [AJAXController::class, 'getOnlineFees'])->name('get-online-fees-list');
+	Route::post('fees/PaidUnpaid', [fees_collect_controller::class, 'PaidUnpaid']);
+	Route::post('fees/PaidUnpaidTeacher', [fees_collect_controller::class, 'PaidUnpaidTeacher']);
 	Route::group(['prefix' => 'report','middleware' => ['session','menu','logRoute']], function () {
 	   Route::resource('report_module', 'report\report_module\report_module_controller');
     });
     //online routes
 
-    Route::GET('fees/online_fees_collect', 'fees\online_fees\online_fees_collect_controller@index');
+Route::controller(online_fees_collect_controller::class)->group(function () {
+    Route::get('fees/online_fees_collect', 'index');
 
-    Route::POST('fees/hdfc/online_fees_collect', 'fees\online_fees\online_fees_collect_controller@hdfc')->name("hdfc_fees_collect");
-    Route::POST('fees/hdfc/online_fees_hdfcRequestHandler', 'fees\online_fees\online_fees_collect_controller@hdfc_request_handler')->name("hdfc_request_handler");
-    Route::POST('fees/hdfc/online_fees_hdfcResponseHandler', 'fees\online_fees\online_fees_collect_controller@hdfc_response_handler')->name("hdfc_response_handler");
+    Route::post('fees/hdfc/online_fees_collect', 'hdfc')->name("hdfc_fees_collect");
+    Route::post('fees/hdfc/online_fees_hdfcRequestHandler', 'hdfc_request_handler')->name("hdfc_request_handler");
+    Route::post('fees/hdfc/online_fees_hdfcResponseHandler', 'hdfc_response_handler')->name("hdfc_response_handler");
 
-    Route::POST('fees/axis/online_fees_collect', 'fees\online_fees\online_fees_collect_controller@axis')->name("axis_fees_collect");
-    Route::POST('fees/axis/online_fees_axisRequestHandler', 'fees\online_fees\online_fees_collect_controller@axis_request_handler')->name("axis_request_handler");
-    Route::GET('fees/axis/online_fees_axisResponseHandler', 'fees\online_fees\online_fees_collect_controller@axis_response_handler')->name("axis_response_handler");
+    Route::post('fees/axis/online_fees_collect', 'axis')->name("axis_fees_collect");
+    Route::post('fees/axis/online_fees_axisRequestHandler', 'axis_request_handler')->name("axis_request_handler");
+    Route::get('fees/axis/online_fees_axisResponseHandler', 'axis_response_handler')->name("axis_response_handler");
 
-    Route::POST('fees/aggre_pay/online_fees_collect', 'fees\online_fees\online_fees_collect_controller@aggre_pay')->name("aggre_pay_fees_collect");
-    Route::POST('fees/aggre_pay/online_fees_aggre_payRequestHandler', 'fees\online_fees\online_fees_collect_controller@aggre_pay_request_handler')->name("aggre_pay_request_handler");
-    Route::POST('fees/aggre_pay/online_fees_aggre_payResponseHandler', 'fees\online_fees\online_fees_collect_controller@aggre_pay_response_handler')->name("aggre_pay_response_handler");
+    Route::post('fees/aggre_pay/online_fees_collect', 'aggre_pay')->name("aggre_pay_fees_collect");
+    Route::post('fees/aggre_pay/online_fees_aggre_payRequestHandler', 'aggre_pay_request_handler')->name("aggre_pay_request_handler");
+    Route::post('fees/aggre_pay/online_fees_aggre_payResponseHandler', 'aggre_pay_response_handler')->name("aggre_pay_response_handler");
 
-    Route::POST('fees/icici/online_fees_collect', 'fees\online_fees\online_fees_collect_controller@icici')->name("icici_fees_collect");
-    Route::POST('fees/icici/online_fees_iciciRequestHandler', 'fees\online_fees\online_fees_collect_controller@icici_request_handler')->name("icici_request_handler");
-    Route::POST('fees/icici/online_fees_iciciResponseHandler', 'fees\online_fees\online_fees_collect_controller@icici_response_handler')->name("icici_response_handler");
+    Route::post('fees/icici/online_fees_collect', 'icici')->name("icici_fees_collect");
+    Route::post('fees/icici/online_fees_iciciRequestHandler', 'icici_request_handler')->name("icici_request_handler");
+    Route::post('fees/icici/online_fees_iciciResponseHandler', 'icici_response_handler')->name("icici_response_handler");
+
+    Route::post('fees/razorpay/online_fees_collect', 'razorpay')->name("razorpay_fees_collect");
+    Route::post('fees/razorpay/online_fees_razorpayRequestHandler', 'razorpay_request_handler')->name("razorpay_request_handler");
+    Route::post('fees/razorpay/online_fees_razorpayResponseHandler', 'razorpay_response_handler')->name("razorpay_response_handler");
+
+});
     
-    Route::POST('fees/razorpay/online_fees_collect', 'fees\online_fees\online_fees_collect_controller@razorpay')->name("razorpay_fees_collect");
-    Route::POST('fees/razorpay/online_fees_razorpayRequestHandler', 'fees\online_fees\online_fees_collect_controller@razorpay_request_handler')->name("razorpay_request_handler");
-    Route::POST('fees/razorpay/online_fees_razorpayResponseHandler', 'fees\online_fees\online_fees_collect_controller@razorpay_response_handler')->name("razorpay_response_handler");
+Route::controller(AJAXController::class)->group(function () {
+    Route::get('fees/get-student', 'getStudentFromMobile')->name('get-student');
+    Route::get('ajax_PDF_FeesReceipt', 'ajax_PDF_FeesReceipt')->name('ajax_PDF_FeesReceipt');
+    Route::get('ajax_PDF_Bulk_OtherFeesReceipt', 'ajax_PDF_Bulk_OtherFeesReceipt')->name('ajax_PDF_Bulk_OtherFeesReceipt');
+    Route::get('ajax_checkFeesBreakoff', 'ajax_checkFeesBreakoff')->name('ajax_checkFeesBreakoff');
 
-    Route::GET('fees/get-student', 'AJAXController@getStudentFromMobile')->name('get-student');
+});
     // Route::get('admission/online-admission/{id}/{title}', 'admission\admissionEnquiryController@onlineEnquiryFirst')->name('onlineEnquiryFirst');
 
-    Route::GET('ajax_PDF_FeesReceipt', 'AJAXController@ajax_PDF_FeesReceipt')->name('ajax_PDF_FeesReceipt');
-    Route::GET('ajax_PDF_Bulk_OtherFeesReceipt', 'AJAXController@ajax_PDF_Bulk_OtherFeesReceipt')->name('ajax_PDF_Bulk_OtherFeesReceipt');
-
-    Route::POST('/studentFeesDetailAPI', 'fees\fees_collect\fees_collect_controller@studentFeesDetailAPI');
-
-    Route::GET('ajax_checkFeesStructure', 'fees\fees_breackoff\fees_breackoff_controller@ajax_checkFeesStructure')->name('ajax_checkFeesStructure');
-
-    Route::GET('ajax_checkFeesBreakoff', 'AJAXController@ajax_checkFeesBreakoff')->name('ajax_checkFeesBreakoff');
     
+    Route::post('/studentFeesDetailAPI', [fees_collect_controller::class, 'studentFeesDetailAPI']);
 
-?>
+    Route::get('ajax_checkFeesStructure', [fees_breackoff_controller::class, 'ajax_checkFeesStructure'])->name('ajax_checkFeesStructure');
+
+    

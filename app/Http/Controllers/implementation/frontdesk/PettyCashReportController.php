@@ -1,13 +1,13 @@
 <?php
 
-namespace App\Http\Controllers\frontdesk;
+namespace App\Http\Controllers\implementation\frontdesk;
 
-use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use App\Models\frontdesk\PettyCashMasterModel;
 use App\Models\frontdesk\PettyCashModel;
-use function App\Helpers\is_mobile;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use function App\Helpers\is_mobile;
 
 class PettyCashReportController extends Controller
 {

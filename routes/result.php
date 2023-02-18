@@ -1,38 +1,62 @@
 <?php
 
-Route::group(['prefix' => 'result', 'middleware' => ['session', 'menu','logRoute']], function () {
-	Route::resource('exam_type_master', 'result\ExamTypeMaster\ExamTypeMasterController');
-	Route::resource('exam_master', 'result\ExamMaster\ExamMasterController');
-	Route::resource('grade_master', 'result\GradeMaster\GradeMasterController');
+use App\Http\Controllers\result\cbse_result\cbse_11_t2_result_controller;
+use App\Http\Controllers\result\cbse_result\cbse_1t5_result_controller;
+use App\Http\Controllers\result\cbse_result\cbse_1t5_t2_result_controller;
+use App\Http\Controllers\result\cbse_result\overall_mark_report_controller;
+use App\Http\Controllers\result\cbse_result\result_report_controller;
+use App\Http\Controllers\result\cbse_result\WRT_progress_report_controller;
+use App\Http\Controllers\result\cbse_result\WRT_report_controller;
+use App\Http\Controllers\result\co_scholastic\co_scholastic_controller;
+use App\Http\Controllers\result\co_scholastic_marks_entry\co_scholastic_marks_entry_controller;
+use App\Http\Controllers\result\co_scholastic_master\co_scholastic_master_controller;
+use App\Http\Controllers\result\exam_creation\exam_creation_controller;
+use App\Http\Controllers\result\ExamMaster\ExamMasterController;
+use App\Http\Controllers\result\ExamTypeMaster\ExamTypeMasterController;
+use App\Http\Controllers\result\GradeMaster\GradeMasterController;
+use App\Http\Controllers\result\marks_entry\marks_entry_controller;
+use App\Http\Controllers\result\result_book_master\result_book_master_controller;
+use App\Http\Controllers\result\result_master\result_master_controller;
+use App\Http\Controllers\result\result_remark_master\result_remark_master_controller;
+use App\Http\Controllers\result\std_grd_maping\std_grd_maping_controller;
+use App\Http\Controllers\result\student_attendance_master\student_attendance_master_controller;
+use App\Http\Controllers\result\upload_result\upload_result_controller;
+use App\Http\Controllers\result\working_day_master\working_day_master_controller;
+use Illuminate\Support\Facades\Route;
+
+Route::group(['prefix' => 'result', 'middleware' => ['session', 'menu', 'logRoute']], function () {
+	Route::resource('exam_type_master', ExamTypeMasterController::class);
+	Route::resource('exam_master', ExamMasterController::class);
+	Route::resource('grade_master', GradeMasterController::class);
 	Route::get('grade_master/createData/{id}', ['as' => 'grade_master.createData', 'uses' => 'result\GradeMaster\GradeMasterController@AddAllData']);
-	Route::resource('std_grd_maping', 'result\std_grd_maping\std_grd_maping_controller');
-	Route::resource('result_master', 'result\result_master\result_master_controller');
-	Route::resource('exam_creation', 'result\exam_creation\exam_creation_controller');
-	Route::resource('result_remark_master', 'result\result_remark_master\result_remark_master_controller');
-	Route::resource('result_book_master', 'result\result_book_master\result_book_master_controller');
-	Route::resource('co_scholastic_master', 'result\co_scholastic_master\co_scholastic_master_controller');
-	Route::resource('co_scholastic', 'result\co_scholastic\co_scholastic_controller');
-	Route::resource('working_day_master', 'result\working_day_master\working_day_master_controller');
-	Route::resource('student_attendance_master', 'result\student_attendance_master\student_attendance_master_controller');
-	Route::resource('marks_entry', 'result\marks_entry\marks_entry_controller');
-	Route::resource('co_scholastic_marks_entry', 'result\co_scholastic_marks_entry\co_scholastic_marks_entry_controller');
-	Route::resource('cbse_1t5_result', 'result\cbse_result\cbse_1t5_result_controller');
-	Route::resource('cbse_1t5_t2_result', 'result\cbse_result\cbse_1t5_t2_result_controller');
-	Route::resource('overall_mark_report', 'result\cbse_result\overall_mark_report_controller');
+	Route::resource('std_grd_maping', std_grd_maping_controller::class);
+	Route::resource('result_master', result_master_controller::class);
+	Route::resource('exam_creation', exam_creation_controller::class);
+	Route::resource('result_remark_master', result_remark_master_controller::class);
+	Route::resource('result_book_master', result_book_master_controller::class);
+	Route::resource('co_scholastic_master', co_scholastic_master_controller::class);
+	Route::resource('co_scholastic', co_scholastic_controller::class);
+	Route::resource('working_day_master', working_day_master_controller::class);
+	Route::resource('student_attendance_master', student_attendance_master_controller::class);
+	Route::resource('marks_entry', marks_entry_controller::class);
+	Route::resource('co_scholastic_marks_entry', co_scholastic_marks_entry_controller::class);
+	Route::resource('cbse_1t5_result', cbse_1t5_result_controller::class);
+	Route::resource('cbse_1t5_t2_result', cbse_1t5_t2_result_controller::class);
+	Route::resource('overall_mark_report', overall_mark_report_controller::class);
 	Route::post('cbse_1t5_result/show_result', ['as' => 'cbse_1t5_result.show_result', 'uses' => 'result\cbse_result\cbse_1t5_result_controller@show_result']);
     Route::post('cbse_1t5_t2_result/show_result', ['as' => 'cbse_1t5_t2_result.show_result', 'uses' => 'result\cbse_result\cbse_1t5_t2_result_controller@show_result']);
-	Route::resource('cbse_11_t2_result', 'result\cbse_result\cbse_11_t2_result_controller');
+	Route::resource('cbse_11_t2_result', cbse_11_t2_result_controller::class);
 	Route::post('cbse_11_t2_result/show_result', ['as' => 'cbse_11_t2_result.show_result', 'uses' => 'result\cbse_result\cbse_11_t2_result_controller@show_result']);
-	Route::resource('WRT_report', 'result\cbse_result\WRT_report_controller');
+	Route::resource('WRT_report', WRT_report_controller::class);
 	Route::post('WRT_report/show_result', ['as' => 'WRT_report.show_result', 'uses' => 'result\cbse_result\WRT_report_controller@show_result']);
-	Route::resource('WRT_progress_report', 'result\cbse_result\WRT_progress_report_controller');
+	Route::resource('WRT_progress_report', WRT_progress_report_controller::class);
 	Route::post('WRT_progress_report/show_result', ['as' => 'WRT_progress_report.show_result', 'uses' => 'result\cbse_result\WRT_progress_report_controller@show_result']);
 
-    Route::resource('result_report', 'result\cbse_result\result_report_controller');
+    Route::resource('result_report', result_report_controller::class);
 	Route::post('show_result_report', 'result\cbse_result\result_report_controller@show_result_report')->name('show_result_report');
 	Route::GET('ajax_StandardwiseSubject', 'result\cbse_result\result_report_controller@ajax_StandardwiseSubject')->name('ajax_StandardwiseSubject');
 
-	Route::resource('upload_result', 'result\upload_result\upload_result_controller');
+	Route::resource('upload_result', upload_result_controller::class);
 	// Route::GET('student_homework_submission_report_index', 'student\studentHomeworkSubmissionController@studentHomeworkSubmissionReportIndex')->name("student_homework_submission_report_index");
 
 //    Route::post('cbse_1t5_result', 'result\cbse_result\cbse_1t5_result_controller');

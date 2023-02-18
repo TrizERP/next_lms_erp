@@ -1,19 +1,13 @@
 <?php
 
-namespace App\Http\Controllers\frontdesk;
+namespace App\Http\Controllers\implementation\frontdesk;
 
-use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use App\Models\frontdesk\complaintModel;
-use App\Models\student\tblstudentModel;
 use App\Models\user\tbluserModel;
-
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-
-use Illuminate\Support\Facades\Validator;
-use Illuminate\Support\Facades\View;
 use function App\Helpers\is_mobile;
-use Illuminate\Http\Response;
 
 class complaintController extends Controller {
 	/**
