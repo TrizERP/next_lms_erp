@@ -8,10 +8,13 @@ class map_year extends Model {
 
     protected $table = "fees_map_years";
     protected $fillable = [
+        'id',
         'from_month',
         'to_month',
         'syear',
         'sub_institute_id',
+        'created_at',
+        'updated_at'
     ];
 
 }

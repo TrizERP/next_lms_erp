@@ -9,6 +9,8 @@ class frontdeskModel extends Model {
 	//  protected $table = "task";
 
     protected $fillable = [
+        'ID',
+        'SUB_INSTITUTE_ID',
         'VISITOR_TYPE',
         'DATE',
         'IN_TIME',
@@ -21,30 +23,35 @@ class frontdeskModel extends Model {
         'FILE_SIZE',
         'FILE_TYPE',
         'TO_WHOM_MEET',
+        'CREATED_ON',
+        'CREATED_BY',
+        'CREATED_IP',
         'SYEAR',
-        'MARKING_PERID_ID',
-        'sub_institute_id'
+        'MARKING_PERIOD_ID'
     ];
-    
+
     public function complaint(){
         return $this->belongsTo('App\Models\frontdesk\complaintModel');
     }
-    
+
     public function frontdesk(){
         return $this->belongsTo('App\Models\frontdesk\frontdeskModel');
     }
-      public function PettycashMaster(){
+
+    public function PettycashMaster()
+    {
         return $this->belongsTo('App\Models\frontdesk\pettycashMasterModel');
 
-          public function Pettycash(){
+    }
+
+    public function Pettycash()
+    {
         return $this->belongsTo('App\Models\frontdesk\PettycashModel');
     }
 
-    }
 
-
-	//public $timestamps = false;
+    //public $timestamps = false;
 }
 
 
-	
+

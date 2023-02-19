@@ -6,8 +6,9 @@ use Illuminate\Database\Eloquent\Model;
 
 class school_setupModel extends Model
 {
-    protected $table = "school_setup"; 
+        protected $table = "school_setup";
     protected $fillable = [
+        'Id',
         'SchoolName',
         'ShortCode',
         'ContactPerson',
@@ -30,5 +31,5 @@ class school_setupModel extends Model
         'expire_date',
         'given_space_mb'
     ];
-    public $timestamps = false;  
+    public $timestamps = false;
 }

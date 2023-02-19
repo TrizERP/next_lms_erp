@@ -6,11 +6,12 @@ use Illuminate\Database\Eloquent\Model;
 
 class inventory_item_returnModel extends Model
 {
-    protected $table = "inventory_item_return_details"; 
+    protected $table = "inventory_item_return_details";
     protected $fillable = [
+        'ID',
         'SYEAR',
         'SUB_INSTITUTE_ID',
-        'REQUISITION_DETAILS_ID',
+        'REQUISITION_ID',
         'ITEM_ID',
         'RETURN_DATE',
         'REMARKS',

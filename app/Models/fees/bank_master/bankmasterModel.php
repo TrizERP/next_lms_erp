@@ -6,5 +6,10 @@ use Illuminate\Database\Eloquent\Model;
 
 class bankmasterModel extends Model {
     protected $table = "bank_master";
-    public $timestamps = false;   
+    public $timestamps = false;
+
+    protected $fillable = [
+        'id',
+        'bank_name',
+    ];
 }

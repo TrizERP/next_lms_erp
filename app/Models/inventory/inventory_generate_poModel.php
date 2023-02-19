@@ -6,8 +6,9 @@ use Illuminate\Database\Eloquent\Model;
 
 class inventory_generate_poModel extends Model
 {
-   protected $table = "inventory_generate_po_details"; 
+   protected $table = "inventory_generate_po_details";
     protected $fillable = [
+        'id',
         'syear',
         'sub_institute_id',
         'po_number',
@@ -38,6 +39,6 @@ class inventory_generate_poModel extends Model
         'po_additional_charges_ids',
         'po_place_of_delivery'
     ];
-    
+
     public $timestamps = false;
 }

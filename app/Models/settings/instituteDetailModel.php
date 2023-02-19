@@ -6,9 +6,10 @@ use Illuminate\Database\Eloquent\Model;
 
 class instituteDetailModel extends Model
 {
-    protected $table = "institute_detail"; 
-    public $timestamps = false;    
+    protected $table = "institute_detail";
+    public $timestamps = false;
     protected $fillable = [
+        'id',
         'sub_institute_id',
         'principal_name',
         'principal_mobile',
@@ -33,7 +34,8 @@ class instituteDetailModel extends Model
         'data_available_AISHE',
         'trustee_conflict',
         'affilitated_college_condition',
-        ]; 
+        'created_on'
+        ];
 }
 
 ?>

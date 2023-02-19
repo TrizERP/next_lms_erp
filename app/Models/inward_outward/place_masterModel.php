@@ -6,10 +6,13 @@ use Illuminate\Database\Eloquent\Model;
 
 class place_masterModel extends Model
 {
-    protected $table = "place_master"; 
+    protected $table = "place_master";
     protected $fillable = [
+        'id',
+        'sub_institute_id',
         'title',
         'description',
-        'sub_institute_id'
+        'created_at',
+        'updated_at'
     ];
 }

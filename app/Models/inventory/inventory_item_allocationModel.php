@@ -8,6 +8,7 @@ class inventory_item_allocationModel extends Model
 {
     protected $table = "inventory_allocation_details";
     protected $fillable = [
+        'ID',
         'SYEAR',
         'SUB_INSTITUTE_ID',
         'REQUISITION_DETAILS_ID',
@@ -17,7 +18,7 @@ class inventory_item_allocationModel extends Model
         'ITEM_ID',
         'CREATED_BY',
         'CREATED_ON',
-        'CREATED_IP_ADDRESS',
+        'CREATED_IP_ADDRESS'
     ];
     public $timestamps = false;
 }

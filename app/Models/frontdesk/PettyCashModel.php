@@ -9,18 +9,22 @@ class PettyCashModel extends Model
     protected $table = "petty_cash";
 
      protected $fillable = [
-        'title_id',
-        'description',
-        'amount',
-        'user_id',
-        'bill_image',
-        'sub_institute_id'
+         'id',
+         'title_id',
+         'description',
+         'amount',
+         'created_on',
+         'user_id',
+         'sub_institute_id',
+         'bill_image',
+         'file_size',
+         'file_type'
     ];
-    
+
     public function complaint(){
         return $this->belongsTo('App\Models\frontdesk\complaintModel');
     }
-    
+
     public function frontdesk(){
         return $this->belongsTo('App\Models\frontdesk\frontdeskModel');
     }
@@ -31,7 +35,7 @@ class PettyCashModel extends Model
         //return $this->belongsTo('App\Models\frontdesk\PettycashModel');
    // }
 
-    
+
 
 
 

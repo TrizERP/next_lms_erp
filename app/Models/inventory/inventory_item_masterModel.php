@@ -6,9 +6,11 @@ use Illuminate\Database\Eloquent\Model;
 
 class inventory_item_masterModel extends Model
 {
-    protected $table = "inventory_item_master"; 
+    protected $table = "inventory_item_master";
     protected $fillable = [
+        'id',
         'syear',
+        'sub_institute_id',
         'category_id',
         'sub_category_id',
         'item_type_id',
@@ -16,9 +18,11 @@ class inventory_item_masterModel extends Model
         'description',
         'opening_stock',
         'minimum_stock',
+        'direct_purchase_stock',
         'item_attachment',
         'item_status',
-        'sub_institute_id'
+        'created_at',
+        'updated_at'
     ];
-    
+
 }

@@ -6,8 +6,9 @@ use Illuminate\Database\Eloquent\Model;
 
 class inventory_vendor_masterModel extends Model
 {
-    protected $table = "inventory_vendor_master"; 
+    protected $table = "inventory_vendor_master";
     protected $fillable = [
+        'id',
         'syear',
         'sub_institute_id',
         'vendor_name',
@@ -37,8 +38,8 @@ class inventory_vendor_masterModel extends Model
         'bank_ifsc_code',
         'created_by',
         'created_on',
-        'created_ip_address' 
+        'created_ip_address'
     ];
-    
+
     public $timestamps = false;
 }

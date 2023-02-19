@@ -6,8 +6,9 @@ use Illuminate\Database\Eloquent\Model;
 
 class requisitionApprovedModel extends Model
 {
-    protected $table = "inventory_requisition_details"; 
+    protected $table = "inventory_requisition_details";
     protected $fillable = [
+        'id',
         'syear',
         'sub_institute_id',
         'marking_period_id',
@@ -28,6 +29,8 @@ class requisitionApprovedModel extends Model
         'department_id',
         'user_group_id',
         'created_by',
-        'created_ip_address'
+        'created_ip_address',
+        'created_at',
+        'updated_at'
     ];
 }

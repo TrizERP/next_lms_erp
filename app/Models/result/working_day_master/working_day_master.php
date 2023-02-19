@@ -8,10 +8,13 @@ class working_day_master extends Model {
 
     protected $table = "result_working_day_master";
     protected $fillable = [
+        'id',
         'term_id',
+        'sub_institute_id',
         'standard',
         'total_working_day',
-        'sub_institute_id',
+        'created_at',
+        'updated_at'
     ];
 
 }

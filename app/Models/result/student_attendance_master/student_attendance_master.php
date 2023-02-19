@@ -8,6 +8,7 @@ class student_attendance_master extends Model {
 
     protected $table = "result_student_attendance_master";
     protected $fillable = [
+        'id',
         'term_id',
         'standard',
         'sub_institute_id',
@@ -16,7 +17,9 @@ class student_attendance_master extends Model {
         'attendance',
         'percentage',
         'remark_id',
-        'teacher_remark'
+        'teacher_remark',
+        'created_at',
+        'updated_at'
     ];
 
 }

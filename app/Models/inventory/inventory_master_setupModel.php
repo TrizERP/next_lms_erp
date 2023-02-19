@@ -6,9 +6,11 @@ use Illuminate\Database\Eloquent\Model;
 
 class inventory_master_setupModel extends Model
 {
-    protected $table = "inventory_master_setup"; 
+    protected $table = "inventory_master_setup";
     protected $fillable = [
+        'ID',
         'SYEAR',
+        'SUB_INSTITUTE_ID',
         'GST_REGISTRATION_NO',
         'GST_REGISTRATION_DATE',
         'CST_REGISTRATION_NO',
@@ -16,6 +18,7 @@ class inventory_master_setupModel extends Model
         'LOGO',
         'PO_NO_PREFIX',
         'ITEM_SETTING_FOR_REQUISITION',
-        'SUB_INSTITUTE_ID'
+        'created_at',
+        'updated_at'
     ];
 }

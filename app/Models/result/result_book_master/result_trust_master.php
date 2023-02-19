@@ -8,6 +8,7 @@ class result_trust_master extends Model
 {
       protected $table = "result_trust_master";
     protected $fillable = [
+        'id',
         'syear',
         'line1',
         'line2',
@@ -16,6 +17,8 @@ class result_trust_master extends Model
         'left_logo',
         'right_logo',
         'status',
-        'sub_institute_id'
+        'sub_institute_id',
+        'created_at',
+        'updated_at'
     ];
 }

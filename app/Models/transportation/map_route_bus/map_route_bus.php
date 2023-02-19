@@ -12,7 +12,9 @@ class map_route_bus extends Model {
         'syear',
         'route_id',
         'bus_id',
-        'sub_institute_id'
+        'sub_institute_id',
+        'created_at',
+        'updated_at'
     ];
 
 }

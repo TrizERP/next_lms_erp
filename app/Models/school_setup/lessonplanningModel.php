@@ -6,18 +6,23 @@ use Illuminate\Database\Eloquent\Model;
 
 class lessonplanningModel extends Model
 {
-    protected $table = "lessonplan"; 
+    protected $table = "lessonplan";
     protected $fillable = [
-        'syear',        
-        'sub_institute_id',    
-        'school_date',    
-        'grade_id',    
-        'standard_id',    
-        'division_id',    
-        'course_id',    
-        'teacher_id',    
-        'user_group_id',    
-        'title',    
-        'description'
+        'id',
+        'syear',
+        'sub_institute_id',
+        'user_group_id',
+        'school_date',
+        'grade_id',
+        'standard_id',
+        'division_id',
+        'subject_id',
+        'teacher_id',
+        'title',
+        'description',
+        'created_at',
+        'updated_at',
+        'total_marks',
+        'book_link'
     ];
 }

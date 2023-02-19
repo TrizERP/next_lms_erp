@@ -6,11 +6,14 @@ use Illuminate\Database\Eloquent\Model;
 
 class hosteltypemasterModel extends Model
 {
-    protected $table = "hostel_type_master"; 
+    protected $table = "hostel_type_master";
     protected $fillable = [
+        'id',
+        'sub_institute_id',
         'hostel_type',
         'status',
         'description',
-        'sub_institute_id'
+        'created_at',
+        'updated_at'
     ];
 }

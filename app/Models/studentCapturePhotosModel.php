@@ -11,6 +11,7 @@ class studentCapturePhotosModel extends Model
     protected $table = "student_capture_photos";
 
     protected $fillable = [
+        'id',
         'syear',
         'sub_institute_id',
         'student_id',

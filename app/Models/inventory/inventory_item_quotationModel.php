@@ -6,8 +6,9 @@ use Illuminate\Database\Eloquent\Model;
 
 class inventory_item_quotationModel extends Model
 {
-    protected $table = "inventory_item_quotation_details"; 
+    protected $table = "inventory_item_quotation_details";
     protected $fillable = [
+        'id',
         'syear',
         'sub_institute_id',
         'item_id',
@@ -28,6 +29,6 @@ class inventory_item_quotationModel extends Model
         'created_on',
         'created_ip_address'
     ];
-    
+
     public $timestamps = false;
 }

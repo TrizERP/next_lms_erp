@@ -9,4 +9,11 @@ class castModel extends Model
     public $timestamps = false;
 
 	protected $table = "cast";
+
+    protected $fillable = [
+        'id',
+        'title',
+        'sort_order',
+        'sub_institute_id'
+    ];
 }

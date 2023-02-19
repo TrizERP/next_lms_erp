@@ -8,6 +8,7 @@ class add_vehicle extends Model {
 
     protected $table = "transport_vehicle";
     protected $fillable = [
+        'id',
         'title',
         'vehicle_number',
         'vehicle_type',
@@ -16,7 +17,9 @@ class add_vehicle extends Model {
         'vehicle_identity_number',
         'driver',
         'conductor',
-        'sub_institute_id'
+        'sub_institute_id',
+        'created_at',
+        'updated_at'
     ];
 
 }

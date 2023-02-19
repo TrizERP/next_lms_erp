@@ -11,6 +11,7 @@ class attendanceJsonResultModel extends Model
     protected $table = "attendance_json_result";
 
     protected $fillable = [
+        'id',
         'syear',
         'sub_institute_id',
         'json_data',
