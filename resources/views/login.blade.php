@@ -93,6 +93,7 @@ $loginpage_backgrond = session()->get('loginpage_backgrond');
         <div class="col-md-8">
           <div class="white-box123">            
             <form class="form-horizontal new-lg-form" id="loginform" method="POST" action="/login">
+                @csrf
               <h3 class="box-title m-b-0">Sign In to User</h3>
 
               @if(!empty($successMsg))

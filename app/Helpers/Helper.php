@@ -1,13 +1,13 @@
 <?php
 
 namespace App\Helpers;
-use App\Http\Requests;
-use Session;
-use App\Http\Controllers\Redirect;
+
+
 use App\Models\fees\fees_title\fees_title;
 use App\Models\fees\map_year\map_year;
 use App\Models\student\tblstudentModel;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\Validator;
 use App\Models\student\appNotificationModel;
 use App\Models\easy_com\manage_sms_api\manage_sms_api;
@@ -82,7 +82,7 @@ if (!function_exists('ValidateInsertData')) {
 }
 if (!function_exists('SearchChain')) {
 
-    function SearchChain($col = 3, $multiple, $listed_drop, $grade_val = "", $std_val = "", $div_val = "")
+    function SearchChain($col, $multiple, $listed_drop, $grade_val = "", $std_val = "", $div_val = "")
     {
         // echo "<pre>"; print_r(session()->all()); exit;
         
@@ -454,7 +454,7 @@ if (!function_exists('SearchChain')) {
 }
 if (!function_exists('SearchChainSubject')) {
 
-    function SearchChainSubject($col = 3, $multiple, $listed_drop, $grade_val = "", $std_val = "", $sub_val = "")
+    function SearchChainSubject($col, $multiple, $listed_drop, $grade_val = "", $std_val = "", $sub_val = "")
     {
 
         //        echo $grade_val,',';
@@ -1564,7 +1564,7 @@ function sendSMS($mobile, $text, $sub_institute_id)
 
 if (!function_exists('LMSSearchChain')) {
 
-    function LMSSearchChain($col = 3, $multiple,$prefix,$standard_id, $listed_drop, $std_val = "", $sub_val = "" , $chapter_val = "" ,$topic_val = "" )
+    function LMSSearchChain($col, $multiple,$prefix,$standard_id, $listed_drop, $std_val = "", $sub_val = "" , $chapter_val = "" ,$topic_val = "" )
     {        
         $sub_institute_id = session()->get('sub_institute_id');
         $explod_list = explode(',', $listed_drop);        
