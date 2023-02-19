@@ -17,3 +17,4 @@ yarn-error.log
 /public/captcha/
 /public/css/
 /public/excel_upload/
+/public/plugins/
