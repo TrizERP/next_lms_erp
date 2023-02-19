@@ -101,6 +101,7 @@ class MenuMiddleware {
 
 		if (isset($rightsQuery['0']['MID'])) {
 			$rightsMenusIds = $rightsQuery['0']['MID'];
+            $rightsMenusIds = substr($rightsMenusIds,  0, -1); 
 		}
 		// dd($rightsMenusIds);
 		// dd($checkMenu);
@@ -229,8 +230,9 @@ class MenuMiddleware {
 			}
 			else
 			{
-				$data = tblmenumasterModel::where(['parent_menu_id' => "0", 'level' => "1"])->whereRaw("find_in_set('$sub_institute_id',sub_institute_id) and status = 1 and id in (" . $rightsMenusIds . ") and menu_type IS NULL")->orderBy('sort_order')->get()->toArray();
-
+                $data = tblmenumasterModel::where(['parent_menu_id' => "0", 'level' => "1"])
+                    ->whereRaw("find_in_set('$sub_institute_id',sub_institute_id) and status = 1 and id in (" . $rightsMenusIds . ") and menu_type IS NULL")
+                    ->orderBy('sort_order')->get()->toArray();
 				$subMenuData = tblmenumasterModel::where('parent_menu_id', '!=', 0)->whereRaw("find_in_set('$sub_institute_id',sub_institute_id) AND level = 2 and id in (" . $rightsMenusIds . ") and status = 1 and menu_type IS NULL")->orderBy('sort_order')->get()->toArray();
 
 				$i = 0;
