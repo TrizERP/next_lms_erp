@@ -260,7 +260,6 @@ class dashboardController extends Controller
                     ->get()->toArray();
 
                 foreach ($attendanceCharts as $key => $value) {
-                    // $standards = "'".$value->standard."',";
                     $standards_att[] = $value->standard;
                     $absents[] = (int) $value->absent;
                     $presants[] = (int) $value->present;
@@ -1409,93 +1408,121 @@ class dashboardController extends Controller
         if ($user_profile_name == 'Admin' || $user_profile_name == 'ADMIN' || $user_profile_name == 'admin' || $user_profile_name == 'school admin'
             || $user_profile_name == 'SCHOOL ADMIN' || $user_profile_name == 'School Admin') {
 
-            // if ($sub_institute_id == 46) {
-            // $date = "2019-08-22"; //date('Y-m-d');
-            // } else {
             $date = date('Y-m-d');
-            // }
             $date15 = date('Y-m-d', strtotime($date.' +15 day'));
 
             $users = tbluserModel::selectRaw("count(id) as users")->where([
                 'sub_institute_id' => $sub_institute_id, 'status' => "1",
             ])->get()->toArray();
 
-            // $students = tblstudentModel::selectRaw("count(id) as students")->where(['sub_institute_id' => $sub_institute_id])->get()->toArray();
+            $students = DB::table('tblstudent as ts')
+                ->join('tblstudent_enrollment as se', function ($join) {
+                    $join->whereRaw("se.student_id = ts.id AND se.sub_institute_id = se.sub_institute_id");
+                })
+                ->join('standard as s', function ($join) {
+                    $join->whereRaw("s.id = se.standard_id AND se.sub_institute_id = s.sub_institute_id");
+                })
+                ->selectRaw("COUNT(ts.id) students")
+                ->where("ts.sub_institute_id", "=",$sub_institute_id)
+                ->where("se.syear", "=", $syear)
+                ->whereNull("se.end_date")->get()->toArray();
 
-            $students = DB::select("SELECT COUNT(ts.id) students FROM tblstudent ts
-INNER JOIN tblstudent_enrollment se ON se.student_id = ts.id AND se.sub_institute_id = se.sub_institute_id
-INNER JOIN standard s ON s.id = se.standard_id AND se.sub_institute_id = s.sub_institute_id
-WHERE ts.sub_institute_id = '".$sub_institute_id."' AND se.syear = '".$syear."' AND se.end_date IS NULL");
-            // dd($students[0]->students);
+            $total_admission = DB::table('admission_enquiry')
+                ->selectRaw("COUNT(id) as total_admissions")
+                ->where('syear', '=', $syear)
+                ->where('sub_institute_id', '=', $sub_institute_id)
+                ->get()->toArray();
 
-            $total_admission = DB::select("SELECT COUNT(id) as total_admissions FROM admission_enquiry 
-				WHERE syear = '".$syear."' AND sub_institute_id = '".$sub_institute_id."' ");
-
-            $fees_collects = fees_collect::selectRaw("ifnull(sum(amount),0) as fees")->where([
-                'sub_institute_id' => $sub_institute_id, 'syear' => $syear, 'is_deleted' => "N",
-            ])
+            $fees_collects = fees_collect::selectRaw("ifnull(sum(amount),0) as fees")
+                ->where(['sub_institute_id' => $sub_institute_id, 'syear' => $syear, 'is_deleted' => "N"])
                 ->whereRaw("date_format(created_date,'%Y-%m-%d') = '".$date."'")->get()->toArray();
 
-            $other_fees_collects = DB::select("SELECT IFNULL(SUM(actual_amountpaid),0) AS fees
-												FROM fees_paid_other
-												WHERE (`sub_institute_id` = '".$sub_institute_id."' AND `syear` = '".$syear."' ) 
-												AND DATE_FORMAT(created_date,'%Y-%m-%d') = '".$date."' AND is_deleted = 'N' ");
+            
+            $other_fees_collects = DB::table('fees_paid_other')
+                ->selectRaw("IFNULL(SUM(actual_amountpaid),0) AS fees")
+                ->where('sub_institute_id', '=', $sub_institute_id)
+                ->where('syear', '=', $syear)
+                ->whereRaw("DATE_FORMAT(created_date,'%Y-%m-%d') = '".$date."'")
+                ->where('is_deleted', '=', 'N')->get()->toArray();
             $other_fees_collects = json_decode(json_encode($other_fees_collects), true);
+            
+            $parentCommunication = DB::table('parent_communication as p')
+                ->join('tblstudent as s', function($join) {
+                    $join->whereRaw("p.student_id = s.id");
+                })
+                ->selectRaw("p.*,CONCAT_WS(' ',s.first_name,s.last_name) as student_name,s.image as student_image")
+                ->where('p.sub_institute_id', '=', $sub_institute_id)
+                ->where('p.date_', '=', $date)
+                ->orderBy('p.id')->limit(10)->get()->toArray();
 
-            $parentCommunication = DB::select("SELECT p.*,CONCAT_WS(' ',s.first_name,s.last_name) as student_name,s.image as student_image
-			FROM parent_communication p INNER JOIN tblstudent s on p.student_id = s.id WHERE date_ = '".$date."' AND p.sub_institute_id = '".$sub_institute_id."' order by p.id desc limit 10");
-
-            $fees_collection = fees_collect::selectRaw('fees_collect.*,CONCAT_WS(" ",tblstudent.first_name,tblstudent.middle_name,tblstudent.last_name) 
-				as student_name,sum(amount) as total_fees')
+            $fees_collection = fees_collect::selectRaw('fees_collect.*,CONCAT_WS(" ",tblstudent.first_name,tblstudent.middle_name,
+                tblstudent.last_name) as student_name,sum(amount) as total_fees')
                 ->join('tblstudent', 'tblstudent.id', '=', 'fees_collect.student_id')
                 ->where(['fees_collect.sub_institute_id' => $sub_institute_id, 'fees_collect.is_deleted' => "N"])
                 ->whereRaw("date_format(fees_collect.created_date,'%Y-%m-%d') = '".$date."'")
                 ->groupBy('payment_mode')
                 ->take(10)->get()->toArray();
+            
+            $studentBirthdays = DB::table('tblstudent as s')
+                ->join('tblstudent_enrollment as ts', function($join) use($syear) {
+                    $join->whereRaw("s.id = ts.student_id and ts.syear = '".$syear."'");
+                })
+                ->join('standard as st', function($join) {
+                    $join->whereRaw("ts.standard_id = st.id");
+                })
+                ->join('division as d', function($join) {
+                    $join->whereRaw("ts.section_id = d.id");
+                })
+                ->selectRaw("CONCAT_WS(' ',s.first_name,s.middle_name,s.last_name) as student_name,st.name as standard_name,d.name as division_name, DATE_FORMAT(s.dob, '%d-%m-%Y') AS dob")
+                ->where("s.sub_institute_id", $sub_institute_id)
+                ->whereNull("ts.end_date")
+                ->whereRaw("DATE_FORMAT(s.dob, '%m-%d') >= DATE_FORMAT(NOW(), '%m-%d') and DATE_FORMAT(s.dob, '%m-%d') <= DATE_FORMAT((NOW() + INTERVAL +7 DAY), '%m-%d')")->get()->toArray();
 
-            $studentBirthdayQuery = "SELECT CONCAT_WS(' ',s.first_name,s.middle_name,s.last_name) as student_name,st.name as standard_name,d.name as division_name, DATE_FORMAT(s.dob, '%d-%m-%Y') AS dob
-			FROM tblstudent s 
-			INNER JOIN tblstudent_enrollment ts on s.id = ts.student_id and ts.syear = '".$syear."' 
-			INNER JOIN standard st on ts.standard_id = st.id INNER JOIN division d on ts.section_id = d.id 
-			WHERE s.sub_institute_id = '".$sub_institute_id."'and ts.end_date is null  and DATE_FORMAT(s.dob, '%m-%d') >= DATE_FORMAT(NOW(), '%m-%d') and DATE_FORMAT(s.dob, '%m-%d') <= DATE_FORMAT((NOW() + INTERVAL +7 DAY), '%m-%d')";
+            $teacherBirthdays = DB::table('tbluser as s')
+                ->join('tbluserprofilemaster as tu', function($join) {
+                    $join->whereRaw("s.user_profile_id = tu.id");
+                })
+                ->selectRaw("CONCAT_WS(' ',s.first_name,s.middle_name,s.last_name) as teacher_name,tu.name as designation,s.mobile as contact_number, DATE_FORMAT(s.birthdate, '%d-%m-%Y') AS birthdate")
+                ->where("s.sub_institute_id", $sub_institute_id)
+                ->where("s.status", "!=", 0)
+                ->whereRaw("date_format(s.birthdate,'%m-%d') >= DATE_FORMAT(NOW(), '%m-%d') and DATE_FORMAT(s.birthdate, '%m-%d') <= DATE_FORMAT((NOW() + INTERVAL +7 DAY), '%m-%d')")
+                ->orderByRaw("DATE_FORMAT(s.birthdate, '%d')")->get()->toArray();
+            
+            $calendarEvents = DB::table('calendar_events')->where('sub_institute_id', $sub_institute_id)
+                ->where('school_date', '>=', $date)->where('school_date', '<=', $date15)->get()->toArray();
 
-            $studentBirthdays = DB::select($studentBirthdayQuery);
+            $studentLeaves = DB::table('leave_applications as l')
+                ->join('tblstudent as s', function ($join) {
+                    $join->whereRaw("l.student_id = s.id");
+                })
+                ->join('tblstudent_enrollment as se', function ($join) use ($syear) {
+                    $join->whereRaw("s.id = se.id AND se.syear = '".$syear."'");
+                })
+                ->join('standard as st', function ($join) {
+                    $join->whereRaw("st.id = se.standard_id");
+                })
+                ->join('division as dt', function ($join) {
+                    $join->whereRaw("dt.id = se.section_id");
+                })
+                ->selectRaw("l.*, CONCAT_WS(' ',s.first_name,s.middle_name,s.last_name) AS student_name,st.name AS standard_name,dt.name AS division_name")
+                ->whereRaw("l.sub_institute_id = '".$sub_institute_id."' AND '".$date."' BETWEEN from_date AND to_date")
+                ->get()->toArray();
 
-            $teacherBirthdayQuery = "SELECT CONCAT_WS(' ',s.first_name,s.middle_name,s.last_name) as teacher_name,tu.name as designation,s.mobile as contact_number, DATE_FORMAT(s.birthdate, '%d-%m-%Y') AS birthdate
-			FROM tbluser s 
-			INNER JOIN tbluserprofilemaster tu on s.user_profile_id = tu.id 
-			WHERE s.sub_institute_id = '".$sub_institute_id."' AND s.status !=0 and date_format(s.birthdate,'%m-%d') >= DATE_FORMAT(NOW(), '%m-%d') and DATE_FORMAT(s.birthdate, '%m-%d') <= DATE_FORMAT((NOW() + INTERVAL +7 DAY), '%m-%d')
-			ORDER BY DATE_FORMAT(s.birthdate, '%d')";
-            $teacherBirthdays = DB::select($teacherBirthdayQuery);
+            $standards_att = [];
+            $absents = [];
+            $presants = [];
 
-            $calendarEventsQuery = "SELECT *
-		FROM calendar_events where sub_institute_id = '".$sub_institute_id."' and school_date >= '".$date."' AND school_date <= '".$date15."'";
-
-            $calendarEvents = DB::select($calendarEventsQuery);
-
-            $studentLeave = "SELECT l.*, CONCAT_WS(' ',s.first_name,s.middle_name,s.last_name) AS student_name,st.name AS standard_name,dt.name AS division_name
-		FROM leave_applications l
-		INNER JOIN tblstudent s ON l.student_id = s.id
-		INNER JOIN tblstudent_enrollment se ON s.id = se.id AND se.syear = '".$syear."'
-		INNER JOIN standard st ON st.id = se.standard_id
-		INNER JOIN division1 dt ON dt.id = se.section_id
-		WHERE l.sub_institute_id = '".$sub_institute_id."' AND '".$date."' BETWEEN from_date AND to_date";
-
-            $studentLeaves = DB::select($studentLeave);
-
-            $standards_att = array();
-            $absents = array();
-            $presants = array();
-
-            $attendanceCharts = "SELECT st.name as standard,dt.name,s.attendance_code, SUM(CASE WHEN s.attendance_code = 'A' THEN 1 ELSE 0 END) AS absent, 
-			SUM(CASE WHEN s.attendance_code = 'P' THEN 1 ELSE 0 END) AS present
-		FROM attendance_student s
-		INNER JOIN standard st ON s.standard_id = st.id
-		INNER JOIN division dt ON s.section_id = dt.id
-		WHERE s.sub_institute_id = '".$sub_institute_id."' AND s.attendance_date = '".$date."'
-		GROUP BY s.standard_id";
-
-            $attendanceCharts = DB::select($attendanceCharts);
+            $attendanceCharts = DB::table('attendance_student as s')
+                ->join('standard as st', function ($join) {
+                    $join->whereRaw("s.standard_id = st.id");
+                })
+                ->join('division as dt', function ($join) {
+                    $join->whereRaw("s.section_id = dt.id");
+                })
+                ->selectRaw("st.name as standard,dt.name,s.attendance_code, SUM(CASE WHEN s.attendance_code = 'A' THEN 1 ELSE 0 END) AS absent, SUM(CASE WHEN s.attendance_code = 'P' THEN 1 ELSE 0 END) AS present")
+                ->where("s.sub_institute_id", '=', $sub_institute_id)
+                ->where("s.attendance_date", '=', $date)
+                ->groupBy("s.standard_id")->get()->toArray();
 
             foreach ($attendanceCharts as $key => $value) {
                 // $standards = "'".$value->standard."',";
@@ -1510,69 +1537,73 @@ WHERE ts.sub_institute_id = '".$sub_institute_id."' AND se.syear = '".$syear."' 
                 ":sb"    => $sub_institute_id,
                 ":syear" => $syear,
             );
-            $fees_chart_data = DB::select('select sum(fc.amount) amount,s.name
-        from fees_collect fc
-        inner join tblstudent_enrollment se on se.student_id = fc.student_id and se.syear = :syear
-        inner join standard s on s.id = se.standard_id
-        where DATE_FORMAT(fc.created_date, "%Y-%m-%d") = :dt and fc.sub_institute_id = :sb group by se.standard_id',
-                $parameters);
+            
+            $fees_chart_data = DB::table('fees_collect as fc')
+                ->join('tblstudent_enrollment as se', function ($join) use($syear) {
+                    $join->whereRaw("se.student_id = fc.student_id and se.syear = ".$syear);
+                })
+                ->join('standard as s', function ($join) {
+                    $join->whereRaw("s.id = se.standard_id");
+                })
+                ->selectRaw("sum(fc.amount) amount,s.name")
+                ->whereRaw('DATE_FORMAT(fc.created_date, "%Y-%m-%d") = '.$today.' and fc.sub_institute_id = '.$sub_institute_id)
+                ->groupBy('se.standard_id')->get()->toArray();
 
             $parameters = array(
                 ":syear" => $syear,
                 ":sb"    => $sub_institute_id,
             );
-            $student_chart_data = DB::select('select count(se.student_id) total_student,s.name
-        from tblstudent_enrollment se
-        inner join standard s on s.id = se.standard_id
-        where se.sub_institute_id = :sb  and se.syear = :syear
-        group by se.standard_id,s.id
-        order by s.sort_order
-        ', $parameters);
-            // echo ('<pre>');print_r($fees_chart_data);
-            // echo ('<pre>');print_r($student_chart_data);exit;
+            
+            $student_chart_data = DB::table('tblstudent_enrollment as se')
+                ->join('standard as s', function ($join) {
+                    $join->whereRaw("s.id = se.standard_id");
+                })
+                ->selectRaw("count(se.student_id) total_student,s.name")
+                ->where('se.sub_institute_id', $sub_institute_id)
+                ->where('se.syear', $syear)
+                ->groupByRaw('se.standard_id,s.id')->orderBy('s.sort_order')->get()->toArray();
 
             $total_fees = 0;
             $total_student = 0;
             $final_chart_data = " [{
-            'id': '0.0',
-            'parent': '',
-            'name': 'Main Chart'
-        }, {
-            id: '1.1',
-            parent: '0.0',
-            name: 'Fees'
-        }, {
-            id: '1.2',
-            parent: '0.0',
-            name: 'Student'
-        }, ";
+                'id': '0.0',
+                'parent': '',
+                'name': 'Main Chart'
+            }, {
+                id: '1.1',
+                parent: '0.0',
+                name: 'Fees'
+            }, {
+                id: '1.2',
+                parent: '0.0',
+                name: 'Student'
+            }, ";
 
             foreach ($fees_chart_data as $key => $value) {
                 $total_fees = $total_fees + $value->amount;
                 $final_chart_data .= "{
-                'id': '2.".$key."',
-                'parent': '1.1',
-                'name': '".$value->name."',
-                'value':".$value->amount."
-            },";
+                    'id': '2.".$key."',
+                    'parent': '1.1',
+                    'name': '".$value->name."',
+                    'value':".$value->amount."
+                },";
             }
+            
             if (isset($next_id)) {
                 $next_id = $key + 1;
             } else {
                 $next_id = 0;
             }
-            // echo('<pre>');
-            // print_r($next_id);
-            // exit;
+
             foreach ($student_chart_data as $key => $value) {
                 $total_student = $total_student + $value->total_student;
                 $ids = $next_id + $key;
                 $final_chart_data .= "{
-                'id': '2.".$ids."',
-                'parent': '1.2',
-                'name': '".$value->name."',
-                'value':".$value->total_student."
-            },";
+                    'id': '2.".$ids."',
+                    'parent': '1.2',
+                    'name': '".$value->name."',
+                    'value':".$value->total_student."
+                },";
             }
             $final_chart_data = rtrim($final_chart_data, ",");
             $final_chart_data .= '];';
@@ -1584,13 +1615,19 @@ WHERE ts.sub_institute_id = '".$sub_institute_id."' AND se.syear = '".$syear."' 
                 ":syear" => $syear,
                 ":mode"  => "cash",
             );
-            $fees_chart1_cash_data = DB::select('select fc.amount,s.name
-        from fees_collect fc
-        inner join tblstudent_enrollment se on se.student_id = fc.student_id and se.syear = :syear
-        inner join standard s on s.id = se.standard_id
-        where DATE_FORMAT(fc.created_date, "%Y-%m-%d") = :dt
-        and fc.sub_institute_id = :sb and payment_mode = :mode group by se.standard_id', $parameters);
-            // echo ('<pre>');print_r($fees_chart1_cash_data);exit;
+
+            $fees_chart1_cash_data = DB::table('fees_collect as fc')
+                ->join('tblstudent_enrollment as se', function ($join) use($syear) {
+                    $join->whereRaw("se.student_id = fc.student_id and se.syear = ".$syear);
+                })
+                ->join('standard as s', function ($join) {
+                    $join->whereRaw("s.id = se.standard_id");
+                })
+                ->selectRaw("fc.amount,s.name")
+                ->whereRaw('DATE_FORMAT(fc.created_date, "%Y-%m-%d") = '.$today.' and fc.sub_institute_id = '.$sub_institute_id)
+                ->where('payment_mode', 'cash')
+                ->groupBy('se.standard_id')->get()->toArray();
+
             $today = date("Y-m-d");
             $parameters = array(
                 ":dt"    => $today,
@@ -1598,36 +1635,42 @@ WHERE ts.sub_institute_id = '".$sub_institute_id."' AND se.syear = '".$syear."' 
                 ":syear" => $syear,
                 ":mode"  => "cheque",
             );
-            $fees_chart1_cheque_data = DB::select('select fc.amount,s.name
-        from fees_collect fc
-        inner join tblstudent_enrollment se on se.student_id = fc.student_id and se.syear = :syear
-        inner join standard s on s.id = se.standard_id
-        where DATE_FORMAT(fc.created_date, "%Y-%m-%d") = :dt
-        and fc.sub_institute_id = :sb and payment_mode = :mode', $parameters);
+            
+            $fees_chart1_cheque_data = DB::table('fees_collect as fc')
+                ->join('tblstudent_enrollment as se', function ($join) use($syear) {
+                    $join->whereRaw("se.student_id = fc.student_id and se.syear = ".$syear);
+                })
+                ->join('standard as s', function ($join) {
+                    $join->whereRaw("s.id = se.standard_id");
+                })
+                ->selectRaw("fc.amount,s.name")
+                ->whereRaw('DATE_FORMAT(fc.created_date, "%Y-%m-%d") = '.$today.' and fc.sub_institute_id = '.$sub_institute_id)
+                ->where('payment_mode', 'cheque')
+                ->get()->toArray();
 
             $final_chart1_data = " [{
-            'id': '0.0',
-            'parent': '',
-            'name': 'Cash/Cheque Chart'
-        }, {
-            id: '1.1',
-            parent: '0.0',
-            name: 'Cash Fees'
-        }, {
-            id: '1.2',
-            parent: '0.0',
-            name: 'Cheque Fees'
-        }, ";
+                'id': '0.0',
+                'parent': '',
+                'name': 'Cash/Cheque Chart'
+            }, {
+                id: '1.1',
+                parent: '0.0',
+                name: 'Cash Fees'
+            }, {
+                id: '1.2',
+                parent: '0.0',
+                name: 'Cheque Fees'
+            }, ";
 
 
             foreach ($fees_chart1_cash_data as $key => $value) {
                 // $total_fees = $total_fees + $value->amount;
                 $final_chart1_data .= "{
-                'id': '2.".$key."',
-                'parent': '1.1',
-                'name': '".$value->name."',
-                'value':".$value->amount."
-            },";
+                    'id': '2.".$key."',
+                    'parent': '1.1',
+                    'name': '".$value->name."',
+                    'value':".$value->amount."
+                },";
             }
 
             if (isset($next_id)) {
@@ -1636,42 +1679,36 @@ WHERE ts.sub_institute_id = '".$sub_institute_id."' AND se.syear = '".$syear."' 
                 $next_id = 0;
             }
 
-            // $next_id = $key + 1;
-            // echo('<pre>');
-            // print_r($next_id);
-            // exit;
             foreach ($fees_chart1_cheque_data as $key => $value) {
                 // $total_student = $total_student + $value->total_student;
                 $ids = $next_id + $key;
                 $final_chart1_data .= "{
-                'id': '2.".$ids."',
-                'parent': '1.2',
-                'name': '".$value->name."',
-                'value':".$value->amount."
-            },";
+                    'id': '2.".$ids."',
+                    'parent': '1.2',
+                    'name': '".$value->name."',
+                    'value':".$value->amount."
+                },";
             }
             $final_chart1_data = rtrim($final_chart1_data, ",");
             $final_chart1_data .= '];';
 
-            $fees_chart2_bkoff_data = DB::select('SELECT SUM(fb.amount) amt,st.name
-        FROM tblstudent s
-        INNER JOIN tblstudent_enrollment se ON se.student_id = s.id
-        INNER JOIN academic_section g ON g.id = se.grade_id
-        INNER JOIN standard st ON st.id = se.standard_id
-        LEFT JOIN division d ON d.id = se.section_id
-        INNER JOIN fees_breackoff fb ON
-         (fb.syear = "'.$syear.'" AND
-         fb.admission_year = s.admission_year AND
-         fb.quota = se.student_quota AND
-         fb.grade_id = se.grade_id AND
-         fb.standard_id = se.standard_id AND
-         fb.sub_institute_id = "'.$sub_institute_id.'"
-        )
-        WHERE s.sub_institute_id = "'.$sub_institute_id.'" AND se.syear = "'.$syear.'"
-        GROUP BY st.id ORDER BY st.id');
-            // echo('<pre>');
-            // print_r($fees_chart2_bkoff_data);
-            // exit;
+            $fees_chart2_bkoff_data = DB::table('tblstudent as s')
+                ->join('tblstudent_enrollment as se', function ($join) use($syear) {
+                    $join->whereRaw("se.student_id = s.id");
+                })->join('academic_section as g', function ($join) {
+                    $join->whereRaw("g.id = se.grade_id");
+                })->join('standard as st', function ($join) {
+                    $join->whereRaw("st.id = se.standard_id");
+                })->leftJoin('division as d', function ($join) {
+                    $join->whereRaw("d.id = se.section_id");
+                })->join('fees_breackoff as fb', function ($join) use($syear, $sub_institute_id) {
+                    $join->whereRaw("fb.syear = ".$syear." AND fb.admission_year = s.admission_year AND fb.quota = se.student_quota AND
+                        fb.grade_id = se.grade_id AND fb.standard_id = se.standard_id AND fb.sub_institute_id = ".$sub_institute_id);
+                })
+                ->selectRaw("SUM(fb.amount) amt,st.name")
+                ->where('s.sub_institute_id', $sub_institute_id)
+                ->where('se.syear', $syear)->groupBy('st.id')->orderBy('st.id')
+                ->get()->toArray();
 
             $unpaid_data = "[";
             $std_data = "[";
@@ -1684,29 +1721,23 @@ WHERE ts.sub_institute_id = '".$sub_institute_id."' AND se.syear = '".$syear."' 
             $unpaid_data .= "]";
             $std_data .= "]";
 
-            // echo('<pre>');
-            // print_r($unpaid_data);
-            // print_r($std_data);
-            // exit;
-
-            $fees_chart2_fees_data = DB::select('SELECT SUM(fc.amount)+ SUM(fc.fees_discount) amount,st.name
-        FROM tblstudent s
-        INNER JOIN tblstudent_enrollment se ON se.student_id = s.id
-        INNER JOIN academic_section g ON g.id = se.grade_id
-        INNER JOIN standard st ON st.id = se.standard_id
-        LEFT JOIN division d ON d.id = se.section_id
-        INNER JOIN fees_collect fc ON
-         (
-         fc.student_id = s.id AND
-         fc.sub_institute_id = "'.$sub_institute_id.'" AND
-         fc.syear = "'.$syear.'"
-        )
-        WHERE s.sub_institute_id = "'.$sub_institute_id.'"
-        GROUP BY st.id ORDER BY st.id');
-
-            // echo('<pre>');
-            // print_r($fees_chart2_fees_data);
-            // exit;
+            $fees_chart2_fees_data =
+                DB::table('tblstudent as s')
+                    ->join('tblstudent_enrollment as se', function ($join) use($syear) {
+                        $join->whereRaw("se.student_id = s.id");
+                    })->join('academic_section as g', function ($join) {
+                        $join->whereRaw("g.id = se.grade_id");
+                    })->join('standard as st', function ($join) {
+                        $join->whereRaw("st.id = se.standard_id");
+                    })->leftJoin('division as d', function ($join) {
+                        $join->whereRaw("d.id = se.section_id");
+                    })->join('fees_collect as fc', function ($join) use($syear, $sub_institute_id) {
+                        $join->whereRaw("fc.student_id = s.id AND fc.sub_institute_id = ".$sub_institute_id." AND fc.syear = ".$syear);
+                    })
+                    ->selectRaw("SUM(fc.amount)+ SUM(fc.fees_discount) amount,st.name")
+                    ->where('s.sub_institute_id', $sub_institute_id)
+                    ->groupBy('st.id')->orderBy('st.id')
+                    ->get()->toArray();
 
             $paid_data = "[";
             foreach ($fees_chart2_fees_data as $id => $arr) {
@@ -1714,34 +1745,9 @@ WHERE ts.sub_institute_id = '".$sub_institute_id."' AND se.syear = '".$syear."' 
             }
             $paid_data = rtrim($paid_data, ",");
             $paid_data .= "]";
-            // $paid_data .= "]";
-            // echo('<pre>');
-            // print_r($paid_data);
-            // exit;
-            // echo $final_chart_data;
-            // echo ('<pre>');print_r($final_chart1_data);exit;
 
-            // echo ('<pre>');print_r($fees_chart_data);exit;
-
-            // if($standards != '')
-            // {
-            // 	$standards = rtrim($standards,",");
-            // }
-
-            // $value = array(
-            //     array(
-            //     'id'=>'1',
-            //     'parent'=>'2'
-            //     ),
-            //     array(
-            //     'id'=>'1',
-            //     'parent'=>'2'
-            //     )
-            //     );
-
-            // $result = json_encode($value);
-
-            $academicSections = DB::select("select * from academic_section where sub_institute_id = '".$sub_institute_id."'");
+            
+            $academicSections = DB::table('academic_section')->where('sub_institute_id', $sub_institute_id)->get()->toArray();
 
             $academicSections = array_map(function ($value) {
                 return (array) $value;
@@ -1751,8 +1757,8 @@ WHERE ts.sub_institute_id = '".$sub_institute_id."' AND se.syear = '".$syear."' 
             foreach ($academicSections as $key => $value) {
                 $gradeIds .= $value['id'].',';
             }
-
-            $standards = DB::select("select * from standard where grade_id IN (".rtrim($gradeIds, ",").") ");
+            
+            $standards = DB::table('standard')->whereIn('grade_id', explode(',', rtrim($gradeIds, ",")))->get()->toArray();
 
             $standards = array_map(function ($value) {
                 return (array) $value;
@@ -1763,30 +1769,35 @@ WHERE ts.sub_institute_id = '".$sub_institute_id."' AND se.syear = '".$syear."' 
             foreach ($standards as $key => $value) {
                 $standardsArray[$value['grade_id']][] = $standards[$key];
             }
-
-            $chartStudents = DB::select("SELECT s.id,se.grade_id,se.standard_id
-		FROM tblstudent s
-		INNER JOIN tblstudent_enrollment se ON s.id = se.student_id
-		WHERE s.sub_institute_id = '".$sub_institute_id."' and grade_id != '' and standard_id != ''");
-
-            // dd($chartStudents);
-            $chartAS = array();
-            $chartS = array();
+            
+            $chartStudents = DB::table('tblstudent as s')
+                ->join('tblstudent_enrollment as se', function($join) {
+                    $join->whereRaw("s.id = se.student_id");
+                })
+                ->selectRaw('s.id,se.grade_id,se.standard_id')
+                ->where('s.sub_institute_id', $sub_institute_id)
+                ->where('grade_id', '!=', '')->where('standard_id', '!=', '')->get()->toArray();
+            
+            $chartAS = [];
+            $chartS = [];
 
             foreach ($chartStudents as $k => $v) {
                 $chartAs[$v->grade_id][] = $v->id;
                 $chartS[$v->standard_id][] = $v->id;
             }
 
-            $chartFAs = array();
-            $chartFS = array();
+            $chartFAs = [];
+            $chartFS = [];
 
-            $chartFees = DB::select("SELECT fc.amount,s.name,se.grade_id,se.standard_id
-		FROM fees_collect fc
-		INNER JOIN tblstudent_enrollment se ON se.student_id = fc.student_id AND se.syear = '".$syear."'
-		INNER JOIN standard s ON s.id = se.standard_id
-		WHERE fc.sub_institute_id = '".$sub_institute_id."'");
-
+            $chartFees = DB::table('fees_collect as fc')
+                    ->join('tblstudent_enrollment as se', function($join) use($syear) {
+                        $join->whereRaw("se.student_id = fc.student_id AND se.syear = ". $syear);
+                    })->join('standard as s', function($join) {
+                        $join->whereRaw("s.id = se.standard_id");
+                    })
+                    ->selectRaw("fc.amount,s.name,se.grade_id,se.standard_id")
+                    ->where('s.sub_institute_id', $sub_institute_id)->get()->toArray();
+            
             foreach ($academicSections as $key => $value) {
                 $chartFAs[$value['id']] = 0;
             }
@@ -1802,47 +1813,47 @@ WHERE ts.sub_institute_id = '".$sub_institute_id."' AND se.syear = '".$syear."' 
             }
 
             $chart = "[{
-    id: '0.0',
-    parent: '',
-    name: 'Triz ERP',
-    value: ".$students[0]->students.",
-    label: ".$students[0]->students."
-}, {
-    id: '1.3',
-    parent: '0.0',
-    name: 'Student',
-    value: ".$students[0]->students.",
-    label: ".$students[0]->students.",
-    events: {click: function (event) {alertValue('Student');}}
-}, {
-    id: '1.1',
-    parent: '0.0',
-    name: 'Fees',
-    value: ".$students[0]->students.",
-    label: ".$totalFeesCF.",
-    events: {click: function (event) {alertValue('Fees');}}
-}, {
-    id: '1.2',
-    parent: '0.0',
-    name: 'Admission',
-    value: ".$students[0]->students.",
-    label: ".$students[0]->students.",
-    events: {click: function (event) {alertValue('Admission');}}
-}, {
-    id: '1.4',
-    parent: '0.0',
-    name: 'Attendance',
-    value: ".$students[0]->students.",
-    label: ".$students[0]->students.",
-    events: {click: function (event) {alertValue('Attendance');}}
-}, {
-    id: '1.5',
-    parent: '0.0',
-    name: 'Homework',
-    value: ".$students[0]->students.",
-    label: ".$students[0]->students.",
-    events: {click: function (event) {alertValue('Homework');}}
-},";
+                id: '0.0',
+                parent: '',
+                name: 'Triz ERP',
+                value: ".$students[0]->students.",
+                label: ".$students[0]->students."
+            }, {
+                id: '1.3',
+                parent: '0.0',
+                name: 'Student',
+                value: ".$students[0]->students.",
+                label: ".$students[0]->students.",
+                events: {click: function (event) {alertValue('Student');}}
+            }, {
+                id: '1.1',
+                parent: '0.0',
+                name: 'Fees',
+                value: ".$students[0]->students.",
+                label: ".$totalFeesCF.",
+                events: {click: function (event) {alertValue('Fees');}}
+            }, {
+                id: '1.2',
+                parent: '0.0',
+                name: 'Admission',
+                value: ".$students[0]->students.",
+                label: ".$students[0]->students.",
+                events: {click: function (event) {alertValue('Admission');}}
+            }, {
+                id: '1.4',
+                parent: '0.0',
+                name: 'Attendance',
+                value: ".$students[0]->students.",
+                label: ".$students[0]->students.",
+                events: {click: function (event) {alertValue('Attendance');}}
+            }, {
+                id: '1.5',
+                parent: '0.0',
+                name: 'Homework',
+                value: ".$students[0]->students.",
+                label: ".$students[0]->students.",
+                events: {click: function (event) {alertValue('Homework');}}
+            },";
 
             $j = 6;
             $child = 1;
@@ -1854,12 +1865,12 @@ WHERE ts.sub_institute_id = '".$sub_institute_id."' AND se.syear = '".$syear."' 
                     $ca = 0;
                 }
                 $chart .= "{id: '2.".$child."',
-    parent: '1.1',
-    name: '".$v['short_name']."',
-    value: ".$ca.",
-    label: ".$ca.",
-    events: {click: function (event) {alertValue('Fees');}}
-},";
+                    parent: '1.1',
+                    name: '".$v['short_name']."',
+                    value: ".$ca.",
+                    label: ".$ca.",
+                    events: {click: function (event) {alertValue('Fees');}}
+                },";
 
                 $childP = 1;
                 $value = $ca / count($standardsArray[$v['id']]);
@@ -1871,12 +1882,12 @@ WHERE ts.sub_institute_id = '".$sub_institute_id."' AND se.syear = '".$syear."' 
                     }
                     $j++;
                     $chart .= "{id: '3.".$childL.$childP."',
-				    parent: '2.".$child."',
-				    name: '".$va['short_name']."',
-				    value: ".$cs.",
-				    label: ".$cs.",
-				    events: {click: function (event) {alertValue('Fees');}}
-				},";
+                        parent: '2.".$child."',
+                        name: '".$va['short_name']."',
+                        value: ".$cs.",
+                        label: ".$cs.",
+                        events: {click: function (event) {alertValue('Fees');}}
+                    },";
                     $childP++;
 
                 }
@@ -1894,12 +1905,12 @@ WHERE ts.sub_institute_id = '".$sub_institute_id."' AND se.syear = '".$syear."' 
                     $ca = 0;
                 }
                 $chart .= "{id: '3.".$child."',
-    parent: '1.2',
-    name: '".$v['short_name']."',
-    value: ".$ca.",
-    label: ".$ca.",
-    events: {click: function (event) {alertValue('Admission');}}
-},";
+                    parent: '1.2',
+                    name: '".$v['short_name']."',
+                    value: ".$ca.",
+                    label: ".$ca.",
+                    events: {click: function (event) {alertValue('Admission');}}
+                },";
 
                 $childP = 1;
                 $value = $ca / count($standardsArray[$v['id']]);
@@ -1911,12 +1922,12 @@ WHERE ts.sub_institute_id = '".$sub_institute_id."' AND se.syear = '".$syear."' 
                     }
                     $j++;
                     $chart .= "{id: '4.".$childL.$childP."',
-				    parent: '3.".$child."',
-				    name: '".$va['short_name']."',
-				    value: ".$cs.",
-				    label: ".$cs.",
-				    events: {click: function (event) {alertValue('Admission');}}
-				},";
+                        parent: '3.".$child."',
+                        name: '".$va['short_name']."',
+                        value: ".$cs.",
+                        label: ".$cs.",
+                        events: {click: function (event) {alertValue('Admission');}}
+                    },";
                     $childP++;
 
                 }
@@ -1934,12 +1945,12 @@ WHERE ts.sub_institute_id = '".$sub_institute_id."' AND se.syear = '".$syear."' 
                     $ca = 0;
                 }
                 $chart .= "{id: '4.".$child."',
-    parent: '1.3',
-    name: '".$v['short_name']."',
-    value: ".$ca.",
-    label: ".$ca.",
-    events: {click: function (event) {alertValue('Student');}}
-},";
+                    parent: '1.3',
+                    name: '".$v['short_name']."',
+                    value: ".$ca.",
+                    label: ".$ca.",
+                    events: {click: function (event) {alertValue('Student');}}
+                },";
 
                 $childP = 1;
                 $value = $ca / count($standardsArray[$v['id']]);
@@ -1951,12 +1962,12 @@ WHERE ts.sub_institute_id = '".$sub_institute_id."' AND se.syear = '".$syear."' 
                     }
                     $j++;
                     $chart .= "{id: '5.".$childL.$childP."',
-				    parent: '4.".$child."',
-				    name: '".$va['short_name']."',
-				    value: ".$cs.",
-				    label: ".$cs.",
-				    events: {click: function (event) {alertValue('Student');}}
-				},";
+                        parent: '4.".$child."',
+                        name: '".$va['short_name']."',
+                        value: ".$cs.",
+                        label: ".$cs.",
+                        events: {click: function (event) {alertValue('Student');}}
+                    },";
                     $childP++;
 
                 }
@@ -1974,12 +1985,12 @@ WHERE ts.sub_institute_id = '".$sub_institute_id."' AND se.syear = '".$syear."' 
                     $ca = 0;
                 }
                 $chart .= "{id: '5.".$child."',
-    parent: '1.4',
-    name: '".$v['short_name']."',
-    value: ".$ca.",
-    label: ".$ca.",
-    events: {click: function (event) {alertValue('Attendance');}}
-},";
+                    parent: '1.4',
+                    name: '".$v['short_name']."',
+                    value: ".$ca.",
+                    label: ".$ca.",
+                    events: {click: function (event) {alertValue('Attendance');}}
+                },";
 
                 $childP = 1;
                 $value = $ca / count($standardsArray[$v['id']]);
@@ -1991,12 +2002,12 @@ WHERE ts.sub_institute_id = '".$sub_institute_id."' AND se.syear = '".$syear."' 
                     }
                     $j++;
                     $chart .= "{id: '6.".$childL.$childP."',
-				    parent: '5.".$child."',
-				    name: '".$va['short_name']."',
-				    value: ".$cs.",
-				    label: ".$cs.",
-				    events: {click: function (event) {alertValue('Attendance');}}
-				},";
+                        parent: '5.".$child."',
+                        name: '".$va['short_name']."',
+                        value: ".$cs.",
+                        label: ".$cs.",
+                        events: {click: function (event) {alertValue('Attendance');}}
+                    },";
                     $childP++;
 
                 }
@@ -2014,12 +2025,12 @@ WHERE ts.sub_institute_id = '".$sub_institute_id."' AND se.syear = '".$syear."' 
                     $ca = 0;
                 }
                 $chart .= "{id: '6.".$child."',
-    parent: '1.5',
-    name: '".$v['short_name']."',
-    value: ".$ca.",
-    label: ".$ca.",
-    events: {click: function (event) {alertValue('Homework');}}
-},";
+                    parent: '1.5',
+                    name: '".$v['short_name']."',
+                    value: ".$ca.",
+                    label: ".$ca.",
+                    events: {click: function (event) {alertValue('Homework');}}
+                },";
 
                 $childP = 1;
                 $value = $ca / count($standardsArray[$v['id']]);
@@ -2031,12 +2042,12 @@ WHERE ts.sub_institute_id = '".$sub_institute_id."' AND se.syear = '".$syear."' 
                     }
                     $j++;
                     $chart .= "{id: '7.".$childL.$childP."',
-				    parent: '6.".$child."',
-				    name: '".$va['short_name']."',
-				    value: ".$cs.",
-				    label: ".$cs.",
-				    events: {click: function (event) {alertValue('Homework');}}
-				},";
+                        parent: '6.".$child."',
+                        name: '".$va['short_name']."',
+                        value: ".$cs.",
+                        label: ".$cs.",
+                        events: {click: function (event) {alertValue('Homework');}}
+                    },";
                     $childP++;
 
                 }
@@ -2076,64 +2087,84 @@ WHERE ts.sub_institute_id = '".$sub_institute_id."' AND se.syear = '".$syear."' 
             return is_mobile($type, "chart_home", $res, "view");
         } else {
 
-            // if ($sub_institute_id == 46) {
-            // 	$date = "2019-08-22"; //date('Y-m-d');
-            // } else {
             $date = date('Y-m-d');
-            // }
 
             $date15 = date('Y-m-d', strtotime($date.' +15 day'));
 
             $users = tbluserModel::selectRaw("count(id) as users")->where([
                 'sub_institute_id' => $sub_institute_id, 'status' => "1",
             ])->get()->toArray();
-
-            // $students = tblstudentModel::selectRaw("count(id) as students")->where(['sub_institute_id' => $sub_institute_id])->get()->toArray();
-
-            $students = DB::select("SELECT COUNT(ts.id) students FROM tblstudent ts
-INNER JOIN tblstudent_enrollment se ON se.student_id = ts.id AND se.sub_institute_id = se.sub_institute_id
-INNER JOIN standard s ON s.id = se.standard_id AND se.sub_institute_id = s.sub_institute_id
-WHERE ts.sub_institute_id = '".$sub_institute_id."' AND se.syear = '".$syear."' AND se.end_date IS NULL");
-            // dd($students[0]->students);
-
-            $total_admission = DB::select("SELECT COUNT(id) as total_admissions FROM admission_enquiry 
-				WHERE syear = '".$syear."' AND sub_institute_id = '".$sub_institute_id."' ");
+            
+            $students = DB::table('tblstudent as ts')
+                ->join('tblstudent_enrollment as se', function($join) {
+                    $join->whereRaw("se.student_id = ts.id AND se.sub_institute_id = se.sub_institute_id");
+                })->join('standard as s', function($join) {
+                    $join->whereRaw("s.id = se.standard_id AND se.sub_institute_id = s.sub_institute_id");
+                })
+                ->selectRaw("COUNT(ts.id) students")
+                ->where('ts.sub_institute_id', $sub_institute_id)
+                ->where('se.syear', $syear)
+                ->whereNull('se.end_date')->get()->toArray();
+            
+            
+            $total_admission = DB::table('admission_enquiry')
+                ->selectRaw("COUNT(id) as total_admissions")
+                ->where('sub_institute_id', $sub_institute_id)
+                ->where('syear', $syear)
+                ->get()->toArray();
 
             $fees_collects = fees_collect::selectRaw("ifnull(sum(amount),0) as fees")->where([
                 'sub_institute_id' => $sub_institute_id, 'syear' => $syear, 'is_deleted' => "N",
-            ])
-                ->whereRaw("date_format(created_date,'%Y-%m-%d') = '".$date."'")->get()->toArray();
-
-            $other_fees_collects = DB::select("SELECT IFNULL(SUM(actual_amountpaid),0) AS fees
-												FROM fees_paid_other
-												WHERE (`sub_institute_id` = '".$sub_institute_id."' AND `syear` = '".$syear."' ) 
-												AND DATE_FORMAT(created_date,'%Y-%m-%d') = '".$date."' AND is_deleted = 'N' ");
+            ])->whereRaw("date_format(created_date,'%Y-%m-%d') = '".$date."'")->get()->toArray();
+            
+            $other_fees_collects = DB::table('fees_paid_other')
+                ->selectRaw("IFNULL(SUM(actual_amountpaid),0) AS fees")
+                ->where('sub_institute_id', $sub_institute_id)
+                ->where('syear', $syear)
+                ->whereRaw("DATE_FORMAT(created_date,'%Y-%m-%d') = '".$date."'")
+                ->where('is_deleted', 'N')
+                ->get()->toArray();
             $other_fees_collects = json_decode(json_encode($other_fees_collects), true);
+            
+            $parentCommunication = DB::table('parent_communication as p')
+                ->join('tblstudent as s', function($join) {
+                    $join->whereRaw('p.student_id = s.id');
+                })
+                ->selectRaw("p.*,CONCAT_WS(' ',s.first_name,s.last_name) as student_name,s.image as student_image")
+                ->where('p.sub_institute_id', $sub_institute_id)
+                ->where('date_', $date)
+                ->orderBy('p.id', 'desc')
+                ->limit(10)
+                ->get()->toArray();
 
-            $parentCommunication = DB::select("SELECT p.*,CONCAT_WS(' ',s.first_name,s.last_name) as student_name,s.image as student_image
-			FROM parent_communication p INNER JOIN tblstudent s on p.student_id = s.id WHERE date_ = '".$date."' AND p.sub_institute_id = '".$sub_institute_id."' order by p.id desc limit 10");
+            $studentBirthdays = DB::table('tblstudent as s')
+                ->join('tblstudent_enrollment as ts', function($join) use($syear) {
+                    $join->whereRaw('s.id = ts.student_id and ts.syear = '.$syear);
+                })->join('standard as st', function($join) {
+                    $join->whereRaw('ts.standard_id = st.id');
+                })->join('division as d', function($join) {
+                    $join->whereRaw('ts.section_id = d.id');
+                })
+                ->selectRaw("CONCAT_WS(' ',s.first_name,s.middle_name,s.last_name) as student_name,st.name as standard_name, d.name as division_name")
+                ->where('s.sub_institute_id', $sub_institute_id)
+                ->whereNull('ts.end_date')
+                ->whereRaw("DATE_FORMAT(s.dob, '%m-%d') >= DATE_FORMAT(NOW(), '%m-%d') and DATE_FORMAT(s.dob, '%m-%d') <= DATE_FORMAT((NOW() + INTERVAL +7 DAY), '%m-%d')")
+                ->orderByRaw("DATE_FORMAT(s.dob, '%d')")
+                ->get()->toArray();
 
-            $studentBirthdayQuery = "SELECT CONCAT_WS(' ',s.first_name,s.middle_name,s.last_name) as student_name,st.name as standard_name,
-			d.name as division_name 
-			FROM tblstudent s 
-			INNER JOIN tblstudent_enrollment ts on s.id = ts.student_id and ts.syear = '".$syear."' 
-			INNER JOIN standard st on ts.standard_id = st.id INNER JOIN division d on ts.section_id = d.id 
-			WHERE s.sub_institute_id = '".$sub_institute_id."' and ts.end_date is null and DATE_FORMAT(s.dob, '%m-%d') >= DATE_FORMAT(NOW(), '%m-%d') and DATE_FORMAT(s.dob, '%m-%d') <= DATE_FORMAT((NOW() + INTERVAL +7 DAY), '%m-%d')
-			ORDER BY DATE_FORMAT(s.dob, '%d')";
+            $teacherBirthdays = DB::table('tbluser as s')
+                ->join('tbluserprofilemaster as tu', function($join) use($syear) {
+                    $join->whereRaw('s.user_profile_id = tu.id');
+                })
+                ->selectRaw("CONCAT_WS(' ',s.first_name,s.middle_name,s.last_name) as teacher_name,tu.name as designation,s.mobile as contact_number, DATE_FORMAT(s.birthdate, '%d-%m-%Y') AS birthdate")
+                ->where('s.sub_institute_id', $sub_institute_id)
+                ->where('s.status', '!=', 0)
+                ->whereRaw("date_format(s.birthdate,'%m-%d') >= DATE_FORMAT(NOW(), '%m-%d') and DATE_FORMAT(s.birthdate, '%m-%d') <= DATE_FORMAT((NOW() + INTERVAL +7 DAY), '%m-%d')")
+                ->orderByRaw("DATE_FORMAT(s.birthdate, '%d')")
+                ->get()->toArray();
 
-            $studentBirthdays = DB::select($studentBirthdayQuery);
-
-            $teacherBirthdayQuery = "SELECT CONCAT_WS(' ',s.first_name,s.middle_name,s.last_name) as teacher_name,tu.name as designation,s.mobile as contact_number, DATE_FORMAT(s.birthdate, '%d-%m-%Y') AS birthdate
-			FROM tbluser s 
-			INNER JOIN tbluserprofilemaster tu on s.user_profile_id = tu.id 
-			WHERE s.sub_institute_id = '".$sub_institute_id."' AND s.status !=0 and date_format(s.birthdate,'%m-%d') >= DATE_FORMAT(NOW(), '%m-%d') and DATE_FORMAT(s.birthdate, '%m-%d') <= DATE_FORMAT((NOW() + INTERVAL +7 DAY), '%m-%d')
-			ORDER BY DATE_FORMAT(s.birthdate, '%d')";
-            $teacherBirthdays = DB::select($teacherBirthdayQuery);
-
-            $calendarEventsQuery = "SELECT *
-		FROM calendar_events where sub_institute_id = '".$sub_institute_id."' and school_date >= '".$date."' AND school_date <= '".$date15."'";
-
-            $calendarEvents = DB::select($calendarEventsQuery);
+            $calendarEvents = DB::table('calendar_events')->where('sub_institute_id', $sub_institute_id)
+                ->where('school_date', '>=', $date)->where('school_date', '<=', $date15)->get()->toArray();
 
             $res['totalUser'] = $users[0]['users'];
             $res['totalStudent'] = $students[0]->students;
@@ -2151,9 +2182,9 @@ WHERE ts.sub_institute_id = '".$sub_institute_id."' AND se.syear = '".$syear."' 
     /**
      * Show the form for creating a new resource.
      *
-     * @return Response
+     * @return void
      */
-    public function create()
+    public function create(): void
     {
         //
     }
@@ -2161,10 +2192,10 @@ WHERE ts.sub_institute_id = '".$sub_institute_id."' AND se.syear = '".$syear."' 
     /**
      * Store a newly created resource in storage.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @return Response
+     * @param  Request  $request
+     * @return void
      */
-    public function store(Request $request)
+    public function store(Request $request): void
     {
         //
     }
@@ -2173,7 +2204,7 @@ WHERE ts.sub_institute_id = '".$sub_institute_id."' AND se.syear = '".$syear."' 
      * Display the specified resource.
      *
      * @param  int  $id
-     * @return Response
+     * @return void
      */
     public function show($id)
     {
@@ -2184,7 +2215,7 @@ WHERE ts.sub_institute_id = '".$sub_institute_id."' AND se.syear = '".$syear."' 
      * Show the form for editing the specified resource.
      *
      * @param  int  $id
-     * @return Response
+     * @return void
      */
     public function edit($id)
     {
@@ -2194,9 +2225,9 @@ WHERE ts.sub_institute_id = '".$sub_institute_id."' AND se.syear = '".$syear."' 
     /**
      * Update the specified resource in storage.
      *
-     * @param  \Illuminate\Http\Request  $request
+     * @param  Request  $request
      * @param  int  $id
-     * @return Response
+     * @return void
      */
     public function update(Request $request, $id)
     {
@@ -2207,7 +2238,7 @@ WHERE ts.sub_institute_id = '".$sub_institute_id."' AND se.syear = '".$syear."' 
      * Remove the specified resource from storage.
      *
      * @param  int  $id
-     * @return Response
+     * @return void
      */
     public function destroy($id)
     {
@@ -2220,13 +2251,16 @@ WHERE ts.sub_institute_id = '".$sub_institute_id."' AND se.syear = '".$syear."' 
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $user_id = $request->session()->get('user_id');
 
-        $rightsQuery = "SELECT GROUP_CONCAT(distinct m.id) AS MID
-FROM tbluser u LEFT JOIN tblindividual_rights i ON u.id = i.user_id AND u.sub_institute_id = i.sub_institute_id 
-LEFT JOIN tblgroupwise_rights g ON u.user_profile_id = g.profile_id AND u.sub_institute_id = g.sub_institute_id 
-INNER JOIN tblmenumaster m ON (i.menu_id = m.id OR g.menu_id = m.id) AND FIND_IN_SET(".$sub_institute_id.", m.sub_institute_id) 
-WHERE u.sub_institute_id = '".$sub_institute_id."' AND u.id = '".$user_id."'";
-
-        $rightsQuery = DB::select($rightsQuery);
+        $rightsQuery = DB::table('tbluser as u')
+            ->leftJoin('tblindividual_rights as i', function ($join) {
+                $join->whereRaw('u.id = i.user_id AND u.sub_institute_id = i.sub_institute_id');
+            })->leftJoin('tblgroupwise_rights as g', function ($join) {
+                $join->whereRaw('u.user_profile_id = g.profile_id AND u.sub_institute_id = g.sub_institute_id');
+            })->join('tblmenumaster as m', function ($join) use($sub_institute_id) {
+                $join->whereRaw("(i.menu_id = m.id OR g.menu_id = m.id) AND FIND_IN_SET(".$sub_institute_id.", m.sub_institute_id)");
+            })
+            ->selectRaw('GROUP_CONCAT(distinct m.id) AS MID')
+            ->where('u.sub_institute_id', $sub_institute_id)->where('u.id', $user_id)->get()->toArray();
 
         $rightsQuery = array_map(function ($value) {
             return (array) $value;
@@ -2238,34 +2272,30 @@ WHERE u.sub_institute_id = '".$sub_institute_id."' AND u.id = '".$user_id."'";
             $rightsMenusIds = $rightsQuery['0']['MID'];
         }
         $rightsMenusIds = rtrim($rightsMenusIds, ',');//RAJESH
-        $data = tblmenumasterModel::where(['parent_menu_id' => "0", 'level' => "1"])->whereRaw("find_in_set('$sub_institute_id',sub_institute_id) 
-			and status = 1 and id in (".$rightsMenusIds.") ")->orderBy('sort_order')->get()->toArray();
-        //        $subMenuData = tblmenumasterModel::where('parent_menu_id', '!=' , 0)->whereIn('sub_institute_id', [$user_id])->get()->toArray();
-        $subMenuData = tblmenumasterModel::where('parent_menu_id', '!=', 0)->whereRaw("find_in_set('$sub_institute_id',sub_institute_id) 
-			AND level = 2 and id in (".$rightsMenusIds.") and status = 1 ")->orderBy('sort_order')->get()->toArray();
-        //         dd($subMenuData);
+        $data = tblmenumasterModel::where(['parent_menu_id' => "0", 'level' => "1"])
+            ->whereRaw("find_in_set('$sub_institute_id',sub_institute_id) and status = 1 and id in (".$rightsMenusIds.") ")
+            ->orderBy('sort_order')->get()->toArray();
+
+        $subMenuData = tblmenumasterModel::where('parent_menu_id', '!=', 0)
+            ->whereRaw("find_in_set('$sub_institute_id',sub_institute_id) AND level = 2 and id in (".$rightsMenusIds.") and status = 1 ")
+            ->orderBy('sort_order')->get()->toArray();
+
         $i = 0;
         foreach ($subMenuData as $key => $value) {
             $finalSubMenu[$value['parent_menu_id']][$i] = $subMenuData[$key];
             $i++;
         }
 
-        $subChildMenuData = tblmenumasterModel::where('parent_menu_id', '!=', 0)->whereRaw("find_in_set('$sub_institute_id',sub_institute_id) 
-			AND level = 3 and id in (".$rightsMenusIds.") and status = 1 ")->orderBy('sort_order')->get()->toArray();
+        $subChildMenuData = tblmenumasterModel::where('parent_menu_id', '!=', 0)
+            ->whereRaw("find_in_set('$sub_institute_id',sub_institute_id) AND level = 3 and id in (".$rightsMenusIds.") and status = 1 ")
+            ->orderBy('sort_order')->get()->toArray();
+        
         $i = 0;
         foreach ($subChildMenuData as $key => $value) {
             $finalSubChildMenu[$value['parent_menu_id']][$i] = $subChildMenuData[$key];
             $i++;
         }
 
-        // view()->share('groupwisemenuMaster', $data);
-        // if (isset($finalSubMenu)) {
-        // 	view()->share('groupwisesubmenuMaster', $finalSubMenu);
-        // }
-
-        // if (isset($finalSubSubMenu)) {
-        // 	view()->share('groupwiseSubsubmenuMaster', $finalSubChildMenu);
-        // }
 
         $res['status_code'] = 1;
         $res['message'] = "Success";
@@ -2280,9 +2310,7 @@ WHERE u.sub_institute_id = '".$sub_institute_id."' AND u.id = '".$user_id."'";
     {
         $type = $request->input('type');
 
-        $query = "select * from knowledge_base where status = 1";
-
-        $data = DB::select($query);
+        $data = DB::table('knowledge_base')->where('status', 1)->get()->toArray();
 
         $data = array_map(function ($value) {
             return (array) $value;
@@ -2303,7 +2331,8 @@ WHERE u.sub_institute_id = '".$sub_institute_id."' AND u.id = '".$user_id."'";
             ->join('knowledge_base as kb', function ($join) {
                 $join->whereRaw('kbd.kb_id = kb.id');
             })
-            ->selectRaw("kbd.*,kb.name as kname")->where('kb.status', '=', 1)->get()->toArray();
+            ->selectRaw("kbd.*,kb.name as kname")
+            ->where('kb.status', '=', 1)->get()->toArray();
 
         $data = array_map(function ($value) {
             return (array) $value;
@@ -2329,7 +2358,5 @@ WHERE u.sub_institute_id = '".$sub_institute_id."' AND u.id = '".$user_id."'";
         $bytes /= (1 << (10 * $pow));
 
         return round($bytes, $precision).' '.$units[$pow];
-        // return round($bytes, $precision); 
     }
-
 }
