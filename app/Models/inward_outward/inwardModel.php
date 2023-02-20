@@ -3,10 +3,12 @@
 namespace App\Models\inward_outward;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class inwardModel extends Model
 {
     protected $table = "inward";
+    
     protected $fillable = [
         'id',
         'sub_institute_id',
@@ -25,11 +27,13 @@ class inwardModel extends Model
         'updated_at'
     ];
 
-    public function place(){
-        return $this->belongsTo('App\Models\inward_outward\place_masterModel');
+    public function place(): BelongsTo
+    {
+        return $this->belongsTo(place_masterModel::class);
     }
 
-    public function file_location(){
-        return $this->belongsTo('App\Models\inward_outward\physical_file_locationModel');
+    public function file_location(): BelongsTo
+    {
+        return $this->belongsTo(physical_file_locationModel::class);
     }
 }

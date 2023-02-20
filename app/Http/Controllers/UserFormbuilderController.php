@@ -1,26 +1,29 @@
 <?php
 
 namespace App\Http\Controllers;
-use DB;
-use App\Http\Controllers\Controller;
+
+use Exception;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Contracts\Foundation\Application;
+use Illuminate\Contracts\View\Factory;
+use Illuminate\Contracts\View\View;
 use Illuminate\Http\Request;
 use App\Models\FormTable;
 use App\Models\FormSubmitData;
 use App\Models\lms\chapterModel;
 use function App\Helpers\is_mobile;
-use Illuminate\Support\Facades\Redirect;
-
-use View;
 
 class UserFormbuilderController extends Controller
 {
-    public function index()
+    public function index(): Factory|View|Application
     {
         $formBuils = FormTable::all();
+        
         return view('formbuilder.formbuilderList', compact('formBuils'));
     }
 
-    public function formbuilder()
+    public function formbuilder(): Factory|View|Application
     {
         return view('formbuilder.formbuilder');
     }
@@ -33,38 +36,38 @@ class UserFormbuilderController extends Controller
             } else {
                 $formBuils = new FormTable();
             }
-            $formBuils->form_name = $request->formname ? $request->formname : '';
-            $formBuils->form_xml = $request->dataxml ? $request->dataxml : '';
-            $formBuils->form_json = $request->datajson ? $request->datajson : '';
+            
+            $formBuils->form_name = $request->formname ?: '';
+            $formBuils->form_xml = $request->dataxml ?: '';
+            $formBuils->form_json = $request->datajson ?: '';
             $formBuils->form_active = 0;
             $formBuils->save();
-            if ($formBuils) {
-                return 'true';
-            } else {
-                return 'false';
-            }
+            
+            return 'true';
+            
         } catch (Exception $e) {
             return  $e->getMessage();
         }
     }
 
-    public function editformbuilder(Request $request, $id)
+    public function editformbuilder(Request $request, $id): Factory|View|Application
     {
         $editformBuils = FormTable::find($id);
+        
         return view('formbuilder.formbuilderEdit', compact('editformBuils'));
     }
 
-    public function deleteformbuilder(Request $request, $id)
+    public function deleteformbuilder(Request $request, $id): RedirectResponse
     {
         $DelformBuils = FormTable::find($id);
         $DelformBuils->delete();
+        
         return redirect()->route('formbuild.list');
     }
 
     public function getformbuilder($name)
     {
-        $formBuils = FormTable::where('form_name', $name)->first();
-        return $formBuils;
+        return FormTable::where('form_name', $name)->first();
     }
 
     public function Apigetformbuilder($name = Null)
@@ -75,8 +78,11 @@ class UserFormbuilderController extends Controller
             } else {
                 $formBuils = FormTable::all();
             }
+            
             return response(["status" => true, "data" => $formBuils], 200);
+            
         } catch (Exception $e) {
+            
             return response(["status" => false, "data" => ''], 400);
         }
     }
@@ -93,7 +99,6 @@ class UserFormbuilderController extends Controller
      */
     public function viewForm(Request $request)
     {
-        // dd($request->all());
         if (!session()->get('user_id')) {
             return redirect()->route('dashboard');
         }
@@ -105,30 +110,20 @@ class UserFormbuilderController extends Controller
 
         $getSubmitFormData = false;
         if ( $chapter_id ) {
-            $getSubmitFormData = FormSubmitData::/* where('user_id', $user_id)
-                -> */where('sub_institute_id', $sub_institute_id)
+            $getSubmitFormData = FormSubmitData::where('sub_institute_id', $sub_institute_id)
                 ->where('form_id', $id)
                 ->where('chapter', $chapter_id)
                 ->get()
                 ->first();
     
-            // echo "<pre>"; print_r(DB::getQueryLog());
-            // print_r($getSubmitFormData);
-            //  exit;
-    
-            // echo $submitFormData->id; die('conde');
-            // get submitted form data for edit
-            // $getSubmitFormData = FormSubmitData::find($getSubmitFormData->id);
         }
         $submitFormData = new FormSubmitData();
-
 
         $result = FormTable::find($id);
         $html = '';
 
         if ($result) {
             $formData = json_decode($result->form_json);
-            // echo "<pre>"; print_r($formData); exit;
             if (!empty($formData)) {
                 $html .= "<div class='container'>
                     <form action='" . route('submit_form_data') . "' method='post'>
@@ -148,26 +143,18 @@ class UserFormbuilderController extends Controller
 
                     switch ($data->type) {
                         case 'header':
-                            $heading_tag = isset($data->subtype) ? $data->subtype : '';
-                            $heading_label = isset($data->label) ? $data->label : '';
-                            $heading_class = isset($data->className) ? $data->className : '';
+                            $heading_tag = $data->subtype ?? '';
+                            $heading_label = $data->label ?? '';
+                            $heading_class = $data->className ?? '';
                             $html .= "<$heading_tag class='$heading_class'>$heading_label</$heading_tag>";
                             break;
 
                         case 'date':
-                            $date_class = isset($data->className) ? $data->className : '';
-                            $date_label = isset($data->label) ? $data->label : '';
+                            $date_class = $data->className ?? '';
+                            $date_label = $data->label ?? '';
                             $date_required = (isset($data->required) && $data->required) ? 'required' : '';
-                            $date_name = isset($data->name) ? $data->name : '';
-                            $date_value = isset($data->value) ? $data->value : '';
-
-                            // echo "<pre>";
-                            // echo "edit";
-                            // print_r($getSubmitFormData);
-                            // echo "form";
-                            // print_r($date_name);
-                            // print_r($date_value);
-                            // exit;
+                            $date_name = $data->name ?? '';
+                            $date_value = $data->value ?? '';
 
                             $html .= "<div class='form-group date'>
                                 <label for='input_from'>$date_label</label>
@@ -240,25 +227,19 @@ class UserFormbuilderController extends Controller
                                         if ( $getSubmitFormData ) {
                                             $get_selected_std = $this->setValue($getSubmitFormData, $select_original_name, $std_id);
                                             if ($select_multiple) {
-                                                if (is_array($get_selected_std)) {
-                                                    if (in_array($std_id, $get_selected_std)) {
-                                                        $selected_std = 'selected';
-                                                    } else {
-                                                        $selected_std = '';
-                                                    }
+                                                if (is_array($get_selected_std) && in_array($std_id, $get_selected_std)) {
+                                                    $selected_std = 'selected';
+                                                } else {
+                                                    $selected_std = '';
+                                                }
+                                            } elseif (is_array($get_selected_std)) {
+                                                if (in_array($std_id, $get_selected_std)) {
+                                                    $selected_std = 'selected';
                                                 } else {
                                                     $selected_std = '';
                                                 }
                                             } else {
-                                                if (is_array($get_selected_std)) {
-                                                    if (in_array($std_id, $get_selected_std)) {
-                                                        $selected_std = 'selected';
-                                                    } else {
-                                                        $selected_std = '';
-                                                    }
-                                                } else {
-                                                    $selected_std = '';
-                                                }
+                                                $selected_std = '';
                                             }
                                         } else {
                                             $selected_std = '';
@@ -267,7 +248,8 @@ class UserFormbuilderController extends Controller
                                         $html .= "<option value='$std_id' $selected_std >$std_name</option>";
                                     }
                                 }
-                            } if ( $select_label == 'Subject' ) {
+                            } 
+                            if ( $select_label == 'Subject' ) {
 
                             } else if (isset($data->values) && !empty($data->values)) {
                                 foreach ($data->values as $option) {
@@ -280,25 +262,15 @@ class UserFormbuilderController extends Controller
                                         $option_value_selected = $this->setValue($getSubmitFormData, $select_original_name, $option_value);
 
                                         if ($select_multiple) {
-                                            if (is_array($option_value_selected)) {
-                                                if (in_array($option_value, $option_value_selected)) {
-                                                    $option_selected = 'selected';
-                                                } else {
-                                                    $option_selected = '';
-                                                }
+                                            if (is_array($option_value_selected) && in_array($option_value, $option_value_selected)) {
+                                                $option_selected = 'selected';
                                             } else {
                                                 $option_selected = '';
                                             }
+                                        } elseif (is_array($option_value_selected) && in_array($option_value, $option_value_selected)) {
+                                            $option_selected = 'selected';
                                         } else {
-                                            if (is_array($option_value_selected)) {
-                                                if (in_array($option_value, $option_value_selected)) {
-                                                    $option_selected = 'selected';
-                                                } else {
-                                                    $option_selected = '';
-                                                }
-                                            } else {
-                                                $option_selected = '';
-                                            }
+                                            $option_selected = '';
                                         }
                                     }
 
@@ -334,13 +306,13 @@ class UserFormbuilderController extends Controller
 
                         case 'text':
                             $text_required = (isset($data->required) && $data->required) ? 'required' : '';
-                            $text_label = isset($data->label) ? $data->label : '';
-                            $text_placeholder = isset($data->placeholder) ? $data->placeholder : '';
-                            $text_class = isset($data->className) ? $data->className : '';
-                            $text_name = isset($data->name) ? $data->name : '';
-                            $text_value = isset($data->value) ? $data->value : '';
-                            $text_subtype = isset($data->subtype) ? $data->subtype : '';
-                            $text_maxlength = isset($data->maxlength) ? $data->maxlength : '';
+                            $text_label = $data->label ?? '';
+                            $text_placeholder = $data->placeholder ?? '';
+                            $text_class = $data->className ?? '';
+                            $text_name = $data->name ?? '';
+                            $text_value = $data->value ?? '';
+                            $text_subtype = $data->subtype ?? '';
+                            $text_maxlength = $data->maxlength ?? '';
 
                             if ( $text_label == 'Chapters' ) {
                                 $html .= "<input type='hidden' name='chapter' value=''>";
@@ -355,14 +327,14 @@ class UserFormbuilderController extends Controller
 
                         case 'number':
                             $number_required = (isset($data->required) && $data->required) ? 'required' : '';
-                            $number_label = isset($data->label) ? $data->label : '';
-                            $number_placeholder = isset($data->placeholder) ? $data->placeholder : '';
-                            $number_class = isset($data->className) ? $data->className : '';
-                            $number_name = isset($data->name) ? $data->name : '';
-                            $number_value = isset($data->value) ? $data->value : '';
-                            $number_min = isset($data->min) ? $data->min : 0;
-                            $number_max = isset($data->max) ? $data->max : 0;
-                            $number_step = isset($data->step) ? $data->step : 1;
+                            $number_label = $data->label ?? '';
+                            $number_placeholder = $data->placeholder ?? '';
+                            $number_class = $data->className ?? '';
+                            $number_name = $data->name ?? '';
+                            $number_value = $data->value ?? '';
+                            $number_min = $data->min ?? 0;
+                            $number_max = $data->max ?? 0;
+                            $number_step = $data->step ?? 1;
 
                             $html .= "<div class='form-group'>
                                 <label>$number_label</label>
@@ -373,13 +345,13 @@ class UserFormbuilderController extends Controller
 
                         case 'textarea':
                             $textarea_required = (isset($data->required) && $data->required) ? 'required' : '';
-                            $textarea_label = isset($data->label) ? $data->label : '';
-                            $textarea_description = isset($data->description) ? $data->description : '';
-                            $textarea_class = isset($data->className) ? $data->className : '';
-                            $textarea_name = isset($data->name) ? $data->name : '';
-                            $textarea_value = isset($data->value) ? $data->value : '';
-                            $textarea_subtype = isset($data->subtype) ? $data->subtype : '';
-                            $textarea_rows = isset($data->rows) ? $data->rows : '';
+                            $textarea_label = $data->label ?? '';
+                            $textarea_description = $data->description ?? '';
+                            $textarea_class = $data->className ?? '';
+                            $textarea_name = $data->name ?? '';
+                            $textarea_value = $data->value ?? '';
+                            $textarea_subtype = $data->subtype ?? '';
+                            $textarea_rows = $data->rows ?? '';
 
                             if ($textarea_subtype == 'textarea') {
                                 $html .= "<div class='form-group'>
@@ -440,7 +412,6 @@ class UserFormbuilderController extends Controller
         }
 
         return view('formbuilder.formview', compact('html'));
-        // echo "<pre>"; print_r(json_decode($data->form_json)); exit;
     }
 
     /**
@@ -452,12 +423,11 @@ class UserFormbuilderController extends Controller
             if (isset($edit_form_data->form_data) && $edit_form_data->form_data) {
                 $edit_form_data_decode = (array) json_decode($edit_form_data->form_data);
 
-                // echo "<pre>"; print_r($edit_form_data_decode); exit;
 
                 if (strpos($form_field_key, 'select') !== false) {
                     return isset($edit_form_data_decode[$form_field_key]) ? explode(", ", $edit_form_data_decode[$form_field_key]) : $form_field_value;
                 }
-                return isset($edit_form_data_decode[$form_field_key]) ? $edit_form_data_decode[$form_field_key] : $form_field_value;
+                return $edit_form_data_decode[$form_field_key] ?? $form_field_value;
             }
         }
         return $form_field_value;
@@ -468,7 +438,6 @@ class UserFormbuilderController extends Controller
      */
     public function submitFrom(Request $request)
     {
-        // echo "<pre>"; print_r($request->all()); exit;
         unset($request['_token']);
 
         $form_data = [];
@@ -484,10 +453,7 @@ class UserFormbuilderController extends Controller
             }
         }
 
-        // echo "<pre>"; print_r($form_data); exit;
-        
         $data_json = json_encode($form_data);
-        // echo "<pre>"; print_r($data_json); exit;
 
         $sub_institute_id = session()->get('sub_institute_id');
         $user_id = session()->get('user_id');
@@ -499,7 +465,6 @@ class UserFormbuilderController extends Controller
         $chapter_id = $request->chapter_id;
         // $form_submited_id = $request->form_submited_id;
         $form_submited_id = '32';
-        // dd($chapter_id);
         // $getSubmitFormData = FormSubmitData::/* where('user_id', $user_id)
         //     -> */where('sub_institute_id', $sub_institute_id)
         //     ->where('form_id', $form_id)
@@ -507,7 +472,6 @@ class UserFormbuilderController extends Controller
         //     ->get()
         //     ->first();
 
-        // echo $submitFormData->id; die('conde');
         if ($form_submited_id) {
             $submitFormData = FormSubmitData::find( $form_submited_id );
         } else {
@@ -515,9 +479,9 @@ class UserFormbuilderController extends Controller
         }
 
         // $chapter_list = DB::table('chapter_master')               
-        //         ->where(['sub_institute_id'=>session()->get('sub_institute_id'),'subject_id'=>$request->subject_id,"standard_id"=>$standard_id])                
-        //         ->pluck('chapter_name', 'id');  
-        // DB::enableQueryLog();
+        //->where(['sub_institute_id'=>session()->get('sub_institute_id'),'subject_id'=>$request->subject_id,"standard_id"=>$standard_id])  
+        //->pluck('chapter_name', 'id');  
+        
         if ( $submitFormData ) {
             $chapter = chapterModel::select('id')
                 ->where( 'sub_institute_id', session()->get('sub_institute_id') )
@@ -525,8 +489,6 @@ class UserFormbuilderController extends Controller
                 ->where( "standard_id", $standard_id )
                 ->where( 'chapter_name', $chapter_title)
                 ->first();
-    
-            // echo "<pre>"; print_r($chapter); exit;
     
             $submitFormData->form_id = $form_id;
             $submitFormData->user_id = $user_id;
@@ -543,8 +505,8 @@ class UserFormbuilderController extends Controller
                     return redirect()->route('lms_lessonplan.index',['standard_id'=>$standard_id,'subject_id'=>$subject_id,'chapter_id'=>$chapter_id]);
                     // return view('formbuilder.formview', compact('html'));
                 } else {
-                    return redirect()->route('formbuild.list');
                     
+                    return redirect()->route('formbuild.list');
                 }
     
                 // return response()->json(['data' => $submitFormData], 201);
@@ -590,7 +552,7 @@ class UserFormbuilderController extends Controller
                     // continue;
                 }
 
-                if ( $formField->type == 'date' || $formField->type == 'text' || $formField->type == 'textarea' || $formField->type == 'number' || $formField->type == 'date' ) {
+                if ( $formField->type == 'text' || $formField->type == 'textarea' || $formField->type == 'number' || $formField->type == 'date' ) {
                     if ( isset($form_data[$formField->name]) ) {
                         $formField->value = $form_data[$formField->name];
                         $fieldObject[$formField->label] = $form_data[$formField->name];
@@ -625,6 +587,7 @@ class UserFormbuilderController extends Controller
         $res['status_code'] = 1;
         $res['message'] = !empty($fieldObject) ? "SUCCESS": 'No data found';
         $res['data'] = $fieldObject;
+        
         return is_mobile($type,'lms/lessonplan/form_data_table_add_lessonplan',$res,"view");  
     }
 }
