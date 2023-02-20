@@ -6,15 +6,16 @@ use Illuminate\Database\Eloquent\Model;
 
 class houseModel extends Model
 {
-    protected $table = "house_master"; 
+    protected $table = "house_master";
     protected $fillable = [
-        'syear',
+        'id',
         'sub_institute_id',
+        'syear',
         'house_name',
-        'sort_order',
-        'created_by',
         'created_at',
-        'created_ip'
+        'created_by',
+        'created_ip',
+        'sort_order'
     ];
-    public $timestamps = false;    
+    public $timestamps = false;
 }

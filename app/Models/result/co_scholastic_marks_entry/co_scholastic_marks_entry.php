@@ -18,6 +18,8 @@ class co_scholastic_marks_entry extends Model {
         'points',
         'sub_institute_id',
         'syear',
+        'created_at',
+        'updated_at'
     ];
 
 }

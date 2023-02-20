@@ -6,6 +6,11 @@ use Illuminate\Database\Eloquent\Model;
 
 class casteModel extends Model
 {
-    protected $table = "caste"; 
+    protected $table = "caste";
 	public $timestamps = false;
+
+    protected $fillable = [
+        'id',
+        'bloodgroup'
+    ];
 }

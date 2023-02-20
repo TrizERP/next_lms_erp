@@ -13,6 +13,8 @@ class map_route_stop extends Model {
         'route_id',
         'stop_id',
         'sub_institute_id',
+        'created_at',
+        'updated_at',
         'pickuptime',
         'droptime'
     ];

@@ -8,10 +8,13 @@ class inventory_item_receivableModel extends Model
 {
     protected $table = "inventory_item_receivable_details";
     protected $fillable = [
+        'ID',
         'SYEAR',
         'SUB_INSTITUTE_ID',
         'PURCHASE_ORDER_NO',
         'ITEM_ID',
+        'ITEM_CODE',
+        'ITEM_CATEGORY',
         'ORDER_QTY',
         'PREVIOUS_RECEIVED_QTY',
         'ACTUAL_RECEIVED_QTY',
@@ -30,7 +33,7 @@ class inventory_item_receivableModel extends Model
         'CREATED_IP_ADDRESS',
         'GATEPASS_NO',
         'CHEQUE_NO',
-        'BANK_NAME',
+        'BANK_NAME'
     ];
     public $timestamps = false;
 }

@@ -8,8 +8,11 @@ class fees_breackoff extends Model {
 
     protected $table = "fees_breackoff";
     protected $fillable = [
+        'id',
         'syear',
+        'admission_year',
         'fee_type_id',
+        'quota',
         'grade_id',
         'standard_id',
         'section_id',
@@ -17,7 +20,7 @@ class fees_breackoff extends Model {
         'amount',
         'sub_institute_id',
         'created_at',
-        'updated_at',
+        'updated_at'
     ];
 
 }

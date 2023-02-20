@@ -8,12 +8,18 @@ class parentCommunication extends Model {
 
     protected $table = "parent_communication";
     protected $fillable = [
+        'id',
         'syear',
-        'student_id',
-        'message',
         'date_',
+        'student_id',
+        'title',
+        'message',
         'reply',
-        'sub_institute_id'
+        'reply_by',
+        'reply_on',
+        'sub_institute_id',
+        'created_at',
+        'updated_at'
     ];
 
 }

@@ -6,8 +6,9 @@ use Illuminate\Database\Eloquent\Model;
 
 class SchoolModel extends Model {
 
-    protected $table = "school_setup"; 
+    protected $table = "school_setup";
     protected $fillable = [
+        'Id',
         'SchoolName',
         'ShortCode',
         'ContactPerson',
@@ -19,6 +20,16 @@ class SchoolModel extends Model {
         'ReceiptContact',
         'SortOrder',
         'Logo',
+        'created_at',
+        'created_by',
+        'created_ip',
+        'updated_at',
+        'client_id',
+        'is_lms',
+        'cheque_return_charges',
+        'syear',
+        'expire_date',
+        'given_space_mb'
     ];
 
 }

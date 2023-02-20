@@ -11,12 +11,14 @@ class tbluserprofilemasterModel extends Model
     protected  $table = "tbluserprofilemaster";
 
     protected $fillable = [
+        'id',
         'parent_id',
         'name',
         'description',
-        'status',
         'sort_order',
-        'sub_institute_id'
+        'status',
+        'sub_institute_id',
+        'client_id'
     ];
 
 

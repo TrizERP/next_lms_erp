@@ -9,4 +9,11 @@ class tblcityModel extends Model
     protected $table = "tblcity";
 
     public $timestamps = false;
+
+    protected $fillable = [
+        'id',
+        'city_name',
+        'state_id',
+        'state_name'
+    ];
 }

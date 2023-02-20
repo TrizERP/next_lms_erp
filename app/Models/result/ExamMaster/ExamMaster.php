@@ -9,11 +9,14 @@ class ExamMaster extends Model {
     //
     protected $table = "result_exam_master";
     protected $fillable = [
+        'Id',
         'Code',
         'ExamType',
         'ExamTitle',
         'SortOrder',
-        'SubInstituteId'
+        'SubInstituteId',
+        'created_at',
+        'updated_at'
     ];
 
 }

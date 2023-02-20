@@ -12,6 +12,8 @@ class add_stop extends Model {
         'syear',
         'stop_name',
         'sub_institute_id',
+        'created_at',
+        'updated_at'
     ];
 
 }

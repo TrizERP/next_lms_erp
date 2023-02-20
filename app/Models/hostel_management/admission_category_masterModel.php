@@ -6,10 +6,13 @@ use Illuminate\Database\Eloquent\Model;
 
 class admission_category_masterModel extends Model
 {
-    protected $table = "admission_category_master"; 
+    protected $table = "admission_category_master";
     protected $fillable = [
+        'id',
+        'sub_institute_id',
         'title',
         'description',
-        'sub_institute_id'
+        'created_at',
+        'updated_at'
     ];
 }

@@ -6,6 +6,11 @@ use Illuminate\Database\Eloquent\Model;
 
 class religionModel extends Model
 {
-    protected $table = "religion"; 
+    protected $table = "religion";
 	public $timestamps = false;
+
+    protected $fillable = [
+        'id',
+        'religion_name'
+    ];
 }

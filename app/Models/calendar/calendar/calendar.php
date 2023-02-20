@@ -13,6 +13,7 @@ class calendar extends Model {
         'title',
         'description',
         'event_type',
+        'standard',
         'sub_institute_id',
     ];
 

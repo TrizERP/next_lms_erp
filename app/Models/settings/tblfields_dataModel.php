@@ -9,6 +9,7 @@ class tblfields_dataModel extends Model
     protected $table = "tblfields_data";
 
     protected $fillable = [
+        'id',
         'field_id',
         'display_text',
         'display_value',

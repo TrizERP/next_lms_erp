@@ -11,6 +11,7 @@ class studentCaptureAttendanceModel extends Model
     protected $table = "student_capture_attendance";
 
     protected $fillable = [
+        'id',
         'syear',
         'sub_institute_id',
         'standard_id',

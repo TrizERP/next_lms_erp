@@ -8,6 +8,7 @@ class fees_title extends Model {
 
     protected $table = "fees_title";
     protected $fillable = [
+        'id',
         'fees_title_id',
         'fees_title',
         'display_name',
@@ -17,6 +18,9 @@ class fees_title extends Model {
         'syear',
         'sub_institute_id',
         'other_fee_id',
+        'rollover_id',
+        'created_at',
+        'updated_at'
     ];
 
 }

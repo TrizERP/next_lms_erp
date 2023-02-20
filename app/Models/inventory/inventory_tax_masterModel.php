@@ -6,8 +6,9 @@ use Illuminate\Database\Eloquent\Model;
 
 class inventory_tax_masterModel extends Model
 {
-    protected $table = "inventory_tax_master"; 
+    protected $table = "inventory_tax_master";
     protected $fillable = [
+        'id',
         'syear',
         'sub_institute_id',
         'title',
@@ -19,6 +20,6 @@ class inventory_tax_masterModel extends Model
         'created_on',
         'created_ip_address'
     ];
-    
+
     public $timestamps = false;
 }

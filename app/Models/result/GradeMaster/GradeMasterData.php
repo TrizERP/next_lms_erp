@@ -9,6 +9,8 @@ class GradeMasterData extends Model {
     //
     protected $table = "grade_master_data";
     protected $fillable = [
+        'id',
+        'syear',
         'grade_id',
         'title',
         'breakoff',
@@ -16,7 +18,8 @@ class GradeMasterData extends Model {
         'sort_order',
         'comment',
         'sub_institute_id',
-        'syear',
+        'created_at',
+        'updated_at'
     ];
 
 }

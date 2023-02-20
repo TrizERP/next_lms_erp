@@ -14,6 +14,8 @@ class add_route extends Model {
         'from_time',
         'to_time',
         'sub_institute_id',
+        'created_at',
+        'updated_at'
     ];
 
 }

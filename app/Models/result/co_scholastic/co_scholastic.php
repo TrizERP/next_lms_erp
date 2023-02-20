@@ -8,14 +8,17 @@ class co_scholastic extends Model {
 
     protected $table = "result_co_scholastic";
     protected $fillable = [
-        "term_id",
-        "title",
-        "sort_order",
-        "parent_id",
-        "mark_type",
-        "max_mark",
-        "co_grade",
-        "sub_institute_id"
+        'id',
+        'term_id',
+        'title',
+        'sort_order',
+        'parent_id',
+        'mark_type',
+        'max_mark',
+        'co_grade',
+        'sub_institute_id',
+        'created_at',
+        'updated_at'
     ];
 
 }
