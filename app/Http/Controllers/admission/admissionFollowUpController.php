@@ -5,15 +5,16 @@ namespace App\Http\Controllers\admission;
 use App\Http\Controllers\Controller;
 use App\Models\admission\admissionEnquiryModel;
 use App\Models\admission\admissionFollowUpModel;
-use function App\Helpers\is_mobile;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
+use function App\Helpers\is_mobile;
 
 class admissionFollowUpController extends Controller
 {
     /**
      * Display a listing of the resource.
      *
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function index(Request $request)
     {
@@ -30,17 +31,17 @@ class admissionFollowUpController extends Controller
         $res['data'] = $data['0'];
         $res['enquiry_id'] = $enquiry_id;
         $res['module'] = $module;
-        if(count($follow_up_data) > 0)
-        {
+        if (count($follow_up_data) > 0) {
             $res['followUpData'] = $follow_up_data;
         }
+
         return is_mobile($type, 'admission/follow_up/show_admission_follow_up', $res, 'view');
     }
 
     /**
      * Show the form for creating a new resource.
      *
-     * @return \Illuminate\Http\Response
+     * @return void
      */
     public function create()
     {
@@ -50,8 +51,8 @@ class admissionFollowUpController extends Controller
     /**
      * Store a newly created resource in storage.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\Response
+     * @param  Request  $request
+     * @return Response
      */
     public function store(Request $request)
     {       
@@ -63,7 +64,7 @@ class admissionFollowUpController extends Controller
 
         // $data['syear'] = $syear;
         $data['created_on'] = date('Y-m-d H:i:s');
-        $data['created_ip'] =  \Request::getClientIp();
+        $data['created_ip'] = Request::getClientIp();
         $data['sub_institute_id'] = $sub_institute_id;
 
         admissionFollowUpModel::insert($data);
@@ -78,7 +79,7 @@ class admissionFollowUpController extends Controller
      * Display the specified resource.
      *
      * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * @return void
      */
     public function show($id)
     {
@@ -89,7 +90,7 @@ class admissionFollowUpController extends Controller
      * Show the form for editing the specified resource.
      *
      * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * @return void
      */
     public function edit($id)
     {
@@ -99,9 +100,9 @@ class admissionFollowUpController extends Controller
     /**
      * Update the specified resource in storage.
      *
-     * @param  \Illuminate\Http\Request  $request
+     * @param  Request  $request
      * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * @return void
      */
     public function update(Request $request, $id)
     {
@@ -112,7 +113,7 @@ class admissionFollowUpController extends Controller
      * Remove the specified resource from storage.
      *
      * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * @return void
      */
     public function destroy($id)
     {
