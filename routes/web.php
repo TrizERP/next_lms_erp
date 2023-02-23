@@ -1,8 +1,41 @@
 <?php
 
-use App\Models\general_dataModel;
 use Illuminate\Http\Request;
+use App\Models\general_dataModel;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\AJAXController;
+use App\Http\Controllers\tourController;
+use App\Http\Controllers\loginController;
+use App\Http\Controllers\signupController;
+use App\Http\Controllers\dashboardController;
+use App\Http\Controllers\UserFormbuilderController;
+use App\Http\Controllers\CkeditorFileUploadController;
+use App\Http\Controllers\school_setup\batchController;
+use App\Http\Controllers\school_setup\proxyController;
+use App\Http\Controllers\school_setup\topicController;
+use App\Http\Controllers\Auth\ForgotPasswordController;
+use App\Http\Controllers\school_setup\periodController;
+use App\Http\Controllers\school_setup\schoolController;
+use App\Http\Controllers\school_setup\chapterController;
+use App\Http\Controllers\template_result\TemplateResult;
+use App\Http\Controllers\school_setup\subject1Controller;
+use App\Http\Controllers\school_setup\workflowController;
+use App\Http\Controllers\school_setup\erpstatusController;
+use App\Http\Controllers\school_setup\timetableController;
+use App\Http\Controllers\school_setup\proxyReportController;
+use App\Http\Controllers\school_setup\classteacherController;
+use App\Http\Controllers\student\questionWiseReportController;
+use App\Http\Controllers\school_setup\changePasswordController;
+use App\Http\Controllers\school_setup\lessonplanningController;
+use App\Http\Controllers\school_setup\teachertransferController;
+use App\Http\Controllers\school_setup\dashboardSettingController;
+use App\Http\Controllers\school_setup\todaysproxyReportController;
+use App\Http\Controllers\school_setup\classteacherReportController;
+use App\Http\Controllers\school_setup\classwisetimetableController;
+use App\Http\Controllers\school_setup\teacherdailyReportController;
+use App\Http\Controllers\school_setup\facultywisetimetableController;
+use App\Http\Controllers\school_setup\lessonplanningReportController;
+use App\Http\Controllers\school_setup\divisionCapacityMasterController;
 
 /*
 |--------------------------------------------------------------------------
@@ -50,148 +83,148 @@ if(isset($_REQUEST['sub_institute_id']) && $_REQUEST['sub_institute_id'] != '')
     // echo 'aaaa';die;
 }
 
-Route::any('/knowledge-base', 'dashboardController@knowledge_base')->name('knowledge_base')->middleware('session', 'menu');
+Route::any('/knowledge-base', [dashboardController::class, 'knowledge_base'])->name('knowledge_base')->middleware('session', 'menu');
 
-Route::any('/knowledge-base-detail/{id}/{title}', 'dashboardController@knowledge_base_detail')->name('knowledge_base_detail')->middleware('session', 'menu');
+Route::any('/knowledge-base-detail/{id}/{title}', [dashboardController::Class, 'knowledge_base_detail'])->name('knowledge_base_detail')->middleware('session', 'menu');
 
-Route::get('dashboard', 'dashboardController@index')->name('dashboard')->middleware('session', 'menu','logRoute');
+Route::get('dashboard', [dashboardController::class, 'index'])->name('dashboard')->middleware('session', 'menu','logRoute');
 // From Build
-Route::get('formbuilder/list', 'UserFormbuilderController@index')->name('formbuild.list')->middleware('session', 'menu','logRoute');
-Route::get('formbuilder/create', 'UserFormbuilderController@formbuilder')->name('formbuild.create')->middleware('session', 'menu','logRoute');
-Route::post('saveformbuild/{id?}', 'UserFormbuilderController@saveformbuilder')->name('saveformbuild')->middleware('session', 'menu','logRoute');
-Route::get('formbuilder/edit/{id?}', 'UserFormbuilderController@editformbuilder')->name('formbuild.edit')->middleware('session', 'menu','logRoute');
-Route::get('formbuilder/delete/{id?}', 'UserFormbuilderController@deleteformbuilder')->name('formbuild.delete')->middleware('session', 'menu','logRoute');
-Route::get('getformbuilder/{name?}', 'UserFormbuilderController@getformbuilder')->name('getformbuild');
-Route::get('apiGetformbuilder/{name?}', 'UserFormbuilderController@Apigetformbuilder')->name('getformbuild');
+Route::get('formbuilder/list', [UserFormbuilderController::class, 'index'])->name('formbuild.list')->middleware('session', 'menu','logRoute');
+Route::get('formbuilder/create', [UserFormbuilderController::class, 'formbuilder'])->name('formbuild.create')->middleware('session', 'menu','logRoute');
+Route::post('saveformbuild/{id?}', [UserFormbuilderController::class, 'saveformbuilder'])->name('saveformbuild')->middleware('session', 'menu','logRoute');
+Route::get('formbuilder/edit/{id?}', [UserFormbuilderController::class, 'editformbuilder'])->name('formbuild.edit')->middleware('session', 'menu','logRoute');
+Route::get('formbuilder/delete/{id?}', [UserFormbuilderController::class, 'deleteformbuilder'])->name('formbuild.delete')->middleware('session', 'menu','logRoute');
+Route::get('getformbuilder/{name?}', [UserFormbuilderController::class, 'getformbuilder'])->name('getformbuild');
+Route::get('apiGetformbuilder/{name?}', [UserFormbuilderController::class, 'Apigetformbuilder'])->name('getformbuild');
 
 # submit form
-Route::post('submit_form_data', 'UserFormbuilderController@submitFrom')->name('submit_form_data');
+Route::post('submit_form_data', [UserFormbuilderController::Class, 'submitFrom'])->name('submit_form_data');
 
 # view form
-Route::get('view_form/{id}/{chapter_id?}', 'UserFormbuilderController@viewForm')->name('view_form');
+Route::get('view_form/{id}/{chapter_id?}', [UserFormbuilderController::class, 'viewForm'])->name('view_form');
 
 # Display form view table
-Route::get('displayForm', 'UserFormbuilderController@displayFormDataRecord');
+Route::get('displayForm', [UserFormbuilderController::class, 'displayFormDataRecord']);
 
 //End From Build
 
-Route::get('chart_dashboard', 'dashboardController@chart')->name('chart_dashboard')->middleware('session', 'menu','logRoute');
+Route::get('chart_dashboard', [dashboardController::class, 'chart'])->name('chart_dashboard')->middleware('session', 'menu','logRoute');
 
-Route::get('schoolList', 'dashboardController@schoolList')->name('schoolList');
+Route::get('schoolList', [dashboardController::class, 'schoolList'])->name('schoolList');
 
-Route::get('siteMap', 'dashboardController@siteMap')->name('siteMap')->middleware('session', 'menu','logRoute');
+Route::get('siteMap', [dashboardController::class, 'siteMap'])->name('siteMap')->middleware('session', 'menu','logRoute');
 
-Route::any('login', 'loginController@index')->name('login');
-Route::any('signup', 'signupController@index')->name('signup');
+Route::any('login', [loginController::class, 'index'])->name('login');
+Route::any('signup', [signupController::class, 'index'])->name('signup');
 //Route::get('aftersignuplogin', 'loginController@aftersignuplogin');
 
-Route::any('ajaxMenuSession', 'loginController@ajaxMenuSession')->name('ajaxMenuSession');
+Route::any('ajaxMenuSession', [loginController::class, 'ajaxMenuSession'])->name('ajaxMenuSession');
 
-Route::any('/logout', 'loginController@logout');
+Route::any('/logout', [loginController::class, 'logout']);
 
-Route::any('/profileAPI', 'loginController@profileAPI');
+Route::any('/profileAPI', [loginController::class, 'profileAPI']);
 
-Route::any('/tourUpdate', 'tourController@index')->name('tourUpdate');
+Route::any('/tourUpdate', [tourController::class, 'index'])->name('tourUpdate');
 
-Route::get('/implementation', 'tourController@implementation')->name('implementation')->middleware('session', 'menu','logRoute');
-Route::get('/implementation_1', 'tourController@implementation_1')->name('implementation_1')->middleware('session', 'menu','logRoute');
-Route::get('/implementation_2', 'tourController@implementation_2')->name('implementation_2')->middleware('session', 'menu','logRoute');
-Route::get('/skip_implementation', 'tourController@skipImplementation')->name('skip_implementation')->middleware('session', 'menu','logRoute');
+Route::get('/implementation', [tourController::class, 'implementation'])->name('implementation')->middleware('session', 'menu','logRoute');
+Route::get('/implementation_1', [tourController::class, 'implementation_1'])->name('implementation_1')->middleware('session', 'menu','logRoute');
+Route::get('/implementation_2', [tourController::class, 'implementation_2'])->name('implementation_2')->middleware('session', 'menu','logRoute');
+Route::get('/skip_implementation', [tourController::class, 'skipImplementation'])->name('skip_implementation')->middleware('session', 'menu','logRoute');
 
-Route::get('ajax_SaveDynamicDashboardMenu', 'school_setup\dashboardSettingController@ajax_SaveDynamicDashboardMenu')->name('ajax_SaveDynamicDashboardMenu');
+Route::get('ajax_SaveDynamicDashboardMenu', [dashboardSettingController::class, 'ajax_SaveDynamicDashboardMenu'])->name('ajax_SaveDynamicDashboardMenu');
 
 // Harshad Start
 Route::group(['prefix' => 'student', 'middleware' => ['session', 'menu','logRoute']], function () {
-    Route::get('studentresult', 'template_result\TemplateResult@index');
-    Route::post('studentresult_show', 'template_result\TemplateResult@show_result')->name('studentresult.show');
-    Route::get('result_show/{arr?}', 'template_result\TemplateResult@result_show')->name('result.show');
+    Route::get('studentresult', [TemplateResult::class, 'index']);
+    Route::post('studentresult_show', [TemplateResult::class, 'show_result'])->name('studentresult.show');
+    Route::get('result_show/{arr?}', [TemplateResult::class, 'result_show'])->name('result.show');
 });
 // Harshad End
 
 
 Route::group(['prefix' => 'school_setup', 'middleware' => ['session', 'menu','logRoute']], function () {
-    Route::resource('add_school', 'school_setup\schoolController');
-    Route::resource('std_div_map', 'school_setup\std_divController');
-    Route::resource('division_capacity_master', 'school_setup\divisionCapacityMasterController');
-    Route::resource('subject_master', 'school_setup\subject1Controller');
-    Route::resource('chapter_master', 'school_setup\chapterController');
-    Route::get('ajax_StandardwiseSubject', 'school_setup\chapterController@StandardwiseSubject')->name('ajax_StandardwiseSubject');
-    Route::resource('topic_master', 'school_setup\topicController');
-    Route::resource('sub_std_map', 'school_setup\sub_std_mapController');
-    Route::resource('period_master', 'school_setup\periodController');
-    Route::resource('change_password', 'school_setup\changePasswordController');
-    Route::resource('dashboard_setting', 'school_setup\dashboardSettingController');
-    Route::get('device_check', 'school_setup\changePasswordController@device_check')->name('device_check');
+    Route::resource('add_school', schoolController::class);
+    Route::resource('std_div_map', std_divController::class);
+    Route::resource('division_capacity_master', divisionCapacityMasterController::class);
+    Route::resource('subject_master', subject1Controller::class);
+    Route::resource('chapter_master', chapterController::class);
+    Route::get('ajax_StandardwiseSubject', [chapterController::class, 'StandardwiseSubject'])->name('ajax_StandardwiseSubject');
+    Route::resource('topic_master', topicController::class);
+    Route::resource('sub_std_map', sub_std_mapController::class);
+    Route::resource('period_master', periodController::class);
+    Route::resource('change_password', changePasswordController::class);
+    Route::resource('dashboard_setting', dashboardSer::class);
+    Route::get('device_check', [changePasswordController::class, 'device_check'])->name('device_check');
 
-    Route::resource('erp_status', 'school_setup\erpstatusController');
-    Route::resource('workflow', 'school_setup\workflowController');
-    Route::get('ajax_wk_modulewise_fields', 'school_setup\workflowController@wk_modulewise_fields')->name('ajax_wk_modulewise_fields');
-    Route::post('ajax_wk_savemail', 'school_setup\workflowController@wk_savemail')->name('ajax_wk_savemail');
-    Route::post('ajax_wk_saveupdatequery', 'school_setup\workflowController@wk_saveupdatequery')->name('ajax_wk_saveupdatequery');
-    Route::post('ajax_wk_savesms', 'school_setup\workflowController@wk_savesms')->name('ajax_wk_savesms');
+    Route::resource('erp_status', erpstatusController::class);
+    Route::resource('workflow', workflowController::class);
+    Route::get('ajax_wk_modulewise_fields', [workflowController::class, 'wk_modulewise_fields'])->name('ajax_wk_modulewise_fields');
+    Route::post('ajax_wk_savemail', [workflowController::class, 'wk_savemail'])->name('ajax_wk_savemail');
+    Route::post('ajax_wk_saveupdatequery', [workflowController::class, 'wk_saveupdatequery'])->name('ajax_wk_saveupdatequery');
+    Route::post('ajax_wk_savesms', [workflowController::class, 'wk_savesms'])->name('ajax_wk_savesms');
 
-    Route::resource('batch_master', 'school_setup\batchController');
-    Route::post('ajaxdestroybatch_master', 'school_setup\batchController@ajaxdestroy')->name('ajaxdestroybatch_master');
-    Route::get('ajax_StandardwiseDivision', 'school_setup\batchController@StandardwiseDivision')->name('ajax_StandardwiseDivision');
+    Route::resource('batch_master', batchController::class);
+    Route::post('ajaxdestroybatch_master', [batchController::class, 'ajaxdestroy'])->name('ajaxdestroybatch_master');
+    Route::get('ajax_StandardwiseDivision', [batchController::class, 'StandardwiseDivision'])->name('ajax_StandardwiseDivision');
 
-    Route::resource('timetable', 'school_setup\timetableController');
-    Route::get('ajax_AcademicwiseStandard', 'school_setup\timetableController@AcademicwiseStandard')->name('ajax_AcademicwiseStandard');
-    Route::post('ajax_getTimetable', 'school_setup\timetableController@getTimetable')->name('ajax_getTimetable');
+    Route::resource('timetable', timetableController::class);
+    Route::get('ajax_AcademicwiseStandard', [timetableController::class, 'AcademicwiseStandard'])->name('ajax_AcademicwiseStandard');
+    Route::post('ajax_getTimetable', [timetableController::class, 'getTimetable'])->name('ajax_getTimetable');
 
-    Route::resource('classwisetimetable', 'school_setup\classwisetimetableController');
-    Route::post('ajax_getClasswiseTimetable', 'school_setup\classwisetimetableController@getClasswiseTimetable')->name('ajax_getClasswiseTimetable');
-    Route::get('ajax_Batch_Timetable', 'school_setup\timetableController@getBatchTimetable')->name('ajax_Batch_Timetable');
+    Route::resource('classwisetimetable', classwisetimetableController::class);
+    Route::post('ajax_getClasswiseTimetable', [classwisetimetableController::class, 'getClasswiseTimetable'])->name('ajax_getClasswiseTimetable');
+    Route::get('ajax_Batch_Timetable', [timetableController::class, 'getBatchTimetable'])->name('ajax_Batch_Timetable');
 
-    Route::get('ajax_New_Standard_Div', 'school_setup\timetableController@getNewStandardDiv')->name('ajax_New_Standard_Div');
+    Route::get('ajax_New_Standard_Div', [timetableController::class, 'getNewStandardDiv'])->name('ajax_New_Standard_Div');
 
-    Route::get('ajax_Delete_Timetable', 'school_setup\timetableController@deleteTimetable')->name('ajax_Delete_Timetable');
+    Route::get('ajax_Delete_Timetable', [timetableController::class, 'deleteTimetable'])->name('ajax_Delete_Timetable');
 
-    Route::get('ajax_Mapping_Teachers', 'school_setup\timetableController@getMappingTeachers')->name('ajax_Mapping_Teachers');
+    Route::get('ajax_Mapping_Teachers', [timetableController::class, 'getMappingTeachers'])->name('ajax_Mapping_Teachers');
 
-    Route::resource('proxy_master', 'school_setup\proxyController');
+    Route::resource('proxy_master', proxyController::class);
 
-    Route::post('ajax_getproxyperiod', 'school_setup\proxyController@getproxyperiod')->name('ajax_getproxyperiod');
-    Route::resource('facultywisetimetable', 'school_setup\facultywisetimetableController');
-    Route::post('ajax_getFacultywiseTimetable', 'school_setup\facultywisetimetableController@getFacultywiseTimetable')->name('ajax_getFacultywiseTimetable');
+    Route::post('ajax_getproxyperiod', [proxyController::class, 'getproxyperiod'])->name('ajax_getproxyperiod');
+    Route::resource('facultywisetimetable', facultywisetimetableController::class);
+    Route::post('ajax_getFacultywiseTimetable', [facultywisetimetableController::class, 'getFacultywiseTimetable'])->name('ajax_getFacultywiseTimetable');
 
-    Route::resource('proxy_report', 'school_setup\proxyReportController');
-    Route::post('ajax_getproxyreport', 'school_setup\proxyReportController@getproxyreport')->name('ajax_getproxyreport');
+    Route::resource('proxy_report', proxyReportController::class);
+    Route::post('ajax_getproxyreport', [proxyReportController::class, 'getproxyreport'])->name('ajax_getproxyreport');
 
-    Route::resource('todays_proxy_report', 'school_setup\todaysproxyReportController');
+    Route::resource('todays_proxy_report', todaysproxyReportController::class);
 
-    Route::resource('classteacher', 'school_setup\classteacherController');
-    Route::resource('classteacherReport', 'school_setup\classteacherReportController');
+    Route::resource('classteacher', classteacherController::class);
+    Route::resource('classteacherReport', classteacherReportController::class);
 
-    Route::resource('teachertransfer', 'school_setup\teachertransferController');
+    Route::resource('teachertransfer', teachertransferController::class);
 
-    Route::resource('teacher_daily_report', 'school_setup\teacherdailyReportController');
-    Route::post('ajax_getTeacherDailyReport', 'school_setup\teacherdailyReportController@getTeacherDailyReport')->name('ajax_getTeacherDailyReport');
+    Route::resource('teacher_daily_report', teacherdailyReportController::class);
+    Route::post('ajax_getTeacherDailyReport', [teacherdailyReportController::class, 'getTeacherDailyReport'])->name('ajax_getTeacherDailyReport');
 
-    Route::resource('lessonplanning', 'school_setup\lessonplanningController');
-    Route::get('ajax_getlp_subject', 'school_setup\lessonplanningController@getSubjectData')->name('ajax_getlp_subject');
-    Route::get('ajax_getlp_division', 'school_setup\lessonplanningController@getDivisionData')->name('ajax_getlp_division');
+    Route::resource('lessonplanning',lessonplanningController::class);
+    Route::get('ajax_getlp_subject', [lessonplanningController::class, 'getSubjectData'])->name('ajax_getlp_subject');
+    Route::get('ajax_getlp_division', [lessonplanningController::class, 'getDivisionData'])->name('ajax_getlp_division');
 
-    Route::resource('lessonplanningReport', 'school_setup\lessonplanningReportController');
+    Route::resource('lessonplanningReport', lessonplanningReportController::class);
 
     Route::get('google-analytics-summary', array('as' => 'google-analytics-summary', 'uses' => 'school_setup\HomeController@getAnalyticsSummary'));
 
-    Route::resource('used_storage_graph', 'used_storage_graphController');
+    Route::resource('used_storage_graph', used_storage_graphController::class);
 
 });
-Route::post('get_proxy_master', 'school_setup\proxyController@getproxydata');
-Route::get('school_setup/ajax_getTeacherDailyDetailsReport', 'school_setup\teacherdailyReportController@getTeacherDailyDetailsReport')->name("ajax_getTeacherDailyDetailsReport");
+Route::post('get_proxy_master', [proxyController::class, 'getproxydata']);
+Route::get('school_setup/ajax_getTeacherDailyDetailsReport', [teacherdailyReportController::class, 'getTeacherDailyDetailsReport'])->name("ajax_getTeacherDailyDetailsReport");
 
 
-Route::post('/teacherTimetableAPI', 'school_setup\facultywisetimetableController@teacherTimetableAPI');
-Route::post('/studentTimetableAPI', 'school_setup\classwisetimetableController@studentTimetableAPI');
+Route::post('/teacherTimetableAPI', [facultywisetimetableController::class, 'teacherTimetableAPI']);
+Route::post('/studentTimetableAPI', [classwisetimetableController::class, 'studentTimetableAPI']);
 
-Route::get('ajax_load_rightSideMenu', 'AJAXController@ajax_load_rightSideMenu')->name('ajax_load_rightSideMenu');
-Route::get('ajax_load_helpguide', 'AJAXController@ajax_load_helpguide')->name('ajax_load_helpguide');
+Route::get('ajax_load_rightSideMenu', [AJAXController::class, 'ajax_load_rightSideMenu'])->name('ajax_load_rightSideMenu');
+Route::get('ajax_load_helpguide', [AJAXController::class, 'ajax_load_helpguide'])->name('ajax_load_helpguide');
 
-Route::post('ajax_sendmail', 'AJAXController@ajax_sendmail')->name('ajax_sendmail');
+Route::post('ajax_sendmail', [AJAXController::class, 'ajax_sendmail'])->name('ajax_sendmail');
 
-Route::get('ckeditor/create', 'CkeditorFileUploadController@create')->name('ckeditor.create');
-Route::post('ckeditor', 'CkeditorFileUploadController@store')->name('uploadimage');
+Route::get('ckeditor/create', [CkeditorFileUploadController::class, 'create'])->name('ckeditor.create');
+Route::post('ckeditor', [CkeditorFileUploadController::class, 'store'])->name('uploadimage');
 
 // Route::get('exception/index', 'ExceptionController@index');
 
@@ -200,45 +233,45 @@ Route::post('ckeditor', 'CkeditorFileUploadController@store')->name('uploadimage
 // Route::get('/home', 'HomeController@index')->name('home');
 
 // Forgot Password Routes
-Route::get('forget-password', 'Auth\ForgotPasswordController@showForgetPasswordForm')->name('forget.password.get');
-Route::post('forget-password', 'Auth\ForgotPasswordController@submitForgetPasswordForm')->name('forget.password.post');
-Route::get('reset-password/{token}/{email}','Auth\ForgotPasswordController@showResetPasswordForm')->name('reset.password.get');
-Route::post('reset-password','Auth\ForgotPasswordController@submitResetPasswordForm')->name('reset.password.post');
+Route::get('forget-password', [ForgotPasswordController::class, 'showForgetPasswordForm'])->name('forget.password.get');
+Route::post('forget-password', [ForgotPasswordController::class, 'submitForgetPasswordForm'])->name('forget.password.post');
+Route::get('reset-password/{token}/{email}',[ForgotPasswordController::class, 'showResetPasswordForm'])->name('reset.password.get');
+Route::post('reset-password',[ForgotPasswordController::class, 'submitResetPasswordForm'])->name('reset.password.post');
 
 
-Route::post('NewLMS_temp_signup', 'api\NewLMS_ApiController@NewLMS_temp_signup')->name("NewLMS_temp_signup");
-Route::post('NewLMS_signup', 'api\NewLMS_ApiController@NewLMS_signup')->name("NewLMS_signup");
-Route::get('Resend_otp', 'api\NewLMS_ApiController@Resend_otp')->name("Resend_otp");
+Route::post('NewLMS_temp_signup', [NewLMS_ApiController::class, 'NewLMS_temp_signup'])->name("NewLMS_temp_signup");
+Route::post('NewLMS_signup', [NewLMS_ApiController::class, 'NewLMS_signup'])->name("NewLMS_signup");
+Route::get('Resend_otp', [NewLMS_ApiController::class, 'Resend_otp'])->name("Resend_otp");
 
-Route::post('NewLMS_temp_signup_student', 'api\NewLMS_StudentApiController@NewLMS_temp_signup_student')->name("NewLMS_temp_signup_student");
-Route::post('NewLMS_signup_student', 'api\NewLMS_StudentApiController@NewLMS_signup_student')->name("NewLMS_signup_student");
+Route::post('NewLMS_temp_signup_student', [NewLMS_StudentApiController::class, 'NewLMS_temp_signup_student'])->name("NewLMS_temp_signup_student");
+Route::post('NewLMS_signup_student', [NewLMS_StudentApiController::Class, 'NewLMS_signup_student'])->name("NewLMS_signup_student");
 
 
-Route::get('get_trizStandard', 'signupController@get_trizStandard')->name("get_trizStandard");
+Route::get('get_trizStandard', [signupController::class, 'get_trizStandard'])->name("get_trizStandard");
 
-Route::post('searching_menu', 'AJAXController@searchMenu')->name("searching_menu");
-Route::post('get_search_url', 'AJAXController@get_search_url')->name("get_search_url");
+Route::post('searching_menu', [AJAXController::Class, 'searchMenu'])->name("searching_menu");
+Route::post('get_search_url', [AJAXController::class, 'get_search_url'])->name("get_search_url");
 
 
 // send birthday notification
-Route::get('send_birthday_notification', 'easy_com\send_birthday_notification\send_birthday_notification_controller@send_birthday_notification')->name('send_birthday_notification');
+Route::get('send_birthday_notification', [send_birthday_notification_controller::class, 'send_birthday_notification'])->name('send_birthday_notification');
 
 // Question Wise Report
-Route::get('questionReport', 'student\questionWiseReportController@index')->name('question_wise_report');
-Route::post('show_question_wise_report', 'student\questionWiseReportController@show_question_wise_report')->name('show_question_wise_report');
+Route::get('questionReport', [questionWiseReportController::class, 'index'])->name('question_wise_report');
+Route::post('show_question_wise_report', [questionWiseReportController::class, 'show_question_wise_report'])->name('show_question_wise_report');
 
 // Admin Authorization (Show Result)
-Route::get('result_admin_permission', 'result\result_admin_permission\ResultAdminPermissionController@index')->name('result_admin_permission');
-Route::post('show_result_admin_permission', 'result\result_admin_permission\ResultAdminPermissionController@show_result_admin_permission')->name('show_result_admin_permission');
-Route::post('allow_admin_permission', 'result\result_admin_permission\ResultAdminPermissionController@allow_admin_permission')->name('allow_admin_permission');
+Route::get('result_admin_permission', [ResultAdminPermissionController::class, 'index'])->name('result_admin_permission');
+Route::post('show_result_admin_permission', [ResultAdminPermissionController::class, 'show_result_admin_permission'])->name('show_result_admin_permission');
+Route::post('allow_admin_permission', [ResultAdminPermissionController::class, 'allow_admin_permission'])->name('allow_admin_permission');
 
 
 // create result excel
-Route::get('download_create_result', 'result\MarkUploadController@index');
-Route::post('generate_create_result_excel', 'result\MarkUploadController@create')->name('create-excel');
-Route::get('upload_create_result', 'result\MarkUploadController@store')->name('upload_create_result');
+Route::get('download_create_result', [MarkUploadController::class, 'index']);
+Route::post('generate_create_result_excel', [MarkUploadController::class, 'create'])->name('create-excel');
+Route::get('upload_create_result', [MarkUploadController::class, 'store'])->name('upload_create_result');
 
-Route::get('fetch_payment_status', 'fees\online_fees\online_fees_collect_controller@razorpay_fetch_payment_status');
+Route::get('fetch_payment_status', [online_fees_collect_controller::class, 'razorpay_fetch_payment_status']);
 
 
 
