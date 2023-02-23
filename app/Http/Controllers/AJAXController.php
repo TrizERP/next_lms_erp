@@ -2,24 +2,23 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\fees\fees_report\otherNewfeesReportController;
+use App\Models\tblmenumasterModel;
 use Illuminate\Http\Request;
-use App\Http\Requests;
-use DB;
-//use function App\Helpers\FeeBreakoffHeadWise;
-use function App\Helpers\is_mobile;
-use function App\Helpers\FeeMonthId;
+use Illuminate\Support\Facades\DB;
+use PHPMailer\PHPMailer;
 use function App\Helpers\FeeBreackoff;
 use function App\Helpers\FeeBreakoffHeadWise;
+use function App\Helpers\FeeMonthId;
+use function App\Helpers\htmlToPDF;
+use function App\Helpers\htmlToPDFLandscape;
+use function App\Helpers\htmlToPDFLandscapeCertificate;
+use function App\Helpers\htmlToPDFPortrait;
 use function App\Helpers\OtherBreackOff;
 use function App\Helpers\OtherBreackOffHead;
 use function App\Helpers\OtherBreackOfMonth;
-use PHPMailer\PHPMailer;
-use function App\Helpers\htmlToPDF;
-use function App\Helpers\htmlToPDFLandscape;
-use function App\Helpers\htmlToPDFPortrait;
-use function App\Helpers\htmlToPDFLandscapeCertificate;
-use App\Http\Controllers\fees\fees_report\otherNewfeesReportController;
-use App\Models\tblmenumasterModel;
+
+//use function App\Helpers\FeeBreakoffHeadWise;
 
 class AJAXController extends Controller
 {
@@ -27,8 +26,8 @@ class AJAXController extends Controller
      * GET Exam By Search
      * @field grade_id, standard, division, subject, sub_institute_id, syear
      */
-    public function getExamsList(Request $request) {
-        // echo "<pre>"; print_r($request->all()); exit;
+    public function getExamsList(Request $request)
+    {
         $grade = $request->grade_id;
         $standard = $request->standard_id;
         $division = $request->division_id;
@@ -36,101 +35,86 @@ class AJAXController extends Controller
         $sub_institute_id = $request->sub_institute_id;
         $syear = $request->syear;
 
-        // Query To fetch exam
-        $where = "where std.grade_id = $grade
-            and std.id = $standard
-            and divi.id = $division
-            and sub.id = $subject
-            and ts.sub_institute_id = $sub_institute_id
-            and ay.syear = $syear
-            and ay.sub_institute_id = $sub_institute_id
-        ";
+        $queryResult = DB::table('tblstudent as ts')
+            ->join('tblstudent_enrollment as tse', function ($join) {
+                $join->whereRaw('tse.student_id = ts.id');
+            })->join('academic_year as ay', function ($join) {
+                $join->whereRaw('ay.term_id = tse.term_id');
+            })->join('standard as std', function ($join) {
+                $join->whereRaw('std.id = tse.standard_id');
+            })->join('std_div_map as sdm', function ($join) {
+                $join->whereRaw('sdm.standard_id = std.id');
+            })->join('division as divi', function ($join) {
+                $join->whereRaw('divi.id = sdm.division_id');
+            })->join('sub_std_map as ssm', function ($join) {
+                $join->whereRaw('ssm.standard_id = sdm.standard_id');
+            })->join('subject as sub', function ($join) {
+                $join->whereRaw('sub.id = ssm.subject_id');
+            })->join('question_paper as qp', function ($join) {
+                $join->whereRaw('qp.subject_id = ssm.subject_id and qp.standard_id = sdm.standard_id');
+            })->join('lms_question_master as lqm', function ($join) {
+                $join->whereRaw('lqm.subject_id = ssm.subject_id and lqm.standard_id = sdm.standard_id and lqm.id in 
+                (SELECT FROM lms_question_master as lqm, WHERE qp.id = qp2.id AND FIND_IN_SET(lqm.id, qp.question_ids))');
+            })->join('lms_online_exam_answer as am', function ($join) {
+                $join->whereRaw('am.question_paper_id = qp.id and am.student_id = ts.id and am.question_id = lqm.id');
+            })
+            ->selectRaw('qp.id, am.online_exam_id AS online_exam_ids, qp.paper_name AS question_paper_name')
+            ->where('std.grade_id', '=', $grade)
+            ->where('std.id', '=', $standard)
+            ->where('divi.id', '=', $division)
+            ->where('sub.id', '=', $subject)
+            ->where('ts.sub_institute_id', '=', $sub_institute_id)
+            ->where('ay.syear', '=', $syear)
+            ->where('ay.sub_institute_id', '=', $sub_institute_id)
+            ->groupBy('qp.id')->get()->toArray();
 
-        // DB::enableQueryLog();
-        $queryResult = DB::select("
-        select
-            qp.id,
-            am.online_exam_id AS online_exam_ids,
-            qp.paper_name AS question_paper_name
-        from
-            tblstudent as ts
-            inner join tblstudent_enrollment as tse on tse.student_id = ts.id
-            inner join academic_year as ay on ay.term_id = tse.term_id
-            inner join standard as std on std.id = tse.standard_id
-            inner join std_div_map as sdm on sdm.standard_id = std.id
-            inner join division as divi on divi.id = sdm.division_id
-            inner join sub_std_map as ssm on ssm.standard_id = sdm.standard_id
-            inner join subject as sub on sub.id = ssm.subject_id
-            inner join question_paper as qp on qp.subject_id = ssm.subject_id
-            and qp.standard_id = sdm.standard_id
-            inner join lms_question_master as lqm on lqm.subject_id = ssm.subject_id
-            and lqm.standard_id = sdm.standard_id
-            and lqm.id in (
-                SELECT
-                    lqm.id
-                FROM
-                    lms_question_master as lqm,
-                    question_paper as qp2
-                WHERE
-                    qp.id = qp2.id
-                    AND FIND_IN_SET(lqm.id, qp.question_ids)
-            )
-            inner join lms_online_exam_answer as am on am.question_paper_id = qp.id
-            and am.student_id = ts.id
-            and am.question_id = lqm.id
-            $where
-            group by qp.id
-        ");
-        
-        // DB::enableQueryLog();
-        //  echo ('<pre>');print_r(DB::getQueryLog());exit;
-        //  echo ('<pre>');print_r($queryResult);exit;
-        
         return response()->json($queryResult);
     }
 
     /**
-     * get Subject name by Create Exam 
+     * get Subject name by Create Exam
      */
-    public function getSubjectByCreateExam(Request $request) {
+    public function getSubjectByCreateExam(Request $request)
+    {
         $grade = $request->grade_id;
         $standard = $request->standard_id;
         $division = $request->division_id;
         $sub_institute_id = $request->sub_institute_id;
         $syear = $request->syear;
 
-        // Query To fetch Subject
-        $where = "where std.grade_id = $grade
-            and std.id = $standard
-            and divi.id = $division
-            and ts.sub_institute_id = $sub_institute_id
-            and ay.syear = $syear
-            and ay.sub_institute_id = $sub_institute_id
-        ";
-
-        // DB::enableQueryLog();
-        $queryResult = DB::select("
-            SELECT sub.subject_name as subject_name,rce.subject_id as subject_id
-            FROM tblstudent AS ts
-            INNER JOIN tblstudent_enrollment AS tse ON tse.student_id = ts.id
-            INNER JOIN academic_year AS ay ON ay.term_id = tse.term_id
-            INNER JOIN standard AS std ON std.id = tse.standard_id
-            INNER JOIN std_div_map AS sdm ON sdm.standard_id = std.id
-            INNER JOIN division AS divi ON divi.id = sdm.division_id
-            INNER JOIN result_create_exam AS rce ON rce.standard_id = sdm.standard_id
-            INNER JOIN subject AS sub ON sub.id = rce.subject_id
-        $where
-        GROUP BY rce.subject_id
-        ");
-        //DB::enableQueryLog();
+        $queryResult = DB::table('tblstudent as ts')
+            ->join('tblstudent_enrollment as tse', function ($join) {
+                $join->whereRaw('tse.student_id = ts.id');
+            })->join('academic_year as ay', function ($join) {
+                $join->whereRaw('ay.term_id = tse.term_id');
+            })->join('standard as std', function ($join) {
+                $join->whereRaw('std.id = tse.standard_id');
+            })->join('std_div_map as sdm', function ($join) {
+                $join->whereRaw('sdm.standard_id = std.id');
+            })->join('division as divi', function ($join) {
+                $join->whereRaw('divi.id = sdm.division_id');
+            })->join('result_create_exam AS rce', function ($join) {
+                $join->whereRaw('rce.standard_id = sdm.standard_id');
+            })->join('subject as sub', function ($join) {
+                $join->whereRaw('sub.id = rce.subject_id');
+            })
+            ->selectRaw('sub.subject_name as subject_name,rce.subject_id as subject_id')
+            ->where('std.grade_id', '=', $grade)
+            ->where('std.id', '=', $standard)
+            ->where('divi.id', '=', $division)
+            ->where('ts.sub_institute_id', '=', $sub_institute_id)
+            ->where('ay.syear', '=', $syear)
+            ->where('ay.sub_institute_id', '=', $sub_institute_id)
+            ->groupBy('rce.subject_id')->get()->toArray();
 
         return response()->json($queryResult);
     }
 
     /**
-     * get Exam name by Create Exam 
+     * get Exam name by Create Exam
      */
-    public function getExamByCreateExam(Request $request) {
+    public function getExamByCreateExam(Request $request)
+    {
         $grade = $request->grade_id;
         $standard = $request->standard_id;
         $subject = $request->subject_id;
@@ -138,101 +122,89 @@ class AJAXController extends Controller
         $sub_institute_id = $request->sub_institute_id;
         $syear = $request->syear;
 
-        // Query To fetch Subject
-        $where = "where std.grade_id = $grade
-            and std.id = $standard
-            and divi.id = $division
-            and rce.subject_id = $subject
-            and ts.sub_institute_id = $sub_institute_id
-            and ay.syear = $syear
-            and ay.sub_institute_id = $sub_institute_id
-        ";
-
-        // DB::enableQueryLog();
-        $queryResult = DB::select("
-            SELECT
-                rem.id, 
-                rem.ExamTitle
-            FROM
-                tblstudent AS ts 
-                INNER JOIN  tblstudent_enrollment AS tse ON tse.student_id = ts.id 
-                INNER JOIN  academic_year AS ay ON ay.term_id = tse.term_id 
-                INNER JOIN  standard AS std ON std.id = tse.standard_id 
-                INNER JOIN  std_div_map AS sdm ON sdm.standard_id = std.id 
-                INNER JOIN  division AS divi ON divi.id = sdm.division_id 
-                INNER JOIN  result_create_exam AS rce ON rce.standard_id = sdm.standard_id 
-                INNER JOIN  subject AS sub ON sub.id = rce.subject_id 
-                inner join  result_exam_master as rem on rem.id = rce.exam_id
-            $where
-            group by rce.exam_id
-        ");
-        //DB::enableQueryLog();
+        $queryResult = DB::table('tblstudent as ts')
+            ->join('tblstudent_enrollment as tse', function ($join) {
+                $join->whereRaw('tse.student_id = ts.id');
+            })->join('academic_year as ay', function ($join) {
+                $join->whereRaw('ay.term_id = tse.term_id');
+            })->join('standard as std', function ($join) {
+                $join->whereRaw('std.id = tse.standard_id');
+            })->join('std_div_map as sdm', function ($join) {
+                $join->whereRaw('sdm.standard_id = std.id');
+            })->join('division as divi', function ($join) {
+                $join->whereRaw('divi.id = sdm.division_id');
+            })->join('result_create_exam AS rce', function ($join) {
+                $join->whereRaw('rce.standard_id = sdm.standard_id');
+            })->join('subject as sub', function ($join) {
+                $join->whereRaw('sub.id = rce.subject_id');
+            })->join('result_exam_master', function ($join) {
+                $join->whereRaw('rem.id = rce.exam_id');
+            })
+            ->selectRaw('sub.subject_name as subject_name,rce.subject_id as subject_id')
+            ->where('std.grade_id', '=', $grade)
+            ->where('std.id', '=', $standard)
+            ->where('divi.id', '=', $division)
+            ->where('rce.subject_id', '=', $subject)
+            ->where('ts.sub_institute_id', '=', $sub_institute_id)
+            ->where('ay.syear', '=', $syear)
+            ->where('ay.sub_institute_id', '=', $sub_institute_id)
+            ->groupBy('rce.exam_id')->get()->toArray();
 
         return response()->json($queryResult);
     }
-    
+
     public function getStandardList(Request $request)
     {
         $path = $_SERVER['HTTP_REFERER'];
         preg_match("/[^\/]+$/", $path, $matches);
         $module_name = $matches[0];
 
-        $module_array = array(
-            '1' => 'student_homework'
-        );
+        $module_array = [
+            '1' => 'student_homework',
+        ];
 
         $explode = explode(',', $request->grade_id);
 
         if (count($explode) > 1) {
-            $query  = DB::table('standard');
+            $query = DB::table('standard');
             $query->whereIn('grade_id', $explode)->get();
-            
+
             //START Check for class teacher assigned standards
             $classTeacherStdArr = session()->get('classTeacherStdArr');
-            if ($classTeacherStdArr != "" && !in_array($module_name, $module_array))
-            {
-                $query->whereIn('id',$classTeacherStdArr);          
+            if ($classTeacherStdArr != "" && ! in_array($module_name, $module_array)) {
+                $query->whereIn('id', $classTeacherStdArr);
             }
             //END Check for class teacher assigned standards
 
             //START Check for subject teacher assigned
             $subjectTeacherStdArr = session()->get('subjectTeacherStdArr');
-            if ($subjectTeacherStdArr != "" && ($classTeacherStdArr == "" || in_array($module_name, $module_array)))
-            {
-                $query->whereIn('id',$subjectTeacherStdArr);          
+            if ($subjectTeacherStdArr != "" && ($classTeacherStdArr == "" || in_array($module_name, $module_array))) {
+                $query->whereIn('id', $subjectTeacherStdArr);
             }
             //END Check for subject teacher assigned
 
             $standard = $query->pluck("name", "id");
-            
-            // $standard = DB::table("standard")
-                // ->whereIn('grade_id', $explode)->get()
-                // ->pluck("name", "id");
+
         } else {
-            $query  = DB::table('standard');
+            $query = DB::table('standard');
             $query->where("grade_id", $request->grade_id);
-            
+
             //START Check for class teacher assigned standards
             $classTeacherStdArr = session()->get('classTeacherStdArr');
-            if ($classTeacherStdArr != "" && !in_array($module_name, $module_array))
-            {
-                $query->whereIn('id',$classTeacherStdArr);          
+            if ($classTeacherStdArr != "" && ! in_array($module_name, $module_array)) {
+                $query->whereIn('id', $classTeacherStdArr);
             }
             //END Check for class teacher assigned standards
 
             //START Check for subject teacher assigned
             $subjectTeacherStdArr = session()->get('subjectTeacherStdArr');
-            if ($subjectTeacherStdArr != "" && ($classTeacherStdArr == "" || in_array($module_name, $module_array)))
-            {
-                $query->whereIn('id',$subjectTeacherStdArr);          
+            if ($subjectTeacherStdArr != "" && ($classTeacherStdArr == "" || in_array($module_name, $module_array))) {
+                $query->whereIn('id', $subjectTeacherStdArr);
             }
             //END Check for subject teacher assigned
 
             $standard = $query->pluck("name", "id");
-            
-            // $standard = DB::table("standard")
-                // ->where("grade_id", $request->grade_id)
-                // ->pluck("name", "id");
+
         }
 
         return response()->json($standard);
@@ -240,44 +212,38 @@ class AJAXController extends Controller
 
     public function getDivisionList(Request $request)
     {
-        // echo "<pre>"; print_r($request->standard_id); exit;
         $path = $_SERVER['HTTP_REFERER'];
         preg_match("/[^\/]+$/", $path, $matches);
         $module_name = $matches[0];
 
-        $module_array = array(
-            '1' => 'student_homework'
-        );
+        $module_array = [
+            '1' => 'student_homework',
+        ];
 
         $standard_id = $request->standard_id;
 
         $explode = explode(',', $request->standard_id);
-        if (count($explode) > 1) { 
+        if (count($explode) > 1) {
             $query = DB::table('std_div_map');
             $query->join('division', 'division.id', '=', 'std_div_map.division_id');
             $query->whereIn("std_div_map.standard_id", $explode);
+
             //START Check for class teacher assigned standards
             $classTeacherDivArr = session()->get('classTeacherDivArr');
-            if ($classTeacherDivArr != "" && !in_array($module_name, $module_array))
-            {
-                $query->whereIn('division.id',$classTeacherDivArr);         
+            if ($classTeacherDivArr != "" && ! in_array($module_name, $module_array)) {
+                $query->whereIn('division.id', $classTeacherDivArr);
             }
             //END Check for class teacher assigned standards
 
             //START Check for subject teacher assigned
             $subjectTeacherDivArr = session()->get('subjectTeacherDivArr');
-            if ($subjectTeacherDivArr != "" && ($classTeacherDivArr == "" || in_array($module_name, $module_array)))
-            {
-                $query->orwhereIn('division.id',$subjectTeacherDivArr);         
+            if ($subjectTeacherDivArr != "" && ($classTeacherDivArr == "" || in_array($module_name, $module_array))) {
+                $query->orwhereIn('division.id', $subjectTeacherDivArr);
             }
             //END Check for subject teacher assigned
 
             $std_div_map = $query->pluck('division.name', 'division.id');
-            
-            // $std_div_map = DB::table('std_div_map')
-                // ->join('division', 'division.id', '=', 'std_div_map.division_id')
-                // ->whereIn("std_div_map.standard_id", $explode)
-                // ->pluck('division.name', 'division.id');
+
         } else {
             // DB::enableQueryLog();
             $query = DB::table('std_div_map');
@@ -285,36 +251,24 @@ class AJAXController extends Controller
             $query->where("std_div_map.standard_id", $request->standard_id);
             //START Check for class teacher assigned standards
             $classTeacherDivArr = session()->get('classTeacherDivArr');
-            
-            if ($classTeacherDivArr != "" && !in_array($module_name, $module_array))
-            {
-                $query->whereIn('division.id',$classTeacherDivArr);         
+
+            if ($classTeacherDivArr != "" && ! in_array($module_name, $module_array)) {
+                $query->whereIn('division.id', $classTeacherDivArr);
             }
             //END Check for class teacher assigned standards
             //START Check for class teacher assigned standards
             $subjectTeacherDivArr = session()->get('subjectTeacherDivArr');
-            if ($subjectTeacherDivArr != "" && ($classTeacherDivArr == "" || in_array($module_name, $module_array)))
-            {
-                // if( session()->get('user_profile_name') == 'Teacher' ) {
-                    $query->whereIn('division.id', function ($sub_query) use ($standard_id) {
-                        $sub_query->select('division_id')
-                            ->from('timetable')
-                            ->where('teacher_id', session()->get('user_id'))
-                            ->where('standard_id', $standard_id);
-                    });         
-                // } else {
-                //     $query->orwhereIn('division.id',$subjectTeacherDivArr);         
-                // }
+            if ($subjectTeacherDivArr != "" && ($classTeacherDivArr == "" || in_array($module_name, $module_array))) {
+                $query->whereIn('division.id', function ($sub_query) use ($standard_id) {
+                    $sub_query->select('division_id')
+                        ->from('timetable')
+                        ->where('teacher_id', session()->get('user_id'))
+                        ->where('standard_id', $standard_id);
+                });
             }
             //END Check for class teacher assigned standards
 
             $std_div_map = $query->pluck('division.name', 'division.id');
-            // echo "<pre>";
-            // print_r(DB::getQueryLog()); exit;
-            // $std_div_map = DB::table('std_div_map')
-                // ->join('division', 'division.id', '=', 'std_div_map.division_id')
-                // ->where("std_div_map.standard_id", $request->standard_id)
-                // ->pluck('division.name', 'division.id');
         }
 
         return response()->json($std_div_map);
@@ -322,23 +276,22 @@ class AJAXController extends Controller
 
     public function getSubjectList(Request $request)
     {
-        // echo ('<pre>');print_r($_REQUEST);exit;
         $standard_id = $request->standard_id;
         $explode = explode(',', $request->standard_id);
 
         $arr = $request->server;
         $HTTP_REFERER = "";
         foreach ($arr as $id => $val) {
-            if ($id == 'HTTP_REFERER')
+            if ($id == 'HTTP_REFERER') {
                 $HTTP_REFERER = $val;
+            }
         }
         $refer_arr = explode('/', $HTTP_REFERER);
-        // echo ('<pre>');print_r($refer_arr);exit;
-        // if ($refer_arr[count($refer_arr) - 2] == 'exam_creation' || $refer_arr[count($refer_arr) - 1] == 'marks_entry') {
+
         if ($refer_arr[count($refer_arr) - 2] == 'exam_creation' || in_array('marks_entry', $refer_arr)) {
             $where = array(
                 "sub_std_map.sub_institute_id" => session()->get('sub_institute_id'),
-                "sub_std_map.allow_grades" => "Yes",
+                "sub_std_map.allow_grades"     => "Yes",
             );
         } else {
             $where = array(
@@ -352,28 +305,25 @@ class AJAXController extends Controller
                 ->where($where)
                 ->orderBy('sub_std_map.sort_order')
                 ->pluck('sub_std_map.display_name', 'subject.id');
-            // echo ('<pre>');print_r($_REQUEST);exit;
         } else {
-            if( session()->get('user_profile_name') == 'Teacher' ) {
+            if (session()->get('user_profile_name') == 'Teacher') {
                 # Get subjects by teacher, standard and division
                 $std_sub_map = DB::table('subject as sub')
-                    ->whereIn('sub.id', function ($sub_query) use ( $request ) {
+                    ->whereIn('sub.id', function ($sub_query) use ($request) {
                         $sub_query->select('subject_id')
-                        ->from('timetable')
-                        ->where('teacher_id', session()->get('user_id'))
-                        ->where('standard_id', $request->standard_id)
-                        ->where('division_id', $request->division_id);
+                            ->from('timetable')
+                            ->where('teacher_id', session()->get('user_id'))
+                            ->where('standard_id', $request->standard_id)
+                            ->where('division_id', $request->division_id);
                     })
                     ->pluck('sub.subject_name as display_name', 'sub.id');
             } else {
                 $where['sub_std_map.standard_id'] = $request->standard_id;
-                //DB::enableQueryLog();
                 $std_sub_map = DB::table('subject')
                     ->join('sub_std_map', 'subject.id', '=', 'sub_std_map.subject_id')
                     ->where($where)
                     ->orderBy('sub_std_map.sort_order')
                     ->pluck('sub_std_map.display_name', 'subject.id');
-                //  echo ('<pre>');print_r(DB::getQueryLog());exit;
             }
         }
 
@@ -381,51 +331,55 @@ class AJAXController extends Controller
     }
 
     public function getChapterList(Request $request)
-    {                
+    {
         $explode = explode(',', $request->subject_id);
         $standard_id = $request->standard_id;
 
         if (count($explode) > 1) {
-             $chapter_list = DB::table('chapter_master')               
-                ->where(['sub_institute_id'=>session()->get('sub_institute_id'),"standard_id"=>$standard_id])
-                ->wherein('subject_id',$explode)               
-                ->pluck('chapter_name', 'id');                            
+            $chapter_list = DB::table('chapter_master')
+                ->where(['sub_institute_id' => session()->get('sub_institute_id'), "standard_id" => $standard_id])
+                ->wherein('subject_id', $explode)
+                ->pluck('chapter_name', 'id');
         } else {
-            $chapter_list = DB::table('chapter_master')               
-                ->where(['sub_institute_id'=>session()->get('sub_institute_id'),'subject_id'=>$request->subject_id,"standard_id"=>$standard_id])                
-                ->pluck('chapter_name', 'id');            
+            $chapter_list = DB::table('chapter_master')
+                ->where([
+                    'sub_institute_id' => session()->get('sub_institute_id'), 'subject_id' => $request->subject_id,
+                    "standard_id"      => $standard_id,
+                ])
+                ->pluck('chapter_name', 'id');
         }
-       
+
         return response()->json($chapter_list);
     }
 
     public function getTopicList(Request $request)
-    {                
-        $explode = explode(',', $request->chapter_id);       
+    {
+        $explode = explode(',', $request->chapter_id);
 
         if (count($explode) > 1) {
-             $topic_list = DB::table('topic_master')               
-                ->where(['sub_institute_id'=>session()->get('sub_institute_id')])
-                ->wherein('chapter_id',$explode)               
-                ->pluck('name', 'id');                            
+            $topic_list = DB::table('topic_master')
+                ->where(['sub_institute_id' => session()->get('sub_institute_id')])
+                ->wherein('chapter_id', $explode)
+                ->pluck('name', 'id');
         } else {
-            $topic_list = DB::table('topic_master')               
-                ->where(['sub_institute_id'=>session()->get('sub_institute_id'),'chapter_id'=>$request->chapter_id])                
-                ->pluck('name', 'id');            
+            $topic_list = DB::table('topic_master')
+                ->where([
+                    'sub_institute_id' => session()->get('sub_institute_id'), 'chapter_id' => $request->chapter_id,
+                ])
+                ->pluck('name', 'id');
         }
-       
+
         return response()->json($topic_list);
     }
-    
+
     public function getExamList(Request $request)
     {
-
         $where = array(
             "re.sub_institute_id" => session()->get('sub_institute_id'),
-            "re.syear" => session()->get('syear'),
-            "re.term_id" => $request->term_id,
-            "re.standard_id" => $request->standard_id,
-            "re.subject_id" => $request->subject_id,
+            "re.syear"            => session()->get('syear'),
+            "re.term_id"          => $request->term_id,
+            "re.standard_id"      => $request->standard_id,
+            "re.subject_id"       => $request->subject_id,
         );
 
         $std_sub_map = DB::table('result_create_exam as re')
@@ -437,7 +391,6 @@ class AJAXController extends Controller
 
     public function getCoScholasticParentList(Request $request)
     {
-
         $where = array(
             "re.sub_institute_id" => session()->get('sub_institute_id'),
         );
@@ -451,11 +404,10 @@ class AJAXController extends Controller
 
     public function getCoScholasticList(Request $request)
     {
-
         $where = array(
             "re.sub_institute_id" => session()->get('sub_institute_id'),
-            "re.parent_id" => $request->co_scholastic_parent_id,
-            "re.term_id" => $request->term_id            
+            "re.parent_id"        => $request->co_scholastic_parent_id,
+            "re.term_id"          => $request->term_id,
         );
 
         $co_scholastic_parent = DB::table('result_co_scholastic as re')
@@ -467,10 +419,9 @@ class AJAXController extends Controller
 
     public function getBusList(Request $request)
     {
-
         $where = array(
             "tv.sub_institute_id" => session()->get('sub_institute_id'),
-            "tv.school_shift" => $request->shift_id,
+            "tv.school_shift"     => $request->shift_id,
         );
 
         $bus = DB::table('transport_vehicle as tv')
@@ -506,8 +457,6 @@ class AJAXController extends Controller
 
     public function getFees(Request $request)
     {
-
-        // dd($request);
         $months = $request->checkedMonths;
         $student_id = $request->student_id;
 
@@ -517,17 +466,15 @@ class AJAXController extends Controller
         }
 
         $stu_arr = array(
-            "0" => $student_id
+            "0" => $student_id,
         );
         $search_ids = $months;
         $reg_bk_off = FeeBreackoff($stu_arr);
-        // echo ('<pre>');print_r($reg_bk_off);exit;
         $other_bk_off = OtherBreackOff($stu_arr, $search_ids);
         $other_bk_off_month_wise = OtherBreackOfMonth($stu_arr);
         $year_arr = FeeMonthId();
 
         $head_wise_fees = FeeBreakoffHeadWise($stu_arr);
-        // echo ('<pre>');print_r($head_wise_fees);exit;
         $till_now_breckoff = array();
         foreach ($search_ids as $id => $val) {
             foreach ($head_wise_fees as $temp_id => $arr) {
@@ -545,15 +492,13 @@ class AJAXController extends Controller
 
         foreach ($till_now_breckoff as $month_id => $fees_detail) {
             foreach ($fees_detail as $head_name => $arr) {
-                if (!isset($reg_bk_month_wise[$arr['title']]))
+                if (! isset($reg_bk_month_wise[$arr['title']])) {
                     $reg_bk_month_wise[$arr['title']] = 0;
+                }
                 $reg_bk_month_wise[$arr['title']] += $arr['amount'];
                 $final_bk_name[$arr['title']] = $head_name;
-                //                $total = $total + $arr['amount'];
             }
         }
-
-        // echo ('<pre>');print_r($final_bk_name);exit;
 
         $full_bk = array_merge($reg_bk_month_wise, $other_bk_off);
 
@@ -562,10 +507,6 @@ class AJAXController extends Controller
         }
 
         $other_fee_title = OtherBreackOffHead();
-        //echo "<pre>";
-        //print_r($other_fee_title);
-        //print_r($full_bk);
-        //exit;
 
         foreach ($other_fee_title as $id => $arr) {
             foreach ($full_bk as $title => $val) {
@@ -574,15 +515,11 @@ class AJAXController extends Controller
                 }
             }
         }
-        //        echo "<pre>";
-        //        print_r($final_bk_name);
-        //        exit;
-        //        
+
         $full_bk["Total"] = $total;
 
         $response = "";
         $response .= ' <tr class="spaceUnder">
-                        <!--<th colspan="2" align="center" style="width: 40%;align-content: center;">Particular</th>-->
                         <th  align="center" style="width: 30%;align-content: center;">Particular</th>
                         <th style="width: 10%;padding-left: 15px;">Amount</th>
                         <th style="width: 20%;padding-left: 15px;">Collection Amount</th>
@@ -597,12 +534,12 @@ class AJAXController extends Controller
                     <td style='width: 20%'>$val</td>
             ";
             if ($id != 'Total') {
-                $response .= "<td style='width: 20%'><input type='number' min=0 max=$val  value='" . $val . "' name='fees_data[" . $final_bk_name[$id] . "]' class='form-control allField1'></td>";
-                $response .= "<input type='hidden' value='" . $val . "' name='hid_fees_data[" . $final_bk_name[$id] . "]' class='hid_allField1'>";
-                $response .= "<td style='width: 20%'><input type='number' value='0' name='discount_data[" . $final_bk_name[$id] . "]' class='form-control allDisField' style='min-width:150px;'></td>"; // min=0 max=$val  
-                $response .= "<td style='width: 20%'><input type='number'  min=0 value=0 name='fine_data[" . $final_bk_name[$id] . "]' class='form-control allFinField' style='min-width:150px;'></td>";
+                $response .= "<td style='width: 20%'><input type='number' min=0 max=$val  value='".$val."' name='fees_data[".$final_bk_name[$id]."]' class='form-control allField1'></td>";
+                $response .= "<input type='hidden' value='".$val."' name='hid_fees_data[".$final_bk_name[$id]."]' class='hid_allField1'>";
+                $response .= "<td style='width: 20%'><input type='number' value='0' name='discount_data[".$final_bk_name[$id]."]' class='form-control allDisField' style='min-width:150px;'></td>"; // min=0 max=$val  
+                $response .= "<td style='width: 20%'><input type='number'  min=0 value=0 name='fine_data[".$final_bk_name[$id]."]' class='form-control allFinField' style='min-width:150px;'></td>";
             } else {
-                $response .= "<td style='width: 25%'><input type='text' id='totalVal' name='total' value='" . $total . "' class='form-control'></td>";
+                $response .= "<td style='width: 25%'><input type='text' id='totalVal' name='total' value='".$total."' class='form-control'></td>";
                 $response .= "<td style='width: 25%'><input type='text' id='totalDis' name='totalDis' value='0' class='form-control directdiscount'></td>";
                 $response .= "<td style='width: 25%'><input id='totalFin' type='text' name='totalFin' value='0' class='form-control directfine'></td>";
             }
@@ -610,11 +547,8 @@ class AJAXController extends Controller
         }
 
         return $response;
-        //        echo "<pre>";
-        //        print_r($final_bk);
-        //        print_r($final_bk_name);
-        //        exit;
     }
+
     public function getOnlineFees(Request $request)
     {
 
@@ -628,17 +562,15 @@ class AJAXController extends Controller
         }
 
         $stu_arr = array(
-            "0" => $student_id
+            "0" => $student_id,
         );
         $search_ids = $months;
         $reg_bk_off = FeeBreackoff($stu_arr);
-        // echo ('<pre>');print_r($reg_bk_off);exit;
         $other_bk_off = OtherBreackOff($stu_arr, $search_ids);
         $other_bk_off_month_wise = OtherBreackOfMonth($stu_arr);
         $year_arr = FeeMonthId();
 
         $head_wise_fees = FeeBreakoffHeadWise($stu_arr);
-        // echo ('<pre>');print_r($head_wise_fees);exit;
         $till_now_breckoff = array();
         foreach ($search_ids as $id => $val) {
             foreach ($head_wise_fees as $temp_id => $arr) {
@@ -656,15 +588,13 @@ class AJAXController extends Controller
 
         foreach ($till_now_breckoff as $month_id => $fees_detail) {
             foreach ($fees_detail as $head_name => $arr) {
-                if (!isset($reg_bk_month_wise[$arr['title']]))
+                if (! isset($reg_bk_month_wise[$arr['title']])) {
                     $reg_bk_month_wise[$arr['title']] = 0;
+                }
                 $reg_bk_month_wise[$arr['title']] += $arr['amount'];
                 $final_bk_name[$arr['title']] = $head_name;
-                //                $total = $total + $arr['amount'];
             }
         }
-
-        // echo ('<pre>');print_r($final_bk_name);exit;
 
         $full_bk = array_merge($reg_bk_month_wise, $other_bk_off);
 
@@ -673,10 +603,6 @@ class AJAXController extends Controller
         }
 
         $other_fee_title = OtherBreackOffHead();
-        //echo "<pre>";
-        //print_r($other_fee_title);
-        //print_r($full_bk);
-        //exit;
 
         foreach ($other_fee_title as $id => $arr) {
             foreach ($full_bk as $title => $val) {
@@ -685,15 +611,11 @@ class AJAXController extends Controller
                 }
             }
         }
-        //        echo "<pre>";
-        //        print_r($final_bk_name);
-        //        exit;
-        //        
+
         $full_bk["Total"] = $total;
 
         $response = "";
         $response .= ' <tr class="spaceUnder">
-                        <!--<th colspan="2" align="center" style="width: 40%;align-content: center;">Particular</th>-->
                         <th  align="center" style="width: 30%;align-content: center;">Particular</th>
                         <th style="width: 10%;padding-left: 15px;">Amount</th>
                     </tr>';
@@ -705,25 +627,22 @@ class AJAXController extends Controller
                     <td style='width: 20%'>$val</td>
             ";
             if ($id == 'Total') {
-                $response .= "<input type='hidden' id='totalVal' name='total' value='" . $total . "' class='form-control'>";
-            } 
-            
+                $response .= "<input type='hidden' id='totalVal' name='total' value='".$total."' class='form-control'>";
+            }
+
             $response .= "</tr>";
-            
+
         }
 
         return $response;
-        //        echo "<pre>";
-        //        print_r($final_bk);
-        //        print_r($final_bk_name);
-        //        exit;
     }
+
     public function getOnlineFeesMonth($arr)
     {
 
         $months = $arr["months"];
         $student_id = $arr["student_id"];
-        
+
 
         if (empty($months)) {
             return "";
@@ -731,17 +650,15 @@ class AJAXController extends Controller
         }
 
         $stu_arr = array(
-            "0" => $student_id
+            "0" => $student_id,
         );
         $search_ids = $months;
         $reg_bk_off = FeeBreackoff($stu_arr);
-        // echo ('<pre>');print_r($reg_bk_off);exit;
         $other_bk_off = OtherBreackOff($stu_arr, $search_ids);
         $other_bk_off_month_wise = OtherBreackOfMonth($stu_arr);
         $year_arr = FeeMonthId();
 
         $head_wise_fees = FeeBreakoffHeadWise($stu_arr);
-        // echo ('<pre>');print_r($head_wise_fees);exit;
         $till_now_breckoff = array();
         foreach ($search_ids as $id => $val) {
             foreach ($head_wise_fees as $temp_id => $arr) {
@@ -759,15 +676,13 @@ class AJAXController extends Controller
 
         foreach ($till_now_breckoff as $month_id => $fees_detail) {
             foreach ($fees_detail as $head_name => $arr) {
-                if (!isset($reg_bk_month_wise[$arr['title']]))
+                if (! isset($reg_bk_month_wise[$arr['title']])) {
                     $reg_bk_month_wise[$arr['title']] = 0;
+                }
                 $reg_bk_month_wise[$arr['title']] += $arr['amount'];
                 $final_bk_name[$arr['title']] = $head_name;
-                //                $total = $total + $arr['amount'];
             }
         }
-
-        // echo ('<pre>');print_r($final_bk_name);exit;
 
         $full_bk = array_merge($reg_bk_month_wise, $other_bk_off);
 
@@ -776,10 +691,6 @@ class AJAXController extends Controller
         }
 
         $other_fee_title = OtherBreackOffHead();
-        //echo "<pre>";
-        //print_r($other_fee_title);
-        //print_r($full_bk);
-        //exit;
 
         foreach ($other_fee_title as $id => $arr) {
             foreach ($full_bk as $title => $val) {
@@ -788,46 +699,20 @@ class AJAXController extends Controller
                 }
             }
         }
-        //        echo "<pre>";
-        //        print_r($final_bk_name);
-        //        exit;
-        //        
+
         $full_bk["Total"] = $total;
 
-        // $return_arr = array();
-        // foreach ($full_bk as $id => $val) {
-        //     $return_arr
-        //     $response .= "
-        //          <tr>
-                    
-        //             <td style='width: 20%'>$id</td>
-        //             <td style='width: 20%'>$val</td>
-        //     ";
-        //     if ($id == 'Total') {
-        //         $response .= "<input type='hidden' id='totalVal' name='total' value='" . $total . "' class='form-control'>";
-        //     } 
-            
-        //     $response .= "</tr>";
-            
-        // }
-
         return $full_bk;
-        //        echo "<pre>";
-        //        print_r($final_bk);
-        //        print_r($final_bk_name);
-        //        exit;
     }
+
     public function getLOSubjectList(Request $request)
     {
-        // echo 'her';
-        // exit;
-
         $standard = $request->standard_id;
         $medium = $request->medium_id;
 
         $where = array(
             'learning_outcome_pdf.standard' => $standard,
-            'learning_outcome_pdf.medium' => $medium,
+            'learning_outcome_pdf.medium'   => $medium,
         );
 
         $std_sub_map = DB::table('learning_outcome_pdf')
@@ -836,19 +721,17 @@ class AJAXController extends Controller
 
         return response()->json($std_sub_map);
     }
+
     public function getLOList(Request $request)
     {
-        // echo 'her';
-        // exit;
-
         $standard = $request->standard_id;
         $medium = $request->medium_id;
         $subject = $request->subject_id;
 
         $where = array(
             'learning_outcome_indicator.standard' => $standard,
-            'learning_outcome_indicator.medium' => $medium,
-            'learning_outcome_indicator.subject' => $subject,
+            'learning_outcome_indicator.medium'   => $medium,
+            'learning_outcome_indicator.subject'  => $subject,
         );
 
         $std_sub_map = DB::table('learning_outcome_indicator')
@@ -857,9 +740,9 @@ class AJAXController extends Controller
 
         return response()->json($std_sub_map);
     }
+
     public function getSubModuleList(Request $request)
     {
-
         $main_module_name = DB::table("report_module")
             ->where("id", $request->main_module_id)
             ->get();
@@ -877,62 +760,65 @@ class AJAXController extends Controller
 
         return response()->json($all_sub_module);
     }
+
     public function getStudentFromMobile(Request $request)
     {
         $mobile = $_REQUEST["mobile_number"];
-        // $sub_institute_id = $request->session()->get('sub_institute_id');
-        
+
         $all_student = DB::table("tblstudent as s")
             ->join('fees_online_maping as fo', 'fo.sub_institute_id', '=', 's.sub_institute_id')
-            ->select(
-                DB::raw("CONCAT(s.first_name,' ',s.last_name) AS name"),
-                's.id','fo.bank_name','s.sub_institute_id'
-            )
-            ->where(['mobile'=>$mobile]) //,'fo.sub_institute_id' => $sub_institute_id
+            ->select(DB::raw("CONCAT(s.first_name,' ',s.last_name) AS name"), 's.id', 'fo.bank_name',
+                's.sub_institute_id')
+            ->where(['mobile' => $mobile]) //,'fo.sub_institute_id' => $sub_institute_id
             ->get();
-            
+
         return response()->json($all_student);
     }
 
     public function ajax_checkFeesBreakoff(Request $request)
     {
         $student_id = $_REQUEST["student_id"];
-        
-        $get_enrollment_data = DB::select("SELECT * FROM tblstudent_enrollment WHERE student_id = '".$student_id."' ORDER BY syear DESC LIMIT 1");
+
+        $get_enrollment_data = DB::table('tblstudent_enrollment')->where('student_id', $student_id)
+            ->orderBy('syear', 'DESC')->limit(1)->get()->toArray();
+
         $get_enrollment_data = $get_enrollment_data[0];
 
-        $bf_data = DB::select("SELECT SUM(IFNULL(fb.amount,0)) AS total_amount
-                                FROM tblstudent s
-                                LEFT JOIN fees_breackoff fb ON fb.sub_institute_id = s.sub_institute_id AND fb.admission_year = s.admission_year 
-                                AND fb.quota = '".$get_enrollment_data->student_quota."' AND fb.grade_id = '".$get_enrollment_data->grade_id."' AND fb.syear = '".$get_enrollment_data->syear."' AND fb.standard_id = '".$get_enrollment_data->standard_id."'
-                                WHERE s.id = '".$student_id."' ");
+        $bf_data = DB::table('tblstudent as s')
+            ->leftJoin('fees_breackoff as fb', function ($join) use ($get_enrollment_data) {
+                $join->whereRaw("fb.sub_institute_id = s.sub_institute_id AND fb.admission_year = s.admission_year AND fb.quota = '"
+                    .$get_enrollment_data->student_quota."' AND fb.grade_id = '".$get_enrollment_data->grade_id."' AND fb.syear = '"
+                    .$get_enrollment_data->syear."' AND fb.standard_id = '".$get_enrollment_data->standard_id."'");
+            })
+            ->selectRaw('SUM(IFNULL(fb.amount,0)) AS total_amount')
+            ->where('s.id', $student_id)->get()->toArray();
 
-        $medium_data = DB::select("SELECT medium FROM academic_section WHERE id = '".$get_enrollment_data->grade_id."' ");                
-        
-        $return = $bf_data[0]->total_amount.'####'.$medium_data[0]->medium;
+        $medium_data = DB::table('academic_section')->where('id', $get_enrollment_data->grade_id)
+            ->select('medium')->get()->toArray();
 
-        return $return;
+        return $bf_data[0]->total_amount.'####'.$medium_data[0]->medium;
     }
 
-    public function ajax_load_rightSideMenu(Request $request){  
-             
+    public function ajax_load_rightSideMenu(Request $request)
+    {
+
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $user_id = $request->session()->get('user_id');
         $main_menu_id = $request->menu_id;
 
-        $RightSideMenu = $RS_Menu = $RS_ChildMenu = array();            
-        $RSMainQuery = "SELECT * FROM rightside_menumaster m 
-                        WHERE FIND_IN_SET('" . $sub_institute_id . "', m.sub_institute_id) AND m.parent_menu_id = 0 
-                        AND main_menu_id = '" . $main_menu_id . "'
-                        ORDER BY sort_order";
-        $RSMainQuery = DB::select($RSMainQuery);       
-        $RSMainQuery = json_decode(json_encode($RSMainQuery),true);          
+        $RightSideMenu = $RS_Menu = $RS_ChildMenu = array();
 
-        if(count($RSMainQuery) > 0)
-        {
+        $RSMainQuery = DB::table('rightside_menumaster as m')
+            ->whereRaw("FIND_IN_SET('".$sub_institute_id."', m.sub_institute_id) AND 
+                m.parent_menu_id = 0 AND main_menu_id = '".$main_menu_id."'")
+            ->orderBy('sort_order')->get()->toArray();
+        $RSMainQuery = DB::select($RSMainQuery);
+        $RSMainQuery = json_decode(json_encode($RSMainQuery), true);
+
+        if (count($RSMainQuery) > 0) {
             foreach ($RSMainQuery as $key => $value) {
-                $RS_Menu[$value['id']] = $value; 
-            }           
+                $RS_Menu[$value['id']] = $value;
+            }
         }
 
         $RSChildQuery = "SELECT distinct(m.id),m.*,mm.link
@@ -941,38 +827,41 @@ class AJAXController extends Controller
                         LEFT JOIN tblgroupwise_rights g ON u.user_profile_id = g.profile_id AND u.sub_institute_id = g.sub_institute_id
                         INNER JOIN rightside_menumaster m ON (i.menu_id = m.tblmenu_master_id OR g.menu_id = m.tblmenu_master_id) 
                         INNER JOIN tblmenumaster mm on mm.id = m.tblmenu_master_id
-                        AND FIND_IN_SET('" . $sub_institute_id . "', m.sub_institute_id)
-                        WHERE u.sub_institute_id = '" . $sub_institute_id . "' AND u.id = '" . $user_id . "'
-                        AND m.main_menu_id = '" . $main_menu_id . "'";
-        
-        $RSChildQuery = DB::select($RSChildQuery);
-        $RSChildQuery = json_decode(json_encode($RSChildQuery),true);            
+                        AND FIND_IN_SET('".$sub_institute_id."', m.sub_institute_id)
+                        WHERE u.sub_institute_id = '".$sub_institute_id."' AND u.id = '".$user_id."'
+                        AND m.main_menu_id = '".$main_menu_id."'";
 
-        if(count($RSChildQuery) > 0)
-        {
+        $RSChildQuery = DB::table('tbluser as u')
+            ->leftJoin('tblindividual_rights as i', function ($join) {
+                $join->whereRaw('u.id = i.user_id AND u.sub_institute_id = i.sub_institute_id');
+            })->leftJoin('tblgroupwise_rights as g', function ($join) {
+                $join->whereRaw('u.user_profile_id = g.profile_id AND u.sub_institute_id = g.sub_institute_id');
+            })->join('rightside_menumaster as m', function ($join) {
+                $join->whereRaw('(i.menu_id = m.tblmenu_master_id OR g.menu_id = m.tblmenu_master_id)');
+            })->join('tblmenumaster as mm', function ($join) use ($sub_institute_id) {
+                $join->whereRaw("mm.id = m.tblmenu_master_id AND FIND_IN_SET('".$sub_institute_id."', m.sub_institute_id)");
+            })
+            ->where('u.sub_institute_id', $sub_institute_id)
+            ->where('u.id', $user_id)
+            ->where('m.main_menu_id', $main_menu_id)->get()->toArray();
+
+        $RSChildQuery = json_decode(json_encode($RSChildQuery), true);
+
+        if (count($RSChildQuery) > 0) {
             foreach ($RSChildQuery as $key1 => $value1) {
-                $RS_ChildMenu[$value1['parent_menu_id']][] = $value1; 
-            }           
+                $RS_ChildMenu[$value1['parent_menu_id']][] = $value1;
+            }
         }
-        
-        $i=1;
+
+        $i = 1;
         $main_menu = $child_menu = "";
 
-        // echo '<pre>';
-        // print_r($RS_Menu);
-        // print_r($RS_ChildMenu);
-        // die;
-
-        foreach($RS_Menu as $key => $val)
-        {
-            if(isset($RS_ChildMenu[$val['id']]))
-            {
-                if($i == 1)
-                {
+        foreach ($RS_Menu as $key => $val) {
+            if (isset($RS_ChildMenu[$val['id']])) {
+                if ($i == 1) {
                     $active = "active";
-                }
-                else{
-                    $active = "";   
+                } else {
+                    $active = "";
                 }
                 $main_menu .= '<li class="nav-item" role="presentation" data-toggle="tooltip" data-placement="top" 
                 title="'.$val['name'].'"><a class="nav-link '.$active.'" data-toggle="tab" href="#right-tab-'.$i.'" 
@@ -980,15 +869,13 @@ class AJAXController extends Controller
                 src="http://'.$_SERVER['HTTP_HOST'].'/admin_dep/images/side-'.$val['icon'].'.png" alt="">
                 <img class="icon-hvr" src="https://'.$_SERVER['HTTP_HOST'].'/admin_dep/images/side-'.$val['icon'].'-white.png" 
                 alt=""></a></li>';
-                
+
                 $child_arr = $RS_ChildMenu[$val['id']];
-                $child_li = "";            
-                foreach($child_arr as $ckey => $cval)
-                {                
+                $child_li = "";
+                foreach ($child_arr as $ckey => $cval) {
                     $child_li .= '<li class="d-flex align-items-center"><i class="fa fa-angle-right" style="margin-right: 8px;">
                     </i><a href="'.route($cval['link']).'" onclick="sessionMenu('.$cval['tblmenu_master_id'].');" >'.$cval['name'].'</a></li>';
-                    if($cval['name'] == 'Field Settings')
-                    {
+                    if ($cval['name'] == 'Field Settings') {
                         $export_import_link = "window.open('https://erp.triz.co.in/excel_upload/export_xlsx.php?sub_institute_iderp=".$sub_institute_id."','scrollbars=yes,resizable=no,status=no,location=no,toolbar=no,menubar=no','width=600,height=300,left=100,top=100')";
                         $child_li .= '<li><i class="fa fa-angle-right" style="margin-right: 8px;">
                     </i><a href="javascript:void(0);" onclick="'.$export_import_link.'" class="waves-effect">Excel Import/Export</a></li>';
@@ -1004,9 +891,8 @@ class AJAXController extends Controller
                 $i++;
             }
         }
-        
-        return $main_menu."####".$child_menu;      
-        // return 'jinl';
+
+        return $main_menu."####".$child_menu;
     }
 
     public function ajax_load_helpguide(Request $request)
@@ -1016,106 +902,87 @@ class AJAXController extends Controller
         $user_id = $request->session()->get('user_id');
         $main_menu_id = $request->menu_id;
 
-        $helpguide = array();            
+        $helpguide = array();
 
-        $data = DB::select('SELECT * FROM tblmenumaster where id = "'.$main_menu_id.'"');
-        
-        $data = json_decode(json_encode($data),true);             
-        $data = $data[0];  
-        if($data['youtube_link'] != "")
-        {
-                      
+        $data = DB::table('tblmenumaster')->where('id', $main_menu_id)->get()->toArray();
+
+        $data = json_decode(json_encode($data), true);
+        $data = $data[0];
+        if ($data['youtube_link'] != "") {
+
             return $data['youtube_link']."####".$data['pdf_link'];
-        }
-        else
-        {
-            return "0";   
-        }
+        } else {
 
+            return "0";
+        }
     }
 
     public function ajax_sendmail(Request $request)
-    {        
+    {
         require_once('mailer/class.phpmailer.php');
         $sub_institute_id = $request->session()->get('sub_institute_id');
 
-        $sql = "SELECT * FROM smtp_details WHERE sub_institute_id = '".$sub_institute_id."'";
-        $mail = DB::select($sql);
-        $mail = json_decode(json_encode($mail),true);       
+        $mail = DB::table('smtp_details')->where('sub_institute_id', $sub_institute_id)->get()->toArray();
+        $mail = json_decode(json_encode($mail), true);
         $smtp_details = $mail[0];
-        
-        if(count($mail) > 0)
-        {
+
+        if (count($mail) > 0) {
             $from = $smtp_details['gmail'];
             $from_pass = $smtp_details['password'];
-            $subject = $request->get('subject');         
-            $send_to = $request->get('email');  
+            $subject = $request->get('subject');
+            $send_to = $request->get('email');
             $message = $request->get('message');
 
-                        
+
             $mail = new PHPMailer\PHPMailer();
-            $mail->IsSMTP();            
+            $mail->IsSMTP();
             $mail->isHTML(true);
             $mail->SMTPDebug = 0;
             $mail->SMTPAuth = true;
             $mail->SMTPSecure = "ssl";
             $mail->Host = $smtp_details['server_address'];
             $mail->Port = $smtp_details['port'];
-            /*foreach ($to_arr as $id => $val) {
-                $mail->AddAddress($val);
-            }*/
-            
+
             $mail->AddAddress($send_to);
             $mail->Username = $from;
             $mail->Password = $from_pass;
             $mail->SetFrom($from, $from);
             $mail->AddReplyTo($from, $from);
 
-            if(!empty($request->get('attachment'))){
+            if (! empty($request->get('attachment'))) {
                 $attachment = $request->get('attachment');
                 $mail->addAttachment($attachment);
             }
-            
+
             $mail->Subject = $subject;
             $mail->Body = $message;
             $mail->AltBody = $message;
             $mail->Send();
-            // if($mail->Send())
-            // {
-            //     echo "done";
-            // }else
-            // {
-            //     echo "error".$mail->ErrorInfo;
-            // }
-            // die;
-
         }
-        return redirect()->back();
 
+        return redirect()->back();
     }
 
     public function ajax_sendEmailFeesReceipt(Request $request)
     {
-        // dd($request);
         $sub_institute_id = session()->get('sub_institute_id');
         $syear = session()->get('syear');
         $student_id = $request->input('student_id');
         $receipt_id = $request->input('receipt_id_html');
         $action = $request->input('action');
 
-        $fees_receipt_html = $this->get_FeesHtml($student_id,$action,$receipt_id);
+        $fees_receipt_html = $this->get_FeesHtml($student_id, $action, $receipt_id);
         $fees_css = $this->get_FeesCss($action);
         $fees_receipt_css = "<style>".$fees_css."</style>";
-        
-        if ($fees_receipt_html != '') 
-        {
+
+        if ($fees_receipt_html != '') {
             $dom = '<!DOCTYPE html>
                     <html>
                         <head>
                            <title></title>
                            <meta charset="UTF-8">
                            <meta name="viewport" content="width=erpice-width, initial-scale=1.0">';
-            $dom .= $fees_receipt_css;       
+            $dom .= $fees_receipt_css;
             $dom .= '</head>
                         <body>
                             <div>
@@ -1123,35 +990,34 @@ class AJAXController extends Controller
                             </div>
                         </body>
                     </html>';
-            
-            $getEmailAddress = DB::select("SELECT id,email,enrollment_no,mobile 
-                                           FROM tblstudent 
-                                           WHERE sub_institute_id = '".$sub_institute_id."' AND id = '".$student_id."' ");
 
-            $getEmails = json_decode(json_encode($getEmailAddress),true);
+            $getEmailAddress = DB::table('tblstudent')->selectRaw('id,email,enrollment_no,mobile')
+                ->where('sub_institute_id', $sub_institute_id)
+                ->where('id', $student_id)->get()->toArray();
+
+            $getEmails = json_decode(json_encode($getEmailAddress), true);
             $getEmails = $getEmails[0];
-            
-            $to_arr = $getEmails['email'];   
 
-            $save_path = $_SERVER['DOCUMENT_ROOT'] . '/storage/mail_receipt_pdf';
+            $to_arr = $getEmails['email'];
+
+            $save_path = $_SERVER['DOCUMENT_ROOT'].'/storage/mail_receipt_pdf';
 
             $CUR_TIME = date('YmdHis');
-            $html_filename = $student_id.'_'.$CUR_TIME . ".html";
-            $pdf_filename = $student_id.'_'.$CUR_TIME . ".pdf";
+            $html_filename = $student_id.'_'.$CUR_TIME.".html";
+            $pdf_filename = $student_id.'_'.$CUR_TIME.".pdf";
 
             $html = '';
             $html .= $fees_receipt_html;
-            $path = 'src="http://' . $_SERVER['HTTP_HOST'];
+            $path = 'src="http://'.$_SERVER['HTTP_HOST'];
             $html = str_replace('src="', $path, $html);
             $html = str_replace('##HTML_SEC##', $html, $dom);
 
-            $html_file_path = $save_path . '/' . $html_filename;
-            $pdf_file_path = $save_path . '/' . $pdf_filename;
+            $html_file_path = $save_path.'/'.$html_filename;
+            $pdf_file_path = $save_path.'/'.$pdf_filename;
             file_put_contents($html_file_path, $html);
             htmlToPDF($html_file_path, $pdf_file_path);
 
-            if($action == 'imprest_ledger_view')
-            {
+            if ($action == 'imprest_ledger_view') {
                 $EMAIL_TEXT = "Dear Parents,
                      <br/>
                      <br/>
@@ -1161,7 +1027,7 @@ class AJAXController extends Controller
                      Regards,
                      <br/>
                     ";
-            }else{
+            } else {
                 $EMAIL_TEXT = "Dear Parents,
                      <br/>
                      <br/>
@@ -1171,14 +1037,13 @@ class AJAXController extends Controller
                      Regards,
                      <br/>
                     ";
-            }        
+            }
 
-            if($action == 'imprest_ledger_view')
-            {
+            if ($action == 'imprest_ledger_view') {
                 $request->request->add(['subject' => 'Imprest Ledger Sheet']);
-            }else{
+            } else {
                 $request->request->add(['subject' => 'Fees Receipt']);
-            }     
+            }
             $request->request->add(['email' => $to_arr]);
             $request->request->add(['message' => $EMAIL_TEXT]);
             $request->request->add(['attachment' => $pdf_file_path]);
@@ -1187,10 +1052,9 @@ class AJAXController extends Controller
             unlink($html_file_path);
             unlink($pdf_file_path);
 
-            if($action == 'imprest_ledger_view')
-            {
+            if ($action == 'imprest_ledger_view') {
                 return '2';
-            }else{
+            } else {
                 return '1';
             }
         }
@@ -1198,25 +1062,21 @@ class AJAXController extends Controller
 
     public function ajax_sendBulkEmailFeesReceipt(Request $request)
     {
-        // dd($request);
         $sub_institute_id = session()->get('sub_institute_id');
         $syear = session()->get('syear');
         $last_inserted_ids = $request->input('inserted_ids');
         $action = $request->input('action');
 
-        $inserted_ids_arr = explode(',',$last_inserted_ids);
+        $inserted_ids_arr = explode(',', $last_inserted_ids);
 
-        foreach ($inserted_ids_arr as $key => $value) 
-        { 
+        foreach ($inserted_ids_arr as $key => $value) {
 
-           $html_data = $this->get_FeesHtmlForBulk($action,$value);
-           $student_id = $html_data['student_id'];
-           $fees_receipt_html = $html_data['fees_receipt_html'];
-           // dd($html_data);
+            $html_data = $this->get_FeesHtmlForBulk($action, $value);
+            $student_id = $html_data['student_id'];
+            $fees_receipt_html = $html_data['fees_receipt_html'];
 
-           if ($fees_receipt_html != '') 
-           {
-                 $dom = '<!DOCTYPE html>
+            if ($fees_receipt_html != '') {
+                $dom = '<!DOCTYPE html>
                         <html>
                             <head>
                                <title></title>
@@ -1229,41 +1089,38 @@ class AJAXController extends Controller
                                 </div>
                             </body>
                         </html>';
-                
-                $getEmailAddress = DB::select("SELECT id,email,enrollment_no,mobile 
-                                               FROM tblstudent 
-                                               WHERE sub_institute_id = '".$sub_institute_id."' AND id = '".$student_id."' ");
 
-                $getEmails = json_decode(json_encode($getEmailAddress),true);
+                $getEmailAddress = DB::table('tblstudent')->selectRaw('id,email,enrollment_no,mobile')
+                    ->where('sub_institute_id', $sub_institute_id)
+                    ->where('id', $student_id)->get()->toArray();
+
+                $getEmails = json_decode(json_encode($getEmailAddress), true);
                 $getEmails = $getEmails[0];
-                
-                $to_arr = $getEmails['email'];
-                // $to_arr[2] ='no-reply@themillenniumschoolsurat.org';     
 
-                $save_path = $_SERVER['DOCUMENT_ROOT'] . '/storage/mail_receipt_pdf';
+                $to_arr = $getEmails['email'];
+
+                $save_path = $_SERVER['DOCUMENT_ROOT'].'/storage/mail_receipt_pdf';
 
                 $CUR_TIME = date('YmdHis');
-                $html_filename = $student_id.'_'.$CUR_TIME . ".html";
-                $pdf_filename = $student_id.'_'.$CUR_TIME . ".pdf";
+                $html_filename = $student_id.'_'.$CUR_TIME.".html";
+                $pdf_filename = $student_id.'_'.$CUR_TIME.".pdf";
 
                 $html = '';
                 $html .= $fees_receipt_html;
-                $path = 'src="http://' . $_SERVER['HTTP_HOST'];
+                $path = 'src="http://'.$_SERVER['HTTP_HOST'];
                 $html = str_replace('src="', $path, $html);
                 $html = str_replace('##HTML_SEC##', $html, $dom);
 
-                $html_file_path = $save_path . '/' . $html_filename;
-                $pdf_file_path = $save_path . '/' . $pdf_filename;
+                $html_file_path = $save_path.'/'.$html_filename;
+                $pdf_file_path = $save_path.'/'.$pdf_filename;
                 file_put_contents($html_file_path, $html);
-                if($action == 'fees_circular')
-                {
+                if ($action == 'fees_circular') {
                     htmlToPDFLandscape($html_file_path, $pdf_file_path);
-                }else{                    
+                } else {
                     htmlToPDF($html_file_path, $pdf_file_path);
-                }    
+                }
 
-                if($action == 'fees_circular')
-                {
+                if ($action == 'fees_circular') {
                     $EMAIL_TEXT = "Dear Parents,
                          <br/>
                          <br/>
@@ -1275,7 +1132,7 @@ class AJAXController extends Controller
                          <br/>
                          TMS-Surat
                         ";
-                }else{
+                } else {
                     $EMAIL_TEXT = "Dear Parents,
                          <br/>
                          <br/>
@@ -1287,12 +1144,11 @@ class AJAXController extends Controller
                          <br/>
                          TMS-Surat
                         ";
-                }        
+                }
 
-                if($action == 'fees_circular')
-                {
+                if ($action == 'fees_circular') {
                     $request->request->add(['subject' => 'Fees Circular']);
-                }else{
+                } else {
                     $request->request->add(['subject' => 'Other Fees Receipt']);
                 }
                 $request->request->add(['email' => $to_arr]);
@@ -1302,27 +1158,27 @@ class AJAXController extends Controller
                 $this->ajax_sendmail($request);
                 unlink($html_file_path);
                 unlink($pdf_file_path);
-                
             }
         }
-        if($action == 'fees_circular')
-        {
+
+        if ($action == 'fees_circular') {
+
             return '2';
-        }else{
+        } else {
+
             return '1';
         }
     }
 
     public function ajax_PDF_FeesReceipt(Request $request)
     {
-        
         //Start For Empty folder before creating new PDF
-        $folder_path = $_SERVER['DOCUMENT_ROOT'] . '/storage/print_receipt_pdf/*';
+        $folder_path = $_SERVER['DOCUMENT_ROOT'].'/storage/print_receipt_pdf/*';
         $files = glob($folder_path); // get all file names
-        foreach($files as $file){ // iterate files
-          if(is_file($file)) {
-            unlink($file); // delete file
-          }
+        foreach ($files as $file) { // iterate files
+            if (is_file($file)) {
+                unlink($file); // delete file
+            }
         }
         //END For Empty folder before creating new PDF
 
@@ -1333,15 +1189,12 @@ class AJAXController extends Controller
         $action = $request->input('action');
         $paper_size = $request->input('paper_size');
 
-        //echo $student_id."***".$action."***".$receipt_id;
-        //die();
 
-        $fees_receipt_html = $this->get_FeesHtml($student_id,$action,$receipt_id);
+        $fees_receipt_html = $this->get_FeesHtml($student_id, $action, $receipt_id);
         $fees_css = $this->get_FeesCss($action);
         $fees_receipt_css = "<style>".$fees_css."</style>";
-        
-        if ($fees_receipt_html != '') 
-        {
+
+        if ($fees_receipt_html != '') {
             $dom = '<!DOCTYPE html>
                     <html>
                         <head>
@@ -1357,58 +1210,51 @@ class AJAXController extends Controller
             $dom .= '</body>
                 </html>';
 
-            $save_path = $_SERVER['DOCUMENT_ROOT'] . '/storage/print_receipt_pdf';
+            $save_path = $_SERVER['DOCUMENT_ROOT'].'/storage/print_receipt_pdf';
 
             $CUR_TIME = date('YmdHis');
-            $html_filename = $student_id.'_'.$CUR_TIME . ".html";
-            $pdf_filename = $student_id.'_'.$CUR_TIME . ".pdf";
+            $html_filename = $student_id.'_'.$CUR_TIME.".html";
+            $pdf_filename = $student_id.'_'.$CUR_TIME.".pdf";
 
             $html = '';
-            if(is_array($fees_receipt_html) == 1)
-            {
-                foreach ($fees_receipt_html as $key => $val) 
-                {
+            if (is_array($fees_receipt_html) == 1) {
+                foreach ($fees_receipt_html as $key => $val) {
                     $html .= $val['fees_html'];
                 }
-            }
-            else
-            {
+            } else {
                 $html .= $fees_receipt_html;
             }
-            
-            if($action != 'certificate_re_receipt')
-            {
-                $path = 'src="http://' . $_SERVER['HTTP_HOST'];
+
+            if ($action != 'certificate_re_receipt') {
+                $path = 'src="http://'.$_SERVER['HTTP_HOST'];
                 $html = str_replace('src="', $path, $html);
             }
-            
+
             $html = str_replace('##HTML_SEC##', $html, $dom);
 
-            $html_file_path = $save_path . '/' . $html_filename;
-            $pdf_file_path = $save_path . '/' . $pdf_filename;
+            $html_file_path = $save_path.'/'.$html_filename;
+            $pdf_file_path = $save_path.'/'.$pdf_filename;
             file_put_contents($html_file_path, $html);
 
-            $htmlToPDF = $this->htmlToPDF_making($paper_size,$html_file_path, $pdf_file_path);
+            $htmlToPDF = $this->htmlToPDF_making($paper_size, $html_file_path, $pdf_file_path);
 
             unlink($html_file_path);
 
             $PDF_path_for_open = "http://".$_SERVER['HTTP_HOST'].'/storage/print_receipt_pdf/'.$pdf_filename;
 
             return $PDF_path_for_open;
-
         }
     }
- 
+
     public function ajax_PDF_Bulk_OtherFeesReceipt(Request $request)
     {
-        
         //Start For Empty folder before creating new PDF
-        $folder_path = $_SERVER['DOCUMENT_ROOT'] . '/storage/print_receipt_pdf/*';
+        $folder_path = $_SERVER['DOCUMENT_ROOT'].'/storage/print_receipt_pdf/*';
         $files = glob($folder_path); // get all file names
-        foreach($files as $file){ // iterate files
-          if(is_file($file)) {
-            unlink($file); // delete file
-          }
+        foreach ($files as $file) { // iterate files
+            if (is_file($file)) {
+                unlink($file); // delete file
+            }
         }
         //END For Empty folder before creating new PDF
 
@@ -1417,20 +1263,18 @@ class AJAXController extends Controller
         $last_inserted_ids = $request->input('inserted_ids');
         $action = $request->input('action');
 
-        $inserted_ids_arr = explode(',',$last_inserted_ids);
+        $inserted_ids_arr = explode(',', $last_inserted_ids);
 
         $html = '';
-        foreach ($inserted_ids_arr as $key => $value) 
-        { 
+        foreach ($inserted_ids_arr as $key => $value) {
 
-           $html_data = $this->get_FeesHtmlForBulk($action,$value);
-           $student_id = $html_data['student_id'];
-           $fees_receipt_html = $html_data['fees_receipt_html'];
-           // dd($html_data);
+            $html_data = $this->get_FeesHtmlForBulk($action, $value);
+            $student_id = $html_data['student_id'];
+            $fees_receipt_html = $html_data['fees_receipt_html'];
+            // dd($html_data);
 
-           if($fees_receipt_html != '') 
-           {
-                 $dom = '<!DOCTYPE html>
+            if ($fees_receipt_html != '') {
+                $dom = '<!DOCTYPE html>
                         <html>
                             <head>
                                <title></title>
@@ -1449,113 +1293,107 @@ class AJAXController extends Controller
                             </body>
                         </html>';
 
-                $save_path = $_SERVER['DOCUMENT_ROOT'] . '/storage/print_receipt_pdf';
+                $save_path = $_SERVER['DOCUMENT_ROOT'].'/storage/print_receipt_pdf';
 
                 $CUR_TIME = date('YmdHis');
-                $html_filename = $student_id.'_'.$CUR_TIME . ".html";
-                $pdf_filename = $student_id.'_'.$CUR_TIME . ".pdf";
+                $html_filename = $student_id.'_'.$CUR_TIME.".html";
+                $pdf_filename = $student_id.'_'.$CUR_TIME.".pdf";
 
                 // $html = '';
                 $html .= $fees_receipt_html.'<div class="last_page" style="page-break-before: always !important;"></div>';
                 $html = str_replace('##HTML_SEC##', $html, $dom);
 
-                $html_file_path = $save_path . '/' . $html_filename;
-                $pdf_file_path = $save_path . '/' . $pdf_filename;
+                $html_file_path = $save_path.'/'.$html_filename;
+                $pdf_file_path = $save_path.'/'.$pdf_filename;
                 file_put_contents($html_file_path, $html);
 
-                if($action == 'Bonafide' || $action == 'Character Certificate' || $action == 'other_fees_collect_receipt' || $action == 'imprest_fees_cancel_refund_receipt')
-                {
+                if ($action == 'Bonafide' || $action == 'Character Certificate' || $action == 'other_fees_collect_receipt' || $action == 'imprest_fees_cancel_refund_receipt') {
                     htmlToPDFLandscapeCertificate($html_file_path, $pdf_file_path);
-                }else{
+                } else {
                     htmlToPDF($html_file_path, $pdf_file_path);
                 }
-    
-         
+
+
                 unlink($html_file_path);
 
                 $PDF_path_for_open = "http://".$_SERVER['HTTP_HOST'].'/storage/print_receipt_pdf/'.$pdf_filename;
             }
         }
-        return $PDF_path_for_open;
 
+        return $PDF_path_for_open;
     }
 
-    public function get_FeesHtml($student_id,$action,$receipt_id)
+    public function get_FeesHtml($student_id, $action, $receipt_id)
     {
-
         $sub_institute_id = session()->get('sub_institute_id');
         $syear = session()->get('syear');
 
-        if($action == 'imprest_ledger_view')
-        {
+        if ($action == 'imprest_ledger_view') {
             $NewRequest = new Request();
             $NewRequest->request->add(['student_id' => $student_id]);
 
             $get_controller = new otherNewfeesReportController;
             $fees_receipt_html = $get_controller->ajax_ledgerData($NewRequest);
-        }
-        elseif($action == 'other_fees_re_receipt')
-        {
-            $get_data = DB::select("SELECT *
-                                    FROM fees_other_collection fc
-                                    WHERE fc.sub_institute_id = '".$sub_institute_id."' AND fc.syear = '".$syear."' 
-                                    AND fc.receipt_id = '".$receipt_id."' AND fc.student_id = '".$student_id."'
-                                    ");
+        } elseif ($action == 'other_fees_re_receipt') {
 
-            $other_fees_collection_data = json_decode(json_encode($get_data),true);
+            $get_data = DB::table('fees_other_collection')
+                ->where('sub_institute_id', $sub_institute_id)
+                ->where('syear', $syear)
+                ->where('receipt_id', $receipt_id)
+                ->where('student_id', $student_id)->get()->toArray();
+
+            $other_fees_collection_data = json_decode(json_encode($get_data), true);
             $other_fees_collection_data = $other_fees_collection_data[0];
             $fees_receipt_html = $other_fees_collection_data['paid_fees_html'];
-        }
-        elseif($action == 'certificate_re_receipt')
-        {
-            $get_data = DB::select("SELECT *
-                                    FROM certificate_history
-                                    WHERE sub_institute_id = '".$sub_institute_id."' AND syear = '".$syear."' 
-                                    AND id = '".$receipt_id."' AND student_id = '".$student_id."'
-                                    ");
+        } elseif ($action == 'certificate_re_receipt') {
+            $get_data = DB::table('certificate_history')
+                ->where('sub_institute_id', $sub_institute_id)
+                ->where('syear', $syear)
+                ->where('id', $receipt_id)
+                ->where('student_id', $student_id)->get()->toArray();
 
-            $certificate_data = json_decode(json_encode($get_data),true);
+            $certificate_data = json_decode(json_encode($get_data), true);
             $certificate_data = $certificate_data[0];
             $fees_receipt_html = $certificate_data['certificate_html'];
-        }
-        elseif($action == 'fees_refund_receipt')
-        {
-            $fees_refund_data = DB::select("SELECT *
-                                    FROM fees_refund
-                                    WHERE sub_institute_id = '".$sub_institute_id."' AND syear = '".$syear."' 
-                                    AND id = '".$receipt_id."' AND student_id = '".$student_id."'
-                                    ");
+        } elseif ($action == 'fees_refund_receipt') {
+            $fees_refund_data = DB::table('fees_refund')
+                ->where('sub_institute_id', $sub_institute_id)
+                ->where('syear', $syear)
+                ->where('id', $receipt_id)
+                ->where('student_id', $student_id)->get()->toArray();
 
-            $fees_refund_data = json_decode(json_encode($fees_refund_data),true);
+            $fees_refund_data = json_decode(json_encode($fees_refund_data), true);
             $fees_refund_data = $fees_refund_data[0];
             $fees_receipt_html = $fees_refund_data['fees_html'];
-        }
-        else
-        {
-            $sql = "SELECT fc.id,fc.student_id,fc.receipt_no,fc.fees_html
-                    FROM fees_collect fc
-                    INNER JOIN fees_receipt fr ON FIND_IN_SET(fc.id,fr.FEES_ID) AND fr.SUB_INSTITUTE_ID = fc.sub_institute_id
-                    WHERE fc.sub_institute_id = '".$sub_institute_id."' AND fc.syear = '".$syear."' 
-                    AND fc.student_id = '".$student_id."' AND (fr.RECEIPT_ID_1 = '".$receipt_id."' OR fr.RECEIPT_ID_2 = '".$receipt_id."' OR fr.RECEIPT_ID_3 = '".$receipt_id."' OR fr.RECEIPT_ID_4 = '".$receipt_id."' OR fr.RECEIPT_ID_5 = '".$receipt_id."' OR fr.RECEIPT_ID_6 = '".$receipt_id."')
-                    GROUP BY fc.fees_html
-                    UNION
-                    SELECT fo.id,fo.student_id,fo.reciept_id AS receipt_no,fo.paid_fees_html AS fees_html
-                    FROM fees_paid_other fo
-                    INNER JOIN fees_receipt fro ON FIND_IN_SET(fo.id,fro.OTHER_FEES_ID) AND fro.SUB_INSTITUTE_ID = fo.sub_institute_id
-                    WHERE fo.sub_institute_id = '".$sub_institute_id."' AND fo.syear = '".$syear."' 
-                    AND fo.student_id = '".$student_id."' AND (fro.RECEIPT_ID_1 = '".$receipt_id."' OR fro.RECEIPT_ID_2 = '".$receipt_id."' OR fro.RECEIPT_ID_3 = '".$receipt_id."' OR fro.RECEIPT_ID_4 = '".$receipt_id."' OR fro.RECEIPT_ID_5 = '".$receipt_id."' OR fro.RECEIPT_ID_6 = '".$receipt_id."')
-                    GROUP BY fo.paid_fees_html";
-                    //ORDER BY id DESC fo.reciept_id = '".$receipt_id."' AND fc.receipt_no = '".$receipt_id."'
-                //echo "<pre>";
-                //echo $sql;
-                //die();
-            $get_data = DB::select($sql);
+        } else {
+            $unionQuery = DB::table('fees_paid_other as fo')
+                ->join('fees_receipt as fro', function ($join) {
+                    $join->whereRaw('FIND_IN_SET(fo.id,fro.OTHER_FEES_ID) AND fro.SUB_INSTITUTE_ID = fo.sub_institute_id');
+                })
+                ->selectRaw('fo.id,fo.student_id,fo.reciept_id AS receipt_no,fo.paid_fees_html AS fees_html')
+                ->where('fo.sub_institute_id', $sub_institute_id)
+                ->where('fo.syear', $syear)
+                ->where('fo.student_id', $student_id)
+                ->whereRaw("(fro.RECEIPT_ID_1 = '".$receipt_id."' OR fro.RECEIPT_ID_2 = '".$receipt_id."' OR fro.RECEIPT_ID_3 = '".$receipt_id."' OR fro.RECEIPT_ID_4 = '".$receipt_id."' OR fro.RECEIPT_ID_5 = '".$receipt_id."' OR fro.RECEIPT_ID_6 = '".$receipt_id."')")
+                ->groupBy('fo.paid_fees_html');
 
-            $fees_collection_data = json_decode(json_encode($get_data),true);
-            if(count($fees_collection_data) > 1)
-            {
+            $get_data = DB::table('fees_collect fc')
+                ->join('fees_receipt as fr', function ($join) {
+                    $join->whereRaw('FIND_IN_SET(fc.id,fr.FEES_ID) AND fr.SUB_INSTITUTE_ID = fc.sub_institute_id');
+                })
+                ->selectRaw('fc.id,fc.student_id,fc.receipt_no,fc.fees_html')
+                ->where('fc.sub_institute_id', $sub_institute_id)
+                ->where('fc.syear', $syear)
+                ->where('fc.student_id', $student_id)
+                ->whereRaw("(fr.RECEIPT_ID_1 = '".$receipt_id."' OR fr.RECEIPT_ID_2 = '".$receipt_id."' OR fr.RECEIPT_ID_3 = '".$receipt_id."' 
+                    OR fr.RECEIPT_ID_4 = '".$receipt_id."' OR fr.RECEIPT_ID_5 = '".$receipt_id."' OR fr.RECEIPT_ID_6 = '".$receipt_id."')")
+                ->groupBy('fc.fees_html')
+                ->union($unionQuery)->get()->toArray();
+
+            $fees_collection_data = json_decode(json_encode($get_data), true);
+            if (count($fees_collection_data) > 1) {
                 $fees_receipt_html = $fees_collection_data;
-            }else{
+            } else {
                 $fees_collection_data = $fees_collection_data[0];
                 $fees_receipt_html = $fees_collection_data['fees_html'];
             }
@@ -1564,55 +1402,64 @@ class AJAXController extends Controller
         return $fees_receipt_html;
     }
 
-    public function get_FeesHtmlForBulk($action,$inserted_id)
+    public function get_FeesHtmlForBulk($action, $inserted_id)
     {
 
         $sub_institute_id = session()->get('sub_institute_id');
         $syear = session()->get('syear');
         $html_array = array();
 
-        if($action == 'other_fees_collect_receipt')
-        {
-            $get_data = DB::select("SELECT * FROM fees_other_collection WHERE sub_institute_id = '".$sub_institute_id."' AND  syear = '".$syear."' AND id = '".$inserted_id."' ");
+        if ($action == 'other_fees_collect_receipt') {
 
-           $fees_other_collection_data = json_decode(json_encode($get_data),true);
-           $fees_other_collection_data = $fees_other_collection_data[0];
+            $get_data = DB::table('fees_other_collection')
+                ->where('sub_institute_id', $sub_institute_id)
+                ->where('syear', $syear)
+                ->where('id', $inserted_id)->get()->toArray();
 
-           $html_array['student_id'] = $fees_other_collection_data['student_id'];
-           $html_array['fees_receipt_html'] = $fees_other_collection_data['paid_fees_html'];
+            $fees_other_collection_data = json_decode(json_encode($get_data), true);
+            $fees_other_collection_data = $fees_other_collection_data[0];
+
+            $html_array['student_id'] = $fees_other_collection_data['student_id'];
+            $html_array['fees_receipt_html'] = $fees_other_collection_data['paid_fees_html'];
         }
 
-        if($action == 'imprest_fees_cancel_refund_receipt')
-        {
-            $get_data = DB::select("SELECT * FROM imprest_fees_cancel WHERE sub_institute_id = '".$sub_institute_id."' AND  syear = '".$syear."' AND id = '".$inserted_id."' ");
+        if ($action == 'imprest_fees_cancel_refund_receipt') {
+            $get_data = DB::table('imprest_fees_cancel')
+                ->where('sub_institute_id', $sub_institute_id)
+                ->where('syear', $syear)
+                ->where('id', $inserted_id)->get()->toArray();
 
-           $imprest_fees_cancel_data = json_decode(json_encode($get_data),true);
-           $imprest_fees_cancel_data = $imprest_fees_cancel_data[0];
+            $imprest_fees_cancel_data = json_decode(json_encode($get_data), true);
+            $imprest_fees_cancel_data = $imprest_fees_cancel_data[0];
 
-           $html_array['student_id'] = $imprest_fees_cancel_data['student_id'];
-           $html_array['fees_receipt_html'] = $imprest_fees_cancel_data['cancel_fees_html'];
+            $html_array['student_id'] = $imprest_fees_cancel_data['student_id'];
+            $html_array['fees_receipt_html'] = $imprest_fees_cancel_data['cancel_fees_html'];
         }
 
-        if($action == 'fees_circular')
-        {
-            $get_data = DB::select("SELECT * FROM fees_circular_log WHERE sub_institute_id = '".$sub_institute_id."' AND  syear = '".$syear."' AND id = '".$inserted_id."' ");
+        if ($action == 'fees_circular') {
+            $get_data = DB::table('fees_circular_log')
+                ->where('sub_institute_id', $sub_institute_id)
+                ->where('syear', $syear)
+                ->where('id', $inserted_id)->get()->toArray();
 
-            $fees_circular_data = json_decode(json_encode($get_data),true);
+            $fees_circular_data = json_decode(json_encode($get_data), true);
             $fees_circular_data = $fees_circular_data[0];
 
             $html_array['student_id'] = $fees_circular_data['STUDENT_ID'];
             $html_array['fees_receipt_html'] = $fees_circular_data['FEES_CIRCULAR_HTML'];
         }
 
-        if($action == 'Bonafide' || $action == 'Character Certificate' || $action == 'Transfer Certificate')
-        {
-            $get_data = DB::select("SELECT * FROM certificate_history WHERE sub_institute_id = '".$sub_institute_id."' AND  syear = '".$syear."' AND id = '".$inserted_id."' ");
+        if ($action == 'Bonafide' || $action == 'Character Certificate' || $action == 'Transfer Certificate') {
+            $get_data = DB::table('certificate_history')
+                ->where('sub_institute_id', $sub_institute_id)
+                ->where('syear', $syear)
+                ->where('id', $inserted_id)->get()->toArray();
 
-           $student_certificate_data = json_decode(json_encode($get_data),true);
-           $student_certificate_data = $student_certificate_data[0];
+            $student_certificate_data = json_decode(json_encode($get_data), true);
+            $student_certificate_data = $student_certificate_data[0];
 
-           $html_array['student_id'] = $student_certificate_data['student_id'];
-           $html_array['fees_receipt_html'] = $student_certificate_data['certificate_html'];
+            $html_array['student_id'] = $student_certificate_data['student_id'];
+            $html_array['fees_receipt_html'] = $student_certificate_data['certificate_html'];
         }
 
         return $html_array;
@@ -1623,27 +1470,23 @@ class AJAXController extends Controller
         $sub_institute_id = session()->get('sub_institute_id');
         $syear = session()->get('syear');
 
-        $sql = "select fc.* ,frc.css
-            from  fees_config_master fc
-            inner join fees_receipt_css frc on frc.receipt_id = fc.fees_receipt_template
-            where fc.sub_institute_id = '".$sub_institute_id."' AND fc.syear = '".$syear."' ";
-        $sql = preg_replace('/\n+/', '', $sql);
-        $fees_config = DB::select($sql);
+        $fees_config = DB::table('fees_config_master as fc')
+            ->join('fees_receipt_css as frc', function ($join) {
+                $join->whereRaw('frc.receipt_id = fc.fees_receipt_template');
+            })->selectRaw('fc.* ,frc.css')
+            ->where('fc.sub_institute_id', $sub_institute_id)
+            ->where('fc.syear', $syear)->get()->toArray();
 
-        if (count($fees_config) > 0) 
-        {
+        if (count($fees_config) > 0) {
             $receipt_css = $fees_config[0]->css;
-        }else{
-            $sql = "select frc.css from fees_receipt_css frc where frc.receipt_id = 'A5' ";
-            $sql = preg_replace('/\n+/', '', $sql);
-            $fees_config = DB::select($sql);
+        } else {
+            $fees_config = DB::table('fees_receipt_css')->where('receipt_id', 'A5')->select('css')->get()->toArray();
             $receipt_css = $fees_config[0]->css;
         }
 
-        if($action == 'imprest_ledger_view' || $action == 'Bonafide' || $action == 'Character Certificate' || $action == 'Transfer Certificate' || $action == 'certificate_re_receipt' || $action == 'other_fees_re_receipt')
-        {
+        if ($action == 'imprest_ledger_view' || $action == 'Bonafide' || $action == 'Character Certificate' || $action == 'Transfer Certificate' || $action == 'certificate_re_receipt' || $action == 'other_fees_re_receipt') {
             $fees_receipt_css = '';
-        }else{
+        } else {
             $fees_receipt_css = $receipt_css;
         }
 
@@ -1656,16 +1499,13 @@ class AJAXController extends Controller
         $syear = session()->get('syear');
 
         $extra_html = '';
-        if($paper_size == "A5")
-        {
+        if ($paper_size == "A5") {
             $extra_html = ' <div>
                                 <page size="A5" layout="landscape">
                                    ##HTML_SEC##                           
                                 </page>
                             </div>';
-        }
-        elseif($paper_size == "A5DB")
-        {
+        } elseif ($paper_size == "A5DB") {
             $extra_html = ' <div>
                                 <page size="A5" layout="landscape">
                                     <table width="100%">
@@ -1680,26 +1520,20 @@ class AJAXController extends Controller
                                     </table>
                                 </page>
                             </div>';
-        }
-        elseif($paper_size == "A4")
-        {
+        } elseif ($paper_size == "A4") {
             $extra_html = ' <div>
                                 <page size="A4" layout="landscape">
                                    ##HTML_SEC##                           
                                 </page>
                             </div>';
-        }
-        elseif($paper_size == "A4DB")
-        {
+        } elseif ($paper_size == "A4DB") {
             $extra_html = ' <div>
                                 <page size="A4">
                                    ##HTML_SEC##
                                    ##HTML_SEC##                          
                                 </page>
                             </div>';
-        }
-        else
-        {
+        } else {
             $extra_html = '<div>
                                 ##HTML_SEC##
                            </div>';
@@ -1708,39 +1542,34 @@ class AJAXController extends Controller
         return $extra_html;
     }
 
-    public function htmlToPDF_making($paper_size,$html_file_path, $pdf_file_path)
+    public function htmlToPDF_making($paper_size, $html_file_path, $pdf_file_path)
     {
-        if($paper_size == "A5" || $paper_size == "A4")
-        {
+        if ($paper_size == "A5" || $paper_size == "A4") {
             htmlToPDFLandscapeCertificate($html_file_path, $pdf_file_path);
-        }
-        elseif($paper_size == "A5DB")
-        {
+        } elseif ($paper_size == "A5DB") {
             htmlToPDFLandscape($html_file_path, $pdf_file_path);
-        }
-        elseif($paper_size == "A4DB")
-        {
+        } elseif ($paper_size == "A4DB") {
             htmlToPDFPortrait($html_file_path, $pdf_file_path);
-        }
-        else
-        {
+        } else {
             htmlToPDF($html_file_path, $pdf_file_path);
         }
     }
 
     public function searchMenu(Request $request)
-    {        
+    {
         $searchValue = $request->input('value');
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $user_id = $request->session()->get('user_id');
 
-        $rightsQuery = "SELECT GROUP_CONCAT(distinct m.id) AS MID
-        FROM tbluser u LEFT JOIN tblindividual_rights i ON u.id = i.user_id AND u.sub_institute_id = i.sub_institute_id 
-        LEFT JOIN tblgroupwise_rights g ON u.user_profile_id = g.profile_id AND u.sub_institute_id = g.sub_institute_id 
-        INNER JOIN tblmenumaster m ON (i.menu_id = m.id OR g.menu_id = m.id) AND FIND_IN_SET(" . $sub_institute_id . ", m.sub_institute_id) 
-        WHERE u.sub_institute_id = '" . $sub_institute_id . "' AND u.id = '" . $user_id . "'";
-
-        $rightsQuery = DB::select($rightsQuery);
+        $rightsQuery = DB::table('tbluser as u')
+            ->leftJoin('tblindividual_rights as i', function ($join) {
+                $join->whereRaw('u.id = i.user_id AND u.sub_institute_id = i.sub_institute_id');
+            })->leftJoin('tblgroupwise_rights as g', function ($join) {
+                $join->whereRaw('u.user_profile_id = g.profile_id AND u.sub_institute_id = g.sub_institute_id');
+            })->join('tblmenumaster as m', function ($join) use ($sub_institute_id) {
+                $join->whereRaw("(i.menu_id = m.id OR g.menu_id = m.id) AND FIND_IN_SET(".$sub_institute_id.", m.sub_institute_id)")
+            })->selectRaw('GROUP_CONCAT(distinct m.id) AS MID')
+            ->where('u.sub_institute_id', $sub_institute_id)->where('u.id', $user_id)->get()->toArray();
 
         $rightsQuery = array_map(function ($value) {
             return (array) $value;
@@ -1752,29 +1581,29 @@ class AJAXController extends Controller
             $rightsMenusIds = $rightsQuery['0']['MID'];
         }
 
-        $subChildMenuData = tblmenumasterModel::where('parent_menu_id', '!=', 0)
-                            ->whereRaw("find_in_set('$sub_institute_id',sub_institute_id) AND LEVEL IN (2,3) AND link != 'javascript:void(0);' AND id IN (" . $rightsMenusIds . ") AND status = 1 AND NAME LIKE '%".$searchValue."%' ")
-                            ->orderBy('sort_order')
-                            ->get()
-                            ->toArray();    
-        return $subChildMenuData; 
+        return tblmenumasterModel::where('parent_menu_id', '!=', 0)
+            ->whereRaw("find_in_set('$sub_institute_id',sub_institute_id) AND LEVEL IN (2,3) AND link != 'javascript:void(0);' AND id IN (".$rightsMenusIds.") AND status = 1 AND NAME LIKE '%".$searchValue."%' ")
+            ->orderBy('sort_order')
+            ->get()
+            ->toArray();
     }
 
     public function get_search_url(Request $request)
-    {                
-        $url = route($_REQUEST['value']);        
-        return $url;
-    } 
-    public function get_bloom_texonomy(Request $request) {
+    {
+        return route($_REQUEST['value']);
+    }
+
+    public function get_bloom_texonomy(Request $request)
+    {
         $question = $request->question;
 
-        if ( $question ) {
+        if ($question) {
             $url = 'https://getbloomslevel-gyzqqaohja-el.a.run.app';
             $headers = ['Accept: application/json'];
 
-            $fields = [ 'str' => $question ];
-            
-            $ch = curl_init ();
+            $fields = ['str' => $question];
+
+            $ch = curl_init();
             curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 0);
             curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, 0);
             curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
@@ -1784,12 +1613,7 @@ class AJAXController extends Controller
             curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($fields));
 
             $result = curl_exec($ch);
-            // echo '$result : '.$result;
-            // echo '<pre>';
-            // print_r(curl_getinfo($ch));
-            // die();
-            curl_close ($ch);
-
+            curl_close($ch);
 
 
             return $result;

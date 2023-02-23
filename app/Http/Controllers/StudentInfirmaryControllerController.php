@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\student\studentInfirmaryController;
+use App\Http\Controllers\student\studentInfirmaryController;
 use Illuminate\Http\Request;
 
 class StudentInfirmaryControllerController extends Controller
@@ -10,7 +10,7 @@ class StudentInfirmaryControllerController extends Controller
     /**
      * Display a listing of the resource.
      *
-     * @return \Illuminate\Http\Response
+     * @return void
      */
     public function index()
     {
@@ -20,7 +20,7 @@ class StudentInfirmaryControllerController extends Controller
     /**
      * Show the form for creating a new resource.
      *
-     * @return \Illuminate\Http\Response
+     * @return void
      */
     public function create()
     {
@@ -30,8 +30,8 @@ class StudentInfirmaryControllerController extends Controller
     /**
      * Store a newly created resource in storage.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\Response
+     * @param  Request  $request
+     * @return void
      */
     public function store(Request $request)
     {
@@ -41,8 +41,8 @@ class StudentInfirmaryControllerController extends Controller
     /**
      * Display the specified resource.
      *
-     * @param  \App\student\studentInfirmaryController  $studentInfirmaryController
-     * @return \Illuminate\Http\Response
+     * @param  studentInfirmaryController  $studentInfirmaryController
+     * @return void
      */
     public function show(studentInfirmaryController $studentInfirmaryController)
     {
@@ -52,8 +52,8 @@ class StudentInfirmaryControllerController extends Controller
     /**
      * Show the form for editing the specified resource.
      *
-     * @param  \App\student\studentInfirmaryController  $studentInfirmaryController
-     * @return \Illuminate\Http\Response
+     * @param  studentInfirmaryController  $studentInfirmaryController
+     * @return void
      */
     public function edit(studentInfirmaryController $studentInfirmaryController)
     {
@@ -63,9 +63,9 @@ class StudentInfirmaryControllerController extends Controller
     /**
      * Update the specified resource in storage.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  \App\student\studentInfirmaryController  $studentInfirmaryController
-     * @return \Illuminate\Http\Response
+     * @param  Request  $request
+     * @param  studentInfirmaryController  $studentInfirmaryController
+     * @return void
      */
     public function update(Request $request, studentInfirmaryController $studentInfirmaryController)
     {
@@ -75,8 +75,8 @@ class StudentInfirmaryControllerController extends Controller
     /**
      * Remove the specified resource from storage.
      *
-     * @param  \App\student\studentInfirmaryController  $studentInfirmaryController
-     * @return \Illuminate\Http\Response
+     * @param  studentInfirmaryController  $studentInfirmaryController
+     * @return void
      */
     public function destroy(studentInfirmaryController $studentInfirmaryController)
     {
