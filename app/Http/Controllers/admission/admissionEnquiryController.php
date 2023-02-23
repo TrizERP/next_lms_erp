@@ -4,21 +4,19 @@ namespace App\Http\Controllers\admission;
 
 use App\Http\Controllers\Controller;
 use App\Models\admission\admissionEnquiryModel;
+use App\Models\castModel;
+use App\Models\fees\fees_circular\feesCircularMasterModel;
+use App\Models\school_setup\SchoolModel;
+use App\Models\school_setup\standardModel;
 use App\Models\settings\tblcustomfieldsModel;
 use App\Models\settings\tblfields_dataModel;
-use App\Models\school_setup\SchoolModel;
-use App\Models\student\studentQuotaModel;
-use App\Models\school_setup\standardModel;
-use App\Models\fees\feesReceiptBookMasterModel;
-use App\Models\fees\tblfeesConfigModel;
-use App\Models\fees\fees_circular\feesCircularMasterModel;
-use App\Models\castModel;
-use function App\Helpers\is_mobile;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use function App\Helpers\is_mobile;
 use function App\Helpers\sendSMS;
 
-class admissionEnquiryController extends Controller {
+class admissionEnquiryController extends Controller
+{
     /**
      * Display a listing of the resource.
      *
@@ -43,7 +41,6 @@ class admissionEnquiryController extends Controller {
         // ->groupBy('admission_enquiry.id')
         // ->orderby(DB::raw('admission_enquiry.followup_date = DATE_FORMAT(NOW(),"%Y-%m-%d")'),'DESC')
         // ->get();
-        // dd($data);
 
         // $sql = 'SELECT `admission_enquiry`.*,
         //         CASE
@@ -70,37 +67,35 @@ class admissionEnquiryController extends Controller {
         //         ORDER BY admission_enquiry.followup_date = DATE_FORMAT(NOW(),"%Y-%m-%d") desc';
         // $data = DB::select($sql);        
         // $data = json_decode(json_encode($data),true);
-        // // dd($data);
 
         // $res['status_code'] = 1;
         // $res['message'] = "Success";
         // $res['data'] = $data;
-         $sql = 'SELECT `admission_enquiry`.*,
-                CASE
-                    WHEN admission_enquiry.followup_date = DATE_FORMAT(NOW(),"%Y-%m-%d") THEN "#f5f777"
-                    WHEN fu.follow_up_date = DATE_FORMAT(NOW(),"%Y-%m-%d") THEN "#f5f777"
+
+        $data = DB::table('admission_enquiry')
+            ->leftJoin('admission_form as af', function ($join) {
+                $join->whereRaw('af.enquiry_id = admission_enquiry.id AND af.sub_institute_id = admission_enquiry.sub_institute_id');
+            })->leftJoin('tblstudent', function ($join) {
+                $join->whereRaw('`tblstudent`.`admission_id` = `admission_enquiry`.`id`');
+            })->leftJoin('standard', function ($join) {
+                $join->whereRaw('`standard`.`id` = `admission_enquiry`.`admission_standard`');
+            })->leftJoin('follow_up as fu', function ($join) {
+                $join->whereRaw('fu.id = (SELECT id FROM follow_up AS fu1 WHERE fu1.enquiry_id = admission_enquiry.id ORDER BY fu1.id DESC LIMIT 1)');
+            })
+            ->selectRaw('CASE WHEN admission_enquiry.followup_date = DATE_FORMAT(NOW(),"%Y-%m-%d") THEN "#f5f777"
+                WHEN fu.follow_up_date = DATE_FORMAT(NOW(),"%Y-%m-%d") THEN "#f5f777"
                 END AS current_status_color,
                 COUNT(tblstudent.id) AS total_student_count,standard.name as std_name,
                 IF(fu.status = "close","1","0") as enquiry_status,fu.status as display_enquiry_status,
                 if(fu.status = "close","pink","") as enq_color,DATE_FORMAT(fu.follow_up_date,"%d-%m-%Y") as next_follow_up_date,
                 af.form_no as form_number,
-                if(fu.follow_up_date = DATE_FORMAT(NOW(),"%Y-%m-%d"),"#0aa884","") as todays_next_followup 
-                FROM `admission_enquiry` 
-                LEFT JOIN admission_form af ON af.enquiry_id = admission_enquiry.id AND af.sub_institute_id = admission_enquiry.sub_institute_id
-                LEFT JOIN `tblstudent` on `tblstudent`.`admission_id` = `admission_enquiry`.`id` 
-                LEFT JOIN `standard` on `standard`.`id` = `admission_enquiry`.`admission_standard` 
-                LEFT JOIN follow_up fu ON fu.id = (
-                SELECT id
-                FROM follow_up AS fu1
-                WHERE fu1.enquiry_id = admission_enquiry.id
-                ORDER BY fu1.id DESC
-                LIMIT 1)
-                WHERE (`admission_enquiry`.`sub_institute_id` = "'.$sub_institute_id.'" and `admission_enquiry`.`syear` = "'.$syear.'") 
-                GROUP BY `admission_enquiry`.`id` 
-                ORDER BY admission_enquiry.followup_date = DATE_FORMAT(NOW(),"%Y-%m-%d") desc';
-        $data = DB::select($sql);        
-        $data = json_decode(json_encode($data),true);
-        // dd($data);
+                if(fu.follow_up_date = DATE_FORMAT(NOW(),"%Y-%m-%d"),"#0aa884","") as todays_next_followup ')
+            ->where('admission_enquiry.sub_institute_id', $sub_institute_id)
+            ->where('admission_enquiry.syear', $syear)
+            ->groupBy('admission_enquiry.id')
+            ->orderByRaw('admission_enquiry.followup_date = DATE_FORMAT(NOW(),"%Y-%m-%d") desc')
+            ->get()->toArray();
+        $data = json_decode(json_encode($data), true);
 
         $res['status_code'] = 1;
         $res['message'] = "Success";
@@ -309,16 +304,12 @@ class admissionEnquiryController extends Controller {
 
         if($sub_institute_id == 198) // For Admission Registration Receipt (Maheshvari)
         {
-            $sql = "SELECT *,GROUP_CONCAT(fees_head_id) heads
-            FROM fees_receipt_book_master
-            WHERE syear = '" . session()->get('syear') . "'
-            AND sub_institute_id = '" . session()->get('sub_institute_id') . "'
-            GROUP BY receipt_line_1,receipt_line_2,receipt_line_3,
-            receipt_line_4,receipt_prefix,receipt_logo,last_receipt_number";
-            $sql = preg_replace('/\n+/', '', $sql);
-            // die;
-            $result = DB::select($sql);
-            //dd($result);
+            $result = DB::table('fees_receipt_book_master')
+                ->selectRaw('*,GROUP_CONCAT(fees_head_id) heads')
+                ->where('syear', session()->get('syear'))
+                ->where('sub_institute_id', session()->get('sub_institute_id'))
+                ->groupByRaw('receipt_line_1,receipt_line_2,receipt_line_3,receipt_line_4,receipt_prefix,receipt_logo,last_receipt_number')
+                ->get()->toArray();
             $get_receipt = "SELECT (IFNULL(MAX(CAST(receipt_id AS UNSIGNED)),1) + 1) as rid
                         FROM admission_enquiry
                         WHERE SUB_INSTITUTE_ID = '".$sub_institute_id."' ";
@@ -328,9 +319,7 @@ class admissionEnquiryController extends Controller {
 
             $receipt_book_arr = array();
             foreach ($result as $temp_id => $receipt_detail) {
-                // if ($sort_order == $receipt_detail->sort_order) {
-                    $receipt_book_arr = $receipt_detail;
-                // }
+                $receipt_book_arr = $receipt_detail;
             }
            
             $image_path = "/storage/fees/" . $receipt_book_arr->receipt_logo;
@@ -449,9 +438,6 @@ class admissionEnquiryController extends Controller {
             $recHtml .= '</tr>';
 
             $recHtml .= '</table><br>';
-            // $sArr = array('"', "'");
-            // $rArr = array('\"', "\'");
-            // $recHtml_for_insert = str_replace($sArr, $rArr, $recHtml);
             $recHtml_for_insert = $recHtml;
 
             $data['receipt_id'] = $RECEIPT_NO;
@@ -673,6 +659,7 @@ class admissionEnquiryController extends Controller {
         admissionEnquiryModel::where(["id" => $id])->delete();
         $res['status_code'] = "1";
         $res['message'] = "Deleted successfully";
+
         return is_mobile($type, "admission_enquiry.index", $res);
     }
 

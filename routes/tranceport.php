@@ -1,10 +1,19 @@
 <?php
 
-use App\Models\tbluserModel;
-use Illuminate\Http\Request;
 use App\Http\Controllers\AJAXController;
+use App\Http\Controllers\transportation\add_driver\add_driver_controller;
+use App\Http\Controllers\transportation\add_route\add_route_controller;
+use App\Http\Controllers\transportation\add_stop\add_stop_controller;
+use App\Http\Controllers\transportation\add_vehicle\add_vehicle_controller;
+use App\Http\Controllers\transportation\map_route_bus\map_route_bus_controller;
+use App\Http\Controllers\transportation\map_route_stop\map_route_stop_controller;
+use App\Http\Controllers\transportation\map_student\map_student_controller;
+use App\Http\Controllers\transportation\send_late_sms\send_late_sms_controller;
+use App\Http\Controllers\transportation\van_wise_report\van_wise_report_controller;
+use App\Models\tbluserModel;
+use Illuminate\Support\Facades\Route;
 
-Route::group(['prefix' => 'transportation', 'middleware' => ['session', 'menu','logRoute']], function() {
+Route::group(['prefix' => 'transportation', 'middleware' => ['session', 'menu', 'logRoute']], function () {
     Route::resource('add_driver', add_driver_controller::class);
     Route::resource('add_vehicle', add_vehicle_controller::class);
     Route::resource('add_route', add_route_controller::class);

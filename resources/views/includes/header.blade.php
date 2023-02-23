@@ -197,9 +197,9 @@
                                 @if($loop->last)
                                     {{ $newsegment }}
                                 @else
-                                    <!-- <a href="">{{ title_case($newsegment) }}</a> -->
-                                    <a href="{{ $link }}" class="{{$i}}">{{ title_case($newsegment) }}</a>
-                                    <!-- <a href="#">{{ $newsegment }}</a> -->
+                                    {{--                                    <!-- <a href="">{{ title_case($newsegment) }}</a> -->--}}
+                                    {{--                                    <a href="{{ $link }}" class="{{$i}}">{{ title_case($newsegment) }}</a>--}}
+                                    {{--                                    <!-- <a href="#">{{ $newsegment }}</a> -->--}}
                                 @endif
                             </li>
                         @endif
