@@ -2,14 +2,14 @@
 
 namespace App\Exceptions;
 
+use App\Models\errLog;
 use Exception;
 use Illuminate\Foundation\Exceptions\Handler as ExceptionHandler;
-use App\Models\errLog;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response as ResponseAlias;
+use Illuminate\Support\Facades\URL;
 use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\NotFoundExceptionInterface;
-use Illuminate\Support\Facades\URL;
 use Throwable;
 
 class Handler extends ExceptionHandler
@@ -36,19 +36,17 @@ class Handler extends ExceptionHandler
     /**
      * Report or log an exception.
      *
-     * @param Exception|Throwable $exception
-     * @return void
+     * @param  Exception|Throwable  $exception
      * @throws Throwable
      * @throws ContainerExceptionInterface
      * @throws NotFoundExceptionInterface
+     * @return void
      */
     public function report(Exception|Throwable $exception)
     {
 
         // 13/08/2021 START code for Insert Exception & Error in DB table
 
-        // $data = Session::all();
-        // dd($data);
         $u_id = session()->get("user_id");
         if ($u_id != '') {
             $userId = $u_id;
@@ -58,17 +56,16 @@ class Handler extends ExceptionHandler
 
         if ($exception->getCode() != 0) {
             $random_no = rand(10000, 99999);
-            $image_name = $random_no . '.jpg';
+            $image_name = $random_no.'.jpg';
             $path = URL::current();
-            $save_path = $_SERVER['DOCUMENT_ROOT'] . '/storage/error_screenshort/' . $image_name;
-            // exec('wkhtmltoimage --width 2000 --height 1000 '.$path.' '.$save_path);
+            $save_path = $_SERVER['DOCUMENT_ROOT'].'/storage/error_screenshort/'.$image_name;
 
             $errLog = new errLog([
-                'user_id' => $userId,
-                'code' => $exception->getCode(),
-                'file' => $exception->getFile(),
-                'line' => $exception->getLine(),
-                'message' => $exception->getMessage(),
+                'user_id'      => $userId,
+                'code'         => $exception->getCode(),
+                'file'         => $exception->getFile(),
+                'line'         => $exception->getLine(),
+                'message'      => $exception->getMessage(),
                 'screen_short' => $path //  '/storage/error_screenshort/'.$image_name
             ]);
             $errLog->save();
@@ -81,20 +78,19 @@ class Handler extends ExceptionHandler
     /**
      * Render an exception into an HTTP response.
      *
-     * @param Request $request
-     * @param Exception|Throwable $exception
-     * @return ResponseAlias
+     * @param  Request  $request
+     * @param  Exception|Throwable  $exception
      * @throws Throwable
+     * @return ResponseAlias
      */
     public function render($request, Exception|Throwable $exception)
     {
         if ($this->isHttpException($exception)) {
             if ($exception->getStatusCode() == 404) {
-                return response()->view('errors.' . '404', [], 404);
+                return response()->view('errors.'.'404', [], 404);
             }
         }
-        //dd($exception->getMessage());
-        //return response()->view('errors.500', ['error' => $exception->getMessage()], 500);
+
         return parent::render($request, $exception);
     }
 }
