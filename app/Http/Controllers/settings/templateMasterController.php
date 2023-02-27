@@ -4,49 +4,50 @@ namespace App\Http\Controllers\settings;
 
 use App\Http\Controllers\Controller;
 use App\Models\settings\templateMasterModel;
-use function App\Helpers\is_mobile;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use function App\Helpers\is_mobile;
 
-class templateMasterController extends Controller {
+class templateMasterController extends Controller
+{
 
-	public function index(Request $request) {		
-		$type = $request->input('type');
-        $data = $this->getData($request);   
-        $res['status_code'] = 1;
-        $res['message'] = "SUCCESS";      
-        $res['data'] =  $data['template_data'];  
-        
-        return is_mobile($type,'settings/show_templates',$res,"view");         
-	}
-
-	public function getData($request){
-		
-		$sub_institute_id = $request->session()->get('sub_institute_id');
-        $data['template_data'] = array();
-        
-        $data['template_data'] = templateMasterModel::select('template_master.*',
-        	db::raw('concat_ws(" ",u.first_name,u.middle_name,u.last_name) as created_by'))   
-        ->join('tbluser as u','u.id','=','template_master.created_by')     
-        ->where(['template_master.sub_institute_id'=>$sub_institute_id])                      
-        ->get()->toArray();
-      
-        return $data;
-	}
-
-	public function create(Request $request) {
-		$type = $request->input('type');
-		$data = array();
-		// $data['all_tags'] = $this->getAllTags();
-		
-        return is_mobile($type,'settings/add_templates',$data,"view");
-	}
-
-    public function viewAllTag(Request $request) 
-    {    
+    public function index(Request $request)
+    {
         $type = $request->input('type');
-        $data = "
-        To make the template values dynamic,please use the following table as below.
+        $data = $this->getData($request);
+        $res['status_code'] = 1;
+        $res['message'] = "SUCCESS";
+        $res['data'] = $data['template_data'];
+
+        return is_mobile($type, 'settings/show_templates', $res, "view");
+    }
+
+    public function getData($request)
+    {
+
+        $sub_institute_id = $request->session()->get('sub_institute_id');
+
+        $data['template_data'] = templateMasterModel::select('template_master.*',
+            DB::raw('concat_ws(" ",u.first_name,u.middle_name,u.last_name) as created_by'))
+            ->join('tbluser as u', 'u.id', '=', 'template_master.created_by')
+            ->where(['template_master.sub_institute_id' => $sub_institute_id])
+            ->get()->toArray();
+
+        return $data;
+    }
+
+    public function create(Request $request)
+    {
+        $type = $request->input('type');
+        $data = [];
+
+        return is_mobile($type, 'settings/add_templates', $data, "view");
+    }
+
+    public function viewAllTag(Request $request)
+    {
+        $type = $request->input('type');
+        $data = "To make the template values dynamic,please use the following table as below.
         <ul>
         <li><b><< receipt_logo >></b> : Institute/School Logo</li>
         <li><b><< receipt_line_1 >></b> : Institute/School Name</li>
@@ -109,76 +110,80 @@ class templateMasterController extends Controller {
         <li><b><< his_her_value >></b> : His/Her</li>
         </ul>";
 
-        return is_mobile($type,'settings/view_all_tag',$data,"view");
+        return is_mobile($type, 'settings/view_all_tag', $data, "view");
     }
 
-	public function store(Request $request) {
+    public function store(Request $request)
+    {
 
-		$sub_institute_id = $request->session()->get('sub_institute_id');               
-        $user_id = $request->session()->get('user_id');       
-                  
+        $sub_institute_id = $request->session()->get('sub_institute_id');
+        $user_id = $request->session()->get('user_id');
+
         $content = array(
-            'module_name' => $request->get('module_name'),
-            'title' => $request->get('title'),
-            'html_content' => $request->get('html_content'),                       
-            'status' => '1',                                   
-            'created_by' => $user_id,
-            'sub_institute_id' => $sub_institute_id
-        );  
-        
+            'module_name'      => $request->get('module_name'),
+            'title'            => $request->get('title'),
+            'html_content'     => $request->get('html_content'),
+            'status'           => '1',
+            'created_by'       => $user_id,
+            'sub_institute_id' => $sub_institute_id,
+        );
+
         templateMasterModel::insert($content);
-        
+
         $res = array(
             "status_code" => 1,
-            "message" => "Template Added Successfully",
+            "message"     => "Template Added Successfully",
         );
         $type = $request->input('type');
-        return is_mobile($type, "templatemaster.index", $res, "redirect");        
-	}
 
-	public function edit(Request $request,$id)
+        return is_mobile($type, "templatemaster.index", $res, "redirect");
+    }
+
+    public function edit(Request $request, $id)
     {
         $type = $request->input('type');
-        $sub_institute_id = $request->session()->get('sub_institute_id');       
-                        
-        $data['template_data'] = templateMasterModel::find($id)->toArray(); 
+        $sub_institute_id = $request->session()->get('sub_institute_id');
 
-        // $data['all_tags'] = $this->getAllTags();        
-        
+        $data['template_data'] = templateMasterModel::find($id)->toArray();
+
         return is_mobile($type, "settings/add_templates", $data, "view");
     }
 
-	public function update(Request $request, $id) {
-		$sub_institute_id = $request->session()->get('sub_institute_id'); 
-        $syear = $request->session()->get('syear');         
-        $user_id = $request->session()->get('user_id');              
-        
-        $data = array(
-            'module_name' => $request->get('module_name'),
-            'title' => $request->get('title'),
-            'html_content' => $request->get('html_content'),                       
-            'status' => '1',                                   
-            'created_by' => $user_id,
-            'sub_institute_id' => $sub_institute_id
-        );              
+    public function update(Request $request, $id)
+    {
+        $sub_institute_id = $request->session()->get('sub_institute_id');
+        $syear = $request->session()->get('syear');
+        $user_id = $request->session()->get('user_id');
+
+        $data = [
+            'module_name'      => $request->get('module_name'),
+            'title'            => $request->get('title'),
+            'html_content'     => $request->get('html_content'),
+            'status'           => '1',
+            'created_by'       => $user_id,
+            'sub_institute_id' => $sub_institute_id,
+        ];
 
         templateMasterModel::where(["id" => $id])->update($data);
-                
-        $res = array(
-            "status_code" => 1,
-            "message" => "Template Updated Successfully",
-        );
-        $type = $request->input('type');
-        return is_mobile($type, "templatemaster.index", $res, "redirect");
-	}
 
-	public function destroy(Request $request, $id) {
-		$type = $request->input('type');
-             
+        $res = [
+            "status_code" => 1,
+            "message"     => "Template Updated Successfully",
+        ];
+        $type = $request->input('type');
+
+        return is_mobile($type, "templatemaster.index", $res, "redirect");
+    }
+
+    public function destroy(Request $request, $id)
+    {
+        $type = $request->input('type');
+
         templateMasterModel::where(["id" => $id])->delete();
         $res['status_code'] = "1";
         $res['message'] = "Template Deleted Successfully";
+
         return is_mobile($type, "templatemaster.index", $res);
-	}
-	
+    }
+
 }

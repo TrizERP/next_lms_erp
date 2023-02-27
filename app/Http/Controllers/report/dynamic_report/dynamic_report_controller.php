@@ -2,13 +2,11 @@
 
 namespace App\Http\Controllers\report\dynamic_report;
 
-// namespace  App\Http\Controllers\learning_outcome\indicator_mapping\indicator_mapping_controller;
-
-
-//use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
-use DB;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
+use Illuminate\Support\Facades\DB;
+use function App\Helpers\is_mobile;
 
 
 class dynamic_report_controller extends Controller
@@ -18,7 +16,7 @@ class dynamic_report_controller extends Controller
     /**
      * Display a listing of the resource.
      *
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function index(Request $request)
     {
@@ -31,21 +29,18 @@ class dynamic_report_controller extends Controller
 
 
         $school_data["data"] = $this->getData();
-        // echo '<pre>'; print_r($_REQUEST); exit;
-        // $school_data['data'] = $this->get_all_dd();
-        // $dataStore = $this->get_all_dd();
-        // $school_data['data'] = array();
 
         $type = $request->input('type');
 
-        return \App\Helpers\is_mobile($type, 'dynamic_report/dynamic_report/show', $school_data, 'view');
+        return is_mobile($type, 'dynamic_report/dynamic_report/show', $school_data, 'view');
     }
 
     public function getData($id = "")
     {
-        $where_arr = array(
-            "sub_institute_id" => session()->get('sub_institute_id')
-        );
+        $where_arr = [
+            "sub_institute_id" => session()->get('sub_institute_id'),
+        ];
+
         $data = array();
         if ($id != "") {
             $where_arr["id"] = $id;
@@ -54,7 +49,7 @@ class dynamic_report_controller extends Controller
                 ->get();
         } else {
             $or_where_arr = array(
-                "privacy" => 1
+                "privacy" => 1,
             );
             $data = DB::table('report_module_data')
                 ->where($where_arr)
@@ -67,53 +62,39 @@ class dynamic_report_controller extends Controller
             $arr->SrNo = $i;
             $i++;
         }
-        // echo '<pre>'; print_r($data); exit;
+
         return $data;
     }
+
     public function get_all_dd()
     {
-        $str = 'SELECT * FROM report_module group by main_module order by id';
-        $result = DB::select(DB::raw($str));
+        $result = DB::table('report_module')->groupBy('main_module')->orderBy('id')->get()->toArray();
 
         $main_module = array();
         foreach ($result as $id => $arr) {
             $main_module[$arr->id] = $arr->main_module;
         }
 
-        $dataStore = array(
+        return [
             'main_module' => $main_module,
-        );
-
-        return $dataStore;
+        ];
     }
 
     public function dynamicReportStep2(Request $request)
     {
-        // echo '<pre>'; print_r($_REQUEST); exit;
         $report_name = $_REQUEST["report_name"];
         $main_module = $_REQUEST["main_module"];
         $sub_module = $_REQUEST["sub_module"];
         $description = $_REQUEST["description"];
+
         //private
         $privacy = $_REQUEST["privacy"];
 
-        // if(isset($_REQUEST["public"])){
-        //     $privacy = 1;
-        // }
         $sub_module[] = $main_module;
-        // echo '<pre>'; 
-        // print_r($_REQUEST);
-        // print_r($sub_module);
-        //  exit;
-        //  $whereIn = implode(",",$sub_module);
-
 
         $all_sub_module_fields = DB::table("report_module_fields")
             ->whereIn("menu_id", $sub_module)
             ->get();
-        // echo '<pre>';
-        // print_r($all_sub_module_fields);
-        // exit;
 
         $sub_module_showing_name = array();
         $sub_module_db_fields = array();
@@ -129,29 +110,21 @@ class dynamic_report_controller extends Controller
         $send_arr = array(
             "report_name" => $_REQUEST["report_name"],
             "main_module" => $_REQUEST["main_module"],
-            "sub_module" => $_REQUEST["sub_module"],
+            "sub_module"  => $_REQUEST["sub_module"],
             "description" => $_REQUEST["description"],
-            "privacy" => $privacy,
-            "all_fields" => $all_fields_name
+            "privacy"     => $privacy,
+            "all_fields"  => $all_fields_name,
         );
 
         $type = "";
-        return \App\Helpers\is_mobile($type, 'dynamic_report/dynamic_report/step2', $send_arr, 'view');
 
-        // echo '<pre>';
-        // print_r($all_fields_index);
-        // print_r($all_fields_name);
-        // exit;
+        return is_mobile($type, 'dynamic_report/dynamic_report/step2', $send_arr, 'view');
+
     }
+
     public function dynamicReportStep3(Request $request)
     {
-        // $arr = explode(",",$_REQUEST["selected_fields"]);
-        // echo '<pre>'; 
-        // print_r($_REQUEST);
-        // print_r($arr);
-        //  exit;
-
-        $group_by_arr = array();
+        $group_by_arr = [];
         if (isset($_REQUEST["group_by1"]) && $_REQUEST["group_by1"] != '') {
             $group_by_arr[] = $_REQUEST["group_by1"];
         }
@@ -162,7 +135,7 @@ class dynamic_report_controller extends Controller
             $group_by_arr[] = $_REQUEST["group_by3"];
         }
 
-        $sort_order_arr = array();
+        $sort_order_arr = [];
         if (isset($_REQUEST["sort_order1"]) && $_REQUEST["sort_order1"] != '') {
             $sort_order_arr[] = $_REQUEST["sort_order1"];
         }
@@ -174,35 +147,36 @@ class dynamic_report_controller extends Controller
         }
 
         $old_data = unserialize($_REQUEST["old_data"]);
-        $old_data["selected_fields"] = explode(",",$_REQUEST["selected_fields"]);
+        $old_data["selected_fields"] = explode(",", $_REQUEST["selected_fields"]);
         $old_data["group_by"] = $group_by_arr;
         $old_data["sort_order"] = $sort_order_arr;
         $old_data["old_data"] = serialize($old_data);
 
         $type = "";
-        return \App\Helpers\is_mobile($type, 'dynamic_report/dynamic_report/step3', $old_data, 'view');
+
+        return is_mobile($type, 'dynamic_report/dynamic_report/step3', $old_data, 'view');
     }
+
     /**
      * Show the form for creating a new resource.
      *
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function create(Request $request)
     {
         $type = $request->input('type');
         $dataStore = $this->get_all_dd();
 
-        return \App\Helpers\is_mobile($type, 'dynamic_report/dynamic_report/add', $dataStore, 'view');
+        return is_mobile($type, 'dynamic_report/dynamic_report/add', $dataStore, 'view');
     }
-
 
 
     /**
      * Store a newly created resource in storage.
      *
-     * @param \Illuminate\Http\Request $request
+     * @param  Request  $request
      *
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function store(Request $request)
     {
@@ -213,44 +187,38 @@ class dynamic_report_controller extends Controller
 
         $data = array(
             'sub_institute_id' => session()->get('sub_institute_id'),
-            'report_name' => $old_data["report_name"],
-            'description' => $old_data["description"],
-            'privacy' => $old_data["privacy"],
+            'report_name'      => $old_data["report_name"],
+            'description'      => $old_data["description"],
+            'privacy'          => $old_data["privacy"],
         );
         $all_data = serialize($old_data);
         $data["all_data"] = $all_data;
 
-        DB::table('report_module_data')->insert(
-            $data
-        );
+        DB::table('report_module_data')
+            ->insert($data);
 
         $res = array(
             'status_code' => 1,
-            'message' => 'Data Saved',
+            'message'     => 'Data Saved',
         );
 
         $type = $request->input('type');
 
-        return \App\Helpers\is_mobile($type, 'dynamic_report.index', $res, 'redirect');
-
-        // echo '<pre>';
-        // print_r($request->Code);
-        // exit;
+        return is_mobile($type, 'dynamic_report.index', $res, 'redirect');
     }
 
     /**
      * Display the specified resource.
      *
-     * @param int $id
+     * @param  int  $id
      *
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function show($id)
     {
         //getting all data from table
         $data = $this->getData($id);
         $all_detail = unserialize($data[0]->all_data);
-        // echo '<pre>'; print_r($all_detail); exit;
 
         //getting main module name
         $main_module = $all_detail["main_module"];
@@ -266,21 +234,14 @@ class dynamic_report_controller extends Controller
         $sub_module_name = DB::table("report_module")
             ->whereIn("id", $sub_module)
             ->get();
-        // echo '<pre>'; print_r($sub_module_name); exit;
-        // $sub_module_name = $sub_module_name[0]->sub_module;
-
 
         //gettting  all_filed with their index
-
         $all_sub_module_fields = DB::table("report_module_fields")
             ->whereIn("menu_id", $sub_module)
             ->get();
-        // echo '<pre>';
-        // print_r($all_sub_module_fields);
-        // exit;
 
-        $sub_module_showing_name = array();
-        $sub_module_db_fields = array();
+        $sub_module_showing_name = [];
+        $sub_module_db_fields = [];
         foreach ($all_sub_module_fields as $id => $arr) {
             $temp_showing_name = explode(",", $all_sub_module_fields[$id]->showing_name);
             $temp_db_fields = explode("|", $all_sub_module_fields[$id]->database_fields);
@@ -288,36 +249,25 @@ class dynamic_report_controller extends Controller
             $sub_module_db_fields = array_merge($sub_module_db_fields, $temp_db_fields);
         }
 
-        // $all_sub_module_fields = DB::table("report_module_fields")
-        //     ->where("menu_id", $sub_module)
-        //     ->get();
         $all_fields_name = $sub_module_showing_name;
         $all_fields_index = $sub_module_db_fields;
 
-        // echo '<pre>';
-        // print_r($all_detail);
-        // print_r($all_fields_name);
-        // print_r($all_fields_index);
-        // exit;
-
-
-
-        $enrollment_join = array(
-            'se.student_id' => 's.id',
+        $enrollment_join = [
+            'se.student_id'       => 's.id',
             'se.sub_institute_id' => 's.sub_institute_id',
-        );
-        $grade_join = array(
-            'acs.id' => 'se.grade_id',
+        ];
+        $grade_join = [
+            'acs.id'               => 'se.grade_id',
             'acs.sub_institute_id' => 'se.sub_institute_id',
-        );
-        $std_join = array(
-            'st.id' => 'se.standard_id',
+        ];
+        $std_join = [
+            'st.id'               => 'se.standard_id',
             'st.sub_institute_id' => 'se.sub_institute_id',
-        );
-        $div_join = array(
-            'di.id' => 'se.section_id',
+        ];
+        $div_join = [
+            'di.id'               => 'se.section_id',
             'di.sub_institute_id' => 'se.sub_institute_id',
-        );
+        ];
 
         // $query = new DB;
         $main_table_initial = "";
@@ -328,14 +278,14 @@ class dynamic_report_controller extends Controller
             foreach ($sub_module_name as $id => $arr) {
                 if ($arr->sub_module == "Student") {
 
-                    $tblstudent_join = array(
-                        'hm.student_id' => 's.id',
+                    $tblstudent_join = [
+                        'hm.student_id'       => 's.id',
                         'hm.sub_institute_id' => 's.sub_institute_id',
-                    );
-                    $subject_join = array(
-                        'sj.id' => 'hm.subject_id',
+                    ];
+                    $subject_join = [
+                        'sj.id'               => 'hm.subject_id',
                         'hm.sub_institute_id' => 'sj.sub_institute_id',
-                    );
+                    ];
                     $this->query->join('tblstudent as s', $tblstudent_join);
                     $this->query->join('tblstudent_enrollment as se', $enrollment_join);
                     $this->query->join('academic_section as acs', $grade_join);
@@ -344,167 +294,172 @@ class dynamic_report_controller extends Controller
                     $this->query->join('subject as sj', $subject_join);
                 }
             }
-        } else if ($main_module_name == "Attendance") {
-            $this->query = DB::table('attendance_student as a');
-            $main_table_initial = "a";
-            foreach ($sub_module_name as $id => $arr) {
-
-                if ($arr->sub_module == "Student") {
-                    $tblstudent_join = array(
-                        'a.student_id' => 's.id',
-                        'a.sub_institute_id' => 's.sub_institute_id',
-                    );
-
-                    $this->query->join('tblstudent as s', $tblstudent_join);
-                    $this->query->join('tblstudent_enrollment as se', $enrollment_join);
-                    $this->query->join('academic_section as acs', $grade_join);
-                    $this->query->join('standard as st', $std_join);
-                    $this->query->join('division as di', $div_join);
-                }
-                if ($arr->sub_module == "Teacher") {
-                    $tbluser_join = array(
-                        'a.teacher_id' => 'u.id',
-                        'a.user_group_id' => 'u.user_profile_id',
-                    );
-
-                    $this->query->join('tbluser as u', $tbluser_join);
-                }
-            }
-        } else if ($main_module_name == "Assignment") {
-            $this->query = DB::table('homework as hm');
-            $main_table_initial = "hm";
-            foreach ($sub_module_name as $id => $arr) {
-
+        } else {
+            if ($main_module_name == "Attendance") {
+                $this->query = DB::table('attendance_student as a');
+                $main_table_initial = "a";
                 foreach ($sub_module_name as $id => $arr) {
+
                     if ($arr->sub_module == "Student") {
+                        $tblstudent_join = [
+                            'a.student_id'       => 's.id',
+                            'a.sub_institute_id' => 's.sub_institute_id',
+                        ];
 
-                        $tblstudent_join = array(
-                            'hm.student_id' => 's.id',
-                            'hm.sub_institute_id' => 's.sub_institute_id',
-                        );
-                        $subject_join = array(
-                            'sj.id' => 'hm.subject_id',
-                            'hm.sub_institute_id' => 'sj.sub_institute_id',
-                        );
-                        $this->query->join('tblstudent as s', $tblstudent_join);
-                        $this->query->join('tblstudent_enrollment as se', $enrollment_join);
-                        $this->query->join('academic_section as acs', $grade_join);
-                        $this->query->join('standard as st', $std_join);
-                        $this->query->join('division as di', $div_join);
-                        $this->query->join('subject as sj', $subject_join);
-                    }
-                }
-                if ($arr->sub_module == "Teacher") {
-                    $tbluser_join = array(
-                        'hm.created_by' => 'u.id'
-                    );
-
-                    $this->query->join('tbluser as u', $tbluser_join);
-                }
-            }
-        } else if ($main_module_name == "Mobile App User") {
-            $this->query = DB::table('gcm_users as gu');
-            $main_table_initial = "gu";
-            // foreach ($sub_module_name as $id => $arr) {
-
-                foreach ($sub_module_name as $id => $arr) {
-                    if ($arr->sub_module == "Student") {
-
-                        $tblstudent_join = array(
-                            'gu.mobile_no' => 's.mobile',
-                            'gu.sub_institute_id' => 's.sub_institute_id',
-                        );
-                        
                         $this->query->join('tblstudent as s', $tblstudent_join);
                         $this->query->join('tblstudent_enrollment as se', $enrollment_join);
                         $this->query->join('academic_section as acs', $grade_join);
                         $this->query->join('standard as st', $std_join);
                         $this->query->join('division as di', $div_join);
                     }
-            }
-        }else if ($main_module_name == "Mobile Notification") {
-            $this->query = DB::table('app_notification as n');
-            $main_table_initial = "n";
-            $main_table_initial_capital = true;
-            // foreach ($sub_module_name as $id => $arr) {
+                    if ($arr->sub_module == "Teacher") {
+                        $tbluser_join = [
+                            'a.teacher_id'    => 'u.id',
+                            'a.user_group_id' => 'u.user_profile_id',
+                        ];
 
-                foreach ($sub_module_name as $id => $arr) {
-                    if ($arr->sub_module == "Student") {
-
-                        $tblstudent_join = array(
-                            'n.student_id' => 's.id',
-                            'n.sub_institute_id' => 's.sub_institute_id',
-                        );
-                        
-                        $this->query->join('tblstudent as s', $tblstudent_join);
-                        $this->query->join('tblstudent_enrollment as se', $enrollment_join);
-                        $this->query->join('academic_section as acs', $grade_join);
-                        $this->query->join('standard as st', $std_join);
-                        $this->query->join('division as di', $div_join);
-                    // }
+                        $this->query->join('tbluser as u', $tbluser_join);
+                    }
                 }
-            }
-        }else if ($main_module_name == "Sent SMS") {
-            $this->query = DB::table('sms_sent_parents as sms');
-            $main_table_initial = "sms";
-            // $main_table_initial_capital = true;
+            } else {
+                if ($main_module_name == "Assignment") {
+                    $this->query = DB::table('homework as hm');
+                    $main_table_initial = "hm";
+                    foreach ($sub_module_name as $id => $arr) {
 
-                foreach ($sub_module_name as $id => $arr) {
-                    if ($arr->sub_module == "Student") {
+                        foreach ($sub_module_name as $id => $arr) {
+                            if ($arr->sub_module == "Student") {
 
-                        $tblstudent_join = array(
-                            'sms.student_id' => 's.id',
-                            'sms.sub_institute_id' => 's.sub_institute_id',
-                        );
-                        
-                        $this->query->join('tblstudent as s', $tblstudent_join);
-                        $this->query->join('tblstudent_enrollment as se', $enrollment_join);
-                        $this->query->join('academic_section as acs', $grade_join);
-                        $this->query->join('standard as st', $std_join);
-                        $this->query->join('division as di', $div_join);
-                    // }
-                }
-            }
-        }else if ($main_module_name == "Circular") {
-            $this->query = DB::table('circular as c');
-            $main_table_initial = "c";
-            // $main_table_initial_capital = true;
+                                $tblstudent_join = [
+                                    'hm.student_id'       => 's.id',
+                                    'hm.sub_institute_id' => 's.sub_institute_id',
+                                ];
+                                $subject_join = [
+                                    'sj.id'               => 'hm.subject_id',
+                                    'hm.sub_institute_id' => 'sj.sub_institute_id',
+                                ];
+                                $this->query->join('tblstudent as s', $tblstudent_join);
+                                $this->query->join('tblstudent_enrollment as se', $enrollment_join);
+                                $this->query->join('academic_section as acs', $grade_join);
+                                $this->query->join('standard as st', $std_join);
+                                $this->query->join('division as di', $div_join);
+                                $this->query->join('subject as sj', $subject_join);
+                            }
+                        }
+                        if ($arr->sub_module == "Teacher") {
+                            $tbluser_join = [
+                                'hm.created_by' => 'u.id',
+                            ];
 
-                foreach ($sub_module_name as $id => $arr) {
-                    if ($arr->sub_module == "Standard") {
+                            $this->query->join('tbluser as u', $tbluser_join);
+                        }
+                    }
+                } else {
+                    if ($main_module_name == "Mobile App User") {
+                        $this->query = DB::table('gcm_users as gu');
+                        $main_table_initial = "gu";
+                        // foreach ($sub_module_name as $id => $arr) {
 
-                        $standard_join = array(
-                            'c.standard_id' => 'st.id',
-                        );
-                        
-                        // $this->query->join('tblstudent as s', $tblstudent_join);
-                        // $this->query->join('tblstudent_enrollment as se', $enrollment_join);
-                        // $this->query->join('academic_section as acs', $grade_join);
-                        $this->query->join('standard as st', $standard_join);
-                        // $this->query->join('division as di', $div_join);
-                    // }
+                        foreach ($sub_module_name as $id => $arr) {
+                            if ($arr->sub_module == "Student") {
+
+                                $tblstudent_join = [
+                                    'gu.mobile_no'        => 's.mobile',
+                                    'gu.sub_institute_id' => 's.sub_institute_id',
+                                ];
+
+                                $this->query->join('tblstudent as s', $tblstudent_join);
+                                $this->query->join('tblstudent_enrollment as se', $enrollment_join);
+                                $this->query->join('academic_section as acs', $grade_join);
+                                $this->query->join('standard as st', $std_join);
+                                $this->query->join('division as di', $div_join);
+                            }
+                        }
+                    } else {
+                        if ($main_module_name == "Mobile Notification") {
+                            $this->query = DB::table('app_notification as n');
+                            $main_table_initial = "n";
+                            $main_table_initial_capital = true;
+                            // foreach ($sub_module_name as $id => $arr) {
+
+                            foreach ($sub_module_name as $id => $arr) {
+                                if ($arr->sub_module == "Student") {
+
+                                    $tblstudent_join = [
+                                        'n.student_id'       => 's.id',
+                                        'n.sub_institute_id' => 's.sub_institute_id',
+                                    ];
+
+                                    $this->query->join('tblstudent as s', $tblstudent_join);
+                                    $this->query->join('tblstudent_enrollment as se', $enrollment_join);
+                                    $this->query->join('academic_section as acs', $grade_join);
+                                    $this->query->join('standard as st', $std_join);
+                                    $this->query->join('division as di', $div_join);
+                                    // }
+                                }
+                            }
+                        } else {
+                            if ($main_module_name == "Sent SMS") {
+                                $this->query = DB::table('sms_sent_parents as sms');
+                                $main_table_initial = "sms";
+                                // $main_table_initial_capital = true;
+
+                                foreach ($sub_module_name as $id => $arr) {
+                                    if ($arr->sub_module == "Student") {
+
+                                        $tblstudent_join = [
+                                            'sms.student_id'       => 's.id',
+                                            'sms.sub_institute_id' => 's.sub_institute_id',
+                                        ];
+
+                                        $this->query->join('tblstudent as s', $tblstudent_join);
+                                        $this->query->join('tblstudent_enrollment as se', $enrollment_join);
+                                        $this->query->join('academic_section as acs', $grade_join);
+                                        $this->query->join('standard as st', $std_join);
+                                        $this->query->join('division as di', $div_join);
+                                    }
+                                }
+                            } else {
+                                if ($main_module_name == "Circular") {
+                                    $this->query = DB::table('circular as c');
+                                    $main_table_initial = "c";
+                                    // $main_table_initial_capital = true;
+
+                                    foreach ($sub_module_name as $id => $arr) {
+                                        if ($arr->sub_module == "Standard") {
+
+                                            $standard_join = [
+                                                'c.standard_id' => 'st.id',
+                                            ];
+
+                                            $this->query->join('standard as st', $standard_join);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
             }
         }
 
 
-        $col = array();
+        $col = [];
         foreach ($all_detail["selected_fields"] as $id => $val) {
             if ($all_fields_name[$val] == " Full Name") {
                 $col[] = DB::raw("concat_ws(' ',s.first_name,s.middle_name,s.last_name) as full_name");
             } else {
                 $col[] = $all_fields_index[$val];
-                // $col[] = "asds";
             }
         }
 
         $result = "";
         $sub_institute_id = session()->get('sub_institute_id');
         foreach ($all_detail["condition"] as $must_any => $arr) {
-            if($main_table_initial_capital){
+            if ($main_table_initial_capital) {
                 $this->query->whereRaw("$main_table_initial.SUB_INSTITUTE_ID = $sub_institute_id");
-            }else{
-            $this->query->whereRaw("$main_table_initial.sub_institute_id = $sub_institute_id");
+            } else {
+                $this->query->whereRaw("$main_table_initial.sub_institute_id = $sub_institute_id");
             }
             if ($must_any == "must") {
                 $count = count($all_detail["condition"]["must"]["field"]);
@@ -524,9 +479,8 @@ class dynamic_report_controller extends Controller
                         if ($all_detail["condition"]["must"]["con"][$i] == "grater_then") {
                             $sign = ">";
                         }
-                        $val = "'" . $all_detail["condition"]["must"]["val"][$i] . "'";
+                        $val = "'".$all_detail["condition"]["must"]["val"][$i]."'";
                         $fld = $all_fields_index[$all_detail["condition"]["must"]["field"][$i]];
-                        // $this->query->where($fld, $sign, $val);
 
                         $temp_fld_arr = explode("as ", $fld);
                         $fld = $temp_fld_arr[0];
@@ -553,7 +507,7 @@ class dynamic_report_controller extends Controller
                         if ($all_detail["condition"]["any"]["con"][$i] == "grater_then") {
                             $sign = ">";
                         }
-                        $val = "'" . $all_detail["condition"]["any"]["val"][$i] . "'";
+                        $val = "'".$all_detail["condition"]["any"]["val"][$i]."'";
                         $fld = $all_fields_index[$all_detail["condition"]["any"]["field"][$i]];
 
                         $temp_fld_arr = explode("as ", $fld);
@@ -563,8 +517,6 @@ class dynamic_report_controller extends Controller
                             $where = "(";
                         }
                         $where .= " $fld $sign $val or";
-                        // $this->query->where($fld, $sign, $val);
-                        // $this->query->whereRaw("$fld $sign $val");
                     }
                 }
                 if ($where != "") {
@@ -597,7 +549,7 @@ class dynamic_report_controller extends Controller
         }
         $this->query->select($col);
         $result = $this->query->get();
-        $tbl_detail = array();
+        $tbl_detail = [];
         foreach ($all_detail["selected_fields"] as $id => $val) {
 
             $field_arr = explode("as ", $all_fields_index[$val]);
@@ -610,16 +562,10 @@ class dynamic_report_controller extends Controller
                 $tbl_detail[] = $field_arr[1];
             }
         }
-        $tbl_heading = array();
+        $tbl_heading = [];
         foreach ($all_detail["selected_fields"] as $id => $val) {
-            // $field_arr = explode(".",$all_fields_index[$val]);
             $tbl_heading[] = $all_fields_name[$val];
         }
-        // echo '<pre>';
-        // print_r($result);
-        // print_r($tbl_detail);
-        // print_r($tbl_heading);
-        // exit;
 
         $result_data = array();
         $result_data["tbl_heading"] = $tbl_heading;
@@ -627,102 +573,90 @@ class dynamic_report_controller extends Controller
         $result_data["result"] = $result;
 
         $type = "";
-        return \App\Helpers\is_mobile($type, 'dynamic_report/dynamic_report/show_report', $result_data, 'view');
+
+        return is_mobile($type, 'dynamic_report/dynamic_report/show_report', $result_data, 'view');
     }
 
     /**
      * Show the form for editing the specified resource.
      *
-     * @param int $id
+     * @param  int  $id
      *
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function edit(Request $request, $id)
     {
         $all_dd = $this->get_all_dd();
 
-        // $allData = indicator_mapping::
-        //     where(['SubInstituteId' => $sub_institute_id])
-        //     ->get()->toArray();
-
-        $str = 'SELECT * FROM LEARNING_OUTCOME_INDICATOR WHERE ID = ' . $id;
-        $allData = DB::select(DB::raw($str));
-
-        // $allData = indicator_mapping::find($id)->toArray();
-        // echo('<pre>');
-        // print_r($allData);
-        // exit;
+        $allData = DB::table('LEARNING_OUTCOME_INDICATOR')->where('ID', $id)->get()->toArray();
 
         $standard = $allData[0]->STANDARD;
         $medium = $allData[0]->MEDIUM;
 
-        $where = array(
+        $where = [
             'LEARNING_OUTCOME_PDF.standard' => $standard,
-            'LEARNING_OUTCOME_PDF.medium' => $medium,
-        );
+            'LEARNING_OUTCOME_PDF.medium'   => $medium,
+        ];
 
         $std_sub_map = DB::table('LEARNING_OUTCOME_PDF')
             ->where($where)
             ->pluck('LEARNING_OUTCOME_PDF.DISPLAY_SUBJECT', 'LEARNING_OUTCOME_PDF.SUBJECTS');
 
-        $data = array(
-            'medium' => $all_dd['medium'],
-            'std' => $all_dd['std'],
-            'selected_medium' => $allData[0]->MEDIUM,
-            'selected_std' => $allData[0]->STANDARD,
+        $data = [
+            'medium'           => $all_dd['medium'],
+            'std'              => $all_dd['std'],
+            'selected_medium'  => $allData[0]->MEDIUM,
+            'selected_std'     => $allData[0]->STANDARD,
             'selected_subject' => $allData[0]->SUBJECT,
             'learning_outcome' => $allData[0]->INDICATOR,
-            'subject' => $std_sub_map,
-            'id' => $id,
+            'subject'          => $std_sub_map,
+            'id'               => $id,
 
-        );
-        // echo ('<pre>');print_r($data);exit;
+        ];
 
-        // $sub_institute_id = session()->get('sub_institute_id');
         $type = $request->input('type');
 
-        // $data['ddValue'] = $ddvalue;
-        return \App\Helpers\is_mobile($type, "learning_outcome/indicator_mapping/edit", $data, "view");
+        return is_mobile($type, "learning_outcome/indicator_mapping/edit", $data, "view");
     }
 
     /**
      * Update the specified resource in storage.
      *
-     * @param \Illuminate\Http\Request $request
-     * @param int                      $id
+     * @param  Request  $request
+     * @param  int  $id
      *
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function update(Request $request, $id)
     {
-        $data = array(
-            'MEDIUM' => $request->get('medium'),
-            'STANDARD' => $request->get('std'),
-            'SUBJECT' => $request->get('subject'),
-            'INDICATOR' => $request->get('learning_outcome'),
+        $data = [
+            'MEDIUM'     => $request->get('medium'),
+            'STANDARD'   => $request->get('std'),
+            'SUBJECT'    => $request->get('subject'),
+            'INDICATOR'  => $request->get('learning_outcome'),
             'UPDATED_AT' => now(),
             'UPDATED_BY' => $request->session()->get('user_id'),
-        );
+        ];
 
         DB::table('LEARNING_OUTCOME_INDICATOR')
             ->where(["ID" => $id])
             ->update($data);
 
-        $res = array(
+        $res = [
             "status_code" => 1,
-            "message" => "Data Saved",
-        );
+            "message"     => "Data Saved",
+        ];
         $type = $request->input('type');
 
-        return \App\Helpers\is_mobile($type, "indicator_mapping.index", $res, "redirect");
+        return is_mobile($type, "indicator_mapping.index", $res, "redirect");
     }
 
     /**
      * Remove the specified resource from storage.
      *
-     * @param int $id
+     * @param  int  $id
      *
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function destroy(Request $request, $id)
     {
@@ -732,11 +666,11 @@ class dynamic_report_controller extends Controller
             ->where(["id" => $id])
             ->delete();
 
-        $res = array(
+        $res = [
             "status_code" => 1,
-            "message" => "Data Deleted",
-        );
+            "message"     => "Data Deleted",
+        ];
 
-        return \App\Helpers\is_mobile($type, "dynamic_report.index", $res, "redirect");
+        return is_mobile($type, "dynamic_report.index", $res, "redirect");
     }
 }
