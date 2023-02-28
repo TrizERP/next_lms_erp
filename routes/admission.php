@@ -9,12 +9,12 @@ use App\Http\Controllers\admission\onlineAdmissionConfirmController;
 use Illuminate\Support\Facades\Route;
 
 
-Route::group(['prefix' => 'admission', 'middleware' => ['session', 'menu','logRoute']], function () {
-	Route::resource('admission_enquiry', admissionEnquiryController::class);
-	Route::resource('admission_registration', admissionFormController::class);
-	Route::resource('admission_confirmation', admissionRegistrationController::class);
-	Route::resource('admission_follow_up', admissionFollowUpController::class);
-	Route::resource('online_admission_confirm', onlineAdmissionConfirmController::class);
+Route::group(['prefix' => 'admission', 'middleware' => ['session', 'menu', 'logRoute']], static function () {
+    Route::resource('admission_enquiry', admissionEnquiryController::class);
+    Route::resource('admission_registration', admissionFormController::class);
+    Route::resource('admission_confirmation', admissionRegistrationController::class);
+    Route::resource('admission_follow_up', admissionFollowUpController::class);
+    Route::resource('online_admission_confirm', onlineAdmissionConfirmController::class);
 
     Route::controller(admissionRegistrationController::class)->group(function () {
         Route::post('admission_student', 'saveStudent')->name('admission_student');
@@ -54,5 +54,3 @@ Route::controller(admissionRegistrationController::class)->group(function () {
     Route::get('ajax_getDivision', 'ajax_getDivision')->name('ajax_getDivision');
 });
 
-
-?>

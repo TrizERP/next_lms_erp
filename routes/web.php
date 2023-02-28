@@ -159,7 +159,7 @@ Route::group(['prefix' => 'school_setup', 'middleware' => ['session', 'menu','lo
     Route::resource('sub_std_map', sub_std_mapController::class);
     Route::resource('period_master', periodController::class);
     Route::resource('change_password', changePasswordController::class);
-    Route::resource('dashboard_setting', dashboardSer::class);
+    Route::resource('dashboard_setting', dashboardSettingController::class);
     Route::get('device_check', [changePasswordController::class, 'device_check'])->name('device_check');
 
     Route::resource('erp_status', erpstatusController::class);
@@ -260,24 +260,26 @@ Route::post('get_search_url', [AJAXController::class, 'get_search_url'])->name("
 
 
 // send birthday notification
-Route::get('send_birthday_notification', [send_birthday_notification_controller::class, 'send_birthday_notification'])->name('send_birthday_notification');
+Route::get('send_birthday_notification',
+    [send_birthday_notification_controller::class, 'send_birthday_notification'])->name('send_birthday_notification');
 
 // Question Wise Report
 Route::get('questionReport', [questionWiseReportController::class, 'index'])->name('question_wise_report');
-Route::post('show_question_wise_report', [questionWiseReportController::class, 'show_question_wise_report'])->name('show_question_wise_report');
+Route::post('show_question_wise_report',
+    [questionWiseReportController::class, 'show_question_wise_report'])->name('show_question_wise_report');
 
 // Admin Authorization (Show Result)
-Route::get('result_admin_permission', [ResultAdminPermissionController::class, 'index'])->name('result_admin_permission');
-Route::post('show_result_admin_permission', [ResultAdminPermissionController::class, 'show_result_admin_permission'])->name('show_result_admin_permission');
-Route::post('allow_admin_permission', [ResultAdminPermissionController::class, 'allow_admin_permission'])->name('allow_admin_permission');
-
-
-// create result excel
-Route::get('download_create_result', [MarkUploadController::class, 'index']);
-Route::post('generate_create_result_excel', [MarkUploadController::class, 'create'])->name('create-excel');
-Route::get('upload_create_result', [MarkUploadController::class, 'store'])->name('upload_create_result');
-
-Route::get('fetch_payment_status', [online_fees_collect_controller::class, 'razorpay_fetch_payment_status']);
+//Route::get('result_admin_permission', [ResultAdminPermissionController::class, 'index'])->name('result_admin_permission');
+//Route::post('show_result_admin_permission', [ResultAdminPermissionController::class, 'show_result_admin_permission'])->name('show_result_admin_permission');
+//Route::post('allow_admin_permission', [ResultAdminPermissionController::class, 'allow_admin_permission'])->name('allow_admin_permission');
+//
+//
+//// create result excel
+//Route::get('download_create_result', [MarkUploadController::class, 'index']);
+//Route::post('generate_create_result_excel', [MarkUploadController::class, 'create'])->name('create-excel');
+//Route::get('upload_create_result', [MarkUploadController::class, 'store'])->name('upload_create_result');
+//
+//Route::get('fetch_payment_status', [online_fees_collect_controller::class, 'razorpay_fetch_payment_status']);
 
 
 

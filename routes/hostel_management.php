@@ -17,7 +17,7 @@ use Illuminate\Support\Facades\Route;
 
 Route::group(['prefix' => 'hostel_management', 'middleware' => ['session', 'menu', 'logRoute']], function() {
     Route::resource('add_hostel_type_master', hosteltypemasterController::class);
-    // Route::GET('listhosteltype', 'hostel_management\hosteltypemasterController@listhosteltype')->name('listhosteltype');
+    // Route::get('listhosteltype', 'hostel_management\hosteltypemasterController@listhosteltype')->name('listhosteltype');
     Route::resource('add_room_type_master', room_type_masterController::class);
     Route::resource('add_admission_category_master', admission_category_masterController::class);
     Route::resource('add_hostel_master', hostel_masterController::class);

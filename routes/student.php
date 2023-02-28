@@ -208,5 +208,3 @@ Route::GET('ajax_StatewiseCity', [tblstudentController::class, 'ajax_StatewiseCi
 // Route::POST('front_desk/leave_application/add_leave_application', function(){
 //     echo "asds";
 // });
-
-?>

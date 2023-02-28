@@ -223,13 +223,11 @@ Route::controller(AJAXController::class)->group(function () {
     Route::get('ajax_PDF_FeesReceipt', 'ajax_PDF_FeesReceipt')->name('ajax_PDF_FeesReceipt');
     Route::get('ajax_PDF_Bulk_OtherFeesReceipt', 'ajax_PDF_Bulk_OtherFeesReceipt')->name('ajax_PDF_Bulk_OtherFeesReceipt');
     Route::get('ajax_checkFeesBreakoff', 'ajax_checkFeesBreakoff')->name('ajax_checkFeesBreakoff');
-
 });
-    // Route::get('admission/online-admission/{id}/{title}', 'admission\admissionEnquiryController@onlineEnquiryFirst')->name('onlineEnquiryFirst');
-
     
-    Route::post('/studentFeesDetailAPI', [fees_collect_controller::class, 'studentFeesDetailAPI']);
+Route::post('/studentFeesDetailAPI', [fees_collect_controller::class, 'studentFeesDetailAPI']);
 
-    Route::get('ajax_checkFeesStructure', [fees_breackoff_controller::class, 'ajax_checkFeesStructure'])->name('ajax_checkFeesStructure');
+Route::get('ajax_checkFeesStructure',
+    [fees_breackoff_controller::class, 'ajax_checkFeesStructure'])->name('ajax_checkFeesStructure');
 
     

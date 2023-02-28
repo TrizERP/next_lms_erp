@@ -1,24 +1,24 @@
 <?php
 
-namespace App\Http\Controllers\school_setup;
+namespace App\Http\Controllers\lms;
 
-use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
-use function App\Helpers\is_mobile;
-use App\Models\school_setup\lessonplanningModel;
-use App\Models\school_setup\lessonplanning_executionModel;
-use App\Models\school_setup\standardModel;
-use App\Models\school_setup\timetableModel;
-use App\Models\school_setup\subjectModel;
 use App\Models\school_setup\divisionModel;
+use App\Models\school_setup\lessonplanning_executionModel;
+use App\Models\school_setup\lessonplanningModel;
+use App\Models\school_setup\subjectModel;
+use App\Models\school_setup\timetableModel;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use function App\Helpers\is_mobile;
 
 class lessonplanningController extends Controller
 {
-    public function index(Request $request){ 
+    public function index(Request $request)
+    {
         $user_profile_id = $request->session()->get('user_profile_id');
         $user_profile_name = $request->session()->get('user_profile_name');
-        
+
         $user_id = $request->session()->get('user_id');                
         if($user_profile_name != 'Admin'){
             $res['editable'] = "true";

@@ -59,8 +59,7 @@ Route::group(['prefix' => 'inventory', 'middleware' => ['session', 'menu', 'logR
         Route::get('ajax_SubcategoryeiseItems', 'ajax_SubcategoryeiseItems')->name('ajax_SubcategoryeiseItems');    
     });
     
-    Route::resource('add_vendor_master_setup', 'inventory\vendor_masterController');
+    Route::resource('add_vendor_master_setup', vendor_masterController::class);
     Route::resource('add_requisition', requisitionController::class);
     Route::resource('requisition_approved', requisitionApprovedController::class);
 });
-?>

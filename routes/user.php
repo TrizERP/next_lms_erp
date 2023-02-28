@@ -28,5 +28,6 @@ Route::group(['prefix' => 'user', 'middleware' => ['session', 'menu', 'logRoute'
     Route::get('ajax_individualrights',
         [tblindividual_rightsController::class, 'displayIndividualRights'])->name('ajax_individualrights');
 });
+
 Route::post('/teacherListAPI', [tbluserController::class, 'teacherListAPI']);
 

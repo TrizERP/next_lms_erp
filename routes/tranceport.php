@@ -10,7 +10,6 @@ use App\Http\Controllers\transportation\map_route_stop\map_route_stop_controller
 use App\Http\Controllers\transportation\map_student\map_student_controller;
 use App\Http\Controllers\transportation\send_late_sms\send_late_sms_controller;
 use App\Http\Controllers\transportation\van_wise_report\van_wise_report_controller;
-use App\Models\tbluserModel;
 use Illuminate\Support\Facades\Route;
 
 Route::group(['prefix' => 'transportation', 'middleware' => ['session', 'menu', 'logRoute']], function () {
