@@ -2,16 +2,13 @@
 
 namespace App\Http\Controllers\easy_com\send_notification_report;
 
-use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
-use function App\Helpers\sendNotification;
-use function App\Helpers\send_FCM_Notification;
-use App\Models\school_setup\SchoolModel;
-use function App\Helpers\is_mobile;
 use DB;
-use GenTux\Jwt\JwtToken;
 use GenTux\Jwt\GetsJwtToken;
+use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use function App\Helpers\aut_token;
+use function App\Helpers\is_mobile;
 
 
 class register_parents_report_controller extends Controller
@@ -20,7 +17,7 @@ class register_parents_report_controller extends Controller
     /**
      * Display a listing of the resource.
      *
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     use GetsJwtToken;
     
@@ -35,10 +32,11 @@ class register_parents_report_controller extends Controller
     }
 
     //13.46
+
     /**
      * Show the form for creating a new resource.
      *
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function create(Request $request)
     {
@@ -99,7 +97,7 @@ class register_parents_report_controller extends Controller
      * Store a newly created resource in storage.
      *
      * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function store(Request $request)
     {
@@ -110,7 +108,7 @@ class register_parents_report_controller extends Controller
      * Display the specified resource.
      *
      * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function show($id)
     {
@@ -121,7 +119,7 @@ class register_parents_report_controller extends Controller
      * Show the form for editing the specified resource.
      *
      * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function edit($id)
     {
@@ -133,7 +131,7 @@ class register_parents_report_controller extends Controller
      *
      * @param  \Illuminate\Http\Request  $request
      * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function update(Request $request, $id)
     {
@@ -144,7 +142,7 @@ class register_parents_report_controller extends Controller
      * Remove the specified resource from storage.
      *
      * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function destroy($id)
     {

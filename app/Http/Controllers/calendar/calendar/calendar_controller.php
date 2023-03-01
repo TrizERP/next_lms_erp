@@ -5,26 +5,23 @@ namespace App\Http\Controllers\calendar\calendar;
 use App\Http\Controllers\Controller;
 use App\Models\calendar\calendar\calendar;
 use GenTux\Jwt\GetsJwtToken;
-use GenTux\Jwt\JwtToken;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
-use function App\Helpers\aut_token;
 use function App\Helpers\is_mobile;
 
 class calendar_controller extends Controller
 {
+
+    use GetsJwtToken;
 
     /**
      * Display a listing of the resource.
      *
      * @return Response
      */
-    
-    use GetsJwtToken;
-    
     public function index(Request $request)
     {
         if (session()->has('data')) { // check if it exists
@@ -47,20 +44,22 @@ class calendar_controller extends Controller
                     $std = json_encode($std_arr);
                 }
 
-                $color_bg = array('vacation' => 'bg-warning',
-                                  'event' => 'bg-success',
-                                  'holiday' => 'bg-danger');
+                $color_bg = [
+                    'vacation' => 'bg-warning',
+                    'event'    => 'bg-success',
+                    'holiday'  => 'bg-danger',
+                ];
 
-                $calendarData[] = array(
-                    'id' => $val['id'],
-                    'title' => $val['title'],
-                    'start' => $val['school_date'],
-                    'description' => $val['description'],
-                    'event_type' => $val['event_type'],
-                    'standard' => $std,
+                $calendarData[] = [
+                    'id'               => $val['id'],
+                    'title'            => $val['title'],
+                    'start'            => $val['school_date'],
+                    'description'      => $val['description'],
+                    'event_type'       => $val['event_type'],
+                    'standard'         => $std,
                     'sub_institute_id' => $val['sub_institute_id'],
-                    'className' => $color_bg[$val['event_type']]
-                );
+                    'className'        => $color_bg[$val['event_type']],
+                ];
             }
         }
         $calendarData = json_encode($calendarData, true);
@@ -80,7 +79,7 @@ class calendar_controller extends Controller
     {
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $syear = $request->session()->get('syear');
-        $extra = array('lp.sub_institute_id' => $sub_institute_id,'lp.syear' => $syear);
+        $extra = ['lp.sub_institute_id' => $sub_institute_id, 'lp.syear' => $syear];
 
         return calendar::from("calendar_events as lp")
             ->where($extra)
@@ -90,6 +89,7 @@ class calendar_controller extends Controller
     public function fetchData(Request $request)
     {
         $response = ['response' => '', 'success' => false];
+
         $validator = Validator::make($request->all(), [
             'student_id'       => 'required|numeric',
             'syear'            => 'required|numeric',
@@ -135,7 +135,7 @@ class calendar_controller extends Controller
                 $response['response'] = $result_data;
                 $response['success'] = true;
             } else {
-                $response['response'] = array("student_id" => array("No student found."));
+                $response['response'] = ["student_id" => ["No student found."]];
             }
         }
 
@@ -146,17 +146,17 @@ class calendar_controller extends Controller
     {
         try {
             if (! $this->jwtToken()->validate()) {
-                $response = array('status' => '2', 'message' => 'Token Auth Failed', 'data' => []);
+                $response = ['status' => '2', 'message' => 'Token Auth Failed', 'data' => []];
 
                 return response()->json($response, 200);
             }
         } catch (\Exception $e) {
-            $response = array('status' => '2', 'message' => $e->getMessage(), 'data' => []);
+            $response = ['status' => '2', 'message' => $e->getMessage(), 'data' => []];
 
             return response()->json($response, 200);
         }
 
-        $response = array('status' => '0', 'message' => '', 'data' => []);
+        $response = ['status' => '0', 'message' => '', 'data' => []];
 
         $validator = Validator::make($request->all(), [
             'standard_id'      => 'required|numeric',
@@ -212,7 +212,7 @@ class calendar_controller extends Controller
 
         $syear = $request->session()->get('syear');
 
-        $finalArray[] = array(
+        $finalArray[] = [
             'title'            => $request->get('title'),
             'description'      => $request->get('description'),
             'event_type'       => $request->get('event_type'),
@@ -220,7 +220,7 @@ class calendar_controller extends Controller
             'school_date'      => date("Y-m-d", $request->get('school_date') / 1000),
             'syear'            => $syear,
             'sub_institute_id' => $sub_institute_id,
-        );
+        ];
 
         calendar::insert($finalArray);
     }
@@ -237,7 +237,7 @@ class calendar_controller extends Controller
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $syear = $request->session()->get('syear');
 
-        $finalArray = array(
+        $finalArray = [
             'title'            => $request->get('title'),
             'description'      => $request->get('description'),
             'event_type'       => $request->get('event_type'),
@@ -245,7 +245,7 @@ class calendar_controller extends Controller
             'school_date'      => date("Y-m-d", $request->get('school_date') / 1000),
             'syear'            => $syear,
             'sub_institute_id' => $sub_institute_id,
-        );
+        ];
 
         calendar::where(["id" => $id])->update($finalArray);
 
@@ -273,16 +273,16 @@ class calendar_controller extends Controller
     {
         try {
             if (! $this->jwtToken()->validate()) {
-                $response = array('status' => '2', 'message' => 'Token Auth Failed', 'data' => []);
+                $response = ['status' => '2', 'message' => 'Token Auth Failed', 'data' => []];
 
                 return response()->json($response, 401);
             }
         } catch (\Exception $e) {
-            $response = array('status' => '2', 'message' => $e->getMessage(), 'data' => []);
+            $response = ['status' => '2', 'message' => $e->getMessage(), 'data' => []];
 
             return response()->json($response, 401);
         }
-                
+
         $student_id = $request->input("student_id");
         $sub_institute_id = $request->input("sub_institute_id");
         $syear = $request->input("syear");
@@ -309,7 +309,7 @@ class calendar_controller extends Controller
             $res['status'] = 0;
             $res['message'] = "Parameter Missing";
         }
-        
+
         return json_encode($res);
     }
 }

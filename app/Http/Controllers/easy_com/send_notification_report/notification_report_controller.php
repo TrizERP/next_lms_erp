@@ -2,16 +2,12 @@
 
 namespace App\Http\Controllers\easy_com\send_notification_report;
 
-use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
-use function App\Helpers\sendNotification;
-use function App\Helpers\send_FCM_Notification;
-use App\Models\school_setup\SchoolModel;
-use function App\Helpers\is_mobile;
-use DB;
-use GenTux\Jwt\JwtToken;
 use GenTux\Jwt\GetsJwtToken;
-use function App\Helpers\aut_token;
+use Illuminate\Http\Request;
+use Illuminate\Http\Response;
+use Illuminate\Support\Facades\DB;
+use function App\Helpers\is_mobile;
 
 
 class notification_report_controller extends Controller
@@ -20,10 +16,10 @@ class notification_report_controller extends Controller
     /**
      * Display a listing of the resource.
      *
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     use GetsJwtToken;
-    
+
     public function index(Request $request)
     {
         $type = $request->input('type');
@@ -31,18 +27,18 @@ class notification_report_controller extends Controller
         $res['status_code'] = "1";
         $res['message'] = "Success";
 
-        return is_mobile($type, "easy_comm/send_notification_report/show_notification_report", $res , "view");
+        return is_mobile($type, "easy_comm/send_notification_report/show_notification_report", $res, "view");
     }
 
     //13.46
+
     /**
      * Show the form for creating a new resource.
      *
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function create(Request $request)
     {
-
         $type = $request->input("type");
         $mobile_no = $request->input('mobile_no');
         $from_date = $request->input('from_date');
@@ -50,63 +46,59 @@ class notification_report_controller extends Controller
         $syear = $request->session()->get('syear');
         $sub_institute_id = $request->session()->get('sub_institute_id');
 
-        $extraSearchArrayRaw = " 1=1 ";
+        $data = DB::table('app_notification as an')
+            ->join('tblstudent as s', function ($join) {
+                $join->whereRaw('s.id=an.STUDENT_ID');
+            })->join('tblstudent_enrollment as se', function ($join) {
+                $join->whereRaw('se.student_id=s.id');
+            })->join('standard as ss', function ($join) {
+                $join->whereRaw('ss.id = se.standard_id');
+            })->join('academic_section as aa', function ($join) {
+                $join->whereRaw('aa.id=ss.grade_id');
+            })->join('gcm_users as gu', function ($join) {
+                $join->whereRaw('gu.mobile_no = s.mobile');
+            })->join('division as dd', function ($join) {
+                $join->whereRaw('dd.id=se.section_id');
+            })->selectRaw("s.id AS student_id,CONCAT_WS(' ',s.first_name,s.middle_name,s.last_name) AS stu_name, 
+                ss.name AS std_name,dd.name AS div_name,aa.title as aca_sec,gu.imei_no,gu.curr_version,gu.new_version,
+                gu.mobile_no, DATE_FORMAT(an.CREATED_AT,'%d-%m-%Y %r') AS CREATED_ON,s.enrollment_no,an.NOTIFICATION_TYPE, 
+                DATE_FORMAT(an.NOTIFICATION_DATE,'%d-%m-%Y') AS NOTOFICATION_DATE,an.NOTIFICATION_DESCRIPTION, 
+                CASE WHEN an.Status = 1 THEN 'Read' WHEN an.Status =0 THEN 'Un-Read' ELSE 'N/A' END AS NOTIFICATION_STATUS")
+            ->where('se.SYEAR', $syear)
+            ->where('gu.sub_institute_id', $sub_institute_id)
+            ->where('an.sub_institute_id', $sub_institute_id)
+            ->where(function ($q) use ($mobile_no, $from_date, $to_date) {
+                if ($mobile_no != '') {
+                    $q->where('s.mobile', $mobile_no);
+                }
+                if ($from_date != '') {
+                    $q->where('an.NOTIFICATION_DATE', '>=', $from_date);
+                }
 
-        if($mobile_no != '')
-        {
-            $extraSearchArrayRaw .= "  AND s.mobile = ".$mobile_no;            
-        }
+                if ($to_date != '') {
+                    $q->where('an.NOTIFICATION_DATE', '<=', $to_date);
+                }
+            })->get()->toArray();
 
-        if($from_date != '')
-        {
-            $extraSearchArrayRaw .= "  AND an.NOTIFICATION_DATE >= '".$from_date."'";
-        }
-
-        if($to_date != '')
-        {
-            $extraSearchArrayRaw .= "  AND an.NOTIFICATION_DATE <= '".$to_date."'";
-        }
-
-        $sql = "SELECT s.id AS student_id,
-                CONCAT_WS(' ',s.first_name,s.middle_name,s.last_name) AS stu_name, 
-                ss.name AS std_name,dd.name AS div_name,aa.title as aca_sec,gu.imei_no,
-                gu.curr_version,gu.new_version,
-                gu.mobile_no, DATE_FORMAT(an.CREATED_AT,'%d-%m-%Y %r') AS CREATED_ON,s.enrollment_no,
-                an.NOTIFICATION_TYPE, 
-                DATE_FORMAT(an.NOTIFICATION_DATE,'%d-%m-%Y') AS NOTOFICATION_DATE,
-                an.NOTIFICATION_DESCRIPTION, 
-                CASE WHEN an.Status = 1 THEN 'Read' 
-                WHEN an.Status =0 THEN 'Un-Read' 
-                ELSE 'N/A' END AS NOTIFICATION_STATUS 
-                FROM app_notification an
-                INNER JOIN tblstudent s ON s.id=an.STUDENT_ID
-                INNER JOIN tblstudent_enrollment se ON se.student_id=s.id
-                INNER JOIN standard ss ON ss.id = se.standard_id
-                INNER JOIN academic_section aa ON aa.id=ss.grade_id
-                INNER JOIN gcm_users gu ON gu.mobile_no = s.mobile
-                LEFT JOIN division dd ON dd.id=se.section_id
-                WHERE $extraSearchArrayRaw AND se.SYEAR='".$syear."' AND gu.sub_institute_id = '".$sub_institute_id."' AND an.sub_institute_id = '".$sub_institute_id."' ";
-
-        $data = DB::select($sql);
         $data = array_map(function ($value) {
             return (array) $value;
         }, $data);
 
-        // dd($fees_data);
         $res['status_code'] = 1;
         $res['message'] = "Success";
         $res['data'] = $data;
         $res['mobile_no'] = $mobile_no;
         $res['from_date'] = $from_date;
         $res['to_date'] = $to_date;
-        return is_mobile($type, "easy_comm/send_notification_report/show_notification_report", $res , "view");
+
+        return is_mobile($type, "easy_comm/send_notification_report/show_notification_report", $res, "view");
     }
 
     /**
      * Store a newly created resource in storage.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\Response
+     * @param  Request  $request
+     * @return void
      */
     public function store(Request $request)
     {
@@ -117,7 +109,7 @@ class notification_report_controller extends Controller
      * Display the specified resource.
      *
      * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * @return void
      */
     public function show($id)
     {
@@ -128,7 +120,7 @@ class notification_report_controller extends Controller
      * Show the form for editing the specified resource.
      *
      * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * @return void
      */
     public function edit($id)
     {
@@ -138,9 +130,9 @@ class notification_report_controller extends Controller
     /**
      * Update the specified resource in storage.
      *
-     * @param  \Illuminate\Http\Request  $request
+     * @param  Request  $request
      * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * @return void
      */
     public function update(Request $request, $id)
     {
@@ -151,7 +143,7 @@ class notification_report_controller extends Controller
      * Remove the specified resource from storage.
      *
      * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * @return void
      */
     public function destroy($id)
     {

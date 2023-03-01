@@ -2,11 +2,15 @@
 
 namespace App\Http\Controllers\easy_com\send_email_other;
 
-use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use App\Models\easy_com\manage_sms_api\manage_sms_api;
-use DB;
+use Illuminate\Http\Request as RequestAlias;
+use Illuminate\Http\Response;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\File;
 use PHPMailer\PHPMailer;
+use function App\Helpers\is_mobile;
+use function App\Helpers\SearchStudent;
 
 class send_email_other_controller extends Controller
 {
@@ -14,9 +18,9 @@ class send_email_other_controller extends Controller
     /**
      * Display a listing of the resource.
      *
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
-    public function index(Request $request)
+    public function index(RequestAlias $request)
     {
         if (session()->has('data')) { // check if it exists
             $data_arr = session('data'); // to retrieve value
@@ -25,95 +29,78 @@ class send_email_other_controller extends Controller
             }
         }
 
-        //        $data['data'] = $this->getData();
-
-
-        $data['data'] = array();
+        $data['data'] = [];
         $type = $request->input('type');
-        return \App\Helpers\is_mobile($type, "easy_comm/send_email_other/send_email", $data, "view");
+
+        return is_mobile($type, "easy_comm/send_email_other/send_email", $data, "view");
     }
 
     //13.46
+
     /**
      * Show the form for creating a new resource.
      *
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
-    public function create(Request $request)
+    public function create(RequestAlias $request)
     {
-        //    echo "<pre>";
-        //    print_r($_REQUEST);
-        //    exit;
-
         $type = $request->input('type');
-        $student_data = \App\Helpers\SearchStudent($_REQUEST['grade'], $_REQUEST['standard'], $_REQUEST['division']);
+        $student_data = SearchStudent($_REQUEST['grade'], $_REQUEST['standard'], $_REQUEST['division']);
         $responce_arr['grade'] = $_REQUEST['grade'];
         $responce_arr['standard'] = $_REQUEST['standard'];
         $responce_arr['division'] = $_REQUEST['division'];
+
         foreach ($student_data as $id => $arr) {
             $responce_arr['stu_data'][$id]['sr.no'] = $id + 1;
-            $responce_arr['stu_data'][$id]['name'] = $arr['first_name'] . ' ' . $arr['middle_name'] . ' ' . $arr['last_name'];
+            $responce_arr['stu_data'][$id]['name'] = $arr['first_name'].' '.$arr['middle_name'].' '.$arr['last_name'];
             $responce_arr['stu_data'][$id]['student_id'] = $arr['student_id'];
             $responce_arr['stu_data'][$id]['mobile'] = $arr['mobile'];
             $responce_arr['stu_data'][$id]['email'] = $arr['email'];
         }
 
-        return \App\Helpers\is_mobile($type, "easy_comm/send_email_other/add", $responce_arr, "view");
-        //         echo "<pre>";
-        //         print_r($student_data);
-        //         exit;
+        return is_mobile($type, "easy_comm/send_email_other/add", $responce_arr, "view");
     }
 
     /**
      * Store a newly created resource in storage.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\Response
+     * @param  RequestAlias  $request
+     * @return Response
      */
-    public function store(Request $request)
+    public function store(RequestAlias $request)
     {
-        //    echo "<pre>";
-        //    print_r($_REQUEST);
-        //    exit;
-        // $text = $_REQUEST['sendsms'];
-        $responce = array();
-        // foreach($_REQUEST["sendsms"] as $email=>$value){
+        $responce = [];
+
         foreach ($request->get("sendsms") as $email => $value) {
             $responce[] = $email;
         }
-        $type = $request->input('type');
-        // return \App\Helpers\is_mobile($type, "easy_comm/send_email_other/send_email", $responce, "redirect");
-        return \App\Helpers\is_mobile($type, "easy_comm/send_email_other/send_email", $responce, "view");
-        // return \App\Helpers\is_mobile($type, "send_mail", $responce, "redirect");
 
-        //        echo "<pre>";
-        //        print_r($responce);
-        //        exit;
+        $type = $request->input('type');
+
+        return is_mobile($type, "easy_comm/send_email_other/send_email", $responce, "view");
     }
 
-    public function sendEmail(Request $request)
+    public function sendEmail(RequestAlias $request)
     {
-        // dd($request);
-        // echo ('<pre>');print_r($_REQUEST);exit;
-        // require_once(public_path().'/mailer/class.phpmailer.php');
         $path = "";
+
         if ($request->hasFile('fileToUpload')) {
             $file = $request->file('fileToUpload');
             $originalname = $file->getClientOriginalName();
-            $name = $request->get('fileToUpload') . date('YmdHis');
-            $ext = \File::extension($originalname);
-            $file_name = "email_" . $name . '.' . $ext;
+            $name = $request->get('fileToUpload').date('YmdHis');
+            $ext = File::extension($originalname);
+            $file_name = "email_".$name.'.'.$ext;
             $path = $file->storeAs('public/email', $file_name);
         }
 
         if ($path != "") {
-            $filePath = storage_path() . "/app/" . $path;
+            $filePath = storage_path()."/app/".$path;
             $path = $filePath;
         }
         $sub_institute_id = session()->get('sub_institute_id');
-        $where_arr = array(
-            "sub_institute_id" => $sub_institute_id
-        );
+        $where_arr = [
+            "sub_institute_id" => $sub_institute_id,
+        ];
         $smtp_details = DB::table('smtp_details')
             ->where($where_arr)
             ->get();
@@ -126,20 +113,10 @@ class send_email_other_controller extends Controller
             $message = $_REQUEST['content'];
             $attechment = $path;
 
-            $ip =  \Request::getClientIp();
+            $ip = RequestAlias::getClientIp();
 
             $this->saveParentLog($emails, $message, $subject, $attechment, $ip);
-            // echo ('<pre>');print_r($_REQUEST);
-            // echo ('<pre>');print_r($smtp_details);exit;
 
-            // $to_arr = array("keyurmodi143@gmail.com");
-
-
-
-            // $to_arr = array("keyurmodi143@gmail.com");
-
-            // $from = 'trizinnovation2018@gmail.com';
-            // $from_pass = '2018@Info$123';
             $from = $smtp_details[0]->gmail;
             $from_pass = $smtp_details[0]->password;
 
@@ -149,14 +126,12 @@ class send_email_other_controller extends Controller
             $mail->SMTPDebug = 0;
             $mail->SMTPAuth = true;
             $mail->SMTPSecure = "ssl";
-            // $mail->Host = "smtp.gmail.com";
             $mail->Host = $smtp_details[0]->server_address;
-            // $mail->Port = 465;
             $mail->Port = $smtp_details[0]->port;
             foreach ($to_arr as $id => $val) {
                 $mail->AddAddress($val);
             }
-            // $mail->AddAddress("keyurmodi143@gmail.com");
+
             $mail->Username = $from;
             $mail->Password = $from_pass;
             $mail->SetFrom($from, $from);
@@ -167,35 +142,34 @@ class send_email_other_controller extends Controller
             $mail->AltBody = $message;
             $mail->Send();
 
-            $res = array(
+            $res = [
                 "status_code" => 1,
-                "message" => "Email Sent",
-            );
+                "message"     => "Email Sent",
+            ];
         } else {
-            $res = array(
+            $res = [
                 "status_code" => 1,
-                "message" => "You did not setup mail client.",
-            );
+                "message"     => "You did not setup mail client.",
+            ];
         }
 
         $type = $request->input('type');
-        return \App\Helpers\is_mobile($type, "send_email_other.index", $res, "redirect");
+
+        return is_mobile($type, "send_email_other.index", $res, "redirect");
     }
 
     public function saveParentLog($email, $msg, $subject, $attachment, $ip)
     {
-        DB::table('email_sent_parents')->insert(
-            array(
-                'SYEAR' => session()->get('syear'),
-                'EMAIL' => $email,
-                'SUBJECT' => $subject,
-                'EMAIL_TEXT' => $msg,
-                'ATTECHMENT' => $attachment,
-                'USER_ID' => session()->get('user_id'),
-                'IP' => $ip,
-                'sub_institute_id' => session()->get('sub_institute_id')
-            )
-        );
+        DB::table('email_sent_parents')->insert([
+            'SYEAR'            => session()->get('syear'),
+            'EMAIL'            => $email,
+            'SUBJECT'          => $subject,
+            'EMAIL_TEXT'       => $msg,
+            'ATTECHMENT'       => $attachment,
+            'USER_ID'          => session()->get('user_id'),
+            'IP'               => $ip,
+            'sub_institute_id' => session()->get('sub_institute_id'),
+        ]);
     }
 
     public function sendSMS($mobile, $text)
@@ -207,7 +181,7 @@ class send_email_other_controller extends Controller
         $isError = 0;
         $errorMessage = true;
 
-        $url = $data['url'] . $data['pram'] . $data['mobile_var'] . $mobile . $data['text_var'] . $text . $data['last_var'];
+        $url = $data['url'].$data['pram'].$data['mobile_var'].$mobile.$data['text_var'].$text.$data['last_var'];
 
         $ch = curl_init();
 
@@ -233,16 +207,16 @@ class send_email_other_controller extends Controller
         } else {
             $responce = array('error' => 0);
         }
+
         return $responce;
     }
-
 
 
     /**
      * Display the specified resource.
      *
      * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * @return void
      */
     public function show($id)
     {
@@ -253,7 +227,7 @@ class send_email_other_controller extends Controller
      * Show the form for editing the specified resource.
      *
      * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * @return void
      */
     public function edit($id)
     {
@@ -263,11 +237,11 @@ class send_email_other_controller extends Controller
     /**
      * Update the specified resource in storage.
      *
-     * @param  \Illuminate\Http\Request  $request
+     * @param  RequestAlias  $request
      * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * @return void
      */
-    public function update(Request $request, $id)
+    public function update(RequestAlias $request, $id)
     {
         //
     }
@@ -276,7 +250,7 @@ class send_email_other_controller extends Controller
      * Remove the specified resource from storage.
      *
      * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * @return void
      */
     public function destroy($id)
     {
