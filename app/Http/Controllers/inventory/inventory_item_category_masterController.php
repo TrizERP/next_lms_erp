@@ -2,15 +2,15 @@
 
 namespace App\Http\Controllers\inventory;
 
-use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use App\Models\inventory\inventory_item_category_masterModel;
-use Illuminate\Support\Facades\DB;
+use Illuminate\Http\Request;
+use function App\Helpers\is_mobile;
 
 class inventory_item_category_masterController extends Controller
 {
-     public function index(Request $request)
-    {        
+    public function index(Request $request)
+    {
         if (session()->has('data')) { // check if it exists
             $data_arr = session('data'); // to retrieve value
             if (isset($data_arr['message'])) {
@@ -18,87 +18,87 @@ class inventory_item_category_masterController extends Controller
             }
         }
         $sub_institute_id = $request->session()->get('sub_institute_id');
-        //$syear = $request->session()->get('syear');
 
-        $data = inventory_item_category_masterModel::where(['sub_institute_id'=>$sub_institute_id])->get(); //'syear'=>$syear]
+        $data = inventory_item_category_masterModel::where(['sub_institute_id' => $sub_institute_id])->get(); //'syear'=>$syear]
         $item_data['status_code'] = 1;
         $item_data['data'] = $data;
         $type = $request->input('type');
-        return \App\Helpers\is_mobile($type, "inventory/show_inventory_item_category", $item_data, "view");
 
+        return is_mobile($type, "inventory/show_inventory_item_category", $item_data, "view");
     }
-    
-    public function create(Request $request) {
+
+    public function create(Request $request)
+    {
         $sub_institute_id = $request->session()->get('sub_institute_id');
-        $data = inventory_item_category_masterModel::where(['sub_institute_id'=>$sub_institute_id])->get()->toArray();
-        return view('inventory/add_inventory_item_category_master',['menu' => $data]);
-       //return view('hostel_management/add_hostel_type_master');
-    }
-    
-    public function store(Request $request) {
+        $data = inventory_item_category_masterModel::where(['sub_institute_id' => $sub_institute_id])->get()->toArray();
 
-       // \App\Helpers\ValidateInsertData('hostel_type_master',$request);
-        //$syear = $request->session()->get('syear');
+        return view('inventory/add_inventory_item_category_master', ['menu' => $data]);
+    }
+
+    public function store(Request $request)
+    {
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $item_category = new inventory_item_category_masterModel([
-            //'syear' => $syear,
-            'title' => $request->get('title'),          
-            'description' => $request->get('description'),
-            'status' => $request->get('status'),
-            'sub_institute_id' => $sub_institute_id
+            'title'            => $request->get('title'),
+            'description'      => $request->get('description'),
+            'status'           => $request->get('status'),
+            'sub_institute_id' => $sub_institute_id,
         ]);
+
         $item_category->save();
-        
+
         $message['status_code'] = "1";
-        $message = array(
-            "message" => "Item Category Added Succesfully",
-        );
+//        $message = array(
+//            "message" => "Item Category Added Succesfully",
+//        );
         $message = inventory_item_category_masterModel::where(['sub_institute_id' => $sub_institute_id])->get();
 
         $type = $request->input('type');
-        return \App\Helpers\is_mobile($type, "add_inventory_item_category_master.index", $message, "redirect");
+
+        return is_mobile($type, "add_inventory_item_category_master.index", $message, "redirect");
 
     }
-    
-     public function edit(Request $request, $id)
-    {  
-        
+
+    public function edit(Request $request, $id)
+    {
+
         $type = $request->input('type');
         $data = inventory_item_category_masterModel::find($id);
-        return \App\Helpers\is_mobile($type, "inventory/add_inventory_item_category_master", $data, "view");
+
+        return is_mobile($type, "inventory/add_inventory_item_category_master", $data, "view");
     }
-      
+
     public function update(Request $request, $id)
     {
-      // \App\Helpers\ValidateInsertData('hostel_type_master', 'update'); 
-     //$syear = $request->session()->get('syear');
-     $sub_institute_id = $request->session()->get('sub_institute_id');
-      $data = array(
-            // 'syear' => $syear,
-            'title' => $request->get('title'),
-            'description' => $request->get('description'),
-            'status' => $request->get('status'),
+        $sub_institute_id = $request->session()->get('sub_institute_id');
+        $data = [
+            'title'            => $request->get('title'),
+            'description'      => $request->get('description'),
+            'status'           => $request->get('status'),
             'sub_institute_id' => $sub_institute_id,
-      );
-      inventory_item_category_masterModel::where(["id" => $id])->update($data);
-       $message['status_code'] = "1";
-       $message = array(
-            "message" => "Item Category Updated Successfully",
-        );
-       $type = $request->input('type');
+        ];
 
-       return \App\Helpers\is_mobile($type, "add_inventory_item_category_master.index", $message, "redirect");
-    }
-    public function destroy(Request $request,$id)
-    {  
-     $type = $request->input('type');
-     inventory_item_category_masterModel::where(["id" => $id])->delete();
+
+        inventory_item_category_masterModel::where(["id" => $id])->update($data);
         $message['status_code'] = "1";
-        $message = array(
-            "message" => "Item Category Deleted successfully",
-        );
+        $message = [
+            "message" => "Item Category Updated Successfully",
+        ];
+        $type = $request->input('type');
 
-        return \App\Helpers\is_mobile($type, "add_inventory_item_category_master.index", $message, "redirect");
-     
+        return is_mobile($type, "add_inventory_item_category_master.index", $message, "redirect");
+    }
+
+    public function destroy(Request $request, $id)
+    {
+        $type = $request->input('type');
+        inventory_item_category_masterModel::where(["id" => $id])->delete();
+
+        $message['status_code'] = "1";
+        $message = [
+            "message" => "Item Category Deleted successfully",
+        ];
+
+        return is_mobile($type, "add_inventory_item_category_master.index", $message, "redirect");
     }
 }

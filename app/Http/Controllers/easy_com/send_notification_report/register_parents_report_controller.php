@@ -3,24 +3,22 @@
 namespace App\Http\Controllers\easy_com\send_notification_report;
 
 use App\Http\Controllers\Controller;
-use DB;
 use GenTux\Jwt\GetsJwtToken;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
-use function App\Helpers\aut_token;
+use Illuminate\Support\Facades\DB;
 use function App\Helpers\is_mobile;
 
 
 class register_parents_report_controller extends Controller
 {
+    use GetsJwtToken;
 
     /**
      * Display a listing of the resource.
      *
      * @return Response
      */
-    use GetsJwtToken;
-    
     public function index(Request $request)
     {
         $type = $request->input('type');
@@ -28,7 +26,7 @@ class register_parents_report_controller extends Controller
         $res['status_code'] = "1";
         $res['message'] = "Success";
 
-        return is_mobile($type, "easy_comm/send_notification_report/show_register_parents_report", $res , "view");
+        return is_mobile($type, "easy_comm/send_notification_report/show_register_parents_report", $res, "view");
     }
 
     //13.46
@@ -48,56 +46,54 @@ class register_parents_report_controller extends Controller
         $syear = $request->session()->get('syear');
         $sub_institute_id = $request->session()->get('sub_institute_id');
 
-        $extraSearchArrayRaw = " 1=1 ";
+        $data = DB::table('gcm_users as gu')
+            ->join('tblstudent as s', function ($join) {
+                $join->whereRaw('s.mobile=gu.mobile_no');
+            })->join('tblstudent_enrollment as se', function ($join) {
+                $join->whereRaw('se.student_id=s.id');
+            })->join('standard as ss', function ($join) {
+                $join->whereRaw('ss.id = se.standard_id');
+            })->join('academic_section as aa', function ($join) {
+                $join->whereRaw('aa.id=ss.grade_id');
+            })->join('division as dd', function ($join) {
+                $join->whereRaw('dd.id=se.section_id');
+            })->selectRaw("s.id AS student_id,CONCAT_WS(' ',s.first_name,s.middle_name,s.last_name) AS stu_name, 
+        ss.name AS std_name,dd.name AS div_name,aa.title as aca_sec,gu.imei_no,gu.curr_version,gu.new_version,
+        gu.mobile_no, DATE_FORMAT(gu.created_on,'%d-%m-%Y %r') AS CREATED_ON,s.enrollment_no")
+            ->where('se.SYEAR', $syear)
+            ->where('gu.sub_institute_id', $sub_institute_id)
+            ->where(function ($q) use ($mobile_no, $from_date, $to_date) {
+                if ($mobile_no != '') {
+                    $q->where('s.mobile', $mobile_no);
+                }
+                if ($from_date != '') {
+                    $q->where('gu.created_on', '>=', $from_date);
+                }
 
-        if($mobile_no != '')
-        {
-            $extraSearchArrayRaw .= "  AND s.mobile = ".$mobile_no;            
-        }
+                if ($to_date != '') {
+                    $q->where('gu.created_on', '<=', $to_date);
+                }
+            })->get()->toArray();
 
-        if($from_date != '')
-        {
-            $extraSearchArrayRaw .= "  AND gu.created_on >= '".$from_date."'";
-        }
-
-        if($to_date != '')
-        {
-            $extraSearchArrayRaw .= "  AND gu.created_on <= '".$to_date."'";
-        }
-
-        $sql = "SELECT s.id AS student_id,
-                CONCAT_WS(' ',s.first_name,s.middle_name,s.last_name) AS stu_name, 
-                ss.name AS std_name,dd.name AS div_name,aa.title as aca_sec,gu.imei_no,
-                gu.curr_version,gu.new_version,
-                gu.mobile_no, DATE_FORMAT(gu.created_on,'%d-%m-%Y %r') AS CREATED_ON,s.enrollment_no
-                FROM gcm_users gu
-                INNER JOIN tblstudent s ON s.mobile=gu.mobile_no
-                INNER JOIN tblstudent_enrollment se ON se.student_id=s.id
-                INNER JOIN standard ss ON ss.id = se.standard_id
-                INNER JOIN academic_section aa ON aa.id=ss.grade_id
-                LEFT JOIN division dd ON dd.id=se.section_id
-                WHERE $extraSearchArrayRaw AND se.SYEAR='".$syear."' AND gu.sub_institute_id = '".$sub_institute_id."' ";
-
-        $data = DB::select($sql);
         $data = array_map(function ($value) {
             return (array) $value;
         }, $data);
 
-        // dd($fees_data);
         $res['status_code'] = 1;
         $res['message'] = "Success";
         $res['data'] = $data;
         $res['mobile_no'] = $mobile_no;
         $res['from_date'] = $from_date;
         $res['to_date'] = $to_date;
-        return is_mobile($type, "easy_comm/send_notification_report/show_register_parents_report", $res , "view");
+
+        return is_mobile($type, "easy_comm/send_notification_report/show_register_parents_report", $res, "view");
     }
 
     /**
      * Store a newly created resource in storage.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @return Response
+     * @param  Request  $request
+     * @return void
      */
     public function store(Request $request)
     {
@@ -108,7 +104,7 @@ class register_parents_report_controller extends Controller
      * Display the specified resource.
      *
      * @param  int  $id
-     * @return Response
+     * @return void
      */
     public function show($id)
     {
@@ -119,7 +115,7 @@ class register_parents_report_controller extends Controller
      * Show the form for editing the specified resource.
      *
      * @param  int  $id
-     * @return Response
+     * @return void
      */
     public function edit($id)
     {
@@ -129,9 +125,9 @@ class register_parents_report_controller extends Controller
     /**
      * Update the specified resource in storage.
      *
-     * @param  \Illuminate\Http\Request  $request
+     * @param  Request  $request
      * @param  int  $id
-     * @return Response
+     * @return void
      */
     public function update(Request $request, $id)
     {
@@ -142,7 +138,7 @@ class register_parents_report_controller extends Controller
      * Remove the specified resource from storage.
      *
      * @param  int  $id
-     * @return Response
+     * @return void
      */
     public function destroy($id)
     {

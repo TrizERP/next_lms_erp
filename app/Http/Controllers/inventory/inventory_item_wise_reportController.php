@@ -2,37 +2,41 @@
 
 namespace App\Http\Controllers\inventory;
 
-use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
+use App\Models\inventory\inventory_item_masterModel;
+use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
 use function App\Helpers\is_mobile;
-use App\Models\inventory\inventory_item_masterModel;
 
 class inventory_item_wise_reportController extends Controller
 {
     /**
      * Display a listing of the resource.
      *
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function index(Request $request)
     {
         $type = $request->input('type');
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $syear = $request->session()->get('syear');
-        $items = inventory_item_masterModel::select('id', 'title')->where(['sub_institute_id' => $sub_institute_id,'syear' => $syear,'item_status' => 'Active'])->get()->toArray();
-                
-                
+        $items = inventory_item_masterModel::select('id', 'title')
+            ->where([
+                'sub_institute_id' => $sub_institute_id, 'syear' => $syear, 'item_status' => 'Active',
+            ])->get()->toArray();
+
         $res['status_code'] = 1;
         $res['message'] = "Success";
         $res['item'] = $items;
+
         return is_mobile($type, "inventory/inventory_item_wise_report", $res, "view");
     }
 
     /**
      * Show the form for creating a new resource.
      *
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function create(Request $request)
     {
@@ -44,43 +48,51 @@ class inventory_item_wise_reportController extends Controller
         $item_id = $request->input('item_id');
         $extra_query = '';
 
-        if($from_date != '' && $to_date != '')
-        {
+        if ($from_date != '' && $to_date != '') {
             $extra_query .= " AND date_format(IRD.REQUISITION_APPROVED_DATE,'%Y-%m-%d') BETWEEN '".$from_date."' AND '".$to_date."' ";
         }
 
-        if($item_id != '')
-        {
+        if ($item_id != '') {
             $extra_query .= " AND IRD.ITEM_ID = '".$item_id."' ";
         }
 
-        $sql = "SELECT CONCAT_WS(' ',u.first_name,u.middle_name,u.last_name) AS REQUISITION_BY_NAME,IRD.REQUISITION_NO,IRD.REQUISITION_BY,IRD.ITEM_ID,IRD.ITEM_QTY,IRD.APPROVED_QTY, DATE_FORMAT(IRD.REQUISITION_APPROVED_DATE, '%d-%m-%Y') AS REQUISITION_DATE,IM.title as ITEM_NAME,IRD.USER_GROUP_ID
-			FROM inventory_requisition_details IRD
-			INNER JOIN inventory_allocation_details IAD ON IAD.REQUISITION_DETAILS_ID = IRD.ID
-			INNER JOIN inventory_item_master IM ON IM.ID=IRD.ITEM_ID
-			INNER JOIN tbluser u ON u.id = IRD.requisition_by
-            WHERE 1=1 AND IRD.sub_institute_id = '".$sub_institute_id."' AND IRD.syear = '".$syear."' ";
+        $result = DB::table("inventory_requisition_details as IRD")
+            ->join('inventory_allocation_details as IAD', function ($join) {
+                $join->whereRaw("IAD.REQUISITION_DETAILS_ID = IRD.ID");
+            })
+            ->join('inventory_item_master as IM', function ($join) {
+                $join->whereRaw("IM.ID=IRD.ITEM_ID");
+            })
+            ->join('tbluser as u', function ($join) {
+                $join->whereRaw("u.id = IRD.requisition_by");
+            })
+            ->selectRaw('CONCAT_WS(" ",u.first_name,u.middle_name,u.last_name) AS REQUISITION_BY_NAME,IRD.REQUISITION_NO,
+                IRD.REQUISITION_BY,IRD.ITEM_ID,IRD.ITEM_QTY,IRD.APPROVED_QTY, DATE_FORMAT(IRD.REQUISITION_APPROVED_DATE, "%d-%m-%Y") 
+                AS REQUISITION_DATE,IM.title as ITEM_NAME,IRD.USER_GROUP_ID')
+            ->where("IRD.sub_institute_id", "=", $sub_institute_id)
+            ->where("IRD.syear", "=", $syear)
+            ->get()->toArray();
 
-            // dd($sql.$extra_query);
-        $result = DB::select($sql.$extra_query);
-
-        $items = inventory_item_masterModel::select('id', 'title')->where(['sub_institute_id' => $sub_institute_id,'syear' => $syear,'item_status' => 'Active'])->get()->toArray();
+        $items = inventory_item_masterModel::select('id', 'title')->where([
+            'sub_institute_id' => $sub_institute_id, 'syear' => $syear, 'item_status' => 'Active',
+        ])->get()->toArray();
 
         $res['status_code'] = 1;
         $res['message'] = "Success";
         $res['result_report'] = $result;
-     	$res['item'] = $items;
+        $res['item'] = $items;
         $res['from_date'] = $from_date;
         $res['to_date'] = $to_date;
         $res['item_id'] = $item_id;
+
         return is_mobile($type, "inventory/inventory_item_wise_report", $res, "view");
     }
 
     /**
      * Store a newly created resource in storage.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\Response
+     * @param  Request  $request
+     * @return void
      */
     public function store(Request $request)
     {
@@ -91,7 +103,7 @@ class inventory_item_wise_reportController extends Controller
      * Display the specified resource.
      *
      * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * @return void
      */
     public function show($id)
     {
@@ -102,7 +114,7 @@ class inventory_item_wise_reportController extends Controller
      * Show the form for editing the specified resource.
      *
      * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * @return void
      */
     public function edit($id)
     {
@@ -112,9 +124,9 @@ class inventory_item_wise_reportController extends Controller
     /**
      * Update the specified resource in storage.
      *
-     * @param  \Illuminate\Http\Request  $request
+     * @param  Request  $request
      * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * @return void
      */
     public function update(Request $request, $id)
     {
@@ -125,7 +137,7 @@ class inventory_item_wise_reportController extends Controller
      * Remove the specified resource from storage.
      *
      * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * @return void
      */
     public function destroy($id)
     {
