@@ -12,7 +12,7 @@ use Illuminate\Support\Facades\Route;
 
 Route::group(['prefix' => 'user', 'middleware' => ['session', 'menu', 'logRoute']], function () {
     Route::resource('add_user_profile', tbluserprofilemasterController::class);
-    Route::resource(tbluserController::class, 'add_user');
+    Route::resource('add_user', tbluserController::class);
     Route::resource('add_groupwise_rights', tblgroupwise_rightsController::class);
     Route::resource('add_mobileapp_menu_rights', mobileapp_menu_rightsController::class);
     Route::resource('add_user_past_education', tbluserPastEducationController::class);
