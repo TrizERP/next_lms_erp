@@ -2,10 +2,11 @@
 
 namespace App\Http\Controllers\hostel_management;
 
-use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
-use Illuminate\Support\Facades\DB;
 use App\Models\hostel_management\admission_category_masterModel;
+use Illuminate\Http\Request;
+use function App\Helpers\is_mobile;
+use function App\Helpers\ValidateInsertData;
 
 class admission_category_masterController extends Controller
 {
@@ -18,83 +19,90 @@ class admission_category_masterController extends Controller
             }
         }
         $sub_institute_id = $request->session()->get('sub_institute_id');
-        $data = admission_category_masterModel::where(['sub_institute_id'=>$sub_institute_id])->get();
+        $data = admission_category_masterModel::where(['sub_institute_id' => $sub_institute_id])->get();
         $admission_data['status_code'] = 1;
         $admission_data['data'] = $data;
         $type = $request->input('type');
-        return \App\Helpers\is_mobile($type, "hostel_management/show_admission_category", $admission_data, "view");
+
+        return is_mobile($type, "hostel_management/show_admission_category", $admission_data, "view");
 
     }
-    
-    public function create(Request $request) {
+
+    public function create(Request $request)
+    {
         $sub_institute_id = $request->session()->get('sub_institute_id');
-        $data =  admission_category_masterModel::where(['sub_institute_id'=>$sub_institute_id])->get()->toArray();
-        return view('hostel_management/add_admission_category_master',['menu' => $data]);
-    }
-    
-    public function getData() {
-        $admission_data = admission_category_masterModel::orderBy('id')->get();
-        return $admission_data;
-    }
-    
-    public function store(Request $request) {
+        $data = admission_category_masterModel::where(['sub_institute_id' => $sub_institute_id])->get()->toArray();
 
-        \App\Helpers\ValidateInsertData('admission_category_master',$request);
-     
+        return view('hostel_management/add_admission_category_master', ['menu' => $data]);
+    }
+
+    public function getData()
+    {
+        return admission_category_masterModel::orderBy('id')->get();
+    }
+
+    public function store(Request $request)
+    {
+
+        ValidateInsertData('admission_category_master', $request);
+
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $admission = new admission_category_masterModel([
-            'title' => $request->get('title'),
-            'description' => $request->get('description'),
-            'sub_institute_id' => $sub_institute_id
+            'title'            => $request->get('title'),
+            'description'      => $request->get('description'),
+            'sub_institute_id' => $sub_institute_id,
         ]);
         $admission->save();
         $message['status_code'] = "1";
-        $message = array(
-            "message" => "Admission category Added Succesfully",
-        );
+//        $message = array(
+//            "message" => "Admission category Added Succesfully",
+//        );
+
         $message = admission_category_masterModel::where(['sub_institute_id' => $sub_institute_id])->get();
         $type = $request->input('type');
-        return \App\Helpers\is_mobile($type, "add_admission_category_master.index", $message, "redirect");
-        
-        //return redirect(route('add_hostel_type_master.index'))->with('success', 'Hostel Type Added Successfully.');
+
+        return is_mobile($type, "add_admission_category_master.index", $message, "redirect");
     }
-    
-     public function edit(Request $request, $id)
-    {  
-        
+
+    public function edit(Request $request, $id)
+    {
+
         $type = $request->input('type');
         $data = admission_category_masterModel::find($id);
 
-        return \App\Helpers\is_mobile($type, "hostel_management/add_admission_category_master", $data, "view");
+        return is_mobile($type, "hostel_management/add_admission_category_master", $data, "view");
     }
-      
+
     public function update(Request $request, $id)
     {
-       \App\Helpers\ValidateInsertData('admission_category_master', 'update'); 
-     
-      $data = array(
-            'title' => $request->get('title'),
+        ValidateInsertData('admission_category_master', 'update');
+
+        $data = [
+            'title'       => $request->get('title'),
             'description' => $request->get('description'),
-      );
-      admission_category_masterModel::where(["id" => $id])->update($data);
-       $message['status_code'] = "1"; 
-       $message = array(
+        ];
+
+        admission_category_masterModel::where(["id" => $id])->update($data);
+        $message['status_code'] = "1";
+        $message = [
             "message" => "Data Updated Successfully",
-        );
-       $type = $request->input('type');
+        ];
+        $type = $request->input('type');
 
-       return \App\Helpers\is_mobile($type, "add_admission_category_master.index", $message, "redirect");
+        return is_mobile($type, "add_admission_category_master.index", $message, "redirect");
     }
-    public function destroy(Request $request,$id)
-    {  
-     $type = $request->input('type');
-     admission_category_masterModel::where(["id" => $id])->delete();
-     $message['status_code'] = "1";
-        $message = array(
-            "message" => "Data Deleted successfully",
-        );
 
-        return \App\Helpers\is_mobile($type, "add_admission_category_master.index", $message, "redirect");
-     
+    public function destroy(Request $request, $id)
+    {
+        $type = $request->input('type');
+
+        admission_category_masterModel::where(["id" => $id])->delete();
+
+        $message['status_code'] = "1";
+        $message = [
+            "message" => "Data Deleted successfully",
+        ];
+
+        return is_mobile($type, "add_admission_category_master.index", $message, "redirect");
     }
 }
