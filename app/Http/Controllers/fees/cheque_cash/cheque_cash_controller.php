@@ -2,20 +2,29 @@
 
 namespace App\Http\Controllers\fees\cheque_cash;
 
-use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use App\Models\student\tblstudentModel;
+use Illuminate\Http\Request;
+use Illuminate\Http\Response;
+use Illuminate\Support\Facades\DB;
+use Psr\Container\ContainerExceptionInterface;
+use Psr\Container\NotFoundExceptionInterface;
 use function App\Helpers\FeeMonthId;
-use DB;
+use function App\Helpers\is_mobile;
 
-class cheque_cash_controller extends Controller {
+class cheque_cash_controller extends Controller
+{
 
     /**
      * Display a listing of the resource.
      *
-     * @return \Illuminate\Http\Response
+     * @param  Request  $request
+     * @throws ContainerExceptionInterface
+     * @throws NotFoundExceptionInterface
+     * @return Response
      */
-    public function index(Request $request) {
+    public function index(Request $request)
+    {
         if (session()->has('data')) { // check if it exists
             $data_arr = session('data'); // to retrieve value
             if (isset($data_arr['message'])) {
@@ -23,45 +32,51 @@ class cheque_cash_controller extends Controller {
             }
         }
 
-//        $school_data['data'] = $this->getData();
-        $where = array(
-            "other_fee_id" => 0,
+        $where = [
+            "other_fee_id"     => 0,
             "SUB_INSTITUTE_ID" => session()->get('sub_institute_id'),
-            "syear" => session()->get('syear'),
-        );
+            "syear"            => session()->get('syear'),
+        ];
+
         $fees_title = DB::table('fees_title')
-                ->where($where)
-                ->pluck('display_name', 'fees_title');
+            ->where($where)
+            ->pluck('display_name', 'fees_title');
 
 
-        $school_data['data'] = array();
+        $school_data['data'] = [];
         $school_data['data']['fees_title'] = $fees_title;
         $type = $request->input('type');
-        return \App\Helpers\is_mobile($type, "fees/cheque_cash/show", $school_data, "view");
+
+        return is_mobile($type, "fees/cheque_cash/show", $school_data, "view");
     }
 
     /**
      * Show the form for creating a new resource.
      *
-     * @return \Illuminate\Http\Response
+     * @throws ContainerExceptionInterface
+     * @throws NotFoundExceptionInterface
+     * @return Response
      */
-    public function create() {
+    public function create()
+    {
         $months = FeeMonthId();
 
-        $where = array(
-            "other_fee_id" => 0,
+        $where = [
+            "other_fee_id"     => 0,
             "SUB_INSTITUTE_ID" => session()->get('sub_institute_id'),
-            "syear" => session()->get('syear'),
-        );
+            "syear"            => session()->get('syear'),
+        ];
+
         $fees_title = DB::table('fees_title')
-                ->where($where)
-                ->pluck('display_name', 'fees_title');
-        $title_arr = array();
+            ->where($where)
+            ->pluck('display_name', 'fees_title');
+
+        $title_arr = [];
         foreach ($fees_title as $id => $val) {
             $title_arr[$id] = $val;
         }
 
-        $all_fields = array(
+        $all_fields = [
             "fc.created_date",
             "fc.receipt_no",
             "fc.term_id",
@@ -69,10 +84,8 @@ class cheque_cash_controller extends Controller {
             "fc.cheque_no",
             "fc.cheque_bank_name",
             "fc.fees_discount",
-        );
-//                    "concat(s.name,'/',d.name) as std",
-//            "concat(s.first_name,' ',s.last_name) as name",
-//        $select_fields = "ts.*,se.syear,se.student_id,se.enrollment_code,
+        ];
+
         $select_fields = "se.syear,se.student_id,se.enrollment_code,
                         fc.payment_mode,fc.amount
                         ";
@@ -82,7 +95,7 @@ class cheque_cash_controller extends Controller {
         $columns[] = "d.name as division_name";
         $columns[] = "ts.first_name";
         $columns[] = "ts.last_name";
-//        $columns[] = $all_fields;
+
         foreach ($_REQUEST['fees_heads'] as $id => $val) {
             $columns[] = $val;
         }
@@ -93,33 +106,33 @@ class cheque_cash_controller extends Controller {
 
         $query = tblstudentModel::from('tblstudent as ts');
 
-        $where = array(
-            'se.syear' => session()->get('syear'),
-            'fc.syear' => session()->get('syear'),
+        $where = [
+            'se.syear'            => session()->get('syear'),
+            'fc.syear'            => session()->get('syear'),
             'ts.sub_institute_id' => session()->get('sub_institute_id'),
             ['fc.created_date', '>=', $_REQUEST['from_date']],
-            ['fc.created_date', '<=', $_REQUEST['to_date']]
-        );
+            ['fc.created_date', '<=', $_REQUEST['to_date']],
+        ];
 
-        $enrollment_join = array(
-            'se.student_id' => 'ts.id',
-            'se.sub_institute_id' => 'ts.sub_institute_id'
-        );
-        $grade_join = array(
-            'acs.id' => 'se.grade_id',
-            'acs.sub_institute_id' => 'se.sub_institute_id'
-        );
-        $std_join = array(
-            's.id' => 'se.standard_id',
-            's.sub_institute_id' => 'se.sub_institute_id'
-        );
-        $div_join = array(
-            'd.id' => 'se.section_id',
-            'd.sub_institute_id' => 'se.sub_institute_id'
-        );
-        $paid_join = array(
+        $enrollment_join = [
+            'se.student_id'       => 'ts.id',
+            'se.sub_institute_id' => 'ts.sub_institute_id',
+        ];
+        $grade_join = [
+            'acs.id'               => 'se.grade_id',
+            'acs.sub_institute_id' => 'se.sub_institute_id',
+        ];
+        $std_join = [
+            's.id'               => 'se.standard_id',
+            's.sub_institute_id' => 'se.sub_institute_id',
+        ];
+        $div_join = [
+            'd.id'               => 'se.section_id',
+            'd.sub_institute_id' => 'se.sub_institute_id',
+        ];
+        $paid_join = [
             ['fc.student_id', 'ts.id'],
-        );
+        ];
 
         $query->join('tblstudent_enrollment as se', $enrollment_join);
         $query->join('academic_section as acs', $grade_join);
@@ -142,9 +155,9 @@ class cheque_cash_controller extends Controller {
 
         $records = $query->get($columns)->toArray();
 
-        $total_arr = $cash_arr = $cheque_arr = array();        
-        if(count($records) > 0)
-        {
+        $total_arr = $cash_arr = $cheque_arr = [];
+
+        if (count($records) > 0) {
             foreach ($records as $id => $arr) {
                 if ($arr['payment_mode'] == 'Cash') {
                     $cash_arr[] = $arr;
@@ -157,26 +170,21 @@ class cheque_cash_controller extends Controller {
         $responce_html = $old_date = "";
         $grand_total_cash = $grand_total_cheque = $total_cash = $total_cheque = 0;
 
-        if(count($cheque_arr) > 0)
-        {
+        if (count($cheque_arr) > 0) {
             $responce_html .= "<center><h3>Cheque Data</h3></center>";
 
-            foreach ($cheque_arr as $id => $arr) 
-            {
-                
+            foreach ($cheque_arr as $id => $arr) {
+
                 $cur_date = date("Y-m-d", strtotime($arr['created_date']));
-                if ($old_date != $cur_date) 
-                {
+                if ($old_date != $cur_date) {
                     $old_date = $cur_date;
 
-                    if ($id != 0) 
-                    {
+                    if ($id != 0) {
                         $responce_html .= " <tr>";
                         $responce_html .= "     <td align=right colspan=7>";
                         $responce_html .= "         <b>Date Wise Total :</b>";
                         $responce_html .= "     </td>";
-                        foreach ($_REQUEST['fees_heads'] as $test_id => $head_val) 
-                        {
+                        foreach ($_REQUEST['fees_heads'] as $test_id => $head_val) {
                             $responce_html .= "     <td>";
                             $responce_html .= "<b>".$total_arr[$test_id]."</b>";
                             $responce_html .= "     </td>";
@@ -189,8 +197,8 @@ class cheque_cash_controller extends Controller {
                         $responce_html .= "     </td>";
                         $responce_html .= "</table><br>";
                         $total_cheque = $total_cheque + $total_arr['amount'];
-                    }    
-                    $total_arr = array();
+                    }
+                    $total_arr = [];
                     $responce_html .= "<table width='100%' class='customers'>";
                     $responce_html .= " <tr>";
                     $responce_html .= "     <td>";
@@ -225,8 +233,7 @@ class cheque_cash_controller extends Controller {
                     $responce_html .= "         Bank Name";
                     $responce_html .= "     </th>";
 
-                    foreach ($_REQUEST['fees_heads'] as $test_id => $head_val) 
-                    {
+                    foreach ($_REQUEST['fees_heads'] as $test_id => $head_val) {
                         $responce_html .= "     <th>";
                         $responce_html .= $fees_title[$head_val];
                         $responce_html .= "     </th>";
@@ -245,7 +252,7 @@ class cheque_cash_controller extends Controller {
                 $responce_html .= $arr['receipt_no'];
                 $responce_html .= "     </td>";
                 $responce_html .= "     <td>";
-                $responce_html .= $arr['standard_name'] . '/' . $arr['division_name'];
+                $responce_html .= $arr['standard_name'].'/'.$arr['division_name'];
                 $responce_html .= "     </td>";
                 $responce_html .= "     <td>";
                 $responce_html .= $months[$arr['term_id']];
@@ -254,7 +261,7 @@ class cheque_cash_controller extends Controller {
                 $responce_html .= $arr['enrollment_no'];
                 $responce_html .= "     </td>";
                 $responce_html .= "     <td>";
-                $responce_html .= $arr['first_name'] . " " . $arr['last_name'];
+                $responce_html .= $arr['first_name']." ".$arr['last_name'];
                 $responce_html .= "     </td>";
                 $responce_html .= "     <td>";
                 $responce_html .= $arr['cheque_no'];
@@ -263,23 +270,20 @@ class cheque_cash_controller extends Controller {
                 $responce_html .= $arr['cheque_bank_name'];
                 $responce_html .= "     </td>";
 
-                foreach ($_REQUEST['fees_heads'] as $test_id => $head_val) 
-                {
+                foreach ($_REQUEST['fees_heads'] as $test_id => $head_val) {
                     $responce_html .= "     <td>";
-                    if ($arr[$head_val] == '' || $arr[$head_val] == NULL)
+                    if ($arr[$head_val] == '' || $arr[$head_val] == null) {
                         $arr[$head_val] = 0;
+                    }
                     $responce_html .= $arr[$head_val];
-                    if (isset($total_arr[$test_id])) 
-                    {
+                    if (isset($total_arr[$test_id])) {
                         $total_arr[$test_id] = $arr[$head_val] + $total_arr[$test_id];
-                    } 
-                    else 
-                    {
+                    } else {
                         $total_arr[$test_id] = 0;
                         $total_arr[$test_id] = $arr[$head_val] + $total_arr[$test_id];
                     }
                     $responce_html .= "     </td>";
-                }                
+                }
 
                 $responce_html .= "     <td>";
                 $responce_html .= $arr['fees_discount'];
@@ -289,33 +293,26 @@ class cheque_cash_controller extends Controller {
                 $responce_html .= "     </td>";
 
                 $responce_html .= " </tr>";
-                if (isset($total_arr['fees_discount'])) 
-                {
-                    $total_arr['fees_discount'] = $total_arr['fees_discount'] + $arr['fees_discount'];
-                } 
-                else 
-                {
+                if (isset($total_arr['fees_discount'])) {
+                    $total_arr['fees_discount'] += $arr['fees_discount'];
+                } else {
                     $total_arr['fees_discount'] = 0;
-                    $total_arr['fees_discount'] = $total_arr['fees_discount'] + $arr['fees_discount'];
+                    $total_arr['fees_discount'] += $arr['fees_discount'];
                 }
-                if (isset($total_arr['amount'])) 
-                {
-                    $total_arr['amount'] = $total_arr['amount'] + $arr['amount'];
-                } 
-                else 
-                {
+                if (isset($total_arr['amount'])) {
+                    $total_arr['amount'] += $arr['amount'];
+                } else {
                     $total_arr['amount'] = 0;
-                    $total_arr['amount'] = $total_arr['amount'] + $arr['amount'];
+                    $total_arr['amount'] += $arr['amount'];
                 }
-            }            
-        
+            }
+
             $responce_html .= " <tr>";
             $responce_html .= "     <td align=right colspan=7>";
             $responce_html .= "<b>"."         Date Wise Total :"."</b>";
             $responce_html .= "     </td>";
-            
-            foreach ($_REQUEST['fees_heads'] as $test_id => $head_val) 
-            {
+
+            foreach ($_REQUEST['fees_heads'] as $test_id => $head_val) {
                 $responce_html .= "     <td>";
                 $responce_html .= "<b>".$total_arr[$test_id]."</b>";
                 $responce_html .= "     </td>";
@@ -325,35 +322,28 @@ class cheque_cash_controller extends Controller {
             $responce_html .= "<b>".$total_arr['fees_discount']."</b>";
             $responce_html .= "     </td>";
             $responce_html .= "     <td>";
-            $responce_html .= "<b>".$total_arr['amount'] ."</b>";
+            $responce_html .= "<b>".$total_arr['amount']."</b>";
             $responce_html .= "     </td>";
             $responce_html .= "</table>";
 
-        }        
+        }
 
         $old_date = "";
-        // echo "<pre>";
-        // print_r($cash_arr);
-        // die;
-        if(count($cash_arr) > 0)
-        {
+
+        if (count($cash_arr) > 0) {
             $responce_html .= "<center><h3>Cash Data</h3></center>";
 
-            foreach ($cash_arr as $id => $arr) 
-            {
+            foreach ($cash_arr as $id => $arr) {
                 $cur_date = date("Y-m-d", strtotime($arr['created_date']));
-                if ($old_date != $cur_date) 
-                {
+                if ($old_date != $cur_date) {
                     $old_date = $cur_date;
 
-                    if ($id != 0) 
-                    {
+                    if ($id != 0) {
                         $responce_html .= " <tr>";
                         $responce_html .= "     <td align=right colspan=7>";
                         $responce_html .= "<b>"."         Date Wise Total :"."</b>";
                         $responce_html .= "     </td>";
-                        foreach ($_REQUEST['fees_heads'] as $test_id => $head_val) 
-                        {
+                        foreach ($_REQUEST['fees_heads'] as $test_id => $head_val) {
                             $responce_html .= "     <td>";
                             $responce_html .= "<b>".$total_arr[$test_id]."</b>";
                             $responce_html .= "     </td>";
@@ -367,7 +357,7 @@ class cheque_cash_controller extends Controller {
                         $responce_html .= "</table><br>";
                         $total_cash = $total_cash + $total_arr['amount'];
                     }
-                    $total_arr = array();
+                    $total_arr = [];
                     $responce_html .= "<table width='100%' class='customers'>";
                     $responce_html .= " <tr>";
                     $responce_html .= "     <td>";
@@ -402,8 +392,7 @@ class cheque_cash_controller extends Controller {
                     $responce_html .= "         Bank Name";
                     $responce_html .= "     </th>";
 
-                    foreach ($_REQUEST['fees_heads'] as $test_id => $head_val) 
-                    {
+                    foreach ($_REQUEST['fees_heads'] as $test_id => $head_val) {
                         $responce_html .= "     <th>";
                         $responce_html .= $fees_title[$head_val];
                         $responce_html .= "     </th>";
@@ -422,16 +411,13 @@ class cheque_cash_controller extends Controller {
                 $responce_html .= $arr['receipt_no'];
                 $responce_html .= "     </td>";
                 $responce_html .= "     <td>";
-                $responce_html .= $arr['standard_name'] . '/' . $arr['division_name'];
+                $responce_html .= $arr['standard_name'].'/'.$arr['division_name'];
                 $responce_html .= "     </td>";
                 $responce_html .= "     <td>";
 
-                if(isset($arr['term_id']) && $arr['term_id'] != '')
-                {
+                if (isset($arr['term_id']) && $arr['term_id'] != '') {
                     $month_term = $months[$arr['term_id']];
-                }
-                else
-                {
+                } else {
                     $month_term = '';
                 }
                 $responce_html .= $month_term;
@@ -440,7 +426,7 @@ class cheque_cash_controller extends Controller {
                 $responce_html .= $arr['enrollment_no'];
                 $responce_html .= "     </td>";
                 $responce_html .= "     <td>";
-                $responce_html .= $arr['first_name'] . " " . $arr['last_name'];
+                $responce_html .= $arr['first_name']." ".$arr['last_name'];
                 $responce_html .= "     </td>";
                 $responce_html .= "     <td>";
                 $responce_html .= "NA";
@@ -449,18 +435,15 @@ class cheque_cash_controller extends Controller {
                 $responce_html .= "NA";
                 $responce_html .= "     </td>";
 
-                foreach ($_REQUEST['fees_heads'] as $test_id => $head_val) 
-                {
+                foreach ($_REQUEST['fees_heads'] as $test_id => $head_val) {
                     $responce_html .= "     <td>";
-                    if ($arr[$head_val] == '' || $arr[$head_val] == NULL)
+                    if ($arr[$head_val] == '' || $arr[$head_val] == null) {
                         $arr[$head_val] = 0;
+                    }
                     $responce_html .= $arr[$head_val];
-                    if (isset($total_arr[$test_id])) 
-                    {
+                    if (isset($total_arr[$test_id])) {
                         $total_arr[$test_id] = $arr[$head_val] + $total_arr[$test_id];
-                    } 
-                    else 
-                    {
+                    } else {
                         $total_arr[$test_id] = 0;
                         $total_arr[$test_id] = $arr[$head_val] + $total_arr[$test_id];
                     }
@@ -475,32 +458,25 @@ class cheque_cash_controller extends Controller {
                 $responce_html .= "     </td>";
 
                 $responce_html .= " </tr>";
-                if (isset($total_arr['fees_discount'])) 
-                {
-                    $total_arr['fees_discount'] = $total_arr['fees_discount'] + $arr['fees_discount'];
-                } 
-                else 
-                {
+                if (isset($total_arr['fees_discount'])) {
+                    $total_arr['fees_discount'] += $arr['fees_discount'];
+                } else {
                     $total_arr['fees_discount'] = 0;
-                    $total_arr['fees_discount'] = $total_arr['fees_discount'] + $arr['fees_discount'];
+                    $total_arr['fees_discount'] += $arr['fees_discount'];
                 }
-                if (isset($total_arr['amount'])) 
-                {
-                    $total_arr['amount'] = $total_arr['amount'] + $arr['amount'];
-                }
-                else 
-                {
+                if (isset($total_arr['amount'])) {
+                    $total_arr['amount'] += $arr['amount'];
+                } else {
                     $total_arr['amount'] = 0;
-                    $total_arr['amount'] = $total_arr['amount'] + $arr['amount'];
+                    $total_arr['amount'] += $arr['amount'];
                 }
             }
-        
+
             $responce_html .= " <tr>";
             $responce_html .= "     <td align=right colspan=7>";
             $responce_html .= "<b>"."         Date Wise Total :"."</b>";
             $responce_html .= "     </td>";
-            foreach ($_REQUEST['fees_heads'] as $test_id => $head_val) 
-            {
+            foreach ($_REQUEST['fees_heads'] as $test_id => $head_val) {
                 $responce_html .= "     <td>";
                 $responce_html .= "<b>".$total_arr[$test_id]."</b>";
                 $responce_html .= "     </td>";
@@ -552,26 +528,26 @@ class cheque_cash_controller extends Controller {
         $responce_html .= " </tr>";
         $responce_html .= "</table></center>";
 
-//        echo $responce_html;
-//        exit;
+
         $responce_arr['stu_data'] = $responce_html;
 
-        if (isset($_REQUEST['type']))
+        if (isset($_REQUEST['type'])) {
             $type = $_REQUEST['type'];
-        else
+        } else {
             $type = "";
+        }
 
-        return \App\Helpers\is_mobile($type, "fees/cheque_cash/add", $responce_arr, "view");
-//        return \App\Helpers\is_mobile($type, "fees/fees_collect/show", $responce_arr, "view");
+        return is_mobile($type, "fees/cheque_cash/add", $responce_arr, "view");
     }
 
     /**
      * Store a newly created resource in storage.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\Response
+     * @param  Request  $request
+     * @return void
      */
-    public function store(Request $request) {
+    public function store(Request $request)
+    {
         //
     }
 
@@ -579,9 +555,10 @@ class cheque_cash_controller extends Controller {
      * Display the specified resource.
      *
      * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * @return void
      */
-    public function show($id) {
+    public function show($id)
+    {
         //
     }
 
@@ -589,20 +566,22 @@ class cheque_cash_controller extends Controller {
      * Show the form for editing the specified resource.
      *
      * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * @return void
      */
-    public function edit($id) {
+    public function edit($id)
+    {
         //
     }
 
     /**
      * Update the specified resource in storage.
      *
-     * @param  \Illuminate\Http\Request  $request
+     * @param  Request  $request
      * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * @return void
      */
-    public function update(Request $request, $id) {
+    public function update(Request $request, $id)
+    {
         //
     }
 
@@ -610,9 +589,10 @@ class cheque_cash_controller extends Controller {
      * Remove the specified resource from storage.
      *
      * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * @return void
      */
-    public function destroy($id) {
+    public function destroy($id)
+    {
         //
     }
 
