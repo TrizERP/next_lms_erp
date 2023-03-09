@@ -1517,3 +1517,58 @@ if (! function_exists('LMSSearchChain')) {
         echo $html;
     }
 }
+
+if (! function_exists('getGrade')) {
+    function getGrade($grade_arr, $total_mark, $total_gain_mark)
+    {
+        $per = (100 * $total_gain_mark) / $total_mark;
+        foreach ($grade_arr as $id => $data) {
+            if (! isset($grade)) {
+                if ($per >= $data['breakoff']) {
+                    $grade = $data['title'];
+                }
+            }
+        }
+        if (! isset($grade)) {
+            $grade = "-";
+        }
+
+        return $grade;
+    }
+}
+
+
+if (! function_exists('getGradeScale')) {
+    function getGradeScale()
+    {
+        $sub_institute_id = session()->get('sub_institute_id');
+        $syear = session()->get('syear');
+        $standard_id = session()->get('standard');
+
+        $sql_grade = "SELECT dt.* 
+                    FROM result_std_grd_maping  sgm
+                    INNER JOIN grade_master_data dt on dt.grade_id = sgm.grade_scale AND dt.syear = ".$syear."
+                    WHERE sgm.standard = ".$standard_id." AND 
+                    sgm.sub_institute_id = ".$sub_institute_id."
+                    ORDER BY dt.breakoff DESC
+                ";
+        $ret_grade = DB::select(DB::raw($sql_grade));
+
+        //converting it into array 
+        $grade_arr = array();
+        foreach ($ret_grade as $id => $arr) {
+            $grade_arr[$id]['id'] = $arr->id;
+            $grade_arr[$id]['grade_id'] = $arr->grade_id;
+            $grade_arr[$id]['title'] = $arr->title;
+            $grade_arr[$id]['breakoff'] = $arr->breakoff;
+            $grade_arr[$id]['gp'] = $arr->gp;
+            $grade_arr[$id]['sort_order'] = $arr->sort_order;
+            $grade_arr[$id]['comment'] = $arr->comment;
+            $grade_arr[$id]['sub_institute_id'] = $arr->sub_institute_id;
+            $grade_arr[$id]['created_at'] = $arr->created_at;
+            $grade_arr[$id]['updated_at'] = $arr->updated_at;
+        }
+
+        return $grade_arr;
+    }
+}

@@ -180,3 +180,5 @@ Route::post('studentResultPDFAPI', [cbse_1t5_result_controller::class, 'studentR
 //    Route::post('update-event', 'Event\EventController@update_event');
 //    Route::delete('delete-event/{id}', 'Event\EventController@delete_event');
 //});
+
+Route::get('cbse_1t5_result/download_overall_report', [result_report_controller::class, 'downloadOverAllReportExcel']);

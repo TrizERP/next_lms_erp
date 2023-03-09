@@ -2,17 +2,12 @@
 
 namespace App\Http\Controllers\result\cbse_result;
 
-use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
-use DB;
-use GenTux\Jwt\JwtToken;
-use GenTux\Jwt\GetsJwtToken;
-use function App\Helpers\aut_token;
-use Illuminate\Support\Facades\Validator;
-use function App\Helpers\htmlToPDF;
-use function App\Helpers\htmlToPDFLandscape;
-use App\Http\Controllers\result\cbse_result\cbse_1t5_result_controller;
 use App\Models\school_setup\sub_std_mapModel;
+use DB;
+use GenTux\Jwt\GetsJwtToken;
+use Illuminate\Http\Request;
+use function App\Helpers\aut_token;
 
 
 class result_report_controller extends Controller {
@@ -34,7 +29,6 @@ class result_report_controller extends Controller {
 
     public function show_result_report(Request $request)
     {
-        // dd($request);
         $syear = session()->get('syear');
         $sub_institute_id = session()->get('sub_institute_id');
         $term_id = session()->get('term_id');
@@ -48,13 +42,157 @@ class result_report_controller extends Controller {
         $roll_no = $request->input('roll_no');
         $from_date = $request->input('from_date');
         $to_date = $request->input('to_date');
-        $exam_type = $request->input('exam_type');       
-        
-        if($report_of == 'merit_report')
-        {     
-            $rank = $this->getRank($standard_id,$division_id,$passing_ratio=35,$type,$top_students,$from_date,$to_date);
+        $exam_type = $request->input('exam_type');
 
-            $data['students_data'] = $rank;              
+        if ($report_of == 'overall_report') {
+            $controller = app(cbse_1t5_result_controller::class);
+            $all_student = \App\Helpers\SearchStudent($_REQUEST['grade'], $_REQUEST['standard'], $_REQUEST['division']);
+            $responce_arr = [];
+
+            $syear = session()->get('syear');
+            $next_year = session()->get('syear') + 1;
+            $academicTerms = session()->get('academicTerms');
+
+            $result_year = $syear."-".$next_year;
+            session()->put('term_id', $academicTerms[0]->term_id);
+            session()->put('standard', $_REQUEST['standard']);
+            //getting year detail
+            //getting all exam name with mark
+            $all_exam = $controller->getAllExam($_REQUEST['standard']);
+
+            //getting all subject name
+            $all_subject = $controller->getAllSubject($_REQUEST['standard']);
+
+            //getting all mark
+            $all_subject_mark = $controller->getAllMark($all_exam, $all_subject, $all_student);
+
+            //getting Co Scholastic        
+            $all_co_data = $controller->getCoArea($all_student);
+
+            //getting attendance
+            $all_att_data = $controller->getAttendance($all_student);
+
+            //getting scholastic grade range
+            $all_grd_data = $controller->getGradeRange();
+
+            //getting currunt term name
+            $term_name = $controller->getTermName();
+
+            //getting result header
+            $header_data = $controller->getHeader($_REQUEST['standard']);
+
+            //get exam master settigs
+            $footer_data = $controller->getExamMasterSettigs($_REQUEST['standard']);
+
+            //getting all student detail
+
+            foreach ($all_student as $id => $arr) {
+                $cur_student_id = $arr['student_id'];
+                $responce_arr[$cur_student_id]['year'] = $result_year;
+                $responce_arr[$cur_student_id]['term'] = $term_name;
+                $responce_arr[$cur_student_id]['total_mark'] = $all_exam[count($all_exam) - 1]['mark'];
+                $responce_arr[$cur_student_id]['name'] = $arr['first_name']." ".$arr['middle_name']." ".$arr['last_name'];
+                $responce_arr[$cur_student_id]['roll_no'] = $arr['roll_no'];
+                $responce_arr[$cur_student_id]['mother_name'] = $arr['mother_name'];
+                $responce_arr[$cur_student_id]['class'] = $arr['standard_name'];
+                $responce_arr[$cur_student_id]['father_name'] = $arr['father_name'];
+                $responce_arr[$cur_student_id]['division'] = $arr['division_name'];
+                $responce_arr[$cur_student_id]['date_of_birth'] = date("d-m-Y", strtotime($arr['dob']));
+                $responce_arr[$cur_student_id]['gr_no'] = $arr['enrollment_no'];
+                $responce_arr[$cur_student_id]['exam'] = $all_exam;
+                $responce_arr[$cur_student_id]['mark'] = $all_subject_mark[$cur_student_id];
+                $responce_arr[$cur_student_id]['per'] = $controller->getPer($responce_arr[$cur_student_id]['total_mark'],
+                    $all_subject_mark[$cur_student_id]);
+                $responce_arr[$cur_student_id]['final_grade'] = $controller->getFinalGrade($responce_arr[$cur_student_id]['per']);
+                if (isset($all_co_data[$cur_student_id])) {
+                    $responce_arr[$cur_student_id]['co_scholastic_area'] = $all_co_data[$cur_student_id];
+                }
+                $responce_arr[$cur_student_id]['att'] = '';
+                if (isset($all_att_data[$cur_student_id])) {
+                    $responce_arr[$cur_student_id]['att'] = $all_att_data[$cur_student_id];
+                }
+                $responce_arr[$cur_student_id]['grade_range'] = $all_grd_data;
+            }
+
+            session()->put('term_id', $academicTerms[1]->term_id);
+            //getting year detail
+            //getting all exam name with mark
+            $all_exam = $controller->getAllExam($_REQUEST['standard']);
+
+            //getting all subject name
+            $all_subject = $controller->getAllSubject($_REQUEST['standard']);
+
+            //getting all mark
+            $all_subject_mark = $controller->getAllMark($all_exam, $all_subject, $all_student);
+
+            //getting Co Scholastic        
+            $all_co_data = $controller->getCoArea($all_student);
+
+            //getting attendance
+            $all_att_data = $controller->getAttendance($all_student);
+
+            //getting scholastic grade range
+            $all_grd_data = $controller->getGradeRange();
+
+            //getting currunt term name
+            $term_name = $controller->getTermName();
+
+            //getting result header
+            $header_data = $controller->getHeader($_REQUEST['standard']);
+
+            //get exam master settigs
+            $footer_data = $controller->getExamMasterSettigs($_REQUEST['standard']);
+
+            $responce_arr_term2 = [];
+            foreach ($all_student as $id => $arr) {
+                $cur_student_id = $arr['student_id'];
+                $responce_arr_term2[$cur_student_id]['year'] = $result_year;
+                $responce_arr_term2[$cur_student_id]['term'] = $term_name;
+                $responce_arr_term2[$cur_student_id]['total_mark'] = $all_exam[count($all_exam) - 1]['mark'];
+                $responce_arr_term2[$cur_student_id]['name'] = $arr['first_name']." ".$arr['middle_name']." ".$arr['last_name'];
+                $responce_arr_term2[$cur_student_id]['roll_no'] = $arr['roll_no'];
+                $responce_arr_term2[$cur_student_id]['mother_name'] = $arr['mother_name'];
+                $responce_arr_term2[$cur_student_id]['class'] = $arr['standard_name'];
+                $responce_arr_term2[$cur_student_id]['father_name'] = $arr['father_name'];
+                $responce_arr_term2[$cur_student_id]['division'] = $arr['division_name'];
+                $responce_arr_term2[$cur_student_id]['date_of_birth'] = date("d-m-Y", strtotime($arr['dob']));
+                $responce_arr_term2[$cur_student_id]['gr_no'] = $arr['enrollment_no'];
+                $responce_arr_term2[$cur_student_id]['exam'] = $all_exam;
+                $responce_arr_term2[$cur_student_id]['mark'] = $all_subject_mark[$cur_student_id];
+                $responce_arr_term2[$cur_student_id]['per'] = $controller->getPer($responce_arr_term2[$cur_student_id]['total_mark'],
+                    $all_subject_mark[$cur_student_id]);
+                $responce_arr_term2[$cur_student_id]['final_grade'] = $controller->getFinalGrade($responce_arr_term2[$cur_student_id]['per']);
+                if (isset($all_co_data[$cur_student_id])) {
+                    $responce_arr_term2[$cur_student_id]['co_scholastic_area'] = $all_co_data[$cur_student_id];
+                }
+                $responce_arr_term2[$cur_student_id]['att'] = '';
+                if (isset($all_att_data[$cur_student_id])) {
+                    $responce_arr_term2[$cur_student_id]['att'] = $all_att_data[$cur_student_id];
+                }
+                $responce_arr_term2[$cur_student_id]['grade_range'] = $all_grd_data;
+            }
+
+            $data['data'] = $responce_arr;
+            $data['term_2_data'] = $responce_arr_term2;
+            $data['header_data'] = $header_data;
+            $data['footer_data'] = $footer_data;
+            $data['standard_id'] = $_REQUEST['standard'];
+            $data['grade_id'] = $_REQUEST['grade'];
+            $data['division_id'] = $_REQUEST['division'];
+            $data['syear'] = session()->get('syear');
+            $data['term_id'] = session()->get('term_id');
+
+
+            session()->put('over_all_data', $data);
+
+            return \App\Helpers\is_mobile($type, "result/result_report/overall_report_show", $data, "view");
+        }
+
+        if ($report_of == 'merit_report') {
+            $rank = $this->getRank($standard_id, $division_id, $passing_ratio = 35, $type, $top_students, $from_date,
+                $to_date);
+
+            $data['students_data'] = $rank;
             $data['grade_id'] = $grade_id;
             $data['standard_id'] = $standard_id;
             $data['division_id'] = $division_id;
@@ -194,19 +332,33 @@ class result_report_controller extends Controller {
             $data['WRT_data'] = $all_WRT_data;
             $data['all_student'] = $students_data;
 
-//echo "<pre>";
-//print_r($students_data);
-//die();
-           
             return \App\Helpers\is_mobile($type, "result/result_report/classwise_report_show", $data, "view");
         }
 
     }
 
-    public function getClasswise($all_student,$standard_id,$subject,$type,$exam_type=null,$from_date=null,$to_date=null)
+    public function downloadOverAllReportExcel()
     {
-        if($type == 'API')
-        {
+        $data = session()->get('over_all_data');
+
+        $html = view('result/result_report/overall_report_excel', compact('data'))->render();
+
+        header("Content-type: application/excel");
+        header("Content-Disposition: attachment; filename=OverallReport.xls");
+        echo $html;
+        exit;
+    }
+
+    public function getClasswise(
+        $all_student,
+        $standard_id,
+        $subject,
+        $type,
+        $exam_type = null,
+        $from_date = null,
+        $to_date = null
+    ) {
+        if ($type == 'API') {
             $syear = $_REQUEST['syear'];
             $sub_institute_id = $_REQUEST['sub_institute_id'];
             $term_id = 149;
