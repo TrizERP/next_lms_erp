@@ -2,19 +2,25 @@
 
 namespace App\Http\Controllers\front_desk\syllabus;
 
-use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
-use File;
-use DB;
+use Illuminate\Http\Request;
+use Illuminate\Http\Response;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\File;
+use Psr\Container\ContainerExceptionInterface;
+use Psr\Container\NotFoundExceptionInterface;
+use function App\Helpers\is_mobile;
 
-class syllabusController extends Controller {
+class syllabusController extends Controller
+{
 
     /**
      * Display a listing of the resource.
      *
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
-    public function index(Request $request) {
+    public function index(Request $request)
+    {
         if (session()->has('data')) { // check if it exists
             $data_arr = session('data'); // to retrieve value
             if (isset($data_arr['message'])) {
@@ -22,10 +28,11 @@ class syllabusController extends Controller {
             }
         }
 
-        $school_data['data'] = $this->getData();      
-        //$school_data['data'] = array();
+        $school_data['data'] = $this->getData();
+
         $type = $request->input('type');
-        return \App\Helpers\is_mobile($type, "front_desk/syllabus/show", $school_data, "view");
+
+        return is_mobile($type, "front_desk/syllabus/show", $school_data, "view");
     }
 
     function getData()
@@ -36,86 +43,101 @@ class syllabusController extends Controller {
         $user_profile_name = session()->get('user_profile_name');
         $user_id = session()->get('user_id');
 
-        if(strtoupper($user_profile_name) == 'TEACHER')
-        {
-            $sql = "SELECT c.*,s.name std_name ,su.display_name
-                    FROM syllabus c
-                    INNER JOIN standard s on s.id = c.standard_id
-                    INNER JOIN sub_std_map su on su.subject_id = c.subject_id AND su.standard_id = c.standard_id
-                    INNER JOIN timetable t ON t.standard_id = s.id AND t.subject_id = su.subject_id AND t.sub_institute_id = su.sub_institute_id
-                    WHERE c.syear = '".$syear."' AND c.sub_institute_id = '".$sub_institute_id."' AND t.teacher_id = '".$user_id."' ";
-        }else{
-            $sql = "SELECT c.*,s.name std_name ,su.display_name
-                    FROM syllabus c
-                    INNER JOIN standard s on s.id = c.standard_id
-                    INNER JOIN sub_std_map su on su.subject_id = c.subject_id AND su.standard_id = c.standard_id
-                    WHERE c.syear = '".$syear."' AND c.sub_institute_id = '".$sub_institute_id."' ";
+        if (strtoupper($user_profile_name) == 'TEACHER') {
+            $result = DB::table("syllabus as c")
+                ->join('standard as s', function ($join) {
+                    $join->whereRaw("s.id = c.standard_id");
+                })
+                ->join('sub_std_map as su', function ($join) {
+                    $join->whereRaw("su.subject_id = c.subject_id AND su.standard_id = c.standard_id");
+                })
+                ->join('timetable as t', function ($join) {
+                    $join->whereRaw("t.standard_id = s.id AND t.subject_id = su.subject_id AND t.sub_institute_id = su.sub_institute_id");
+                })
+                ->selectRaw('c.*,s.name std_name ,su.display_name')
+                ->where("c.syear", "=", $syear)
+                ->where("c.sub_institute_id", "=", $sub_institute_id)
+                ->where("t.teacher_id", "=", $user_id)
+                ->get()->toArray();
+        } else {
+            $result = DB::table("syllabus as c")
+                ->join('standard as s', function ($join) {
+                    $join->whereRaw("s.id = c.standard_id");
+                })
+                ->join('sub_std_map as su', function ($join) {
+                    $join->whereRaw("su.subject_id = c.subject_id AND su.standard_id = c.standard_id");
+                })
+                ->selectRaw('c.*,s.name std_name ,su.display_name')
+                ->where("c.syear", "=", $syear)
+                ->where("c.sub_institute_id", "=", $sub_institute_id)
+                ->get()->toArray();
         }
-        $sql = preg_replace('/\n+/', '', $sql);
 
-        $result = DB::select($sql);
         return $result;
     }
 
     /**
      * Show the form for creating a new resource.
      *
-     * @return \Illuminate\Http\Response
+     * @return void
      */
-    public function create() {
+    public function create()
+    {
 
     }
 
     /**
      * Store a newly created resource in storage.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\Response
+     * @param  Request  $request
+     * @throws ContainerExceptionInterface
+     * @throws NotFoundExceptionInterface
+     * @return Response
      */
-    public function store(Request $request) {
+    public function store(Request $request)
+    {
 
         $file_name = "";
         if ($request->hasFile('attachment')) {
             $file = $request->file('attachment');
             $originalname = $file->getClientOriginalName();
-            $name = $request->get('attachment') . date('YmdHis');
-            $ext = \File::extension($originalname);
-            $file_name = "attachment_" . $name . '.' . $ext;
+            $name = $request->get('attachment').date('YmdHis');
+            $ext = File::extension($originalname);
+            $file_name = "attachment_".$name.'.'.$ext;
             $path = $file->storeAs('public/syllabus/', $file_name);
         }
-        // if (isset($_REQUEST['standard'])) {
-        //     foreach ($_REQUEST['standard'] as $id => $std) {
-                $values = array(
-                    'syear' => session()->get('syear'),
-                    'standard_id' => $_REQUEST['standard'],
-                    'title' => $_REQUEST['title'],
-                    'message' => $_REQUEST['message'],
-                    'file_name' => $file_name,
-                    'date_' => $_REQUEST['date_'],
-                    'sub_institute_id' => session()->get('sub_institute_id'),
-                    'created_at' => now(),
-                    'updated_at' => now(),
-                    'subject_id' => $_REQUEST['subject'],
-                );
-                DB::table('syllabus')->insert($values);
-        //     }
-        // }
+        $values = [
+            'syear'            => session()->get('syear'),
+            'standard_id'      => $_REQUEST['standard'],
+            'title'            => $_REQUEST['title'],
+            'message'          => $_REQUEST['message'],
+            'file_name'        => $file_name,
+            'date_'            => $_REQUEST['date_'],
+            'sub_institute_id' => session()->get('sub_institute_id'),
+            'created_at'       => now(),
+            'updated_at'       => now(),
+            'subject_id'       => $_REQUEST['subject'],
+        ];
+        DB::table('syllabus')->insert($values);
 
-        $res = array(
+        $res = [
             "status_code" => 1,
-            "message" => "Done",
-        );
+            "message"     => "Done",
+        ];
+
         $type = $request->input('type');
-        return \App\Helpers\is_mobile($type, "syllabus.index", $res, "redirect");
+
+        return is_mobile($type, "syllabus.index", $res, "redirect");
     }
 
     /**
      * Display the specified resource.
      *
      * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * @return void
      */
-    public function show($id) {
+    public function show($id)
+    {
         //
     }
 
@@ -123,43 +145,37 @@ class syllabusController extends Controller {
      * Show the form for editing the specified resource.
      *
      * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * @return void
      */
-    public function edit($id) {
+    public function edit($id)
+    {
         //
     }
 
     /**
      * Update the specified resource in storage.
      *
-     * @param  \Illuminate\Http\Request  $request
+     * @param  Request  $request
      * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * @return void
      */
-    public function update(Request $request, $id) {
+    public function update(Request $request, $id)
+    {
         //
     }
 
-    /**
-     * Remove the specified resource from storage.
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
-//    public function destroy($id) {
-//        //
-//    }
 
-    public function destroy(Request $request, $id) {
+    public function destroy(Request $request, $id)
+    {
         $type = $request->input('type');
         DB::table('syllabus')->where(["Id" => $id])->delete();
-//        ExamMaster::where(["Id" => $id])->delete();
-        $res = array(
-            "status_code" => 1,
-            "message" => "Data Deleted",
-        );
 
-        return \App\Helpers\is_mobile($type, "syllabus.index", $res, "redirect");
+        $res = [
+            "status_code" => 1,
+            "message"     => "Data Deleted",
+        ];
+
+        return is_mobile($type, "syllabus.index", $res, "redirect");
     }
 
 }

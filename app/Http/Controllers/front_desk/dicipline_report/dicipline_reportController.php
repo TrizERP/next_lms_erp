@@ -2,18 +2,24 @@
 
 namespace App\Http\Controllers\front_desk\dicipline_report;
 
-use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
-use DB;
+use Illuminate\Http\Request;
+use Illuminate\Http\Response;
+use Illuminate\Support\Facades\DB;
+use Psr\Container\ContainerExceptionInterface;
+use Psr\Container\NotFoundExceptionInterface;
+use function App\Helpers\is_mobile;
 
-class dicipline_reportController extends Controller {
+class dicipline_reportController extends Controller
+{
 
     /**
      * Display a listing of the resource.
      *
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
-    public function index(Request $request) {
+    public function index(Request $request)
+    {
         if (session()->has('data')) { // check if it exists
             $data_arr = session('data'); // to retrieve value
             if (isset($data_arr['message'])) {
@@ -21,82 +27,84 @@ class dicipline_reportController extends Controller {
             }
         }
 
-//        $data['data'] = $this->getData();
-
-
-        $data['data'] = array();
-//        $data['data']['dd'] = $dd;
+        $data['data'] = [];
         $type = $request->input('type');
-        return \App\Helpers\is_mobile($type, "front_desk/dicipline_report/show", $data, "view");
+
+        return is_mobile($type, "front_desk/dicipline_report/show", $data, "view");
     }
 
     /**
      * Show the form for creating a new resource.
      *
-     * @return \Illuminate\Http\Response
+     * @param  Request  $request
+     * @throws ContainerExceptionInterface
+     * @throws NotFoundExceptionInterface
+     * @return Response
      */
-    public function create(Request $request) {
-//        echo "<pre>";
-//        print_r($_REQUEST);
-//        exit;
+    public function create(Request $request)
+    {
 
-        $extra_where = "";
-        if (isset($_REQUEST['grade']) && $_REQUEST['grade'] != '') {
-            $grade_val = $_REQUEST['grade'];
-            $extra_where .= " AND se.grade_id =  '" . $_REQUEST['grade'] . "'";
-        }
-        if (isset($_REQUEST['standard']) && $_REQUEST['standard'] != '') {
-            $extra_where .= " AND se.standard_id =  '" . $_REQUEST['standard'] . "'";
-//            $responce_arr['standard'] = $_REQUEST['standard'];
-        }
-        if (isset($_REQUEST['division']) && $_REQUEST['division'] != '') {
-            $extra_where .= " AND se.section_id ='" . $_REQUEST['division'] . "'";
-//            $responce_arr['division'] = $_REQUEST['division'];
-        }
-        if (isset($_REQUEST['from_date']) && $_REQUEST['from_date'] != '') {
-            $extra_where .= " and pc.date_ >='" . $_REQUEST['from_date'] . "'";
-        }
-        if (isset($_REQUEST['to_date']) && $_REQUEST['to_date'] != '') {
-            $extra_where .= " and pc.date_ <='" . $_REQUEST['to_date'] . "'";
-        }
-        $sql = "SELECT s.*,se.syear,se.student_id,se.grade_id,
-                se.standard_id,se.section_id,se.student_quota,se.start_date,
-                se.end_date,se.enrollment_code,se.drop_code,se.drop_remarks,
-                se.drop_remarks,se.term_id,se.remarks,se.admission_fees,
-                se.house_id,se.lc_number,st.name standard_name,
-                d.name as division_name,pc.id,pc.syear,pc.student_id,pc.message,
-                pc.dicipline,pc.date_,pc.name
-                FROM tblstudent s
-                INNER JOIN tblstudent_enrollment se ON se.student_id = s.id
-                INNER JOIN academic_section g ON g.id = se.grade_id
-                INNER JOIN standard st ON st.id = se.standard_id
-                INNER JOIN division d ON  d.id = se.section_id
-                INNER JOIN dicipline pc ON pc.student_id = s.id
-                WHERE s.sub_institute_id = '" . session()->get('sub_institute_id') . "'
-                AND se.syear = '" . session()->get('syear') . "'
-                AND pc.syear = '" . session()->get('syear') . "'
-               $extra_where
-                ";
-//        echo $sql;
-        $sql = preg_replace('/\n+/', '', $sql);
+        $requestData = $_REQUEST;
+        $result = DB::table("tblstudent as s")
+            ->join('tblstudent_enrollment as se', function ($join) {
+                $join->whereRaw("se.student_id = s.id");
+            })
+            ->join('academic_section as g', function ($join) {
+                $join->whereRaw("g.id = se.grade_id");
+            })
+            ->join('standard as st', function ($join) {
+                $join->whereRaw("st.id = se.standard_id");
+            })
+            ->join('division as d', function ($join) {
+                $join->whereRaw("d.id = se.section_id");
+            })
+            ->join('dicipline as pc', function ($join) {
+                $join->whereRaw("pc.student_id = s.id");
+            })
+            ->selectRaw('s.*,se.syear,se.student_id,se.grade_id, se.standard_id,se.section_id,se.student_quota,se.start_date, 
+                        se.end_date,se.enrollment_code,se.drop_code,se.drop_remarks, se.drop_remarks,se.term_id,se.remarks,se.admission_fees,
+                        se.house_id,se.lc_number,st.name standard_name,d.name as division_name,pc.id,pc.syear,pc.student_id,pc.message,
+                        pc.dicipline,pc.date_,pc.name')
+            ->where("s.sub_institute_id", "=", session()->get('sub_institute_id'))
+            ->where("se.syear", "=", session()->get('syear'))
+            ->where("pc.syear", "=", session()->get('syear'))
+            ->where(function ($q) use ($requestData) {
+                if (isset($requestData['grade']) && $requestData['grade'] != '') {
+                    $q->where('se.grade_id', $requestData['grade']);
+                }
 
-        $result = DB::select($sql);
+                if (isset($requestData['standard']) && $requestData['standard'] != '') {
+                    $q->where('se.standard_id', $requestData['standard']);
+                }
 
-//        echo "<pre>";
-//        print_r($result);
-//        exit;
+                if (isset($requestData['division']) && $requestData['division'] != '') {
+                    $q->where('se.section_id', $requestData['division']);
+                }
+
+                if (isset($requestData['from_date']) && $requestData['from_date'] != '') {
+                    $q->where('pc.date_', '>=', $requestData['from_date']);
+                }
+
+                if (isset($requestData['to_date']) && $requestData['to_date'] != '') {
+                    $q->where('pc.date_', '<=', $requestData['to_date']);
+                }
+            })
+            ->get()->toarray();
+
         $data['data'] = $result;
         $type = $request->input('type');
-        return \App\Helpers\is_mobile($type, "front_desk/dicipline_report/add", $data, "view");
+
+        return is_mobile($type, "front_desk/dicipline_report/add", $data, "view");
     }
 
     /**
      * Store a newly created resource in storage.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\Response
+     * @param  Request  $request
+     * @return void
      */
-    public function store(Request $request) {
+    public function store(Request $request)
+    {
         //
     }
 
@@ -104,9 +112,10 @@ class dicipline_reportController extends Controller {
      * Display the specified resource.
      *
      * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * @return void
      */
-    public function show($id) {
+    public function show($id)
+    {
         //
     }
 
@@ -114,20 +123,22 @@ class dicipline_reportController extends Controller {
      * Show the form for editing the specified resource.
      *
      * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * @return void
      */
-    public function edit($id) {
+    public function edit($id)
+    {
         //
     }
 
     /**
      * Update the specified resource in storage.
      *
-     * @param  \Illuminate\Http\Request  $request
+     * @param  Request  $request
      * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * @return void
      */
-    public function update(Request $request, $id) {
+    public function update(Request $request, $id)
+    {
         //
     }
 
@@ -135,9 +146,10 @@ class dicipline_reportController extends Controller {
      * Remove the specified resource from storage.
      *
      * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * @return void
      */
-    public function destroy($id) {
+    public function destroy($id)
+    {
         //
     }
 

@@ -2,25 +2,28 @@
 
 namespace App\Http\Controllers\front_desk\dicipline;
 
-use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
-use DB;
-use GenTux\Jwt\JwtToken;
 use GenTux\Jwt\GetsJwtToken;
-use function App\Helpers\aut_token;
+use Illuminate\Http\Request;
+use Illuminate\Http\Response;
+use Illuminate\Support\Facades\DB;
+use function App\Helpers\is_mobile;
+use function App\Helpers\SearchStudent;
 use function App\Helpers\sendNotification;
 
 
-class diciplineController extends Controller {
+class diciplineController extends Controller
+{
 
     /**
      * Display a listing of the resource.
      *
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
-	use GetsJwtToken;
-	 
-    public function index(Request $request) {
+    use GetsJwtToken;
+
+    public function index(Request $request)
+    {
         if (session()->has('data')) { // check if it exists
             $data_arr = session('data'); // to retrieve value
             if (isset($data_arr['message'])) {
@@ -28,24 +31,21 @@ class diciplineController extends Controller {
             }
         }
 
-//        $data['data'] = $this->getData();
-
-
         $data['data'] = array();
-        //dd($data);
-//        $data['data']['dd'] = $dd;
         $type = $request->input('type');
-        return \App\Helpers\is_mobile($type, "front_desk/dicipline/show", $data, "view");
+
+        return is_mobile($type, "front_desk/dicipline/show", $data, "view");
     }
 
     /**
      * Show the form for creating a new resource.
      *
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
-    public function create(Request $request) {
+    public function create(Request $request)
+    {
         $type = $request->input('type');
-        $student_data = \App\Helpers\SearchStudent($_REQUEST['grade'], $_REQUEST['standard'], $_REQUEST['division']);
+        $student_data = SearchStudent($_REQUEST['grade'], $_REQUEST['standard'], $_REQUEST['division']);
 
         $responce_arr['grade'] = $_REQUEST['grade'];
         $responce_arr['standard'] = $_REQUEST['standard'];
@@ -53,7 +53,7 @@ class diciplineController extends Controller {
         foreach ($student_data as $id => $arr) {
 
             $responce_arr['stu_data'][$id]['sr.no'] = $id + 1;
-            $responce_arr['stu_data'][$id]['name'] = $arr['first_name'] . ' ' . $arr['middle_name'] . ' ' . $arr['last_name'];
+            $responce_arr['stu_data'][$id]['name'] = $arr['first_name'].' '.$arr['middle_name'].' '.$arr['last_name'];
             $responce_arr['stu_data'][$id]['student_id'] = $arr['student_id'];
             $responce_arr['stu_data'][$id]['mobile'] = $arr['mobile'];
             $responce_arr['stu_data'][$id]['standard_name'] = $arr['standard_name'];
@@ -61,87 +61,78 @@ class diciplineController extends Controller {
         }
         $dd = DB::table('dicipline_dd')->pluck('message', 'id');
         $responce_arr['dd'] = $dd;
-       // dd($responce_arr);
 
-        return \App\Helpers\is_mobile($type, "front_desk/dicipline/add", $responce_arr, "view");
+        return is_mobile($type, "front_desk/dicipline/add", $responce_arr, "view");
     }
 
     /**
      * Store a newly created resource in storage.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\Response
+     * @param  Request  $request
+     * @return Response
      */
-    public function store(Request $request) {
-//        echo "<pre>";
-//        print_r($_REQUEST);
-//        exit;
-        $stu_arr = array();
+    public function store(Request $request)
+    {
+        $stu_arr = [];
         foreach ($_REQUEST['values']['stud_id'] as $student_id => $on) {
             $stu_arr[] = $student_id;
         }
 
-        $sql = "select concat(first_name,' ',last_name) name 
-                from tbluser 
-                where id = " . $request->session()->get('user_id');
-        $sql = preg_replace('/\n+/', '', $sql);
-        $result = DB::select($sql);
+
+        $result = DB::table("tbluser")
+            ->selectRaw("concat(first_name,' ',last_name) name")
+            ->where("id", "=", $request->session()->get('user_id'))
+            ->get()->toArray();
+
         $name = $result[0]->name;
 
-//        echo "<pre>";
-//        print_r($stu_arr);
-//        exit;
         foreach ($stu_arr as $id => $stu_id) {
-            DB::table('dicipline')->insert(
-                    array(
-                        'syear' => session()->get('syear'),
-                        'student_id' => $stu_id,
-                        'name' => $name,
-                        'dicipline' => $_REQUEST['values']['dd'][$stu_id],
-                        'message' => $_REQUEST['values']['text'][$stu_id],
-                        'date_' => date('Y-m-d'),
-                        'sub_institute_id' => session()->get('sub_institute_id'),
-                        'created_by' => session()->get('user_id'),
-                        'created_at' => now(),
-                        'updated_at' => now()
-                    )
-            );
+            DB::table('dicipline')->insert([
+                'syear'            => session()->get('syear'),
+                'student_id'       => $stu_id,
+                'name'             => $name,
+                'dicipline'        => $_REQUEST['values']['dd'][$stu_id],
+                'message'          => $_REQUEST['values']['text'][$stu_id],
+                'date_'            => date('Y-m-d'),
+                'sub_institute_id' => session()->get('sub_institute_id'),
+                'created_by'       => session()->get('user_id'),
+                'created_at'       => now(),
+                'updated_at'       => now(),
+            ]);
 
             //START Send Notification Code
-            $app_notification_content = array(
-                'NOTIFICATION_TYPE' => 'Student Remarks',
-                'NOTIFICATION_DATE' => date('Y-m-d'),
-                'STUDENT_ID' => $stu_id,
+            $app_notification_content = [
+                'NOTIFICATION_TYPE'        => 'Student Remarks',
+                'NOTIFICATION_DATE'        => date('Y-m-d'),
+                'STUDENT_ID'               => $stu_id,
                 'NOTIFICATION_DESCRIPTION' => $_REQUEST['values']['text'][$stu_id],
-                'STATUS' => 0,
-                'SUB_INSTITUTE_ID' => session()->get('sub_institute_id'),                  
-                'SYEAR' => session()->get('syear'),
-                'CREATED_BY' => session()->get('user_id'),        
-                'CREATED_IP' => $_SERVER['REMOTE_ADDR']          
-            );
-            sendNotification($app_notification_content);  
+                'STATUS'                   => 0,
+                'SUB_INSTITUTE_ID'         => session()->get('sub_institute_id'),
+                'SYEAR'                    => session()->get('syear'),
+                'CREATED_BY'               => session()->get('user_id'),
+                'CREATED_IP'               => $_SERVER['REMOTE_ADDR'],
+            ];
+            sendNotification($app_notification_content);
             //END Send Notification Code
         }
-        $res = array(
+        $res = [
             "status_code" => 1,
-            "message" => "Dicipline Added",
-        );
+            "message"     => "Dicipline Added",
+        ];
 
         $type = $request->input('type');
-        return \App\Helpers\is_mobile($type, "dicipline.index", $res, "redirect");
 
-        //        echo "<pre>";
-        //        print_r($responce);
-        //        exit;
+        return is_mobile($type, "dicipline.index", $res, "redirect");
     }
 
     /**
      * Display the specified resource.
      *
      * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * @return void
      */
-    public function show($id) {
+    public function show($id)
+    {
         //
     }
 
@@ -149,20 +140,22 @@ class diciplineController extends Controller {
      * Show the form for editing the specified resource.
      *
      * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * @return void
      */
-    public function edit($id) {
+    public function edit($id)
+    {
         //
     }
 
     /**
      * Update the specified resource in storage.
      *
-     * @param  \Illuminate\Http\Request  $request
+     * @param  Request  $request
      * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * @return void
      */
-    public function update(Request $request, $id) {
+    public function update(Request $request, $id)
+    {
         //
     }
 
@@ -170,45 +163,50 @@ class diciplineController extends Controller {
      * Remove the specified resource from storage.
      *
      * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * @return void
      */
-    public function destroy($id) {
+    public function destroy($id)
+    {
         //
     }
-	
-	public function studentDisciplineAPI(Request $request) {
-	   try {
-            if (!$this->jwtToken()->validate()) {
-                $response = array('status' => '2', 'message' => 'Token Auth Failed', 'data' => array());
+
+    public function studentDisciplineAPI(Request $request)
+    {
+        try {
+            if (! $this->jwtToken()->validate()) {
+                $response = ['status' => '2', 'message' => 'Token Auth Failed', 'data' => []];
+
                 return response()->json($response, 401);
             }
         } catch (\Exception $e) {
-            $response = array('status' => '2', 'message' => $e->getMessage(), 'data' => array());
+            $response = ['status' => '2', 'message' => $e->getMessage(), 'data' => []];
+
             return response()->json($response, 401);
         }
-		
-		$type = $request->input("type");
-		$student_id = $request->input("student_id");
-		$sub_institute_id = $request->input("sub_institute_id");
-		$syear = $request->input("syear");
 
-		if($student_id != "" && $sub_institute_id != "" && $syear != "")
-		{				
-			$data = DB::select("SELECT dicipline as discipline,message,date_ AS discipline_date
-			FROM dicipline
-			WHERE syear = '".$syear."' AND sub_institute_id = '".$sub_institute_id."' 
-			AND student_id = '".$student_id."'				
-			");
-			
-			$res['status'] = 1;
-			$res['message'] = "Success";
-			$res['data'] = $data;	
-		}else{
-			$res['status'] = 0;
-			$res['message'] = "Parameter Missing";
-		}
-		//return  \App\Helpers\is_mobile($type, "implementation", $res);
-		return json_encode($res);		
-	}
+        $type = $request->input("type");
+        $student_id = $request->input("student_id");
+        $sub_institute_id = $request->input("sub_institute_id");
+        $syear = $request->input("syear");
+
+        if ($student_id != "" && $sub_institute_id != "" && $syear != "") {
+
+            $data = DB::table("dicipline")
+                ->selectRaw('dicipline as discipline,message,date_ AS discipline_date')
+                ->where("syear", "=", $syear)
+                ->where("sub_institute_id", "=", $sub_institute_id)
+                ->where("student_id", "=", $student_id)
+                ->get()->toArray();
+
+            $res['status'] = 1;
+            $res['message'] = "Success";
+            $res['data'] = $data;
+        } else {
+            $res['status'] = 0;
+            $res['message'] = "Parameter Missing";
+        }
+
+        return json_encode($res);
+    }
 
 }
