@@ -2,17 +2,22 @@
 
 namespace App\Http\Controllers\transportation\add_driver;
 
-use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use App\Models\transportation\add_driver\add_driver;
-use DB;
+use Illuminate\Http\Request;
+use Illuminate\Http\Response;
+use Illuminate\Support\Facades\File;
+use Psr\Container\ContainerExceptionInterface;
+use Psr\Container\NotFoundExceptionInterface;
+use function App\Helpers\is_mobile;
 
-class add_driver_controller extends Controller {
+class add_driver_controller extends Controller
+{
 
     /**
      * Display a listing of the resource.
      *
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function index(Request $request)
     {
@@ -23,35 +28,39 @@ class add_driver_controller extends Controller {
             }
         }
         $school_data['data'] = $this->getData();
+
         $type = $request->input('type');
-        return \App\Helpers\is_mobile($type, "transportation/add_driver/show", $school_data, "view");
+
+        return is_mobile($type, "transportation/add_driver/show", $school_data, "view");
     }
 
     public function getData()
     {
-        $data = add_driver::where(['sub_institute_id' => session()->get('sub_institute_id')])->get();
-        return $data;
+        return add_driver::where(['sub_institute_id' => session()->get('sub_institute_id')])->get();
     }
 
     /**
      * Show the form for creating a new resource.
      *
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function create(Request $request)
     {
         $type = $request->input('type');
-        $dataStore = array();
-        return \App\Helpers\is_mobile($type, 'transportation/add_driver/add', $dataStore, "view");
+        $dataStore = [];
+
+        return is_mobile($type, 'transportation/add_driver/add', $dataStore, "view");
     }
 
     /**
      * Store a newly created resource in storage.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\Response
+     * @param  Request  $request
+     * @throws ContainerExceptionInterface
+     * @throws NotFoundExceptionInterface
+     * @return Response
      */
-    public function store(Request $request) 
+    public function store(Request $request)
     {
         $sub_institute_id = session()->get('sub_institute_id');
 
@@ -60,35 +69,36 @@ class add_driver_controller extends Controller {
             $file = $request->file('icard_icon');
             $originalname = $file->getClientOriginalName();
             $name = date('YmdHis');
-            $ext = \File::extension($originalname);
-            $file_name = $name . '.' . $ext;
+            $ext = File::extension($originalname);
+            $file_name = $name.'.'.$ext;
             $path = $file->storeAs('public/driver/', $file_name);
         }
 
         $add_driver = new add_driver([
-            "first_name" => $request->get('first_name'),
-            "last_name" => $request->get('last_name'),
-            "mobile" => $request->get('mobile'),
-            "type" => $request->get('type'),
-            'icard_icon' => $file_name,
-            'sub_institute_id' => $sub_institute_id
+            "first_name"       => $request->get('first_name'),
+            "last_name"        => $request->get('last_name'),
+            "mobile"           => $request->get('mobile'),
+            "type"             => $request->get('type'),
+            'icard_icon'       => $file_name,
+            'sub_institute_id' => $sub_institute_id,
         ]);
         $add_driver->save();
 
-        $res = array(
+        $res = [
             "status_code" => 1,
-            "message" => "Data Added Successfully."
-        );
+            "message"     => "Data Added Successfully.",
+        ];
 
         $type = $request->input('type');
-        return \App\Helpers\is_mobile($type, "add_driver.index", $res, "redirect");
+
+        return is_mobile($type, "add_driver.index", $res, "redirect");
     }
 
     /**
      * Display the specified resource.
      *
      * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * @return void
      */
     public function show($id)
     {
@@ -99,31 +109,36 @@ class add_driver_controller extends Controller {
      * Show the form for editing the specified resource.
      *
      * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function edit(Request $request, $id)
     {
         $type = $request->input('type');
         $data = add_driver::find($id)->toArray();
-        return \App\Helpers\is_mobile($type, "transportation/add_driver/edit", $data, "view");
+
+        return is_mobile($type, "transportation/add_driver/edit", $data, "view");
     }
 
     /**
      * Update the specified resource in storage.
      *
-     * @param  \Illuminate\Http\Request  $request
+     * @param  Request  $request
      * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * @throws ContainerExceptionInterface
+     * @throws NotFoundExceptionInterface
+     * @return Response
      */
     public function update(Request $request, $id)
     {
-        $sub_institute_id = session()->get('sub_institute_id');        
-        $data1 = array([
+        $sub_institute_id = session()->get('sub_institute_id');
+        $data1 = array(
+            [
                 "first_name" => $request->get('first_name'),
-                "last_name" => $request->get('last_name'),
-                "mobile" => $request->get('mobile'),
-                "type" => $request->get('type')
-        ]);
+                "last_name"  => $request->get('last_name'),
+                "mobile"     => $request->get('mobile'),
+                "type"       => $request->get('type'),
+            ],
+        );
         $data1 = $data1[0];
 
         $file_name = "";
@@ -131,40 +146,43 @@ class add_driver_controller extends Controller {
             $file = $request->file('icard_icon');
             $originalname = $file->getClientOriginalName();
             $name = date('YmdHis');
-            $ext = \File::extension($originalname);
-            $file_name = $name . '.' . $ext;
+            $ext = File::extension($originalname);
+            $file_name = $name.'.'.$ext;
             $path = $file->storeAs('public/driver/', $file_name);
         }
+
         if ($file_name != "") {
             $data1['icard_icon'] = $file_name;
         }
 
         add_driver::where(["id" => $id])->update($data1);
 
-        $res = array(
+        $res = [
             "status_code" => 1,
-            "message" => "Data Updated Successfully."
-        );
+            "message"     => "Data Updated Successfully.",
+        ];
         $type = $request->input('type');
-        return \App\Helpers\is_mobile($type, "add_driver.index", $res, "redirect");
+
+        return is_mobile($type, "add_driver.index", $res, "redirect");
     }
 
     /**
      * Remove the specified resource from storage.
      *
      * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function destroy(Request $request, $id)
     {
         $type = $request->input('type');
         add_driver::where(["id" => $id])->delete();
-        $res = array(
-            "status_code" => 1,
-            "message" => "Data Deleted Successfully.",
-        );
 
-        return \App\Helpers\is_mobile($type, "add_driver.index", $res, "redirect");
+        $res = [
+            "status_code" => 1,
+            "message"     => "Data Deleted Successfully.",
+        ];
+
+        return is_mobile($type, "add_driver.index", $res, "redirect");
     }
 
 }

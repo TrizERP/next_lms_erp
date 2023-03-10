@@ -2,19 +2,24 @@
 
 namespace App\Http\Controllers\transportation\add_stop;
 
-use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use App\Models\transportation\add_stop\add_stop;
-use DB;
+use Illuminate\Http\Request;
+use Illuminate\Http\Response;
+use Psr\Container\ContainerExceptionInterface;
+use Psr\Container\NotFoundExceptionInterface;
+use function App\Helpers\is_mobile;
 
-class add_stop_controller extends Controller {
+class add_stop_controller extends Controller
+{
 
     /**
      * Display a listing of the resource.
      *
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
-    public function index(Request $request) {
+    public function index(Request $request)
+    {
         if (session()->has('data')) { // check if it exists
             $data_arr = session('data'); // to retrieve value
             if (isset($data_arr['message'])) {
@@ -23,64 +28,67 @@ class add_stop_controller extends Controller {
         }
 
         $school_data['data'] = $this->getData();
-//        $school_data['data'] = array();
         $type = $request->input('type');
-        return \App\Helpers\is_mobile($type, "transportation/add_stop/show", $school_data, "view");
+
+        return is_mobile($type, "transportation/add_stop/show", $school_data, "view");
     }
 
-    public function getData() {
-        $data = add_stop::
-                where([
-                    'sub_institute_id' => session()->get('sub_institute_id'),
-                        ]
-                )
-                ->get();
-        return $data;
+    public function getData()
+    {
+        return add_stop::where([
+            'sub_institute_id' => session()->get('sub_institute_id'),
+        ])->get();
     }
 
     /**
      * Show the form for creating a new resource.
      *
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
-    public function create(Request $request) {
+    public function create(Request $request)
+    {
         $type = $request->input('type');
-        $dataStore = array();
-        return \App\Helpers\is_mobile($type, 'transportation/add_stop/add', $dataStore, "view");
+        $dataStore = [];
+
+        return is_mobile($type, 'transportation/add_stop/add', $dataStore, "view");
     }
 
     /**
      * Store a newly created resource in storage.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\Response
+     * @param  Request  $request
+     * @throws ContainerExceptionInterface
+     * @throws NotFoundExceptionInterface
+     * @return Response
      */
-    public function store(Request $request) {
-//        $max_id = add_stop::max('map_id');
+    public function store(Request $request)
+    {
 
         $exam = new add_stop([
-            "stop_name" => $request->get('stop_name'),
+            "stop_name"        => $request->get('stop_name'),
             'sub_institute_id' => session()->get('sub_institute_id'),
-            'syear' => session()->get('syear'),
+            'syear'            => session()->get('syear'),
         ]);
         $exam->save();
 
-        $res = array(
+        $res = [
             "status_code" => 1,
-            "message" => "Data Saved",
-        );
+            "message"     => "Data Saved",
+        ];
 
         $type = $request->input('type');
-        return \App\Helpers\is_mobile($type, "add_stop.index", $res, "redirect");
+
+        return is_mobile($type, "add_stop.index", $res, "redirect");
     }
 
     /**
      * Display the specified resource.
      *
      * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * @return void
      */
-    public function show($id) {
+    public function show($id)
+    {
         //
     }
 
@@ -88,60 +96,64 @@ class add_stop_controller extends Controller {
      * Show the form for editing the specified resource.
      *
      * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
-    public function edit(Request $request, $id) {
+    public function edit(Request $request, $id)
+    {
         $type = $request->input('type');
         $data = add_stop::find($id)->toArray();
 
-        return \App\Helpers\is_mobile($type, "transportation/add_stop/edit", $data, "view");
+        return is_mobile($type, "transportation/add_stop/edit", $data, "view");
     }
 
     /**
      * Update the specified resource in storage.
      *
-     * @param  \Illuminate\Http\Request  $request
+     * @param  Request  $request
      * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * @throws ContainerExceptionInterface
+     * @throws NotFoundExceptionInterface
+     * @return Response
      */
-    public function update(Request $request, $id) {
-//        echo "<pre>";
-//        dd($request);
-
-        $data1 = array([
-                "stop_name" => $request->get('stop_name'),
+    public function update(Request $request, $id)
+    {
+        $data1 = array(
+            [
+                "stop_name"        => $request->get('stop_name'),
                 'sub_institute_id' => session()->get('sub_institute_id'),
-                'syear' => session()->get('syear'),
-        ]);
+                'syear'            => session()->get('syear'),
+            ],
+        );
 
         $data1 = $data1[0];
 
         add_stop::where(["id" => $id])->update($data1);
 
-        $res = array(
+        $res = [
             "status_code" => 1,
-            "message" => "Data Saved",
-        );
+            "message"     => "Data Saved",
+        ];
         $type = $request->input('type');
 
-        return \App\Helpers\is_mobile($type, "add_stop.index", $res, "redirect");
+        return is_mobile($type, "add_stop.index", $res, "redirect");
     }
 
     /**
      * Remove the specified resource from storage.
      *
      * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
-    public function destroy(Request $request, $id) {
+    public function destroy(Request $request, $id)
+    {
         $type = $request->input('type');
         add_stop::where(["id" => $id])->delete();
-        $res = array(
+        $res = [
             "status_code" => 1,
-            "message" => "Data Deleted",
-        );
+            "message"     => "Data Deleted",
+        ];
 
-        return \App\Helpers\is_mobile($type, "add_stop.index", $res, "redirect");
+        return is_mobile($type, "add_stop.index", $res, "redirect");
     }
 
 }
