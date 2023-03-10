@@ -117,28 +117,26 @@ $loginpage_backgrond = session()->get('loginpage_backgrond');
                   <input class="form-control" name="password" type="password" required="" placeholder="Password">
                 </div>
               </div>
-              <div class="form-group">
-                <div class="row">
-                  <div class="col-6">
-                    <label>Captcha</label>
-                    <input class="form-control" autocomplete="off" name="captchaText" type="text" required="" placeholder="Enter Captcha">
-                  </div>
-        
-                  <div class="col-6">
-                    <?php                
-                    $servername = ($_SERVER['HTTP_HOST']);
-                    ?>                    
-                    <img src="https://{{$servername}}/captcha/captcha.php" width="100%" />                        
-                  <input type="hidden" name='hid_captcha' id="hid_captcha">
-                  </div>
+                <div class="form-group">
+                    <div class="row">
+                        <div class="col-6">
+                            <label>Captcha</label>
+                            <input class="form-control" autocomplete="off" name="captchaText" type="text" required=""
+                                   placeholder="Enter Captcha">
+                        </div>
+
+                        <div class="col-6">
+                            <img src="{{ asset('captcha/captcha.php') }}" width="100%"/>
+                            <input type="hidden" name='hid_captcha' id="hid_captcha">
+                        </div>
+                    </div>
                 </div>
-              </div>
-              <div class="form-group">
-                <div class="col-md-12 d-flex align-items-center justify-content-between">
-                  <div class="custom-control custom-checkbox my-1 mr-sm-2">
-                    <input id="checkbox-signup" class="custom-control-input" type="checkbox">
-                    <label class="custom-control-label mb-0 pt-1" for="checkbox-signup"> Remember me </label>
-                  </div>
+                <div class="form-group">
+                    <div class="col-md-12 d-flex align-items-center justify-content-between">
+                        <div class="custom-control custom-checkbox my-1 mr-sm-2">
+                            <input id="checkbox-signup" class="custom-control-input" type="checkbox">
+                            <label class="custom-control-label mb-0 pt-1" for="checkbox-signup"> Remember me </label>
+                        </div>
                   <a href="{{ route('forget.password.get') }}">Forgot Password</a>
                   <!-- <a href="javascript:void(0)" id="to-recover" class="text-dark pull-right"><i class="fa fa-lock m-r-5"></i> Forgot Password?</a>  -->
                 </div>
