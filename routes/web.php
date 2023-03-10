@@ -35,7 +35,7 @@ use App\Http\Controllers\school_setup\topicController;
 use App\Http\Controllers\school_setup\workflowController;
 use App\Http\Controllers\signupController;
 use App\Http\Controllers\student\questionWiseReportController;
-use App\Http\Controllers\template_result\TemplateResult;
+use App\Http\Controllers\template_result1\TemplateResult;
 use App\Http\Controllers\tourController;
 use App\Http\Controllers\used_storage_graphController;
 use App\Http\Controllers\UserFormbuilderController;
