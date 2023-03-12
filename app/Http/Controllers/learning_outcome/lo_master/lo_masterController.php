@@ -2,13 +2,11 @@
 
 namespace App\Http\Controllers\learning_outcome\lo_master;
 
-// namespace  App\Http\Controllers\learning_outcome\lo_master\lo_master_controller;
-
-
-//use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
-use DB;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
+use Illuminate\Support\Facades\DB;
+use function App\Helpers\is_mobile;
 
 class lo_masterController extends Controller
 {
@@ -16,7 +14,7 @@ class lo_masterController extends Controller
     /**
      * Display a listing of the resource.
      *
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function index(Request $request)
     {
@@ -28,14 +26,10 @@ class lo_masterController extends Controller
         }
 
         $school_data['data'] = $this->getData();
-        // $school_data['data'] = array();
-        // echo "<pre>";
-        // print_r($school_data);
-        // exit;
-        // $school_data['data'] = DB::table('learning_outcome_pdf')->get();
+
         $type = $request->input('type');
 
-        return \App\Helpers\is_mobile($type, 'learning_outcome/lo_master/show', $school_data, 'view');
+        return is_mobile($type, 'learning_outcome/lo_master/show', $school_data, 'view');
     }
 
     public function getData()
@@ -46,94 +40,92 @@ class lo_masterController extends Controller
             $arr->SrNo = $i;
             $i++;
         }
+
         return $data;
     }
+
     public function get_all_dd()
     {
-        $str = 'SELECT MEDIUM FROM learning_outcome_pdf GROUP BY MEDIUM';
-        $result = DB::select(DB::raw($str));
+        $result = DB::table("learning_outcome_pdf")
+            ->select('MEDIUM')
+            ->groupBy('MEDIUM')
+            ->get()->toArray();
 
-        $medium = array();
+        $medium = [];
         foreach ($result as $id => $arr) {
             $medium[$arr->MEDIUM] = $arr->MEDIUM;
         }
 
-        $str = 'SELECT STANDARD FROM learning_outcome_pdf GROUP BY STANDARD';
-        $result = DB::select(DB::raw($str));
+        $result = DB::table("learning_outcome_pdf")
+            ->select('STANDARD')
+            ->groupBy('STANDARD')
+            ->get()->toArray();
 
-        $std = array();
+        $std = [];
         foreach ($result as $id => $arr) {
             $std[$arr->STANDARD] = $arr->STANDARD;
         }
 
-        $dataStore = array(
+        return [
             'medium' => $medium,
-            'std' => $std,
-            // 'div' => $div,
-        );
-
-        return $dataStore;
+            'std'    => $std,
+        ];
     }
 
     /**
      * Show the form for creating a new resource.
      *
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function create(Request $request)
     {
         $type = $request->input('type');
         $dataStore = $this->get_all_dd();
 
-        return \App\Helpers\is_mobile($type, 'learning_outcome/lo_master/add', $dataStore, 'view');
+        return is_mobile($type, 'learning_outcome/lo_master/add', $dataStore, 'view');
     }
 
-  
 
     /**
      * Store a newly created resource in storage.
      *
-     * @param \Illuminate\Http\Request $request
+     * @param  Request  $request
      *
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function store(Request $request)
     {
-        $data = array(
-            'MEDIUM' => $request->get('medium'),
-            'STANDARD' => $request->get('std'),
-            'SUBJECT' => $request->get('subject'),
-            'INDICATOR' => $request->get('learning_outcome'),
+        $data = [
+            'MEDIUM'     => $request->get('medium'),
+            'STANDARD'   => $request->get('std'),
+            'SUBJECT'    => $request->get('subject'),
+            'INDICATOR'  => $request->get('learning_outcome'),
             'CREATED_AT' => now(),
             'UPDATED_AT' => now(),
-            'CREATED_BY' =>  $request->session()->get('user_id'),
+            'CREATED_BY' => $request->session()->get('user_id'),
             'UPDATED_BY' => $request->session()->get('user_id'),
-        );
+        ];
 
         DB::table('learning_outcome_indicator')->insert(
             $data
         );
-  
-        $res = array(
+
+        $res = [
             'status_code' => 1,
-            'message' => 'Data Saved',
-        );
+            'message'     => 'Data Saved',
+        ];
 
         $type = $request->input('type');
 
-        return \App\Helpers\is_mobile($type, 'lo_master.index', $res, 'redirect');
-
-        // echo '<pre>';
-        // print_r($request->Code);
-        // exit;
+        return is_mobile($type, 'lo_master.index', $res, 'redirect');
     }
 
     /**
      * Display the specified resource.
      *
-     * @param int $id
+     * @param  int  $id
      *
-     * @return \Illuminate\Http\Response
+     * @return void
      */
     public function show($id)
     {
@@ -142,110 +134,98 @@ class lo_masterController extends Controller
     /**
      * Show the form for editing the specified resource.
      *
-     * @param int $id
+     * @param  int  $id
      *
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function edit(Request $request, $id)
     {
         $all_dd = $this->get_all_dd();
 
-        // $allData = lo_master::
-        //     where(['SubInstituteId' => $sub_institute_id])
-        //     ->get()->toArray();
-
-        $str = 'SELECT * FROM learning_outcome_indicator WHERE ID = '.$id;
-        $allData = DB::select(DB::raw($str));
-
-        // $allData = lo_master::find($id)->toArray();
-        // echo('<pre>');
-        // print_r($allData);
-        // exit;
+        $allData = DB::table("learning_outcome_indicator")
+            ->where("ID", "=", $id)
+            ->get()->toArray();
 
         $standard = $allData[0]->STANDARD;
         $medium = $allData[0]->MEDIUM;
 
-        $where = array(
+        $where = [
             'learning_outcome_pdf.standard' => $standard,
-            'learning_outcome_pdf.medium' => $medium,
-        );
+            'learning_outcome_pdf.medium'   => $medium,
+        ];
 
         $std_sub_map = DB::table('learning_outcome_pdf')
             ->where($where)
             ->pluck('learning_outcome_pdf.DISPLAY_SUBJECT', 'learning_outcome_pdf.SUBJECTS');
 
-        $data = array(
-            'medium' => $all_dd['medium'],
-            'std' => $all_dd['std'],
-            'selected_medium' => $allData[0]->MEDIUM,
-            'selected_std' => $allData[0]->STANDARD,
+        $data = [
+            'medium'           => $all_dd['medium'],
+            'std'              => $all_dd['std'],
+            'selected_medium'  => $allData[0]->MEDIUM,
+            'selected_std'     => $allData[0]->STANDARD,
             'selected_subject' => $allData[0]->SUBJECT,
             'learning_outcome' => $allData[0]->INDICATOR,
-            'subject' => $std_sub_map,
-            'id' => $id,
+            'subject'          => $std_sub_map,
+            'id'               => $id,
+        ];
 
-        );
-        // echo ('<pre>');print_r($data);exit;
-
-        // $sub_institute_id = session()->get('sub_institute_id');
         $type = $request->input('type');
 
-        // $data['ddValue'] = $ddvalue;
-        return \App\Helpers\is_mobile($type, "learning_outcome/lo_master/edit", $data, "view");
+        return is_mobile($type, "learning_outcome/lo_master/edit", $data, "view");
     }
 
     /**
      * Update the specified resource in storage.
      *
-     * @param \Illuminate\Http\Request $request
-     * @param int                      $id
+     * @param  Request  $request
+     * @param  int  $id
      *
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function update(Request $request, $id)
     {
-        $data = array(
-            'MEDIUM' => $request->get('medium'),
-            'STANDARD' => $request->get('std'),
-            'SUBJECT' => $request->get('subject'),
-            'INDICATOR' => $request->get('learning_outcome'),
+        $data = [
+            'MEDIUM'     => $request->get('medium'),
+            'STANDARD'   => $request->get('std'),
+            'SUBJECT'    => $request->get('subject'),
+            'INDICATOR'  => $request->get('learning_outcome'),
             'UPDATED_AT' => now(),
             'UPDATED_BY' => $request->session()->get('user_id'),
-        );
+        ];
 
         DB::table('learning_outcome_indicator')
-        ->where(["ID" => $id])
-        ->update($data);
-        
-        $res = array(
+            ->where(["ID" => $id])
+            ->update($data);
+
+        $res = [
             "status_code" => 1,
-            "message" => "Data Saved",
-        );
+            "message"     => "Data Saved",
+        ];
         $type = $request->input('type');
 
-        return \App\Helpers\is_mobile($type, "lo_master.index", $res, "redirect");
+        return is_mobile($type, "lo_master.index", $res, "redirect");
     }
 
     /**
      * Remove the specified resource from storage.
      *
-     * @param int $id
+     * @param  int  $id
      *
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function destroy(Request $request, $id)
     {
         $type = $request->input('type');
 
         DB::table('learning_outcome_indicator')
-        ->where(["ID" => $id])
-        ->delete();
+            ->where(["ID" => $id])
+            ->delete();
 
-        $res = array(
+        $res = [
             "status_code" => 1,
-            "message" => "Data Deleted",
-        );
+            "message"     => "Data Deleted",
+        ];
 
-        return \App\Helpers\is_mobile($type, "lo_master.index", $res, "redirect");
+        return is_mobile($type, "lo_master.index", $res, "redirect");
     }
 }
