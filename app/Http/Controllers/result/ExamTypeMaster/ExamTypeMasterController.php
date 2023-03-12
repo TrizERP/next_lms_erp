@@ -2,14 +2,16 @@
 
 namespace App\Http\Controllers\result\ExamTypeMaster;
 
-use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use App\Models\result\ExamTypeMaster\ExamTypeMater;
+use Illuminate\Http\Request;
+use function App\Helpers\is_mobile;
 
-class ExamTypeMasterController extends Controller {
+class ExamTypeMasterController extends Controller
+{
 
-    //
-    public function index(Request $request) {
+    public function index(Request $request)
+    {
 
         if (session()->has('data')) { // check if it exists
             $data_arr = session('data'); // to retrieve value
@@ -20,58 +22,55 @@ class ExamTypeMasterController extends Controller {
 
         $school_data['data'] = $this->getData();
         $type = $request->input('type');
-        return \App\Helpers\is_mobile($type, "result/ExamTypeMaster/show_exam_type", $school_data, "view");
+
+        return is_mobile($type, "result/ExamTypeMaster/show_exam_type", $school_data, "view");
     }
 
-    public function create(Request $request) {
+    public function create(Request $request)
+    {
         $type = $request->input('type');
 
         $sub_institute_id = session()->get('sub_institute_id');
 
-        $maxCode = ExamTypeMater::
-                where(['SubInstituteId' => $sub_institute_id])
-                ->max('Code');
-        $maxCode = $maxCode + 1;
-        $maxSortOrder = ExamTypeMater::
-                where(['SubInstituteId' => $sub_institute_id])
-                ->max('SortOrder');
-        $maxSortOrder = $maxSortOrder + 1;
+        $maxCode = ExamTypeMater::where(['SubInstituteId' => $sub_institute_id])
+            ->max('Code');
+        ++$maxCode;
+        $maxSortOrder = ExamTypeMater::where(['SubInstituteId' => $sub_institute_id])
+            ->max('SortOrder');
+        ++$maxSortOrder;
 
         $dataStore['Code'] = $maxCode;
         $dataStore['SortOrder'] = $maxSortOrder;
-        return \App\Helpers\is_mobile($type, 'result/ExamTypeMaster/add_exam_type', $dataStore, "view");
+
+        return is_mobile($type, 'result/ExamTypeMaster/add_exam_type', $dataStore, "view");
     }
 
-    public function store(Request $request) {
-
-//        \App\Helpers\ValidateInsertData('exam_type_master', $request);
-
-//        echo "<pre>";
-//        print_r(session()->get('sub_institute_id'));
-//        exit;
+    public function store(Request $request)
+    {
         $exam_type = new ExamTypeMater([
-            'Code' => $request->get('Code'),
-            'ExamType' => $request->get('ExamType'),
-            'ShortName' => $request->get('ShortName'),
-            'SortOrder' => $request->get('SortOrder'),
+            'Code'           => $request->get('Code'),
+            'ExamType'       => $request->get('ExamType'),
+            'ShortName'      => $request->get('ShortName'),
+            'SortOrder'      => $request->get('SortOrder'),
             'SubInstituteId' => session()->get('sub_institute_id'),
         ]);
         $exam_type->save();
 
-        $res = array(
+        $res = [
             "status_code" => 1,
-            "message" => "Data Saved",
-        );
+            "message"     => "Data Saved",
+        ];
 
         $type = $request->input('type');
-        return \App\Helpers\is_mobile($type, "exam_type_master.index", $res, "redirect");
+
+        return is_mobile($type, "exam_type_master.index", $res, "redirect");
     }
 
-    public function getData() {
+    public function getData()
+    {
         $sub_institute_id = session()->get('sub_institute_id');
-        $exam_type = ExamTypeMater::
-                        where(['SubInstituteId' => $sub_institute_id])
-                        ->orderBy('id')->get();
+        $exam_type = ExamTypeMater::where(['SubInstituteId' => $sub_institute_id])
+            ->orderBy('id')->get();
 
         $i = 1;
         foreach ($exam_type as $id => $arr) {
@@ -82,45 +81,44 @@ class ExamTypeMasterController extends Controller {
         return $exam_type;
     }
 
-    public function edit(Request $request, $id) {
+    public function edit(Request $request, $id)
+    {
 
         $type = $request->input('type');
         $data = ExamTypeMater::find($id);
 
-        return \App\Helpers\is_mobile($type, "result/ExamTypeMaster/add_exam_type", $data, "view");
+        return is_mobile($type, "result/ExamTypeMaster/add_exam_type", $data, "view");
     }
 
-    public function update(Request $request, $id) {
-
-//        \App\Helpers\ValidateInsertData('exam_type_master', 'update');
-
-        $data = array(
-            'Code' => $request->get('Code'),
-            'ExamType' => $request->get('ExamType'),
+    public function update(Request $request, $id)
+    {
+        $data = [
+            'Code'      => $request->get('Code'),
+            'ExamType'  => $request->get('ExamType'),
             'ShortName' => $request->get('ShortName'),
             'SortOrder' => $request->get('SortOrder'),
-        );
+        ];
 
         ExamTypeMater::where(["Id" => $id])->update($data);
 
-        $res = array(
+        $res = [
             "status_code" => 1,
-            "message" => "Data Saved",
-        );
+            "message"     => "Data Saved",
+        ];
         $type = $request->input('type');
 
-        return \App\Helpers\is_mobile($type, "exam_type_master.index", $res, "redirect");
+        return is_mobile($type, "exam_type_master.index", $res, "redirect");
     }
 
-    public function destroy(Request $request, $id) {
+    public function destroy(Request $request, $id)
+    {
         $type = $request->input('type');
         ExamTypeMater::where(["Id" => $id])->delete();
-        $res = array(
+        $res = [
             "status_code" => 1,
-            "message" => "Data Deleted",
-        );
+            "message"     => "Data Deleted",
+        ];
 
-        return \App\Helpers\is_mobile($type, "exam_type_master.index", $res, "redirect");
+        return is_mobile($type, "exam_type_master.index", $res, "redirect");
     }
-
 }
