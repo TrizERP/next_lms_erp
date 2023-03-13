@@ -106,6 +106,7 @@ class cbse_1t5_result_controller extends Controller
         }
 
 
+        session()->put('term_id', $academicTerms[1]->term_id);
         //getting year detail
         //getting all exam name with mark
         $all_exam = $this->getAllExam($_REQUEST['standard']);
@@ -458,7 +459,7 @@ class cbse_1t5_result_controller extends Controller
             $standard_id = $_REQUEST['standard'];
         }
 
-        $ret_grade = DB::table("result_std_grd_maping as smg")
+        $ret_grade = DB::table("result_std_grd_maping as sgm")
             ->join('grade_master_data as dt', function ($join) use ($syear) {
                 $join->whereRaw("dt.grade_id = sgm.grade_scale AND dt.syear = ".$syear."");
             })

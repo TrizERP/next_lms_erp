@@ -20,7 +20,7 @@ class result_report_controller extends Controller
     {
         $sub_institute_id = session()->get('sub_institute_id');
         $exam_master_sql = DB::table("result_exam_master as r")
-            ->where("r.SubInstituteId"."=", $sub_institute_id)
+            ->where("r.SubInstituteId", "=", $sub_institute_id)
             ->get()->toArray();
 
         $exam_master_data = json_decode(json_encode($exam_master_sql), true);

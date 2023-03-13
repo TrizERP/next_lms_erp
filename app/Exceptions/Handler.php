@@ -2,12 +2,10 @@
 
 namespace App\Exceptions;
 
-use App\Models\errLog;
 use Exception;
 use Illuminate\Foundation\Exceptions\Handler as ExceptionHandler;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response as ResponseAlias;
-use Illuminate\Support\Facades\URL;
 use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\NotFoundExceptionInterface;
 use Throwable;
@@ -54,22 +52,22 @@ class Handler extends ExceptionHandler
             $userId = 0;
         }
 
-        if ($exception->getCode() != 0) {
-            $random_no = rand(10000, 99999);
-            $image_name = $random_no.'.jpg';
-            $path = URL::current();
-            $save_path = $_SERVER['DOCUMENT_ROOT'].'/storage/error_screenshort/'.$image_name;
-
-            $errLog = new errLog([
-                'user_id'      => $userId,
-                'code'         => $exception->getCode(),
-                'file'         => $exception->getFile(),
-                'line'         => $exception->getLine(),
-                'message'      => $exception->getMessage(),
-                'screen_short' => $path //  '/storage/error_screenshort/'.$image_name
-            ]);
-            $errLog->save();
-        }
+//        if ($exception->getCode() != 0) {
+//            $random_no = rand(10000, 99999);
+//            $image_name = $random_no.'.jpg';
+//            $path = URL::current();
+//            $save_path = $_SERVER['DOCUMENT_ROOT'].'/storage/error_screenshort/'.$image_name;
+//
+//            $errLog = new errLog([
+//                'user_id'      => $userId,
+//                'code'         => $exception->getCode(),
+//                'file'         => $exception->getFile(),
+//                'line'         => $exception->getLine(),
+//                'message'      => $exception->getMessage(),
+//                'screen_short' => $path //  '/storage/error_screenshort/'.$image_name
+//            ]);
+//            $errLog->save();
+//        }
         // 13/08/2021 END code for Insert Exception & Error in DB table
 
         parent::report($exception);

@@ -26,7 +26,8 @@
                         $header_data = $data['header_data'];
                         $footer_data = $data['footer_data'];
                         $term_2_data = $data['term_2_data'];
-
+                        $gradeScale = \App\Helpers\getGradeScale();
+                        $grandTotal = 0;
                         //foreach ($data as $arr) {
                         foreach ($data['data'] as $stuent_id => $all_data) {
                         ?>
@@ -120,11 +121,22 @@
                                                             <th style="text-align: center;"
                                                                 colspan="<?php echo count($term_2_data[$stuent_id]['exam']) + 1; ?>"
                                                                 class="main-th"><?php echo $term_2_data[$stuent_id]['term']." (".$term_2_data[$stuent_id]['total_mark']." Marks)"; ?></th>
+                                                            <th style="text-align: center;" class="main-th" rowspan="2">
+                                                                Grand Total ({{ 
+                                                                $term_2_data[$stuent_id]['total_mark'] + $all_data['total_mark']
+                                                            }})
+                                                            </th>
+                                                            <th style="text-align: center;" class="main-th" rowspan="2">
+                                                                Grade
+                                                            </th>
                                                         </tr>
                                                         <tr>
                                                             <th align="left">Sub Name</th>
                                                             <?php
                                                             foreach ($all_data['exam'] as $temp_id => $exam_data) {
+                                                            if (strtolower($exam_data['exam']) != 'marks obtained') {
+                                                                $grandTotal += (float) $exam_data['mark'];
+                                                            }
                                                             ?>
                                                             <th style="text-align: center;"><?php echo $exam_data['exam']; ?>
                                                                 <br>(<?php echo $exam_data['mark']; ?>)
@@ -135,6 +147,9 @@
                                                             <th style="text-align: center;">Grade</th>
                                                             <?php
                                                             foreach ($term_2_data[$stuent_id]['exam'] as $temp_id => $exam_data) {
+                                                            if (strtolower($exam_data['exam']) != 'marks obtained') {
+                                                                $grandTotal += (float) $exam_data['mark'];
+                                                            }
                                                             ?>
                                                             <th style="text-align: center;"><?php echo $exam_data['exam']; ?>
                                                                 <br>(<?php echo $exam_data['mark']; ?>)
@@ -146,6 +161,8 @@
                                                         </tr>
                                                         <?php
                                                         foreach ($all_data['mark'] as $subject => $subject_data) {
+                                                        $grandGainTotal = (float) $subject_data['TOTAL_GAIN'] +
+                                                            (float) $term_2_data[$stuent_id]['mark'][$subject]['TOTAL_GAIN'];
                                                         ?>
                                                         <tr>
                                                             <td><?php echo $subject; ?></td>
@@ -155,6 +172,8 @@
                                                             <?php foreach ($term_2_data[$stuent_id]['mark'][$subject] as $exam_name => $obtain_point) { ?>
                                                             <td align="center"><?php echo $obtain_point; ?></td>
                                                             <?php } ?>
+                                                            <td> {{ number_format($grandGainTotal, 2) }}</td>
+                                                            <td>{{ \App\Helpers\getGrade($gradeScale, $grandTotal, $grandGainTotal) }}</td>
                                                         </tr>
                                                         <?php
                                                         }
@@ -174,6 +193,16 @@
                                                             <td align="center">
                                                                 <b><?php echo $term_2_data[$stuent_id]['final_grade']; ?></b>
                                                             </td>
+                                                            <td>
+                                                                @php
+                                                                    $finalPer = round((round($term_2_data[$stuent_id]['per'],2) +
+                                                                    round($all_data['per'], 2)) / 2, 2);
+                                                                @endphp
+                                                                <b>{{ $finalPer }}%</b>
+                                                            </td>
+                                                            <td><b>
+                                                                    {{ \App\Helpers\getGrade($gradeScale, 100, $finalPer) }}
+                                                                </b></td>
                                                         </tr>
                                                         </tbody>
                                                     </table>
