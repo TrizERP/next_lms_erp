@@ -3,16 +3,17 @@
 namespace App\Http\Controllers\student;
 
 use App\Http\Controllers\Controller;
-use function App\Helpers\is_mobile;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
+use function App\Helpers\is_mobile;
 
 class student_certificate_reportController extends Controller
 {
     /**
      * Display a listing of the resource.
      *
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function index(Request $request)
     {
@@ -29,7 +30,7 @@ class student_certificate_reportController extends Controller
     /**
      * Show the form for creating a new resource.
      *
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function create(Request $request)
     {
@@ -38,30 +39,30 @@ class student_certificate_reportController extends Controller
         $syear = $request->session()->get('syear');
         $from_date = $request->input('from_date');
         $to_date = $request->input('to_date');
-        $extra_query = '';
+
+        $result = DB::table('certificate_history as sr')
+            ->join('tblstudent as ts', function ($join) {
+                $join->whereRaw('sr.STUDENT_ID = ts.id');
+            })->join('tblstudent_enrollment as se', function ($join) {
+                $join->whereRaw('se.student_id = ts.id');
+            })->join('standard as s', function ($join) {
+                $join->whereRaw('s.id = se.STANDARD_ID');
+            })->join('division as d', function ($join) {
+                $join->whereRaw('d.id = se.SECTION_ID');
+            })->selectRaw("sr.*,ts.enrollment_no, CONCAT_WS(' ',ts.first_name,ts.last_name) AS student_name,
+                s.name AS standard,d.name AS division,sr.certificate_type AS REQUEST")
+            ->where('ts.sub_institute_id', $sub_institute_id)
+            ->where('sr.SYEAR', $syear);
 
         if ($from_date != '') {
-            $extra_query .= " AND sr.CREATED_AT >= '" . $from_date . "' ";
+            $result = $result->where('sr.CREATED_AT', '>=', $from_date);
         }
 
         if ($to_date != '') {
-            $extra_query .= " AND sr.CREATED_AT <= '" . $to_date . "' ";
+            $result = $result->where('sr.CREATED_AT', '<=', $to_date);
         }
 
-        $sql = "SELECT sr.*,ts.enrollment_no, CONCAT_WS(' ',ts.first_name,ts.last_name) AS student_name,
-                s.name AS standard,d.name AS division,sr.certificate_type AS REQUEST
-        FROM certificate_history sr
-        INNER JOIN tblstudent ts ON sr.STUDENT_ID = ts.id
-        INNER JOIN tblstudent_enrollment se on se.student_id = ts.id
-        INNER JOIN standard s ON s.id = se.STANDARD_ID
-        INNER JOIN division d ON d.id = se.SECTION_ID
-        WHERE ts.sub_institute_id = '" . $sub_institute_id . "' AND sr.SYEAR = '" . $syear . "' $extra_query 
-        GROUP BY sr.id";
-        $sql = $sql;
-        // echo $sql;
-        $sql = preg_replace('/\n+/', '', $sql);
-
-        $result = DB::select($sql . $extra_query);
+        $result = $result->groupBy('sr.id')->get()->toArray();
 
         $res['status_code'] = 1;
         $res['message'] = "Success";
@@ -75,8 +76,8 @@ class student_certificate_reportController extends Controller
     /**
      * Store a newly created resource in storage.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\Response
+     * @param  Request  $request
+     * @return void
      */
     public function store(Request $request)
     {
@@ -87,7 +88,7 @@ class student_certificate_reportController extends Controller
      * Display the specified resource.
      *
      * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * @return void
      */
     public function show($id)
     {
@@ -98,7 +99,7 @@ class student_certificate_reportController extends Controller
      * Show the form for editing the specified resource.
      *
      * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * @return void
      */
     public function edit($id)
     {
@@ -108,9 +109,9 @@ class student_certificate_reportController extends Controller
     /**
      * Update the specified resource in storage.
      *
-     * @param  \Illuminate\Http\Request  $request
+     * @param  Request  $request
      * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * @return void
      */
     public function update(Request $request, $id)
     {
@@ -121,7 +122,7 @@ class student_certificate_reportController extends Controller
      * Remove the specified resource from storage.
      *
      * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * @return void
      */
     public function destroy($id)
     {

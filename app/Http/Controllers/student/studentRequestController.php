@@ -2,38 +2,37 @@
 
 namespace App\Http\Controllers\student;
 
-use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
-use App\Models\student\studentRequestModel;
 use App\Models\student\studentChangeRequestTypeModel;
+use App\Models\student\studentRequestModel;
+use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use function App\Helpers\is_mobile;
 use function App\Helpers\SearchStudent;
-
-use Illuminate\Support\Facades\DB;
 
 class studentRequestController extends Controller
 {
     /**
      * Display a listing of the resource.
      *
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function index(Request $request)
     {
         $type = $request->input('type');
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $syear = $request->session()->get('syear');
-                
+
         $res['status_code'] = 1;
         $res['message'] = "Success";
-        
+
         return is_mobile($type, "student/student_request", $res, "view");
     }
 
     /**
      * Show the form for creating a new resource.
      *
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function create(Request $request)
     {
@@ -43,9 +42,11 @@ class studentRequestController extends Controller
         $grade = $request->input('grade');
         $standard = $request->input('standard');
         $division = $request->input('division');
-        $student_data = SearchStudent($grade,$standard,$division);
-        
-        $request_type_data = studentChangeRequestTypeModel::where(['SUB_INSTITUTE_ID' => $sub_institute_id, 'SYEAR' => $syear])->get()->toArray();
+        $student_data = SearchStudent($grade, $standard, $division);
+
+        $request_type_data = studentChangeRequestTypeModel::where([
+            'SUB_INSTITUTE_ID' => $sub_institute_id, 'SYEAR' => $syear,
+        ])->get()->toArray();
 
         $res['status_code'] = 1;
         $res['message'] = "Success";
@@ -54,15 +55,15 @@ class studentRequestController extends Controller
         $res['grade_id'] = $grade;
         $res['standard_id'] = $standard;
         $res['division_id'] = $division;
-        
+
         return is_mobile($type, "student/student_request", $res, "view");
     }
 
     /**
      * Store a newly created resource in storage.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\Response
+     * @param  Request  $request
+     * @return Response
      */
     public function store(Request $request)
     {
@@ -77,15 +78,15 @@ class studentRequestController extends Controller
         $STANDARD_IDS = $request->input('STANDARD_IDS');
         $SECTION_IDS = $request->input('SECTION_IDS');
         $user_id = $request->session()->get('user_id');
-        
-        if($student_request == '')
-        {
+
+        if ($student_request == '') {
             $res['status_code'] = 0;
             $res['message'] = "Please select student to proceed";
+
             return is_mobile($type, "student_request.index", $res);
         }
-        foreach($student_request as $key => $student_id)
-        {
+
+        foreach ($student_request as $key => $student_id) {
             $studentRequest['STUDENT_ID'] = $student_id;
             $studentRequest['SYEAR'] = $syear;
             $studentRequest['SUB_INSTITUTE_ID'] = $sub_institute_id;
@@ -96,13 +97,14 @@ class studentRequestController extends Controller
             $studentRequest['STANDARD_ID'] = $STANDARD_IDS[$student_id];
             $studentRequest['SECTION_ID'] = $SECTION_IDS[$student_id];
             $studentRequest['CREATED_BY'] = $user_id;
-            
+
 
             studentRequestModel::insert($studentRequest);
         }
 
         $res['status_code'] = 1;
         $res['message'] = "Student Request Successfully Added";
+
         return is_mobile($type, "student_request.index", $res);
     }
 
@@ -110,7 +112,7 @@ class studentRequestController extends Controller
      * Display the specified resource.
      *
      * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * @return void
      */
     public function show($id)
     {
@@ -121,7 +123,7 @@ class studentRequestController extends Controller
      * Show the form for editing the specified resource.
      *
      * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * @return void
      */
     public function edit($id)
     {
@@ -131,9 +133,9 @@ class studentRequestController extends Controller
     /**
      * Update the specified resource in storage.
      *
-     * @param  \Illuminate\Http\Request  $request
+     * @param  Request  $request
      * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * @return void
      */
     public function update(Request $request, $id)
     {
@@ -144,7 +146,7 @@ class studentRequestController extends Controller
      * Remove the specified resource from storage.
      *
      * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * @return void
      */
     public function destroy($id)
     {

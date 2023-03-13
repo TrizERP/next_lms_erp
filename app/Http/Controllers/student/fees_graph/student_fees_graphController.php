@@ -4,23 +4,22 @@ namespace App\Http\Controllers\student\fees_graph;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-use function App\Helpers\is_mobile;
-use function App\Helpers\SearchStudent;
+use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
-use function App\Helpers\getCountDays;
+use function App\Helpers\is_mobile;
 
 class student_fees_graphController extends Controller
 {
     /**
      * Display a listing of the resource.
      *
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function index(Request $request)
     {
         $type = $request->input('type');
         $submit = $request->input('submit');
-        
+
         $res['status_code'] = 1;
         $res['message'] = "Success";
         $syear = $request->session()->get('syear');
@@ -28,9 +27,8 @@ class student_fees_graphController extends Controller
         $sub_institute_id = $request->session()->get('sub_institute_id');
 
         $date = "2019-08-22";
-        // echo ('<pre>');print_r($_REQUEST);exit;
         // return is_mobile($type, "student/fees_graph/view", $res, "view");
-        
+
 
         // SUM(CASE WHEN s.gender = 'M' THEN 1 ELSE 0 END) AS BOY,
         // SUM(CASE WHEN s.gender = 'F' THEN 1 ELSE 0 END) AS GIRL,
@@ -69,37 +67,17 @@ class student_fees_graphController extends Controller
         GROUP BY se.grade_id,se.standard_id,se.section_id";
         $query = trim(preg_replace('/\s\s+/', ' ', $query));
 
-        // echo $query;
         $data = DB::select($query);
 
-        foreach ($data as $id=>$arr) {
+        foreach ($data as $id => $arr) {
             if (
                 $arr->tot_paid == '' ||
                 $arr->tot_paid == ' ' ||
                 $arr->tot_paid == null
-                ) {
+            ) {
                 $data[$id]->tot_paid = 0;
             }
         }
-        // echo('<pre>');
-        // print_r($data);
-        // exit;
-
-        // foreach ($data as $id=>$arr) {
-        //     if ($arr->TA == 0 && $arr->TP == 0) {
-
-        //     }
-        // }
-
-        // var data = [{
-//     id: '0',
-//     parent: '',
-//     name: 'Total Student'
-        // }, {
-//     id: '1.3',
-//     parent: '0.0',
-//     name: 'Asia'
-        // }
 
         $chart_data = "[{
             id: '0.0',
@@ -107,12 +85,12 @@ class student_fees_graphController extends Controller
             name: 'Fees Chart'
         },";
 
-        $grades = array();
-        foreach ($data as $id=>$arr) {
-            if (!in_array($arr->title, $grades)) {
+        $grades = [];
+        foreach ($data as $id => $arr) {
+            if (! in_array($arr->title, $grades)) {
                 $grades[] = $arr->title;
                 $chart_data .= "{";
-                $chart_data .= "id: "."'1." . count($grades)."',";
+                $chart_data .= "id: "."'1.".count($grades)."',";
                 $chart_data .= "parent: '0.0',";
                 $chart_data .= "name: "."'".$arr->title."'";
                 $chart_data .= "},";
@@ -123,13 +101,13 @@ class student_fees_graphController extends Controller
 
         $i = 1;
         $standards = array();
-        foreach ($grades as $id=>$val) {
-            foreach ($data as $key=>$arr) {
+        foreach ($grades as $id => $val) {
+            foreach ($data as $key => $arr) {
                 if ($arr->title == $val) {
-                    if (!in_array($arr->standard_name, $standards)) {
+                    if (! in_array($arr->standard_name, $standards)) {
                         $standards[] = $arr->standard_name;
                         $chart_data .= "{";
-                        $chart_data .= "id: "."'2." . count($standards)."',";
+                        $chart_data .= "id: "."'2.".count($standards)."',";
                         $chart_data .= "parent: '1.".$i."',";
                         $chart_data .= "name: "."'".$arr->standard_name."'";
                         $chart_data .= "},";
@@ -139,17 +117,16 @@ class student_fees_graphController extends Controller
             $i++;
         }
 
-        // $i = 1;
-        $divisioin = array();
+        $divisioin = [];
         $temp = 0;
-        foreach ($standards as $id=>$val) {
-            foreach ($data as $key=>$arr) {
+        foreach ($standards as $id => $val) {
+            foreach ($data as $key => $arr) {
                 if ($arr->standard_name == $val) {
                     // if (!in_array($arr->division_name, $divisioin)) {
                     $divisioin[] = $arr->division_name;
                     $chart_data .= "{";
-                    $chart_data .= "id: "."'3." . count($divisioin)."',";
-                    $chart_data .= "parent: '2.".($id+1)."',";
+                    $chart_data .= "id: "."'3.".count($divisioin)."',";
+                    $chart_data .= "parent: '2.".($id + 1)."',";
                     $chart_data .= "name: "."'".$arr->division_name."',";
                     $chart_data .= "value: ".$arr->tot_amount;
                     $chart_data .= "},";
@@ -157,7 +134,7 @@ class student_fees_graphController extends Controller
                     // if ($arr->tot_paid != 0) {
                     $temp++;
                     $chart_data .= "{";
-                    $chart_data .= "id: "."'4." . $temp."',";
+                    $chart_data .= "id: "."'4.".$temp."',";
                     $chart_data .= "parent: '3.".count($divisioin)."',";
                     $chart_data .= "name: 'Paid',";
                     $chart_data .= "value: ".$arr->tot_paid;
@@ -165,14 +142,14 @@ class student_fees_graphController extends Controller
 
                     $temp++;
                     $chart_data .= "{";
-                    $chart_data .= "id: "."'4." . $temp."',";
+                    $chart_data .= "id: "."'4.".$temp."',";
                     $chart_data .= "parent: '3.".count($divisioin)."',";
                     $chart_data .= "name: 'UnPaid',";
                     $chart_data .= "value: ".($arr->tot_amount - $arr->tot_paid);
                     $chart_data .= "},";
-                       
+
                     // }else{
-                       
+
                     // }
                 }
             }
@@ -180,28 +157,10 @@ class student_fees_graphController extends Controller
         }
 
 
-
-
         $chart_data = rtrim($chart_data, ",");
         $chart_data .= "];";
 
-        // echo('<pre>');
-        // print_r($chart_data);
-        // exit;
         $res['chartData'] = $chart_data;
-
-        // echo ('<pre>');print_r($chart_data);exit;
-
-        // echo('<pre>');
-        // print_r($chart_data);
-        // exit;
-
-
-        
-        // echo('<pre>');
-        // print_r($grades);
-        // exit;
-
 
         return is_mobile($type, "student/fees_graph/view", $res, "view");
     }

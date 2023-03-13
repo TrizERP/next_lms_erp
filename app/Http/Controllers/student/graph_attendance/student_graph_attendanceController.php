@@ -4,17 +4,16 @@ namespace App\Http\Controllers\student\graph_attendance;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-use function App\Helpers\is_mobile;
-use function App\Helpers\SearchStudent;
+use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
-use function App\Helpers\getCountDays;
+use function App\Helpers\is_mobile;
 
 class student_graph_attendanceController extends Controller
 {
     /**
      * Display a listing of the resource.
      *
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function index(Request $request)
     {
@@ -28,9 +27,7 @@ class student_graph_attendanceController extends Controller
         $sub_institute_id = $request->session()->get('sub_institute_id');
 
         $date = "2019-08-22";
-        // echo ('<pre>');print_r($_REQUEST);exit;
-        // return is_mobile($type, "student/graph_attendance/view", $res, "view");
-        
+
 
         // SUM(CASE WHEN s.gender = 'M' THEN 1 ELSE 0 END) AS BOY,
         // SUM(CASE WHEN s.gender = 'F' THEN 1 ELSE 0 END) AS GIRL,
@@ -38,40 +35,26 @@ class student_graph_attendanceController extends Controller
         // SUM(CASE WHEN s.gender = 'F' AND a.attendance_code = 'P' THEN 1 ELSE 0 END) TGP,
         // SUM(CASE WHEN s.gender = 'M' AND a.attendance_code = 'A' THEN 1 ELSE 0 END) TBA,
         // SUM(CASE WHEN s.gender = 'F' AND a.attendance_code = 'A' THEN 1 ELSE 0 END) TGA
-        $query = "SELECT acs.title,sm.name AS standard_name, 
-        dm.name AS division_name,
-        se.standard_id,se.section_id,count(se.student_id) total_student,
-        SUM(CASE WHEN a.attendance_code = 'A' THEN 1 ELSE 0 END) TA,
-        SUM(CASE WHEN a.attendance_code = 'P' THEN 1 ELSE 0 END) TP
-		FROM tblstudent s
-		INNER JOIN tblstudent_enrollment se ON s.id = se.student_id AND se.syear = '".$syear."'
-        INNER JOIN academic_section acs on acs.id = se.grade_id
-		INNER JOIN standard sm ON se.standard_id = sm.id
-		INNER JOIN division dm ON se.section_id = dm.id
-        LEFT JOIN attendance_student a ON a.student_id = s.id and a.attendance_date = '".$date."'
-		WHERE s.sub_institute_id = '".$sub_institute_id."'
-        GROUP BY se.grade_id,se.standard_id,se.section_id";
-        
-        $data = DB::select($query);
-        // echo('<pre>');
-        // print_r($data);
-        // exit;
 
-        // foreach ($data as $id=>$arr) {
-        //     if ($arr->TA == 0 && $arr->TP == 0) {
-
-        //     }
-        // }
-
-        // var data = [{
-//     id: '0',
-//     parent: '',
-//     name: 'Total Student'
-        // }, {
-//     id: '1.3',
-//     parent: '0.0',
-//     name: 'Asia'
-        // }
+        $data = DB::table('tblstudent as s')
+            ->join('tblstudent_enrollment as se', function ($join) use ($syear) {
+                $join->whereRaw("s.id = se.student_id AND se.syear = '".$syear."'");
+            })->join('academic_section as acs', function ($join) {
+                $join->whereRaw("acs.id = se.grade_id");
+            })->join('standard as sm', function ($join) {
+                $join->whereRaw("se.standard_id = sm.id");
+            })->join('division as dm', function ($join) {
+                $join->whereRaw("se.section_id = dm.id");
+            })->leftJoin('attendance_student as a', function ($join) use ($date) {
+                $join->whereRaw("a.student_id = s.id and a.attendance_date = '".$date."'");
+            })
+            ->selectRaw("acs.title,sm.name AS standard_name,dm.name AS division_name,
+                se.standard_id,se.section_id,count(se.student_id) total_student,
+                SUM(CASE WHEN a.attendance_code = 'A' THEN 1 ELSE 0 END) TA,
+                SUM(CASE WHEN a.attendance_code = 'P' THEN 1 ELSE 0 END) TP")
+            ->where('s.sub_institute_id', $sub_institute_id)
+            ->groupBy('se.grade_id,se.standard_id,se.section_id')
+            ->get()->toArray();
 
         $chart_data = "[{
             id: '0.0',
@@ -79,9 +62,9 @@ class student_graph_attendanceController extends Controller
             name: 'Attendance Chart'
         },";
 
-        $grades = array();
-        foreach ($data as $id=>$arr) {
-            if (!in_array($arr->title, $grades)) {
+        $grades = [];
+        foreach ($data as $id => $arr) {
+            if (! in_array($arr->title, $grades)) {
                 $grades[] = $arr->title;
                 $chart_data .= "{";
                 $chart_data .= "id: "."'1." . count($grades)."',";
@@ -94,7 +77,7 @@ class student_graph_attendanceController extends Controller
 
 
         $i = 1;
-        $standards = array();
+        $standards = [];
         foreach ($grades as $id=>$val) {
             foreach ($data as $key=>$arr) {
                 if ($arr->title == $val) {
@@ -112,7 +95,7 @@ class student_graph_attendanceController extends Controller
         }
 
         // $i = 1;
-        $divisioin = array();
+        $divisioin = [];
         $temp = 0;
         foreach ($standards as $id=>$val) {
             foreach ($data as $key=>$arr) {
@@ -147,27 +130,10 @@ class student_graph_attendanceController extends Controller
             // $i++;
         }
 
-
-
-
         $chart_data = rtrim($chart_data, ",");
         $chart_data .= "];";
 
-        // echo ('<pre>');print_r($chart_data);exit;
         $res['chartData'] = $chart_data;
-
-        // echo ('<pre>');print_r($chart_data);exit;
-
-        // echo('<pre>');
-        // print_r($chart_data);
-        // exit;
-
-
-        
-        // echo('<pre>');
-        // print_r($grades);
-        // exit;
-
 
         return is_mobile($type, "student/graph_attendance/view", $res, "view");
     }

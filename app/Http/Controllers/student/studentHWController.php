@@ -2,53 +2,54 @@
 
 namespace App\Http\Controllers\student;
 
-use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use App\Models\student\studentHWModel;
+use GenTux\Jwt\GetsJwtToken;
+use Illuminate\Contracts\Foundation\Application;
+use Illuminate\Contracts\View\Factory;
+use Illuminate\Contracts\View\View;
+use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
 use function App\Helpers\is_mobile;
-use GenTux\Jwt\JwtToken;
-use GenTux\Jwt\GetsJwtToken;
-use function App\Helpers\aut_token;
 
 class studentHWController extends Controller
 {
+    use GetsJwtToken;
+
     /**
      * Display a listing of the resource.
      *
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
-    use GetsJwtToken;
-    
     public function index(Request $request)
     {
         $type = $request->input('type');
         $sub_institute_id = $request->session()->get('sub_institute_id');
-        
-        $data = "SELECT si.*, CONCAT_WS(' ',s.first_name,s.middle_name,s.last_name) AS student_name
-        FROM student_height_weight si
-        INNER JOIN tblstudent s ON si.student_id = s.id
-        WHERE si.sub_institute_id = '".$sub_institute_id."' order by si.id desc ";
 
-        $result = DB::select($data);
+        $result = DB::table('student_height_weight as si')
+            ->join('tblstudent as s', function ($join) {
+                $join->whereRaw('si.student_id = s.id');
+            })->selectRaw("si.*, CONCAT_WS(' ',s.first_name,s.middle_name,s.last_name) AS student_name")
+            ->where('si.sub_institute_id', $sub_institute_id)
+            ->orderBy('si.id', 'DESC')
+            ->get()->toArray();
 
         $result = array_map(function ($value) {
-            return (array)$value;
+            return (array) $value;
         }, $result);
-
-        // dd($result);
 
         $res['status_code'] = 1;
         $res['message'] = "Success";
         $res['data'] = $result;
-        
+
         return is_mobile($type, "student/hw/show_student_hw", $res, "view");
     }
 
     /**
      * Show the form for creating a new resource.
      *
-     * @return \Illuminate\Http\Response
+     * @return Application|Factory|View
      */
     public function create()
     {
@@ -58,8 +59,8 @@ class studentHWController extends Controller
     /**
      * Store a newly created resource in storage.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\Response
+     * @param  Request  $request
+     * @return Response
      */
     public function store(Request $request)
     {
@@ -69,10 +70,10 @@ class studentHWController extends Controller
         $type = $request->input('type');
         $user_id = $request->session()->get('user_id');
 
-        $finalArray = $request->except('_method','_token','submit');
+        $finalArray = $request->except('_method', '_token', 'submit');
 
         $STUDENT = $request->input("student_id");
-        $STUDENT = explode("-",$STUDENT);
+        $STUDENT = explode("-", $STUDENT);
         $finalArray['student_id'] = trim($STUDENT[1]);
 
         $finalArray['created_by'] = $user_id;
@@ -83,10 +84,10 @@ class studentHWController extends Controller
 
         studentHWModel::insert($finalArray);
         $id = DB::getPdo()->lastInsertId();
-        
+
         $res['status_code'] = 1;
         $res['message'] = "Student Height Weight Successfully Created.";
-        
+
         return is_mobile($type, "student_hw.index", $res);
     }
 
@@ -94,7 +95,7 @@ class studentHWController extends Controller
      * Display the specified resource.
      *
      * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * @return void
      */
     public function show($id)
     {
@@ -105,34 +106,36 @@ class studentHWController extends Controller
      * Show the form for editing the specified resource.
      *
      * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * @return Application|Factory|View
      */
     public function edit(Request $request, $id)
     {
-        $sub_institute_id = $request->session()->get("sub_institute_id") ;
+        $sub_institute_id = $request->session()->get("sub_institute_id");
 
-        $data = "SELECT si.*, CONCAT_WS(' ',s.first_name,s.middle_name,s.last_name) AS student_name
-        FROM student_height_weight si
-        INNER JOIN tblstudent s ON si.student_id = s.id
-        WHERE si.sub_institute_id = '".$sub_institute_id."' and si.id = '".$id."' order by si.id desc";
-
-        $result = DB::select($data);
+        $result = DB::table('student_height_weight as si')
+            ->join('tblstudent as s', function ($join) {
+                $join->whereRaw('si.student_id = s.id');
+            })->selectRaw("si.*, CONCAT_WS(' ',s.first_name,s.middle_name,s.last_name) AS student_name")
+            ->where('si.sub_institute_id', $sub_institute_id)
+            ->where('si.id', $id)
+            ->orderBy('si.id', 'DESC')
+            ->get()->toArray();
 
         $result = array_map(function ($value) {
-            return (array)$value;
+            return (array) $value;
         }, $result);
 
         $editData = $result[0];
 
-        return view('student/hw/edit_student_hw',['data' => $editData]);
+        return view('student/hw/edit_student_hw', ['data' => $editData]);
     }
 
     /**
      * Update the specified resource in storage.
      *
-     * @param  \Illuminate\Http\Request  $request
+     * @param  Request  $request
      * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function update(Request $request, $id)
     {
@@ -142,17 +145,17 @@ class studentHWController extends Controller
         $type = $request->input('type');
         $user_id = $request->session()->get('user_id');
 
-        $finalArray = $request->except('_method','_token','submit');
+        $finalArray = $request->except('_method', '_token', 'submit');
 
         $STUDENT = $request->input("student_id");
-        $STUDENT = explode("-",$STUDENT);
+        $STUDENT = explode("-", $STUDENT);
         $finalArray['student_id'] = trim($STUDENT[1]);
 
-        $data = studentHWModel::where(['id'=>$id])->update($finalArray);
-        
+        $data = studentHWModel::where(['id' => $id])->update($finalArray);
+
         $res['status_code'] = 1;
         $res['message'] = "Student Height Weight successfully updated.";
-        
+
         return is_mobile($type, "student_hw.index", $res);
     }
 
@@ -160,26 +163,30 @@ class studentHWController extends Controller
      * Remove the specified resource from storage.
      *
      * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
-    public function destroy(Request $request,$id)
+    public function destroy(Request $request, $id)
     {
         $type = $request->input('type');
         studentHWModel::where(["id" => $id])->delete();
         $res['status_code'] = "1";
         $res['message'] = "Student Height Weight deleted successfully";
+
         return is_mobile($type, "student_hw.index", $res);
     }
 
-    public function studentHWAPI(Request $request) {
+    public function studentHWAPI(Request $request)
+    {
 
         try {
-            if (!$this->jwtToken()->validate()) {
-                $response = array('status' => '2', 'message' => 'Token Auth Failed', 'data' => array());
+            if (! $this->jwtToken()->validate()) {
+                $response = ['status' => '2', 'message' => 'Token Auth Failed', 'data' => []];
+
                 return response()->json($response, 401);
             }
         } catch (\Exception $e) {
-            $response = array('status' => '2', 'message' => $e->getMessage(), 'data' => array());
+            $response = ['status' => '2', 'message' => $e->getMessage(), 'data' => []];
+
             return response()->json($response, 401);
         }
 
@@ -188,23 +195,25 @@ class studentHWController extends Controller
         $sub_institute_id = $request->input("sub_institute_id");
         $syear = $request->input("syear");
 
-        if($student_id != "" && $sub_institute_id != "" && $syear != "")
-        {                                   
-            $data = DB::select("SELECT si.id,si.student_id,si.doctor_name,si.doctor_contact,si.height,si.weight,DATE_FORMAT(si.date,'%d-%m-%Y') AS date
-                FROM student_height_weight si
-                WHERE si.sub_institute_id = '".$sub_institute_id."' AND si.student_id = '".$student_id."' AND si.syear = '".$syear."'
-                ORDER BY si.date");
-            
+        if ($student_id != "" && $sub_institute_id != "" && $syear != "") {
+            $data = DB::table('student_height_weight as si')
+                ->selectRaw("si.id,si.student_id,si.doctor_name,si.doctor_contact,si.height,si.weight,
+                    DATE_FORMAT(si.date,'%d-%m-%Y') AS date")
+                ->where('si.sub_institute_id', $sub_institute_id)
+                ->where('si.student_id', $student_id)
+                ->where('si.syear', $syear)
+                ->orderBy('si.date')
+                ->get()->toArray();
+
             $res['status_code'] = 1;
             $res['message'] = "Success";
-            $res['data'] = $data;   
-        
-        }else{
+            $res['data'] = $data;
+
+        } else {
             $res['status_code'] = 0;
             $res['message'] = "Parameter Missing";
         }
+
         return json_encode($res);
-        
-        // return is_mobile($type, "implementation", $res);    
     }
 }

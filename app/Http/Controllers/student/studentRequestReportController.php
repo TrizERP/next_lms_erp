@@ -2,42 +2,35 @@
 
 namespace App\Http\Controllers\student;
 
-use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
-use App\Models\school_setup\divisionModel;
-use App\Models\school_setup\standardModel;
-use App\Models\student\studentRequestModel;
-use App\Models\student\studentChangeRequestTypeModel;
-use App\Models\student\tblstudentModel;
-
-use function App\Helpers\is_mobile;
-use function App\Helpers\SearchStudent;
-
+use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
+use function App\Helpers\is_mobile;
 
 class studentRequestReportController extends Controller
 {
     /**
      * Display a listing of the resource.
      *
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function index(Request $request)
     {
         $type = $request->input('type');
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $syear = $request->session()->get('syear');
-                
+
         $res['status_code'] = 1;
         $res['message'] = "Success";
-        
+
         return is_mobile($type, "student/student_request_report", $res, "view");
     }
 
     /**
      * Show the form for creating a new resource.
      *
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function create(Request $request)
     {
@@ -46,28 +39,31 @@ class studentRequestReportController extends Controller
         $syear = $request->session()->get('syear');
         $from_date = $request->input('from_date');
         $to_date = $request->input('to_date');
-        $extra_query = '';
 
-        if($from_date != '')
-        {
-            $extra_query .= " AND sr.CREATED_ON >= '".$from_date."' ";
+
+        $result = DB::table('student_change_request as sr')
+            ->join('tblstudent as ts', function ($join) {
+                $join->whereRaw('sr.STUDENT_ID = ts.id');
+            })->join('standard as s', function ($join) {
+                $join->whereRaw('s.id = sr.STANDARD_ID');
+            })->join('division as d', function ($join) {
+                $join->whereRaw('d.id = sr.SECTION_ID');
+            })->join('STUDENT_CHANGE_REQ_TYPE as srt', function ($join) {
+                $join->whereRaw('srt.ID = sr.CHANGE_REQUEST_ID');
+            })->selectRaw("sr.*,ts.enrollment_no, CONCAT_WS(' ',ts.first_name,ts.last_name) AS student_name,
+                s.name AS standard,d.name AS division,srt.REQUEST_TITLE AS REQUEST")
+            ->where('ts.sub_institute_id', $sub_institute_id)
+            ->where('sr.SYEAR', $syear);
+
+        if ($from_date != '') {
+            $result = $result->where('sr.CREATED_ON', '>=', $from_date);
         }
 
-        if($to_date != '')
-        {
-            $extra_query .= " AND sr.CREATED_ON <= '".$to_date."' ";
+        if ($to_date != '') {
+            $result = $result->where('sr.CREATED_ON', '<=', $to_date);
         }
 
-        $sql = "SELECT sr.*,ts.enrollment_no, CONCAT_WS(' ',ts.first_name,ts.last_name) AS student_name,s.name AS standard,d.name AS division,srt.REQUEST_TITLE AS REQUEST
-        FROM student_change_request sr
-        INNER JOIN tblstudent ts ON sr.STUDENT_ID = ts.id
-        INNER JOIN standard s ON s.id = sr.STANDARD_ID
-        INNER JOIN division d ON d.id = sr.SECTION_ID
-        INNER JOIN STUDENT_CHANGE_REQ_TYPE srt ON srt.ID = sr.CHANGE_REQUEST_ID
-        WHERE ts.sub_institute_id = '".$sub_institute_id."' AND sr.SYEAR = '".$syear."' ";
-
-
-        $result = DB::select($sql.$extra_query);
+        $result = $result->get()->toArray();
 
         $res['status_code'] = 1;
         $res['message'] = "Success";
@@ -79,8 +75,8 @@ class studentRequestReportController extends Controller
     /**
      * Store a newly created resource in storage.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\Response
+     * @param  Request  $request
+     * @return void
      */
     public function store(Request $request)
     {
@@ -91,7 +87,7 @@ class studentRequestReportController extends Controller
      * Display the specified resource.
      *
      * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * @return void
      */
     public function show($id)
     {
@@ -102,7 +98,7 @@ class studentRequestReportController extends Controller
      * Show the form for editing the specified resource.
      *
      * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * @return void
      */
     public function edit($id)
     {
@@ -112,9 +108,9 @@ class studentRequestReportController extends Controller
     /**
      * Update the specified resource in storage.
      *
-     * @param  \Illuminate\Http\Request  $request
+     * @param  Request  $request
      * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * @return void
      */
     public function update(Request $request, $id)
     {
@@ -125,7 +121,7 @@ class studentRequestReportController extends Controller
      * Remove the specified resource from storage.
      *
      * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * @return void
      */
     public function destroy($id)
     {

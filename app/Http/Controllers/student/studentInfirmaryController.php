@@ -2,56 +2,56 @@
 
 namespace App\Http\Controllers\student;
 
-use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
+use App\Models\school_setup\SchoolModel;
 use App\Models\student\studentInfirmaryModel;
+use GenTux\Jwt\GetsJwtToken;
+use Illuminate\Contracts\Foundation\Application;
+use Illuminate\Contracts\View\Factory;
+use Illuminate\Contracts\View\View;
+use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
 use function App\Helpers\is_mobile;
-use GenTux\Jwt\JwtToken;
-use GenTux\Jwt\GetsJwtToken;
-use function App\Helpers\aut_token;
-use App\Models\school_setup\SchoolModel;
-use function App\Helpers\sendNotification;
 use function App\Helpers\send_FCM_Notification;
+use function App\Helpers\sendNotification;
 
 class studentInfirmaryController extends Controller
 {
     /**
      * Display a listing of the resource.
      *
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     use GetsJwtToken;
-    
+
     public function index(Request $request)
     {
         $type = $request->input('type');
         $sub_institute_id = $request->session()->get('sub_institute_id');
-        
-        $data = "SELECT si.*, CONCAT_WS(' ',s.first_name,s.middle_name,s.last_name) AS student_name
-        FROM student_infirmary si
-        INNER JOIN tblstudent s ON si.student_id = s.id
-        WHERE si.sub_institute_id = '".$sub_institute_id."' order by si.id desc ";
 
-        $result = DB::select($data);
+        $result = DB::table('student_infirmary as si')
+            ->join('tblstudent as s', function ($join) {
+                $join->whereRaw('si.student_id = s.id');
+            })->selectRaw("si.*, CONCAT_WS(' ',s.first_name,s.middle_name,s.last_name) AS student_name")
+            ->where('si.sub_institute_id', $sub_institute_id)
+            ->orderBy('si.id', 'DESC')->get()->toArray();
 
         $result = array_map(function ($value) {
-            return (array)$value;
+            return (array) $value;
         }, $result);
-
-        // dd($result);
 
         $res['status_code'] = 1;
         $res['message'] = "Success";
         $res['data'] = $result;
-        
+
         return is_mobile($type, "student/infirmary/show_student_infirmary", $res, "view");
     }
 
     /**
      * Show the form for creating a new resource.
      *
-     * @return \Illuminate\Http\Response
+     * @return Application|Factory|View
      */
     public function create()
     {
@@ -61,8 +61,8 @@ class studentInfirmaryController extends Controller
     /**
      * Store a newly created resource in storage.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\Response
+     * @param  Request  $request
+     * @return Response
      */
     public function store(Request $request)
     {
@@ -72,10 +72,10 @@ class studentInfirmaryController extends Controller
         $type = $request->input('type');
         $user_id = $request->session()->get('user_id');
 
-        $finalArray = $request->except('_method','_token','submit');
+        $finalArray = $request->except('_method', '_token', 'submit');
 
         $STUDENT = $request->input("student_id");
-        $STUDENT = explode("-",$STUDENT);
+        $STUDENT = explode("-", $STUDENT);
         $student_id = trim($STUDENT[1]);
         $finalArray['student_id'] = $student_id;
 
@@ -88,77 +88,73 @@ class studentInfirmaryController extends Controller
         studentInfirmaryModel::insert($finalArray);
 
         //START Send Notification Code
-        $student_sql = "SELECT *,s.id as stu_id,concat_ws(' ',s.first_name,s.middle_name,s.last_name) as student_name 
-                FROM tblstudent s
-                WHERE s.sub_institute_id = '".$sub_institute_id."' AND s.id = '".$student_id."' ";
-        $student_data = DB::select($student_sql);
+        $student_data = DB::table('tblstudent as s')
+            ->selectRaw("*,s.id as stu_id,concat_ws(' ',s.first_name,s.middle_name,s.last_name) as student_name")
+            ->where('s.sub_institute_id', $sub_institute_id)
+            ->where('s.id', $student_id)->get()->toArray();
 
-        $schoolData = SchoolModel::where(['id' => $sub_institute_id])->get()->toArray(); 
+        $schoolData = SchoolModel::where(['id' => $sub_institute_id])->get()->toArray();
         $schoolName = $schoolData[0]['SchoolName'];
         $schoolLogo = $_SERVER['APP_URL'].'/admin_dep/images/'.$schoolData[0]['Logo'];
 
-        if(count($student_data) > 0)
-        {
-            foreach($student_data as $key => $val)
-            {
+        if (count($student_data) > 0) {
+            foreach ($student_data as $key => $val) {
                 $student_id = $val->stu_id;
                 $mobile_no = $val->mobile;
                 $student_name = $val->student_name;
 
-                $pushMessage = "Dear Parents, ".$student_name." Infirmary details has been added for date : ".date('d-m-Y', strtotime($_REQUEST['date']))." . Details are Medical Case No.: ".$_REQUEST['medical_case_no']." ,Doctore Name : ".$_REQUEST['doctor_name']." ,Doctore Concat No.: ".$_REQUEST['doctor_contact'];
+                $pushMessage = "Dear Parents, ".$student_name." Infirmary details has been added for date : ".
+                    date('d-m-Y',
+                        strtotime($_REQUEST['date']))." . Details are Medical Case No.: ".$_REQUEST['medical_case_no']." ,
+                    Doctore Name : ".$_REQUEST['doctor_name']." ,Doctore Concat No.: ".$_REQUEST['doctor_contact'];
 
-                $app_notification_content = array(
-                    'NOTIFICATION_TYPE' => 'Infirmary',
-                    'NOTIFICATION_DATE' => $_REQUEST['date'],                 
-                    'STUDENT_ID' => $student_id,                   
+                $app_notification_content = [
+                    'NOTIFICATION_TYPE'        => 'Infirmary',
+                    'NOTIFICATION_DATE'        => $_REQUEST['date'],
+                    'STUDENT_ID'               => $student_id,
                     'NOTIFICATION_DESCRIPTION' => $_REQUEST['complaint'].' - '.$pushMessage,
-                    'STATUS' => 0,
-                    'SUB_INSTITUTE_ID' => $sub_institute_id,                  
-                    'SYEAR' =>  $syear,
-                    'SCREEN_NAME' => 'student_infirmary',
-                    'CREATED_BY' => $user_id,        
-                    'CREATED_IP' => $_SERVER['REMOTE_ADDR']          
-                );
+                    'STATUS'                   => 0,
+                    'SUB_INSTITUTE_ID'         => $sub_institute_id,
+                    'SYEAR'                    => $syear,
+                    'SCREEN_NAME'              => 'student_infirmary',
+                    'CREATED_BY'               => $user_id,
+                    'CREATED_IP'               => $_SERVER['REMOTE_ADDR'],
+                ];
 
-                $gcm_query = "SELECT * 
-                          FROM gcm_users 
-                          WHERE mobile_no ='".$mobile_no."' 
-                          AND sub_institute_id = '".$sub_institute_id."' ";
-                $gcm_data = DB::select($gcm_query);
-                // dd($gcm_data);
-                $gcmRegIds = array();
-                if(count($gcm_data) > 0)
-                {
-                    foreach($gcm_data as $key1 => $val1)
-                    {
-                        array_push($gcmRegIds, $val1->gcm_regid);
+                $gcm_data = DB::table('gcm_users')->where('mobile_no', $mobile_no)
+                    ->where('sub_institute_id', $sub_institute_id)->get()->toArray();
+
+                $gcmRegIds = [];
+                if (count($gcm_data) > 0) {
+                    foreach ($gcm_data as $key1 => $val1) {
+                        $gcmRegIds[] = $val1->gcm_regid;
                     }
                 }
 
                 $bunch_arr = array_chunk($gcmRegIds, 1000);
-                if (!empty($bunch_arr)) 
-                {
-                    foreach ($bunch_arr as $val) 
-                    {
-                        if (isset($val) && isset($pushMessage)) 
-                        {
+                if (! empty($bunch_arr)) {
+                    foreach ($bunch_arr as $val) {
+                        if (isset($val) && isset($pushMessage)) {
                             $type = 'Infirmary';
-                            $message = array('body' => $pushMessage, 'TYPE' => $type, 'USER_ID' => $student_id, 'title' => $schoolName, 'image' => $schoolLogo);
+                            $message = [
+                                'body'  => $pushMessage, 'TYPE' => $type, 'USER_ID' => $student_id,
+                                'title' => $schoolName, 'image' => $schoolLogo,
+                            ];
                             $pushStatus = send_FCM_Notification($val, $message);
-                            sendNotification($app_notification_content);                                      
+                            sendNotification($app_notification_content);
                         }
                     }
                 }
-               
+
             }
         }
         //END Send Notification Code
 
         $id = DB::getPdo()->lastInsertId();
-        
+
         $res['status_code'] = 1;
         $res['message'] = "Student Infirmary successfully created.";
-        
+
         return is_mobile($type, "student_infirmary.index", $res);
     }
 
@@ -166,7 +162,7 @@ class studentInfirmaryController extends Controller
      * Display the specified resource.
      *
      * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * @return void
      */
     public function show($id)
     {
@@ -177,34 +173,35 @@ class studentInfirmaryController extends Controller
      * Show the form for editing the specified resource.
      *
      * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * @return Application|Factory|View
      */
     public function edit(Request $request, $id)
     {
-        $sub_institute_id = $request->session()->get("sub_institute_id") ;
+        $sub_institute_id = $request->session()->get("sub_institute_id");
 
-        $data = "SELECT si.*, CONCAT_WS(' ',s.first_name,s.middle_name,s.last_name) AS student_name
-        FROM student_infirmary si
-        INNER JOIN tblstudent s ON si.student_id = s.id
-        WHERE si.sub_institute_id = '".$sub_institute_id."' and si.id = '".$id."' order by si.id desc";
-
-        $result = DB::select($data);
+        $result = DB::table('student_infirmary as si')
+            ->join('tblstudent as s', function ($join) {
+                $join->whereRaw('si.student_id = s.id');
+            })->whereRaw("si.*, CONCAT_WS(' ',s.first_name,s.middle_name,s.last_name) AS student_name")
+            ->where('si.sub_institute_id', $sub_institute_id)
+            ->where('si.id', $id)
+            ->orderBy('si.id', 'DESC')->get()->toArray();
 
         $result = array_map(function ($value) {
-            return (array)$value;
+            return (array) $value;
         }, $result);
 
         $editData = $result[0];
 
-        return view('student/infirmary/edit_student_infirmary',['data' => $editData]);
+        return view('student/infirmary/edit_student_infirmary', ['data' => $editData]);
     }
 
     /**
      * Update the specified resource in storage.
      *
-     * @param  \Illuminate\Http\Request  $request
+     * @param  Request  $request
      * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function update(Request $request, $id)
     {
@@ -214,17 +211,17 @@ class studentInfirmaryController extends Controller
         $type = $request->input('type');
         $user_id = $request->session()->get('user_id');
 
-        $finalArray = $request->except('_method','_token','submit');
+        $finalArray = $request->except('_method', '_token', 'submit');
 
         $STUDENT = $request->input("student_id");
-        $STUDENT = explode("-",$STUDENT);
+        $STUDENT = explode("-", $STUDENT);
         $finalArray['student_id'] = trim($STUDENT[1]);
 
-        $data = studentInfirmaryModel::where(['id'=>$id])->update($finalArray);
-        
+        $data = studentInfirmaryModel::where(['id' => $id])->update($finalArray);
+
         $res['status_code'] = 1;
         $res['message'] = "Student Infirmary successfully updated.";
-        
+
         return is_mobile($type, "student_infirmary.index", $res);
     }
 
@@ -232,14 +229,15 @@ class studentInfirmaryController extends Controller
      * Remove the specified resource from storage.
      *
      * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
-    public function destroy(Request $request,$id)
+    public function destroy(Request $request, $id)
     {
         $type = $request->input('type');
         studentInfirmaryModel::where(["id" => $id])->delete();
         $res['status_code'] = "1";
         $res['message'] = "Student Infirmary deleted successfully";
+
         return is_mobile($type, "student_infirmary.index", $res);
     }
 
@@ -253,18 +251,19 @@ class studentInfirmaryController extends Controller
         $type = $request->input('type');
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $syear = $request->session()->get('syear');
-        $req = $request->except('_token','_method','submit');
-        
-        $data = "SELECT si.*, CONCAT_WS(' ',s.first_name,s.middle_name,s.last_name) AS student_name
-        FROM ".$req['health_type']." si
-        INNER JOIN tblstudent s ON si.student_id = s.id
-        INNER JOIN tblstudent_enrollment se ON se.student_id = s.id and se.syear = '".$syear."'
-        WHERE si.sub_institute_id = '".$sub_institute_id."' ";
+        $req = $request->except('_token', '_method', 'submit');
 
-        $headers =array();
+        $result = DB::table($req['health_type']." as si")
+            ->join('tblstudent as s', function ($join) {
+                $join->whereRaw("si.student_id = s.id");
+            })->join('tblstudent_enrollment as se', function ($join) use ($syear) {
+                $join->whereRaw("se.student_id = s.id and se.syear = '".$syear."'");
+            })->selectRaw("si.*, CONCAT_WS(' ',s.first_name,s.middle_name,s.last_name) AS student_name")
+            ->where('si.sub_institute_id', $sub_institute_id);
 
-        if($req['health_type'] == 'student_infirmary')
-        {
+        $headers = [];
+
+        if ($req['health_type'] == 'student_infirmary') {
             $headers['student_name'] = "Student Name";
             $headers['doctor_name'] = "Doctor Name";
             $headers['doctor_contact'] = "Doctor Contact";
@@ -275,61 +274,51 @@ class studentInfirmaryController extends Controller
             $headers['treatments'] = "Treatments";
             $headers['medical_close_date'] = "Medical Close Date";
         }
-        if($req['health_type'] == 'student_vaccination')
-        {
+        if ($req['health_type'] == 'student_vaccination') {
             $headers['student_name'] = "Student Name";
             $headers['doctor_name'] = "Doctor Name";
             $headers['vaccination_type'] = "Vaccination Type";
             $headers['note'] = "Note";
             $headers['date'] = "Date";
         }
-        if($req['health_type'] == 'student_height_weight')
-        {
+        if ($req['health_type'] == 'student_height_weight') {
             $headers['student_name'] = "Student Name";
             $headers['doctor_name'] = "Doctor Name";
             $headers['doctor_contact'] = "Doctor Contact";
             $headers['height'] = "Height";
             $headers['weight'] = "Weight";
         }
-        if($req['health_type'] == 'student_health')
-        {
+        if ($req['health_type'] == 'student_health') {
             $headers['student_name'] = "Student Name";
             $headers['doctor_name'] = "Doctor Name";
             $headers['doctor_contact'] = "Doctor Contact";
             $headers['date'] = "Date";
             $headers['file'] = "File";
         }
-        
 
-        if($req['grade'] != '')
-        {
-            $data .= "  AND se.grade_id = '".$req['grade']."'  ";
+
+        if ($req['grade'] != '') {
+            $result = $result->where('se.grade_id', $req['grade']);
         }
 
-        if($req['standard'] != '')
-        {
-            $data .= "  AND se.standard_id = '".$req['standard']."'  ";
+        if ($req['standard'] != '') {
+            $result = $result->where('se.standard_id', $req['standard']);
         }
 
-        if($req['division'] != '')
-        {
-            $data .= "  AND se.section_id = '".$req['division']."'  ";
+        if ($req['division'] != '') {
+            $result = $result->where('se.section_id', $req['division']);
         }
 
-        if($req['from_date'] != '')
-        {
-            $data .= "  AND si.date >= '".$req['from_date']."'  ";
+        if ($req['from_date'] != '') {
+            $result = $result->where('si.date', '>=', $req['from_date']);
         }
 
-        if($req['to_date'] != '')
-        {
-            $data .= "  AND si.date <= '".$req['to_date']."'  ";
+        if ($req['to_date'] != '') {
+            $result = $result->where('si.date', '<=', $req['to_date']);
         }
 
-        $data .= "  order by si.id desc";
-        
-        $result = DB::select($data);
-        
+        $result = $result->orderBy('si.id', 'DESC')->get()->toArray();
+
         $res['status_code'] = 1;
         $res['message'] = "Success";
         $res['health_data'] = $result;
@@ -344,15 +333,18 @@ class studentInfirmaryController extends Controller
         return is_mobile($type, "student/show_student_health_report", $res, "view");
     }
 
-    public function studentInfirmaryAPI(Request $request) {
+    public function studentInfirmaryAPI(Request $request)
+    {
 
         try {
-            if (!$this->jwtToken()->validate()) {
-                $response = array('status' => '2', 'message' => 'Token Auth Failed', 'data' => array());
+            if (! $this->jwtToken()->validate()) {
+                $response = ['status' => '2', 'message' => 'Token Auth Failed', 'data' => []];
+
                 return response()->json($response, 401);
             }
         } catch (\Exception $e) {
-            $response = array('status' => '2', 'message' => $e->getMessage(), 'data' => array());
+            $response = ['status' => '2', 'message' => $e->getMessage(), 'data' => []];
+
             return response()->json($response, 401);
         }
 
@@ -361,21 +353,24 @@ class studentInfirmaryController extends Controller
         $sub_institute_id = $request->input("sub_institute_id");
         $syear = $request->input("syear");
 
-        if($student_id != "" && $sub_institute_id != "" && $syear != "")
-        {                                   
-            $data = DB::select("SELECT si.id,si.student_id,si.doctor_name,si.doctor_contact,si.medical_case_no,DATE_FORMAT(si.date,'%d-%m-%Y') AS date,si.complaint,si.symptoms,si.disease,si.treatments,si.medical_case_no,DATE_FORMAT(si.medical_close_date,'%d-%m-%Y') AS medical_close_date,si.health_center FROM student_infirmary si
-                WHERE si.sub_institute_id = '".$sub_institute_id."' AND si.student_id = '".$student_id."' AND si.syear = '".$syear."'
-                ORDER BY si.date");
-            
+        if ($student_id != "" && $sub_institute_id != "" && $syear != "") {
+            $data = DB::table('student_infirmary as si')
+                ->selectRaw("si.id,si.student_id,si.doctor_name,si.doctor_contact,si.medical_case_no,
+                    DATE_FORMAT(si.date,'%d-%m-%Y') AS date,si.complaint,si.symptoms,si.disease,si.treatments,si.medical_case_no,
+                    DATE_FORMAT(si.medical_close_date,'%d-%m-%Y') AS medical_close_date,si.health_center")
+                ->where('si.sub_institute_id', $sub_institute_id)
+                ->where('si.student_id', $student_id)
+                ->where('si.syear', $syear)->get()->toArray();
+
             $res['status_code'] = 1;
             $res['message'] = "Success";
-            $res['data'] = $data;   
-        
-        }else{
+            $res['data'] = $data;
+
+        } else {
             $res['status_code'] = 0;
             $res['message'] = "Parameter Missing";
         }
+
         return json_encode($res);
-        // return is_mobile($type, "implementation", $res);    
     }
 }

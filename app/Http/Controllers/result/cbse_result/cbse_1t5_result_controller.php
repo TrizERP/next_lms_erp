@@ -42,6 +42,11 @@ class cbse_1t5_result_controller extends Controller
         $next_year = session()->get('syear') + 1;
         $result_year = $syear."-".$next_year;
 
+        $academicTerms = session()->get('academicTerms');
+
+        $result_year = $syear."-".$next_year;
+        session()->put('term_id', $academicTerms[0]->term_id);
+
         //getting year detail
         //getting all exam name with mark
         $all_exam = $this->getAllExam($_REQUEST['standard']);
@@ -100,7 +105,68 @@ class cbse_1t5_result_controller extends Controller
             $responce_arr[$cur_student_id]['grade_range'] = $all_grd_data;
         }
 
+
+        //getting year detail
+        //getting all exam name with mark
+        $all_exam = $this->getAllExam($_REQUEST['standard']);
+
+        //getting all subject name
+        $all_subject = $this->getAllSubject($_REQUEST['standard']);
+
+        //getting all mark
+        $all_subject_mark = $this->getAllMark($all_exam, $all_subject, $all_student);
+
+        //getting Co Scholastic        
+        $all_co_data = $this->getCoArea($all_student);
+
+        //getting attendance
+        $all_att_data = $this->getAttendance($all_student);
+
+        //getting scholastic grade range
+        $all_grd_data = $this->getGradeRange();
+
+        //getting currunt term name
+        $term_name = $this->getTermName();
+
+        //getting result header
+        $header_data = $this->getHeader($_REQUEST['standard']);
+
+        //get exam master settigs
+        $footer_data = $this->getExamMasterSettigs($_REQUEST['standard']);
+
+        //getting all student detail
+        $responce_arr_term2 = [];
+        foreach ($all_student as $id => $arr) {
+            $cur_student_id = $arr['student_id'];
+            $responce_arr_term2[$cur_student_id]['year'] = $result_year;
+            $responce_arr_term2[$cur_student_id]['term'] = $term_name;
+            $responce_arr_term2[$cur_student_id]['total_mark'] = $all_exam[count($all_exam) - 1]['mark'];
+            $responce_arr_term2[$cur_student_id]['name'] = $arr['first_name']." ".$arr['middle_name']." ".$arr['last_name'];
+            $responce_arr_term2[$cur_student_id]['roll_no'] = $arr['roll_no'];
+            $responce_arr_term2[$cur_student_id]['mother_name'] = $arr['mother_name'];
+            $responce_arr_term2[$cur_student_id]['class'] = $arr['standard_name'];
+            $responce_arr_term2[$cur_student_id]['father_name'] = $arr['father_name'];
+            $responce_arr_term2[$cur_student_id]['division'] = $arr['division_name'];
+            $responce_arr_term2[$cur_student_id]['date_of_birth'] = date("d-m-Y", strtotime($arr['dob']));
+            $responce_arr_term2[$cur_student_id]['gr_no'] = $arr['enrollment_no'];
+            $responce_arr_term2[$cur_student_id]['exam'] = $all_exam;
+            $responce_arr_term2[$cur_student_id]['mark'] = $all_subject_mark[$cur_student_id];
+            $responce_arr_term2[$cur_student_id]['per'] = $this->getPer($responce_arr_term2[$cur_student_id]['total_mark'],
+                $all_subject_mark[$cur_student_id]);
+            $responce_arr_term2[$cur_student_id]['final_grade'] = $this->getFinalGrade($responce_arr_term2[$cur_student_id]['per']);
+            if (isset($all_co_data[$cur_student_id])) {
+                $responce_arr_term2[$cur_student_id]['co_scholastic_area'] = $all_co_data[$cur_student_id];
+            }
+            $responce_arr_term2[$cur_student_id]['att'] = '';
+            if (isset($all_att_data[$cur_student_id])) {
+                $responce_arr_term2[$cur_student_id]['att'] = $all_att_data[$cur_student_id];
+            }
+            $responce_arr_term2[$cur_student_id]['grade_range'] = $all_grd_data;
+        }
+
+
         $data['data'] = $responce_arr;
+        $data['term_2_data'] = $responce_arr_term2;
         $data['header_data'] = $header_data;
         $data['footer_data'] = $footer_data;
         $data['standard_id'] = $_REQUEST['standard'];
