@@ -4,67 +4,62 @@ namespace App\Http\Controllers\student;
 
 use App\Http\Controllers\Controller;
 use App\Models\admission\admissionEnquiryModel;
-use App\Http\Controllers\student\studentSearchController;
+use App\Models\fees\NACH\ac_typeModel;
+use App\Models\school_setup\batchModel;
+use App\Models\school_setup\bloodgroupModel;
+use App\Models\school_setup\casteModel;
+use App\Models\school_setup\religionModel;
+use App\Models\school_setup\student_optional_subjectModel;
+use App\Models\school_setup\sub_std_mapModel;
 use App\Models\settings\tblcustomfieldsModel;
 use App\Models\settings\tblfields_dataModel;
+use App\Models\student\documentTypeModel;
 use App\Models\student\houseModel;
+use App\Models\student\studentHealthModel;
+use App\Models\student\studentHWModel;
 use App\Models\student\studentInfirmaryModel;
 use App\Models\student\studentQuotaModel;
+use App\Models\student\studentVaccinationModel;
+use App\Models\student\tblcityModel;
+use App\Models\student\tblstateModel;
+use App\Models\student\tblstudentDocumentModel;
 use App\Models\student\tblstudentEnrollmentModel;
 use App\Models\student\tblstudentFamilyHistoryModel;
+use App\Models\student\tblstudentFeesDetailModel;
 use App\Models\student\tblstudentModel;
 use App\Models\student\tblstudentParentFeedbackModel;
 use App\Models\student\tblstudentPastEducationModel;
-use App\Models\student\studentVaccinationModel;
-use App\Models\student\studentHWModel;
-use App\Models\student\studentHealthModel;
-use App\Models\student\documentTypeModel;
-use App\Models\student\tblstudentDocumentModel;
-use App\Models\user\tbluserprofilemasterModel;
-use App\Models\school_setup\batchModel;
-use App\Models\school_setup\bloodgroupModel;
-use App\Models\school_setup\religionModel;
-use App\Models\school_setup\casteModel;
-use App\Models\school_setup\sub_std_mapModel;
-use App\Models\school_setup\student_optional_subjectModel;
-use App\Models\student\tblstudentFeesDetailModel;
-use App\Models\student\tblstudentTcModel;
 use App\Models\student\tblstudentPaymentMethodMappingModel;
-use App\Models\school_setup\divisionCapacityMasterModel;
-use App\Models\fees\NACH\ac_typeModel;
-use function App\Helpers\is_mobile;
+use App\Models\student\tblstudentTcModel;
+use App\Models\transportation\add_vehicle\add_transport_kilometer_rate;
+use App\Models\user\tbluserprofilemasterModel;
+use GenTux\Jwt\GetsJwtToken;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
-use GenTux\Jwt\JwtToken;
-use GenTux\Jwt\GetsJwtToken;
-use function App\Helpers\aut_token;
-use function App\Helpers\FeeBreakoffHeadWise;
-use App\Models\student\TransportModel;
-use App\Models\transportation\add_vehicle\add_transport_kilometer_rate;
-use App\Models\student\tblstateModel;
-use App\Models\student\tblcityModel;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Validator;
-use Illuminate\Support\Facades\Auth;
-
-// studentSearchController
+use Psr\Container\ContainerExceptionInterface;
+use Psr\Container\NotFoundExceptionInterface;
+use function App\Helpers\FeeBreakoffHeadWise;
+use function App\Helpers\is_mobile;
 
 class tblstudentController extends Controller
 {
-	/**
-	 * Display a listing of the resource.
-	 *
-	 * @return \Illuminate\Http\Response
-	 */
+    use GetsJwtToken;
 
-	use GetsJwtToken;
+    /**
+     * Display a listing of the resource.
+     *
+     * @return Response
+     */
+    public function index(Request $request)
+    {
 
-	public function index(Request $request)
-	{
-
-		if (session()->has('data')) { // check if it exists
-			$data_arr = session('data'); // to retrieve value
-			if (isset($data_arr['message'])) {
+        if (session()->has('data')) { // check if it exists
+            $data_arr = session('data'); // to retrieve value
+            if (isset($data_arr['message'])) {
 				$data['message'] = $data_arr['message'];
 			}
 		}
@@ -78,36 +73,39 @@ class tblstudentController extends Controller
 			->get();
 
 		$fieldsData = tblfields_dataModel::get()->toArray();
-		$i = 0;
-		$finalfieldsData = array();
+        $i = 0;
+        $finalfieldsData = [];
 		foreach ($fieldsData as $key => $value) {
 			$finalfieldsData[$value['field_id']][$i]['display_text'] = $value['display_text'];
 			$finalfieldsData[$value['field_id']][$i]['display_value'] = $value['display_value'];
 			$i++;
-		}
+        }
 
-		$studentQuota = studentQuotaModel::where(['sub_institute_id' => $sub_institute_id])->get();
-		$bloodgroupData = bloodgroupModel::select()->get();
-		$religionData = religionModel::select()->get();
-		$houseData = houseModel::where(['sub_institute_id' => $sub_institute_id])->get();
-		$casteData = casteModel::select()->get();
-		$document_type = documentTypeModel::select()->get();
-		$transport_kilometer_data = add_transport_kilometer_rate::where(['sub_institute_id' => $sub_institute_id, 'syear' => $syear])->get();
-		$stateData = tblstateModel::get()->toArray();
-		$cityData = array();
-		// dd($stateData);
-		$maxEnrollment = DB::select("SELECT (MAX(CAST(enrollment_no AS INT)) + 1) AS new_enrollment_no FROM tblstudent WHERE sub_institute_id = '" . $sub_institute_id . "' ORDER BY id DESC LIMIT 1");
+        $studentQuota = studentQuotaModel::where(['sub_institute_id' => $sub_institute_id])->get();
+        $bloodgroupData = bloodgroupModel::select()->get();
+        $religionData = religionModel::select()->get();
+        $houseData = houseModel::where(['sub_institute_id' => $sub_institute_id])->get();
+        $casteData = casteModel::select()->get();
+        $document_type = documentTypeModel::select()->get();
+        $transport_kilometer_data = add_transport_kilometer_rate::where([
+            'sub_institute_id' => $sub_institute_id, 'syear' => $syear,
+        ])->get();
+        $stateData = tblstateModel::get()->toArray();
+        $cityData = [];
 
-		$maxEnrollment = array_map(function ($value) {
-			return (array) $value;
-		}, $maxEnrollment);
+        $maxEnrollment = DB::table('tblstudent')->selectRaw("(MAX(CAST(enrollment_no AS INT)) + 1) AS new_enrollment_no")
+            ->where('sub_institute_id', $sub_institute_id)->orderBy('id')->limit(1)->get()->toArray();
 
-		$new_enrollment_no = $maxEnrollment['0']['new_enrollment_no'];
-		// dd($new_enrollment_no);
-		$res['status_code'] = 1;
-		$res['message'] = "Success";
-		$res['data'] = $data;
-		$res['custom_fields'] = $dataCustomFields;
+        $maxEnrollment = array_map(function ($value) {
+            return (array) $value;
+        }, $maxEnrollment);
+
+        $new_enrollment_no = $maxEnrollment['0']['new_enrollment_no'];
+
+        $res['status_code'] = 1;
+        $res['message'] = "Success";
+        $res['data'] = $data;
+        $res['custom_fields'] = $dataCustomFields;
 		if (count($finalfieldsData) > 0) {
 			$res['data_fields'] = $finalfieldsData;
 		}
@@ -121,27 +119,28 @@ class tblstudentController extends Controller
 		$res['state_data'] = $stateData;
 		$res['city_data'] = $cityData;
 		$res['new_enrollment_no'] = $new_enrollment_no;
-		// dd($res);
+
 		$type = $request->input('type');
+
 		return is_mobile($type, "student/add_student", $res, "view");
 	}
 
-	/**
-	 * Show the form for creating a new resource.
-	 *
-	 * @return \Illuminate\Http\Response
-	 */
+    /**
+     * Show the form for creating a new resource.
+     *
+     * @return void
+     */
 	public function create()
 	{
 		//
 	}
 
-	/**
-	 * Store a newly created resource in storage.
-	 *
-	 * @param  \Illuminate\Http\Request  $request
-	 * @return \Illuminate\Http\Response
-	 */
+    /**
+     * Store a newly created resource in storage.
+     *
+     * @param  Request  $request
+     * @return Response
+     */
 	public function store(Request $request)
 	{
 		$sub_institute_id = $request->session()->get('sub_institute_id');
@@ -153,56 +152,55 @@ class tblstudentController extends Controller
 			'student_image' => 'size:1000',
 		]);
 
-		// dd($request->file());
 		$file_name = $ext = $file_size = "";
+
 		if ($request->hasFile('student_image')) {
 			$file = $request->file('student_image');
 			$originalname = $file->getClientOriginalName();
 			$file_size = $file->getSize();
 			if ($file_size > 500000) {
-				$res['status_code'] = 0;
-				$res['message'] = "Student image not uploaded,Please select file up to 500 KB size.";
-				$res['data'] = array();
-				return is_mobile($type, "search_student.index", $res);
-				// return redirect()->back()->with("Warning","Please select file up to 500 KB size.");
-			} else {
-				$name = $id;
-				$ext = \File::extension($originalname);
-				$file_name = $name . '.' . $ext;
+                $res['status_code'] = 0;
+                $res['message'] = "Student image not uploaded,Please select file up to 500 KB size.";
+                $res['data'] = [];
+
+                return is_mobile($type, "search_student.index", $res);
+            } else {
+                $name = $id;
+                $ext = File::extension($originalname);
+                $file_name = $name.'.'.$ext;
 				$path = $file->storeAs('public/student/', $file_name);
 			}
-			$name = $request->input('user_name') . date('YmdHis');
-			$ext = \File::extension($originalname);
-			$file_name = $name . '.' . $ext;
-			$path = $file->storeAs('public/student/', $file_name);
-		}
+            $name = $request->input('user_name').date('YmdHis');
+            $ext = File::extension($originalname);
+            $file_name = $name.'.'.$ext;
+            $path = $file->storeAs('public/student/', $file_name);
+        }
 
-		$request->request->add(['image' => $file_name]); //add request
-		$request->request->add(['file_size' => $file_size]); //add request
-		$request->request->add(['file_type' => $ext]); //add request
+        $request->request->add(['image' => $file_name]); //add request
+        $request->request->add(['file_size' => $file_size]); //add request
+        $request->request->add(['file_type' => $ext]); //add request
 
-		$dataCustomFields = tblcustomfieldsModel::select('field_name')->where(['status' => "1", 'table_name' => "tblstudent", 'field_type' => "file"])
-			->whereRaw('(sub_institute_id = ' . $sub_institute_id . ' OR common_to_all = 1)')
-			->get()
-			->toArray();
+        $dataCustomFields = tblcustomfieldsModel::select('field_name')
+            ->where(['status' => "1", 'table_name' => "tblstudent", 'field_type' => "file"])
+            ->whereRaw('(sub_institute_id = '.$sub_institute_id.' OR common_to_all = 1)')
+            ->get()
+            ->toArray();
 
-		foreach ($dataCustomFields as $key => $value) {
-			$file_name = '';
-			// echo $value['field_name'];
-			if ($request->hasFile($value['field_name'])) {
-				$file = $request->file($value['field_name']);
-				$originalname = $file->getClientOriginalName();
-				$name = $value['field_name'] . "_" . $request->input('user_name') . date('YmdHis');
-				$ext = \File::extension($originalname);
-				$file_name = $name . '.' . $ext;
+        foreach ($dataCustomFields as $key => $value) {
+            $file_name = '';
+
+            if ($request->hasFile($value['field_name'])) {
+                $file = $request->file($value['field_name']);
+                $originalname = $file->getClientOriginalName();
+                $name = $value['field_name']."_".$request->input('user_name').date('YmdHis');
+                $ext = File::extension($originalname);
+                $file_name = $name.'.'.$ext;
 				$path = $file->storeAs('public/student/', $file_name);
 				$request->files->remove($value['field_name']);
 				$request->request->add([$value['field_name'] => $file_name]); //add request
 			}
 		}
-		// die;
-		// $request->put('image', $file_name) ;
-		// dd($request);
+
 		$data = $this->saveData($request);
 		$student_id = $data;
 
@@ -235,14 +233,14 @@ class tblstudentController extends Controller
 		$res['status_code'] = 1;
 		$res['message'] = "Student successfully created.";
 		$res['data'] = $data;
+
 		return is_mobile($type, "search_student.index", $res);
 	}
 
 	public function saveData(Request $request)
 	{
-		// dd($request);
 		$newRequest = $request->post();
-		// dd($newRequest);
+
 		$sub_institute_id = $request->session()->get('sub_institute_id');
 		$finalArray['sub_institute_id'] = $sub_institute_id;
 		$finalArrayAdmission['sub_institute_id'] = $sub_institute_id;
@@ -254,31 +252,38 @@ class tblstudentController extends Controller
 		$finalArray['status'] = 1;
 
 		unset($newRequest['student_image']);
+
 		foreach ($newRequest as $key => $value) {
-			if ($key != '_method' && $key != '_token' && $key != 'submit' && $key != 'grade' && $key != 'standard' && $key != 'division' && $key != 'student_quota' && $key != 'optional_subject' && $key != 'previous_school_gr_no' && $key != 'house' && $key != 'father_occupation' && $key != 'father_qualification' && $key != 'mother_occupation' && $key != 'mother_qualification' && $key != 'guardian_name' && $key != 'guardian_relation' && $key != 'house_no' && $key != 'building_name_appratment_name_society_name' && $key != 'district_name') { //&& $key != 'place_of_birth' && $key != 'previous_school_name'
-				if (is_array($value)) {
-					$value = implode(",", $value);
-				}
-				$finalArray[$key] = $value;
-			}
-			// 05-04-2022 START if city is not exist in table then insert city in table
-			if ($key == 'state') {
-				$get_state_data = tblstateModel::where(['state_name' => $value])->get()->toArray();
-				if (count($get_state_data) > 0) {
-					$state_id = $get_state_data[0]['id'];
-					$state_name = $get_state_data[0]['state_name'];
-				}
-			}
-			if ($key == 'city') {
-				$check_exist_city = tblcityModel::where(['city_name' => $value])->get()->toArray();
-				if (count($check_exist_city) == 0) {
-					$city_data['city_name'] = $finalArray[$key];
-					$city_data['state_id'] = $state_id;
-					$city_data['state_name'] = $state_name;
-					tblcityModel::insert($city_data);
-				}
-			}
-			// 05-04-2022 END if city is not exist in table then insert city in table
+            if ($key != '_method' && $key != '_token' && $key != 'submit' && $key != 'grade' && $key != 'standard'
+                && $key != 'division' && $key != 'student_quota' && $key != 'optional_subject' && $key != 'previous_school_gr_no'
+                && $key != 'house' && $key != 'father_occupation' && $key != 'father_qualification' && $key != 'mother_occupation'
+                && $key != 'mother_qualification' && $key != 'guardian_name' && $key != 'guardian_relation' && $key != 'house_no'
+                && $key != 'building_name_appratment_name_society_name' && $key != 'district_name') { //&& $key != 'place_of_birth' && $key != 'previous_school_name'
+                if (is_array($value)) {
+                    $value = implode(",", $value);
+                }
+                $finalArray[$key] = $value;
+            }
+
+            // 05-04-2022 START if city is not exist in table then insert city in table
+            if ($key == 'state') {
+                $get_state_data = tblstateModel::where(['state_name' => $value])->get()->toArray();
+                if (count($get_state_data) > 0) {
+                    $state_id = $get_state_data[0]['id'];
+                    $state_name = $get_state_data[0]['state_name'];
+                }
+            }
+
+            if ($key == 'city') {
+                $check_exist_city = tblcityModel::where(['city_name' => $value])->get()->toArray();
+                if (count($check_exist_city) == 0) {
+                    $city_data['city_name'] = $finalArray[$key];
+                    $city_data['state_id'] = $state_id;
+                    $city_data['state_name'] = $state_name;
+                    tblcityModel::insert($city_data);
+                }
+            }
+            // 05-04-2022 END if city is not exist in table then insert city in table
 
 		}
 
@@ -301,36 +306,44 @@ class tblstudentController extends Controller
 
 		if ($sub_institute_id == 198) {
 
-			$getAdmissionId = tblstudentModel::select(DB::raw('admission_id'))->where(['sub_institute_id' => $sub_institute_id, 'id' => $id])->get()->toArray();
-			$admission_id = $getAdmissionId[0]['admission_id'];
-			$dataAdmission = admissionEnquiryModel::where(['id' => $admission_id])->update($finalArrayAdmission);
-		}
+            $getAdmissionId = tblstudentModel::select(DB::raw('admission_id'))
+                ->where(['sub_institute_id' => $sub_institute_id, 'id' => $id])->get()->toArray();
+            $admission_id = $getAdmissionId[0]['admission_id'];
+            $dataAdmission = admissionEnquiryModel::where(['id' => $admission_id])->update($finalArrayAdmission);
+        }
 
 		return $id;
 	}
 
 	public function updateData(Request $request)
-	{
-		$newRequest = $request->post();
-		$student_id = $newRequest['id'];
-		$sub_institute_id = $request->session()->get('sub_institute_id');
-		$finalArray['sub_institute_id'] = $sub_institute_id;
-		$finalArrayAdmission['sub_institute_id'] = $sub_institute_id;
-		$finalArray['password'] = md5('student');
-		$finalArray['status'] = 1;
-		unset($newRequest['student_image']);
-		foreach ($newRequest as $key => $value) {
-			if ($key != '_method' && $key != '_token' && $key != 'submit' && $key != 'grade' && $key != 'standard' && $key != 'division' && $key != 'student_quota' && $key != 'end_date' && $key != 'remarks' && $key != 'inactive_satus' && $key != 'id' && $key != 'optional_subject' && $key != 'previous_school_gr_no' && $key != 'house' && $key != 'father_occupation' && $key != 'father_qualification' && $key != 'mother_occupation' && $key != 'mother_qualification' && $key != 'guardian_name' && $key != 'guardian_relation' && $key != 'house_no' && $key != 'building_name_appratment_name_society_name' && $key != 'district_name') { //&& $key != 'place_of_birth' && $key != 'previous_school_name'
-				if (is_array($value)) {
-					$value = implode(",", $value);
-				}
-				$finalArray[$key] = $value;
+    {
+        $newRequest = $request->post();
+        $student_id = $newRequest['id'];
+        $sub_institute_id = $request->session()->get('sub_institute_id');
+        $finalArray['sub_institute_id'] = $sub_institute_id;
+        $finalArrayAdmission['sub_institute_id'] = $sub_institute_id;
+        $finalArray['password'] = md5('student');
+        $finalArray['status'] = 1;
 
-				// 05-04-2022 START if city is not exist in table then insert city in table
-				if ($key == 'state') {
-					$get_state_data = tblstateModel::where(['state_name' => $value])->get()->toArray();
-					if (count($get_state_data) > 0) {
-						$state_id = $get_state_data[0]['id'];
+        unset($newRequest['student_image']);
+
+        foreach ($newRequest as $key => $value) {
+            if ($key != '_method' && $key != '_token' && $key != 'submit' && $key != 'grade' && $key != 'standard'
+                && $key != 'division' && $key != 'student_quota' && $key != 'end_date' && $key != 'remarks' && $key != 'inactive_satus'
+                && $key != 'id' && $key != 'optional_subject' && $key != 'previous_school_gr_no' && $key != 'house'
+                && $key != 'father_occupation' && $key != 'father_qualification' && $key != 'mother_occupation'
+                && $key != 'mother_qualification' && $key != 'guardian_name' && $key != 'guardian_relation'
+                && $key != 'house_no' && $key != 'building_name_appratment_name_society_name' && $key != 'district_name') { //&& $key != 'place_of_birth' && $key != 'previous_school_name'
+                if (is_array($value)) {
+                    $value = implode(",", $value);
+                }
+                $finalArray[$key] = $value;
+
+                // 05-04-2022 START if city is not exist in table then insert city in table
+                if ($key == 'state') {
+                    $get_state_data = tblstateModel::where(['state_name' => $value])->get()->toArray();
+                    if (count($get_state_data) > 0) {
+                        $state_id = $get_state_data[0]['id'];
 						$state_name = $get_state_data[0]['state_name'];
 					}
 				}
@@ -352,49 +365,55 @@ class tblstudentController extends Controller
 				|| $key  == 'mother_qualification' || $key  == 'guardian_name' || $key  == 'guardian_relation'
 				|| $key  == 'house_no' || $key == 'building_name_appratment_name_society_name' || $key  == 'district_name'
 			) {
-				if (is_array($value)) {
-					$value = implode(",", $value);
-				}
-				$finalArrayAdmission[$key] = $value;
-			}
-		}
+                if (is_array($value)) {
+                    $value = implode(",", $value);
+                }
+                $finalArrayAdmission[$key] = $value;
+            }
+        }
 
-		$finalArray['updated_on'] = date('Y-m-d H:i:s');
+        $finalArray['updated_on'] = date('Y-m-d H:i:s');
 
-		$data = tblstudentModel::where(['id' => $student_id])->update($finalArray);
-		$getAdmissionId = tblstudentModel::select(DB::raw('admission_id'))->where(['sub_institute_id' => $sub_institute_id, 'id' => $student_id])->get()->toArray();
-		$admission_id = $getAdmissionId[0]['admission_id'];
-		$dataAdmission = admissionEnquiryModel::where(['id' => $admission_id])->update($finalArrayAdmission);
-		return $data;
-	}
+        $data = tblstudentModel::where(['id' => $student_id])->update($finalArray);
+        $getAdmissionId = tblstudentModel::select(DB::raw('admission_id'))
+            ->where(['sub_institute_id' => $sub_institute_id, 'id' => $student_id])->get()->toArray();
+        $admission_id = $getAdmissionId[0]['admission_id'];
 
-	/**
-	 * Display the specified resource.
-	 *
-	 * @param  int  $id
-	 * @return \Illuminate\Http\Response
-	 */
-	public function show($id)
-	{
-		//
-	}
+        $dataAdmission = admissionEnquiryModel::where(['id' => $admission_id])->update($finalArrayAdmission);
 
-	/**
-	 * Show the form for editing the specified resource.
-	 *
-	 * @param  int  $id
-	 * @return \Illuminate\Http\Response
-	 */
-	public function edit(Request $request, $id)
-	{
-		$type = $request->input('type');
+        return $data;
+    }
 
-		if ($type == "API") {
-			$sub_institute_id = $request->input('sub_institute_id');
-			$syear = $request->input('syear');
-		} else {
-			$sub_institute_id = $request->session()->get('sub_institute_id');
-			$syear = session()->get('syear');
+    /**
+     * Display the specified resource.
+     *
+     * @param  int  $id
+     * @return void
+     */
+    public function show($id)
+    {
+        //
+    }
+
+    /**
+     * Show the form for editing the specified resource.
+     *
+     * @param  Request  $request
+     * @param  int  $id
+     * @throws ContainerExceptionInterface
+     * @throws NotFoundExceptionInterface
+     * @return Response
+     */
+    public function edit(Request $request, $id)
+    {
+        $type = $request->input('type');
+
+        if ($type == "API") {
+            $sub_institute_id = $request->input('sub_institute_id');
+            $syear = $request->input('syear');
+        } else {
+            $sub_institute_id = $request->session()->get('sub_institute_id');
+            $syear = session()->get('syear');
 		}
 
 		// $data = file_get_contents('https://erp.triz.co.in/get_adminParentCommunicationListAPI');
@@ -427,10 +446,11 @@ class tblstudentController extends Controller
 		curl_setopt($ch, CURLOPT_POSTFIELDS, $payload);
 		 
 		// Set HTTP Header for POST request 
-		curl_setopt($ch, CURLOPT_HTTPHEADER, array(
-			'Content-Type: application/json',
-			'Content-Length: ' . strlen($payload))
-		);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, [
+                'Content-Type: application/json',
+                'Content-Length: '.strlen($payload),
+            ]
+        );
 		 
 		// Submit the POST request
 		$getResult = curl_exec($ch);
@@ -447,81 +467,120 @@ class tblstudentController extends Controller
 		}
 
 		if ($sub_institute_id == 198) {
-			$student_data = tblstudentModel::select('admission_enquiry.*', 'tblstudent.*', 'tblstudent_enrollment.*', 'tblstudent.id  as id', 'admission_enquiry.building_name_appratment_name_society_name as building_name', 'tblstudent_enrollment.house_id')
-				->join('tblstudent_enrollment', 'tblstudent.id', '=', 'tblstudent_enrollment.student_id')
-				->leftJoin('admission_enquiry', 'tblstudent.admission_id', '=', 'admission_enquiry.id')
-				->where(['tblstudent_enrollment.sub_institute_id' => $sub_institute_id, 'tblstudent_enrollment.syear' => $syear, 'tblstudent.status' => 1, 'tblstudent.id' => $id])
-				->first();
-		} else {
+            $student_data = tblstudentModel::select('admission_enquiry.*', 'tblstudent.*', 'tblstudent_enrollment.*',
+                'tblstudent.id  as id', 'admission_enquiry.building_name_appratment_name_society_name as building_name',
+                'tblstudent_enrollment.house_id')
+                ->join('tblstudent_enrollment', 'tblstudent.id', '=', 'tblstudent_enrollment.student_id')
+                ->leftJoin('admission_enquiry', 'tblstudent.admission_id', '=', 'admission_enquiry.id')
+                ->where([
+                    'tblstudent_enrollment.sub_institute_id' => $sub_institute_id,
+                    'tblstudent_enrollment.syear'            => $syear, 'tblstudent.status' => 1, 'tblstudent.id' => $id,
+                ])
+                ->first();
+        } else {
 
-			$student_data = tblstudentModel::select('tblstudent.*', 'tblstudent_enrollment.*', 'tblstudent.id as id', 'tblstudent_enrollment.house_id')
-				->join('tblstudent_enrollment', 'tblstudent.id', '=', 'tblstudent_enrollment.student_id')
-				->where(['tblstudent_enrollment.sub_institute_id' => $sub_institute_id, 'tblstudent_enrollment.syear' => $syear, 'tblstudent.status' => 1, 'tblstudent.id' => $id])
-				->first();
-		}
+            $student_data = tblstudentModel::select('tblstudent.*', 'tblstudent_enrollment.*', 'tblstudent.id as id',
+                'tblstudent_enrollment.house_id')
+                ->join('tblstudent_enrollment', 'tblstudent.id', '=', 'tblstudent_enrollment.student_id')
+                ->where([
+                    'tblstudent_enrollment.sub_institute_id' => $sub_institute_id,
+                    'tblstudent_enrollment.syear'            => $syear, 'tblstudent.status' => 1, 'tblstudent.id' => $id,
+                ])
+                ->first();
+        }
+
 		// RAJESH	->whereRaw('tblstudent_enrollment.end_date is NULL')
-		// dd($student_data);
 		$dataCustomFields = tblcustomfieldsModel::where(['status' => "1", 'table_name' => "tblstudent"])
 			->whereRaw('(sub_institute_id = ' . $sub_institute_id . ' OR common_to_all = 1)')
 			->get();
 
 		$fieldsData = tblfields_dataModel::get()->toArray();
-		$i = 0;
-		$finalfieldsData = array();
-		foreach ($fieldsData as $key => $value) {
-			$finalfieldsData[$value['field_id']][$i]['display_text'] = $value['display_text'];
-			$finalfieldsData[$value['field_id']][$i]['display_value'] = $value['display_value'];
-			$i++;
-		}
+        $i = 0;
+        $finalfieldsData = [];
+        foreach ($fieldsData as $key => $value) {
+            $finalfieldsData[$value['field_id']][$i]['display_text'] = $value['display_text'];
+            $finalfieldsData[$value['field_id']][$i]['display_value'] = $value['display_value'];
+            $i++;
+        }
 
-		$studentQuota = studentQuotaModel::where(['sub_institute_id' => $sub_institute_id])->get();
-		$std_id = $student_data->standard_id;
-		$div_id = $student_data->section_id;
-		$batchData = $optional_subject_data = $student_optional_subject_data = array();
-		if ($std_id != "" && $div_id != "") {
-			$batchData = batchModel::where(['sub_institute_id' => $sub_institute_id, 'standard_id' => $std_id, 'division_id' => $div_id])
-				->get()->toArray();
-			//dd($batchData);
-		}
-		$bloodgroupData = bloodgroupModel::select()->get();
-		$religionData = religionModel::select()->get();
-		$houseData = houseModel::where(['sub_institute_id' => $sub_institute_id])->get();
-		$casteData = casteModel::select()->get();
-		$document_type_data = documentTypeModel::select()->get();
-		$transport_kilometer_data = add_transport_kilometer_rate::where(['sub_institute_id' => $sub_institute_id, 'syear' => $syear])->get();
+        $studentQuota = studentQuotaModel::where(['sub_institute_id' => $sub_institute_id])->get();
+        $std_id = $student_data->standard_id;
+        $div_id = $student_data->section_id;
+        $batchData = $optional_subject_data = $student_optional_subject_data = [];
+
+        if ($std_id != "" && $div_id != "") {
+            $batchData = batchModel::where([
+                'sub_institute_id' => $sub_institute_id, 'standard_id' => $std_id, 'division_id' => $div_id,
+            ])
+                ->get()->toArray();
+        }
+        $bloodgroupData = bloodgroupModel::select()->get();
+        $religionData = religionModel::select()->get();
+        $houseData = houseModel::where(['sub_institute_id' => $sub_institute_id])->get();
+        $casteData = casteModel::select()->get();
+        $document_type_data = documentTypeModel::select()->get();
+        $transport_kilometer_data = add_transport_kilometer_rate::where([
+            'sub_institute_id' => $sub_institute_id, 'syear' => $syear,
+        ])->get();
 
 		if ($std_id != "") {
-			$optional_subject_data = sub_std_mapModel::select('sub_std_map.*', 'subject.subject_name', 'subject.subject_code')
-				->join('subject', 'subject.id', '=', 'sub_std_map.subject_id')
-				->where(['sub_std_map.sub_institute_id' => $sub_institute_id, 'standard_id' => $std_id, 'elective_subject' => 'Yes'])
-				->get()->toArray();
+            $optional_subject_data = sub_std_mapModel::select('sub_std_map.*', 'subject.subject_name',
+                'subject.subject_code')
+                ->join('subject', 'subject.id', '=', 'sub_std_map.subject_id')
+                ->where([
+                    'sub_std_map.sub_institute_id' => $sub_institute_id, 'standard_id' => $std_id,
+                    'elective_subject'             => 'Yes',
+                ])
+                ->get()->toArray();
 
-			$student_optional_subject_data = student_optional_subjectModel::selectRaw('GROUP_CONCAT(subject_id) AS subject_ids')->where(['sub_institute_id' => $sub_institute_id, 'student_id' => $id, 'syear' => $syear])->get();
+            $student_optional_subject_data = student_optional_subjectModel::selectRaw('GROUP_CONCAT(subject_id) AS subject_ids')
+                ->where(['sub_institute_id' => $sub_institute_id, 'student_id' => $id, 'syear' => $syear])->get();
 
-			$student_optional_subject_data = explode(",", $student_optional_subject_data[0]->subject_ids);
-		}
+            $student_optional_subject_data = explode(",", $student_optional_subject_data[0]->subject_ids);
+        }
 
-		$pastEducation = tblstudentPastEducationModel::where(['sub_institute_id' => $sub_institute_id, 'student_id' => $id])->get()->toArray();
+        $pastEducation = tblstudentPastEducationModel::where([
+            'sub_institute_id' => $sub_institute_id, 'student_id' => $id,
+        ])->get()->toArray();
 
-		$familyHistory = tblstudentFamilyHistoryModel::where(['sub_institute_id' => $sub_institute_id, 'student_id' => $id])->get()->toArray();
+        $familyHistory = tblstudentFamilyHistoryModel::where([
+            'sub_institute_id' => $sub_institute_id, 'student_id' => $id,
+        ])->get()->toArray();
 
 
-		$studentSiblings_data = DB::select("SELECT s.id,s.enrollment_no,concat_ws(' ',s.first_name,s.middle_name,s.last_name) as student_name,st.name as std_name,d.name as div_name,s.mobile
-			FROM tblstudent s
-			INNER JOIN tblstudent_enrollment se ON se.student_id = s.id AND se.sub_institute_id = s.sub_institute_id
-			INNER JOIN standard st on st.id = se.standard_id AND st.sub_institute_id = se.sub_institute_id
-			INNER JOIN division d ON d.id = se.section_id AND d.sub_institute_id = se.sub_institute_id
-			WHERE (s.mobile = '" . $student_data->mobile . "' OR s.mother_mobile = '" . $student_data->mobile . "' OR s.student_mobile = '" . $student_data->mobile . "') 
-			AND s.sub_institute_id = '" . $sub_institute_id . "' AND s.id != '" . $id . "' AND se.syear = '" . $syear . "' ");
-		$studentSiblings_data = json_decode(json_encode($studentSiblings_data), true);
+        $studentSiblings_data = DB::table('tblstudent as s')
+            ->join('tblstudent_enrollment as se', function ($join) {
+                $join->whereRaw("se.student_id = s.id AND se.sub_institute_id = s.sub_institute_id");
+            })->join('standard as st', function ($join) {
+                $join->whereRaw("st.id = se.standard_id AND st.sub_institute_id = se.sub_institute_id");
+            })->join('division as d', function ($join) {
+                $join->whereRaw("d.id = se.section_id AND d.sub_institute_id = se.sub_institute_id");
+            })
+            ->selectRaw("s.id,s.enrollment_no,concat_ws(' ',s.first_name,s.middle_name,s.last_name) as student_name,
+                st.name as std_name,d.name as div_name,s.mobile")
+            ->where(function ($q) use ($student_data) {
+                $q->where('s.mobile', $student_data->mobile)
+                    ->orWhere('s.mother_mobile', $student_data->mobile)
+                    ->orWhere('s.student_mobile', $student_data->mobile);
+            })->where('s.sub_institute_id', $sub_institute_id)
+            ->where('s.id', '!=', $id)
+            ->where('se.syear', $syear)->get()->toArray();
 
-		$parentFeedback = tblstudentParentFeedbackModel::where(['sub_institute_id' => $sub_institute_id, 'student_id' => $id])->get()->toArray();
+        $studentSiblings_data = json_decode(json_encode($studentSiblings_data), true);
 
-		$studentInfirmary = studentInfirmaryModel::where(['student_id' => $id])->get()->toArray();
+        $parentFeedback = tblstudentParentFeedbackModel::where([
+            'sub_institute_id' => $sub_institute_id, 'student_id' => $id,
+        ])->get()->toArray();
 
-		$studentVaccination = studentVaccinationModel::where(['sub_institute_id' => $sub_institute_id, 'student_id' => $id])->get()->toArray();
+        $studentInfirmary = studentInfirmaryModel::where(['student_id' => $id])->get()->toArray();
 
-		$studentheight_weight = studentHWModel::where(['sub_institute_id' => $sub_institute_id, 'student_id' => $id])->get()->toArray();
+        $studentVaccination = studentVaccinationModel::where([
+            'sub_institute_id' => $sub_institute_id, 'student_id' => $id,
+        ])->get()->toArray();
+
+        $studentheight_weight = studentHWModel::where([
+            'sub_institute_id' => $sub_institute_id, 'student_id' => $id,
+        ])->get()->toArray();
 
 		$studenthealth = studentHealthModel::where(['sub_institute_id' => $sub_institute_id, 'student_id' => $id])->get()->toArray();
 
@@ -537,33 +596,40 @@ class tblstudentController extends Controller
 
 		$stateData = tblstateModel::get()->toArray();
 		$state_name = '';
-		if (isset($student_data->state) && $student_data->state != '') {
-			$state_name = $student_data->state;
-		}
-		$city_name = '';
-		if (isset($student_data->city) && $student_data->city != '') {
-			$city_name = $student_data->city;
-		}
-		$cityData = tblcityModel::where(['state_name' => $state_name, 'city_name' => $city_name])->get()->toArray();
-		// dd($cityData);	
-		//START if once fees is paid for current year admission year,standard,student quota,academic section can't be edited
-		$studentfees_paid = DB::select("SELECT * FROM fees_collect c WHERE c.sub_institute_id = '" . $sub_institute_id . "' 
-							AND c.student_id = '" . $id . "' AND syear = '" . $syear . "' AND c.is_deleted = 'N' ");
-		$studentfees_paid = json_decode(json_encode($studentfees_paid), true);
+        if (isset($student_data->state) && $student_data->state != '') {
+            $state_name = $student_data->state;
+        }
+        $city_name = '';
+        if (isset($student_data->city) && $student_data->city != '') {
+            $city_name = $student_data->city;
+        }
+        $cityData = tblcityModel::where(['state_name' => $state_name, 'city_name' => $city_name])->get()->toArray();
 
-		$res['edit_disable'] = "";
-		if (count($studentfees_paid) > 0) {
-			$res['edit_disable'] = "disabled";
-		}
-		//END if once fees is paid for current year admission year,standard,student quota,academic section can't be edited
+        //START if once fees is paid for current year admission year,standard,student quota,academic section can't be edited
+        $studentfees_paid = DB::table('fees_collect as c')
+            ->where('c.sub_institute_id', $sub_institute_id)
+            ->where('c.student_id', $id)
+            ->where('syear', $syear)
+            ->where('c.is_deleted', '=', 'N')->get()->toArray();
+
+        $studentfees_paid = json_decode(json_encode($studentfees_paid), true);
+
+        $res['edit_disable'] = "";
+        if (count($studentfees_paid) > 0) {
+            $res['edit_disable'] = "disabled";
+        }
+        //END if once fees is paid for current year admission year,standard,student quota,academic section can't be edited
 
 
-		$stuarr = array($id);
-		$breakoffData = FeeBreakoffHeadWise($stuarr);
-		$breakoff_MonthArr = array();
+        $stuarr = [$id];
+        $breakoffData = FeeBreakoffHeadWise($stuarr);
+        $breakoff_MonthArr = [];
 		if (count($breakoffData) > 0) {
-			$breakoffData = $breakoffData[$id]['breakoff'];
-			$months = array(1 => 'Jan', 2 => 'Feb', 3 => 'Mar', 4 => 'Apr', 5 => 'May', 6 => 'Jun', 7 => 'Jul', 8 => 'Aug', 9 => 'Sep', 10 => 'Oct', 11 => 'Nov', 12 => 'Dec');
+            $breakoffData = $breakoffData[$id]['breakoff'];
+            $months = [
+                1 => 'Jan', 2 => 'Feb', 3 => 'Mar', 4 => 'Apr', 5 => 'May', 6 => 'Jun', 7 => 'Jul', 8 => 'Aug',
+                9 => 'Sep', 10 => 'Oct', 11 => 'Nov', 12 => 'Dec',
+            ];
 			foreach ($breakoffData as $bid => $arr) {
 				$y = $bid / 10000;
 				$month = (int) $y;
@@ -572,9 +638,11 @@ class tblstudentController extends Controller
 			}
 		}
 
-		$studentPM_Mapping = tblstudentPaymentMethodMappingModel::where(['sub_institute_id' => $sub_institute_id, 'student_id' => $id])
-			->get()->toArray();
-		$studentPM_Arr = array();
+        $studentPM_Mapping = tblstudentPaymentMethodMappingModel::where([
+            'sub_institute_id' => $sub_institute_id, 'student_id' => $id,
+        ])
+            ->get()->toArray();
+        $studentPM_Arr = [];
 		if (count($studentPM_Mapping) > 0) {
 			foreach ($studentPM_Mapping as $pmid => $pmarr) {
 				$studentPM_Arr[$pmarr['month_id']] = $pmarr;
@@ -637,9 +705,6 @@ class tblstudentController extends Controller
 			->where(['student_id' => $id])
 			->get()
 			->toArray();
-
-		// dd($dataStudentSiblings);
-
 
 		/*if (count($dataStudentSiblings) > 0) {
 
@@ -724,13 +789,13 @@ class tblstudentController extends Controller
 		return is_mobile($type, "student/edit_student", $res, "view");
 	}
 
-	/**
-	 * Update the specified resource in storage.
-	 *
-	 * @param  \Illuminate\Http\Request  $request
-	 * @param  int  $id
-	 * @return \Illuminate\Http\Response
-	 */
+    /**
+     * Update the specified resource in storage.
+     *
+     * @param  Request  $request
+     * @param  int  $id
+     * @return RedirectResponse|Response
+     */
 	public function update(Request $request, $id)
 	{
 		$sub_institute_id = $request->session()->get('sub_institute_id');
@@ -745,37 +810,37 @@ class tblstudentController extends Controller
 			$file_size = $file->getSize();
 
 			if ($file_size > 500000) {
-				return redirect()->back()->with("Warning", "Student image not uploaded,Please select file up to 500 KB size.");
+
+                return redirect()->back()->with("Warning", "Student image not uploaded,Please select file up to 500 KB size.");
 			} else {
-				$name = $id;
-				$ext = \File::extension($originalname);
-				$file_name = $name . '.' . $ext;
+                $name = $id;
+                $ext = File::extension($originalname);
+                $file_name = $name.'.'.$ext;
 				$path = $file->storeAs('public/student/', $file_name);
 			}
-		}
-		if ($file_name != '') {
-			$request->request->add(['image' => $file_name]); //add request
-			$request->request->add(['file_size' => $file_size]); //add request
-			$request->request->add(['file_type' => $ext]); //add request
-		}
+        }
+        if ($file_name != '') {
+            $request->request->add(['image' => $file_name]); //add request
+            $request->request->add(['file_size' => $file_size]); //add request
+            $request->request->add(['file_type' => $ext]); //add request
+        }
 
-		// dd($request);
-		$request->request->add(['id' => $id]); //add request
-		$student_id = $id;
+        $request->request->add(['id' => $id]); //add request
+        $student_id = $id;
 
-		$dataCustomFields = tblcustomfieldsModel::select('field_name')->where(['status' => "1", 'table_name' => "tblstudent", 'field_type' => "file"])
-			->whereRaw('(sub_institute_id = ' . $sub_institute_id . ' OR common_to_all = 1)')
-			->get()
-			->toArray();
+        $dataCustomFields = tblcustomfieldsModel::select('field_name')
+            ->where(['status' => "1", 'table_name' => "tblstudent", 'field_type' => "file"])
+            ->whereRaw('(sub_institute_id = '.$sub_institute_id.' OR common_to_all = 1)')
+            ->get()
+            ->toArray();
 
-		foreach ($dataCustomFields as $key => $value) {
-			// echo $value['field_name'];
-			if ($request->hasFile($value['field_name'])) {
-				$file = $request->file($value['field_name']);
-				$originalname = $file->getClientOriginalName();
-				$name = $value['field_name'] . "_" . $request->input('user_name') . date('YmdHis');
-				$ext = \File::extension($originalname);
-				$file_name = $name . '.' . $ext;
+        foreach ($dataCustomFields as $key => $value) {
+            if ($request->hasFile($value['field_name'])) {
+                $file = $request->file($value['field_name']);
+                $originalname = $file->getClientOriginalName();
+                $name = $value['field_name']."_".$request->input('user_name').date('YmdHis');
+                $ext = File::extension($originalname);
+                $file_name = $name.'.'.$ext;
 				$path = $file->storeAs('public/student/', $file_name);
 
 				$request->files->remove($value['field_name']);
@@ -832,26 +897,26 @@ class tblstudentController extends Controller
 		return redirect()->back();
 	}
 
-	/**
-	 * Remove the specified resource from storage.
-	 *
-	 * @param  int  $id
-	 * @return \Illuminate\Http\Response
-	 */
+    /**
+     * Remove the specified resource from storage.
+     *
+     * @param  int  $id
+     * @return Response
+     */
 	public function destroy(Request $request, $id)
 	{
 		$type = $request->input('type');
-		$syear = $request->session()->get('syear');
-		$fields = array(
-			'status' => "0",
-		);
-		tblstudentModel::where(["id" => $id])->update($fields);
+        $syear = $request->session()->get('syear');
+        $fields = [
+            'status' => "0",
+        ];
+        tblstudentModel::where(["id" => $id])->update($fields);
 
-		$fields = array(
-			'end_date' => date('Y-m-d'),
-			'updated_on' => date('Y-m-d H:i:s'),
-		);
-		tblstudentEnrollmentModel::where(["student_id" => $id, "syear" => $syear])->update($fields);
+        $fields = [
+            'end_date' => date('Y-m-d'),
+            'updated_on' => date('Y-m-d H:i:s'),
+        ];
+        tblstudentEnrollmentModel::where(["student_id" => $id, "syear" => $syear])->update($fields);
 
 		$res['status_code'] = "1";
 		$res['message'] = "Student deleted successfully";
@@ -863,11 +928,11 @@ class tblstudentController extends Controller
 
 		try {
 			if (!$this->jwtToken()->validate()) {
-				$response = array('status' => '2', 'message' => 'Token Auth Failed', 'data' => array());
+                $response = ['status' => '2', 'message' => 'Token Auth Failed', 'data' => []];
 				return response()->json($response, 401);
 			}
 		} catch (\Exception $e) {
-			$response = array('status' => '2', 'message' => $e->getMessage(), 'data' => array());
+            $response = ['status' => '2', 'message' => $e->getMessage(), 'data' => []];
 			return response()->json($response, 401);
 		}
 
@@ -927,11 +992,11 @@ END as color_code
 
 		try {
 			if (!$this->jwtToken()->validate()) {
-				$response = array('status' => '2', 'message' => 'Token Auth Failed', 'data' => array());
+                $response = ['status' => '2', 'message' => 'Token Auth Failed', 'data' => []];
 				return response()->json($response, 401);
 			}
 		} catch (\Exception $e) {
-			$response = array('status' => '2', 'message' => $e->getMessage(), 'data' => array());
+            $response = ['status' => '2', 'message' => $e->getMessage(), 'data' => []];
 			return response()->json($response, 401);
 		}
 
@@ -941,23 +1006,33 @@ END as color_code
 		$syear = $request->input("syear");
 
 		if ($teacher_id != "" && $sub_institute_id != "" && $syear != "") {
-			$data = DB::select("SELECT ts.id,concat_ws(' ',ts.first_name,ts.middle_name,ts.last_name) as student_name,ts.enrollment_no,ts.roll_no,ts.mobile,ts.email,
-						ct.standard_id,ct.division_id,s.name AS standard_name,d.name AS division_name
-						FROM class_teacher ct
-						INNER JOIN standard s ON ct.standard_id = s.id AND ct.sub_institute_id = s.sub_institute_id
-						INNER JOIN division d ON d.id = ct.division_id AND d.sub_institute_id = ct.sub_institute_id
-						INNER JOIN tblstudent_enrollment se ON se.standard_id = ct.standard_id AND se.section_id = ct.division_id AND se.sub_institute_id = ct.sub_institute_id
-						INNER JOIN tblstudent ts on ts.id = se.student_id AND ts.sub_institute_id = ct.sub_institute_id
-						WHERE ct.sub_institute_id = '" . $sub_institute_id . "' AND ct.syear = '" . $syear . "' AND se.syear = '" . $syear . "' AND ct.teacher_id = '" . $teacher_id . "'");
+            $data = DB::table('class_teacher as ct')
+                ->join('standard as s', function ($join) {
+                    $join->whereRaw("ct.standard_id = s.id AND ct.sub_institute_id = s.sub_institute_id");
+                })->join('division as d', function ($join) {
+                    $join->whereRaw("d.id = ct.division_id AND d.sub_institute_id = ct.sub_institute_id");
+                })->join('tblstudent_enrollment as se', function ($join) {
+                    $join->whereRaw("se.standard_id = ct.standard_id AND se.section_id = ct.division_id 
+                        AND se.sub_institute_id = ct.sub_institute_id");
+                })->join('tblstudent as ts', function ($join) {
+                    $join->whereRaw("ts.id = se.student_id AND ts.sub_institute_id = ct.sub_institute_id");
+                })->selectRaw("ts.id,concat_ws(' ',ts.first_name,ts.middle_name,ts.last_name) as student_name,
+                    ts.enrollment_no,ts.roll_no,ts.mobile,ts.email,ct.standard_id,ct.division_id,s.name AS standard_name,
+                    d.name AS division_name")
+                ->where('ct.sub_institute_id', $sub_institute_id)
+                ->where('ct.syear', $syear)
+                ->where('se.syear', $syear)
+                ->where('ct.teacher_id', $teacher_id)->get()->toArray();
 
-			$res['status'] = 1;
-			$res['message'] = "Success";
-			$res['data'] = $data;
-		} else {
+            $res['status'] = 1;
+            $res['message'] = "Success";
+            $res['data'] = $data;
+        } else {
 			$res['status'] = 0;
 			$res['message'] = "Parameter Missing";
 		}
-		return json_encode($res);
+
+        return json_encode($res);
 	}
 
 	public function allStudentListAPI(Request $request)
@@ -965,11 +1040,11 @@ END as color_code
 
 		try {
 			if (!$this->jwtToken()->validate()) {
-				$response = array('status' => '2', 'message' => 'Token Auth Failed', 'data' => array());
+                $response = ['status' => '2', 'message' => 'Token Auth Failed', 'data' => []];
 				return response()->json($response, 401);
 			}
 		} catch (\Exception $e) {
-			$response = array('status' => '2', 'message' => $e->getMessage(), 'data' => array());
+            $response = ['status' => '2', 'message' => $e->getMessage(), 'data' => []];
 			return response()->json($response, 401);
 		}
 
@@ -981,28 +1056,37 @@ END as color_code
 		$division_id = $request->input("division_id");
 
 		if ($sub_institute_id != "" && $syear != "") {
-			$sql = "SELECT ts.id,concat_ws(' ',ts.first_name,ts.middle_name,ts.last_name) as student_name,ts.enrollment_no,ts.roll_no,ts.dob,ts.address,ts.mobile,ts.email,if(ts.image = '','',concat('https://" . $_SERVER['SERVER_NAME'] . "/storage/student/',ts.image)) as student_image,se.standard_id,se.section_id AS division_id,s.name AS standard_name,d.name AS division_name
-				FROM tblstudent ts
-				INNER JOIN tblstudent_enrollment se ON se.student_id = ts.id AND se.sub_institute_id = ts.sub_institute_id AND se.end_date IS null
-				INNER JOIN standard s ON se.standard_id = s.id AND se.sub_institute_id = s.sub_institute_id AND s.grade_id=se.grade_id
-				INNER JOIN division d ON d.id = se.section_id AND d.sub_institute_id = se.sub_institute_id
-				WHERE ts.sub_institute_id = '" . $sub_institute_id . "' AND se.syear = '" . $syear . "'";
-			if ($standard_id)
-				$sql .= " AND se.standard_id = '" . $standard_id . "' ";
-			if ($division_id)
-				$sql .= " AND se.section_id = '" . $division_id . "' ";
-			//echo $sql;
-			$data = DB::select($sql);
+            $data = DB::table('tblstudent as ts')
+                ->join('tblstudent_enrollment as se', function ($join) {
+                    $join->whereRaw("se.student_id = ts.id AND se.sub_institute_id = ts.sub_institute_id AND se.end_date IS null");
+                })->join('standard as s', function ($join) {
+                    $join->whereRaw("se.standard_id = s.id AND se.sub_institute_id = s.sub_institute_id AND s.grade_id=se.grade_id");
+                })->join('division as d', function ($join) {
+                    $join->whereRaw("d.id = se.section_id AND d.sub_institute_id = se.sub_institute_id");
+                })->selectRaw("ts.id,concat_ws(' ',ts.first_name,ts.middle_name,ts.last_name) as student_name,
+                    ts.enrollment_no,ts.roll_no,ts.dob,ts.address,ts.mobile,ts.email,if(ts.image = '','',
+                    concat('https://".$_SERVER['SERVER_NAME']."/storage/student/',ts.image)) as student_image,se.standard_id,
+                    se.section_id AS division_id,s.name AS standard_name,d.name AS division_name")
+                ->where('ts.sub_institute_id', $sub_institute_id)
+                ->where('se.syear', $syear);
+            if ($standard_id) {
+                $data = $data->where('se.standard_id', $standard_id);
+            }
+            if ($division_id) {
+                $data = $data->where('se.section_id', $division_id);
+            }
 
-			if (count($data) > 0) {
-				$res['status'] = 1;
-				$res['message'] = "Success";
-				$res['data'] = $data;
-			} else {
-				$res['status'] = 0;
-				$res['message'] = "No Record";
-			}
-		} else {
+            $data = $data->get()->toArray();
+
+            if (count($data) > 0) {
+                $res['status'] = 1;
+                $res['message'] = "Success";
+                $res['data'] = $data;
+            } else {
+                $res['status'] = 0;
+                $res['message'] = "No Record";
+            }
+        } else {
 			$res['status'] = 0;
 			$res['message'] = "Parameter Missing";
 		}
@@ -1014,11 +1098,11 @@ END as color_code
 
 		try {
 			if (!$this->jwtToken()->validate()) {
-				$response = array('status' => '2', 'message' => 'Token Auth Failed', 'data' => array());
+                $response = ['status' => '2', 'message' => 'Token Auth Failed', 'data' => []];
 				return response()->json($response, 401);
 			}
 		} catch (\Exception $e) {
-			$response = array('status' => '2', 'message' => $e->getMessage(), 'data' => array());
+            $response = ['status' => '2', 'message' => $e->getMessage(), 'data' => []];
 			return response()->json($response, 401);
 		}
 
@@ -1030,19 +1114,21 @@ END as color_code
 
 		if ($teacher_id != "" && $sub_institute_id != "" && $syear != "" && $annoucement_type != "") {
 			if ($annoucement_type == 'SMS') {
-				$data = DB::select("SELECT ss.id,ss.staff_id,ss.sms_text,ss.sms_no,ss.module_name,ss.created_on
-						FROM sms_sent_staff ss
-						WHERE ss.staff_id = '" . $teacher_id . "' AND ss.sub_institute_id = '" . $sub_institute_id . "'
-						ORDER BY ss.id DESC");
-			}
+                $data = DB::table('sms_sent_staff as ss')
+                    ->selectRaw('ss.id,ss.staff_id,ss.sms_text,ss.sms_no,ss.module_name,ss.created_on')
+                    ->where('ss.staff_id', $teacher_id)
+                    ->where('ss.sub_institute_id', $sub_institute_id)
+                    ->orderBy('ss.id', 'DESC')->get()->toArray();
+            }
 
 			if ($annoucement_type == 'Notification') {
-				$data = DB::select("SELECT an.ID,an.NOTIFICATION_TYPE, DATE_FORMAT(an.NOTIFICATION_DATE,'%d-%m-%Y') AS NOTIFICATION_DATE,
-						an.TEACHER_ID,an.SUB_INSTITUTE_ID,an.Status as STATUS,an.NOTIFICATION_DESCRIPTION
-						FROM app_notification_teacher an
-						WHERE an.TEACHER_ID = '" . $teacher_id . "' AND an.SUB_INSTITUTE_ID = '" . $sub_institute_id . "'
-						ORDER BY an.ID DESC");
-			}
+                $data = DB::table('app_notification_teacher as an')
+                    ->selectRaw("an.ID,an.NOTIFICATION_TYPE, DATE_FORMAT(an.NOTIFICATION_DATE,'%d-%m-%Y') 
+                        AS NOTIFICATION_DATE,an.TEACHER_ID,an.SUB_INSTITUTE_ID,an.Status as STATUS,an.NOTIFICATION_DESCRIPTION")
+                    ->where('an.TEACHER_ID', $teacher_id)
+                    ->where('an.SUB_INSTITUTE_ID', $sub_institute_id)
+                    ->orderBy('an.ID', 'DESC')->get()->toArray();
+            }
 			if (count($data) > 0) {
 				$res['status'] = 1;
 				$res['message'] = "Success";
@@ -1071,17 +1157,18 @@ END as color_code
 	}
 
 	public function ajax_getOptionalSubject(Request $request)
-	{
-		$std_id = $request->input("std_id");
-		$sub_institute_id = $request->session()->get("sub_institute_id");
+    {
+        $std_id = $request->input("std_id");
+        $sub_institute_id = $request->session()->get("sub_institute_id");
 
-		$data = sub_std_mapModel::select('sub_std_map.*', 'subject.subject_name', 'subject.subject_code')
-			->join('subject', 'subject.id', '=', 'sub_std_map.subject_id')
-			->where(['sub_std_map.sub_institute_id' => $sub_institute_id, 'standard_id' => $std_id, 'elective_subject' => 'Yes'])
-			->get()->toArray();
-
-		return $data;
-	}
+        return sub_std_mapModel::select('sub_std_map.*', 'subject.subject_name', 'subject.subject_code')
+            ->join('subject', 'subject.id', '=', 'sub_std_map.subject_id')
+            ->where([
+                'sub_std_map.sub_institute_id' => $sub_institute_id, 'standard_id' => $std_id,
+                'elective_subject'             => 'Yes',
+            ])
+            ->get()->toArray();
+    }
 
 	public function ajax_checkEmailExist(Request $request)
 	{
@@ -1100,41 +1187,41 @@ END as color_code
 	}
 
 	public function ajax_checkDivisionCapacity(Request $request)
-	{
-		$syear = session()->get("syear");
-		$sub_institute_id = session()->get("sub_institute_id");
-		$std_id = $request->input("std_id");
-		$division_id = $request->input("division_id");
+    {
+        $syear = session()->get("syear");
+        $sub_institute_id = session()->get("sub_institute_id");
+        $std_id = $request->input("std_id");
+        $division_id = $request->input("division_id");
 
-		$sql = "SELECT COUNT(se.id) AS enrolled_student, d.capacity AS total_capacity,
-					(d.capacity - COUNT(se.id)) AS remaining_capacity
-					FROM division_capacity_master d
-					LEFT JOIN tblstudent_enrollment se ON d.standard_id = se.standard_id AND d.division_id = se.section_id AND d.sub_institute_id = se.sub_institute_id AND se.syear = '" . $syear . "' AND se.end_date IS NULL
-					LEFT JOIN tblstudent s ON s.id = se.student_id AND s.sub_institute_id = se.sub_institute_id
-					WHERE d.standard_id = '" . $std_id . "' AND d.division_id = '" . $division_id . "' AND d.syear = '" . $syear . "' 
-					AND d.sub_institute_id = '" . $sub_institute_id . "' ";
+        $check_div_capacity = DB::table('division_capacity_master as d')
+            ->leftJoin('tblstudent_enrollment as se', function ($join) use ($syear) {
+                $join->whereRaw("d.standard_id = se.standard_id AND d.division_id = se.section_id AND d.sub_institute_id = se.sub_institute_id AND se.syear = '".$syear."' AND se.end_date IS NULL");
+            })->leftJoin('tblstudent as s', function ($join) {
+                $join->whereRaw("s.id = se.student_id AND s.sub_institute_id = se.sub_institute_id");
+            })->selectRaw("COUNT(se.id) AS enrolled_student, d.capacity AS total_capacity,
+                (d.capacity - COUNT(se.id)) AS remaining_capacity")
+            ->where('d.standard_id', $std_id)
+            ->where('d.division_id', $division_id)
+            ->where('d.syear', $syear)
+            ->where('d.sub_institute_id', $sub_institute_id)->get()->toArray();
 
-		$check_div_capacity = DB::select($sql);
+        $total_capacity = '';
+        if (isset($check_div_capacity[0]->total_capacity)) {
+            $total_capacity = $check_div_capacity[0]->total_capacity;
+        }
 
-		$total_capacity = '';
-		if (isset($check_div_capacity[0]->total_capacity)) {
-			$total_capacity = $check_div_capacity[0]->total_capacity;
-		}
+        $remaining_capacity = '';
+        if (isset($check_div_capacity[0]->remaining_capacity)) {
+            $remaining_capacity = $check_div_capacity[0]->remaining_capacity;
+        }
 
-		$remaining_capacity = '';
-		if (isset($check_div_capacity[0]->remaining_capacity)) {
-			$remaining_capacity = $check_div_capacity[0]->remaining_capacity;
-		}
-
-		$capacity_val = $total_capacity . "/" . $remaining_capacity;
-
-		return $capacity_val;
+        return $total_capacity."/".$remaining_capacity;
 	}
 
 	public function ajax_StatewiseCity(Request $request)
-	{
-		$state_name = $request->input("state_name");
-		$cityData = tblcityModel::where(['state_name' => $state_name])->get()->toArray();
-		return $cityData;
-	}
+    {
+        $state_name = $request->input("state_name");
+
+        return tblcityModel::where(['state_name' => $state_name])->get()->toArray();
+    }
 }

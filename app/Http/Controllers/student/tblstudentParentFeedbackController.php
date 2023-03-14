@@ -2,9 +2,10 @@
 
 namespace App\Http\Controllers\student;
 
-use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use App\Models\student\tblstudentParentFeedbackModel;
+use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
 use function App\Helpers\is_mobile;
 
@@ -13,7 +14,7 @@ class tblstudentParentFeedbackController extends Controller
     /**
      * Display a listing of the resource.
      *
-     * @return \Illuminate\Http\Response
+     * @return void
      */
     public function index()
     {
@@ -23,7 +24,7 @@ class tblstudentParentFeedbackController extends Controller
     /**
      * Show the form for creating a new resource.
      *
-     * @return \Illuminate\Http\Response
+     * @return void
      */
     public function create()
     {
@@ -33,8 +34,8 @@ class tblstudentParentFeedbackController extends Controller
     /**
      * Store a newly created resource in storage.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\Response
+     * @param  Request  $request
+     * @return Response
      */
     public function store(Request $request)
     {
@@ -47,19 +48,19 @@ class tblstudentParentFeedbackController extends Controller
         $person_names = $request['person_names'];
         $commentss = $request['commentss'];
         $dates = $request['dates'];
-        
-        
-        tblstudentParentFeedbackModel::where(["student_id" => $request->input('student_id'),"sub_institute_id" => $sub_institute_id])->delete();
+
+
+        tblstudentParentFeedbackModel::where(["student_id"       => $request->input('student_id'),
+                                              "sub_institute_id" => $sub_institute_id,
+        ])->delete();
         $request->request->remove('purposes');
         $request->request->remove('responses');
         $request->request->remove('person_names');
         $request->request->remove('commentss');
         $request->request->remove('dates');
 
-        foreach($person_names as $key => $value)
-        {
-            if($value == '')
-            {
+        foreach ($person_names as $key => $value) {
+            if ($value == '') {
                 break;
             }
             $request->request->set('person_name', $value);
@@ -68,12 +69,13 @@ class tblstudentParentFeedbackController extends Controller
             $request->request->set('comments', $commentss[$key]);
             $request->request->set('date', $dates[$key]);
 
-            $data = $this->saveData($request);     
+            $data = $this->saveData($request);
         }
         
         $res['status_code'] = 1;
         $res['message'] = "Student Parent Feedback Successfully Updated.";
         $res['data'] = $data;
+
         return is_mobile($type, "search_student.index", $res);
     }
 
@@ -95,14 +97,15 @@ class tblstudentParentFeedbackController extends Controller
         }
         
         tblstudentParentFeedbackModel::insert($finalArray);
-        return  $id = DB::getPdo()->lastInsertId();
+
+        return DB::getPdo()->lastInsertId();
     }
 
     /**
      * Display the specified resource.
      *
      * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * @return void
      */
     public function show($id)
     {
@@ -113,7 +116,7 @@ class tblstudentParentFeedbackController extends Controller
      * Show the form for editing the specified resource.
      *
      * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * @return void
      */
     public function edit($id)
     {
@@ -123,9 +126,9 @@ class tblstudentParentFeedbackController extends Controller
     /**
      * Update the specified resource in storage.
      *
-     * @param  \Illuminate\Http\Request  $request
+     * @param  Request  $request
      * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * @return void
      */
     public function update(Request $request, $id)
     {
@@ -136,7 +139,7 @@ class tblstudentParentFeedbackController extends Controller
      * Remove the specified resource from storage.
      *
      * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * @return void
      */
     public function destroy($id)
     {
