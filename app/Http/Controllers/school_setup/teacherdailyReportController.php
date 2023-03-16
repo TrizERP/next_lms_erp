@@ -2,41 +2,40 @@
 
 namespace App\Http\Controllers\school_setup;
 
-use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
-use App\Models\school_setup\proxyModel;
 use App\Models\user\tbluserModel;
-use App\Models\school_setup\timetableModel;
-use function App\Helpers\is_mobile;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use function App\Helpers\is_mobile;
 
 
 class teacherdailyReportController extends Controller
 {
     public function index(Request $request)
-    {                
+    {
         $type = $request->input('type');
-        $sub_institute_id = $request->session()->get('sub_institute_id');                                    
-        $data['status_code'] = 1; 
-        return is_mobile($type,'school_setup/show_teacherdailyreport',$data,"view");          
-    }
-	
-	public function getData($request)
-	{
-		$sub_institute_id = $request->session()->get('sub_institute_id');
-        
-        $user_data = tbluserModel::select('tbluser.*',
-        DB::raw('concat(tbluser.first_name," ",tbluser.middle_name," ",tbluser.last_name) as teacher_name'))
-        ->join('tbluserprofilemaster','tbluserprofilemaster.id' ,"=", 'tbluser.user_profile_id')        
-        ->where(['tbluser.sub_institute_id'=>$sub_institute_id,'tbluserprofilemaster.name' => 'Teacher'])
-        ->get();                     
-        return $user_data;
-	}
+        $sub_institute_id = $request->session()->get('sub_institute_id');
+        $data['status_code'] = 1;
 
-    public function getTeacherDailyReport(Request $request){
-        $date = $request->get('date');  
+        return is_mobile($type, 'school_setup/show_teacherdailyreport', $data, "view");
+    }
+
+    public function getData($request)
+    {
+        $sub_institute_id = $request->session()->get('sub_institute_id');
+
+        return tbluserModel::select('tbluser.*',
+            DB::raw('concat(tbluser.first_name," ",tbluser.middle_name," ",tbluser.last_name) as teacher_name'))
+            ->join('tbluserprofilemaster', 'tbluserprofilemaster.id', "=", 'tbluser.user_profile_id')
+            ->where(['tbluser.sub_institute_id' => $sub_institute_id, 'tbluserprofilemaster.name' => 'Teacher'])
+            ->get();
+    }
+
+    public function getTeacherDailyReport(Request $request)
+    {
+        $date = $request->get('date');
         $status = $request->get('status');
-        $sub_institute_id = $request->session()->get('sub_institute_id'); 
+        $sub_institute_id = $request->session()->get('sub_institute_id');
         $syear = $request->session()->get('syear');
         $extra_query = '';
 
@@ -72,8 +71,7 @@ class teacherdailyReportController extends Controller
                 WHERE 1=1 AND tt.syear='".$syear."' AND ts.sub_institute_id = '".$sub_institute_id."'
                 ";
 
-        if($status == 'N')
-        {
+        if ($status == 'N') {
             $sql .= "AND (((
                     SELECT COUNT(*)
                     FROM homework
@@ -91,9 +89,8 @@ class teacherdailyReportController extends Controller
                     FROM attendance_student
                     WHERE created_by = ts.id AND created_on LIKE '%".$date."%') = 0)
                     )";
-        }        
-        if($status == 'Y')
-        {
+        }
+        if ($status == 'Y') {
             $sql .= "AND (((
                     SELECT COUNT(*)
                     FROM homework
@@ -111,104 +108,150 @@ class teacherdailyReportController extends Controller
                     FROM attendance_student
                     WHERE created_by = ts.id AND created_on LIKE '%".$date."%') > 0)
                     )";
-        }  
+        }
 
         $sql .= "GROUP BY tt.teacher_id
                 ORDER BY ts.id";
-        // dd($data);
 
         $result = DB::select($sql);
-		
-        $type = $request->input('type');   
-        $data['data'] = $result;                                
-        $data['date_selected'] = $date;             
-        $data['status'] = $status;                    
-        return is_mobile($type,'school_setup/show_teacherdailyreport',$data,"view");
+
+        $type = $request->input('type');
+        $data['data'] = $result;
+        $data['date_selected'] = $date;
+        $data['status'] = $status;
+
+        return is_mobile($type, 'school_setup/show_teacherdailyreport', $data, "view");
     }
 
-    public function getTeacherDailyDetailsReport(Request $request){
-    	// echo "asd";
-    	$date = $request->get('date');  
+    public function getTeacherDailyDetailsReport(Request $request)
+    {
+        // echo "asd";
+        $date = $request->get('date');
         $teacher_id = $request->get('teacher_id');
         $action = $request->get('action');
-        $sub_institute_id = $request->session()->get('sub_institute_id'); 
+        $sub_institute_id = $request->session()->get('sub_institute_id');
         $syear = $request->session()->get('syear');
 
-        if($action == 'homework_assign'){
-        	$sql = "SELECT DISTINCT '' S_NO,CONCAT_WS(' ',ts.first_name,ts.middle_name,ts.last_name) AS teacher, 
+        if ($action == 'homework_assign') {
+            $RET = DB::table('homework as h')
+                ->join('tbluser as ts', function ($join) {
+                    $join->whereRaw('h.created_by = ts.id');
+                })->join('timetable as tt', function ($join) {
+                    $join->whereRaw('ts.id = tt.teacher_id');
+                })->join('standard as cs', function ($join) {
+                    $join->whereRaw('cs.id = h.standard_id');
+                })->join('subject as s', function ($join) {
+                    $join->whereRaw('s.id = h.subject_id');
+                })->join('division as ss', function ($join) {
+                    $join->whereRaw('ss.id = h.division_id');
+                })->selectRaw("'' S_NO,CONCAT_WS(' ',ts.first_name,ts.middle_name,ts.last_name) AS teacher, 
 					ss.name as div_name,cs.name AS STD,h.title,h.description, 
-					date_format(h.created_on,'%d-%m-%Y') AS homework_date,h.image AS ATTACHMENT,s.subject_name AS SUBJECT
-					FROM homework h
-					INNER JOIN tbluser ts ON h.created_by = ts.id
-					JOIN timetable tt ON ts.id = tt.teacher_id
-					JOIN standard cs ON cs.id = h.standard_id
-					JOIN subject s ON s.id = h.subject_id
-					JOIN division ss ON ss.id = h.division_id
-					WHERE 1=1 AND h.syear = '".$syear."' AND h.created_on LIKE '%".$date."%' AND ts.id = '".$teacher_id."' AND h.sub_institute_id = '".$sub_institute_id."'
-					GROUP BY h.standard_id,h.division_id,h.title";
-					// die;
+					date_format(h.created_on,'%d-%m-%Y') AS homework_date,h.image AS ATTACHMENT,s.subject_name AS SUBJECT")
+                ->where('h.syear', $syear)
+                ->where('h.created_on', 'LIKE', '%'.$date.'%')
+                ->where('ts.id', $teacher_id)
+                ->where('h.sub_institute_id', $sub_institute_id)
+                ->groupByRaw('h.standard_id,h.division_id,h.title')
+                ->distinct()
+                ->get()->toArray();
         }
 
-        if($action == 'homework_check'){
-        	$sql = "SELECT DISTINCT '' S_NO,CONCAT_WS(' ',ts.first_name,ts.middle_name,ts.last_name) AS teacher, 
-					ss.name as div_name,cs.name AS STD,h.title,h.description, 
-					date_format(h.created_on,'%d-%m-%Y') AS homework_date,date_format(h.submission_date,'%d-%m-%Y') AS submission_date,h.image AS ATTACHMENT,s.subject_name AS SUBJECT,h.submission_remarks
-					FROM homework h
-					INNER JOIN tbluser ts ON h.created_by = ts.id
-					JOIN timetable tt ON ts.id = tt.teacher_id
-					JOIN standard cs ON cs.id = h.standard_id
-					JOIN subject s ON s.id = h.subject_id
-					JOIN division ss ON ss.id = h.division_id
-					WHERE 1=1 AND h.syear = '".$syear."' AND h.submission_date LIKE '%".$date."%' AND ts.id = '".$teacher_id."' AND h.sub_institute_id = '".$sub_institute_id."' AND h.completion_status = 'Y'
-					GROUP BY h.standard_id,h.division_id,h.title";
+        if ($action == 'homework_check') {
+            $RET = DB::table('homework as h')
+                ->join('tbluser as ts', function ($join) {
+                    $join->whereRaw('h.reply_by = ts.id');
+                })->join('timetable as t', function ($join) {
+                    $join->whereRaw('t.teacher_id = ts.id');
+                })->join('standard as cs', function ($join) {
+                    $join->whereRaw('cs.id = t.standard_id');
+                })->join('subject as s', function ($join) {
+                    $join->whereRaw('s.id = h.subject_id');
+                })->join('division as ss', function ($join) {
+                    $join->whereRaw('ss.id = t.division_id');
+                })->selectRaw("'' S_NO,CONCAT_WS(' ',ts.first_name,ts.middle_name,ts.last_name) AS teacher, 
+					ss.name as div_name,cs.name AS STD,h.title,h.description,date_format(h.created_on,'%d-%m-%Y') AS homework_date,
+					date_format(h.submission_date,'%d-%m-%Y') AS submission_date,h.image AS ATTACHMENT,s.subject_name AS SUBJECT,
+					h.submission_remarks")
+                ->where('h.syear', $syear)
+                ->where('h.submission_date', 'LIKE', '%'.$date.'%')
+                ->where('ts.id', $teacher_id)
+                ->where('h.sub_institute_id', $sub_institute_id)
+                ->where('h.completion_status', '=', 'Y')
+                ->groupByRaw('h.standard_id,h.division_id,h.title')
+                ->distinct()
+                ->get()->toArray();
         }
 
-        if($action == 'attedance'){
-        	$sql = "SELECT DISTINCT '' S_NO, CONCAT_WS(' ',ts.first_name,ts.middle_name,ts.last_name) AS teacher, 
+        if ($action == 'attedance') {
+            $RET = DB::table('attendance_student as h')
+                ->join('tbluser as ts', function ($join) {
+                    $join->whereRaw('h.created_by = ts.id');
+                })->join('standard as cs', function ($join) {
+                    $join->whereRaw('cs.id = t.standard_id');
+                })->join('division as ss', function ($join) {
+                    $join->whereRaw('ss.id = t.division_id');
+                })->selectRaw("'' S_NO, CONCAT_WS(' ',ts.first_name,ts.middle_name,ts.last_name) AS teacher, 
 					ss.name AS div_name,cs.name AS STD,h.attendance_code,DATE_FORMAT(h.created_on,'%d-%m-%Y') AS created_date,
-					DATE_FORMAT(h.attendance_date,'%d-%m-%Y') AS attendance_date
-					FROM attendance_student h
-					INNER JOIN tbluser ts ON h.created_by = ts.id
-					JOIN standard cs ON cs.id = h.standard_id
-					JOIN division ss ON ss.id = h.section_id
-					WHERE 1=1 AND h.syear = '".$syear."' AND h.created_on LIKE '%".$date."%' AND ts.id = '".$teacher_id."' AND h.sub_institute_id = '".$sub_institute_id."'
-					GROUP BY h.standard_id,h.section_id";
+					DATE_FORMAT(h.attendance_date,'%d-%m-%Y') AS attendance_date")
+                ->where('h.syear', $syear)
+                ->where('h.created_on', 'LIKE', '%'.$date.'%')
+                ->where('ts.id', $teacher_id)
+                ->where('h.sub_institute_id', $sub_institute_id)
+                ->groupByRaw('h.standard_id,h.section_id')
+                ->distinct()
+                ->get()->toArray();
         }
 
-        if($action == 'parent_comm'){
-        	$sql = "SELECT DISTINCT '' S_NO, CONCAT_WS(' ',ts.first_name,ts.middle_name,ts.last_name) AS teacher, 
+        if ($action == 'parent_comm') {
+            $RET = DB::table('parent_communication as h')
+                ->join('tbluser as ts', function ($join) {
+                    $join->whereRaw('h.reply_by = ts.id');
+                })->join('timetable as t', function ($join) {
+                    $join->whereRaw('t.teacher_id = ts.id');
+                })->join('standard as cs', function ($join) {
+                    $join->whereRaw('cs.id = t.standard_id');
+                })->join('division as ss', function ($join) {
+                    $join->whereRaw('ss.id = t.division_id');
+                })->selectRaw("'' S_NO, CONCAT_WS(' ',ts.first_name,ts.middle_name,ts.last_name) AS teacher, 
 					ss.name AS div_name,cs.name AS STD,h.message,h.reply,DATE_FORMAT(h.created_at,'%d-%m-%Y') AS created_date,
-					DATE_FORMAT(h.reply_on,'%d-%m-%Y') AS reply_date
-					FROM parent_communication h
-					INNER JOIN tbluser ts ON h.reply_by = ts.id
-					JOIN timetable t on t.teacher_id = ts.id
-					JOIN standard cs ON cs.id = t.standard_id
-					JOIN division ss ON ss.id = t.division_id
-					WHERE 1=1 AND h.syear = '".$syear."' AND h.created_at LIKE '%".$date."%' AND ts.id = '".$teacher_id."' AND h.sub_institute_id = '".$sub_institute_id."'
-					GROUP BY h.id";
+					DATE_FORMAT(h.reply_on,'%d-%m-%Y') AS reply_date")
+                ->where('h.syear', $syear)
+                ->where('h.created_at', 'LIKE', '%'.$date.'%')
+                ->where('ts.id', $teacher_id)
+                ->where('h.sub_institute_id', $sub_institute_id)
+                ->groupBy('h.id')
+                ->distinct()
+                ->get()->toArray();
         }
 
-        if($action == 'student_leave'){
-        	$sql = "SELECT DISTINCT '' S_NO, CONCAT_WS(' ',ts.first_name,ts.middle_name,ts.last_name) AS teacher, 
+        if ($action == 'student_leave') {
+            $RET = DB::table('leave_applications as h')
+                ->join('tbluser as ts', function ($join) {
+                    $join->whereRaw('h.reply = ts.id');
+                })->join('timetable as t', function ($join) {
+                    $join->whereRaw('t.teacher_id = ts.id');
+                })->join('standard as cs', function ($join) {
+                    $join->whereRaw('cs.id = t.standard_id');
+                })->join('division as ss', function ($join) {
+                    $join->whereRaw('ss.id = t.division_id');
+                })->selectRaw("'' S_NO, CONCAT_WS(' ',ts.first_name,ts.middle_name,ts.last_name) AS teacher, 
 					ss.name AS div_name,cs.name AS STD,h.message,h.files,h.status,
-					DATE_FORMAT(h.apply_date,'%d-%m-%Y') AS apply_date
-					FROM leave_applications h
-					INNER JOIN tbluser ts ON h.reply = ts.id
-					JOIN timetable t on t.teacher_id = ts.id
-					JOIN standard cs ON cs.id = t.standard_id
-					JOIN division ss ON ss.id = t.division_id
-					WHERE 1=1 AND h.syear = '".$syear."' AND h.apply_date LIKE '%".$date."%' AND ts.id = '".$teacher_id."' AND h.sub_institute_id = '".$sub_institute_id."'
-					GROUP BY h.id";
+					DATE_FORMAT(h.apply_date,'%d-%m-%Y') AS apply_date")
+                ->where('h.syear', $syear)
+                ->where('h.apply_date', 'LIKE', '%'.$date.'%')
+                ->where('ts.id', $teacher_id)
+                ->where('h.sub_institute_id', $sub_institute_id)
+                ->groupBy('h.id')
+                ->distinct()
+                ->get()->toArray();
         }
-		
-		$RET = DB::select($sql);
-		
-        $type = $request->input('type');   
-        $data['data'] = $RET;          
-        $data['request_action'] = $request->get('action');                   
-        return is_mobile($type,'school_setup/show_teacherdailydetailsreport',$data,"view");
-    	// dd($request);
 
+
+        $type = $request->input('type');
+        $data['data'] = $RET;
+        $data['request_action'] = $request->get('action');
+
+        return is_mobile($type, 'school_setup/show_teacherdailydetailsreport', $data, "view");
     }
-    
+
 }

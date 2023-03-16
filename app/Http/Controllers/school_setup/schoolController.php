@@ -2,15 +2,18 @@
 
 namespace App\Http\Controllers\school_setup;
 
-use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use App\Models\school_setup\SchoolModel;
-use Symfony\Component\HttpFoundation\File;
-use Illuminate\Support\Facades\DB;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\File;
+use function App\Helpers\is_mobile;
+use function App\Helpers\ValidateInsertData;
 
-class schoolController extends Controller {
+class schoolController extends Controller
+{
 
-    public function index(Request $request) {
+    public function index(Request $request)
+    {
 
         if (session()->has('data')) { // check if it exists
             $data_arr = session('data'); // to retrieve value
@@ -21,88 +24,94 @@ class schoolController extends Controller {
 
         $school_data['data'] = $this->getData();
         $type = $request->input('type');
-        return \App\Helpers\is_mobile($type, "school_setup/show_school", $school_data, "view");
+
+        return is_mobile($type, "school_setup/show_school", $school_data, "view");
     }
 
-    public function create(Request $request) {
+    public function create(Request $request)
+    {
         return view('school_setup/add_school');
     }
 
-    public function getData() {
-        $school_data = SchoolModel::orderBy('id')->get();
-        return $school_data;
+    public function getData()
+    {
+        return SchoolModel::orderBy('id')->get();
     }
 
-    public function store(Request $request) {
+    public function store(Request $request)
+    {
 
-        \App\Helpers\ValidateInsertData('school_setup', $request);
+        ValidateInsertData('school_setup', $request);
 
         $file_name = "";
         if ($request->hasFile('Logo')) {
             $file = $request->file('Logo');
             $originalname = $file->getClientOriginalName();
             $name = date('YmdHis');
-            $ext = \File::extension($originalname);
-            $file_name = $name . '.' . $ext;
+            $ext = File::extension($originalname);
+            $file_name = $name.'.'.$ext;
             $path = $file->storeAs('public/school/', $file_name);
         }
 
         $school = new SchoolModel([
-            'SchoolName' => $request->get('SchoolName'),
-            'ShortCode' => $request->get('ShortCode'),
-            'ContactPerson' => $request->get('ContactPerson'),
-            'Mobile' => $request->get('Mobile'),
-            'Email' => $request->get('Email'),
-            'ReceiptHeader' => $request->get('ReceiptHeader'),
+            'SchoolName'     => $request->get('SchoolName'),
+            'ShortCode'      => $request->get('ShortCode'),
+            'ContactPerson'  => $request->get('ContactPerson'),
+            'Mobile'         => $request->get('Mobile'),
+            'Email'          => $request->get('Email'),
+            'ReceiptHeader'  => $request->get('ReceiptHeader'),
             'ReceiptAddress' => $request->get('ReceiptAddress'),
-            'FeeEmail' => $request->get('FeeEmail'),
+            'FeeEmail'       => $request->get('FeeEmail'),
             'ReceiptContact' => $request->get('ReceiptContact'),
-            'SortOrder' => $request->get('SortOrder'),
-            'Logo' => $file_name,
+            'SortOrder'      => $request->get('SortOrder'),
+            'Logo'           => $file_name,
         ]);
         $school->save();
 
-        $res = array(
+        $res = [
             "status_code" => 1,
-            "message" => "Data Saved",
-        );
+            "message"     => "Data Saved",
+        ];
 
         $type = $request->input('type');
-        return \App\Helpers\is_mobile($type, "add_school.index", $res, "redirect");
+
+        return is_mobile($type, "add_school.index", $res, "redirect");
     }
 
-    public function edit(Request $request, $id) {
+    public function edit(Request $request, $id)
+    {
 
         $type = $request->input('type');
         $data = SchoolModel::find($id);
 
-        return \App\Helpers\is_mobile($type, "school_setup/add_school", $data, "view");
+        return is_mobile($type, "school_setup/add_school", $data, "view");
     }
 
-    public function update(Request $request, $id) {
+    public function update(Request $request, $id)
+    {
 
-        \App\Helpers\ValidateInsertData('school_setup', 'update');
+        ValidateInsertData('school_setup', 'update');
 
-        $data = array(
-            'SchoolName' => $request->get('SchoolName'),
-            'ShortCode' => $request->get('ShortCode'),
-            'ContactPerson' => $request->get('ContactPerson'),
-            'Mobile' => $request->get('Mobile'),
-            'Email' => $request->get('Email'),
-            'ReceiptHeader' => $request->get('ReceiptHeader'),
+        $data = [
+            'SchoolName'     => $request->get('SchoolName'),
+            'ShortCode'      => $request->get('ShortCode'),
+            'ContactPerson'  => $request->get('ContactPerson'),
+            'Mobile'         => $request->get('Mobile'),
+            'Email'          => $request->get('Email'),
+            'ReceiptHeader'  => $request->get('ReceiptHeader'),
             'ReceiptAddress' => $request->get('ReceiptAddress'),
-            'FeeEmail' => $request->get('FeeEmail'),
+            'FeeEmail'       => $request->get('FeeEmail'),
             'ReceiptContact' => $request->get('ReceiptContact'),
-            'SortOrder' => $request->get('SortOrder')
-        );
+            'SortOrder'      => $request->get('SortOrder'),
+        ];
 
         $file_name = "";
         if ($request->hasFile('Logo')) {
             $file = $request->file('Logo');
             $originalname = $file->getClientOriginalName();
             $name = date('YmdHis');
-            $ext = \File::extension($originalname);
-            $file_name = $name . '.' . $ext;
+            $ext = File::extension($originalname);
+            $file_name = $name.'.'.$ext;
             $path = $file->storeAs('public/school/', $file_name);
         }
         if ($file_name != "") {
@@ -110,24 +119,25 @@ class schoolController extends Controller {
         }
         SchoolModel::where(["Id" => $id])->update($data);
 
-        $res = array(
+        $res = [
             "status_code" => 1,
-            "message" => "Data Saved",
-        );
+            "message"     => "Data Saved",
+        ];
         $type = $request->input('type');
 
-        return \App\Helpers\is_mobile($type, "add_school.index", $res, "redirect");
+        return is_mobile($type, "add_school.index", $res, "redirect");
     }
 
-    public function destroy(Request $request,$id) {
+    public function destroy(Request $request, $id)
+    {
         $type = $request->input('type');
         SchoolModel::where(["Id" => $id])->delete();
-        $res = array(
+        $res = [
             "status_code" => 1,
-            "message" => "Data Deleted",
-        );
+            "message"     => "Data Deleted",
+        ];
 
-        return \App\Helpers\is_mobile($type, "add_school.index", $res, "redirect");
+        return is_mobile($type, "add_school.index", $res, "redirect");
     }
 
 }

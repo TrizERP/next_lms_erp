@@ -2,28 +2,31 @@
 
 namespace App\Http\Controllers\school_setup;
 
-use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
-use function App\Helpers\is_mobile;
+use App\Models\school_setup\academic_sectionModel;
+use App\Models\school_setup\batchModel;
+use App\Models\school_setup\divisionModel;
 use App\Models\school_setup\periodModel;
 use App\Models\school_setup\standardModel;
-use App\Models\school_setup\academic_sectionModel;
-use App\Models\school_setup\sub_std_mapModel;
-use App\Models\user\tbluserModel;
-use App\Models\school_setup\timetableModel;
-use App\Models\school_setup\divisionModel;
 use App\Models\school_setup\std_div_mappingModel;
-use App\Models\school_setup\batchModel;
+use App\Models\school_setup\sub_std_mapModel;
+use App\Models\school_setup\timetableModel;
+use App\Models\user\tbluserModel;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use function App\Helpers\is_mobile;
+
 class timetableController extends Controller
 {
-    public function index(Request $request){        
-        $data = $this->getData($request);               
-        $type = $request->input('type');        
+    public function index(Request $request)
+    {
+        $data = $this->getData($request);
+        $type = $request->input('type');
         $res['status_code'] = 1;
         $res['message'] = "SUCCESS";
         $res = array_merge($res, $data);
-        return is_mobile($type,'school_setup/show_timetable',$res,"view");  
+
+        return is_mobile($type, 'school_setup/show_timetable', $res, "view");  
     }
 
     public function getData($request){        
