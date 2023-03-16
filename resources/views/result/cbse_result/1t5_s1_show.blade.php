@@ -32,7 +32,8 @@
                         foreach ($data['data'] as $stuent_id => $all_data) {
                         ?>
                         <div id="{{$stuent_id}}">
-                            <table class="main-table ml-5 mr-5 mb-5" width="100%" style="border:1px solid #f37a0d;">
+                            <table class="main-table ml-5 mr-5 mb-5" width="100%">
+                                <!--style="border:1px solid #f37a0d;"-->
                                 <tbody>
                                 <tr>
                                     <td>
@@ -59,6 +60,7 @@
                                             </tr>
                                             <tr>
                                                 <td colspan="4">
+                                                    <br/><br/>
                                                     <hr></hr>
                                                 </td>
                                             </tr>
@@ -69,35 +71,34 @@
                                             <tbody>
                                             <tr>
                                                 <td colspan="3" align="center">
-                                                    <h3 style="font-size:14">MARKSHEET CUM CERTIFICATE OF
-                                                        PERFORMANCE</h3>
-                                                    <h3 style="font-size:14">
-                                                        SESSION <?php echo $all_data['year']; ?></h3>
+                                                    <h3 style="font-size:16;color:black;font-weight: 600;">ACADEMIC
+                                                        SESSION : <?php echo $all_data['year']; ?> | REPORT CARD FOR
+                                                        CLASS - <?php echo $all_data['class']; ?></h3>
+                                                <!--<h3 style="font-size:14">SESSION <?php echo $all_data['year']; ?></h3>-->
                                                 </td>
                                             </tr>
                                             <tr>
                                                 <td width="60%">Student's Name :
                                                     <label><?php echo $all_data['name']; ?></label></td>
-                                                <td width="20%"></td>
                                                 <td width="20%">Roll No. :
                                                     <label><?php echo $all_data['roll_no']; ?></label></td>
+                                                <td width="20%" rowspan="4"><img height="100px"
+                                                                                 src="/storage/student/<?php echo $all_data['image']; ?>">
+                                                </td>
                                             </tr>
                                             <tr>
                                                 <td>Mother's Name :
                                                     <label><?php echo $all_data['mother_name']; ?></label></td>
-                                                <td></td>
                                                 <td>Class : <label><?php echo $all_data['class']; ?></label></td>
                                             </tr>
                                             <tr>
                                                 <td>Father's Name :
                                                     <label><?php echo $all_data['father_name']; ?></label></td>
-                                                <td></td>
                                                 <td>Division : <label><?php echo $all_data['division']; ?></label></td>
                                             </tr>
                                             <tr>
                                                 <td>Date Of Birth :
                                                     <label><?php echo $all_data['date_of_birth']; ?></label></td>
-                                                <td></td>
                                                 <td>G.R. No. : <label><?php echo $all_data['gr_no']; ?> </label></td>
                                             </tr>
                                             </tbody>
@@ -112,52 +113,51 @@
                                                            width="100%" cellspacing="0" cellpadding="0" border="1">
                                                         <tbody>
                                                         <tr>
-                                                            <th class="main-th" align="left">Part 1-A-Scholastic
-                                                                Areas:
+                                                            <th align="left" rowspan="2"><b>Sub Name</b></th>
+                                                            <!--<th class="main-th" align="left">Part 1-A-Scholastic Areas:</th>   -->
+                                                            <th style="text-align: center;"
+                                                                colspan="<?php echo count($all_data['exam']) + 1; ?>">
+                                                                <b><?php echo $all_data['term']." (".$all_data['total_mark']." Marks)"; ?></b>
                                                             </th>
                                                             <th style="text-align: center;"
-                                                                colspan="<?php echo count($all_data['exam']) + 1; ?>"
-                                                                class="main-th"><?php echo $all_data['term']." (".$all_data['total_mark']." Marks)"; ?></th>
-                                                            <th style="text-align: center;"
-                                                                colspan="<?php echo count($term_2_data[$stuent_id]['exam']) + 1; ?>"
-                                                                class="main-th"><?php echo $term_2_data[$stuent_id]['term']." (".$term_2_data[$stuent_id]['total_mark']." Marks)"; ?></th>
-                                                            <th style="text-align: center;" class="main-th" rowspan="2">
-                                                                Grand Total ({{ 
-                                                                $term_2_data[$stuent_id]['total_mark'] + $all_data['total_mark']
-                                                            }})
+                                                                colspan="<?php echo count($term_2_data[$stuent_id]['exam']) + 1; ?>">
+                                                                <b><?php echo $term_2_data[$stuent_id]['term']." (".$term_2_data[$stuent_id]['total_mark']." Marks)"; ?></b>
                                                             </th>
-                                                            <th style="text-align: center;" class="main-th" rowspan="2">
-                                                                Grade
+                                                            <th style="text-align: center;  " rowspan="2"><b>Grand<br/>Total<br/>
+                                                                    ({{ 
+                                                                            $term_2_data[$stuent_id]['total_mark'] + $all_data['total_mark']
+                                                                        }})</b></th>
+                                                            <th style="text-align: center;" rowspan="2"><b>Grade</b>
                                                             </th>
                                                         </tr>
                                                         <tr>
-                                                            <th align="left">Sub Name</th>
+
                                                             <?php
                                                             foreach ($all_data['exam'] as $temp_id => $exam_data) {
                                                             if (strtolower($exam_data['exam']) != 'marks obtained') {
                                                                 $grandTotal += (float) $exam_data['mark'];
                                                             }
                                                             ?>
-                                                            <th style="text-align: center;"><?php echo $exam_data['exam']; ?>
-                                                                <br>(<?php echo $exam_data['mark']; ?>)
-                                                            </th>
+                                                            <th style="text-align: center;">
+                                                                <b><?php echo $exam_data['exam']; ?>
+                                                                    <br>(<?php echo $exam_data['mark']; ?>)</b></th>
                                                             <?php
                                                             }
                                                             ?>
-                                                            <th style="text-align: center;">Grade</th>
+                                                            <th style="text-align: center;"><b>Grade</b></th>
                                                             <?php
                                                             foreach ($term_2_data[$stuent_id]['exam'] as $temp_id => $exam_data) {
                                                             if (strtolower($exam_data['exam']) != 'marks obtained') {
                                                                 $grandTotal += (float) $exam_data['mark'];
                                                             }
                                                             ?>
-                                                            <th style="text-align: center;"><?php echo $exam_data['exam']; ?>
-                                                                <br>(<?php echo $exam_data['mark']; ?>)
-                                                            </th>
+                                                            <th style="text-align: center;">
+                                                                <b><?php echo $exam_data['exam']; ?>
+                                                                    <br>(<?php echo $exam_data['mark']; ?>)</b></th>
                                                             <?php
                                                             }
                                                             ?>
-                                                            <th style="text-align: center;">Grade</th>
+                                                            <th style="text-align: center;"><b>Grade</b></th>
                                                         </tr>
                                                         <?php
                                                         foreach ($all_data['mark'] as $subject => $subject_data) {
@@ -172,8 +172,11 @@
                                                             <?php foreach ($term_2_data[$stuent_id]['mark'][$subject] as $exam_name => $obtain_point) { ?>
                                                             <td align="center"><?php echo $obtain_point; ?></td>
                                                             <?php } ?>
-                                                            <td> {{ number_format($grandGainTotal, 2) }}</td>
-                                                            <td>{{ \App\Helpers\getGrade($gradeScale, $grandTotal, $grandGainTotal) }}</td>
+                                                            <td align="center">
+                                                                <b>{{ number_format($grandGainTotal, 0) }}</b></td>
+                                                            <td align="center">
+                                                                <b>{{ \App\Helpers\getGrade($gradeScale, $grandTotal, $grandGainTotal) }}</b>
+                                                            </td>
                                                         </tr>
                                                         <?php
                                                         }
@@ -193,14 +196,14 @@
                                                             <td align="center">
                                                                 <b><?php echo $term_2_data[$stuent_id]['final_grade']; ?></b>
                                                             </td>
-                                                            <td>
+                                                            <td align="center">
                                                                 @php
                                                                     $finalPer = round((round($term_2_data[$stuent_id]['per'],2) +
                                                                     round($all_data['per'], 2)) / 2, 2);
                                                                 @endphp
                                                                 <b>{{ $finalPer }}%</b>
                                                             </td>
-                                                            <td><b>
+                                                            <td align="center"><b>
                                                                     {{ \App\Helpers\getGrade($gradeScale, 100, $finalPer) }}
                                                                 </b></td>
                                                         </tr>
@@ -240,15 +243,15 @@
                                                                cellspacing="0" cellpadding="0" border="1">
                                                             <tbody>
                                                             <tr>
-                                                                <th colspan="3" width="15%" align="center">
+                                                                <th colspan="3" width="15%" style="text-align: left;">
                                                                     <b><?php echo $parent; ?></b></th>
                                                             </tr>
                                                             <tr>
-                                                                <th width="15%" align="center"><b>Optional
+                                                                <th width="50%" style="text-align: left;"><b>Optional
                                                                         Subject</b></th>
-                                                                <th width="15%" align="center">
+                                                                <th width="25%" style="text-align: center;">
                                                                     <b>{{ $all_data['term'] }}</b></th>
-                                                                <th width="15%" align="center">
+                                                                <th width="25%" style="text-align: center;">
                                                                     <b>{{ $term_2_data[$stuent_id]['term'] }}</b>
                                                                 </th>
                                                             </tr>
@@ -284,27 +287,26 @@
 
                                             @if(count($footer_data) > 0)
                                                 <tr>
-                                                    <td>
-                                                        <table class="aca-year"
-                                                               style="border-collapse:collapse; border:1px solid #e68023;"
-                                                               width="100%" cellspacing="0" cellpadding="0" border="1">
-                                                        <!--    <tr>
-                                                                    <th><b>Attendance (Term I+II)</b></th>                                                              
-                                                                    <td><?php echo $all_data['att']; ?></td>
-                                                                </tr> -->
+                                                    <td><br/><br/>
+                                                        <table style="border:hidden;" width="100%" cellspacing="0"
+                                                               cellpadding="0">
                                                             <tr>
-                                                                <th><b>Result</b></th>
-
-                                                                <td>
-                                                                    <?php
-                                                                    // if($pass === true){
-                                                                    //     echo "Passed and Promoted to Grade XII ".$all_data['medium'];
-                                                                    // }else{
-                                                                    //     echo "Detained  in  Grade  XI ".$all_data['medium'];
-                                                                    // }                                              
-                                                                    ?>
-                                                                </td>
+                                                                <th colspan="3" align="left"><b>Attendance (Term
+                                                                        I+II)</b> : <?php echo $all_data['att']; ?></th>
                                                             </tr>
+                                                        <!--<tr>
+                                                                    <th><b>Result</b></th>
+                                                                   
+                                                                    <td>
+                                                                        <?php
+                                                        // if($pass === true){
+                                                        //     echo "Passed and Promoted to Grade XII ".$all_data['medium'];
+                                                        // }else{
+                                                        //     echo "Detained  in  Grade  XI ".$all_data['medium'];
+                                                        // }                                              
+                                                        ?>
+                                                                </td>
+                                                            </tr>-->
                                                         <!-- <tr>
                                                                     <th><b>School Reopens on</b></th>
                                                                     <td>
@@ -312,36 +314,38 @@
                                                         // $date = date_create($footer_data['reopen_date']);
                                                         // echo date_format($date,"d-m-Y");                                 
                                                         ?>
-                                                                </td> -->
-                                                            </tr>
+                                                                </td> 
+                                                            </tr>-->
                                                             <tr>
-                                                                <th><b>Signature</b></th>
-                                                                <td colspan=2>
-                                                                    <table width="100%" border="0">
-                                                                        <tr>
-                                                                            <td style="text-align: center;">
-                                                                                <br><br>
-                                                                                <img height="50px" width="100px"
-                                                                                     src="/storage/result/teacher_sign/{{$footer_data['teacher_sign']}}"/>
-                                                                                <hr>
-                                                                                Teacher's Sign
-                                                                            </td>
-                                                                            <td style="text-align: center;">
-                                                                                <br><br>
-                                                                                <img height="50px" width="100px"
-                                                                                     src="/storage/result/principle_sign/{{$footer_data['principal_sign']}}"/>
-                                                                                <hr>
-                                                                                Principal's Sign
-                                                                            </td>
-                                                                            <td style="text-align: center;">
-                                                                                <br><br>
-                                                                                <img height="50px" width="100px"/>
-                                                                                <hr>
-                                                                                Parent's Sign
-                                                                            </td>
-                                                                        </tr>
-                                                                    </table>
+                                                                <!--                                                                     <th><b>Signature</b></th>
+                                                                                                                                    <td colspan=2>
+                                                                                                                                        <table width="100%" border="0">
+                                                                                                                                            <tr> -->
+                                                                <td align="center" width="33%">
+                                                                    <br>
+                                                                    <img height="50px" width="100px"
+                                                                         src="/storage/result/teacher_sign/{{$footer_data['teacher_sign']}}"/>
+                                                                    <br>
+                                                                    <!--<hr>-->
+                                                                    Teacher's Sign
                                                                 </td>
+                                                                <td align="center" width="33%">
+                                                                    <br>
+                                                                    <img height="50px" width="100px"
+                                                                         src="/storage/result/principle_sign/{{$footer_data['principal_sign']}}"/>
+                                                                    <br>
+                                                                    <!--<hr>-->
+                                                                    Principal's Sign
+                                                                </td>
+                                                                <td align="center" width="33%">
+                                                                    <br><br><br>
+                                                                    <!--<img height="50px" width="100px"/>
+                                                                    <hr>-->
+                                                                    Parent's Sign
+                                                                </td>
+                                                                <!-- </tr>
+                                                            </table>
+                                                        </td> -->
                                                             </tr>
                                                         </table>
                                                     </td>
@@ -373,6 +377,7 @@
                                                         </td>
                                                     </tr>
                                                      -->
+
                                             <tr>
                                                 <td colspan="3" align="center" class="p-t-10" valign="top">
                                                     <?php
@@ -406,6 +411,7 @@
                                                     ?>
                                                 </td>
                                             </tr>
+
                                             <!-- <tr>
                                                 <td colspan="3" align="center" class="p-t-10" valign="top">
                                                     <table class="aca-year" style="border-collapse:collapse; border:1px solid #e68023;" width="100%" cellspacing="0" cellpadding="0" border="1">            
@@ -428,15 +434,15 @@
                                                                 <td align="center">Good</td>
                                                                 <td align="center">Fair</td>       
                                                             </tr>        
-                                                        </tbody>-->
+                                                        </tbody>
+                                                    </table>
+                                                </td>
+                                            </tr>-->
+                                            </tbody>
                                         </table>
                                     </td>
                                 </tr>
                                 </tbody>
-                            </table>
-                            </td>
-                            </tr>
-                            </tbody>
                             </table>
                         </div>
                         <div style="page-break-after: always !important;"></div>

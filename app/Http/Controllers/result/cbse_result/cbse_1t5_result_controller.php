@@ -35,18 +35,17 @@ class cbse_1t5_result_controller extends Controller
 
     public function show_result(Request $request)
     {
+
         $all_student = SearchStudent($_REQUEST['grade'], $_REQUEST['standard'], $_REQUEST['division']);
         $responce_arr = [];
 
         $syear = session()->get('syear');
         $next_year = session()->get('syear') + 1;
-        $result_year = $syear."-".$next_year;
-
         $academicTerms = session()->get('academicTerms');
 
         $result_year = $syear."-".$next_year;
         session()->put('term_id', $academicTerms[0]->term_id);
-
+        session()->put('standard', $_REQUEST['standard']);
         //getting year detail
         //getting all exam name with mark
         $all_exam = $this->getAllExam($_REQUEST['standard']);
@@ -90,6 +89,7 @@ class cbse_1t5_result_controller extends Controller
             $responce_arr[$cur_student_id]['division'] = $arr['division_name'];
             $responce_arr[$cur_student_id]['date_of_birth'] = date("d-m-Y", strtotime($arr['dob']));
             $responce_arr[$cur_student_id]['gr_no'] = $arr['enrollment_no'];
+            $responce_arr[$cur_student_id]['image'] = $arr['image'];
             $responce_arr[$cur_student_id]['exam'] = $all_exam;
             $responce_arr[$cur_student_id]['mark'] = $all_subject_mark[$cur_student_id];
             $responce_arr[$cur_student_id]['per'] = $this->getPer($responce_arr[$cur_student_id]['total_mark'],
@@ -104,7 +104,6 @@ class cbse_1t5_result_controller extends Controller
             }
             $responce_arr[$cur_student_id]['grade_range'] = $all_grd_data;
         }
-
 
         session()->put('term_id', $academicTerms[1]->term_id);
         //getting year detail
@@ -135,7 +134,6 @@ class cbse_1t5_result_controller extends Controller
         //get exam master settigs
         $footer_data = $this->getExamMasterSettigs($_REQUEST['standard']);
 
-        //getting all student detail
         $responce_arr_term2 = [];
         foreach ($all_student as $id => $arr) {
             $cur_student_id = $arr['student_id'];
@@ -150,6 +148,7 @@ class cbse_1t5_result_controller extends Controller
             $responce_arr_term2[$cur_student_id]['division'] = $arr['division_name'];
             $responce_arr_term2[$cur_student_id]['date_of_birth'] = date("d-m-Y", strtotime($arr['dob']));
             $responce_arr_term2[$cur_student_id]['gr_no'] = $arr['enrollment_no'];
+            $responce_arr_term2[$cur_student_id]['image'] = $arr['image'];
             $responce_arr_term2[$cur_student_id]['exam'] = $all_exam;
             $responce_arr_term2[$cur_student_id]['mark'] = $all_subject_mark[$cur_student_id];
             $responce_arr_term2[$cur_student_id]['per'] = $this->getPer($responce_arr_term2[$cur_student_id]['total_mark'],
@@ -164,7 +163,6 @@ class cbse_1t5_result_controller extends Controller
             }
             $responce_arr_term2[$cur_student_id]['grade_range'] = $all_grd_data;
         }
-
 
         $data['data'] = $responce_arr;
         $data['term_2_data'] = $responce_arr_term2;
@@ -216,6 +214,7 @@ class cbse_1t5_result_controller extends Controller
 
         return $responce;
     }
+
 
     public function getAllExam($standard_id)
     {
@@ -285,11 +284,13 @@ class cbse_1t5_result_controller extends Controller
     public function getAllMark($all_exam, $all_subject, $all_student)
     {
         $exam_id_arr = [];
+
         foreach ($all_exam as $id => $arr) {
             if ($id != count($all_exam) - 1) {
                 $exam_id_arr[] = $arr['exam_id'];
             }
         }
+
         $exam_id = implode(',', $exam_id_arr);
 
         $student_id_arr = [];
@@ -309,7 +310,7 @@ class cbse_1t5_result_controller extends Controller
                 $join->whereRaw("s.subject_id = ex.subject_id");
             })
             ->selectRaw('ex.id,rm.student_id,s.subject_id,s.display_name,s.elective_subject,SUM(ex.points) total_points,
-    ex.con_point,SUM(rm.points) points,exm.Id exam_id')
+                ex.con_point,round(SUM(rm.points),0) points,exm.Id exam_id,rm.is_absent')
             ->whereIn("exm.Id", $exam_id_arr)
             ->whereIn("rm.student_id", $student_id_arr)
             ->where("ex.term_id", "=", session()->get('term_id'))
@@ -331,6 +332,7 @@ class cbse_1t5_result_controller extends Controller
             $temp_arr['con_point'] = $arr->con_point;
             $temp_arr['points'] = $arr->points;
             $temp_arr['exam_id'] = $arr->exam_id;
+            $temp_arr['is_absent'] = $arr->is_absent;
 
             if ($arr->elective_subject == 'Yes') {
                 $check_optional_subject_with_student = DB::table("student_optional_subject")
@@ -338,7 +340,6 @@ class cbse_1t5_result_controller extends Controller
                     ->where("subject_id", "=", $arr->subject_id)
                     ->where("syear", "=", session()->get('syear'))
                     ->get()->toArray();
-
                 if ((count($check_optional_subject_with_student) > 0)) {
                     $marks_arr[$arr->student_id][$arr->display_name][$arr->exam_id] = $temp_arr;
                 }
@@ -351,6 +352,7 @@ class cbse_1t5_result_controller extends Controller
         //getting grade scale data
         $grade_arr = $this->getGradeScale();
 
+
         $responce_arr = [];
         foreach ($all_student as $students => $arr_student) {
             foreach ($all_subject as $subject_id => $subject) {
@@ -358,9 +360,11 @@ class cbse_1t5_result_controller extends Controller
                 $subject = $subject_arr[0];
                 $subject_elective = $subject_arr[1];
 
-                $total_gain_mark = 0;
+                $total_gain_mark = $total_con_point = 0;
                 $total_mark = 0;
+
                 foreach ($all_exam as $exam_id => $exam_detail) {
+                    $abFlag = $naFlag = $exFlag = 0;
                     // last exam have total mark so calculate before it
                     if (count($all_exam) - 1 != $exam_id) {
                         $mark = 0;
@@ -370,47 +374,87 @@ class cbse_1t5_result_controller extends Controller
                         $subject = strtoupper($subject);
 
                         if (isset($marks_arr[$arr_student['student_id']][$subject][$exam_detail['exam_id']])) {
-                            $mark = $marks_arr[$arr_student['student_id']][$subject][$exam_detail['exam_id']]['points'];
-                            $total_mark = $marks_arr[$arr_student['student_id']][$subject][$exam_detail['exam_id']]['total_points'];
-                            $con_point = $marks_arr[$arr_student['student_id']][$subject][$exam_detail['exam_id']]['con_point'];
-                        } else {
+                            $is_absent = $marks_arr[$arr_student['student_id']][$subject][$exam_detail['exam_id']]['is_absent'];
+
+                            if (isset($is_absent) && $is_absent == "N.A.") {
+                                $naFlag = 1;
+                                //continue;
+                            } elseif (isset($is_absent) && $is_absent == "EX") {
+                                $exFlag = 1;
+                                //continue;
+                            } elseif (isset($is_absent) && $is_absent == "AB") {
+                                $abFlag = 1;
+                                $mark = $marks_arr[$arr_student['student_id']][$subject][$exam_detail['exam_id']]['points'];
+                                $total_mark = $marks_arr[$arr_student['student_id']][$subject][$exam_detail['exam_id']]['total_points'];
+                                $con_point = $marks_arr[$arr_student['student_id']][$subject][$exam_detail['exam_id']]['con_point'];
+
+                                if ($con_point != null && $con_point != $total_mark) {
+                                    $mark = ($con_point * $mark) / $total_mark;
+                                }
+                                $total_gain_mark += $mark;
+                                $total_con_point += $con_point;
+                            } else {
+                                $mark = $marks_arr[$arr_student['student_id']][$subject][$exam_detail['exam_id']]['points'];
+                                $total_mark = $marks_arr[$arr_student['student_id']][$subject][$exam_detail['exam_id']]['total_points'];
+                                $con_point = $marks_arr[$arr_student['student_id']][$subject][$exam_detail['exam_id']]['con_point'];
+
+                                if ($con_point != null && $con_point != $total_mark) {
+                                    $mark = ($con_point * $mark) / $total_mark;
+                                }
+                                $total_gain_mark += $mark;
+                                $total_con_point += $con_point;
+                            }
+
+                        }
+                        /*else
+                        {                            
                             $mark = 0;
                             $total_mark = 0;
                             $con_point = 0;
-                        }
+                        }*/
 
                         // if 1 type have multiple exam then convert mark
-                        if ($con_point != null && $con_point != $total_mark) {
-                            $mark = ($con_point * $mark) / $total_mark;
+
+
+                        //$get_absent = $marks_arr[$arr_student['student_id']][$subject][$exam_detail['exam_id']]['is_absent'];
+                        if ($abFlag == 1) {
+                            $e_points = "AB";
+                        } elseif ($naFlag == 1) {
+                            $e_points = "N.A.";
+                        } elseif ($exFlag == 1) {
+                            $e_points = "EX";
+                        } else {
+                            $e_points = number_format($mark, 0);
                         }
-                        $responce_arr[$arr_student['student_id']][$subject][$exam_detail['exam']] = number_format($mark,
-                            2);
-                        $total_gain_mark += $mark;
+
+                        //$responce_arr[$arr_student['student_id']][$subject][$exam_detail['exam']] = number_format($mark,0);
+                        $responce_arr[$arr_student['student_id']][$subject][$exam_detail['exam']] = $e_points;
                     } else {
                         $total_mark = $exam_detail['mark'];
                     }
                 }
 
                 if ($subject_elective == 'Yes') {
-                    $check_optional_subject_with_student = DB::table("student_optional_subject")
-                        ->where("student_id", "=", $arr_student['student_id'])
-                        ->where("subject_id", "=", $subject_id)
-                        ->where("syear", "=", session()->get('syear'))
+                    $check_optional_subject_with_student = DB::table('student_optional_subject')
+                        ->where('student_id', $arr_student['student_id'])
+                        ->where('subject_id', $subject_id)
+                        ->where('syear', session()->get('syear'))
                         ->get()->toArray();
 
                     if ((count($check_optional_subject_with_student) == 0)) {
                         unset($responce_arr[$arr_student['student_id']][$subject]);
                     } else {
                         $responce_arr[$arr_student['student_id']][$subject]['TOTAL_GAIN'] = number_format($total_gain_mark,
-                            2);
+                            0);
                         $responce_arr[$arr_student['student_id']][$subject]['GRADE'] = $this->getGrade($grade_arr,
-                            $total_mark, $total_gain_mark);
+                            $total_con_point, $total_gain_mark);
                     }
                 } else {
+                    //echo "totoa-".$total_con_point."<br/>";die();
                     $responce_arr[$arr_student['student_id']][$subject]['TOTAL_GAIN'] = number_format($total_gain_mark,
-                        2);
+                        0);
                     $responce_arr[$arr_student['student_id']][$subject]['GRADE'] = $this->getGrade($grade_arr,
-                        $total_mark, $total_gain_mark);
+                        $total_con_point, $total_gain_mark);
                 }
 
             }
