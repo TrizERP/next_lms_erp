@@ -8,7 +8,7 @@ class castModel extends Model
 {
     public $timestamps = false;
 
-	protected $table = "cast";
+	protected $table = "caste";
 
     protected $fillable = [
         'id',

@@ -1572,3 +1572,24 @@ if (! function_exists('getGradeScale')) {
         return $grade_arr;
     }
 }
+
+DEFINE('BEST_OF', 2);
+
+if (! function_exists('getGradeScale')) {
+    function getBestOf($elemArr)
+    {
+        $newArr = [];
+
+        rsort($elemArr);
+        $srNo = 0;
+
+        foreach ($elemArr as $value) {
+            $srNo++;
+            if ($srNo <= BEST_OF) {
+                $newArr[] = $value;
+            }
+        }
+
+        return $newArr;
+    }
+}

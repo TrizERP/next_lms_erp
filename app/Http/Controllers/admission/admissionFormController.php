@@ -30,7 +30,7 @@ class admissionFormController extends Controller
             ->leftJoin('admission_form as af', function ($join) {
                 $join->whereRaw('ae.id = af.enquiry_id');
             })->leftJoin('tblstudent as ts', function ($join) {
-                $join->whereRaw('s.admission_id = ae.id AND ts.admission_year = ae.syear AND ts.sub_institute_id = ae.sub_institute_id');
+                $join->whereRaw('ts.admission_id = ae.id AND ts.admission_year = ae.syear AND ts.sub_institute_id = ae.sub_institute_id');
             })->leftJoin('standard as s', function ($join) use ($sub_institute_id) {
                 $join->whereRaw("s.id = ae.admission_standard AND s.sub_institute_id = '".$sub_institute_id."'");
             })
