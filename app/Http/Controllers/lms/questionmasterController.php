@@ -11,16 +11,18 @@ use App\Models\lms\lmsQuestionMasterModel;
 use App\Models\lms\questionmasterModel;
 use App\Models\lms\questionpaperModel;
 use App\Models\lms\questiontypeModel;
-use function App\Helpers\is_mobile;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
+use function App\Helpers\is_mobile;
 
 class questionmasterController extends Controller
 {
     /**
      * Display a listing of the resource.
      *
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function index(Request $request)
     {
@@ -30,6 +32,7 @@ class questionmasterController extends Controller
         $res['message'] = "SUCCESS";
         $res['data'] = $data['questionmaster_data'];
         $res['breadcrum_data'] = $data['breadcrum_data'];
+
         return is_mobile($type, 'lms/show_questionmaster', $res, "view");
     }
 
@@ -50,7 +53,8 @@ class questionmasterController extends Controller
 
         $where_condition['lms_question_master.sub_institute_id'] = $sub_institute_id;
 
-        $data['questionmaster_data'] = lmsQuestionMasterModel::select('lms_question_master.*', 'standard.name as standard_name',
+        $data['questionmaster_data'] = lmsQuestionMasterModel::select('lms_question_master.*',
+            'standard.name as standard_name',
             'academic_section.title as grade_name', 'subject_name', 'chapter_name', 'question_type')
             ->join('standard', 'standard.id', '=', 'lms_question_master.standard_id')
             ->join('academic_section', 'academic_section.id', '=', 'lms_question_master.grade_id')
@@ -62,7 +66,8 @@ class questionmasterController extends Controller
             ->orderby('lms_question_master.id')
             ->get();
 
-        $data['breadcrum_data'] = $this->getBreadcrum($sub_institute_id, $request->get('chapter_id'), $request->get('topic_id'));
+        $data['breadcrum_data'] = $this->getBreadcrum($sub_institute_id, $request->get('chapter_id'),
+            $request->get('topic_id'));
 
         return $data;
     }
@@ -71,23 +76,8 @@ class questionmasterController extends Controller
     {
         $where = '';
         $select = '';
-        
-        // if ( $topic_id ) {
-        //     $where = "AND t.id = $topic_id";
-        //     $select = ',t.id as topic_id';
-        // }
-
-        /* 21-12-23 old modify by Mukund */
-        // $breadcrum_data = DB::select("SELECT c.subject_id,s.display_name AS subject_name,c.standard_id,st.name AS standard_name,c.id AS chapter_id,
-        // c.chapter_name $select,t.name as topic_name
-        // FROM chapter_master c
-        // INNER JOIN sub_std_map s ON s.subject_id = c.subject_id AND s.standard_id = c.standard_id
-        // INNER JOIN standard st ON st.id = c.standard_id
-        // INNER JOIN topic_master t on t.chapter_id = c.id
-        // WHERE c.sub_institute_id = '" . $sub_institute_id . "' and c.id = '" . $chapter_id . "' $where");
 
         // Get breadcrum
-        // DB::enableQueryLog();
         $breadcrum_data = DB::table('chapter_master as c')
             ->select(
                 'c.subject_id',
@@ -96,16 +86,16 @@ class questionmasterController extends Controller
                 'st.name AS standard_name',
                 'c.id AS chapter_id',
                 'c.chapter_name'
-            )->join( 'sub_std_map as s', function ( $query ) {
+            )->join('sub_std_map as s', function ($query) {
                 $query->on('s.subject_id', '=', 'c.subject_id')
-                ->on('s.standard_id', '=', 'c.standard_id');
-            } )
+                    ->on('s.standard_id', '=', 'c.standard_id');
+            })
             ->join('standard as st', 'st.id', '=', "c.standard_id");
 
-            if ( $topic_id ) {
-                $breadcrum_data->addSelect('t.id as topic_id', 't.name as topic_name');
-                $breadcrum_data->join('topic_master as t', 't.chapter_id', '=', 'c.id');
-            }
+        if ($topic_id) {
+            $breadcrum_data->addSelect('t.id as topic_id', 't.name as topic_name');
+            $breadcrum_data->join('topic_master as t', 't.chapter_id', '=', 'c.id');
+        }
 
         $breadcrum_data = $breadcrum_data->where('c.sub_institute_id', '1')
             ->where('c.id', '68')
@@ -121,7 +111,7 @@ class questionmasterController extends Controller
     /**
      * Display a listing of the Chapter resource.
      *
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function indexChapter(Request $request)
     {
@@ -152,7 +142,8 @@ class questionmasterController extends Controller
 
         $where_condition['lms_question_master.sub_institute_id'] = $sub_institute_id;
 
-        $data['questionmaster_data'] = lmsQuestionMasterModel::select('lms_question_master.*', 'standard.name as standard_name',
+        $data['questionmaster_data'] = lmsQuestionMasterModel::select('lms_question_master.*',
+            'standard.name as standard_name',
             'academic_section.title as grade_name', 'subject_name', 'chapter_name', 'question_type')
             ->join('standard', 'standard.id', '=', 'lms_question_master.standard_id')
             ->join('academic_section', 'academic_section.id', '=', 'lms_question_master.grade_id')
@@ -171,7 +162,7 @@ class questionmasterController extends Controller
     /**
      * Show the form for creating a new resource.
      *
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function create(Request $request)
     {
@@ -187,20 +178,21 @@ class questionmasterController extends Controller
 
         // if topic id exist
         $where = '';
-        if ( $request->get('topic_id') ) {
+        if ($request->get('topic_id')) {
             $data['topic_id'] = $request->get('topic_id');
-            $where = "and (topic_id = '" . $request->get('topic_id') . "' or topic_id = 0)";
+            $where = "and (topic_id = '".$request->get('topic_id')."' or topic_id = 0)";
         }
 
         $lms_mapping_type = DB::select("SELECT * FROM lms_mapping_type WHERE status=1 AND parent_id=0 AND
-                                (globally=1 OR chapter_id = '" . $request->get('chapter_id') . "') $where");
+                                (globally=1 OR chapter_id = '".$request->get('chapter_id')."') $where");
         $lms_mapping_type = json_decode(json_encode($lms_mapping_type), true);
         $data['lms_mapping_type'] = $lms_mapping_type;
 
-        $data['breadcrum_data'] = $this->getBreadcrum($sub_institute_id, $request->get('chapter_id'), $request->get('topic_id'));
+        $data['breadcrum_data'] = $this->getBreadcrum($sub_institute_id, $request->get('chapter_id'),
+            $request->get('topic_id'));
 
         //GET lms mapping from lmsmappingController
-        if ( $request->get('topic_id') ) {
+        if ($request->get('topic_id')) {
             $request->request->remove('topic_id');
         }
 
@@ -214,7 +206,7 @@ class questionmasterController extends Controller
      * Store a newly created resource in storage.
      *
      * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\Response
+     * @return RedirectResponse|Response
      */
     public function store(Request $request)
     {
@@ -229,33 +221,33 @@ class questionmasterController extends Controller
 
         $pre_topic = $post_topic = $cross_curriculum_topic = "";
         if ($request->get('prechapter') != "") {
-            $pre_topic = $request->get('prechapter') . '####' . $request->get('pretopic');
+            $pre_topic = $request->get('prechapter').'####'.$request->get('pretopic');
         }
         if ($request->get('postchapter') != "") {
-            $post_topic = $request->get('postchapter') . '####' . $request->get('posttopic');
+            $post_topic = $request->get('postchapter').'####'.$request->get('posttopic');
         }
         if ($request->get('cross-curriculumchapter') != "") {
-            $cross_curriculum_topic = $request->get('cross-curriculumchapter') . '####' . $request->get('cross-curriculumtopic');
+            $cross_curriculum_topic = $request->get('cross-curriculumchapter').'####'.$request->get('cross-curriculumtopic');
         }
 
         $question = array(
-            'question_type_id' => $request->get('question_type_id'),
-            'grade_id' => $request->get('grade_id'),
-            'standard_id' => $request->get('standard_id'),
-            'subject_id' => $request->get('subject_id'),
-            'chapter_id' => $request->get('chapter_id'),
-            'topic_id' => $request->get('topic_id'),
-            'question_title' => $request->get('question_title'),
-            'description' => $request->get('description'),
-            'multiple_answer' => $multiple_answer_val,
-            'pre_grade_topic' => $pre_topic,
-            'post_grade_topic' => $post_topic,
+            'question_type_id'             => $request->get('question_type_id'),
+            'grade_id'                     => $request->get('grade_id'),
+            'standard_id'                  => $request->get('standard_id'),
+            'subject_id'                   => $request->get('subject_id'),
+            'chapter_id'                   => $request->get('chapter_id'),
+            'topic_id'                     => $request->get('topic_id'),
+            'question_title'               => $request->get('question_title'),
+            'description'                  => $request->get('description'),
+            'multiple_answer'              => $multiple_answer_val,
+            'pre_grade_topic'              => $pre_topic,
+            'post_grade_topic'             => $post_topic,
             'cross_curriculum_grade_topic' => $cross_curriculum_topic,
-            'points' => $request->get('points'),
-            'status' => $status_val,
-            'created_by' => $user_id,
-            'sub_institute_id' => $sub_institute_id,
-            'hint_text' => $request->get('hint_text'),
+            'points'                       => $request->get('points'),
+            'status'                       => $status_val,
+            'created_by'                   => $user_id,
+            'sub_institute_id'             => $sub_institute_id,
+            'hint_text'                    => $request->get('hint_text'),
         );
         $question_id = lmsQuestionMasterModel::insertGetId($question);
 
@@ -266,8 +258,8 @@ class questionmasterController extends Controller
             if ($val != "" && $mapping_value[$key] != "") {
                 $contentmappingtype = array(
                     'questionmaster_id' => $question_id,
-                    'mapping_type_id' => $val,
-                    'mapping_value_id' => $mapping_value[$key],
+                    'mapping_type_id'   => $val,
+                    'mapping_value_id'  => $mapping_value[$key],
                 );
                 lmsQuestionMappingModel::insert($contentmappingtype);
             }
@@ -286,11 +278,11 @@ class questionmasterController extends Controller
                 }
 
                 $answer = array(
-                    'question_id' => $question_id,
-                    'answer' => $val,
-                    'feedback' => $feedback_arr['NEW'][$key],
-                    'correct_answer' => $correct_answer_val,
-                    'created_by' => $user_id,
+                    'question_id'      => $question_id,
+                    'answer'           => $val,
+                    'feedback'         => $feedback_arr['NEW'][$key],
+                    'correct_answer'   => $correct_answer_val,
+                    'created_by'       => $user_id,
                     'sub_institute_id' => $sub_institute_id,
                 );
                 answermasterModel::insert($answer);
@@ -300,13 +292,14 @@ class questionmasterController extends Controller
 
         $res = array(
             "status_code" => 1,
-            "message" => "Question-Master Added Successfully",
+            "message"     => "Question-Master Added Successfully",
         );
         $type = $request->input('type');
 
         // return array
         if ($request->get('topic_id')) {
-            return redirect()->route('question_master.index', ['chapter_id' => $request->get('chapter_id'), 'topic_id' => $request->get('topic_id')]);
+            return redirect()->route('question_master.index',
+                ['chapter_id' => $request->get('chapter_id'), 'topic_id' => $request->get('topic_id')]);
         } else {
             return redirect()->route('question_chapter_master', ['chapter_id' => $request->get('chapter_id')]);
         }
@@ -318,7 +311,7 @@ class questionmasterController extends Controller
      * Show the form for editing the specified resource.
      *
      * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function edit(Request $request, $id)
     {
@@ -350,9 +343,16 @@ class questionmasterController extends Controller
         $data['question_mapping_data'] = $final_question_mapping_type;
 
         //GET LMS Mapping values
-        $lms_mapping_type = DB::select("SELECT * FROM lms_mapping_type WHERE status=1 AND parent_id=0 AND
-                                (globally=1 OR chapter_id = '" . $data['questionmaster_data']['chapter_id'] . "') and
-                                (topic_id = '" . $data['questionmaster_data']['topic_id'] . "' or topic_id = 0)");
+        $lms_mapping_type = DB::table('lms_mapping_type')
+            ->where('status', '=', 1)
+            ->where('parent_id', '=', 0)
+            ->where(function ($q) use ($data) {
+                $q->where('globally', '=', 1)
+                    ->orWhere('chapter_id', $data['questionmaster_data']['chapter_id']);
+            })->where(function ($q) use ($data) {
+                $q->where('topic_id', '=', $data['questionmaster_data']['topic_id'])
+                    ->orWhere('topic_id', '=', 0);
+            })->get()->toArray();
         $lms_mapping_type = json_decode(json_encode($lms_mapping_type), true);
         foreach ($lms_mapping_type as $lkey => $lval) {
             $arr = lmsmappingtypeModel::where(['parent_id' => $lval['id']])->get()->toArray();
@@ -364,7 +364,7 @@ class questionmasterController extends Controller
         $data['lms_mapping_type'] = $lms_mapping_type;
 
         //START Get Pre Topic
-        $data['pretopicData'] = array();
+        $data['pretopicData'] = [];
         if ($data['questionmaster_data']['pre_grade_topic'] != "") {
             $pre_arr = explode("####", $data['questionmaster_data']['pre_grade_topic']);
             $pre_arr_chapter_id = $pre_arr[0];
@@ -372,17 +372,22 @@ class questionmasterController extends Controller
 
             //If both chapter and topic are mapped
             if ($pre_arr_chapter_id != "" && $pre_arr_topic_id != "") {
-                $pretopicData = DB::select("SELECT t.id as topic_id,c.id AS chapter_id,c.standard_id,c.subject_id
-                                FROM topic_master t
-                                INNER JOIN chapter_master c ON c.id = t.chapter_id
-                                WHERE t.id = '" . $pre_arr_topic_id . "'
-                                ");
-            } else if ($pre_arr_chapter_id != "") //If only chapter is mapped
-            {
-                $pretopicData = DB::select("SELECT c.id AS chapter_id,c.standard_id,c.subject_id
-                                FROM chapter_master c
-                                WHERE c.id = '" . $pre_arr_chapter_id . "'
-                                ");
+                $pretopicData = DB::table('topic_master as t')
+                    ->join('chapter_master as c', function ($join) {
+                        $join->whereRaw('c.id = t.chapter_id');
+                    })
+                    ->selectRaw('t.id as topic_id,c.id AS chapter_id,c.standard_id,c.subject_id')
+                    ->where('t.id', '=', $pre_arr_topic_id)
+                    ->get()->toArray();
+            } else {
+                if ($pre_arr_chapter_id != "") //If only chapter is mapped
+                {
+                    $pretopicData = DB::table('chapter_master as c')
+                        ->selectRaw('c.id AS chapter_id,c.standard_id,c.subject_id')
+                        ->where('c.id', '=', $pre_arr_chapter_id)
+                        ->get()->toArray();
+
+                }
             }
 
             $pretopicData = json_decode(json_encode($pretopicData), true);
@@ -391,7 +396,7 @@ class questionmasterController extends Controller
         //END Get Pre Topic
 
         //START Get Post Topic
-        $data['posttopicData'] = array();
+        $data['posttopicData'] = [];
         if ($data['questionmaster_data']['post_grade_topic'] != "") {
             $post_arr = explode("####", $data['questionmaster_data']['post_grade_topic']);
             $post_arr_chapter_id = $post_arr[0];
@@ -399,17 +404,22 @@ class questionmasterController extends Controller
 
             //If both chapter and topic are mapped
             if ($post_arr_chapter_id != "" && $post_arr_topic_id != "") {
-                $posttopicData = DB::select("SELECT t.id as topic_id,c.id AS chapter_id,c.standard_id,c.subject_id
-                                FROM topic_master t
-                                INNER JOIN chapter_master c ON c.id = t.chapter_id
-                                WHERE t.id = '" . $post_arr_topic_id . "'
-                                ");
-            } else if ($post_arr_chapter_id != "") //If only chapter is mapped
-            {
-                $posttopicData = DB::select("SELECT c.id AS chapter_id,c.standard_id,c.subject_id
-                                FROM chapter_master c
-                                WHERE c.id = '" . $post_arr_chapter_id . "'
-                                ");
+                $posttopicData = DB::table('topic_master as t')
+                    ->join('chapter_master as c', function ($join) {
+                        $join->whereRaw('c.id = t.chapter_id');
+                    })
+                    ->selectRaw('t.id as topic_id,c.id AS chapter_id,c.standard_id,c.subject_id')
+                    ->where('t.id', '=', $post_arr_topic_id)
+                    ->get()->toArray();
+
+            } else {
+                if ($post_arr_chapter_id != "") //If only chapter is mapped
+                {
+                    $posttopicData = DB::table('chapter_master as c')
+                        ->selectRaw('c.id AS chapter_id,c.standard_id,c.subject_id')
+                        ->where('c.id', '=', $post_arr_chapter_id)
+                        ->get()->toArray();
+                }
             }
             $posttopicData = json_decode(json_encode($posttopicData), true);
             $data['posttopicData'] = $posttopicData[0];
@@ -417,7 +427,7 @@ class questionmasterController extends Controller
         //END Get Post Topic
 
         //START Get Cross curriculum Topic
-        $data['cctopicData'] = array();
+        $data['cctopicData'] = [];
         if ($data['questionmaster_data']['cross_curriculum_grade_topic'] != "") {
             $cc_arr = explode("####", $data['questionmaster_data']['cross_curriculum_grade_topic']);
             $cc_arr_chapter_id = $cc_arr[0];
@@ -425,43 +435,39 @@ class questionmasterController extends Controller
 
             //If both chapter and topic are mapped
             if ($cc_arr_chapter_id != "" && $cc_arr_topic_id != "") {
-                $cctopicData = DB::select("SELECT t.id as topic_id,c.id AS chapter_id,c.standard_id,c.subject_id
-                                FROM topic_master t
-                                INNER JOIN chapter_master c ON c.id = t.chapter_id
-                                WHERE t.id = '" . $cc_arr_topic_id . "'
-                                ");
-            } else if ($cc_arr_chapter_id != "") //If only chapter is mapped
-            {
-                $cctopicData = DB::select("SELECT c.id AS chapter_id,c.standard_id,c.subject_id
-                                FROM chapter_master c
-                                WHERE c.id = '" . $cc_arr_chapter_id . "'
-                                ");
+                $cctopicData = DB::table('topic_master as t')
+                    ->join('chapter_master as c', function ($join) {
+                        $join->whereRaw('c.id = t.chapter_id');
+                    })
+                    ->selectRaw('t.id as topic_id,c.id AS chapter_id,c.standard_id,c.subject_id')
+                    ->where('t.id', '=', $cc_arr_topic_id)
+                    ->get()->toArray();
+
+            } else {
+                if ($cc_arr_chapter_id != "") //If only chapter is mapped
+                {
+                    $cctopicData = DB::table('chapter_master as c')
+                        ->selectRaw('c.id AS chapter_id,c.standard_id,c.subject_id')
+                        ->where('c.id', '=', $cc_arr_chapter_id)
+                        ->get()->toArray();
+                }
             }
             $cctopicData = json_decode(json_encode($cctopicData), true);
             $data['cctopicData'] = $cctopicData[0];
         }
         //END Get Cross curriculum Topic
 
-        $data['breadcrum_data'] = $this->getBreadcrum($sub_institute_id, $data['questionmaster_data']['chapter_id'], $data['questionmaster_data']['topic_id']);
+        $data['breadcrum_data'] = $this->getBreadcrum($sub_institute_id, $data['questionmaster_data']['chapter_id'],
+            $data['questionmaster_data']['topic_id']);
 
         // condition for page call form chapter or topic
-        if ( $request->has('topic_id') ) {
+        if ($request->has('topic_id')) {
             $data['topic_id'] = $request->get('topic_id');
         }
 
         return is_mobile($type, "lms/edit_questionmaster", $data, "view");
     }
 
-    /**
-     * Update the specified resource in storage.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
-    // public function show(Request $request)
-    // {
-    // }
 
     public function update(Request $request, $id)
     {
@@ -471,37 +477,37 @@ class questionmasterController extends Controller
         $syear = $request->session()->get('syear');
         $user_id = $request->session()->get('user_id');
         $status = $request->get('status');
-        $status_val = isset($status) ? $status : '';
+        $status_val = $status ?? '';
 
         // $multiple_answer = $request->get('multiple_answer');
         // $multiple_answer_val = isset($multiple_answer) ? $multiple_answer : '';
         $pre_topic = $post_topic = $cross_curriculum_topic = "";
         if ($request->get('prechapter') != "") {
-            $pre_topic = $request->get('prechapter') . '####' . $request->get('pretopic');
+            $pre_topic = $request->get('prechapter').'####'.$request->get('pretopic');
         }
         if ($request->get('postchapter') != "") {
-            $post_topic = $request->get('postchapter') . '####' . $request->get('posttopic');
+            $post_topic = $request->get('postchapter').'####'.$request->get('posttopic');
         }
         if ($request->get('cross-curriculumchapter') != "") {
-            $cross_curriculum_topic = $request->get('cross-curriculumchapter') . '####' . $request->get('cross-curriculumtopic');
+            $cross_curriculum_topic = $request->get('cross-curriculumchapter').'####'.$request->get('cross-curriculumtopic');
         }
 
         $question = array(
-            'grade_id' => $request->get('grade_id'),
-            'standard_id' => $request->get('standard_id'),
-            'subject_id' => $request->get('subject_id'),
-            'chapter_id' => $request->get('chapter_id'),
-            'topic_id' => $request->get('topic_id'),
-            'question_title' => $request->get('question_title'),
-            'description' => $request->get('description'),
-            'points' => $request->get('points'),
-            'pre_grade_topic' => $pre_topic,
-            'post_grade_topic' => $post_topic,
+            'grade_id'                     => $request->get('grade_id'),
+            'standard_id'                  => $request->get('standard_id'),
+            'subject_id'                   => $request->get('subject_id'),
+            'chapter_id'                   => $request->get('chapter_id'),
+            'topic_id'                     => $request->get('topic_id'),
+            'question_title'               => $request->get('question_title'),
+            'description'                  => $request->get('description'),
+            'points'                       => $request->get('points'),
+            'pre_grade_topic'              => $pre_topic,
+            'post_grade_topic'             => $post_topic,
             'cross_curriculum_grade_topic' => $cross_curriculum_topic,
-            'status' => $status_val,
-            'created_by' => $user_id,
-            'sub_institute_id' => $sub_institute_id,
-            'hint_text' => $request->get('hint_text'),
+            'status'                       => $status_val,
+            'created_by'                   => $user_id,
+            'sub_institute_id'             => $sub_institute_id,
+            'hint_text'                    => $request->get('hint_text'),
         );
 
         lmsQuestionMasterModel::where(["id" => $id])->update($question);
@@ -516,11 +522,11 @@ class questionmasterController extends Controller
                     $correct_answer_val = in_array($key, $correct_answer) ? 1 : 0;
                 }
                 $answer = array(
-                    'question_id' => $id,
-                    'answer' => $val,
-                    'feedback' => $feedback_arr['EDIT'][$key],
-                    'correct_answer' => $correct_answer_val,
-                    'created_by' => $user_id,
+                    'question_id'      => $id,
+                    'answer'           => $val,
+                    'feedback'         => $feedback_arr['EDIT'][$key],
+                    'correct_answer'   => $correct_answer_val,
+                    'created_by'       => $user_id,
                     'sub_institute_id' => $sub_institute_id,
                 );
                 answermasterModel::where(["id" => $key])->update($answer);
@@ -535,26 +541,27 @@ class questionmasterController extends Controller
 
         foreach ($mapping_type as $key => $val) {
             if ($val != "" && $mapping_value[$key] != "") {
-                $questionmappingtype = array(
+                $questionmappingtype = [
                     'questionmaster_id' => $id,
-                    'mapping_type_id' => $val,
-                    'mapping_value_id' => $mapping_value[$key],
-                );
+                    'mapping_type_id'   => $val,
+                    'mapping_value_id'  => $mapping_value[$key],
+                ];
                 lmsQuestionMappingModel::insert($questionmappingtype);
             }
         }
         //END Delete and insert into question_mapping_Data
 
-        $res = array(
+        $res = [
             "status_code" => 1,
-            "message" => "Question-Master Updated Successfully",
-        );
+            "message"     => "Question-Master Updated Successfully",
+        ];
         $type = $request->input('type');
         //return is_mobile($type, "question_master.index", $res, "redirect");
 
         // return array
         if ($request->get('topic_id')) {
-            return redirect()->route('question_master.index', ['chapter_id' => $request->get('chapter_id'), 'topic_id' => $request->get('topic_id')]);
+            return redirect()->route('question_master.index',
+                ['chapter_id' => $request->get('chapter_id'), 'topic_id' => $request->get('topic_id')]);
         } else {
             return redirect()->route('question_chapter_master', ['chapter_id' => $request->get('chapter_id')]);
         }
@@ -564,11 +571,10 @@ class questionmasterController extends Controller
      * Remove the specified resource from storage.
      *
      * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * @return RedirectResponse
      */
     public function destroy(Request $request, $id)
     {
-        die('here');
         $type = $request->input('type');
         $questiondata = lmsQuestionMasterModel::where(["id" => $id])->get()->toArray();
         $chapter_id = $questiondata[0]['chapter_id'];
@@ -595,7 +601,9 @@ class questionmasterController extends Controller
         $chapter_id = $request->input("chapter_id");
         $sub_institute_id = $request->session()->get("sub_institute_id");
 
-        $lomasterData = questionmasterModel::where(['sub_institute_id' => $sub_institute_id, 'chapter_id' => $chapter_id])
+        $lomasterData = questionmasterModel::where([
+            'sub_institute_id' => $sub_institute_id, 'chapter_id' => $chapter_id,
+        ])
             ->get()->toArray();
 
         return $lomasterData;
@@ -608,7 +616,7 @@ class questionmasterController extends Controller
 
         $data = questionpaperModel::select(DB::raw('count(*) as total'))
             ->where('question_paper.sub_institute_id', $sub_institute_id)
-            ->whereraw('find_in_set(' . $question_id . ',question_ids)')
+            ->whereraw('find_in_set('.$question_id.',question_ids)')
             ->get()->toArray();
 
         return $data[0]['total'];
@@ -621,6 +629,7 @@ class questionmasterController extends Controller
         if ($question_ids) {
             $res['status_code'] = "1";
             $res['message'] = "Questions Deleted Successfully";
+
             return response()->json($res, 200);
         }
     }

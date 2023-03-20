@@ -2,43 +2,44 @@
 
 namespace App\Http\Controllers\lms;
 
-use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
-use App\Models\lms\chapterModel;
-use App\Models\lms\lomasterModel;
+use App\Models\student\tblstudentEnrollmentModel;
+use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
 use function App\Helpers\is_mobile;
-use App\Models\student\tblstudentEnrollmentModel;
 
 class lmsActivityStreamController extends Controller
 {
     /**
      * Display a listing of the resource.
      *
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function index(Request $request)
-    {    
-        $data = $this->getData($request); 
+    {
+        $data = $this->getData($request);
         $type = $request->input('type');
         $res['status_code'] = 1;
-        $res['message'] = "SUCCESS"; 
+        $res['message'] = "SUCCESS";
         $res['activitystream_today_data'] = $data['activitystream_today_data'];
-       $res['activitystream_upcoming_data'] = $data['activitystream_upcoming_data'];
-        //dd($res['activitystream_today_data']);        
-        return is_mobile($type,'lms/show_lmsActivityStream',$res,"view");  
+        $res['activitystream_upcoming_data'] = $data['activitystream_upcoming_data'];
+
+        return is_mobile($type, 'lms/show_lmsActivityStream', $res, "view");
     }
 
-    public function getData($request){
-        $sub_institute_id = $request->session()->get('sub_institute_id');       
-        $syear = $request->session()->get('syear');       
+    public function getData($request)
+    {
+        $sub_institute_id = $request->session()->get('sub_institute_id');
+        $syear = $request->session()->get('syear');
         $data['activitystream_upcoming_data'] = $data['activitystream_today_data'] = array();
 
-        if(strtoupper(session()->get('user_profile_name')) == "STUDENT")
-        {
-            $student_id = session()->get('user_id');   
-            $stu_data = tblstudentEnrollmentModel::select('standard_id')->where(['student_id'=> $student_id,"syear"=>$syear])->get()->toArray(); 
-            
+        if (strtoupper(session()->get('user_profile_name')) == "STUDENT") {
+            $student_id = session()->get('user_id');
+            $stu_data = tblstudentEnrollmentModel::select('standard_id')->where([
+                'student_id' => $student_id, "syear" => $syear,
+            ])->get()->toArray();
+
             //START Today's Event Query
             $data['activitystream_today_data'] = DB::select("
                 SELECT * FROM (
@@ -80,13 +81,14 @@ class lmsActivityStreamController extends Controller
                 ");
             //END Upcoming Event Query
         }
+
         return $data;
     }
 
     /**
      * Show the form for creating a new resource.
      *
-     * @return \Illuminate\Http\Response
+     * @return void
      */
     public function create(Request $request)
     {
@@ -96,19 +98,19 @@ class lmsActivityStreamController extends Controller
     /**
      * Store a newly created resource in storage.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\Response
+     * @param  Request  $request
+     * @return void
      */
     public function store(Request $request)
     {
-        
+
     }
 
     /**
      * Display the specified resource.
      *
      * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * @return void
      */
     public function show($id)
     {
@@ -119,34 +121,34 @@ class lmsActivityStreamController extends Controller
      * Show the form for editing the specified resource.
      *
      * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * @return void
      */
-    public function edit(Request $request,$id)
+    public function edit(Request $request, $id)
     {
-    
+
     }
 
     /**
      * Update the specified resource in storage.
      *
-     * @param  \Illuminate\Http\Request  $request
+     * @param  Request  $request
      * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * @return void
      */
     public function update(Request $request, $id)
-    {          
-        
+    {
+
     }
 
     /**
      * Remove the specified resource from storage.
      *
      * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * @return void
      */
-    public function destroy(Request $request,$id)
+    public function destroy(Request $request, $id)
     {
-        
-    }    
-    
+
+    }
+
 }

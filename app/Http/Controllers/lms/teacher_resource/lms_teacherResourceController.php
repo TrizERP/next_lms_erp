@@ -2,24 +2,24 @@
 
 namespace App\Http\Controllers\lms\teacher_resource;
 
-use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
-use App\Models\lms\chapterModel;
-use App\Models\lms\topicModel;
 use App\Models\lms\teacherResourceModel;
-use Illuminate\Support\Facades\DB;
-use function App\Helpers\is_mobile;
 use App\Models\settings\tblcustomfieldsModel;
 use App\Models\settings\tblfields_dataModel;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\Http\Response;
+use function App\Helpers\is_mobile;
 
 class lms_teacherResourceController extends Controller
 {
     /**
      * Display a listing of the resource.
      *
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
-    public function index(Request $request){        
+    public function index(Request $request)
+    {
         $data = $this->getData($request); 		
         $type = $request->input('type');
         $res['status_code'] = 1;
@@ -66,7 +66,7 @@ class lms_teacherResourceController extends Controller
         //START Columns from field setting for combo checkbox
         $fieldsData = tblfields_dataModel::get()->toArray();
         $i = 0;
-        $finalfieldsData = array();
+        $finalfieldsData = [];
         foreach ($fieldsData as $key => $value) {
             $finalfieldsData[$value['field_id']][$i]['display_text'] = $value['display_text'];
             $finalfieldsData[$value['field_id']][$i]['display_value'] = $value['display_value'];
@@ -79,13 +79,13 @@ class lms_teacherResourceController extends Controller
         //END Columns from field setting for combo checkbox         
 
         return $data;
-    }   
+    }
 
     /**
      * Store a newly created resource in storage.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\Response
+     * @param  Request  $request
+     * @return RedirectResponse
      */
     public function store(Request $request)
     {            
@@ -136,27 +136,26 @@ class lms_teacherResourceController extends Controller
             }
         }
 
-        teacherResourceModel::insert($TR_data);	  
+        teacherResourceModel::insert($TR_data);
 
         $res = array(
             "status_code" => 1,
-            "message" => "Teacher Resource Added Successfully",
+            "message"     => "Teacher Resource Added Successfully",
         );
         $type = $request->input('type');
 
-        return redirect()->route('lms_teacherResource.index', 
-            [
+        return redirect()->route('lms_teacherResource.index', [
             'standard_id' => $request->get('hid_standard_id'),
-            'subject_id' => $request->get('hid_subject_id'),
-            'chapter_id' => $request->get('hid_chapter_id')
-            ]);     
+            'subject_id'  => $request->get('hid_subject_id'),
+            'chapter_id'  => $request->get('hid_chapter_id'),
+        ]);
     }
 
     /**
      * Display the specified resource.
      *
      * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * @return void
      */
     public function show($id)
     {
@@ -164,34 +163,16 @@ class lms_teacherResourceController extends Controller
     }
 
     /**
-     * Show the form for editing the specified resource.
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
-   
-
-    /**
-     * Update the specified resource in storage.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
-    
-
-    /**
      * Remove the specified resource from storage.
      *
      * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * @return RedirectResponse
      */
     public function destroy(Request $request,$id)
     {
         $type = $request->input('type');
-        $TRdata = teacherResourceModel::where(["id" => $id])->get()->toArray();        
-        if( count($TRdata) > 0)
-        {
+        $TRdata = teacherResourceModel::where(["id" => $id])->get()->toArray();
+        if (count($TRdata) > 0) {
             $standard_id = $TRdata[0]['standard_id'];
             $subject_id = $TRdata[0]['subject_id'];
             $chapter_id = $TRdata[0]['chapter_id'];
@@ -199,17 +180,16 @@ class lms_teacherResourceController extends Controller
             $file_name = $TRdata[0]['file_name'];
             unlink(public_path('storage'.$file_folder.'/'.$file_name));
         }
-                
+
         teacherResourceModel::where(["id" => $id])->delete();
         $res['status_code'] = "1";
         $res['message'] = "Teacher Resource Deleted Successfully";
 
 
-        return redirect()->route('lms_teacherResource.index', 
-            [
+        return redirect()->route('lms_teacherResource.index', [
             'standard_id' => $standard_id,
-            'subject_id' => $subject_id,
-            'chapter_id' => $chapter_id
-            ]);       
+            'subject_id'  => $subject_id,
+            'chapter_id'  => $chapter_id,
+        ]);
     }
 }

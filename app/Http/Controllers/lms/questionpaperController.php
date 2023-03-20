@@ -2,103 +2,103 @@
 
 namespace App\Http\Controllers\lms;
 
-use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use App\Models\lms\answermasterModel;
-use App\Models\lms\chapterModel;
-use App\Models\lms\questionmasterModel;
+use App\Models\lms\lmsmappingtypeModel;
+use App\Models\lms\lmsQuestionMappingModel;
+use App\Models\lms\lmsQuestionMasterModel;
 use App\Models\lms\questionpaperModel;
 use App\Models\lms\questiontypeModel;
 use App\Models\school_setup\sub_std_mapModel;
-use App\Models\lms\locategoryModel;
-use App\Models\lms\loindicatorModel;
-use App\Models\lms\lomasterModel;
-use App\Models\lms\questioncategoryModel;
-use App\Models\lms\questionlevelModel;
-use function App\Helpers\is_mobile;
-use Illuminate\Support\Facades\DB;
-use App\Models\lms\lmsQuestionMappingModel;
-use App\Models\lms\lmsQuestionMasterModel;
-use App\Models\lms\lmsmappingtypeModel;
-use App\Models\student\tblstudentEnrollmentModel;
 use App\Models\school_setup\subjectModel;
+use App\Models\student\tblstudentEnrollmentModel;
+use Illuminate\Http\Request;
+use Illuminate\Http\Response;
+use Illuminate\Support\Facades\DB;
+use function App\Helpers\is_mobile;
 
 class questionpaperController extends Controller
 {
     /**
      * Display a listing of the resource.
      *
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
-    public function index(Request $request){        
-        $data = $this->getData($request); 		
+    public function index(Request $request)
+    {
+        $data = $this->getData($request);
         $type = $request->input('type');
         $res['status_code'] = 1;
         $res['message'] = "SUCCESS";
-        $res['data'] = $data['questionpaper_data'];         
-                
-        return is_mobile($type,'lms/show_questionpaper',$res,"view");  
+        $res['data'] = $data['questionpaper_data'];
+
+        return is_mobile($type, 'lms/show_questionpaper', $res, "view");
     }
 
-    public function getData($request){
+    public function getData($request)
+    {
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $syear = $request->session()->get('syear');
         $data['questionpaper_data'] = array();
 
-        if(strtoupper(session()->get('user_profile_name')) == "STUDENT")
-        {
-            $student_id = session()->get('user_id');   
-            $stu_data = tblstudentEnrollmentModel::select('standard_id')->where(['student_id'=> $student_id,'syear'=>$syear])->get()->toArray(); 
+        if (strtoupper(session()->get('user_profile_name')) == "STUDENT") {
+            $student_id = session()->get('user_id');
+            $stu_data = tblstudentEnrollmentModel::select('standard_id')->where([
+                'student_id' => $student_id, 'syear' => $syear,
+            ])->get()->toArray();
 
-            if(count($stu_data) > 0)
-            {
+            if (count($stu_data) > 0) {
 
-                $where_array['question_paper.sub_institute_id'] = $sub_institute_id;      
+                $where_array['question_paper.sub_institute_id'] = $sub_institute_id;
                 $where_array['standard.id'] = $stu_data[0]['standard_id'];
                 $where_array['question_paper.exam_type'] = "online";
 
-                $data['questionpaper_data'] = questionpaperModel::select('question_paper.*','standard.name as standard_name',
-                'academic_section.title as grade_name','subject_name',DB::raw('count(lms_online_exam.id) as total_attempt,
+                $data['questionpaper_data'] = questionpaperModel::select('question_paper.*',
+                    'standard.name as standard_name',
+                    'academic_section.title as grade_name', 'subject_name', DB::raw('count(lms_online_exam.id) as total_attempt,
                     date_format(open_date,"%Y-%m-%d") as open_date,date_format(close_date,"%Y-%m-%d") as close_date,
                     if(now() between open_date and close_date,"yes","no") as active_exam'))
+                    ->join('standard', 'standard.id', '=', 'question_paper.standard_id')
+                    ->join('academic_section', 'academic_section.id', '=', 'question_paper.grade_id')
+                    ->join('subject', 'subject.id', '=', 'question_paper.subject_id')
+                    ->leftjoin('lms_online_exam', [
+                        'lms_online_exam.question_paper_id' => 'question_paper.id',
+                        'lms_online_exam.student_id'        => DB::raw($student_id),
+                    ])
+                    ->where($where_array)
+                    ->groupby("question_paper.id")
+                    ->get();
+            }
+        } else {
+            $data['questionpaper_data'] = questionpaperModel::select('question_paper.*',
+                'standard.name as standard_name',
+                'academic_section.title as grade_name', 'subject_name', DB::raw('date_format(open_date,"%Y-%m-%d") as open_date,
+                date_format(close_date,"%Y-%m-%d") as close_date,if(now() between open_date and close_date,"yes","no") as active_exam'))
                 ->join('standard', 'standard.id', '=', 'question_paper.standard_id')
                 ->join('academic_section', 'academic_section.id', '=', 'question_paper.grade_id')
-                ->join('subject', 'subject.id', '=', 'question_paper.subject_id')         
-                ->leftjoin('lms_online_exam', ['lms_online_exam.question_paper_id'=>'question_paper.id','lms_online_exam.student_id'=>DB::raw($student_id)])         
-                ->where($where_array) 
-                ->groupby("question_paper.id")                        
+                ->join('subject', 'subject.id', '=', 'question_paper.subject_id')
+                ->where('question_paper.sub_institute_id', $sub_institute_id)
                 ->get();
-            }
         }
-        else
-        {                    
-            $data['questionpaper_data'] = questionpaperModel::select('question_paper.*','standard.name as standard_name',
-            'academic_section.title as grade_name','subject_name',DB::raw('date_format(open_date,"%Y-%m-%d") as open_date,
-                date_format(close_date,"%Y-%m-%d") as close_date,if(now() between open_date and close_date,"yes","no") as active_exam'))
-            ->join('standard', 'standard.id', '=', 'question_paper.standard_id')
-            ->join('academic_section', 'academic_section.id', '=', 'question_paper.grade_id')
-            ->join('subject', 'subject.id', '=', 'question_paper.subject_id')         
-            ->where('question_paper.sub_institute_id',$sub_institute_id)                      
-            ->get();
-        }
+
         return $data;
     }
 
     /**
      * Show the form for creating a new resource.
      *
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function create(Request $request)
     {
         $type = $request->input('type');
-        $sub_institute_id = $request->session()->get('sub_institute_id');                
-        $data['questiontype_data'] = questiontypeModel::select('*')->get();        
-        
+        $sub_institute_id = $request->session()->get('sub_institute_id');
+        $data['questiontype_data'] = questiontypeModel::select('*')->get();
+
         // $data['question_level_data'] = questionlevelModel::select('*')->get();        
-        
+
         // $data['question_category_data'] = questioncategoryModel::select('*')->get(); 
-        
+
         // $category_text = questioncategoryModel::select('*')->get()->toArray(); 
         // $question_category_text = "";
         // foreach($category_text as $key => $val)
@@ -108,98 +108,96 @@ class questionpaperController extends Controller
         // $data['question_category_text'] = $question_category_text;
 
         $data['lms_mapping_type'] = lmsmappingtypeModel::select('*')
-                                ->where(['globally'=>'1','parent_id'=>'0'])
-                                ->get()->toArray();     
+            ->where(['globally' => '1', 'parent_id' => '0'])
+            ->get()->toArray();
 
-        return is_mobile($type,'lms/add_questionpaper',$data,"view");
+        return is_mobile($type, 'lms/add_questionpaper', $data, "view");
     }
 
     /**
      * Store a newly created resource in storage.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\Response
+     * @param  Request  $request
+     * @return Response
      */
     public function store(Request $request)
-    {        
-        //echo ('<pre>');print_r($_REQUEST);die;
+    {
         //$open_d1 = substr(str_replace('/', '-', $_REQUEST['open_date']),0,16);        
         //$close_d1 = substr(str_replace('/', '-', $_REQUEST['close_date']),0,16);        
         $open_date = $close_date = null;
-        if($_REQUEST['open_date'] != ""){
-            $open_date = date('Y-m-d H:i:s',strtotime($_REQUEST['open_date']));        
+        if ($_REQUEST['open_date'] != "") {
+            $open_date = date('Y-m-d H:i:s', strtotime($_REQUEST['open_date']));
         }
-        if($_REQUEST['close_date'] != ""){
-            $close_date = date('Y-m-d H:i:s',strtotime($_REQUEST['close_date']));  
+        if ($_REQUEST['close_date'] != "") {
+            $close_date = date('Y-m-d H:i:s', strtotime($_REQUEST['close_date']));
         }
-        
-        $sub_institute_id = $request->session()->get('sub_institute_id'); 		        
-        $syear = $request->session()->get('syear'); 		        
-        $user_id = $request->session()->get('user_id');      
 
-        $show_hide = $request->get('show_hide');             
+        $sub_institute_id = $request->session()->get('sub_institute_id');
+        $syear = $request->session()->get('syear');
+        $user_id = $request->session()->get('user_id');
+
+        $show_hide = $request->get('show_hide');
         $show_hide_val = isset($show_hide) ? $show_hide : '';
 
-        $result_show_ans = $request->get('result_show_ans');             
+        $result_show_ans = $request->get('result_show_ans');
         $result_show_ans_val = isset($result_show_ans) ? $result_show_ans : '';
 
-        $shuffle_question = $request->get('shuffle_question');             
-        $shuffle_question_val = isset($shuffle_question) ? $shuffle_question : '';                  
+        $shuffle_question = $request->get('shuffle_question');
+        $shuffle_question_val = isset($shuffle_question) ? $shuffle_question : '';
 
-        $show_feedback = $request->get('show_feedback');             
-        $show_feedback_val = isset($show_feedback) ? $show_feedback : '';   
-        
-        $timelimit_enable = $request->get('timelimit_enable');             
-        $timelimit_enable_val = isset($timelimit_enable) ? $timelimit_enable : '';    
+        $show_feedback = $request->get('show_feedback');
+        $show_feedback_val = $show_feedback ?? '';
+
+        $timelimit_enable = $request->get('timelimit_enable');
+        $timelimit_enable_val = isset($timelimit_enable) ? $timelimit_enable : '';
 
         $question_ids = "";
-        if($request->has('questions'))
-        {
-            $question_ids = implode(",",$request->get('questions'));
-        }                
+        if ($request->has('questions')) {
+            $question_ids = implode(",", $request->get('questions'));
+        }
 
-        $questionpaper = array(            
-            'grade_id' => $request->get('grade'),
-            'standard_id' => $request->get('standard'),
-            'subject_id' => $request->get('subject'),
-            'paper_name' => $request->get('paper_name'),
-            'paper_desc' => $request->get('paper_desc'),
-            'open_date' => $open_date,
-            'close_date' => $close_date,
-            'timelimit_enable' => $timelimit_enable_val,            
-            'time_allowed' => $request->get('time_allowed'),
-            'total_ques' => $request->get('total_ques'),
-            'total_marks' => $request->get('total_marks'),
-            'question_ids' => $question_ids,                                    
-            'shuffle_question' => $shuffle_question_val, 
-            'attempt_allowed' => $request->get('attempt_allowed'),
-            'show_feedback' => $show_feedback_val, 
-            'show_hide' => $show_hide_val,                     
-            'result_show_ans' => $result_show_ans_val,                     
-            'created_by' => $user_id,
+        $questionpaper = array(
+            'grade_id'         => $request->get('grade'),
+            'standard_id'      => $request->get('standard'),
+            'subject_id'       => $request->get('subject'),
+            'paper_name'       => $request->get('paper_name'),
+            'paper_desc'       => $request->get('paper_desc'),
+            'open_date'        => $open_date,
+            'close_date'       => $close_date,
+            'timelimit_enable' => $timelimit_enable_val,
+            'time_allowed'     => $request->get('time_allowed'),
+            'total_ques'       => $request->get('total_ques'),
+            'total_marks'      => $request->get('total_marks'),
+            'question_ids'     => $question_ids,
+            'shuffle_question' => $shuffle_question_val,
+            'attempt_allowed'  => $request->get('attempt_allowed'),
+            'show_feedback'    => $show_feedback_val,
+            'show_hide'        => $show_hide_val,
+            'result_show_ans'  => $result_show_ans_val,
+            'created_by'       => $user_id,
             'sub_institute_id' => $sub_institute_id,
-            'syear' => $syear,
-            'exam_type' => $request->get('exam_type')
+            'syear'            => $syear,
+            'exam_type'        => $request->get('exam_type'),
         );
         //echo ('<pre>');print_r($questionpaper);die;
         questionpaperModel::insertGetId($questionpaper);
         $questionpaper_id = DB::getPDO()->lastInsertId();
-            		
-		$res = array(
-			"status_code" => 1,
-			"message" => "Question-Paper Added Successfully",
-		);
-        $type = $request->input('type');  
 
-        $this->generatePDF($request,$questionpaper_id);          
+        $res = array(
+            "status_code" => 1,
+            "message"     => "Question-Paper Added Successfully",
+        );
+        $type = $request->input('type');
+
+        $this->generatePDF($request, $questionpaper_id);
 
         return is_mobile($type, "question_paper.index", $res, "redirect");
     }
 
-    public function generatePDF($request,$questionpaper_id)
+    public function generatePDF($request, $questionpaper_id)
     {
-        $sub_institute_id = $request->session()->get('sub_institute_id');               
-        $syear = $request->session()->get('syear'); 
+        $sub_institute_id = $request->session()->get('sub_institute_id');
+        $syear = $request->session()->get('syear');
 
         $dom = '<!DOCTYPE html>
         <html>
@@ -216,94 +214,96 @@ class questionpaperController extends Controller
         </html>';
 
         //Get Question Paper Data
-        $data['questionpaper_data'] = questionpaperModel::find($questionpaper_id)->toArray(); 
-        
+        $data['questionpaper_data'] = questionpaperModel::find($questionpaper_id)->toArray();
+
         //Get all questions subject wise        
-        $question_ids = explode(",",$data['questionpaper_data']['question_ids']);
-        $data['question_arr'] = lmsQuestionMasterModel::whereIn("id",$question_ids)->get()->toArray(); 
-        
+        $question_ids = explode(",", $data['questionpaper_data']['question_ids']);
+        $data['question_arr'] = lmsQuestionMasterModel::whereIn("id", $question_ids)->get()->toArray();
+
         $answer = array();
-        foreach($data['question_arr'] as $key => $val)
-        {            
-            $answer_arr = answermasterModel::where("question_id",$val['id'])->get()->toArray(); 
-            if(count($answer_arr) > 0)
-            {
-                foreach($answer_arr as $anskey => $ansval)
-                {
+        foreach ($data['question_arr'] as $key => $val) {
+            $answer_arr = answermasterModel::where("question_id", $val['id'])->get()->toArray();
+            if (count($answer_arr) > 0) {
+                foreach ($answer_arr as $anskey => $ansval) {
                     $answer[$val['id']][] = $ansval;
-                }                       
+                }
             }
         }
         $data['answer_arr'] = $answer;
 
-        $html = view('lms/questionpaper_html', compact('data'))->render();   
+        $html = view('lms/questionpaper_html', compact('data'))->render();
 
-        $pdf_folder = $_SERVER['DOCUMENT_ROOT'] . '/storage/QuestionPaper';       
-    
+        $pdf_folder = $_SERVER['DOCUMENT_ROOT'].'/storage/QuestionPaper';
+
         $html_filename = $questionpaper_id.'_'.$sub_institute_id.'_'.$syear.".html";
         $pdf_filename = $questionpaper_id.'_'.$sub_institute_id.'_'.$syear.".pdf";
-        
+
         //$path = "src=http://" . $_SERVER['HTTP_HOST'] . "/storage/QuestionPaper";
         //$html = str_replace('src="', $path, $html);
         //$html = str_replace('" alt=', ' alt=', $html);
-        
+
         $html = str_replace('##HTML_SEC##', $html, $dom);
-        
-        $html_file_path = $pdf_folder . '/' . $html_filename;
-        $pdf_file_path = $pdf_folder . '/' . $pdf_filename;
+
+        $html_file_path = $pdf_folder.'/'.$html_filename;
+        $pdf_file_path = $pdf_folder.'/'.$pdf_filename;
         file_put_contents($html_file_path, $html);
         $this->htmlToPDF($html_file_path, $pdf_file_path);
-        unlink($html_file_path);       
+        unlink($html_file_path);
     }
 
-    public function htmlToPDF($htmlPath, $pdfPath) 
+    public function htmlToPDF($htmlPath, $pdfPath)
     {
         $command = '/usr/local/bin/wkhtmltopdf '; // --page-height 297mm //-L 0 -R 0 -B 0 -T 0 -s A4 
         $command .= " $htmlPath ";
-        $command .= " $pdfPath ";            
+        $command .= " $pdfPath ";
+
         return exec($command);
     }
 
-    public function edit(Request $request,$id)
+    public function edit(Request $request, $id)
     {
-        $type = $request->input('type');        
-		$sub_institute_id = $request->session()->get('sub_institute_id'); 		
-						
-        $data['questionpaper_data'] = questionpaperModel::find($id)->toArray();                       
-               
-        if($data['questionpaper_data']['open_date'] != "0000-00-00 00:00:00" && $data['questionpaper_data']['open_date'] != null){         
-            $data['questionpaper_data']['open_date'] = date('m/d/Y h:i A',strtotime($data['questionpaper_data']['open_date'])); 
-        }
-        else{
+        $type = $request->input('type');
+        $sub_institute_id = $request->session()->get('sub_institute_id');
+
+        $data['questionpaper_data'] = questionpaperModel::find($id)->toArray();
+
+        if ($data['questionpaper_data']['open_date'] != "0000-00-00 00:00:00" && $data['questionpaper_data']['open_date'] != null) {
+            $data['questionpaper_data']['open_date'] = date('m/d/Y h:i A',
+                strtotime($data['questionpaper_data']['open_date']));
+        } else {
             $data['questionpaper_data']['open_date'] = "";
         }
 
-        if($data['questionpaper_data']['close_date'] != "0000-00-00 00:00:00" && $data['questionpaper_data']['close_date'] != null){
-            $data['questionpaper_data']['close_date'] = date('m/d/Y h:i A',strtotime($data['questionpaper_data']['close_date'])); 
-        }      
-        else{
+        if ($data['questionpaper_data']['close_date'] != "0000-00-00 00:00:00" && $data['questionpaper_data']['close_date'] != null) {
+            $data['questionpaper_data']['close_date'] = date('m/d/Y h:i A',
+                strtotime($data['questionpaper_data']['close_date']));
+        } else {
             $data['questionpaper_data']['close_date'] = "";
-        }             
+        }
 
         $std_id = $data['questionpaper_data']['standard_id'];
-        $stdData = sub_std_mapModel::where(['sub_institute_id' => $sub_institute_id,'standard_id' => $std_id])
-        ->orderBy('display_name')->get()->toArray();		        
-        $data['subjects'] = $stdData; 
-        
+        $stdData = sub_std_mapModel::where(['sub_institute_id' => $sub_institute_id, 'standard_id' => $std_id])
+            ->orderBy('display_name')->get()->toArray();
+        $data['subjects'] = $stdData;
+
         //Get all questions subject wise
         $sub_id = $data['questionpaper_data']['subject_id'];
-        $questionData = DB::select("SELECT qm.id,question_title,points,t.question_type,
-            ifnull(answer,'-') AS correct_answer,c.chapter_name,c.sort_order
-            FROM lms_question_master qm
-            INNER JOIN question_type_master t ON t.id = qm.question_type_id
-            INNER JOIN chapter_master c ON c.id = qm.chapter_id
-            LEFT JOIN answer_master am ON am.question_id = qm.id AND correct_answer=1
-            WHERE qm.standard_id =  '".$std_id."' AND qm.subject_id = '".$sub_id."' 
-            AND qm.sub_institute_id = '".$sub_institute_id."'
-            GROUP BY qm.id
-            ORDER BY chapter_name
-            ");
-        $data['questionData'] = $questionData;                 
+        $questionData = DB::table('lms_question_master as qm')
+            ->join('question_type_master as t', function ($join) {
+                $join->whereRaw('t.id = qm.question_type_id');
+            })->join('chapter_master as c', function ($join) {
+                $join->whereRaw('c.id = qm.chapter_id');
+            })->leftJoin('answer_master as am', function ($join) {
+                $join->whereRaw('am.question_id = qm.id AND correct_answer=1');
+            })->selectRaw("qm.id,question_title,points,t.question_type,
+                ifnull(answer,'-') AS correct_answer,c.chapter_name,c.sort_order")
+            ->where('qm.standard_id', $std_id)
+            ->where('qm.subject_id', $sub_id)
+            ->where('qm.sub_institute_id', $sub_institute_id)
+            ->groupBy('qm.id')
+            ->orderBy('chapter_name')->get()->toArray();
+
+        $data['questionData'] = $questionData;
 
         return is_mobile($type, "lms/add_questionpaper", $data, "view");
     }
@@ -311,102 +311,99 @@ class questionpaperController extends Controller
     /**
      * Update the specified resource in storage.
      *
-     * @param  \Illuminate\Http\Request  $request
+     * @param  Request  $request
      * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function update(Request $request, $id)
-    {                        
-        $sub_institute_id = $request->session()->get('sub_institute_id'); 		        
-        $syear = $request->session()->get('syear'); 		        
-        $user_id = $request->session()->get('user_id'); 
+    {
+        $sub_institute_id = $request->session()->get('sub_institute_id');
+        $syear = $request->session()->get('syear');
+        $user_id = $request->session()->get('user_id');
 
-        $show_hide = $request->get('show_hide');             
-        $show_hide_val = isset($show_hide) ? $show_hide : '';                  
+        $show_hide = $request->get('show_hide');
+        $show_hide_val = $show_hide ?? '';
 
-        $result_show_ans = $request->get('result_show_ans');             
-        $result_show_ans_val = isset($result_show_ans) ? $result_show_ans : '';
+        $result_show_ans = $request->get('result_show_ans');
+        $result_show_ans_val = $result_show_ans ?? '';
 
-        $shuffle_question = $request->get('shuffle_question');             
-        $shuffle_question_val = isset($shuffle_question) ? $shuffle_question : '';                  
+        $shuffle_question = $request->get('shuffle_question');
+        $shuffle_question_val = $shuffle_question ?? '';
 
-        $show_feedback = $request->get('show_feedback');             
-        $show_feedback_val = isset($show_feedback) ? $show_feedback : '';   
-        
-        $timelimit_enable = $request->get('timelimit_enable');             
-        $timelimit_enable_val = isset($timelimit_enable) ? $timelimit_enable : '';    
+        $show_feedback = $request->get('show_feedback');
+        $show_feedback_val = $show_feedback ?? '';
+
+        $timelimit_enable = $request->get('timelimit_enable');
+        $timelimit_enable_val = $timelimit_enable ?? '';
 
         $question_ids = "";
-        if($request->has('questions'))
-        {
-            $question_ids = implode(",",$request->get('questions'));
-        }                
+        if ($request->has('questions')) {
+            $question_ids = implode(",", $request->get('questions'));
+        }
 
-        $questionpaper = array(            
-            'grade_id' => $request->get('grade'),
-            'standard_id' => $request->get('standard'),
-            'subject_id' => $request->get('subject'),
-            'paper_name' => $request->get('paper_name'),
-            'paper_desc' => $request->get('paper_desc'),          
-            'timelimit_enable' => $timelimit_enable_val,            
-            'time_allowed' => $request->get('time_allowed'),
-            'total_ques' => $request->get('total_ques'),
-            'total_marks' => $request->get('total_marks'),
-            'question_ids' => $question_ids,                                    
-            'shuffle_question' => $shuffle_question_val, 
-            'attempt_allowed' => $request->get('attempt_allowed'),
-            'show_feedback' => $show_feedback_val, 
-            'show_hide' => $show_hide_val, 
-            'result_show_ans' => $result_show_ans_val,                         
-            'created_by' => $user_id,
+        $questionpaper = array(
+            'grade_id'         => $request->get('grade'),
+            'standard_id'      => $request->get('standard'),
+            'subject_id'       => $request->get('subject'),
+            'paper_name'       => $request->get('paper_name'),
+            'paper_desc'       => $request->get('paper_desc'),
+            'timelimit_enable' => $timelimit_enable_val,
+            'time_allowed'     => $request->get('time_allowed'),
+            'total_ques'       => $request->get('total_ques'),
+            'total_marks'      => $request->get('total_marks'),
+            'question_ids'     => $question_ids,
+            'shuffle_question' => $shuffle_question_val,
+            'attempt_allowed'  => $request->get('attempt_allowed'),
+            'show_feedback'    => $show_feedback_val,
+            'show_hide'        => $show_hide_val,
+            'result_show_ans'  => $result_show_ans_val,
+            'created_by'       => $user_id,
             'sub_institute_id' => $sub_institute_id,
-            'syear' => $syear,
-            'exam_type' => $request->get('exam_type')
+            'syear'            => $syear,
+            'exam_type'        => $request->get('exam_type'),
         );
         $open_date = $close_date = "";
-        if($_REQUEST['open_date'] != ""){            
-            $open_date = date('Y-m-d H:i:s',strtotime($_REQUEST['open_date'])); 
-            $questionpaper['open_date'] = $open_date;       
+        if ($_REQUEST['open_date'] != "") {
+            $open_date = date('Y-m-d H:i:s', strtotime($_REQUEST['open_date']));
+            $questionpaper['open_date'] = $open_date;
         }
-        if($_REQUEST['close_date'] != ""){
-            $close_date = date('Y-m-d H:i:s',strtotime($_REQUEST['close_date']));
-            $questionpaper['close_date'] = $close_date; 
+        if ($_REQUEST['close_date'] != "") {
+            $close_date = date('Y-m-d H:i:s', strtotime($_REQUEST['close_date']));
+            $questionpaper['close_date'] = $close_date;
         }
 
         //dd($questionpaper);
         questionpaperModel::where(["id" => $id])->update($questionpaper);
-                
-		$res = array(
-			"status_code" => 1,
-			"message" => "Question-Paper Updated Successfully",
-		);
+
+        $res = [
+            "status_code" => 1,
+            "message"     => "Question-Paper Updated Successfully",
+        ];
         $type = $request->input('type');
+
         return is_mobile($type, "question_paper.index", $res, "redirect");
     }
 
-    public function show(Request $request,$id)
-    {        
+    public function show(Request $request, $id)
+    {
         $type = $request->input('type');
         $sub_institute_id = $request->session()->get('sub_institute_id');
-        $data['questionpaper_data'] = questionpaperModel::find($id)->toArray(); 
-        
+        $data['questionpaper_data'] = questionpaperModel::find($id)->toArray();
+
         //Get all questions subject wise        
-        $question_ids = explode(",",$data['questionpaper_data']['question_ids']);
-        $data['question_arr'] = lmsQuestionMasterModel::whereIn("id",$question_ids)->get()->toArray(); 
-        
-        foreach($data['question_arr'] as $key => $val)
-        {            
-            $answer_arr = answermasterModel::where("question_id",$val['id'])->get()->toArray(); 
-            if(count($answer_arr) > 0)
-            {
-                foreach($answer_arr as $anskey => $ansval)
-                {
+        $question_ids = explode(",", $data['questionpaper_data']['question_ids']);
+        $data['question_arr'] = lmsQuestionMasterModel::whereIn("id", $question_ids)->get()->toArray();
+
+        foreach ($data['question_arr'] as $key => $val) {
+            $answer_arr = answermasterModel::where("question_id", $val['id'])->get()->toArray();
+            if (count($answer_arr) > 0) {
+                foreach ($answer_arr as $anskey => $ansval) {
                     $answer[$val['id']][] = $ansval;
-                }                       
+                }
             }
         }
         $data['answer_arr'] = $answer;
-        //echo ('<pre>');print_r($data);die;
+
         return is_mobile($type, "lms/view_questionpaper", $data, "view");
     }
 
@@ -414,61 +411,55 @@ class questionpaperController extends Controller
      * Remove the specified resource from storage.
      *
      * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
-    public function destroy(Request $request,$id)
+    public function destroy(Request $request, $id)
     {
         $type = $request->input('type');
         //questionpaperModel::where(["id" => $id])->delete();        
         $res['status_code'] = "1";
         $res['message'] = "Question-Paper Deleted Successfully";
+
         return is_mobile($type, "question_paper.index", $res);
     }
-    
+
     public function ajax_SubjectwiseQuestion(Request $request)
-    {    
-        // dd($request);      
-        $sub_id = $request->input("sub_id");        
-        $std_id = $request->input("std_id");        
+    {
+        $sub_id = $request->input("sub_id");
+        $std_id = $request->input("std_id");
         $sub_institute_id = $request->session()->get("sub_institute_id");
-        
-        $extra = "";        
+
+        $extra = "";
         $outer_extra = "WHERE 1 = 1";
-        if($request->has('search_chapter'))
-        {
-            $search_chapter = $request->input("search_chapter");  
+        if ($request->has('search_chapter')) {
+            $search_chapter = $request->input("search_chapter");
             $extra .= " AND qm.chapter_id IN (".$search_chapter.") ";
         }
-        if($request->has('search_topic'))
-        {
-            $search_topic = $request->input("search_topic");  
+        if ($request->has('search_topic')) {
+            $search_topic = $request->input("search_topic");
             $extra .= " AND qm.topic_id IN (".$search_topic.") ";
         }
-        if($request->has('search_mapping_type'))
-        {
+        if ($request->has('search_mapping_type')) {
             $search_mapping_type = $request->input("search_mapping_type");
-            $mapping_types = explode(",",$search_mapping_type);  
+            $mapping_types = explode(",", $search_mapping_type);
             $outer_extra_type = " AND (";
-            foreach ($mapping_types as $key => $mapping_type_val) 
-            {
+            foreach ($mapping_types as $key => $mapping_type_val) {
                 $outer_extra_type .= " find_in_set('".$mapping_type_val."',a.mapping_type) OR";
             }
-            $outer_extra_type .= ")"; 
-            $outer_extra .= str_replace(') OR)','))',$outer_extra_type);   
-        } 
-        if($request->has('search_mapping_value'))
-        {
+            $outer_extra_type .= ")";
+            $outer_extra .= str_replace(') OR)', '))', $outer_extra_type);
+        }
+        if ($request->has('search_mapping_value')) {
             $search_mapping_value = $request->input("search_mapping_value");
-            $mapping_values = explode(",",$search_mapping_value); 
+            $mapping_values = explode(",", $search_mapping_value);
             $outer_extra_mapping = " AND (";
-            foreach ($mapping_values as $key1 => $mapping_val) 
-            {
+            foreach ($mapping_values as $key1 => $mapping_val) {
                 $outer_extra_mapping .= " find_in_set('".$mapping_val."',a.mapping_value) OR";
             }
-            $outer_extra_mapping .= ")"; 
-            $outer_extra .= str_replace(') OR)','))',$outer_extra_mapping);
-        }      
-        
+            $outer_extra_mapping .= ")";
+            $outer_extra .= str_replace(') OR)', '))', $outer_extra_mapping);
+        }
+
         $sql = "
             SELECT * FROM 
             (SELECT qm.id,question_title,points,t.question_type,
@@ -489,74 +480,74 @@ class questionpaperController extends Controller
             ";
         $questionData = DB::select($sql);
 
-        $questionData = json_decode(json_encode($questionData),true);
+        $questionData = json_decode(json_encode($questionData), true);
 
-        foreach($questionData as $key => $val)
-        {            
-            $lmsquestionmapping_arr = lmsQuestionMappingModel::select('lms_question_mapping.questionmaster_id','t.name as type_name','t.id as type_id'
-                ,'t1.name as value_name','t1.id as value_id')
-            ->join('lms_mapping_type as t','t.id','lms_question_mapping.mapping_type_id')
-            ->join('lms_mapping_type as t1','t1.id','lms_question_mapping.mapping_value_id')
-            ->where( ["questionmaster_id"=>$val['id']])
-            ->get()->toArray(); 
-            if(count($lmsquestionmapping_arr) > 0)
-            {
+        foreach ($questionData as $key => $val) {
+            $lmsquestionmapping_arr = lmsQuestionMappingModel::select('lms_question_mapping.questionmaster_id',
+                't.name as type_name', 't.id as type_id'
+                , 't1.name as value_name', 't1.id as value_id')
+                ->join('lms_mapping_type as t', 't.id', 'lms_question_mapping.mapping_type_id')
+                ->join('lms_mapping_type as t1', 't1.id', 'lms_question_mapping.mapping_value_id')
+                ->where(["questionmaster_id" => $val['id']])
+                ->get()->toArray();
+            if (count($lmsquestionmapping_arr) > 0) {
                 $mapping_html = "";
-                $i=1;
-                foreach($lmsquestionmapping_arr as $lkey => $lval)
-                {                   
-                    $mapping_html .= $i++.") ".$lval['type_name']." - ".$lval['value_name']."<br><br>";                    
+                $i = 1;
+                foreach ($lmsquestionmapping_arr as $lkey => $lval) {
+                    $mapping_html .= $i++.") ".$lval['type_name']." - ".$lval['value_name']."<br><br>";
                     $questionData[$key]['LMS_MAPPING_DATA'] = $mapping_html;
-                }   
+                }
 
-            }  
-        }  
-        return $questionData;    
-    }     
+            }
+        }
+
+        return $questionData;
+    }
 
     public function ajax_LMS_StandardwiseSubject(Request $request)
-    {        
-        $std_id = $request->input("std_id");        
+    {
+        $std_id = $request->input("std_id");
         $sub_institute_id = session()->get("sub_institute_id");
         $user_profile_id = session()->get('user_profile_id');
         $user_profile_name = session()->get('user_profile_name');
         $user_id = session()->get('user_id');
 
-        if($user_profile_name == 'Teacher')
-        {
-            $wherecondition = array('t.sub_institute_id'=>$sub_institute_id,'t.teacher_id'=>$user_id);
-            if($std_id !="")
-            {
-                $wherecondition['t.standard_id'] = $std_id; 
+        if ($user_profile_name == 'Teacher') {
+            $wherecondition = ['t.sub_institute_id' => $sub_institute_id, 't.teacher_id' => $user_id];
+            if ($std_id != "") {
+                $wherecondition['t.standard_id'] = $std_id;
             }
             $stdData = subjectModel::from("timetable as t")
-            ->select('sst.display_name','sst.subject_id')
-            ->join('subject as s','s.id', '=', 't.subject_id')
-            ->join("sub_std_map as sst",function($join){
-                $join->on("sst.subject_id","=","s.id")
-                    ->on("sst.standard_id","=","t.standard_id");
-            })
-            ->where($wherecondition)
-            ->groupby('sst.id')
-            ->orderBy('sst.display_name')    
-            ->get()->toArray(); 
-        }else{
-            $stdData = sub_std_mapModel::where(['sub_institute_id' => $sub_institute_id,'standard_id' => $std_id])
-                        ->orderBy('display_name')->get()->toArray();
+                ->select('sst.display_name', 'sst.subject_id')
+                ->join('subject as s', 's.id', '=', 't.subject_id')
+                ->join("sub_std_map as sst", function ($join) {
+                    $join->on("sst.subject_id", "=", "s.id")
+                        ->on("sst.standard_id", "=", "t.standard_id");
+                })
+                ->where($wherecondition)
+                ->groupby('sst.id')
+                ->orderBy('sst.display_name')
+                ->get()->toArray();
+        } else {
+            $stdData = sub_std_mapModel::where(['sub_institute_id' => $sub_institute_id, 'standard_id' => $std_id])
+                ->orderBy('display_name')->get()->toArray();
         }
-        return $stdData;    
+
+        return $stdData;
     }
 
     public function ajax_questionpaperDependencies(Request $request)
     {
-        $id = $request->input("id");        
-        $exam_type = $request->input("exam_type");        
+        $id = $request->input("id");
+        $exam_type = $request->input("exam_type");
         $sub_institute_id = $request->session()->get("sub_institute_id");
         $syear = $request->session()->get("syear");
-        
-        $data = DB::select("SELECT count(*) as total FROM lms_".$exam_type."_exam WHERE question_paper_id = '".$id."'");        
-      
-        return$data[0]->total; 
-    }      
-    
+
+        $data = DB::table("lms_".$exam_type."_exam")
+            ->selectRaw('count(*) as total')
+            ->where('question_paper_id', $id)->get()->toArray();
+
+        return $data[0]->total;
+    }
+
 }
