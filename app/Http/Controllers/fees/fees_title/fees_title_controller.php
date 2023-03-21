@@ -2,21 +2,30 @@
 
 namespace App\Http\Controllers\fees\fees_title;
 
-use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
-use Illuminate\Support\Facades\Schema;
-//use Illuminate\Http\Request;
 use App\Models\fees\fees_title\fees_title;
 use DB;
+use Illuminate\Contracts\Foundation\Application;
+use Illuminate\Contracts\View\Factory;
+use Illuminate\Contracts\View\View;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Schema;
+use function App\Helpers\is_mobile;
 
-class fees_title_controller extends Controller {
+//use Illuminate\Http\Request;
+
+class fees_title_controller extends Controller
+{
 
     /**
      * Display a listing of the resource.
      *
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
-    public function index(Request $request) {
+    public function index(Request $request)
+    {
         if (session()->has('data')) { // check if it exists
             $data_arr = session('data'); // to retrieve value
             if (isset($data_arr['message'])) {
@@ -27,16 +36,17 @@ class fees_title_controller extends Controller {
         $school_data['data'] = $this->getData();
 //        $school_data['data'] = array();
         $type = $request->input('type');
-        return \App\Helpers\is_mobile($type, "fees/fees_title/show", $school_data, "view");
+        return is_mobile($type, "fees/fees_title/show", $school_data, "view");
     }
 
-    public function getData() {
+    public function getData()
+    {
         $data = fees_title::
-                        select('id', 'display_name', 'cumulative_name', 'append_name', 'mandatory', 'syear', 'other_fee_id')
-                        ->where([
-                            'sub_institute_id' => session()->get('sub_institute_id'),
-                            'syear' => session()->get('syear')
-                        ])->get()->toArray();
+        select('id', 'display_name', 'cumulative_name', 'append_name', 'mandatory', 'syear', 'other_fee_id')
+            ->where([
+                'sub_institute_id' => session()->get('sub_institute_id'),
+                'syear' => session()->get('syear')
+            ])->get()->toArray();
         $responce_arr = array();
         if (count($data) > 0) {
             foreach ($data as $id => $arr) {
@@ -63,30 +73,32 @@ class fees_title_controller extends Controller {
     /**
      * Show the form for creating a new resource.
      *
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
-    public function create(Request $request) {
+    public function create(Request $request)
+    {
         $type = $request->input('type');
 //        $dataStore = array();
         $dataStore['data']['ddTtitle'] = $this->ddTtitle();
-        return \App\Helpers\is_mobile($type, 'fees/fees_title/add', $dataStore, "view");
+        return is_mobile($type, 'fees/fees_title/add', $dataStore, "view");
     }
 
-    public function ddTtitle() {
+    public function ddTtitle()
+    {
         $std_div_map = DB::table('fees_title_master')
-                ->select('fees_title_master.title', 'fees_title_master.id')
-                ->pluck('title', 'id');
+            ->select('fees_title_master.title', 'fees_title_master.id')
+            ->pluck('title', 'id');
         $data = fees_title::
-                select('fees_title', 'fees_title_id')
-                ->where([
-                    'sub_institute_id' => session()->get('sub_institute_id'),
-                    'syear' => session()->get('syear')
-                ])->get()->toArray();
-        
-        foreach ($data as $id=>$arr) {
-            if($arr["fees_title_id"] == 1){
+        select('fees_title', 'fees_title_id')
+            ->where([
+                'sub_institute_id' => session()->get('sub_institute_id'),
+                'syear' => session()->get('syear')
+            ])->get()->toArray();
+
+        foreach ($data as $id => $arr) {
+            if ($arr["fees_title_id"] == 1) {
                 continue;
-            }else{
+            } else {
                 unset($std_div_map[$arr["fees_title_id"]]);
             }
         }
@@ -97,18 +109,19 @@ class fees_title_controller extends Controller {
     /**
      * Store a newly created resource in storage.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\Response
+     * @param \Illuminate\Http\Request $request
+     * @return false|Application|Factory|View|RedirectResponse|string
      */
-    public function store(Request $request) {
-       	   
+    public function store(Request $request)
+    {
+
         // logic if it was other fee
         if ($request->get('fees_title_id') == 1) {
             $sub_institute_id = session()->get('sub_institute_id');
             $id = DB::select(DB::raw("SELECT ifnull(max(other_fee_id),0) max_id FROM fees_title WHERE sub_institute_id = '$sub_institute_id'"));
             $id = $id[0]->max_id + 1;
 
-            //checking if coloum exist or not 
+            //checking if coloum exist or not
             $columns = Schema::getColumnListing('fees_paid_other');
             if (!in_array($id, $columns)) {
                 $type = "decimal";
@@ -118,10 +131,10 @@ class fees_title_controller extends Controller {
                     $table->$type($fieldName, $length);
                 });
             }
-			
-			$mandatory = $request->get('mandatory');             
-			$mandatory_val = isset($mandatory) ? $mandatory : 0;  	   
-       
+
+            $mandatory = $request->get('mandatory');
+            $mandatory_val = isset($mandatory) ? $mandatory : 0;
+
             $exam = new fees_title([
                 'fees_title_id' => $request->get('fees_title_id'),
                 'fees_title' => $id,
@@ -138,13 +151,13 @@ class fees_title_controller extends Controller {
         } else {
             $fees_title_id = $request->get('fees_title_id');
             $fees_title = DB::select(DB::raw("
-                    SELECT fee_paid_title 
-                    FROM fees_title_master 
+                    SELECT fee_paid_title
+                    FROM fees_title_master
                     WHERE id = '$fees_title_id'"));
             $fees_title = $fees_title[0]->fee_paid_title;
 
-			$mandatory = $request->get('mandatory');             
-			$mandatory_val = isset($mandatory) ? $mandatory : 0; 
+            $mandatory = $request->get('mandatory');
+            $mandatory_val = isset($mandatory) ? $mandatory : 0;
             $exam = new fees_title([
                 'fees_title_id' => $request->get('fees_title_id'),
                 'fees_title' => $fees_title,
@@ -165,40 +178,43 @@ class fees_title_controller extends Controller {
         );
 
         $type = $request->input('type');
-        return \App\Helpers\is_mobile($type, "fees_title.index", $res, "redirect");
+        return is_mobile($type, "fees_title.index", $res, "redirect");
     }
 
     /**
      * Display the specified resource.
      *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * @param int $id
+     * @return void
      */
-    public function show($id) {
+    public function show($id)
+    {
         //
     }
 
     /**
      * Show the form for editing the specified resource.
      *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * @param int $id
+     * @return Response
      */
-    public function edit(Request $request, $id) {
+    public function edit(Request $request, $id)
+    {
         $type = $request->input('type');
         $data = fees_title::find($id)->toArray();
         $data['data']['ddTtitle'] = $this->ddTtitle();
-        return \App\Helpers\is_mobile($type, "fees/fees_title/edit", $data, "view");
+        return is_mobile($type, "fees/fees_title/edit", $data, "view");
     }
 
     /**
      * Update the specified resource in storage.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * @param \Illuminate\Http\Request $request
+     * @param int $id
+     * @return false|Application|Factory|View|RedirectResponse|string
      */
-    public function update(Request $request, $id) {
+    public function update(Request $request, $id)
+    {
 //RAJESH        fees_title::where(["id" => $id])->delete();
         // logic if it was other fee
         if ($request->get('fees_title_id') == 1) {
@@ -206,10 +222,10 @@ class fees_title_controller extends Controller {
             $id = DB::select(DB::raw("SELECT ifnull(max(other_fee_id),0) max_id FROM fees_title WHERE sub_institute_id = '$sub_institute_id'"));
             $id = $id[0]->max_id + 1;
 
-			$mandatory = $request->get('mandatory');             
-			$mandatory_val = isset($mandatory) ? $mandatory : 0; 
-            
-			$exam = new fees_title([
+            $mandatory = $request->get('mandatory');
+            $mandatory_val = isset($mandatory) ? $mandatory : 0;
+
+            $exam = new fees_title([
                 'fees_title_id' => $request->get('fees_title_id'),
                 'fees_title' => $id,
                 'display_name' => $request->get('display_name'),
@@ -224,15 +240,15 @@ class fees_title_controller extends Controller {
         } else {
             $fees_title_id = $request->get('fees_title_id');
             $fees_title = DB::select(DB::raw("
-                    SELECT fee_paid_title 
-                    FROM fees_title_master 
+                    SELECT fee_paid_title
+                    FROM fees_title_master
                     WHERE id = '$fees_title_id'"));
             $fees_title = $fees_title[0]->fee_paid_title;
 
-			$mandatory = $request->get('mandatory');             
-			$mandatory_val = isset($mandatory) ? $mandatory : 0; 
-            
-			$exam = new fees_title([
+            $mandatory = $request->get('mandatory');
+            $mandatory_val = isset($mandatory) ? $mandatory : 0;
+
+            $exam = new fees_title([
                 'fees_title_id' => $request->get('fees_title_id'),
                 'fees_title' => $fees_title,
                 'display_name' => $request->get('display_name'),
@@ -252,16 +268,17 @@ class fees_title_controller extends Controller {
         );
         $type = $request->input('type');
 
-        return \App\Helpers\is_mobile($type, "fees_title.index", $res, "redirect");
+        return is_mobile($type, "fees_title.index", $res, "redirect");
     }
 
     /**
      * Remove the specified resource from storage.
      *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * @param int $id
+     * @return false|Application|Factory|View|RedirectResponse|string
      */
-    public function destroy(Request $request, $id) {
+    public function destroy(Request $request, $id)
+    {
         $type = $request->input('type');
         fees_title::where(["id" => $id])->delete();
         $res = array(
@@ -269,7 +286,7 @@ class fees_title_controller extends Controller {
             "message" => "Data Deleted",
         );
 
-        return \App\Helpers\is_mobile($type, "fees_title.index", $res, "redirect");
+        return is_mobile($type, "fees_title.index", $res, "redirect");
     }
 
 }

@@ -2,20 +2,24 @@
 
 namespace App\Http\Controllers\fees\online_fees;
 
-use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
-use Illuminate\Support\Facades\Schema;
-//use Illuminate\Http\Request;
 use App\Models\fees\fees_title\fees_title;
-use DB;
+use Illuminate\Contracts\Foundation\Application;
+use Illuminate\Contracts\View\Factory;
+use Illuminate\Contracts\View\View;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\Http\Response;
+use Illuminate\Support\Facades\DB;
+use function App\Helpers\is_mobile;
 
-class online_fees_split_controller  extends Controller
+class online_fees_split_controller extends Controller
 {
 
     /**
      * Display a listing of the resource.
      *
-     * @return \Illuminate\Http\Response
+     * @return false|Application|Factory|View|RedirectResponse|Response|string
      */
     public function index(Request $request)
     {
@@ -29,20 +33,21 @@ class online_fees_split_controller  extends Controller
         $school_data['data'] = $this->getData();
 //        $school_data['data'] = array();
         $type = $request->input('type');
-        return \App\Helpers\is_mobile($type, "fees/online_fees_split/show", $school_data, "view");
+
+        return is_mobile($type, "fees/online_fees_split/show", $school_data, "view");
     }
 
     public function getData()
     {
         $data = DB::table("fees_online_split as fos")
-                        ->select('fos.id', 'ft.display_name', 'fos.bank_split_name')
-                        ->join('fees_title as ft', 'ft.id', '=', 'fos.fees_title_id')
-                        ->where([
-                            'fos.sub_institute_id' => session()->get('sub_institute_id'),
-                        ])->get();
+            ->select('fos.id', 'ft.display_name', 'fos.bank_split_name')
+            ->join('fees_title as ft', 'ft.id', '=', 'fos.fees_title_id')
+            ->where([
+                'fos.sub_institute_id' => session()->get('sub_institute_id'),
+            ])->get();
         $responce_arr = array();
         $data = json_encode($data);
-        $responce_arr = json_decode($data,true);
+        $responce_arr = json_decode($data, true);
         // if (count($data) > 0) {
         //     foreach ($data as $id => $arr) {
         //         if ($arr['mandatory'] == '1') {
@@ -68,15 +73,15 @@ class online_fees_split_controller  extends Controller
     /**
      * Show the form for creating a new resource.
      *
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
-    
+
     public function create(Request $request)
     {
         $type = $request->input('type');
 //        $dataStore = array();
         $dataStore['data']['ddTtitle'] = $this->ddTtitle();
-        return \App\Helpers\is_mobile($type, 'fees/online_fees_split/add', $dataStore, "view");
+        return is_mobile($type, 'fees/online_fees_split/add', $dataStore, "view");
     }
 
     public function ddTtitle()
@@ -86,12 +91,12 @@ class online_fees_split_controller  extends Controller
         //         ->pluck('title', 'id');
 
         $data = fees_title::
-                select('id', 'display_name')
-                ->where([
-                    'sub_institute_id' => session()->get('sub_institute_id'),
-                    'syear' => session()->get('syear')
-                ])->pluck("display_name","id");
-        
+        select('id', 'display_name')
+            ->where([
+                'sub_institute_id' => session()->get('sub_institute_id'),
+                'syear' => session()->get('syear')
+            ])->pluck("display_name", "id");
+
         // foreach ($data as $id=>$arr) {
         //     if($arr["fees_title_id"] == 1){
         //         continue;
@@ -105,8 +110,8 @@ class online_fees_split_controller  extends Controller
     /**
      * Store a newly created resource in storage.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\Response
+     * @param \Illuminate\Http\Request $request
+     * @return Response
      */
     public function store(Request $request)
     {
@@ -143,14 +148,14 @@ class online_fees_split_controller  extends Controller
         //     ]);
         //     $exam->save();
         // } else {
-            // $fees_title_id = $request->get('fees_title_id');
-            // $fees_title = DB::select(DB::raw("
-            //         SELECT fee_paid_title 
-            //         FROM fees_title_master 
-            //         WHERE id = '$fees_title_id'"));
-            // $fees_title = $fees_title[0]->fee_paid_title;
+        // $fees_title_id = $request->get('fees_title_id');
+        // $fees_title = DB::select(DB::raw("
+        //         SELECT fee_paid_title
+        //         FROM fees_title_master
+        //         WHERE id = '$fees_title_id'"));
+        // $fees_title = $fees_title[0]->fee_paid_title;
 
-            $exam = DB::table("fees_online_split")
+        $exam = DB::table("fees_online_split")
             ->insert([
                 'fees_title_id' => $request->get('fees_title_id'),
                 'bank_split_name' => $request->get('bank_split_name'),
@@ -158,7 +163,7 @@ class online_fees_split_controller  extends Controller
                 'created_at' => now(),
                 'updated_at' => now(),
             ]);
-            // $exam->save();
+        // $exam->save();
         // }
         $res = array(
             "status_code" => 1,
@@ -166,14 +171,14 @@ class online_fees_split_controller  extends Controller
         );
 
         $type = $request->input('type');
-        return \App\Helpers\is_mobile($type, "online_fees_split.index", $res, "redirect");
+        return is_mobile($type, "online_fees_split.index", $res, "redirect");
     }
 
     /**
      * Display the specified resource.
      *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * @param int $id
+     * @return Response
      */
     public function show($id)
     {
@@ -183,41 +188,40 @@ class online_fees_split_controller  extends Controller
     /**
      * Show the form for editing the specified resource.
      *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * @param int $id
+     * @return Response
      */
     public function edit(Request $request, $id)
     {
         $type = $request->input('type');
         $data = DB::table("fees_online_split")->find($id);
         $data = json_encode($data);
-        $data = json_decode($data,true);
+        $data = json_decode($data, true);
 
         $data['data']['ddTtitle'] = $this->ddTtitle();
-        return \App\Helpers\is_mobile($type, "fees/online_fees_split/edit", $data, "view");
+        return is_mobile($type, "fees/online_fees_split/edit", $data, "view");
     }
 
     /**
      * Update the specified resource in storage.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * @param \Illuminate\Http\Request $request
+     * @param int $id
+     * @return Response
      */
     public function update(Request $request, $id)
     {
         // fees_title::where(["id" => $id])->delete();
         // logic if it was other fee
 
-            $exam = DB::table("fees_online_split")
-            ->where(["id"=>$id])
+        $exam = DB::table("fees_online_split")
+            ->where(["id" => $id])
             ->update([
                 'fees_title_id' => $request->get('fees_title_id'),
                 'bank_split_name' => $request->get('bank_split_name'),
                 'updated_at' => now(),
-            ])
-            ;
-            // $exam->save();
+            ]);
+        // $exam->save();
 
         $res = array(
             "status_code" => 1,
@@ -225,14 +229,14 @@ class online_fees_split_controller  extends Controller
         );
         $type = $request->input('type');
 
-        return \App\Helpers\is_mobile($type, "online_fees_split.index", $res, "redirect");
+        return is_mobile($type, "online_fees_split.index", $res, "redirect");
     }
 
     /**
      * Remove the specified resource from storage.
      *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * @param int $id
+     * @return Response
      */
     public function destroy(Request $request, $id)
     {
@@ -243,6 +247,6 @@ class online_fees_split_controller  extends Controller
             "message" => "Data Deleted",
         );
 
-        return \App\Helpers\is_mobile($type, "online_fees_split.index", $res, "redirect");
+        return is_mobile($type, "online_fees_split.index", $res, "redirect");
     }
 }

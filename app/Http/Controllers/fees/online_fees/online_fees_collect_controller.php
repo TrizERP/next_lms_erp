@@ -2,12 +2,12 @@
 
 namespace App\Http\Controllers\fees\online_fees;
 
-use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
-use App\Http\Controllers\fees\fees_collect\fees_collect_controller;
-use App\Http\Controllers\AJAXController;
 use App\Classes\AesForJava;
-use DB;
+use App\Http\Controllers\AJAXController;
+use App\Http\Controllers\Controller;
+use App\Http\Controllers\fees\fees_collect\fees_collect_controller;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Razorpay\Api\Api;
 
 class online_fees_collect_controller extends Controller
@@ -20,11 +20,13 @@ class online_fees_collect_controller extends Controller
         $type = "web";
         return \App\Helpers\is_mobile($type, "fees/online_fees_collect/search_student", $school_data, "view");
     }
+
     public function site_name()
     {
         $site_name = "https://erp.triz.co.in/";
         return $site_name;
     }
+
     public function get_fees(Request $request)
     {
         // echo '<pre>'; print_r($_REQUEST); exit;
@@ -40,7 +42,7 @@ class online_fees_collect_controller extends Controller
             ->where("s.id", $_REQUEST["student_id"])
             ->get();
         $get_syear = DB::select("SELECT s.id,s.mobile,se.syear,se.sub_institute_id
-                                FROM tblstudent s 
+                                FROM tblstudent s
                                 INNER JOIN tblstudent_enrollment se ON se.student_id = s.id AND se.sub_institute_id = s.sub_institute_id
                                 WHERE s.id = '" . $_REQUEST["student_id"] . "'
                                 ORDER BY se.syear desc");
@@ -66,7 +68,7 @@ class online_fees_collect_controller extends Controller
                     $fees_amt = $arr["remain"];
                 }
             }
-            // Start Add code for showing previous year fees bf 25-11-2021            
+            // Start Add code for showing previous year fees bf 25-11-2021
             if ($get_old_data == 1) {
                 $data = $OldData;
             }
@@ -93,6 +95,7 @@ class online_fees_collect_controller extends Controller
         $data["syear"] = $year;
         return $data;
     }
+
     public function hdfc(Request $request)
     {
         // echo '<pre>'; print_r($_REQUEST); exit;
@@ -117,6 +120,7 @@ class online_fees_collect_controller extends Controller
         return \App\Helpers\is_mobile($type, "fees/online_fees_collect/show_fees", $data, "view");
         // echo '<pre>'; print_r($data); exit;
     }
+
     public function hdfc_request_handler(Request $request)
     {
         // echo '<pre>';
@@ -185,6 +189,7 @@ class online_fees_collect_controller extends Controller
         return \App\Helpers\is_mobile($type, "fees/online_fees_collect/hdfc_RequestHandler", $data, "view");
         // echo '<pre>'; print_r($data); exit;
     }
+
     public function hdfc_responce_handler(Request $request)
     {
         // echo '<pre>';
@@ -239,7 +244,7 @@ class online_fees_collect_controller extends Controller
                 $mer_amount = $information[1];
             }
         }
-        $res_arr  = array(
+        $res_arr = array(
             "order_id" => $order_id,
             "tracking_id" => $tracking_id,
             "bank_ref_no" => $bank_ref_no,
@@ -279,7 +284,7 @@ class online_fees_collect_controller extends Controller
             ->where($where_arr)
             ->update($update_arr);
         if ($order_status == "Success") {
-            $data = $this->pay_fees($request, $get_all_data[0]->student_id, $get_all_data[0]->syear, $get_all_data[0]->sub_institute_id, $res_arr["AMT"],$order_id);
+            $data = $this->pay_fees($request, $get_all_data[0]->student_id, $get_all_data[0]->syear, $get_all_data[0]->sub_institute_id, $res_arr["AMT"], $order_id);
             $type = $request->input('type');
             // return is_mobile($type, "fees/fees_collect/add", $res, "view");
             return \App\Helpers\is_mobile($type, "fees/online_fees_collect/receipt_view", $data, "view");
@@ -291,6 +296,7 @@ class online_fees_collect_controller extends Controller
             // return \App\Helpers\is_mobile($type, "fees/online_fees_collect/axis_RequestHandler", $data, "view");
         }
     }
+
     public function icici(Request $request)
     {
         $data = $this->get_fees($request);
@@ -298,6 +304,7 @@ class online_fees_collect_controller extends Controller
         $type = "web";
         return \App\Helpers\is_mobile($type, "fees/online_fees_collect/show_icici_fees", $data, "view");
     }
+
     public function icici_request_handler(Request $request)
     {
         // echo '<pre>'; print_r($_REQUEST); exit;
@@ -390,6 +397,7 @@ class online_fees_collect_controller extends Controller
         );
         return \App\Helpers\is_mobile($type, "fees/online_fees_collect/icici_RequestHandler", $data, "view");
     }
+
     public function icici_response_handler(Request $request)
     {
         $get_map_bank_detail = DB::table("fees_icici")
@@ -419,7 +427,7 @@ class online_fees_collect_controller extends Controller
             ->where($where_arr)
             ->update($update_arr);
         if ($payment_status == "PS") {
-            $data = $this->pay_fees($request, $get_all_data[0]->student_id, $get_all_data[0]->syear, $get_all_data[0]->sub_institute_id, $response["Transaction_Amount"],$response["ReferenceNo"]);
+            $data = $this->pay_fees($request, $get_all_data[0]->student_id, $get_all_data[0]->syear, $get_all_data[0]->sub_institute_id, $response["Transaction_Amount"], $response["ReferenceNo"]);
             $type = $request->input('type');
             return \App\Helpers\is_mobile($type, "fees/online_fees_collect/receipt_view", $data, "view");
         } else {
@@ -429,15 +437,17 @@ class online_fees_collect_controller extends Controller
             // return \App\Helpers\is_mobile($type, "fees/online_fees_collect/axis_RequestHandler", $data, "view");
         }
     }
+
     public function axis(Request $request)
     {
-        // echo '<pre>'; print_r($_REQUEST); 
+        // echo '<pre>'; print_r($_REQUEST);
         $data = $this->get_fees($request);
         //  print_r($data); exit;
         $type = "web";
         return \App\Helpers\is_mobile($type, "fees/online_fees_collect/show_axis_fees", $data, "view");
         // echo '<pre>'; print_r($data); exit;
     }
+
     public function axis_request_handler(Request $request)
     {
         // echo '<pre>';
@@ -516,6 +526,7 @@ class online_fees_collect_controller extends Controller
         return \App\Helpers\is_mobile($type, "fees/online_fees_collect/axis_RequestHandler", $data, "view");
         // echo '<pre>'; print_r($data); exit;
     }
+
     public function axis_response_handler(Request $request)
     {
         // echo ('<pre>');
@@ -577,7 +588,7 @@ class online_fees_collect_controller extends Controller
             ->where($where_arr)
             ->update($update_arr);
         if ($payment_status == "PS") {
-            $data = $this->pay_fees($request, $get_all_data[0]->student_id, $get_all_data[0]->syear, $get_all_data[0]->sub_institute_id, $res_arr["AMT"],$res_arr["RID"]);
+            $data = $this->pay_fees($request, $get_all_data[0]->student_id, $get_all_data[0]->syear, $get_all_data[0]->sub_institute_id, $res_arr["AMT"], $res_arr["RID"]);
             $type = $request->input('type');
             // return is_mobile($type, "fees/fees_collect/add", $res, "view");
             return \App\Helpers\is_mobile($type, "fees/online_fees_collect/receipt_view", $data, "view");
@@ -590,6 +601,7 @@ class online_fees_collect_controller extends Controller
         }
         // echo '<pre>'; print_r($data); exit;
     }
+
     public function aggre_pay(Request $request)
     {
         $data = $this->get_fees($request);
@@ -597,6 +609,7 @@ class online_fees_collect_controller extends Controller
         return \App\Helpers\is_mobile($type, "fees/online_fees_collect/show_aggre_pay_fees", $data, "view");
         // echo '<pre>'; print_r($data); exit;
     }
+
     public function aggre_pay_request_handler(Request $request)
     {
         // echo '<pre>';
@@ -694,6 +707,7 @@ class online_fees_collect_controller extends Controller
         // echo '<pre>'; print_r(session()->all()); exit;
         return \App\Helpers\is_mobile($type, "fees/online_fees_collect/aggre_pay_RequestHandler", $data, "view");
     }
+
     public function aggre_pay_response_handler(Request $request)
     {
         // echo ('<pre>');
@@ -743,7 +757,7 @@ class online_fees_collect_controller extends Controller
             ->where($where_arr)
             ->update($update_arr);
         if ($payment_status == "PS") {
-            $data = $this->pay_fees($request, $get_all_data[0]->student_id, $get_all_data[0]->syear, $get_all_data[0]->sub_institute_id, $response["amount"],$response["order_id"]);
+            $data = $this->pay_fees($request, $get_all_data[0]->student_id, $get_all_data[0]->syear, $get_all_data[0]->sub_institute_id, $response["amount"], $response["order_id"]);
             $type = $request->input('type');
             return \App\Helpers\is_mobile($type, "fees/online_fees_collect/receipt_view", $data, "view");
         } else {
@@ -755,7 +769,8 @@ class online_fees_collect_controller extends Controller
         }
         // echo '<pre>'; print_r($data); exit;
     }
-    public function pay_fees(Request $request, $student_id, $syear, $sub_institute_id, $amount,$cheque_no="")
+
+    public function pay_fees(Request $request, $student_id, $syear, $sub_institute_id, $amount, $cheque_no = "")
     {
         // echo "<pre>"; print_r($request->all()); exit;
         $get_map_bank_data = DB::table("fees_online_maping")
@@ -844,11 +859,11 @@ class online_fees_collect_controller extends Controller
                 "submit" => "Save",
             );
             // echo '<pre>';
-            // print_r($send_arr); 
+            // print_r($send_arr);
             // print_r($_REQUEST);
             // die;
             $_REQUEST = $send_arr;
-            $paid_fees =  $controller->pay_fees($request);
+            $paid_fees = $controller->pay_fees($request);
             return $paid_fees;
             // print_r($paid_fees);
             // exit;
@@ -945,14 +960,15 @@ class online_fees_collect_controller extends Controller
                 "submit" => "Save",
             );
             // echo '<pre>';
-            // print_r($send_arr); 
+            // print_r($send_arr);
             // print_r($_REQUEST);
             $_REQUEST = $send_arr;
-            $paid_fees =  $controller->pay_fees($request);
+            $paid_fees = $controller->pay_fees($request);
             return $paid_fees;
             // print_r($paid_fees);
         }
     }
+
     public function aggre_pay_for_request_hashCalculate($salt, $input)
     {
         /* Columns used for hash calculation, Donot add or remove values from $hash_columns array */
@@ -974,6 +990,7 @@ class online_fees_collect_controller extends Controller
         $hash = strtoupper(hash("sha512", $hash_data));
         return $hash;
     }
+
     public function aggre_pay_for_response_hashCalculate($salt, $input)
     {
         /* Remove hash key if it is present */
@@ -994,6 +1011,7 @@ class online_fees_collect_controller extends Controller
         }
         return $hash;
     }
+
     public function hdfc_encrypt($plainText, $key)
     {
         $key = $this->hdfc_hextobin(md5($key));
@@ -1002,6 +1020,7 @@ class online_fees_collect_controller extends Controller
         $encryptedText = bin2hex($openMode);
         return $encryptedText;
     }
+
     public function hdfc_decrypt($encryptedText, $key)
     {
         $key = $this->hdfc_hextobin(md5($key));
@@ -1010,12 +1029,14 @@ class online_fees_collect_controller extends Controller
         $decryptedText = openssl_decrypt($encryptedText, 'AES-128-CBC', $key, OPENSSL_RAW_DATA, $initVector);
         return $decryptedText;
     }
+
     //*********** Padding public Function hdfc_*********************
     public function hdfc_pkcs5_pad($plainText, $blockSize)
     {
         $pad = $blockSize - (strlen($plainText) % $blockSize);
         return $plainText . str_repeat(chr($pad), $pad);
     }
+
     //********** Hexadecimal to Binary public function hdfc_for php 4.0 version ********
     public function hdfc_hextobin($hexString)
     {
@@ -1034,6 +1055,7 @@ class online_fees_collect_controller extends Controller
         }
         return $binString;
     }
+
     public function icici_aes128Encrypt($str, $key)
     {
         // $plaintext = "1|1|1";
@@ -1048,6 +1070,7 @@ class online_fees_collect_controller extends Controller
         }
         return 1;
     }
+
     public function icici_encrypt($plainText, $key)
     {
         $secretKey = hextobin(md5($key));
@@ -1061,6 +1084,7 @@ class online_fees_collect_controller extends Controller
         }
         return bin2hex($encryptedText);
     }
+
     public function icici_decrypt($encryptedText, $key)
     {
         $secretKey = hextobin(md5($key));
@@ -1073,12 +1097,14 @@ class online_fees_collect_controller extends Controller
         mcrypt_generic_deinit($openMode);
         return $decryptedText;
     }
+
     //*********** Padding public function icici_*********************
     public function icici_pkcs5_pad($plainText, $blockSize)
     {
         $pad = $blockSize - (strlen($plainText) % $blockSize);
         return $plainText . str_repeat(chr($pad), $pad);
     }
+
     //********** Hexadecimal to Binary public function icici_for php 4.0 version ********
     public function icici_hextobin($hexString)
     {
@@ -1097,6 +1123,7 @@ class online_fees_collect_controller extends Controller
         }
         return $binString;
     }
+
     public function razorpay(Request $request)
     {
         $data = $this->get_fees($request);
@@ -1111,8 +1138,8 @@ class online_fees_collect_controller extends Controller
      */
     public function razorpay_request_handler(Request $request)
     {
-         //echo '<pre>';
-         //print_r($_REQUEST);
+        //echo '<pre>';
+        //print_r($_REQUEST);
         // echo "########################";
         //$input = $request->all();
         //print_r($input);
@@ -1145,7 +1172,7 @@ class online_fees_collect_controller extends Controller
         $get_map_bank_detail = DB::table("fees_razorpay")
             ->where(["sub_institute_id" => session()->get("sub_institute_id"), "medium" => $medium_data[0]->medium])
             ->get();
-        //echo '<pre>RAJESH'; print_r($get_map_bank_detail); exit;        
+        //echo '<pre>RAJESH'; print_r($get_map_bank_detail); exit;
 
         $in_arr = array(
             "student_id" => $_REQUEST["student_id"],
@@ -1191,12 +1218,13 @@ class online_fees_collect_controller extends Controller
     /**
      * Fetch payment status from RAZORPAY
      */
-    public function razorpay_fetch_payment_status(Request $request) {
+    public function razorpay_fetch_payment_status(Request $request)
+    {
 
         //DB::enableQueryLog();
         // get payment data if payment status is not captured and is not null and order id is not null
         $payment_data = DB::table('fees_payment AS fp')
-            ->select('fp.id','fp.student_id','fr.key_id', 'fr.key_secret', 'fp.razorpay_order_id', 'tse.syear', 'fp.sub_institute_id')
+            ->select('fp.id', 'fp.student_id', 'fr.key_id', 'fr.key_secret', 'fp.razorpay_order_id', 'tse.syear', 'fp.sub_institute_id')
             ->join('tblstudent_enrollment AS tse', 'tse.student_id', '=', 'fp.student_id')
             ->join('academic_section AS a', 'a.id', '=', 'tse.grade_id')
             ->join('fees_razorpay AS fr', 'fr.medium', '=', 'a.medium')
@@ -1210,21 +1238,21 @@ class online_fees_collect_controller extends Controller
 
         //echo "<pre>RAJESH"; print_r(DB::getQueryLog()); exit;
         //echo "<pre>PAY"; print_r($payment_data); exit;
-        if ( !empty($payment_data) ) {
+        if (!empty($payment_data)) {
 
-            foreach ( $payment_data as $data ) {
+            foreach ($payment_data as $data) {
                 $id = $data->id;
                 $key_id = $data->key_id;
                 $key_secret = $data->key_secret;
                 $payment_id = $data->razorpay_order_id;
                 $student_id = $data->student_id;
-                $amount = round($data->amount,0);
+                $amount = round($data->amount, 0);
 //echo "<pre>API"; print_r($data); exit;
                 // initial razorpay api
                 $api = new Api($key_id, $key_secret);
                 $payment = $api->payment->fetch($payment_id);
 //echo "<pre>API"; print_r($data); exit;
-                if ( !empty( $payment ) ) {
+                if (!empty($payment)) {
                     $status = $payment['status'];
                     $json_response = $this->razorpay_payment_response_data_to_array($payment);
 
@@ -1234,11 +1262,11 @@ class online_fees_collect_controller extends Controller
                         "razorpay_bank_res" => $json_response,
                         "updated_at" => now()
                     );
-                //echo "<pre>IF-PAY"; print_r($data); exit;
-                  DB::table("fees_payment")
-                    ->where('id', $id)
-                    ->update($update_arr);
-                
+                    //echo "<pre>IF-PAY"; print_r($data); exit;
+                    DB::table("fees_payment")
+                        ->where('id', $id)
+                        ->update($update_arr);
+
                     $request->merge([
                         '_key' => csrf_token(),
                         'student_id' => $student_id,
@@ -1249,10 +1277,10 @@ class online_fees_collect_controller extends Controller
                     ]);
 
                     // echo "<pre>"; print_r($request->all()); exit;
-                    if($status == 'captured')
-                        $schooldata = $this->pay_fees($request, $data->student_id, $data->syear, $data->sub_institute_id, ($amount/100), $payment_id);//$payment['amount']
+                    if ($status == 'captured')
+                        $schooldata = $this->pay_fees($request, $data->student_id, $data->syear, $data->sub_institute_id, ($amount / 100), $payment_id);//$payment['amount']
                     //echo "<pre>"; print_r($schooldata); exit;
-                    
+
                 }
             }
         }
@@ -1264,7 +1292,7 @@ class online_fees_collect_controller extends Controller
         // echo "<pre>";
         // print_r($input);
         // exit;
-        
+
         $student_id = $_REQUEST["student_id"];
         $medium_data = DB::select("SELECT a.*,e.grade_id,CONCAT_WS('_',t.first_name,t.middle_name,t.last_name) AS student_name, t.mobile FROM tblstudent_enrollment e
         inner join academic_section a on e.grade_id = a.id
@@ -1292,22 +1320,22 @@ class online_fees_collect_controller extends Controller
 
         $api = new Api($get_map_bank_detail[0]->key_id, $get_map_bank_detail[0]->key_secret);
         $payment = $api->payment->fetch($input['razorpay_payment_id']);
-        if (count($input)  && !empty($input['razorpay_payment_id'])) {
+        if (count($input) && !empty($input['razorpay_payment_id'])) {
             try {
 
                 //Fetch payment information by razorpay_payment_id
-                $response = $api->payment->fetch($input['razorpay_payment_id'])->capture(array('amount' => $payment['amount'],'currency' => 'INR'));
+                $response = $api->payment->fetch($input['razorpay_payment_id'])->capture(array('amount' => $payment['amount'], 'currency' => 'INR'));
 
                 $json_response = $this->razorpay_payment_response_data_to_array($response);
-                
+
                 $res_josn = json_encode($response);
                 $get_all_data = DB::table("fees_payment")
-                ->where(["id" => $_REQUEST["inserted_id"]])
-                ->get();
+                    ->where(["id" => $_REQUEST["inserted_id"]])
+                    ->get();
                 $payment_status_res = $response['status'];
                 $payment_status = "PS";
-                
-                
+
+
                 $update_arr = array(
                     "razorpay_order_id" => $input['razorpay_payment_id'],
                     "razorpay_payment_status" => $payment_status,
@@ -1322,17 +1350,17 @@ class online_fees_collect_controller extends Controller
                 );
                 // echo "<pre>"; print_r($response); exit;
                 DB::table("fees_payment")
-                ->where($where_arr)
-                ->update($update_arr);
+                    ->where($where_arr)
+                    ->update($update_arr);
 
 
-                $data = $this->pay_fees($request, $get_all_data[0]->student_id, $get_all_data[0]->syear, $get_all_data[0]->sub_institute_id, ($payment['amount']/100),$input['razorpay_payment_id']);
+                $data = $this->pay_fees($request, $get_all_data[0]->student_id, $get_all_data[0]->syear, $get_all_data[0]->sub_institute_id, ($payment['amount'] / 100), $input['razorpay_payment_id']);
                 $type = $request->input('type');
 
 
                 return \App\Helpers\is_mobile($type, "fees/online_fees_collect/receipt_view", $data, "view");
             } catch (Exception $e) {
-                return  $e->getMessage();
+                return $e->getMessage();
                 $res_josn = json_encode($e->getMessage());
                 $get_all_data = DB::table("fees_payment")
                     ->where(["id" => $_REQUEST["inserted_id"]])
@@ -1361,11 +1389,12 @@ class online_fees_collect_controller extends Controller
         // return redirect()->back();
     }
 
-    public function razorpay_payment_response_data_to_array($response) {
+    public function razorpay_payment_response_data_to_array($response)
+    {
 
-        if ( !empty($response) ) {
+        if (!empty($response)) {
             $data = [];
-            foreach ( $response as $key => $value ) {
+            foreach ($response as $key => $value) {
                 $data[$key] = $value;
             }
 
