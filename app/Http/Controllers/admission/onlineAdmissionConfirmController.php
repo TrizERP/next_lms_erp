@@ -306,16 +306,14 @@ class onlineAdmissionConfirmController extends Controller
 
 //		$query = "SELECT *,id AS CHECKBOX FROM new_admission_inquiry_registration WHERE syear = '" . $syear . "' AND sub_institute_id = '".$sub_institute_id."' ";
 
-        $query = DB::table('new_admission_inquiry_registration')
-            ->select('*', 'id as CHECKBOX')
+        $result = DB::table('new_admission_inquiry_registration')
+            ->selectRaw('*, id as CHECKBOX')
             ->where('syear', '=', $syear)
             ->where('sub_institute_id', '=', $sub_institute_id)
-            ->get();
-
-        $result = DB::select($query);
+            ->get()->toArray();
 
         $result = array_map(function ($value) {
-            return (array) $value;
+            return (array)$value;
         }, $result);
         // dd($result);
         $res['status_code'] = 1;

@@ -2,25 +2,23 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\school_setup\facultywisetimetableController;
 use App\Models\fees\fees_collect\fees_collect;
-use App\Models\student\tblstudentModel;
 use App\Models\tblmenumasterModel;
 use App\Models\user\tbluserModel;
-use Psr\Container\ContainerExceptionInterface;
-use Psr\Container\NotFoundExceptionInterface;
-use function App\Helpers\is_mobile;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
-use App\Http\Controllers\school_setup\facultywisetimetableController;
-use Illuminate\Support\Facades\Storage;
+use Psr\Container\ContainerExceptionInterface;
+use Psr\Container\NotFoundExceptionInterface;
+use function App\Helpers\is_mobile;
 
 class dashboardController extends Controller
 {
     /**
      * Display a listing of the resource.
      *
-     * @param  Request  $request
+     * @param Request $request
      * @throws ContainerExceptionInterface
      * @throws NotFoundExceptionInterface
      * @return Response
@@ -971,7 +969,7 @@ class dashboardController extends Controller
                 $res['occupied_space_in_MB'] = $occupied_space_in_MB;
                 $res['used_space_in_MB'] = $used_space_in_MB;
                 $res['available_space_in_MB'] = $available_space_in_MB;
-                //END Code for calculate used space using folder-wise table   
+                //END Code for calculate used space using folder-wise table
 
                 // START Code for calculate used space in MB (using sub_institute_wise folder)
                 /*$size = 0;
@@ -985,12 +983,12 @@ class dashboardController extends Controller
                 $occupied_space_in_MB = $school_setup_data['given_space_mb'];
                 $used_space_in_MB = $this->formatBytes($size);
                 $available_space_in_MB = ($occupied_space_in_MB - $used_space_in_MB);
-    
+
                 $res['occupied_space_in_MB'] = $occupied_space_in_MB;
                 $res['used_space_in_MB'] = $used_space_in_MB;
                 $res['available_space_in_MB'] = $available_space_in_MB;*/
 
-                // END Code for calculate used space in MB (using sub_institute_wise folder) 
+                // END Code for calculate used space in MB (using sub_institute_wise folder)
 
                 return is_mobile($type, "home", $res, "view");
             } else {
@@ -1059,13 +1057,13 @@ class dashboardController extends Controller
             $standards_att = $absents = $presants = array();
 
             $attendanceCharts = DB::table("attendance_student as s")
-                ->join("standard as st", function($join){
+                ->join("standard as st", function ($join) {
                     $join->whereRaw("s.standard_id = st.id");
                 })
-                ->join("division as dt", function($join){
+                ->join("division as dt", function ($join) {
                     $join->whereRaw("s.section_id = dt.id");
                 })
-                ->select("st.name as standard,dt.name,s.attendance_code, SUM(CASE WHEN s.attendance_code = 'A' THEN 1 ELSE 0 END) AS absent, 
+                ->select("st.name as standard,dt.name,s.attendance_code, SUM(CASE WHEN s.attendance_code = 'A' THEN 1 ELSE 0 END) AS absent,
 			        SUM(CASE WHEN s.attendance_code = 'P' THEN 1 ELSE 0 END) AS present")
                 ->where("s.sub_institute_id", "=", $sub_institute_id)
                 ->where("s.attendance_date", "=", $date)
@@ -1351,7 +1349,7 @@ class dashboardController extends Controller
             }
 
             $get_complaint_data = DB::table("complaint")->selectRaw("SUM(IFNULL(FILE_SIZE,0)) AS file_size")
-                ->where("SUB_INSTITUTE_ID", $sub_institute_id)->where('CREATED_BY', $user_id)->get()->toArray();
+                ->where("SUB_INSTITUTE_ID", $sub_institute_id)->where('COMPLAINT_BY', $user_id)->get()->toArray();
 
             $complaint_size = 0;
             if ($get_complaint_data[0]->file_size != 0) {
@@ -1391,7 +1389,7 @@ class dashboardController extends Controller
             $res['occupied_space_in_MB'] = $occupied_space_in_MB;
             $res['used_space_in_MB'] = $used_space_in_MB;
             $res['available_space_in_MB'] = $available_space_in_MB;
-            //END Code for calculate used space using folder-wise table  
+            //END Code for calculate used space using folder-wise table
 
             return is_mobile($type, "teacher_home", $res, "view");
         }
@@ -1437,7 +1435,7 @@ class dashboardController extends Controller
                 ->where(['sub_institute_id' => $sub_institute_id, 'syear' => $syear, 'is_deleted' => "N"])
                 ->whereRaw("date_format(created_date,'%Y-%m-%d') = '".$date."'")->get()->toArray();
 
-            
+
             $other_fees_collects = DB::table('fees_paid_other')
                 ->selectRaw("IFNULL(SUM(actual_amountpaid),0) AS fees")
                 ->where('sub_institute_id', '=', $sub_institute_id)
@@ -1445,7 +1443,7 @@ class dashboardController extends Controller
                 ->whereRaw("DATE_FORMAT(created_date,'%Y-%m-%d') = '".$date."'")
                 ->where('is_deleted', '=', 'N')->get()->toArray();
             $other_fees_collects = json_decode(json_encode($other_fees_collects), true);
-            
+
             $parentCommunication = DB::table('parent_communication as p')
                 ->join('tblstudent as s', function($join) {
                     $join->whereRaw("p.student_id = s.id");
@@ -1462,7 +1460,7 @@ class dashboardController extends Controller
                 ->whereRaw("date_format(fees_collect.created_date,'%Y-%m-%d') = '".$date."'")
                 ->groupBy('payment_mode')
                 ->take(10)->get()->toArray();
-            
+
             $studentBirthdays = DB::table('tblstudent as s')
                 ->join('tblstudent_enrollment as ts', function($join) use($syear) {
                     $join->whereRaw("s.id = ts.student_id and ts.syear = '".$syear."'");
@@ -1487,7 +1485,7 @@ class dashboardController extends Controller
                 ->where("s.status", "!=", 0)
                 ->whereRaw("date_format(s.birthdate,'%m-%d') >= DATE_FORMAT(NOW(), '%m-%d') and DATE_FORMAT(s.birthdate, '%m-%d') <= DATE_FORMAT((NOW() + INTERVAL +7 DAY), '%m-%d')")
                 ->orderByRaw("DATE_FORMAT(s.birthdate, '%d')")->get()->toArray();
-            
+
             $calendarEvents = DB::table('calendar_events')->where('sub_institute_id', $sub_institute_id)
                 ->where('school_date', '>=', $date)->where('school_date', '<=', $date15)->get()->toArray();
 
@@ -1537,7 +1535,7 @@ class dashboardController extends Controller
                 ":sb"    => $sub_institute_id,
                 ":syear" => $syear,
             );
-            
+
             $fees_chart_data = DB::table('fees_collect as fc')
                 ->join('tblstudent_enrollment as se', function ($join) use($syear) {
                     $join->whereRaw("se.student_id = fc.student_id and se.syear = ".$syear);
@@ -1553,7 +1551,7 @@ class dashboardController extends Controller
                 ":syear" => $syear,
                 ":sb"    => $sub_institute_id,
             );
-            
+
             $student_chart_data = DB::table('tblstudent_enrollment as se')
                 ->join('standard as s', function ($join) {
                     $join->whereRaw("s.id = se.standard_id");
@@ -1588,7 +1586,7 @@ class dashboardController extends Controller
                     'value':".$value->amount."
                 },";
             }
-            
+
             if (isset($next_id)) {
                 $next_id = $key + 1;
             } else {
@@ -1635,7 +1633,7 @@ class dashboardController extends Controller
                 ":syear" => $syear,
                 ":mode"  => "cheque",
             );
-            
+
             $fees_chart1_cheque_data = DB::table('fees_collect as fc')
                 ->join('tblstudent_enrollment as se', function ($join) use($syear) {
                     $join->whereRaw("se.student_id = fc.student_id and se.syear = ".$syear);
@@ -1746,7 +1744,7 @@ class dashboardController extends Controller
             $paid_data = rtrim($paid_data, ",");
             $paid_data .= "]";
 
-            
+
             $academicSections = DB::table('academic_section')->where('sub_institute_id', $sub_institute_id)->get()->toArray();
 
             $academicSections = array_map(function ($value) {
@@ -1757,7 +1755,7 @@ class dashboardController extends Controller
             foreach ($academicSections as $key => $value) {
                 $gradeIds .= $value['id'].',';
             }
-            
+
             $standards = DB::table('standard')->whereIn('grade_id', explode(',', rtrim($gradeIds, ",")))->get()->toArray();
 
             $standards = array_map(function ($value) {
@@ -1769,7 +1767,7 @@ class dashboardController extends Controller
             foreach ($standards as $key => $value) {
                 $standardsArray[$value['grade_id']][] = $standards[$key];
             }
-            
+
             $chartStudents = DB::table('tblstudent as s')
                 ->join('tblstudent_enrollment as se', function($join) {
                     $join->whereRaw("s.id = se.student_id");
@@ -1777,7 +1775,7 @@ class dashboardController extends Controller
                 ->selectRaw('s.id,se.grade_id,se.standard_id')
                 ->where('s.sub_institute_id', $sub_institute_id)
                 ->where('grade_id', '!=', '')->where('standard_id', '!=', '')->get()->toArray();
-            
+
             $chartAS = [];
             $chartS = [];
 
@@ -1790,14 +1788,14 @@ class dashboardController extends Controller
             $chartFS = [];
 
             $chartFees = DB::table('fees_collect as fc')
-                    ->join('tblstudent_enrollment as se', function($join) use($syear) {
-                        $join->whereRaw("se.student_id = fc.student_id AND se.syear = ". $syear);
-                    })->join('standard as s', function($join) {
-                        $join->whereRaw("s.id = se.standard_id");
-                    })
-                    ->selectRaw("fc.amount,s.name,se.grade_id,se.standard_id")
-                    ->where('s.sub_institute_id', $sub_institute_id)->get()->toArray();
-            
+                ->join('tblstudent_enrollment as se', function($join) use($syear) {
+                    $join->whereRaw("se.student_id = fc.student_id AND se.syear = ". $syear);
+                })->join('standard as s', function($join) {
+                    $join->whereRaw("s.id = se.standard_id");
+                })
+                ->selectRaw("fc.amount,s.name,se.grade_id,se.standard_id")
+                ->where('s.sub_institute_id', $sub_institute_id)->get()->toArray();
+
             foreach ($academicSections as $key => $value) {
                 $chartFAs[$value['id']] = 0;
             }
@@ -2094,7 +2092,7 @@ class dashboardController extends Controller
             $users = tbluserModel::selectRaw("count(id) as users")->where([
                 'sub_institute_id' => $sub_institute_id, 'status' => "1",
             ])->get()->toArray();
-            
+
             $students = DB::table('tblstudent as ts')
                 ->join('tblstudent_enrollment as se', function($join) {
                     $join->whereRaw("se.student_id = ts.id AND se.sub_institute_id = se.sub_institute_id");
@@ -2105,8 +2103,8 @@ class dashboardController extends Controller
                 ->where('ts.sub_institute_id', $sub_institute_id)
                 ->where('se.syear', $syear)
                 ->whereNull('se.end_date')->get()->toArray();
-            
-            
+
+
             $total_admission = DB::table('admission_enquiry')
                 ->selectRaw("COUNT(id) as total_admissions")
                 ->where('sub_institute_id', $sub_institute_id)
@@ -2116,7 +2114,7 @@ class dashboardController extends Controller
             $fees_collects = fees_collect::selectRaw("ifnull(sum(amount),0) as fees")->where([
                 'sub_institute_id' => $sub_institute_id, 'syear' => $syear, 'is_deleted' => "N",
             ])->whereRaw("date_format(created_date,'%Y-%m-%d') = '".$date."'")->get()->toArray();
-            
+
             $other_fees_collects = DB::table('fees_paid_other')
                 ->selectRaw("IFNULL(SUM(actual_amountpaid),0) AS fees")
                 ->where('sub_institute_id', $sub_institute_id)
@@ -2125,7 +2123,7 @@ class dashboardController extends Controller
                 ->where('is_deleted', 'N')
                 ->get()->toArray();
             $other_fees_collects = json_decode(json_encode($other_fees_collects), true);
-            
+
             $parentCommunication = DB::table('parent_communication as p')
                 ->join('tblstudent as s', function($join) {
                     $join->whereRaw('p.student_id = s.id');
@@ -2289,7 +2287,7 @@ class dashboardController extends Controller
         $subChildMenuData = tblmenumasterModel::where('parent_menu_id', '!=', 0)
             ->whereRaw("find_in_set('$sub_institute_id',sub_institute_id) AND level = 3 and id in (".$rightsMenusIds.") and status = 1 ")
             ->orderBy('sort_order')->get()->toArray();
-        
+
         $i = 0;
         foreach ($subChildMenuData as $key => $value) {
             $finalSubChildMenu[$value['parent_menu_id']][$i] = $subChildMenuData[$key];
