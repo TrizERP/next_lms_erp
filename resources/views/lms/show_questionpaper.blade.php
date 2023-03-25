@@ -103,27 +103,27 @@
                                                 <td>
                                                     @if ($show_block == 'YES')
                                                         <a target="_blank"
-                                                            href="{{ route('question_paper.show', ['id' => $quespaper->id]) }}"
-                                                            class="btn btn-info btn-outline btn m-r-5">View</a>
+                                                           href="{{ route('question_paper.show', ['question_paper' => $quespaper->id]) }}"
+                                                           class="btn btn-info btn-outline btn m-r-5">View</a>
                                                     @endif
 
                                                     @if (strtoupper($user_profile) == 'STUDENT')
                                                         <div class="text-nowrap">
                                                             @if ($quespaper->total_attempt > 0)
                                                                 <a href="{{ route('online_exam_attempt', ['questionpaper_id' => $quespaper->id, 'student_id' => session()->get('user_id')]) }}"
-                                                                    class="btn btn-info btn-outline btn m-r-5">View
+                                                                   class="btn btn-info btn-outline btn m-r-5">View
                                                                     Attempted Exam</a>
                                                             @endif
 
                                                             @php
                                                                 $show_attempt_exam = 'no';
-                                                                
+
                                                                 if ($quespaper->attempt_allowed == 'unlimited') {
                                                                     $show_attempt_exam = 'yes';
                                                                 } elseif ($quespaper->attempt_allowed != 'unlimited' && $quespaper->attempt_allowed > $quespaper->total_attempt) {
                                                                     $show_attempt_exam = 'yes';
                                                                 }
-                                                                
+
                                                                 if ($quespaper->open_date != '' && $quespaper->close_date != '') {
                                                                     if ($quespaper->active_exam == 'yes') {
                                                                         $show_attempt_exam = 'yes';
@@ -131,7 +131,7 @@
                                                                         $show_attempt_exam = 'no';
                                                                     }
                                                                 }
-                                                                
+
                                                             @endphp
 
                                                             @if ($show_attempt_exam == 'yes')
@@ -141,7 +141,8 @@
                                                                     Exam</a>
                                                             @else
                                                                 <div class="btn btn-danger m-r-5"
-                                                                    style="pointer-events: none;">Closed Exam</div>
+                                                                     style="pointer-events: none;">Closed Exam
+                                                                </div>
                                                             @endif
                                                         </div>
                                                     @endif
@@ -151,14 +152,14 @@
                                                     <td>
                                                         <div class="d-flex align-items-center justify-content-end">
                                                             <a class="btn btn-outline-success"
-                                                                href="{{ route('question_paper.edit', ['id' => $quespaper->id]) }}"
-                                                                onclick="return edit_questionpaper({{ $quespaper->id }},'{{ $quespaper->exam_type }}');">
+                                                               href="{{ route('question_paper.edit', ['question_paper' => $quespaper->id]) }}"
+                                                               onclick="return edit_questionpaper({{ $quespaper->id }},'{{ $quespaper->exam_type }}');">
                                                                 <i class="ti-pencil-alt"></i>
                                                             </a>
                                                             <form class="d-inline"
-                                                                action="{{ route('question_paper.destroy', $quespaper->id) }}"
-                                                                method="post" class="btn btn-outline-danger btn-sm"
-                                                                onsubmit="return delete_questionpaper({{ $quespaper->id }},'{{ $quespaper->exam_type }}');">
+                                                                  action="{{ route('question_paper.destroy', $quespaper->id) }}"
+                                                                  method="post" class="btn btn-outline-danger btn-sm"
+                                                                  onsubmit="return delete_questionpaper({{ $quespaper->id }},'{{ $quespaper->exam_type }}');">
                                                                 @csrf
                                                                 @method('DELETE')
                                                                 <button type="submit" class="btn btn-outline-danger">
@@ -188,41 +189,41 @@
 </div>
 @include('includes.lmsfooterJs')
 <script>
-   $(document).ready(function() {
-     var table = $('#subject_list').DataTable( {
-         ordering: false,
-         select: true,          
-         lengthMenu: [ 
-                        [100, 500, 1000, -1], 
-                        ['100', '500', '1000', 'Show All'] 
-        ],
-        dom: 'Bfrtip', 
-        buttons: [ 
-            { 
-                extend: 'pdfHtml5',
-                title: 'Exam List',
-                orientation: 'landscape',
-                pageSize: 'LEGAL',                
-                pageSize: 'A0',
-                exportOptions: {                   
-                     columns: ':visible'                             
+    $(document).ready(function () {
+        var table = $('#subject_list').DataTable({
+            ordering: false,
+            select: true,
+            lengthMenu: [
+                [100, 500, 1000, -1],
+                ['100', '500', '1000', 'Show All']
+            ],
+            dom: 'Bfrtip',
+            buttons: [
+                {
+                    extend: 'pdfHtml5',
+                    title: 'Exam List',
+                    orientation: 'landscape',
+                    pageSize: 'LEGAL',
+                    pageSize: 'A0',
+                    exportOptions: {
+                        columns: ':visible'
+                    },
                 },
-            }, 
-            { extend: 'csv', text: ' CSV', title: 'Exam List' }, 
-            { extend: 'excel', text: ' EXCEL', title: 'Exam List' }, 
-            { extend: 'print', text: ' PRINT', title: 'Exam List' }, 
-            'pageLength' 
-        ], 
-        }); 
+                {extend: 'csv', text: ' CSV', title: 'Exam List'},
+                {extend: 'excel', text: ' EXCEL', title: 'Exam List'},
+                {extend: 'print', text: ' PRINT', title: 'Exam List'},
+                'pageLength'
+            ],
+        });
         //table.buttons().container().appendTo('#example_wrapper .col-md-6:eq(0)');
 
-        $('#subject_list thead tr').clone(true).appendTo( '#subject_list thead' );
-        $('#subject_list thead tr:eq(1) th').each( function (i) {
+        $('#subject_list thead tr').clone(true).appendTo('#subject_list thead');
+        $('#subject_list thead tr:eq(1) th').each(function (i) {
             var title = $(this).text();
-            $(this).html( '<input type="text" placeholder="Search '+title+'" />' );
+            $(this).html('<input type="text" placeholder="Search ' + title + '" />');
 
-            $( 'input', this ).on( 'keyup change', function () {
-                if ( table.column(i).search() !== this.value ) {
+            $('input', this).on('keyup change', function () {
+                if (table.column(i).search() !== this.value) {
                     table
                         .column(i)
                         .search( this.value )

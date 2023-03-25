@@ -26,6 +26,7 @@
                         <div class="row">
                             <div class="col-lg-6 col-md-6 col-6">
                               <form role="search" id="academicYears" class="app-search hidden-sm hidden-xs m-r-5">
+                                  @csrf
                                 <select class="cust-select form-control year-sel mb-0">
                                 @foreach(Session::get('academicYears') as $kay => $vay)
                                     <option value="{{$vay->syear}}"
@@ -35,10 +36,11 @@
                                     >{{$vay->syear}}</option>
                                   @endforeach
                                 </select>
-                              </form>                                
+                              </form>
                             </div>
                             <div class="col-lg-6 col-md-6 col-6">
-                              <form role="search" id="academicTerms" class="app-search hidden-sm hidden-xs m-r-5">
+                                <form role="search" id="academicTerms" class="app-search hidden-sm hidden-xs m-r-5">
+                                    @csrf
                                 <select class="cust-select form-control mb-0">
                                   @foreach(Session::get('academicTerms') as $kat => $vat)
                                     <option value="{{$vat->term_id}}"
@@ -48,7 +50,7 @@
                                     >{{$vat->title}}</option>
                                   @endforeach
                                 </select>
-                              </form>                                
+                                </form>
                             </div>
                         </div>
                     </div>
@@ -74,48 +76,50 @@
                                 <a class="dropdown-item" href="{{route('device_check')}}"><i class="mdi mdi-table-settings"></i> Device Check</a>
                                 <a class="dropdown-item" href="{{route('erp_status.index')}}"><i class="mdi mdi-content-save-settings-outline"></i> ERP Status</a>
                                 <a class="dropdown-item" href="{{route('implementation')}}"><i class="mdi mdi-checkerboard"></i> Implementation</a>
-                                @if(strtoupper(Session::get('user_profile_name')) == 'ADMIN')    
+                                @if(strtoupper(Session::get('user_profile_name')) == 'ADMIN')
                                 <a class="dropdown-item" href="{{route('add_groupwise_rights.index')}}"><i class="mdi mdi-lumx"></i> Groupwise Rights</a>
                                 <a class="dropdown-item" href="{{route('add_individual_rights.index')}}"><i class="mdi mdi-repeat-once"></i> Individual Rights</a>
                                 @endif
-                                <a class="dropdown-item" href="{{ url('/logout') }}"><i class="mdi mdi-power"></i> Logout</a>
+                                <a class="dropdown-item" href="{{ url('/logout') }}"><i class="mdi mdi-power"></i>
+                                    Logout</a>
                             </div>
                         </div>
                     </div>
                 </div>
-            </header>
-  <aside class="left-sidebar d-flex">                 
-    <div class="main-menu-block">
-        <div class="main-nav nav flex-column nav-pills" role="tablist" aria-orientation="vertical">
-            <a class="nav-link" href="{{route('dashboard')}}">
+          </header>
+            <aside class="left-sidebar d-flex">
+                <div class="main-menu-block">
+                    <div class="main-nav nav flex-column nav-pills" role="tablist" aria-orientation="vertical">
+                        <a class="nav-link" href="{{route('dashboard')}}">
                 <span class="menu-main-icon">
-                
+
                     <img class="icon-nrml" src="{{ asset('/admin_dep/images/menu-dashboard.png') }}" alt="">
-                    
+
                     <img class="icon-hvr" src="{{ asset('/admin_dep/images/menu-dashboard-white.png') }}" alt="">
                 </span>
-                Dashboard
-            </a>
-            @if(!empty($menuMaster))
-            @php 
-            $i = 1;
-            @endphp
-            @foreach($menuMaster as $key => $value)
-                @php 
-                $icon_name = $value['icon'];                                
-                $icon_nrml = "https://".$_SERVER['HTTP_HOST']."/admin_dep/images/menu-$icon_name.png";
-                $icon_hvr = "https://".$_SERVER['HTTP_HOST']."/admin_dep/images/menu-$icon_name-white.png";
-                @endphp
-                <a class="nav-link" id="menu-{{$i}}-tab" data-toggle="pill" href="#menu-{{$i}}" role="tab" aria-controls="menu-{{$i}}" aria-selected="false">
+                            Dashboard
+                        </a>
+                        @if(!empty($menuMaster))
+                            @php
+                                $i = 1;
+                            @endphp
+                            @foreach($menuMaster as $key => $value)
+                                @php
+                                    $icon_name = $value['icon'];
+                                    $icon_nrml = "https://".$_SERVER['HTTP_HOST']."/admin_dep/images/menu-$icon_name.png";
+                                    $icon_hvr = "https://".$_SERVER['HTTP_HOST']."/admin_dep/images/menu-$icon_name-white.png";
+                                @endphp
+                                <a class="nav-link" id="menu-{{$i}}-tab" data-toggle="pill" href="#menu-{{$i}}"
+                                   role="tab" aria-controls="menu-{{$i}}" aria-selected="false">
                 <span class="menu-main-icon">
                     <img class="icon-nrml" src="{{$icon_nrml}}" alt="">
                     <img class="icon-hvr" src="{{$icon_hvr}}" alt="">
                 </span>
-                {{$value['name']}}
-                </a>
+                                    {{$value['name']}}
+                                </a>
                 @php $i++; @endphp
-            @endforeach
-            @endif             
+                            @endforeach
+                        @endif
         </div>
     </div>
 </aside>
@@ -132,16 +136,18 @@
               <div class="alert alert-danger">
                 <div class="error">
                   <!-- <div class="error__subtitle">{{$error}}</div></br> -->
-                  <div class="error__description">Something went wrong while performing your request. Please contact Triz Administrator.</div>
+                      <div class="error__description">Something went wrong while performing your request. Please contact
+                          Triz Administrator.
+                      </div>
                 </div>
               </div>
-              <button class="btn btn-warning" onclick="goBack();">GO BACK</button>
+                <button class="btn btn-warning" onclick="goBack();">GO BACK</button>
             </center>
         </div>
     </div>
-</div>            
+</div>
 
-@include('includes.footerJs')
+            @include('includes.footerJs')
 <script type="text/javascript">
   function goBack(){
     window.history.back();

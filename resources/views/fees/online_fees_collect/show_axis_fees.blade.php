@@ -20,6 +20,7 @@
                 <h4 class="page-title">Fees Collect</h4>
             </div>
             <form action="<?php echo $data['redirect_url']; ?>" id="myForm" method="post">
+                @csrf
                 <input type="hidden" name="student_id" value=<?php echo $data['student_id']; ?>>
                 <div class="col-lg-3 col-md-4 col-sm-4">
                     <label for="year">Choose Year:</label>
@@ -62,13 +63,13 @@
                                     <tr>
                                         <th>Month</th>
                                         <th>Fees</th>
-                                        <th>Paid </th>
-                                        <th>Remaining </th>
+                                        <th>Paid</th>
+                                        <th>Remaining</th>
                                     </tr>
-                                    <?php 
-                                    $remainFees = 0; 
+                                    <?php
+                                    $remainFees = 0;
                                     $feesDetails = [];
-                                foreach ($data['total_fees'] as $id => $arr) { 
+                                    foreach ($data['total_fees'] as $id => $arr) {
                                     $feesDetails[$arr['month']] = $arr['remain'];
                                     ?>
                                     <tr>
@@ -77,9 +78,9 @@
                                         <td><?php echo $arr['paid']; ?></td>
                                         <td><?php echo $arr['remain']; ?></td>
                                     </tr>
-                                <?php 
+                                    <?php
                                     $remainFees += $arr['remain'];
-                                } ?>
+                                    } ?>
 
                                 </table>
                             </div>
@@ -236,7 +237,7 @@
                                 </div>
                                 <div class="table-responsive col-md-12">
                                     <div class="col-md-6 form-group">
-                                        
+
                                     </div>
                                     <div class="col-md-6 form-group">
                                         <?php

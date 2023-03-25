@@ -4,15 +4,15 @@
 
 <div id="page-wrapper">
     <div class="container-fluid">
-            <div class="row bg-title">
-                <div class="col-lg-3 col-md-4 col-sm-4 col-xs-12">
-                    <h4 class="page-title">Template Master</h4> 
-                </div>
-            </div>        
-            <div class="card">
-                <div class="row">
-                    <div class="col-lg-12 col-sm-12 col-xs-12">
-                        @if ($sessionData = Session::get('data'))
+        <div class="row bg-title">
+            <div class="col-lg-3 col-md-4 col-sm-4 col-xs-12">
+                <h4 class="page-title">Template Master</h4>
+            </div>
+        </div>
+        <div class="card">
+            <div class="row">
+                <div class="col-lg-12 col-sm-12 col-xs-12">
+                    @if ($sessionData = Session::get('data'))
                         <div class="alert alert-success alert-block">
                             <button type="button" class="close" data-dismiss="alert">×</button>
                             <strong>{{ $sessionData['message'] }}</strong>
@@ -37,30 +37,34 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                @php
-                                $j=1;                              
-                                @endphp
+                            @php
+                                $j=1;
+                            @endphp
 
-                                @if(isset($data['data']))
-                                    @foreach($data['data'] as $key => $val)                                    
-                                    <tr>    
+                            @if(isset($data['data']))
+                                @foreach($data['data'] as $key => $val)
+                                    <tr>
                                         <td>{{$j}}</td>
                                         <td>{{$val['module_name']}}</td>
                                         <td>{{$val['title']}}</td>
                                         <td>{{$val['created_by']}}</td>
-                                        <td>{{$val['created_on']}}</td>                                      
-                                        <td> 
+                                        <td>{{$val['created_on']}}</td>
+                                        <td>
                                             <div class="d-inline">
-                                                <a class="btn btn-info btn-outline" href="{{ route('templatemaster.edit',['id'=>$val['id']]) }}">
+                                                <a class="btn btn-info btn-outline"
+                                                   href="{{ route('templatemaster.edit',['templatemaster'=>$val['id']]) }}">
                                                     <i class="ti-pencil-alt"></i>
-                                                </a>                                    
-                                                <form action="{{ route('templatemaster.destroy', $val['id'])}}" method="post" class="d-inline">
+                                                </a>
+                                                <form action="{{ route('templatemaster.destroy', $val['id'])}}"
+                                                      method="post" class="d-inline">
                                                     @csrf
                                                     @method('DELETE')
-                                                    <button onclick="return confirmDelete();" type="submit" class="btn btn-outline-danger"><i class="mdi mdi-close"></i></button>                                                
+                                                    <button onclick="return confirmDelete();" type="submit"
+                                                            class="btn btn-outline-danger"><i class="mdi mdi-close"></i>
+                                                    </button>
                                                 </form>
                                             </div>
-                                        </td>  
+                                        </td>
                                     </tr>
                                     @php
                                     $j++;
@@ -71,8 +75,8 @@
                         </table>
                     </div>
                     </div>
-                </div>
-            </div>       
+            </div>
+        </div>
     </div>
 </div>
 

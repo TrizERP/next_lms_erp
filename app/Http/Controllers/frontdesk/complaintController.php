@@ -33,10 +33,10 @@ class complaintController extends Controller
 
         $data = DB::table("complaint as c")
             ->join('tbluser as u', function ($join) use ($sub_institute_id) {
-                $join->toArray("c.COMPLAINT_BY = u.id AND u.sub_institute_id = '".$sub_institute_id."'");
+                $join->whereRaw("c.COMPLAINT_BY = u.id AND u.sub_institute_id = '" . $sub_institute_id . "'");
             })
             ->leftJoin('tbluser as u2', function ($join) use ($sub_institute_id) {
-                $join->toArray("c.COMPLAINT_SOLUTION_BY = u2.id AND u2.sub_institute_id = '".$sub_institute_id."'");
+                $join->whereRaw("c.COMPLAINT_SOLUTION_BY = u2.id AND u2.sub_institute_id = '" . $sub_institute_id . "'");
             })
             ->selectRaw("c.*, CONCAT_WS(' ',u.first_name,u.middle_name,u.last_name) AS COMPLAINT_BY,
 		    CONCAT_WS(' ',u2.first_name,u2.middle_name,u2.last_name) AS COMPLAINT_SOLUTION_BY")
@@ -160,13 +160,13 @@ class complaintController extends Controller
         $syear = $request->session()->get("syear");
 
         $result = DB::table("complaint as c")
-            ->join('tbluser as u', function ($join) {
-                $join->toArray("c.COMPLAINT_BY = u.id AND u.sub_institute_id = '".$sub_institute_id."'");
+            ->join('tbluser as u', function ($join) use ($sub_institute_id) {
+                $join->whereRaw("c.COMPLAINT_BY = u.id AND u.sub_institute_id = '" . $sub_institute_id . "'");
             })
-            ->leftJoin('tbluser as u2', function ($join) {
-                $join->toArray("c.COMPLAINT_SOLUTION_BY = u2.id AND u2.sub_institute_id = '".$sub_institute_id."'");
+            ->leftJoin('tbluser as u2', function ($join) use ($sub_institute_id) {
+                $join->whereRaw("c.COMPLAINT_SOLUTION_BY = u2.id AND u2.sub_institute_id = '" . $sub_institute_id . "'");
             })
-            ->selectRaw("c.*, CONCAT_WS(' ',u.first_name,u.middle_name,u.last_name) AS COMPLAINT_BY, 
+            ->selectRaw("c.*, CONCAT_WS(' ',u.first_name,u.middle_name,u.last_name) AS COMPLAINT_BY,
 		    CONCAT_WS(' ',u2.first_name,u2.middle_name,u2.last_name) AS COMPLAINT_SOLUTION_BY")
             ->where("c.SYEAR", "=", $syear)
             ->where("c.SUB_INSTITUTE_ID", "=", $sub_institute_id)

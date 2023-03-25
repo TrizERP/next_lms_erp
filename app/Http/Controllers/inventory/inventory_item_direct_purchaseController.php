@@ -29,19 +29,19 @@ class inventory_item_direct_purchaseController extends Controller
 
         $data = DB::table("inventory_item_direct_purchase as idp")
             ->join('inventory_vendor_master as iv', function ($join) {
-                $join->wherRaw("iv.id = idp.vendor_id AND iv.sub_institute_id = idp.sub_institute_id");
+                $join->whereRaw("iv.id = idp.vendor_id AND iv.sub_institute_id = idp.sub_institute_id");
             })
             ->join('inventory_item_category_master as ic', function ($join) {
-                $join->wherRaw("ic.id = idp.category_id AND ic.sub_institute_id = idp.sub_institute_id");
+                $join->whereRaw("ic.id = idp.category_id AND ic.sub_institute_id = idp.sub_institute_id");
             })
             ->join('inventory_item_sub_category_master as ics', function ($join) {
-                $join->wherRaw("ics.id = idp.sub_category_id AND ics.sub_institute_id = idp.sub_institute_id");
+                $join->whereRaw("ics.id = idp.sub_category_id AND ics.sub_institute_id = idp.sub_institute_id");
             })
             ->join('inventory_item_master as im', function ($join) {
-                $join->wherRaw("im.id = idp.item_id AND im.sub_institute_id = idp.sub_institute_id");
+                $join->whereRaw("im.id = idp.item_id AND im.sub_institute_id = idp.sub_institute_id");
             })
             ->join('tbluser as tu', function ($join) {
-                $join->wherRaw("tu.id = idp.created_by AND tu.sub_institute_id = idp.sub_institute_id");
+                $join->whereRaw("tu.id = idp.created_by AND tu.sub_institute_id = idp.sub_institute_id");
             })
             ->selectRaw('idp.*,iv.vendor_name,ic.title AS catergory_name,ics.title AS sub_catergory_name,im.title AS item_name,
                 CONCAT_WS(" ",tu.first_name,tu.middle_name,tu.last_name) AS created_by')

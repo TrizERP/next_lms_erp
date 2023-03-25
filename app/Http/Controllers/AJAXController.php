@@ -53,7 +53,7 @@ class AJAXController extends Controller
             })->join('question_paper as qp', function ($join) {
                 $join->whereRaw('qp.subject_id = ssm.subject_id and qp.standard_id = sdm.standard_id');
             })->join('lms_question_master as lqm', function ($join) {
-                $join->whereRaw('lqm.subject_id = ssm.subject_id and lqm.standard_id = sdm.standard_id and lqm.id in 
+                $join->whereRaw('lqm.subject_id = ssm.subject_id and lqm.standard_id = sdm.standard_id and lqm.id in
                 (SELECT FROM lms_question_master as lqm, WHERE qp.id = qp2.id AND FIND_IN_SET(lqm.id, qp.question_ids))');
             })->join('lms_online_exam_answer as am', function ($join) {
                 $join->whereRaw('am.question_paper_id = qp.id and am.student_id = ts.id and am.question_id = lqm.id');
@@ -529,15 +529,15 @@ class AJAXController extends Controller
         foreach ($full_bk as $id => $val) {
             $response .= "
                  <tr>
-                    
+
                     <td style='width: 20%'>$id</td>
                     <td style='width: 20%'>$val</td>
             ";
             if ($id != 'Total') {
-                $response .= "<td style='width: 20%'><input type='number' min=0 max=$val  value='".$val."' name='fees_data[".$final_bk_name[$id]."]' class='form-control allField1'></td>";
-                $response .= "<input type='hidden' value='".$val."' name='hid_fees_data[".$final_bk_name[$id]."]' class='hid_allField1'>";
-                $response .= "<td style='width: 20%'><input type='number' value='0' name='discount_data[".$final_bk_name[$id]."]' class='form-control allDisField' style='min-width:150px;'></td>"; // min=0 max=$val  
-                $response .= "<td style='width: 20%'><input type='number'  min=0 value=0 name='fine_data[".$final_bk_name[$id]."]' class='form-control allFinField' style='min-width:150px;'></td>";
+                $response .= "<td style='width: 20%'><input type='number' min=0 max=$val  value='" . $val . "' name='fees_data[" . $final_bk_name[$id] . "]' class='form-control allField1'></td>";
+                $response .= "<input type='hidden' value='" . $val . "' name='hid_fees_data[" . $final_bk_name[$id] . "]' class='hid_allField1'>";
+                $response .= "<td style='width: 20%'><input type='number' value='0' name='discount_data[" . $final_bk_name[$id] . "]' class='form-control allDisField' style='min-width:150px;'></td>"; // min=0 max=$val
+                $response .= "<td style='width: 20%'><input type='number'  min=0 value=0 name='fine_data[" . $final_bk_name[$id] . "]' class='form-control allFinField' style='min-width:150px;'></td>";
             } else {
                 $response .= "<td style='width: 25%'><input type='text' id='totalVal' name='total' value='".$total."' class='form-control'></td>";
                 $response .= "<td style='width: 25%'><input type='text' id='totalDis' name='totalDis' value='0' class='form-control directdiscount'></td>";
@@ -622,7 +622,7 @@ class AJAXController extends Controller
         foreach ($full_bk as $id => $val) {
             $response .= "
                  <tr>
-                    
+
                     <td style='width: 20%'>$id</td>
                     <td style='width: 20%'>$val</td>
             ";
@@ -809,10 +809,10 @@ class AJAXController extends Controller
         $RightSideMenu = $RS_Menu = $RS_ChildMenu = array();
 
         $RSMainQuery = DB::table('rightside_menumaster as m')
-            ->whereRaw("FIND_IN_SET('".$sub_institute_id."', m.sub_institute_id) AND 
-                m.parent_menu_id = 0 AND main_menu_id = '".$main_menu_id."'")
+            ->whereRaw("FIND_IN_SET('" . $sub_institute_id . "', m.sub_institute_id) AND
+                m.parent_menu_id = 0 AND main_menu_id = '" . $main_menu_id . "'")
             ->orderBy('sort_order')->get()->toArray();
-        $RSMainQuery = DB::select($RSMainQuery);
+
         $RSMainQuery = json_decode(json_encode($RSMainQuery), true);
 
         if (count($RSMainQuery) > 0) {
@@ -820,16 +820,6 @@ class AJAXController extends Controller
                 $RS_Menu[$value['id']] = $value;
             }
         }
-
-        $RSChildQuery = "SELECT distinct(m.id),m.*,mm.link
-                        FROM tbluser u
-                        LEFT JOIN tblindividual_rights i ON u.id = i.user_id AND u.sub_institute_id = i.sub_institute_id
-                        LEFT JOIN tblgroupwise_rights g ON u.user_profile_id = g.profile_id AND u.sub_institute_id = g.sub_institute_id
-                        INNER JOIN rightside_menumaster m ON (i.menu_id = m.tblmenu_master_id OR g.menu_id = m.tblmenu_master_id) 
-                        INNER JOIN tblmenumaster mm on mm.id = m.tblmenu_master_id
-                        AND FIND_IN_SET('".$sub_institute_id."', m.sub_institute_id)
-                        WHERE u.sub_institute_id = '".$sub_institute_id."' AND u.id = '".$user_id."'
-                        AND m.main_menu_id = '".$main_menu_id."'";
 
         $RSChildQuery = DB::table('tbluser as u')
             ->leftJoin('tblindividual_rights as i', function ($join) {
@@ -839,8 +829,9 @@ class AJAXController extends Controller
             })->join('rightside_menumaster as m', function ($join) {
                 $join->whereRaw('(i.menu_id = m.tblmenu_master_id OR g.menu_id = m.tblmenu_master_id)');
             })->join('tblmenumaster as mm', function ($join) use ($sub_institute_id) {
-                $join->whereRaw("mm.id = m.tblmenu_master_id AND FIND_IN_SET('".$sub_institute_id."', m.sub_institute_id)");
+                $join->whereRaw("mm.id = m.tblmenu_master_id AND FIND_IN_SET('" . $sub_institute_id . "', m.sub_institute_id)");
             })
+            ->selectRaw('distinct(m.id),m.*,mm.link')
             ->where('u.sub_institute_id', $sub_institute_id)
             ->where('u.id', $user_id)
             ->where('m.main_menu_id', $main_menu_id)->get()->toArray();
@@ -863,18 +854,18 @@ class AJAXController extends Controller
                 } else {
                     $active = "";
                 }
-                $main_menu .= '<li class="nav-item" role="presentation" data-toggle="tooltip" data-placement="top" 
-                title="'.$val['name'].'"><a class="nav-link '.$active.'" data-toggle="tab" href="#right-tab-'.$i.'" 
-                role="tab" aria-controls="right-tab-'.$i.'" aria-selected="false"><img class="icon-nrml" 
-                src="http://'.$_SERVER['HTTP_HOST'].'/admin_dep/images/side-'.$val['icon'].'.png" alt="">
-                <img class="icon-hvr" src="https://'.$_SERVER['HTTP_HOST'].'/admin_dep/images/side-'.$val['icon'].'-white.png" 
+                $main_menu .= '<li class="nav-item" role="presentation" data-toggle="tooltip" data-placement="top"
+                title="' . $val['name'] . '"><a class="nav-link ' . $active . '" data-toggle="tab" href="#right-tab-' . $i . '"
+                role="tab" aria-controls="right-tab-' . $i . '" aria-selected="false"><img class="icon-nrml"
+                src="http://' . $_SERVER['HTTP_HOST'] . '/admin_dep/images/side-' . $val['icon'] . '.png" alt="">
+                <img class="icon-hvr" src="https://' . $_SERVER['HTTP_HOST'] . '/admin_dep/images/side-' . $val['icon'] . '-white.png"
                 alt=""></a></li>';
 
                 $child_arr = $RS_ChildMenu[$val['id']];
                 $child_li = "";
                 foreach ($child_arr as $ckey => $cval) {
                     $child_li .= '<li class="d-flex align-items-center"><i class="fa fa-angle-right" style="margin-right: 8px;">
-                    </i><a href="'.route($cval['link']).'" onclick="sessionMenu('.$cval['tblmenu_master_id'].');" >'.$cval['name'].'</a></li>';
+                    </i><a href="' . route($cval['link']) . '" onclick="sessionMenu(' . $cval['tblmenu_master_id'] . ');" >' . $cval['name'] . '</a></li>';
                     if ($cval['name'] == 'Field Settings') {
                         $export_import_link = "window.open('https://erp.triz.co.in/excel_upload/export_xlsx.php?sub_institute_iderp=".$sub_institute_id."','scrollbars=yes,resizable=no,status=no,location=no,toolbar=no,menubar=no','width=600,height=300,left=100,top=100')";
                         $child_li .= '<li><i class="fa fa-angle-right" style="margin-right: 8px;">
@@ -883,10 +874,10 @@ class AJAXController extends Controller
                     </i><a href="'.route('workflow.index').'">Workflow</a></li>';
                     }
                 }
-                $child_menu .= '<div class="tab-pane show '.$active.'" id="right-tab-'.$i.'" 
+                $child_menu .= '<div class="tab-pane show ' . $active . '" id="right-tab-' . $i . '"
                 role="tabpanel"><div class="acc-panel"><div class="acc-header d-flex align-items-center">
-                <span><i class="fa fa-angle-down" style="margin-right: 8px;"></i></span><h4 class="m-0">'.$val['name'].'</h4>
-                </div><div class="acc-body" style="display: block;"><ul class="list-unstyled activity-checks">'.$child_li.'</ul>
+                <span><i class="fa fa-angle-down" style="margin-right: 8px;"></i></span><h4 class="m-0">' . $val['name'] . '</h4>
+                </div><div class="acc-body" style="display: block;"><ul class="list-unstyled activity-checks">' . $child_li . '</ul>
                 <div class="activity-accordian"></div></div></div></div>';
                 $i++;
             }
@@ -1081,7 +1072,7 @@ class AJAXController extends Controller
                             <head>
                                <title></title>
                                <meta charset="UTF-8">
-                               <meta name="viewport" content="width=erpice-width, initial-scale=1.0">                           
+                               <meta name="viewport" content="width=erpice-width, initial-scale=1.0">
                             </head>
                             <body>
                                 <div>
@@ -1279,7 +1270,7 @@ class AJAXController extends Controller
                             <head>
                                <title></title>
                                <meta charset="UTF-8">
-                               <meta name="viewport" content="width=erpice-width, initial-scale=1.0">                           
+                               <meta name="viewport" content="width=erpice-width, initial-scale=1.0">
                             </head>
                             <style>
                                 .last_page:last-child {
@@ -1385,8 +1376,8 @@ class AJAXController extends Controller
                 ->where('fc.sub_institute_id', $sub_institute_id)
                 ->where('fc.syear', $syear)
                 ->where('fc.student_id', $student_id)
-                ->whereRaw("(fr.RECEIPT_ID_1 = '".$receipt_id."' OR fr.RECEIPT_ID_2 = '".$receipt_id."' OR fr.RECEIPT_ID_3 = '".$receipt_id."' 
-                    OR fr.RECEIPT_ID_4 = '".$receipt_id."' OR fr.RECEIPT_ID_5 = '".$receipt_id."' OR fr.RECEIPT_ID_6 = '".$receipt_id."')")
+                ->whereRaw("(fr.RECEIPT_ID_1 = '" . $receipt_id . "' OR fr.RECEIPT_ID_2 = '" . $receipt_id . "' OR fr.RECEIPT_ID_3 = '" . $receipt_id . "'
+                    OR fr.RECEIPT_ID_4 = '" . $receipt_id . "' OR fr.RECEIPT_ID_5 = '" . $receipt_id . "' OR fr.RECEIPT_ID_6 = '" . $receipt_id . "')")
                 ->groupBy('fc.fees_html')
                 ->union($unionQuery)->get()->toArray();
 
@@ -1502,7 +1493,7 @@ class AJAXController extends Controller
         if ($paper_size == "A5") {
             $extra_html = ' <div>
                                 <page size="A5" layout="landscape">
-                                   ##HTML_SEC##                           
+                                   ##HTML_SEC##
                                 </page>
                             </div>';
         } elseif ($paper_size == "A5DB") {
@@ -1523,14 +1514,14 @@ class AJAXController extends Controller
         } elseif ($paper_size == "A4") {
             $extra_html = ' <div>
                                 <page size="A4" layout="landscape">
-                                   ##HTML_SEC##                           
+                                   ##HTML_SEC##
                                 </page>
                             </div>';
         } elseif ($paper_size == "A4DB") {
             $extra_html = ' <div>
                                 <page size="A4">
                                    ##HTML_SEC##
-                                   ##HTML_SEC##                          
+                                   ##HTML_SEC##
                                 </page>
                             </div>';
         } else {

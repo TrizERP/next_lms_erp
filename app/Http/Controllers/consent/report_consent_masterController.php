@@ -23,7 +23,7 @@ class report_consent_masterController extends Controller
         $res['status_code'] = 1;
         $res['message'] = "Success";
 
-        return is_mobile($type, "consent/report_consent_master", $res, "view");
+        return is_mobile($type, "front_desk/consent/report_consent_master", $res, "view");
     }
 
     /**
@@ -46,18 +46,18 @@ class report_consent_masterController extends Controller
             ->join('tblstudent as s', function ($join) {
                 $join->whereRaw("s.id = CM.student_id AND s.sub_institute_id = CM.sub_institute_id");
             })->join('tblstudent_enrollment as SE', function ($join) use ($syear) {
-                $join->whereRaw("SE.student_id = s.id AND SE.syear = '".$syear."'");
+                $join->whereRaw("SE.student_id = s.id AND SE.syear = '" . $syear . "'");
             })->join('standard as CS', function ($join) {
                 $join->whereRaw("CS.id = SE.standard_id");
             })->join('academic_section as SG', function ($join) use ($sub_institute_id) {
-                $join->whereRaw("SG.id = CS.grade_id AND SG.sub_institute_id = '".$sub_institute_id."'");
+                $join->whereRaw("SG.id = CS.grade_id AND SG.sub_institute_id = '" . $sub_institute_id . "'");
             })->join('division as SS', function ($join) {
                 $join->whereRaw("SS.id = SE.section_id");
             })->join('tbluser as ta', function ($join) {
                 $join->whereRaw("ta.id = CM.created_by");
-            })->selectRaw("CM.ID AS CHECKBOX,CM.*,s.enrollment_no, CONCAT_WS(' ',s.first_name,s.middle_name,s.last_name) 
-                AS FULL_NAME,s.mobile AS SMS_NO,SG.title AS GRADE_ID, CONCAT_WS('/',CS.name,SS.name) AS STANDARD, 
-                CONCAT_WS(' ',ta.first_name,ta.last_name) AS created_by,DATE_FORMAT(CM.date,'%d-%m-%Y') AS consent_date, 
+            })->selectRaw("CM.ID AS CHECKBOX,CM.*,s.enrollment_no, CONCAT_WS(' ',s.first_name,s.middle_name,s.last_name)
+                AS FULL_NAME,s.mobile AS SMS_NO,SG.title AS GRADE_ID, CONCAT_WS('/',CS.name,SS.name) AS STANDARD,
+                CONCAT_WS(' ',ta.first_name,ta.last_name) AS created_by,DATE_FORMAT(CM.date,'%d-%m-%Y') AS consent_date,
                 IF(CM.accountable_status = 'Accountable','Acoount','Not Account') AS account_status")
             ->where('CM.syear', $syear)
             ->where('CM.sub_institute_id', $sub_institute_id)
@@ -82,7 +82,7 @@ class report_consent_masterController extends Controller
         $res['from_date'] = $from_date;
         $res['to_date'] = $to_date;
 
-        return is_mobile($type, "consent/report_consent_master", $res, "view");
+        return is_mobile($type, "front_desk/consent/report_consent_master", $res, "view");
     }
 
     /**
@@ -93,7 +93,7 @@ class report_consent_masterController extends Controller
      */
     public function store(Request $request)
     {
-        // 
+        //
     }
 
     /**

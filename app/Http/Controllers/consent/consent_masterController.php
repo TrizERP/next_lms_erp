@@ -5,7 +5,6 @@ namespace App\Http\Controllers\consent;
 use App\Http\Controllers\Controller;
 use App\Models\consent\consent_masterModel;
 use GenTux\Jwt\GetsJwtToken;
-use GenTux\Jwt\JwtToken;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -32,7 +31,7 @@ class consent_masterController extends Controller
         $res['status_code'] = 1;
         $res['message'] = "Success";
 
-        return is_mobile($type, "consent/show_consent_master", $res, "view");
+        return is_mobile($type, "front_desk/consent/show_consent_master", $res, "view");
     }
 
     /**
@@ -57,7 +56,7 @@ class consent_masterController extends Controller
         $res['standard_id'] = $standard;
         $res['division_id'] = $division;
 
-        return is_mobile($type, "consent/show_consent_master", $res, "view");
+        return is_mobile($type, "front_desk/consent/show_consent_master", $res, "view");
     }
 
     /**

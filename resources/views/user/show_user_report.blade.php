@@ -7,11 +7,11 @@
     <div class="container-fluid">
         <div class="row bg-title">
             <div class="col-lg-3 col-md-4 col-sm-4 col-xs-12">
-                <h4 class="page-title">User Report</h4> 
+                <h4 class="page-title">User Report</h4>
             </div>
-        </div>        
-                <div class="card">
-                    @if ($sessionData = Session::get('data'))
+        </div>
+        <div class="card">
+            @if ($sessionData = Session::get('data'))
                         @if($sessionData['status_code'] == 1)
                         <div class="alert alert-success alert-block">
                         @else
@@ -22,8 +22,9 @@
                         </div>
                     @endif
                         <form action="{{ route('show_user_report') }}" method="post">
+                            @csrf
                             <div class="row">
-                                @if(isset($data['profiles']))                                
+                                @if(isset($data['profiles']))
                                 <div class="col-md-3 form-group ml-0">
                                     <label>User</label>
                                     <select name="profile" id="profile" required="required" class="form-control">
@@ -76,99 +77,98 @@
                                 </div>
                                 @endforeach
                             @endif
-                            <div class="col-md-12 form-group">
-                                <input type="submit" name="submit" value="Search" class="btn btn-success" >    
+                                <div class="col-md-12 form-group">
+                                    <input type="submit" name="submit" value="Search" class="btn btn-success">
+                                </div>
                             </div>
+                        </form>
                         </div>
-                        </form>       
-                    </div>
 
-                @if(isset($data['user_data']))
+                    @if(isset($data['user_data']))
                 @php
                     if(isset($data['user_data'])){
                         $user_data = $data['user_data'];
-                    }                
+                    }
                 @endphp
                 <div class="table-responsive">
                     <table id="example" class="table table-striped">
                         <thead>
+                        <tr>
+                            @foreach($data['headers'] as $hkey => $header)
+                                <th> {{$header}} </th>
+                            @endforeach
+                        </tr>
+                        </thead>
+                        <tbody>
+                        @foreach($user_data as $key => $value)
                             <tr>
                                 @foreach($data['headers'] as $hkey => $header)
-                                    <th> {{$header}} </th>
+                                    @if($hkey == "birthdate")
+                                        <td> {{date('d-m-Y',strtotime($value->$hkey))}}</td>
+                                    @else
+                                        <td> {{$value->$hkey}} </td>
+                                    @endif
                                 @endforeach
                             </tr>
-                        </thead>                    
-                        <tbody>
-                            @foreach($user_data as $key => $value)
-                                <tr> 
-                                    @foreach($data['headers'] as $hkey => $header)                                  
-                                        @if($hkey == "birthdate")
-                                            <td> {{date('d-m-Y',strtotime($value->$hkey))}}</td>
-                                        @else
-                                            <td> {{$value->$hkey}} </td>
-                                        @endif                                        
-                                    @endforeach 
-                                </tr>
-                            @endforeach 
+                        @endforeach
                         </tbody>
                     </table>
                 </div>
-            </div>       
-        @endif        
-</div>
+        </div>
+        @endif
+    </div>
 
-@include('includes.footerJs')
-<script>
-    var checked = false;
-function checkedAll()
-{
-    if (checked == false) {
-        checked = true
-    } else {
-        checked = false
-    }
-    for (var i = 0; i < document.getElementsByName('dynamicFields[]').length; i++)
-    {
-        document.getElementsByName('dynamicFields[]')[i].checked = checked;
-    }
-}    
-</script>
-<script>
-$(document).ready(function() {
-     var table = $('#example').DataTable( {
-         select: true,          
-         lengthMenu: [ 
-                        [100, 500, 1000, -1], 
-                        ['100', '500', '1000', 'Show All'] 
-        ],
-        dom: 'Bfrtip', 
-        buttons: [ 
-            { 
-                extend: 'pdfHtml5',
-                title: 'User Report',
-                orientation: 'landscape',
-                pageSize: 'LEGAL',                
-                pageSize: 'A0',
-                exportOptions: {                   
-                     columns: ':visible'                             
-                },
-            }, 
-            { extend: 'csv', text: ' CSV', title: 'User Report' }, 
-            { extend: 'excel', text: ' EXCEL', title: 'User Report'}, 
-            { extend: 'print', text: ' PRINT', title: 'User Report'}, 
-            'pageLength' 
-        ], 
-        }); 
+    @include('includes.footerJs')
+    <script>
+        var checked = false;
 
-        $('#example thead tr').clone(true).appendTo( '#example thead' );
-        $('#example thead tr:eq(1) th').each( function (i) {
-            var title = $(this).text();
-            $(this).html( '<input type="text" placeholder="Search '+title+'" />' );
+        function checkedAll() {
+            if (checked == false) {
+                checked = true
+            } else {
+                checked = false
+            }
+            for (var i = 0; i < document.getElementsByName('dynamicFields[]').length; i++) {
+                document.getElementsByName('dynamicFields[]')[i].checked = checked;
+            }
+        }
+    </script>
+    <script>
+        $(document).ready(function () {
+            var table = $('#example').DataTable({
+                select: true,
+                lengthMenu: [
+                    [100, 500, 1000, -1],
+                    ['100', '500', '1000', 'Show All']
+                ],
+                dom: 'Bfrtip',
+                buttons: [
+                    {
+                        extend: 'pdfHtml5',
+                        title: 'User Report',
+                        orientation: 'landscape',
+                        pageSize: 'LEGAL',
+                        pageSize: 'A0',
+                        exportOptions: {
+                            columns: ':visible'
+                        },
+                    },
+                    {extend: 'csv', text: ' CSV', title: 'User Report'},
+                    {extend: 'excel', text: ' EXCEL', title: 'User Report'},
+                    {extend: 'print', text: ' PRINT', title: 'User Report'},
+                    'pageLength'
+                ],
+            });
 
-            $( 'input', this ).on( 'keyup change', function () {
-                if ( table.column(i).search() !== this.value ) {
-                    table
-                        .column(i)
+            $('#example thead tr').clone(true).appendTo('#example thead');
+            $('#example thead tr:eq(1) th').each(function (i) {
+                var title = $(this).text();
+                $(this).html('<input type="text" placeholder="Search ' + title + '" />');
+
+                $('input', this).on('keyup change', function () {
+                    if (table.column(i).search() !== this.value) {
+                        table
+                            .column(i)
                         .search( this.value )
                         .draw();
                 }

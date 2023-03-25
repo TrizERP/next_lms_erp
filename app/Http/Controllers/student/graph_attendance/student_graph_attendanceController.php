@@ -19,7 +19,7 @@ class student_graph_attendanceController extends Controller
     {
         $type = $request->input('type');
         $submit = $request->input('submit');
-        
+
         $res['status_code'] = 1;
         $res['message'] = "Success";
         $syear = $request->session()->get('syear');
@@ -46,14 +46,14 @@ class student_graph_attendanceController extends Controller
             })->join('division as dm', function ($join) {
                 $join->whereRaw("se.section_id = dm.id");
             })->leftJoin('attendance_student as a', function ($join) use ($date) {
-                $join->whereRaw("a.student_id = s.id and a.attendance_date = '".$date."'");
+                $join->whereRaw("a.student_id = s.id and a.attendance_date = '" . $date . "'");
             })
             ->selectRaw("acs.title,sm.name AS standard_name,dm.name AS division_name,
                 se.standard_id,se.section_id,count(se.student_id) total_student,
                 SUM(CASE WHEN a.attendance_code = 'A' THEN 1 ELSE 0 END) TA,
                 SUM(CASE WHEN a.attendance_code = 'P' THEN 1 ELSE 0 END) TP")
             ->where('s.sub_institute_id', $sub_institute_id)
-            ->groupBy('se.grade_id,se.standard_id,se.section_id')
+            ->groupByRaw('se.grade_id,se.standard_id,se.section_id')
             ->get()->toArray();
 
         $chart_data = "[{
@@ -108,7 +108,7 @@ class student_graph_attendanceController extends Controller
                     $chart_data .= "name: "."'".$arr->division_name."',";
                     $chart_data .= "value: ".$arr->total_student;
                     $chart_data .= "},";
-                    
+
                     if ($arr->TA != 0 || $arr->TP != 0) {
                         $temp++;
                         $chart_data .= "{";

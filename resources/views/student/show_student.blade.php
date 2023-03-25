@@ -26,6 +26,7 @@
             </div>
             @endif
             <form action="{{ route('show_search_student') }}" enctype="multipart/form-data" method="post">
+                @csrf
                 <div class="row">
                     {{ App\Helpers\SearchChain('4','single','grade,std,div',$grade_id,$standard_id,$division_id) }}
                 </div>
@@ -52,17 +53,18 @@
                     </div>
                     <div class="col-md-4 form-group">
                         <label class="box-title after-none mb-0">UniqueID/Adm.No</label>
-                        <input type="text" name="unique_id" value="@if(isset($data['unique_id'])) {{$data['unique_id']}} @endif" class="form-control">
+                        <input type="text" name="unique_id" value="@if(isset($data['unique_id'])) {{$data['unique_id']}} @endif"
+                               class="form-control">
                     </div>
                     <div class="col-md-4 form-group">
-                        <div class="d-inline">                                                        
-                            <input type="checkbox" name="including_inactive" value="Yes" @if(isset($data['including_inactive'])) @if($data['including_inactive'] == 'Yes') checked @endif @endif>
+                        <div class="d-inline">
+                            <input type="checkbox" name="including_inactive" value="Yes"
+                                   @if(isset($data['including_inactive'])) @if($data['including_inactive'] == 'Yes') checked @endif @endif>
                             <span>Including In-active Students</span>
                         </div>
                     </div>
                 </div>
 
-                        
 
                 <div class="row">
                     <div class="col-md-12 form-group">
@@ -70,11 +72,11 @@
                             <input type="submit" name="submit" value="Search" class="btn btn-success">
                         </center>
                     </div>
-                </div>    
                 </div>
-            </form>
         </div>
-        @if(isset($data['data']))
+        </form>
+    </div>
+    @if(isset($data['data']))
         @php
         if(isset($data['data'])){
         $student_data = $data['data'];
@@ -109,26 +111,28 @@
                                 $j=1;
                                 @endphp
                                 @foreach($student_data as $key => $data)
-                                <tr style="background-color:{{$data->inactive_colour}}">
-                                    <td>{{$j}}</td>
-                                    <td>{{$data->first_name}} {{$data->middle_name}} {{$data->last_name}}</td>
-                                    <td>{{$data->enrollment_no}}</td>
-                                    <td>{{$data->uniqueid}}</td>
-                                    <td>{{$data->grade}}</td>
-                                    <td>{{$data->standard}}</td>
-                                    <td>{{$data->division}}</td>
-                                    <td>{{$data->gender}}</td>
-                                    <td>{{$data->mobile}}</td>                                    
-                                    <td>
-                                         <div class="d-flex align-items-center justify-content-end">
-                                            <a href="{{ route('add_student.edit',$data->student_id)}}" class="btn btn-outline-success mr-1"><i class="ti-pencil-alt"></i></a>
-                                        
+                                    <tr style="background-color:{{$data->inactive_colour}}">
+                                        <td>{{$j}}</td>
+                                        <td>{{$data->first_name}} {{$data->middle_name}} {{$data->last_name}}</td>
+                                        <td>{{$data->enrollment_no}}</td>
+                                        <td>{{$data->uniqueid}}</td>
+                                        <td>{{$data->grade}}</td>
+                                        <td>{{$data->standard}}</td>
+                                        <td>{{$data->division}}</td>
+                                        <td>{{$data->gender}}</td>
+                                        <td>{{$data->mobile}}</td>
+                                        <td>
+                                            <div class="d-flex align-items-center justify-content-end">
+                                                <a href="{{ route('add_student.edit',$data->student_id)}}"
+                                                   class="btn btn-outline-success mr-1"><i
+                                                        class="ti-pencil-alt"></i></a>
+
                                             <!-- <form action="{{ route('add_student.destroy', $data->student_id)}}" method="post">
                                             @csrf
                                             @method('DELETE')
                                                 <button type="submit" onclick="return confirmDelete();" class="btn btn-info btn-outline-danger"><i class="ti-trash"></i></button>
                                             </form> -->
-                                        </div>
+                                            </div>
                                     </td>
                                 </tr>
                                 @php
@@ -146,17 +150,16 @@
 </div>
 
 @include('includes.footerJs')
-<link href = "https://code.jquery.com/ui/1.10.4/themes/ui-lightness/jquery-ui.css" rel = "stylesheet">
-<script src = "https://code.jquery.com/jquery-1.10.2.js"></script>
-<script src = "https://code.jquery.com/ui/1.10.4/jquery-ui.js"></script>
+<link href="https://code.jquery.com/ui/1.10.4/themes/ui-lightness/jquery-ui.css" rel="stylesheet">
+<script src="https://code.jquery.com/jquery-1.10.2.js"></script>
+<script src="https://code.jquery.com/ui/1.10.4/jquery-ui.js"></script>
 
 <script>
-    $(document).ready(function() {
-        
-        $("#first_name").autocomplete({          
-          source: function( request, response ) 
-          {        
-            $.ajax({
+    $(document).ready(function () {
+
+        $("#first_name").autocomplete({
+            source: function (request, response) {
+                $.ajax({
                     url: "{{route('search_student_by_firstname')}}",
                     type: 'POST',
                     data: {
@@ -164,20 +167,19 @@
                     },
                     success: function(data){
                        response( $.map( data, function( item ) {
-                          return {
-                              label: item.first_name,
-                              value: item.first_name
-                          }
-                      }));
+                           return {
+                               label: item.first_name,
+                               value: item.first_name
+                           }
+                       }));
                     }
                 });
-          }
+            }
         });
 
-        $("#last_name").autocomplete({          
-          source: function( request, response ) 
-          {        
-            $.ajax({
+        $("#last_name").autocomplete({
+            source: function (request, response) {
+                $.ajax({
                     url: "{{route('search_student_by_lastname')}}",
                     type: 'POST',
                     data: {
@@ -226,12 +228,9 @@
         ]
     } );*/
 
-  
-      
-  
+
     });
 
-  
-  
+
 </script>
 @include('includes.footer')

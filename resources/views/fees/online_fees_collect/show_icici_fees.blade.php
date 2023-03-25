@@ -19,10 +19,11 @@
                 <h4 class="page-title text-center">Fees Collect</h4>
             </div>
         </div>
-        <div class="card">    
+        <div class="card">
             <form action="<?php echo $data['redirect_url']; ?>" id="myForm" method="post">
+                @csrf
                 <input type="hidden" name="student_id" value=<?php echo $data['student_id']; ?>>
-                <div class="row">                    
+                <div class="row">
                     <div class="col-md-4">
                         <label for="year">Choose Year:</label>
                         <select name="syear" id="year" onchange="this.form.submit();" class="form-control">
@@ -40,7 +41,7 @@
                     </div>
                 </div>
             </form>
-        </div>    
+        </div>
         <div class="card">
             @if ($sessionData = Session::get('data'))
             @if($sessionData['status_code'] == 1)
@@ -62,23 +63,23 @@
                                 <tr>
                                     <th>Month</th>
                                     <th>Fees</th>
-                                    <th>Paid </th>
-                                    <th>Remaining </th>
+                                    <th>Paid</th>
+                                    <th>Remaining</th>
                                 </tr>
-                                <?php 
-                                    $remainFees = 0; 
-                                    $feesDetails = [];
-                                foreach ($data['total_fees'] as $id => $arr) { 
-                                    $feesDetails[$arr['month']] = $arr['remain'];
-                                    ?>
-                                    <tr>
-                                        <td><?php echo $arr['month']; ?></td>
-                                        <td><?php echo $arr['bk']; ?></td>
-                                        <td><?php echo $arr['paid']; ?></td>
-                                        <td><?php echo $arr['remain']; ?></td>
-                                    </tr>
-                                <?php 
-                                    $remainFees += $arr['remain'];
+                                <?php
+                                $remainFees = 0;
+                                $feesDetails = [];
+                                foreach ($data['total_fees'] as $id => $arr) {
+                                $feesDetails[$arr['month']] = $arr['remain'];
+                                ?>
+                                <tr>
+                                    <td><?php echo $arr['month']; ?></td>
+                                    <td><?php echo $arr['bk']; ?></td>
+                                    <td><?php echo $arr['paid']; ?></td>
+                                    <td><?php echo $arr['remain']; ?></td>
+                                </tr>
+                                <?php
+                                $remainFees += $arr['remain'];
                                 } ?>
                             </table>
                         </div>
@@ -179,12 +180,12 @@
                                                         <td style="width: 20%"><?php echo $val; ?></td>
 
                                                         <?php
-                                                            if ($id != 'Total') {
-                                                              
-                                                            } else {
-                                                                echo "<input type='hidden' id='totalVal' name='total' value=" . $val . " class='form-control'>";
-                                                            }
-                                                            ?>                                                        
+                                                        if ($id != 'Total') {
+
+                                                        } else {
+                                                            echo "<input type='hidden' id='totalVal' name='total' value=" . $val . " class='form-control'>";
+                                                        }
+                                                        ?>
                                                     </tr>
                                                 <?php } ?>
 
@@ -203,7 +204,7 @@
                             </div>
                             <div class="table-responsive col-md-12">
                                 <div class="col-md-6 form-group">
-                                    
+
                                 </div>
                                 <div class="col-md-6 form-group">
                                     <?php
@@ -221,13 +222,13 @@
                             </div>
                         </form>
                     </div>
-                </div>    
+                </div>
             </div>
-        </div>    
+        </div>
     </div>
 </div>
 
-    @include('includes.footerJs')
+@include('includes.footerJs')
     <script>
         document.body.className = document.body.className.replace("fix-header", "fix-header show-sidebar hide-sidebar");
         var elements = document.querySelectorAll('input,select,textarea');

@@ -23,7 +23,7 @@ class feesCancelController extends Controller
         $sub_institute_id = $request->session()->get('sub_institute_id');
 
         $fees_config = DB::table('fees_config_master as fc')
-            ->join('fees_receipt_css frc', function ($join) {
+            ->join('fees_receipt_css as frc', function ($join) {
                 $join->whereRaw('frc.receipt_id = fc.fees_receipt_template');
             })
             ->selectRaw('fc.* ,frc.css')
@@ -173,10 +173,10 @@ class feesCancelController extends Controller
         $other_extraSearchArray['tblstudent_enrollment.syear'] = $syear;
         $other_extraSearchArray['fees_paid_other.sub_institute_id'] = $sub_institute_id;
 
-        $other_fees_paid = $feesData = tblstudentModel::selectRaw("'OTHER' as fees_type,fees_paid_other.id,fees_paid_other.reciept_id as 
+        $other_fees_paid = $feesData = tblstudentModel::selectRaw("'OTHER' as fees_type,fees_paid_other.id,fees_paid_other.reciept_id as
             receipt_no,fees_paid_other.paid_fees_html,fees_paid_other.receiptdate,fees_paid_other.payment_mode,
             SUM(fees_paid_other.actual_amountpaid) as total_amount,CONCAT_WS(' ',tblstudent.first_name,tblstudent.middle_name,
-            tblstudent.last_name) AS student_name,academic_section.title as grade,standard.name as standard_name,division.name as 
+            tblstudent.last_name) AS student_name,academic_section.title as grade,standard.name as standard_name,division.name as
             division_name,tblstudent.enrollment_no,date_format(fees_paid_other.created_date,'%Y-%m-%d %H:%i:%s') as created_on,
             tblstudent.id as student_id")
             ->join('tblstudent_enrollment', 'tblstudent.id', '=', 'tblstudent_enrollment.student_id')

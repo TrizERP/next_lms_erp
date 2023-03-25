@@ -21,8 +21,8 @@ class lmsLeaderboardController extends Controller
         $type = $request->input('type');
         $res['status_code'] = 1;
         $res['message'] = "SUCCESS";
-        // $res['total_points'] = $data['total_points'];      
-        // $res['modulewise_points'] = $data['modulewise_points'];      
+        // $res['total_points'] = $data['total_points'];
+        // $res['modulewise_points'] = $data['modulewise_points'];
         $res['lb_Data'] = $data;
 
         return is_mobile($type, 'lms/show_lmsLeaderboard', $res, "view");
@@ -71,13 +71,13 @@ class lmsLeaderboardController extends Controller
                     $join->whereRaw('l.user_id = s.id and l.sub_institute_id = s.sub_institute_id');
                 })->join('tblstudent_enrollment as se', function ($join) {
                     $join->whereRaw('se.student_id = s.id and se.sub_institute_id = s.sub_institute_id');
-                })->selectRaw("sum(points) as total_points,l.user_id,CONCAT_WS(' ' ,s.first_name,
+                })->selectRaw("SUM(points) as total_points,l.user_id,CONCAT_WS(' ' ,s.first_name,
                     s.middle_name,s.last_name) as student_name")
                 ->where('l.sub_institute_id', $sub_institute_id)
                 ->where('se.standard_id', $standard_id)
                 ->where('se.syear', $syear)
                 ->groupBy('user_id')
-                ->groupBy('total_points', 'DESC')->limit(5)
+                ->orderBY('total_points', 'DESC')->limit(5)
                 ->get()->toArray();
 
             $classdata = json_decode(json_encode($classdata), true);

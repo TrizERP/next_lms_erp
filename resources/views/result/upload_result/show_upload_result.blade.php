@@ -30,41 +30,44 @@
                 $term_id = $data['term_id'];
             }
         @endphp
-        <div class="card">            
-            <form action="{{ route('upload_result.create') }}">  
-                <div class="row">                    
-                    {{ App\Helpers\SearchChain('4','single','grade,std,div',$grade_id,$standard_id,$division_id) }}
-                    {{ App\Helpers\TermDD($term_id) }}
+            <div class="card">
+                <form action="{{ route('upload_result.create') }}">
+                    @csrf
+                    <div class="row">
+                        {{ App\Helpers\SearchChain('4','single','grade,std,div',$grade_id,$standard_id,$division_id) }}
+                        {{ App\Helpers\TermDD($term_id) }}
 
-                    <div class="col-sm-12 form-group">
-                        <center>                            
-                            <input type="submit" name="submit" value="Search" class="btn btn-success" >
-                        </center>
+                        <div class="col-sm-12 form-group">
+                            <center>
+                                <input type="submit" name="submit" value="Search" class="btn btn-success">
+                            </center>
+                        </div>
                     </div>
-                </div>              
-            </form>            
-        </div>
-        @if(isset($data['student_data']))
-        @php
-            if(isset($data['student_data'])){
-                $student_data = $data['student_data'];
-                $finalData = $data;
-            }
-        @endphp
+                </form>
+            </div>
+            @if(isset($data['student_data']))
+                @php
+                    if(isset($data['student_data'])){
+                        $student_data = $data['student_data'];
+                        $finalData = $data;
+                    }
+                @endphp
 
-        <div class="card">                
-            <form method="POST" enctype="multipart/form-data" action="{{ route('upload_result.store') }}" id="submit_form">
-                <div class="row">                    
-                    <div class="col-lg-12 col-sm-12 col-xs-12">
-                        <div class="table-responsive">
-                            <table id="example" class="table table-striped">
-                                <thead>
-                                    <tr>
-                                        <th><input id="checkall" onchange="checkAll(this);" type="checkbox"></th>
-                                        <th>Student Name</th>
-                                        <th>Enrollment/GR No.</th>
-                                        <th>Std/Div</th>
-                                        <th>Mobile</th>
+                <div class="card">
+                    <form method="POST" enctype="multipart/form-data" action="{{ route('upload_result.store') }}"
+                          id="submit_form">
+                        @csrf
+                        <div class="row">
+                            <div class="col-lg-12 col-sm-12 col-xs-12">
+                                <div class="table-responsive">
+                                    <table id="example" class="table table-striped">
+                                        <thead>
+                                        <tr>
+                                            <th><input id="checkall" onchange="checkAll(this);" type="checkbox"></th>
+                                            <th>Student Name</th>
+                                            <th>Enrollment/GR No.</th>
+                                            <th>Std/Div</th>
+                                            <th>Mobile</th>
                                         <th>Term</th>
                                         <th>File</th>
                                         <th>File Link</th>
@@ -96,66 +99,65 @@
                                         @endphp
                                     @endforeach
                                 </tbody>
-                            </table>
+                                    </table>
+                                </div>
+                            </div>
+                            <div class="col-md-12 form-group">
+                                <center>
+                                    <input type="hidden" name="division_id"
+                                           @if(isset($finalData['division_id'])) value="{{$finalData['division_id']}}" @endif>
+                                    <input type="hidden" name="standard_id"
+                                           @if(isset($finalData['standard_id'])) value="{{$finalData['standard_id']}}" @endif>
+                                    <input type="hidden" name="grade_id"
+                                           @if(isset($finalData['grade_id'])) value="{{$finalData['grade_id']}}" @endif>
+                                    <input type="hidden" name="term_id"
+                                           @if(isset($finalData['term_id'])) value="{{$finalData['term_id']}}" @endif>
+                                    <input type="submit" name="submit" value="Submit" class="btn btn-success">
+                                </center>
+                            </div>
                         </div>
-                    </div>    
-                    <div class="col-md-12 form-group">
-                        <center>
-                            <input type="hidden" name="division_id" @if(isset($finalData['division_id'])) value="{{$finalData['division_id']}}" @endif>
-                            <input type="hidden" name="standard_id" @if(isset($finalData['standard_id'])) value="{{$finalData['standard_id']}}" @endif>
-                            <input type="hidden" name="grade_id" @if(isset($finalData['grade_id'])) value="{{$finalData['grade_id']}}" @endif>                         
-                            <input type="hidden" name="term_id" @if(isset($finalData['term_id'])) value="{{$finalData['term_id']}}" @endif>
-                            <input type="submit" name="submit" value="Submit" class="btn btn-success" >
-                        </center>
-                    </div>            
+                    </form>
                 </div>
-            </form>
+            @endif
         </div>
-        @endif
     </div>
-</div>
 
 @include('includes.footerJs')
-<script>
-    $('#grade').attr('required',true);
-    $('#standard').attr('required',true);
-    $('#term').attr('required',true);
+    <script>
+        $('#grade').attr('required', true);
+        $('#standard').attr('required', true);
+        $('#term').attr('required', true);
 
-    $('#submit_form').submit(function(){ 
-        var selected_stud = $("input[name='students[]']:checked").length;
-        if(selected_stud == 0)
-        {
-            alert("Please Select Atleast One Student");
-            return false;
+        $('#submit_form').submit(function () {
+            var selected_stud = $("input[name='students[]']:checked").length;
+            if (selected_stud == 0) {
+                alert("Please Select Atleast One Student");
+                return false;
+            } else {
+                return true;
+            }
+        });
+
+        function required_file(val) {
+            document.getElementById('image[' + val + ']').required = true;
         }
-        else{
-            return true;
-        }   
-    });
 
-    function required_file(val)
-    {
-       document.getElementById('image['+val+']').required = true;
-    }
+        function required_checkbox(val) {
+            document.getElementById(val).required = true;
+        }
 
-    function required_checkbox(val)
-    {
-        document.getElementById(val).required = true;
-    }
-
-	function checkAll(ele) 
-    {
-         var checkboxes = $("input[name='checkall']");         
-	     if (ele.checked) {
-	         for (var i = 0; i < checkboxes.length; i++) {
-	             if (checkboxes[i].type == 'checkbox') {
-	                 checkboxes[i].checked = true;
-	             }
-	         }
-	     } else {
-	         for (var i = 0; i < checkboxes.length; i++) {
-	             console.log(i)
-	             if (checkboxes[i].type == 'checkbox') {
+        function checkAll(ele) {
+            var checkboxes = $("input[name='checkall']");
+            if (ele.checked) {
+                for (var i = 0; i < checkboxes.length; i++) {
+                    if (checkboxes[i].type == 'checkbox') {
+                        checkboxes[i].checked = true;
+                    }
+                }
+            } else {
+                for (var i = 0; i < checkboxes.length; i++) {
+                    console.log(i)
+                    if (checkboxes[i].type == 'checkbox') {
 	                 checkboxes[i].checked = false;
 	             }
 	         }

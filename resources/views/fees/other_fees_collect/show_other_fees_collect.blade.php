@@ -39,15 +39,16 @@
             }
 
         @endphp
-        <div class="card">            
+        <div class="card">
             @if ($sessionData = Session::get('data'))
-            <div class="alert alert-success alert-block">
-                <button type="button" class="close" data-dismiss="alert">×</button>
-                <strong>{{ $sessionData['message'] }}</strong>
-            </div>
+                <div class="alert alert-success alert-block">
+                    <button type="button" class="close" data-dismiss="alert">×</button>
+                    <strong>{{ $sessionData['message'] }}</strong>
+                </div>
             @endif
-            <form action="{{ route('other_fees_collect.create') }}">  
-                <div class="row">                    
+            <form action="{{ route('other_fees_collect.create') }}">
+                @csrf
+                <div class="row">
                     {{ App\Helpers\SearchChain('4','single','grade,std,div',$grade_id,$standard_id,$division_id) }}
                     <div class="col-md-4 form-group">
                         <label for="other_fees_title">Other Fees Title(Head)</label>
@@ -55,9 +56,9 @@
                             <option value="">Select Other Fees Title</option>
                             @foreach($data['other_fees_title'] as $key => $value)
                                 <option value="{{$value['id']}}"
-                                @if(isset($data['other_fees_title_selected']))
-                                    @if($data['other_fees_title_selected'] == $value['id'])
-                                    selected='selected'
+                                        @if(isset($data['other_fees_title_selected']))
+                                        @if($data['other_fees_title_selected'] == $value['id'])
+                                        selected='selected'
                                     @endif
                                 @endif
                                 >{{$value['display_name']}}</option>
@@ -79,37 +80,40 @@
                     <div class="col-md-4 form-group">
                         <label>Mobile No.</label>
                         <input type="text" id="mobile_no" value="{{$mobile_no}}" name="mobile_no" class="form-control">
-                    </div>                    
+                    </div>
                     <div class="col-md-4 form-group">
                         <label>Unique ID</label>
                         <input type="text" id="uniqueid" value="{{$uniqueid}}" name="uniqueid" class="form-control">
                     </div>
                     <div class="col-sm-12 form-group">
-                        <center>                            
-                            <input type="submit" name="submit" value="Search" class="btn btn-success" >
+                        <center>
+                            <input type="submit" name="submit" value="Search" class="btn btn-success">
                         </center>
                     </div>
-                </div>              
-            </form>            
+                </div>
+            </form>
         </div>
         @if(isset($data['student_data']))
-        @php
-            if(isset($data['student_data'])){
-                $student_data = $data['student_data'];
-                $finalData = $data;
-            }
-        @endphp
+            @php
+                if(isset($data['student_data'])){
+                    $student_data = $data['student_data'];
+                    $finalData = $data;
+                }
+            @endphp
 
-        <div class="card">                
-            <form method="POST" action="{{ route('other_fees_collect.store') }}" id="submit_form">
-                <center>                            
-                    <div class="table-responsive mb-5 w-50">
-                        <table class="table table-box table-bordered">
-                            <tbody>
+            <div class="card">
+                <form method="POST" action="{{ route('other_fees_collect.store') }}" id="submit_form">
+                    @csrf
+                    <center>
+                        <div class="table-responsive mb-5 w-50">
+                            <table class="table table-box table-bordered">
+                                <tbody>
                                 <tr>
                                     <td class="w-25">Date of Deduction:</td>
                                     <td class="w-25">
-                                        <input type="text" id="deduction_date" name="deduction_date" value="@php echo date('Y-m-d'); @endphp" class="form-control mydatepicker">
+                                        <input type="text" id="deduction_date" name="deduction_date"
+                                               value="@php echo date('Y-m-d'); @endphp"
+                                               class="form-control mydatepicker">
                                     </td>
                                     <td class="w-25">Other Fees Head:</td>
                                     <td class="w-25 text-center">{{$data['get_name_of_head']}}</td>
@@ -117,14 +121,15 @@
                                 <tr>
                                     <td>Payment Mode:</td>
                                     <td>
-                                        <select class="form-control" required="required" name="payment_mode" id="payment_mode">
-                                        <option value="">Select Payment Mode</option>        
-                                        <option value="Cash">Cash</option>        
-                                        <option value="Cheque">Cheque</option>        
-                                        <option value="DD">DD</option>        
-                                        <option value="Online">Online</option>              
-                                        <option value="From Imprest">From Imprest</option>        
-                                    </select>
+                                        <select class="form-control" required="required" name="payment_mode"
+                                                id="payment_mode">
+                                            <option value="">Select Payment Mode</option>
+                                            <option value="Cash">Cash</option>
+                                            <option value="Cheque">Cheque</option>
+                                            <option value="DD">DD</option>
+                                            <option value="Online">Online</option>
+                                            <option value="From Imprest">From Imprest</option>
+                                        </select>
                                     </td>
                                     <td>Remarks (if any):</td>
                                     <td>
@@ -136,8 +141,8 @@
                                     <td>
                                         <select class="form-control" name="bank_name" id="bank_name">
                                             <option value="">Select Bank Name</option>
-                                            @if(!empty($data['bank_data']))  
-                                            @foreach($data['bank_data'] as $key => $value)
+                                            @if(!empty($data['bank_data']))
+                                                @foreach($data['bank_data'] as $key => $value)
                                                 <option value="{{$value['bank_name']}}">{{$value['bank_name']}}</option>
                                             @endforeach
                                             @endif
@@ -155,22 +160,24 @@
                                     </td>
                                     <td>Cheque/DD Date:</td>
                                     <td>
-                                        <input type="text" id="cheque_date" name="cheque_date" value="@php echo date('Y-m-d'); @endphp" class="form-control mydatepicker">
+                                        <input type="text" id="cheque_date" name="cheque_date" value="@php echo date('Y-m-d'); @endphp"
+                                               class="form-control mydatepicker">
                                     </td>
                                 </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </center>
-                                  
+                                </tbody>
+                            </table>
+                        </div>
+                    </center>
 
-                <div class="row mt-5">                    
-                    <div class="col-lg-12 col-sm-12 col-xs-12">
-                        <div class="table-responsive">
-                            <table class="table table-box table-bordered">
-                                <thead>
+
+                    <div class="row mt-5">
+                        <div class="col-lg-12 col-sm-12 col-xs-12">
+                            <div class="table-responsive">
+                                <table class="table table-box table-bordered">
+                                    <thead>
                                     <tr>
-                                        <th><input id="checkall" name="checkall" onchange="checkAll(this);" type="checkbox"></th>
+                                        <th><input id="checkall" name="checkall" onchange="checkAll(this);"
+                                                   type="checkbox"></th>
                                         <th>Sr.No.</th>
                                         <th>Student Name</th>
                                         <th>Enrollment No.</th>
@@ -198,7 +205,7 @@
                                         }else{
                                             $disabled = 'disabled';
                                         }
-                                       
+
                                         @endphp
                                     <tr>
                                         <td>
@@ -221,28 +228,32 @@
                                         @else
                                             <span><font color=red>Fees has been already paid.</font></span>
                                         @endif
-                                        </td>                                        
+                                        </td>
                                     </tr>
                                         @php
                                         $j++;
                                         @endphp
                                     @endforeach
                                 </tbody>
-                            </table>
+                                </table>
+                            </div>
                         </div>
-                    </div>    
-                    <div class="col-md-12 form-group">
-                        <center>
-                            <input type="hidden" name="division_id" @if(isset($finalData['division_id'])) value="{{$finalData['division_id']}}" @endif>
-                        	<input type="hidden" name="standard_id" @if(isset($finalData['standard_id'])) value="{{$finalData['standard_id']}}" @endif>
-                            <input type="hidden" name="other_fees_title" @if(isset($finalData['other_fees_title_selected'])) value="{{$finalData['other_fees_title_selected']}}" @endif>                            
-                            <input type="hidden" name="other_fees_title_name" @if(isset($finalData['get_name_of_head'])) value="{{$finalData['get_name_of_head']}}" @endif>                            
-                            <input type="submit" name="submit" value="Submit" class="btn btn-success" >
-                        </center>
-                    </div>            
-                </div>
-            </form>
-        </div>
+                        <div class="col-md-12 form-group">
+                            <center>
+                                <input type="hidden" name="division_id"
+                                       @if(isset($finalData['division_id'])) value="{{$finalData['division_id']}}" @endif>
+                                <input type="hidden" name="standard_id"
+                                       @if(isset($finalData['standard_id'])) value="{{$finalData['standard_id']}}" @endif>
+                                <input type="hidden" name="other_fees_title"
+                                       @if(isset($finalData['other_fees_title_selected'])) value="{{$finalData['other_fees_title_selected']}}" @endif>
+                                <input type="hidden" name="other_fees_title_name"
+                                       @if(isset($finalData['get_name_of_head'])) value="{{$finalData['get_name_of_head']}}" @endif>
+                                <input type="submit" name="submit" value="Submit" class="btn btn-success">
+                            </center>
+                        </div>
+                    </div>
+                </form>
+            </div>
         @endif
     </div>
 </div>
@@ -252,21 +263,19 @@
     // $('#grade').attr('required',true);
     // $('#standard').attr('required',true);
 
-    $('#submit_form').submit(function(){ 
+    $('#submit_form').submit(function () {
         var selected_stud = $("input[name='students[]']:checked").length;
-        if(selected_stud == 0)
-        {
+        if (selected_stud == 0) {
             alert("Please Select Atleast One Student");
             return false;
-        }
-        else{
+        } else {
             return true;
-        }   
+        }
     });
 
     // $('.cls_txtbx_amount_of_deduction').keyup(function(){
     //   student_id = $(this).attr('data-value');
-      
+
     //   paid_amount = document.getElementById('paid_amt['+student_id+']').value;
     //   if(paid_amount > 0)
     //   {
@@ -291,41 +300,36 @@
          // alert(checkboxes);
 	     var checkboxes_new = document.getElementsByTagName('input');
          // alert(checkboxes);
-         
-	     if (ele.checked) {
+
+        if (ele.checked) {
 	         for (var i = 0; i < checkboxes.length; i++) {
 	             if (checkboxes[i].type == 'checkbox') {
 	                 checkboxes[i].checked = true;
 	             }
 	         }
-	     } else {
-	         for (var i = 0; i < checkboxes.length; i++) {
-	             console.log(i)
-	             if (checkboxes[i].type == 'checkbox') {
-	                 checkboxes[i].checked = false;
-	             }
-	         }
-	     }
-	}
-    function fill_all_amount_of_deduction(element)
-    {           
-        element = document.getElementById('aod_chkbx_cmn');                                 
-        aod_txtbx_cmn_element = document.getElementById('aod_txtbx_cmn');
-
-        if (element.checked == true)
-        {   
-            all_aod_txtbxs = document.getElementsByClassName('cls_txtbx_amount_of_deduction');   
-            for(var i = 0; i < all_aod_txtbxs.length; i++)
-            {
-                all_aod_txtbxs.item(i).value = aod_txtbx_cmn_element.value;
+        } else {
+            for (var i = 0; i < checkboxes.length; i++) {
+                console.log(i)
+                if (checkboxes[i].type == 'checkbox') {
+                    checkboxes[i].checked = false;
+                }
             }
         }
-        else
-        {
-            all_aod_txtbxs = document.getElementsByClassName('cls_txtbx_amount_of_deduction');   
-            for(var i = 0; i < all_aod_txtbxs.length; i++)
-            {
-                all_aod_txtbxs.item(i).value = 0;  
+    }
+
+    function fill_all_amount_of_deduction(element) {
+        element = document.getElementById('aod_chkbx_cmn');
+        aod_txtbx_cmn_element = document.getElementById('aod_txtbx_cmn');
+
+        if (element.checked == true) {
+            all_aod_txtbxs = document.getElementsByClassName('cls_txtbx_amount_of_deduction');
+            for (var i = 0; i < all_aod_txtbxs.length; i++) {
+                all_aod_txtbxs.item(i).value = aod_txtbx_cmn_element.value;
+            }
+        } else {
+            all_aod_txtbxs = document.getElementsByClassName('cls_txtbx_amount_of_deduction');
+            for (var i = 0; i < all_aod_txtbxs.length; i++) {
+                all_aod_txtbxs.item(i).value = 0;
             }
         }
     }
