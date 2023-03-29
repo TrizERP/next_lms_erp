@@ -54,11 +54,15 @@ class leaveApplicationController extends Controller
         $standard_id = "";
         $division_id = "";
         $extra_where = "";
+        $classteacher_data = [];
+        $grades_ids = '';
+        $standards_ids = '';
+        $divisions_ids = '';
         if (session()->get("user_profile_name") == "Teacher") {
             $where_arr = [
-                "teacher_id"       => session()->get("user_id"),
+                "teacher_id" => session()->get("user_id"),
                 "sub_institute_id" => session()->get("sub_institute_id"),
-                "syear"            => session()->get("syear"),
+                "syear" => session()->get("syear"),
             ];
 
             $classteacher_data = DB::table('class_teacher')
@@ -108,8 +112,8 @@ class leaveApplicationController extends Controller
             ->where("se.syear", "=", session()->get('syear'))
             ->where(function ($q) use ($classteacher_data, $grades_ids, $standards_ids, $divisions_ids, $requestData) {
                 if (count($classteacher_data) > 0) {
-                    $q->whereRaw("se.grade_id IN  (".$grades_ids.") AND se.standard_id IN (".$standards_ids.") 
-                                AND se.section_id IN (".$divisions_ids.")");
+                    $q->whereRaw("se.grade_id IN  (" . $grades_ids . ") AND se.standard_id IN (" . $standards_ids . ")
+                                AND se.section_id IN (" . $divisions_ids . ")");
                 } else {
                     if (isset($requestData['grade']) && $requestData['grade'] != '') {
                         $q->where('se.grade_id', $requestData['grade']);
@@ -258,7 +262,7 @@ class leaveApplicationController extends Controller
                     }
                 }
             }
-            //END Send Notification Code 
+            //END Send Notification Code
 
         }
         $res = [

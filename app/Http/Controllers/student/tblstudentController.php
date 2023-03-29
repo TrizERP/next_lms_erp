@@ -416,8 +416,9 @@ class tblstudentController extends Controller
             $syear = session()->get('syear');
 		}
 
-		// $data = file_get_contents('https://erp.triz.co.in/get_adminParentCommunicationListAPI');
-		// $payload = array(
+
+        // $data = file_get_contents('https://erp.triz.co.in/get_adminParentCommunicationListAPI');
+        // $payload = array(
 		//     // 'exp' => time() + 7200,
 		//     "id" => 123,
 		//     "first_name" => 'keyur',
@@ -430,43 +431,43 @@ class tblstudentController extends Controller
 		 * GET STUDENT PARENT DATA USING API
 		 */
 		$postData = [
-			'sub_institute_id' => $sub_institute_id, 
-			'syear' => $syear, 
-			'student_id' => $id
-			// 'token' => session()->get('_token')
-		];
-		
-		$payload = json_encode($postData);
-		 
-		// Prepare new cURL resource
-		$ch = curl_init("https://" . $_SERVER['SERVER_NAME'] . "/studentParentcommunicationListAPI");
-		curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-		curl_setopt($ch, CURLINFO_HEADER_OUT, true);
-		curl_setopt($ch, CURLOPT_POST, true);
-		curl_setopt($ch, CURLOPT_POSTFIELDS, $payload);
-		 
-		// Set HTTP Header for POST request 
+            'sub_institute_id' => $sub_institute_id,
+            'syear' => $syear,
+            'student_id' => $id
+            // 'token' => session()->get('_token')
+        ];
+
+        $payload = json_encode($postData);
+
+        // Prepare new cURL resource
+        $ch = curl_init("https://" . $_SERVER['SERVER_NAME'] . "/studentParentcommunicationListAPI");
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLINFO_HEADER_OUT, true);
+        curl_setopt($ch, CURLOPT_POST, true);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, $payload);
+
+        // Set HTTP Header for POST request
         curl_setopt($ch, CURLOPT_HTTPHEADER, [
                 'Content-Type: application/json',
-                'Content-Length: '.strlen($payload),
+                'Content-Length: ' . strlen($payload),
             ]
         );
-		 
-		// Submit the POST request
-		$getResult = curl_exec($ch);
 
-		// decode json result
-		$result = json_decode( $getResult );
-		 
-		// Close cURL session handle
-		curl_close($ch);
+        // Submit the POST request
+        $getResult = curl_exec($ch);
 
-		$stuParCommunication = [];
-		if ( $result->status_code == 1 ) {
-			$stuParCommunication = $result->data;
-		}
+        // decode json result
+        $result = json_decode($getResult);
 
-		if ($sub_institute_id == 198) {
+        // Close cURL session handle
+        curl_close($ch);
+
+        $stuParCommunication = [];
+        if (!empty($result) && $result->status_code == 1) {
+            $stuParCommunication = $result->data;
+        }
+
+        if ($sub_institute_id == 198) {
             $student_data = tblstudentModel::select('admission_enquiry.*', 'tblstudent.*', 'tblstudent_enrollment.*',
                 'tblstudent.id  as id', 'admission_enquiry.building_name_appratment_name_society_name as building_name',
                 'tblstudent_enrollment.house_id')
@@ -474,9 +475,10 @@ class tblstudentController extends Controller
                 ->leftJoin('admission_enquiry', 'tblstudent.admission_id', '=', 'admission_enquiry.id')
                 ->where([
                     'tblstudent_enrollment.sub_institute_id' => $sub_institute_id,
-                    'tblstudent_enrollment.syear'            => $syear, 'tblstudent.status' => 1, 'tblstudent.id' => $id,
-                ])
-                ->first();
+                    'tblstudent_enrollment.syear' => $syear,
+                    'tblstudent.status' => 1,
+                    'tblstudent.id' => $id,
+                ])->first();
         } else {
 
             $student_data = tblstudentModel::select('tblstudent.*', 'tblstudent_enrollment.*', 'tblstudent.id as id',
@@ -484,9 +486,10 @@ class tblstudentController extends Controller
                 ->join('tblstudent_enrollment', 'tblstudent.id', '=', 'tblstudent_enrollment.student_id')
                 ->where([
                     'tblstudent_enrollment.sub_institute_id' => $sub_institute_id,
-                    'tblstudent_enrollment.syear'            => $syear, 'tblstudent.status' => 1, 'tblstudent.id' => $id,
-                ])
-                ->first();
+                    'tblstudent_enrollment.syear' => $syear,
+                    'tblstudent.status' => 1,
+                    'tblstudent.id' => $id,
+                ])->first();
         }
 
 		// RAJESH	->whereRaw('tblstudent_enrollment.end_date is NULL')
@@ -494,7 +497,7 @@ class tblstudentController extends Controller
 			->whereRaw('(sub_institute_id = ' . $sub_institute_id . ' OR common_to_all = 1)')
 			->get();
 
-		$fieldsData = tblfields_dataModel::get()->toArray();
+        $fieldsData = tblfields_dataModel::get()->toArray();
         $i = 0;
         $finalfieldsData = [];
         foreach ($fieldsData as $key => $value) {
@@ -504,8 +507,8 @@ class tblstudentController extends Controller
         }
 
         $studentQuota = studentQuotaModel::where(['sub_institute_id' => $sub_institute_id])->get();
-        $std_id = $student_data->standard_id;
-        $div_id = $student_data->section_id;
+        $std_id = $student_data->standard_id ?? "";
+        $div_id = $student_data->section_id ?? "";
         $batchData = $optional_subject_data = $student_optional_subject_data = [];
 
         if ($std_id != "" && $div_id != "") {
@@ -559,9 +562,11 @@ class tblstudentController extends Controller
             ->selectRaw("s.id,s.enrollment_no,concat_ws(' ',s.first_name,s.middle_name,s.last_name) as student_name,
                 st.name as std_name,d.name as div_name,s.mobile")
             ->where(function ($q) use ($student_data) {
-                $q->where('s.mobile', $student_data->mobile)
-                    ->orWhere('s.mother_mobile', $student_data->mobile)
-                    ->orWhere('s.student_mobile', $student_data->mobile);
+                if (!empty($student_data)) {
+                    $q->where('s.mobile', $student_data->mobile)
+                        ->orWhere('s.mother_mobile', $student_data->mobile)
+                        ->orWhere('s.student_mobile', $student_data->mobile);
+                }
             })->where('s.sub_institute_id', $sub_institute_id)
             ->where('s.id', '!=', $id)
             ->where('se.syear', $syear)->get()->toArray();
@@ -643,25 +648,25 @@ class tblstudentController extends Controller
         ])
             ->get()->toArray();
         $studentPM_Arr = [];
-		if (count($studentPM_Mapping) > 0) {
-			foreach ($studentPM_Mapping as $pmid => $pmarr) {
-				$studentPM_Arr[$pmarr['month_id']] = $pmarr;
-			}
-		}
+        if (count($studentPM_Mapping) > 0) {
+            foreach ($studentPM_Mapping as $pmid => $pmarr) {
+                $studentPM_Arr[$pmarr['month_id']] = $pmarr;
+            }
+        }
 
-		//START GET NACH Account types		
-		$ac_type_arr = ac_typeModel::where(['sub_institute_id' => $sub_institute_id])
-			->get()->toArray();
-		//END GET NACH Account types
+        //START GET NACH Account types
+        $ac_type_arr = ac_typeModel::where(['sub_institute_id' => $sub_institute_id])
+            ->get()->toArray();
+        //END GET NACH Account types
 
-		// GET ALL ATTENDANCE YEAR
-		/* $gatYear = DB::table('attendance_student')
-			->select(DB::raw('YEAR(date(created_on)) as Year'))
-			->where(DB::raw('YEAR(date(created_on))'), DB::raw('YEAR(date(created_on))'))
-			->groupBy(DB::raw('YEAR(date(created_on))'))
-			->get(); */
+        // GET ALL ATTENDANCE YEAR
+        /* $gatYear = DB::table('attendance_student')
+            ->select(DB::raw('YEAR(date(created_on)) as Year'))
+            ->where(DB::raw('YEAR(date(created_on))'), DB::raw('YEAR(date(created_on))'))
+            ->groupBy(DB::raw('YEAR(date(created_on))'))
+            ->get(); */
 
-		
+
 		$attendanceData = DB::table('attendance_student')
 		->select(
 			DB::raw('DATE_FORMAT(attendance_date, "%y") AS YEAR'),
@@ -689,7 +694,7 @@ class tblstudentController extends Controller
 		->where('student_id', $id)
 		->groupBy('YEAR', DB::raw('MONTH(attendance_date)'))
 		->get();
-		
+
 		/*$dataStudentSiblingsNew = array();
 
 		$studentSiblings = DB::table('tblstudent_siblings')
@@ -728,9 +733,10 @@ class tblstudentController extends Controller
 		$res['status_code'] = 1;
 		$res['message'] = "Success";
 		$res['data'] = $student_data;
+//		$res['student_data'] = $student_data;
 		$res['custom_fields'] = $dataCustomFields;
-		
-		if (count($finalfieldsData) > 0) {
+
+        if (count($finalfieldsData) > 0) {
 			$res['data_fields'] = $finalfieldsData;
 		}
 		if (count($pastEducation) > 0) {
@@ -1012,7 +1018,7 @@ END as color_code
                 })->join('division as d', function ($join) {
                     $join->whereRaw("d.id = ct.division_id AND d.sub_institute_id = ct.sub_institute_id");
                 })->join('tblstudent_enrollment as se', function ($join) {
-                    $join->whereRaw("se.standard_id = ct.standard_id AND se.section_id = ct.division_id 
+                    $join->whereRaw("se.standard_id = ct.standard_id AND se.section_id = ct.division_id
                         AND se.sub_institute_id = ct.sub_institute_id");
                 })->join('tblstudent as ts', function ($join) {
                     $join->whereRaw("ts.id = se.student_id AND ts.sub_institute_id = ct.sub_institute_id");
@@ -1123,7 +1129,7 @@ END as color_code
 
 			if ($annoucement_type == 'Notification') {
                 $data = DB::table('app_notification_teacher as an')
-                    ->selectRaw("an.ID,an.NOTIFICATION_TYPE, DATE_FORMAT(an.NOTIFICATION_DATE,'%d-%m-%Y') 
+                    ->selectRaw("an.ID,an.NOTIFICATION_TYPE, DATE_FORMAT(an.NOTIFICATION_DATE,'%d-%m-%Y')
                         AS NOTIFICATION_DATE,an.TEACHER_ID,an.SUB_INSTITUTE_ID,an.Status as STATUS,an.NOTIFICATION_DESCRIPTION")
                     ->where('an.TEACHER_ID', $teacher_id)
                     ->where('an.SUB_INSTITUTE_ID', $sub_institute_id)
