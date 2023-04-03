@@ -122,7 +122,7 @@ if (! function_exists('SearchChain')) {
             Session::put('subjectTeacherStdArr', $subjectTeacherStdArr);
             Session::put('subjectTeacherDivArr', $subjectTeacherDivArr);
         }
-        // END 07/09/2021 code for getting standard , grade , division according to timetable wise for homework module  
+        // END 07/09/2021 code for getting standard , grade , division according to timetable wise for homework module
 
 
         $explod_list = explode(',', $listed_drop);
@@ -236,10 +236,10 @@ if (! function_exists('SearchChain')) {
                 if (isset($subjectTeacherStdArr) && (! isset($classTeacherStdArr)
                         || in_array($module_name, $module_array))) {
                     if (count($subjectTeacherStdArr) > 0) {
-                        // $query->orwhereIn('id',$subjectTeacherStdArr);          
+                        // $query->orwhereIn('id',$subjectTeacherStdArr);
                         $query->whereIn('id', $subjectTeacherStdArr);
                     } else {
-                        // $query->orwhere('id',null);           
+                        // $query->orwhere('id',null);
                         $query->where('id', null);
                     }
                 }
@@ -337,8 +337,8 @@ if (! function_exists('SearchChain')) {
         }
 
         $grade = '<div class="col-md-'.$col.'">
-                    <div class="form-group">                        
-                        <label>Select Section:</label> 
+                    <div class="form-group">
+                        <label>Select Section:</label>
                         <select name="'.$grade_name.'" id="grade" class="form-control" '.$multiple.'>
                             '.$option.'
                         </select>
@@ -348,7 +348,7 @@ if (! function_exists('SearchChain')) {
 
         $std = '<div class="col-md-'.$col.'">
                     <div class="form-group">
-                        <label>Select Standard:</label>                     
+                        <label>Select Standard:</label>
                         <select name="'.$std_name.'" id="standard" class="form-control" '.$multiple.'>
                             '.$std_option.'
                         </select>
@@ -928,7 +928,7 @@ if (! function_exists('OtherBreackOff')) {
         $syear = session()->get('syear');
 
         $fees_breckoff = DB::table('fees_breakoff_other')
-            ->whereRaw('*,sum(amount) tot_amount')
+            ->selectRaw('*, sum(amount) as tot_amount')
             ->where('sub_institute_id', $sub_institute_id)
             ->where('syear', $syear)
             ->where('student_id', $student_id)
@@ -939,7 +939,7 @@ if (! function_exists('OtherBreackOff')) {
         $extra_condition = '';
 
         if (isset($_REQUEST['from_date']) && isset($_REQUEST['to_date'])) {
-            $extra_condition .= " AND receiptdate <= '".$_REQUEST['to_date']."' "; //AND receiptdate >= '".$_REQUEST['from_date']."' 
+            $extra_condition .= " AND receiptdate <= '" . $_REQUEST['to_date'] . "' "; //AND receiptdate >= '".$_REQUEST['from_date']."'
         }
         //END for fees over all headwise report
 
@@ -1271,7 +1271,7 @@ if (! function_exists('htmlToPDF')) {
 if (! function_exists('htmlToPDFPortrait')) {
     function htmlToPDFPortrait($htmlPath, $pdfPath)
     {
-        $command = '/usr/local/bin/wkhtmltopdf -L 0 -R 0 -B 0 -T 0.5 -s A4 '; // --page-height 297mm //-L 0 -R 0 -B 0 -T 0 -s A4 
+        $command = '/usr/local/bin/wkhtmltopdf -L 0 -R 0 -B 0 -T 0.5 -s A4 '; // --page-height 297mm //-L 0 -R 0 -B 0 -T 0 -s A4
         $command .= " $htmlPath ";
         $command .= " $pdfPath ";
 
@@ -1282,7 +1282,7 @@ if (! function_exists('htmlToPDFPortrait')) {
 if (! function_exists('htmlToPDFLandscape')) {
     function htmlToPDFLandscape($htmlPath, $pdfPath)
     {
-        $command = '/usr/local/bin/wkhtmltopdf -L 0 -R 0 -B 0 -T 0.5 --page-height 250mm --page-width 300mm '; // --page-height 297mm //-L 0 -R 0 -B 0 -T 0 -s A4 
+        $command = '/usr/local/bin/wkhtmltopdf -L 0 -R 0 -B 0 -T 0.5 --page-height 250mm --page-width 300mm '; // --page-height 297mm //-L 0 -R 0 -B 0 -T 0 -s A4
         $command .= " $htmlPath ";
         $command .= " $pdfPath ";
 
@@ -1293,7 +1293,7 @@ if (! function_exists('htmlToPDFLandscape')) {
 if (! function_exists('htmlToPDFLandscapeCertificate')) {
     function htmlToPDFLandscapeCertificate($htmlPath, $pdfPath)
     {
-        $command = '/usr/local/bin/wkhtmltopdf -L 5 -R 5 -B 5 -T 5 -s A5 --orientation "Landscape" '; // --page-height 297mm //-L 0 -R 0 -B 0 -T 0 -s A4 
+        $command = '/usr/local/bin/wkhtmltopdf -L 5 -R 5 -B 5 -T 5 -s A5 --orientation "Landscape" '; // --page-height 297mm //-L 0 -R 0 -B 0 -T 0 -s A4
         $command .= " $htmlPath ";
         $command .= " $pdfPath ";
 
@@ -1545,16 +1545,16 @@ if (! function_exists('getGradeScale')) {
         $syear = session()->get('syear');
         $standard_id = session()->get('standard');
 
-        $sql_grade = "SELECT dt.* 
+        $sql_grade = "SELECT dt.*
                     FROM result_std_grd_maping  sgm
-                    INNER JOIN grade_master_data dt on dt.grade_id = sgm.grade_scale AND dt.syear = ".$syear."
-                    WHERE sgm.standard = ".$standard_id." AND 
-                    sgm.sub_institute_id = ".$sub_institute_id."
+                    INNER JOIN grade_master_data dt on dt.grade_id = sgm.grade_scale AND dt.syear = " . $syear . "
+                    WHERE sgm.standard = " . $standard_id . " AND
+                    sgm.sub_institute_id = " . $sub_institute_id . "
                     ORDER BY dt.breakoff DESC
                 ";
         $ret_grade = DB::select(DB::raw($sql_grade));
 
-        //converting it into array 
+        //converting it into array
         $grade_arr = array();
         foreach ($ret_grade as $id => $arr) {
             $grade_arr[$id]['id'] = $arr->id;

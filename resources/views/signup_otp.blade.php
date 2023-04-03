@@ -1,4 +1,4 @@
-<!DOCTYPE html>  
+<!DOCTYPE html>
 <html lang="en">
 
 <!-- Mirrored from www.ampleadmin.wrappixel.com/ampleadmin-html/ampleadmin-minimal/login.html by HTTrack Website Copier/3.x [XR&CO'2014], Thu, 30 Aug 2018 10:12:45 GMT -->
@@ -21,7 +21,7 @@ $loginpage_backgrond = session()->get('loginpage_backgrond');
 <meta name="author" content="">
 @if(!empty($loginpage_favicon))
   <link rel="icon" type="image/png" sizes="16x16" href={{$loginpage_favicon}} >
-@else             
+    @else
   <link rel="icon" type="image/png" sizes="16x16" href="../admin_dep/images/icon.png">
 @endif
 <title>TRIZ-ERP || LOGIN</title>
@@ -48,13 +48,13 @@ $loginpage_backgrond = session()->get('loginpage_backgrond');
 
 </head>
 <style type="text/css">
-.division_success {
-    width: 80%;
-    height: 35px;    
-    font-size: 1.1em;
-    color: green;
-    font-weight: bold;
-}
+    .division_success {
+        width: 80%;
+        height: 35px;
+        font-size: 1.1em;
+        color: green;
+        font-weight: bold;
+    }
 </style>
 <body>
 <!-- Preloader -->
@@ -75,34 +75,34 @@ $loginpage_backgrond = session()->get('loginpage_backgrond');
                 @if(!empty($loginpage_logo))
                     {!!$loginpage_logo!!}
                 @else
-                  <center>
-                    <img src="http://dev.triz.co.in/admin_dep/images/triz.png" width="250px">
-                  </center>                
+                    <center>
+                        <img src="http://dev.triz.co.in/admin_dep/images/triz.png" width="250px">
+                    </center>
                 @endif
 
                 @if(!empty($loginpage_title))
-                  {!!$loginpage_title!!}
+                    {!!$loginpage_title!!}
                 @else
-                  <h2 class="text-light">OWN INSTITUTE MAXIMIZE LEARNING</h2>                
-                @endif 
+                    <h2 class="text-light">OWN INSTITUTE MAXIMIZE LEARNING</h2>
+                @endif
 
                 @if(!empty($loginpage_description))
-                  {!!$loginpage_description!!}
+                    {!!$loginpage_description!!}
                 @else
-                  <p class="text-light">Integrated solution for institutes need-DIGITAL!!!</p>
-                @endif
-                <!-- <a href="#" class="btn btn-rounded btn-danger p-l-20 p-r-20"> Buy now</a> -->
+                    <p class="text-light">Integrated solution for institutes need-DIGITAL!!!</p>
+            @endif
+            <!-- <a href="#" class="btn btn-rounded btn-danger p-l-20 p-r-20"> Buy now</a> -->
             </div>
           </div>
-      </div>
-    </div>
+        </div>
+          </div>
 
-    <div class="col-md-6">
-      <div class="new-login-box row align-items-center justify-content-center py-4">
-        <div class="col-md-8">
-          <div class="white-box123">            
-            <form class="form-horizontal new-lg-form" id="loginform" method="POST" 
-            action="
+            <div class="col-md-6">
+                <div class="new-login-box row align-items-center justify-content-center py-4">
+                    <div class="col-md-8">
+                        <div class="white-box123">
+                            <form class="form-horizontal new-lg-form" id="loginform" method="POST"
+                                  action="
             @if(isset($data['user_type']) && $data['user_type'] == 'Student')
             {{ route('NewLMS_signup_student') }}
             @else
@@ -112,10 +112,10 @@ $loginpage_backgrond = session()->get('loginpage_backgrond');
 
               @if(!empty($data['message']))
               <div class="alert alert-danger" role="alert">
-                {{ $data['message'] }} 
+                  {{ $data['message'] }}
               </div>
-              @endif
-
+                                @endif
+                                @csrf
               <div class="form-group">
                   <span id="division_error_span"></span>
               </div>
@@ -126,27 +126,30 @@ $loginpage_backgrond = session()->get('loginpage_backgrond');
                   <label>Enter OTP</label>
                   <input class="form-control" name="otp" type="text" required placeholder="OTP">
                   <input class="form-control" name="mobile" id="mobile" type="hidden" value="@if(isset($data['mobile'])){{$data['mobile']}}@endif">
-                  <input class="form-control" name="type" type="hidden" value="web">
+                    <input class="form-control" name="type" type="hidden" value="web">
                 </div>
               </div>
-              <div class="form-group text-center m-t-20">
-                <div class="row">                  
-                  <div class="col-md-6">
-                    <button class="btn btn-primary btn-lg btn-block" type="submit">Check OTP</button>
-                  </div>  
-                  <div class="col-md-6">
-                    <button class="btn btn-primary btn-lg btn-block" type="button" id="resend_otp">Resend OTP</button>
-                  </div>
+                                <div class="form-group text-center m-t-20">
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <button class="btn btn-primary btn-lg btn-block" type="submit">Check OTP
+                                            </button>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <button class="btn btn-primary btn-lg btn-block" type="button"
+                                                    id="resend_otp">Resend OTP
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
                 </div>
-              </div>             
-            </form>
-          </div>
-        </div>  
-      </div>  
+            </div>
     </div>
-  </div>          
-  
-  
+
+
 </section>
 <!-- jQuery -->
 <script src="{{ asset("plugins/bower_components/jquery/dist/jquery.min.js") }}"></script>
@@ -165,23 +168,24 @@ $loginpage_backgrond = session()->get('loginpage_backgrond');
 <script src="{{ asset("plugins/bower_components/styleswitcher/jQuery.style.switcher.js") }}"></script>
 <script src="{{ asset("plugins/bower_components/bootstrap-datepicker/bootstrap-datepicker.min.js") }}"></script>
 <script>
-  $(document).ready(function(){
-    $.ajax({url: "../captcha/getcaptcha.php", success: function(result){
-      $("#hid_captcha").val(result);
-    }}); 
+    $(document).ready(function () {
+        $.ajax({
+            url: "../captcha/getcaptcha.php", success: function (result) {
+                $("#hid_captcha").val(result);
+            }
+        });
 
-    jQuery('.mydatepicker, #datepicker').datepicker({
-      autoclose: true,
-      format: 'yyyy-mm-dd',
-      orientation: 'bottom'
-    }); 
-  });
+        jQuery('.mydatepicker, #datepicker').datepicker({
+            autoclose: true,
+            format: 'yyyy-mm-dd',
+            orientation: 'bottom'
+        });
+    });
 
-  $('#resend_otp').click(function()
-  {
-      var mobile = $("#mobile").val();
-      
-      var path = "{{ route('Resend_otp') }}";
+    $('#resend_otp').click(function () {
+        var mobile = $("#mobile").val();
+
+        var path = "{{ route('Resend_otp') }}";
       $.ajax({
           url:path,
           data:'mobile='+mobile,

@@ -18,6 +18,7 @@
                     </div>
                     @endif
                     <form action="{{ route('add_ptm_attened_status.create') }}">
+                        @csrf
                         <div class="row">
                             <div class="col-md-4 form-group">
                                 <label>Date</label>
@@ -41,43 +42,44 @@
                             </div>
 
                             <div class="col-md-4 form-group">
-                                <label>Teacher</label>                                                                         
+                                <label>Teacher</label>
                                 <select class="form-control" name="teacher_id" id="teacher_id">
-                                    <option value="">Select Teacher</option>                        
+                                    <option value="">Select Teacher</option>
                                     @if(isset($data['users']))
-                                    @foreach($data['users'] as $key =>$val)
-                                        @php 
-                                        $selected = '';
-                                        if( isset($data['teacher_id']) && $data['teacher_id'] == $val->id )
-                                        {
-                                            $selected = 'selected';
-                                        }
-                                        @endphp                                                                                                                                                                            
-                                        <option {{$selected}} value="{{$val->id}}">{{$val->teacher_name}}</option>                            
-                                    @endforeach                       
-                                    @endif                                                                                                 
-                                </select>                        
-                            </div>                       
+                                        @foreach($data['users'] as $key =>$val)
+                                            @php
+                                                $selected = '';
+                                                if( isset($data['teacher_id']) && $data['teacher_id'] == $val->id )
+                                                {
+                                                    $selected = 'selected';
+                                                }
+                                            @endphp
+                                            <option {{$selected}} value="{{$val->id}}">{{$val->teacher_name}}</option>
+                                        @endforeach
+                                    @endif
+                                </select>
+                            </div>
 
-                            <div class="col-md-4 form-group">                               
+                            <div class="col-md-4 form-group">
                                 <center>
-                                    <input type="submit" name="submit" value="Search" class="btn btn-success" >
-                                </center>    
+                                    <input type="submit" name="submit" value="Search" class="btn btn-success">
+                                </center>
                             </div>
                         </div>
                     </form>
                 </div>
-            </div>        
+            </div>
         @if(isset($data['student_data']))
         @php
             if(isset($data['student_data'])){
                 $student_data = $data['student_data'];
                 $finalData = $data;
             }
-        @endphp       
+        @endphp
             <div class="card">
                 <div class="panel-body">
                 <form method="POST" action="{{ route('add_ptm_attened_status.store') }}">
+                    @csrf
                     <div class="col-lg-12 col-sm-12 col-xs-12">
                     <div class="table-responsive">
                         <table id="example" class="table table-striped">
@@ -123,17 +125,17 @@
                                     @endphp
                                 @endforeach
                             </tbody>
-                        </table>                        
+                        </table>
                     </div>
-                    <div class="col-md-12 form-group mt-4">
+                        <div class="col-md-12 form-group mt-4">
                             <center>
-                                <input type="submit" name="submit" value="Submit" class="btn btn-success" >
+                                <input type="submit" name="submit" value="Submit" class="btn btn-success">
                             </center>
                         </div>
                     </div>
                 </form>
                 </div>
-            </div>        
+            </div>
         @endif
     </div>
 </div>

@@ -39,15 +39,15 @@ class fees_breackoff_controller extends Controller
     {
         $result = DB::table('fees_breackoff as fb')
             ->join('fees_title as ft', function ($join) {
-                $join->where('ft.id = fb.fee_type_id');
+                $join->whereRaw('ft.id = fb.fee_type_id');
             })->join('student_quota as sq', function ($join) {
-                $join->where('sq.id = fb.quota');
+                $join->whereRaw('sq.id = fb.quota');
             })->join('academic_section as acs', function ($join) {
-                $join->where('acs.id = fb.grade_id');
+                $join->whereRaw('acs.id = fb.grade_id');
             })->join('standard as st', function ($join) {
-                $join->where('st.id = fb.standard_id');
+                $join->whereRaw('st.id = fb.standard_id');
             })->leftJoin('division as d', function ($join) {
-                $join->where('d.id = fb.section_id');
+                $join->whereRaw('d.id = fb.section_id');
             })->selectRaw('fb.syear,fb.admission_year,ft.display_name fees_head,sq.title quota,acs.title grade_name,
                 st.name sta_name,d.name div_name,fb.month_id,fb.amount')
             ->where('fb.sub_institute_id', session()->get('sub_institute_id'))

@@ -41,6 +41,7 @@
                             <div class="tab-content" id="pills-tabContent">
                                 <div class="tab-pane fade show active" id="notification" role="tabpanel" aria-labelledby="notification-tab">
                                     <form class="row">
+                                        @csrf
                                         <div class="col-md-3 form-group">
                                             <select class="cust-select form-control border-0" id="subject" tabindex="-98">
                                                 <option>Select</option>

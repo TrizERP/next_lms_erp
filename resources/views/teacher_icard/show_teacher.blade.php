@@ -72,6 +72,7 @@
             <div class="white-box">
                 <div class="panel-body">
                 	<form method="POST" action="show_student_icard">
+                        @csrf
                         <div class="col-md-4 form-group">
                             <label>Template</label>
                             <select class="form-control" name="template" required="required">

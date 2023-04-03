@@ -6,48 +6,49 @@
     <div class="container-fluid">
             <div class="row bg-title">
                 <div class="col-lg-3 col-md-4 col-sm-4 col-xs-12">
-                    <h4 class="page-title">Consent Master</h4> </div>
+                    <h4 class="page-title">Consent Master</h4></div>
             </div>
         @php
-        $grade_id = $standard_id = $division_id = '';
+            $grade_id = $standard_id = $division_id = '';
 
-            if(isset($data['grade_id'])){
-                $grade_id = $data['grade_id'];
-                $standard_id = $data['standard_id'];
-                $division_id = $data['division_id'];
-            }
-        @endphp        
-            <div class="card">               
-                    @if ($sessionData = Session::get('data'))
-                    <div class="alert alert-success alert-block">
-                        <button type="button" class="close" data-dismiss="alert">×</button>
-                        <strong>{{ $sessionData['message'] }}</strong>
-                    </div>
-                    @endif
-                    <form action="{{ route('add_consent_master.create') }}">
-                        
-                        <div class="row">
-                             
-                            {{ App\Helpers\SearchChain('4','single','grade,std,div',$grade_id,$standard_id,$division_id) }}                                                    
-                        
-                            <div class="col-md-12 form-group">                        
-                                <input type="submit" name="submit" value="Search" class="btn btn-success" >
-                            </div>
-
-                        </div>
-                    </form>
+                if(isset($data['grade_id'])){
+                    $grade_id = $data['grade_id'];
+                    $standard_id = $data['standard_id'];
+                    $division_id = $data['division_id'];
+                }
+        @endphp
+        <div class="card">
+            @if ($sessionData = Session::get('data'))
+                <div class="alert alert-success alert-block">
+                    <button type="button" class="close" data-dismiss="alert">×</button>
+                    <strong>{{ $sessionData['message'] }}</strong>
                 </div>
-            </div>
-        
-        @if(isset($data['student_data']))
+            @endif
+            <form action="{{ route('add_consent_master.create') }}">
+                @csrf
+                <div class="row">
+
+                    {{ App\Helpers\SearchChain('4','single','grade,std,div',$grade_id,$standard_id,$division_id) }}
+
+                    <div class="col-md-12 form-group">
+                        <input type="submit" name="submit" value="Search" class="btn btn-success">
+                    </div>
+
+                </div>
+            </form>
+        </div>
+    </div>
+
+    @if(isset($data['student_data']))
         @php
             if(isset($data['student_data'])){
                 $student_data = $data['student_data'];
                 $finalData = $data;
             }
-        @endphp    
+        @endphp
             <div class="card">
                 <form method="POST" action="{{ route('add_consent_master.store') }}">
+                    @csrf
                     <div class="row">
                         <div class="col-md-4 form-group">
                             <label>Date</label>
@@ -64,7 +65,7 @@
                             <option value="Accountable">Accountable</option>
                             <option value="Non_Accountable">Non Accountable</option>
                             </select>
-                           
+
                         </div>
                     <div class="col-lg-12 col-sm-12 col-xs-12">
                     <div class="table-responsive">
@@ -104,7 +105,7 @@
                             <input type="hidden" name="division_id" @if(isset($finalData['division_id'])) value="{{$finalData['division_id']}}" @endif>
 
                             <input type="hidden" name="standard_id" @if(isset($finalData['standard_id'])) value="{{$finalData['standard_id']}}" @endif>
-                            	
+
                             <input type="submit" name="submit" value="Submit" class="btn btn-success" >
                         </center>
                     </div>
@@ -112,8 +113,8 @@
             </div>
         </div>
     </div>
-      
-        @endif
+
+@endif
     </div>
 </div>
 

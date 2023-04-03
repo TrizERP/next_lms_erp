@@ -17,7 +17,7 @@
         $standard_id = $data['standard_id'];
         $division_id = $data['division_id'];
         }
-        @endphp        
+        @endphp
             <div class="card">
                 <div class="panel-body">
                     @if ($sessionData = Session::get('data'))
@@ -27,6 +27,7 @@
                     </div>
                     @endif
                     <form action="{{ route('student_homework.create') }}">
+                        @csrf
                         <div class="row">
                             {{ App\Helpers\SearchChain('3','multiple','grade,std,div',$grade_id,$standard_id,$division_id) }}
 
@@ -43,22 +44,24 @@
 
                             <div class="col-md-2 form-group">
                                 <br>
-                                <input type="submit" name="submit" value="Search" onclick="return validateData();" class="btn btn-success">
+                                <input type="submit" name="submit" value="Search" onclick="return validateData();"
+                                       class="btn btn-success">
                             </div>
                         </div>
                     </form>
                 </div>
-            </div>        
+            </div>
         @if(isset($data['student_data']))
         @php
         if(isset($data['student_data'])){
         $student_data = $data['student_data'];
         $finalData = $data;
         }
-        @endphp        
+        @endphp
             <div class="card">
                 <div class="panel-body">
                     <form method="POST" enctype="multipart/form-data" action="{{ route('student_homework.store') }}">
+                        @csrf
                         <div class="row">
                             <div class="col-md-3 form-group">
                                 <label>Title</label>
@@ -133,49 +136,46 @@
 
                                         <input type="hidden" name="subject_id" @if(isset($finalData['subject'])) value="{{$finalData['subject']}}" @endif>
 
-                                        <input type="submit" name="submit" value="Submit" class="btn btn-success">
+                                            <input type="submit" name="submit" value="Submit" class="btn btn-success">
                                     </center>
                                 </div>
                             </div>
                         </div>
                     </form>
                 </div>
-            </div>        
+            </div>
         @endif
     </div>
 </div>
 
 @include('includes.footerJs')
 <script>
-    $(document).on('change','#standard', function(){
-        var standard_id = $(this).val();      
+    $(document).on('change', '#standard', function () {
+        var standard_id = $(this).val();
         var path = "{{ route('ajax_getHomeworkSubjects') }}";
         $.ajax({
-            url:path,
-            data:'standard_id='+standard_id,
-            success:function(result){                     
+            url: path,
+            data: 'standard_id=' + standard_id,
+            success: function (result) {
                 var e = $('select[name="subject"]');
                 $(e).find('option').remove().end();
                 $(e).append($("<option></option>").val("").html('Select Subject'));
-                for(var i=0;i < result.length ;i++)
-                {
+                for (var i = 0; i < result.length; i++) {
                     $(e).append($("<option></option>").val(result[i]['subject_id']).html(result[i]['display_name']));
                 }
             }
         });
     });
-	function validateData()
-	{		
-		var c = $('#grade').find('option:selected').length;
-		if(c == 0)
-		{
-			alert("Please Select Atleast One Academic Section");
-			return false;
-		}
-		else{
-			return true;
-		}
-		
+
+    function validateData() {
+        var c = $('#grade').find('option:selected').length;
+        if (c == 0) {
+            alert("Please Select Atleast One Academic Section");
+            return false;
+        } else {
+            return true;
+        }
+
 	}
     function checkAll(ele) {
         var checkboxes = document.getElementsByTagName('input');

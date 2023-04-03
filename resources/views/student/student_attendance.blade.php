@@ -3,12 +3,13 @@
 @include('includes.sideNavigation')
 
 <style type="text/css">
-    .Present{
+    .Present {
         accent-color: green;
     }
-    .Absent{
+
+    .Absent {
         accent-color: red;
-    }     
+    }
 </style>
 
 <div id="page-wrapper">
@@ -25,44 +26,49 @@
                 $standard_division = $data['standard_division'];
             }
         @endphp
-        <div class="card">               
+        <div class="card">
             @if ($sessionData = Session::get('data'))
                 @if($sessionData['status_code'] == 1)
-                <div class="alert alert-success alert-block">
-                @else
-                <div class="alert alert-danger alert-block">
-                @endif
-                    <button type="button" class="close" data-dismiss="alert">×</button>
-                    <strong>{{ $sessionData['message'] }}</strong>
-                </div>
-            @endif
-            <form action="{{ route('show_student_attendance') }}" enctype="multipart/form-data" method="post">
-                <div class="row">                    
-                    <div class="col-md-4 form-group">
-                        <label>Select Standard Division</label>
-                        {{ App\Helpers\ClassTeacherSearch($standard_division) }}
+                    <div class="alert alert-success alert-block">
+                        @else
+                            <div class="alert alert-danger alert-block">
+                                @endif
+                                <button type="button" class="close" data-dismiss="alert">×</button>
+                                <strong>{{ $sessionData['message'] }}</strong>
+                            </div>
+                        @endif
+                        <form action="{{ route('show_student_attendance') }}" enctype="multipart/form-data"
+                              method="post">
+                            @csrf
+                            <div class="row">
+                                <div class="col-md-4 form-group">
+                                    <label>Select Standard Division</label>
+                                    {{ App\Helpers\ClassTeacherSearch($standard_division) }}
+                                </div>
+                                <div class="col-md-4 form-group">
+                                    <label>Select Date</label>
+                                    <input type="text" name="date" autocomplete="off"
+                                           @if(isset($data['date'])) value="{{$data['date']}}"
+                                           @endif class="form-control mydatepicker" placeholder="Select Date">
+                                </div>
+                                <div class="col-md-4 form-group mt-4">
+                                    <center>
+                                        <input type="submit" name="submit" value="Search" class="btn btn-success">
+                                    </center>
+                                </div>
+                            </div>
+                        </form>
                     </div>
-                    <div class="col-md-4 form-group">
-                        <label>Select Date</label>
-                        <input type="text" name="date" autocomplete="off" @if(isset($data['date'])) value="{{$data['date']}}" @endif class="form-control mydatepicker" placeholder="Select Date">
-                    </div>
-                    <div class="col-md-4 form-group mt-4">
-                        <center>                            
-                            <input type="submit" name="submit" value="Search" class="btn btn-success" >
-                        </center>
-                    </div>
-                </div>
-            </form>
-        </div>
-        @if(isset($data['student_data']))
+                    @if(isset($data['student_data']))
         @php
         $j = 1;
             if(isset($data['student_data'])){
                 $student_data = $data['student_data'];
             }
         @endphp
-        <div class="card">            
-            <form method="POST" action="{{route('save_student_attendance')}}">
+                        <div class="card">
+                            <form method="POST" action="{{route('save_student_attendance')}}">
+                                @csrf
                 <div class="table-responsive">
                     <table id="example" class="table table-striped">
                     <thead>
@@ -92,7 +98,7 @@
                         @endforeach
                     </tbody>
                     </table>
-                    <div class="row">                        
+                    <div class="row">
                         <div class="col-md-12 form-group">
                             <center>
                                 <input type="hidden" name="date" @if(isset($data['date'])) value="{{$data['date']}}" @endif">
@@ -104,8 +110,8 @@
                 </div>
             </form>
         </div>
-           
-        @endif
+
+                    @endif
     </div>
 </div>
 

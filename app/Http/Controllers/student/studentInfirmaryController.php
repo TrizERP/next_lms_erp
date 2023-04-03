@@ -12,6 +12,7 @@ use Illuminate\Contracts\View\View;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 use function App\Helpers\is_mobile;
 use function App\Helpers\send_FCM_Notification;
 use function App\Helpers\sendNotification;
@@ -76,7 +77,14 @@ class studentInfirmaryController extends Controller
 
         $STUDENT = $request->input("student_id");
         $STUDENT = explode("-", $STUDENT);
-        $student_id = trim($STUDENT[1]);
+        $student_id = trim($STUDENT[1] ?? '');
+
+        if (empty($student_id)) {
+            throw ValidationException::withMessages([
+                'student_id' => 'Please select proper student with id',
+            ]);
+        }
+
         $finalArray['student_id'] = $student_id;
 
         $finalArray['created_by'] = $user_id;
@@ -84,7 +92,7 @@ class studentInfirmaryController extends Controller
         $finalArray['marking_period_id'] = $term_id;
         $finalArray['sub_institute_id'] = $sub_institute_id;
         $finalArray['created_on'] = date('Y-m-d H:i:s');
-        // dd($finalArray);
+
         studentInfirmaryModel::insert($finalArray);
 
         //START Send Notification Code

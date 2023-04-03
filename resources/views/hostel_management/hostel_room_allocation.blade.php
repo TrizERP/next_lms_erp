@@ -6,29 +6,29 @@
     <div class="container-fluid">
             <div class="row bg-title">
                 <div class="col-lg-3 col-md-4 col-sm-4 col-xs-12">
-                    <h4 class="page-title">Hostel Room Allocation</h4> </div>
+                    <h4 class="page-title">Hostel Room Allocation</h4></div>
             </div>
         @php
-        $grade_id = $standard_id = $division_id = '';
-            if(isset($data['grade_id'])){
-                $grade_id = $data['grade_id'];
-                $standard_id = $data['standard_id'];
-                $division_id = $data['division_id'];
-            }
-        @endphp        
-            <div class="card">               
-                    @if ($sessionData = Session::get('data'))
-                    @if($sessionData['status_code'] == 1)
+            $grade_id = $standard_id = $division_id = '';
+                if(isset($data['grade_id'])){
+                    $grade_id = $data['grade_id'];
+                    $standard_id = $data['standard_id'];
+                    $division_id = $data['division_id'];
+                }
+        @endphp
+        <div class="card">
+            @if ($sessionData = Session::get('data'))
+                @if($sessionData['status_code'] == 1)
                     <div class="alert alert-success alert-block">
-                    @else
-                    <div class="alert alert-danger alert-block">
-                    @endif
-                        <button type="button" class="close" data-dismiss="alert">×</button>
-                        <strong>{{ $sessionData['message'] }}</strong>
-                    </div>
-                    @endif
+                        @else
+                            <div class="alert alert-danger alert-block">
+                                @endif
+                                <button type="button" class="close" data-dismiss="alert">×</button>
+                                <strong>{{ $sessionData['message'] }}</strong>
+                            </div>
+                        @endif
                     <form action="{{ route('student_hostel_room_allocation') }}" enctype="multipart/form-data" method="post">
-                        
+                        @csrf
                         <div class="row">
                             {{ App\Helpers\SearchChain('4','single','grade,std,div',$grade_id,$standard_id,$division_id) }}
 
@@ -46,12 +46,12 @@
                                 <select name="user" required id="user" class="form-control">
                                     <option value=""> Select User </option>
                                         @foreach($data['profiles'] as $key => $value)
-                                            @php 
+                                        @php
                                                 $selected = '';
                                             @endphp
                                         @if(isset($data['userProfile']))
                                             @if($data['userProfile'][0]['id'] == $value['id'])
-                                                @php 
+                                                @php
                                                 $selected = 'selected="selected"';
                                                 @endphp
                                             @endif
@@ -63,24 +63,25 @@
                             @endif
 
                             <div class="col-md-6 form-group">
-                                <center>                               
-                                    <input type="submit" name="submit" value="Search" class="btn btn-success" >    
-                                </center>                               
+                                <center>
+                                    <input type="submit" name="submit" value="Search" class="btn btn-success">
+                                </center>
                             </div>
                         </div>
-                    </form>                      
-            </div>
+                    </form>
+                    </div>
         </div>
         @if(isset($data['data']))
         @php
             if(isset($data['data'])){
                 $student_data = $data['data'];
             }
-        @endphp       
+        @endphp
             <div class="card">
-                <div class="panel-body">        
+                <div class="panel-body">
                     <div class="table-responsive">
-                    <form method="POST" action="{{ route('hostel_room_allocation.store') }}">
+                        <form method="POST" action="{{ route('hostel_room_allocation.store') }}">
+                            @csrf
                         <table id="example" class="table table-striped">
                             @if(isset($data['tableHeads']))
                             <thead>
@@ -150,62 +151,61 @@
                                         <td><input type="textbox" class="form-control" name="lockerno[{{$valueData['id']}}]" value="{{$valueData['locker_no']}}"></td>
                                         <td><input type="textbox" class="form-control" name="tableno[{{$valueData['id']}}]" value="{{$valueData['table_no']}}"></td>
                                         <td><input type="textbox" class="form-control" name="bedsheetno[{{$valueData['id']}}]" value="{{$valueData['bedsheet_no']}}"></td>
-                                            
+
                                     </tr>
                                     @endforeach
                             </tbody>
                             @endif
-                            
+
                         </table>
-                        <input type="hidden" name="user_group_id" value="{{$data['userProfile'][0]['id']}}">
+                            <input type="hidden" name="user_group_id" value="{{$data['userProfile'][0]['id']}}">
                             <div class="col-md-4 form-group">
                                 <center>
-                                    <input type="submit" name="submit" value="Save" class="btn btn-success" >
+                                    <input type="submit" name="submit" value="Save" class="btn btn-success">
                                 </center>
                             </div>
-                    </form>
+                        </form>
                     </div>
                 </div>
-            </div>       
-        @endif    
-</div>
+            </div>
+        @endif
+    </div>
 
-@include('includes.footerJs')
-<script>
-    var checked = false;
-function checkedAll()
-{
-    if (checked == false) {
-        checked = true
-    } else {
-        checked = false
-    }
-    for (var i = 0; i < document.getElementsByName('students[]').length; i++)
-    {
-        document.getElementsByName('students[]')[i].checked = checked;
-    }
-}    
-</script>
-<script>
-$(document).ready(function () {
-    $('#example').DataTable();
-});
-</script>
-<script>
-    function getRooms(hostel_id,user_id){
-        var path = "{{ route('hostelWiseRoomList') }}";
-        var roomId = "#roomno"+user_id;
-        $(roomId).find('option').remove().end().append('<option value=""> Select Room  </option>').val('');
-        $.ajax({
-        type:'POST',
-        url:path,
-        data:{hostel_id:hostel_id},
-            success:function(data){
-                for(var i=0;i < data.length;i++){  
-                    $(roomId).append($("<option value=''> Select Room </option>").val(data[i]['id']).html(data[i]['room_name']));  
-                } 
+    @include('includes.footerJs')
+    <script>
+        var checked = false;
+
+        function checkedAll() {
+            if (checked == false) {
+                checked = true
+            } else {
+                checked = false
             }
+            for (var i = 0; i < document.getElementsByName('students[]').length; i++) {
+                document.getElementsByName('students[]')[i].checked = checked;
+            }
+        }
+    </script>
+    <script>
+        $(document).ready(function () {
+            $('#example').DataTable();
         });
-    }
-</script>
+    </script>
+    <script>
+        function getRooms(hostel_id, user_id) {
+            var path = "{{ route('hostelWiseRoomList') }}";
+            var roomId = "#roomno" + user_id;
+            $(roomId).find('option').remove().end().append('<option value=""> Select Room  </option>').val('');
+            $.ajax({
+                type: 'POST',
+                url: path,
+                data: {hostel_id: hostel_id},
+                success: function (data) {
+                    for (var i = 0; i < data.length; i++) {
+                        $(roomId).append($("<option value=''> Select Room </option>").val(data[i]['id']).html(data[i]['room_name']));
+                    }
+                }
+            });
+        }
+    </script>
 @include('includes.footer')

@@ -15,7 +15,7 @@
                 $standard_id = $data['standard_id'];
                 $division_id = $data['division_id'];
             }
-        @endphp                   
+        @endphp
                 <div class="card">
                     @if ($sessionData = Session::get('data'))
                     @if($sessionData['status_code'] == 1)
@@ -28,7 +28,7 @@
                     </div>
                     @endif
                     <form action="{{ route('show_hostel_report') }}" enctype="multipart/form-data" method="post">
-                        
+                        @csrf
                         <div class="row">
                             {{ App\Helpers\SearchChain('3','single','grade,std,div',$grade_id,$standard_id,$division_id) }}
 
@@ -46,12 +46,12 @@
                                 <select name="user" required id="user" class="form-control">
                                     <option value=""> Select User </option>
                                         @foreach($data['profiles'] as $key => $value)
-                                            @php 
+                                        @php
                                                 $selected = '';
                                             @endphp
                                         @if(isset($data['userProfile']))
                                             @if($data['userProfile'][0]['id'] == $value['id'])
-                                                @php 
+                                                @php
                                                 $selected = 'selected="selected"';
                                                 @endphp
                                             @endif
@@ -68,12 +68,12 @@
                                 <select name="admissionCategory" id="admissionCategory" class="form-control">
                                     <option value=""> Select Admission Category </option>
                                         @foreach($data['admissionCategoryList'] as $key => $value)
-                                            @php 
+                                        @php
                                                 $selected = '';
                                             @endphp
                                         @if(isset($data['admissionCategory']))
                                             @if($data['admissionCategory'] == $key)
-                                                @php 
+                                                @php
                                                 $selected = 'selected="selected"';
                                                 @endphp
                                             @endif
@@ -90,12 +90,12 @@
                                 <select name="hostel" id="hostel" onchange="getRooms(this.value)" class="form-control">
                                     <option value=""> Select Hostel  </option>
                                         @foreach($data['hostelList'] as $key => $value)
-                                            @php 
+                                        @php
                                                 $selected = '';
                                             @endphp
                                         @if(isset($data['hostel']))
                                             @if($data['hostel'] == $key)
-                                                @php 
+                                                @php
                                                 $selected = 'selected="selected"';
                                                 @endphp
                                             @endif
@@ -117,30 +117,30 @@
                             @endif
 
                             <div class="col-md-3 form-group">
-                                <input type="submit" name="submit" value="Search" class="btn btn-success" >    
+                                <input type="submit" name="submit" value="Search" class="btn btn-success">
                             </div>
                         </div>
-                    </form>       
+                    </form>
+                    </div>
                 </div>
-            </div>
-        
+
         @if(isset($data['data']))
-        @php
-            if(isset($data['data'])){
-                $student_data = $data['data'];
-            }
-        @endphp        
-                <div class="panel-body">        
-                    <div class="table-responsive">
-                        <table id="example" class="table table-striped">
-                            @if(isset($data['tableHeads']))
+            @php
+                if(isset($data['data'])){
+                    $student_data = $data['data'];
+                }
+            @endphp
+            <div class="panel-body">
+                <div class="table-responsive">
+                    <table id="example" class="table table-striped">
+                        @if(isset($data['tableHeads']))
                             <thead>
-                                <tr>
-                                    @foreach($data['tableHeads'] as $key => $value)
-                                        <th>{{ucfirst(str_replace("_"," ",$value))}}</th>
-                                    @endforeach
-                                    <th>Admission Category</th>
-                                    <th>Hostel</th>
+                            <tr>
+                                @foreach($data['tableHeads'] as $key => $value)
+                                    <th>{{ucfirst(str_replace("_"," ",$value))}}</th>
+                                @endforeach
+                                <th>Admission Category</th>
+                                <th>Hostel</th>
                                     <th>Room No</th>
                                     <th>Bed No</th>
                                     <th>Locker No</th>
@@ -156,60 +156,60 @@
 
                                             <td>{{$valueData[$value]}}</td>
                                         @endforeach
-                                        
+
                                         <td>{{$data['admissionCategoryList'][$valueData['admission_category_id']]}}</td>
                                         <td>{{$data['hostelList'][$valueData['hostel_id']]}}</td>
                                         <td>{{$data['roomList'][$valueData['room_id']]}}</td>
-                                        <td>{{$valueData['bed_no']}}</td>
-                                        <td>{{$valueData['locker_no']}}</td>
-                                        <td>{{$valueData['table_no']}}</td>
-                                        <td>{{$valueData['bedsheet_no']}}</td>
-                                    </tr>
-                                    @endforeach
+                                    <td>{{$valueData['bed_no']}}</td>
+                                    <td>{{$valueData['locker_no']}}</td>
+                                    <td>{{$valueData['table_no']}}</td>
+                                    <td>{{$valueData['bedsheet_no']}}</td>
+                                </tr>
+                                @endforeach
                             </tbody>
-                            @endif
-                        </table>
-                    </div>
-                </div>            
-        @endif    
-</div>
+                        @endif
+                    </table>
+                </div>
+            </div>
+        @endif
+    </div>
 </div>
 
 @include('includes.footerJs')
 <script>
-$(document).ready(function() {
-    var table = $('#example').DataTable( {
-         select: true,          
-         lengthMenu: [ 
-                        [100, 500, 1000, -1], 
-                        ['100', '500', '1000', 'Show All'] 
-        ],
-        dom: 'Bfrtip', 
-        buttons: [ 
-            { 
-                extend: 'pdfHtml5',
-                title: 'Hostel Room Report',
-                orientation: 'landscape',
-                pageSize: 'LEGAL',                
-                pageSize: 'A0',
-                exportOptions: {                   
-                     columns: ':visible'                             
+    $(document).ready(function () {
+        var table = $('#example').DataTable({
+            select: true,
+            lengthMenu: [
+                [100, 500, 1000, -1],
+                ['100', '500', '1000', 'Show All']
+            ],
+            dom: 'Bfrtip',
+            buttons: [
+                {
+                    extend: 'pdfHtml5',
+                    title: 'Hostel Room Report',
+                    orientation: 'landscape',
+                    pageSize: 'LEGAL',
+                    pageSize: 'A0',
+                    exportOptions: {
+                        columns: ':visible'
+                    },
                 },
-            }, 
-            { extend: 'csv', text: ' CSV', title: 'Hostel Room Report' }, 
-            { extend: 'excel', text: ' EXCEL', title: 'Hostel Room Report' }, 
-            { extend: 'print', text: ' PRINT', title: 'Hostel Room Report' },
-            'pageLength' 
-        ], 
-        }); 
+                {extend: 'csv', text: ' CSV', title: 'Hostel Room Report'},
+                {extend: 'excel', text: ' EXCEL', title: 'Hostel Room Report'},
+                {extend: 'print', text: ' PRINT', title: 'Hostel Room Report'},
+                'pageLength'
+            ],
+        });
 
-        $('#example thead tr').clone(true).appendTo( '#example thead' );
-        $('#example thead tr:eq(1) th').each( function (i) {
+        $('#example thead tr').clone(true).appendTo('#example thead');
+        $('#example thead tr:eq(1) th').each(function (i) {
             var title = $(this).text();
-            $(this).html( '<input type="text" placeholder="Search '+title+'" />' );
+            $(this).html('<input type="text" placeholder="Search ' + title + '" />');
 
-            $( 'input', this ).on( 'keyup change', function () {
-                if ( table.column(i).search() !== this.value ) {
+            $('input', this).on('keyup change', function () {
+                if (table.column(i).search() !== this.value) {
                     table
                         .column(i)
                         .search( this.value )
@@ -225,25 +225,24 @@ $(document).ready(function() {
         var roomId = "#room";
         $(roomId).find('option').remove().end().append('<option value=""> Select Room </option>').val('');
         $.ajax({
-        type:'POST',
-        url:path,
-        data:{hostel_id:hostel_id},
-            success:function(data){
-                for(var i=0;i < data.length;i++){
-                    
-                    if(data[i]['id'] == room_id)
-                    {
-                        $(roomId).append($("<option value=''> Select Room </option>").val(data[i]['id']).html(data[i]['room_name']).attr("selected","selected"));  
-                        
-                    }else{
-                        $(roomId).append($("<option value=''> Select Room </option>").val(data[i]['id']).html(data[i]['room_name']));  
+            type: 'POST',
+            url: path,
+            data: {hostel_id: hostel_id},
+            success: function (data) {
+                for (var i = 0; i < data.length; i++) {
+
+                    if (data[i]['id'] == room_id) {
+                        $(roomId).append($("<option value=''> Select Room </option>").val(data[i]['id']).html(data[i]['room_name']).attr("selected", "selected"));
+
+                    } else {
+                        $(roomId).append($("<option value=''> Select Room </option>").val(data[i]['id']).html(data[i]['room_name']));
                     }
-                } 
+                }
             }
         });
     }
 
-    $( document ).ready(function() {
+    $(document).ready(function () {
         var hostel = @if(isset($data['hostel'])) {{$data['hostel']}} @else '0' @endif;
         var room_id = @if(isset($data['room'])) {{$data['room']}} @else '0' @endif;
         if(hostel != 0)

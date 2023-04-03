@@ -20,13 +20,14 @@
         @endphp
         <div class="card">
             @if ($sessionData = Session::get('data'))
-            <div class="alert alert-success alert-block">
-                <button type="button" class="close" data-dismiss="alert">×</button>
-                <strong>{{ $sessionData['message'] }}</strong>
-            </div>
+                <div class="alert alert-success alert-block">
+                    <button type="button" class="close" data-dismiss="alert">×</button>
+                    <strong>{{ $sessionData['message'] }}</strong>
+                </div>
             @endif
             <form action="{{ route('student_homework_report') }}" method="POST">
-                <div class="row">                    
+                @csrf
+                <div class="row">
                     {{ App\Helpers\SearchChain('4','single','grade,std,div',$grade_id,$standard_id,$division_id) }}
                     <div class="col-md-4 form-group">
                         <label for="subject">Select Subject:</label>
@@ -34,9 +35,9 @@
                             <option value="">Select Subject</option>
                             @foreach($data['subjects'] as $key => $value)
                                 <option value="{{$value['id']}}"
-                                @if(isset($data['subject']))
-                                    @if($data['subject'] == $value['id'])
-                                    selected='selected'
+                                        @if(isset($data['subject']))
+                                        @if($data['subject'] == $value['id'])
+                                        selected='selected'
                                     @endif
                                 @endif
                                 >{{$value['subject_name']}}</option>
@@ -49,29 +50,30 @@
                     </div>
                     <div class="col-md-4 form-group">
                         <label>To Date</label>
-                        <input type="text" id="to_date" @if(isset($data['to_date'])) value="{{$data['to_date']}}"  @endif name="to_date" class="form-control mydatepicker" autocomplete="off">
-                    </div>                
+                        <input type="text" id="to_date" @if(isset($data['to_date'])) value="{{$data['to_date']}}" @endif name="to_date"
+                               class="form-control mydatepicker" autocomplete="off">
+                    </div>
                     <div class="col-md-12 form-group">
-                        <center>                            
-                            <input type="submit" name="submit" value="Search" class="btn btn-success" >
+                        <center>
+                            <input type="submit" name="submit" value="Search" class="btn btn-success">
                         </center>
                     </div>
-                </div>                        
+                </div>
             </form>
         </div>
         @if(isset($data['report_data']))
-        @php
-            if(isset($data['report_data'])){
-                $report_data = $data['report_data'];
-                $finalData = $data;
-            }
-        @endphp
-        <div class="card">        
-            <div class="row">                    
-                <div class="col-lg-12 col-sm-12 col-xs-12">
-                    <div class="table-responsive">
-                        <table id="example" class="table table-striped">
-                            <thead>
+            @php
+                if(isset($data['report_data'])){
+                    $report_data = $data['report_data'];
+                    $finalData = $data;
+                }
+            @endphp
+            <div class="card">
+                <div class="row">
+                    <div class="col-lg-12 col-sm-12 col-xs-12">
+                        <div class="table-responsive">
+                            <table id="example" class="table table-striped">
+                                <thead>
                                 <tr>
                                     <th>Sr.No.</th>
                                     <th>Student Name</th>
@@ -115,41 +117,41 @@
 @include('includes.footerJs')
 
 <script>
-$(document).ready(function() {
-    var table = $('#example').DataTable( {
-         select: true,          
-         lengthMenu: [ 
-                        [100, 500, 1000, -1], 
-                        ['100', '500', '1000', 'Show All'] 
-        ],
-        dom: 'Bfrtip', 
-        buttons: [ 
-            { 
-                extend: 'pdfHtml5',
-                title: 'Student Homework Report',
-                orientation: 'landscape',
-                pageSize: 'LEGAL',                
-                pageSize: 'A0',
-                exportOptions: {                   
-                     columns: ':visible'                             
+    $(document).ready(function () {
+        var table = $('#example').DataTable({
+            select: true,
+            lengthMenu: [
+                [100, 500, 1000, -1],
+                ['100', '500', '1000', 'Show All']
+            ],
+            dom: 'Bfrtip',
+            buttons: [
+                {
+                    extend: 'pdfHtml5',
+                    title: 'Student Homework Report',
+                    orientation: 'landscape',
+                    pageSize: 'LEGAL',
+                    pageSize: 'A0',
+                    exportOptions: {
+                        columns: ':visible'
+                    },
                 },
-            }, 
-            { extend: 'csv', text: ' CSV', title: 'Student Homework Report' }, 
-            { extend: 'excel', text: ' EXCEL', title: 'Student Homework Report' }, 
-            { extend: 'print', text: ' PRINT', title: 'Student Homework Report' }, 
-            'pageLength' 
-        ], 
-        }); 
-        $('#example thead tr').clone(true).appendTo( '#example thead' );
-        $('#example thead tr:eq(1) th').each( function (i) {
+                {extend: 'csv', text: ' CSV', title: 'Student Homework Report'},
+                {extend: 'excel', text: ' EXCEL', title: 'Student Homework Report'},
+                {extend: 'print', text: ' PRINT', title: 'Student Homework Report'},
+                'pageLength'
+            ],
+        });
+        $('#example thead tr').clone(true).appendTo('#example thead');
+        $('#example thead tr:eq(1) th').each(function (i) {
             var title = $(this).text();
-            $(this).html( '<input type="text" placeholder="Search '+title+'" />' );
+            $(this).html('<input type="text" placeholder="Search ' + title + '" />');
 
-            $( 'input', this ).on( 'keyup change', function () {
-                if ( table.column(i).search() !== this.value ) {
+            $('input', this).on('keyup change', function () {
+                if (table.column(i).search() !== this.value) {
                     table
                         .column(i)
-                        .search( this.value )
+                        .search(this.value)
                         .draw();
                 }
             } );

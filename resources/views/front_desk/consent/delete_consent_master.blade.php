@@ -6,38 +6,43 @@
     <div class="container-fluid">
         <div class="row bg-title">
             <div class="col-lg-3 col-md-4 col-sm-4 col-xs-12">
-                <h4 class="page-title">Delete Consent Master</h4> 
+                <h4 class="page-title">Delete Consent Master</h4>
             </div>
         </div>
         @php
-        $grade_id = $standard_id = $division_id = '';
+            $grade_id = $standard_id = $division_id = '';
 
-            if(isset($data['grade_id'])){
-                $grade_id = $data['grade_id'];
-                $standard_id = $data['standard_id'];
-                $division_id = $data['division_id'];
-            }
+                if(isset($data['grade_id'])){
+                    $grade_id = $data['grade_id'];
+                    $standard_id = $data['standard_id'];
+                    $division_id = $data['division_id'];
+                }
         @endphp
-        
-            <div class="card">                
-                    @if ($sessionData = Session::get('data'))
-                    <div class="alert alert-success alert-block">
-                        <button type="button" class="close" data-dismiss="alert">×</button>
-                        <strong>{{ $sessionData['message'] }}</strong>
-                    </div>
-                    @endif
-                    <form action="{{ route('delete_consent_master.create') }}">
-                        <div class="row">        
-                            {{ App\Helpers\SearchChain('4','single','grade,std,div',$grade_id,$standard_id,$division_id) }}
-                            
-                            <div class="col-md-4 form-group ml-0 mr-0">
-                                <label>From Date</label>
-                                <input type="text" name="from_date" class="form-control mydatepicker" placeholder="Please select from date." autocomplete="off" required="required" value="@if(isset($data['from_date'])) {{$data['from_date']}} @endif">
-                            </div>
 
-                            <div class="col-md-4 form-group ml-0">
-                                <label>To Date</label>
-                                <input type="text" name="to_date" class="form-control mydatepicker" placeholder="Please select to date." autocomplete="off" required="required" value="@if(isset($data['to_date'])) {{$data['to_date']}} @endif">
+        <div class="card">
+            @if ($sessionData = Session::get('data'))
+                <div class="alert alert-success alert-block">
+                    <button type="button" class="close" data-dismiss="alert">×</button>
+                    <strong>{{ $sessionData['message'] }}</strong>
+                </div>
+            @endif
+            <form action="{{ route('delete_consent_master.create') }}">
+                @csrf
+                <div class="row">
+                    {{ App\Helpers\SearchChain('4','single','grade,std,div',$grade_id,$standard_id,$division_id) }}
+
+                    <div class="col-md-4 form-group ml-0 mr-0">
+                        <label>From Date</label>
+                        <input type="text" name="from_date" class="form-control mydatepicker"
+                               placeholder="Please select from date." autocomplete="off" required="required"
+                               value="@if(isset($data['from_date'])) {{$data['from_date']}} @endif">
+                    </div>
+
+                    <div class="col-md-4 form-group ml-0">
+                        <label>To Date</label>
+                        <input type="text" name="to_date" class="form-control mydatepicker"
+                               placeholder="Please select to date." autocomplete="off" required="required"
+                               value="@if(isset($data['to_date'])) {{$data['to_date']}} @endif">
                             </div>
 
                             <div class="col-md-12 form-group">
@@ -47,17 +52,18 @@
                         </div>
                     </form>
             </div>
-        
+
         @if(isset($data['student_data']))
-        @php
-            if(isset($data['student_data'])){
-                $student_data = $data['student_data'];
-                $finalData = $data;
-            }
-                
-        @endphp        
+            @php
+                if(isset($data['student_data'])){
+                    $student_data = $data['student_data'];
+                    $finalData = $data;
+                }
+
+            @endphp
             <div class="card">
                 <form method="POST" action="{{ route('delete_consent_master.store') }}">
+                    @csrf
                     <div class="row">
                     <div class="col-lg-12 col-sm-12 col-xs-12">
                     <div class="table-responsive">
@@ -82,8 +88,8 @@
                                     $j=1;
                                     @endphp
                                 @foreach($student_data as $key => $data)
-                                
-                                <tr>
+
+                                    <tr>
                                     <td><input id="{{$data->CHECKBOX}}" value="{{$data->CHECKBOX}}" name="students[]" type="checkbox"></td>
                                     <td>{{$data->enrollment_no}}</td>
                                     <td>{{$data->FULL_NAME}}</td>
@@ -108,14 +114,14 @@
                             <input type="hidden" name="division_id" @if(isset($finalData['division_id'])) value="{{$finalData['division_id']}}" @endif>
 
                             <input type="hidden" name="standard_id" @if(isset($finalData['standard_id'])) value="{{$finalData['standard_id']}}" @endif>
-                            </br>	
-                            <input type="submit" name="submit" value="Submit" class="btn btn-success" >
+                            </br>
+                            <input type="submit" name="submit" value="Submit" class="btn btn-success">
                         </center>
                     </div>
-                </div>
+                    </div>
+                    </div>
+                </form>
             </div>
-        </form>
-    </div>       
         @endif
     </div>
 </div>

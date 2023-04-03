@@ -12,25 +12,26 @@
                 <strong>{{ $data['message'] }}</strong>
             </div>
             @endif
-            <div class="row">                
+            <div class="row">
                 <div class="col-lg-3 col-sm-3 col-xs-3">
                     {{-- <a href="{{ route('lo_master.create') }}" class="btn btn-info add-new"><i
                         class="fa fa-plus"></i> Add New</a> --}}
                 </div>
                 <form action="{{ route('lo_marks_entry.store') }}" enctype="multipart/form-data" method="post">
-                    <div class="row">                    
+                    @csrf
+                    <div class="row">
                         <div class="col-lg-12 col-sm-12 col-xs-12">
-                            <div class="table-responsive">                                
+                            <div class="table-responsive">
                                 <table id="example" class="table table-striped">
                                     <thead>
-                                        <tr>
-                                            <th>Sr No.</th>
-                                            <th>Name</th>
-                                            <th>Standard</th>
-                                            <th>LO</th>
-                                            <th>Result</th>
-                                            <th>Perfomance</th>
-                                        </tr>
+                                    <tr>
+                                        <th>Sr No.</th>
+                                        <th>Name</th>
+                                        <th>Standard</th>
+                                        <th>LO</th>
+                                        <th>Result</th>
+                                        <th>Perfomance</th>
+                                    </tr>
                                     </thead>
                                     <tbody>
                                         @php
@@ -62,7 +63,7 @@
                         </div>
                     </div>
                 </form>
-            </div>                
+            </div>
         </div>
     </div>
 </div>

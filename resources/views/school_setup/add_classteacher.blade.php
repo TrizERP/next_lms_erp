@@ -17,40 +17,42 @@
                 Edit Class Teacher
                 @endif
                 </h4>
-            </div>            
+            </div>
         </div>
         <div class="row" style=" margin-top: 25px;">
-        <div class="white-box">   
-            <div class="panel-body">
-                @if ($message = Session::get('data'))
-                <div class="alert alert-success alert-block">
-                    <button type="button" class="close" data-dismiss="alert">×</button>
-                    <strong>{{ $message['message'] }}</strong>
-                </div>
-                @endif
-                <div class="col-lg-12 col-sm-12 col-xs-12">
-                    <form action="{{ route('ajax_getClasswiseTimetable') }}" enctype="multipart/form-data" method="post">
-                        <div class="col-md-10 form-group">                                                        
-                            {{ App\Helpers\SearchChain('4','single','grade,std,div',$data['academic_section_id'],$data['standard_id'],$data['division_id']) }}
-                        </div>                                                
-                        <div class="col-md-2 form-group">                                                        
-                            <br>
-                            <input type="submit" name="submit" value="Submit" class="btn btn-success" >                                                    
+            <div class="white-box">
+                <div class="panel-body">
+                    @if ($message = Session::get('data'))
+                        <div class="alert alert-success alert-block">
+                            <button type="button" class="close" data-dismiss="alert">×</button>
+                            <strong>{{ $message['message'] }}</strong>
                         </div>
-                    </form>                    
-                </div>
-                <div class="col-lg-12 col-sm-12 col-xs-12">
-                    <div class="col-md-12 form-group"> 
-                        <!-- <div class="panel"> -->
+                    @endif
+                    <div class="col-lg-12 col-sm-12 col-xs-12">
+                        <form action="{{ route('ajax_getClasswiseTimetable') }}" enctype="multipart/form-data"
+                              method="post">
+                            @csrf
+                            <div class="col-md-10 form-group">
+                                {{ App\Helpers\SearchChain('4','single','grade,std,div',$data['academic_section_id'],$data['standard_id'],$data['division_id']) }}
+                            </div>
+                            <div class="col-md-2 form-group">
+                                <br>
+                                <input type="submit" name="submit" value="Submit" class="btn btn-success">
+                            </div>
+                        </form>
+                    </div>
+                    <div class="col-lg-12 col-sm-12 col-xs-12">
+                        <div class="col-md-12 form-group">
+                            <!-- <div class="panel"> -->
                             <div class="table-responsive">
                                 @if( isset($data['HTML']) )
                                     @php echo $data['HTML'] @endphp
                                 @endif
-                            </div> 
-                        <!-- </div-.>  -->
-                    </div>                    
-                </div>                    
-                @if (count($errors) > 0)
+                            </div>
+                            <!-- </div-.>  -->
+                        </div>
+                    </div>
+                    @if (count($errors) > 0)
                 <div class="alert alert-danger">
                     <strong>Whoops!</strong> There were some problems with your input.<br><br>
                     <ul>

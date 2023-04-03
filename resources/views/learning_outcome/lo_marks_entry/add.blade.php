@@ -21,6 +21,7 @@
                     </div>
                     <br><br><br>
                     <form action="{{ route('lo_marks_entry.store') }}" enctype="multipart/form-data" method="post">
+                        @csrf
                         <input type="hidden" name="examdate" value="{{ $data['examdate'] }}">
                         <input type="hidden" name="medium" value="{{ $data['medium'] }}">
                         <input type="hidden" name="std" value="{{ $data['std'] }}">

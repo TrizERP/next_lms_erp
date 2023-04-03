@@ -119,7 +119,6 @@ class lo_marks_arNarController extends Controller
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $syear = $request->session()->get('syear');
 
-
         $students = DB::table("tblstudent as s")
             ->join('tblstudent_enrollment as se', function ($join) {
                 $join->whereRaw("se.student_id = s.id");
@@ -130,8 +129,8 @@ class lo_marks_arNarController extends Controller
             ->join('division as d', function ($join) {
                 $join->whereRaw("d.id = se.section_id");
             })
-            ->join('learning_outcome_question_master as li', function ($join) use ($ids) {
-                $join->whereRaw("li.ID IN ($ids)");
+            ->join('learning_outcome_question_master as li', function ($join) use ($ids, $id_arr) {
+                $join->whereIn("li.ID", $id_arr);
             })
             ->join('learning_outcome_indicator as lo', function ($join) {
                 $join->whereRaw("lo.ID = li.INDICATORE_ID");
@@ -139,9 +138,12 @@ class lo_marks_arNarController extends Controller
             ->join('learning_outcome_student_marks as lom', function ($join) use ($sub_institute_id) {
                 $join->whereRaw("se.student_id = lom.STUDENT_ID AND li.ID = lom.QUESTION_ID AND lom.sub_institute_id = '$sub_institute_id'");
             })
-            ->selectRaw("' ',s.first_name,s.middle_name,s.last_name) stu_name,stds.name,lo.INDICATOR, 
-if(ROUND((sum(lom.MARKS)*100/sum(li.QUESTION_OUT_OF)),2)<50,'NOT ACHIEVED','ACHIEVED') AR,
-sum(li.QUESTION_OUT_OF) out_of,sum(lom.MARKS) got_marks,ROUND((sum(lom.MARKS)*100/sum(li.QUESTION_OUT_OF)),2) as per")
+            ->selectRaw("concat_ws(' ',s.first_name,s.middle_name,s.last_name) stu_name,
+                stds.name, lo.INDICATOR,
+                if(ROUND((sum(lom.MARKS)*100/sum(li.QUESTION_OUT_OF)),2)<50,'NOT ACHIEVED','ACHIEVED') AR,
+                sum(li.QUESTION_OUT_OF) out_of,
+                sum(lom.MARKS) got_marks,
+                ROUND((sum(lom.MARKS)*100/sum(li.QUESTION_OUT_OF)),2) as per")
             ->groupBy('lo.ID', 's.id')
             ->get()->toArray();
 

@@ -4,17 +4,17 @@
 
 <style type="text/css">
     #overlay {
-        position: fixed; /* Sit on top of the page content */ 
-        display: none; /* Hidden by default */ 
-        width: 100%; /* Full width (cover the whole page) */ 
-        height: 100%; /* Full height (cover the whole page) */ 
-        top: 0; 
-        left: 0; 
-        right: 0; 
-        bottom: 0; 
-        background-color: rgba(0,0,0,0.5); /* Black background with opacity */ 
-        z-index: 2; /* Specify a stack order in case you're using a different order for other elements */ 
-        cursor: pointer; /* Add a pointer on hover */ 
+        position: fixed; /* Sit on top of the page content */
+        display: none; /* Hidden by default */
+        width: 100%; /* Full width (cover the whole page) */
+        height: 100%; /* Full height (cover the whole page) */
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: rgba(0, 0, 0, 0.5); /* Black background with opacity */
+        z-index: 2; /* Specify a stack order in case you're using a different order for other elements */
+        cursor: pointer; /* Add a pointer on hover */
     }
 </style>
 
@@ -55,15 +55,16 @@
             }
 
         @endphp
-        <div class="card">            
+        <div class="card">
             @if ($sessionData = Session::get('data'))
-            <div class="alert alert-success alert-block">
-                <button type="button" class="close" data-dismiss="alert">×</button>
-                <strong>{{ $sessionData['message'] }}</strong>
-            </div>
+                <div class="alert alert-success alert-block">
+                    <button type="button" class="close" data-dismiss="alert">×</button>
+                    <strong>{{ $sessionData['message'] }}</strong>
+                </div>
             @endif
-            <form action="{{ route('other_fees_cancel.create') }}">  
-                <div class="row">                    
+            <form action="{{ route('other_fees_cancel.create') }}">
+                @csrf
+                <div class="row">
                     {{ App\Helpers\SearchChain('4','single','grade,std,div',$grade_id,$standard_id,$division_id) }}
                     <div class="col-md-4 form-group">
                         <label for="other_fees_title">Other Fees Title(Head)</label>
@@ -71,9 +72,9 @@
                             <option value="">Select Other Fees Title</option>
                             @foreach($data['other_fees_title'] as $key => $value)
                                 <option value="{{$value['id']}}"
-                                @if(isset($data['other_fees_title_selected']))
-                                    @if($data['other_fees_title_selected'] == $value['id'])
-                                    selected='selected'
+                                        @if(isset($data['other_fees_title_selected']))
+                                        @if($data['other_fees_title_selected'] == $value['id'])
+                                        selected='selected'
                                     @endif
                                 @endif
                                 >{{$value['display_name']}}</option>
@@ -95,36 +96,38 @@
                     <div class="col-md-4 form-group">
                         <label>Mobile No.</label>
                         <input type="text" id="mobile_no" value="{{$mobile_no}}" name="mobile_no" class="form-control">
-                    </div>                    
+                    </div>
                     <div class="col-md-4 form-group">
                         <label>Unique ID</label>
                         <input type="text" id="uniqueid" value="{{$uniqueid}}" name="uniqueid" class="form-control">
                     </div>
                     <div class="col-sm-12 form-group">
-                        <center>                            
-                            <input type="submit" name="submit" value="Search" class="btn btn-success" >
+                        <center>
+                            <input type="submit" name="submit" value="Search" class="btn btn-success">
                         </center>
                     </div>
-                </div>              
-            </form>            
+                </div>
+            </form>
         </div>
         @if(isset($data['student_data']))
-        @php
-            if(isset($data['student_data'])){
-                $student_data = $data['student_data'];
-                $finalData = $data;
-            }
-        @endphp
+            @php
+                if(isset($data['student_data'])){
+                    $student_data = $data['student_data'];
+                    $finalData = $data;
+                }
+            @endphp
 
-        <div class="card">                
-            <form method="POST" action="{{ route('other_fees_cancel.store') }}" id="submit_form">
-                <div class="row mt-5">                    
-                    <div class="col-lg-12 col-sm-12 col-xs-12">
-                        <div class="table-responsive">
-                            <table class="table table-box table-bordered">
-                                <thead>
+            <div class="card">
+                <form method="POST" action="{{ route('other_fees_cancel.store') }}" id="submit_form">
+                    @csrf
+                    <div class="row mt-5">
+                        <div class="col-lg-12 col-sm-12 col-xs-12">
+                            <div class="table-responsive">
+                                <table class="table table-box table-bordered">
+                                    <thead>
                                     <tr>
-                                        <th><input id="checkall" name="checkall" onchange="checkAll(this);" type="checkbox"></th>
+                                        <th><input id="checkall" name="checkall" onchange="checkAll(this);"
+                                                   type="checkbox"></th>
                                         <th>Sr.No.</th>
                                         <th>Student Name</th>
                                         <th>Enrollment No.</th>
@@ -140,18 +143,19 @@
                                             <br/>
                                             <INPUT type="text" name="txtbx_date" id="txtbx_date" value="@php echo date('d-m-Y'); @endphp"/>
                                         </th>
-                                        <th>Reason of Cancel 
-                                            <input type="checkbox" value="Y" name="chkbx_reason" id="chkbx_reason" onclick="fill_all_reason_of_cancel(this);"/>
+                                        <th>Reason of Cancel
+                                            <input type="checkbox" value="Y" name="chkbx_reason" id="chkbx_reason"
+                                                   onclick="fill_all_reason_of_cancel(this);"/>
                                             <br/>
                                             <INPUT type="text" name="txtbx_reason" id="txtbx_reason" value=""/>
                                         </th>
                                     </tr>
-                                </thead>
-                                <tbody>
-                                        @php
+                                    </thead>
+                                    <tbody>
+                                    @php
                                         $j=1;
                                         @endphp
-                                    @foreach($student_data as $key => $data)            
+                                    @foreach($student_data as $key => $data)
                                     <tr>
                                         <td><input id="students" value="{{$data['id']}}" name="students[]" type="checkbox"></td>
                                         <td>{{$j}}</td>
@@ -166,33 +170,39 @@
                                         <td>
                                             <button type="button" class="btn btn-info float-right" data-toggle="modal" onclick="javascript:add_data({{$data['id']}},{{$data['student_id']}},'{{$data['receipt_id']}}');">{{$data['receipt_id']}}</button>
                                             <input type="hidden" name="fees_html_{{$data['id']}}" id="fees_html_{{$data['id']}}" value="{{$data['paid_fees_html']}}">
-                                        </td>                                                
+                                        </td>
                                         <td>
-                                            <input type="text" id="date_of_cancel[{{$data['id']}}]" name="date_of_cancel[{{$data['id']}}]" class="form-control mydatepicker cls_txtbx_date_of_cancel" autocomplete="off">
-                                        </td> 
+                                            <input type="text" id="date_of_cancel[{{$data['id']}}]" name="date_of_cancel[{{$data['id']}}]"
+                                                   class="form-control mydatepicker cls_txtbx_date_of_cancel"
+                                                   autocomplete="off">
+                                        </td>
                                         <td>
-                                            <input type="text" id="reason_of_cancel[{{$data['id']}}]" name="reason_of_cancel[{{$data['id']}}]" class="form-control cls_txtbx_reason_of_cancel" autocomplete="off">
-                                        </td>                                       
+                                            <input type="text" id="reason_of_cancel[{{$data['id']}}]" name="reason_of_cancel[{{$data['id']}}]"
+                                                   class="form-control cls_txtbx_reason_of_cancel" autocomplete="off">
+                                        </td>
                                     </tr>
-                                        @php
+                                    @php
                                         $j++;
-                                        @endphp
+                                    @endphp
                                     @endforeach
-                                </tbody>
-                            </table>
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
-                    </div>    
-                    <div class="col-md-12 form-group">
-                        <center>
-                            <input type="hidden" name="division_id" @if(isset($finalData['division_id'])) value="{{$finalData['division_id']}}" @endif>
-                        	<input type="hidden" name="standard_id" @if(isset($finalData['standard_id'])) value="{{$finalData['standard_id']}}" @endif>
-                            <input type="hidden" name="other_fees_title" @if(isset($finalData['other_fees_title_selected'])) value="{{$finalData['other_fees_title_selected']}}" @endif>                           
-                            <input type="submit" name="submit" value="Submit" class="btn btn-success">
-                        </center>
-                    </div>            
-                </div>
-            </form>
-        </div>
+                        <div class="col-md-12 form-group">
+                            <center>
+                                <input type="hidden" name="division_id"
+                                       @if(isset($finalData['division_id'])) value="{{$finalData['division_id']}}" @endif>
+                                <input type="hidden" name="standard_id"
+                                       @if(isset($finalData['standard_id'])) value="{{$finalData['standard_id']}}" @endif>
+                                <input type="hidden" name="other_fees_title"
+                                       @if(isset($finalData['other_fees_title_selected'])) value="{{$finalData['other_fees_title_selected']}}" @endif>
+                                <input type="submit" name="submit" value="Submit" class="btn btn-success">
+                            </center>
+                        </div>
+                    </div>
+                </form>
+            </div>
         @endif
     </div>
 </div>
@@ -223,27 +233,31 @@
                                 <div id="reprint_receipt_html">
                                 </div>
                             </div>
-                        </div>                            
+                        </div>
                     </div>
                 </div>
                 <!--Footer-->
                 <div class="modal-footer" style="display: block !important;">
-                     <div id="overlay" style="display:none;"><center><p style="margin-top: 273px;color:red;font-weight: 700;">Please do not refresh the page, while the process is going on.</p><img src="http://dev.triz.co.in/admin_dep/images/loader.gif"></center></div>
+                    <div id="overlay" style="display:none;">
+                        <center><p style="margin-top: 273px;color:red;font-weight: 700;">Please do not refresh the page,
+                                while the process is going on.</p><img
+                                src="http://dev.triz.co.in/admin_dep/images/loader.gif"></center>
+                    </div>
                     <center>
                         <button id="ajax_PDF" type="button" class="btn btn-primary">Print Receipt</button>
-                    </center>                            
+                    </center>
                 </div>
             </div>
             <!--/.Content-->
         </div>
     </div>
-</div>    
+</div>
 <!--Modal: Add ChapterModal-->
 
 @include('includes.footerJs')
 <script>
 
-    // document.getElementById("btnPrint").onclick = function () 
+    // document.getElementById("btnPrint").onclick = function ()
     // {
     //         PrintDiv("reprint_receipt_html");
     // }
@@ -257,88 +271,74 @@
     //     popupWin.document.close();
     // }
 
-    function add_data(fees_collect_id,student_id,receipt_no)
-    {
-        var fees_content = $('#fees_html_'+fees_collect_id).val();
+    function add_data(fees_collect_id,student_id,receipt_no) {
+        var fees_content = $('#fees_html_' + fees_collect_id).val();
         // alert(fees_content);
         $('#reprint_receipt_html').html(fees_content);
         $('#student_id').val(student_id);
         $('#receipt_id_html').val(receipt_no);
         $('#ChapterModal').modal('show');
-       
+
     }
 
-    $('#submit_form').submit(function(){ 
+    $('#submit_form').submit(function () {
         var selected_stud = $("input[name='students[]']:checked").length;
-        if(selected_stud == 0)
-        {
+        if (selected_stud == 0) {
             alert("Please Select Atleast One Student");
             return false;
-        }
-        else{
+        } else {
             return true;
-        }   
+        }
     });
 
-	function checkAll(ele) {
-	     var checkboxes = document.getElementsByTagName('input');
-	     if (ele.checked) {
-	         for (var i = 0; i < checkboxes.length; i++) {
-	             if (checkboxes[i].type == 'checkbox') {
-	                 checkboxes[i].checked = true;
-	             }
-	         }
-	     } else {
-	         for (var i = 0; i < checkboxes.length; i++) {
-	             console.log(i)
-	             if (checkboxes[i].type == 'checkbox') {
-	                 checkboxes[i].checked = false;
-	             }
-	         }
-	     }
-	}
-    function fill_all_date_of_cancel(element)
-    {           
-        element = document.getElementById('chkbx_date');                                 
-        txtbx_date_element = document.getElementById('txtbx_date');
-
-        if (element.checked == true)
-        {   
-            all_aod_txtbxs = document.getElementsByClassName('cls_txtbx_date_of_cancel');   
-            for(var i = 0; i < all_aod_txtbxs.length; i++)
-            {
-                all_aod_txtbxs.item(i).value = txtbx_date_element.value;
+    function checkAll(ele) {
+        var checkboxes = document.getElementsByTagName('input');
+        if (ele.checked) {
+            for (var i = 0; i < checkboxes.length; i++) {
+                if (checkboxes[i].type == 'checkbox') {
+                    checkboxes[i].checked = true;
+                }
             }
-        }
-        else
-        {
-            all_aod_txtbxs = document.getElementsByClassName('cls_txtbx_date_of_cancel');   
-            for(var i = 0; i < all_aod_txtbxs.length; i++)
-            {
-                all_aod_txtbxs.item(i).value = '';  
+        } else {
+            for (var i = 0; i < checkboxes.length; i++) {
+                console.log(i)
+                if (checkboxes[i].type == 'checkbox') {
+                    checkboxes[i].checked = false;
+                }
             }
         }
     }
 
-    function fill_all_reason_of_cancel(element)
-    {           
-        element = document.getElementById('chkbx_reason');                                 
-        txtbx_reason_element = document.getElementById('txtbx_reason');
+    function fill_all_date_of_cancel(element) {
+        element = document.getElementById('chkbx_date');
+        txtbx_date_element = document.getElementById('txtbx_date');
 
-        if (element.checked == true)
-        {   
-            all_aod_txtbxs = document.getElementsByClassName('cls_txtbx_reason_of_cancel');   
-            for(var i = 0; i < all_aod_txtbxs.length; i++)
-            {
-                all_aod_txtbxs.item(i).value = txtbx_reason_element.value;
+        if (element.checked == true) {
+            all_aod_txtbxs = document.getElementsByClassName('cls_txtbx_date_of_cancel');
+            for (var i = 0; i < all_aod_txtbxs.length; i++) {
+                all_aod_txtbxs.item(i).value = txtbx_date_element.value;
+            }
+        } else {
+            all_aod_txtbxs = document.getElementsByClassName('cls_txtbx_date_of_cancel');
+            for (var i = 0; i < all_aod_txtbxs.length; i++) {
+                all_aod_txtbxs.item(i).value = '';
             }
         }
-        else
-        {
-            all_aod_txtbxs = document.getElementsByClassName('cls_txtbx_reason_of_cancel');   
-            for(var i = 0; i < all_aod_txtbxs.length; i++)
-            {
-                all_aod_txtbxs.item(i).value = '';  
+    }
+
+    function fill_all_reason_of_cancel(element) {
+        element = document.getElementById('chkbx_reason');
+        txtbx_reason_element = document.getElementById('txtbx_reason');
+
+        if (element.checked == true) {
+            all_aod_txtbxs = document.getElementsByClassName('cls_txtbx_reason_of_cancel');
+            for (var i = 0; i < all_aod_txtbxs.length; i++) {
+                all_aod_txtbxs.item(i).value = txtbx_reason_element.value;
+            }
+        } else {
+            all_aod_txtbxs = document.getElementsByClassName('cls_txtbx_reason_of_cancel');
+            for (var i = 0; i < all_aod_txtbxs.length; i++) {
+                all_aod_txtbxs.item(i).value = '';
             }
         }
     }

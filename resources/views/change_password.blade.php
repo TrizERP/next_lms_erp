@@ -12,11 +12,12 @@
         </div>
         <div class="card">
             <div class="col-md-12 mb-5">
-            @if(Session::get('user_profile_name') == 'Admin')                                
-                <a href="#" class="btn btn-info pull-right m-l-20 hidden-xs hidden-sm waves-effect waves-light">
-                Your Id @if(isset($data['userdata']['user_name'])){{str_pad($data['userdata']['id'], 5, '0', STR_PAD_LEFT)}}@endif
-                </a> 
-            @endif                   
+                @if(Session::get('user_profile_name') == 'Admin')
+                    <a href="#" class="btn btn-info pull-right m-l-20 hidden-xs hidden-sm waves-effect waves-light">
+                        Your
+                        Id @if(isset($data['userdata']['user_name'])){{str_pad($data['userdata']['id'], 5, '0', STR_PAD_LEFT)}}@endif
+                    </a>
+                @endif
             </div>
             <div id="errorbox" style="display:none;">
                 <div class="alert alert-danger alert-block">
@@ -25,26 +26,31 @@
             </div>
 
             @if (isset($data['message']) && $data['message'] == 'Password Change Successfully')
-            <div class="alert alert-success alert-block">
-                <button type="button" class="close" data-dismiss="alert">×</button>
-                <strong>{{ $data['message'] }}</strong>
-            </div>
+                <div class="alert alert-success alert-block">
+                    <button type="button" class="close" data-dismiss="alert">×</button>
+                    <strong>{{ $data['message'] }}</strong>
+                </div>
             @endif
 
-            <form action="{{ route('change_password.store') }}" enctype="multipart/form-data" method="post" onSubmit="return checkPassword();">
-
-                <div class="row"> 
-                    @if(Session::get('user_profile_name') == 'Admin')                   
-                    <div class="col-md-4 form-group">
-                        <label>School Name </label>
-                        <input type="text" id='school_name' @if(isset($data['schooldata']['SchoolName'])) value="{{$data['schooldata']['SchoolName']}}" @endif required name='school_name' readonly="readonly" class="form-control">
-                    </div>
-                    <div class="col-md-4 form-group">
-                        <label>User Name </label>
-                        <input type="text" id='contact_person' @if(isset($data['userdata']['user_name'])) value="{{$data['userdata']['user_name']}}" @endif required name='contact_person' readonly="readonly" class="form-control">
-                    </div>
-                    <div class="col-md-4 form-group">
-                        <label>Mobile </label>
+            <form action="{{ route('change_password.store') }}" enctype="multipart/form-data" method="post"
+                  onSubmit="return checkPassword();">
+                @csrf
+                <div class="row">
+                    @if(Session::get('user_profile_name') == 'Admin')
+                        <div class="col-md-4 form-group">
+                            <label>School Name </label>
+                            <input type="text" id='school_name'
+                                   @if(isset($data['schooldata']['SchoolName'])) value="{{$data['schooldata']['SchoolName']}}"
+                                   @endif required name='school_name' readonly="readonly" class="form-control">
+                        </div>
+                        <div class="col-md-4 form-group">
+                            <label>User Name </label>
+                            <input type="text" id='contact_person'
+                                   @if(isset($data['userdata']['user_name'])) value="{{$data['userdata']['user_name']}}"
+                                   @endif required name='contact_person' readonly="readonly" class="form-control">
+                        </div>
+                        <div class="col-md-4 form-group">
+                            <label>Mobile </label>
                         <input type="text" @if(isset($data['userdata']['mobile'])) value="{{$data['userdata']['mobile']}}" @endif  readonly="readonly" id='mobile' required name='mobile' class="form-control">
                     </div>
                     <div class="col-md-4 form-group">
@@ -58,17 +64,18 @@
                     </div>
                     <div class="col-md-4 form-group">
                         <label>Confirm Password </label>
-                        <input type="password" id='confirmpassword' required name='confirmpassword' class="form-control">
+                        <input type="password" id='confirmpassword' required name='confirmpassword'
+                               class="form-control">
                     </div>
                     <div class="col-md-12 form-group">
                         <center>
-                        <input type="submit" name="submit" value="Change Password" class="btn btn-success" >
+                            <input type="submit" name="submit" value="Change Password" class="btn btn-success">
                         </center>
                     </div>
                 </div>
             </form>
-        </div> 
-        @if(Session::get('user_profile_name') == 'Admin')    
+        </div>
+        @if(Session::get('user_profile_name') == 'Admin')
             <div class="card">
                 <h3 class="box-title">Account Settings</h3>
                 <div class="list-group tickets">
@@ -76,7 +83,8 @@
                         <span class="sp-setting-left">
                             <strong>Weekly Summary</strong>. Receive a quick summary for the past one week via email. Default is ON.
                             Receive it every:
-                                <select name="updateDate" id="updateDate" class="form-control form-material-input" style="width:350px;display:inline-block;font-size: 14px;padding: 6px;">
+                                <select name="updateDate" id="updateDate" class="form-control form-material-input"
+                                        style="width:350px;display:inline-block;font-size: 14px;padding: 6px;">
                                     <option value="0">Sunday (For the prior week ending Saturday)</option>
                                     <option value="1">Monday (For the prior week ending Sunday)</option>
                                     <option value="2" selected="">Tuesday (For the prior week ending Monday)</option>
@@ -105,7 +113,7 @@
                     </div>
                 </div>
             </div>
-        @endif    
+        @endif
         </div>
     </div>
 </div>

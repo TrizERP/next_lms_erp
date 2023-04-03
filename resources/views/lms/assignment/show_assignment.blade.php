@@ -7,25 +7,25 @@
         <div class="row bg-title align-items-center justify-content-between">
             <div class="col-lg-6 col-md-4 col-sm-4 col-xs-12 mb-4">
                 <h1 class="h4 mb-3">Create Assignment</h1>
-                 <nav aria-label="breadcrumb">
+                <nav aria-label="breadcrumb">
                     <ol class="breadcrumb bg-transparent p-0">
-                        <li class="breadcrumb-item"><a href="{{route('course_master.index')}}">LMS</a></li>                                 
-                        <li class="breadcrumb-item">Exam</li>                                 
+                        <li class="breadcrumb-item"><a href="{{route('course_master.index')}}">LMS</a></li>
+                        <li class="breadcrumb-item">Exam</li>
                         <li class="breadcrumb-item active" aria-current="page">Assignment</li>
                     </ol>
                 </nav>
-            </div>         
+            </div>
         </div>
-        
-        @php
-        $grade_id = $standard_id = $division_id = '';
 
-        if(isset($data['grade_id'])){
-        $grade_id = $data['grade_id'];
-        $standard_id = $data['standard_id'];
-        $division_id = $data['division_id'];
-        }
-        @endphp        
+        @php
+            $grade_id = $standard_id = $division_id = '';
+
+            if(isset($data['grade_id'])){
+            $grade_id = $data['grade_id'];
+            $standard_id = $data['standard_id'];
+            $division_id = $data['division_id'];
+            }
+        @endphp
             <div class="card">
                 <div class="card-body">
                     @if ($sessionData = Session::get('data'))
@@ -35,6 +35,7 @@
                     </div>
                     @endif
                     <form action="{{ route('lmsAssignment.create') }}">
+                        @csrf
                         <div class="row">
                             {{ App\Helpers\SearchChain('3','multiple','grade,std,div',$grade_id,$standard_id,$division_id) }}
 
@@ -56,17 +57,18 @@
                         </div>
                     </form>
                 </div>
-            </div>        
+            </div>
         @if(isset($data['student_data']))
         @php
         if(isset($data['student_data'])){
         $student_data = $data['student_data'];
         $finalData = $data;
         }
-        @endphp        
+        @endphp
             <div class="card">
                 <div class="card-body">
                     <form method="POST" enctype="multipart/form-data" action="{{ route('lmsAssignment.store') }}">
+                        @csrf
                         <div class="row">
                             <div class="col-md-3 form-group">
                                 <label>Title</label>
@@ -130,65 +132,64 @@
                                     <center>
                                         <?php
                                         if (isset($finalData['division_id'])) {
-                                            foreach ($finalData['division_id'] as $id=>$value) {
+                                            foreach ($finalData['division_id'] as $id => $value) {
                                                 echo '<input type="hidden" name="division_id[]" value="' . $value . '">';
                                             }
                                         }
                                         if (isset($finalData['standard_id'])) {
-                                            foreach ($finalData['standard_id'] as $id=>$value) {
+                                            foreach ($finalData['standard_id'] as $id => $value) {
                                                 echo '<input type="hidden" name="standard_id[]" value="' . $value . '">';
                                             }
-                                        }                                       
+                                        }
                                         ?>
 
                                         <input type="hidden" name="subject_id" @if(isset($finalData['subject'])) value="{{$finalData['subject']}}" @endif>
 
-                                        <input type="submit" name="submit" value="Submit" onclick="return validateData();" class="btn btn-success">
+                                        <input type="submit" name="submit" value="Submit"
+                                               onclick="return validateData();" class="btn btn-success">
                                     </center>
                                 </div>
                             </div>
                         </div>
                     </form>
                 </div>
-            </div>        
+            </div>
         @endif
     </div>
 </div>
-@include('includes.lmsfooterJs')    
+@include('includes.lmsfooterJs')
 <script>
-    $(document).on('change','#standard', function(){
-        var standard_id = $(this).val();      
+    $(document).on('change', '#standard', function () {
+        var standard_id = $(this).val();
         var path = "{{ route('ajax_getHomeworkSubjects') }}";
         $.ajax({
-            url:path,
-            data:'standard_id='+standard_id,
-            success:function(result){                     
+            url: path,
+            data: 'standard_id=' + standard_id,
+            success: function (result) {
                 var e = $('select[name="subject"]');
                 $(e).find('option').remove().end();
                 $(e).append($("<option></option>").val("").html('Select Subject'));
-                for(var i=0;i < result.length ;i++)
-                {
+                for (var i = 0; i < result.length; i++) {
                     $(e).append($("<option></option>").val(result[i]['subject_id']).html(result[i]['display_name']));
                 }
             }
         });
     });
-	function validateData()
-	{				
+
+    function validateData() {
         var selected_stud = $("input[name='students[]']:checked").length;
-        if(selected_stud == 0)
-        {
+        if (selected_stud == 0) {
             alert("Please Select Atleast One Student");
             return false;
-        }
-        else{
+        } else {
             return true;
-        }        		
-	}
-    $( document ).ready(function() {
-        $('#grade').attr("required",true);
-        $('#standard').attr("required",true);
-        $('#subject').attr("required",true);
+        }
+    }
+
+    $(document).ready(function () {
+        $('#grade').attr("required", true);
+        $('#standard').attr("required", true);
+        $('#subject').attr("required", true);
     });
 
     function checkAll(ele) {

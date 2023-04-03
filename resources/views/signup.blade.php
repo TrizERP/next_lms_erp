@@ -1,4 +1,4 @@
-<!DOCTYPE html>  
+<!DOCTYPE html>
 <html lang="en">
 
 <!-- Mirrored from www.ampleadmin.wrappixel.com/ampleadmin-html/ampleadmin-minimal/login.html by HTTrack Website Copier/3.x [XR&CO'2014], Thu, 30 Aug 2018 10:12:45 GMT -->
@@ -22,7 +22,7 @@ $loginpage_backgrond = session()->get('loginpage_backgrond');
 <meta name="author" content="">
 @if(!empty($loginpage_favicon))
   <link rel="icon" type="image/png" sizes="16x16" href={{$loginpage_favicon}} >
-@else             
+    @else
   <link rel="icon" type="image/png" sizes="16x16" href="../admin_dep/images/icon.png">
 @endif
 <title>TRIZ-ERP || LOGIN</title>
@@ -88,29 +88,30 @@ $loginpage_backgrond = session()->get('loginpage_backgrond');
             border-radius: 100%;
         }
 
-      div.click-to-top span {
-          display: block; 
-          position: absolute; 
-          bottom: 0; 
-          left: 0; 
-          right: 0; 
-          background: #333; 
-          color: #fff; 
-          width: 100px;
-          margin-bottom: -10%;
-          margin-left: 25%;
+        div.click-to-top span {
+            display: block;
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: #333;
+            color: #fff;
+            width: 100px;
+            margin-bottom: -10%;
+            margin-left: 25%;
         }
-     /* div.click-to-top:hover span {
-        display: block; 
-      }*/
+
+        /* div.click-to-top:hover span {
+           display: block;
+         }*/
 </style>
 <body>
 <!-- Preloader -->
 <section id="wrapper" class="new-login-register container-fluid">
-  <div class="row">
+    <div class="row">
 
-    <div class="col-md-6">
-      @if(!empty($loginpage_backgrond))
+        <div class="col-md-6">
+            @if(!empty($loginpage_backgrond))
           <div class="lg-info-panel h-100 d-flex align-items-center p-3" style="background:url({{$loginpage_backgrond}}) center;">
       @else
         <div class="lg-info-panel h-100 d-flex align-items-center p-3" style="background:url(https://p0.pikist.com/photos/545/980/students-women-female-woman-happy-girl-young-college-education.jpg) center;">
@@ -120,40 +121,40 @@ $loginpage_backgrond = session()->get('loginpage_backgrond');
                 @if(!empty($loginpage_logo))
                     {!!$loginpage_logo!!}
                 @else
-                  <center>
-                    <img src="http://dev.triz.co.in/admin_dep/images/triz.png" width="250px">
-                  </center>                
+                    <center>
+                        <img src="http://dev.triz.co.in/admin_dep/images/triz.png" width="250px">
+                    </center>
                 @endif
 
                 @if(!empty($loginpage_title))
-                  {!!$loginpage_title!!}
+                    {!!$loginpage_title!!}
                 @else
-                  <h2 class="text-light">OWN INSTITUTE MAXIMIZE LEARNING</h2>                
-                @endif 
+                    <h2 class="text-light">OWN INSTITUTE MAXIMIZE LEARNING</h2>
+                @endif
 
                 @if(!empty($loginpage_description))
-                  {!!$loginpage_description!!}
+                    {!!$loginpage_description!!}
                 @else
-                  <p class="text-light">Integrated solution for institutes need-DIGITAL!!!</p>
-                @endif     
-                       
+                    <p class="text-light">Integrated solution for institutes need-DIGITAL!!!</p>
+                @endif
+
             </div>
           </div>
-      </div>
-    </div>
-    <div class="col-md-6">
-      <div class="new-login-box row align-items-center justify-content-center py-4">
-        <div class="col-md-8">
-          <div class="white-box123">            
-            
-            <form class="form-horizontal new-lg-form" id="signupform" method="POST">
+        </div>
+          </div>
+                <div class="col-md-6">
+                    <div class="new-login-box row align-items-center justify-content-center py-4">
+                        <div class="col-md-8">
+                            <div class="white-box123">
 
+                                <form class="form-horizontal new-lg-form" id="signupform" method="POST">
+                                    @csrf
               <h3 class="box-title m-b-0">New Sign Up</h3>
               <hr style="border-top: 8px solid rgba(92 74 199);">
-              
+
               @if(!empty($data['message']))
               <div class="alert alert-danger" role="alert">
-                {{ $data['message'] }} 
+                  {{ $data['message'] }}
               </div>
               @endif
               @php
@@ -182,36 +183,39 @@ $loginpage_backgrond = session()->get('loginpage_backgrond');
                          <input type="radio" name="user_type" id="lmsteacher" value="LMS Teacher" class="imgbgchk" onclick="show_hide_block(this.value);" required>
                           <label for="lmsteacher">
                             <img src="{{$teacher_img}}" alt="LMS Teacher">
-                            <span>LMS Teacher</span> 
-                            <div class="tick_container">
-                              <div class="tick"><i class="fa fa-check"></i></div>
-                            </div>
+                              <span>LMS Teacher</span>
+                              <div class="tick_container">
+                                  <div class="tick"><i class="fa fa-check"></i></div>
+                              </div>
                           </label>
                       </div>
-                      <div class='col-md-4 text-center click-to-top'>
-                        <input type="radio" name="user_type" id="student" class="imgbgchk" value="Student" onclick="show_hide_block(this.value);" required>
-                        <label for="student">
-                          <img src="{{$student_img}}" alt="Student">
-                          <span>Student</span>                          
-                          <div class="tick_container">
-                            <div class="tick"><i class="fa fa-check"></i></div>
-                          </div>
-                        </label>
-                      </div>
+                        <div class='col-md-4 text-center click-to-top'>
+                            <input type="radio" name="user_type" id="student" class="imgbgchk" value="Student"
+                                   onclick="show_hide_block(this.value);" required>
+                            <label for="student">
+                                <img src="{{$student_img}}" alt="Student">
+                                <span>Student</span>
+                                <div class="tick_container">
+                                    <div class="tick"><i class="fa fa-check"></i></div>
+                                </div>
+                            </label>
+                        </div>
                     </div>
                   </div>
-                </div>  
-              </div>    
-              <div class="form-group m-t-10 mt-5">
-                <div class="col-xs-12">
-                  <label>First Name<span style="color: red;font-size: large;">*</span></label>
-                  <input class="form-control" name="first_name" type="text" required placeholder="Enter first name">
                 </div>
               </div>
-              <div class="form-group  m-t-10">
-                <div class="col-xs-12">
-                  <label>Last Name<span style="color: red;font-size: large;">*</span></label>
-                  <input class="form-control" name="last_name" type="text" required placeholder="Enter last name">
+                                    <div class="form-group m-t-10 mt-5">
+                                        <div class="col-xs-12">
+                                            <label>First Name<span style="color: red;font-size: large;">*</span></label>
+                                            <input class="form-control" name="first_name" type="text" required
+                                                   placeholder="Enter first name">
+                                        </div>
+                                    </div>
+                                    <div class="form-group  m-t-10">
+                                        <div class="col-xs-12">
+                                            <label>Last Name<span style="color: red;font-size: large;">*</span></label>
+                                            <input class="form-control" name="last_name" type="text" required
+                                                   placeholder="Enter last name">
                 </div>
               </div>
               <div class="form-group  m-t-10">
@@ -260,33 +264,35 @@ $loginpage_backgrond = session()->get('loginpage_backgrond');
               <div class="form-group  m-t-10" id="institute_name_div">
                 <div class="col-xs-12">
                   <label>Institute Name<span style="color: red;font-size: large;">*</span></label>
-                  <input class="form-control" name="institute_name" id="institute_name" type="text" placeholder="Enter institute name">
+                    <input class="form-control" name="institute_name" id="institute_name" type="text"
+                           placeholder="Enter institute name">
                 </div>
               </div>
-              <div class="form-group  m-t-10" id="standard_div">
-                <div class="col-xs-12">
-                  <label>Standard<span style="color: red;font-size: large;">*</span></label>
-                  <select class="form-control" name="standard" id="standard">
-                    <option value="">Select Standard</option>
-                  </select>
-                </div>
-              </div>        
-                        
-              <div class="form-group text-center m-t-20">
-                <div class="col-xs-12">
-                  <input class="form-control" name="type" value="web" type="hidden">
-                  <button class="btn btn-primary btn-lg btn-block" type="submit">Signup</button>
-                </div>
-              </div>             
-            </form>
+                                    <div class="form-group  m-t-10" id="standard_div">
+                                        <div class="col-xs-12">
+                                            <label>Standard<span style="color: red;font-size: large;">*</span></label>
+                                            <select class="form-control" name="standard" id="standard">
+                                                <option value="">Select Standard</option>
+                                            </select>
+                                        </div>
+                                    </div>
 
-          </div>
-        </div>  
-      </div>  
-    </div>
-  </div>          
-  
-  
+                                    <div class="form-group text-center m-t-20">
+                                        <div class="col-xs-12">
+                                            <input class="form-control" name="type" value="web" type="hidden">
+                                            <button class="btn btn-primary btn-lg btn-block" type="submit">Signup
+                                            </button>
+                                        </div>
+                                    </div>
+                                </form>
+
+                            </div>
+                        </div>
+                    </div>
+                </div>
+        </div>
+
+
 </section>
 <!-- jQuery -->
 <script src="{{ asset("plugins/bower_components/jquery/dist/jquery.min.js") }}"></script>
@@ -316,8 +322,8 @@ $loginpage_backgrond = session()->get('loginpage_backgrond');
       format: 'yyyy-mm-dd',
       orientation: 'bottom'
     });
-    
-    $('#standard_div').hide();
+
+      $('#standard_div').hide();
     $('#institute_name_div').hide();
   });
 
@@ -335,24 +341,23 @@ $loginpage_backgrond = session()->get('loginpage_backgrond');
 
       $('#institute_name_div').hide();
       $('#standard_div').show();
-      
-      var path = "{{ route('get_trizStandard') }}";
-      $('#standard').find('option').remove().end().append('<option value="">Select Standard</option>').val('');
-      $.ajax({url: path, success: function(result){          
-          for(var i=0;i < result.length;i++)
-          {
-              $("#standard").append($("<option></option>").val(result[i]['id']).html(result[i]['name']));
-          }          
-        }
-      });
+
+        var path = "{{ route('get_trizStandard') }}";
+        $('#standard').find('option').remove().end().append('<option value="">Select Standard</option>').val('');
+        $.ajax({
+            url: path, success: function (result) {
+                for (var i = 0; i < result.length; i++) {
+                    $("#standard").append($("<option></option>").val(result[i]['id']).html(result[i]['name']));
+                }
+            }
+        });
     }
   }
 
-  function validate_mobile(mobile)
-  {
-    var phoneno = /^[7-9][0-9]{0,8}$/;
-    if(mobile.value.match(phoneno)) {
-      return true;
+  function validate_mobile(mobile) {
+      var phoneno = /^[7-9][0-9]{0,8}$/;
+      if (mobile.value.match(phoneno)) {
+          return true;
     }
     else {
       alert("Wrong mobile number has been entered.");

@@ -2,19 +2,12 @@
 
 namespace App\Http\Controllers\fees\imprest_fees_cancel;
 
-use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
-use function App\Helpers\is_mobile;
-use function App\Helpers\SearchStudent;
-use function App\Helpers\FeeMonthId;
-use function App\Helpers\FeeBreakoffHeadWise;
-use function App\Helpers\FeeBreackoff;
-use App\Models\fees\feesReceiptBookMasterModel;
-use App\Models\fees\tblfeesConfigModel;
-use App\Models\student\tblstudentModel;
-use App\Models\student\tblstudentEnrollmentModel;
-use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\fees\other_fees_collect\other_fees_collect_controller;
+use App\Models\student\tblstudentModel;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use function App\Helpers\is_mobile;
 
 class imprestFeesCancelController extends Controller
 {
@@ -29,23 +22,18 @@ class imprestFeesCancelController extends Controller
         $syear = $request->session()->get('syear');
         $sub_institute_id = $request->session()->get('sub_institute_id');
 
-        $sql = "SELECT fc.* ,frc.css
-                FROM  fees_config_master fc
-                INNER JOIN fees_receipt_css frc ON frc.receipt_id = fc.fees_receipt_template
-                WHERE fc.sub_institute_id = '".$sub_institute_id."' AND fc.syear = '".$syear."' ";
-        $sql = preg_replace('/\n+/', '', $sql);
-        $fees_config = DB::select($sql);
+        $fees_config = DB::table('fees_config_master as fc')
+            ->join('fees_receipt_css as frc', function ($q) {
+                $q->whereRaw('frc.receipt_id = fc.fees_receipt_template');
+            })->selectRaw('fc.* ,frc.css')
+            ->where('fc.sub_institute_id', $sub_institute_id)
+            ->where('fc.syear', $syear)->get()->toArray();
 
-        if (count($fees_config) > 0)
-        {
+        if (count($fees_config) > 0) {
             $receipt_css = $fees_config[0]->css;
             $paper_size = $fees_config[0]->fees_receipt_template;
-        } 
-        else 
-        {
-            $sql = "SELECT frc.css FROM fees_receipt_css frc WHERE frc.receipt_id = 'A5' ";
-            $sql = preg_replace('/\n+/', '', $sql);
-            $fees_config = DB::select($sql);
+        } else {
+            $fees_config = DB::table('fees_receipt_css')->select(['css'])->where('receipt_id', 'A5')->get()->toArray();
             $receipt_css = $fees_config[0]->css;
             $paper_size = 'A5';
         }
@@ -125,7 +113,7 @@ class imprestFeesCancelController extends Controller
     }
 
     public function showImprestFees(Request $request)
-    {       
+    {
         // dd($request);
         $type = $request->input("type");
         $grade = $request->input('grade');
@@ -145,7 +133,7 @@ class imprestFeesCancelController extends Controller
         {
             $other_extraSearchArray['tblstudent_enrollment.grade_id'] = $grade;
         }
-    
+
         if($standard != '')
         {
             $other_extraSearchArray['tblstudent_enrollment.standard_id'] = $standard;
@@ -177,9 +165,9 @@ class imprestFeesCancelController extends Controller
         }
 
         $other_extraSearchArray['fees_paid_other.syear'] = $syear;
-        $other_extraSearchArray['tblstudent_enrollment.syear'] = $syear;        
+        $other_extraSearchArray['tblstudent_enrollment.syear'] = $syear;
         $other_extraSearchArray['fees_paid_other.sub_institute_id'] = $sub_institute_id;
-        
+
         $other_fees_paid = tblstudentModel::selectRaw("IF((SUM(fees_paid_other.actual_amountpaid) - SUM(IFNULL(fees_other_collection.deduction_amount,0))) < 0,'reamining_amt_minus','reamining_amt_plus') AS fees_type,fees_paid_other.id,fees_paid_other.reciept_id as receipt_no,fees_paid_other.paid_fees_html as fees_html,fees_paid_other.receiptdate,fees_paid_other.payment_mode,
             SUM(fees_paid_other.actual_amountpaid) as total_amount,fees_other_collection.deduction_head_id,fees_other_head.display_name, SUM(IFNULL(fees_other_collection.deduction_amount,0)) AS deduction_amount,
             (SUM(fees_paid_other.actual_amountpaid) - SUM(IFNULL(fees_other_collection.deduction_amount,0))) AS remaining_amount,
@@ -207,37 +195,31 @@ class imprestFeesCancelController extends Controller
             ->toArray();
 
 
-
-        if(count($other_fees_paid) == 0)
-        {
+        if (count($other_fees_paid) == 0) {
             $res['status_code'] = 0;
             $res['message'] = "No Fees Receipt Found Please Search Again";
             return is_mobile($type, "imprest_fees_cancel.index", $res);
         }
 
-        $feesCancelType = DB::table('fees_cancel_type')->pluck('title','id');
+        $feesCancelType = DB::table('fees_cancel_type')->pluck('title', 'id');
 
-        $sql = "SELECT fc.* ,frc.css
-                FROM  fees_config_master fc
-                INNER JOIN fees_receipt_css frc ON frc.receipt_id = fc.fees_receipt_template
-                WHERE fc.sub_institute_id = '".$sub_institute_id."' AND fc.syear = '".$syear."' ";
-        $sql = preg_replace('/\n+/', '', $sql);
-        $fees_config = DB::select($sql);
+        $fees_config = DB::table('fees_config_master as fc')
+            ->join('fees_receipt_css as frc', function ($q) {
+                $q->whereRaw('frc.receipt_id = fc.fees_receipt_template');
+            })->selectRaw('fc.* ,frc.css')
+            ->where('fc.sub_institute_id', $sub_institute_id)
+            ->where('fc.syear', $syear)->get()->toArray();
 
-        if (count($fees_config) > 0)
-        {
+
+        if (count($fees_config) > 0) {
             $receipt_css = $fees_config[0]->css;
             $paper_size = $fees_config[0]->fees_receipt_template;
-        } 
-        else 
-        {
-            $sql = "SELECT frc.css FROM fees_receipt_css frc WHERE frc.receipt_id = 'A5' ";
-            $sql = preg_replace('/\n+/', '', $sql);
-            $fees_config = DB::select($sql);
+        } else {
+            $fees_config = DB::table('fees_receipt_css')->select(['css'])->where('receipt_id', 'A5')->get()->toArray();
             $receipt_css = $fees_config[0]->css;
             $paper_size = 'A5';
         }
-            
+
         $res['status_code'] = 1;
         $res['message'] = "Success";
         $res['fees_data'] = $other_fees_paid;
@@ -251,7 +233,7 @@ class imprestFeesCancelController extends Controller
         $res['from_date'] = $from_date;
         $res['to_date'] = $to_date;
         $res['fees_cancel_type'] = $feesCancelType;
-        // dd($res);
+
         return is_mobile($type, "fees/imprest_fees_cancel/index", $res , "view");
     }
 
@@ -279,7 +261,7 @@ class imprestFeesCancelController extends Controller
         $style = '<style type="text/css">
             body {
                 background: #ffffff;
-            } 
+            }
             table.fees-receipt {
                 border-collapse: inherit !important;
             }
@@ -309,7 +291,7 @@ class imprestFeesCancelController extends Controller
                 border-bottom: 1px double #000;
                 border-width: 3px;
             }
-            .particulars {        
+            .particulars {
                 overflow: hidden;
                 display: block;
                 vertical-align: top
@@ -393,29 +375,28 @@ class imprestFeesCancelController extends Controller
             receipt_line_4,receipt_prefix,receipt_logo,last_receipt_number";
             $sql = preg_replace('/\n+/', '', $sql);
             $result = DB::select($sql);
-            
+
             $get_receipt_id = "SELECT IFNULL(MAX(CONVERT(SUBSTRING_INDEX(cancel_fees_receipt_id,'/',-1), UNSIGNED)),0) AS rid
                             FROM imprest_fees_cancel
                             WHERE sub_institute_id = '".$sub_institute_id."' AND syear = '".$syear."' ";
-                      
+
             $sql_receipt = preg_replace('/\n+/', '', $get_receipt_id);
             $RECEIPT_NO_result = DB::select($sql_receipt);
             $RECEIPT_NO = $syear.'/'.($RECEIPT_NO_result[0]->rid + 1);
 
             $student_sql = "SELECT s.id,CONCAT_WS(' ',s.first_name,s.last_name) AS stu_name,
                             CONCAT_WS('/',st.name,d.name) AS std_name,s.enrollment_no,s.mobile
-                            FROM tblstudent s 
+                            FROM tblstudent s
                             INNER JOIN tblstudent_enrollment se ON se.student_id = s.id AND s.sub_institute_id = se.sub_institute_id
                             INNER JOIN academic_section aa ON aa.id = se.grade_id
                             INNER JOIN standard st ON st.id = se.standard_id AND st.sub_institute_id = se.sub_institute_id
                             INNER JOIN division d ON d.id = se.section_id AND d.sub_institute_id = se.sub_institute_id
-                            WHERE s.id = '".$feesDetails->student_id."' AND se.syear = '".$syear."' AND se.end_date IS NULL 
-                            AND s.sub_institute_id = '".$sub_institute_id."'";
-            $stu_data = DB::select($student_sql);               
+                            WHERE s.id = '" . $feesDetails->student_id . "' AND se.syear = '" . $syear . "' AND se.end_date IS NULL
+                            AND s.sub_institute_id = '" . $sub_institute_id . "'";
+            $stu_data = DB::select($student_sql);
 
             $receipt_book_arr = array();
-            foreach ($result as $temp_id => $receipt_detail) 
-            {
+            foreach ($result as $temp_id => $receipt_detail) {
                 $receipt_book_arr = $receipt_detail;
             }
 
@@ -475,14 +456,14 @@ class imprestFeesCancelController extends Controller
             $recHtml .= '       Name : <label><b>'.$stu_data[0]->stu_name.'</b></label>';
             $recHtml .= '   </td>';
             $recHtml .= '   <td colspan="2" align="right">';
-            $recHtml .= '       Mobile : <label><b>' .$stu_data[0]->mobile. '</b></label>';
-            $recHtml .= '   </td>';            
+            $recHtml .= '       Mobile : <label><b>' . $stu_data[0]->mobile . '</b></label>';
+            $recHtml .= '   </td>';
             $recHtml .= '</tr>';
 
             $recHtml .= '<tr>';
             $recHtml .= '   <td colspan="4" align="left">';
-            $recHtml .= '       Std/Div. : <label><b>'.$stu_data[0]->std_name.'</b></label>';
-            $recHtml .= '   </td>';          
+            $recHtml .= '       Std/Div. : <label><b>' . $stu_data[0]->std_name . '</b></label>';
+            $recHtml .= '   </td>';
             $recHtml .= '</tr>';
 
             $recHtml .= '<tr>';
@@ -556,7 +537,7 @@ class imprestFeesCancelController extends Controller
             $feesCancelLog['cancel_fees_html'] = $style.$recHtml_for_insert;
             $feesCancelLog['cancelled_by'] = $user_id;
             $feesCancelLog['ip_address'] = $_SERVER['REMOTE_ADDR'];
-            
+
             DB::table('imprest_fees_cancel')->insert($feesCancelLog);
             $last_inserted_id = DB::getPdo()->lastInsertId();
 
@@ -568,7 +549,7 @@ class imprestFeesCancelController extends Controller
             DB::table('fees_paid_other')
             ->where(['id' => $fees_paid_other_id,'reciept_id' => $value, 'syear' => $syear, 'sub_institute_id' => $sub_institute_id])
             ->update(['is_deleted' => 'Y','is_waved' => $cancel_type[$fees_paid_other_id]]);
-        }        
+        }
         $inserted_ids = rtrim($all_inserted_id,',');
 
         $res['status'] = "1";
