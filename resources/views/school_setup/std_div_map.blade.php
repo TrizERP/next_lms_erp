@@ -8,7 +8,7 @@
             <div class="col-lg-3 col-md-4 col-sm-4 col-xs-12">
                 <h4 class="page-title">Standard Division Mapping</h4>
             </div>
-        </div>        
+        </div>
         <div class="card">
             <div class="panel-body">
                 @if ($message = Session::get('data'))
@@ -19,6 +19,7 @@
                 @endif
                 <div class="col-lg-12 col-sm-12 col-xs-12">
                     <form action="{{ route('std_div_map.store') }}" enctype="multipart/form-data" method="post">
+                    @csrf
                             <!-- <div class="col-md-12 form-group">                                                                             -->
                             <div class="row">
                             <div class="col-md-4 form-group h3">
@@ -74,7 +75,7 @@
                 </div>
                 @endif
             </div>
-        </div>      
+        </div>
     </div>
 </div>
 

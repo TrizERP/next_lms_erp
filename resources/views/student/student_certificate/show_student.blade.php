@@ -32,7 +32,7 @@
             <form action="{{ route('student_certificate.show_student') }}" enctype="multipart/form-data" method="post">
             {{ method_field("POST") }}
             @csrf
-                <div class="row">                    
+                <div class="row">
                     {{ App\Helpers\SearchChain('4','single','grade,std,div',$grade_id,$standard_id,$division_id) }}
                     <div class="col-md-12 form-group">
                         <center>
@@ -41,27 +41,28 @@
                     </div>
                 </div>
             </form>
-        </div>
-        @if(isset($data['data']))
-        @php
-            if(isset($data['data'])){
-                $student_data = $data['data'];
-            }
-        @endphp
+                </div>
+                    @if(isset($data['data']))
+                        @php
+                            if(isset($data['data'])){
+                                $student_data = $data['data'];
+                            }
+                        @endphp
 
-        <div class="card">               
-        	<form method="POST" action="show_student_certificate">
-                <div class="row">                    
-                    <div class="col-md-4 form-group">
-                        <label>Certificate Template</label>
-                        <select class="form-control" name="template" required="required">
-                            <option value="">Select Certificate Template</option>
-                            <option value="Bonafide">Bonafide Certificate</option>
-                            <option value="Character Certificate">Character Certificate</option>
-                            <option value="Transfer Certificate">Transfer Certificate</option>
-                        </select>
-                    </div>
-                    <div class="col-md-4 form-group">
+                        <div class="card">
+                            <form method="POST" action="show_student_certificate">
+                                @csrf
+                                <div class="row">
+                                    <div class="col-md-4 form-group">
+                                        <label>Certificate Template</label>
+                                        <select class="form-control" name="template" required="required">
+                                            <option value="">Select Certificate Template</option>
+                                            <option value="Bonafide">Bonafide Certificate</option>
+                                            <option value="Character Certificate">Character Certificate</option>
+                                            <option value="Transfer Certificate">Transfer Certificate</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-4 form-group">
                         <label>Certificate Reason</label>
                         <input type="text" id="certificate_reason" name="certificate_reason" class="form-control">
                     </div>
@@ -98,18 +99,19 @@
                                 </tbody>
                             </table>
                         </div>
-                    </div>    
-                    <div class="col-md-12 form-group">
-                        <center>
-                        	 <input type="hidden" name="grade_id" @if(isset($data['grade_id'])) value="{{$data['grade_id']}}" @endif">
-                        	<input type="hidden" name="standard_id" @if(isset($data['standard_id'])) value="{{$data['standard_id']}}" @endif">
-                            <input type="submit" name="submit" value="Submit" class="btn btn-success" >
-                        </center>
                     </div>
-                </div>
-            </form>                        
-        </div>
-        @endif
+                                    <div class="col-md-12 form-group">
+                                        <center>
+                                            <input type="hidden" name="grade_id" @if(isset($data['grade_id'])) value="{{$data['grade_id']}}" @endif">
+                        	<input type="hidden" name="standard_id" @if(isset($data['standard_id'])) value="{{$data['standard_id']}}" @endif
+                                            ">
+                                            <input type="submit" name="submit" value="Submit" class="btn btn-success">
+                                        </center>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                    @endif
     </div>
 </div>
 

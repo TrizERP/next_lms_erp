@@ -103,10 +103,19 @@ class outwardController extends Controller
     public function edit(Request $request, $id)
     {
         $type = $request->input('type');
+        $syear = $request->session()->get('syear');
+
         $data = outwardModel::find($id);
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $editdata = place_masterModel::where(['sub_institute_id' => $sub_institute_id])->get();
         $editdata1 = physical_file_locationModel::where(['sub_institute_id' => $sub_institute_id])->get();
+        $get_outward_no = DB::table("outward")
+            ->selectRaw('(IFNULL(MAX(CAST(outward_number AS INT)),0) + 1) AS outward_no')
+            ->where("sub_institute_id", "=", $sub_institute_id)
+            ->where("syear", "=", $syear)
+            ->get()->toArray();
+
+        view()->share('outward_no', $get_outward_no[0]->outward_no);
         view()->share('menu', $editdata);
         view()->share('menu1', $editdata1);
 

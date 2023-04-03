@@ -20,7 +20,7 @@
             }
             if(isset($data['driver_id']))
             {
-                $driver_id = $data['driver_id'];            
+                $driver_id = $data['driver_id'];
             }
         @endphp
         <div class="card">
@@ -52,32 +52,33 @@
 
                     <div class="col-md-12 form-group">
                         <center>
-                            <input type="submit" name="submit" value="Search" class="btn btn-success" >
+                            <input type="submit" name="submit" value="Search" class="btn btn-success">
                         </center>
-                    </div>                    
+                    </div>
                 </div>
             </form>
-        </div>
-        
-        @if(isset($data['data']))
-        @php
-            if(isset($data['data'])){
-                $student_data = $data['data'];
-            }
-        @endphp
-        <div class="card">
-            <form method="POST" action="show_student_icard">
-                <div class="row">                    
-                    <div class="col-md-4 form-group">
-                        <label>Template</label>
-                        <select class="form-control" name="template" required="required">
-                            <option value="">Select Template</option>
-                            <option value="template_1">Template 1</option>
-                            <option value="template_2">Template 2</option>
-                            <option value="template_3">Template 3</option>
-                            <option value="template_4">Template 4</option>
-                        </select>
-                    </div>
+                </div>
+
+                    @if(isset($data['data']))
+                        @php
+                            if(isset($data['data'])){
+                                $student_data = $data['data'];
+                            }
+                        @endphp
+                        <div class="card">
+                            <form method="POST" action="show_student_icard">
+                                @csrf
+                                <div class="row">
+                                    <div class="col-md-4 form-group">
+                                        <label>Template</label>
+                                        <select class="form-control" name="template" required="required">
+                                            <option value="">Select Template</option>
+                                            <option value="template_1">Template 1</option>
+                                            <option value="template_2">Template 2</option>
+                                            <option value="template_3">Template 3</option>
+                                            <option value="template_4">Template 4</option>
+                                        </select>
+                                    </div>
                     <div class="col-md-3 form-group">
                         <label>Card Per Row</label>
                         <input type="text" id="row" name="row" required="required" class="form-control">
@@ -123,7 +124,7 @@
                                 </tbody>
                             </table>
                         </div>
-                        <div class="row">                            
+                        <div class="row">
                             <div class="col-md-12 form-group">
                                 <center>
                                     <input type="hidden" name="grade_id" @if(isset($data['grade_id'])) value="{{$data['grade_id']}}" @endif">

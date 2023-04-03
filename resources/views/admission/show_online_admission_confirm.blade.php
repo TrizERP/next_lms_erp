@@ -4,13 +4,13 @@
 
 <div id="page-wrapper">
     <div class="container-fluid">
-            <div class=" bg-title">
-                <div class="col-lg-3 col-md-4 col-sm-4 col-xs-12">
-                    <h4 class="page-title">Online Admission Confirmation</h4> 
-                </div>
+        <div class=" bg-title">
+            <div class="col-lg-3 col-md-4 col-sm-4 col-xs-12">
+                <h4 class="page-title">Online Admission Confirmation</h4>
             </div>
-            <div class="card">
-                @if ($sessionData = Session::get('data'))
+        </div>
+        <div class="card">
+            @if ($sessionData = Session::get('data'))
                 <div class="alert alert-success alert-block">
                     <button type="button" class="close" data-dismiss="alert">×</button>
                     <strong>{{ $sessionData['message'] }}</strong>
@@ -23,11 +23,12 @@
                 </div>
                 @endif
                 <form action="{{ route('online_admission_confirm.create') }}">
-                    <div class="row">                        
+                    <div class="row">
                         <div class="col-md-3">
                             <div class="form-group">
                                 <label>Token Number</label>
-                                <input type="text" name="token_no" class="form-control" placeholder="Please Enter Token No." value="@if(isset($data['token_no'])) {{$data['token_no']}} @endif">
+                                <input type="text" name="token_no" class="form-control"
+                                       placeholder="Please Enter Token No." value="@if(isset($data['token_no'])) {{$data['token_no']}} @endif">
                             </div>
                         </div>
                         <div class="col-md-2">
@@ -62,6 +63,7 @@
         @endphp
             <div class="card">
                 <form method="POST" enctype="multipart/form-data" action="{{ route('online_admission_confirm.store') }}">
+                    @csrf
                     <div class="table-responsive">
                         <table id="example1" class="display nowrap table table-hover table-striped table-bordered dataTable">
                             <thead>
@@ -190,52 +192,76 @@
                                         $not_varified_by_principal = 'disabled';
                                     }
                                     @endphp
-                                <tr>
-                                    <td>
-                                        <input id="{{$data->CHECKBOX}}" value="{{$data->CHECKBOX}}" name="students[]" type="checkbox">
-                                    </td>
-                                    <td>
-                                        <select class="form-control" id="admin_status[{{$data->CHECKBOX}}]" name="admin_status[{{$data->CHECKBOX}}]" style="width: 100px !important;" 
-                                            @php echo $for_principal_disable; @endphp 
-                                            @php echo $for_account_disable; @endphp 
-                                            @if($data->admin_status == 'Verified') disabled @endif
+                                    <tr>
+                                        <td>
+                                            <input id="{{$data->CHECKBOX}}" value="{{$data->CHECKBOX}}"
+                                                   name="students[]" type="checkbox">
+                                        </td>
+                                        <td>
+                                            <select class="form-control" id="admin_status[{{$data->CHECKBOX}}]"
+                                                    name="admin_status[{{$data->CHECKBOX}}]"
+                                                    style="width: 100px !important;"
+                                                    @php echo $for_principal_disable; @endphp
+                                                    @php echo $for_account_disable; @endphp
+                                                    @if($data->admin_status == 'Verified') disabled @endif
                                             >
-                                            <option>Select Status</option>
-                                            <option value="Verified" @if($data->admin_status == 'Verified') selected=selected @endif>Verified</option>
-                                        </select>
-                                    </td>
-                                    <td>
-                                    
-                                        <select class="form-control" id="principal_status[{{$data->CHECKBOX}}]" name="principal_status[{{$data->CHECKBOX}}]" style="width: 100px !important;"
-                                        @php echo $for_admin_disable; @endphp 
-                                        @php echo $for_account_disable; 
+                                                <option>Select Status</option>
+                                                <option value="Verified"
+                                                        @if($data->admin_status == 'Verified') selected=selected @endif>
+                                                    Verified
+                                                </option>
+                                            </select>
+                                        </td>
+                                        <td>
+
+                                            <select class="form-control" id="principal_status[{{$data->CHECKBOX}}]"
+                                                    name="principal_status[{{$data->CHECKBOX}}]"
+                                                    style="width: 100px !important;"
+                                                    @php echo $for_admin_disable; @endphp
+                                                    @php echo $for_account_disable;
                                             echo $not_varified_by_admin;
-                                        @endphp 
-                                        @if(isset($data->principal_status)) disabled @endif>
-                                            <option>Select Status</option>
-                                            <option value="Approved" @if($data->principal_status == 'Approved') selected=selected @endif>Approved</option>
-                                            <option value="Not Approved" @if($data->principal_status == 'Not Approved') selected=selected @endif>Not Approved</option>
-                                        </select>
-                                    </td>
-                                    <td>
-                                        <select class="form-control" id="account_status[{{$data->CHECKBOX}}]" name="account_status[{{$data->CHECKBOX}}]" style="width: 100px !important;" 
-                                            @php echo $for_admin_disable; echo $not_varified_by_principal; @endphp 
-                                            @php echo $for_principal_disable; @endphp 
-                                            @if(isset($data->account_status)) disabled @endif>
-                                            <option>Select Status</option>
-                                            <option value="Confirm" @if($data->account_status == 'Confirm') selected=selected @endif>Confirm</option>
-                                            <option value="Cancel" @if($data->account_status == 'Cancel') selected=selected @endif>Cancel</option>
-                                        </select>
-                                    </td>
-                                    <td><a target="blank" href="https://erp.triz.co.in/New_Admission/other_details.php?token_no={{$data->token}}" style="color: #007bff;">{{$data->token}}</a></td>
-                                    <td>{{$data->child_name}}</td>
-                                    <td>{{$data->syear}}</td>
-                                    <td>{{$data->admission_std}}</td>
+                                                    @endphp
+                                                    @if(isset($data->principal_status)) disabled @endif>
+                                                <option>Select Status</option>
+                                                <option value="Approved"
+                                                        @if($data->principal_status == 'Approved') selected=selected @endif>
+                                                    Approved
+                                                </option>
+                                                <option value="Not Approved"
+                                                        @if($data->principal_status == 'Not Approved') selected=selected @endif>
+                                                    Not Approved
+                                                </option>
+                                            </select>
+                                        </td>
+                                        <td>
+                                            <select class="form-control" id="account_status[{{$data->CHECKBOX}}]"
+                                                    name="account_status[{{$data->CHECKBOX}}]"
+                                                    style="width: 100px !important;"
+                                                    @php echo $for_admin_disable; echo $not_varified_by_principal; @endphp
+                                                    @php echo $for_principal_disable; @endphp
+                                                    @if(isset($data->account_status)) disabled @endif>
+                                                <option>Select Status</option>
+                                                <option value="Confirm"
+                                                        @if($data->account_status == 'Confirm') selected=selected @endif>
+                                                    Confirm
+                                                </option>
+                                                <option value="Cancel"
+                                                        @if($data->account_status == 'Cancel') selected=selected @endif>
+                                                    Cancel
+                                                </option>
+                                            </select>
+                                        </td>
+                                        <td><a target="blank"
+                                               href="https://erp.triz.co.in/New_Admission/other_details.php?token_no={{$data->token}}"
+                                               style="color: #007bff;">{{$data->token}}</a></td>
+                                        <td>{{$data->child_name}}</td>
+                                        <td>{{$data->syear}}</td>
+                                        <td>{{$data->admission_std}}</td>
                                     <td>{{$data->date_of_birth}}</td>
                                     <td>{{$data->age}}</td>
                                     <td>{{$data->mobile}}</td>
                                     <td>{{$data->address}}</td>
-                                
+
                                     <td>{{$data->father_name}}</td>
                                     <td>{{$data->mail}}</td>
                                     <td>{{$data->father_adhar}}</td>
@@ -314,26 +340,44 @@
                                     <td><a target="blank" href="../../../../storage/student_document/{{$data->student_adharcard}}"></td>
                                     <td><a target="blank" href="../../../../storage/student_document/{{$data->student_cast_certificate}}">{{$data->student_cast_certificate}}</td>
                                     <td><a target="blank" href="../../../../storage/student_document/{{$data->father_cast_certificate}}">{{$data->father_cast_certificate}}</td>
-                                    <td><a target="blank" href="../../../../storage/student_document/{{$data->student_passport_size_photo}}">{{$data->student_passport_size_photo}}</td>
-                                    <td><a target="blank" href="../../../../storage/student_document/{{$data->family_photo}}">{{$data->family_photo}}</td>
-                                    <td><a target="blank" href="../../../../storage/student_document/{{$data->family_photo}}">{{$data->family_photo}}</td>
-                                    <td><a target="blank" href="../../../../storage/student_document/{{$data->medical_examination_report}}">{{$data->medical_examination_report}}</td>
-                                    <td><a target="blank" href="../../../../storage/student_document/{{$data->father_adharcard}}">{{$data->father_adharcard}}</td>
-                                    <td><a target="blank" href="../../../../storage/student_document/{{$data->mother_adharcard}}">{{$data->mother_adharcard}}</td>
-                                    <td><a target="blank" href="../../../../storage/student_document/{{$data->address_proof}}">{{$data->address_proof}}</td>
-                                    <td><a target="blank" href="../../../../storage/student_document/{{$data->father_signature}}">{{$data->father_signature}}</td>
-                                    <td><a target="blank" href="../../../../storage/student_document/{{$data->mother_signature}}">{{$data->mother_signature}}</td>
-                                    <td>{{$data->parents_declaration}}</td>
-                                    <td>{{$data->created_on}}</td>       
-                                </tr>
+                                        <td><a target="blank"
+                                               href="../../../../storage/student_document/{{$data->student_passport_size_photo}}">{{$data->student_passport_size_photo}}
+                                        </td>
+                                        <td><a target="blank"
+                                               href="../../../../storage/student_document/{{$data->family_photo}}">{{$data->family_photo}}
+                                        </td>
+                                        <td><a target="blank"
+                                               href="../../../../storage/student_document/{{$data->family_photo}}">{{$data->family_photo}}
+                                        </td>
+                                        <td><a target="blank"
+                                               href="../../../../storage/student_document/{{$data->medical_examination_report}}">{{$data->medical_examination_report}}
+                                        </td>
+                                        <td><a target="blank"
+                                               href="../../../../storage/student_document/{{$data->father_adharcard}}">{{$data->father_adharcard}}
+                                        </td>
+                                        <td><a target="blank"
+                                               href="../../../../storage/student_document/{{$data->mother_adharcard}}">{{$data->mother_adharcard}}
+                                        </td>
+                                        <td><a target="blank"
+                                               href="../../../../storage/student_document/{{$data->address_proof}}">{{$data->address_proof}}
+                                        </td>
+                                        <td><a target="blank"
+                                               href="../../../../storage/student_document/{{$data->father_signature}}">{{$data->father_signature}}
+                                        </td>
+                                        <td><a target="blank"
+                                               href="../../../../storage/student_document/{{$data->mother_signature}}">{{$data->mother_signature}}
+                                        </td>
+                                        <td>{{$data->parents_declaration}}</td>
+                                        <td>{{$data->created_on}}</td>
+                                    </tr>
                                     @php
-                                    $j++;
+                                        $j++;
                                     @endphp
                                 @endforeach
                             </tbody>
                         </table>
                     </div>
-                    <div class="row">                        
+                    <div class="row">
                         <div class="col-md-12 form-group">
                             <center>
                                 <input type="hidden" name="token_no" @if(isset($finalData['token_no'])) value="{{$finalData['token_no']}}" @endif">

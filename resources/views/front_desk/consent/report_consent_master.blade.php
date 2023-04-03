@@ -16,45 +16,49 @@
                 $standard_id = $data['standard_id'];
                 $division_id = $data['division_id'];
             }
-        @endphp        
+        @endphp
         <div class="card">
             @if ($sessionData = Session::get('data'))
-            <div class="alert alert-success alert-block">
-                <button type="button" class="close" data-dismiss="alert">×</button>
-                <strong>{{ $sessionData['message'] }}</strong>
-            </div>
+                <div class="alert alert-success alert-block">
+                    <button type="button" class="close" data-dismiss="alert">×</button>
+                    <strong>{{ $sessionData['message'] }}</strong>
+                </div>
             @endif
             <form action="{{ route('report_consent_master.create') }}">
-                
-                 <div class="row">
+                @csrf
+                <div class="row">
 
-                    {{ App\Helpers\SearchChain('4','single','grade,std,div',$grade_id,$standard_id,$division_id) }}                
-               
+                    {{ App\Helpers\SearchChain('4','single','grade,std,div',$grade_id,$standard_id,$division_id) }}
+
                     <div class="col-md-4 form-group ml-0 mr-0">
                         <label>From Date</label>
-                        <input type="text" name="from_date" class="form-control mydatepicker" placeholder="Please select from date." required="required" value="@if(isset($data['from_date'])) {{$data['from_date']}} @endif" autocomplete="off">
+                        <input type="text" name="from_date" class="form-control mydatepicker"
+                               placeholder="Please select from date." required="required"
+                               value="@if(isset($data['from_date'])) {{$data['from_date']}} @endif" autocomplete="off">
                     </div>
 
                     <div class="col-md-4 form-group ml-0">
                         <label>To Date</label>
-                        <input type="text" name="to_date" class="form-control mydatepicker" placeholder="Please select to date." required="required" value="@if(isset($data['to_date'])) {{$data['to_date']}} @endif" autocomplete="off">
+                        <input type="text" name="to_date" class="form-control mydatepicker"
+                               placeholder="Please select to date." required="required"
+                               value="@if(isset($data['to_date'])) {{$data['to_date']}} @endif" autocomplete="off">
                     </div>
 
                     <div class="col-md-2 form-group">
                         <br>
-                        <input type="submit" name="submit" value="Search" class="btn btn-success" >
+                        <input type="submit" name="submit" value="Search" class="btn btn-success">
                     </div>
                 </div>
             </form>
-        </div>          
+        </div>
         @if(isset($data['student_data']))
-        @php
-            if(isset($data['student_data'])){
-                $student_data = $data['student_data'];
-                $finalData = $data;
-            }
-                
-        @endphp      
+            @php
+                if(isset($data['student_data'])){
+                    $student_data = $data['student_data'];
+                    $finalData = $data;
+                }
+
+            @endphp
                 <div class="card">
                     <div class="col-lg-12 col-sm-12 col-xs-12">
                     <div class="table-responsive">
@@ -79,7 +83,7 @@
                                     $j=1;
                                     @endphp
                                 @foreach($student_data as $key => $data)
-                                
+
                                 <tr>
                                     <td>{{$j}}</td>
                                     <td>{{$data->enrollment_no}}</td>
@@ -100,47 +104,47 @@
                             </tbody>
                         </table>
                     </div>
+                    </div>
                 </div>
-            </div>           
         @endif
     </div>
 </div>
 
 @include('includes.footerJs')
 <script>
-    $(document).ready(function() {
-     var table = $('#example').DataTable( {
-         select: true,          
-         lengthMenu: [ 
-                        [100, 500, 1000, -1], 
-                        ['100', '500', '1000', 'Show All'] 
-        ],
-        dom: 'Bfrtip', 
-        buttons: [ 
-            { 
-                extend: 'pdfHtml5',
-                title: 'Consent Report',
-                orientation: 'landscape',
-                pageSize: 'LEGAL',                
-                pageSize: 'A0',
-                exportOptions: {                   
-                     columns: ':visible'                             
+    $(document).ready(function () {
+        var table = $('#example').DataTable({
+            select: true,
+            lengthMenu: [
+                [100, 500, 1000, -1],
+                ['100', '500', '1000', 'Show All']
+            ],
+            dom: 'Bfrtip',
+            buttons: [
+                {
+                    extend: 'pdfHtml5',
+                    title: 'Consent Report',
+                    orientation: 'landscape',
+                    pageSize: 'LEGAL',
+                    pageSize: 'A0',
+                    exportOptions: {
+                        columns: ':visible'
+                    },
                 },
-            }, 
-            { extend: 'csv', text: ' CSV', title: 'Consent Report' }, 
-            { extend: 'excel', text: ' EXCEL', title: 'Consent Report'}, 
-            { extend: 'print', text: ' PRINT', title: 'Consent Report'}, 
-            'pageLength' 
-        ], 
-        }); 
+                {extend: 'csv', text: ' CSV', title: 'Consent Report'},
+                {extend: 'excel', text: ' EXCEL', title: 'Consent Report'},
+                {extend: 'print', text: ' PRINT', title: 'Consent Report'},
+                'pageLength'
+            ],
+        });
 
-        $('#example thead tr').clone(true).appendTo( '#example thead' );
-        $('#example thead tr:eq(1) th').each( function (i) {
+        $('#example thead tr').clone(true).appendTo('#example thead');
+        $('#example thead tr:eq(1) th').each(function (i) {
             var title = $(this).text();
-            $(this).html( '<input type="text" placeholder="Search '+title+'" />' );
+            $(this).html('<input type="text" placeholder="Search ' + title + '" />');
 
-            $( 'input', this ).on( 'keyup change', function () {
-                if ( table.column(i).search() !== this.value ) {
+            $('input', this).on('keyup change', function () {
+                if (table.column(i).search() !== this.value) {
                     table
                         .column(i)
                         .search( this.value )

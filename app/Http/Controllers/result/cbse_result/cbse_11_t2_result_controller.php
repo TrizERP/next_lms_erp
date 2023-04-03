@@ -130,7 +130,7 @@ class cbse_11_t2_result_controller extends Controller
             ->where("ay.syear", "=", session()->get('syear'))
             ->where("ay.sub_institute_id", "=", session()->get('sub_institute_id'))
             ->groupByRaw('em.ExamTitle,e.term_id')
-            ->orderBy('e.term_id,CAST(em.SortOrder AS UNSIGNED)')
+            ->orderByRaw('e.term_id,CAST(em.SortOrder AS UNSIGNED)')
             ->get()->toarray();
 
         $result = $this->objToArr($result);

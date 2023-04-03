@@ -52,6 +52,7 @@
                         <div class="modal-body">
                             <form role="form" method="post">
                                 {{ method_field("POST") }}
+                                @csrf
                                 <div class="row">
                                     <div class="col-md-6">
                                         <label class="control-label">Category Name</label>
@@ -132,13 +133,14 @@
                     // if so, remove the element from the "Draggable Events" list
                     eventObj.remove();
                 }
-            },
+        },
             /* on click on event */
-            CalendarApp.prototype.onEventClick = function(calEvent, jsEvent, view) {
+            CalendarApp.prototype.onEventClick = function (calEvent, jsEvent, view) {
                 //                alert('onEventClick');
                 console.log(calEvent);
                 var $this = this;
                 var form = $("<form id='update_item_form'></form>");
+                form.append("<input type='hidden' name='_token' value='{{ csrf_token() }}'>")
                 form.append("<label>Event Name</label>");
                 form.append("<input type='hidden' name='school_date' id='school_date' value='" + calEvent.start + "'>");
                 form.append("<input class='form-control ' name='title' type=text value='" + calEvent.title + "' /><br>");
@@ -220,13 +222,14 @@
                 });
             },
             /* on select */
-            CalendarApp.prototype.onSelect = function(start, end, allDay) {
+            CalendarApp.prototype.onSelect = function (start, end, allDay) {
                 //                alert('onselect');
                 var $this = this;
                 $this.$modal.modal({
                     backdrop: 'static'
                 });
                 var form = $("<form id=add_item_form></form>");
+                form.append("<input type='hidden' name='_token' value='{{ csrf_token() }}'>")
                 form.append("<div class='row'></div>");
                 form.find(".row")
                     .append("<input class='form-control' type='hidden' name='school_date' id='school_date' value='" + start + "'/>")

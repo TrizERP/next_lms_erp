@@ -16,20 +16,21 @@
                 <div class="col-lg-3 col-sm-3 col-xs-3">
                     {{-- <a href="{{ route('lo_master.create') }}" class="btn btn-info add-new"><i
                         class="fa fa-plus"></i> Add New</a> --}}
-                </div>                
+                </div>
             </div>
-            <form action="{{ route('lo_marks_entry.store') }}" enctype="multipart/form-data" method="post">
+                <form action="{{ route('lo_marks_entry.store') }}" enctype="multipart/form-data" method="post">
+                    @csrf
                 <input type="hidden" name="examdate" value="{{ $data['examdate'] }}">
                 <input type="hidden" name="medium" value="{{ $data['medium'] }}">
                 <input type="hidden" name="std" value="{{ $data['std'] }}">
                 <input type="hidden" name="div" value="{{ $data['div'] }}">
                 <input type="hidden" name="subject" value="{{ $data['subject'] }}">
                 <input type="hidden" name="questionIds" id="questionIds" value="{{ $data['questions_ids'] }}">
-                <div class="row">
-                    <div class="col-lg-12 col-sm-12 col-xs-12">
-                        <div class="table-responsive">                        
-                            <table id="example" class="table table-striped">
-                                <thead>
+                    <div class="row">
+                        <div class="col-lg-12 col-sm-12 col-xs-12">
+                            <div class="table-responsive">
+                                <table id="example" class="table table-striped">
+                                    <thead>
                                     <tr>
                                         <th>Sr No.</th>
                                         <th>Roll No</th>
@@ -64,11 +65,11 @@
                                         $resultQid = "QID".$id;
                                         @endphp
                                         <td>
-                                            {{ $datas->$resultQid }}                                          
+                                            {{ $datas->$resultQid }}
                                         </td>
                                         @endforeach
                                         <td>
-                                            {{$datas->total}}                                            
+                                            {{$datas->total}}
                                         </td>
                                     </tr>
                                     @php
@@ -76,11 +77,11 @@
                                     @endphp
                                     @endforeach
                                 </tbody>
-                            </table>
+                                </table>
+                            </div>
                         </div>
                     </div>
-                </div>    
-            </form>
+                </form>
         </div>
     </div>
 </div>

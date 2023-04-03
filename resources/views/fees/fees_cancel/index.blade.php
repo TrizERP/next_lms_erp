@@ -17,8 +17,8 @@
                 <input type="checkbox" id="toggle_cancel_refund" name="toggle_cancel_refund" checked data-toggle="toggle" data-on="Fees Cancel" data-off="Fees Refund" data-onstyle="warning" data-offstyle="danger" onchange="show_fees_cancel_refund();">
                 <!-- <h4 class="page-title">
                     <a href="{{ route("fees_cancel.index") }}" class="btn btn-info add-new">Fees Cancel</a>
-                </h4> 
-                
+                </h4>
+
                 <h4 class="page-title ml-2">
                     <a href="{{ route("add_requisition.create") }}" class="btn btn-info add-new">Fees Refund</a>
                 </h4> -->
@@ -64,44 +64,49 @@
                         {{ method_field("POST") }}
                         @csrf
                         <div class="row">
-                           
+
                             {{ App\Helpers\SearchChain('4','single','grade,std,div',$grade_id,$standard_id,$division_id) }}
                              <div class="col-md-4 form-group">
-                                <label>Enrollment No</label>
-                                <input type="text" id="enrollment_no" name="enrollment_no" value="{{$enrollment_no}}" class="form-control">
-                            </div>
-                            
+                                 <label>Enrollment No</label>
+                                 <input type="text" id="enrollment_no" name="enrollment_no" value="{{$enrollment_no}}"
+                                        class="form-control">
+                             </div>
+
                             <div class="col-md-4 form-group">
                                 <label>From Date</label>
-                                <input type="text" id="from_date" name="from_date" value="{{$from_date}}" class="form-control mydatepicker" autocomplete="off">
+                                <input type="text" id="from_date" name="from_date" value="{{$from_date}}"
+                                       class="form-control mydatepicker" autocomplete="off">
                             </div>
                             <div class="col-md-4 form-group">
                                 <label>To Date</label>
-                                <input type="text" id="to_date" name="to_date" value="{{$to_date}}" class="form-control mydatepicker" autocomplete="off"> 
+                                <input type="text" id="to_date" name="to_date" value="{{$to_date}}"
+                                       class="form-control mydatepicker" autocomplete="off">
                             </div>
                             <div class="col-md-4 form-group">
                                 <label>Receipt No</label>
-                                <input type="text" id="receipt_no" value="{{$receipt_no}}" name="receipt_no" class="form-control">
+                                <input type="text" id="receipt_no" value="{{$receipt_no}}" name="receipt_no"
+                                       class="form-control">
                             </div>
-                            
+
                             <div class="col-md-12 form-group">
                                 <center>
                                     <input type="submit" name="submit" value="Search" class="btn btn-success">
-                                </center>    
+                                </center>
                             </div>
-                              
+
                         </div>
                     </form>
                 </div>
             </div>
-            @if(isset($data['fees_data']))
+        @if(isset($data['fees_data']))
             @php
             if(isset($data['fees_data'])){
                 $fees_data = $data['fees_data'];
             }
             @endphp
-            <div class="card">         
-               <form method="POST" action="cancel_fees">
+            <div class="card">
+                <form method="POST" action="cancel_fees">
+                    @csrf
                     <div class="row">
                         <div class="col-lg-12 col-sm-12 col-xs-12 p-0">
                             <div class="table-responsive">
@@ -177,10 +182,10 @@
                                 </center>
                             </div>
                         </div>
-                    </div>    
-                </form>                
+                    </div>
+                </form>
             </div>
-            @endif
+        @endif
     </div>
 
     <!--Modal: Add ChapterModal-->
@@ -208,26 +213,30 @@
                                         <div id="reprint_receipt_html">
                                         </div>
                                     </div>
-                                </div>                            
+                                </div>
                             </div>
                         </div>
                         <!--Footer-->
                         <div class="modal-footer" style="display: block !important;">
-                            <div id="overlay" style="display:none;"><center><p style="margin-top: 273px;color:red;font-weight: 700;">Please do not refresh the page, while the process is going on.</p><img src="http://dev.triz.co.in/admin_dep/images/loader.gif"></center></div>
+                            <div id="overlay" style="display:none;">
+                                <center><p style="margin-top: 273px;color:red;font-weight: 700;">Please do not refresh
+                                        the page, while the process is going on.</p><img
+                                        src="http://dev.triz.co.in/admin_dep/images/loader.gif"></center>
+                            </div>
                             <center>
                                 <button id="ajax_PDF" type="button" class="btn btn-primary">Print Receipt</button>
-                            </center>                            
+                            </center>
                         </div>
                     </div>
                     <!--/.Content-->
                 </div>
             </div>
-        </div>    
-        <!--Modal: Add ChapterModal-->
+        </div>
+    <!--Modal: Add ChapterModal-->
 
 
     @include('includes.footerJs')
-    <script src="https://cdn.jsdelivr.net/gh/gitbrent/bootstrap4-toggle@3.6.1/js/bootstrap4-toggle.min.js"></script> 
+    <script src="https://cdn.jsdelivr.net/gh/gitbrent/bootstrap4-toggle@3.6.1/js/bootstrap4-toggle.min.js"></script>
     <script>
         // document.getElementById("btnPrint").onclick = function () {
         //     // alert('dddd');
@@ -253,7 +262,7 @@
             $('#student_id').val(student_id);
             $('#receipt_id_html').val(receipt_no);
             $('#ChapterModal').modal('show');
-           
+
         }
 
         function checkAll(ele) {
@@ -273,10 +282,9 @@
                 }
             }
         }
-        function show_fees_cancel_refund()
-        {   
-            if($("#toggle_cancel_refund").prop("checked") == true)
-            {
+
+        function show_fees_cancel_refund() {
+            if ($("#toggle_cancel_refund").prop("checked") == true) {
                 var path = "{{ route('fees_cancel.index') }}";
                 location.href = path;
             }
@@ -289,7 +297,7 @@
     </script>
     <script>
         $(document).ready(function() {
-            
+
             $('#example').DataTable({
                 "order": [
                     [1, 'asc']

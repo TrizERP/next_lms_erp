@@ -3,8 +3,8 @@
 @include('includes.sideNavigation')
 <style type="text/css">
     input[type="checkbox"][readonly] {
-          pointer-events: none;
-        }
+        pointer-events: none;
+    }
 </style>
 <div id="page-wrapper">
     <div class="container-fluid">
@@ -13,14 +13,15 @@
                 <h4 class="page-title">Item Receivable</h4>
             </div>
         </div>
-        <div class="card">            
+        <div class="card">
             @if ($sessionData = Session::get('data'))
-            <div class="alert alert-success alert-block">
-                <button type="button" class="close" data-dismiss="alert">×</button>
-                <strong>{{ $sessionData['message'] }}</strong>
-            </div>
+                <div class="alert alert-success alert-block">
+                    <button type="button" class="close" data-dismiss="alert">×</button>
+                    <strong>{{ $sessionData['message'] }}</strong>
+                </div>
             @endif
-            <form action="{{ route('show_inventory_item_receivable.create') }}">  
+            <form action="{{ route('show_inventory_item_receivable.create') }}">
+                @csrf
                 <div class="row">
                     <div class="col-md-3 form-group ml-0 mr-0">
                         <label for="subject">Po Number:</label>
@@ -28,35 +29,36 @@
                             <option value="">Select Po Number</option>
                             @foreach($data['po_numbers'] as $key => $value)
                                 <option value="{{$value['po_number']}}"
-                                @if(isset($data['po_number']))
-                                    @if($data['po_number'] == $value['po_number'])
-                                    selected='selected'
+                                        @if(isset($data['po_number']))
+                                        @if($data['po_number'] == $value['po_number'])
+                                        selected='selected'
                                     @endif
                                 @endif
                                 >{{$value['po_number']}}</option>
                             @endforeach
                         </select>
                     </div>
-                    <div class="col-md-3 form-group ml-0 mr-0 mt-4">                                                
-                        <input type="submit" name="submit" value="Search" class="btn btn-success" >                   
+                    <div class="col-md-3 form-group ml-0 mr-0 mt-4">
+                        <input type="submit" name="submit" value="Search" class="btn btn-success">
                     </div>
-                </div>              
-            </form>            
+                </div>
+            </form>
         </div>
         @if(isset($data['student_data']))
-        @php
-            if(isset($data['student_data'])){
-                $student_data = $data['student_data'];
-                $finalData = $data;
-            }
-        @endphp
-        <div class="card">                
-            <form method="POST" action="{{ route('show_inventory_item_receivable.store') }}">
-                <div class="row">                    
-                    <div class="col-lg-12 col-sm-12 col-xs-12">
-                        <div class="table-responsive">
-                            <table id="example" class="table table-striped">
-                                <thead>
+            @php
+                if(isset($data['student_data'])){
+                    $student_data = $data['student_data'];
+                    $finalData = $data;
+                }
+            @endphp
+            <div class="card">
+                <form method="POST" action="{{ route('show_inventory_item_receivable.store') }}">
+                    @csrf
+                    <div class="row">
+                        <div class="col-lg-12 col-sm-12 col-xs-12">
+                            <div class="table-responsive">
+                                <table id="example" class="table table-striped">
+                                    <thead>
                                     <tr>
                                         <th></th>
                                         <th>Po Number</th>
@@ -123,23 +125,24 @@
                                         </td>
                                         <td>{{$data->received_by}}</td>
                                     </tr>
-                                        @php
+                                    @php
                                         $j++;
-                                        @endphp
+                                    @endphp
                                     @endforeach
                                 </tbody>
-                            </table>
+                                </table>
+                            </div>
                         </div>
-                    </div>    
-                    <div class="col-md-12 form-group">
-                        <center>
-                            <input type="hidden" name="po_number" @if(isset($finalData['po_number'])) value="{{$finalData['po_number']}}" @endif>                          
-                            <input type="submit" name="submit" value="Submit" class="btn btn-success" >
-                        </center>
-                    </div>            
-                </div>
-            </form>
-        </div>
+                        <div class="col-md-12 form-group">
+                            <center>
+                                <input type="hidden" name="po_number"
+                                       @if(isset($finalData['po_number'])) value="{{$finalData['po_number']}}" @endif>
+                                <input type="submit" name="submit" value="Submit" class="btn btn-success">
+                            </center>
+                        </div>
+                    </div>
+                </form>
+            </div>
         @endif
     </div>
 </div>

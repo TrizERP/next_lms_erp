@@ -17,6 +17,7 @@
                 </div>
             </div>
             <form action="{{ route('erp_status.store') }}" enctype="multipart/form-data" method="post">
+                @csrf
                 <div class="row">
                     <div class="col-md-3 form-group">
                         <label>Total Student</label>
@@ -29,8 +30,8 @@
                              <!-- <span class="counter text-blue">{{$data['total_staff']}}</span> -->
                     </div>
                     <div class="col-md-3 form-group">
-                        <label>Total Standard</label> 
-                            <input type="text" class="form-control counter text-blue" value="{{$data['total_standard']}}" readonly="readonly">
+                        <label>Total Standard</label>
+                        <input type="text" class="form-control counter text-blue" value="{{$data['total_standard']}}" readonly="readonly">
                             <!-- <span class="counter text-blue">{{$data['total_standard']}}</span> -->
                     </div>
                     <div class="col-md-3 form-group">
@@ -40,17 +41,17 @@
                     </div>
                     <div class="col-md-3 form-group">
                         <center>
-                        <input type="submit" name="submit" value="Submit" class="btn btn-success" >
+                            <input type="submit" name="submit" value="Submit" class="btn btn-success">
                         </center>
                     </div>
-            	</div>
+                </div>
             </form>
-        </div>        
+        </div>
         <div class="card">
-            <div class="row">                
+            <div class="row">
                 <div class="col-md-12 form-group">
                     <table id="example" class="table table-striped table-bordered">
-                         <tr>
+                        <tr>
                             <th width="10%">Sr. No.</th>
                             <th>Module Name</th>
                             <th>Data</th>
@@ -74,9 +75,9 @@
                     </table>
                 </div>
             </div>
-        </div>    
         </div>
     </div>
+</div>
 </div>
 
 @include('includes.footerJs')

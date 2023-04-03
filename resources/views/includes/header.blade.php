@@ -1,41 +1,42 @@
 <style type="text/css">
-.\31 {
-    pointer-events: none !important;
-    cursor: default !important;
-    color: var(--primary) !important;
-}
-#profileImage {
-  width: 70px;
-  height: 50px;  
-  background: #512DA8;
-  font-size: 35px;
-  color: #fff;  
-  border-radius: 0%;
-  padding: 19px 8px;   
-}
+    .\31 {
+        pointer-events: none !important;
+        cursor: default !important;
+        color: var(--primary) !important;
+    }
+
+    #profileImage {
+        width: 70px;
+        height: 50px;
+        background: #512DA8;
+        font-size: 35px;
+        color: #fff;
+        border-radius: 0%;
+        padding: 19px 8px;
+    }
 </style>
 
 <body class="fix-header">
-    <!-- ============================================================== -->
-    <!-- Preloader -->
-    <!-- ============================================================== -->
-    <!--<div class="preloader">-->
-    <!--    <svg class="circular" viewBox="25 25 50 50">-->
-    <!--        <circle class="path" cx="50" cy="50" r="20" fill="none" stroke-width="2" stroke-miterlimit="10" />-->
+<!-- ============================================================== -->
+<!-- Preloader -->
+<!-- ============================================================== -->
+<!--<div class="preloader">-->
+<!--    <svg class="circular" viewBox="25 25 50 50">-->
+<!--        <circle class="path" cx="50" cy="50" r="20" fill="none" stroke-width="2" stroke-miterlimit="10" />-->
     <!--    </svg>-->
     <!--</div>-->
     <!-- ============================================================== -->
     <!-- Wrapper -->
     <!-- ============================================================== -->
-    <?php
-        $school_logo = session()->get('school_logo'); 
-        $loginpage_link = session()->get('loginpage_link');  
-        $getInstitutes = session()->get('getInstitutes');
-        $academicYears = session()->get('academicYears');
-        $academicTerms = session()->get('academicTerms');
-        // dd(count($academicYears));
+<?php
+$school_logo = session()->get('school_logo');
+$loginpage_link = session()->get('loginpage_link');
+$getInstitutes = session()->get('getInstitutes');
+$academicYears = session()->get('academicYears');
+$academicTerms = session()->get('academicTerms');
+// dd(count($academicYears));
 
-    ?>
+?>
     <div id="wrapper">
         <div id="page">
             <header class="navbar justify-content-between flex-nowrap fixed-top">
@@ -45,23 +46,24 @@
                             <em class="fas fa-bars"></em>
                         </button>
                         <div class="text-center flex-fill">
-                        <?php
-                        if($school_logo != ""){                         
-                        ?>
-                            <a class="navbar-brand" href="{{ route('dashboard') }}"><img src="/admin_dep/images/{{$school_logo}}" style="height: 50px;" alt="home"></a>                        
-                        <?php
-                        }
-                        else
-                        {                            
-                            $words = explode(" ",Session::get('name'));
-                            $name_initial = strtoupper($words[0][0]. $words[1][0]);
-                        ?>
+                            <?php
+                            if($school_logo != ""){
+                            ?>
+                            <a class="navbar-brand" href="{{ route('dashboard') }}"><img
+                                    src="/admin_dep/images/{{$school_logo}}" style="height: 50px;" alt="home"></a>
+                            <?php
+                            }
+                            else
+                            {
+                            $words = explode(" ", Session::get('name'));
+                            $name_initial = strtoupper($words[0][0] . $words[1][0]);
+                            ?>
                             <div id="profileImage">{{$name_initial}}</div>
-                        <?php
-                        }   
-                        ?>                                                                 
+                            <?php
+                            }
+                            ?>
                         </div>
-                        
+
                         <button class="collapse-btn right-collapse-btn d-md-none">
                             <em class="fas fa-bars"></em>
                         </button>
@@ -82,25 +84,28 @@
                             </div>
 
                             @if(Session::get('is_admin') == 1 && Session::get('user_profile_name') == 'Super Admin')
-                            <div class="col-md-3">
-                                <form id="institute" class="app-search hidden-sm hidden-xs m-r-5">
-                                    <select class="cust-select form-control" onchange="setInstitute('institute',this.value);">
-                                        <option value="">Select Institute</option>
-                                        @if(count($getInstitutes) > 0)
-                                            @foreach($getInstitutes as $k => $v)
-                                                <option value="{{$v->Id}}" 
-                                                @if(Session::get('sub_institute_id') == $v->Id)
-                                                selected="selected"
-                                                @endif    
-                                                >{{$v->SchoolName}}</option>
-                                            @endforeach
-                                        @endif
-                                    </select>
-                                </form>                                
-                            </div>
+                                <div class="col-md-3">
+                                    <form id="institute" class="app-search hidden-sm hidden-xs m-r-5">
+                                        @csrf
+                                        <select class="cust-select form-control"
+                                                onchange="setInstitute('institute',this.value);">
+                                            <option value="">Select Institute</option>
+                                            @if(count($getInstitutes) > 0)
+                                                @foreach($getInstitutes as $k => $v)
+                                                    <option value="{{$v->Id}}"
+                                                            @if(Session::get('sub_institute_id') == $v->Id)
+                                                            selected="selected"
+                                                        @endif
+                                                    >{{$v->SchoolName}}</option>
+                                                @endforeach
+                                            @endif
+                                        </select>
+                                    </form>
+                                </div>
                             @endif
                             <div class="col-md-3">
 								<form role="search" id="academicYears" class="app-search hidden-sm hidden-xs m-r-5">
+                                    @csrf
 									<select class="cust-select form-control year-sel mb-0" onchange="setSession('syear',this.value);">
                                         @if(count($academicYears) > 0)
     									    @foreach($academicYears as $kay => $vay)
@@ -109,16 +114,17 @@
     											selected="selected"
     											@endif
     											>{{$vay->syear}}</option>
-    										@endforeach
-                                        @endif    
-									</select>
-								</form>                                
+                                            @endforeach
+                                        @endif
+                                    </select>
+                                </form>
                             </div>
                             <div class="col-md-3">
-								<form role="search" id="academicTerms" class="app-search hidden-sm hidden-xs m-r-5">
+                                <form role="search" id="academicTerms" class="app-search hidden-sm hidden-xs m-r-5">
+                                    @csrf
 									<select class="cust-select form-control mb-0" onchange="setSession('term_id',this.value);" style="width: auto;">
-                                        @if(count($academicTerms) > 0)    
-    										@foreach($academicTerms as $kat => $vat)
+                                        @if(count($academicTerms) > 0)
+                                            @foreach($academicTerms as $kat => $vat)
     											<option value="{{$vat->term_id}}"
     											@if(Session::get('term_id') == $vat->term_id)
     											selected="selected"
@@ -126,8 +132,8 @@
     											>{{$vat->title}}</option>
     										@endforeach
                                         @endif
-									</select>
-								</form>                                
+                                    </select>
+                                </form>
                             </div>
                         </div>
                     </div>
@@ -154,7 +160,7 @@
                                 <a class="dropdown-item" href="{{route('device_check')}}"><i class="mdi mdi-table-settings"></i> Device Check</a>
                                 <a class="dropdown-item" href="{{route('erp_status.index')}}"><i class="mdi mdi-content-save-settings-outline"></i> ERP Status</a>
                                 <a class="dropdown-item" href="{{route('implementation')}}"><i class="mdi mdi-checkerboard"></i> Implementation</a>
-                                @if(Session::get('user_profile_name') == 'Admin')   
+                                @if(Session::get('user_profile_name') == 'Admin')
                                 <a class="dropdown-item" href="{{route('add_groupwise_rights.index')}}"><i class="mdi mdi-lumx"></i> Groupwise Rights</a>
                                 <a class="dropdown-item" href="{{route('add_individual_rights.index')}}"><i class="mdi mdi-repeat-once"></i> Individual Rights</a>
                                 <a class="dropdown-item" href="{{route('add_mobileapp_menu_rights.index')}}"><i class="mdi mdi-cellphone-lock"></i> Mobile App Menu Rights</a>
@@ -172,7 +178,7 @@
                         </div>
                     </div>
                 </div>
-            </header> 
+            </header>
 
             @if(Route::current()->getName() != 'home')
             <nav aria-label="breadcrumb">
@@ -182,9 +188,9 @@
                         $link = url('/');
                         $all_segments = request()->segments();
                         // unset($all_segments[0]);
-                        $i = 1;     
+                        $i = 1;
                     @endphp
-                    
+
                     @foreach($all_segments as $segment)
                         @php
                             $segment = str_replace('breackoff','structure',$segment);
@@ -211,48 +217,45 @@
 
         <!-- End Top Navigation -->
 
-   
+
 <link href = "https://code.jquery.com/ui/1.10.4/themes/ui-lightness/jquery-ui.css" rel = "stylesheet">
 <script src = "https://code.jquery.com/jquery-1.10.2.js"></script>
 <script src="{{ asset("/admin_dep/js/jquery-ui.js") }}"></script>
-<script>
-    $(document).ready(function() {
-        $("#search_menu").autocomplete({          
-            source: function( request, response ) 
-            {        
-                $.ajax({
-                        url: "{{route('searching_menu')}}",
+            <script>
+                $(document).ready(function () {
+                    $("#search_menu").autocomplete({
+                        source: function (request, response) {
+                            $.ajax({
+                                url: "{{route('searching_menu')}}",
                         type: 'POST',
                         data: {
                             'value': request.term
                         },
-                        success: function(data){
-                           response($.map( data, function( item ) {
-                              return {
-                                  label: item.name,
-                                  value: item.link
-                              }
-                          }));
-                        }
-                    });
-            },
-            select: function( event, ui ) { 
+                                success: function (data) {
+                                    response($.map(data, function (item) {
+                                        return {
+                                            label: item.name,
+                                            value: item.link
+                                        }
+                                    }));
+                                }
+                            });
+                        },
+                        select: function (event, ui) {
 
-                route_link = ui.item.value;                
-                $.ajax({
-                        url: "{{route('get_search_url')}}",
-                        type: 'POST',
-                        data: {'value': route_link},
-                        success: function(data){
-                           window.location.href = data;
+                            route_link = ui.item.value;
+                            $.ajax({
+                                url: "{{route('get_search_url')}}",
+                                type: 'POST',
+                                data: {'value': route_link},
+                                success: function (data) {
+                                    window.location.href = data;
+                                }
+                            });
+
                         }
+                    })
                 });
-                               
-            }
-        })  
-    });
 
-    
-   
-    
-</script>  
+
+            </script>

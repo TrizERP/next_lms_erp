@@ -125,25 +125,25 @@ class facultywisetimetableController extends Controller
         $html .= '</td>';
         $html .= '</tr>';
         $html .= '<tr><td>&nbsp;</td></tr>';
-        $html .= '<tr><td>&nbsp;</td><td style="text-align:center !important;" align="center"><span style=" font-size: 18px;font-weight: 700;font-family: Arial, Helvetica, sans-serif !important">Teacher Name : '.$get_teacher_name[0]->teacher_name.'</span><br></td><td>&nbsp;</td></tr>';
+        $html .= '<tr><td>&nbsp;</td><td style="text-align:center !important;" align="center"><span style=" font-size: 18px;font-weight: 700;font-family: Arial, Helvetica, sans-serif !important">Teacher Name : ' . $get_teacher_name[0]->teacher_name . '</span><br></td><td>&nbsp;</td></tr>';
         $html .= '</tbody>';
         $html .= '</table>';
         $html .= '<br>';
 
         $html .= "<table class='table table-bordered table-center' border=1>";
         $week_data = $this->getweeks();
-        if (count($timetable_data) > 0) {
-            $html .= "<tr>                
+        if (!empty($timetable_data) && count($timetable_data) > 0) {
+            $html .= "<tr>
                 <td style='display: table-cell;width:30px;'><span class='label label-info'>Days - Lectures</span></td>";
             foreach ($period_data as $pkey => $pval) {
-                $html .= "<td style='display: table-cell;' align='center'><span class='label label-info'>".$pval['title']."</span>";
+                $html .= "<td style='display: table-cell;' align='center'><span class='label label-info'>" . $pval['title'] . "</span>";
                 $html .= "<br>";
-                $html .= "( ".$pval['s_time']."-".$pval['e_time']." )"."</span></td>";
+                $html .= "( " . $pval['s_time'] . "-" . $pval['e_time'] . " )" . "</span></td>";
             }
             $html .= "</tr>";
             foreach ($week_data as $wkey => $wval) {
                 $html .= "<tr>";
-                $html .= "<td style='display: table-cell;'><span class='label label-warning'>".$wkey."</span></td>";
+                $html .= "<td style='display: table-cell;'><span class='label label-warning'>" . $wkey . "</span></td>";
                 foreach ($period_data as $pkey => $pval) {
                     $html .= "<td align='center' style='font-size:10px;color: black;'>";
                     if (isset($timetable_data[$wval][$pval['id']]['SUBJECT'])) {

@@ -108,7 +108,7 @@ class admissionRegistrationController extends Controller
 			        ae.previous_standard,ae.mother_name,ae.mobile_number_mother ,ae.place_of_birth,ar.enquiry_id as registration_enquiry_id")
                 ->where('ae.id', $id)->get()->toArray();
         } else {
-            DB::table('admission_enquiry as ae')
+            $data = DB::table('admission_enquiry as ae')
                 ->join('admission_form as af', function ($join) {
                     $join->whereRaw('ae.id = af.enquiry_id');
                 })->leftJoin('admission_registration as ar', function ($join) {
@@ -415,11 +415,11 @@ class admissionRegistrationController extends Controller
     public function max_enrollment_no($sub_institute_id, $admission_standard_id)
     {
 
-        if ($sub_institute_id == 47)//Generate Enrollment No for MMISERP 
+        if ($sub_institute_id == 47)//Generate Enrollment No for MMISERP
         {
-            $get_prefix = "SELECT * FROM enrollment_prefix_master 
-					   WHERE sub_institute_id = '".$sub_institute_id."' 
-					   AND FIND_IN_SET ('".$admission_standard_id."',standards) ";
+            $get_prefix = "SELECT * FROM enrollment_prefix_master
+					   WHERE sub_institute_id = '" . $sub_institute_id . "'
+					   AND FIND_IN_SET ('" . $admission_standard_id . "',standards) ";
 
             $get_prefix_result = DB::select($get_prefix);
             $prefix = $get_prefix_result[0]->prefix;
@@ -428,7 +428,7 @@ class admissionRegistrationController extends Controller
                 $enrollment_result = DB::table('tblstudent')
                     ->selectRaw('*,MAX(enrollment_no) as new_enrollment_no')
                     ->where('sub_institute_id', $sub_institute_id)
-                    ->whereRaw("enrollment_no LIKE '%".$prefix."%'")->get()->toArray();
+                    ->whereRaw("enrollment_no LIKE '%" . $prefix . "%'")->get()->toArray();
                 $get_enrollment_no = substr($enrollment_result[0]->new_enrollment_no, 2, 6);
                 $new_enrollment_number = $get_enrollment_no + 1;
                 $new_enrollment_no = $prefix.$new_enrollment_number;
@@ -472,16 +472,16 @@ class admissionRegistrationController extends Controller
     public function max_enrollment_no_new($sub_institute_id, $admission_standard_id)
     {
 
-        if ($sub_institute_id == 47)//Generate Enrollment No for MMISERP 
+        if ($sub_institute_id == 47)//Generate Enrollment No for MMISERP
         {
             $get_prefix_result = DB::table('enrollment_prefix_master')
                 ->select('enrollment_prefix_master.*')
-                ->whereRaw("sub_institute_id = '".$sub_institute_id."' AND FIND_IN_SET ('".$admission_standard_id."',standards) ")
+                ->whereRaw("sub_institute_id = '" . $sub_institute_id . "' AND FIND_IN_SET ('" . $admission_standard_id . "',standards) ")
                 ->get()->toArray();
             $prefix = $get_prefix_result[0]->prefix;
 
             if ($prefix != '') {
-                $enrollment_no_sql = "SELECT concat_Ws('','".$prefix."',substr(MAX(enrollment_no),3) + 1) as new_enrollment_no
+                $enrollment_no_sql = "SELECT concat_Ws('','" . $prefix . "',substr(MAX(enrollment_no),3) + 1) as new_enrollment_no
 				FROM tblstudent as s
 				WHERE sub_institute_id = '".$sub_institute_id."' AND enrollment_no LIKE '%".$prefix."%'";
             } else {
@@ -501,8 +501,8 @@ class admissionRegistrationController extends Controller
 				WHERE sub_institute_id = '".$sub_institute_id."' $extra_query ";
             }
         } else {
-            $enrollment_no_sql = "SELECT MAX(CAST(enrollment_no as int) + 1) as new_enrollment_no FROM tblstudent as s 
-                WHERE sub_institute_id = '".$sub_institute_id."'";
+            $enrollment_no_sql = "SELECT MAX(CAST(enrollment_no as int) + 1) as new_enrollment_no FROM tblstudent as s
+                WHERE sub_institute_id = '" . $sub_institute_id . "'";
         }
 
         return $enrollment_no_sql;

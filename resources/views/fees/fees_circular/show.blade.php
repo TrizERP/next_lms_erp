@@ -18,7 +18,7 @@
             }
         @endphp
         <div class="card">
-            @if ($sessionData = Session::get('data'))            
+            @if ($sessionData = Session::get('data'))
                 @if($sessionData['status_code'] == 1)
                 <div class="alert alert-success alert-block">
                 @else
@@ -26,8 +26,8 @@
                 @endif
                     <button type="button" class="close" data-dismiss="alert">×</button>
                     <strong>{{ $sessionData['message'] }}</strong>
-                </div>  
-            @endif
+                </div>
+                    @endif
             <form action="{{ route('fees_circular.show_student') }}" enctype="multipart/form-data" method="post">
                 {{ method_field("POST") }}
                 @csrf
@@ -87,6 +87,7 @@
         @endphp
         <div class="card">
             <form method="POST" action="show_circular">
+                @csrf
                 <div class="row">
                     <div class="col-lg-12 col-sm-12 col-xs-12">
                         <div class="table-responsive">
@@ -140,15 +141,16 @@
                                 <input type="hidden" name="month" @if(isset($data['month'])) value="{{implode(',',$data['month'])}}" @endif">
                                 <input type="hidden" name="receipt_id" @if(isset($data['receipt_id'])) value="{{$data['receipt_id']}}" @endif">
                                 <input type="hidden" name="grade_id" @if(isset($data['grade_id'])) value="{{$data['grade_id']}}" @endif">
-                                <input type="hidden" name="standard_id" @if(isset($data['standard_id'])) value="{{$data['standard_id']}}" @endif">
-                                <input type="submit" name="submit" value="Submit" class="btn btn-success" >
+                                <input type="hidden" name="standard_id" @if(isset($data['standard_id'])) value="{{$data['standard_id']}}" @endif
+                                ">
+                                <input type="submit" name="submit" value="Submit" class="btn btn-success">
                             </center>
                         </div>
                     </div>
-                </div>    
+                </div>
             </form>
-        </div> 
-        @endif
+        </div>
+                    @endif
     </div>
 </div>
 

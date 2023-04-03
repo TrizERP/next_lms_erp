@@ -104,12 +104,21 @@ class inwardController extends Controller
     public function edit(Request $request, $id)
     {
         $type = $request->input('type');
+        $syear = $request->session()->get('syear');
+
         $data = inwardModel::find($id);
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $editdata = place_masterModel::where(['sub_institute_id' => $sub_institute_id])->get();
         $editdata1 = physical_file_locationModel::where(['sub_institute_id' => $sub_institute_id])->get();
+        $get_inward_no = DB::table("inward")
+            ->selectRaw('(IFNULL(MAX(CAST(inward_number AS INT)),0) + 1) AS inward_no')
+            ->where("sub_institute_id", "=", $sub_institute_id)
+            ->where("syear", "=", $syear)
+            ->get()->toArray();
+
         view()->share('menu', $editdata);
         view()->share('menu1', $editdata1);
+        view()->share('inward_no', $get_inward_no[0]->inward_no);
 
         return view('inward_outward/add_inward', ['data' => $data]);
     }

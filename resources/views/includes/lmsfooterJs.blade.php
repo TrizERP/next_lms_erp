@@ -6,32 +6,33 @@
   <div class="help-head">
     <div class="guide-title">Help Guide</div>
     <div class="dropdown">
-      <button class="dropdown-toggle" type="button" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-        <!-- <i class="mdi mdi-dots-vertical"></i> -->
-      </button>
-     <!--  <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
-        <a class="dropdown-item" href="#">Action</a>
-        <a class="dropdown-item" href="#">Another action</a>
-        <a class="dropdown-item" href="#">Something else here</a>
-      </div> -->
+        <button class="dropdown-toggle" type="button" id="dropdownMenuButton" data-toggle="dropdown"
+                aria-haspopup="true" aria-expanded="false">
+            <!-- <i class="mdi mdi-dots-vertical"></i> -->
+        </button>
+        <!--  <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
+           <a class="dropdown-item" href="#">Action</a>
+           <a class="dropdown-item" href="#">Another action</a>
+           <a class="dropdown-item" href="#">Something else here</a>
+         </div> -->
     </div>
-    <div class="help-arraw">
-      <i class="mdi mdi-chevron-down"></i>        
-    </div>
+      <div class="help-arraw">
+          <i class="mdi mdi-chevron-down"></i>
+      </div>
   </div>
-  <div class="help-body" style="display:none;">
-    <div class="w-auto gutter-10 main-nav justify-content-center">
-      <div class="row">        
-        <div class="col-md-4">
-          <div class="help-box">
-            <a id="pdf_link" target="_blank" class="nav-link pb-0">
-              <span class="menu-main-icon"><i class="mdi mdi-file-pdf md-36"></i></span> PDF
-            </a>
-          </div>
-        </div>
-        <div class="col-md-4">
-          <div class="help-box">
-            <a id="youtube_link" target="_blank" class="nav-link pb-0">
+    <div class="help-body" style="display:none;">
+        <div class="w-auto gutter-10 main-nav justify-content-center">
+            <div class="row">
+                <div class="col-md-4">
+                    <div class="help-box">
+                        <a id="pdf_link" target="_blank" class="nav-link pb-0">
+                            <span class="menu-main-icon"><i class="mdi mdi-file-pdf md-36"></i></span> PDF
+                        </a>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="help-box">
+                        <a id="youtube_link" target="_blank" class="nav-link pb-0">
               <span class="menu-main-icon"><i class="mdi mdi-youtube md-36"></i></span> Youtube
             </a>
           </div>
@@ -57,27 +58,27 @@
             </a>
           </div>
         </div>
-        <div class="col-6 col-md-4">
-          <div class="help-box">
-            <a href="http://apps.triz.co.in/crm/" class="nav-link pb-0" target="_blank">
-              <span class="menu-main-icon"><i class="mdi mdi-clipboard-account md-36"></i></span> TTMS
-            </a>
-          </div>
+                <div class="col-6 col-md-4">
+                    <div class="help-box">
+                        <a href="http://apps.triz.co.in/crm/" class="nav-link pb-0" target="_blank">
+                            <span class="menu-main-icon"><i class="mdi mdi-clipboard-account md-36"></i></span> TTMS
+                        </a>
+                    </div>
+                </div>
+            </div>
         </div>
-      </div>
     </div>
-  </div>
-</div>  
+</div>
 
 <!-- Email Modal -->
 <div class="modal fade" id="emailModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
-  <div class="modal-dialog">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title" id="exampleModalLabel">Email</h5>
-        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-          <span aria-hidden="true">x</span>
-        </button>
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="exampleModalLabel">Email</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">x</span>
+                </button>
       </div>
       <form name="sendmail" id="sendmail" action="{{ route('ajax_sendmail') }}" method="post">
         {{ method_field('POST') }}
@@ -111,64 +112,71 @@
 <!-- Chat Modal -->
 <div class="modal fade" id="chatModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title" id="exampleModalLabel">Chat</h5>
-        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-          <span aria-hidden="true">x</span>
-        </button>
-      </div>
-      <div class="modal-body">
-        <div class="jumbotron m-0 p-0 bg-transparent">
-          <div class="row m-0 p-0">
-            <div class="col-12 p-0 m-0" style="right: 0px;">      
-                <div class="card bg-sohbet border-0 m-0 p-0" style="height: 100vh;">
-                  <div id="sohbet" class="card border-0 m-0 p-0 position-relative bg-transparent" style="overflow-y: auto; height: 100vh;">      
-                    <div class="balon1 p-2 m-0 position-relative" data-is="You - 3:20 pm">        
-                      <a class="float-right"> Hey there! What's up? </a>          
-                    </div>
-            
-                    <div class="balon2 p-2 m-0 position-relative" data-is="Yusuf - 3:22 pm">
-                      <a class="float-left sohbet2"> Checking out iOS7 you know.. </a>                  
-                    </div>
-                    <div class="balon1 p-2 m-0 position-relative" data-is="You - 3:23 pm">
-                      <a class="float-right"> Check out this bubble! </a>
-                    </div>        
-                    <div class="balon2 p-2 m-0 position-relative" data-is="Yusuf - 3:26 pm">                
-                      <a class="float-left sohbet2"> It's pretty cool! </a>                  
-                    </div>
-                    <div class="balon1 p-2 m-0 position-relative" data-is="You - 3:28 pm">                
-                      <a class="float-right"> Yeah it's pure CSS & HTML </a>                  
-                    </div>        
-                    <div class="balon2 p-2 m-0 position-relative" data-is="Yusuf - 3:33 pm">                
-                      <a class="float-left sohbet2"> Wow that's impressive. But what's even more impressive is that this bubble is really high. </a>                  
-                    </div>
-                  </div>
-                </div>
-
-                <div class="w-100 card-footer p-0 bg-light border border-bottom-0 border-left-0 border-right-0">                
-                  <form class="m-0 p-0 pt-4" action="" method="POST" autocomplete="off">            
-                    <div class="row m-0 p-0">
-                      <div class="col-9 m-0 p-1">                    
-                        <input id="text" class="mw-100 border rounded form-control mb-0" type="text" name="text" title="Type a message..." placeholder="Type a message..." required>                      
-                      </div>
-                      <div class="col-3 m-0 p-1">                    
-                        <button class="btn btn-outline-secondary rounded border w-100 mb-0 h-100" title="Gönder!"><i class="fa fa-paper-plane" aria-hidden="true"></i></button>                          
-                      </div>
-                    </div>                
-                  </form>                  
-                </div>
-            </div>
+      <div class="modal-content">
+          <div class="modal-header">
+              <h5 class="modal-title" id="exampleModalLabel">Chat</h5>
+              <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                  <span aria-hidden="true">x</span>
+              </button>
           </div>
-      
-        </div>
+          <div class="modal-body">
+              <div class="jumbotron m-0 p-0 bg-transparent">
+                  <div class="row m-0 p-0">
+                      <div class="col-12 p-0 m-0" style="right: 0px;">
+                          <div class="card bg-sohbet border-0 m-0 p-0" style="height: 100vh;">
+                              <div id="sohbet" class="card border-0 m-0 p-0 position-relative bg-transparent"
+                                   style="overflow-y: auto; height: 100vh;">
+                                  <div class="balon1 p-2 m-0 position-relative" data-is="You - 3:20 pm">
+                                      <a class="float-right"> Hey there! What's up? </a>
+                                  </div>
+
+                                  <div class="balon2 p-2 m-0 position-relative" data-is="Yusuf - 3:22 pm">
+                                      <a class="float-left sohbet2"> Checking out iOS7 you know.. </a>
+                                  </div>
+                                  <div class="balon1 p-2 m-0 position-relative" data-is="You - 3:23 pm">
+                                      <a class="float-right"> Check out this bubble! </a>
+                                  </div>
+                                  <div class="balon2 p-2 m-0 position-relative" data-is="Yusuf - 3:26 pm">
+                                      <a class="float-left sohbet2"> It's pretty cool! </a>
+                                  </div>
+                                  <div class="balon1 p-2 m-0 position-relative" data-is="You - 3:28 pm">
+                                      <a class="float-right"> Yeah it's pure CSS & HTML </a>
+                                  </div>
+                                  <div class="balon2 p-2 m-0 position-relative" data-is="Yusuf - 3:33 pm">
+                                      <a class="float-left sohbet2"> Wow that's impressive. But what's even more
+                                          impressive is that this bubble is really high. </a>
+                                  </div>
+                              </div>
+                          </div>
+
+                          <div
+                              class="w-100 card-footer p-0 bg-light border border-bottom-0 border-left-0 border-right-0">
+                              <form class="m-0 p-0 pt-4" action="" method="POST" autocomplete="off">
+                                  @csrf
+                                  <div class="row m-0 p-0">
+                                      <div class="col-9 m-0 p-1">
+                                          <input id="text" class="mw-100 border rounded form-control mb-0" type="text"
+                                                 name="text" title="Type a message..." placeholder="Type a message..."
+                                                 required>
+                                      </div>
+                                      <div class="col-3 m-0 p-1">
+                                          <button class="btn btn-outline-secondary rounded border w-100 mb-0 h-100"
+                                                  title="Gönder!"><i class="fa fa-paper-plane" aria-hidden="true"></i>
+                                          </button>
+                                      </div>
+                                  </div>
+                              </form>
+                          </div>
+                      </div>
+                  </div>
+
+              </div>
+          </div>
       </div>
-    </div>
   </div>
 </div>
 
-	
-	
+
 <!-- /#wrapper -->
 <!-- jQuery -->
 <script src="{{ asset("/admin_dep/js/jquery-3.5.1.min.js") }}"></script>
@@ -278,27 +286,26 @@
 <script language="javascript">
   function printdiv(printpage) {
     var headstr = "<html><head><title></title></head><body>";
-    var footstr = "</body>";
-    var newstr = document.getElementById(printpage).innerHTML;
-    var oldstr = document.body.innerHTML;
-    document.body.innerHTML = headstr + newstr + footstr;
-    window.print();
-    document.body.innerHTML = oldstr;
-    return false;
+      var footstr = "</body>";
+      var newstr = document.getElementById(printpage).innerHTML;
+      var oldstr = document.body.innerHTML;
+      document.body.innerHTML = headstr + newstr + footstr;
+      window.print();
+      document.body.innerHTML = oldstr;
+      return false;
   }
 
-  function sessionMenu(x)
-  {    
-    // if (typeof(Storage) !== "undefined") {
-    //   // Store
-    //   // alert(x);
-    //   localStorage.setItem("right_menu_id", x);
-    //   // alert(x);
-    //   // Retrieve
-    // }
-    var xhttp = new XMLHttpRequest();
-    xhttp.onreadystatechange = function() {
-      if (this.readyState == 4 && this.status == 200) {
+  function sessionMenu(x) {
+      // if (typeof(Storage) !== "undefined") {
+      //   // Store
+      //   // alert(x);
+      //   localStorage.setItem("right_menu_id", x);
+      //   // alert(x);
+      //   // Retrieve
+      // }
+      var xhttp = new XMLHttpRequest();
+      xhttp.onreadystatechange = function () {
+          if (this.readyState == 4 && this.status == 200) {
         // alert(x);
       }
     };
@@ -309,132 +316,129 @@
     //   // alert(this);
     //   var menu_main_id = $(this).parents('.tab-pane').attr("id");
     //   // alert(menu_main_id);
-    //  $(this).parents('.tab-pane').addClass('active');
-    //   // $(this).parent("[aria-controls='menu-1']").addClass('active');
-    // // alert('.nav-link').attr('href','#'+menu_main_id);
-    // $('.nav-link').attr('href','#'+menu_main_id).addClass('active');
-    //   // $('.nav-link[href="#' + menu_main_id + '"]').addClass('active');
+      //  $(this).parents('.tab-pane').addClass('active');
+      //   // $(this).parent("[aria-controls='menu-1']").addClass('active');
+      // // alert('.nav-link').attr('href','#'+menu_main_id);
+      // $('.nav-link').attr('href','#'+menu_main_id).addClass('active');
+      //   // $('.nav-link[href="#' + menu_main_id + '"]').addClass('active');
 
-    // });
+      // });
   }
 
-  function redirect_pages_soni(x,menu_id,main_menu_id)
-  {                
-    localStorage.setItem('menu_id', menu_id);
-    localStorage.setItem('main_menu_id', main_menu_id);
-    window.location.replace(x);       
+  function redirect_pages_soni(x, menu_id, main_menu_id) {
+      localStorage.setItem('menu_id', menu_id);
+      localStorage.setItem('main_menu_id', main_menu_id);
+      window.location.replace(x);
   }
 
-  function load_rightside_menu(x,main_menu_id)
-  { 
-    $('.right-sidebar').show();
-    var path = "{{ route('ajax_load_rightSideMenu') }}";
+  function load_rightside_menu(x, main_menu_id) {
+      $('.right-sidebar').show();
+      var path = "{{ route('ajax_load_rightSideMenu') }}";
 
-    $.ajax({
-      url : path,     
-      data:'menu_id='+x, 
-      dataType: 'html',
-      async: false,     
-      success:function(result){ 
-          // console.log(result);
-          res = result.split("####");          
-          $("#loadRightSideMenu").html(res[0]);  
-          $("#loadSubMenu").html(res[1]);
-      }
-    });
-
-    var path1 = "{{ route('ajax_load_helpguide') }}";
-
-    $.ajax({
-      url : path1,     
-      data:'menu_id='+x, 
-      dataType: 'html',
-      async: false,     
-      success:function(links){ 
-          // console.log(links);
-          if(links != "0")
-          {          
-            link_arr = links.split("####");          
-            $("#youtube_link").attr("href",link_arr[0]);  
-            $("#pdf_link").attr("href","../../../storage/help_guide/"+link_arr[1]);
+      $.ajax({
+          url: path,
+          data: 'menu_id=' + x,
+          dataType: 'html',
+          async: false,
+          success: function (result) {
+              // console.log(result);
+              res = result.split("####");
+              $("#loadRightSideMenu").html(res[0]);
+              $("#loadSubMenu").html(res[1]);
           }
-      }
-    });
-    
-    $("[aria-controls='menu-"+main_menu_id+"']").addClass('active');
-    $("#menu-"+main_menu_id).addClass('active');  
+      });
 
-     //var tab_pane_id = $('.main-menu-block').find('.active').attr("aria-controls");               
+      var path1 = "{{ route('ajax_load_helpguide') }}";
+
+      $.ajax({
+          url: path1,
+          data: 'menu_id=' + x,
+          dataType: 'html',
+          async: false,
+          success: function (links) {
+              // console.log(links);
+              if (links != "0") {
+                  link_arr = links.split("####");
+                  $("#youtube_link").attr("href", link_arr[0]);
+                  $("#pdf_link").attr("href", "../../../storage/help_guide/" + link_arr[1]);
+              }
+          }
+      });
+
+      $("[aria-controls='menu-" + main_menu_id + "']").addClass('active');
+      $("#menu-" + main_menu_id).addClass('active');
+
+      //var tab_pane_id = $('.main-menu-block').find('.active').attr("aria-controls");
   }
 
-// function hideRightsideMenu(){
-//   $('.right-sidebar').show();
-// }
+  // function hideRightsideMenu(){
+  //   $('.right-sidebar').show();
+  // }
   // function load_rightside_menu(x)
-  // {       
+  // {
   //   var path = "{{ route('ajax_load_rightSideMenu') }}";
   //   $.ajax({
-  //     url : path,     
-  //     data:'menu_id='+x,      
-  //     success:function(result){ 
+  //     url : path,
+  //     data:'menu_id='+x,
+  //     success:function(result){
   //         console.log(result);
   //         var main_arr = result['Main'];
   //         var child_arr = result['Child'];
 
-  //         $("#loadRightSideMenu").html('');                           
-  //         $("#loadSubMenu").html('');                           
+  //         $("#loadRightSideMenu").html('');
+  //         $("#loadSubMenu").html('');
 
-          
-  //         for(var i=0,j=1;i < main_arr.length;i++,j++){ 
-  //             inner_arr = child_arr[main_arr[i].id];              
+
+  //         for(var i=0,j=1;i < main_arr.length;i++,j++){
+  //             inner_arr = child_arr[main_arr[i].id];
   //             var childmenus = '';
   //             // alert("<?php echo "asdasda";?>");
   //             for(var k=0;k < inner_arr.length;k++){
   //               var php_route ="<?php echo "{{ route('";?>"+inner_arr[k].link+"<?php echo "') }}";?>";
-  //               console.log(php_route); 
-  //               childmenus = childmenus + '<li class="d-flex align-items-center"><em class="fa fa-angle-right"></em><a href="'+php_route+'" onclick="sessionMenu('+inner_arr[k].tblmenu_master_id+');" >'+inner_arr[k].name+'</a></li>';                
-  //             }              
-              
-  //             if(i == 0){
-  //               $("#loadRightSideMenu").append('<li class="nav-item" role="presentation" data-toggle="tooltip" data-placement="top" title="'+main_arr[i].name+'"><a class="nav-link active" data-toggle="tab" href="#right-tab-'+j+'" role="tab" aria-controls="right-tab-'+j+'" aria-selected="false"><img class="icon-nrml" src="http://{{$_SERVER['HTTP_HOST']}}/admin_dep/images/side-'+main_arr[i].icon+'.png" alt=""><img class="icon-hvr" src="http://{{$_SERVER['HTTP_HOST']}}/admin_dep/images/side-'+main_arr[i].icon+'-white.png" alt=""></a></li>');                                                     
-  //               $("#loadSubMenu").append('<div class="tab-pane show active" id="right-tab-'+j+'" role="tabpanel"><div class="acc-panel"><div class="acc-header d-flex align-items-center"><span><em class="fa fa-angle-down"></em></span><h4 class="m-0">'+main_arr[i].name+'</h4></div><div class="acc-body" style="display: block;"><ul class="list-unstyled activity-checks">'+childmenus+'</ul><div class="activity-accordian"></div></div></div></div>');          
-  //             }else{
-  //               $("#loadRightSideMenu").append('<li class="nav-item" role="presentation" data-toggle="tooltip" data-placement="top" title="'+main_arr[i].name+'"><a class="nav-link" data-toggle="tab" href="#right-tab-'+j+'" role="tab" aria-controls="right-tab-'+j+'" aria-selected="false"><img class="icon-nrml" src="http://{{$_SERVER['HTTP_HOST']}}/admin_dep/images/side-'+main_arr[i].icon+'.png" alt=""><img class="icon-hvr" src="http://{{$_SERVER['HTTP_HOST']}}/admin_dep/images/side-'+main_arr[i].icon+'-white.png" alt=""></a></li>');                                                     
-  //               $("#loadSubMenu").append('<div class="tab-pane show" id="right-tab-'+j+'" role="tabpanel"><div class="acc-panel"><div class="acc-header d-flex align-items-center"><span><em class="fa fa-angle-down"></em></span><h4 class="m-0">'+main_arr[i].name+'</h4></div><div class="acc-body" style="display: block;"><ul class="list-unstyled activity-checks">'+childmenus+'</ul><div class="activity-accordian"></div></div></div></div>');          
+  //               console.log(php_route);
+  //               childmenus = childmenus + '<li class="d-flex align-items-center"><em class="fa fa-angle-right"></em><a href="'+php_route+'" onclick="sessionMenu('+inner_arr[k].tblmenu_master_id+');" >'+inner_arr[k].name+'</a></li>';
   //             }
-  //          }                                                       
-  //     }   
+
+  //             if(i == 0){
+  //               $("#loadRightSideMenu").append('<li class="nav-item" role="presentation" data-toggle="tooltip" data-placement="top" title="'+main_arr[i].name+'"><a class="nav-link active" data-toggle="tab" href="#right-tab-'+j+'" role="tab" aria-controls="right-tab-'+j+'" aria-selected="false"><img class="icon-nrml" src="http://{{$_SERVER['HTTP_HOST']}}/admin_dep/images/side-'+main_arr[i].icon+'.png" alt=""><img class="icon-hvr" src="http://{{$_SERVER['HTTP_HOST']}}/admin_dep/images/side-'+main_arr[i].icon+'-white.png" alt=""></a></li>');
+  //               $("#loadSubMenu").append('<div class="tab-pane show active" id="right-tab-'+j+'" role="tabpanel"><div class="acc-panel"><div class="acc-header d-flex align-items-center"><span><em class="fa fa-angle-down"></em></span><h4 class="m-0">'+main_arr[i].name+'</h4></div><div class="acc-body" style="display: block;"><ul class="list-unstyled activity-checks">'+childmenus+'</ul><div class="activity-accordian"></div></div></div></div>');
+  //             }else{
+  //               $("#loadRightSideMenu").append('<li class="nav-item" role="presentation" data-toggle="tooltip" data-placement="top" title="'+main_arr[i].name+'"><a class="nav-link" data-toggle="tab" href="#right-tab-'+j+'" role="tab" aria-controls="right-tab-'+j+'" aria-selected="false"><img class="icon-nrml" src="http://{{$_SERVER['HTTP_HOST']}}/admin_dep/images/side-'+main_arr[i].icon+'.png" alt=""><img class="icon-hvr" src="http://{{$_SERVER['HTTP_HOST']}}/admin_dep/images/side-'+main_arr[i].icon+'-white.png" alt=""></a></li>');
+  //               $("#loadSubMenu").append('<div class="tab-pane show" id="right-tab-'+j+'" role="tabpanel"><div class="acc-panel"><div class="acc-header d-flex align-items-center"><span><em class="fa fa-angle-down"></em></span><h4 class="m-0">'+main_arr[i].name+'</h4></div><div class="acc-body" style="display: block;"><ul class="list-unstyled activity-checks">'+childmenus+'</ul><div class="activity-accordian"></div></div></div></div>');
+  //             }
+  //          }
+  //     }
   //   });
-      
+
   // }
 </script>
 
 <script type="text/javascript">
-  // function updateTour(module) {
+    // function updateTour(module) {
 
-  // //   alert('asd');
+    // //   alert('asd');
 
   //   var url = {{ route('tourUpdate') }} + "?module="+module;
-  //   var xhttp = new XMLHttpRequest();
-  //   xhttp.onreadystatechange = function() {
-  //     if (this.readyState == 4 && this.status == 200) {
-  //       alert("success");
-  //     }
-  //   };
-  //   xhttp.open("GET", url, true);
-  //   xhttp.send();
-  // }
-  
-  
+    //   var xhttp = new XMLHttpRequest();
+    //   xhttp.onreadystatechange = function() {
+    //     if (this.readyState == 4 && this.status == 200) {
+    //       alert("success");
+    //     }
+    //   };
+    //   xhttp.open("GET", url, true);
+    //   xhttp.send();
+    // }
+
+
 </script>
 <script type="text/javascript">
-	var options = {
-          series: [{
-          name: 'PRODUCT A',
-          data: dataSet[0]
+    var options = {
+        series: [{
+            name: 'PRODUCT A',
+            data: dataSet[0]
         }, {
-          name: 'PRODUCT B',
-          data: dataSet[1]
+            name: 'PRODUCT B',
+            data: dataSet[1]
         }, {
           name: 'PRODUCT C',
           data: dataSet[2]
@@ -560,33 +564,33 @@
 
 
 <script>
-  $(document).ready(function() { 
+    $(document).ready(function () {
 
-    $('[data-toggle="tooltip"]').tooltip(); 
+        $('[data-toggle="tooltip"]').tooltip();
 
-    //Call function for right side menu
-    load_rightside_menu(localStorage.getItem('menu_id'),localStorage.getItem('main_menu_id'));        
+        //Call function for right side menu
+        load_rightside_menu(localStorage.getItem('menu_id'), localStorage.getItem('main_menu_id'));
 
-    $.extend($.fn.dataTable.defaults, {
-      // dom: 'ZBflrtip',
-      language: {
-        oPaginate: {
-          sNext: '<i class="fa fa-angle-right" title="Next"></i>',
-          sPrevious: '<i class="fa fa-angle-left" title="Privious"></i>',
-          sFirst: '<i class="fa fa-angle-double-left" title="First"></i>',
-          sLast: '<i class="fa fa-angle-double-right" title="Last"></i>'
-        },
-      },
+        $.extend($.fn.dataTable.defaults, {
+            // dom: 'ZBflrtip',
+            language: {
+                oPaginate: {
+                    sNext: '<i class="fa fa-angle-right" title="Next"></i>',
+                    sPrevious: '<i class="fa fa-angle-left" title="Privious"></i>',
+                    sFirst: '<i class="fa fa-angle-double-left" title="First"></i>',
+                    sLast: '<i class="fa fa-angle-double-right" title="Last"></i>'
+                },
+            },
+        });
+
+        // $('.sub-drop-panel a').click(function(){
+        //   var tab_pane_id = $('.main-menu-block').find('.active').attr("aria-controls");
+        //   alert(tab_pane_id);
+        //   $("#"+tab_pane_id).addClass('active');
+        // });
+
     });
 
-    // $('.sub-drop-panel a').click(function(){  
-    //   var tab_pane_id = $('.main-menu-block').find('.active').attr("aria-controls");
-    //   alert(tab_pane_id);       
-    //   $("#"+tab_pane_id).addClass('active');
-    // });
 
-  });
-
-
-// for sidebar menu entirely but not cover treeview 
+    // for sidebar menu entirely but not cover treeview
 </script>

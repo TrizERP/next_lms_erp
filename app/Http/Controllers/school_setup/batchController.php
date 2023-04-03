@@ -110,8 +110,10 @@ class batchController extends Controller
         $batch_data = batchModel::select('batch.*', DB::raw('group_concat(batch.title) as titles'),
             DB::raw('group_concat(batch.id) as ids'))
             ->where([
-                'sub_institute_id' => $sub_institute_id, 'syear' => $syear, 'division_id' => $div_id,
-                'standard_id'      => $std_id,
+                'sub_institute_id' => $sub_institute_id,
+                'syear' => $syear,
+                'division_id' => $div_id,
+                'standard_id' => $std_id,
             ])
             ->get()->toArray();
 
@@ -166,7 +168,7 @@ class batchController extends Controller
             // }
 
             // if( isset($val['title']) )
-            // {				
+            // {
             // $check_for_duplicate = $val['title'];
             // $check_for = "title";
             // }

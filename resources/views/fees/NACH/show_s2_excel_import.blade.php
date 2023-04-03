@@ -9,15 +9,16 @@
                 <h4 class="page-title">S2-NACH Excel Import</h4>
             </div>
         </div>
-        <div class="card">            
+        <div class="card">
             @if ($sessionData = Session::get('data'))
-            <div class="alert alert-success alert-block">
-                <button type="button" class="close" data-dismiss="alert">×</button>
-                <strong>{{ $sessionData['message'] }}</strong>
-            </div>
+                <div class="alert alert-success alert-block">
+                    <button type="button" class="close" data-dismiss="alert">×</button>
+                    <strong>{{ $sessionData['message'] }}</strong>
+                </div>
             @endif
-            <form action="{{ route('NACH_s2excel_import.store') }}" enctype='multipart/form-data' method='post'>  
-                <div class="row">                                                            
+            <form action="{{ route('NACH_s2excel_import.store') }}" enctype='multipart/form-data' method='post'>
+                @csrf
+                <div class="row">
                     <div class="col-md-4 form-group ml-0 mr-0">
                         <label>Select File</label>
 
@@ -25,12 +26,12 @@
                         <a href="../SAMPLE_NACH_S2_Import.xlsx" download class="text-primary h5">Sample S2 NACH File</a>
                     </div>
                     <div class="col-sm-4 form-group ml-0 mt-4">
-                        <center>                            
-                            <input type="submit" name="submit" value="Search" class="btn btn-success" >
+                        <center>
+                            <input type="submit" name="submit" value="Search" class="btn btn-success">
                         </center>
                     </div>
-                </div>              
-            </form>            
+                </div>
+            </form>
         </div>
     </div>
 </div>

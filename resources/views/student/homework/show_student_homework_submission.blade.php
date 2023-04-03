@@ -17,51 +17,55 @@
                 $division_id = $data['division_id'];
             }
         @endphp
-        <div class="card">            
+        <div class="card">
             @if ($sessionData = Session::get('data'))
-            <div class="alert alert-success alert-block">
-                <button type="button" class="close" data-dismiss="alert">×</button>
-                <strong>{{ $sessionData['message'] }}</strong>
-            </div>
+                <div class="alert alert-success alert-block">
+                    <button type="button" class="close" data-dismiss="alert">×</button>
+                    <strong>{{ $sessionData['message'] }}</strong>
+                </div>
             @endif
-            <form action="{{ route('student_homework_submission.create') }}">  
-                <div class="row">                    
+            <form action="{{ route('student_homework_submission.create') }}">
+                @csrf
+                <div class="row">
                     {{ App\Helpers\SearchChain('3','single','grade,std,div',$grade_id,$standard_id,$division_id) }}
                     <div class="col-md-3 form-group">
                         <label for="subject">Select Subject:</label>
                         <select name="subject" id="subject" class="form-control">
                             <option value="">Select Subject</option>
-                            <!-- @foreach($data['subjects'] as $key => $value)
+                        <!-- @foreach($data['subjects'] as $key => $value)
                             <option value="{{$value['id']}}" @if(isset($data['subject'])) @if($data['subject']==$value['id']) selected='selected' @endif @endif>{{$value['subject_name']}}</option>
                             @endforeach -->
                         </select>
                     </div>
                     <div class="col-sm-3 form-group">
                         <label>Submission Date</label>
-                        <input type="text" name="submission_date" class="form-control mydatepicker" placeholder="Please select submission date." required="required" value="@if(isset($data['submission_date'])){{$data['submission_date']}}@endif"  autocomplete="off">
+                        <input type="text" name="submission_date" class="form-control mydatepicker" placeholder="Please select submission date." required="required" value="@if(isset($data['submission_date'])){{$data['submission_date']}}@endif"
+                               autocomplete="off">
                     </div>
                     <div class="col-sm-12 form-group">
-                        <center>                            
-                            <input type="submit" name="submit" value="Search" class="btn btn-success" >
+                        <center>
+                            <input type="submit" name="submit" value="Search" class="btn btn-success">
                         </center>
                     </div>
-                </div>              
-            </form>            
+                </div>
+            </form>
         </div>
         @if(isset($data['student_data']))
-        @php
-            if(isset($data['student_data'])){
-                $student_data = $data['student_data'];
-                $finalData = $data;
-            }
-        @endphp
-        <div class="card">                
-            <form method="POST" enctype="multipart/form-data" action="{{ route('student_homework_submission.store') }}">
-                <div class="row">                    
-                    <div class="col-lg-12 col-sm-12 col-xs-12">
-                        <div class="table-responsive">
-                            <table id="example" class="table table-striped">
-                                <thead>
+            @php
+                if(isset($data['student_data'])){
+                    $student_data = $data['student_data'];
+                    $finalData = $data;
+                }
+            @endphp
+            <div class="card">
+                <form method="POST" enctype="multipart/form-data"
+                      action="{{ route('student_homework_submission.store') }}">
+                    @csrf
+                    <div class="row">
+                        <div class="col-lg-12 col-sm-12 col-xs-12">
+                            <div class="table-responsive">
+                                <table id="example" class="table table-striped">
+                                    <thead>
                                     <tr>
                                         <th><input id="checkall" onchange="checkAll(this);" type="checkbox"></th>
                                         <th>Enrollment Code</th>
@@ -103,38 +107,42 @@
                                         @endphp
                                     @endforeach
                                 </tbody>
-                            </table>
+                                </table>
+                            </div>
                         </div>
-                    </div>    
-                    <div class="col-md-12 form-group">
-                        <center>
-                            <input type="hidden" name="division_id" @if(isset($finalData['division_id'])) value="{{$finalData['division_id']}}" @endif">
-                        	<input type="hidden" name="standard_id" @if(isset($finalData['standard_id'])) value="{{$finalData['standard_id']}}" @endif">
-                            <input type="hidden" name="subject_id" @if(isset($finalData['subject'])) value="{{$finalData['subject']}}" @endif">                            
-                            <input type="submit" name="submit" value="Submit" class="btn btn-success" >
-                        </center>
-                    </div>            
-                </div>
-            </form>
-        </div>
+                        <div class="col-md-12 form-group">
+                            <center>
+                                <input type="hidden" name="division_id"
+                                       @if(isset($finalData['division_id'])) value="{{$finalData['division_id']}}" @endif
+                                ">
+                                <input type="hidden" name="standard_id"
+                                       @if(isset($finalData['standard_id'])) value="{{$finalData['standard_id']}}" @endif
+                                ">
+                                <input type="hidden" name="subject_id"
+                                       @if(isset($finalData['subject'])) value="{{$finalData['subject']}}" @endif">
+                                <input type="submit" name="submit" value="Submit" class="btn btn-success">
+                            </center>
+                        </div>
+                    </div>
+                </form>
+            </div>
         @endif
     </div>
 </div>
 
 @include('includes.footerJs')
 <script>
-    $(document).on('change','#standard', function(){
-        var standard_id = $(this).val();      
+    $(document).on('change', '#standard', function () {
+        var standard_id = $(this).val();
         var path = "{{ route('ajax_getHomeworkSubjects') }}";
         $.ajax({
-            url:path,
-            data:'standard_id='+standard_id,
-            success:function(result){                     
+            url: path,
+            data: 'standard_id=' + standard_id,
+            success: function (result) {
                 var e = $('select[name="subject"]');
                 $(e).find('option').remove().end();
                 $(e).append($("<option></option>").val("").html('Select Subject'));
-                for(var i=0;i < result.length ;i++)
-                {
+                for (var i = 0; i < result.length; i++) {
                     $(e).append($("<option></option>").val(result[i]['subject_id']).html(result[i]['display_name']));
                 }
             }

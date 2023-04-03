@@ -3,8 +3,8 @@
 @include('includes.sideNavigation')
 <style type="text/css">
     input[type="checkbox"][readonly] {
-          pointer-events: none;
-        }
+        pointer-events: none;
+    }
 </style>
 <div id="page-wrapper">
     <div class="container-fluid">
@@ -13,14 +13,15 @@
                 <h4 class="page-title">Item Receivable</h4>
             </div>
         </div>
-        <div class="card">            
+        <div class="card">
             @if ($sessionData = Session::get('data'))
-            <div class="alert alert-success alert-block">
-                <button type="button" class="close" data-dismiss="alert">×</button>
-                <strong>{{ $sessionData['message'] }}</strong>
-            </div>
+                <div class="alert alert-success alert-block">
+                    <button type="button" class="close" data-dismiss="alert">×</button>
+                    <strong>{{ $sessionData['message'] }}</strong>
+                </div>
             @endif
-            <form action="{{ route('show_inventory_item_allocation.create') }}">  
+            <form action="{{ route('show_inventory_item_allocation.create') }}">
+                @csrf
                 <div class="row">
                     <div class="col-md-3 form-group">
                         <label for="Item">Item :</label>
@@ -28,9 +29,9 @@
                             <option value="">Select Item</option>
                             @foreach($data['item'] as $key => $value)
                                 <option value="{{$value['item_id']}}"
-                                @if(isset($data['item_id']))
-                                    @if($data['item_id'] == $value['item_id'])
-                                    selected='selected'
+                                        @if(isset($data['item_id']))
+                                        @if($data['item_id'] == $value['item_id'])
+                                        selected='selected'
                                     @endif
                                 @endif
                                 >{{$value['item_title']}}</option>
@@ -58,32 +59,34 @@
                     </div>
                     <div class="col-md-3 form-group">
                         <label>To Date </label>
-                        <input type="text" id='to_date' required name="to_date" @if(isset($data['to_date'])) value="{{$data['to_date']}}" @endif class="form-control mydatepicker" autocomplete="off">
+                        <input type="text" id='to_date' required name="to_date" @if(isset($data['to_date'])) value="{{$data['to_date']}}" @endif class="form-control mydatepicker"
+                               autocomplete="off">
                     </div>
                     <div class="col-md-12 form-group">
-                        <center>                            
-                            <input type="submit" name="submit" value="Search" class="btn btn-success" >                   
-                        </center>                                                
+                        <center>
+                            <input type="submit" name="submit" value="Search" class="btn btn-success">
+                        </center>
                     </div>
-                </div>              
-            </form>            
+                </div>
+            </form>
         </div>
         @if(isset($data['requisition_RET']))
-        @php
-            if(isset($data['requisition_RET'])){
-                $requisition_data = $data['requisition_RET'];
-                $finalData = $data;
-            }
-        @endphp
-        <div class="card">                
-            <form method="POST" action="{{ route('show_inventory_item_allocation.store') }}">
-                <div class="row">                    
-                    <div class="col-lg-12 col-sm-12 col-xs-12">
-                        <div class="table-responsive">
-                            <table id="example" class="table table-striped">
-                                <thead>
+            @php
+                if(isset($data['requisition_RET'])){
+                    $requisition_data = $data['requisition_RET'];
+                    $finalData = $data;
+                }
+            @endphp
+            <div class="card">
+                <form method="POST" action="{{ route('show_inventory_item_allocation.store') }}">
+                    @csrf
+                    <div class="row">
+                        <div class="col-lg-12 col-sm-12 col-xs-12">
+                            <div class="table-responsive">
+                                <table id="example" class="table table-striped">
+                                    <thead>
                                     <tr>
-                                        <th><input id="checkall" onchange="checkAll(this);" type="checkbox"></th>    
+                                        <th><input id="checkall" onchange="checkAll(this);" type="checkbox"></th>
                                         <th>Sr.No.</th>
                                         <th>Requisition By</th>
                                         <th>Requisition Date</th>
@@ -110,7 +113,7 @@
                                         <td>
                                             {{$data->REQUISITION_BY_NAME}}
                                             <input type="hidden" value="{{$data->REQUISITION_DETAILS_ID}}" name="requisition_details_id[{{$data->ITEM_ID}}]">
-                                            
+
                                             <input type="hidden" value="{{$data->REQUISITION_BY}}" name="requisition_by[{{$data->ITEM_ID}}]">
                                         </td>
                                         <td>{{$data->REQUISITION_DATE}}</td>
@@ -135,18 +138,18 @@
                                         @endphp
                                     @endforeach
                                 </tbody>
-                            </table>
+                                </table>
+                            </div>
                         </div>
-                    </div>    
-                    <div class="col-md-12 form-group">
-                        <center>
+                        <div class="col-md-12 form-group">
+                            <center>
                             <!-- <input type="hidden" name="po_number" @if(isset($finalData['po_number'])) value="{{$finalData['po_number']}}" @endif>                           -->
-                            <input type="submit" name="submit" value="Submit" class="btn btn-success" >
-                        </center>
-                    </div>            
-                </div>
-            </form>
-        </div>
+                                <input type="submit" name="submit" value="Submit" class="btn btn-success">
+                            </center>
+                        </div>
+                    </div>
+                </form>
+            </div>
         @endif
     </div>
 </div>

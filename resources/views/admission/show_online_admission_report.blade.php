@@ -10,25 +10,26 @@
             </div>
         </div>
         @if(isset($data['report_data']))
-        @php
-        if(isset($data['report_data'])){
-            $report_data = $data['report_data'];
-            $finalData = $data;
-        }           
-        @endphp
-        <div class="card">                
-            <form method="POST" enctype="multipart/form-data" action="{{ route('ajax_AdmissionConfirmReport') }}">
-                <div class="row">                    
-                    <div class="col-lg-12 col-sm-12 col-xs-12">
-                        <div class="table-responsive">
-                            <table id="example" class="table table-striped">
-                                <thead>
+            @php
+                if(isset($data['report_data'])){
+                    $report_data = $data['report_data'];
+                    $finalData = $data;
+                }
+            @endphp
+            <div class="card">
+                <form method="POST" enctype="multipart/form-data" action="{{ route('ajax_AdmissionConfirmReport') }}">
+                    @csrf
+                    <div class="row">
+                        <div class="col-lg-12 col-sm-12 col-xs-12">
+                            <div class="table-responsive">
+                                <table id="example" class="table table-striped">
+                                    <thead>
                                     <tr>
                                         <th><input id="checkall" onchange="checkAll(this);" type="checkbox"></th>
                                         <th>Sr.No.</th>
                                         <th>Syear</th>
                                         <th>Eligible Status</th>
-                                        <th>Token</th>                                 
+                                        <th>Token</th>
                                         <th>Birth Certificate</th>
                                         <th>Student Name</th>
                                         <th>Admission Std</th>
@@ -42,17 +43,17 @@
                                         <th>Email</th>
                                         <th>Father Aadhaar</th>
                                         <th>Mother Aadhaar</th>
-                                        <th>Sibling Details</th>                                    
+                                        <th>Sibling Details</th>
                                         <th>Admission for one child/twins</th>
                                     </tr>
-                                </thead>
-                                <tbody>
-                                        @php
+                                    </thead>
+                                    <tbody>
+                                    @php
                                         $j=1;
 
                                         @endphp
                                     @foreach($report_data as $key => $data)
-                                    @php 
+                                        @php
                                     $disable = $style = '';
                                     if($data['eligible_status'] == 'Yes')
                                     {
@@ -71,8 +72,8 @@
                                         <td>{{$data['admission_std']}}</td>
                                         <td>{{date('d-m-Y',strtotime($data['date_of_birth']))}}</td>
                                         <td>{{$data['age']}}</td>
-                                         <td>{{$data['student_quota']}}</td>
-                                         <td>{{$data['otp']}}</td>
+                                        <td>{{$data['student_quota']}}</td>
+                                        <td>{{$data['otp']}}</td>
                                         <td>{{$data['mobile']}}</td>
                                         <td>{{$data['address']}}</td>
                                         <td>{{$data['father_name']}}</td>
@@ -80,24 +81,24 @@
                                         <td>{{$data['father_adhar']}}</td>
                                         <td>{{$data['mother_adhar']}}</td>
                                         <td>{{$data['sibling_details']}}</td>
-                                        <td>{{$data['admission_for_child_twins']}}</td>                                    
+                                        <td>{{$data['admission_for_child_twins']}}</td>
                                     </tr>
                                         @php
-                                        $j++;
+                                            $j++;
                                         @endphp
                                     @endforeach
-                                </tbody>
-                            </table>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <div class="col-md-12 form-group">
+                            <center>
+                                <input type="submit" name="submit" value="Submit" class="btn btn-success">
+                            </center>
                         </div>
                     </div>
-                    <div class="col-md-12 form-group">
-                        <center>
-                            <input type="submit" name="submit" value="Submit" class="btn btn-success" >
-                        </center>
-                    </div>
-                </div>
-            </form>         
-        </div>
+                </form>
+            </div>
         @endif
     </div>
 </div>
@@ -123,39 +124,39 @@
     }
 </script>
 <script>
-  $(document).ready(function() {
-     var table = $('#example').DataTable( {
-         select: true,          
-         lengthMenu: [ 
-                        [100, 500, 1000, -1], 
-                        ['100', '500', '1000', 'Show All'] 
-        ],
-        dom: 'Bfrtip', 
-        buttons: [ 
-            { 
-                extend: 'pdfHtml5',
-                title: 'Online Admission Report',
-                orientation: 'landscape',
-                pageSize: 'LEGAL',                
-                pageSize: 'A0',
-                exportOptions: {                   
-                     columns: ':visible'                             
+    $(document).ready(function () {
+        var table = $('#example').DataTable({
+            select: true,
+            lengthMenu: [
+                [100, 500, 1000, -1],
+                ['100', '500', '1000', 'Show All']
+            ],
+            dom: 'Bfrtip',
+            buttons: [
+                {
+                    extend: 'pdfHtml5',
+                    title: 'Online Admission Report',
+                    orientation: 'landscape',
+                    pageSize: 'LEGAL',
+                    pageSize: 'A0',
+                    exportOptions: {
+                        columns: ':visible'
+                    },
                 },
-            }, 
-            { extend: 'csv', text: ' CSV', title: 'Online Admission Report' }, 
-            { extend: 'excel', text: ' EXCEL', title: 'Online Admission Report'}, 
-            { extend: 'print', text: ' PRINT', title: 'Online Admission Report'}, 
-            'pageLength' 
-        ], 
-        }); 
+                {extend: 'csv', text: ' CSV', title: 'Online Admission Report'},
+                {extend: 'excel', text: ' EXCEL', title: 'Online Admission Report'},
+                {extend: 'print', text: ' PRINT', title: 'Online Admission Report'},
+                'pageLength'
+            ],
+        });
 
-        $('#example thead tr').clone(true).appendTo( '#example thead' );
-        $('#example thead tr:eq(1) th').each( function (i) {
+        $('#example thead tr').clone(true).appendTo('#example thead');
+        $('#example thead tr:eq(1) th').each(function (i) {
             var title = $(this).text();
-            $(this).html( '<input type="text" placeholder="Search '+title+'" />' );
+            $(this).html('<input type="text" placeholder="Search ' + title + '" />');
 
-            $( 'input', this ).on( 'keyup change', function () {
-                if ( table.column(i).search() !== this.value ) {
+            $('input', this).on('keyup change', function () {
+                if (table.column(i).search() !== this.value) {
                     table
                         .column(i)
                         .search( this.value )

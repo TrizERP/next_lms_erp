@@ -20,6 +20,7 @@
                             <h3 class="box-title m-b-0">Default Basic Forms</h3>
                             <p class="text-muted m-b-30 font-13"> All bootstrap element classies </p>
                             <form class="form-horizontal">
+                                @csrf
                                 <div class="form-group">
                                     <label class="col-md-12">Default Text <span class="help"> e.g. "George deo"</span></label>
                                     <div class="col-md-12">

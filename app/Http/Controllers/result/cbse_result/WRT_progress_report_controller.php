@@ -47,15 +47,15 @@ class WRT_progress_report_controller extends Controller
         $next_year = session()->get('syear') + 1;
         $result_year = $syear."-".$next_year;
 
-        //getting all exam master heading        
+        //getting all exam master heading
         $all_exam_master = $this->getAllExamMaster($_REQUEST['standard'], $_REQUEST['from_date'], $_REQUEST['to_date'],
             $type);
 
-        //getting all exam marks        
+        //getting all exam marks
         $all_WRT_data = $this->getWRTData($all_student, $_REQUEST['standard'], $type, $exam_type,
             $_REQUEST['from_date'], $_REQUEST['to_date']);
 
-        //getting result header        
+        //getting result header
         $header_data = $this->getHeader($_REQUEST['standard'], $type);
 
         $data['WRT_data'] = $all_WRT_data;
@@ -129,7 +129,7 @@ class WRT_progress_report_controller extends Controller
             ->leftJoin('result_marks as rm', function ($join) {
                 $join->whereRaw("rm.sub_institute_id = e.sub_institute_id AND rm.exam_id = e.id");
             })
-            ->selectRaw("e.title as ExamTitle, IF((e.con_point IS NULL) OR (e.con_point = ''),e.points,e.con_point) AS total_points, 
+            ->selectRaw("e.title as ExamTitle, IF((e.con_point IS NULL) OR (e.con_point = ''),e.points,e.con_point) AS total_points,
     e.subject_id,s.display_name as subject_name,date_format(e.exam_date,'%d-%m-%Y') as exam_date,
     dayname(e.exam_date) as exam_day,rm.student_id,rm.points as obtained_points,rm.is_absent")
             ->where("e.sub_institute_id", "=", $sub_institute_id)
@@ -189,7 +189,7 @@ class WRT_progress_report_controller extends Controller
             ->where("r.syear", "=", $syear)
             ->whereBetween("r.exam_date", [$from_date, $to_date])
             ->groupBy('title')
-            ->get()->toArrat();
+            ->get()->toArray();
 
         $result = json_decode(json_encode($result), true);
 

@@ -17,7 +17,7 @@
         $standard_id = $data['standard_id'];
         $division_id = $data['division_id'];
         }
-        @endphp      
+        @endphp
                 <div class="card">
                     @if ($sessionData = Session::get('data'))
                     @if($sessionData['status_code'] == 1)
@@ -56,15 +56,16 @@
                         </form>
                     </div>
                 </div>
-            
+
             @if(isset($data['data']))
             @php
             if(isset($data['data'])){
             $student_data = $data['data'];
             }
-            @endphp           
+            @endphp
                     <div class="card">
                         <form method="POST" action="show_teacher_icard">
+                            @csrf
                             <div class="row">
                             <div class="col-md-4 form-group">
                                 <label>Template</label>
@@ -87,8 +88,8 @@
                                 <label>View Templates</label>
                                 <a href="{{ route('view_samples_user') }}" target="blank" class="form-control">View Template</a>
                             </div>
-                             
-                            <div class="col-lg-12 col-sm-12 col-xs-12">
+
+                                <div class="col-lg-12 col-sm-12 col-xs-12">
                                 <div class="table-responsive">
                                     <table id="example" class="table table-striped">
                                         <thead>
@@ -139,8 +140,8 @@
                             </div>
                             </div>
                         </form>
-        
-                </div>
+
+                    </div>
             @endif
         </div>
     </div>

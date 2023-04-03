@@ -23,6 +23,7 @@
             <div class="row">
                 <div class="col-lg-12 col-sm-12 col-xs-12">
                     <form action="{{ route('ajax_getTimetable') }}" enctype="multipart/form-data" method="post">
+                        @csrf
                         <div class="row">
                             <div class="col-md-4 form-group">
                                 <label class="box-title after-none mb-0">Academic Section</label>
@@ -91,8 +92,8 @@
                             </div>
                             <div class="col-md-12 form-group">
                                 <center>
-                                    <input type="submit" name="submit" value="Submit" class="btn btn-success" />
-                                </center>     
+                                    <input type="submit" name="submit" value="Submit" class="btn btn-success"/>
+                                </center>
                             </div>
                         </div>
                     </form>
@@ -101,17 +102,17 @@
                     <div class="row">
                         <div class="col-md-12 form-group">
                             <!-- <div class="panel"> -->
-                                <div class="table-responsive">
-                                    @if( isset($data['HTML']) )
+                            <div class="table-responsive">
+                                @if( isset($data['HTML']) )
                                         @php echo $data['HTML'] @endphp
                                     @endif
-                                </div>
+                            </div>
                             <!-- </div> -->
-                        </div>                    
+                        </div>
                     </div>
                 </div>
-            </div>    
-            @if (count($errors) > 0)
+            </div>
+                @if (count($errors) > 0)
             <div class="alert alert-danger">
                 <strong>Whoops!</strong> There were some problems with your input.<br><br>
                 <ul>
@@ -120,7 +121,7 @@
                     @endforeach
                 </ul>
             </div>
-            @endif        
+                @endif
         </div>
     </div>
 </div>
@@ -163,19 +164,18 @@ function getMappingTeachers(subject_id,id)
 {
     var standard_id = $("#hid_standard_id").val();
     var path = "{{ route('ajax_Mapping_Teachers') }}";
-    $.ajax({url: path,data:'standard_id='+standard_id+'&subject_id='+subject_id+'&id='+id,
-    success: function(result)
-    {
-        var check_res = result.split("///");
-        if(check_res[0] > 0)
-        {
-            $("#"+id).html(check_res[1]);
+    $.ajax({
+        url: path, data: 'standard_id=' + standard_id + '&subject_id=' + subject_id + '&id=' + id,
+        success: function (result) {
+            var check_res = result.split("///");
+            if (check_res[0] > 0) {
+                $("#" + id).html(check_res[1]);
+            }
         }
-    }
-    }); 
+    });
 }
 
-function deleteTimetable(id){
+function deleteTimetable(id) {
     var standard_id = $("#hid_standard_id").val();
     var division_id = $("#hid_division_id").val();
     var path = "{{ route('ajax_Delete_Timetable') }}";
@@ -203,22 +203,21 @@ function removeNewRow(id){
     var standard_id = $("#hid_standard_id").val();
     var division_id = $("#hid_division_id").val();
     var path = "{{ route('ajax_Batch_Timetable') }}";
-    $.ajax({url: path,data:'mode=normal&standard_id='+standard_id+'&division_id='+division_id+'&id='+id,
-    success: function(result){
-        $("#"+id).html(result);
-    }
+    $.ajax({
+        url: path, data: 'mode=normal&standard_id=' + standard_id + '&division_id=' + division_id + '&id=' + id,
+        success: function (result) {
+            $("#" + id).html(result);
+        }
     });
 }
 
-$(".teacher_capacity_check").change(function(){
-    var teacher_id = this.value;    
-    var total_lect = $("#hid_total_lecture_"+teacher_id).val();
-    if(total_lect != "Unlimited")
-    {
+$(".teacher_capacity_check").change(function () {
+    var teacher_id = this.value;
+    var total_lect = $("#hid_total_lecture_" + teacher_id).val();
+    if (total_lect != "Unlimited") {
         total_lect = total_lect - 1;
-        $("#hid_total_lecture_"+teacher_id).val(total_lect);
-        if($("#hid_total_lecture_"+teacher_id).val() < 0)
-        {
+        $("#hid_total_lecture_" + teacher_id).val(total_lect);
+        if ($("#hid_total_lecture_" + teacher_id).val() < 0) {
             alert("Teacher Total Lecture Capacity is over.Please select another teacher.")
             this.value = "";
         }

@@ -47,12 +47,12 @@ class admissionReportController extends Controller
                 })->join('standard as s', function ($join) {
                     $join->whereRaw('s.id = ai.admission_standard AND s.sub_institute_id = ai.sub_institute_id');
                 })
-                ->selectRaw("ai.enquiry_no, ai.created_on,ai.followup_date, ai.first_name, ai.middle_name, ai.last_name, 
+                ->selectRaw("ai.enquiry_no, ai.created_on,ai.followup_date, ai.first_name, ai.middle_name, ai.last_name,
                     ai.gender, ai.mobile, ai.email, ai.address, ai.date_of_birth, ai.age, ai.syear, ai.previous_school_name,ai.previous_standard,
-                    s.name as admission_standard, ai.remarks,fu.status as enquiry_status, ai.source_of_enquiry, ai.created_by, 
+                    s.name as admission_standard, ai.remarks,fu.status as enquiry_status, ai.source_of_enquiry, ai.created_by,
                     ai.counciler_name, ai.father_name,CONCAT_WS(' ',ts.first_name,ts.last_name) AS created_by, cs.caste_name $extra")
-                ->whereRaw("(DATE_FORMAT(ai.created_on, '%Y-%m-%d') BETWEEN '".$from_date."' AND '".$to_date."') 
-                    AND ai.sub_institute_id = '".$sub_institute_id."' AND ai.syear = '".$syear."'");
+                ->whereRaw("(DATE_FORMAT(ai.created_on, '%Y-%m-%d') BETWEEN '" . $from_date . "' AND '" . $to_date . "')
+                    AND ai.sub_institute_id = '" . $sub_institute_id . "' AND ai.syear = '" . $syear . "'");
 
 
             if ($standard != '') {
@@ -146,8 +146,8 @@ class admissionReportController extends Controller
                     $join->whereRaw('ar.enquiry_id = ae.id');
                 })
                 ->selectRaw('ar.*, ae.admission_standard, ae.first_name, ae.middle_name, ae.last_name, ae.mobile, ae.email')
-                ->whereRaw("DATE_FORMAT(ar.created_on, '%Y-%m-%d') BETWEEN '".$from_date."' AND '".$to_date."' 
-                    AND ae.sub_institute_id = '".$sub_institute_id."' AND ae.syear = '".$syear."'");
+                ->whereRaw("DATE_FORMAT(ar.created_on, '%Y-%m-%d') BETWEEN '" . $from_date . "' AND '" . $to_date . "'
+                    AND ae.sub_institute_id = '" . $sub_institute_id . "' AND ae.syear = '" . $syear . "'");
 
 
             if ($standard != '') {
@@ -237,8 +237,8 @@ class admissionReportController extends Controller
                     $join->whereRaw('ar.enquiry_id = ae.id');
                 })
                 ->selectRaw('ar.*, ae.admission_standard, ae.first_name, ae.middle_name, ae.last_name, ae.mobile, ae.email')
-                ->whereRaw("DATE_FORMAT(ar.created_on, '%Y-%m-%d') BETWEEN '".$from_date."' AND '".$to_date."' 
-                    AND ae.sub_institute_id = '".$sub_institute_id."' AND ae.syear = '".$syear."'");
+                ->whereRaw("DATE_FORMAT(ar.created_on, '%Y-%m-%d') BETWEEN '" . $from_date . "' AND '" . $to_date . "'
+                    AND ae.sub_institute_id = '" . $sub_institute_id . "' AND ae.syear = '" . $syear . "'");
 
             if ($standard != '') {
                 $getQuery = $getQuery->where('ae.admission_standard', $standard);
@@ -337,7 +337,7 @@ class admissionReportController extends Controller
                 })->leftJoin('blood_group as bg', function ($join) {
                     $join->whereRaw('bg.id = ar.blood_group');
                 })
-                ->selectRaw("ai.enquiry_no,ai.first_name, ai.middle_name, ai.last_name, ai.gender, 
+                ->selectRaw("ai.enquiry_no,ai.first_name, ai.middle_name, ai.last_name, ai.gender,
 						ai.mobile, ai.email,s.name AS admission_standard,d.name AS div_name,sq.title AS stu_quota,
 						ar.place_of_birth,ar.enrollment_no,ar.payment_mode,ar.bank_name,ar.bank_branch,ar.cheque_no,
 						ar.cheque_date,bg.bloodgroup,ar.aadhar_number,ar.mother_name,ar.mother_mobile_number,
@@ -415,8 +415,8 @@ class admissionReportController extends Controller
 						ae.previous_school_name,st.name AS admission_std,ae.address,ae.mobile,ae.source_of_enquiry,
 						DATE_FORMAT(fu.follow_up_date,'%d-%m-%Y') as follow_up_date,
 						fu.remarks AS followup_remark,ae.email")
-                ->where("fu.sub_institute_id = '".$sub_institute_id."' AND ae.syear = '".$syear."' 
-                        AND DATE_FORMAT(fu.created_on,'%Y-%m-%d') BETWEEN '".$from_date."' AND '".$to_date."'")
+                ->whereRaw("fu.sub_institute_id = '" . $sub_institute_id . "' AND ae.syear = '" . $syear . "'
+                        AND DATE_FORMAT(fu.created_on,'%Y-%m-%d') BETWEEN '" . $from_date . "' AND '" . $to_date . "'")
                 ->groupByRaw('fu.id,fu.remarks')
                 ->when($follow_up_status == 'Followed', function ($q) {
                     $q->having('fu.remarks', '!=', '');

@@ -35,6 +35,7 @@
                     </div>
                     @endif
                     <form action="{{ route('lmsStudent_report.create') }}">
+                        @csrf
                         <div class="row">
                             {{ App\Helpers\SearchChain('3','single','grade,std,div',$grade_id,$standard_id,$division_id) }}
 

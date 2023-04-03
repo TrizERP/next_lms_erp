@@ -13,55 +13,67 @@
         <div class="card">
             @if ($sessionData = Session::get('data'))
                 @if($sessionData['status_code'] == 1)
-                <div class="alert alert-success alert-block">
-                @else
-                <div class="alert alert-danger alert-block">
-                @endif
-                    <button type="button" class="close" data-dismiss="alert">×</button>
-                    <strong>{{ $sessionData['message'] }}</strong>
-                </div>
-            @endif
-            <form action="{{ route('show_daywise_student_attendance_report') }}" enctype="multipart/form-data" method="post">
-                <div class="row">                    
-                    <div class="col-md-4 form-group">
-                        <label>Attendance Date</label>
-                        <input type="text" name="date" autocomplete="off" @if(isset($data['date'])) value="{{$data['date']}}" @endif class="form-control mydatepicker" required="required" placeholder="Please select date to view report.">
+                    <div class="alert alert-success alert-block">
+                        @else
+                            <div class="alert alert-danger alert-block">
+                                @endif
+                                <button type="button" class="close" data-dismiss="alert">×</button>
+                                <strong>{{ $sessionData['message'] }}</strong>
+                            </div>
+                        @endif
+                        <form action="{{ route('show_daywise_student_attendance_report') }}"
+                              enctype="multipart/form-data" method="post">
+                            @csrf
+                            <div class="row">
+                                <div class="col-md-4 form-group">
+                                    <label>Attendance Date</label>
+                                    <input type="text" name="date" autocomplete="off"
+                                           @if(isset($data['date'])) value="{{$data['date']}}"
+                                           @endif class="form-control mydatepicker" required="required"
+                                           placeholder="Please select date to view report.">
+                                </div>
+                                <div class="col-md-4 form-group">
+                                    <label>Taken</label>
+                                    <select name="taken" class="form-control" required="required">
+                                        <option value="">Select Taken</option>
+                                        <option value="yes"
+                                                @if(isset($data['taken'])) @if($data['taken'] == 'yes') selected="selected" @endif @endif>
+                                            Yes
+                                        </option>
+                                        <option value="no"
+                                                @if(isset($data['taken'])) @if($data['taken'] == 'no') selected="selected" @endif @endif>
+                                            No
+                                        </option>
+                                    </select>
+                                </div>
+                                <div class="col-md-4 form-group mt-4">
+                                    <center>
+                                        <input type="submit" name="submit" value="Search" class="btn btn-success">
+                                    </center>
+                                </div>
+                            </div>
+                        </form>
                     </div>
-                    <div class="col-md-4 form-group">
-                        <label>Taken</label>
-                        <select name="taken" class="form-control" required="required">
-                            <option value="">Select Taken</option>
-                            <option value="yes" @if(isset($data['taken'])) @if($data['taken'] == 'yes') selected="selected" @endif @endif>Yes</option>
-                            <option value="no" @if(isset($data['taken'])) @if($data['taken'] == 'no') selected="selected" @endif @endif>No</option>
-                        </select>
-                    </div>
-                    <div class="col-md-4 form-group mt-4">
-                        <center>                            
-                            <input type="submit" name="submit" value="Search" class="btn btn-success" >
-                        </center>
-                    </div>
-                </div>
-            </form>
-        </div>
 
-        @if(isset($data['attendance_data']))
+                    @if(isset($data['attendance_data']))
         @php
         $j = 1;
             if(isset($data['attendance_data'])){
                 $attendance_data = $data['attendance_data'];
             }
         @endphp
-        <div class="card">            
-            <div class="table-responsive">
-                <table id="daywise_attendance" class="table table-striped table-bordered" border="1" style="border-collapse: collapse;">
-                    <thead>
-                        <tr>
-                            <th rowspan="2">Standard</th>
-                            <th colspan="3">Total Student</th>
-                            <th colspan="3">Present</th>
-                            <th colspan="3">Absent</th>
-                            <th rowspan="2">Taken</th>
-                            <th rowspan="2">Average</th>
+                        <div class="card">
+                            <div class="table-responsive">
+                                <table id="daywise_attendance" class="table table-striped table-bordered" border="1"
+                                       style="border-collapse: collapse;">
+                                    <thead>
+                                    <tr>
+                                        <th rowspan="2">Standard</th>
+                                        <th colspan="3">Total Student</th>
+                                        <th colspan="3">Present</th>
+                                        <th colspan="3">Absent</th>
+                                        <th rowspan="2">Taken</th>
+                                        <th rowspan="2">Average</th>
                             <th rowspan="2">Staff Signature</th>
                         </tr>
                         <tr>
@@ -106,13 +118,16 @@
                             </tr>
                         @endforeach
                     </tbody>
-                </table>
-                <center>                    
-                    <button onclick="exportTableToExcel('daywise_attendance', 'Boys Girls Daywise Attendance Report')" class="btn btn-success mt-2">Excel Export</button>
-                </center>
-            </div>
-        </div>
-        @endif
+                                </table>
+                                <center>
+                                    <button
+                                        onclick="exportTableToExcel('daywise_attendance', 'Boys Girls Daywise Attendance Report')"
+                                        class="btn btn-success mt-2">Excel Export
+                                    </button>
+                                </center>
+                            </div>
+                        </div>
+                    @endif
     </div>
 </div>
 
@@ -124,15 +139,15 @@
         var dataType = 'application/vnd.ms-excel';
         var tableSelect = document.getElementById(tableID);
         var tableHTML = tableSelect.outerHTML.replace(/ /g, '%20');
-        
+
         // Specify file name
         filename = filename?filename+'.xls':'excel_data.xls';
-        
+
         // Create download link element
         downloadLink = document.createElement("a");
-        
+
         document.body.appendChild(downloadLink);
-        
+
         if(navigator.msSaveOrOpenBlob){
             var blob = new Blob(['\ufeff', tableHTML], {
                 type: dataType
@@ -141,10 +156,10 @@
         }else{
             // Create a link to the file
             downloadLink.href = 'data:' + dataType + ', ' + tableHTML;
-        
+
             // Setting the file name
             downloadLink.download = filename;
-            
+
             //triggering the function
             downloadLink.click();
         }

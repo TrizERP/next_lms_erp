@@ -26,63 +26,74 @@
             if(isset($data['month_id']))
             {
                 $month_id = $data['month_id'];
-            }            
+            }
 
         @endphp
-        <div class="card">            
+        <div class="card">
             @if ($sessionData = Session::get('data'))
-            <div class="alert alert-success alert-block">
-                <button type="button" class="close" data-dismiss="alert">×</button>
-                <strong>{{ $sessionData['message'] }}</strong>
-            </div>
+                <div class="alert alert-success alert-block">
+                    <button type="button" class="close" data-dismiss="alert">×</button>
+                    <strong>{{ $sessionData['message'] }}</strong>
+                </div>
             @endif
-            <form action="{{ route('NACH_s3excel_export.create') }}">  
-                <div class="row"> 
-                                                                        
-                    {{ App\Helpers\SearchChain('3','single','grade,std,div',$grade,$standard,$division) }}                                                                    
+            <form action="{{ route('NACH_s3excel_export.create') }}">
+                @csrf
+                <div class="row">
+
+                    {{ App\Helpers\SearchChain('3','single','grade,std,div',$grade,$standard,$division) }}
 
                     <div class="col-md-3">
                         <label>Month</label>
                         <select id="month_id" name="month_id" class="form-control" required>
                             <option value="">Select</option>
-                            @foreach ($data['fee_month'] as $id => $val)                             
+                            @foreach ($data['fee_month'] as $id => $val)
                                 <option value="{{$id}}" @if($month_id == $id) selected @endif>{{$val}}</option>
                             @endforeach
                         </select>
-                    </div>                                                                               
-                    
+                    </div>
+
                     <div class="col-sm-4 form-group mt-4">
-                        <center>                            
-                            <input type="submit" name="submit" value="Search" class="btn btn-success" >
+                        <center>
+                            <input type="submit" name="submit" value="Search" class="btn btn-success">
                         </center>
                     </div>
-                </div>              
-            </form>            
+                </div>
+            </form>
         </div>
         @if(isset($data['student_data']))
-        @php
-            if(isset($data['student_data'])){
-                $student_data = $data['student_data'];                
-            }
-        @endphp
+            @php
+                if(isset($data['student_data'])){
+                    $student_data = $data['student_data'];
+                }
+            @endphp
 
-        <div class="card">                            
-                <div class="row mt-5">                    
+            <div class="card">
+                <div class="row mt-5">
                     <div class="col-lg-12 col-sm-12 col-xs-12">
                         <div class="table-responsive">
                             <table class="table table-box table-bordered">
                                 <thead>
-                                    <tr>                                       
-                                        <th data-toggle="tooltip" title="Sr.No.">Sr.No.</th>
-                                        <th data-toggle="tooltip" title="ACH Transaction Code (2) M">ACH Transaction Code (2) M</th>
-                                        <th data-toggle="tooltip" title="Control (9) O">Control (9) O</th>
-                                        <th data-toggle="tooltip" title="Destination Account Type (2) O">Destination Account Type (2) O</th>
-                                        <th data-toggle="tooltip" title="Ledger Folio Number (3) O">Ledger Folio Number (3) O</th>
-                                        <th data-toggle="tooltip" title="Control (15) O">Control (15) O</th>
-                                        <th data-toggle="tooltip" title="Beneficiary Account Holder's Name (40) M">Beneficiary Account Holder's Name (40) M</th>
-                                        <th data-toggle="tooltip" title="Control (9) O">Control (9) O</th>
-                                        <th data-toggle="tooltip" title="Control (7) O">Control (7) O</th>
-                                        <th data-toggle="tooltip" title="User Name / Narration (20) O">User Name / Narration (20) O</th>
+                                <tr>
+                                    <th data-toggle="tooltip" title="Sr.No.">Sr.No.</th>
+                                    <th data-toggle="tooltip" title="ACH Transaction Code (2) M">ACH Transaction Code
+                                        (2) M
+                                    </th>
+                                    <th data-toggle="tooltip" title="Control (9) O">Control (9) O</th>
+                                    <th data-toggle="tooltip" title="Destination Account Type (2) O">Destination Account
+                                        Type (2) O
+                                    </th>
+                                    <th data-toggle="tooltip" title="Ledger Folio Number (3) O">Ledger Folio Number (3)
+                                        O
+                                    </th>
+                                    <th data-toggle="tooltip" title="Control (15) O">Control (15) O</th>
+                                    <th data-toggle="tooltip" title="Beneficiary Account Holder's Name (40) M">
+                                        Beneficiary Account Holder's Name (40) M
+                                    </th>
+                                    <th data-toggle="tooltip" title="Control (9) O">Control (9) O</th>
+                                    <th data-toggle="tooltip" title="Control (7) O">Control (7) O</th>
+                                    <th data-toggle="tooltip" title="User Name / Narration (20) O">User Name / Narration
+                                        (20) O
+                                    </th>
                                         <th data-toggle="tooltip" title="Control (13) O">Control (13) O</th>
                                         <th data-toggle="tooltip" title="Amount (13) M">Settlement Date (DDMMYYYY) (8) M</th>
                                         <th data-toggle="tooltip" title="Reserved (ACH Item Seq No.) (10) O">Reserved (ACH Item Seq No.) (10) O</th>
@@ -94,24 +105,26 @@
                                         <th data-toggle="tooltip" title="Sponsor Bank IFSC / MICR / IIN (11) M">Sponsor Bank IFSC / MICR / IIN (11) M</th>
                                         <th data-toggle="tooltip" title="User Number (18) M">User Number (18) M</th>
                                         <th data-toggle="tooltip" title="Transaction Reference (30) M">Transaction Reference (30) M</th>
-                                        <th data-toggle="tooltip" title="Product Type (3) M">Product Type (3) M</th>
-                                        <th data-toggle="tooltip" title="Beneficiary Aadhaar Number (15) M for APBS">Beneficiary Aadhaar Number (15) M for APBS</th>
-                                        <th data-toggle="tooltip" title="UMRN (20) M">UMRN (20) M</th>
-                                    </tr>
+                                    <th data-toggle="tooltip" title="Product Type (3) M">Product Type (3) M</th>
+                                    <th data-toggle="tooltip" title="Beneficiary Aadhaar Number (15) M for APBS">
+                                        Beneficiary Aadhaar Number (15) M for APBS
+                                    </th>
+                                    <th data-toggle="tooltip" title="UMRN (20) M">UMRN (20) M</th>
+                                </tr>
                                 </thead>
                                 <tbody>
-                                    @php
+                                @php
                                     $j=1;
-                                    @endphp
-                                    @if(count($student_data) > 0)
-                                        @foreach($student_data as $key => $studata)            
-                                        <tr>                                        
+                                @endphp
+                                @if(count($student_data) > 0)
+                                    @foreach($student_data as $key => $studata)
+                                        <tr>
                                             <td>{{$j}}</td>
                                             <td>{{$studata['ACH_TRANSACTION_CODE']}}</td>
                                             <td>{{$studata['CONTROL_1']}}</td>
                                             <td>{{$studata['DESTINATION_AC_TYPE']}}</td>
                                             <td>{{$studata['LEDGER_FOLIO_NUMBER']}}</td>
-                                            <td>{{$studata['CONTROL_2']}}</td>                                        
+                                            <td>{{$studata['CONTROL_2']}}</td>
                                             <td>{{$studata['BENEFICIARY_AC_HOLDER_NAME']}}</td>
                                             <td>{{$studata['CONTROL_3']}}</td>
                                             <td>{{$studata['CONTROL_4']}}</td>
@@ -146,10 +159,10 @@
                                 </tbody>
                             </table>
                         </div>
-                    </div>                                
+                    </div>
                 </div>
-           
-        </div>
+
+            </div>
         @endif
     </div>
 </div>
@@ -158,8 +171,8 @@
 @include('includes.footerJs')
 
 <script type="text/javascript">
-$(document).ready(function(){
-    $('[data-toggle="tooltip"]').tooltip();   
-});
+    $(document).ready(function () {
+        $('[data-toggle="tooltip"]').tooltip();
+    });
 </script>
 @include('includes.footer')

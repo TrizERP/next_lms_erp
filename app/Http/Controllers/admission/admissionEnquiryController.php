@@ -27,18 +27,17 @@ class admissionEnquiryController extends Controller
     {
         $type = $request->input('type');
         $sub_institute_id = $request->session()->get('sub_institute_id');
-        $data = admissionEnquiryModel::get()->toArray();
         $syear = $request->session()->get('syear');
         // $users = tbluserModel::select(
         //    DB::raw("CONCAT(first_name,' ',last_name) AS name"),
         //    'id'
-        // 
+        //
 
         // $data = admissionEnquiryModel::select('admission_enquiry.*',
         //     DB::raw('if(followup_date = date_format(NOW(),"%Y-%m-%d"),"#f5f777","") as status,COUNT(tblstudent.id) AS total_student_count,standard.name as std_name,IF(fu.status = "close","1","0") as enquiry_status,fu.status as display_enquiry_status,if(fu.status = "close","pink","") as enq_color'))
-        // ->leftjoin('tblstudent','tblstudent.admission_id' ,"=", 'admission_enquiry.id','tblstudent.admission_year' ,"=", 'admission_enquiry.syear','tblstudent.sub_institute_id' ,"=", 'admission_enquiry.sub_institute_id') 
-        // ->leftjoin('standard','standard.id' ,"=", 'admission_enquiry.admission_standard','standard.sub_institute_id' ,"=", 'admission_enquiry.sub_institute_id') 
-        // ->leftjoin(DB::raw('(SELECT * FROM follow_up ORDER BY id desc LIMIT 1) as fu'),'fu.enquiry_id' ,"=", 'admission_enquiry.id','fu.sub_institute_id' ,"=", 'admission_enquiry.sub_institute_id') 
+        // ->leftjoin('tblstudent','tblstudent.admission_id' ,"=", 'admission_enquiry.id','tblstudent.admission_year' ,"=", 'admission_enquiry.syear','tblstudent.sub_institute_id' ,"=", 'admission_enquiry.sub_institute_id')
+        // ->leftjoin('standard','standard.id' ,"=", 'admission_enquiry.admission_standard','standard.sub_institute_id' ,"=", 'admission_enquiry.sub_institute_id')
+        // ->leftjoin(DB::raw('(SELECT * FROM follow_up ORDER BY id desc LIMIT 1) as fu'),'fu.enquiry_id' ,"=", 'admission_enquiry.id','fu.sub_institute_id' ,"=", 'admission_enquiry.sub_institute_id')
         // ->where(['admission_enquiry.sub_institute_id'=>$sub_institute_id,'admission_enquiry.syear'=>$syear])
         // ->groupBy('admission_enquiry.id')
         // ->orderby(DB::raw('admission_enquiry.followup_date = DATE_FORMAT(NOW(),"%Y-%m-%d")'),'DESC')
@@ -53,21 +52,21 @@ class admissionEnquiryController extends Controller
         //         IF(fu.status = "close","1","0") as enquiry_status,fu.status as display_enquiry_status,
         //         if(fu.status = "close","pink","") as enq_color,DATE_FORMAT(fu.follow_up_date,"%d-%m-%Y") as next_follow_up_date,
         //         af.form_no as form_number,
-        //         if(fu.follow_up_date = DATE_FORMAT(NOW(),"%Y-%m-%d"),"#0aa884","") as todays_next_followup 
-        //         FROM `admission_enquiry` 
+        //         if(fu.follow_up_date = DATE_FORMAT(NOW(),"%Y-%m-%d"),"#0aa884","") as todays_next_followup
+        //         FROM `admission_enquiry`
         //         LEFT JOIN admission_form af ON af.enquiry_id = admission_enquiry.id AND af.sub_institute_id = admission_enquiry.sub_institute_id
-        //         LEFT JOIN `tblstudent` on `tblstudent`.`admission_id` = `admission_enquiry`.`id` 
-        //         LEFT JOIN `standard` on `standard`.`id` = `admission_enquiry`.`admission_standard` 
+        //         LEFT JOIN `tblstudent` on `tblstudent`.`admission_id` = `admission_enquiry`.`id`
+        //         LEFT JOIN `standard` on `standard`.`id` = `admission_enquiry`.`admission_standard`
         //         LEFT JOIN follow_up fu ON fu.id = (
         //         SELECT id
         //         FROM follow_up AS fu1
         //         WHERE fu1.enquiry_id = admission_enquiry.id
         //         ORDER BY fu1.id DESC
         //         LIMIT 1)
-        //         WHERE (`admission_enquiry`.`sub_institute_id` = "'.$sub_institute_id.'" and `admission_enquiry`.`syear` = "'.$syear.'") 
-        //         GROUP BY `admission_enquiry`.`id` 
+        //         WHERE (`admission_enquiry`.`sub_institute_id` = "'.$sub_institute_id.'" and `admission_enquiry`.`syear` = "'.$syear.'")
+        //         GROUP BY `admission_enquiry`.`id`
         //         ORDER BY admission_enquiry.followup_date = DATE_FORMAT(NOW(),"%Y-%m-%d") desc';
-        // $data = DB::select($sql);        
+        // $data = DB::select($sql);
         // $data = json_decode(json_encode($data),true);
 
         // $res['status_code'] = 1;
@@ -84,7 +83,7 @@ class admissionEnquiryController extends Controller
             })->leftJoin('follow_up as fu', function ($join) {
                 $join->whereRaw('fu.id = (SELECT id FROM follow_up AS fu1 WHERE fu1.enquiry_id = admission_enquiry.id ORDER BY fu1.id DESC LIMIT 1)');
             })
-            ->selectRaw('CASE WHEN admission_enquiry.followup_date = DATE_FORMAT(NOW(),"%Y-%m-%d") THEN "#f5f777"
+            ->selectRaw('admission_enquiry.*, CASE WHEN admission_enquiry.followup_date = DATE_FORMAT(NOW(),"%Y-%m-%d") THEN "#f5f777"
                 WHEN fu.follow_up_date = DATE_FORMAT(NOW(),"%Y-%m-%d") THEN "#f5f777"
                 END AS current_status_color,
                 COUNT(tblstudent.id) AS total_student_count,standard.name as std_name,
@@ -132,7 +131,7 @@ class admissionEnquiryController extends Controller
             $i++;
         }
 
-        /*$GET_ENQUIRY_No = admissionEnquiryModel::select(DB::raw('max(substring(enquiry_no,6,7)) as LAST_FORM_NO'))->where(['sub_institute_id' => $sub_institute_id,'syear' => $syear])->get()->toArray(); 
+        /*$GET_ENQUIRY_No = admissionEnquiryModel::select(DB::raw('max(substring(enquiry_no,6,7)) as LAST_FORM_NO'))->where(['sub_institute_id' => $sub_institute_id,'syear' => $syear])->get()->toArray();
         $FORM_NO = $GET_ENQUIRY_No[0]['LAST_FORM_NO'] + 1;
         if($sub_institute_id == 46) // MLZS ERP
         {
