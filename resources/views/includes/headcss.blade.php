@@ -7,10 +7,9 @@
     <link rel="icon" type="image/png" sizes="16x16" href="images/favicon.png">
     <title>TRIZ ERP</title>
 
-	
-	
+
     <!-- Bootstrap Core CSS -->
-    <!-- <link href="{{ asset("/admin_dep/bootstrap/dist/css/bootstrap.min.css") }}" rel="stylesheet"> -->
+<!-- <link href="{{ asset("/admin_dep/bootstrap/dist/css/bootstrap.min.css") }}" rel="stylesheet"> -->
     <!-- Menu CSS -->
     <!-- <link href="{{ asset("/plugins/bower_components/sidebar-nav/dist/sidebar-nav.min.css") }}" rel="stylesheet"> -->
     <!-- <link href="{{ asset("/plugins/bower_components/css-chart/css-chart.css") }}" rel="stylesheet"> -->
@@ -29,7 +28,7 @@
     <!-- <link href="{{ asset("/admin_dep/css/triz-style.css") }}" rel="stylesheet"> -->
     <!-- color CSS -->
     <!-- <link href="{{ asset("/admin_dep/css/colors/default.css") }}" id="theme" rel="stylesheet"> -->
-	
+
     <link href="{{ asset("/admin_dep/css/bootstrap.css") }}" rel="stylesheet">
     <link href="{{ asset("/admin_dep/css/bootstrap-select.css") }}" rel="stylesheet">
     <link href="{{ asset("/admin_dep/css/bootstrap-datepicker.min.css") }}" rel="stylesheet">
@@ -54,7 +53,7 @@
 
 
     <link href="https://cdn.datatables.net/buttons/1.5.6/css/buttons.dataTables.min.css" rel="stylesheet"
-        type="text/css" />
+          type="text/css"/>
 
     <style type="text/css">
         @media print {
@@ -64,8 +63,9 @@
 
             /* page-break-after works, as well */
         }
-        .ui-datepicker-inline {            
-            display: none !important;            
+
+        .ui-datepicker-inline {
+            display: none !important;
         }
     </style>
 
@@ -73,13 +73,17 @@
     <script async src="https://www.googletagmanager.com/gtag/js?id=UA-153077517-1"></script>
     <script>
         window.dataLayer = window.dataLayer || [];
-        function gtag(){dataLayer.push(arguments);}
+
+        function gtag() {
+            dataLayer.push(arguments);
+        }
+
         gtag('js', new Date());
         gtag('config', 'UA-153077517-1');
     </script>
-    <script type="text/javascript">
-        $(document).ready(function() {
-            hideRightsideMenu();
-         });
-    </script>
+    {{--    <script type="text/javascript">--}}
+    {{--        $(document).ready(function() {--}}
+    {{--            hideRightsideMenu();--}}
+    {{--         });--}}
+    {{--    </script>--}}
 </head>

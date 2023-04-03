@@ -444,6 +444,8 @@
     "/plugins/bower_components/bootstrap-datepicker/bootstrap-datepicker.min.css": "/plugins/bower_components/bootstrap-datepicker/bootstrap-datepicker.min.css",
     "/plugins/bower_components/bootstrap-datepicker/bootstrap-datepicker.min.js": "/plugins/bower_components/bootstrap-datepicker/bootstrap-datepicker.min.js",
     "/plugins/bower_components/calendar/dist/fullcalendar.css": "/plugins/bower_components/calendar/dist/fullcalendar.css",
+    "/plugins/bower_components/calendar/dist/fullcalendar.min.js": "/plugins/bower_components/calendar/dist/fullcalendar.min.js",
+    "/plugins/bower_components/calendar/dist/jquery.fullcalendar.js": "/plugins/bower_components/calendar/dist/jquery.fullcalendar.js",
     "/plugins/bower_components/chartist-js/dist/chartist.min.css": "/plugins/bower_components/chartist-js/dist/chartist.min.css",
     "/plugins/bower_components/chartist-js/dist/chartist.min.js": "/plugins/bower_components/chartist-js/dist/chartist.min.js",
     "/plugins/bower_components/chartist-plugin-tooltip-master/dist/chartist-plugin-tooltip.css": "/plugins/bower_components/chartist-plugin-tooltip-master/dist/chartist-plugin-tooltip.css",
