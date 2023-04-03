@@ -18,7 +18,7 @@ $(document).ready(function(){
         if(me.hasClass('active'))
         {
            me.removeClass('active');
-          panel.removeClass('active');     
+            panel.removeClass('active');
               return false;
         }
     });
@@ -31,7 +31,7 @@ $(document).ready(function(){
         $(".sub-menu-block").toggleClass("sub-tab-hide");
         $(".main-menu-block").toggleClass("d-none");
     });
-    
+
 
 
     //
@@ -46,27 +46,27 @@ $(document).ready(function(){
     });
 
     //
-    $('.activity-header').on('click', function(event) {
+    $('.activity-header').on('click', function (event) {
         $(this).closest(".activity-panel").toggleClass("open").find(".activity-body").slideToggle();
     });
 
     // $('div').removeClass('white-box').addClass('card');
     // $('.white-box').addClass('card');
-    
-    // $('form').addClass('row'); 
-    // $('table').addClass('table-hover'); 
+
+    // $('form').addClass('row');
+    // $('table').addClass('table-hover');
     $('.btn-info.btn-outline').removeClass('btn-outline').addClass('btn-outline-success');
     $('.ti-pencil-alt').removeClass('ti-pencil-alt').addClass('mdi mdi-lead-pencil');
     $('.ti-trash').removeClass('ti-trash').addClass('mdi mdi-close');
-    // $('/form').prepend($("</div>"));    
-    // $( "<div class='table-responsive'>" ).insertBefore( "table" ); 
+    // $('/form').prepend($("</div>"));
+    // $( "<div class='table-responsive'>" ).insertBefore( "table" );
     $('select').removeClass('cust-select');
     $('select').removeClass('selectpicker');
 
     // $('div').removeClass('bootstrap-select');
     $('.form-control').removeClass('bootstrap-select');
     // $('#menu-1').addClass('active');
-    
+
     $('#page-wrapper').addClass('content-main flex-fill');
 });
 
@@ -125,7 +125,7 @@ $('.dropdown.bootstrap-select').on("load",function(){
 
 $('.dropdown.bootstrap-select').parent('.form-group').children('h4.box-title').replaceWith($("label.box-title"));
 if($('.dropdown.bootstrap-select').parents('.form-group').children( "h4" )){
-    $('.bootstrap-select').parents('.col-md-3').children( "h4" ).replaceWith('label', true);    
+    $('.bootstrap-select').parents('.col-md-3').children("h4").replaceWith('label', true);
 }
 
 // Help Guide
