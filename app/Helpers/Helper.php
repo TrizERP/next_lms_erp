@@ -1141,7 +1141,7 @@ if (! function_exists('getStudents')) {
                 tkr.from_distance,IF(tv.vehicle_type = 'Van',tkr.van_new,tkr.rick_new) AS distance_rate")
             ->where('s.sub_institute_id', $sub_institute_id)
             ->where('se.syear', $syear)
-            ->whereIn('s.id', $stud_arr)
+            ->whereIn('s.id', $student_ids)
             ->groupBy('s.id')->get()->toArray();
 
         $student_data = array();
