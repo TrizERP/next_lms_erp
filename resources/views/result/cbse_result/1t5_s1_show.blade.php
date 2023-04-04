@@ -43,18 +43,18 @@
                                             <tr>
                                                 <td style="width: 165px;text-align: center;" align="left">
                                                     <img style="width: 100px;height: 90px;margin: 0;"
-                                                         src="/storage/result/left_logo/{{$header_data['left_logo']}}"
+                                                         src="/storage/result/left_logo/{{$header_data['left_logo'] ?? ''}}"
                                                          alt="SCHOOL LOGO">
                                                 </td>
                                                 <td style="text-align:center !important;" align="center">
-                                                    <span class="sc-hd">{{$header_data['line1']}}</span><br>
-                                                    <span class="ma-hd">{{$header_data['line2']}}</span><br>
-                                                    <span class="rg-hd">{{$header_data['line3']}}</span><br>
-                                                    <span class="rg-hd">{{$header_data['line4']}}</span><br>
+                                                    <span class="sc-hd">{{$header_data['line1'] ?? ''}}</span><br>
+                                                    <span class="ma-hd">{{$header_data['line2'] ?? ''}}</span><br>
+                                                    <span class="rg-hd">{{$header_data['line3'] ?? ''}}</span><br>
+                                                    <span class="rg-hd">{{$header_data['line4'] ?? ''}}</span><br>
                                                 </td>
                                                 <td style="width: 165px;text-align: center;" align="left">
                                                     <img style="width: 100px;height: 90px;margin: 0;"
-                                                         src="/storage/result/right_logo/{{$header_data['right_logo']}}"
+                                                         src="/storage/result/right_logo/{{$header_data['right_logo'] ?? ''}}"
                                                          alt="SCHOOL LOGO">
                                                 </td>
                                             </tr>
@@ -117,14 +117,14 @@
                                                             <!--<th class="main-th" align="left">Part 1-A-Scholastic Areas:</th>   -->
                                                             <th style="text-align: center;"
                                                                 colspan="<?php echo count($all_data['exam']) + 1; ?>">
-                                                                <b><?php echo $all_data['term']." (".$all_data['total_mark']." Marks)"; ?></b>
+                                                                <b><?php echo $all_data['term'] . " (" . $all_data['total_mark'] . " Marks)"; ?></b>
                                                             </th>
                                                             <th style="text-align: center;"
                                                                 colspan="<?php echo count($term_2_data[$stuent_id]['exam']) + 1; ?>">
-                                                                <b><?php echo $term_2_data[$stuent_id]['term']." (".$term_2_data[$stuent_id]['total_mark']." Marks)"; ?></b>
+                                                                <b><?php echo $term_2_data[$stuent_id]['term'] . " (" . $term_2_data[$stuent_id]['total_mark'] . " Marks)"; ?></b>
                                                             </th>
                                                             <th style="text-align: center;  " rowspan="2"><b>Grand<br/>Total<br/>
-                                                                    ({{ 
+                                                                    ({{
                                                                             $term_2_data[$stuent_id]['total_mark'] + $all_data['total_mark']
                                                                         }})</b></th>
                                                             <th style="text-align: center;" rowspan="2"><b>Grade</b>
@@ -296,14 +296,14 @@
                                                             </tr>
                                                         <!--<tr>
                                                                     <th><b>Result</b></th>
-                                                                   
+
                                                                     <td>
                                                                         <?php
                                                         // if($pass === true){
                                                         //     echo "Passed and Promoted to Grade XII ".$all_data['medium'];
                                                         // }else{
                                                         //     echo "Detained  in  Grade  XI ".$all_data['medium'];
-                                                        // }                                              
+                                                        // }
                                                         ?>
                                                                 </td>
                                                             </tr>-->
@@ -312,10 +312,10 @@
                                                                     <td>
                                                                     <?php
                                                         // $date = date_create($footer_data['reopen_date']);
-                                                        // echo date_format($date,"d-m-Y");                                 
+                                                        // echo date_format($date,"d-m-Y");
                                                         ?>
-                                                                </td> 
-                                                            </tr>-->
+                                                            </td>
+                                                        </tr>-->
                                                             <tr>
                                                                 <!--                                                                     <th><b>Signature</b></th>
                                                                                                                                     <td colspan=2>
@@ -414,26 +414,26 @@
 
                                             <!-- <tr>
                                                 <td colspan="3" align="center" class="p-t-10" valign="top">
-                                                    <table class="aca-year" style="border-collapse:collapse; border:1px solid #e68023;" width="100%" cellspacing="0" cellpadding="0" border="1">            
+                                                    <table class="aca-year" style="border-collapse:collapse; border:1px solid #e68023;" width="100%" cellspacing="0" cellpadding="0" border="1">
                                                         <tbody>
-                                                            <tr>                
+                                                            <tr>
                                                                 <th width="200px" align="center"><b>CO-SCHOLASTIC GRADE1</b></th>
                                                                 <td align="center">4.1 - 5.0</td>
                                                                 <td align="center">3.1 - 4.0</td>
-                                                                <td align="center">2.1 - 3.0</td>     
-                                                            </tr>     
-                                                            <tr>        
+                                                                <td align="center">2.1 - 3.0</td>
+                                                            </tr>
+                                                            <tr>
                                                                 <th width="200px" align="center"><b>GRADE POINTS</b></th>
                                                                 <td align="center">A</td>
                                                                 <td align="center">B</td>
-                                                                <td align="center">C</td>       
-                                                            </tr>        
+                                                                <td align="center">C</td>
+                                                            </tr>
                                                             <tr>
                                                                 <th width="200px" align="center"><b>REMARKS</b></th>
                                                                 <td align="center">Very Good</td>
                                                                 <td align="center">Good</td>
-                                                                <td align="center">Fair</td>       
-                                                            </tr>        
+                                                                <td align="center">Fair</td>
+                                                            </tr>
                                                         </tbody>
                                                     </table>
                                                 </td>

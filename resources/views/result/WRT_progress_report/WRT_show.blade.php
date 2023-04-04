@@ -98,27 +98,33 @@ $grade_arr = cbse_1t5_result_controller::getGradeScale($_REQUEST['standard'],'we
                         $student_id = $all_data['id'];
                         $student_name = $all_data['first_name'].' '.$all_data['middle_name'].' '.$all_data['last_name'];
 
-                        ?>
-                        <div id="{{$student_id}}">
-                        <table class="main-table ml-5 mr-5 mb-5" width="100%" style="border:1px solid #f37a0d;border-collapse: collapse;">
+                    ?>
+                    <div id="{{$student_id}}">
+                        <table class="main-table ml-5 mr-5 mb-5" width="100%"
+                               style="border:1px solid #f37a0d;border-collapse: collapse;">
                             <tbody>
-                                <tr>
-                                    <td>
-                                        <table class="report-card" style="border-collapse:collapse;" width="100%" cellspacing="0" cellpadding="0">
-                                            <tbody>
-                                                <tr>
-                                                     <td style="width: 165px;text-align: center;" align="left">
-                                                        <img style="width: 100px;height: 90px;margin: 0;" src="/storage/result/left_logo/{{$header_data['left_logo']}}" alt="SCHOOL LOGO">
-                                                     </td>
-                                                     <td style="text-align:center !important;" align="center">
-                                                        <span class="sc-hd">{{$header_data['line1']}}</span><br>
-                                                        <span class="ma-hd">{{$header_data['line2']}}</span><br>
-                                                        <span class="rg-hd">{{$header_data['line3']}}</span><br>
-                                                        <span class="rg-hd">{{$header_data['line4']}}</span><br>
-                                                     </td>
-                                                     <td style="width: 165px;text-align: center;" align="left">
-                                                        <img style="width: 100px;height: 90px;margin: 0;" src="/storage/result/right_logo/{{$header_data['right_logo']}}" alt="SCHOOL LOGO">
-                                                     </td>
+                            <tr>
+                                <td>
+                                    <table class="report-card" style="border-collapse:collapse;" width="100%"
+                                           cellspacing="0" cellpadding="0">
+                                        <tbody>
+                                        <tr>
+                                            <td style="width: 165px;text-align: center;" align="left">
+                                                <img style="width: 100px;height: 90px;margin: 0;"
+                                                     src="/storage/result/left_logo/{{$header_data['left_logo'] ?? ''}}"
+                                                     alt="SCHOOL LOGO">
+                                            </td>
+                                            <td style="text-align:center !important;" align="center">
+                                                <span class="sc-hd">{{$header_data['line1']}}</span><br>
+                                                <span class="ma-hd">{{$header_data['line2']}}</span><br>
+                                                <span class="rg-hd">{{$header_data['line3']}}</span><br>
+                                                <span class="rg-hd">{{$header_data['line4']}}</span><br>
+                                            </td>
+                                            <td style="width: 165px;text-align: center;" align="left">
+                                                <img style="width: 100px;height: 90px;margin: 0;"
+                                                     src="/storage/result/right_logo/{{$header_data['right_logo']}}"
+                                                     alt="SCHOOL LOGO">
+                                            </td>
                                                 </tr>
                                                 <tr>
                                                     <td colspan="4">

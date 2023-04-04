@@ -6,8 +6,11 @@ use App\Http\Controllers\school_setup\facultywisetimetableController;
 use App\Models\fees\fees_collect\fees_collect;
 use App\Models\tblmenumasterModel;
 use App\Models\user\tbluserModel;
+use Illuminate\Contracts\Foundation\Application;
+use Illuminate\Contracts\View\Factory;
+use Illuminate\Contracts\View\View;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
 use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\NotFoundExceptionInterface;
@@ -19,9 +22,9 @@ class dashboardController extends Controller
      * Display a listing of the resource.
      *
      * @param Request $request
-     * @throws ContainerExceptionInterface
+     * @return false|Application|Factory|View|RedirectResponse|string
      * @throws NotFoundExceptionInterface
-     * @return Response
+     * @throws ContainerExceptionInterface
      */
     public function index(Request $request)
     {
@@ -1063,7 +1066,7 @@ class dashboardController extends Controller
                 ->join("division as dt", function ($join) {
                     $join->whereRaw("s.section_id = dt.id");
                 })
-                ->select("st.name as standard,dt.name,s.attendance_code, SUM(CASE WHEN s.attendance_code = 'A' THEN 1 ELSE 0 END) AS absent,
+                ->selectRaw("st.name as standard,dt.name,s.attendance_code, SUM(CASE WHEN s.attendance_code = 'A' THEN 1 ELSE 0 END) AS absent,
 			        SUM(CASE WHEN s.attendance_code = 'P' THEN 1 ELSE 0 END) AS present")
                 ->where("s.sub_institute_id", "=", $sub_institute_id)
                 ->where("s.attendance_date", "=", $date)

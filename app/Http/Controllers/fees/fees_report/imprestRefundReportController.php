@@ -4,6 +4,10 @@ namespace App\Http\Controllers\fees\fees_report;
 
 use App\Http\Controllers\Controller;
 use App\Models\fees\other_fees_title\other_fees_title;
+use Illuminate\Contracts\Foundation\Application;
+use Illuminate\Contracts\View\Factory;
+use Illuminate\Contracts\View\View;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use function App\Helpers\is_mobile;
@@ -13,7 +17,8 @@ class imprestRefundReportController extends Controller
     /**
      * Display a listing of the resource.
      *
-     * @return \Illuminate\Http\Response
+     * @param Request $request
+     * @return false|Application|Factory|View|RedirectResponse|string
      */
     public function index(Request $request)
     {
@@ -46,7 +51,7 @@ class imprestRefundReportController extends Controller
         $syear = $request->session()->get('syear');
         $sub_institute_id = $request->session()->get('sub_institute_id');
 
-        $extraSearch = " ";
+        $extraSearch = "1=1 ";
 
         if ($grade != '') {
             $extraSearch .= " AND se.grade_id = '" . $grade . "'";
@@ -64,20 +69,26 @@ class imprestRefundReportController extends Controller
             $extraSearch .= " AND c.cancel_date between '" . $from_date . "' AND '" . $to_date . "' ";
         }
 
-
-        $refund_feesData = DB::select("SELECT CONCAT_WS(' ',s.first_name,s.middle_name,s.last_name) AS student_name,
-            s.enrollment_no,s.mobile,c.student_id, st.name AS standard_name,
-            d.name AS division_name,c.cancel_date,c.cancel_remark,c.cancel_amount,c.cancel_type,
-            c.reciept_id, CONCAT_WS(' ',u.first_name,u.middle_name,u.last_name) AS cancelled_by
-            FROM imprest_fees_cancel c
-            INNER JOIN tblstudent s ON s.id = c.student_id AND c.sub_institute_id = s.sub_institute_id
-            INNER JOIN tblstudent_enrollment se ON se.student_id = s.id AND se.syear = c.syear
-            INNER JOIN standard st ON st.id = se.standard_id
-            INNER JOIN division d ON se.section_id = d.id
-            INNER JOIN tbluser u ON u.id = c.cancelled_by AND u.sub_institute_id = c.sub_institute_id
-            WHERE c.sub_institute_id = '" . $sub_institute_id . "' AND c.syear = '" . $syear . "' " . $extraSearch . "
-            ORDER BY c.cancel_date
-        ");
+        $refund_feesData = DB::table('imprest_fees_cancel as c')
+            ->join('tblstudent as s', function ($join) {
+                $join->whereRaw('s.id = c.student_id AND c.sub_institute_id = s.sub_institute_id');
+            })->join('tblstudent_enrollment as se', function ($join) {
+                $join->whereRaw('se.student_id = s.id AND se.syear = c.syear');
+            })->join('standard as st', function ($join) {
+                $join->whereRaw('st.id = se.standard_id');
+            })->join('division as d', function ($join) {
+                $join->whereRaw('se.section_id = d.id');
+            })->join('tbluser as u', function ($join) {
+                $join->whereRaw('u.id = c.cancelled_by AND u.sub_institute_id = c.sub_institute_id');
+            })->selectRaw("CONCAT_WS(' ',s.first_name,s.middle_name,s.last_name) AS student_name,
+                s.enrollment_no,s.mobile,c.student_id, st.name AS standard_name,
+                d.name AS division_name,c.cancel_date,c.cancel_remark,c.cancel_amount,c.cancel_type,
+                c.reciept_id, CONCAT_WS(' ',u.first_name,u.middle_name,u.last_name) AS cancelled_by")
+            ->where('c.sub_institute_id', $sub_institute_id)
+            ->where('c.syear', $syear)
+            ->whereRaw($extraSearch)
+            ->orderBy('c.cancel_date')
+            ->get()->toArray();
 
         $refund_feesData = json_decode(json_encode($refund_feesData), true);
 

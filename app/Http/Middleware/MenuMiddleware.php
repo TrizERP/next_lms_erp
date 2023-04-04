@@ -132,18 +132,19 @@ class MenuMiddleware
                         foreach ($subMenuData as $key => $value) {
                             $finalSubMenu[$value['parent_menu_id']][$i] = $subMenuData[$key];
                             if ($value['quick_menu'] != '') {
-                                $quick_menu_new = "SELECT * FROM tblmenumaster WHERE find_in_set (id,(select quick_menu from tblmenumaster where id = '".$value['id']."'))";
+                                $quick_menu_new = "SELECT * FROM tblmenumaster WHERE find_in_set (id,(select quick_menu
+                                    from tblmenumaster where id = '" . $value['id'] . "'))";
                                 $quick_menu_data = DB::select($quick_menu_new);
 
                                 $quick_menu_data = array_map(function ($value) {
-                                    return (array) $value;
+                                    return (array)$value;
                                 }, $quick_menu_data);
                                 $finalQuickMenu[$value['id']] = $quick_menu_data;
                             }
                             $i++;
                         }
                         $subChildMenuData = tblmenumasterModel::where('parent_menu_id', '!=', 0)
-                            ->whereRaw("find_in_set('$client_id',client_id) AND level = 3 and id in (".$rightsMenusIds.") 
+                            ->whereRaw("find_in_set('$client_id',client_id) AND level = 3 and id in (" . $rightsMenusIds . ")
                             and status = 1 and menu_type IS NULL")->orderBy('sort_order')->get()->toArray();
                         $i = 0;
                         foreach ($subChildMenuData as $key => $value) {
@@ -152,12 +153,12 @@ class MenuMiddleware
                         }
                     } else {
                         $data = tblmenumasterModel::where(['parent_menu_id' => "0", 'level' => "1"])
-                            ->whereRaw("find_in_set('$sub_institute_id',sub_institute_id) and status = 1 
-                            and id in (".$rightsMenusIds.") and menu_type IS NULL")->orderBy('sort_order')->get()->toArray();
+                            ->whereRaw("find_in_set('$sub_institute_id',sub_institute_id) and status = 1
+                            and id in (" . $rightsMenusIds . ") and menu_type IS NULL")->orderBy('sort_order')->get()->toArray();
 
                         $subMenuData = tblmenumasterModel::where('parent_menu_id', '!=', 0)
-                            ->whereRaw("find_in_set('$sub_institute_id',sub_institute_id) AND level = 2 
-                            and id in (".$rightsMenusIds.") and status = 1 and menu_type IS NULL")->orderBy('sort_order')->get()->toArray();
+                            ->whereRaw("find_in_set('$sub_institute_id',sub_institute_id) AND level = 2
+                            and id in (" . $rightsMenusIds . ") and status = 1 and menu_type IS NULL")->orderBy('sort_order')->get()->toArray();
 
                         $i = 0;
                         foreach ($subMenuData as $key => $value) {
@@ -174,8 +175,8 @@ class MenuMiddleware
                             $i++;
                         }
                         $subChildMenuData = tblmenumasterModel::where('parent_menu_id', '!=', 0)
-                            ->whereRaw("find_in_set('$sub_institute_id',sub_institute_id) AND level = 3 
-                            and id in (".$rightsMenusIds.") and status = 1 and menu_type IS NULL")->orderBy('sort_order')->get()->toArray();
+                            ->whereRaw("find_in_set('$sub_institute_id',sub_institute_id) AND level = 3
+                            and id in (" . $rightsMenusIds . ") and status = 1 and menu_type IS NULL")->orderBy('sort_order')->get()->toArray();
                         $i = 0;
                         foreach ($subChildMenuData as $key => $value) {
                             $finalSubChildMenu[$value['parent_menu_id']][$i] = $subChildMenuData[$key];
@@ -201,19 +202,19 @@ class MenuMiddleware
         if ($type != "API") {
             if ($sub_institute_id == 0 && $is_admin == 1) {
                 $data = tblmenumasterModel::where(['parent_menu_id' => "0", 'level' => "1"])
-                    ->whereRaw("find_in_set('$client_id',client_id) and status = 1 and id in (".$rightsMenusIds.") 
+                    ->whereRaw("find_in_set('$client_id',client_id) and status = 1 and id in (" . $rightsMenusIds . ")
                         and menu_type IS NULL")->orderBy('sort_order')->get()->toArray();
 
                 $subMenuData = tblmenumasterModel::where('parent_menu_id', '!=', 0)
-                    ->whereRaw("find_in_set('$client_id',client_id) AND level = 2 and id in (".$rightsMenusIds.") 
+                    ->whereRaw("find_in_set('$client_id',client_id) AND level = 2 and id in (" . $rightsMenusIds . ")
                         and status = 1 and menu_type IS NULL")->orderBy('sort_order')->get()->toArray();
 
                 $i = 0;
                 foreach ($subMenuData as $key => $value) {
                     $finalSubMenu[$value['parent_menu_id']][$i] = $subMenuData[$key];
                     if ($value['quick_menu'] != '') {
-                        $quick_menu_data = DB::table('tblmenumaster')->whereRaw("find_in_set(id,(select quick_menu from 
-                            tblmenumaster where id = '".$value['id']."'))")->get()->toArray();
+                        $quick_menu_data = DB::table('tblmenumaster')->whereRaw("find_in_set(id,(select quick_menu from
+                            tblmenumaster where id = '" . $value['id'] . "'))")->get()->toArray();
 
                         $quick_menu_data = array_map(function ($value) {
                             return (array) $value;
@@ -224,7 +225,7 @@ class MenuMiddleware
                 }
 
                 $subChildMenuData = tblmenumasterModel::where('parent_menu_id', '!=', 0)
-                    ->whereRaw("find_in_set('$client_id',client_id) AND level = 3 and id in (".$rightsMenusIds.") 
+                    ->whereRaw("find_in_set('$client_id',client_id) AND level = 3 and id in (" . $rightsMenusIds . ")
                         and status = 1 and menu_type IS NULL")->orderBy('sort_order')->get()->toArray();
                 $i = 0;
                 foreach ($subChildMenuData as $key => $value) {
@@ -237,16 +238,16 @@ class MenuMiddleware
                         and id in (".$rightsMenusIds.") and menu_type IS NULL")
                     ->orderBy('sort_order')->get()->toArray();
                 $subMenuData = tblmenumasterModel::where('parent_menu_id', '!=', 0)
-                    ->whereRaw("find_in_set('$sub_institute_id',sub_institute_id) AND level = 2 
-                        and id in (".$rightsMenusIds.") and status = 1 and menu_type IS NULL")
+                    ->whereRaw("find_in_set('$sub_institute_id',sub_institute_id) AND level = 2
+                        and id in (" . $rightsMenusIds . ") and status = 1 and menu_type IS NULL")
                     ->orderBy('sort_order')->get()->toArray();
 
                 $i = 0;
                 foreach ($subMenuData as $key => $value) {
                     $finalSubMenu[$value['parent_menu_id']][$i] = $subMenuData[$key];
                     if ($value['quick_menu'] != '') {
-                        $quick_menu_data = DB::table('tblmenumaster')->whereRaw("find_in_set(id,(select quick_menu from 
-                            tblmenumaster where id = '".$value['id']."'))")->get()->toArray();
+                        $quick_menu_data = DB::table('tblmenumaster')->whereRaw("find_in_set(id,(select quick_menu from
+                            tblmenumaster where id = '" . $value['id'] . "'))")->get()->toArray();
 
                         $quick_menu_data = array_map(function ($value) {
                             return (array) $value;
@@ -257,8 +258,8 @@ class MenuMiddleware
                 }
 
                 $subChildMenuData = tblmenumasterModel::where('parent_menu_id', '!=', 0)
-                    ->whereRaw("find_in_set('$sub_institute_id',sub_institute_id) AND level = 3 
-                        and id in (".$rightsMenusIds.") and status = 1 and menu_type IS NULL")->orderBy('sort_order')->get()->toArray();
+                    ->whereRaw("find_in_set('$sub_institute_id',sub_institute_id) AND level = 3
+                        and id in (" . $rightsMenusIds . ") and status = 1 and menu_type IS NULL")->orderBy('sort_order')->get()->toArray();
                 $i = 0;
                 foreach ($subChildMenuData as $key => $value) {
                     $finalSubChildMenu[$value['parent_menu_id']][$i] = $subChildMenuData[$key];

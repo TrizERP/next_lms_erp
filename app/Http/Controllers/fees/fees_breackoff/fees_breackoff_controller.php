@@ -375,13 +375,13 @@ class fees_breackoff_controller extends Controller
         $month_arr = explode(",", $month_values);
 
         foreach ($month_arr as $key => $val) {
-            $fees_breakoff_data = fees_breackoff::select(db::raw('count(*) as total'))
+            $fees_breakoff_data = fees_breackoff::select(DB::raw('count(*) as total'))
                 ->where([
                     'sub_institute_id' => $sub_institute_id,
-                    'syear'            => $syear,
-                    'month_id'         => $val,
-                    'grade_id'         => $grade,
-                    'standard_id'      => $standard,
+                    'syear' => $syear,
+                    'month_id' => $val,
+                    'grade_id' => $grade,
+                    'standard_id' => $standard,
                 ])->get()->toArray();
 
             $fees_breakoff_data = $fees_breakoff_data[0];

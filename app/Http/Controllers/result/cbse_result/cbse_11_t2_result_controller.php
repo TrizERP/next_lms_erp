@@ -373,16 +373,19 @@ class cbse_11_t2_result_controller extends Controller
 
     public function getGrade($grade_arr, $total_mark, $total_gain_mark)
     {
-        $per = (100 * $total_gain_mark) / $total_mark;
+        $per = 0;
+        if ($total_mark != 0) {
+            $per = (100 * $total_gain_mark) / $total_mark;
+        }
         foreach ($grade_arr as $id => $data) {
-            if (! isset($grade)) {
+            if (!isset($grade)) {
                 if ($per >= $data['breakoff']) {
                     $grade = $data['title'];
                 }
             }
         }
 
-        if (! isset($grade)) {
+        if (!isset($grade)) {
             $grade = "-";
         }
 
@@ -508,6 +511,9 @@ class cbse_11_t2_result_controller extends Controller
         foreach ($all_gain_mark as $id => $arr) {
             $total_subject_mark += $total_mark;
             $total_gain_mark += $arr['TOTAL_GAIN'];
+        }
+        if ($total_subject_mark == 0) {
+            return 0;
         }
 
         return (100 * $total_gain_mark) / $total_subject_mark;

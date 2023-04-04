@@ -2,26 +2,23 @@
 
 namespace App\Http\Controllers\fees\fees_report;
 
-use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
-use App\Http\Controllers\fees\fees_collect\fees_collect_controller;
-use function App\Helpers\is_mobile;
-use function App\Helpers\SearchStudent;
-use function App\Helpers\FeeMonthId;
-use function App\Helpers\FeeBreakoffHeadWise;
-use function App\Helpers\FeeBreackoff;
-use App\Models\fees\feesReceiptBookMasterModel;
-use App\Models\fees\tblfeesConfigModel;
-use App\Models\student\tblstudentModel;
-use App\Models\student\tblstudentEnrollmentModel;
+use Illuminate\Contracts\Foundation\Application;
+use Illuminate\Contracts\View\Factory;
+use Illuminate\Contracts\View\View;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
+use function App\Helpers\is_mobile;
 
 class feesTypewiseReportController extends Controller
 {
     /**
      * Display a listing of the resource.
      *
-     * @return \Illuminate\Http\Response
+     * @param Request $request
+     * @return false|Application|Factory|View|RedirectResponse|string
      */
     public function index(Request $request)
     {
@@ -30,13 +27,14 @@ class feesTypewiseReportController extends Controller
         $res['status_code'] = "1";
         $res['message'] = "Success";
 
-        return is_mobile($type, "fees/fees_report/show_fees_type_wise_report", $res , "view");
+        return is_mobile($type, "fees/fees_report/show_fees_type_wise_report", $res, "view");
     }
 
     /**
      * Show the form for creating a new resource.
      *
-     * @return \Illuminate\Http\Response
+     * @param Request $request
+     * @return false|Application|Factory|View|RedirectResponse|string
      */
     public function create(Request $request)
     {
@@ -57,93 +55,94 @@ class feesTypewiseReportController extends Controller
 
         $extraSearchArrayRaw = " 1=1 ";
 
-        if($grade != '')
-        {
-            $extraSearchArrayRaw .= "  AND se.grade_id = ".$grade;
-        }
-    
-        if($standard != '')
-        {
-            $extraSearchArrayRaw .= "  AND se.standard_id = ".$standard;
+        if ($grade != '') {
+            $extraSearchArrayRaw .= "  AND se.grade_id = " . $grade;
         }
 
-        if($division != '')
-        {
-            $extraSearchArrayRaw .= "  AND se.section_id = ".$division;
+        if ($standard != '') {
+            $extraSearchArrayRaw .= "  AND se.standard_id = " . $standard;
         }
 
-        if($enrollment_no != '')
-        {
-            $extraSearchArrayRaw .= "  AND ts.enrollment_no = ".$enrollment_no;
+        if ($division != '') {
+            $extraSearchArrayRaw .= "  AND se.section_id = " . $division;
         }
 
-        if($mobile_no != '')
-        {
-            $extraSearchArrayRaw .= "  AND ts.mobile = ".$mobile_no;            
+        if ($enrollment_no != '') {
+            $extraSearchArrayRaw .= "  AND ts.enrollment_no = " . $enrollment_no;
         }
 
-        if($uniqueid != '')
-        {
-            $extraSearchArrayRaw .= "  AND ts.uniqueid = ".$uniqueid;            
+        if ($mobile_no != '') {
+            $extraSearchArrayRaw .= "  AND ts.mobile = " . $mobile_no;
         }
 
-        if($first_name != '')
-        {
-            $extraSearchArrayRaw .= "  AND ts.first_name like '%".$first_name."%' ";
+        if ($uniqueid != '') {
+            $extraSearchArrayRaw .= "  AND ts.uniqueid = " . $uniqueid;
         }
 
-        if($last_name != '')
-        {
-            $extraSearchArrayRaw .= "  AND ts.last_name like '%".$last_name."%' ";
+        if ($first_name != '') {
+            $extraSearchArrayRaw .= "  AND ts.first_name like '%" . $first_name . "%' ";
         }
 
-        if($admission_year != '' && $admission_year != '--Select Admission Year--')
-        {
-            $extraSearchArrayRaw .= "  AND ts.admission_year  = '".$admission_year."'";
+        if ($last_name != '') {
+            $extraSearchArrayRaw .= "  AND ts.last_name like '%" . $last_name . "%' ";
         }
 
-        if($from_date != '')
-        {
-            $extraSearchArrayRaw .= "  AND fc.receiptdate >= '".$from_date."'";
+        if ($admission_year != '' && $admission_year != '--Select Admission Year--') {
+            $extraSearchArrayRaw .= "  AND ts.admission_year  = '" . $admission_year . "'";
         }
 
-        if($to_date != '')
-        {
-            $extraSearchArrayRaw .= "  AND fc.receiptdate <= '".$to_date."'";
+        if ($from_date != '') {
+            $extraSearchArrayRaw .= "  AND fc.receiptdate >= '" . $from_date . "'";
         }
 
-        $fees_heads = DB::select("SELECT * FROM fees_title FT WHERE FT.sub_institute_id = '".$sub_institute_id."' AND FT.other_fee_id = 0 AND FT.syear = '".$syear."' ");                            
+        if ($to_date != '') {
+            $extraSearchArrayRaw .= "  AND fc.receiptdate <= '" . $to_date . "'";
+        }
+
+        $fees_heads = DB::table('fees_title as FT')
+            ->where('FT.sub_institute_id', $sub_institute_id)
+            ->where('FT.other_fee_id', '=', 0)
+            ->where('FT.syear', $syear)->get()->toArray();
 
         $fees_heads = array_map(function ($value) {
-            return (array) $value;
+            return (array)$value;
         }, $fees_heads);
-        
+
         $fees_head_sum = "";
         foreach ($fees_heads as $key => $value) {
-            $fees_head_sum .= " SUM(fc.".$value['fees_title'].") AS ".$value['fees_title'].",";
+            $fees_head_sum .= " SUM(fc." . $value['fees_title'] . ") AS " . $value['fees_title'] . ",";
         }
-        $sql = "SELECT fc.id,fc.student_id,CONCAT_WS(' ',ts.first_name,ts.middle_name,ts.last_name) AS student_name,ts.enrollment_no,
-                ts.admission_year,ts.mobile,ts.email,
-                date_format(ts.dob,'%d-%m-%Y') AS dob,a.title AS section,s.name AS std_name,d.name AS div_name,
-                sq.title AS stu_qouta, $fees_head_sum
-                SUM(fc.fine) AS total_fine,SUM(fc.fees_discount) AS tot_disc,fc.receipt_no
-                FROM fees_collect fc
-                INNER JOIN tblstudent ts ON ts.id = fc.student_id AND ts.sub_institute_id = fc.sub_institute_id
-                INNER JOIN tblstudent_enrollment se ON se.student_id = ts.id
-                INNER JOIN student_quota sq ON sq.id = se.student_quota
-                INNER JOIN academic_section a ON a.id = se.grade_id
-                INNER JOIN standard s ON s.id = se.standard_id
-                INNER JOIN division d ON d.id = se.section_id
-                WHERE $extraSearchArrayRaw AND se.syear = '".$syear."' AND fc.syear = '".$syear."' AND s.sub_institute_id = '".$sub_institute_id."' AND se.end_date IS NULL 
-                AND fc.is_deleted = 'N' 
-                GROUP BY ts.id";
 
-        $fees_data = DB::select($sql);
+        $fees_data = DB::table('fees_collect as fc')
+            ->join('tblstudent as ts', function ($join) {
+                $join->whereRaw('ts.id = fc.student_id AND ts.sub_institute_id = fc.sub_institute_id');
+            })->join('tblstudent_enrollment as se', function ($join) {
+                $join->whereRaw('se.student_id = ts.id');
+            })->join('student_quota as sq', function ($join) {
+                $join->whereRaw('sq.id = se.student_quota');
+            })->join('academic_section as a', function ($join) {
+                $join->whereRaw('a.id = se.grade_id');
+            })->join('standard as s', function ($join) {
+                $join->whereRaw('s.id = se.standard_id');
+            })->join('division as d', function ($join) {
+                $join->whereRaw('d.id = se.section_id');
+            })
+            ->selectRaw("fc.id,fc.student_id,CONCAT_WS(' ',ts.first_name,ts.middle_name,ts.last_name) AS student_name,
+                ts.enrollment_no,ts.admission_year,ts.mobile,ts.email,date_format(ts.dob,'%d-%m-%Y') AS dob,a.title AS section,
+                s.name AS std_name,d.name AS div_name,sq.title AS stu_qouta, $fees_head_sum
+                SUM(fc.fine) AS total_fine,SUM(fc.fees_discount) AS tot_disc,fc.receipt_no")
+            ->whereRaw($extraSearchArrayRaw)
+            ->where('se.syear', $syear)
+            ->where('fc.syear', $syear)
+            ->where('s.sub_institute_id', $sub_institute_id)
+            ->whereIsNull('se.end_date')
+            ->where('fc.is_deleted', '=', 'N')
+            ->groupBy('ts.id')->get()->toArray();
+
         $fees_data = array_map(function ($value) {
-            return (array) $value;
+            return (array)$value;
         }, $fees_data);
 
-        // dd($fees_data);
         $res['status_code'] = 1;
         $res['message'] = "Success";
         $res['fees_data'] = $fees_data;
@@ -159,14 +158,15 @@ class feesTypewiseReportController extends Controller
         $res['admission_year'] = $admission_year;
         $res['from_date'] = $from_date;
         $res['to_date'] = $to_date;
-        return is_mobile($type, "fees/fees_report/show_fees_type_wise_report", $res , "view");
+
+        return is_mobile($type, "fees/fees_report/show_fees_type_wise_report", $res, "view");
     }
 
     /**
      * Store a newly created resource in storage.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\Response
+     * @param Request $request
+     * @return void
      */
     public function store(Request $request)
     {
@@ -176,8 +176,8 @@ class feesTypewiseReportController extends Controller
     /**
      * Display the specified resource.
      *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * @param int $id
+     * @return Response
      */
     public function show($id)
     {
@@ -187,8 +187,8 @@ class feesTypewiseReportController extends Controller
     /**
      * Show the form for editing the specified resource.
      *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * @param int $id
+     * @return void
      */
     public function edit($id)
     {
@@ -198,9 +198,9 @@ class feesTypewiseReportController extends Controller
     /**
      * Update the specified resource in storage.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * @param Request $request
+     * @param int $id
+     * @return void
      */
     public function update(Request $request, $id)
     {
@@ -210,8 +210,8 @@ class feesTypewiseReportController extends Controller
     /**
      * Remove the specified resource from storage.
      *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * @param int $id
+     * @return void
      */
     public function destroy($id)
     {

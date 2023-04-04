@@ -14,7 +14,8 @@ class feesStructureReportController extends Controller
     /**
      * Display a listing of the resource.
      *
-     * @return \Illuminate\Http\Response
+     * @param Request $request
+     * @return void
      */
     public function index(Request $request)
     {
@@ -24,7 +25,8 @@ class feesStructureReportController extends Controller
     /**
      * Show the form for creating a new resource.
      *
-     * @return \Illuminate\Http\Response
+     * @param Request $request
+     * @return void
      */
     public function create(Request $request)
     {
@@ -34,19 +36,19 @@ class feesStructureReportController extends Controller
     /**
      * Store a newly created resource in storage.
      *
-     * @param \Illuminate\Http\Request $request
-     * @return \Illuminate\Http\Response
+     * @param Request $request
+     * @return void
      */
     public function store(Request $request)
     {
-        // dd($request);
+
     }
 
     /**
      * Display the specified resource.
      *
      * @param int $id
-     * @return \Illuminate\Http\Response
+     * @return void
      */
     public function show($id)
     {
@@ -57,7 +59,7 @@ class feesStructureReportController extends Controller
      * Show the form for editing the specified resource.
      *
      * @param int $id
-     * @return \Illuminate\Http\Response
+     * @return void
      */
     public function edit($id)
     {
@@ -67,9 +69,9 @@ class feesStructureReportController extends Controller
     /**
      * Update the specified resource in storage.
      *
-     * @param \Illuminate\Http\Request $request
+     * @param Request $request
      * @param int $id
-     * @return \Illuminate\Http\Response
+     * @return void
      */
     public function update(Request $request, $id)
     {
@@ -80,7 +82,7 @@ class feesStructureReportController extends Controller
      * Remove the specified resource from storage.
      *
      * @param int $id
-     * @return \Illuminate\Http\Response
+     * @return void
      */
     public function destroy($id)
     {
@@ -107,11 +109,11 @@ class feesStructureReportController extends Controller
         $grade = $request->input('grade');
         $standard = $request->input('standard');
 
-        $data = map_year::
-        where([
+        $data = map_year::where([
             'sub_institute_id' => session()->get('sub_institute_id'),
             'syear' => session()->get('syear')
         ])->get()->toArray();
+
         $start_month = $data[0]['from_month'];
         $end_month = $data[0]['to_month'];
         $months = array(1 => 'Jan', 2 => 'Feb', 3 => 'Mar', 4 => 'Apr', 5 => 'May', 6 => 'Jun', 7 => 'Jul', 8 => 'Aug', 9 => 'Sep', 10 => 'Oct', 11 => 'Nov', 12 => 'Dec');
@@ -128,21 +130,20 @@ class feesStructureReportController extends Controller
         }
 
 
-        $extra_query = "";
+        $std_result = DB::table('standard as s')
+            ->selectRaw('*,s.name AS standard_name')
+            ->where('s.sub_institute_id', session()->get('sub_institute_id'));
         if ($grade != "") {
-            $extra_query = " AND s.grade_id = '" . $grade . "'";
+            $std_result = $std_result->where('s.grade_id', $grade);
         }
         if ($standard != "") {
-            $extra_query = " AND s.id = '" . $standard . "'";
+            $std_result = $std_result->where('s.id', $standard);
         }
+        $std_result = $std_result->get()->toArray();
 
-        $query = "SELECT *,s.name AS standard_name
-		FROM standard s WHERE s.sub_institute_id = '" . session()->get('sub_institute_id') . "' " . $extra_query;
-        $std_result = DB::select($query);
-
-        $query1 = "SELECT *,q.title AS quota_name
-		FROM student_quota q WHERE q.sub_institute_id = '" . session()->get('sub_institute_id') . "'";
-        $quota_result = DB::select($query1);
+        $quota_result = DB::table('student_quota as q')
+            ->selectRaw('*,q.title AS quota_name')
+            ->where('q.sub_institute_id', session()->get('sub_institute_id'))->get()->toArray();
 
         $final_data = array();
         foreach ($std_result as $key => $val) {

@@ -4,6 +4,10 @@ namespace App\Http\Controllers\front_desk\dicipline;
 
 use App\Http\Controllers\Controller;
 use GenTux\Jwt\GetsJwtToken;
+use Illuminate\Contracts\Foundation\Application;
+use Illuminate\Contracts\View\Factory;
+use Illuminate\Contracts\View\View;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
@@ -40,7 +44,8 @@ class diciplineController extends Controller
     /**
      * Show the form for creating a new resource.
      *
-     * @return Response
+     * @param Request $request
+     * @return false|Application|Factory|View|RedirectResponse|string
      */
     public function create(Request $request)
     {
@@ -74,10 +79,10 @@ class diciplineController extends Controller
     public function store(Request $request)
     {
         $stu_arr = [];
-        foreach ($_REQUEST['values']['stud_id'] as $student_id => $on) {
+        $student_ids = $_REQUEST['values']['stud_id'] ?? [];
+        foreach ($student_ids as $student_id => $on) {
             $stu_arr[] = $student_id;
         }
-
 
         $result = DB::table("tbluser")
             ->selectRaw("concat(first_name,' ',last_name) name")

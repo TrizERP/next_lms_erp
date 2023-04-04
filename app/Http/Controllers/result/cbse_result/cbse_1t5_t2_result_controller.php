@@ -3,8 +3,11 @@
 namespace App\Http\Controllers\result\cbse_result;
 
 use App\Http\Controllers\Controller;
+use Illuminate\Contracts\Foundation\Application;
+use Illuminate\Contracts\View\Factory;
+use Illuminate\Contracts\View\View;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
 use function App\Helpers\is_mobile;
 use function App\Helpers\SearchStudent;
@@ -15,7 +18,8 @@ class cbse_1t5_t2_result_controller extends Controller
     /**
      * Display a listing of the resource.
      *
-     * @return Response
+     * @param Request $request
+     * @return false|Application|Factory|View|RedirectResponse|string
      */
     public function index(Request $request)
     {
@@ -69,8 +73,8 @@ class cbse_1t5_t2_result_controller extends Controller
             $cur_student_id = $arr['student_id'];
             $responce_arr[$cur_student_id]['year'] = $result_year;
             $responce_arr[$cur_student_id]['term'] = $term_name;
-            $responce_arr[$cur_student_id]['total_mark'] = $all_exam[count($all_exam) - 1]['mark'];
-            $responce_arr[$cur_student_id]['name'] = $arr['first_name']." ".$arr['middle_name']." ".$arr['last_name'];
+            $responce_arr[$cur_student_id]['total_mark'] = $all_exam[count($all_exam) - 1]['mark'] ?? 0;
+            $responce_arr[$cur_student_id]['name'] = $arr['first_name'] . " " . $arr['middle_name'] . " " . $arr['last_name'];
             $responce_arr[$cur_student_id]['roll_no'] = $arr['enrollment_no'];
             $responce_arr[$cur_student_id]['mother_name'] = $arr['mother_name'];
             $responce_arr[$cur_student_id]['class'] = $arr['standard_name'];
@@ -83,8 +87,8 @@ class cbse_1t5_t2_result_controller extends Controller
             $responce_arr[$cur_student_id]['per'] = $this->getPer($responce_arr[$cur_student_id]['total_mark'],
                 $all_subject_mark[$cur_student_id]);
             $responce_arr[$cur_student_id]['final_grade'] = $this->getFinalGrade($responce_arr[$cur_student_id]['per']);
-            $responce_arr[$cur_student_id]['co_scholastic_area'] = $all_co_data[$cur_student_id];
-            $responce_arr[$cur_student_id]['att'] = $all_att_data[$cur_student_id];
+            $responce_arr[$cur_student_id]['co_scholastic_area'] = $all_co_data[$cur_student_id] ?? [];
+            $responce_arr[$cur_student_id]['att'] = $all_att_data[$cur_student_id] ?? [];
             $responce_arr[$cur_student_id]['grade_range'] = $all_grd_data;
         }
 
@@ -92,6 +96,70 @@ class cbse_1t5_t2_result_controller extends Controller
         $type = $request->input('type');
 
         return is_mobile($type, "result/cbse_result_t2/1t9_s1_t2_show", $data, "view");
+    }
+
+    public function getPer($total_mark, $all_gain_mark)
+    {
+        $total_subject_mark = 0;
+        $total_gain_mark = 0;
+        foreach ($all_gain_mark as $id => $arr) {
+            $total_subject_mark += $total_mark;
+            $total_gain_mark += $arr['TOTAL_GAIN'];
+        }
+        if ($total_subject_mark == 0) {
+            return 0;
+        }
+
+        return ((100 * $total_gain_mark) / $total_subject_mark);
+    }
+
+
+    public function getFinalGrade($per)
+    {
+        $grade_arr = $this->getGradeScale();
+        foreach ($grade_arr as $id => $data) {
+            if (!isset($grade)) {
+                if ($per >= $data['breakoff']) {
+                    $grade = $data['title'];
+                }
+            }
+        }
+        if (!isset($grade)) {
+            $grade = "-";
+        }
+
+        return $grade;
+    }
+
+    public function getGradeRange()
+    {
+        $grade_arr = $this->getGradeScale();
+
+        $responce_arr = [];
+        foreach ($grade_arr as $id => $arr) {
+            if (!isset($last_breckoff)) {
+                $last_breckoff = "100";
+            }
+            $responce_arr['mark_range']['SCHOLASTIC MARKS RANGE'][] = $arr['breakoff'] . "-" . $last_breckoff;
+            $responce_arr['mark_range']['GRADE'][] = $arr['title'];
+            $last_breckoff = $arr['breakoff'] - 1;
+        }
+
+        return $responce_arr;
+    }
+
+    public function getTermName()
+    {
+        $result = DB::table("academic_year")
+            ->where("term_id", "=", session()->get('term_id'))
+            ->where("sub_institute_id", "=", session()->get('sub_institute_id'))
+            ->get()->toArray();
+
+        foreach ($result as $id => $obj) {
+            $responce = $obj->title;
+        }
+
+        return $responce;
     }
 
     public function getAllExam()
@@ -228,10 +296,10 @@ class cbse_1t5_t2_result_controller extends Controller
                             $mark = 0;
                             $total_mark = 0;
                             $con_point = 0;
-
-                            $mark = $marks_arr[$arr_student['student_id']][$subject][$exam_detail['exam_id']]['points'];
-                            $total_mark = $marks_arr[$arr_student['student_id']][$subject][$exam_detail['exam_id']]['total_points'];
-                            $con_point = $marks_arr[$arr_student['student_id']][$subject][$exam_detail['exam_id']]['con_point'];
+//dd($arr_student['student_id']);
+                            $mark = $marks_arr[$arr_student['student_id']][$subject][$exam_detail['exam_id']]['points'] ?? 0;
+                            $total_mark = $marks_arr[$arr_student['student_id']][$subject][$exam_detail['exam_id']]['total_points'] ?? 0;
+                            $con_point = $marks_arr[$arr_student['student_id']][$subject][$exam_detail['exam_id']]['con_point'] ?? 0;
 
                             // if 1 type have multiple exam then convert mark
                             if ($con_point != null && $con_point != $total_mark) {
@@ -267,7 +335,7 @@ class cbse_1t5_t2_result_controller extends Controller
             ->orderBy('dt.breakoff', 'DESC')
             ->get()->toarray();
 
-        //converting it into array 
+        //converting it into array
         $grade_arr = [];
         foreach ($ret_grade as $id => $arr) {
             $grade_arr[$id]['id'] = $arr->id;
@@ -287,15 +355,18 @@ class cbse_1t5_t2_result_controller extends Controller
 
     public function getGrade($grade_arr, $total_mark, $total_gain_mark)
     {
-        $per = (100 * $total_gain_mark) / $total_mark;
+        $per = 0;
+        if ($total_mark != 0) {
+            $per = (100 * $total_gain_mark) / $total_mark;
+        }
         foreach ($grade_arr as $id => $data) {
-            if (! isset($grade)) {
+            if (!isset($grade)) {
                 if ($per >= $data['breakoff']) {
                     $grade = $data['title'];
                 }
             }
         }
-        if (! isset($grade)) {
+        if (!isset($grade)) {
             $grade = "-";
         }
 
@@ -354,12 +425,13 @@ class cbse_1t5_t2_result_controller extends Controller
 
     public function getAttendance($all_student)
     {
+        $sub_institute_id = \request()->session()->get('sub_institute_id') ?? session()->get('sub_institute_id');
         $ret_data = DB::table("result_student_attendance_master as atd")
             ->join('result_working_day_master as wrkd', function ($join) {
                 $join->whereRaw("wrkd.standard = atd.standard and wrkd.sub_institute_id = atd.sub_institute_id");
             })
             ->where("atd.standard", "=", $_REQUEST['standard'])
-            ->where("atd.sub_institute_id", "=", $_REQUEST['sub_institute_id'])
+            ->where("atd.sub_institute_id", "=", $sub_institute_id)
             ->where("atd.syear", "=", session()->get('syear'))
             ->get()->toArray();
 
