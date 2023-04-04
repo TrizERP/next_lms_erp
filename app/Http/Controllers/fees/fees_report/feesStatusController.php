@@ -5,9 +5,15 @@ namespace App\Http\Controllers\fees\fees_report;
 use App\Http\Controllers\Controller;
 use App\Models\easy_com\manage_sms_api\manage_sms_api;
 use App\Models\fees\fees_title\fees_title;
+use Illuminate\Contracts\Foundation\Application;
+use Illuminate\Contracts\View\Factory;
+use Illuminate\Contracts\View\View;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Session;
+use Psr\Container\ContainerExceptionInterface;
+use Psr\Container\NotFoundExceptionInterface;
 use function App\Helpers\FeeBreakoffHeadWise;
 use function App\Helpers\FeeMonthId;
 use function App\Helpers\is_mobile;
@@ -18,7 +24,8 @@ class feesStatusController extends Controller
     /**
      * Display a listing of the resource.
      *
-     * @return \Illuminate\Http\Response
+     * @param Request $request
+     * @return false|Application|Factory|View|RedirectResponse|string
      */
     public function index(Request $request)
     {
@@ -40,7 +47,7 @@ class feesStatusController extends Controller
     /**
      * Show the form for creating a new resource.
      *
-     * @return \Illuminate\Http\Response
+     * @return void
      */
     public function create()
     {
@@ -50,8 +57,8 @@ class feesStatusController extends Controller
     /**
      * Store a newly created resource in storage.
      *
-     * @param \Illuminate\Http\Request $request
-     * @return \Illuminate\Http\Response
+     * @param Request $request
+     * @return void
      */
     public function store(Request $request)
     {
@@ -62,7 +69,7 @@ class feesStatusController extends Controller
      * Display the specified resource.
      *
      * @param int $id
-     * @return \Illuminate\Http\Response
+     * @return void
      */
     public function show($id)
     {
@@ -73,7 +80,7 @@ class feesStatusController extends Controller
      * Show the form for editing the specified resource.
      *
      * @param int $id
-     * @return \Illuminate\Http\Response
+     * @return void
      */
     public function edit($id)
     {
@@ -83,9 +90,9 @@ class feesStatusController extends Controller
     /**
      * Update the specified resource in storage.
      *
-     * @param \Illuminate\Http\Request $request
+     * @param Request $request
      * @param int $id
-     * @return \Illuminate\Http\Response
+     * @return void
      */
     public function update(Request $request, $id)
     {
@@ -96,7 +103,7 @@ class feesStatusController extends Controller
      * Remove the specified resource from storage.
      *
      * @param int $id
-     * @return \Illuminate\Http\Response
+     * @return void
      */
     public function destroy($id)
     {
@@ -188,7 +195,6 @@ class feesStatusController extends Controller
             // }
         }
 
-        // dd($data);
         $res['status_code'] = 1;
         $res['message'] = "Success";
         $res['grade_id'] = $grade;
@@ -207,8 +213,10 @@ class feesStatusController extends Controller
     /**
      * Remove the specified resource from storage.
      *
-     * @param int $id
-     * @return \Illuminate\Http\Response
+     * @param Request $request
+     * @return void
+     * @throws ContainerExceptionInterface
+     * @throws NotFoundExceptionInterface
      */
     public function ajaxRemainFeesSMSsend(Request $request)
     {
@@ -276,12 +284,6 @@ class feesStatusController extends Controller
             curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
             $output = curl_exec($ch);
 
-            // print "<pre>";
-            // print_r(curl_getinfo($ch));
-            // echo '<pre>';
-            // print_r($_REQUEST);
-            // echo 'out put '.$output ;
-            // exit;
 
             //Ignore SSL certificate verification
             // curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 0);

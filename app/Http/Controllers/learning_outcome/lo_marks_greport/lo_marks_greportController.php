@@ -101,14 +101,16 @@ class lo_marks_greportController extends Controller
                 }
 
                 foreach ($all_data[$subject] as $key => $value) {
-                    if ($value['COLOR'] == 'RED') {
-                        $all_final_data[$subject]['RED']['lo'][] = $key;
-                    }
-                    if ($value['COLOR'] == 'YELLOW') {
-                        $all_final_data[$subject]['YELLOW']['lo'][] = $key;
-                    }
-                    if ($value['COLOR'] == 'GREEN') {
-                        $all_final_data[$subject]['GREEN']['lo'][] = $key;
+                    if (isset($value['COLOR'])) {
+                        if ($value['COLOR'] == 'RED') {
+                            $all_final_data[$subject]['RED']['lo'][] = $key;
+                        }
+                        if ($value['COLOR'] == 'YELLOW') {
+                            $all_final_data[$subject]['YELLOW']['lo'][] = $key;
+                        }
+                        if ($value['COLOR'] == 'GREEN') {
+                            $all_final_data[$subject]['GREEN']['lo'][] = $key;
+                        }
                     }
                 }
 

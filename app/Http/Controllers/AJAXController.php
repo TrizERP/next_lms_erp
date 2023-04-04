@@ -156,6 +156,7 @@ class AJAXController extends Controller
     public function getStandardList(Request $request)
     {
         $path = $_SERVER['HTTP_REFERER'];
+        $path = str_ends_with($path, '/') ? substr($path, 0, strlen($path) - 1) : $path;
         preg_match("/[^\/]+$/", $path, $matches);
         $module_name = $matches[0];
 
@@ -213,6 +214,7 @@ class AJAXController extends Controller
     public function getDivisionList(Request $request)
     {
         $path = $_SERVER['HTTP_REFERER'];
+        $path = str_ends_with($path, '/') ? substr($path, 0, strlen($path) - 1) : $path;
         preg_match("/[^\/]+$/", $path, $matches);
         $module_name = $matches[0];
 

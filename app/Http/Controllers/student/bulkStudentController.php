@@ -15,8 +15,11 @@ use App\Models\student\houseModel;
 use App\Models\student\tblstudentEnrollmentModel;
 use App\Models\student\tblstudentModel;
 use App\Models\student\tblstudentQuotaModel;
+use Illuminate\Contracts\Foundation\Application;
+use Illuminate\Contracts\View\Factory;
+use Illuminate\Contracts\View\View;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Http\Response;
 use Illuminate\Support\Facades\File;
 use function App\Helpers\is_mobile;
 
@@ -25,7 +28,8 @@ class bulkStudentController extends Controller
     /**
      * Display a listing of the resource.
      *
-     * @return Response
+     * @param Request $request
+     * @return false|Application|Factory|View|RedirectResponse|string
      */
     public function index(Request $request)
     {
@@ -114,7 +118,7 @@ class bulkStudentController extends Controller
 
         $tblcustoms = tblcustomfieldsModel::select(['field_name', 'field_label', 'field_type'])
             ->where(["status" => "1", "table_name" => "tblstudent"])
-            ->whereRaw('(sub_institute_id = '.$sub_institute_id.' OR common_to_all = 1)')
+            ->whereRaw('(sub_institute_id = ' . $sub_institute_id . ' OR common_to_all = 1)')
             ->get()
             ->toArray();
         $customfieldArray = [];
@@ -141,7 +145,7 @@ class bulkStudentController extends Controller
     /**
      * Store a newly created resource in storage.
      *
-     * @param  Request  $request
+     * @param Request $request
      * @return void
      */
     public function store(Request $request)
@@ -152,7 +156,7 @@ class bulkStudentController extends Controller
     /**
      * Display the specified resource.
      *
-     * @param  int  $id
+     * @param int $id
      * @return void
      */
     public function show($id)
@@ -163,7 +167,7 @@ class bulkStudentController extends Controller
     /**
      * Show the form for editing the specified resource.
      *
-     * @param  int  $id
+     * @param int $id
      * @return void
      */
     public function edit($id)
@@ -174,8 +178,8 @@ class bulkStudentController extends Controller
     /**
      * Update the specified resource in storage.
      *
-     * @param  Request  $request
-     * @param  int  $id
+     * @param Request $request
+     * @param int $id
      * @return void
      */
     public function update(Request $request, $id)
@@ -186,7 +190,7 @@ class bulkStudentController extends Controller
     /**
      * Remove the specified resource from storage.
      *
-     * @param  int  $id
+     * @param int $id
      * @return void
      */
     public function destroy($id)
@@ -237,7 +241,7 @@ class bulkStudentController extends Controller
         ];
         //$header = array('student_name' => 'Student Name');
         $header = [
-            'standard'     => 'Standard', 'division' => 'Division', 'grade' => 'Academic Section',
+            'standard' => 'Standard', 'division' => 'Division', 'grade' => 'Academic Section',
             'student_name' => 'Student Name',
         ];
         $searchArr = ['_'];
@@ -262,7 +266,7 @@ class bulkStudentController extends Controller
             $value1 = str_replace($searchArr, $replaceArr, $value);
             $header[$value] = ucfirst($value1);
 
-            $keyQuotes .= "'".$value."',";
+            $keyQuotes .= "'" . $value . "',";
         }
 
         $keyQuotes = rtrim($keyQuotes, ",");
@@ -270,7 +274,7 @@ class bulkStudentController extends Controller
         $headerKeys = array_keys($header);
 
         foreach ($tblcustom_fields as $key => $value) {
-            if (! in_array($key, $headerKeys)) {
+            if (!in_array($key, $headerKeys)) {
                 unset($tblcustom_fields[$key]);
             }
         }
@@ -280,7 +284,7 @@ class bulkStudentController extends Controller
         $classTeacherStdArr = session()->get('classTeacherStdArr');
         if (isset($classTeacherStdArr)) {
             if (count($classTeacherStdArr) > 0) {
-                $extraRaw = "standard.id IN (".implode(",", $classTeacherStdArr).")";
+                $extraRaw = "standard.id IN (" . implode(",", $classTeacherStdArr) . ")";
             } else {
                 $extraRaw = "standard.id IN (' ')";
             }
@@ -288,12 +292,12 @@ class bulkStudentController extends Controller
         $classTeacherDivArr = session()->get('classTeacherDivArr');
         if (isset($classTeacherDivArr)) {
             if (count($classTeacherDivArr) > 0) {
-                $extraRaw .= " and division.id IN (".implode(",", $classTeacherDivArr).")";
+                $extraRaw .= " and division.id IN (" . implode(",", $classTeacherDivArr) . ")";
             }
         }
-        //END Check for class teacher assigned standards 
+        //END Check for class teacher assigned standards
 
-        //$extraRaw .= " and tblstudent.id IN (93452,17777,17509)";     
+        //$extraRaw .= " and tblstudent.id IN (93452,17777,17509)";
 
         $student_data = tblstudentModel::select($array)
             ->selectRaw("Concat_ws(' ',tblstudent.first_name,tblstudent.middle_name,tblstudent.last_name) as student_name,sum(fees_collect.amount) as total_amount,tblstudent_enrollment.house_id as house")
@@ -324,7 +328,7 @@ class bulkStudentController extends Controller
         $tblcustomsfields_data = tblfields_dataModel::select(['display_text', 'display_value', 'field_name'])
             ->join('tblcustom_fields', 'tblfields_data.field_id', '=', 'tblcustom_fields.id')
             ->where(["status" => "1", "table_name" => "tblstudent"])
-            ->whereRaw('(sub_institute_id = '.$sub_institute_id.' OR common_to_all = 1)')
+            ->whereRaw('(sub_institute_id = ' . $sub_institute_id . ' OR common_to_all = 1)')
             ->get()
             ->toArray();
 
@@ -411,11 +415,11 @@ class bulkStudentController extends Controller
             foreach ($file as $student_id => $req) {
 
                 $dataCustomFields = tblcustomfieldsModel::select('field_name')->where([
-                    'status'     => "1",
+                    'status' => "1",
                     'table_name' => "tblstudent",
                     'field_type' => "file",
                 ])
-                    ->whereRaw('(sub_institute_id = '.$sub_institute_id.' OR common_to_all = 1)')
+                    ->whereRaw('(sub_institute_id = ' . $sub_institute_id . ' OR common_to_all = 1)')
                     ->get()
                     ->toArray();
                 $files = [];
@@ -425,12 +429,12 @@ class bulkStudentController extends Controller
                 //For compulsory image field
                 foreach ($req as $key1 => $val1) {
                     $files = $request->file('values')[$student_id];
-                    if (! in_array($key1, $dataCustomFields[0])) {
+                    if (!in_array($key1, $dataCustomFields[0])) {
                         if (isset($files[$key1])) {
                             $file = $files[$key1];
                             $originalname = $file->getClientOriginalName();
                             $ext = File::extension($originalname);
-                            $file_name = $student_id.'.'.$ext;
+                            $file_name = $student_id . '.' . $ext;
                             $path = $file->storeAs('public/student/', $file_name);
                             $studentEnrollmentData[$key1] = $file_name;
                         }
@@ -444,7 +448,7 @@ class bulkStudentController extends Controller
                     if (isset($files[$value['field_name']])) {
                         $file = $files[$value['field_name']];
                         $originalname = $file->getClientOriginalName();
-                        $name = $value['field_name']."_".$student_id."_".date('YmdHis').'_'.$originalname;
+                        $name = $value['field_name'] . "_" . $student_id . "_" . date('YmdHis') . '_' . $originalname;
 
                         $file_name = $name;
                         $path = $file->storeAs('public/student/', $file_name);

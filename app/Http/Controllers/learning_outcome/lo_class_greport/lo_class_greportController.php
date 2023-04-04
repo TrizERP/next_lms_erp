@@ -102,14 +102,16 @@ class lo_class_greportController extends Controller
                 }
 
                 foreach ($all_data[$subject] as $key => $value) {
-                    if ($value['COLOR'] == 'RED') {
-                        $all_final_data[$subject]['RED']['lo'][] = $key;
-                    }
-                    if ($value['COLOR'] == 'YELLOW') {
-                        $all_final_data[$subject]['YELLOW']['lo'][] = $key;
-                    }
-                    if ($value['COLOR'] == 'GREEN') {
-                        $all_final_data[$subject]['GREEN']['lo'][] = $key;
+                    if (isset($value['COLOR'])) {
+                        if ($value['COLOR'] == 'RED') {
+                            $all_final_data[$subject]['RED']['lo'][] = $key;
+                        }
+                        if ($value['COLOR'] == 'YELLOW') {
+                            $all_final_data[$subject]['YELLOW']['lo'][] = $key;
+                        }
+                        if ($value['COLOR'] == 'GREEN') {
+                            $all_final_data[$subject]['GREEN']['lo'][] = $key;
+                        }
                     }
                 }
 
@@ -150,7 +152,7 @@ class lo_class_greportController extends Controller
                     ->join('learning_outcome_student_marks as LOM', function ($join) {
                         $join->whereRaw("LOM.QUESTION_ID = LQ.ID");
                     })
-                    ->selectRaw('LO.SUBJECT,LO.INDICATOR,LQ.EXAM_CODE,SUM(LQ.QUESTION_OUT_OF) tot, SUM(LOM.MARKS) mar,(SUM(LOM.MARKS)*100/ 
+                    ->selectRaw('LO.SUBJECT,LO.INDICATOR,LQ.EXAM_CODE,SUM(LQ.QUESTION_OUT_OF) tot, SUM(LOM.MARKS) mar,(SUM(LOM.MARKS)*100/
                     SUM(LQ.QUESTION_OUT_OF)) per')
                     ->where("LOM.STUDENT_ID", "=", $request['id'])
                     ->where("LQ.EXAM_TYPE", "=", $exam_type)
@@ -342,14 +344,16 @@ class lo_class_greportController extends Controller
             }
 
             foreach ($all_data[$subject] as $key => $value) {
-                if ($value['COLOR'] == 'RED') {
-                    $all_final_data[$subject]['RED']['lo'][] = $key;
-                }
-                if ($value['COLOR'] == 'YELLOW') {
-                    $all_final_data[$subject]['YELLOW']['lo'][] = $key;
-                }
-                if ($value['COLOR'] == 'GREEN') {
-                    $all_final_data[$subject]['GREEN']['lo'][] = $key;
+                if (isset($value['COLOR'])) {
+                    if ($value['COLOR'] == 'RED') {
+                        $all_final_data[$subject]['RED']['lo'][] = $key;
+                    }
+                    if ($value['COLOR'] == 'YELLOW') {
+                        $all_final_data[$subject]['YELLOW']['lo'][] = $key;
+                    }
+                    if ($value['COLOR'] == 'GREEN') {
+                        $all_final_data[$subject]['GREEN']['lo'][] = $key;
+                    }
                 }
             }
 
@@ -390,7 +394,7 @@ class lo_class_greportController extends Controller
                 ->join('learning_outcome_student_marks as LOM', function ($join) {
                     $join->whereRaw("LOM.QUESTION_ID = LQ.ID");
                 })
-                ->selectRaw('select LO.SUBJECT,LO.INDICATOR,LQ.EXAM_CODE,SUM(LQ.QUESTION_OUT_OF) tot, SUM(LOM.MARKS) mar,(SUM(LOM.MARKS)*100/ 
+                ->selectRaw('select LO.SUBJECT,LO.INDICATOR,LQ.EXAM_CODE,SUM(LQ.QUESTION_OUT_OF) tot, SUM(LOM.MARKS) mar,(SUM(LOM.MARKS)*100/
                 SUM(LQ.QUESTION_OUT_OF)) per')
                 ->where("LQ.EXAM_TYPE", "=", $exam_type)
                 ->where("LQ.medium", "=", $medium)

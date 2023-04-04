@@ -3,8 +3,11 @@
 namespace App\Http\Controllers\learning_outcome\lo_school_greport;
 
 use App\Http\Controllers\Controller;
+use Illuminate\Contracts\Foundation\Application;
+use Illuminate\Contracts\View\Factory;
+use Illuminate\Contracts\View\View;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
 use function App\Helpers\getStudents;
 use function App\Helpers\is_mobile;
@@ -15,7 +18,8 @@ class lo_school_greportController extends Controller
     /**
      * Display a listing of the resource.
      *
-     * @return Response
+     * @param Request $request
+     * @return false|Application|Factory|View|RedirectResponse|string
      */
     public function index(Request $request)
     {
@@ -100,14 +104,16 @@ class lo_school_greportController extends Controller
                 }
 
                 foreach ($all_data[$subject] as $key => $value) {
-                    if ($value['COLOR'] == 'RED') {
-                        $all_final_data[$subject]['RED']['lo'][] = $key;
-                    }
-                    if ($value['COLOR'] == 'YELLOW') {
-                        $all_final_data[$subject]['YELLOW']['lo'][] = $key;
-                    }
-                    if ($value['COLOR'] == 'GREEN') {
-                        $all_final_data[$subject]['GREEN']['lo'][] = $key;
+                    if (isset($value['COLOR'])) {
+                        if ($value['COLOR'] == 'RED') {
+                            $all_final_data[$subject]['RED']['lo'][] = $key;
+                        }
+                        if ($value['COLOR'] == 'YELLOW') {
+                            $all_final_data[$subject]['YELLOW']['lo'][] = $key;
+                        }
+                        if ($value['COLOR'] == 'GREEN') {
+                            $all_final_data[$subject]['GREEN']['lo'][] = $key;
+                        }
                     }
                 }
 
@@ -266,7 +272,8 @@ class lo_school_greportController extends Controller
     /**
      * Show the form for creating a new resource.
      *
-     * @return Response
+     * @param Request $request
+     * @return false|Application|Factory|View|RedirectResponse|string
      */
     public function create(Request $request)
     {
@@ -336,14 +343,16 @@ class lo_school_greportController extends Controller
             }
 
             foreach ($all_data[$subject] as $key => $value) {
-                if ($value['COLOR'] == 'RED') {
-                    $all_final_data[$subject]['RED']['lo'][] = $key;
-                }
-                if ($value['COLOR'] == 'YELLOW') {
-                    $all_final_data[$subject]['YELLOW']['lo'][] = $key;
-                }
-                if ($value['COLOR'] == 'GREEN') {
-                    $all_final_data[$subject]['GREEN']['lo'][] = $key;
+                if (isset($value['COLOR'])) {
+                    if ($value['COLOR'] == 'RED') {
+                        $all_final_data[$subject]['RED']['lo'][] = $key;
+                    }
+                    if ($value['COLOR'] == 'YELLOW') {
+                        $all_final_data[$subject]['YELLOW']['lo'][] = $key;
+                    }
+                    if ($value['COLOR'] == 'GREEN') {
+                        $all_final_data[$subject]['GREEN']['lo'][] = $key;
+                    }
                 }
             }
 
@@ -437,9 +446,9 @@ class lo_school_greportController extends Controller
     /**
      * Store a newly created resource in storage.
      *
-     * @param  Request  $request
+     * @param Request $request
      *
-     * @return Response
+     * @return false|Application|Factory|View|RedirectResponse|string
      */
     public function store(Request $request)
     {
@@ -534,9 +543,10 @@ class lo_school_greportController extends Controller
     /**
      * Show the form for editing the specified resource.
      *
-     * @param  int  $id
+     * @param Request $request
+     * @param int $id
      *
-     * @return Response
+     * @return false|Application|Factory|View|RedirectResponse|string
      */
     public function edit(Request $request, $id)
     {
@@ -577,10 +587,10 @@ class lo_school_greportController extends Controller
     /**
      * Update the specified resource in storage.
      *
-     * @param  Request  $request
-     * @param  int  $id
+     * @param Request $request
+     * @param int $id
      *
-     * @return Response
+     * @return false|Application|Factory|View|RedirectResponse|string
      */
     public function update(Request $request, $id)
     {
@@ -609,9 +619,10 @@ class lo_school_greportController extends Controller
     /**
      * Remove the specified resource from storage.
      *
-     * @param  int  $id
+     * @param Request $request
+     * @param int $id
      *
-     * @return Response
+     * @return false|Application|Factory|View|RedirectResponse|string
      */
     public function destroy(Request $request, $id)
     {

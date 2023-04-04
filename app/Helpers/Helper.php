@@ -1521,15 +1521,18 @@ if (! function_exists('LMSSearchChain')) {
 if (! function_exists('getGrade')) {
     function getGrade($grade_arr, $total_mark, $total_gain_mark)
     {
-        $per = (100 * $total_gain_mark) / $total_mark;
+        $per = 0;
+        if ($total_mark != 0) {
+            $per = (100 * $total_gain_mark) / $total_mark;
+        }
         foreach ($grade_arr as $id => $data) {
-            if (! isset($grade)) {
+            if (!isset($grade)) {
                 if ($per >= $data['breakoff']) {
                     $grade = $data['title'];
                 }
             }
         }
-        if (! isset($grade)) {
+        if (!isset($grade)) {
             $grade = "-";
         }
 
