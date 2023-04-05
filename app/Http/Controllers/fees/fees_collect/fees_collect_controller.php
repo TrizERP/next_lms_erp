@@ -744,7 +744,6 @@ class fees_collect_controller extends Controller
                 $id_arr[$arr->sort_order]['heds'] = $arr->heads;
                 $id_arr[$arr->sort_order]['rid'] = $rid;
             } else {
-                $sql = preg_replace('/\n+/', '', $sql);
                 $result_id = DB::select('fees_receipt as fr')
                     ->leftJoin('fees_collect as fc', function ($join) use ($arr) {
                         $join->whereRaw("fc.receipt_no = fr.RECEIPT_ID_".$arr->sort_order."");

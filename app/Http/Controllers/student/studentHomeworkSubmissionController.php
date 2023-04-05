@@ -71,8 +71,8 @@ class studentHomeworkSubmissionController extends Controller
                 $join->whereRaw('(cs.id = ah.standard_id)');
             })->join('division as ss', function ($join) {
                 $join->whereRaw('(ss.id = ah.division_id)');
-            })->selectRaw("ah.id AS CHECKBOX,s.roll_no,s.enrollment_no, CONCAT_WS(' ',s.last_name,s.first_name,s.middle_name) AS 
-                student_name,cs.name AS standard,ss.name as division,s.email,s.mobile,ah.id, ah.title,ah.description,ah.image, 
+            })->selectRaw("ah.id AS CHECKBOX,s.roll_no,s.enrollment_no, CONCAT_WS(' ',s.last_name,s.first_name,s.middle_name) AS
+                student_name,cs.name AS standard,ss.name as division,s.email,s.mobile,ah.id, ah.title,ah.description,ah.image,
                 DATE_FORMAT(ah.submission_date,'%d-%m-%Y') AS SUBMISSION_DATE,DATE_FORMAT(ah.date,'%d-%m-%Y') AS HOMEWORK_DATE,
                 '' REMARKS,submission_remarks")
             ->where('se.syear', $syear)
@@ -261,7 +261,7 @@ class studentHomeworkSubmissionController extends Controller
                 $join->whereRaw('(s.id = se.student_id AND se.end_date IS NULL)');
             })->join('standard as cs', function ($join) {
                 $join->whereRaw('(cs.id = ah.standard_id)');
-            })->join('division ss', function ($join) {
+            })->join('division as ss', function ($join) {
                 $join->whereRaw('(ss.id = ah.division_id)');
             })->join('tbluser as tu', function ($join) {
                 $join->whereRaw('tu.id = ah.created_by');
