@@ -284,14 +284,14 @@ class timetableController extends Controller
 
         $batch_data = batchModel::where([
             'sub_institute_id' => $sub_institute_id,
-            'standard_id'      => $standard_id,
-            'division_id'      => $division_id,
-            'syear'            => $syear,
+            'standard_id' => $standard_id,
+            'division_id' => $division_id,
+            'syear' => $syear,
         ])->get()->toArray();
         $total_batches = count($batch_data);
 
         $period_data = periodModel::where(['sub_institute_id' => $sub_institute_id])
-            ->orderby('sort_order')->get()->toArray();//"academic_section_id"=>$academic_section_id        
+            ->orderby('sort_order')->get()->toArray();//"academic_section_id"=>$academic_section_id
 
         $subject_data = sub_std_mapModel::where([
             'sub_institute_id' => $sub_institute_id, "standard_id" => $standard_id,
@@ -299,8 +299,8 @@ class timetableController extends Controller
             ->get(["subject_id", "display_name"])->toArray();
 
         /*$period_data =  periodModel::where(['sub_institute_id'=>$sub_institute_id,
-        "academic_section_id"=>$academic_section_id])->orderby('sort_order')->get()->toArray();        
-        
+        "academic_section_id"=>$academic_section_id])->orderby('sort_order')->get()->toArray();
+
         $subject_data =  sub_std_mapModel::where(['sub_institute_id'=>$sub_institute_id,
         "standard_id"=>$standard_id])->get(["subject_id","display_name"])->toArray();*/
 
@@ -319,7 +319,7 @@ class timetableController extends Controller
 
         $week_data = $this->getweeks();
         $html = "<form action=".route('timetable.store')." name='timetable' id='timetable' method='post'>
-                <table class='table table-bordered table-center'>                        
+                <table class='table table-bordered table-center'>
                 <tr>
                 <td style='display: table-cell;width:30px;'>
                     <span class='label label-info'>Days/Lectures</span>
@@ -358,13 +358,13 @@ class timetableController extends Controller
                     $assigned_teacher_id_array[] = $teacher_data1['teacher_id'];
                 }
                 $assigned_teacher_ids = implode(",", $assigned_teacher_id_array);
-                //END Check Allocated Teachers - 16/11/2021  
+                //END Check Allocated Teachers - 16/11/2021
 
                 //IF BATCHES FOUND
                 if (isset($old_timetable_data[$wval][$pval['id']]['SUBJECT_ID'])) {
                     //saved data
                     $sub_count = count($old_timetable_data[$wval][$pval['id']]['SUBJECT_ID']);
-                    // $sub_count = $total_batches;               
+                    // $sub_count = $total_batches;
                     $k = 0;
                     $j = 1;
                     while ($sub_count > 0) {
@@ -407,24 +407,24 @@ class timetableController extends Controller
                         $old_assigned_teacher_ids = implode(",", $old_assigned_teacher_id_array);
                         $extra_where = '';
                         if ($old_assigned_teacher_ids != '') {
-                            $extra_where = 'AND `tbluser`.`id` NOT IN ('.$old_assigned_teacher_ids.') ';
+                            $extra_where = 'AND tbluser.id NOT IN (' . $old_assigned_teacher_ids . ') ';
                         }
 
-                        //END Check Allocated Teachers - 16/11/2021 
+                        //END Check Allocated Teachers - 16/11/2021
 
                         $old_teacher_data = DB::table('tbluser')
                             ->join('tbluserprofilemaster', function ($join) {
-                                $join->whereRaw('`tbluserprofilemaster`.`id` = `tbluser`.`user_profile_id`');
+                                $join->whereRaw('tbluserprofilemaster.id = tbluser.user_profile_id');
                             })
-                            ->leftJoin('`timetable` AS `t`', function ($join) {
-                                $join->whereRaw('`t`.`teacher_id` = `tbluser`.`id` AND `t`.`sub_institute_id` = `tbluser`.`sub_institute_id`');
-                            })->selectRaw('`tbluser`.*, CONCAT_WS(" ",tbluser.first_name,tbluser.middle_name,tbluser.last_name) 
-                                AS teacher_name, (CASE WHEN total_lecture IS NULL THEN "Unlimited" ELSE tbluser.total_lecture 
+                            ->leftJoin('timetable AS t', function ($join) {
+                                $join->whereRaw('t.teacher_id = tbluser.id AND t.sub_institute_id = tbluser.sub_institute_id');
+                            })->selectRaw('tbluser.*, CONCAT_WS(" ",tbluser.first_name,tbluser.middle_name,tbluser.last_name)
+                                AS teacher_name, (CASE WHEN total_lecture IS NULL THEN "Unlimited" ELSE tbluser.total_lecture
                                 - COUNT(t.id) END) AS remaining_lecture')
-                            ->whereRaw('(`tbluser`.`sub_institute_id` = "'.$sub_institute_id.'" AND `tbluserprofilemaster`.`name` 
-                                = "Teacher") '.$extra_where)
-                            ->groupBy('`tbluser`.`id`')
-                            ->orderBy('`tbluser`.`first_name`')->get()->toArray();
+                            ->whereRaw('(tbluser.sub_institute_id = "' . $sub_institute_id . '" AND tbluserprofilemaster.name
+                                = "Teacher") ' . $extra_where)
+                            ->groupBy('tbluser.id')
+                            ->orderBy('tbluser.first_name')->get()->toArray();
 
                         $old_teacher_data_arr = json_decode(json_encode($old_teacher_data), true);
 
@@ -511,26 +511,26 @@ class timetableController extends Controller
                         $assigned_teacher_id_array[] = $teacher_data1['teacher_id'];
                     }
                     $assigned_teacher_ids = implode(",", $assigned_teacher_id_array);
-                    //END Check Allocated Teachers - 16/11/2021  
+                    //END Check Allocated Teachers - 16/11/2021
 
                     $extra_where = '';
                     if ($assigned_teacher_ids != '') {
-                        $extra_where = 'AND `tbluser`.`id` NOT IN ('.$assigned_teacher_ids.') ';
+                        $extra_where = 'AND tbluser.id NOT IN (' . $assigned_teacher_ids . ') ';
                     }
 
                     $new_teacher_data = DB::table('tbluser')
                         ->join('tbluserprofilemaster', function ($join) {
-                            $join->whereRaw('`tbluserprofilemaster`.`id` = `tbluser`.`user_profile_id`');
+                            $join->whereRaw('tbluserprofilemaster.id = tbluser.user_profile_id');
                         })
-                        ->leftJoin('`timetable` AS `t`', function ($join) {
-                            $join->whereRaw('`t`.`teacher_id` = `tbluser`.`id` AND `t`.`sub_institute_id` = `tbluser`.`sub_institute_id`');
-                        })->selectRaw('`tbluser`.*, CONCAT_WS(" ",tbluser.first_name,tbluser.middle_name,tbluser.last_name) 
-                                AS teacher_name, (CASE WHEN total_lecture IS NULL THEN "Unlimited" ELSE tbluser.total_lecture 
+                        ->leftJoin('timetable AS t', function ($join) {
+                            $join->whereRaw('t.teacher_id = tbluser.id AND t.sub_institute_id = tbluser.sub_institute_id');
+                        })->selectRaw('tbluser.*, CONCAT_WS(" ",tbluser.first_name,tbluser.middle_name,tbluser.last_name)
+                                AS teacher_name, (CASE WHEN total_lecture IS NULL THEN "Unlimited" ELSE tbluser.total_lecture
                                 - COUNT(t.id) END) AS remaining_lecture')
-                        ->whereRaw('(`tbluser`.`sub_institute_id` = "'.$sub_institute_id.'" AND `tbluserprofilemaster`.`name` 
-                                = "Teacher") '.$extra_where)
-                        ->groupBy('`tbluser`.`id`')
-                        ->orderBy('`tbluser`.`first_name`')->get()->toArray();
+                        ->whereRaw('(tbluser.sub_institute_id = "' . $sub_institute_id . '" AND tbluserprofilemaster.name
+                                = "Teacher") ' . $extra_where)
+                        ->groupBy('tbluser.id')
+                        ->orderBy('tbluser.first_name')->get()->toArray();
                     $new_teacher_data = json_decode(json_encode($new_teacher_data), true);
 
                     foreach ($new_teacher_data as $tkey => $tval) {
@@ -659,7 +659,7 @@ class timetableController extends Controller
                 if ($i == $total_batches) {
                     // $html .="<div class='minus_div' style='margin-top: 32px;margin-left: 10px;'>";
                     // $html .="<a href='#' onclick=removeNewRow('".$id."');>-</a>";
-                    // $html .="</div>"; 
+                    // $html .="</div>";
                 } else {
                     $html .= "<hr>";
                 }
