@@ -88,21 +88,22 @@ class tblindividual_rightsController extends Controller
         if (! isset($editRights)) {
             $editRights = [];
         }
-        if (! isset($deleteRights)) {
+        if (!isset($deleteRights)) {
             $deleteRights = [];
         }
-        if (! isset($viewRights)) {
+        if (!isset($viewRights)) {
             $viewRights = [];
         }
         $arrayKeys = array_replace($addRights, $editRights, $deleteRights, $viewRights);
         $sub_institute_id = $request->session()->get('sub_institute_id');
 
-        tblindividual_rightsModel::where(["profile_id" => $request->input('profile_id')])->delete();
+        tblindividual_rightsModel::where(["profile_id" => $request->input('profile_id'),
+            "user_id" => $request->input('user_id')])->delete();
         foreach ($arrayKeys as $key => $value) {
             $finalArray = [
-                'menu_id'          => $key,
-                'profile_id'       => $request->input('profile_id'),
-                'user_id'          => $request->input('user_id'),
+                'menu_id' => $key,
+                'profile_id' => $request->input('profile_id'),
+                'user_id' => $request->input('user_id'),
                 'sub_institute_id' => $sub_institute_id,
             ];
 

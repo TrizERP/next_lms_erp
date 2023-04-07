@@ -16,6 +16,11 @@ use function App\Helpers\SearchStudent;
 class cbse_1t5_result_controller extends Controller
 {
 
+    public function __construct()
+    {
+        define('BEST_OF', 2);
+    }
+
 
     use GetsJwtToken;
 
@@ -36,6 +41,9 @@ class cbse_1t5_result_controller extends Controller
     public function show_result(Request $request)
     {
 
+        return session()->get('sub_institute_id');
+        exit;
+
         $all_student = SearchStudent($_REQUEST['grade'], $_REQUEST['standard'], $_REQUEST['division']);
         $responce_arr = [];
 
@@ -43,7 +51,7 @@ class cbse_1t5_result_controller extends Controller
         $next_year = session()->get('syear') + 1;
         $academicTerms = session()->get('academicTerms');
 
-        $result_year = $syear."-".$next_year;
+        $result_year = $syear . "-" . $next_year;
         session()->put('term_id', $academicTerms[0]->term_id);
         session()->put('standard', $_REQUEST['standard']);
         //getting year detail
@@ -92,15 +100,18 @@ class cbse_1t5_result_controller extends Controller
             $responce_arr[$cur_student_id]['image'] = $arr['image'];
             $responce_arr[$cur_student_id]['exam'] = $all_exam;
             $responce_arr[$cur_student_id]['mark'] = $all_subject_mark[$cur_student_id];
-            $responce_arr[$cur_student_id]['per'] = $this->getPer($responce_arr[$cur_student_id]['total_mark'],
-                $all_subject_mark[$cur_student_id]);
+            $responce_arr[$cur_student_id]['per'] = $this->getPer($all_subject_mark[$cur_student_id]);
             $responce_arr[$cur_student_id]['final_grade'] = $this->getFinalGrade($responce_arr[$cur_student_id]['per']);
             if (isset($all_co_data[$cur_student_id])) {
                 $responce_arr[$cur_student_id]['co_scholastic_area'] = $all_co_data[$cur_student_id];
             }
             $responce_arr[$cur_student_id]['att'] = '';
+            $responce_arr[$cur_student_id]['total_working_day'] = '';
+            $responce_arr[$cur_student_id]['teacher_remark'] = '';
             if (isset($all_att_data[$cur_student_id])) {
-                $responce_arr[$cur_student_id]['att'] = $all_att_data[$cur_student_id];
+                $responce_arr[$cur_student_id]['att'] = $all_att_data[$cur_student_id]['attendance'];
+                $responce_arr[$cur_student_id]['total_working_day'] = $all_att_data[$cur_student_id]['total_working_day'];
+                $responce_arr[$cur_student_id]['teacher_remark'] = $all_att_data[$cur_student_id]['teacher_remark'];
             }
             $responce_arr[$cur_student_id]['grade_range'] = $all_grd_data;
         }
@@ -151,15 +162,18 @@ class cbse_1t5_result_controller extends Controller
             $responce_arr_term2[$cur_student_id]['image'] = $arr['image'];
             $responce_arr_term2[$cur_student_id]['exam'] = $all_exam;
             $responce_arr_term2[$cur_student_id]['mark'] = $all_subject_mark[$cur_student_id];
-            $responce_arr_term2[$cur_student_id]['per'] = $this->getPer($responce_arr_term2[$cur_student_id]['total_mark'],
-                $all_subject_mark[$cur_student_id]);
+            $responce_arr_term2[$cur_student_id]['per'] = $this->getPer($all_subject_mark[$cur_student_id]);
             $responce_arr_term2[$cur_student_id]['final_grade'] = $this->getFinalGrade($responce_arr_term2[$cur_student_id]['per']);
             if (isset($all_co_data[$cur_student_id])) {
                 $responce_arr_term2[$cur_student_id]['co_scholastic_area'] = $all_co_data[$cur_student_id];
             }
             $responce_arr_term2[$cur_student_id]['att'] = '';
+            $responce_arr_term2[$cur_student_id]['total_working_day'] = '';
+            $responce_arr_term2[$cur_student_id]['teacher_remark'] = '';
             if (isset($all_att_data[$cur_student_id])) {
-                $responce_arr_term2[$cur_student_id]['att'] = $all_att_data[$cur_student_id];
+                $responce_arr[$cur_student_id]['att'] = $all_att_data[$cur_student_id]['attendance'];
+                $responce_arr[$cur_student_id]['total_working_day'] = $all_att_data[$cur_student_id]['total_working_day'];
+                $responce_arr[$cur_student_id]['teacher_remark'] = $all_att_data[$cur_student_id]['teacher_remark'];
             }
             $responce_arr_term2[$cur_student_id]['grade_range'] = $all_grd_data;
         }
@@ -177,7 +191,11 @@ class cbse_1t5_result_controller extends Controller
 
         $type = $request->input('type');
 
-        return is_mobile($type, "result/cbse_result/1t5_s1_show", $data, "view");
+        if (session()->get('sub_institute_id') == 61) {
+            return is_mobile($type, "result/cbse_result/1t5_s1_show", $data, "view");
+        } else {
+            return is_mobile($type, "result/cbse_result/1t5_s1_show2", $data, "view");
+        }
     }
 
     public function getHeader($standard_id)
@@ -222,13 +240,12 @@ class cbse_1t5_result_controller extends Controller
             ->join('result_exam_master as em', function ($join) {
                 $join->whereRaw("em.Id = e.exam_id");
             })
-            ->selectRaw('em.ExamTitle,IF((e.con_point IS NULL) OR (e.con_point = ""),e.points,e.con_point) AS points ,em.Id')
-            ->where("e.term_id", "=", session()->get('term_id'))
+            ->selectRaw('e.title,em.ExamTitle,IF((e.con_point IS NULL) OR (e.con_point = ""),e.points,e.con_point) AS points ,em.Id')
             ->where("e.sub_institute_id", "=", session()->get('sub_institute_id'))
             ->where("e.syear", "=", session()->get('syear'))
             ->where("e.standard_id", "=", $standard_id)
             ->where("e.report_card_status", "=", 'Y')
-            ->groupBy('em.ExamTitle')
+            ->groupByRaw('em.ExamTitle,e.title')
             ->orderBy('em.SortOrder')
             ->get()->toarray();
 
@@ -237,6 +254,7 @@ class cbse_1t5_result_controller extends Controller
         foreach ($result as $id => $obj) {
             $responce[$id]['exam_id'] = $obj->Id;
             $responce[$id]['exam'] = $obj->ExamTitle;
+            $responce[$id]['title'] = $obj->title;
             $responce[$id]['mark'] = $obj->points;
             $total_mark += $obj->points;
         }
@@ -272,14 +290,31 @@ class cbse_1t5_result_controller extends Controller
             ->where("ssm.sub_institute_id", "=", session()->get('sub_institute_id'))
             ->where("ssm.standard_id", "=", $std)
             ->where("ssm.allow_grades", "=", 'Yes')
+            ->orderBy('ssm.sort_order')
             ->get()->toArray();
 
         $responce = [];
         foreach ($result as $id => $obj) {
-            $responce[$obj->subject_id] = $obj->display_name.'####'.$obj->elective_subject;
+            $responce[$obj->subject_id] = $obj->display_name . '####' . $obj->elective_subject;
         }
 
         return $responce;
+    }
+
+    public function getBestOf($elemArr)
+    {
+        $newArr = array();
+        rsort($elemArr);
+        $srNo = 0;
+        foreach ($elemArr as $value) {
+            $srNo++;
+            if ($srNo <= BEST_OF) {
+                $newArr[] = $value;
+            }
+            // break;
+        }
+
+        return $newArr;
     }
 
     public function getAllMark($all_exam, $all_subject, $all_student)
@@ -302,21 +337,21 @@ class cbse_1t5_result_controller extends Controller
 
         $result = DB::table("result_marks as rm")
             ->join('result_create_exam as ex', function ($join) {
-                $join->whereRaw("ex.id = rm.exam_id");
+                $join->whereRaw("ex.id = rm.exam_id AND ex.term_id = 150");
             })
             ->join('result_exam_master as exm', function ($join) {
                 $join->whereRaw("exm.Id = ex.exam_id");
             })
             ->join('sub_std_map as s', function ($join) {
-                $join->whereRaw("s.subject_id = ex.subject_id");
+                $join->whereRaw("s.subject_id = ex.subject_id and s.standard_id = ex.standard_id");
             })
-            ->selectRaw('ex.id,rm.student_id,s.subject_id,s.display_name,s.elective_subject,SUM(ex.points) total_points,
-                ex.con_point,round(SUM(rm.points),0) points,exm.Id exam_id,rm.is_absent')
+            ->selectRaw('exm.ExamTitle,ex.id,rm.student_id,s.subject_id,s.display_name,s.elective_subject,
+                SUM(ex.points) total_points,ex.con_point,SUM(rm.points) points,exm.Id exam_id,rm.is_absent,ex.title')
             ->whereIn("exm.Id", $exam_id_arr)
             ->whereIn("rm.student_id", $student_id_arr)
-            ->where("ex.term_id", "=", session()->get('term_id'))
             ->where("ex.syear", "=", session()->get('syear'))
-            ->groupByRaw('rm.student_id,s.display_name,ex.points,exm.Id')
+            ->where("ex.report_card_status", "=", "Y")
+            ->groupByRaw('rm.student_id,s.display_name,ex.title')
             ->orderByRaw('rm.student_id,s.display_name,exm.Id')
             ->get()->toarray();
 
@@ -328,6 +363,8 @@ class cbse_1t5_result_controller extends Controller
             $temp_arr['student_id'] = $arr->student_id;
             $temp_arr['subject_id'] = $arr->subject_id;
             $temp_arr['subject_name'] = $arr->display_name;
+            $temp_arr['title'] = $arr->title;
+            $temp_arr['exam title'] = $arr->ExamTitle;
             $temp_arr['optional_subject'] = $arr->elective_subject;
             $temp_arr['total_points'] = $arr->total_points;
             $temp_arr['con_point'] = $arr->con_point;
@@ -342,10 +379,10 @@ class cbse_1t5_result_controller extends Controller
                     ->where("syear", "=", session()->get('syear'))
                     ->get()->toArray();
                 if ((count($check_optional_subject_with_student) > 0)) {
-                    $marks_arr[$arr->student_id][$arr->display_name][$arr->exam_id] = $temp_arr;
+                    $marks_arr[$arr->student_id][$arr->display_name][$arr->title] = $temp_arr;
                 }
             } else {
-                $marks_arr[$arr->student_id][$arr->display_name][$arr->exam_id] = $temp_arr;
+                $marks_arr[$arr->student_id][$arr->display_name][$arr->title] = $temp_arr;
             }
 
         }
@@ -374,38 +411,55 @@ class cbse_1t5_result_controller extends Controller
 
                         $subject = strtoupper($subject);
 
-                        if (isset($marks_arr[$arr_student['student_id']][$subject][$exam_detail['exam_id']])) {
-                            $is_absent = $marks_arr[$arr_student['student_id']][$subject][$exam_detail['exam_id']]['is_absent'];
+                        if (isset($marks_arr[$arr_student['student_id']][$subject][$exam_detail['title']])) {
+                            $is_absent = $marks_arr[$arr_student['student_id']][$subject][$exam_detail['title']]['is_absent'];
 
                             if (isset($is_absent) && $is_absent == "N.A.") {
                                 $naFlag = 1;
-                                //continue;
                             } elseif (isset($is_absent) && $is_absent == "EX") {
                                 $exFlag = 1;
-                                //continue;
                             } elseif (isset($is_absent) && $is_absent == "AB") {
                                 $abFlag = 1;
-                                $mark = $marks_arr[$arr_student['student_id']][$subject][$exam_detail['exam_id']]['points'];
-                                $total_mark = $marks_arr[$arr_student['student_id']][$subject][$exam_detail['exam_id']]['total_points'];
-                                $con_point = $marks_arr[$arr_student['student_id']][$subject][$exam_detail['exam_id']]['con_point'];
+                                $mark = $marks_arr[$arr_student['student_id']][$subject][$exam_detail['title']]['points'];
+                                $total_mark = $marks_arr[$arr_student['student_id']][$subject][$exam_detail['title']]['total_points'];
+                                $con_point = $marks_arr[$arr_student['student_id']][$subject][$exam_detail['title']]['con_point'];
 
-                                if ($con_point != null && $con_point != $total_mark) {
+                                if ($con_point != NULL && $con_point != $total_mark) {
                                     $mark = ($con_point * $mark) / $total_mark;
                                 }
-                                $total_gain_mark += $mark;
-                                $total_con_point += $con_point;
+                                $total_gain_mark = $total_gain_mark + $mark;
+                                $total_con_point = $total_con_point + $con_point;
                             } else {
-                                $mark = $marks_arr[$arr_student['student_id']][$subject][$exam_detail['exam_id']]['points'];
-                                $total_mark = $marks_arr[$arr_student['student_id']][$subject][$exam_detail['exam_id']]['total_points'];
-                                $con_point = $marks_arr[$arr_student['student_id']][$subject][$exam_detail['exam_id']]['con_point'];
+                                $mark = $marks_arr[$arr_student['student_id']][$subject][$exam_detail['title']]['points'];
+                                $total_mark = $marks_arr[$arr_student['student_id']][$subject][$exam_detail['title']]['total_points'];
+                                $con_point = $marks_arr[$arr_student['student_id']][$subject][$exam_detail['title']]['con_point'];
 
-                                if ($con_point != null && $con_point != $total_mark) {
+                                if ($con_point != NULL && $con_point != $total_mark) {
                                     $mark = ($con_point * $mark) / $total_mark;
                                 }
-                                $total_gain_mark += $mark;
-                                $total_con_point += $con_point;
+                                $total_gain_mark = $total_gain_mark + $mark;
+                                $total_con_point = $total_con_point + $con_point;
                             }
-
+                            $title = $marks_arr[$arr_student['student_id']][$subject][$exam_detail['title']]['exam title'];
+                            echo "<pre>";
+                            print_r($title);
+                            // foreach($marks_arr[$arr_student['student_id']][$subject][$exam_detail['title']]['title'] as $value){
+                            $marksArr[] = $mark;
+                            // }
+// echo "<pre>";print_r($marksArr);
+                            $obtained_marks = $tot_marks = $tot_obt_marks = 0;
+                            if (!empty($marksArr)) {
+                                $marksArrs = $this->getBestOf($marksArr);
+                                // echo "<pre>";print_r($marksArrs);
+                                $marksCnt = count($marksArrs);
+                                $totMarks = array_sum($marksArrs);
+                                $obtained_marks = round(($totMarks / $marksCnt), 2);
+                                $tot_obt_marks += $obtained_marks;
+                                if ($naFlag != 1 && $exFlag != 1)
+                                    $tot_marks += $con_point;
+                            } else {
+                                $obtained_marks = '-';
+                            }
                         }
                         /*else
                         {
@@ -418,6 +472,10 @@ class cbse_1t5_result_controller extends Controller
 
 
                         //$get_absent = $marks_arr[$arr_student['student_id']][$subject][$exam_detail['exam_id']]['is_absent'];
+                        // foreach ($marks_arr[$arr_student['student_id']][$subject][$exam_detail['title']] as $key => $value) {
+                        // code...
+                        // $marksArr[]=$mark;
+
                         if ($abFlag == 1) {
                             $e_points = "AB";
                         } elseif ($naFlag == 1) {
@@ -425,8 +483,14 @@ class cbse_1t5_result_controller extends Controller
                         } elseif ($exFlag == 1) {
                             $e_points = "EX";
                         } else {
-                            $e_points = number_format($mark, 0);
+                            $e_points = number_format($tot_obt_marks, 2);
+                            // $marksArr[]=$e_points;
+                            // break;
+                            // echo "<pre>";print_r($e_points);
+                            // $marksArr=array($e_points);
                         }
+                        // }
+
 
                         //$responce_arr[$arr_student['student_id']][$subject][$exam_detail['exam']] = number_format($mark,0);
                         $responce_arr[$arr_student['student_id']][$subject][$exam_detail['exam']] = $e_points;
@@ -445,31 +509,37 @@ class cbse_1t5_result_controller extends Controller
                     if ((count($check_optional_subject_with_student) == 0)) {
                         unset($responce_arr[$arr_student['student_id']][$subject]);
                     } else {
-                        $responce_arr[$arr_student['student_id']][$subject]['TOTAL_GAIN'] = number_format($total_gain_mark,
-                            0);
-                        $responce_arr[$arr_student['student_id']][$subject]['GRADE'] = $this->getGrade($grade_arr,
-                            $total_con_point, $total_gain_mark);
+                        $responce_arr[$arr_student['student_id']][$subject]['TOTAL_GAIN'] = number_format($total_gain_mark, 2);
+                        $responce_arr[$arr_student['student_id']][$subject]['TOTAL_MARKS'] = number_format($total_con_point, 2);
+                        $responce_arr[$arr_student['student_id']][$subject]['GRADE'] = $this->getGrade($grade_arr, $total_con_point, $total_gain_mark);
                     }
                 } else {
                     //echo "totoa-".$total_con_point."<br/>";die();
-                    $responce_arr[$arr_student['student_id']][$subject]['TOTAL_GAIN'] = number_format($total_gain_mark,
-                        0);
-                    $responce_arr[$arr_student['student_id']][$subject]['GRADE'] = $this->getGrade($grade_arr,
-                        $total_con_point, $total_gain_mark);
+                    $responce_arr[$arr_student['student_id']][$subject]['TOTAL_GAIN'] = number_format($total_gain_mark, 2);
+                    $responce_arr[$arr_student['student_id']][$subject]['TOTAL_MARKS'] = number_format($total_con_point, 2);
+                    $responce_arr[$arr_student['student_id']][$subject]['GRADE'] = $this->getGrade($grade_arr, $total_con_point, $total_gain_mark);
                 }
 
             }
+            // echo '<pre>';
+            // print_r($responce_arr);
+            // die;
         }
+        echo "<pre>";
+        print_r($responce_arr);
+        exit;
 
         return $responce_arr;
     }
 
     public static function getGrade($grade_arr, $total_mark, $total_gain_mark)
     {
-        $per = 0;
-        if ($total_mark != 0) {
-            $per = (100 * $total_gain_mark) / $total_mark;
+        if ($total_mark == 0) {
+            return "-";
         }
+
+        $per = (100 * $total_gain_mark) / $total_mark;
+
         foreach ($grade_arr as $id => $data) {
             if (!isset($grade)) {
                 if ($per >= $data['breakoff']) {
@@ -477,23 +547,27 @@ class cbse_1t5_result_controller extends Controller
                 }
             }
         }
+
         if (!isset($grade)) {
             $grade = "-";
         }
-
         return $grade;
     }
 
-    public function getPer($total_mark, $all_gain_mark)
+    public function getPer($all_gain_mark)
     {
         $total_subject_mark = 0;
         $total_gain_mark = 0;
+
         foreach ($all_gain_mark as $id => $arr) {
-            $total_subject_mark += $total_mark;
-            $total_gain_mark += $arr['TOTAL_GAIN'];
+            if (is_numeric($arr['TOTAL_GAIN'])) {
+                $total_gain_mark += $arr['TOTAL_GAIN'];
+                $total_subject_mark += $arr['TOTAL_MARKS'];
+            }
         }
+
         if ($total_subject_mark == 0) {
-            return 0;
+            return 0; // or whatever value you want to return if $total_subject_mark is zero
         }
 
         return (100 * $total_gain_mark) / $total_subject_mark;
@@ -512,7 +586,7 @@ class cbse_1t5_result_controller extends Controller
 
         $ret_grade = DB::table("result_std_grd_maping as sgm")
             ->join('grade_master_data as dt', function ($join) use ($syear) {
-                $join->whereRaw("dt.grade_id = sgm.grade_scale AND dt.syear = ".$syear."");
+                $join->whereRaw("dt.grade_id = sgm.grade_scale AND dt.syear = " . $syear . "");
             })
             ->selectRaw('dt.*')
             ->where("sgm.standard", "=", $standard_id)
@@ -542,13 +616,13 @@ class cbse_1t5_result_controller extends Controller
     {
         $grade_arr = $this->getGradeScale();
         foreach ($grade_arr as $id => $data) {
-            if (! isset($grade)) {
+            if (!isset($grade)) {
                 if ($per >= $data['breakoff']) {
                     $grade = $data['title'];
                 }
             }
         }
-        if (! isset($grade)) {
+        if (!isset($grade)) {
             $grade = "-";
         }
 
@@ -610,15 +684,18 @@ class cbse_1t5_result_controller extends Controller
             ->join('result_working_day_master as wrkd', function ($join) {
                 $join->whereRaw("wrkd.standard = atd.standard and wrkd.sub_institute_id = atd.sub_institute_id");
             })
-            ->selectRaw('atd.student_id,wrkd.total_working_day,atd.attendance')
+            ->selectRaw('atd.student_id,wrkd.total_working_day,atd.attendance,atd.teacher_remark')
             ->where("atd.standard", "=", $_REQUEST['standard'])
             ->where("atd.sub_institute_id", "=", session()->get('sub_institute_id'))
             ->where("atd.syear", "=", session()->get('syear'))
+            ->where("atd.term_id", "=", session()->get('term_id'))
             ->get()->toarray();
 
         $data_arr = [];
         foreach ($ret_data as $id => $arr) {
-            $data_arr[$arr->student_id] = $arr->attendance."/".$arr->total_working_day;
+            $data_arr[$arr->student_id]['attendance'] = $arr->attendance ?? '0';
+            $data_arr[$arr->student_id]['total_working_day'] = $arr->total_working_day ?? '0';
+            $data_arr[$arr->student_id]['teacher_remark'] = $arr->teacher_remark ?? '-';
         }
 
         return $data_arr;
@@ -630,10 +707,10 @@ class cbse_1t5_result_controller extends Controller
 
         $responce_arr = [];
         foreach ($grade_arr as $id => $arr) {
-            if (! isset($last_breckoff)) {
+            if (!isset($last_breckoff)) {
                 $last_breckoff = "100";
             }
-            $responce_arr['mark_range']['SCHOLASTIC MARKS RANGE'][] = $arr['breakoff']."-".$last_breckoff;
+            $responce_arr['mark_range']['SCHOLASTIC MARKS RANGE'][] = $arr['breakoff'] . "-" . $last_breckoff;
             $responce_arr['mark_range']['GRADE'][] = $arr['title'];
             $last_breckoff = $arr['breakoff'] - 1;
         }
@@ -659,7 +736,7 @@ class cbse_1t5_result_controller extends Controller
             $result_data['division_id'] = $division_id;
             $result_data['syear'] = $syear;
             $result_data['sub_institute_id'] = $sub_institute_id;
-            $result_data['html'] = $request->get('html_'.$val);
+            $result_data['html'] = $request->get('html_' . $val);
 
 
             $data = DB::table("result_html")
@@ -673,15 +750,15 @@ class cbse_1t5_result_controller extends Controller
                 ->get()->toArray();
 
             if (count($data) > 0) {
-                $html = $request->get('html_'.$val);
+                $html = $request->get('html_' . $val);
                 $finalArray['html'] = $html;
                 $data = result_html_model::where([
-                    'student_id'  => $val,
-                    'term_id'     => $term_id,
-                    'grade_id'    => $grade_id,
+                    'student_id' => $val,
+                    'term_id' => $term_id,
+                    'grade_id' => $grade_id,
                     'standard_id' => $standard_id,
                     'division_id' => $division_id,
-                    'syear'       => $syear,
+                    'syear' => $syear,
                 ])->update($finalArray);
             } else {
                 DB::table("result_html")->insert($result_data);
@@ -694,7 +771,7 @@ class cbse_1t5_result_controller extends Controller
     public function studentResultPDFAPI(Request $request)
     {
         try {
-            if (! $this->jwtToken()->validate()) {
+            if (!$this->jwtToken()->validate()) {
                 $response = ['status' => '2', 'message' => 'Token Auth Failed', 'data' => []];
 
                 return response()->json($response, 401);
@@ -707,10 +784,10 @@ class cbse_1t5_result_controller extends Controller
 
         $response = [];
         $validator = Validator::make($request->all(), [
-            'student_id'       => 'required|numeric',
-            'syear'            => 'required|numeric',
+            'student_id' => 'required|numeric',
+            'syear' => 'required|numeric',
             'sub_institute_id' => 'required|numeric',
-            'term_id'          => 'required|numeric',
+            'term_id' => 'required|numeric',
         ]);
         if ($validator->fails()) {
             $response['response'] = $validator->messages();
@@ -736,7 +813,7 @@ class cbse_1t5_result_controller extends Controller
                                     FROM(
                                     SELECT SUM(fc.amount)+ SUM(fc.fees_discount) amount,se.student_id
                                     FROM tblstudent s
-                                    INNER JOIN tblstudent_enrollment se ON se.student_id = s.id AND se.syear = '".$request->get('syear')."'
+                                    INNER JOIN tblstudent_enrollment se ON se.student_id = s.id AND se.syear = '" . $request->get('syear') . "'
                                     INNER JOIN academic_section g ON g.id = se.grade_id
                                     INNER JOIN standard st ON st.id = se.standard_id
                                     LEFT JOIN division d ON d.id = se.section_id
@@ -744,21 +821,21 @@ class cbse_1t5_result_controller extends Controller
                                     (
                                      fc.student_id = s.id AND
                                      fc.is_deleted = 'N' AND
-                                     fc.sub_institute_id = '".$request->get('sub_institute_id')."' AND
-                                     fc.syear = '".$request->get('syear')."'
+                                     fc.sub_institute_id = '" . $request->get('sub_institute_id') . "' AND
+                                     fc.syear = '" . $request->get('syear') . "'
                                     )
-                                    WHERE s.sub_institute_id = '".$request->get('sub_institute_id')."' AND s.id = '".$request->get('student_id')."'
+                                    WHERE s.sub_institute_id = '" . $request->get('sub_institute_id') . "' AND s.id = '" . $request->get('student_id') . "'
                                     GROUP BY s.id
                                     UNION
                                     SELECT SUM(fpo.actual_amountpaid)+ SUM(fpo.fees_discount) aa,se.student_id
                                     FROM tblstudent s
-                                    INNER JOIN tblstudent_enrollment se ON se.student_id = s.id AND se.syear = '".$request->get('syear')."'
+                                    INNER JOIN tblstudent_enrollment se ON se.student_id = s.id AND se.syear = '" . $request->get('syear') . "'
                                     INNER JOIN academic_section g ON g.id = se.grade_id
                                     INNER JOIN standard st ON st.id = se.standard_id
                                     LEFT JOIN division d ON d.id = se.section_id
                                     INNER JOIN fees_paid_other fpo ON
                                      (fpo.student_id = s.id)
-                                    WHERE s.sub_institute_id = '".$request->get('sub_institute_id')."' AND s.id = '".$request->get('student_id')."'
+                                    WHERE s.sub_institute_id = '" . $request->get('sub_institute_id') . "' AND s.id = '" . $request->get('student_id') . "'
                                     GROUP BY s.id
                                     ) temp_table
                                     GROUP BY student_id");
@@ -798,8 +875,8 @@ class cbse_1t5_result_controller extends Controller
 
                         $html = $data[0]->html;
 
-                        $css_name = "http://".$_SERVER['SERVER_NAME'];
-                        $result_css = '<link rel="stylesheet" href="'.$css_name.'/css/result.css" />';
+                        $css_name = "http://" . $_SERVER['SERVER_NAME'];
+                        $result_css = '<link rel="stylesheet" href="' . $css_name . '/css/result.css" />';
                         $dom = '<!DOCTYPE html>
                             <html>
                                 <head>
@@ -818,14 +895,14 @@ class cbse_1t5_result_controller extends Controller
                                 </body>
                             </html>';
 
-                        $path = 'src="http://'.$_SERVER['HTTP_HOST'];
+                        $path = 'src="http://' . $_SERVER['HTTP_HOST'];
                         $html = str_replace('src="', $path, $html);
                         $html = str_replace('display:flex;', 'display: -webkit-box; -webkit-box-pack: center;', $html);
                         $html = str_replace('##HTML_SEC##', $html, $dom);
 
 
                         //Start For Empty folder before creating new PDF
-                        $folder_path = $_SERVER['DOCUMENT_ROOT'].'/storage/result_pdf/*';
+                        $folder_path = $_SERVER['DOCUMENT_ROOT'] . '/storage/result_pdf/*';
                         $files = glob($folder_path); // get all file names
                         foreach ($files as $file) { // iterate files
                             if (is_file($file)) {
@@ -834,14 +911,14 @@ class cbse_1t5_result_controller extends Controller
                         }
                         //END For Empty folder before creating new PDF
 
-                        $save_path = $_SERVER['DOCUMENT_ROOT'].'/storage/result_pdf';
+                        $save_path = $_SERVER['DOCUMENT_ROOT'] . '/storage/result_pdf';
 
                         $CUR_TIME = date('YmdHis');
-                        $html_filename = $request->get('student_id').'_'.$CUR_TIME.".html";
-                        $pdf_filename = $request->get('student_id').'_'.$CUR_TIME.".pdf";
+                        $html_filename = $request->get('student_id') . '_' . $CUR_TIME . ".html";
+                        $pdf_filename = $request->get('student_id') . '_' . $CUR_TIME . ".pdf";
 
-                        $html_file_path = $save_path.'/'.$html_filename;
-                        $pdf_file_path = $save_path.'/'.$pdf_filename;
+                        $html_file_path = $save_path . '/' . $html_filename;
+                        $pdf_file_path = $save_path . '/' . $pdf_filename;
                         file_put_contents($html_file_path, $html);
                         //$soni = $save_path."/95634_20211130160457.html";
                         htmlToPDF($html_file_path, $pdf_file_path);
@@ -849,7 +926,7 @@ class cbse_1t5_result_controller extends Controller
                         unlink($html_file_path);
 
                         $new_data['student_id'] = $request->get('student_id');
-                        $new_data['pdf_link'] = "http://".$_SERVER['SERVER_NAME']."/storage/result_pdf/".$pdf_filename;
+                        $new_data['pdf_link'] = "http://" . $_SERVER['SERVER_NAME'] . "/storage/result_pdf/" . $pdf_filename;
 
                         $response['status'] = 1;
                         $response['message'] = "Success";
@@ -874,8 +951,8 @@ class cbse_1t5_result_controller extends Controller
 
                     $html = $data[0]->html;
 
-                    $css_name = "http://".$_SERVER['SERVER_NAME'];
-                    $result_css = '<link rel="stylesheet" href="'.$css_name.'/css/result.css" />';
+                    $css_name = "http://" . $_SERVER['SERVER_NAME'];
+                    $result_css = '<link rel="stylesheet" href="' . $css_name . '/css/result.css" />';
                     $dom = '<!DOCTYPE html>
                         <html>
                             <head>
@@ -894,14 +971,14 @@ class cbse_1t5_result_controller extends Controller
                             </body>
                         </html>';
 
-                    $path = 'src="http://'.$_SERVER['HTTP_HOST'];
+                    $path = 'src="http://' . $_SERVER['HTTP_HOST'];
                     $html = str_replace('src="', $path, $html);
                     $html = str_replace('display:flex;', 'display: -webkit-box; -webkit-box-pack: center;', $html);
                     $html = str_replace('##HTML_SEC##', $html, $dom);
 
 
                     //Start For Empty folder before creating new PDF
-                    $folder_path = $_SERVER['DOCUMENT_ROOT'].'/storage/result_pdf/*';
+                    $folder_path = $_SERVER['DOCUMENT_ROOT'] . '/storage/result_pdf/*';
                     $files = glob($folder_path); // get all file names
                     foreach ($files as $file) { // iterate files
                         if (is_file($file)) {
@@ -910,14 +987,14 @@ class cbse_1t5_result_controller extends Controller
                     }
                     //END For Empty folder before creating new PDF
 
-                    $save_path = $_SERVER['DOCUMENT_ROOT'].'/storage/result_pdf';
+                    $save_path = $_SERVER['DOCUMENT_ROOT'] . '/storage/result_pdf';
 
                     $CUR_TIME = date('YmdHis');
-                    $html_filename = $request->get('student_id').'_'.$CUR_TIME.".html";
-                    $pdf_filename = $request->get('student_id').'_'.$CUR_TIME.".pdf";
+                    $html_filename = $request->get('student_id') . '_' . $CUR_TIME . ".html";
+                    $pdf_filename = $request->get('student_id') . '_' . $CUR_TIME . ".pdf";
 
-                    $html_file_path = $save_path.'/'.$html_filename;
-                    $pdf_file_path = $save_path.'/'.$pdf_filename;
+                    $html_file_path = $save_path . '/' . $html_filename;
+                    $pdf_file_path = $save_path . '/' . $pdf_filename;
                     file_put_contents($html_file_path, $html);
                     //$soni = $save_path."/95634_20211130160457.html";
                     htmlToPDF($html_file_path, $pdf_file_path);
@@ -925,7 +1002,7 @@ class cbse_1t5_result_controller extends Controller
                     unlink($html_file_path);
 
                     $new_data['student_id'] = $request->get('student_id');
-                    $new_data['pdf_link'] = "http://".$_SERVER['SERVER_NAME']."/storage/result_pdf/".$pdf_filename;
+                    $new_data['pdf_link'] = "http://" . $_SERVER['SERVER_NAME'] . "/storage/result_pdf/" . $pdf_filename;
 
                     $response['status'] = 1;
                     $response['message'] = "Success";

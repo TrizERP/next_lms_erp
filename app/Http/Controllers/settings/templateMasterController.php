@@ -65,7 +65,7 @@ class templateMasterController extends Controller
         <li><b><< fees_head_content >></b> : Fees Head-wise Content with amount and head type</li>
         <li><b><< total_amount_in_words >></b> : Total Amount in words</li>
         <li><b><< payment_mode >></b> : Payment Mode</li>
-        <li><b><< admin_user >></b> : Admin User</li>
+        <li><b><< admin_user >></b> : Logged User</li>
         <li><b><< student_image_value >></b> : Student Image</li>
         <li><b><< student_division_value >></b> : Student division</li>
         <li><b><< student_year_value >></b> : Student year</li>

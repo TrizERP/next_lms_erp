@@ -2,427 +2,451 @@
 @include('../includes.header')
 @include('../includes.sideNavigation')
 
-<link rel="stylesheet" href="{{ URL::asset('css/result.css') }}" />
-
-<?php
-// $css = File::get('css/result.css');
-?>
-{{-- <style>
-    table td,
-    table th {
-        border: 1px solid #ddd;
-        padding: 8px;
-    }
-</style> --}}
+<link rel="stylesheet" href="{{ URL::asset('css/result.css') }}"/>
 <div id="page-wrapper">
     <div class="container-fluid">
         <div class="row" style=" margin-top: 25px;">
             <div class="panel-body white-box">
                 @if(!empty($data['message']))
-                <div class="alert alert-{{ $data['class'] }} alert-block">
-                    <button type="button" class="close" data-dismiss="alert">×</button>
-                    <strong>{{ $data['message'] }}</strong>
-                </div>
+                    <div class="alert alert-{{ $data['class'] }} alert-block">
+                        <button type="button" class="close" data-dismiss="alert">×</button>
+                        <strong>{{ $data['message'] }}</strong>
+                    </div>
                 @endif
 
                 <div>
-                    <center> <input class="btn btn-warning" type="button" onclick="printDiv('printableArea');" value="Print Result" /></center>
+                    <center><input class="btn btn-warning" type="button" onclick="printDiv('printableArea');"
+                                   value="Print Result"/></center>
                 </div>
                 <!--<div class="col-lg-12 col-sm-12 col-xs-12">-->
                 <div id="printableArea">
                     <style>
                         table td,
                         table th {
-                            border: 1px solid #ddd;
-                            padding: 8px;
+                            /*border: 1px solid #ddd;*/
+                            padding: 4px;
                         }
                     </style>
-
-                    <?php
-                // echo ('<pre>');print_r($data);exit;
-                    foreach ($data as $arr) {
-                        foreach ($arr as $stuent_id => $all_data) {
-                            ?>
-                    <table class="main-table" width="100%" style="page-break-after: always;">
-                        <tbody>
-                            <tr>
-                                <td>
-
-                                    <table class="report-card" style="border-collapse:collapse;" width="100%"
-                                        cellspacing="0" cellpadding="0">
-                                        <tbody>
+                    <div>
+                        <?php
+                        $header_data = $data['header_data'];
+                        $footer_data = $data['footer_data'];
+                        //$term_2_data = $data['term_2_data'];
+                        $gradeScale = \App\Helpers\getGradeScale();
+                        $grandTotal = 0;
+                        //echo ('<pre>');print_r($data);exit;
+                        // foreach ($data as $arr) {
+                        foreach ($data['data'] as $stuent_id => $all_data) {
+                        // echo ('<pre>');print_r($all_data['year']);exit;
+                        ?>
+                        <div id="{{$stuent_id}}">
+                            <table class="main-table ml-5 mr-5 mb-5" width="100%">
+                                <tbody>
+                                <tr>
+                                    <td>
+                                        <table class="report-card" style="border-collapse:collapse;" width="100%"
+                                               cellspacing="0" cellpadding="0">
+                                            <tbody>
+                                            <tr>
+                                                <td style="text-align:center !important;" align="center">
+                                                    <span class="sc-hd">{{$header_data['line1']}}</span><br>
+                                                    <span class="ma-hd">{{$header_data['line2']}}</span><br>
+                                                    <span class="rg-hd">{{$header_data['line3']}}</span><br>
+                                                    <span class="rg-hd">{{$header_data['line4']}}</span><br>
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td colspan="4">
+                                                    <br/><br/><br/><br/><br/><br/>
+                                                    <hr></hr>
+                                                </td>
+                                            </tr>
+                                            </tbody>
+                                        </table>
+                                        <table class="report-card ml-4" style="border-collapse:collapse;" width="100%"
+                                               cellspacing="0" cellpadding="0">
+                                            <tbody>
                                             <tr>
                                                 <td colspan="3" align="center">
-                                                    <h3 style="font-size:18">
-                                                        <?php echo $all_data['headings']['line1']; ?>
-                                                    </h3>
-                                                    <h3 style="font-size:14">
-                                                        <?php echo $all_data['headings']['line2']; ?>
-                                                    </h3>
-                                                    <h3 style="font-size:14">
-                                                        <?php echo $all_data['headings']['line3']; ?>
-                                                    </h3>
-                                                    <h3 style="font-size:16">
-                                                        <?php echo $all_data['headings']['line4']; ?>
-                                                    </h3>
-                                                    <h3 style="font-size:16">
-                                                        SESSION <?php echo $all_data['year']; ?>
-                                                    </h3>
+                                                    <h3 style="font-size:16;color:black;font-weight: 600;">ACADEMIC
+                                                        SESSION : <?php echo $all_data['year']; ?> | REPORT CARD FOR
+                                                        CLASS - <?php echo $all_data['class']; ?></h3>
+                                                <!-- <h3 style="font-size:14">SESSION <?php echo $all_data['year']; ?></h3> -->
                                                 </td>
                                             </tr>
                                             <tr>
                                                 <td width="60%">Student's Name :
                                                     <label><?php echo $all_data['name']; ?></label></td>
-                                                <td width="20%"></td>
                                                 <td width="20%">Roll No. :
                                                     <label><?php echo $all_data['roll_no']; ?></label></td>
-                                            </tr>
-                                            <tr>
-                                                <td>Mother's Name :
-                                                    <label><?php echo $all_data['mother_name']; ?></label></td>
-                                                <td></td>
-                                                <td>Class : <label><?php echo $all_data['class']; ?></label></td>
+                                                <td width="20%" rowspan="4"><img height="100px"
+                                                                                 src="/storage/student/<?php echo $all_data['image']; ?>">
+                                                </td>
                                             </tr>
                                             <tr>
                                                 <td>Father's Name :
                                                     <label><?php echo $all_data['father_name']; ?></label></td>
-                                                <td></td>
+                                                <td>Class : <label><?php echo $all_data['class']; ?></label></td>
+                                            </tr>
+                                            <tr>
+                                                <td>Mother's Name :
+                                                    <label><?php echo $all_data['mother_name']; ?></label></td>
                                                 <td>Division : <label><?php echo $all_data['division']; ?></label></td>
                                             </tr>
                                             <tr>
                                                 <td>Date Of Birth :
-                                                    <label><?php 
-                                                    $date = date_create($all_data['date_of_birth']);
-                                                        echo date_format($date,"d-m-Y"); 
-                                                        ?></label></td>
-                                                <td></td>
+                                                    <label><?php echo $all_data['date_of_birth']; ?></label></td>
                                                 <td>G.R. No. : <label><?php echo $all_data['gr_no']; ?> </label></td>
                                             </tr>
-                                        </tbody>
-                                    </table><br><br>
-                                    {{-- <table class="report-card" style="border-collapse:collapse;" width="100%" --}}
-                                    <table border=1 style="border-collapse:collapse;" width="100%" cellspacing="0"
-                                        cellpadding="0">
-                                        <tbody>
+                                            </tbody>
+                                        </table>
+                                        <table class="aca-year"
+                                               style="border-collapse:collapse; border:1px solid #e68023;" width="100%"
+                                               cellspacing="0" cellpadding="0" border="1">
+                                            <tbody>
                                             <tr>
-                                                <th rowspan="4">
-                                                    SUBJECTS
-                                                </th>
-                                                <th colspan="12" style="text-align:center">
-                                                    THEORY EXAM
-                                                </th>
-<!--                                                <th rowspan="3" colspan="2" style="text-align:center">
-                                                    PRACTICAL
-                                                </th>
-                                                <th rowspan="3" style="text-align:center">
-                                                    GRAND TOTAL
-                                                </th>
--->                                                
-                                            </tr>
-
-                                            <tr>
-                                                <th colspan="3" style="text-align:center">
-                                                    UNIT TEST
-                                                </th>
-                                                <th rowspan="2" colspan="3" style="text-align:center">
-                                                    TERM I
-                                                </th>
-                                                <th rowspan="2" colspan="3" style="text-align:center">
-                                                    TERM II
-                                                </th>
-                                                <th rowspan="2" colspan="3" style="text-align:center">
-                                                    GRAND TOTAL
+                                                <th rowspan="4"><b>SUBJECTS</b></th>
+                                                <th colspan="14" style="text-align:center"><b>ACADEMIC YEAR EXAM</b>
                                                 </th>
                                             </tr>
                                             <tr>
-                                                <th style="text-align:center">I</th>
-                                                <th style="text-align:center">II</th>
-                                                <th rowspan="2" style="text-align:center">Wtg. 5% OF I + II</th>
+                                                <th colspan="2" style="text-align:center"><b>UNIT TEST</b></th>
+                                                <th rowspan="2" colspan="2" style="text-align:center"><b>HALF
+                                                        YEARLY<br/>EXAM</b></th>
+                                                <th rowspan="2" colspan="2" style="text-align:center"><b>YEARLY<br/>PRACTICAL/ASL/PROJECT</b>
+                                                </th>
+                                                <th rowspan="2" colspan="2" style="text-align:center"><b>YEARLY<br/>EXAM</b>
+                                                </th>
+                                                <th rowspan="3" colspan="3" style="text-align:center"><b>TOTAL</b></th>
+                                                <th rowspan="3" colspan="3" style="text-align:center"><b>AVERAGE</b>
+                                                </th>
                                             </tr>
                                             <tr>
-                                                <th style="text-align:center">OUT OF (25)</th>
-                                                <th style="text-align:center">OUT OF (25)</th>
-                                                <th style="text-align:center">OBT.</th>
-                                                <th style="text-align:center">MM</th>
-                                                <th style="text-align:center">Wtg. 20%</th>
-                                                <th style="text-align:center">OBT.</th>
-                                                <th style="text-align:center">MM</th>
-                                                <th style="text-align:center">Wtg. 75%</th>
-                                                <th style="text-align:center">100</th>
-<!--                                                <th style="text-align:center">THEORY %</th>
-                                                <th style="text-align:center">MM</th>
-                                                <th style="text-align:center">OBT.</th>
-                                                <th style="text-align:center">MM</th>
-                                                <th style="text-align:center">(TH+PR) 100</th>
--->
+                                                <th style="text-align:center"><b>I</b></th>
+                                                <th style="text-align:center"><b>II</b></th>
                                             </tr>
-                                            <?php 
+                                            <tr>
+                                                <th style="text-align:center"><b>OUT OF (25)</b></th>
+                                                <th style="text-align:center"><b>OUT OF (25)</b></th>
+                                                <th style="text-align:center"><b>MAX. MARKS</b></th>
+                                                <th style="text-align:center"><b>OBT. MARKS</b></th>
+                                                <th style="text-align:center"><b>MAX. MARKS</b></th>
+                                                <th style="text-align:center"><b>OBT. MARKS</b></th>
+                                                <th style="text-align:center"><b>MAX. MARKS</b></th>
+                                                <th style="text-align:center"><b>OBT. MARKS</b></th>
+                                            </tr>
+                                            <?php
                                             $term1 = $all_data['term-1'];
                                             $term2 = $all_data['term-2'];
+                                            // echo "<pre>";
+                                            // print_r($term1);
+                                            // exit;
                                             $exams = array();
                                             $result = "pass";
-                                            $pass = true;
-                                            foreach($all_data['exam_subject_wise'] as $subject=>$exam_data){ 
-                                            foreach($exam_data as $term_id=>$exam_arr){ 
-                                                foreach($exam_arr as $id=>$arr){ 
-                                                    $exams[$subject][$term_id][$arr['exam']] = $arr['mark'];
-                                                }
-                                            }
-                                            }
-                                            // echo ('<pre>');print_r($all_data['mark']);exit;
-                                                $total_get_mark_all_subject = array();
-                                                $continue = array();
-                                            foreach($all_data['mark'] as $subject=>$exam_arr){ 
-                                                ?>
-                                            <tr>
-                                                <?php
-                                                if (is_numeric($exam_arr[$term1]['UNIT TEST']) ) {
-                                                    if($exam_arr[$term1]['UNIT TEST'] == 0){
-                                                        // echo ('<pre>');print_r($_REQUEST);exit;
-                                                        $continue[] = $subject;
-                                                        continue;
+                                            $failed = 0;
+                                            if (isset($all_data['exam_subject_wise']) && is_array($all_data['exam_subject_wise'])) {
+                                                foreach ($all_data['exam_subject_wise'] as $subject => $exam_data) {
+                                                    foreach ($exam_data as $term_id => $exam_arr) {
+                                                        foreach ($exam_arr as $id => $arr) {
+                                                            $exams[$subject][$term_id][$arr['exam']] = $arr['mark'];
+                                                        }
                                                     }
                                                 }
-                                                    // if($exam_arr[$term1]['UNIT TEST'] != "AB"){
-                                                   
-                                                    // }
-                                                  ?>
-                                                <td> <?php echo $subject; ?> </td>
+                                            }
+                                            $total_get_mark_all_subject = array();
+                                            $continue = array();
+                                            if (isset($all_data['mark']) && is_array($all_data['mark'])) {
+                                            foreach ($all_data['mark'] as $subject => $subject_data) {
+                                            // echo "<pre>";
+                                            // print_r($all_data);
+                                            // exit;
+                                            ?>
 
-                                                <td> <?php echo $exam_arr[$term1]['UNIT TEST']; ?> </td>
-                                                <td> <?php echo $exam_arr[$term2]['UNIT TEST']; ?> </td>
-                                                <?php 
-                                                if ( !is_numeric($exam_arr[$term1]['UNIT TEST']) ) {
-                                                    $exam_arr[$term1]['UNIT TEST'] = 0;
-                                                        } 
-                                                if ( !is_numeric($exam_arr[$term2]['UNIT TEST']) ) {
-                                                    $exam_arr[$term2]['UNIT TEST'] = 0;
-                                                        } 
-                                                    $total_get_unit_test = $exam_arr[$term2]['UNIT TEST'] + $exam_arr[$term1]['UNIT TEST'];
-                                                    $total_unit_test = $exams[$subject][$term1]['UNIT TEST'] + $exams[$subject][$term2]['UNIT TEST'];
-                                                    
-                                                    $conver5 =  number_format((5 * $total_get_unit_test / $total_unit_test),2);
+                                            <tr>
+                                                <td style="text-align:center"><?php echo $subject; ?></td>
+                                                <?php
+                                                $theory_total = $theory_gain = 0;
+                                                foreach($subject_data as $stud_id => $stud_data){
+
+                                                if(isset($stud_data['Half Yearly']) || isset($stud_data['Yearly']) || isset($stud_data['Practical/ASL/Project']) || isset($stud_data['UT1']) || isset($stud_data['UT2'])){
+
+                                                $unit_1 = $stud_data['UT1'];
+                                                $unit_2 = $stud_data['UT2'];
+                                                $practical = $stud_data['Practical/ASL/Project'];
+                                                $half = $stud_data['Half Yearly'];
+                                                $year = $stud_data['Yearly'];
+
+                                                $total_unit_1 = $subject_data['total_points'][$stud_id]['UT1'];
+                                                $total_unit_2 = $subject_data['total_points'][$stud_id]['UT2'];
+                                                $total_practical = $subject_data['total_points'][$stud_id]['Practical/ASL/Project'];
+                                                $total_half = $subject_data['total_points'][$stud_id]['Half Yearly'];
+                                                $total_year = $subject_data['total_points'][$stud_id]['Yearly'];
+
                                                 ?>
-                                                <td> <?php echo $conver5; ?> </td>
-
-                                                <td> <?php echo $exam_arr[$term1]['THEORY']; ?> </td>
-                                                <td> <?php echo $exams[$subject][$term1]['THEORY']; ?> </td>
-                                                <?php 
-                                                if ( !is_numeric($exam_arr[$term1]['THEORY']) ) {
-                                                    $exam_arr[$term1]['THEORY'] = 0;
-                                                        } 
-                                                $total_t1_get_theory = $exam_arr[$term1]['THEORY'];
-                                                $total_t1_theory = $exams[$subject][$term1]['THEORY'];
-                                                
-                                                $t1_theory_convert =  number_format((20 * $total_t1_get_theory / $total_t1_theory),2);
-                                            ?>
-                                                <td> <?php echo $t1_theory_convert; ?> </td>
-
-                                                <td> <?php echo $exam_arr[$term2]['THEORY']; ?> </td>
-                                                <td> <?php echo $exams[$subject][$term2]['THEORY']; ?> </td>
-                                                <?php 
-                                                if ( !is_numeric($exam_arr[$term2]['THEORY']) ) {
-                                                    $exam_arr[$term2]['THEORY'] = 0;
-                                                        } 
-                                                $total_t2_get_theory = $exam_arr[$term2]['THEORY'];
-                                                $total_t2_theory = $exams[$subject][$term2]['THEORY'];
-                                                
-                                                $t2_theory_convert =  number_format((75 * $total_t2_get_theory / $total_t2_theory),2);
-                                            ?>
-                                                <td> <?php echo $t2_theory_convert; ?> </td>
-
-
-                                                <?php 
-                                                $out_of_100 = $conver5 + $t1_theory_convert + $t2_theory_convert;
-
-                                                
-                                               
-                                                $convert_acording_exam_mm = number_format(($exams[$subject][$term2]['THEORY'] * $out_of_100 / 100),2);
-                                                
-                                                if($exams[$subject][$term2]['THEORY'] == 70){
-                                                    if($convert_acording_exam_mm < 23){
-                                                    $pass = false;
-                                                }
-                                                }else{
-                                                    if($convert_acording_exam_mm < 25){
-                                                    $pass = false;
-                                                }
-                                                }
+                                                <td style="text-align:center"><?php echo $unit_1; $theory_total += $total_unit_1; if (is_numeric($unit_1)) {
+                                                        $theory_gain += $unit_1;
+                                                    } ?></td>
+                                                <td style="text-align:center"><?php echo $unit_2; $theory_total += $total_unit_2; if (is_numeric($unit_2)) {
+                                                        $theory_gain += $unit_2;
+                                                    } ?></td>
+                                                <?php
+                                                // foreach($stud_id as $keys => $total_points){
+                                                // echo "<pre>";
+                                                // print_r($all_data['mark'][$subject]['total_points'][$stud_id]);
+                                                // exit;
+                                                // }
                                                 ?>
 
-                                                <td> <?php echo $out_of_100; ?> </td>
+                                                <td style="text-align:center"><?php echo $total_half; $theory_total += $total_half; ?></td>
+                                                <td style="text-align:center"><?php echo $half; if (is_numeric($half)) {
+                                                        $theory_gain += $half;
+                                                    } ?></td>
+                                                <td style="text-align:center"><?php echo $total_practical; ?></td>
+                                                <td style="text-align:center"><?php echo $practical; ?></td>
+                                                <td style="text-align:center"><?php echo $total_year; $theory_total += $total_year; ?></td>
+                                                <td style="text-align:center"><?php echo $year; if (is_numeric($year)) {
+                                                        $theory_gain += $year;
+                                                    } ?></td>
+                                                <?php
+                                                $total_avg = 0;
+                                                $out_of_100 = $subject_data['TOTAL_GAIN'];
+
+                                                foreach ($subject_data['total_points'][$stud_id] as $key => $value) {
+                                                    // code...
+                                                    if ($half == "N.A." || $half == "EX") {
+                                                        $sum = array($total_practical, $total_year, $total_unit_1, $total_unit_2);
+                                                    } elseif ($year == "N.A." || $year == "EX") {
+                                                        $sum = array($total_practical, $total_half, $total_unit_1, $total_unit_2);
+                                                    } elseif ($practical == "N.A." || $practical == "EX") {
+                                                        $sum = array($total_half, $total_year, $total_unit_1, $total_unit_2);
+                                                    } elseif ($unit_1 == "N.A." || $unit_1 == "EX") {
+                                                        $sum = array($total_practical, $total_year, $total_half, $total_unit_2);
+                                                    } elseif ($unit_2 == "N.A." || $unit_2 == "EX") {
+                                                        $sum = array($total_practical, $total_year, $total_unit_1, $total_half);
+                                                    } else {
+                                                        $sum = $subject_data['total_points'][$stud_id];
+                                                    }
+                                                    $r = array_sum($sum);
+                                                    $total_avg = round(($out_of_100 * 100 / $r), 0);
+
+                                                    if ($theory_total != 0) {
+                                                        $total_per = round(($theory_gain * 100 / $theory_total), 0);
+                                                    } else {
+                                                        $total_per = 0; // Set $total_per to zero if $theory_total is zero
+                                                    }
+                                                    if ($total_per < 33)
+                                                        $failed++;
+                                                }
+                                                // $count = count($stud_data);
+                                                }
+                                                }
+                                                ?>
+                                                <td style="text-align:center"
+                                                    colspan="2"><?php echo $out_of_100; ?></td>
+                                                <!--.":".$theory_gain."/",$theory_total."=".$total_per-->
+                                                <td style="text-align:center" colspan="4"><?php echo $total_avg; ?></td>
                                             </tr>
-                                            <?php 
-                                                $total_get_mark_all_subject[] = $out_of_100;
-                                                } 
-
-                                           //  echo ('<pre>');print_r($total_get_mark_all_subject);exit;
+                                            <?php
+                                            $total_get_mark_all_subject[] = $total_avg;
+                                            }
+                                            }
                                             $total_mark = count($total_get_mark_all_subject) * 100;
                                             $total_get_mark = 0;
-                                            
-                                            foreach($total_get_mark_all_subject as $id=>$val){
+
+                                            foreach ($total_get_mark_all_subject as $id => $val) {
                                                 $total_get_mark = $total_get_mark + $val;
-                                                if($total_get_mark_all_subject < 35){
-                                                    $result="fail";
+                                                if ($total_get_mark_all_subject < 35) {
+                                                    $result = "fail";
                                                 }
                                             }
-                                            // echo ('<pre>');// print_r($total_get_mark_all_subject);
-                                            // echo ($total_get_mark)."asd<br>";
-                                            // echo($total_mark)."asd<br>";
-                                            
-                                            // exit;
-                                                if($total_get_mark != 0){
-                                            $per = number_format(100*$total_get_mark/$total_mark,2);}else{
+
+                                            if ($total_get_mark != 0) {
+                                                $per = number_format(100 * $total_get_mark / $total_mark, 2);
+                                            } else {
                                                 $per = "-";
                                             }
-
                                             ?>
+
                                             <tr>
-                                                <td>Grand Total (Out of <?php echo $total_mark; ?>)</td>
-                                                <td colspan="10" align="right"><?php echo $total_get_mark; ?></td>
+                                                <td align="right" colspan="14"><b>GRAND TOTAL</b></td>
+                                                <td align="center"><b><?php echo $total_get_mark; ?></b></td>
                                             </tr>
                                             <tr>
-                                                <td>PERCENTAGE</td>
-                                                <td colspan="10" align="right"><?php echo $per."%"; ?></td>
+                                                <td align="right" colspan="14"><b>PERCENTAGE</b></td>
+                                                <td align="center"><b><?php echo $per . "%"; ?></b></td>
                                             </tr>
 
-                                        </tbody>
-                                    </table>
-                                </td>
-                            </tr>
-<!--                            
-                            <tr>
-                                <td><br><br>
-                                    <table border=1 style="border-collapse:collapse;" width="100%" cellspacing="0"
-                                        cellpadding="0">
-                                        <tr>
-                                            <th>
-                                                INTERNAL GRADE
-                                            </th>
-                                            <th>
-                                                GRADE
-                                            </th>
-                                        </tr>
+                                            </tbody>
+                                        </table>
+                                    </td>
+                                </tr>
+                                <!-- co-scholastic start -->
+                                <tr>
+                                    <td class="p-t-10" width="100%" valign="top">
+                                        <div style='display:flex;'>
+                                            <?php
+                                            $count = 0;
+                                            if(isset($all_data['co_scholastic_area']) || isset($term_2_data[$stuent_id]['co_scholastic_area']))
+                                            {
+                                            if (isset($all_data['co_scholastic_area'])) {
+                                                $co_scholastic_area = $all_data['co_scholastic_area'];
+                                            } else {
+                                                $co_scholastic_area = $term_2_data[$stuent_id]['co_scholastic_area'];
+                                            }
+                                            foreach ($co_scholastic_area as $co_area => $arr) {
+                                            $term1co = $all_data['co_scholastic_area'][$co_area] ?? [];
+                                            $term2co = $term_2_data[$stuent_id]['co_scholastic_area'][$co_area] ?? [];
 
-                                        <?php foreach($all_data['co_scholastic_area'] as $co_area=>$co_area_arr){ ?>
-                                        <?php foreach($co_area_arr as $disipline=>$disipline_arr){ ?>
-                                        <?php foreach($disipline_arr as $co_name=>$co_arr){ ?>
-                                        <?php foreach($co_arr as $id=>$val){ ?>
-                                        <tr>
-                                            <td>
-                                                <?php echo $co_name; ?>
+                                            foreach ($arr as $parent => $child_arr) {
+                                            $term1arr = $term1co[$parent] ?? [];
+                                            $term2arr = $term2co[$parent] ?? [];
 
-                                            </td>
-                                            <td>
-                                                <?php echo $val; ?>
-                                            </td>
-                                        </tr>
-                                        <?php 
-                                                } 
-                                                } 
-                                                } 
-                                                } 
-                                                ?>
-
-                                    </table>
-                                </td>
-                            </tr>
--->                            
-                            <tr>
-                                <td><br><br>
-                                    <table border=1 style="border-collapse:collapse;" width="100%" cellspacing="0"
-                                        cellpadding="0">
-                                        <tr>
-                                            <th>
-                                                Attendance (Term I+II)
-                                            </th>
-                                            <td>
-                                                :
-                                            </td>
-                                            <td>
-                                                <?php echo $all_data['att']; ?>
-                                            </td>
-                                        </tr>
-                                        <tr>
-                                            <th>
-                                                Result
-                                            </th>
-                                            <td>
-                                                :
-                                            </td>
-                                            <td>
-                                                <?php 
-                                                if($pass === true){
-                                                    echo "Passed and Promoted to Grade XII ".$all_data['medium'];
-                                                }else{
-                                                    echo "Detained  in  Grade  XI ".$all_data['medium'];
-                                                }
-                                                // if($result == "pass"){
-                                                //     echo "Passed and Prometed to Grade XII Science";
-                                                // }else{
-                                                //     echo "Prometed to Grade XII Science";
-                                                // }
-                                                     ?>
-                                            </td>
-                                        </tr>
-                                        <tr>
-                                            <th>
-                                                School Reopens on
-                                            </th>
-                                            <td>
-                                                :
-                                            </td>
-                                            <td>
+                                            $count = $count + 1;
+                                            if ($count % 2 == 0) {
+                                                $margin = "margin-left:2.5%;";
+                                            } else {
+                                                $margin = "margin-right:2.5%;";
+                                            }
+                                            echo "<div style='display:flex;width:50%;" . $margin . "'>";
+                                            ?>
+                                            <table class="aca-year"
+                                                   style="width: 100%;border-collapse:collapse; border:1px solid #e68023;"
+                                                   cellspacing="0" cellpadding="0" border="1">
+                                                <tbody>
+                                                <tr>
+                                                    <th width="70%" style="text-align: left;">
+                                                        <b><?php echo strtoupper($parent); ?></b></th>
+                                                    <th width="30%" style="text-align: center;"><b>GRADE</b></th>
+                                                </tr>
                                                 <?php
-                                                    $date = date_create($all_data['exam_master_settig']['reopen_date']);
-                                                        echo date_format($date,"d-m-Y"); 
-                                                         
-                                                    // echo $all_data['exam_master_settig']['reopen_date']; 
-                                                    ?>
-                                            </td>
-                                        </tr>
-                                        <tr>
-                                            <th>
-                                                Signature
-                                            </th>
-                                            <td colspan=2>
-                                                <table width="100%" border="0">
-                                                    <tr>
-                                                        <td style="text-align: center;">
-                                                            <br><br>
-                                                            <?php $img = "/storage/result/teacher_sign/".$all_data['exam_master_settig']['teacher_sign']; ?>
-                                                            <hr>
-                                                            Teacher's Sign
-                                                        </td>
-                                                        <td style="text-align: center;">
-                                                            <br><br>
-                                                            <?php $img1 = "/storage/result/principle_sign/".$all_data['exam_master_settig']['principal_sign']; ?>
-                                                            <hr>
-                                                            Principal's Sign
-                                                        </td>
-                                                        <td style="text-align: center;">
-                                                            <br><br>
-                                                            <hr>
-                                                            Parent's Sign
-                                                        </td>
-                                                    </tr>
-                                                </table>
-                                            </td>
+                                                foreach ($child_arr as $subject => $obtain_grade) {
+                                                ?>
+                                                <tr>
+                                                    <td><?php echo $subject; ?></td>
+                                                    <td align="center"><?php echo $obtain_grade[$term1]; ?></td>
+                                                </tr>
+                                                <?php } ?>
+                                                </tbody>
+                                            </table>
+                                            <?php
+                                            echo "</div>";
+                                            echo "<div style='display:flex;width:30%;margin-left:3%'>";
+                                            ?>
+                                            <table class="aca-year"
+                                                   style="width: 100%;height:fit-content;margin-top:8%;border-collapse:collapse; border:1px solid #e68023;"
+                                                   cellspacing="0" cellpadding="0" border="1">
+                                                <tbody>
+                                                <tr>
+                                                    <th colspan="2" style="text-align: left;">
+                                                        <b>Total Attendance</b></th>
+                                                </tr>
+                                                <tr>
+                                                    <td width="75%">No. Of Working Days</td>
+                                                    <td width="25%"
+                                                        align="center"><?php echo $all_data['total_working_day']; ?></td>
+                                                </tr>
+                                                <tr>
+                                                    <td>Days Attended</td>
+                                                    <td align="center"><?php echo $all_data['att']; ?></td>
+                                                </tr>
+                                                </tbody>
+                                            </table>
+                                        <?php
+                                        echo "</div>";
+                                        if ($count % 2 == 0) {
+                                            echo "</div>";
+                                            echo "<div class='p-t-10' style='display:flex;'>";
+                                        }
+                                        }
+                                        echo "</div>";
+                                        }
+                                        // }
+                                        ?>
+                                        <!--</div>-->
+                                    </td>
+                                </tr>
+                                <!-- co-scholastic end -->
+                                @if(count($footer_data) > 0)
+                                    <tr>
+                                        <td><br/><br/>
+                                            <table style="border:hidden;" width="100%" cellspacing="0" cellpadding="0">
+                                                <tr>
+                                                    <td colspan="3" class="p-t-10">
+                                                        <b>Class Teacher's Remarks
+                                                            : {{ \App\Helpers\getGradeComment($gradeScale, 100, $per) }}</b>
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <td colspan="3" class="p-t-10">
+                                                        <b>Result : <?php if ($failed) {
+                                                                echo "Failed";
+                                                            } else {
+                                                                echo "Pass";
+                                                            }; ?></b>
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <td colspan="3" class="p-t-10">
+                                                        <b>School Reopens on
+                                                            : </b> <?php echo date_format(new DateTime($footer_data['reopen_date']), "d-M-Y"); ?>
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <td align="center" width="33%">
+                                                        <br>
+                                                        <img height="50px" width="100px"
+                                                             src="/storage/result/teacher_sign/{{$footer_data['teacher_sign']}}"/>
+                                                        <br>
+                                                        <!--<hr>-->
+                                                        Teacher's Sign
+                                                    </td>
+                                                    <td align="center" width="33%">
+                                                        <br>
+                                                        <img height="50px" width="100px"
+                                                             src="/storage/result/principle_sign/{{$footer_data['principal_sign']}}"/>
+                                                        <br>
+                                                        <!--<hr>-->
+                                                        Principal's Sign
+                                                    </td>
+                                                    <td align="center" width="33%">
+                                                        <br>
+                                                        <img height="50px" width="100px"
+                                                             src="/storage/result/teacher_sign/{{$footer_data['teacher_sign']}}"/>
+                                                        <br>
+                                                        Parent's Sign
+                                                    </td>
+                                                </tr>
+                                            </table>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td colspan="3" class="p-t-10">
+                                            <b>NOTE: N.A. = Not Applicable, AB = Absent, EX = Exemption</b>
+                                        </td>
+                                    </tr>
+                                    @endif
+                                    </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div style="page-break-after: always !important;"></div>
 
-                                        </tr>
-
-                                    </table>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                    <?php
-                            echo "<br><br>";
-                        }
-                    }
-                    ?>
+                        <?php } }?>
+                    </div>
                 </div>
 
+
+                @if (count($errors) > 0)
+                    <div class="alert alert-danger">
+                        <strong>Whoops!</strong> There were some problems with your input.<br><br>
+                        <ul>
+                            @foreach ($errors->all() as $error)
+                                <li>{{ $error }}</li>
+                            @endforeach
+                        </ul>
+                    </div>
+                @endif
             </div>
         </div>
     </div>
@@ -436,11 +460,9 @@
         var popupWin = window.open('', '_blank', 'width=300,height=300');
         popupWin.document.open();
         popupWin.document.write('<html>');
-        
+
         popupWin.document.write('<body onload="window.print()">' + divToPrint.innerHTML + '</html>');
         popupWin.document.close();
     }
-
-
 </script>
 @include('includes.footer')

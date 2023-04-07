@@ -34,37 +34,37 @@ class tblgroupwise_rightsController extends Controller
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $user_profiles = tbluserprofilemasterModel::where(['sub_institute_id' => $sub_institute_id])->orderBy('sort_order')->get()->toArray();
 
-        $data = tblmenumasterModel::where([
-            'LEVEL' => 1, 'status' => 1,
-        ])->whereRaw("find_in_set('$sub_institute_id',sub_institute_id)")
-            ->orderBy('sort_order')->get()->toArray();
-
-        $subMenuData = tblmenumasterModel::where(['LEVEL' => 2, 'status' => 1])
-            ->whereRaw("find_in_set('$sub_institute_id',sub_institute_id)")->orderBy('sort_order')->get()->toArray();
-
-        $SubsubMenuData = tblmenumasterModel::where(['LEVEL' => 3, 'status' => 1])
-            ->whereRaw("find_in_set('$sub_institute_id',sub_institute_id)")->orderBy('sort_order')->get()->toArray();
-
-        $i = 0;
-        foreach ($subMenuData as $key => $value) {
-            $finalSubMenu[$value['parent_menu_id']][$i] = $subMenuData[$key];
-            $i++;
-        }
-
-        $i = 0;
-        foreach ($SubsubMenuData as $key => $value) {
-            $finalSubSubMenu[$value['parent_menu_id']][$i] = $SubsubMenuData[$key];
-            $i++;
-        }
-
-        view()->share('groupwisemenuMaster', $data);
-        if (isset($finalSubMenu)) {
-            view()->share('groupwisesubmenuMaster', $finalSubMenu);
-        }
-
-        if (isset($finalSubSubMenu)) {
-            view()->share('groupwiseSubsubmenuMaster', $finalSubSubMenu);
-        }
+//        $data = tblmenumasterModel::where([
+//            'LEVEL' => 1, 'status' => 1,
+//        ])->whereRaw("find_in_set('$sub_institute_id',sub_institute_id)")
+//            ->orderBy('sort_order')->get()->toArray();
+//
+//        $subMenuData = tblmenumasterModel::where(['LEVEL' => 2, 'status' => 1])
+//            ->whereRaw("find_in_set('$sub_institute_id',sub_institute_id)")->orderBy('sort_order')->get()->toArray();
+//
+//        $SubsubMenuData = tblmenumasterModel::where(['LEVEL' => 3, 'status' => 1])
+//            ->whereRaw("find_in_set('$sub_institute_id',sub_institute_id)")->orderBy('sort_order')->get()->toArray();
+//
+//        $i = 0;
+//        foreach ($subMenuData as $key => $value) {
+//            $finalSubMenu[$value['parent_menu_id']][$i] = $subMenuData[$key];
+//            $i++;
+//        }
+//
+//        $i = 0;
+//        foreach ($SubsubMenuData as $key => $value) {
+//            $finalSubSubMenu[$value['parent_menu_id']][$i] = $SubsubMenuData[$key];
+//            $i++;
+//        }
+//
+//        view()->share('groupwisemenuMaster', $data);
+//        if (isset($finalSubMenu)) {
+//            view()->share('groupwisesubmenuMaster', $finalSubMenu);
+//        }
+//
+//        if (isset($finalSubSubMenu)) {
+//            view()->share('groupwiseSubsubmenuMaster', $finalSubSubMenu);
+//        }
 
         return view('user/add_groupwise_rights', ['user_profiles' => $user_profiles]);
     }
@@ -75,16 +75,16 @@ class tblgroupwise_rightsController extends Controller
         $editRights = $request->input('edit');
         $deleteRights = $request->input('delete');
         $viewRights = $request->input('view');
-        if (! isset($addRights)) {
+        if (!isset($addRights)) {
             $addRights = [];
         }
-        if (! isset($editRights)) {
+        if (!isset($editRights)) {
             $editRights = [];
         }
-        if (! isset($deleteRights)) {
+        if (!isset($deleteRights)) {
             $deleteRights = [];
         }
-        if (! isset($viewRights)) {
+        if (!isset($viewRights)) {
             $viewRights = [];
         }
 
@@ -94,8 +94,8 @@ class tblgroupwise_rightsController extends Controller
         tblgroupwise_rightsModel::where(["profile_id" => $request->input('profile_id')])->delete();
         foreach ($arrayKeys as $key => $value) {
             $finalArray = [
-                'menu_id'          => $key,
-                'profile_id'       => $request->input('profile_id'),
+                'menu_id' => $key,
+                'profile_id' => $request->input('profile_id'),
                 'sub_institute_id' => $sub_institute_id,
             ];
 
@@ -123,25 +123,82 @@ class tblgroupwise_rightsController extends Controller
     public function displayGroupwiseRights(Request $request)
     {
         $profile_id = $request->input("profile_id");
-        $rightsData = tblgroupwise_rightsModel::where(['profile_id' => $profile_id])->get()->toArray();
+        $rightsData = tblgroupwise_rightsModel::join('tblmenumaster', 'tblgroupwise_rights.menu_id', '=', 'tblmenumaster.id')
+            ->where(['tblgroupwise_rights.profile_id' => $profile_id])->get()->toArray();
         $rights = array();
         if (count($rightsData) > 0) {
             foreach ($rightsData as $key => $value) {
                 if ($value['can_view'] == 1) {
-                    $rights['view'][] = $value['menu_id']."_".$value['can_view'];
+                    $rights['view'][] = $value['menu_id'] . "_" . $value['can_view'];
                 }
                 if ($value['can_add'] == 1) {
-                    $rights['add'][] = $value['menu_id']."_".$value['can_add'];
+                    $rights['add'][] = $value['menu_id'] . "_" . $value['can_add'];
                 }
                 if ($value['can_edit'] == 1) {
-                    $rights['edit'][] = $value['menu_id']."_".$value['can_edit'];
+                    $rights['edit'][] = $value['menu_id'] . "_" . $value['can_edit'];
                 }
                 if ($value['can_delete'] == 1) {
-                    $rights['delete'][] = $value['menu_id']."_".$value['can_delete'];
+                    $rights['delete'][] = $value['menu_id'] . "_" . $value['can_delete'];
                 }
             }
         }
 
         return $rights;
+    }
+
+    public function ajx_userProfile_Data_Create(Request $request)
+    {
+        $profile_id = $request->profile_id;
+        $sub_institute_id = $request->session()->get('sub_institute_id');
+        $user_profiles = tbluserprofilemasterModel::where(['sub_institute_id' => $sub_institute_id])->orderBy('sort_order')->get()->toArray();
+
+        $data = tblmenumasterModel::join('tblgroupwise_rights', 'tblmenumaster.id', '=', 'tblgroupwise_rights.menu_id')->where(['LEVEL' => 1, 'status' => 1, 'tblgroupwise_rights.profile_id' => $profile_id, 'tblgroupwise_rights.sub_institute_id' => $sub_institute_id])->orderBy('tblmenumaster.sort_order', 'ASC')->get()->toArray();
+
+        $subMenuData = tblmenumasterModel::join('tblgroupwise_rights', 'tblmenumaster.id', '=', 'tblgroupwise_rights.menu_id')->where(['LEVEL' => 2, 'status' => 1, 'tblgroupwise_rights.profile_id' => $profile_id, 'tblgroupwise_rights.sub_institute_id' => $sub_institute_id])->orderBy('tblmenumaster.sort_order', 'ASC')->get()->toArray();
+
+        $SubsubMenuData = tblmenumasterModel::join('tblgroupwise_rights', 'tblmenumaster.id', '=', 'tblgroupwise_rights.menu_id')->where(['LEVEL' => 3, 'status' => 1, 'tblgroupwise_rights.profile_id' => $profile_id, 'tblgroupwise_rights.sub_institute_id' => $sub_institute_id])->orderBy('tblmenumaster.sort_order', 'ASC')->get()->toArray();
+
+        $i = 0;
+        foreach ($subMenuData as $key => $value) {
+            $finalSubMenu[$value['parent_menu_id']][$i] = $subMenuData[$key];
+            $i++;
+        }
+
+        $i = 0;
+        foreach ($SubsubMenuData as $key => $value) {
+            $finalSubSubMenu[$value['parent_menu_id']][$i] = $SubsubMenuData[$key];
+            $i++;
+        }
+
+        view()->share('groupwisemenuMaster', $data);
+        if (isset($finalSubMenu)) {
+            view()->share('groupwisesubmenuMaster', $finalSubMenu);
+        }
+
+        if (isset($finalSubSubMenu)) {
+            view()->share('groupwiseSubsubmenuMaster', $finalSubSubMenu);
+        }
+
+        $rightsData = tblgroupwise_rightsModel::join('tblmenumaster', 'tblgroupwise_rights.menu_id', '=', 'tblmenumaster.id')
+            ->where(['tblgroupwise_rights.profile_id' => $profile_id])->get()->toArray();
+        $rights = array();
+        if (count($rightsData) > 0) {
+            foreach ($rightsData as $key => $value) {
+                if ($value['can_view'] == 1) {
+                    $rights['view'][] = $value['menu_id'] . "_" . $value['can_view'];
+                }
+                if ($value['can_add'] == 1) {
+                    $rights['add'][] = $value['menu_id'] . "_" . $value['can_add'];
+                }
+                if ($value['can_edit'] == 1) {
+                    $rights['edit'][] = $value['menu_id'] . "_" . $value['can_edit'];
+                }
+                if ($value['can_delete'] == 1) {
+                    $rights['delete'][] = $value['menu_id'] . "_" . $value['can_delete'];
+                }
+            }
+        }
+
+        return view('user.add_groupwise_rights', ["user_profiles" => $user_profiles, "rights", $rights]);
     }
 }

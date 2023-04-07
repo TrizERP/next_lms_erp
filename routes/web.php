@@ -54,14 +54,12 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-if(isset($_REQUEST['sub_institute_id']) && $_REQUEST['sub_institute_id'] != '')
-{
+if (isset($_REQUEST['sub_institute_id']) && $_REQUEST['sub_institute_id'] != '') {
     $sub_institute_id = $_REQUEST['sub_institute_id'];
 
     $get_general_data = general_dataModel::where(['sub_institute_id' => $sub_institute_id])->get()->toArray();
 
-    if(count($get_general_data) > 0)
-    {
+    if (count($get_general_data) > 0) {
         $loginpage_link = $get_general_data[0]['fieldvalue'];
         $loginpage_logo = $get_general_data[1]['fieldvalue'];
         $loginpage_title = $get_general_data[2]['fieldvalue'];
@@ -76,7 +74,7 @@ if(isset($_REQUEST['sub_institute_id']) && $_REQUEST['sub_institute_id'] != '')
         session(['loginpage_favicon' => $loginpage_favicon]);
         session(['loginpage_backgrond' => $loginpage_backgrond]);
     }
-}else{
+} else {
     Route::get('/', function (Request $request) {
         $user_id = $request->session()->get('user_id');
 
@@ -93,13 +91,13 @@ Route::any('/knowledge-base', [dashboardController::class, 'knowledge_base'])->n
 
 Route::any('/knowledge-base-detail/{id}/{title}', [dashboardController::Class, 'knowledge_base_detail'])->name('knowledge_base_detail')->middleware('session', 'menu');
 
-Route::get('dashboard', [dashboardController::class, 'index'])->name('dashboard')->middleware('session', 'menu','logRoute');
+Route::get('dashboard', [dashboardController::class, 'index'])->name('dashboard')->middleware('session', 'menu', 'logRoute');
 // From Build
-Route::get('formbuilder/list', [UserFormbuilderController::class, 'index'])->name('formbuild.list')->middleware('session', 'menu','logRoute');
-Route::get('formbuilder/create', [UserFormbuilderController::class, 'formbuilder'])->name('formbuild.create')->middleware('session', 'menu','logRoute');
-Route::post('saveformbuild/{id?}', [UserFormbuilderController::class, 'saveformbuilder'])->name('saveformbuild')->middleware('session', 'menu','logRoute');
-Route::get('formbuilder/edit/{id?}', [UserFormbuilderController::class, 'editformbuilder'])->name('formbuild.edit')->middleware('session', 'menu','logRoute');
-Route::get('formbuilder/delete/{id?}', [UserFormbuilderController::class, 'deleteformbuilder'])->name('formbuild.delete')->middleware('session', 'menu','logRoute');
+Route::get('formbuilder/list', [UserFormbuilderController::class, 'index'])->name('formbuild.list')->middleware('session', 'menu', 'logRoute');
+Route::get('formbuilder/create', [UserFormbuilderController::class, 'formbuilder'])->name('formbuild.create')->middleware('session', 'menu', 'logRoute');
+Route::post('saveformbuild/{id?}', [UserFormbuilderController::class, 'saveformbuilder'])->name('saveformbuild')->middleware('session', 'menu', 'logRoute');
+Route::get('formbuilder/edit/{id?}', [UserFormbuilderController::class, 'editformbuilder'])->name('formbuild.edit')->middleware('session', 'menu', 'logRoute');
+Route::get('formbuilder/delete/{id?}', [UserFormbuilderController::class, 'deleteformbuilder'])->name('formbuild.delete')->middleware('session', 'menu', 'logRoute');
 Route::get('getformbuilder/{name?}', [UserFormbuilderController::class, 'getformbuilder'])->name('getformbuild');
 Route::get('apiGetformbuilder/{name?}', [UserFormbuilderController::class, 'Apigetformbuilder'])->name('getformbuild');
 
@@ -114,11 +112,11 @@ Route::get('displayForm', [UserFormbuilderController::class, 'displayFormDataRec
 
 //End From Build
 
-Route::get('chart_dashboard', [dashboardController::class, 'chart'])->name('chart_dashboard')->middleware('session', 'menu','logRoute');
+Route::get('chart_dashboard', [dashboardController::class, 'chart'])->name('chart_dashboard')->middleware('session', 'menu', 'logRoute');
 
 Route::get('schoolList', [dashboardController::class, 'schoolList'])->name('schoolList');
 
-Route::get('siteMap', [dashboardController::class, 'siteMap'])->name('siteMap')->middleware('session', 'menu','logRoute');
+Route::get('siteMap', [dashboardController::class, 'siteMap'])->name('siteMap')->middleware('session', 'menu', 'logRoute');
 
 Route::any('login', [loginController::class, 'index'])->name('login');
 Route::any('signup', [signupController::class, 'index'])->name('signup');
@@ -132,15 +130,15 @@ Route::any('/profileAPI', [loginController::class, 'profileAPI']);
 
 Route::any('/tourUpdate', [tourController::class, 'index'])->name('tourUpdate');
 
-Route::get('/implementation', [tourController::class, 'implementation'])->name('implementation')->middleware('session', 'menu','logRoute');
-Route::get('/implementation_1', [tourController::class, 'implementation_1'])->name('implementation_1')->middleware('session', 'menu','logRoute');
-Route::get('/implementation_2', [tourController::class, 'implementation_2'])->name('implementation_2')->middleware('session', 'menu','logRoute');
-Route::get('/skip_implementation', [tourController::class, 'skipImplementation'])->name('skip_implementation')->middleware('session', 'menu','logRoute');
+Route::get('/implementation', [tourController::class, 'implementation'])->name('implementation')->middleware('session', 'menu', 'logRoute');
+Route::get('/implementation_1', [tourController::class, 'implementation_1'])->name('implementation_1')->middleware('session', 'menu', 'logRoute');
+Route::get('/implementation_2', [tourController::class, 'implementation_2'])->name('implementation_2')->middleware('session', 'menu', 'logRoute');
+Route::get('/skip_implementation', [tourController::class, 'skipImplementation'])->name('skip_implementation')->middleware('session', 'menu', 'logRoute');
 
 Route::get('ajax_SaveDynamicDashboardMenu', [dashboardSettingController::class, 'ajax_SaveDynamicDashboardMenu'])->name('ajax_SaveDynamicDashboardMenu');
 
 // Harshad Start
-Route::group(['prefix' => 'student', 'middleware' => ['session', 'menu','logRoute']], function () {
+Route::group(['prefix' => 'student', 'middleware' => ['session', 'menu', 'logRoute']], function () {
     Route::get('studentresult', [TemplateResult::class, 'index']);
     Route::post('studentresult_show', [TemplateResult::class, 'show_result'])->name('studentresult.show');
     Route::get('result_show/{arr?}', [TemplateResult::class, 'result_show'])->name('result.show');
@@ -148,7 +146,7 @@ Route::group(['prefix' => 'student', 'middleware' => ['session', 'menu','logRout
 // Harshad End
 
 
-Route::group(['prefix' => 'school_setup', 'middleware' => ['session', 'menu','logRoute']], function () {
+Route::group(['prefix' => 'school_setup', 'middleware' => ['session', 'menu', 'logRoute']], function () {
     Route::resource('add_school', schoolController::class);
     Route::resource('std_div_map', std_divController::class);
     Route::resource('division_capacity_master', divisionCapacityMasterController::class);
@@ -206,7 +204,7 @@ Route::group(['prefix' => 'school_setup', 'middleware' => ['session', 'menu','lo
     Route::resource('teacher_daily_report', teacherdailyReportController::class);
     Route::post('ajax_getTeacherDailyReport', [teacherdailyReportController::class, 'getTeacherDailyReport'])->name('ajax_getTeacherDailyReport');
 
-    Route::resource('lessonplanning',lessonplanningController::class);
+    Route::resource('lessonplanning', lessonplanningController::class);
     Route::get('ajax_getlp_subject', [lessonplanningController::class, 'getSubjectData'])->name('ajax_getlp_subject');
     Route::get('ajax_getlp_division', [lessonplanningController::class, 'getDivisionData'])->name('ajax_getlp_division');
 
@@ -241,8 +239,8 @@ Route::post('ckeditor', [CkeditorFileUploadController::class, 'store'])->name('u
 // Forgot Password Routes
 Route::get('forget-password', [ForgotPasswordController::class, 'showForgetPasswordForm'])->name('forget.password.get');
 Route::post('forget-password', [ForgotPasswordController::class, 'submitForgetPasswordForm'])->name('forget.password.post');
-Route::get('reset-password/{token}/{email}',[ForgotPasswordController::class, 'showResetPasswordForm'])->name('reset.password.get');
-Route::post('reset-password',[ForgotPasswordController::class, 'submitResetPasswordForm'])->name('reset.password.post');
+Route::get('reset-password/{token}/{email}', [ForgotPasswordController::class, 'showResetPasswordForm'])->name('reset.password.get');
+Route::post('reset-password', [ForgotPasswordController::class, 'submitResetPasswordForm'])->name('reset.password.post');
 
 
 Route::post('NewLMS_temp_signup', [NewLMS_ApiController::class, 'NewLMS_temp_signup'])->name("NewLMS_temp_signup");

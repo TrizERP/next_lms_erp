@@ -49,15 +49,15 @@ use App\Http\Controllers\fees\tblfeesLateController;
 use App\Http\Controllers\fees\update_fees_breackoff\update_fees_breackoff_controller;
 use Illuminate\Support\Facades\Route;
 
-Route::group(['prefix' => 'fees', 'middleware' => ['session', 'menu', 'logRoute']], function() {
+Route::group(['prefix' => 'fees', 'middleware' => ['session', 'menu', 'logRoute']], function () {
     Route::resource('fees_config_master', tblfeesConfigController::class);
-    Route::resource('fees_circular_master', feesCircularMasterController::class);    
-    Route::resource('fees_late_master', tblfeesLateController::class);    
-    Route::resource('fees_head_type_master', tblfeesHeadTypeMasterController::class);    
-    Route::resource('fees_receipt_book_master', feesReceiptBookMasterController::class);    
-    Route::resource('fees_circular', feesCircularController::class);    
-    Route::resource('fees_collection_report', feesReportController::class);    
-    Route::resource('other_fees_report', otherfeesReportController::class);    
+    Route::resource('fees_circular_master', feesCircularMasterController::class);
+    Route::resource('fees_late_master', tblfeesLateController::class);
+    Route::resource('fees_head_type_master', tblfeesHeadTypeMasterController::class);
+    Route::resource('fees_receipt_book_master', feesReceiptBookMasterController::class);
+    Route::resource('fees_circular', feesCircularController::class);
+    Route::resource('fees_collection_report', feesReportController::class);
+    Route::resource('other_fees_report', otherfeesReportController::class);
     Route::resource('otherNew_fees_report', otherNewfeesReportController::class);
     Route::resource('NACH_s1excel_export', s1excel_exportController::class);
     Route::resource('NACH_s2excel_import', s2excel_importController::class);
@@ -67,17 +67,17 @@ Route::group(['prefix' => 'fees', 'middleware' => ['session', 'menu', 'logRoute'
 
     Route::get('ajax_ledgerData', [otherNewfeesReportController::class, 'ajax_ledgerData'])->name('ajax_ledgerData');
 
-    Route::resource('otherNew_cancel_fees_report', otherNew_CancelFeesReportController::class);    
-    Route::resource('fees_type_wise_report', feesTypewiseReportController::class);    
-    Route::resource('tally_export_fees_report', tallyExportReportController::class);    
-    Route::resource('fees_overall_headwise_report', feesOverallHeadwiseReportController::class);    
-    Route::resource('fees_headwise_pending_report', feesOverallHeadwisePendingReportController::class);    
-    Route::resource('fees_overall_report', feesOverallReportController::class);    
-    Route::resource('fees_status_report', feesStatusController::class); 
+    Route::resource('otherNew_cancel_fees_report', otherNew_CancelFeesReportController::class);
+    Route::resource('fees_type_wise_report', feesTypewiseReportController::class);
+    Route::resource('tally_export_fees_report', tallyExportReportController::class);
+    Route::resource('fees_overall_headwise_report', feesOverallHeadwiseReportController::class);
+    Route::resource('fees_headwise_pending_report', feesOverallHeadwisePendingReportController::class);
+    Route::resource('fees_overall_report', feesOverallReportController::class);
+    Route::resource('fees_status_report', feesStatusController::class);
 
     // Remain fees send SMS
-    Route::post('fees_remain_sms', [feesStatusController::class, 'ajaxRemainFeesSMSsend'])->name('remainFeesNotification');    
-    
+    Route::post('fees_remain_sms', [feesStatusController::class, 'ajaxRemainFeesSMSsend'])->name('remainFeesNotification');
+
     Route::resource('fees_title', fees_title_controller::class);
 
     Route::resource('other_fees_title', other_fees_title_controller::class);
@@ -94,27 +94,27 @@ Route::group(['prefix' => 'fees', 'middleware' => ['session', 'menu', 'logRoute'
     Route::resource('online_fees', online_fees_settigs_controller::class);
     Route::resource('online_fees_split', online_fees_split_controller::class);
     // Route::get('online_fees\show_online_type', 'fees\online_fees\online_fees_collect_controller@showTypes')->name('online_show_type');
-    
-    Route::get('hdfcpayment', function ($id=null) {
-        return view('fees/online_fees/hdfcpayment', ['name' => 'James']);    
+
+    Route::get('hdfcpayment', function ($id = null) {
+        return view('fees/online_fees/hdfcpayment', ['name' => 'James']);
     })->name('hdfcpayment');
-    Route::get('aggre_pay', function ($id=null) {
-        return view('fees/online_fees/aggre_pay', ['name' => 'James']);    
+    Route::get('aggre_pay', function ($id = null) {
+        return view('fees/online_fees/aggre_pay', ['name' => 'James']);
     })->name('aggre_pay');
-    Route::get('axis', function ($id=null) {
-        return view('fees/online_fees/axis', ['name' => 'James']);    
+    Route::get('axis', function ($id = null) {
+        return view('fees/online_fees/axis', ['name' => 'James']);
     })->name('axis');
-    Route::get('icici', function ($id=null) {
-        return view('fees/online_fees/icici', ['name' => 'James']);    
+    Route::get('icici', function ($id = null) {
+        return view('fees/online_fees/icici', ['name' => 'James']);
     })->name('icici');
-    Route::get('razorpay', function ($id=null) {
-        return view('fees/online_fees/razorpay', ['name' => 'James']);    
+    Route::get('razorpay', function ($id = null) {
+        return view('fees/online_fees/razorpay', ['name' => 'James']);
     })->name('razorpay');
 
-    
+
     Route::post('api/get-fees-list', ['AJAXController', 'getFees'])->name('get-fees-list');
     Route::resource('update_fees_breackoff', update_fees_breackoff_controller::class);
-    
+
     Route::post('fees_collect/show_student', ['as' => 'fees_collect.show_student', 'uses' => 'fees\fees_collect\fees_collect_controller@show_student']);
     Route::post('college_fees_collect/show_student', ['as' => 'college_fees_collect.show_student', 'uses' => 'fees\college_fees_collect\college_fees_collect_controller@show_student']);
 
@@ -122,9 +122,9 @@ Route::group(['prefix' => 'fees', 'middleware' => ['session', 'menu', 'logRoute'
         Route::post('fees_circular/show_student', 'showStudent')->name('fees_circular.show_student');
 //    Route::post('fees_circular/show_student', ['as' => 'fees_circular.show_student', 'uses' => 'fees\fees_circular\feesCircularController@showStudent']);
 
-        Route::post('fees_circular/show_circular', 'showCircular')->name('show_circular'); 
+        Route::post('fees_circular/show_circular', 'showCircular')->name('show_circular');
     });
-    
+
 
     Route::resource('fees_cancel', feesCancelController::class);
     Route::controller(feesCancelController::class)->group(function () {
@@ -150,8 +150,8 @@ Route::group(['prefix' => 'fees', 'middleware' => ['session', 'menu', 'logRoute'
     Route::post('fees/fees_overall_report', [feesOverallReportController::class, 'showFeesOverall'])->name('show_fees_overall_report');
 
     Route::post('fees/fees_status_report', [feesStatusController::class, 'feesStatusReport'])->name('show_fees_status_report');
-    
-    Route::get('pdfview',array('as'=>'pdfview','uses'=>'ItemController@pdfview'));
+
+    Route::get('pdfview', array('as' => 'pdfview', 'uses' => 'ItemController@pdfview'));
 
     Route::controller(feesStructureReportController::class)->group(function () {
         Route::get('fees_structure_report_index', 'feesStructureReportIndex')->name("fees_structure_report_index");
@@ -163,12 +163,12 @@ Route::group(['prefix' => 'fees', 'middleware' => ['session', 'menu', 'logRoute'
         Route::post('fees_cancel_report', 'feesCancelReport')->name("fees_cancel_report");
     });
 
-    
+
     Route::get('fees_refund_report_index', 'fees\fees_report\feesRefundReportController@feesRefundReportIndex')->name("fees_refund_report_index");
     Route::post('fees_refund_report', 'fees\fees_report\feesRefundReportController@feesRefundReport')->name("fees_refund_report");
 
-	Route::resource('fees_monthly_report', feesMonthlyReportController::class);
-	Route::post('getfeesMonthlyReport', [feesMonthlyReportController::class, 'getfeesMonthlyReport'])->name('getfeesMonthlyReport');
+    Route::resource('fees_monthly_report', feesMonthlyReportController::class);
+    Route::post('getfeesMonthlyReport', [feesMonthlyReportController::class, 'getfeesMonthlyReport'])->name('getfeesMonthlyReport');
 
 
     Route::controller(feesInstituteWiseFeesReportController::class)->group(function () {
@@ -182,17 +182,17 @@ Route::group(['prefix' => 'fees', 'middleware' => ['session', 'menu', 'logRoute'
     });
 
     Route::resource('imprest_refund_report', imprestRefundReportController::class);
-    
+
 });
 
-    Route::post('api/get-online-fees-list', [AJAXController::class, 'getOnlineFees'])->name('get-online-fees-list');
-	Route::post('fees/PaidUnpaid', [fees_collect_controller::class, 'PaidUnpaid']);
-	Route::post('fees/PaidUnpaidTeacher', [fees_collect_controller::class, 'PaidUnpaidTeacher']);
-	Route::group(['prefix' => 'report','middleware' => ['session','menu','logRoute']], function () {
-	   Route::resource('report_module', 'report\report_module\report_module_controller');
-    });
-    //online routes
-
+Route::post('api/get-online-fees-list', [AJAXController::class, 'getOnlineFees'])->name('get-online-fees-list');
+Route::post('fees/PaidUnpaid', [fees_collect_controller::class, 'PaidUnpaid']);
+Route::post('fees/PaidUnpaidTeacher', [fees_collect_controller::class, 'PaidUnpaidTeacher']);
+Route::group(['prefix' => 'report', 'middleware' => ['session', 'menu', 'logRoute']], function () {
+    Route::resource('report_module', 'report\report_module\report_module_controller');
+});
+//online routes
+Route::get('/fees/feesDetails/getDetails/{id}/{stud}', [fees_collect_controller::class, 'retrieveDataByUserId']);
 Route::controller(online_fees_collect_controller::class)->group(function () {
     Route::get('fees/online_fees_collect', 'index');
 
@@ -217,17 +217,17 @@ Route::controller(online_fees_collect_controller::class)->group(function () {
     Route::post('fees/razorpay/online_fees_razorpayResponseHandler', 'razorpay_response_handler')->name("razorpay_response_handler");
 
 });
-    
+
 Route::controller(AJAXController::class)->group(function () {
     Route::get('fees/get-student', 'getStudentFromMobile')->name('get-student');
     Route::get('ajax_PDF_FeesReceipt', 'ajax_PDF_FeesReceipt')->name('ajax_PDF_FeesReceipt');
     Route::get('ajax_PDF_Bulk_OtherFeesReceipt', 'ajax_PDF_Bulk_OtherFeesReceipt')->name('ajax_PDF_Bulk_OtherFeesReceipt');
     Route::get('ajax_checkFeesBreakoff', 'ajax_checkFeesBreakoff')->name('ajax_checkFeesBreakoff');
 });
-    
+
 Route::post('/studentFeesDetailAPI', [fees_collect_controller::class, 'studentFeesDetailAPI']);
 
 Route::get('ajax_checkFeesStructure',
     [fees_breackoff_controller::class, 'ajax_checkFeesStructure'])->name('ajax_checkFeesStructure');
 
-    
+

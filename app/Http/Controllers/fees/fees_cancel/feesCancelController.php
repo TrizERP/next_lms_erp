@@ -4,8 +4,11 @@ namespace App\Http\Controllers\fees\fees_cancel;
 
 use App\Http\Controllers\Controller;
 use App\Models\student\tblstudentModel;
+use Illuminate\Contracts\Foundation\Application;
+use Illuminate\Contracts\View\Factory;
+use Illuminate\Contracts\View\View;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
 use function App\Helpers\is_mobile;
 
@@ -14,7 +17,8 @@ class feesCancelController extends Controller
     /**
      * Display a listing of the resource.
      *
-     * @return Response
+     * @param Request $request
+     * @return false|Application|Factory|View|RedirectResponse|string
      */
     public function index(Request $request)
     {
@@ -126,8 +130,8 @@ class feesCancelController extends Controller
         $syear = $request->session()->get('syear');
         $sub_institute_id = $request->session()->get('sub_institute_id');
 
-        $extraSearchArray = $other_extraSearchArray = array();
-        $other_extraSearchArrayRaw = " 1 = 1 ";
+        $extraSearchArray = $other_extraSearchArray = [];
+        $other_extraSearchArrayRaw = " fees_paid_other.is_deleted = 'N'  ";
         $extraSearchArrayRaw = " fees_collect.is_deleted = 'N' ";
 
         if ($grade != '') {
@@ -156,13 +160,18 @@ class feesCancelController extends Controller
         }
 
         if ($from_date != '') {
-            $extraSearchArrayRaw .= "  AND date_format(fees_collect.created_date,'%Y-%m-%d') >= '".$from_date."'";
-            $other_extraSearchArrayRaw .= " AND date_format(fees_paid_other.created_date,'%Y-%m-%d') >= '".$from_date."'";
+            $extraSearchArrayRaw .= "  AND date_format(fees_collect.created_date,'%Y-%m-%d') >= '" . $from_date . "'";
+            $other_extraSearchArrayRaw .= " AND date_format(fees_paid_other.created_date,'%Y-%m-%d') >= '" . $from_date . "'";
         }
 
         if ($to_date != '') {
-            $extraSearchArrayRaw .= "  AND date_format(fees_collect.created_date,'%Y-%m-%d') <= '".$to_date."'";
-            $other_extraSearchArrayRaw .= "  AND date_format(fees_paid_other.created_date,'%Y-%m-%d') <= '".$to_date."'";
+            $extraSearchArrayRaw .= "  AND date_format(fees_collect.created_date,'%Y-%m-%d') <= '" . $to_date . "'";
+            $other_extraSearchArrayRaw .= "  AND date_format(fees_paid_other.created_date,'%Y-%m-%d') <= '" . $to_date . "'";
+        }
+
+        if ($sub_institute_id == 200) {
+            $extraSearchArrayRaw .= " AND fees_collect.standard_id = tblstudent_enrollment.standard_id ";
+            //$other_extraSearchArrayRaw .= "  AND date_format(fees_paid_other.created_date,'%Y-%m-%d') <= '".$to_date."'";
         }
 
         $extraSearchArray['fees_collect.syear'] = $syear;
@@ -186,7 +195,7 @@ class feesCancelController extends Controller
             ->join('fees_paid_other', 'fees_paid_other.student_id', '=', 'tblstudent.id')
             ->where($other_extraSearchArray)
             ->whereRaw($other_extraSearchArrayRaw)
-            ->groupby('fees_paid_other.reciept_id');
+            ->groupby('fees_paid_other.syear', 'fees_paid_other.reciept_id', 'fees_paid_other.student_id');
 
         $feesData = tblstudentModel::selectRaw("'REGULAR' as fees_type,fees_collect.id,fees_collect.receipt_no,fees_collect.fees_html,fees_collect.receiptdate,fees_collect.payment_mode ,
             SUM(fees_collect.amount) as total_amount,CONCAT_WS(' ',tblstudent.first_name,tblstudent.middle_name,tblstudent.last_name) AS student_name,academic_section.title as grade,standard.name as standard_name,division.name as division_name,tblstudent.enrollment_no,date_format(fees_collect.created_date,'%Y-%m-%d %H:%i:%s') as created_on,tblstudent.id as student_id")
@@ -197,7 +206,7 @@ class feesCancelController extends Controller
             ->join('fees_collect', 'fees_collect.student_id', '=', 'tblstudent.id')
             ->where($extraSearchArray)
             ->whereRaw($extraSearchArrayRaw)
-            ->groupby('fees_collect.receipt_no')
+            ->groupby('fees_collect.syear', 'fees_collect.receipt_no', 'fees_collect.student_id')
             ->union($other_fees_paid)
             ->get()
             ->toArray();
@@ -249,6 +258,7 @@ class feesCancelController extends Controller
         $type = $request->input('type');
         $receipt_nos = $request->input('receipt_no');
         $cancel_type = $request->input('cancel_type');
+        $student_id = $request->input('student_id');
         $cancel_remark = $request->input('cancel_remark');
         $syear = $request->session()->get('syear');
         $sub_institute_id = $request->session()->get('sub_institute_id');
@@ -267,6 +277,7 @@ class feesCancelController extends Controller
             $extraSearchArray['fees_collect.is_deleted'] = 'N';
             $extraSearchArray['fees_collect.sub_institute_id'] = $sub_institute_id;
             $extraSearchArray['fees_collect.receipt_no'] = $value;
+            $extraSearchArray['fees_collect.student_id'] = $student_id[$value];
 
             $feesDetails = DB::table('fees_collect')->selectRaw("fees_collect.*,SUM(fees_collect.amount) as total_amount,
                 tblstudent_enrollment.standard_id")

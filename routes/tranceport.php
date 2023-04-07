@@ -23,13 +23,13 @@ Route::group(['prefix' => 'transportation', 'middleware' => ['session', 'menu', 
     Route::resource('send_late_sms', send_late_sms_controller::class);
     Route::resource('van_wise_report', van_wise_report_controller::class);
 
-    Route::POST('show_van_wise_report', [van_wise_report_controller::Class, 'showVanWiseReport'])->name('show_van_wise_report');
+    Route::post('show_van_wise_report', [van_wise_report_controller::Class, 'showVanWiseReport'])->name('show_van_wise_report');
 });
 
 Route::get('api/get-bus-list', [AJAXController::class, 'getBusList']);
 Route::get('api/get-stop-list', [AJAXController::class, 'getStopList']);
-Route::GET('map_student/fetchData', [map_student_controller::class, 'fetchData']);
-Route::GET('ajaxCheckRemainCapacity', [map_student_controller::class, 'ajaxChackRemainCapacity'])->name('ajaxCheckRemainCapacity');
+Route::get('map_student/fetchData', [map_student_controller::class, 'fetchData']);
+Route::get('ajaxCheckRemainCapacity', [map_student_controller::class, 'ajaxChackRemainCapacity'])->name('ajaxCheckRemainCapacity');
 
 //Route::get('api/get-to_bus-list', 'AJAXController@getBusList');
 //Route::get('api/get-to_stop-list', 'AJAXController@getStopList');

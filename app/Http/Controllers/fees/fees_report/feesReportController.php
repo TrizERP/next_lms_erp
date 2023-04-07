@@ -3,12 +3,12 @@
 namespace App\Http\Controllers\fees\fees_report;
 
 use App\Http\Controllers\Controller;
-use App\Models\student\tblstudentModel;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Contracts\View\Factory;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use function App\Helpers\FeeMonthId;
 use function App\Helpers\is_mobile;
 
@@ -103,70 +103,106 @@ class feesReportController extends Controller
         $standard = $request->input('standard');
         $division = $request->input('division');
         $enrollment_no = $request->input('enrollment_no');
+        $name = $request->input('name');
+        $mb_no = $request->input('mb_no');
         $from_date = $request->input('from_date');
         $to_date = $request->input('to_date');
         $receipt_no = $request->input('receipt_no');
         $syear = $request->session()->get('syear');
         $sub_institute_id = $request->session()->get('sub_institute_id');
 
-        $extraSearchArray = array();
-        $extraSearchArrayRaw = "  fees_collect.is_deleted = 'N' ";
+        $extra_fp = "  AND fp.syear = '" . $syear . "' AND te.syear = '" . $syear . "' AND t.sub_institute_id = '" . $sub_institute_id . "' AND fp.sub_institute_id = '" . $sub_institute_id . "' AND fp.is_deleted = 'N' ";
+
+        $extra_fo = "  AND fo.syear = '" . $syear . "' AND te.syear = '" . $syear . "' AND t.sub_institute_id = '" . $sub_institute_id . "' AND fo.sub_institute_id = '" . $sub_institute_id . "' AND fo.is_deleted = 'N' ";
 
         if ($grade != '') {
-            $extraSearchArray['tblstudent_enrollment.grade_id'] = $grade;
+            $extra_fp .= " AND te.grade_id = '" . $grade . "'";
+            $extra_fo .= " AND te.grade_id = '" . $grade . "'";
         }
 
         if ($standard != '') {
-            $extraSearchArray['tblstudent_enrollment.standard_id'] = $standard;
+            $extra_fp .= " AND te.standard_id = '" . $standard . "'";
+            $extra_fo .= " AND te.standard_id = '" . $standard . "'";
         }
 
         if ($division != '') {
-            $extraSearchArray['tblstudent_enrollment.section_id'] = $division;
+            $extra_fp .= " AND te.section_id = '" . $division . "'";
+            $extra_fo .= " AND te.section_id = '" . $division . "'";
         }
 
         if ($enrollment_no != '') {
-            $extraSearchArray['tblstudent.enrollment_no'] = $enrollment_no;
+            $extra_fp .= " AND t.enrollment_no = '" . $enrollment_no . "'";
+            $extra_fo .= " AND t.enrollment_no = '" . $enrollment_no . "'";
         }
-
-        if ($receipt_no != '') {
-            $extraSearchArray['fees_collect.receipt_no'] = $receipt_no;
+        if ($name != '') {
+            // if($name == "t.first_name"){
+            //     $extra_fp .= " AND t.first_name = '".$name."'";
+            //     $extra_fo .= " AND t.first_name = '".$name."'";
+            // }elseif($name == "t.last_name"){
+            //     $extra_fp .= " AND t.last_name = '".$name."'";
+            //     $extra_fo .= " AND t.last_name = '".$name."'";
+            // }elseif($name == "t.middle_name"){
+            //     $extra_fp .= " AND t.middle_name = '".$name."'";
+            //     $extra_fo .= " AND t.middle_name = '".$name."'";
+            // }
+            $extra_fp .= " AND (t.first_name = '" . $name . "' OR t.last_name = '" . $name . "' OR t.middle_name = '" . $name . "') ";
+            $extra_fo .= " AND (t.first_name = '" . $name . "' OR t.last_name = '" . $name . "' OR t.middle_name = '" . $name . "')";
         }
-
+        if ($mb_no != '') {
+            $extra_fp .= " AND t.mobile = '" . $mb_no . "'";
+            $extra_fo .= " AND t.mobile = '" . $mb_no . "'";
+        }
+        /*
+                if($receipt_no != ''){
+                    $extra_fp .= " AND fp.receipt_no = '".$receipt_no."'";
+                    $extra_fo .= " AND fo.reciept_id = '".$receipt_no."'";
+                }
+        */
         if ($from_date != '') {
-            $extraSearchArrayRaw .= "  AND fees_collect.receiptdate >= '" . $from_date . "'";
+            $extra_fp .= " AND fp.receiptdate >= '" . $from_date . "'";
+            $extra_fo .= " AND fo.receiptdate >= '" . $from_date . "'";
         }
 
         if ($to_date != '') {
-            $extraSearchArrayRaw .= "  AND fees_collect.receiptdate <= '" . $to_date . "'";
+            $extra_fp .= " AND fp.receiptdate <= '" . $to_date . "'";
+            $extra_fo .= " AND fo.receiptdate <= '" . $to_date . "'";
+        }
+        if ($sub_institute_id == 200) {
+            $extra_fp .= " AND fp.standard_id=te.standard_id ";
+            //$extra_fo .= " AND fo.receiptdate <= '".$to_date."'";
         }
 
-        $extraSearchArray['fees_collect.syear'] = $syear;
-        $extraSearchArray['tblstudent_enrollment.syear'] = $syear;
-        $extraSearchArray['tblstudent.sub_institute_id'] = $sub_institute_id;
-        $extraSearchArray['fees_collect.sub_institute_id'] = $sub_institute_id;
+        $sql = "SELECT M.student_id,M.enrollment_no,M.roll_no,M.uniqueid,M.student_name,M.mobile,M.grade,M.standard_name,M.division_name,M.created_date,M.user_name,M.term_id,M.receiptdate,M.receipt_no,M.payment_mode,M.cheque_bank_name,M.bank_branch,M.cheque_no,M.cheque_date,
+            (IFNULL(M.amount,0) + IFNULL(N.actual_amountpaid,0)) AS actual_amountpaid
+            FROM (
+            SELECT fp.student_id,t.enrollment_no,t.roll_no,t.uniqueid,CONCAT_WS(' ',t.first_name,t.middle_name,t.last_name) AS student_name,t.mobile,ac.title AS grade,s.name AS standard_name,d.name AS division_name,fp.created_date,CONCAT_WS(' ',u.first_name,u.last_name) AS user_name,fp.term_id,fp.receiptdate,fp.receipt_no,fp.payment_mode,fp.cheque_bank_name,fp.bank_branch,fp.cheque_no,fp.cheque_date,SUM(IFNULL(fp.amount,0)) AS amount
+            FROM tblstudent t
+            -- WHERE t.first_name = $name OR t.middle_name = $name OR t.last_name = $name
+            INNER JOIN tblstudent_enrollment te ON t.id = te.student_id
+            INNER JOIN academic_section ac ON ac.id = te.grade_id
+            INNER JOIN standard s ON s.id = te.standard_id
+            INNER JOIN division d ON d.id = te.section_id
+            INNER JOIN fees_collect fp ON fp.student_id = te.student_id
+            LEFT JOIN tbluser u ON fp.created_by = u.id
+            WHERE 1=1 $extra_fp
+            GROUP BY fp.student_id, fp.receipt_no, fp.syear, fp.receiptdate, fp.payment_mode, fp.cheque_no
+            ORDER BY fp.receiptdate ASC, fp.receipt_no ASC) AS M
+            LEFT JOIN (
+            SELECT fo.student_id, SUM(IFNULL(fo.actual_amountpaid,0)) AS actual_amountpaid
+            FROM tblstudent t
+            INNER JOIN tblstudent_enrollment te ON t.id = te.student_id
+            INNER JOIN academic_section ac ON ac.id = te.grade_id
+            INNER JOIN standard s ON s.id = te.standard_id
+            INNER JOIN division d ON d.id = te.section_id
+            INNER JOIN fees_paid_other fo ON fo.student_id = te.student_id
+            WHERE 1=1 $extra_fo
+            GROUP BY fo.student_id, fo.reciept_id, fo.syear, fo.receiptdate, fo.payment_mode, fo.cheque_dd_no
+            ORDER BY fo.receiptdate ASC, fo.reciept_id ASC) AS N ON M.student_id = N.student_id
+            HAVING (M.receiptdate IS NOT NULL)
+            ORDER BY M.receiptdate,CAST(M.receipt_no AS SIGNED)";
 
-        $feesData = tblstudentModel::selectRaw("fees_collect.*,SUM(fees_collect.amount) AS amount, CONCAT_WS(' ',tblstudent.first_name,tblstudent.middle_name,tblstudent.last_name) AS student_name,tblstudent.uniqueid,academic_section.title as grade,standard.name as standard_name,division.name as division_name,tblstudent.enrollment_no,fees_collect.created_date,CONCAT_WS(' ',tbluser.first_name,tbluser.last_name) as user_name,fees_collect.cheque_no,fees_collect.cheque_date,fees_collect.bank_name,fees_collect.bank_branch,fees_paid_other.actual_amountpaid")
-            ->join('tblstudent_enrollment', 'tblstudent.id', '=', 'tblstudent_enrollment.student_id')
-            ->join('academic_section', 'academic_section.id', '=', 'tblstudent_enrollment.grade_id')
-            ->join('standard', 'standard.id', '=', 'tblstudent_enrollment.standard_id')
-            ->join('division', 'division.id', '=', 'tblstudent_enrollment.section_id')
-            ->join('fees_collect', 'fees_collect.student_id', '=', 'tblstudent.id')
-            ->leftjoin('fees_paid_other', function ($join) {
-                $join->on('fees_paid_other.student_id', '=', 'tblstudent.id')
-                    ->on('fees_paid_other.month_id', '=', 'fees_collect.term_id')
-                    ->on('fees_paid_other.receiptdate', '=', 'fees_collect.receiptdate');
-
-            })
-            ->leftjoin('tbluser', 'fees_collect.created_by', '=', 'tbluser.id')
-            ->where($extraSearchArray)
-            ->whereRaw($extraSearchArrayRaw)
-            ->groupBy('fees_collect.student_id', 'fees_collect.receipt_no', 'fees_collect.syear', 'fees_collect.receiptdate', 'fees_collect.payment_mode', 'fees_collect.cheque_no')
-            ->orderBy('fees_collect.receiptdate', 'asc')
-            ->orderBy('fees_collect.receipt_no', 'asc')
-            ->get()
-            ->toArray();
-        $months = FeeMonthId();
-
+        $result = DB::select(DB::raw($sql));
+        $feesData = json_decode(json_encode($result), true);
 
         $res['status_code'] = 1;
         $res['message'] = "Success";
@@ -176,9 +212,11 @@ class feesReportController extends Controller
         $res['division_id'] = $division;
         $res['enrollment_no'] = $enrollment_no;
         $res['receipt_no'] = $receipt_no;
+        $res['name'] = $name;
+        $res['mb_no'] = $mb_no;
         $res['from_date'] = $from_date;
         $res['to_date'] = $to_date;
-        $res['months'] = $months;
+        $res['months'] = FeeMonthId();
 
         return is_mobile($type, "fees/fees_report/index", $res, "view");
     }

@@ -482,8 +482,12 @@ class bulkStudentController extends Controller
                 if (is_array($value)) {
                     $value = implode(",", $value);
                 }
-                if ($key == 'dob') {
-                    $value = date('Y-m-d', strtotime($value));
+                if ($key == 'dob' || $key == 'admission_date') {
+                    if (isset($value)) {
+                        $value = date('Y-m-d', strtotime($value));
+                    } else {
+                        $value = null;
+                    }
                 }
                 $finalArray[$key] = $value;
             }

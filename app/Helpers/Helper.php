@@ -81,7 +81,34 @@ if (! function_exists('ValidateInsertData')) {
         }
     }
 }
-if (! function_exists('SearchChain')) {
+
+
+if (!function_exists('encrypt_url')) {
+    function encrypt_url($action, $string)
+    {
+        $output = false;
+        $encrypt_method = "AES-256-CBC";
+        //pls set your unique hashing key
+        $secret_key = 'muni';
+        $secret_iv = 'muni123';
+        // hash
+        $key = hash('sha256', $secret_key);
+        // iv - encrypt method AES-256-CBC expects 16 bytes - else you will get a warning
+        $iv = substr(hash('sha256', $secret_iv), 0, 16);
+        //do the encyption given text/string/number
+        if ($action == 'encrypt') {
+            $output = openssl_encrypt($string, $encrypt_method, $key, 0, $iv);
+            $output = base64_encode($output);
+        } else if ($action == 'decrypt') {
+            //decrypt the given text/string/number
+            $output = openssl_decrypt(base64_decode($string), $encrypt_method, $key, 0, $iv);
+        }
+        return $output;
+    }
+}
+
+
+if (!function_exists('SearchChain')) {
 
     function SearchChain($col, $multiple, $listed_drop, $grade_val = "", $std_val = "", $div_val = "")
     {
@@ -129,12 +156,14 @@ if (! function_exists('SearchChain')) {
         $grade_name = 'grade';
         $std_name = 'standard';
         $div_name = 'division';
+        $batch_section = 'batchsection';
 
         if ($multiple == 'multiple') {
             $multiple = 'multiple="multiple"';
             $grade_name = 'grade[]';
             $std_name = 'standard[]';
             $div_name = 'division[]';
+            $batch_section = 'batchsection[]';
         } else {
             if ($multiple == 'single') {
                 $multiple = '';
@@ -147,19 +176,18 @@ if (! function_exists('SearchChain')) {
         $query->where("sub_institute_id", session()->get('sub_institute_id'));
         //START Check for class teacher assigned standards
         $classTeacherGrdArr = session()->get('classTeacherGrdArr');
-        if (isset($classTeacherGrdArr) && ! in_array($module_name, $module_array)) {
+        if (isset($classTeacherGrdArr) && !in_array($module_name, $module_array)) {
             if (count($classTeacherGrdArr) > 0) {
                 $query->whereIn('id', $classTeacherGrdArr);
             } else {
                 $query->where('id', null);
             }
         }
-        //END Check for class teacher assigned standards
+        //  END Check for class teacher assigned standards      //
 
         //START Check for subject teacher assigned
         $subjectTeacherGrdArr = session()->get('subjectTeacherGrdArr');
-        // dd($subjectTeacherGrdArr);
-        if (isset($subjectTeacherGrdArr) && (! isset($classTeacherGrdArr) || in_array($module_name, $module_array))) {
+        if (isset($subjectTeacherGrdArr) && (!isset($classTeacherGrdArr) || in_array($module_name, $module_array))) {
             if (count($subjectTeacherGrdArr) > 0) {
                 $query->whereIn('id', $subjectTeacherGrdArr);
             } else {
@@ -170,6 +198,10 @@ if (! function_exists('SearchChain')) {
         //END Check for subject teacher assigned
 
         $academic_section = $query->pluck("title", "id");
+
+        // $academic_section = DB::table("academic_section")
+        // ->where("sub_institute_id", session()->get('sub_institute_id'))
+        // ->pluck("title", "id");
 
         foreach ($academic_section as $id => $val) {
             $selected = '';
@@ -193,7 +225,7 @@ if (! function_exists('SearchChain')) {
 
                 //START Check for class teacher assigned standards
                 $classTeacherStdArr = session()->get('classTeacherStdArr');
-                if (isset($classTeacherStdArr) && ! in_array($module_name, $module_array)) {
+                if (isset($classTeacherStdArr) && !in_array($module_name, $module_array)) {
                     if (count($classTeacherStdArr) > 0) {
                         $query->whereIn('id', $classTeacherStdArr);
                     } else {
@@ -204,8 +236,7 @@ if (! function_exists('SearchChain')) {
 
                 //START Check for subject teacher assigned
                 $subjectTeacherStdArr = session()->get('subjectTeacherStdArr');
-                if (isset($subjectTeacherStdArr) && (! isset($classTeacherStdArr)
-                        || in_array($module_name, $module_array))) {
+                if (isset($subjectTeacherStdArr) && (!isset($classTeacherStdArr) || in_array($module_name, $module_array))) {
                     if (count($subjectTeacherStdArr) > 0) {
                         $query->orwhereIn('id', $subjectTeacherStdArr);
                     } else {
@@ -216,13 +247,16 @@ if (! function_exists('SearchChain')) {
 
                 $standard = $query->pluck("name", "id");
 
+                // $standard = DB::table("standard")
+                // ->whereIn("grade_id", $grade_val)
+                // ->pluck("name", "id");
             } else {
                 $query = DB::table('standard');
                 $query->where("grade_id", $grade_val);
 
                 //START Check for class teacher assigned standards
                 $classTeacherStdArr = session()->get('classTeacherStdArr');
-                if (isset($classTeacherStdArr) && ! in_array($module_name, $module_array)) {
+                if (isset($classTeacherStdArr) && !in_array($module_name, $module_array)) {
                     if (count($classTeacherStdArr) > 0) {
                         $query->whereIn('id', $classTeacherStdArr);
                     } else {
@@ -233,8 +267,7 @@ if (! function_exists('SearchChain')) {
 
                 //START Check for subject teacher assigned
                 $subjectTeacherStdArr = session()->get('subjectTeacherStdArr');
-                if (isset($subjectTeacherStdArr) && (! isset($classTeacherStdArr)
-                        || in_array($module_name, $module_array))) {
+                if (isset($subjectTeacherStdArr) && (!isset($classTeacherStdArr) || in_array($module_name, $module_array))) {
                     if (count($subjectTeacherStdArr) > 0) {
                         // $query->orwhereIn('id',$subjectTeacherStdArr);
                         $query->whereIn('id', $subjectTeacherStdArr);
@@ -246,6 +279,10 @@ if (! function_exists('SearchChain')) {
                 //END Check for subject teacher assigned
 
                 $standard = $query->pluck("name", "id");
+
+                // $standard = DB::table("standard")
+                // ->where("grade_id", $grade_val)
+                // ->pluck("name", "id");
             }
 
             foreach ($standard as $id => $val) {
@@ -265,8 +302,6 @@ if (! function_exists('SearchChain')) {
         }
 
         $div_option = "<option value=''>Select</option>";
-
-
         if ($std_val != "") {
             if (is_array($std_val)) {
                 $query = DB::table('std_div_map');
@@ -274,7 +309,7 @@ if (! function_exists('SearchChain')) {
                 $query->where("std_div_map.standard_id", $std_val);
                 //START Check for class teacher assigned standards
                 $classTeacherDivArr = session()->get('classTeacherDivArr');
-                if (isset($classTeacherDivArr) && ! in_array($module_name, $module_array)) {
+                if (isset($classTeacherDivArr) && !in_array($module_name, $module_array)) {
                     if (count($classTeacherDivArr) > 0) {
                         $query->whereIn('division.id', $classTeacherDivArr);
                     }
@@ -283,8 +318,7 @@ if (! function_exists('SearchChain')) {
 
                 //START Check for subject teacher assigned
                 $subjectTeacherDivArr = session()->get('subjectTeacherDivArr');
-                if (isset($subjectTeacherDivArr) && (! isset($subjectTeacherDivArr)
-                        || in_array($module_name, $module_array))) {
+                if (isset($subjectTeacherDivArr) && (!isset($subjectTeacherDivArr) || in_array($module_name, $module_array))) {
                     if (count($subjectTeacherDivArr) > 0) {
                         $query->orwhereIn('division.id', $subjectTeacherDivArr);
                     }
@@ -293,13 +327,19 @@ if (! function_exists('SearchChain')) {
 
                 $division = $query->pluck('division.name', 'division.id');
 
+                // $division = DB::table('std_div_map')
+                // ->join('division', 'division.id', '=', 'std_div_map.division_id')
+                // //                        ->where("std_div_map.standard_id", implode(',', $std_val))
+                // ->where("std_div_map.standard_id", $std_val)
+                // ->pluck('division.name', 'division.id');
             } else {
+                // die('here');
                 $query = DB::table('std_div_map');
                 $query->join('division', 'division.id', '=', 'std_div_map.division_id');
                 $query->where("std_div_map.standard_id", $std_val);
                 //START Check for class teacher assigned standards
                 $classTeacherDivArr = session()->get('classTeacherDivArr');
-                if (isset($classTeacherDivArr) && ! in_array($module_name, $module_array)) {
+                if (isset($classTeacherDivArr) && !in_array($module_name, $module_array)) {
                     if (count($classTeacherDivArr) > 0) {
                         $query->whereIn('division.id', $classTeacherDivArr);
                     }
@@ -308,16 +348,41 @@ if (! function_exists('SearchChain')) {
 
                 //START Check for subject teacher assigned
                 $subjectTeacherDivArr = session()->get('subjectTeacherDivArr');
-
-                if ($subjectTeacherDivArr != "" && ($classTeacherDivArr == ""
-                        || in_array($module_name, $module_array))) {
+                // if(isset($subjectTeacherDivArr) && (!isset($subjectTeacherDivArr) || in_array($module_name, $module_array)))
+                if ($subjectTeacherDivArr != "" && ($classTeacherDivArr == "" || in_array($module_name, $module_array))) {
+                    // print_r($subjectTeacherDivArr); exit('here');
                     if (count($subjectTeacherDivArr) > 0) {
+                        // $query->orwhereIn('division.id',$subjectTeacherDivArr);
                         $query->whereIn('division.id', $subjectTeacherDivArr);
                     }
                 }
                 //END Check for subject teacher assigned
 
                 $division = $query->pluck('division.name', 'division.id');
+                // $division = DB::table('std_div_map')
+                // ->join('division', 'division.id', '=', 'std_div_map.division_id')
+                // ->where("std_div_map.standard_id", $std_val)
+                // ->pluck('division.name', 'division.id');
+                // $query = DB::table('std_div_map');
+                // $query->join('division', 'division.id', '=', 'std_div_map.division_id');
+                // $query->where("std_div_map.standard_id", $std_val);
+                // //START Check for class teacher assigned standards
+                // $classTeacherDivArr = session()->get('classTeacherDivArr');
+                // if ($classTeacherDivArr != "" && !in_array($module_name, $module_array))
+                // {
+                //     $query->whereIn('division.id',$classTeacherDivArr);
+                // }
+                // //END Check for class teacher assigned standards
+
+                // //START Check for class teacher assigned standards
+                // $subjectTeacherDivArr = session()->get('subjectTeacherDivArr');
+                // if ($subjectTeacherDivArr != "" && ($classTeacherDivArr == "" || in_array($module_name, $module_array)))
+                // {
+                //     $query->whereIn('division.id',$subjectTeacherDivArr);
+                // }
+                // //END Check for class teacher assigned standards
+
+                // $division = $query->pluck('division.name', 'division.id');
             }
 
             foreach ($division as $id => $val) {
@@ -334,37 +399,56 @@ if (! function_exists('SearchChain')) {
 
                 $div_option .= "<option $selected value=$id>$val</option>";
             }
+
         }
 
-        $grade = '<div class="col-md-'.$col.'">
+        //  //  batch val  //  //
+        $batch_option = "<option value=''>Select</option>";
+
+        $grade = '<div class="col-md-' . $col . '">
                     <div class="form-group">
                         <label>Select Section:</label>
-                        <select name="'.$grade_name.'" id="grade" class="form-control" '.$multiple.'>
-                            '.$option.'
+                        <select name="' . $grade_name . '" id="grade" class="form-control" ' . $multiple . '>
+                            ' . $option . '
                         </select>
 
                     </div>
                 </div>';
+        //<h4 class="box-title after-none mb-0">Select Section:</h4>
 
-        $std = '<div class="col-md-'.$col.'">
+        $std = '<div class="col-md-' . $col . '">
                     <div class="form-group">
                         <label>Select Standard:</label>
-                        <select name="'.$std_name.'" id="standard" class="form-control" '.$multiple.'>
-                            '.$std_option.'
+                        <select name="' . $std_name . '" id="standard" class="form-control" ' . $multiple . '>
+                            ' . $std_option . '
                         </select>
 
                     </div>
                 </div>';
+        //<h4 class="box-title after-none mb-0">Select Standard:</h4>
 
-        $div = ' <div class="col-md-'.$col.'">
+        $div = ' <div class="col-md-' . $col . '">
                     <div class="form-group">
                         <label>Select Division:</label>
-                        <select name="'.$div_name.'" id="division" class="form-control" '.$multiple.'>
-                            '.$div_option.'
+                        <select name="' . $div_name . '" id="division" class="form-control" ' . $multiple . '>
+                            ' . $div_option . '
                         </select>
 
                     </div>
                 </div>';
+        //<h4 class="box-title after-none mb-0">Select Division:</h4>
+
+        //  //  batch val  //  //
+        $batch = ' <div class="col-md-' . $col . '">
+                    <div class="form-group">
+                        <label>Select Batch:</label>
+                        <select name="' . $batch_section . '" id="stdBatch" class="form-control" ' . $multiple . '>
+                            ' . $batch_option . '
+                        </select>
+
+                    </div>
+                </div>';
+        // <h4 class="box-title after-none mb-0">Select Division:</h4>
 
         $html = '';
 
@@ -379,10 +463,15 @@ if (! function_exists('SearchChain')) {
         if (in_array('div', $explod_list)) {
             $html .= $div;
         }
+
+        if (in_array('batch', $explod_list)) {
+            $html .= $batch;
+        }
         $html .= '';
         echo $html;
     }
 }
+
 if (! function_exists('SearchChainSubject')) {
 
     function SearchChainSubject($col, $multiple, $listed_drop, $grade_val = "", $std_val = "", $sub_val = "")
@@ -680,7 +769,7 @@ if (! function_exists('FeeMonthId')) {
 }
 if (! function_exists('FeeBreackoff')) {
 
-    function FeeBreackoff($student_ids)
+    function FeeBreackoff($student_ids, $standard = null)
     {
         $sub_institute_id = session()->get('sub_institute_id');
         $syear = session()->get('syear');
@@ -698,15 +787,24 @@ if (! function_exists('FeeBreackoff')) {
                 $join->whereRaw('se.student_id = s.id');
             })->join('academic_section as g', function ($join) {
                 $join->whereRaw('g.id = se.grade_id');
-            })->join('standard as st', function ($join) {
-                $join->whereRaw('st.id = se.standard_id');
+            })->join('standard as st', function ($join) use ($standard) {
+                if ($standard) {
+                    $join->whereRaw("st.id = '" . $standard . "'");
+                } else {
+                    $join->whereRaw('st.id = se.standard_id');
+                }
             })->leftJoin('division as d', function ($join) {
                 $join->whereRaw(' d.id = se.section_id');
             })->leftJoin('student_quota as sq', function ($join) {
                 $join->whereRaw('sq.id = se.student_quota AND sq.sub_institute_id = se.sub_institute_id');
-            })->join('fees_breackoff as fb', function ($join) use ($syear, $sub_institute_id) {
-                $join->whereRaw("fb.syear = '".$syear."' AND fb.admission_year = s.admission_year AND fb.quota = se.student_quota
-                 AND fb.grade_id = se.grade_id AND fb.standard_id = se.standard_id AND fb.sub_institute_id = '".$sub_institute_id."'");
+            })->join('fees_breackoff as fb', function ($join) use ($syear, $sub_institute_id, $standard) {
+                if ($standard) {
+                    $join->whereRaw("fb.syear = '" . $syear . "' AND fb.admission_year = s.admission_year AND fb.quota = se.student_quota
+                 AND fb.grade_id = se.grade_id AND fb.standard_id = " . $standard . " AND fb.sub_institute_id = '" . $sub_institute_id . "'");
+                } else {
+                    $join->whereRaw("fb.syear = '" . $syear . "' AND fb.admission_year = s.admission_year AND fb.quota = se.student_quota
+                 AND fb.grade_id = se.grade_id AND fb.standard_id = se.standard_id AND fb.sub_institute_id = '" . $sub_institute_id . "'");
+                }
             })->selectRaw("s.*,se.syear,se.student_id,se.grade_id,se.standard_id,se.section_id,se.student_quota,
                 sq.title AS stu_quota,se.start_date,se.end_date,se.enrollment_code,se.drop_code,se.drop_remarks,se.drop_remarks,
                 se.term_id,se.remarks,se.admission_fees, se.house_id,se.lc_number,sum(fb.amount) bkoff,st.name standard_name,
@@ -751,14 +849,14 @@ if (! function_exists('FeeBreakoffHeadWise')) {
             })->selectRaw("s.*,se.syear,se.student_id,se.grade_id,se.standard_id,se.section_id,se.student_quota,
                 se.start_date,se.end_date,se.enrollment_code,se.drop_code,se.drop_remarks,se.drop_remarks,se.term_id,
                 se.remarks,se.admission_fees,se.house_id,se.lc_number,fb.amount,st.name standard_name,d.name as division_name,
-                fb.month_id,ft.display_name,ft.fees_title,'' as breakoff,s.father_name,s.mother_name,
+                fb.month_id,ft.display_name,ft.fees_title, ft.mandatory,'' as breakoff,s.father_name,s.mother_name,
                 RIGHT(fb.month_id, 4) as sort_year,CAST(SUBSTRING(fb.month_id,1,CHAR_LENGTH(fb.month_id)-4) as int) as sort_month,
                 ae.fees_circular_form_no")
             ->where('s.sub_institute_id', $sub_institute_id)
             ->where('se.syear', $syear)
             ->whereIn('s.id', $student_ids)
             ->groupByRaw('s.id,fb.month_id,fb.fee_type_id')
-            ->orderByRaw('sort_year,sort_month')->get()->toArray();
+            ->orderByRaw('sort_year,sort_month,ft.display_name')->get()->toArray();
 
 
         $data = array();
@@ -794,6 +892,7 @@ if (! function_exists('FeeBreakoffHeadWise')) {
 
 
             $data[$value->id][$value->month_id][$value->fees_title]['title'] = $value->display_name;
+            $data[$value->id][$value->month_id][$value->fees_title]['mandatory'] = $value->mandatory;
         }
 
         foreach ($result as $key => $value) {
@@ -1576,23 +1675,22 @@ if (! function_exists('getGradeScale')) {
     }
 }
 
-DEFINE('BEST_OF', 2);
-
-if (! function_exists('getGradeScale')) {
-    function getBestOf($elemArr)
+if (!function_exists('getGradeComment')) {
+    function getGradeComment($grade_arr, $total_mark, $total_gain_mark)
     {
-        $newArr = [];
-
-        rsort($elemArr);
-        $srNo = 0;
-
-        foreach ($elemArr as $value) {
-            $srNo++;
-            if ($srNo <= BEST_OF) {
-                $newArr[] = $value;
+        $per = (100 * $total_gain_mark) / $total_mark;
+        foreach ($grade_arr as $id => $data) {
+            if (!isset($comment)) {
+                if ($per >= $data['breakoff']) {
+                    $comment = $data['comment'];
+                }
             }
         }
+        if (!isset($comment)) {
+            $comment = "-";
+        }
 
-        return $newArr;
+        return $comment;
     }
 }
+

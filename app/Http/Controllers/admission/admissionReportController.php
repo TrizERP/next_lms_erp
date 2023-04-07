@@ -182,7 +182,7 @@ class admissionReportController extends Controller
                 $res['message'] = "Please revise your search. No data found.";
 
 
-                return is_mobile($type, "admission_form_report", $res);
+                return is_mobile($type, "admission_registration_report", $res);
             }
 
         }

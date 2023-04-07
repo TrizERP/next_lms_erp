@@ -8,9 +8,12 @@ use App\Models\fees\map_year\map_year;
 use App\Models\fees\tblfeesConfigModel;
 use App\Models\school_setup\SchoolModel;
 use GenTux\Jwt\GetsJwtToken;
+use Illuminate\Contracts\Foundation\Application;
+use Illuminate\Contracts\View\Factory;
+use Illuminate\Contracts\View\View;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Psr\Container\ContainerExceptionInterface;
@@ -31,7 +34,8 @@ class fees_collect_controller extends Controller
     /**
      * Display a listing of the resource.
      *
-     * @return Response
+     * @param Request $request
+     * @return false|Application|Factory|View|RedirectResponse|string
      */
     public function index(Request $request)
     {
@@ -226,7 +230,7 @@ class fees_collect_controller extends Controller
             foreach ($paid_result as $r_id => $r_arr) {
                 $pd_stu_id = $r_arr->id;
                 if ($bk_stu_id == $pd_stu_id) {
-                    $arr->bkoff -= $r_arr->paid_amt;
+                    $arr->bkoff = abs($arr->bkoff - $r_arr->paid_amt);
                 }
             }
         }
@@ -339,9 +343,10 @@ class fees_collect_controller extends Controller
         $receipt_number = $this->gunrate_receipt_number();
 
         // getting all heads with id
-        $ret_heds_with_id = DB::table('fees_title')->whereRaw('id,fees_title')
+        $ret_heds_with_id = DB::table('fees_title')->selectRaw('id,fees_title')
             ->where('SUB_INSTITUTE_ID', session()->get('sub_institute_id'))
-            ->where('syear', session()->get('syear'))->get()->toArray();
+            ->where('syear', session()->get('syear'))
+            ->orderBy('display_name', 'ASC')->get()->toArray();
         $heds_with_id = [];
         foreach ($ret_heds_with_id as $id => $arr) {
             $heds_with_id[$arr->fees_title] = $arr->id;
@@ -417,16 +422,17 @@ class fees_collect_controller extends Controller
                 $receipt_id_arr = explode('_', $r_id);
                 $receipt_id = $receipt_id_arr[0];
                 $insert_arr = [
-                    'student_id'       => $stu_arr[0],
-                    'term_id'          => $month_id,
-                    'syear'            => session()->get('syear'),
+                    'student_id' => $stu_arr[0],
+                    'standard_id' => $_REQUEST['standard_id'] ?? null,
+                    'term_id' => $month_id,
+                    'syear' => session()->get('syear'),
                     'sub_institute_id' => session()->get('sub_institute_id'),
-                    'payment_mode'     => $_REQUEST['PAYMENT_MODE'],
-                    'created_date'     => date('Y-m-d h:i:s'),
-                    'bank_branch'      => $_REQUEST['bank_branch'],
-                    'receiptdate'      => $_REQUEST['receiptdate'],
-                    'cheque_no'        => $_REQUEST['cheque_no'],
-                    'cheque_date'      => $cheque_date,
+                    'payment_mode' => $_REQUEST['PAYMENT_MODE'],
+                    'created_date' => date('Y-m-d h:i:s'),
+                    'bank_branch' => $_REQUEST['bank_branch'],
+                    'receiptdate' => $_REQUEST['receiptdate'],
+                    'cheque_no' => $_REQUEST['cheque_no'],
+                    'cheque_date' => $cheque_date,
                     'cheque_bank_name' => $_REQUEST['bank_name'],
                     'receipt_no'       => $receipt_id,
                     'remarks'          => $remarks,
@@ -544,6 +550,7 @@ class fees_collect_controller extends Controller
     public function store(Request $request)
     {
         $res = $this->pay_fees($request);
+        $res['standard_id'] = $request->standard_id;
         $type = $request->input('type');
 
         return is_mobile($type, "fees/fees_collect/receipt_view", $res, "view");
@@ -799,6 +806,7 @@ class fees_collect_controller extends Controller
         $ret_heds_with_id = DB::table('fees_title')
             ->where('SUB_INSTITUTE_ID', session()->get('sub_institute_id'))
             ->where('syear', session()->get('syear'))
+            ->orderBy('display_name', 'ASC')
             ->get()->toArray();
 
         $other_fees_heads = [];
@@ -948,7 +956,8 @@ class fees_collect_controller extends Controller
         $get_cumulative_result = DB::table('fees_title')
             ->selectRaw('id,display_name,cumulative_name,append_name')
             ->where('sub_institute_id', session()->get('sub_institute_id'))
-            ->whereNotNull('cumulative_name')->get()->toArray();
+            ->whereNotNull('cumulative_name')
+            ->orderBy('display_name', 'ASC')->get()->toArray();
 
         $get_cumulative_result = array_map(function ($value) {
             return (array) $value;
@@ -1603,7 +1612,7 @@ class fees_collect_controller extends Controller
             $fees_paid_arr[$arr->term_id] = $arr->amount;
         }
 
-        $reg_bk_off = FeeBreackoff($stu_arr);
+        $reg_bk_off = FeeBreackoff($stu_arr, $request->standard);
         if (count($reg_bk_off) == 0) {
             return [];
         }
@@ -1688,7 +1697,8 @@ class fees_collect_controller extends Controller
             ->where('fb.sub_institute_id', session()->get('sub_institute_id'))
             ->where('fb.syear', $prviouse_syear)
             ->where('ft.display_name', 'LIKE', '%Imprest%')
-            ->where('fb.student_id', $reg_bk_off[0]->student_id)->get()->toArray();
+            ->where('fb.student_id', $reg_bk_off[0]->student_id)
+            ->orderBy('ft.display_name', 'ASC')->get()->toArray();
 
         $get_imprest_balance = json_decode(json_encode($get_imprest_sql), true);
 
@@ -1731,6 +1741,7 @@ class fees_collect_controller extends Controller
         }
 
         $reg_bk_month_wise = [];
+        $reg_month_wise = array();
         $final_bk_name = [];
         $total = 0;
 
@@ -1738,15 +1749,26 @@ class fees_collect_controller extends Controller
             foreach ($fees_detail as $head_name => $arr) {
                 if (! isset($reg_bk_month_wise[$arr['title']])) {
                     $reg_bk_month_wise[$arr['title']] = 0;
+                    $reg_month_wise[$arr['title']] = [
+                        'title' => $arr['title'],
+                        'amount' => 0,
+                        'mandatory' => $arr['mandatory'],
+                    ];
                 }
                 if (isset($arr['amount'])) {
                     $reg_bk_month_wise[$arr['title']] += $arr['amount'];
+                    $reg_month_wise[$arr['title']] = [
+                        'title' => $arr['title'],
+                        'amount' => $reg_bk_month_wise[$arr['title']],
+                        'mandatory' => $arr['mandatory'],
+                    ];
                 }
                 $final_bk_name[$arr['title']] = $head_name;
             }
         }
 
         $full_bk = array_merge($reg_bk_month_wise, $other_bk_off);
+        $full_bk_new = array_merge($reg_month_wise, $other_bk_off);
 
         //24-04-2021 START Check Cheque Return charges
 
@@ -1804,6 +1826,7 @@ class fees_collect_controller extends Controller
         }
 
         $full_bk["Total"] = $total;
+        $full_bk_new["Total"] = $total;
 
         $type = "web";
         $res['total_fees'] = $left_bk_table;
@@ -1811,9 +1834,29 @@ class fees_collect_controller extends Controller
         $res['month_arr'] = $new_month_arr;
         $res['search_ids'] = $search_ids;
         $res['final_fee'] = $full_bk;
+        $res['final_fee_new'] = $full_bk_new;
         $res['cheque_return_charges'] = $cheque_return_charges_new;
         $res['final_fee_name'] = $final_bk_name;
         $res['search_id'] = $search_ids;
+
+        $fees_config = DB::table('fees_config_master as fc')
+            ->join('fees_receipt_css as frc', function ($join) {
+                $join->whereRaw('frc.receipt_id = fc.fees_receipt_template');
+            })->selectRaw("fc.* ,frc.css")
+            ->where('fc.sub_institute_id', $sub_institute_id)
+            ->where('fc.syear', $syear)->get()->toArray();
+
+        if (count($fees_config) > 0) {
+            $receipt_css = $fees_config[0]->css;
+            $paper_size = $fees_config[0]->fees_receipt_template;
+        } else {
+            $fees_config = DB::table('fees_receipt_css')->select('css')
+                ->where('receipt_id', 'A5')->get()->toArray();
+            $receipt_css = $fees_config[0]->css;
+            $paper_size = 'A5';
+        }
+        $res['receipt_css_data'] = $receipt_css;
+        $res['paper_size'] = $paper_size;
 
         return $res;
     }
@@ -1945,4 +1988,98 @@ class fees_collect_controller extends Controller
 
         return json_encode($res);
     }
+
+    public function retrieveDataByUserId(Request $request, $user_id, $stud_id)
+    {
+        $division = $request->input('division');
+        $enrollment_no = $user_id;
+        $stud_id = $stud_id;
+        $name = $request->input('name');
+        $mb_no = $request->input('mb_no');
+        $from_date = $request->input('from_date');
+        $to_date = $request->input('to_date');
+        $receipt_no = $request->input('receipt_no');
+        $syear = $request->session()->get('syear');
+        $sub_institute_id = $request->session()->get('sub_institute_id');
+
+        $extra_fp = "  AND fp.syear = '" . $syear . "' AND te.syear = '" . $syear . "' AND t.sub_institute_id = '" . $sub_institute_id . "' AND fp.sub_institute_id = '" . $sub_institute_id . "' AND fp.is_deleted = 'N' ";
+
+        $extra_fo = "  AND fo.syear = '" . $syear . "' AND te.syear = '" . $syear . "' AND t.sub_institute_id = '" . $sub_institute_id . "' AND fo.sub_institute_id = '" . $sub_institute_id . "' AND fo.is_deleted = 'N' ";
+
+        if ($division != '') {
+            $extra_fp .= " AND te.section_id = '" . $division . "'";
+            $extra_fo .= " AND te.section_id = '" . $division . "'";
+        }
+
+        if ($stud_id != '') {
+            $extra_fp .= " AND te.student_id = '" . $stud_id . "'";
+            $extra_fo .= " AND te.student_id = '" . $stud_id . "'";
+        }
+
+        if ($enrollment_no != '') {
+            $extra_fp .= " AND t.enrollment_no = '" . $enrollment_no . "'";
+            $extra_fo .= " AND t.enrollment_no = '" . $enrollment_no . "'";
+        }
+        if ($name != '') {
+            $extra_fp .= " AND (t.first_name = '" . $name . "' OR t.last_name = '" . $name . "' OR t.middle_name = '" . $name . "') ";
+            $extra_fo .= " AND (t.first_name = '" . $name . "' OR t.last_name = '" . $name . "' OR t.middle_name = '" . $name . "')";
+        }
+        if ($mb_no != '') {
+            $extra_fp .= " AND t.mobile = '" . $mb_no . "'";
+            $extra_fo .= " AND t.mobile = '" . $mb_no . "'";
+        }
+        if ($from_date != '') {
+            $extra_fp .= " AND fp.receiptdate >= '" . $from_date . "'";
+            $extra_fo .= " AND fo.receiptdate >= '" . $from_date . "'";
+        }
+
+        if ($to_date != '') {
+            $extra_fp .= " AND fp.receiptdate <= '" . $to_date . "'";
+            $extra_fo .= " AND fo.receiptdate <= '" . $to_date . "'";
+        }
+        if ($sub_institute_id == 200) {
+            $extra_fp .= " AND fp.standard_id=te.standard_id ";
+            //$extra_fo .= " AND fo.receiptdate <= '".$to_date."'";
+        }
+
+        $sql = "SELECT M.student_id,M.enrollment_no,M.roll_no,M.uniqueid,M.student_name,M.mobile,M.grade,M.standard_name,M.division_name,M.created_date,M.user_name,M.term_id,M.receiptdate,M.receipt_no,M.payment_mode,M.cheque_bank_name,M.bank_branch,M.cheque_no,M.cheque_date,
+            (IFNULL(M.amount,0) + IFNULL(N.actual_amountpaid,0)) AS actual_amountpaid
+            FROM (
+            SELECT fp.student_id,t.enrollment_no,t.roll_no,t.uniqueid,CONCAT_WS(' ',t.first_name,t.middle_name,t.last_name) AS student_name,t.mobile,ac.title AS grade,s.name AS standard_name,d.name AS division_name,fp.created_date,CONCAT_WS(' ',u.first_name,u.last_name) AS user_name,fp.term_id,fp.receiptdate,fp.receipt_no,fp.payment_mode,fp.cheque_bank_name,fp.bank_branch,fp.cheque_no,fp.cheque_date,SUM(IFNULL(fp.amount,0)) AS amount
+            FROM tblstudent t
+            -- WHERE t.first_name = $name OR t.middle_name = $name OR t.last_name = $name
+            INNER JOIN tblstudent_enrollment te ON t.id = te.student_id
+            INNER JOIN academic_section ac ON ac.id = te.grade_id
+            INNER JOIN standard s ON s.id = te.standard_id
+            INNER JOIN division d ON d.id = te.section_id
+            INNER JOIN fees_collect fp ON fp.student_id = te.student_id
+            LEFT JOIN tbluser u ON fp.created_by = u.id
+            WHERE 1=1 $extra_fp
+            GROUP BY fp.student_id, fp.receipt_no, fp.syear, fp.receiptdate, fp.payment_mode, fp.cheque_no
+            ORDER BY fp.receiptdate ASC, fp.receipt_no ASC) AS M
+            LEFT JOIN (
+            SELECT fo.student_id, SUM(IFNULL(fo.actual_amountpaid,0)) AS actual_amountpaid
+            FROM tblstudent t
+            INNER JOIN tblstudent_enrollment te ON t.id = te.student_id
+            INNER JOIN academic_section ac ON ac.id = te.grade_id
+            INNER JOIN standard s ON s.id = te.standard_id
+            INNER JOIN division d ON d.id = te.section_id
+            INNER JOIN fees_paid_other fo ON fo.student_id = te.student_id
+            WHERE 1=1 $extra_fo
+            GROUP BY fo.student_id, fo.reciept_id, fo.syear, fo.receiptdate, fo.payment_mode, fo.cheque_dd_no
+            ORDER BY fo.receiptdate ASC, fo.reciept_id ASC) AS N ON M.student_id = N.student_id
+            HAVING (M.receiptdate IS NOT NULL)
+            ORDER BY M.receiptdate,CAST(M.receipt_no AS SIGNED)";
+
+        $result = DB::select(DB::raw($sql));
+        $feesData = json_decode(json_encode($result), true);
+
+        $res['status_code'] = 1;
+        $res['message'] = "Success";
+        $res['fees_data'] = $feesData;
+        $res['enrollment_no'] = $enrollment_no;
+
+        return $feesData;
+    }
+
 }

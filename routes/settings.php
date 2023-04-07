@@ -17,8 +17,8 @@ Route::group(['prefix' => 'settings', 'middleware' => ['session', 'menu', 'logRo
     Route::get('setinstitute', [tblcustomfieldsController::class, 'setinstitute'])->name('setinstitute');
 
     Route::resource('templatemaster', templateMasterController::class);
-	Route::get('view_all_tag', [templateMasterController::class, 'viewAllTag'])->name('view_all_tag');
-	Route::resource('institute_detail', instituteDetailController::class);	
-	Route::resource('manage_institute', manageInstituteController::class);
-	
+    Route::get('view_all_tag', [templateMasterController::class, 'viewAllTag'])->name('view_all_tag');
+    Route::resource('institute_detail', instituteDetailController::class);
+    Route::resource('manage_institute', manageInstituteController::class);
+
 });

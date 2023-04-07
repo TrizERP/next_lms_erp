@@ -12,36 +12,35 @@
         </div>
         <div class="card">
             @if ($sessionData = Session::get('data'))
-                        @if($sessionData['status_code'] == 1)
-                        <div class="alert alert-success alert-block">
+                @if($sessionData['status_code'] == 1)
+                    <div class="alert alert-success alert-block">
                         @else
-                        <div class="alert alert-danger alert-block">
+                            <div class="alert alert-danger alert-block">
+                                @endif
+                                <button type="button" class="close" data-dismiss="alert">×</button>
+                                <strong>{{ $sessionData['message'] }}</strong>
+                            </div>
                         @endif
-                            <button type="button" class="close" data-dismiss="alert">×</button>
-                            <strong>{{ $sessionData['message'] }}</strong>
-                        </div>
-                    @endif
                         <form action="{{ route('show_user_report') }}" method="post">
-                            @csrf
                             <div class="row">
                                 @if(isset($data['profiles']))
-                                <div class="col-md-3 form-group ml-0">
-                                    <label>User</label>
-                                    <select name="profile" id="profile" required="required" class="form-control">
-                                        <option value=""> Select User Profile </option>
-                                        @foreach($data['profiles'] as $key => $value)
-                                            @php
-                                            $checked = '';
-                                            if(isset($data['profile'])){
-                                                if($data['profile'] == $key){
-                                                    $checked = "selected='selected'";
-                                                }
-                                            }
-                                            @endphp
-                                            <option value="{{$key}}" {{$checked}}>{{$value}}</option>
-                                        @endforeach
-                                    </select>
-                                </div>
+                                    <div class="col-md-3 form-group ml-0">
+                                        <label>User</label>
+                                        <select name="profile" id="profile" required="required" class="form-control">
+                                            <option value=""> Select User Profile</option>
+                                            @foreach($data['profiles'] as $key => $value)
+                                                @php
+                                                    $checked = '';
+                                                    if(isset($data['profile'])){
+                                                        if($data['profile'] == $key){
+                                                            $checked = "selected='selected'";
+                                                        }
+                                                    }
+                                                @endphp
+                                                <option value="{{$key}}" {{$checked}}>{{$value}}</option>
+                                            @endforeach
+                                        </select>
+                                    </div>
                                 @endif
                                 <div class="col-md-12 form-group">
                                     <div class="checkbox checkbox-info">
@@ -50,70 +49,73 @@
                                     </div>
                                 </div>
                                 @if(isset($data['data']))
-                                @php
-                                $checkedArray = array();
-                                @endphp
-                                @foreach($data['data'] as $key => $value)
-                                <div class="form-group col-md-2 ml-0 mr-0">
-                                    <div class="custom-control custom-checkbox d-flex align-items-center">
-                                        @php
-                                        $checked = '';
-                                        if(in_array($key,$checkedArray)){
-                                            $checked = 'checked="checked"';
-                                        }
-                                        if(isset($data['headers'])){
-                                            if(count($data['headers']) > 0){
-                                                $headersChecked = array_keys($data['headers']);
-                                            }
-                                            $checked = '';
-                                            if(in_array($key,$headersChecked)){
-                                                $checked = 'checked="checked"';
-                                            }
-                                        }
-                                        @endphp
-                                        <input id="{{$key}}" {{$checked}} value="{{$key}}" class="custom-control-input" name="dynamicFields[]" type="checkbox">
-                                        <label class="custom-control-label mb-0 pt-1" for="{{$key}}"> {{$value}} </label>
-                                    </div>
-                                </div>
-                                @endforeach
-                            @endif
+                                    @php
+                                        $checkedArray = array();
+                                    @endphp
+                                    @foreach($data['data'] as $key => $value)
+                                        <div class="form-group col-md-2 ml-0 mr-0">
+                                            <div class="custom-control custom-checkbox d-flex align-items-center">
+                                                @php
+                                                    $checked = '';
+                                                    if(in_array($key,$checkedArray)){
+                                                        $checked = 'checked="checked"';
+                                                    }
+                                                    if(isset($data['headers'])){
+                                                        if(count($data['headers']) > 0){
+                                                            $headersChecked = array_keys($data['headers']);
+                                                        }
+                                                        $checked = '';
+                                                        if(in_array($key,$headersChecked)){
+                                                            $checked = 'checked="checked"';
+                                                        }
+                                                    }
+                                                @endphp
+                                                <input id="{{$key}}" {{$checked}} value="{{$key}}"
+                                                       class="custom-control-input" name="dynamicFields[]"
+                                                       type="checkbox">
+                                                <label class="custom-control-label mb-0 pt-1"
+                                                       for="{{$key}}"> {{$value}} </label>
+                                            </div>
+                                        </div>
+                                    @endforeach
+                                @endif
                                 <div class="col-md-12 form-group">
                                     <input type="submit" name="submit" value="Search" class="btn btn-success">
                                 </div>
                             </div>
                         </form>
-                        </div>
+                    </div>
 
                     @if(isset($data['user_data']))
-                @php
-                    if(isset($data['user_data'])){
-                        $user_data = $data['user_data'];
-                    }
-                @endphp
-                <div class="table-responsive">
-                    <table id="example" class="table table-striped">
-                        <thead>
-                        <tr>
-                            @foreach($data['headers'] as $hkey => $header)
-                                <th> {{$header}} </th>
-                            @endforeach
-                        </tr>
-                        </thead>
-                        <tbody>
-                        @foreach($user_data as $key => $value)
-                            <tr>
-                                @foreach($data['headers'] as $hkey => $header)
-                                    @if($hkey == "birthdate")
-                                        <td> {{date('d-m-Y',strtotime($value->$hkey))}}</td>
-                                    @else
-                                        <td> {{$value->$hkey}} </td>
-                                    @endif
+                        @php
+                            if(isset($data['user_data'])){
+                                $user_data = $data['user_data'];
+                            }
+                        @endphp
+                        <div class="table-responsive">
+                            <table id="example" class="table table-striped">
+                                <thead>
+                                <tr>
+                                    @foreach($data['headers'] as $hkey => $header)
+                                        <th> {{$header}} </th>
+                                    @endforeach
+                                </tr>
+                                </thead>
+                                <tbody>
+                                @foreach($user_data as $key => $value)
+                                    <tr>
+                                        @foreach($data['headers'] as $hkey => $header)
+                                            @if($hkey == "birthdate")
+                                                <td> {{date('d-m-Y',strtotime($value->$hkey))}}</td>
+                                            @else
+                                                <td> {{$value->$hkey}} </td>
+                                            @endif
+                                        @endforeach
+                                    </tr>
                                 @endforeach
-                            </tr>
-                        @endforeach
-                        </tbody>
-                    </table>
-                </div>
+                                </tbody>
+                            </table>
+                        </div>
         </div>
         @endif
     </div>
@@ -169,11 +171,11 @@
                     if (table.column(i).search() !== this.value) {
                         table
                             .column(i)
-                        .search( this.value )
-                        .draw();
-                }
-            } );
-        } );
-    } );
-</script>
+                            .search(this.value)
+                            .draw();
+                    }
+                });
+            });
+        });
+    </script>
 @include('includes.footer')
