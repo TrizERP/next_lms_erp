@@ -1,0 +1,1 @@
+{"result":{"text":"y over 2 space equals fraction numerator y plus 2 over denominator 2 end fraction"},"status":"ok"}

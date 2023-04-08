@@ -1,0 +1,869 @@
+<div style="width:95%;margin-left: 1% !important;margin-top: 1.5% !important;" id="fee_reciept">
+   <style>
+      tbody tr td:last-child {
+          text-align: left !important;
+      }
+      br {
+         display: block !important;
+      }
+      .cls_tr_frm_branch_field_line{
+      line-height:9px;
+      }
+      .cls_td_date_boxes{
+      line-height:9px;
+      }
+      .cls_space_input_boxes{
+      display:inline;float:left;height:22px;width:10px;text-align:center;
+      }
+      .cls_qft_input_boxes{
+      border: 1px solid;display:inline;float:left;height:22px;width:20px;text-align:center;
+      }
+      .cls_qft_input_boxes b{
+      display:block;padding-top:25%;
+      }
+      .cls_in_input_boxes{
+      border: 1px solid;display:inline;float:left;height:22px;width:13px;text-align:center;
+      }
+      .cls_in_input_boxes b{
+      display:block;padding-top:40%;
+      }
+      .cls_lbl_in_boxes{
+      display:inline;float:left;width:98px;margin-top:6px;font-size:10px;
+      }
+      .cls_atbc_input_boxes{
+      border: 1px solid;display:inline;float:left;height:22px;width:13px;text-align:center;
+      }
+      .cls_atbc_input_boxes b{
+      display:block;padding-top:40%;
+      }
+      .cls_lbl_atbc_boxes{
+      display:inline;float:left;width:130px;margin-top:6px;font-size:10px;
+      }
+      .cls_stamp_lbl{
+      text-align:center;
+      }
+      .cls_frm_amount_in_word_blank_field_line{
+      border-bottom:1px solid;width:98%;
+      }
+      .cls_frm_amount_in_word_field_line{
+      border-bottom:1px solid;width:74%;margin-left:24%;margin-top:-3%;text-align:center;
+      } 
+      .cls_frm_drawn_on_bank_field_line{
+      border-bottom:1px solid;width:74%;margin-left:24%;margin-top:-3%;
+      } 
+      .cls_frm_cheque_dd_no_field_line{
+      border-bottom:1px solid;width:74%;margin-left:24%;margin-top:-3%;
+      }
+      .cls_fee_tbl_heading1{
+      text-align:center;
+      }
+      .cls_frm_father_name_field_line{
+      border-bottom:1px solid;width:73%;margin-left:24%;margin-top:-3%;text-align:center;font-size:13px;
+      }
+      .cls_frm_class_div_field_line{
+      border-bottom:1px solid;width:57%;margin-left:36%;margin-top:-7%;text-align:center;font-size:13px;
+      } 
+      .cls_frm_gr_no_field_line{
+      border-bottom:1px solid;width:70%;margin-left:29%;margin-top:-6%;text-align:center;font-size:13px;
+      }
+      .cls_frm_stud_name_field_line{
+      border-bottom:1px solid;width:72%;margin-left:25%;margin-top:-3%;text-align:center;font-size:13px;
+      }
+      .cls_frm_branch_field_line{
+      border-bottom:1px solid;width:85%;margin-left:12%;margin-top:-3%;
+      }
+      .cls_lbl_date_boxes{
+      display:inline;float:left;width:30px;margin-top:6px;font-size:10px;
+      }
+      .cls_input_boxes{
+      border: 1px solid;display:inline;float:left;height:22px;width:13px;
+      }
+      .cls_lbl_pan_no{
+      border:1px solid;float:left;margin-left:3%;margin-top:4px;
+      }
+      .cls_td_break{
+      border-top: 1px solid;line-height:0px;padding-top:0px !important;
+      }
+      .cls_rec_head_lbl{
+      text-align:center;
+      font-size:12px;
+      }
+      .cls_rec_logo
+      {
+      margin-top: 1%;
+      }
+      .head_tit{
+      font-size:12px;
+      letter-space:1px;
+      padding-right:10px;
+      /*padding-top:12px;*/ 
+      text-align: center !important;
+      width: 50%;
+      padding-left: 10px;
+      font-family:monospace Grande,monospace !important;
+      }
+      .head_tit b{
+      font-size:12px;
+      letter-space:1px;
+      padding-right:10px; 
+      font-weight:bolder;
+      text-align: center !important;
+      width: 50%;
+      padding-left: 10px;
+      font-family:monospace Grande,monospace !important;
+      }
+      .head_tit span{
+      font-size:12px;
+      letter-space:1px;
+      font-family:monospace Grande,monospace !important;
+      }
+      .head_tit2{
+      font-size:11px !important;
+      text-align:center;
+      font-weight:normal;
+      padding:0px !important;
+      }
+      .head_tit3{
+      font-size:12px;
+      }
+      .fee_reci h3{
+      border:2px solid #000;
+      -moz-border-radius: 5px;
+      -webkit-border-radius: 5px;
+      border-radius: 5px;
+      padding:4px;
+      margin:0px auto;
+      width:200px;
+      font-size:18px;
+      }
+      #fee_tbl{
+      background:#fff;
+      border:2px solid #000;
+      font-family:monospace Grande,monospace !important;
+      margin:0px auto;
+      }
+      #fee_tbl td{
+      padding:5px;
+      background:#fff;
+      font-size:10px;
+      }
+      #fee_tbl2{
+      background:#000;
+      }
+      #fee_tbl2 td{
+      padding:0px 5px;
+      background:#fff;
+      /*font-size:11px !important;*/
+      font-size:12px !important;
+      border-bottom:0.5px solid #000;
+      border-right:0.5px solid #000;
+      border-left:0.5px solid #000;
+      border-top:0.5px solid #000;
+      }
+      #fee_tbl3 td{
+      padding:0px 5px;
+      background:#fff;
+      font-size:11px !important;
+      }
+      .aslam1{
+      float:left;
+      width:50% !important;
+      margin:0px auto 0px auto;
+      }
+      .aslam1.cls_imprest_aslam1{
+      float:left;
+      /*width:30% !important;*/
+      width:23% !important;
+      margin:0px auto 0px auto;
+      /*margin-left:2%;*/
+      margin-left:4%;
+      /*margin-right:1%;*/
+      /*margin-right:0%;*/
+      margin-right:1%;
+      }
+      .aslam1.cls_imprest_aslam1.last{
+      margin-left:10%;
+      }
+      .aslam1.cls_imprest_aslam1.cls_imprest_collection_aslam1{
+      /*margin-right:1%;*/
+      margin-right:7%;
+      /*margin-left:2%;*/
+      margin-left:2%;
+      } 
+      
+      @media print {
+      /*.cls_ledger_main_div {page-break-after: always;}*/
+      div+.cls_ledger_main_div {page-break-before: always;}
+      } 
+      td b, td, p, div{
+      font-family:Arial, Helvetica, sans-serif !important;
+      } 
+   </style>
+   <div class="cls_ledger_main_div">
+      <div class="aslam1 cls_imprest_aslam1 cls_imprest_collection_aslam1">
+         <table border="0" width="100%" cellpadding="0" cellspacing="0" id="fee_tbl">
+            <tbody>
+               <tr>
+                  <th colspan="4" class="cls_rec_head_lbl" width="60%"><b><u>STUDENT COPY</u></b></th>
+               </tr>
+               <tr>
+                  <th width="40%" align="left">
+                     <img class="cls_rec_logo" src="&lt;&lt;bank_logo&gt;&gt;" height="37" width="116" vspace="0" hspace="0" border="0">
+                     <div style="width:170px;"></div>
+                  </th>
+                  <th colspan="4" width="40%" align="right">
+                     <img class="cls_rec_logo" src="&lt;&lt;school_logo&gt;&gt;" height="60" width="170" vspace="0" hspace="0" border="0">
+                  </th>
+               </tr>
+               <tr>
+                  <td colspan="4" class="cls_td_break">&nbsp;</td>
+               </tr>
+               <tr>
+                  <td colspan="4" valign="top" class="head_tit">
+                     <center>
+                        <b>&lt;&lt;address_line_1&gt;&gt;</b>
+                     </center>
+                     <center>
+                        <span>
+                           <br>&lt;&lt;address_line_2&gt;&gt;,
+                           <br>&lt;&lt;address_line_3&gt;&gt;,
+                        </span>
+                     </center>
+                  </td>
+               </tr>
+               <tr>
+                  <td colspan="4" class="cls_td_break">&nbsp;</td>
+               </tr>
+               <tr>
+                  <td class="cls_lbl_pan_no" align="left"> <b>PAN No. : &nbsp; &lt;&lt;pan_no&gt;&gt;</b></td>
+                  <td align="left" class="cls_td_date_boxes">
+                     <div class="cls_lbl_date_boxes"> <b>Date :</b> &nbsp;</div>
+                     <div class="cls_input_boxes">&nbsp;</div>
+                     <div class="cls_input_boxes">&nbsp;</div>
+                     <div class="cls_input_boxes">&nbsp;</div>
+                     <div class="cls_input_boxes">&nbsp;</div>
+                     <div class="cls_input_boxes">&nbsp;</div>
+                     <div class="cls_input_boxes">&nbsp;</div>
+                     <div class="cls_input_boxes">&nbsp;</div>
+                     <div class="cls_input_boxes">&nbsp;</div>
+                  </td>
+               </tr>
+               <tr class="cls_tr_frm_branch_field_line">
+                  <td colspan="4">
+                     <b>
+                        Branch &nbsp; 
+                        <div class="cls_frm_branch_field_line">&nbsp;</div>
+                     </b>
+                  </td>
+               </tr>
+               <tr></tr>
+               <tr>
+                  <td colspan="4">
+                     <div class="cls_lbl_atbc_boxes"><b>Account to be Credited :</b></div>
+                     &lt;&lt;account_no&gt;&gt;
+                  </td>
+               </tr>
+               <tr></tr>
+               <tr>
+                  <td colspan="4">
+                     <div class="cls_lbl_atbc_boxes"><b>Cms Client Code:</b></div>
+                     &lt;&lt;cms_client_code&gt;&gt;
+                  </td>                  
+               </tr>
+               <tr></tr>
+               <tr>
+                  <td colspan="4">
+                     <div class="cls_lbl_in_boxes"><b>Institution Name :</b></div>
+                     &lt;&lt;institute_name&gt;&gt;
+                  </td>
+               </tr>
+               <tr></tr>
+               <tr>
+                  <td colspan="4">
+                     <div class="cls_lbl_in_boxes"><b>Quarter Fee (Tick)</b></div>
+                     <div class="cls_qft_input_boxes"><b>&nbsp;</b></div>
+                     <div class="cls_qft_input_boxes"><b>Q1</b></div>
+                     <div class="cls_space_input_boxes">&nbsp;</div>
+                     <div class="cls_qft_input_boxes"><b>&nbsp;</b></div>
+                     <div class="cls_qft_input_boxes"><b>Q2</b></div>
+                     <div class="cls_space_input_boxes">&nbsp;</div>
+                     <div class="cls_qft_input_boxes"><b>&nbsp;</b></div>
+                     <div class="cls_qft_input_boxes"><b>Q3</b></div>
+                     <div class="cls_space_input_boxes">&nbsp;</div>
+                     <div class="cls_qft_input_boxes"><b>&nbsp;</b></div>
+                     <div class="cls_qft_input_boxes"><b>Q4</b></div>
+                     <div class="cls_space_input_boxes">&nbsp;</div>
+                  </td>
+               </tr>
+               <tr></tr>
+               <tr>
+                  <td colspan="4">
+                     <b>Student Name : &nbsp; </b>
+                     <div class="cls_frm_stud_name_field_line"><b>&lt;&lt;student_name&gt;&gt;&nbsp;</b></div>
+                  </td>
+               </tr>
+               <tr></tr>
+               <tr>
+                  <td>
+                     <b>G.R. No. : &nbsp; </b>
+                     <div class="cls_frm_gr_no_field_line"><b>&lt;&lt;enrollment_no&gt;&gt;&nbsp;</b></div>
+                  </td>
+                  <td>
+                     <b>Class/Div. : &nbsp; </b>
+                     <div class="cls_frm_class_div_field_line"><b>&lt;&lt;standard_name&gt;&gt; / &lt;&lt;division_name&gt;&gt;&nbsp;</b></div>
+                  </td>
+               </tr>
+               <tr></tr>
+               <tr>
+                  <td colspan="4">
+                     <b>Father Name : &nbsp; </b>
+                     <div class="cls_frm_father_name_field_line"><b>&lt;&lt;father_name&gt;&gt;&nbsp;</b></div>
+                  </td>
+               </tr>
+               <tr>
+                  <td valign="top">
+                     <table border="0" width="100%" cellpadding="0" cellspacing="0" id="fee_tbl2">
+                        <tbody>
+                           <tr>
+                              <td class="cls_fee_tbl_heading1" width="75%"><b>Fee Heads</b></td>
+                              <td class="cls_fee_tbl_heading1" width="25%"><b>Amount</b></td>
+                           </tr>
+                           &lt;&lt;fees_head&gt;&gt;
+                        </tbody>
+                     </table>
+                  </td>
+                  <td>
+                     <table border="0" width="100%" cellpadding="0" cellspacing="0" style="margin-top:0%;" id="fee_tbl2">
+                        <tbody>
+                           <tr>
+                              <td width="55%"><b>Cash Deposit</b></td>
+                              <td class="cls_fee_tbl_heading1" width="45%"><b>Amount</b></td>
+                           </tr>
+                           <tr>
+                              <td>2000 x &nbsp;</td>
+                              <td>&nbsp;</td>
+                           </tr>
+                           <tr>
+                              <td>500 x &nbsp;</td>
+                              <td>&nbsp;</td>
+                           </tr>
+                           <tr>
+                              <td>100 x &nbsp;</td>
+                              <td>&nbsp;</td>
+                           </tr>
+                           <tr>
+                              <td>50 x &nbsp;</td>
+                              <td>&nbsp;</td>
+                           </tr>
+                           <tr>
+                              <td>20 x &nbsp;</td>
+                              <td>&nbsp;</td>
+                           </tr>
+                           <tr>
+                              <td>10 x &nbsp;</td>
+                              <td>&nbsp;</td>
+                           </tr>
+                           <tr>
+                              <td>5 x &nbsp;</td>
+                              <td>&nbsp;</td>
+                           </tr>
+                           <tr>
+                              <td>&nbsp;</td>
+                              <td>&nbsp;</td>
+                           </tr>
+                           <tr>
+                              <td align="right"><b>Total</b></td>
+                              <td>&nbsp;</td>
+                           </tr>
+                        </tbody>
+                     </table>
+                  </td>
+               </tr>
+               <tr>
+                  <td colspan="4">
+                     <b>Cheque / DD No. &nbsp; </b>
+                     <div class="cls_frm_cheque_dd_no_field_line">&nbsp;</div>
+                  </td>
+               </tr>
+               <tr>
+                  <td colspan="4">
+                     <b>Drawn on Bank &nbsp; </b>
+                     <div class="cls_frm_drawn_on_bank_field_line">&nbsp;</div>
+                  </td>
+               </tr>
+               <tr>
+                  <td colspan="4">
+                     <b>Amount in Word &nbsp; </b>
+                     <div class="cls_frm_amount_in_word_field_line">&lt;&lt;fees_amount_in_words&gt;&gt; &nbsp;</div>
+                  </td>
+               </tr>
+               <!-- <tr>
+                  <td colspan="4">
+                     <div class="cls_frm_amount_in_word_blank_field_line">Ninety Only&nbsp;</div>
+                  </td>
+               </tr> -->
+               <!-- <tr>
+                  <td>&nbsp;</td>
+               </tr> -->
+               <tr>
+                  <td class="cls_stamp_lbl"><b>Depositor Signature</b></td>
+                  <td><b>Bank Stamp / Signature</b></td>
+               </tr>
+               <!-- <tr>
+                  <td><b>Note:</b>&nbsp;<b>*</b></td>
+               </tr>
+               <tr>
+                  <td colspan="2" style="padding-left:5px;padding-bottom:2px;padding-top:2px">Please Pay The Fees Before 04-07-2019</td>
+               </tr>
+               <tr>
+                  <td colspan="2" style="padding-left:5px;padding-bottom:2px;padding-top:2px">Late Fees Payment will attract a fine of Rs.50/- per Day</td>
+               </tr> -->
+            </tbody>
+         </table>
+      </div>
+      <div class="aslam1 cls_imprest_aslam1">
+         <table border="0" width="100%" cellpadding="0" cellspacing="0" id="fee_tbl">
+            <tbody>
+               <tr>
+                  <th colspan="4" class="cls_rec_head_lbl" width="60%"><b><u>SCHOOL COPY</u></b></th>
+               </tr>
+               <tr>
+                  <th width="40%" align="left">
+                     <img class="cls_rec_logo" src="&lt;&lt;bank_logo&gt;&gt;" height="37" width="116" vspace="0" hspace="0" border="0">
+                     <div style="width:170px;"></div>
+                  </th>
+                  <th colspan="4" width="40%" align="right">
+                     <img class="cls_rec_logo" src="&lt;&lt;school_logo&gt;&gt;" height="60" width="170" vspace="0" hspace="0" border="0">
+                  </th>
+               </tr>
+               <tr>
+                  <td colspan="4" class="cls_td_break">&nbsp;</td>
+               </tr>
+               <tr>
+                  <td colspan="4" valign="top" class="head_tit">
+                     <center>
+                        <b>&lt;&lt;address_line_1&gt;&gt;</b>
+                     </center>
+                     <center>
+                        <span>
+                           <br>&lt;&lt;address_line_2&gt;&gt;,
+                           <br>&lt;&lt;address_line_3&gt;&gt;,
+                        </span>
+                     </center>
+                  </td>
+               </tr>
+               <tr>
+                  <td colspan="4" class="cls_td_break">&nbsp;</td>
+               </tr>
+               <tr>
+                  <td class="cls_lbl_pan_no" align="left"> <b>PAN No. : &nbsp; &lt;&lt;pan_no&gt;&gt;</b></td>
+                  <td align="left" class="cls_td_date_boxes">
+                     <div class="cls_lbl_date_boxes"> <b>Date :</b> &nbsp;</div>
+                     <div class="cls_input_boxes">&nbsp;</div>
+                     <div class="cls_input_boxes">&nbsp;</div>
+                     <div class="cls_input_boxes">&nbsp;</div>
+                     <div class="cls_input_boxes">&nbsp;</div>
+                     <div class="cls_input_boxes">&nbsp;</div>
+                     <div class="cls_input_boxes">&nbsp;</div>
+                     <div class="cls_input_boxes">&nbsp;</div>
+                     <div class="cls_input_boxes">&nbsp;</div>
+                  </td>
+               </tr>
+               <tr class="cls_tr_frm_branch_field_line">
+                  <td colspan="4">
+                     <b>
+                        Branch &nbsp; 
+                        <div class="cls_frm_branch_field_line">&nbsp; </div>
+                     </b>
+                  </td>
+               </tr>
+               <tr></tr>
+               <tr>
+                  <td colspan="4">
+                     <div class="cls_lbl_atbc_boxes"><b>Account to be Credited :</b></div>
+                     &lt;&lt;account_no&gt;&gt;
+                  </td>
+               </tr>
+               <tr></tr>
+               <tr>
+                  <td colspan="4">
+                     <div class="cls_lbl_atbc_boxes"><b>Cms Client Code:</b></div>
+                     &lt;&lt;cms_client_code&gt;&gt;
+                  </td>
+               </tr>
+               <tr></tr>
+               <tr>
+                  <td colspan="4">
+                     <div class="cls_lbl_in_boxes"><b>Institution Name :</b></div>
+                     &lt;&lt;institute_name&gt;&gt;
+                  </td>
+               </tr>
+               <tr></tr>
+               <tr>
+                  <td colspan="4">
+                     <div class="cls_lbl_in_boxes"><b>Quarter Fee (Tick)</b></div>
+                     <div class="cls_qft_input_boxes"><b>&nbsp;</b></div>
+                     <div class="cls_qft_input_boxes"><b>Q1</b></div>
+                     <div class="cls_space_input_boxes">&nbsp;</div>
+                     <div class="cls_qft_input_boxes"><b>&nbsp;</b></div>
+                     <div class="cls_qft_input_boxes"><b>Q2</b></div>
+                     <div class="cls_space_input_boxes">&nbsp;</div>
+                     <div class="cls_qft_input_boxes"><b>&nbsp;</b></div>
+                     <div class="cls_qft_input_boxes"><b>Q3</b></div>
+                     <div class="cls_space_input_boxes">&nbsp;</div>
+                     <div class="cls_qft_input_boxes"><b>&nbsp;</b></div>
+                     <div class="cls_qft_input_boxes"><b>Q4</b></div>
+                     <div class="cls_space_input_boxes">&nbsp;</div>
+                  </td>
+               </tr>
+               <tr></tr>
+               <tr>
+                  <td colspan="4">
+                     <b>Student Name : &nbsp; </b>
+                     <div class="cls_frm_stud_name_field_line"><b>&lt;&lt;student_name&gt;&gt;&nbsp;</b></div>
+                  </td>
+               </tr>
+               <tr></tr>
+               <tr>
+                  <td>
+                     <b>G.R. No. : &nbsp; </b>
+                     <div class="cls_frm_gr_no_field_line"><b>&lt;&lt;enrollment_no&gt;&gt;&nbsp;</b></div>
+                  </td>
+                  <td>
+                     <b>Class/Div. : &nbsp; </b>
+                     <div class="cls_frm_class_div_field_line"><b>&lt;&lt;standard_name&gt;&gt; / &lt;&lt;division_name&gt;&gt;&nbsp;</b></div>
+                  </td>
+               </tr>
+               <tr></tr>
+               <tr>
+                  <td colspan="4">
+                     <b>Father Name : &nbsp; </b>
+                     <div class="cls_frm_father_name_field_line"><b>&lt;&lt;father_name&gt;&gt;&nbsp;</b></div>
+                  </td>
+               </tr>
+               <tr>
+                  <td valign="top">
+                     <table border="0" width="100%" cellpadding="0" cellspacing="0" id="fee_tbl2">
+                        <tbody>
+                           <tr>
+                              <td class="cls_fee_tbl_heading1" width="75%"><b>Fee Heads</b></td>
+                              <td class="cls_fee_tbl_heading1" width="25%"><b>Amount</b></td>
+                           </tr>
+                           &lt;&lt;fees_head&gt;&gt;
+                        </tbody>
+                     </table>
+                  </td>
+                  <td>
+                     <table border="0" width="100%" cellpadding="0" cellspacing="0" style="margin-top:0%;" id="fee_tbl2">
+                        <tbody>
+                           <tr>
+                              <td width="55%"><b>Cash Deposit</b></td>
+                              <td class="cls_fee_tbl_heading1" width="45%"><b>Amount</b></td>
+                           </tr>
+                           <tr>
+                              <td>2000 x &nbsp;</td>
+                              <td>&nbsp;</td>
+                           </tr>
+                           <tr>
+                              <td>500 x &nbsp;</td>
+                              <td>&nbsp;</td>
+                           </tr>
+                           <tr>
+                              <td>100 x &nbsp;</td>
+                              <td>&nbsp;</td>
+                           </tr>
+                           <tr>
+                              <td>50 x &nbsp;</td>
+                              <td>&nbsp;</td>
+                           </tr>
+                           <tr>
+                              <td>20 x &nbsp;</td>
+                              <td>&nbsp;</td>
+                           </tr>
+                           <tr>
+                              <td>10 x &nbsp;</td>
+                              <td>&nbsp;</td>
+                           </tr>
+                           <tr>
+                              <td>5 x &nbsp;</td>
+                              <td>&nbsp;</td>
+                           </tr>
+                           <tr>
+                              <td>&nbsp;</td>
+                              <td>&nbsp;</td>
+                           </tr>
+                           <tr>
+                              <td align="right"><b>Total</b></td>
+                              <td>&nbsp;</td>
+                           </tr>
+                        </tbody>
+                     </table>
+                  </td>
+               </tr>
+               <tr>
+                  <td colspan="4">
+                     <b>Cheque / DD No. &nbsp; </b>
+                     <div class="cls_frm_cheque_dd_no_field_line">&nbsp;</div>
+                  </td>
+               </tr>
+               <tr>
+                  <td colspan="4">
+                     <b>Drawn on Bank &nbsp; </b>
+                     <div class="cls_frm_drawn_on_bank_field_line">&nbsp;</div>
+                  </td>
+               </tr>
+               <tr>
+                  <td colspan="4">
+                     <b>Amount in Word &nbsp; </b>
+                     <div class="cls_frm_amount_in_word_field_line">&lt;&lt;fees_amount_in_words&gt;&gt; &nbsp;</div>
+                  </td>
+               </tr>
+               <!-- <tr>
+                  <td colspan="4">
+                     <div class="cls_frm_amount_in_word_blank_field_line">Ninety Only&nbsp;</div>
+                  </td>
+               </tr> -->
+               <!-- <tr>
+                  <td>&nbsp;</td>
+               </tr> -->
+               <tr>
+                  <td class="cls_stamp_lbl"><b>Depositor Signature</b></td>
+                  <td><b>Bank Stamp / Signature</b></td>
+               </tr>
+               <!-- <tr>
+                  <td><b>Note:</b>&nbsp;<b>*</b></td>
+               </tr>
+               <tr>
+                  <td colspan="2" style="padding-left:5px;padding-bottom:2px;padding-top:2px">Please Pay The Fees Before 04-07-2019</td>
+               </tr>
+               <tr>
+                  <td colspan="2" style="padding-left:5px;padding-bottom:2px;padding-top:2px">Late Fees Payment will attract a fine of Rs.50/- per Day</td>
+               </tr> -->
+            </tbody>
+         </table>
+      </div>
+      <div class="aslam1 cls_imprest_aslam1 last">
+         <table border="0" width="100%" cellpadding="0" cellspacing="0" id="fee_tbl">
+            <tbody>
+               <tr>
+                  <th colspan="4" class="cls_rec_head_lbl" width="60%"><b><u>BANK COPY</u></b></th>
+               </tr>
+               <tr>
+                  <th width="40%" align="left">
+                     <img class="cls_rec_logo" src="&lt;&lt;bank_logo&gt;&gt;" height="37" width="116" vspace="0" hspace="0" border="0">
+                     <div style="width:170px;"></div>
+                  </th>
+                  <th colspan="4" width="40%" align="right">
+                     <img class="cls_rec_logo" src="&lt;&lt;school_logo&gt;&gt;" height="60" width="170" vspace="0" hspace="0" border="0">
+                  </th>
+               </tr>
+               <tr>
+                  <td colspan="4" class="cls_td_break">&nbsp;</td>
+               </tr>
+               <tr>
+                  <td colspan="4" valign="top" class="head_tit">
+                     <center>
+                        <b>&lt;&lt;address_line_1&gt;&gt;</b>
+                     </center>
+                     <center>
+                        <span>
+                           <br>&lt;&lt;address_line_2&gt;&gt;,
+                           <br>&lt;&lt;address_line_3&gt;&gt;,
+                        </span>
+                     </center>
+                  </td>
+               </tr>
+               <tr>
+                  <td colspan="4" class="cls_td_break">&nbsp;</td>
+               </tr>
+               <tr>
+                  <td class="cls_lbl_pan_no" align="left"> <b>PAN No. : &nbsp; &lt;&lt;pan_no&gt;&gt;</b></td>
+                  <td align="left" class="cls_td_date_boxes">
+                     <div class="cls_lbl_date_boxes"> <b>Date :</b> &nbsp;</div>
+                     <div class="cls_input_boxes">&nbsp;</div>
+                     <div class="cls_input_boxes">&nbsp;</div>
+                     <div class="cls_input_boxes">&nbsp;</div>
+                     <div class="cls_input_boxes">&nbsp;</div>
+                     <div class="cls_input_boxes">&nbsp;</div>
+                     <div class="cls_input_boxes">&nbsp;</div>
+                     <div class="cls_input_boxes">&nbsp;</div>
+                     <div class="cls_input_boxes">&nbsp;</div>
+                  </td>
+               </tr>
+               <tr class="cls_tr_frm_branch_field_line">
+                  <td colspan="4">
+                     <b>
+                        Branch &nbsp; 
+                        <div class="cls_frm_branch_field_line">&nbsp; </div>
+                     </b>
+                  </td>
+               </tr>
+               <tr></tr>
+               <tr>
+                  <td colspan="4">
+                     <div class="cls_lbl_atbc_boxes"><b>Account to be Credited :</b></div>
+                     &lt;&lt;account_no&gt;&gt;
+                  </td>
+               </tr>
+               <tr></tr>
+               <tr>
+                  <td colspan="4">
+                     <div class="cls_lbl_atbc_boxes"><b>Cms Client Code:</b></div>
+                     &lt;&lt;cms_client_code&gt;&gt;
+                  </td>
+               </tr>
+               <tr></tr>
+               <tr>
+                  <td colspan="4">
+                     <div class="cls_lbl_in_boxes"><b>Institution Name :</b></div>
+                     &lt;&lt;institute_name&gt;&gt;
+                  </td>
+               </tr>
+               <tr></tr>
+               <tr>
+                  <td colspan="4">
+                     <div class="cls_lbl_in_boxes"><b>Quarter Fee (Tick)</b></div>
+                     <div class="cls_qft_input_boxes"><b>&nbsp;</b></div>
+                     <div class="cls_qft_input_boxes"><b>Q1</b></div>
+                     <div class="cls_space_input_boxes">&nbsp;</div>
+                     <div class="cls_qft_input_boxes"><b>&nbsp;</b></div>
+                     <div class="cls_qft_input_boxes"><b>Q2</b></div>
+                     <div class="cls_space_input_boxes">&nbsp;</div>
+                     <div class="cls_qft_input_boxes"><b>&nbsp;</b></div>
+                     <div class="cls_qft_input_boxes"><b>Q3</b></div>
+                     <div class="cls_space_input_boxes">&nbsp;</div>
+                     <div class="cls_qft_input_boxes"><b>&nbsp;</b></div>
+                     <div class="cls_qft_input_boxes"><b>Q4</b></div>
+                     <div class="cls_space_input_boxes">&nbsp;</div>
+                  </td>
+               </tr>
+               <tr></tr>
+               <tr>
+                  <td colspan="4">
+                     <b>Student Name : &nbsp; </b>
+                     <div class="cls_frm_stud_name_field_line"><b>&lt;&lt;student_name&gt;&gt;&nbsp;</b></div>
+                  </td>
+               </tr>
+               <tr></tr>
+               <tr>
+                  <td>
+                     <b>G.R. No. : &nbsp; </b>
+                     <div class="cls_frm_gr_no_field_line"><b>&lt;&lt;enrollment_no&gt;&gt;&nbsp;</b></div>
+                  </td>
+                  <td>
+                     <b>Class/Div. : &nbsp; </b>
+                     <div class="cls_frm_class_div_field_line"><b>&lt;&lt;standard_name&gt;&gt; / &lt;&lt;division_name&gt;&gt;&nbsp;</b></div>
+                  </td>
+               </tr>
+               <tr></tr>
+               <tr>
+                  <td colspan="4">
+                     <b>Father Name : &nbsp; </b>
+                     <div class="cls_frm_father_name_field_line"><b>&lt;&lt;father_name&gt;&gt;&nbsp;</b></div>
+                  </td>
+               </tr>
+               <tr>
+                  <td valign="top">
+                     <table border="0" width="100%" cellpadding="0" cellspacing="0" id="fee_tbl2">
+                        <tbody>
+                           <tr>
+                              <td class="cls_fee_tbl_heading1" width="75%"><b>Fee Heads</b></td>
+                              <td class="cls_fee_tbl_heading1" width="25%"><b>Amount</b></td>
+                           </tr>
+                           &lt;&lt;fees_head&gt;&gt;
+                        </tbody>
+                     </table>
+                  </td>
+                  <td>
+                     <table border="0" width="100%" cellpadding="0" cellspacing="0" style="margin-top:0%;" id="fee_tbl2">
+                        <tbody>
+                           <tr>
+                              <td width="55%"><b>Cash Deposit</b></td>
+                              <td class="cls_fee_tbl_heading1" width="45%"><b>Amount</b></td>
+                           </tr>
+                           <tr>
+                              <td>2000 x &nbsp;</td>
+                              <td>&nbsp;</td>
+                           </tr>
+                           <tr>
+                              <td>500 x &nbsp;</td>
+                              <td>&nbsp;</td>
+                           </tr>
+                           <tr>
+                              <td>100 x &nbsp;</td>
+                              <td>&nbsp;</td>
+                           </tr>
+                           <tr>
+                              <td>50 x &nbsp;</td>
+                              <td>&nbsp;</td>
+                           </tr>
+                           <tr>
+                              <td>20 x &nbsp;</td>
+                              <td>&nbsp;</td>
+                           </tr>
+                           <tr>
+                              <td>10 x &nbsp;</td>
+                              <td>&nbsp;</td>
+                           </tr>
+                           <tr>
+                              <td>5 x &nbsp;</td>
+                              <td>&nbsp;</td>
+                           </tr>
+                           <tr>
+                              <td>&nbsp;</td>
+                              <td>&nbsp;</td>
+                           </tr>
+                           <tr>
+                              <td align="right"><b>Total</b></td>
+                              <td>&nbsp;</td>
+                           </tr>
+                        </tbody>
+                     </table>
+                  </td>
+               </tr>
+               <tr>
+                  <td colspan="4">
+                     <b>Cheque / DD No. &nbsp; </b>
+                     <div class="cls_frm_cheque_dd_no_field_line">&nbsp;</div>
+                  </td>
+               </tr>
+               <tr>
+                  <td colspan="4">
+                     <b>Drawn on Bank &nbsp; </b>
+                     <div class="cls_frm_drawn_on_bank_field_line">&nbsp;</div>
+                  </td>
+               </tr>
+               <tr>
+                  <td colspan="4">
+                     <b>Amount in Word &nbsp; </b>
+                     <div class="cls_frm_amount_in_word_field_line">&lt;&lt;fees_amount_in_words&gt;&gt;&nbsp;</div>
+                  </td>
+               </tr>
+               <!-- <tr>
+                  <td colspan="4">
+                     <div class="cls_frm_amount_in_word_blank_field_line">Ninety Only&nbsp;</div>
+                  </td>
+               </tr> -->
+               <!-- <tr>
+                  <td>&nbsp;</td>
+               </tr> -->
+               <tr>
+                  <td class="cls_stamp_lbl"><b>Depositor Signature</b></td>
+                  <td><b>Bank Stamp / Signature</b></td>
+               </tr>
+               <!-- <tr>
+                  <td><b>Note:</b>&nbsp;<b>*</b></td>
+               </tr>
+               <tr>
+                  <td colspan="2" style="padding-left:5px;padding-bottom:2px;padding-top:2px">Please Pay The Fees Before 04-07-2019</td>
+               </tr>
+               <tr>
+                  <td colspan="2" style="padding-left:5px;padding-bottom:2px;padding-top:2px">Late Fees Payment will attract a fine of Rs.50/- per Day</td>
+               </tr> -->
+            </tbody>
+         </table>
+      </div>
+   </div>
+   <div style="clear:both">&nbsp;</div>
+   <div class="break"></div>
+</div>

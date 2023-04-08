@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <title>A Simple Page with CKEditor</title>
+        <!-- Make sure the path to CKEditor is correct. -->
+        <script src="../ckeditor4/ckeditor.js"></script>
+        <!-- Latest compiled and minified CSS -->
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+
+<!-- jQuery library -->
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.0/jquery.min.js"></script>
+
+<!-- Latest compiled JavaScript -->
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+    </head>
+    <body>
+<button data-toggle="collapse" data-target="#demo">Collapsible</button>
+<div id="toolbar1"></div>
+<div id="demo" class="collapse in">
+    <div name="editor_question" id="editor_question" contenteditable="true">
+        This is my first textarea to be replaced with CKEditor.
+    </div>
+    <div name="noneditor1_name" id="noneditor1" rows="1" cols="80" contenteditable="true">
+        Non CKEDITOR instance
+    </div>
+    <div name="editor_feedback_name" id="editor_feedback" rows="1" cols="80" contenteditable="true">
+        This is my second textarea to be replaced with CKEditor.
+    </div>
+</div>
+<button data-toggle="collapse" data-target="#nonckefields">Collapsible</button>
+
+<div id="nonckefields" class="collapse">
+    <div name="noneditor2" id="noneditor2" row="1" cols="80" contenteditable="true">Field 1</div>
+    <div name="noneditor3" id="noneditor3" row="1" cols="80" contenteditable="true">Field 2</div>
+    <div name="noneditor4" id="noneditor4" row="1" cols="80" contenteditable="true">Field 3</div>
+</div>
+
+
+
+<script>
+    CKEDITOR.config.toolbar_Full =
+        [
+        { name: 'document', items : [ 'Source'] },
+        { name: 'clipboard', items : [ 'Cut','Copy','Paste','-','Undo','Redo' ] },
+        { name: 'editing', items : [ 'Find'] },
+        { name: 'basicstyles', items : [ 'Bold','Italic','Underline'] },
+        { name: 'paragraph', items : [ 'JustifyLeft','JustifyCenter','JustifyRight'] }
+        ];
+    CKEDITOR.config.height = '40px';
+    CKEDITOR.plugins.addExternal('divarea', '../examples/extraplugins/divarea/', 'plugin.js');
+    CKEDITOR.plugins.addExternal('sharedspace', '../examples/extraplugins/sharedspace/', 'plugin.js');
+    CKEDITOR.config.removePlugins = 'maximize';
+    CKEDITOR.config.removePlugins = 'resize';
+    CKEDITOR.config.sharedSpaces = { top: 'toolbar1'};
+    CKEDITOR.replace('editor_question', {
+         extraPlugins: 'divarea,sharedspace,ckeditor_wiris',
+         language: 'en'
+    });
+     CKEDITOR.replace('editor_feedback', {
+         extraPlugins: 'divarea,sharedspace,ckeditor_wiris',
+         language: 'en'
+     });
+</script>
+    </body>
+</html>

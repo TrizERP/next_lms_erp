@@ -1,0 +1,29 @@
+{
+    "name": "ckeditor4",
+    "version": "7.26.0",
+    "description": "MathType API for CKEditor editor",
+    "keywords": [
+        "chem",
+        "chemistry",
+        "chemtype",
+        "editor",
+        "equation",
+        "latex",
+        "math",
+        "maths",
+        "mathml",
+        "mathtype",
+        "ckeditor",
+        "ckeditor4",
+        "wiris"
+    ],
+    "homepage": "http://www.wiris.com/",
+    "bugs": {
+        "email": "support@wiris.com"
+    },
+    "author": "WIRIS Team (http://www.wiris.com)",
+    "license": "GPL-3.0",
+    "dependencies": {
+        "ckeditor": "^4"
+    }
+}

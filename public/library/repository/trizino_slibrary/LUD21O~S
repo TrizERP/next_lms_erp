@@ -1,0 +1,3 @@
+GRANT SELECT, INSERT, UPDATE, DELETE, CREATE, INDEX, EXECUTE  
+ON  TO demouser@'%' identified by 'demo@sql';
+

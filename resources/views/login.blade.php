@@ -68,7 +68,7 @@ $loginpage_backgrond = session()->get('loginpage_backgrond');
                     {!!$loginpage_logo!!}
                 @else
                   <center>
-                    <img src="http://dev.triz.co.in/admin_dep/images/triz.png" width="250px">
+                    <img src="https://erp.triz.co.in/admin_dep/images/triz.png" width="250px">
                   </center>                
                 @endif
 

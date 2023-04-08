@@ -1,0 +1,160 @@
+@charset "utf-8";
+/* CSS Document */
+
+body{
+	background:#000000;
+	padding:0px;
+	margin:0px;
+	font-family:Arial, Helvetica, sans-serif;
+	font-size:14px;
+	color:#333333;
+	line-height:18px;
+}
+#wrapper{
+	background:#efefef;
+	width:1035px;
+	height:720px;
+	margin:0px auto;
+	padding:5px;
+}
+.left_menu{
+	background:url(../images/left-menu.jpg) no-repeat left top;
+	height:47px;
+	width:11px;
+	padding:0px;
+	margin:0px;
+}
+.main_menu{
+	background:url(../images/menu-bg.jpg) repeat-x left top;
+	width:98%;
+	margin:0px auto;
+}
+.main_menu ul{
+	padding:0px;
+	margin:0px;
+	list-style:none;
+}
+.main_menu ul li{
+	padding:0px;
+	margin:0px;
+	float:left;
+}
+.main_menu ul li a{
+	padding:5px 20px;
+	margin:0px;
+	text-decoration:none;
+	line-height:40px;
+	color:#424040;
+}
+.right_menu{
+	background:url(../images/right-menu.jpg) no-repeat left top;
+	height:47px;
+	width:15px;
+	padding:0px;
+	margin:0px;
+}
+
+#header{
+	background:#6e2b2b;
+	margin:0px auto;
+	width:100%; 
+	height:160px;
+}
+
+#logo{
+	width:240px;
+	height:100%;
+	float:left;
+	background:url(../images/logo.jpg) no-repeat left  top;
+}
+
+#main_img{
+	float:left;
+	width:400px;
+	height:100%;
+	background:url(../images/main_img.jpg) no-repeat left top;
+}
+#main_tit{
+	float:left;
+	width:330px;
+	color:#ffffff;
+}
+
+#search{
+margin-top:20px;
+}
+
+#user_login{
+margin:10px 0 10px 0;
+}
+
+h1{
+	font:calibri;
+	font-size:24px;
+	color:#FFFFFF;
+	padding-left:5%;
+	padding-top:5%;
+}
+
+p{
+	padding-left:5%;
+	font:calibri;
+	font-style:italic;
+	font-size:14px;
+}
+
+.br{
+	background:url(../images/hr.png) repeat-x;
+	height:2px;
+	width:auto;
+}
+
+#grad1{
+	color: #fff;
+		height: 100px;
+		padding: 10px;
+		/* For WebKit (Safari, Google Chrome etc) */
+		background: -webkit-gradient(linear, left top, left bottom, from(#2f5e9e), to(#7db1e8));
+		/* For Mozilla/Gecko (Firefox etc) */
+		background: -moz-linear-gradient(top, #2f5e9e, #7db1e8);
+		/* For Internet Explorer 5.5 - 7 */
+		filter: progid:DXImageTransform.Microsoft.gradient(startColorstr=#2f5e9e, endColorstr=#7db1e8);
+		/* For Internet Explorer 8 */
+		-ms-filter: "progid:DXImageTransform.Microsoft.gradient(startColorstr=#2f5e9e, endColorstr=#7db1e8)";
+		-moz-border-radius:10px;
+		margin:2%;
+	}
+	
+#grad2{
+	color: #fff;
+		height: 100px;
+		padding: 10px;
+		/* For WebKit (Safari, Google Chrome etc) */
+		background: -webkit-gradient(linear, left top, left bottom, from(#7db888), to(#3f8a4d));
+		/* For Mozilla/Gecko (Firefox etc) */
+		background: -moz-linear-gradient(top, #7db888, #3f8a4d);
+		/* For Internet Explorer 5.5 - 7 */
+		filter: progid:DXImageTransform.Microsoft.gradient(startColorstr=#7db888, endColorstr=#3f8a4d);
+		/* For Internet Explorer 8 */
+		-ms-filter: "progid:DXImageTransform.Microsoft.gradient(startColorstr=#7db888, endColorstr=#3f8a4d)";
+		
+			-moz-border-radius:10px;
+			margin:2%;
+	}
+	
+	
+#side_bar{
+width:30%;
+float:left;
+}	
+
+#tabs{
+width:70%;
+float:left;
+}
+
+#footer{
+width:auto;
+float:left;
+margin-left:12%;
+}

@@ -1,0 +1,844 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en" dir="ltr"><head><title><?php echo $page_title; ?></title><meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+
+<link rel="icon" href="webicon.ico" type="image/x-icon" />
+<link rel="shortcut icon" href="webicon.ico" type="image/x-icon" />
+<link href="template/core.style.css" rel="stylesheet" type="text/css" />
+<link href="template/igos/960.css" rel="stylesheet" type="text/css" />
+<link href="<?php echo $sysconf['template']['css']; ?>" rel="stylesheet" type="text/css" />
+<script type="text/javascript" src="js/prototype.js"></script>
+<script type="text/javascript" src="js/form.js"></script>
+<script type="text/javascript" src="js/gui.js"></script>
+
+
+<?php error_reporting(0);?>
+
+<?php echo $metadata; ?>
+</head>
+<body>
+<div class="container_12">
+    <!--header-->
+    <div class="grid_12" id="header">
+    <h1 id="app-title"><a href="index.php"><?php echo $sysconf['library_name']; ?></a><div><?php echo $sysconf['library_subname']; ?></div></h1>
+    </div>
+    <div class="clear">&nbsp;</div>
+    <!--header end-->
+
+    <!--application main menu-->
+    <div class="grid_12 tabs" id="main-menu">
+        <ul id="primary-links">
+            <li><a class="menu" href="index.php"><span><?php echo __('Home'); ?></a></span></li>
+          <!--comment made by iresh on 11/1/2011    <li><a class="menu" href="index.php?p=libinfo"><span><?php echo __('Library Information'); ?></span></a></li>-->
+			<!--comment made by iresh on 11/1/2011 <li><a class="menu" href="index.php?p=member"><span><?php echo __('Member Area'); ?></span></a></li>-->
+		<!--added by iresh on 11/1/2011 --><!--comment by iresh on 22-1-2011	<li><a class="menu" href="index.php?p=member"><span><?php echo __('Member Login'); ?></span></a></li>-->
+          <!--comment made by iresh on 11/1/2011    <li><a class="menu" href="index.php?p=peta"><span>Show map</span></a></li>-->
+            <li><a class="menu" href="index.php?p=help"><span><?php echo __('Help on Search'); ?></span></a></li>
+	   <?php if (utility::isMemberLogin()) {?><!-- added by iresh on 7-4-2011 -->
+           <li><a class="menu" href="index.php?p=member&login"><span><?php echo __('My Profile'); ?></span></a></li>
+           <?php }?>
+	   <?php if (utility::isMemberLogin()) {?><!-- added by iresh on 7-4-2011 -->
+           <li><a class="menu" href="index.php?p=book_request"><span><?php echo __('View Request'); ?></span></a></li>
+	   
+         <?php }?> 
+ <!--comment made by iresh on 11/1/2011    <li><a class="menu" href="http://www.igos.web.id"><span>IGOS</span></a></li>
+            <li><a class="menu" href="http://senayan.diknas.go.id"><span>SENAYAN</span></a></li>-->
+           <!--comment by iresh on 22-1-2011 <li><a class="menu" href="index.php?p=login"><span><?php echo __('Librarian LOGIN'); ?></span></a></li>-->
+        </ul>
+	<ul> <?php if (utility::isMemberLogin()) {?><li><?php echo $header_info; ?></li><?php }?> </ul>
+    </div>
+    <div class="clear">&nbsp;</div>
+    <div class="spacer">&nbsp;</div>
+    <!--application main menu end-->
+  
+    <!--application navigation menu/side menu-->
+ <div class="grid_2" id="side-menu"> 
+
+        <!-- language selection -->
+            <!-- comment by iresh on 11/1/2011<div class="block-header"><?php echo __('Select Language'); ?></div>
+            <form name="langSelect" action="index.php" method="get">
+            <select name="select_lang" onchange="document.langSelect.submit();">
+            <?php echo $language_select; ?>
+            </select>
+            </form>-->
+        <!-- language selection end -->
+<?php
+/*echo "SELECT b.title,b.image,b.biblio_id,l.item_code,COUNT(l.loan_id) AS total_loans FROM `loan` AS l
+    LEFT JOIN item AS i ON l.item_code=i.item_code
+    LEFT JOIN biblio AS b ON i.biblio_id=b.biblio_id
+    GROUP BY b.biblio_id ORDER BY COUNT(l.loan_id) DESC LIMIT 10'";*/
+$stat_query = $dbs->query('SELECT b.title,b.image,b.biblio_id,l.item_code,COUNT(l.loan_id) AS total_loans FROM `loan` AS l
+    LEFT JOIN item AS i ON l.item_code=i.item_code
+    LEFT JOIN biblio AS b ON i.biblio_id=b.biblio_id
+    GROUP BY b.biblio_id ORDER BY COUNT(l.loan_id) DESC LIMIT 10');
+$stat_data = '';
+$current_path=$_SERVER['HTTP_HOST'];
+while ($data = $stat_query->fetch_row()) {
+    
+    $stat_data .= 'images/docs/'.$data['1'].',';
+    $stat_data_id.= 'http://'.$current_path.'/index.php?p=show_detail&id='.$data['2'].',';
+}
+$stat_data=explode(",",$stat_data);
+
+$stat_data_id=explode(",",$stat_data_id);
+
+
+
+?>
+<!-- <?php if(!$_REQUEST['p'])
+{?> -->
+<!-- <div class="grid_2" id="tt-menu"> -->
+<div>
+
+<script type="text/javascript">
+
+/***********************************************
+* Conveyor belt slideshow script- © Dynamic Drive DHTML code library (www.dynamicdrive.com)
+* This notice MUST stay intact for legal use
+* Visit Dynamic Drive at http://www.dynamicdrive.com/ for full source code
+***********************************************/
+
+
+//Specify the slider's width (in pixels)
+var sliderwidth="1015px"
+//Specify the slider's height
+var sliderheight="200px"
+//Specify the slider's slide speed (larger is faster 1-10)
+var slidespeed=2
+//configure background color:
+slidebgcolor="#EAEAEA"
+
+//Specify the slider's images
+var leftrightslide=new Array(); 
+var finalslide=''
+leftrightslide[0]='<a href="<?php echo $stat_data_id[0]?>"><img src=" <?php echo $stat_data[0]?>" border=1 width="150px" height="200px"  align=top title="Click To View More Detail" ></a>'
+leftrightslide[1]='<a href="<?php echo $stat_data_id[1]?>"><img src="<?php echo $stat_data[1] ?>" border=1 width="150px" height="200px"  align=top title="Click To View More Detail"></a>'
+leftrightslide[2]='<a href="<?php echo $stat_data_id[2]?>"><img src="<?php echo $stat_data[2] ?>" border=1 width="150px" height="200px" align=top title="Click To View More Detail"></a>'
+leftrightslide[3]='<a href="<?php echo $stat_data_id[3]?>"><img src="<?php echo $stat_data[3] ?>" border=1 width="150px" height="200px" align=top title="Click To View More Detail"></a>'
+leftrightslide[4]='<a href="<?php echo $stat_data_id[4]?>"><img src="<?php echo $stat_data[4] ?>" border=1 width="150px" height="200px" align=top title="Click To View More Detail"></a>'
+leftrightslide[5]='<a href="<?php echo $stat_data_id[5]?>"><img src="<?php echo $stat_data[5] ?>" border=1 width="150px" height="200px" align=top title="Click To View More Detail"></a>'
+leftrightslide[6]='<a href="<?php echo $stat_data_id[6]?>"><img src="<?php echo $stat_data[6] ?>" border=1 width="150px" height="200px" align=top title="Click To View More Detail"></a>'
+leftrightslide[7]='<a href="<?php echo $stat_data_id[7]?>"><img src="<?php echo $stat_data[7] ?>" border=1 width="150px" height="200px" align=top title="Click To View More Detail"></a>'
+leftrightslide[8]='<a href="<?php echo $stat_data_id[8]?>"><img src="<?php echo $stat_data[8] ?>" border=1 width="150px" height="200px" align=top title="Click To View More Detail"></a>'
+leftrightslide[9]='<a href="<?php echo $stat_data_id[9]?>"><img src="<?php echo $stat_data[9] ?>" border=1 width="150px" height="200px" align=top title="Click To View More Detail"></a>'
+//Specify gap between each image (use HTML):
+var imagegap=" "
+
+//Specify pixels gap between each slideshow rotation (use integer):
+var slideshowgap=10
+
+
+////NO NEED TO EDIT BELOW THIS LINE////////////
+
+var copyspeed=slidespeed
+leftrightslide='<nobr>'+leftrightslide.join(imagegap)+'</nobr>'
+var iedom=document.all||document.getElementById
+if (iedom)
+document.write('<span id="temp" style="visibility:hidden;position:absolute;top:100px;left:-9000px">'+leftrightslide+'</span>')
+var actualwidth=''
+var cross_slide, ns_slide
+
+function fillup(){
+if (iedom){
+cross_slide=document.getElementById? document.getElementById("test2") : document.all.test2
+cross_slide2=document.getElementById? document.getElementById("test3") : document.all.test3
+cross_slide.innerHTML=cross_slide2.innerHTML=leftrightslide
+actualwidth=document.all? cross_slide.offsetWidth : document.getElementById("temp").offsetWidth
+cross_slide2.style.left=actualwidth+slideshowgap+"px"
+}
+else if (document.layers){
+ns_slide=document.ns_slidemenu.document.ns_slidemenu2
+ns_slide2=document.ns_slidemenu.document.ns_slidemenu3
+ns_slide.document.write(leftrightslide)
+ns_slide.document.close()
+actualwidth=ns_slide.document.width
+ns_slide2.left=actualwidth+slideshowgap
+ns_slide2.document.write(leftrightslide)
+ns_slide2.document.close()
+}
+lefttime=setInterval("slideleft()",30)
+}
+window.onload=fillup
+
+function slideleft(){
+if (iedom){
+if (parseInt(cross_slide.style.left)>(actualwidth*(-1)+8))
+cross_slide.style.left=parseInt(cross_slide.style.left)-copyspeed+"px"
+else
+cross_slide.style.left=parseInt(cross_slide2.style.left)+actualwidth+slideshowgap+"px"
+
+if (parseInt(cross_slide2.style.left)>(actualwidth*(-1)+8))
+cross_slide2.style.left=parseInt(cross_slide2.style.left)-copyspeed+"px"
+else
+cross_slide2.style.left=parseInt(cross_slide.style.left)+actualwidth+slideshowgap+"px"
+
+}
+else if (document.layers){
+if (ns_slide.left>(actualwidth*(-1)+8))
+ns_slide.left-=copyspeed
+else
+ns_slide.left=ns_slide2.left+actualwidth+slideshowgap
+
+if (ns_slide2.left>(actualwidth*(-1)+8))
+ns_slide2.left-=copyspeed
+else
+ns_slide2.left=ns_slide.left+actualwidth+slideshowgap
+}
+}
+
+
+if (iedom||document.layers){
+with (document){
+document.write('<table border="1" cellspacing="0" cellpadding="0" align="top"><td>')
+if (iedom){
+write('<div style="position:relative;width:'+sliderwidth+';height:'+sliderheight+';overflow:hidden">')
+write('<div style="position:absolute;width:'+sliderwidth+';height:'+sliderheight+';background-color:'+slidebgcolor+'" onMouseover="copyspeed=0" onMouseout="copyspeed=slidespeed">')
+write('<div id="test2" style="position:absolute;left:0px;top:0px"></div>')
+write('<div id="test3" style="position:absolute;left:-1000px;top:0px"></div>')
+write('</div></div>')
+}
+else if (document.layers){
+write('<ilayer width='+sliderwidth+' height='+sliderheight+' name="ns_slidemenu" bgColor='+slidebgcolor+'>')
+write('<layer name="ns_slidemenu2" left=0 top=0 onMouseover="copyspeed=0" onMouseout="copyspeed=slidespeed"></layer>')
+write('<layer name="ns_slidemenu3" left=0 top=0 onMouseover="copyspeed=0" onMouseout="copyspeed=slidespeed"></layer>')
+write('</ilayer>')
+}
+document.write('</td></table>')
+}
+}
+</script>
+
+</div>
+
+ <!-- <?php } echo "<br>"; ?> -->
+<?php if(!(utility::isMemberLogin())) {?>
+         <!--common login for admin and member added by iresh on 22-1-2011 -->
+         <div class="block-header"><?php echo __('Login'); ?></div>
+            <form name="login" action="index.php?p=member" method="post">
+            <div class="fieldLabel"><?php echo __('Id/Username'); ?>:</div>
+            <input type="text" name="uname" value="<?php echo 'Enter Username'.$_REQUEST['username']; ?>" onclick="this.value=''"/>
+	    <div class="fieldLabel marginTop"><?php echo __('Password'); ?>:</div>
+	    <input type="password" name="pass" value="<?php echo 'Enter Password'. $_REQUEST['password']; ?>" onclick="this.value=''"/>
+	    <div class="fieldLabel marginTop"><?php echo __('User Profile'); ?>:</div>	
+	   <!-- added by iresh on 9-2-2011-->
+             <?php	             
+		$member_status = 'unchecked';
+		$admin_status = 'unchecked';
+
+		
+		if($_REQUEST['profile']=='teacher' || $_REQUEST['profile']=='student' )
+	        {
+		$member_status = 'checked';
+		}
+		else if ($_REQUEST['profile']=='admin') {
+		$admin_status = 'checked';
+		}
+		else
+		{
+			$member_status = 'checked';
+		}
+
+	
+	   ?>
+		
+             <input type="radio" name="user" value="member"<?php print $member_status; ?>/>member
+             <input type="radio" name="user" value="admin" <?php print $admin_status; ?>/>admin
+           <!-- end by iresh on 9-2-2011-->
+             <br>
+            <input type="submit" name="logMeIn" value="<?php echo __('login'); ?>" class="button marginTop" />
+            </form>
+                 
+ 	<!--end login form  by iresh --> 
+<?php } ?> <!-- if condition end for hiding login menu when member is login -->
+<!-- <?php echo "<br>"; echo "<br>";echo "<br>";echo "<br>";echo "<br>";?> -->
+<?php if($_REQUEST['p']!='member' && $_REQUEST['p']!='book_request' && $_REQUEST['p']!='help') {?>
+<div style="padding:5px;"></div>
+<?php } ?>
+<?php if($_REQUEST['p']!='member' && $_REQUEST['p']!='book_request' && $_REQUEST['p']!='help') {?>
+
+<!-- --------------------------------------------------------------------------------------------------------- -->      
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
+
+<link rel="stylesheet" type="text/css" href="template/igos/ddsmoothmenu.css" />
+<link rel="stylesheet" type="text/css" href="template/igos/ddsmoothmenu-v.css" />
+
+<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.3.2/jquery.min.js"></script>
+<script type="text/javascript" src="js/ddsmoothmenu.js">
+
+/***********************************************
+* Smooth Navigational Menu- (c) Dynamic Drive DHTML code library (www.dynamicdrive.com)
+* This notice MUST stay intact for legal use
+* Visit Dynamic Drive at http://www.dynamicdrive.com/ for full source code
+***********************************************/
+
+</script>
+
+<script type="text/javascript">
+
+
+ddsmoothmenu.init({
+	mainmenuid: "smoothmenu2", //Menu DIV id
+	orientation: 'v', //Horizontal or vertical menu: Set to "h" or "v"
+	classname: 'ddsmoothmenu-v', //class added to menu's outer DIV
+	customtheme: ["#804000", "#482400"],
+	contentsource: "markup" //"markup" or ["container_id", "path_to_menu_file"]
+})
+
+</script>
+<body>
+
+<div id="smoothmenu2" class="ddsmoothmenu-v">
+<ul>
+<?php
+//echo 'SELECT material_resource_name FROM mst_material_resource_type WHERE material_resource_id="4"';
+$physical=$dbs->query('SELECT material_resource_name FROM mst_material_resource_type WHERE material_resource_id='.$physical_final.'');
+$physical_name=$physical->fetch_assoc();
+?>
+<li><a href="#"><?php echo $physical_name['material_resource_name']; ?></a>
+  <ul>
+  <?php
+	$subject='select topic from mst_topic';
+	$subject=$dbs->query($subject);
+	$s='';
+	while($row=$subject->fetch_assoc())
+	{
+		
+		
+		echo "<li><a href=index.php?subject_search=".urlencode($row['topic']) .">".$row['topic']."</a></li>";
+		
+
+	}
+	
+	 ?>
+
+  </ul>
+</li>
+<?php
+//echo 'SELECT material_resource_name FROM mst_material_resource_type WHERE material_resource_id="4"';
+$virtual=$dbs->query('SELECT material_resource_name FROM mst_material_resource_type WHERE material_resource_id='.$virtual_final.'');
+$virtual_name=$virtual->fetch_assoc();
+?>
+<li><a href="#"><?php echo $virtual_name['material_resource_name']; ?></a>
+  
+    <ul>
+    <?php
+		
+	//$material='select gmd_name from mst_gmd where gmd_code='.$virtual_final.' AND gmd_name NOT IN("Acronyns","Dictionary","Symbols","Encyclopedia","Quatations","Online Newspaper","National NewsPaper","Local Newspaper","International NewsPaper","Educational Newspaper","Online Magazines","Subject-wise","Non-subjectwise")';
+
+     /*    $material='select g.gmd_id,g.gmd_name AS gmd_name from mst_gmd AS g 
+		    right join mst_material_sub_type AS mst ON mst.gmd_id=g.gmd_id	
+		    where g.gmd_code='.$virtual_final.''; */
+         $material='select g.gmd_id AS gmd_id,g.gmd_name AS gmd_name from mst_gmd AS g 
+	            where g.gmd_code='.$virtual_final.'';
+         $material=$dbs->query($material);
+	 $m='';
+	
+	 while($row=$material->fetch_assoc())
+	 {
+			
+	     echo "<li><a href=index.php?gmd_search=".urlencode($row['gmd_name']).">".$row['gmd_name']."</a>";
+		
+	     $sql="select material_sub_name from mst_material_sub_type where gmd_id='".$row['gmd_id']."'";
+      	     $sql=$dbs->query($sql);
+	      $m=$sql->fetch_assoc();
+	   	if(count($m)>=1)
+		{
+	   	  echo "<ul>";
+		}
+	     $sql="select material_sub_name,material_sub_id from mst_material_sub_type where gmd_id='".$row['gmd_id']."'";
+      	     $sql=$dbs->query($sql);
+	    while($row=$sql->fetch_assoc())
+		{
+			
+			
+			    
+			echo "<li><a href=index.php?gmd_search=".urlencode($row['material_sub_name'])."&gmd_id=".$row['material_sub_id'].">".$row['material_sub_name']."</a></li>";	
+		
+		}
+		
+	   	if(count($m)>=1)
+		{
+	   	 	echo "</ul>";
+		}
+		
+	        echo "</li>";
+		
+		
+		//echo $row['count_gmd_id'];
+         }
+	
+	?>
+</ul>
+
+</li>
+
+
+
+<!--<ul>
+   <?php
+		
+	 $material='select gmd_name from mst_gmd where gmd_code="Virtual Resources"';
+         $material=$dbs->query($material);
+	 $m='';
+	 while($row=$material->fetch_assoc())
+	 {
+			
+		echo "<li><a href=index.php?gmd_search=".urlencode($row['gmd_name']).">".$row['gmd_name']."</a></li>";
+		
+         }
+	 ?>
+  </ul> -->
+
+
+<?php
+//echo 'SELECT material_resource_name FROM mst_material_resource_type WHERE material_resource_id="4"';
+$student=$dbs->query('SELECT material_resource_name FROM mst_material_resource_type WHERE material_resource_id='.$student_final.'');
+$student_name=$student->fetch_assoc();
+?>
+<li><a href="#"><?php echo $student_name['material_resource_name']; ?></a>
+  <ul>
+ 
+     <?php
+	
+         $material='select g.gmd_id AS gmd_id,g.gmd_name AS gmd_name from mst_gmd AS g 
+	            where g.gmd_code='.$student_final.'';
+         $material=$dbs->query($material);
+	 $m='';
+	
+	 while($row=$material->fetch_assoc())
+	 {
+			
+	     echo "<li><a href=index.php?gmd_search=".urlencode($row['gmd_name']).">".$row['gmd_name']."</a>";
+		
+	     $sql="select material_sub_name from mst_material_sub_type where gmd_id='".$row['gmd_id']."'";
+      	     $sql=$dbs->query($sql);
+	      $m=$sql->fetch_assoc();
+	   	if(count($m)>=1)
+		{
+	   	  echo "<ul>";
+		}
+		//$sql="select topic from mst_topic";
+	     $sql="select material_sub_name from mst_material_sub_type where gmd_id='".$row['gmd_id']."'";
+      	     $sql=$dbs->query($sql);
+	    if($row['gmd_name']=='Subject Wise')
+	    {
+		    $subject='select topic from mst_topic';
+		    $subject=$dbs->query($subject);
+		    $s='';
+		    while($row=$subject->fetch_assoc())
+		    {
+		
+		
+			echo "<li><a href=index.php?subject_search=".urlencode($row['topic']) .">".$row['topic']."</a></li>";
+		
+		      
+		    }
+	   }
+	 
+	    while($row=$sql->fetch_assoc())
+		{
+			
+					
+			    
+			echo "<li><a href=index.php?gmd_search=".urlencode($row['material_sub_name']).">".$row['material_sub_name']."</a></li>";
+				
+		
+		}
+		
+	   	if(count($m)>=1)
+		{
+	   	 	echo "</ul>";
+		}
+		
+	        echo "</li>";
+		
+		
+		//echo $row['count_gmd_id'];
+         }
+	
+	?>
+		
+        </ul>
+  </li>
+
+
+<?php
+//echo 'SELECT material_resource_name FROM mst_material_resource_type WHERE material_resource_id="4"';
+$teacher=$dbs->query('SELECT material_resource_name FROM mst_material_resource_type WHERE material_resource_id='.$teacher_final.'');
+$teacher_name=$teacher->fetch_assoc();
+?>
+<li><a href="#"><?php echo $teacher_name['material_resource_name']; ?></a>
+<ul>
+    <?php
+
+         $material='select g.gmd_id AS gmd_id,g.gmd_name AS gmd_name from mst_gmd AS g 
+	            where g.gmd_code='.$teacher_final.'';
+         $material=$dbs->query($material);
+	 $m='';
+	
+	 while($row=$material->fetch_assoc())
+	 {
+			
+	     echo "<li><a href=index.php?gmd_search=".urlencode($row['gmd_name']).">".$row['gmd_name']."</a>";
+		
+	     $sql="select material_sub_name from mst_material_sub_type where gmd_id='".$row['gmd_id']."'";
+      	     $sql=$dbs->query($sql);
+	      $m=$sql->fetch_assoc();
+	   	if(count($m)>=1)
+		{
+	   	  echo "<ul>";
+		}
+	     $sql="select material_sub_name from mst_material_sub_type where gmd_id='".$row['gmd_id']."'";
+      	     $sql=$dbs->query($sql);
+	    while($row=$sql->fetch_assoc())
+		{
+			
+			
+			    
+			echo "<li><a href=index.php?gmd_search=".urlencode($row['material_sub_name']).">".$row['material_sub_name']."</a></li>";	
+		
+		}
+		
+	   	if(count($m)>=1)
+		{
+	   	 	echo "</ul>";
+		}
+		
+	        echo "</li>";
+		
+		
+		//echo $row['count_gmd_id'];
+         }
+	
+	?>
+  </ul>
+
+</li>
+<?php
+//echo 'SELECT material_resource_name FROM mst_material_resource_type WHERE material_resource_id="4"';
+$parent=$dbs->query('SELECT material_resource_name FROM mst_material_resource_type WHERE material_resource_id='.$parent_final.'');
+$parent_name=$parent->fetch_assoc();
+?>
+<li><a href="#"><?php echo $parent_name['material_resource_name']; ?></a>
+<ul>
+    <?php
+
+         $material='select g.gmd_id AS gmd_id,g.gmd_name AS gmd_name from mst_gmd AS g 
+	            where g.gmd_code='.$parent_final.'';
+         $material=$dbs->query($material);
+	 $m='';
+	
+	 while($row=$material->fetch_assoc())
+	 {
+			
+	     echo "<li><a href=index.php?gmd_search=".urlencode($row['gmd_name']).">".$row['gmd_name']."</a>";
+		
+	     $sql="select material_sub_name from mst_material_sub_type where gmd_id='".$row['gmd_id']."'";
+      	     $sql=$dbs->query($sql);
+	      $m=$sql->fetch_assoc();
+	   	if(count($m)>=1)
+		{
+	   	  echo "<ul>";
+		}
+	     $sql="select material_sub_name from mst_material_sub_type where gmd_id='".$row['gmd_id']."'";
+      	     $sql=$dbs->query($sql);
+	    while($row=$sql->fetch_assoc())
+		{
+			
+			
+			    
+			echo "<li><a href=index.php?gmd_search=".urlencode($row['material_sub_name']).">".$row['material_sub_name']."</a></li>";	
+		
+		}
+		
+	   	if(count($m)>=1)
+		{
+	   	 	echo "</ul>";
+		}
+		
+	        echo "</li>";
+		
+		
+		//echo $row['count_gmd_id'];
+         }
+	
+	?>
+  </ul>
+
+</li>
+
+
+</ul>
+<br style="clear: left" />
+</div>
+</body>
+</html>
+<?php echo "<br>"; echo "<br>";echo "<br>";echo "<br>";echo "<br>";} ?> <!-- if condition end for hiding login menu when member is login -->
+ </div>
+
+
+
+<?php if (!$_REQUEST['p']){echo "<br>"; echo "<br>";echo "<br>";echo "<br>";echo "<br>";echo "<br>";echo "<br>";echo "<br>";echo "<br>";echo "<br>";echo "<br>";echo "<br>";echo "<br>";echo "<br>";}?>
+
+<?php  if ($_REQUEST['p']!='book_request' && $_REQUEST['p']!='member' && $_REQUEST['p']!='help' )
+{  ?>
+<div class="grid_2" id="t-menu">
+ <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+	"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+
+<html>
+<head>
+<title>Tab Pane Demo (WebFX)</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+
+<script type="text/javascript" src="template/igos/local/webfxlayout.js"></script>
+
+<!-- this link element includes the css definitions that describes the tab pane -->
+<!--
+<link type="text/css" rel="stylesheet" href="tab.winclassic.css" />
+-->
+<link id="luna-tab-style-sheet" type="text/css" rel="stylesheet" href="template/igos/css/luna/tab.css" disabled="disabled" />
+<link id="webfx-tab-style-sheet" type="text/css" rel="stylesheet" href="template/igos/css/tab.webfx.css" disabled="disabled" />
+<link id="winclassic-tab-style-sheet" type="text/css" rel="stylesheet" href="template/igos/css/tab.winclassic.css"  disabled="disabled" />
+<!-- the id is not needed. It is used here to be able to change css file at runtime -->
+
+<style type="text/css">
+
+.dynamic-tab-pane-control .tab-page {
+	height:		auto;
+}
+
+.dynamic-tab-pane-control .tab-page .dynamic-tab-pane-control .tab-page {
+	height:		100px;
+}
+
+form {
+	margin:		0;
+	padding:	0;
+}
+
+/* over ride styles from webfxlayout */
+
+body {
+	margin:		10px;
+	width:		auto;
+	height:		auto;
+}
+
+.dynamic-tab-pane-control h2 {
+	text-align:	center;
+	width:		auto;
+}
+
+.dynamic-tab-pane-control h2 a {
+	display:	inline;
+	width:		auto;
+}
+
+.dynamic-tab-pane-control a:hover {
+	background: transparent;
+}
+
+
+
+</style>
+<script type="text/javascript" src="template/igos/js/tabpane.js"></script>
+</head>
+<body>
+
+<script type="text/javascript">
+//<![CDATA[
+
+function setLinkSrc( sStyle ) {
+	document.getElementById( "luna-tab-style-sheet" ).disabled = sStyle != "luna";
+	document.getElementById( "webfx-tab-style-sheet" ).disabled = sStyle != "webfx"
+	document.getElementById( "winclassic-tab-style-sheet" ).disabled = sStyle != "winclassic"
+	
+	document.documentElement.style.background = 
+	document.body.style.background = sStyle == "webfx" ? "white" : "ThreeDFace";
+}
+
+setLinkSrc( "luna" );
+
+//]]>
+</script>
+
+
+<div class="tab-pane" id="tabPane1">
+
+<script type="text/javascript">
+tp1 = new WebFXTabPane( document.getElementById( "tabPane1" ) );
+//tp1.setClassNameTag( "dynamic-tab-pane-control-luna" );
+//alert( 0 )
+</script>
+
+	<div class="tab-page" id="tabPage1">
+		<h2 class="tab">Search</h2>
+		
+		<script type="text/javascript">tp1.addTabPage( document.getElementById( "tabPage1" ) );</script>
+		<form name="simpleSearch" action="index.php" method="get">
+                <input type="text" name="keywords" />
+                <input type="submit" name="search" value="<?php echo __('Search'); ?>" class="button marginTop"/>
+                </form>
+	</div>
+
+	<div class="tab-page" id="tabPage2">
+		<h2 class="tab">AlphabeticalSearch</h2>
+		
+		<script type="text/javascript">tp1.addTabPage( document.getElementById( "tabPage2" ) );</script>
+		 <form name="advSearchForm" id="advSearchForm" action="index.php" method="post">
+	        <?php  $alphabet = array('A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z');
+		foreach ($alphabet as $letter) {
+		echo "<a href=\"?letter=" . $letter . "\"style='font-weight: bold;color: #666;  margin-right:10px;'>" . $letter . "</a>&nbsp;¦&nbsp;";
+		}
+		echo "<a href=\"?\"style='font-weight: bold;color: #666;'>Show-All</a>";
+	?>
+   </form>
+		
+	</div>
+
+	<div class="tab-page" id="tabPage3">
+		<h2 class="tab">Advanced Search</h2>
+		
+		<script type="text/javascript">tp1.addTabPage( document.getElementById( "tabPage3" ) );</script>
+		
+        <!-- advanced search -->
+            <form name="advSearchForm" id="advSearchForm" action="index.php" method="get">
+            <?php echo __('Title'); ?> :
+            <input type="text" name="title"/>
+	   <?php echo __('Author(s)'); ?> :
+            <?php echo $advsearch_author; ?>
+            <?php echo __('Subject(s)'); ?> :
+            <?php echo $advsearch_topic; ?>
+            <?php echo __('ISBN/ISSN'); ?> :
+            <input type="text" name="isbn" />
+           <!-- commment by iresh on 21-1-2011 <?php echo __('GMD'); ?> :-->
+	    <?php echo "<br>"; ?>
+            <?php echo __('Material Type'); ?> :
+            <select name="gmd" />
+            <?php echo $gmd_list; ?>
+            </select>
+            <?php echo __('Collection Type'); ?> :
+            <select name="colltype" />
+            <?php echo $colltype_list; ?>
+            </select>
+            <?php echo __('Location'); ?> :
+            <select name="location" />
+            <?php echo $location_list; ?>
+            </select>
+           <!--Added by iresh on 21-1-2011 --> <br/> 
+            <input type="submit" name="search" value="<?php echo __('Search'); ?>" />
+	
+            <!-- <input type="button" value="More Options" onclick="" class="button marginTop" /> -->
+            </form>
+	  <!-- advanced search end -->
+		
+	</div>
+
+	<div class="tab-page" id="tabPage4">
+		<h2 class="tab">Keyword Search</h2>
+		
+		<script type="text/javascript">tp1.addTabPage( document.getElementById( "tabPage4" ) );</script>
+		
+	<html>
+	<head>
+	<script type="text/javascript">
+	function showResult(str)
+	{
+	if (str.length==0)
+	{
+	document.getElementById("livesearch").innerHTML="";
+	document.getElementById("livesearch").style.border="0px";
+	return;
+	}
+	if (window.XMLHttpRequest)
+	{// code for IE7+, Firefox, Chrome, Opera, Safari
+	xmlhttp=new XMLHttpRequest();
+
+	}
+	else
+	{// code for IE6, IE5
+	xmlhttp=new ActiveXObject("Microsoft.XMLHTTP");
+	}
+	xmlhttp.onreadystatechange=function()
+	{
+	if (xmlhttp.readyState==4 && xmlhttp.status==200)
+	{
+
+	document.getElementById("livesearch").innerHTML=xmlhttp.responseText;
+	document.getElementById("livesearch").style.border="0px";
+	}
+	}
+	xmlhttp.open("GET","lib/livesearch.inc.php?q="+str,true);
+	xmlhttp.send();
+	}
+	</script>
+	</head>
+	<body>
+
+	<form>
+	<table>
+	<tr><td>
+	<!-- <input type="text" size="30"  onkeyup="showResult(this.value)"  style="float:right; margin-left:-800px; width:600px;" value="Enter Keyword Here" onclick="this.value=''"/> -->
+	<input type="text" size="30"  onkeyup="showResult(this.value)"  style="float:left; margin-left:10px; width:700px;" value="Enter Keyword Here" onclick="this.value=''"/>
+	</td></tr>
+	<tr><td>
+	<!-- <div id="livesearch" style="float:left; margin-right:110px; width:500px;" ></div>-->
+	<div id="livesearch" style="float:left; margin-left:10px; width:700px;" ></div>
+	</td></tr></table>
+	</form>
+
+	</body>
+	</html>
+	
+	</div>
+
+</div>
+<script type="text/javascript">
+//<![CDATA[
+
+setupAllTabs();
+
+//]]>
+</script>
+
+</body>
+</html>
+</div>
+
+<?php } ?>
+
+    <!--application navigation menu/side menu-->
+
+    <!--application main content -->
+<?php if($_REQUEST['p']!='member' && $_REQUEST['p']!='book_request' && $_REQUEST['p']!='help') {?>
+    <div class="grid_9"  id="main-content">
+<?php }
+else {
+?>
+ <div class="grid_9"  id="main-content2">
+
+<?php }?>
+
+    <!-- <?php echo $header_info; ?> -->
+   <!-- comment by iresh on 22-1-2011 <div id="info-box"><?php echo $info; ?></div>-->
+    <!--added by iresh on 22-1-2011<?php echo $info; ?>-->
+    <?php echo $main_content; ?>
+    </div>
+    <!--application main content end -->
+
+    <!--footer-->
+    <div class="grid_12" id="footer">
+    <?php echo $sysconf['page_footer']; ?>
+    </div>
+
+    <!--footer end-->
+
+    <div class="clear">&nbsp;</div>
+    <div class="spacer">&nbsp;</div>
+</div>
+
+
+</body>
+</html>

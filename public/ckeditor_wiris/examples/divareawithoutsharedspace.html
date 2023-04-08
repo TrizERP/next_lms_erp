@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+            <title>
+                A Simple Page with CKEditor
+            </title>
+            <!-- Make sure the path to CKEditor is correct. -->
+            <script src="../ckeditor4/ckeditor.js">
+            </script>
+            <!-- Latest compiled and minified CSS -->
+            <link href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet">
+                <!-- jQuery library -->
+                <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.0/jquery.min.js">
+                </script>
+                <!-- Latest compiled JavaScript -->
+                <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js">
+                </script>
+            </link>
+        </meta>
+    </head>
+    <body>
+        <button data-target="#demo" data-toggle="collapse">
+            Collapsible
+        </button>
+        <div id="toolbar1">
+        </div>
+        <div class="collapse in" id="demo">
+            <div contenteditable="true" id="editor_question" name="editor_question">
+                Textarea1
+            </div>
+            <div cols="80" contenteditable="true" id="noneditor1" name="noneditor1_name" rows="1">
+                Non CKEDITOR instance
+            </div>
+            <div cols="80" contenteditable="true" id="editor_feedback" name="editor_feedback_name" rows="1">
+                Textarea2
+            </div>
+        </div>
+        <button data-target="#nonckefields" data-toggle="collapse">
+            Collapsible
+        </button>
+        <div class="collapse" id="nonckefields">
+            <div cols="80" contenteditable="true" id="noneditor2" name="noneditor2" row="1">
+                Field 1
+            </div>
+            <div cols="80" contenteditable="true" id="noneditor3" name="noneditor3" row="1">
+                Field 2
+            </div>
+            <div cols="80" contenteditable="true" id="noneditor4" name="noneditor4" row="1">
+                Field 3
+            </div>
+        </div>
+        <script>
+            CKEDITOR.config.toolbar_Full =
+                [
+                { name: 'document', items : [ 'Source'] },
+                { name: 'clipboard', items : [ 'Cut','Copy','Paste','-','Undo','Redo' ] },
+                { name: 'editing', items : [ 'Find'] },
+                { name: 'basicstyles', items : [ 'Bold','Italic','Underline'] },
+                { name: 'paragraph', items : [ 'JustifyLeft','JustifyCenter','JustifyRight'] }
+                ];
+            CKEDITOR.config.height = '40px';
+            CKEDITOR.plugins.addExternal('divarea', '../examples/extraplugins/divarea/', 'plugin.js');
+            CKEDITOR.config.removePlugins = 'maximize';
+            CKEDITOR.config.removePlugins = 'resize';
+            CKEDITOR.config.sharedSpaces = { top: 'toolbar1'};
+            CKEDITOR.replace('editor_question', {
+                 extraPlugins: 'divarea,ckeditor_wiris',
+                 language: 'en'
+            });
+             CKEDITOR.replace('editor_feedback', {
+                 extraPlugins: 'divarea,ckeditor_wiris',
+                 language: 'en'
+             });
+        </script>
+    </body>
+</html>

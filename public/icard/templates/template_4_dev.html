@@ -1,0 +1,164 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>Untitled Document</title>
+<style>
+    br {
+        display: block;
+    }
+    @media print{
+        * {
+            -webkit-print-color-adjust: exact !important;   /* Chrome, Safari, Edge */
+            color-adjust: exact !important;                 /*Firefox*/
+        }
+        .page-break-clear { 
+          clear: both;
+        }
+        .page-break {
+          page-break-after: always; /* depreciating, use break-after */
+          break-after: page;
+          height: 0px;
+          display: block!important;
+        }
+        .row-4-column-1{
+            display: grid;
+            grid-template-columns: 1fr;
+            grid-template-rows: 4fr;
+            grid-column-gap: 10px;
+            grid-row-gap: 5px;
+            width: 48vh;
+            margin-right: auto;
+            margin-left: auto;
+        }
+        .row-2-column-2 {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            grid-template-rows: repeat(2, 1fr);
+            grid-column-gap: 10px;
+            grid-row-gap: 5px;
+            width: 48vh;
+            margin-right: auto;
+            margin-left: auto;
+        }
+        .row-1-column-1 {
+            display: grid;
+            grid-template-columns: 1fr;
+            grid-template-rows: 1fr;
+            grid-column-gap: 10px;
+            grid-row-gap: 5px;
+            width: 48vh;
+            margin-right: auto;
+            margin-left: auto;
+        } 
+        .row-3-column-3 {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            grid-template-rows: repeat(3, 1fr);
+            grid-column-gap: 10px;
+            grid-row-gap: 5px;
+            width: 48vh;
+            margin-right: auto;
+            margin-left: auto;
+        }
+        .row-3-column-4 {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            grid-template-rows: repeat(3, 1fr);
+            grid-column-gap: 10px;
+            grid-row-gap: 5px;
+            width: 48vh;
+            margin-right: auto;
+            margin-left: auto;
+        }
+        .icard-item{
+             /*content:url(http://dev.triz.co.in/icard/templates/card-bg.jpg); */
+             /*background: url(http://dev.triz.co.in/icard/templates/card-bg.jpg) !important; */
+            background-size: 100% !important;
+            background-repeat: no-repeat !important;
+            display: -webkit-box;
+            display: -moz-box;
+            display: -ms-flexbox;
+            display: -webkit-flex;
+            display: flex;
+            position: relative;
+        }
+        .row-4-column-1 .item:nth-child(3) > div .icard-item {
+            margin-top: -2px;
+        }
+        .icard-item > img{
+            max-width: 100%;
+            width: 100%;
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+        #printPage::before {
+            content: "";
+            /*background: #000000;*/
+            width: 800px;
+            height: 1387px;
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+        .item{
+            position: relative;
+            z-index: 9;
+        }
+    }
+</style>
+
+
+
+</head>
+
+<body>
+    <div style="border: 0px solid rgb(0, 0, 0); border-collapse: collapse; border-spacing: 0px;overflow: hidden;width:100%;">
+        <div class="icard-item">
+            <!-- <img src="http://dev.triz.co.in/icard/templates/card-bg.jpg" alt=""> -->
+            <div style="width: 40%;"></div>
+            <div style="width: 60%;">
+                <div style="margin-top: 14%;width:100%;margin-bottom: 24%;padding-right: 9%;position: relative;padding-left: 10px;">
+                    <div colspan="2" style="text-align: right;font-size: 2.5vh;font-weight: bold;padding-bottom: 1.4vh;padding-right: 2vh;padding-top: 4vh;-webkit-text-fill-color:#000000;-moz-text-fill-color:#000000;-ms-text-fill-color:#000000;-o-text-fill-color:#000000;">
+                        &lt;&lt;division_name&gt;&gt;
+                    </div>
+                    <div colspan="2" style="font-size: 1.4vh;font-weight: bold;padding: 5px;padding-bottom: 0.4vh;padding-top: 1.2vh;padding-left: 0vh;-webkit-text-fill-color:#000000;-moz-text-fill-color:#000000;-ms-text-fill-color:#000000;-o-text-fill-color:#000000;"> 
+                        &lt;&lt;short_student_name&gt;&gt;
+                    </div>
+                    <div colspan="2" style="font-weight: bold;height: 52px;height:-webkit-fill-available;overflow: hidden;padding: 1px;font-size: 1.3vh;line-height: 2.5vh;padding-left: 1.2vh;vertical-align: text-top;-webkit-text-fill-color:#000000;-moz-text-fill-color:#000000;-ms-text-fill-color:#000000;-o-text-fill-color:#000000;margin-bottom: 0.4vh;">
+                         &lt;&lt;address&gt;&gt;
+                    </div>
+                    <div style="display: -webkit-box;display: -moz-box;display: -ms-flexbox;display: -webkit-flex;display: flex;justify-content: space-between;margin-bottom: 1vh;">
+                        <div style="font-size: 1.6vh;font-weight: bold;padding: 3px;padding-left: 2vh;-webkit-text-fill-color:#000000;-moz-text-fill-color:#000000;-ms-text-fill-color:#000000;-o-text-fill-color:#000000;">
+                             &lt;&lt;mobile&gt;&gt;
+                        </div>
+                        <div style="font-size: 1.6vh;text-align: right;font-weight: bold;padding: 3;-webkit-text-fill-color:#000000;-moz-text-fill-color:#000000;-ms-text-fill-color:#000000;-o-text-fill-color:#000000;margin-right: 17px;">
+                            &lt;&lt;mother_mobile&gt;&gt;
+                        </div>
+                    </div>
+                    <div style="padding-left: 8%;padding-top: 0.5vh;line-height: 1.7vh;display: -webkit-box;display: -moz-box;display: -ms-flexbox;display: -webkit-flex;display: flex;width: 100%;justify-content: space-between;">
+                        <div>
+                            <span style="font-size: 1.6vh;font-weight: bold;padding: 3;-webkit-text-fill-color:#000000;-moz-text-fill-color:#000000;-ms-text-fill-color:#000000;-o-text-fill-color:#000000;">
+                                 &lt;&lt;driver_name&gt;&gt; <br>
+                            </span>
+                            <span style="font-weight: bold;padding: 3;font-size: 1.6vh;-webkit-text-fill-color:#000000;-moz-text-fill-color:#000000;-ms-text-fill-color:#000000;-o-text-fill-color:#000000;">
+                                 &lt;&lt;driver_mobile&gt;&gt;
+                            </span>
+                        </div>
+                        <div style="display: -webkit-box;display: -moz-box;display: -ms-flexbox;display: -webkit-flex;display: flex;align-items: center;margin-top: -5px;">
+                            <span style="padding-right: 10px;font-weight: bold;font-size: 1.2vh;line-height: 1.8vh;-webkit-text-fill-color:#000000;-moz-text-fill-color:#000000;-ms-text-fill-color:#000000;-o-text-fill-color:#000000;">
+                                &lt;&lt;distance_rate&gt;&gt;<br>
+                                &lt;&lt;from_distance&gt;&gt;
+                            </span>    
+                            <span>
+                                <img src="&lt;&lt;icard_icon&gt;&gt;" alt="icard_icon" style="border:1px solid;height: auto;width: 40px;margin-right: 10px;">
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,90 @@
+@charset "utf-8";
+/* CSS Document */
+
+/* root element for tabs  */
+ul.tabs { 
+	list-style:none; 
+	margin:0 !important; 
+	padding:0;	
+	height:42px;
+	border-bottom:1px solid #CCCCCC;
+}
+
+/* single tab */
+ul.tabs li { 
+	float:left;	 
+	text-indent:0;
+	padding:0;
+	margin:0 !important;
+	list-style-image:none !important; 
+}
+
+/* link inside the tab. uses a background image */
+ul.tabs a { 
+	background:#F1F1F1;/*url(../images/blue.png) no-repeat -420px 0*/
+	border:1px solid #CCCCCC;
+	font-size:11px;
+	display:block;
+	height: 30px;  
+	line-height:30px;
+	width: auto;
+	text-align:center;	
+	text-decoration:none;
+	color:#333;
+	padding:5px 15px;
+	margin:0 10px 0 0;	
+	position:relative;
+	top:1px;
+}
+ul.tabs a h3{font-size:13px; margin:0; color:#333333;}
+ul.tabs a:active {
+	outline:none;		
+}
+
+/* when mouse enters the tab move the background image */
+ul.tabs a:hover {
+	/*background-position: -420px -31px;*/	
+	background:#EEEEEE;
+	color:#333;	
+}
+
+/* active tab uses a class name "current". its highlight is also done by moving the background image. */
+ul.tabs a.current, ul.tabs a.current:hover, ul.tabs li.current a {
+	/*background-position: -420px -62px;		*/
+	background:#FFFFFF;
+	cursor:default !important; 
+	color:#1756DC !important;
+	padding-bottom: 4px;
+	border-bottom:none;
+	border-top:3px solid #1756DC;
+}
+ul.tabs a.current h3{color:#1756DC;}
+/* Different widths for tabs: use a class name: s, l, xl */
+
+
+/* width 1 */
+ul.tabs a.s 			{ background-position: -553px 0; width:81px; }
+ul.tabs a.s:hover 	{ background-position: -553px -31px; }
+ul.tabs a.s.current  { background-position: -553px -62px; }
+
+/* width 2 */
+ul.tabs a.l 			{ background-position: -247px -0px; width:174px; }
+ul.tabs a.l:hover 	{ background-position: -247px -31px; }
+ul.tabs a.l.current  { background-position: -247px -62px; }
+
+
+/* width 3 */
+ul.tabs a.xl 			{ background-position: 0 -0px; width:248px; }
+ul.tabs a.xl:hover 	{ background-position: 0 -31px; }
+ul.tabs a.xl.current { background-position: 0 -62px; }
+
+
+/* initially all panes are hidden */ 
+.panes .pane {
+	display:none;		
+}
+.panes div, #divContent{
+	border:1px solid #CCCCCC!important;
+	border-top:none!important;
+}
+#divContent{padding:10px;}

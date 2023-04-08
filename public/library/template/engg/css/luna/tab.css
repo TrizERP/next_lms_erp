@@ -1,0 +1,95 @@
+.dynamic-tab-pane-control.tab-pane {
+	position:	relative;
+	width:		100%;		/* width needed weird IE bug */
+	margin-right:	-2px;	/* to make room for the shadow */
+	margin-top:70px;
+}
+
+.dynamic-tab-pane-control .tab-row .tab {
+
+	/*width:				70px;
+	height:				25px;*/
+	background:url(tab.png) repeat-x left top;
+	position:relative;
+	display:inline;
+	float:left;
+	overflow:hidden;
+	cursor:Default;
+	margin:1px -1px 1px 2px;
+	padding:5px 10px;
+	
+	z-index:1;
+	border:1px solid #fff;
+	-moz-border-radius:5px 5px 0px 0px;
+	white-space:nowrap;
+	text-align:center;
+}
+
+.dynamic-tab-pane-control .tab-row .tab.selected {
+	/*width:				74px !important;
+	background:#003333;
+	height:				18px !important;*/
+	background:url(tab.active.png) repeat-x left top !important;
+	color:#FFFFFF !important;
+	border-bottom-width:0;
+	z-index:3;
+	margin:1px -3px -3px 0px;
+	padding:5px 10px;
+	border:1px solid #fff;
+	-moz-border-radius:5px 5px 0px 0px;
+}
+
+.dynamic-tab-pane-control .tab-row .tab a {
+	font-family:Tahoma,Verdana, Arial, Helvetica, sans-serif;
+	font-weight:normal;
+	font-size:11px;
+    color:#000;
+	text-decoration:none;
+	cursor:default;
+	
+}
+.tab-row .tab .selected a{
+	color:#FFFFFF !important;
+}
+.dynamic-tab-pane-control .tab-row .tab a:hover{
+	color:#ff0000;
+}
+
+.dynamic-tab-pane-control .tab-row .tab.hover {
+	
+	/*width:70px;
+	height:16px;
+	background:#00FF99;*/
+	color:#ff0000;
+	background:url(tab.hover.png) repeat-x left top;
+	border:1px solid #fff;
+	-moz-border-radius:5px 5px 0px 0px;
+	
+	
+}
+
+
+.dynamic-tab-pane-control .tab-page {
+	clear:			both;
+	border:			1px solid rgb( 145, 155, 156 );
+	background:		rgb( 252, 252, 254 );
+	z-index:		2;
+	position:		relative;
+	top:			-2px;
+	color:				#ff0000;
+
+	filter:			progid:DXImageTransform.Microsoft.Gradient(StartColorStr=#fffcfcfe, EndColorStr=#fff4f3ee, GradientType=0)
+					progid:DXImageTransform.Microsoft.Shadow(Color=#ff919899, Strength=2, Direction=135);
+	
+	/*244, 243, 238*/
+	/* 145, 155, 156*/
+	
+	padding:		10px;
+	width:809px;
+	
+}
+
+.dynamic-tab-pane-control .tab-row {
+	z-index:		1;
+	white-space:	nowrap;
+}

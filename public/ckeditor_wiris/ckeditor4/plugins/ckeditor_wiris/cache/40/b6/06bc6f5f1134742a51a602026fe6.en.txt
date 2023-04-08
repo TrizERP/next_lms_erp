@@ -1,0 +1,1 @@
+{"result":{"text":"fraction numerator 3 square root of 3 over denominator 2 end fraction space x squared"},"status":"ok"}

@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+            <title>
+                A Simple Page with CKEditor
+            </title>
+            <!-- Make sure the path to CKEditor is correct. -->
+            <script src="../ckeditor4/ckeditor.js">
+            </script>
+            <!-- Latest compiled and minified CSS -->
+            <link href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet">
+                <!-- jQuery library -->
+                <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.0/jquery.min.js">
+                </script>
+                <!-- Latest compiled JavaScript -->
+                <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js">
+                </script>
+            </link>
+        </meta>
+    </head>
+    <body>
+        <div contenteditable="true" id="example">
+            Textarea1
+        </div>
+        <script>
+            CKEDITOR.config.toolbar_Full =
+            [
+                { name: 'document', items : [ 'Source'] },
+                { name: 'clipboard', items : [ 'Cut','Copy','Paste','-','Undo','Redo' ] },
+                { name: 'editing', items : [ 'Find'] },
+                { name: 'basicstyles', items : [ 'Bold','Italic','Underline'] },
+                { name: 'paragraph', items : [ 'JustifyLeft','JustifyCenter','JustifyRight'] }
+            ];
+            CKEDITOR.inline('example',
+            {
+                extraPlugins: 'ckeditor_wiris',
+                // Allow MathML content.
+                allowedContent : true,
+            });
+        </script>
+    </body>
+</html>

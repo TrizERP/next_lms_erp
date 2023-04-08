@@ -1,0 +1,43 @@
+a,
+button,
+.btn,
+.menu-main-icon,
+#content,
+.sub-drop-nav li a:before,
+.drop-icn em,
+.acc-header span em,
+.activity-header span em{
+	-webkit-transition:all 0.3s ease-in-out;
+	-moz-transition:all 0.3s ease-in-out;
+	-o-transition:all 0.3s ease-in-out;
+	transition:all 0.3s ease-in-out;
+}
+
+.user-photo,
+.notify-dot,
+.sub-drop-nav li a:before,
+.right-sidebar .nav-tabs .nav-link{
+	border-radius: 100%;
+}
+
+.dropdown-toggle::before,
+.sub-drop-nav li a:before,
+.drop-icn,
+.activity-checks li em{
+	transform: translate(-12px, 1px);
+}
+
+.dropdown-menu{
+	box-shadow: 0 5px 10px rgba(0,0,0,0.10);
+}
+.abs-submenu{
+	box-shadow: 0 5px 10px rgba(0,0,0,0.32);
+}
+.menu-main-icon{
+	border-radius: 8px;
+}
+.open .drop-icn em,
+.open > .acc-header span em,
+.open > .activity-header span em{
+	transform: rotate(-180deg);
+}

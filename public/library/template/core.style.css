@@ -1,0 +1,305 @@
+/* AJAX drop down list */
+.ajaxDDlist {
+    display: none;
+    position: absolute;
+    border: 1px solid #727272;
+    border-top: 0;
+    margin: 0;
+    padding: 0;
+    height: 100px;
+    overflow-y: scroll;
+    overflow-x: hidden;
+    background-color: #FFFFFF;
+    list-style-type: none;
+    list-style-position: outside;
+}
+
+.ajaxDDlist > li {
+    margin: 0;
+    padding: 0;
+}
+
+.ajaxDDlist > li > .DDlink,.DDlink:hover {
+    display: block;
+    padding: 2px;
+    text-decoration: none;
+}
+
+.ajaxDDlist > li > .DDlink:hover {
+    background-color: #CCCCCC;
+}
+
+.ajaxInputField {
+    width: 190px;
+}
+
+/* HTML Pop Up Div */
+#htmlPop {
+    width: 600px;
+    background: #000;
+    padding: 10px;
+    position: fixed;
+    -moz-border-radius: 5px;
+}
+
+#htmlPopTitle {
+    color: #FFFFFF;
+    font-weight: bold;
+    padding: 5px;
+}
+
+#htmlPopFrame {
+    width: 100%;
+}
+
+/* Calendar */
+#calendarPop {
+    padding: 5px;
+    background: #CCCCCC;
+    border: 1px solid #666666;
+}
+
+.calendar {
+    width: 100%;
+    clear: both;
+    font-size: 90%;
+}
+
+.calendar th {
+    background: #FFFFFF;
+}
+
+.calendar td {
+    text-align: center;
+}
+
+.calendar td a {
+    color: #555555;
+    display: block;
+}
+
+.calendar td.selected {
+}
+
+.monthyearselect {
+    background: #FFFFFF;
+}
+
+form.clock {
+    text-align: center;
+}
+/* comment by iresh on 22-1-2011
+// Member Login/Area related style 
+#memberLogin {
+    background: #CCCCCC;
+    border: 1px solid #666;
+}
+*/
+/* Member Login/Area related style */
+/*added by iresh on 22-1-2011*/
+#memberLogin {
+    background: #FFFFFF;
+    border: 1px solid #666;
+}
+/*end by iresh on 22-1-2011 */
+#memberLogin legend {
+    font-size: 17px;
+    font-weight: bold;
+}
+
+#memberLogin .fieldLabel {
+    font-weight: bold;
+}
+/* comment by iresh on 22-1-2011
+#memberLogin input[type=text] {
+    width: 90%;
+}
+
+#memberLogin input[type=password] {
+    width: 90%;
+}
+*/
+/*added by iresh on 22-1-2011*/
+#memberLogin input[type=text] {
+    width: 20%;
+}
+
+#memberLogin input[type=password] {
+    width: 20%;
+}
+
+/*end by iresh on 22-1-2011 */
+
+#memberLogin .loginInfo {
+    font-style: italic;
+}
+
+#memberLoginInfo {
+   background: none repeat scroll 0 0 rgba(255, 255, 255, 0.8);
+    border-radius: 6px;
+    padding: 10px;
+    position: absolute;
+    right: 9px;
+    text-align: right;
+    top: -60px;
+   
+    
+}
+#main-content2{
+	-moz-box-sizing: border-box;
+    background:#FFFFFF;
+    margin: -8px 2% 2%;
+    padding: 15px;
+    width: 96%; 
+	
+}
+#memberLogout {
+    color: #FF0000;
+    font-weight: bold;
+}
+
+
+.errorBox {
+    background: #FFC1C1;
+    border: 1px solid #D68282;
+    color: #A03434;
+    line-height: 21px;
+    margin: 0;
+    padding: 15px;
+}
+.errorBox a {
+    color: #A03434;
+    font-weight: bold;
+}
+
+.memberLoanList, .memberDetail {
+    width: 100%;
+    margin: 0;
+    border: 1px solid #C3CDE1;
+	border-radius: 6px;
+}
+
+.memberLoanListInfo, .memberDetailInfo {
+    border: 0;
+    padding: 3px;
+}
+
+.dataListHeader, tr.dataListHeader td {
+    background: #F1F5FF;
+    border-bottom: 1px solid #C3CDE1;
+    color: #1756DC;
+    text-transform: uppercase;
+}
+.dataListHeader a{text-decoration:none;}
+
+.alterCell, .alterCell2 {
+    background: #EAF1FF;
+    border-bottom: 1px solid #C3CDE1;
+}
+
+.alterCell2 {
+    background-color: #fff;
+}
+
+/* Visitor counter */
+#visitorCounterWrap {
+    margin: 0 auto;
+    width: 500px;
+    background: #fff;
+    border: 1px solid #999;
+    padding: 5px;
+}
+
+#visitorCounterWrap #counterInfo {
+    display: none;
+    padding: 3px;
+    border: 1px dotted #f00;
+    font-weight: bold;
+    font-size: 110%;
+}
+
+#visitorCounterWrap .info {
+    font-weight: bold;
+    border-bottom: 1px solid #999;
+}
+
+#visitorCounterWrap legend {
+    font-weight: bold;
+    font-size: 120%;
+}
+
+#visitorCounterWrap input[type=text] {
+    width: 100%;
+}
+
+#visitorCounterForm {
+    width: 75%;
+    float: left;
+}
+
+#visitorCounterPhoto {
+    margin-top: 10px;
+    float: right;
+    width: 100px;
+    height: 120px;
+}
+
+.memberInfoHead {
+    color: #1756DC;
+    font-size: 18px;
+    font-weight: normal;
+	margin-bottom:7px;
+}
+
+.memberDetail tr:first-child td:first-child {
+    border-radius: 6px 0 0;
+}
+.memberDetail tr:first-child td:last-child {
+    border-radius: 0 6px 0 0;
+}
+.memberDetail tr:last-child td:first-child {
+    border-radius: 0 0 0 6px;
+}
+.memberDetail tr:last-child td:last-child {
+    border-radius: 0 0 6px 0;
+}
+.memberDetail tr:last-child td {
+    border-bottom:none;
+}
+.memberDetail{border-top:3px solid #1756DC;}
+.memberDetail tr td{padding:10px;}
+
+#calendarPop div {
+    padding: 5px;
+}
+#calendarPop{background:#F1F1F1!important;}
+.monthyearselect {
+    background: none;
+    padding: 5px;
+}
+.calendar{background:#FFFFFF; padding:5px; border: 1px solid #CCCCCC;}
+.calendar.monthyearselect a {
+    font-size: 24px;
+    text-decoration: none;
+}
+.calendar td {
+    text-align: center;
+}
+
+.calendar td.selected {
+    background-color: none;
+}
+
+.calendar td a {
+    border: 1px solid #CCCCCC;
+    color: #555555;
+    display: block;
+    padding: 5px;
+}
+
+.calendar td.selected > a {
+    background: #1756DC;
+    border: 1px solid #1756DC;
+    color: #FFFFFF;
+    text-decoration: none;
+}

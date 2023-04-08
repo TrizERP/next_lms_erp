@@ -1,0 +1,642 @@
+<div style="width:98%;margin-left: 1% !important;margin-top: 2% !important;" id="fee_reciept">
+   <style>
+      tbody tr td:last-child {
+          text-align: left !important;
+      }
+      br {
+         display: block !important;
+      }
+      .cls_tr_frm_branch_field_line{
+      line-height:9px;
+      }
+      .cls_td_date_boxes{
+      line-height:9px;
+      }
+      .cls_space_input_boxes{
+      display:inline;float:left;height:22px;width:10px;text-align:center;
+      }
+      .cls_qft_input_boxes{
+      border: 1px solid;display:inline;float:left;height:22px;width:20px;text-align:center;
+      }
+      .cls_qft_input_boxes b{
+      display:block;padding-top:25%;
+      }
+      .cls_in_input_boxes{
+      border: 1px solid;display:inline;float:left;height:22px;width:13px;text-align:center;
+      }
+      .cls_in_input_boxes b{
+      display:block;padding-top:40%;
+      }
+      .cls_lbl_in_boxes{
+      display:inline;float:left;width:98px;margin-top:6px;font-size:10px;
+      }
+      .cls_atbc_input_boxes{
+      border: 1px solid;display:inline;float:left;height:22px;width:13px;text-align:center;
+      }
+      .cls_atbc_input_boxes b{
+      display:block;padding-top:40%;
+      }
+      .cls_lbl_atbc_boxes{
+      display:inline;float:left;width:130px;margin-top:6px;font-size:10px;
+      }
+      .cls_stamp_lbl{
+      text-align:center;
+      }
+      .cls_frm_amount_in_word_blank_field_line{
+      border-bottom:1px solid;width:98%;
+      }
+      .cls_frm_amount_in_word_field_line{
+      border-bottom:1px solid;width:74%;margin-left:24%;margin-top:-3%;text-align:center;
+      } 
+      .cls_frm_drawn_on_bank_field_line{
+      border-bottom:1px solid;width:74%;margin-left:24%;margin-top:-3%;
+      } 
+      .cls_frm_cheque_dd_no_field_line{
+      border-bottom:1px solid;width:74%;margin-left:24%;margin-top:-3%;
+      }
+      .cls_fee_tbl_heading1{
+      text-align:center;
+      }
+      .cls_frm_father_name_field_line{
+      border-bottom:1px solid;width:73%;margin-left:24%;margin-top:-3%;text-align:center;font-size:13px;
+      }
+      .cls_frm_class_div_field_line{
+      border-bottom:1px solid;width:57%;margin-left:36%;margin-top:-7%;text-align:center;font-size:13px;
+      } 
+      .cls_frm_gr_no_field_line{
+      border-bottom:1px solid;width:70%;margin-left:29%;margin-top:-6%;text-align:center;font-size:13px;
+      }
+      .cls_frm_stud_name_field_line{
+      border-bottom:1px solid;width:72%;margin-left:25%;margin-top:-3%;text-align:center;font-size:13px;
+      }
+      .cls_frm_branch_field_line{
+      border-bottom:1px solid;width:85%;margin-left:12%;margin-top:-3%;
+      }
+      .cls_lbl_date_boxes{
+      display:inline;float:left;width:30px;margin-top:6px;font-size:10px;
+      }
+      .cls_input_boxes{
+      border: 1px solid;display:inline;float:left;height:22px;width:13px;
+      }
+      .cls_lbl_pan_no{
+      border:1px solid;float:left;margin-left:3%;margin-top:4px;
+      }
+      .cls_td_break{
+      border-top: 1px solid;line-height:0px;padding-top:0px !important;
+      }
+      .cls_rec_head_lbl{
+      text-align:center;
+      font-size:12px;
+      }
+      .cls_rec_logo
+      {
+      margin-top: 1%;
+      }
+      .head_tit{
+      font-size:12px;
+      letter-space:1px;
+      padding-right:10px;
+      /*padding-top:12px;*/ 
+      text-align: center !important;
+      width: 50%;
+      padding-left: 10px;
+      font-family:monospace Grande,monospace !important;
+      }
+      .head_tit b{
+      font-size:12px;
+      letter-space:1px;
+      padding-right:10px; 
+      font-weight:bolder;
+      text-align: center !important;
+      width: 50%;
+      padding-left: 10px;
+      font-family:monospace Grande,monospace !important;
+      }
+      .head_tit span{
+      font-size:12px;
+      letter-space:1px;
+      font-family:monospace Grande,monospace !important;
+      }
+      .head_tit2{
+      font-size:11px !important;
+      text-align:center;
+      font-weight:normal;
+      padding:0px !important;
+      }
+      .head_tit3{
+      font-size:12px;
+      }
+      .fee_reci h3{
+      border:2px solid #000;
+      -moz-border-radius: 5px;
+      -webkit-border-radius: 5px;
+      border-radius: 5px;
+      padding:4px;
+      margin:0px auto;
+      width:200px;
+      font-size:18px;
+      }
+      #fee_tbl{
+      background:#fff;
+      border:2px solid #000;
+      font-family:monospace Grande,monospace !important;
+      margin:0px auto;
+      }
+      #fee_tbl td{
+      padding:5px;
+      background:#fff;
+      font-size:10px;
+      }
+      #fee_tbl2{
+      background:#000;
+      }
+      #fee_tbl2 td{
+      padding:0px 5px;
+      background:#fff;
+      /*font-size:11px !important;*/
+      font-size:12px !important;
+      border-bottom:0.5px solid #000;
+      border-right:0.5px solid #000;
+      border-left:0.5px solid #000;
+      border-top:0.5px solid #000;
+      }
+      #fee_tbl3 td{
+      padding:0px 5px;
+      background:#fff;
+      font-size:11px !important;
+      }
+      .aslam1{
+      float:left;
+      width:50% !important;
+      margin:0px auto 0px auto;
+      }
+      .aslam1.cls_imprest_aslam1{
+      float:left;
+      /*width:30% !important;*/
+      width:23% !important;
+      margin:0px auto 0px auto;
+      /*margin-left:2%;*/
+      margin-left:4%;
+      /*margin-right:1%;*/
+      /*margin-right:0%;*/
+      margin-right:1%;
+      }
+      .aslam1.cls_imprest_aslam1.last{
+      margin-left:10%;
+      }
+      .aslam1.cls_imprest_aslam1.cls_imprest_collection_aslam1{
+      /*margin-right:1%;*/
+      margin-right:7%;
+      /*margin-left:2%;*/
+      margin-left:2%;
+      } 
+      
+      @media print {
+      /*.cls_ledger_main_div {page-break-after: always;}*/
+      div+.cls_ledger_main_div {page-break-before: always;}
+      } 
+      td b, td, p, div{
+      font-family:Arial, Helvetica, sans-serif !important;
+      } 
+   </style>
+   <div class="cls_ledger_main_div">
+      <div class="aslam1 cls_imprest_aslam1 cls_imprest_collection_aslam1">
+         <table border="0" width="130%" cellpadding="0" cellspacing="0" id="fee_tbl">
+            <tbody>
+               <tr>
+                  <th colspan="4" class="cls_rec_head_lbl" width="60%"><b><br><u>BANK COPY</u></b></th>
+               </tr>
+               <tr>
+                  <td colspan="4" valign="top" class="head_tit">
+                     <center>
+                        <b class="cls_rec_head_lbl">&lt;&lt;bank_name&gt;&gt;</b>
+                     </center>
+                     <center>
+                        <span>
+                           <br>&lt;&lt;address_line_1&gt;&gt;
+                           <br>&lt;&lt;address_line_2&gt;&gt;
+                           <br>&lt;&lt;account_number&gt;&gt;
+                        </span>
+                     </center>                    
+                  </td>
+               </tr>
+               <tr>
+                  <td colspan="4" valign="top" class="head_tit">
+                     <span>
+                        No.:___________ &lt;&lt;paid_collection&gt;&gt;
+                     </span>
+                  </td>
+               </tr>
+               <tr>
+                  <td colspan="4" valign="top" class="head_tit">
+                     <span style="float: right;">
+                        &lt;&lt;shift&gt;&gt;                
+                     </span>
+                  </td>
+               </tr>
+               <tr>
+                  <td colspan="4">
+                     <center>
+                        <span class="cls_rec_head_lbl">
+                           <b><u>Receipt</u></b>
+                        </span>
+                     </center>
+                  </td>
+               </tr>
+               <tr>
+                  <td colspan="2" style="float: left;">
+                     <span class="cls_rec_head_lbl">
+                        Form No. <b><u>&lt;&lt;enquiry_no&gt;&gt;</u></b>
+                     </span>
+                  </td>
+                  <td colspan="2">
+                     <span class="cls_rec_head_lbl">
+                        Date. <b><u>&lt;&lt;current_date&gt;&gt;</u></b>
+                     </span>
+                  </td>
+               </tr>
+               <tr>
+                  <td colspan="4" style="font-size: 13px;">
+                     <span style="line-height: 1.5;">
+                        Paid into the credit of &lt;&lt;paid_collection&gt;&gt; Collection <br>
+                        A/C. Surat. The sum of (in Fig.) Rs. <b><u>&lt;&lt;fees_total&gt;&gt;</u></b> <br>
+                        (in words.) <b><u>&lt;&lt;fees_amount_in_words&gt;&gt;</u></b> <br>
+                        &lt;&lt;fees_remark&gt;&gt;
+                        being the school EDUCATION FEE fees for the <b><u>&lt;&lt;fees_months&gt;&gt;</u></b> <br>
+                        (childs name) <b><u>&lt;&lt;student_name&gt;&gt;</u></b><br>
+                        (surname) <b><u>&lt;&lt;surname&gt;&gt;</u></b><br>
+                        of <b><u>&lt;&lt;branch&gt;&gt;</u></b> Branch<br>
+                        Class No. <b><u>&lt;&lt;standard_name&gt;&gt;&nbsp;</u></b>
+                     </span>
+                  </td>
+               </tr>
+               <tr>
+                  <td colspan="4">
+                     <table border="0" width="100%" cellpadding="0" cellspacing="0" style="margin-top:0%;" id="fee_tbl2">
+                        <tbody>
+                           <tr>
+                              <td align="center"><b>Notes</b></td>
+                              <td colspan="4" align="center"><b>RS.</b></td>
+                              <td align="center"><b>Ps.</b></td>
+                           </tr>
+                           <tr>
+                              <td align="right">x 2000</td>
+                              <td>&nbsp;</td>
+                              <td>&nbsp;</td>                              
+                              <td>&nbsp;</td>                              
+                              <td style="width: 25%;">&nbsp;</td>                              
+                              <td style="width: 10%;">&nbsp;</td>                              
+                           </tr>
+                           <tr>
+                              <td align="right">x 500</td>
+                              <td>&nbsp;</td>
+                              <td>&nbsp;</td>                              
+                              <td>&nbsp;</td>                              
+                              <td style="width: 25%;">&nbsp;</td>                              
+                              <td style="width: 10%;">&nbsp;</td>                              
+                           </tr>
+                           <tr>
+                              <td align="right">x 200</td>
+                              <td>&nbsp;</td>
+                              <td>&nbsp;</td>                              
+                              <td>&nbsp;</td>                              
+                              <td style="width: 25%;">&nbsp;</td>                              
+                              <td style="width: 10%;">&nbsp;</td>                              
+                           </tr>
+                           <tr>
+                              <td align="right">x 100</td>
+                              <td>&nbsp;</td>
+                              <td>&nbsp;</td>                              
+                              <td>&nbsp;</td>                              
+                              <td style="width: 25%;">&nbsp;</td>                              
+                              <td style="width: 10%;">&nbsp;</td>                              
+                           </tr>
+                           <tr>
+                              <td align="right">x 50</td>
+                              <td>&nbsp;</td>
+                              <td>&nbsp;</td>                              
+                              <td>&nbsp;</td>                              
+                              <td style="width: 25%;">&nbsp;</td>                              
+                              <td style="width: 10%;">&nbsp;</td>                              
+                           </tr>
+                           <tr>
+                              <td align="right">x 20</td>
+                              <td>&nbsp;</td>
+                              <td>&nbsp;</td>                              
+                              <td>&nbsp;</td>                              
+                              <td style="width: 25%;">&nbsp;</td>                              
+                              <td style="width: 10%;">&nbsp;</td>                              
+                           </tr>
+                           <tr>
+                              <td align="right">x 10</td>
+                              <td>&nbsp;</td>
+                              <td>&nbsp;</td>                              
+                              <td>&nbsp;</td>                              
+                              <td style="width: 25%;">&nbsp;</td>                              
+                              <td style="width: 10%;">&nbsp;</td>                              
+                           </tr>                        
+                           <tr>
+                              <td align="right"><b>Total</b></td>
+                              <td>&nbsp;</td>
+                              <td>&nbsp;</td>                              
+                              <td>&nbsp;</td>                              
+                              <td style="width: 25%;">&nbsp;</td>                              
+                              <td style="width: 10%;">&nbsp;</td> 
+                           </tr>
+                        </tbody>
+                     </table>
+                  </td>
+               </tr>
+               <!-- <tr>
+                  <td colspan="4" align="left">
+                     <span class="cls_rec_head_lbl">
+                        <b></b>
+                     </span>
+                  </td>
+               </tr> -->
+               <tr>
+                  <td colspan="4" style="font-size: 12px;">
+                     <span>
+                        <b>D.D/Cheque No.: _____________</b>
+                     </span>
+                     <span>
+                        <b>Date: ________</b>
+                     </span>
+                  </td>
+               </tr>
+               <tr>
+                  <td colspan="4" style="font-size: 12px;">
+                     <span>
+                        <b>Bank: ___________________________________</b>
+                     </span>                    
+                  </td>
+               </tr>
+               <tr>
+                  <td colspan="4" style="font-size: 12px;">
+                     <span>
+                        <b>Branch: _____________</b>
+                     </span>
+                     <span>
+                        <b>Bank Seal: ___________</b>
+                     </span>
+                  </td>
+               </tr>
+               <tr>
+                  <td colspan="4" style="font-size: 11px;">
+                     <span><b>- This copy is to be retained by the bank.</b></span>
+                  </td>
+               </tr>
+               <tr>
+                  <td colspan="4" style="font-size: 11px;">
+                     <span><b>- બેંક ની કોપી બેંક ના અધિકારીઓએ લઇ લેવા વિંનતી.</b></span>
+                  </td>
+               </tr>
+               <tr>
+                  <td colspan="4" style="font-size: 11px;">
+                     <span><b>- बैंक की कॉपी बैंक के अधिकारी को ले लेने के लिए विंनती है.</b></span>
+                  </td>
+               </tr>
+               <tr>
+                  <td colspan="4" style="font-size: 11px;">
+                     <span><b>- Payment Should be made by Cash or Demand Draft only.</b></span>
+                  </td>
+               </tr>
+            </tbody>
+         </table>
+      </div>
+      <div class="aslam1 cls_imprest_aslam1">
+         <table border="0" width="130%" cellpadding="0" cellspacing="0" id="fee_tbl">
+            <tbody>
+               <tr>
+                  <th colspan="4" class="cls_rec_head_lbl" width="60%"><b><br><u>SCHOOL COPY</u></b></th>
+               </tr>
+               <tr>
+                  <td colspan="4" valign="top" class="head_tit">
+                     <center>
+                        <b class="cls_rec_head_lbl">&lt;&lt;bank_name&gt;&gt;</b>
+                     </center>
+                     <center>
+                        <span>
+                           <br>&lt;&lt;address_line_1&gt;&gt;
+                           <br>&lt;&lt;address_line_2&gt;&gt;
+                           <br>&lt;&lt;account_number&gt;&gt;
+                        </span>
+                     </center>                    
+                  </td>
+               </tr>
+               <tr>
+                  <td colspan="4" valign="top" class="head_tit">
+                     <span>
+                        No.:___________ &lt;&lt;paid_collection&gt;&gt;
+                     </span>
+                  </td>
+               </tr>
+               <tr>
+                  <td colspan="4" valign="top" class="head_tit">
+                     <span style="float: right;">
+                        &lt;&lt;shift&gt;&gt;                
+                     </span>
+                  </td>
+               </tr>
+               <tr>
+                  <td colspan="4">
+                     <center>
+                        <span class="cls_rec_head_lbl">
+                           <b><u>Receipt</u></b>
+                        </span>
+                     </center>
+                  </td>
+               </tr>
+               <tr>
+                  <td colspan="2" style="float: left;">
+                     <span class="cls_rec_head_lbl">
+                        Form No. <b><u>&lt;&lt;enquiry_no&gt;&gt;</u></b>
+                     </span>
+                  </td>
+                  <td colspan="2">
+                     <span class="cls_rec_head_lbl">
+                        Date. <b><u>&lt;&lt;current_date&gt;&gt;</u></b>
+                     </span>
+                  </td>
+               </tr>
+               <tr>
+                  <td colspan="4" style="font-size: 13px;">
+                     <span style="line-height: 1.5;">
+                        Paid into the credit of &lt;&lt;paid_collection&gt;&gt; Collection <br>
+                        A/C. Surat. The sum of (in Fig.) Rs. <b><u>&lt;&lt;fees_total&gt;&gt;</u></b> <br>
+                        (in words.) <b><u>&lt;&lt;fees_amount_in_words&gt;&gt;</u></b> <br>
+                        &lt;&lt;fees_remark&gt;&gt;
+                        being the school EDUCATION FEE fees for the <b><u>&lt;&lt;fees_months&gt;&gt;</u></b><br>
+                        (childs name) <b><u>&lt;&lt;student_name&gt;&gt;</u></b><br>
+                        (surname) <b><u>&lt;&lt;surname&gt;&gt;</u></b><br>
+                        of <b><u>&lt;&lt;branch&gt;&gt;</u></b> Branch<br>
+                        Class No. <b><u>&lt;&lt;standard_name&gt;&gt;&nbsp;</u></b>
+                     </span>
+                  </td>
+               </tr>
+               <tr>
+                  <td colspan="4">
+                     <div style="height:  148px !important;"></div>
+                  </td>
+               </tr>
+               <!-- <tr>
+                  <td colspan="4" align="left">
+                     <span class="cls_rec_head_lbl">
+                        <b></b>
+                     </span>
+                  </td>
+               </tr> -->
+               <tr>
+                  <td colspan="4" style="font-size: 12px;">
+                     <span>
+                        <b>D.D/Cheque No.: _____________</b>
+                     </span>
+                     <span>
+                        <b>Date: ________</b>
+                     </span>
+                  </td>
+               </tr>
+               <tr>
+                  <td colspan="4" style="font-size: 12px;">
+                     <span>
+                        <b>Bank: ___________________________________</b>
+                     </span>                    
+                  </td>
+               </tr>
+               <tr>
+                  <td colspan="4" style="font-size: 12px;">
+                     <span>
+                        <b>Branch: _____________</b>
+                     </span>
+                     <span>
+                        <b>Bank Seal: ___________</b>
+                     </span>
+                  </td>
+               </tr>
+               <tr>
+                  <td colspan="4">
+                     <div style="height:  30px !important;"></div>
+                  </td>
+               </tr>
+               <tr>
+                  <td colspan="4" style="font-size: 11px;">
+                     <span><b>- Parents & School copy should be give to the parents.</b></span>
+                  </td>
+               </tr>
+               <tr>
+                  <td colspan="4" style="font-size: 11px;">
+                     <span><b>- Payment Should be made by Cash or Demand Draft only.</b></span>
+                  </td>
+               </tr>
+            </tbody>
+         </table>
+      </div>
+      <div class="aslam1 cls_imprest_aslam1 last">
+         <table border="0" width="130%" cellpadding="0" cellspacing="0" id="fee_tbl">
+            <tbody>
+               <tr>
+                  <th colspan="4" class="cls_rec_head_lbl" width="60%"><b><br><u>PARENTS COPY</u></b></th>
+               </tr>
+               <tr>
+                  <td colspan="4" valign="top" class="head_tit">
+                     <center>
+                        <b class="cls_rec_head_lbl">&lt;&lt;bank_name&gt;&gt;</b>
+                     </center>
+                     <center>
+                        <span>
+                           <br>&lt;&lt;address_line_1&gt;&gt;
+                           <br>&lt;&lt;address_line_2&gt;&gt;
+                           <br>&lt;&lt;account_number&gt;&gt;
+                        </span>
+                     </center>                    
+                  </td>
+               </tr>
+               <tr>
+                  <td colspan="4" valign="top" class="head_tit">
+                     <span>
+                        No.:___________ &lt;&lt;paid_collection&gt;&gt;
+                     </span>
+                  </td>
+               </tr>
+               <tr>
+                  <td colspan="4" valign="top" class="head_tit">
+                     <span style="float: right;">
+                        &lt;&lt;shift&gt;&gt;                
+                     </span>
+                  </td>
+               </tr>
+               <tr>
+                  <td colspan="4">
+                     <center>
+                        <span class="cls_rec_head_lbl">
+                           <b><u>Receipt</u></b>
+                        </span>
+                     </center>
+                  </td>
+               </tr>
+               <tr>
+                  <td colspan="2" style="float: left;">
+                     <span class="cls_rec_head_lbl">
+                        Form No. <b><u>&lt;&lt;enquiry_no&gt;&gt;</u></b>
+                     </span>
+                  </td>
+                  <td colspan="2">
+                     <span class="cls_rec_head_lbl">
+                        Date. <b><u>&lt;&lt;current_date&gt;&gt;</u></b>
+                     </span>
+                  </td>
+               </tr>
+               <tr>
+                  <td colspan="4" style="font-size: 13px;">
+                     <span style="line-height: 1.5;">
+                        Paid into the credit of &lt;&lt;paid_collection&gt;&gt; Collection <br>
+                        A/C. Surat. The sum of (in Fig.) Rs. <b><u>&lt;&lt;fees_total&gt;&gt;</u></b> <br>
+                        (in words.) <b><u>&lt;&lt;fees_amount_in_words&gt;&gt;</u></b> <br>
+                        &lt;&lt;fees_remark&gt;&gt;
+                        being the school EDUCATION FEE fees for the <b><u>&lt;&lt;fees_months&gt;&gt;</u></b><br>
+                        (childs name) <b><u>&lt;&lt;student_name&gt;&gt;</u></b><br>
+                        (surname) <b><u>&lt;&lt;surname&gt;&gt;</u></b><br>
+                        of <b><u>&lt;&lt;branch&gt;&gt;</u></b> Branch<br>
+                        Class No. <b><u>&lt;&lt;standard_name&gt;&gt; &nbsp;</u></b>
+                     </span>
+                  </td>
+               </tr>
+               <tr>
+                  <td colspan="4">
+                     <div style="height:  148px !important;"></div>
+                  </td>
+               </tr>
+               <!-- <tr>
+                  <td colspan="4" align="left">
+                     <span class="cls_rec_head_lbl">
+                        <b></b>
+                     </span>
+                  </td>
+               </tr> -->
+               <tr>
+                  <td colspan="4">
+                     <div style="height:  65px !important;"></div>
+                  </td>
+               </tr>
+               <tr>
+                  <td colspan="4">
+                     <div style="height:  30px !important;"></div>
+                  </td>
+               </tr>
+               <tr>
+                  <td colspan="4" style="font-size: 11px;">
+                     <span><b>- Parents & School copy should be give to the parents.</b></span>
+                  </td>
+               </tr>
+               <tr>
+                  <td colspan="4" style="font-size: 11px;">
+                     <span><b>- Payment Should be made by Cash or Demand Draft only.</b></span>
+                  </td>
+               </tr>
+            </tbody>
+         </table>
+      </div>
+   </div>
+   <div style="clear:both">&nbsp;</div>
+   <div class="break"></div>
+</div>

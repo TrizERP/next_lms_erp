@@ -1,0 +1,251 @@
+
+body{
+	background:url(../images/bg.jpg) #000 fixed ;
+	padding:0px;
+	margin:0px;
+	font-family:Arial, Helvetica, sans-serif;
+	font-size:12px;
+	color:#333333;
+	line-height:14px;
+}
+
+#outer-header{
+	background:url(../images/header_bg.jpg) no-repeat right top #2e560f;
+	width:100%;
+	height:116px;
+	border-bottom:2px solid #fff;
+}
+#inner_header{
+	margin:0px auto;
+	width:1100px;
+	height:116px;
+	position:relative;
+}
+#logo{
+	padding:0px;
+	margin:0px;
+	
+}
+#user_name{
+	float:right;
+	color:#FFFFFF;
+	margin-top:-15px;
+	margin-right:5px;
+}
+#main_menu_outer{
+	position:absolute;
+	bottom:-20px;
+	height:45px;
+	margin:0px auto;
+	width:1100px;
+	z-index:999;
+}
+.menu_l{
+	background:url(../images/menu_l.png) no-repeat left top;
+	width:9px;
+	height:45px;
+	float:left;
+}
+.menu_m{
+	background:url(../images/menu_bg.jpg) repeat-x left top;
+	height:45px;
+	float:left;
+	width:1082px;
+}
+.menu_m ul{
+	padding:0px;
+	margin:0px;
+	list-style:none;
+}
+.menu_m ul li{
+	padding:0px;
+	margin:0px;
+	float:left;
+}
+.menu_m ul li a{
+	padding:5px 15px;;
+	margin:0px;
+	font-size:13px;
+	color:#FFFFFF;
+	text-decoration:none;
+	line-height:45px;
+	background:url(../images/sepreter.png) no-repeat right center;
+}
+.menu_m ul li a:hover{
+	color:#00FF00;
+	text-decoration:underline;
+}
+.menu_r{
+	background:url(../images/menu_r.png) no-repeat left top;
+	width:9px;
+	height:45px;
+	float:left;
+}
+#wrapper{
+	background-color:#FFFFFF;
+	padding:22px 5px;
+	margin:0px auto;
+	width:1090px;
+	height:auto;
+	clear:both;
+}
+.title{
+	text-align:center;
+	font-size:14px;
+	color:#FFFFFF;
+	line-height:24px;
+}
+/*------------------------------------calender start-------------------------------------------------*/
+.cal_top_bg, .holiday_top_bg, .admin_top_bg, .cir_top_bg, .memb_top_bg, .recent_top_bg{
+	background:url(../images/cal_top_bg.png) no-repeat left top;
+	width:180px;
+	height:24px;
+	
+}
+.cal_mid_bg{
+	background-color:#fff;
+	border-left:1px solid #212222;
+	border-right:1px solid #212222;
+	min-height:140px;
+	width:168px;
+	padding:5px;
+}
+.holiday_mid_bg{
+	background-color:#fff;
+	border-left:1px solid #212222;
+	border-right:1px solid #212222;
+	min-height:140px;
+	width:168px;
+	padding:5px;
+}
+.cal_bot_bg, .holiday_bot_bg, .admin_bot_bg, .cir_bot_bg, .memb_bot_bg, .recent_bot_bg{
+	background:url(../images/cal_bot_bg.jpg) no-repeat left top;
+	width:180px;
+	height:25px;
+}
+
+/*------------------------------------calender end-------------------------------------------------*/
+
+/*------------------------------------middle start-------------------------------------------------*/
+.admin_mid_bg{
+	background:#fff;
+	border-left:1px solid #212222;
+	border-right:1px solid #212222;
+	min-height:354px;
+	width:168px;
+	padding:5px;
+}
+
+.cir_mid_bg{
+	background-color:#fff;
+	border-left:1px solid #212222;
+	border-right:1px solid #212222;
+	min-height:140px;
+	width:168px;
+	padding:5px;
+}
+.memb_mid_bg{
+	background-color:#fff;
+	border-left:1px solid #212222;
+	border-right:1px solid #212222;
+	min-height:140px;
+	width:168px;
+	padding:5px;
+}
+.recent_mid_bg{
+	background-color:#fff;
+	border-left:1px solid #212222;
+	border-right:1px solid #212222;
+	min-height:354px;
+	width:168px;
+	padding:5px;
+}
+/*------------------------------------middle end-------------------------------------------------*/
+
+
+/*------------------------------------Due Date Warning start-------------------------------------------------*/
+.due_top_bg{
+	background:url(../images/due_top_bg.png) no-repeat left top;
+	width:300px;
+	height:24px;
+}
+.due_mid_bg{
+	background:#fff;
+	border-left:1px solid #212222;
+	border-right:1px solid #212222;
+	min-height:354px;
+	width:288px;
+	padding:5px;
+}
+.due_bot_bg{
+	background:url(../images/due_bot_bg.jpg) no-repeat left top;
+	width:300px;
+	height:25px;
+}
+
+/*------------------------------------Due Date Warning end-------------------------------------------------*/
+
+
+/*------------------------------------overdue reports start-------------------------------------------------*/
+.overdue_top_bg{
+	background:url(../images/overdue_top_bg.png) no-repeat left top;
+	width:230px;
+	height:24px;
+}
+.overdue_mid_bg{
+	background:#fff;
+	border-left:1px solid #212222;
+	border-right:1px solid #212222;
+	min-height:354px;
+	width:218px;
+	padding:5px;
+}
+.overdue_bot_bg{
+	background:url(../images/overdue_bot_bg.jpg) no-repeat left top;
+	width:230px;
+	height:25px;
+}
+/*------------------------------------overdue reports end-------------------------------------------------*/
+
+
+/*------------------------------------loan start-------------------------------------------------*/
+.loan_top_bg{
+	background:url(../images/loan_top_bg.png) no-repeat left top;
+	width:365px;
+	height:24px;
+}
+.loan_mid_bg{
+	background:#fff;
+	border-left:1px solid #212222;
+	border-right:1px solid #212222;
+	min-height:354px;
+	width:353px;
+	padding:5px;
+}
+.loan_bot_bg{
+	background:url(../images/loan_bot_bg.jpg) no-repeat left top;
+	width:365px;
+	height:25px;
+}
+/*------------------------------------loan  end-------------------------------------------------*/
+
+/*------------------------------------staff activity start-------------------------------------------------*/
+.staff_top_bg{
+	background:url(../images/staff_top_bg.png) no-repeat left top;
+	width:535px;
+	height:24px;
+}
+.staff_mid_bg{
+	background:#fff;
+	border-left:1px solid #212222;
+	border-right:1px solid #212222;
+	min-height:354px;
+	width:523px;
+	padding:5px;
+}
+.staff_bot_bg{
+	background:url(../images/staff_bot_bg.jpg) no-repeat left top;
+	width:535px;
+	height:25px;
+}
+/*------------------------------------staff activity end-------------------------------------------------*/
