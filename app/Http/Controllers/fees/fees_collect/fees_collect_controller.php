@@ -665,19 +665,20 @@ class fees_collect_controller extends Controller
         $discount_field = "";
         $total_field = "";
 
-        foreach ($_REQUEST['fine_data'] as $id => $val) {
+        $fine_data = $_REQUEST['fine_data'];
+        foreach ($fine_data as $id => $val) {
             if ($val == 0) {
-                unset($_REQUEST['fine_data'][$id]);
+                unset($fine_data[$id]);
             }
         }
 
-        if (count($_REQUEST['fine_data']) > 0) {
+        if (count($fine_data) > 0) {
             foreach ($fees_arr as $month_id => $detail_arr) {
                 foreach ($detail_arr as $receipt_id => $arr) {
                     $fees_arr[$month_id][$receipt_id]['fine'] = 0;
                     foreach ($arr as $title => $val) {
-                        if (isset($_REQUEST['fine_data'][$title])) {
-                            $fin = $_REQUEST['fine_data'][$title];
+                        if (isset($fine_data[$title])) {
+                            $fin = $fine_data[$title];
                             if (isset($_REQUEST['hidden_cheque_return_charges'])) {
                                 $fin = $fin + $_REQUEST['hidden_cheque_return_charges'];
                             }
@@ -685,7 +686,7 @@ class fees_collect_controller extends Controller
                                 $fees_arr[$month_id][$receipt_id]['fine'] = 0;
                             }
                             $fees_arr[$month_id][$receipt_id]['fine'] = $fees_arr[$month_id][$receipt_id]['fine'] + $fin;
-                            unset($_REQUEST['fine_data'][$title]);
+                            unset($fine_data[$title]);
                             unset($_REQUEST['hidden_cheque_return_charges']);
                         }
                     }
@@ -751,7 +752,7 @@ class fees_collect_controller extends Controller
                 $id_arr[$arr->sort_order]['heds'] = $arr->heads;
                 $id_arr[$arr->sort_order]['rid'] = $rid;
             } else {
-                $result_id = DB::select('fees_receipt as fr')
+                $result_id = DB::table('fees_receipt as fr')
                     ->leftJoin('fees_collect as fc', function ($join) use ($arr) {
                         $join->whereRaw("fc.receipt_no = fr.RECEIPT_ID_".$arr->sort_order."");
                     })->leftJoin('fees_paid_other as fo', function ($join) use ($arr) {

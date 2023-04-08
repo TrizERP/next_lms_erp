@@ -167,6 +167,7 @@ return [
         /*
          * Package Service Providers...
          */
+        GenTux\Jwt\Support\LaravelServiceProvider::class,
 
         /*
          * Application Service Providers...

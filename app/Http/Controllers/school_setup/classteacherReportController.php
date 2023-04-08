@@ -84,7 +84,7 @@ class classteacherReportController extends Controller
         }
 
         if ($division != '') {
-            $extraSearchArray['ct.section_id'] = $division;
+            $extraSearchArray['ct.division_id'] = $division;
         }
 
         if ($teacher_id != '') {

@@ -166,7 +166,7 @@ class tallyExportReportController extends Controller
             ->where('se.syear', $syear)
             ->where('s.sub_institute_id', $sub_institute_id)
             ->where('fc.is_deleted', '=', 'N')
-            ->whereIsNull('se.end_date')
+            ->whereNull('se.end_date')
             ->groupByRaw('fc.student_id,fc.receipt_no')
             ->orderByRaw('fc.receipt_no')->get()->toArray();
 

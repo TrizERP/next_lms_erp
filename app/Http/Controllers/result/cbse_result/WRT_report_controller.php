@@ -86,7 +86,7 @@ class WRT_report_controller extends Controller
 
         $result = json_decode(json_encode($result), true);
 
-        return $result[0];
+        return $result[0] ?? [];
     }
 
     public function getWRTData($all_student, $standard_id, $type, $from_date = null, $to_date = null)

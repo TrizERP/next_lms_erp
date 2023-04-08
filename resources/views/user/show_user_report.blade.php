@@ -22,6 +22,7 @@
                             </div>
                         @endif
                         <form action="{{ route('show_user_report') }}" method="post">
+                            @csrf
                             <div class="row">
                                 @if(isset($data['profiles']))
                                     <div class="col-md-3 form-group ml-0">

@@ -315,19 +315,19 @@ class cbse_1t5_t2_result_controller extends Controller
 
         $result = DB::table("result_marks as rm")
             ->join('result_create_exam as ex', function ($join) {
-                $join->whereRaw("ex.id = rm.exam_id AND ex.term_id = '.session()->get('term_id').'");
+                $join->whereRaw("ex.id = rm.exam_id AND ex.term_id = '".session()->get('term_id')."'");
             })
             ->join('result_exam_master as exm', function ($join) {
                 $join->whereRaw("exm.Id = ex.exam_id");
             })
-            ->join('subject as s', function ($join) {
+            ->join('sub_std_map as s', function ($join) {
                 $join->whereRaw("s.subject_id = ex.subject_id AND s.standard_id = ex.standard_id");
             })
-            ->selectRaw('ex.id,rm.student_id,s.subject_name,SUM(ex.points) total_points,ex.con_point,SUM(rm.points) points,exm.Id exam_id')
+            ->selectRaw('ex.id,rm.student_id,s.display_name,SUM(ex.points) total_points,ex.con_point,SUM(rm.points) points,exm.Id exam_id')
             ->whereIn("exm.Id", $exam_id_arr)
             ->whereIn("rm.student_id", $student_id_arr)
-            ->groupByRaw('rm.student_id,s.subject_name,ex.points,exm.Id')
-            ->orderByRaw('rm.student_id,s.subject_name,exm.Id')
+            ->groupByRaw('rm.student_id,s.display_name,ex.points,exm.Id')
+            ->orderByRaw('rm.student_id,s.display_name,exm.Id')
             ->get()->toarray();
 
         // getting data and making readable format student wise

@@ -88,9 +88,9 @@ Route::group(['prefix' => 'student', 'middleware' => ['session', 'menu', 'logRou
     Route::post('ajax_toStandards', [studentTransferController::class, 'ajax_toStandards'])->name('ajax_toStandards');
     Route::post('ajax_toDivisions', [studentTransferController::class, 'ajax_toDivisions'])->name('ajax_toDivisions');
 
-    Route::post('student_homework_report_index', [studentHomeworkController::class, 'studentHomeworkReportIndex'])->name("student_homework_report_index");
+    Route::get('student_homework_report_index', [studentHomeworkController::class, 'studentHomeworkReportIndex'])->name("student_homework_report_index");
     Route::post('student_homework_report', [studentHomeworkController::class, 'studentHomeworkReport'])->name("student_homework_report");
-    Route::post('student_homework_submission_report_index', [studentHomeworkSubmissionController::class, 'studentHomeworkSubmissionReportIndex'])->name("student_homework_submission_report_index");
+    Route::get('student_homework_submission_report_index', [studentHomeworkSubmissionController::class, 'studentHomeworkSubmissionReportIndex'])->name("student_homework_submission_report_index");
 
     Route::post('student_homework_submission_report', [studentHomeworkSubmissionController::class, 'studentHomeworkSubmissionReport'])->name("student_homework_submission_report");
 
@@ -105,13 +105,13 @@ Route::group(['prefix' => 'student', 'middleware' => ['session', 'menu', 'logRou
     Route::post('transfer_student', [transferStudentController::class, 'transferStudent'])->name("transfer_student");
     Route::post('show_student_attendance', [studentAttendanceController::class, 'showStudent'])->name("show_student_attendance");
     Route::post('save_student_attendance', [studentAttendanceController::class, 'saveStudentAttendance'])->name("save_student_attendance");
-    Route::post('daywise_student_attendance', [studentAttendanceController::class, 'daywiseStudentAttendance'])->name("daywise_student_attendance_report");
+    Route::get('daywise_student_attendance', [studentAttendanceController::class, 'daywiseStudentAttendance'])->name("daywise_student_attendance_report");
     Route::post('show_daywise_student_attendance', [studentAttendanceController::class, 'showDaywiseStudentAttendance'])->name("show_daywise_student_attendance_report");
 
-    Route::post('student_health_report', [studentInfirmaryController::class, 'studentHealthReport'])->name("student_health_report");
+    Route::get('student_health_report', [studentInfirmaryController::class, 'studentHealthReport'])->name("student_health_report");
     Route::post('show_student_health_report', [studentInfirmaryController::class, 'showStudentHealthReport'])->name("show_student_health_report");
 
-    Route::post('monthwise_student_attendance', [studentAttendanceController::class, 'monthwiseStudentAttendance'])->name("monthwise_student_attendance_report");
+    Route::get('monthwise_student_attendance', [studentAttendanceController::class, 'monthwiseStudentAttendance'])->name("monthwise_student_attendance_report");
     Route::post('show_monthwise_student_attendance', [studentAttendanceController::class, 'showMonthwiseStudentAttendance'])->name("show_monthwise_student_attendance_report");
 
     Route::post('yearly_student_attendance', 'student\yearly_attendance_controller@index')->name("yearly_student_attendance");

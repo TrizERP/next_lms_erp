@@ -74,7 +74,7 @@ class otherNewfeesReportController extends Controller
             $extraSearch .= " AND deduction_head_id = '" . $otherfeeshead . "'";
         }
 
-        $other_feesData = DB::table('fees_other_cancel as c')
+        $other_feesData = DB::table('fees_other_collection as c')
             ->join('fees_other_head as h', function ($join) {
                 $join->whereRaw('c.deduction_head_id = h.id');
             })->join('tblstudent as s', function ($join) {

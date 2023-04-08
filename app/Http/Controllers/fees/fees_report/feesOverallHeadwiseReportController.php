@@ -249,9 +249,11 @@ class feesOverallHeadwiseReportController extends Controller
                     }
                 }
 
+                 $total_fees_array = array();
                 foreach ($bk_data as $stu_id => $total_fees) {
-                    foreach ($total_fees as $key => $month_data) {
-                        if (isset($month_data['month_id']) && $month_data['month_id'] == '-') {
+                    $total_fees_array[]=$total_fees;
+                    foreach ($total_fees_array[0] as $key => $month_data) {
+                       if (isset($month_data['month_id']) && $month_data['month_id'] == '-') {
                             $final_array[$value['id']][$month_data['month_id']]['paid'] = $total_paid_new;
                             $final_array[$value['id']][$month_data['month_id']]['remain'] = $total_unpaid_new;
                             $final_array[$value['id']][$month_data['month_id']]['bk'] = ($total_paid_new + $total_unpaid_new);

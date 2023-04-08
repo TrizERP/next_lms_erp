@@ -41,9 +41,6 @@ class cbse_1t5_result_controller extends Controller
     public function show_result(Request $request)
     {
 
-        return session()->get('sub_institute_id');
-        exit;
-
         $all_student = SearchStudent($_REQUEST['grade'], $_REQUEST['standard'], $_REQUEST['division']);
         $responce_arr = [];
 
@@ -441,8 +438,8 @@ class cbse_1t5_result_controller extends Controller
                                 $total_con_point = $total_con_point + $con_point;
                             }
                             $title = $marks_arr[$arr_student['student_id']][$subject][$exam_detail['title']]['exam title'];
-                            echo "<pre>";
-                            print_r($title);
+                            // echo "<pre>";
+                            // print_r($title);
                             // foreach($marks_arr[$arr_student['student_id']][$subject][$exam_detail['title']]['title'] as $value){
                             $marksArr[] = $mark;
                             // }
@@ -525,9 +522,9 @@ class cbse_1t5_result_controller extends Controller
             // print_r($responce_arr);
             // die;
         }
-        echo "<pre>";
-        print_r($responce_arr);
-        exit;
+        // echo "<pre>";
+        // print_r($responce_arr);
+        // exit;
 
         return $responce_arr;
     }

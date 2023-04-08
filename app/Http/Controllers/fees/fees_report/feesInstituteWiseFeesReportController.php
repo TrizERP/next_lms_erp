@@ -122,7 +122,7 @@ class feesInstituteWiseFeesReportController extends Controller
             })->selectRaw("ss.Id as sub_institute_id,ss.SchoolName,ss.ShortCode,ss.Mobile,ss.Email,
                 COUNT(DISTINCT ts.id) AS TOTAL_STUDENT")
             ->where('ss.Id', $sub_institute_id)
-            ->where('te,syear', $syear)->get()->toArray();
+            ->where('te.syear', $syear)->get()->toArray();
 
         $result = json_decode(json_encode($result), true);
 

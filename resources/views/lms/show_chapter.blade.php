@@ -145,7 +145,7 @@ use DB;
                     </span>
                     @endif
                     <span class="pr-2 mr-1 border-right">
-                        <a target="_blank" href="{{ route('subjectwise_graph.show',['subject_id'=>$chdata->subject_id,'standard_id'=>$chdata->standard_id,'chapter_id'=>$chdata->id,'chapter_name'=>$chdata->chapter_name,'action'=>'chapterwise']) }}">
+                        <a target="_blank" href="{{ route('subjectwise_graph.show',['subjectwise_graph'=>$chdata->subject_id,'standard_id'=>$chdata->standard_id,'chapter_id'=>$chdata->id,'chapter_name'=>$chdata->chapter_name,'action'=>'chapterwise']) }}">
                             <img src="../../../admin_dep/images/graph_icon.png"
                                  style="float:right;height:25px;width:25px;margin-top:-12px;margin-right:5px;">
                         </a>

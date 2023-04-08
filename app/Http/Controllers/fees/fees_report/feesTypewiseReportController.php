@@ -135,7 +135,7 @@ class feesTypewiseReportController extends Controller
             ->where('se.syear', $syear)
             ->where('fc.syear', $syear)
             ->where('s.sub_institute_id', $sub_institute_id)
-            ->whereIsNull('se.end_date')
+            ->whereNull('se.end_date')
             ->where('fc.is_deleted', '=', 'N')
             ->groupBy('ts.id')->get()->toArray();
 

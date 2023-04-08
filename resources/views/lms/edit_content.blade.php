@@ -32,7 +32,7 @@
     <div class="container-fluid mb-5">
         <div class="card border-0">
             <div class="card-body">
-                <form action="{{ route('content_master.update',['div_id'=>$data['content_data']['id']])}}" method="post" enctype='multipart/form-data'>
+                <form action="{{ route('content_master.update',$data['content_data']['id'])}}" method="post" enctype='multipart/form-data'>
                     {{ method_field("PUT") }}
                     @csrf
 

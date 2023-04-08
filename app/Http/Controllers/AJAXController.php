@@ -1370,7 +1370,7 @@ class AJAXController extends Controller
                 ->whereRaw("(fro.RECEIPT_ID_1 = '".$receipt_id."' OR fro.RECEIPT_ID_2 = '".$receipt_id."' OR fro.RECEIPT_ID_3 = '".$receipt_id."' OR fro.RECEIPT_ID_4 = '".$receipt_id."' OR fro.RECEIPT_ID_5 = '".$receipt_id."' OR fro.RECEIPT_ID_6 = '".$receipt_id."')")
                 ->groupBy('fo.paid_fees_html');
 
-            $get_data = DB::table('fees_collect fc')
+            $get_data = DB::table('fees_collect as fc')
                 ->join('fees_receipt as fr', function ($join) {
                     $join->whereRaw('FIND_IN_SET(fc.id,fr.FEES_ID) AND fr.SUB_INSTITUTE_ID = fc.sub_institute_id');
                 })

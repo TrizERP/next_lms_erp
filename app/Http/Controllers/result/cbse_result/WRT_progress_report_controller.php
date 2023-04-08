@@ -96,7 +96,7 @@ class WRT_progress_report_controller extends Controller
 
         $result = json_decode(json_encode($result), true);
 
-        return $result[0];
+        return $result[0] ?? [];
     }
 
     public function getWRTData($all_student, $standard_id, $type, $exam_type = null, $from_date = null, $to_date = null)
@@ -238,7 +238,7 @@ class WRT_progress_report_controller extends Controller
         }
 
         $rank_data = $rank_data->groupBy("s.id")
-            ->orderBy('percentage DESC,s.roll_no ASC')
+            // ->orderBy('percentage DESC,s.roll_no ASC')
             ->get()->toArray();
 
         $rank_data = json_decode(json_encode($rank_data), true);

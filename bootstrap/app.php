@@ -25,7 +25,7 @@ $app = new Illuminate\Foundation\Application(
 | incoming requests to this application from both the web and CLI.
 |
 */
-$app->register(GenTux\Jwt\Support\LumenServiceProvider::class);
+
 
 $app->singleton(
     Illuminate\Contracts\Http\Kernel::class,

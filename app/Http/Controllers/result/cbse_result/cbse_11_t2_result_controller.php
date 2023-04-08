@@ -198,8 +198,8 @@ class cbse_11_t2_result_controller extends Controller
             ->where("ay.syear", "=", session()->get('syear'))
             ->where("ay.sub_institute_id", "=", session()->get('sub_institute_id'))
             ->groupByRaw('em.ExamTitle,e.term_id,e.subject_id')
-            ->orderBy('e.term_id,CAST(em.SortOrder AS UNSIGNED)')
-            ->get()->toarray();
+            ->orderByRaw('e.term_id,CAST(em.SortOrder AS UNSIGNED)')
+            ->get()->toArray();
 
         $result = $this->objToArr($result);
 
@@ -271,7 +271,7 @@ class cbse_11_t2_result_controller extends Controller
             ->join('result_create_exam as ex', function ($join) {
                 $join->whereRaw("ex.id = rm.exam_id");
             })
-            ->join('sub_std_map s', function ($join) {
+            ->join('sub_std_map as s', function ($join) {
                 $join->whereRaw("s.subject_id = ex.subject_id AND s.standard_id = ex.standard_id");
             })
             ->selectRaw('ex.id,rm.student_id,s.subject_id,s.display_name,s.elective_subject,ex.title as exam_title,
@@ -430,12 +430,12 @@ class cbse_11_t2_result_controller extends Controller
 
 
         $ret_grade = DB::table("result_std_grd_maping as sgm")
-            ->join('grade_master_data as dt', function ($join) {
+            ->join('grade_master_data as dt', function ($join) use($syear){
                 $join->whereRaw("dt.grade_id = sgm.grade_scale AND dt.syear = " . $syear . "");
             })
             ->where("sgm.standard", "=", $standard_id)
             ->where("sgm.sub_institute_id", "=", $sub_institute_id)
-            ->borderBy('dt.breakoff', 'DESC')
+            ->orderBy('dt.breakoff', 'DESC')
             ->get()->toArray();
 
         //converting it into array
@@ -655,7 +655,7 @@ class cbse_11_t2_result_controller extends Controller
         $result = DB::select(DB::raw($str));
         $result = json_decode(json_encode($result), true);
 
-        return $result[0];
+        return $result[0] ?? [];
     }
 
     public function getExamMasterSettigs()

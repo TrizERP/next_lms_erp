@@ -48,13 +48,13 @@ class inventory_staff_wise_reportController extends Controller
         $result = DB::table("inventory_requisition_details as IRD")
             ->selectRaw('CONCAT_WS(" ",u.first_name,u.middle_name,u.last_name) AS REQUISITION_BY_NAME,IRD.REQUISITION_NO,IRD.REQUISITION_BY,IRD.ITEM_ID,IRD.ITEM_QTY,IRD.APPROVED_QTY, DATE_FORMAT(IRD.REQUISITION_APPROVED_DATE, "%d-%m-%Y") AS REQUISITION_DATE,IIM.title as ITEM_NAME,IRD.USER_GROUP_ID,IIC.TITLE AS Category')
             ->join('inventory_item_master as IIM', function ($join) {
-                $join->ehereRaw("IIM.ID = IRD.ITEM_ID");
+                $join->whereRaw("IIM.ID = IRD.ITEM_ID");
             })
             ->join('inventory_item_category_master as IIC', function ($join) {
-                $join->ehereRaw("IIC.ID = IIM.CATEGORY_ID");
+                $join->whereRaw("IIC.ID = IIM.CATEGORY_ID");
             })
             ->join('tbluser as u', function ($join) {
-                $join->ehereRaw("u.id = IRD.requisition_by");
+                $join->whereRaw("u.id = IRD.requisition_by");
             })
             ->where("IRD.sub_institute_id", "=", $sub_institute_id)
             ->where(function ($q) use ($from_date, $to_date, $requisition_by) {

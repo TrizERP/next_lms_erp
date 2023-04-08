@@ -132,9 +132,9 @@
                             @php
                             if(isset($value['actual_amountpaid']) &&  $value['actual_amountpaid'] != '')
                             {
-                                $fees_collect_amt = ($value['amount'] + $value['actual_amountpaid']);
+                                $fees_collect_amt = ($amount + $value['actual_amountpaid']);
                             }else{
-                                $fees_collect_amt = $value['amount'];
+                                $fees_collect_amt = $value['actual_amountpaid'];
                             }
                             @endphp
                             <td>{{$fees_collect_amt}}</td>

@@ -260,10 +260,10 @@ class apiController extends Controller
                     }
                     $time = time() + (60 * 60 * 24 * 30);
                     $payload = [
-                        'exp'              => $time,
+                        //'exp'              => $time,
                         'student_id'       => $arr->id,
                         'sub_institute_id' => $arr->sub_institute_id,
-                        'mobile'           => $arr->mobile,
+                        //'mobile'           => $arr->mobile,
                     ];
 
                     $token = $jwt->createToken($payload);
@@ -370,10 +370,10 @@ class apiController extends Controller
 
                 $time = time() + (60 * 60 * 24 * 30);
                 $payload = [
-                    'exp'              => $time,
+                    //'exp'              => $time,
                     'teacher_id'       => $data['id'],
                     'sub_institute_id' => $data['sub_institute_id'],
-                    'mobile'           => $data['mobile'],
+                    //'mobile'           => $data['mobile'],
                 ];
 
                 $token = $jwt->createToken($payload);

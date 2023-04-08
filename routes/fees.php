@@ -112,7 +112,7 @@ Route::group(['prefix' => 'fees', 'middleware' => ['session', 'menu', 'logRoute'
     })->name('razorpay');
 
 
-    Route::post('api/get-fees-list', ['AJAXController', 'getFees'])->name('get-fees-list');
+    Route::post('api/get-fees-list', [AJAXController::class, 'getFees'])->name('get-fees-list');
     Route::resource('update_fees_breackoff', update_fees_breackoff_controller::class);
 
     Route::post('fees_collect/show_student', ['as' => 'fees_collect.show_student', 'uses' => 'fees\fees_collect\fees_collect_controller@show_student']);

@@ -191,9 +191,10 @@ class feesOverallReportController extends Controller
                 $final_array[$value['id']]['pending'] = $bk_data['stu_data']['pending'];
                 $final_array[$value['id']]['mobile'] = $bk_data['stu_data']['mobile'];
                 $final_array[$value['id']]['uniqueid'] = $bk_data['stu_data']['uniqueid'];
-
+                $total_fees_array=array();
                 foreach ($bk_data as $stu_id => $total_fees) {
-                    foreach ($total_fees as $key => $month_data) {
+                    $total_fees_array[] = $total_fees;
+                    foreach ($total_fees_array[0] as $key => $month_data) {
                         if (isset($month_data['month_id'])) {
                             $final_array[$value['id']][$month_data['month_id']]['paid'] = $month_data['paid'];
                             $final_array[$value['id']][$month_data['month_id']]['remain'] = $month_data['remain'];
@@ -221,7 +222,7 @@ class feesOverallReportController extends Controller
         $res['last_name'] = $last_name;
         $res['mobile_no'] = $mobile_no;
         $res['uniqueid'] = $uniqueid;
-
+        // echo "<pre>";print_r($total_fees_array);exit;
         return is_mobile($type, "fees/fees_report/show_fees_overall_report", $res, "view");
     }
 }
