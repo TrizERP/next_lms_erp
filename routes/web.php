@@ -267,17 +267,15 @@ Route::post('show_question_wise_report',
     [questionWiseReportController::class, 'show_question_wise_report'])->name('show_question_wise_report');
 
 // Admin Authorization (Show Result)
-//Route::get('result_admin_permission', [ResultAdminPermissionController::class, 'index'])->name('result_admin_permission');
-//Route::post('show_result_admin_permission', [ResultAdminPermissionController::class, 'show_result_admin_permission'])->name('show_result_admin_permission');
-//Route::post('allow_admin_permission', [ResultAdminPermissionController::class, 'allow_admin_permission'])->name('allow_admin_permission');
-//
-//
-//// create result excel
-//Route::get('download_create_result', [MarkUploadController::class, 'index']);
-//Route::post('generate_create_result_excel', [MarkUploadController::class, 'create'])->name('create-excel');
-//Route::get('upload_create_result', [MarkUploadController::class, 'store'])->name('upload_create_result');
-//
-//Route::get('fetch_payment_status', [online_fees_collect_controller::class, 'razorpay_fetch_payment_status']);
+Route::GET('result_admin_permission', 'result\result_admin_permission\ResultAdminPermissionController@index')->name('result_admin_permission');
+Route::POST('show_result_admin_permission', 'result\result_admin_permission\ResultAdminPermissionController@show_result_admin_permission')->name('show_result_admin_permission');
+Route::POST('allow_admin_permission', 'result\result_admin_permission\ResultAdminPermissionController@allow_admin_permission')->name('allow_admin_permission');
 
 
+// create result excel
+Route::get('download_create_result', 'result\MarkUploadController@index');
+Route::post('generate_create_result_excel', 'result\MarkUploadController@create')->name('create-excel');
+Route::get('upload_create_result', 'result\MarkUploadController@store')->name('upload_create_result');
+
+Route::get('fetch_payment_status', 'fees\online_fees\online_fees_collect_controller@razorpay_fetch_payment_status');
 

@@ -114,7 +114,7 @@ Route::group(['prefix' => 'student', 'middleware' => ['session', 'menu', 'logRou
     Route::get('monthwise_student_attendance', [studentAttendanceController::class, 'monthwiseStudentAttendance'])->name("monthwise_student_attendance_report");
     Route::post('show_monthwise_student_attendance', [studentAttendanceController::class, 'showMonthwiseStudentAttendance'])->name("show_monthwise_student_attendance_report");
 
-    Route::post('yearly_student_attendance', 'student\yearly_attendance_controller@index')->name("yearly_student_attendance");
+    Route::get('yearly_student_attendance', 'student\yearly_attendance_controller@index')->name("yearly_student_attendance");
     Route::post('yearly_student_attendance', 'student\yearly_attendance_controller@showYearlyStudentAttendance')->name("show_yearly_student_attendance");
 
     Route::post('search_student_by_lastname', [studentSearchController::class, 'searchStudentLastName'])->name("search_student_by_lastname");

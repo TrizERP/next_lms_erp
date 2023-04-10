@@ -9,7 +9,7 @@
                     <h4 class="page-title">Fees Collection Report</h4> </div>
             </div>
         @php
-        $grade_id = $standard_id = $division_id = $enrollment_no = $receipt_no = $from_date = $to_date = '';
+        $grade_id = $standard_id = $division_id = $enrollment_no = $receipt_no = $from_date = $to_date = $name = $mb_no ='';
 
             if(isset($data['grade_id'])){
                 $grade_id = $data['grade_id'];
@@ -19,6 +19,14 @@
             if(isset($data['enrollment_no']))
             {
                 $enrollment_no = $data['enrollment_no'];
+            }
+            if(isset($data['name']))
+            {
+                $name = $data['name'];
+            }
+            if(isset($data['mb_no']))
+            {
+                $mb_no = $data['mb_no'];
             }
             if(isset($data['receipt_no']))
             {
@@ -49,12 +57,20 @@
                     @csrf
                     <div class="col-md-4 form-group">
                         <label>GR No</label>
-                        <input type="text" id="enrollment_no" name="enrollment_no" value="{{$enrollment_no}}" class="form-control">
+                        <input type="text" id="enrollment_no" name="enrollment_no" value="{{$enrollment_no}}" class="form-control" placeholder="Gr No">
                     </div>
                     <div class="col-md-4 form-group">
+                        <label>Name</label>
+                        <input type="text" id="name" name="name" class="form-control" placeholder="Name" value="{{$name}}" >
+                    </div>
+                    <div class="col-md-4 form-group">
+                        <label>Mobile Number</label>
+                        <input type="text" id="mb_no" name="mb_no" class="form-control" value="{{$mb_no}}" placeholder="Mobile Number">
+                    </div>
+                    <!--<div class="col-md-4 form-group">
                         <label>Receipt No</label>
                         <input type="text" id="receipt_no" value="{{$receipt_no}}" name="receipt_no" class="form-control">
-                    </div>
+                    </div>-->
                     {{ App\Helpers\SearchChain('4','single','grade,std,div',$grade_id,$standard_id,$division_id) }}
                     <div class="col-md-4 form-group">
                         <label>From Date</label>
@@ -129,18 +145,10 @@
                             <td>{{date('d-m-Y',strtotime($value['receiptdate']))}}</td>
                             <td>{{$value['user_name']}}</td>
                             <!--<td>{{date('d-m-Y h:i:s',strtotime($value['created_date']))}}</td>-->
-                            @php
-                            if(isset($value['actual_amountpaid']) &&  $value['actual_amountpaid'] != '')
-                            {
-                                $fees_collect_amt = ($amount + $value['actual_amountpaid']);
-                            }else{
-                                $fees_collect_amt = $value['actual_amountpaid'];
-                            }
-                            @endphp
-                            <td>{{$fees_collect_amt}}</td>
+                            <td>{{$value['actual_amountpaid']}}</td>
                         </tr>
                     @php
-                    $amount += $fees_collect_amt;
+                    $amount += $value['actual_amountpaid'];
                     $j++;
                     @endphp
                         @endforeach

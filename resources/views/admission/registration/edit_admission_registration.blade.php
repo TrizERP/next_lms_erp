@@ -463,14 +463,16 @@ $editData = array();
 
         $('.division_alert').on('click', function(){
 
-            if(division_check == false)
+            if(division_check == true)
             { 
+                return true;
+            }else
                 alert('Please select other division.');
                 return false;
             }
 
         });
-    });
+    // });
 
     function getDivision(standard_id) {
         var path = "{{ route('ajax_getDivision') }}";

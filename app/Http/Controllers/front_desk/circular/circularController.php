@@ -97,7 +97,7 @@ class circularController extends Controller
         } else {
             $sub_institute_id = $_REQUEST['sub_institute_id'];
             $syear = $_REQUEST['syear'];
-            $student_id = $_REQUEST['student_id'];
+            $student_id = isset($_REQUEST['student_id']) ? $_REQUEST['student_id'] : '0';
             $action = $_REQUEST['action'];
 
             if ($student_id == $payload['student_id'] && $sub_institute_id == $payload['sub_institute_id']) {

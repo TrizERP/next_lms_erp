@@ -1,8 +1,15 @@
 <?php
 session_start();
-
+/*$ss= array(
+    "user_id "=> $_REQUEST['DUSER_ID'],
+ "password" => $_REQUEST['DUSER_PWD'],
+  "new_erp" => $_REQUEST['NEW_ERP'],
+ "user_group_id" => $_REQUEST['USER_GROUP_ID'],
+ "db_user" => $_REQUEST['db_user'],
+ );   
+echo json_encode($ss);*/
 error_reporting(0);
-//ini_set('display_error',1);
+ini_set('display_error',1);
 require '../sysconfig.inc.php';
 
 if($_REQUEST['NEW_ERP'] ==  1)
@@ -23,15 +30,15 @@ if($user_id == '' && $user_pwd == '')
 
 
 // start the session
-//require SENAYAN_BASE_DIR.'admin/default/session.inc.php';
+require SENAYAN_BASE_DIR.'admin/default/session.inc.php';
 
 // session checking
-//require SENAYAN_BASE_DIR.'admin/default/session_check.inc.php';
+require SENAYAN_BASE_DIR.'admin/default/session_check.inc.php';
 
 require SIMBIO_BASE_DIR . 'simbio_GUI/template_parser/simbio_template_parser.inc.php';
 require LIB_DIR . 'module.inc.php';
 require SIMBIO_BASE_DIR . 'simbio_DB/simbio_dbop.inc.php';
-
+echo $_REQUEST['DUSER_PWD'];
 if ($_REQUEST['Confirm'] == "Confirm") {
 
     if (!isset($_REQUEST['temp_id1'])) {

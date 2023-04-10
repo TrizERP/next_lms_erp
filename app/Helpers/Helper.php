@@ -781,8 +781,8 @@ if (! function_exists('FeeBreackoff')) {
             $sub_institute_id = request()->get('sub_institute_id');
             $syear = request()->get('syear');
         }
-
-        return DB::table('tblstudent as s')
+        //DB::enableQueryLog();
+        $data = DB::table('tblstudent as s')
             ->join('tblstudent_enrollment as se', function ($join) {
                 $join->whereRaw('se.student_id = s.id');
             })->join('academic_section as g', function ($join) {
@@ -815,6 +815,9 @@ if (! function_exists('FeeBreackoff')) {
             ->whereIn('s.id', $student_ids)
             ->groupByRaw('s.id,fb.month_id')
             ->orderByRaw('sort_year,sort_month')->get()->toArray();
+            //$query = DB::getQueryLog();
+            //dd($query);exit();
+        return $data;
     }
 }
 
@@ -1125,7 +1128,7 @@ if (! function_exists('OtherBreackOfMonth')) {
             ->selectRaw('sum(amount) as tot_amount,month_id')
             ->where('sub_institute_id', $sub_institute_id)
             ->where('syear', $syear)
-            ->where('student_id', $syear)
+            ->where('student_id', $student_id)
             ->groupBy('month_id')->get()->toArray();
 
         $responce_arr = array();

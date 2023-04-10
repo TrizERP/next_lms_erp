@@ -88,12 +88,12 @@ class dashboardController extends Controller
 
                 $fees_collects = fees_collect::selectRaw("IFNULL(sum(amount),0) as fees")
                     ->where(["sub_institute_id" => $sub_institute_id, "syear" => $syear, "is_deleted" => "N"])
-                    ->whereDate("created_date", $date)->get()->toArray();
+                    ->whereDate("receiptdate", $date)->get()->toArray();
 
                 $other_fees_collects = DB::table("fees_paid_other")
                     ->selectRaw("IFNULL(sum(actual_amountpaid), 0) as fees")
                     ->where(["sub_institute_id" => $sub_institute_id, "syear" => $syear, "is_deleted" => "N"])
-                    ->get()->toArray();
+                    ->whereDate("receiptdate", $date)->get()->toArray();
                 $other_fees_collects = json_decode(json_encode($other_fees_collects), true);
 
                 $parentCommunication = DB::table("parent_communication as p")

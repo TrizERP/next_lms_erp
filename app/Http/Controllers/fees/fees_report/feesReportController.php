@@ -110,6 +110,7 @@ class feesReportController extends Controller
         $receipt_no = $request->input('receipt_no');
         $syear = $request->session()->get('syear');
         $sub_institute_id = $request->session()->get('sub_institute_id');
+        $client_id = $request->session()->get('client_id');
 
         $extra_fp = "  AND fp.syear = '" . $syear . "' AND te.syear = '" . $syear . "' AND t.sub_institute_id = '" . $sub_institute_id . "' AND fp.sub_institute_id = '" . $sub_institute_id . "' AND fp.is_deleted = 'N' ";
 
@@ -167,7 +168,7 @@ class feesReportController extends Controller
             $extra_fp .= " AND fp.receiptdate <= '" . $to_date . "'";
             $extra_fo .= " AND fo.receiptdate <= '" . $to_date . "'";
         }
-        if ($sub_institute_id == 200) {
+        if($client_id == 6){
             $extra_fp .= " AND fp.standard_id=te.standard_id ";
             //$extra_fo .= " AND fo.receiptdate <= '".$to_date."'";
         }

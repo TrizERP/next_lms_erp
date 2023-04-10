@@ -116,7 +116,7 @@ class adminapiController extends Controller
             $response['status'] = '0';
             $response['message'] = $validator->messages();
         } else {
-            DB::table('tbluser as u')
+            $data =DB::table('tbluser as u')
                 ->join('tbluserprofilemaster as p', function ($join) {
                     $join->whereRaw("p.sub_institute_id = u.sub_institute_id and u.user_profile_id = p.id and p.parent_id = 1");
                 })
@@ -133,9 +133,10 @@ class adminapiController extends Controller
 
             $data = json_decode(json_encode($data), true);
             $data = $data[0];
-            if (isset($data['id']) && $data['id'] != '') {
+            if(isset($data['id']) && $data['id'] != '') {
 
-                $payload = [];
+                    //$data = $data[0];
+                    $payload = array();
 
                 $time = time() + (60 * 60 * 24 * 30);
                 $payload = [

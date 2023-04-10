@@ -68,8 +68,8 @@ $school_logo = session()->get('school_logo');
             $library_db = $client_data[0]->db_library;
             $library_rights = $client_data[0]->library_rights;
             $library_host = '192.168.0.2';
-            $library_user = 'root';
-            $library_password = urlencode('Triz@R@jesh');
+            $library_user = 'dev_db';
+            $library_password = urlencode('dev@sql');
             $solution_db = $client_data[0]->db_solution;
             $school_name = $client_data[0]->SchoolName;
             $school_logo = $client_data[0]->logo;
@@ -112,7 +112,7 @@ $school_logo = session()->get('school_logo');
 
             $hrms_link = "?NEW_ERP=1&DUSER_ID=$DUSER_ID&USER_GROUP_ID=$USER_GROUP_ID&DUSER_NAME=$DUSER_ID&hrms_db_host=$db_host&hrms_db_user=$db_user&hrms_db_password=$db_password&hrms_db_hrms=$hrms_db_hrms&client_name=$client_name";
 
-            $library_link = "?NEW_ERP=1&DUSER_ID=$DUSER_ID&USER_GROUP_ID=$USER_GROUP_ID&DUSER_PWD=$DUSER_PWD&db_host=$library_host&db_user=$library_user&db_password=$library_password&db_library=$library_db&solution_db=triz_erp_2&school_name=$school_name&SUB_INSTITUTE_ID=$sub_institute_id&school_logo=$school_logo&dyear=$syear";
+            $library_link = "?NEW_ERP=1&DUSER_ID=$DUSER_ID&USER_GROUP_ID=$USER_GROUP_ID&DUSER_PWD=$DUSER_PWD&db_host=$library_host&db_user=$library_user&db_password=$library_password&db_library=$library_db&solution_db=triz_erp_21&school_name=$school_name&SUB_INSTITUTE_ID=$sub_institute_id&school_logo=$school_logo&dyear=$syear";
 
             $lms_link=  "lmslogin.php?SUB_INSTITUTE_ID=".$sub_institute_id."&U=".base64_encode($DUSER_ID)."&P=".base64_encode($DUSER_PWD)."";
 
@@ -135,7 +135,7 @@ $school_logo = session()->get('school_logo');
             if($library_rights == 1 && Session::get('user_profile_name') != 'Student'){
             ?> 
                 <!-- <a class="nav-link" target="_blank" href="/library/new"> -->
-                <a class="nav-link" target="_blank" href="https://erp.triz.co.in/library/admin/index.php{{$library_link}}">
+                <a class="nav-link" target="_blank" href="{{asset('library/admin/index.php'.$library_link)}}">
                     <span class="menu-main-icon">                    
                         <i class="mdi mdi-library-shelves"></i>
                     </span>

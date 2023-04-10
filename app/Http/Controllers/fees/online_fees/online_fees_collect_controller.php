@@ -1218,41 +1218,45 @@ class online_fees_collect_controller extends Controller
     /**
      * Fetch payment status from RAZORPAY
      */
-    public function razorpay_fetch_payment_status(Request $request)
-    {
+    public function razorpay_fetch_payment_status(Request $request) {
 
-        //DB::enableQueryLog();
         // get payment data if payment status is not captured and is not null and order id is not null
         $payment_data = DB::table('fees_payment AS fp')
-            ->select('fp.id', 'fp.student_id', 'fr.key_id', 'fr.key_secret', 'fp.razorpay_order_id', 'tse.syear', 'fp.sub_institute_id')
-            ->join('tblstudent_enrollment AS tse', 'tse.student_id', '=', 'fp.student_id')
+            ->select('fp.id', 'fp.student_id', 'fr.key_id', 'fr.key_secret', 'fp.razorpay_order_id', 'tse.syear', 'fp.sub_institute_id', 'fp.amount')
+            ->join('tblstudent_enrollment AS tse', function ($join) {
+                $join->on('tse.student_id', '=', 'fp.student_id')
+                    ->on('tse.syear', '=', 'fp.syear')
+                    ->on('tse.sub_institute_id', '=', 'fp.sub_institute_id');
+            })
             ->join('academic_section AS a', 'a.id', '=', 'tse.grade_id')
-            ->join('fees_razorpay AS fr', 'fr.medium', '=', 'a.medium')
-            ->where('fp.razorpay_dashboard_ps', '!=', 'captured')
-            ->orWhereNull('fp.razorpay_dashboard_ps')
+            ->join('fees_razorpay AS fr', function ($join) {
+                $join->on('fr.medium', '=', 'a.medium')
+                    ->on('fr.sub_institute_id', '=', 'tse.sub_institute_id');
+            })
+            ->where(function ($query) {
+                $query->where('fp.razorpay_dashboard_ps', '!=', 'captured')
+                    ->where('fp.razorpay_dashboard_ps', '!=', 'refunded')
+                    ->orWhereNull('fp.razorpay_dashboard_ps');
+            })
             ->whereNotNull('fp.razorpay_order_id')
-            ->whereRaw('tse.syear = fp.syear AND tse.sub_institute_id = fr.sub_institute_id')
-            // ->where('fp.sub_institute_id', $sub_institute_id)
             ->groupBy('fp.id')
             ->get();
 
-        //echo "<pre>RAJESH"; print_r(DB::getQueryLog()); exit;
-        //echo "<pre>PAY"; print_r($payment_data); exit;
-        if (!empty($payment_data)) {
+        if ( !empty($payment_data) ) {
 
-            foreach ($payment_data as $data) {
+            foreach ( $payment_data as $data ) {
                 $id = $data->id;
                 $key_id = $data->key_id;
                 $key_secret = $data->key_secret;
                 $payment_id = $data->razorpay_order_id;
                 $student_id = $data->student_id;
-                $amount = round($data->amount, 0);
-//echo "<pre>API"; print_r($data); exit;
+                $amount = round($data->amount,0);
+
                 // initial razorpay api
                 $api = new Api($key_id, $key_secret);
                 $payment = $api->payment->fetch($payment_id);
-//echo "<pre>API"; print_r($data); exit;
-                if (!empty($payment)) {
+
+                if ( !empty( $payment ) ) {
                     $status = $payment['status'];
                     $json_response = $this->razorpay_payment_response_data_to_array($payment);
 
@@ -1262,11 +1266,11 @@ class online_fees_collect_controller extends Controller
                         "razorpay_bank_res" => $json_response,
                         "updated_at" => now()
                     );
-                    //echo "<pre>IF-PAY"; print_r($data); exit;
-                    DB::table("fees_payment")
-                        ->where('id', $id)
-                        ->update($update_arr);
-
+                //echo "<pre>IF-PAY"; print_r($data); exit;
+                  DB::table("fees_payment")
+                    ->where('id', $id)
+                    ->update($update_arr);
+                
                     $request->merge([
                         '_key' => csrf_token(),
                         'student_id' => $student_id,
@@ -1277,10 +1281,8 @@ class online_fees_collect_controller extends Controller
                     ]);
 
                     // echo "<pre>"; print_r($request->all()); exit;
-                    if ($status == 'captured')
-                        $schooldata = $this->pay_fees($request, $data->student_id, $data->syear, $data->sub_institute_id, ($amount / 100), $payment_id);//$payment['amount']
-                    //echo "<pre>"; print_r($schooldata); exit;
-
+                    if($status == 'captured')
+                        $schooldata = $this->pay_fees($request, $data->student_id, $data->syear, $data->sub_institute_id, ($amount/100), $payment_id);
                 }
             }
         }

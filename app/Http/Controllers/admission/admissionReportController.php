@@ -271,7 +271,7 @@ class admissionReportController extends Controller
                 $res['status_code'] = 0;
                 $res['message'] = "Please revise your search. No data found.";
 
-                return is_mobile($type, "admission_reg_report", $res);
+                return is_mobile($type, "admission_without_con_report", $res);
             }
 
         }

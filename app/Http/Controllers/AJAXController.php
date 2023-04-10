@@ -899,13 +899,16 @@ class AJAXController extends Controller
 
         $data = DB::table('tblmenumaster')->where('id', $main_menu_id)->get()->toArray();
 
-        $data = json_decode(json_encode($data), true);
-        $data = $data[0];
-        if ($data['youtube_link'] != "") {
+        if (!empty($data)) {
+            $data = json_decode(json_encode($data), true);
+            $data = $data[0];
 
-            return $data['youtube_link']."####".$data['pdf_link'];
+            if ($data['youtube_link'] != "") {
+                return $data['youtube_link']."####".$data['pdf_link'];
+            } else {
+                return "0";
+            }
         } else {
-
             return "0";
         }
     }

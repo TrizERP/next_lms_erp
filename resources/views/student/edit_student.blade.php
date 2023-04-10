@@ -178,6 +178,7 @@ br {
                                                 <option @if($student_data->admission_year == 2020) selected="selected" @endif value="2020">2020</option>
                                                 <option @if($student_data->admission_year == 2021) selected="selected" @endif value="2021">2021</option>
                                                 <option @if($student_data->admission_year == 2022) selected="selected" @endif value="2022">2022</option>
+                                                <option @if($student_data->admission_year == 2023) selected="selected" @endif value="2023">2023</option>
                                             </select>                                           
                                         </div>
                                         <div class="col-md-4 form-group" >

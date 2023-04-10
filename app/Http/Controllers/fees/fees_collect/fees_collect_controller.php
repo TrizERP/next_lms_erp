@@ -733,7 +733,7 @@ class fees_collect_controller extends Controller
             if (isset($arr->receipt_prefix) && $arr->receipt_prefix != '') {
                 $sub_string_count = (strlen($arr->receipt_prefix) + 1);
 
-                $result_id = DB::select('fees_receipt as fr')
+                $result_id = DB::table('fees_receipt as fr')
                     ->leftJoin('fees_collect as fc', function ($join) use ($arr) {
                         $join->whereRaw("fc.receipt_no = fr.RECEIPT_ID_".$arr->sort_order."");
                     })->leftJoin('fees_paid_other as fo', function ($join) use ($arr) {
@@ -1159,21 +1159,21 @@ class fees_collect_controller extends Controller
             $recHtml = $html_content;
             // END Dynamic Template Logic
 
-            $sArr = ['"', "'"];
-            $rArr = ['\"', "\'"];
+            $sArr = ["'"];//'"', 
+            $rArr = ["\'"];//'\"', 
 
             foreach ($insert_html_ids as $sort_order_id => $other_reg) {
                 if ($sort_order == $sort_order_id) {
                     foreach ($other_reg as $identifiyer => $vals) {
                         if ($identifiyer == "OTHER") {
                             DB::table('fees_paid_other')
-                                ->where('id', $vals)
+                                ->whereIn('id', $vals)
                                 ->update([
                                     'paid_fees_html' => str_replace($sArr, $rArr, $recHtml),
                                 ]);
                         } else {
                             DB::table('fees_collect')
-                                ->where('id', $vals)
+                                ->whereIn('id', $vals)
                                 ->update([
                                     'fees_html' => str_replace($sArr, $rArr, $recHtml),
                                 ]);
@@ -1578,32 +1578,32 @@ class fees_collect_controller extends Controller
         }
 
         // TODO: Change this query
-        $sql = "
+             $sql = "
             SELECT SUM(amount) amount,term_id
-        FROM(
+       FROM(
             select SUM(fc.amount)+SUM(fc.fees_discount) amount,fc.term_id
                 FROM tblstudent s
-                INNER JOIN fees_collect fc ON
+                INNER JOIN fees_collect fc ON 
                         (
-                         fc.student_id = s.id AND
+                         fc.student_id = s.id AND 
                          fc.is_deleted = 'N' AND
-                         fc.sub_institute_id = '" . session()->get('sub_institute_id') . "' AND
+                         fc.sub_institute_id = '" . session()->get('sub_institute_id') . "' AND 
                          fc.syear = '" . session()->get('syear') . "'
                              $fees_join
-                        )
-
-                WHERE s.sub_institute_id = '" . session()->get('sub_institute_id') . "' AND s.id = $student_id
+                        ) 
+                
+                WHERE s.sub_institute_id = '" . session()->get('sub_institute_id') . "' AND s.id = $student_id 
                 GROUP BY s.id,fc.term_id
                 UNION ALL
                 select SUM(fpo.actual_amountpaid)+SUM(fpo.fees_discount) aa,fpo.month_id
                 FROM tblstudent s
-                INNER JOIN fees_paid_other fpo ON
+                INNER JOIN fees_paid_other fpo ON 
                     (fpo.student_id = s.id  AND fpo.syear='" . session()->get('syear') . "' $paid_other_join)
-                WHERE s.sub_institute_id = '" . session()->get('sub_institute_id') . "' AND s.id = $student_id
+                WHERE s.sub_institute_id = '" . session()->get('sub_institute_id') . "' AND s.id = $student_id 
                 GROUP BY s.id,fpo.month_id
             ) temp_table
             GROUP BY term_id
-
+                
                 ";
         $sql = preg_replace('/\n+/', '', $sql);
         $paid_result = DB::select($sql);
@@ -1767,6 +1767,7 @@ class fees_collect_controller extends Controller
                 $final_bk_name[$arr['title']] = $head_name;
             }
         }
+        // echo "<pre>";print_r($final_bk_name);exit();
 
         $full_bk = array_merge($reg_bk_month_wise, $other_bk_off);
         $full_bk_new = array_merge($reg_month_wise, $other_bk_off);
