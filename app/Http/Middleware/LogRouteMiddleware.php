@@ -5,7 +5,6 @@ namespace App\Http\Middleware;
 use App\Models\Accesslog;
 use Closure;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Log;
 
 class LogRouteMiddleware
 {
@@ -19,7 +18,7 @@ class LogRouteMiddleware
     public function handle($request, Closure $next)
     {
         if ($request->get('type') != "API") {
-            Log::info($request->fullUrl());
+//            Log::info($request->fullUrl());
 
             $sub_institute_id = $request->session()->get('sub_institute_id');
             $user_id = $request->session()->get('user_id');

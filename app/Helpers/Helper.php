@@ -13,7 +13,10 @@ use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Facades\Validator;
 
-if (! function_exists('is_mobile')) {
+
+define('BEST_OF', 2);
+
+if (!function_exists('is_mobile')) {
 
     function is_mobile($type, $url = null, $data = null, $redirect_type = "redirect")
     {

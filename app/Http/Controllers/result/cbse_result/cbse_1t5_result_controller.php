@@ -16,10 +16,10 @@ use function App\Helpers\SearchStudent;
 class cbse_1t5_result_controller extends Controller
 {
 
-    public function __construct()
-    {
-        define('BEST_OF', 2);
-    }
+//    public function __construct()
+//    {
+//
+//    }
 
 
     use GetsJwtToken;

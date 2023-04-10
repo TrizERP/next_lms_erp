@@ -71,7 +71,7 @@ class result_report_controller extends Controller
             //getting all mark
             $all_subject_mark = $controller->getAllMark($all_exam, $all_subject, $all_student);
 
-            //getting Co Scholastic        
+            //getting Co Scholastic
             $all_co_data = $controller->getCoArea($all_student);
 
             //getting attendance
@@ -130,7 +130,7 @@ class result_report_controller extends Controller
             //getting all mark
             $all_subject_mark = $controller->getAllMark($all_exam, $all_subject, $all_student);
 
-            //getting Co Scholastic        
+            //getting Co Scholastic
             $all_co_data = $controller->getCoArea($all_student);
 
             //getting attendance
@@ -211,7 +211,7 @@ class result_report_controller extends Controller
                 $students_data[$value['id']] = $value;
             }
 
-            //getting all exam marks        
+            //getting all exam marks
             $all_WRT_data = $this->getWRTData($all_student, $standard_id, $subject, $type, $exam_type, $from_date,
                 $to_date);
 
@@ -246,7 +246,7 @@ class result_report_controller extends Controller
                 $result = $result->whereRaw("DATE_FORMAT(e.exam_date, '%Y-%m-%d') BETWEEN '".$from_date."' AND '".$to_date."' ");
             }
 
-            $result = $result->oredrBy('e.title')->get()->toArray();
+            $result = $result->orderBy('e.title')->get()->toArray();
 
             $result = json_decode(json_encode($result), true);
 
@@ -273,7 +273,7 @@ class result_report_controller extends Controller
                 $students_data[$value['id']] = $value;
             }
 
-            //getting all exam marks        
+            //getting all exam marks
             $all_WRT_data = $this->getClasswise($all_student, $standard_id, $subject, $type, $exam_type, $from_date,
                 $to_date);
 
@@ -283,12 +283,12 @@ class result_report_controller extends Controller
             }
             $student_id = implode(',', $student_id_arr);
 
-            /*$str = "SELECT e.title as ExamTitle, IF((e.con_point IS NULL) OR (e.con_point = ''),e.points,e.con_point) AS total_points, 
+            /*$str = "SELECT e.title as ExamTitle, IF((e.con_point IS NULL) OR (e.con_point = ''),e.points,e.con_point) AS total_points,
                 e.subject_id,s.display_name as subject_name,date_format(e.exam_date,'%d-%m-%Y') as exam_date,dayname(e.exam_date) as exam_day,rm.student_id,rm.points as obtained_points
-                FROM result_create_exam e        
+                FROM result_create_exam e
                 INNER JOIN sub_std_map s ON s.subject_id = e.subject_id AND s.sub_institute_id = e.sub_institute_id AND s.standard_id = e.standard_id
                 LEFT JOIN result_marks rm on rm.sub_institute_id = e.sub_institute_id AND rm.exam_id = e.id
-                WHERE e.term_id = '".$term_id."' AND e.sub_institute_id = '".$sub_institute_id."' AND e.syear = '".$syear."' 
+                WHERE e.term_id = '".$term_id."' AND e.sub_institute_id = '".$sub_institute_id."' AND e.syear = '".$syear."'
                 AND e.standard_id = '".$standard_id."' AND e.subject_id = '".$subject."' AND student_id in (".$student_id.") $extra
                 ORDER BY e.title";*/
 
@@ -317,7 +317,7 @@ class result_report_controller extends Controller
             }
 
             $result = $result->groupByRaw('rm.student_id,e.subject_id')
-                ->oredrBy('e.sort_order')->get()->toarray();
+                ->orderBy('e.sort_order')->get()->toarray();
 
             $result = json_decode(json_encode($result), true);
             $date_arr = [];
@@ -391,7 +391,7 @@ class result_report_controller extends Controller
         }
 
         $result = $result->groupByRaw('rm.student_id,e.subject_id')
-            ->oredrBy('s.sort_order')->get()->toarray();
+            ->orderBy('s.sort_order')->get()->toarray();
 
         $result = json_decode(json_encode($result), true);
         $cbse_1t5_result_controller = new cbse_1t5_result_controller;
@@ -468,7 +468,7 @@ class result_report_controller extends Controller
             ->leftJoin('result_marks as rm', function ($join) {
                 $join->whereRaw("rm.sub_institute_id = e.sub_institute_id AND rm.exam_id = e.id");
             })
-            ->selectRaw("e.title as ExamTitle, IF((e.con_point IS NULL) OR (e.con_point = ''),e.points,e.con_point) 
+            ->selectRaw("e.title as ExamTitle, IF((e.con_point IS NULL) OR (e.con_point = ''),e.points,e.con_point)
                      AS total_points,e.subject_id,s.display_name as subject_name,date_format(e.exam_date,'%d-%m-%Y') as exam_date,
                      dayname(e.exam_date) as exam_day,rm.student_id,rm.points as obtained_points,rm.is_absent")
             ->where("e.term_id", "=", $term_id)
@@ -485,7 +485,7 @@ class result_report_controller extends Controller
         if ($from_date != '' && $to_date != '') {
             $result = $result->whereRaw("DATE_FORMAT(e.exam_date, '%Y-%m-%d') BETWEEN '".$from_date."' AND '".$to_date."' ");
         }
-        $result = $result->oredrBy('e.title')->get()->toarray();
+        $result = $result->orderBy('e.title')->get()->toarray();
 
         $result = json_decode(json_encode($result), true);
         $cbse_1t5_result_controller = new cbse_1t5_result_controller;
@@ -541,12 +541,12 @@ class result_report_controller extends Controller
                 $join->whereRaw("rm.student_id = s.id AND rm.sub_institute_id = s.sub_institute_id");
             })
             ->join('result_create_exam as rc', function ($join) use ($syear, $term_id) {
-                $join->whereRaw("rc.id = rm.exam_id AND rc.sub_institute_id = rm.sub_institute_id 
-    AND rc.standard_id = se.standard_id AND rc.syear = '".$syear."' AND rc.term_id = '".$term_id."'");
+                $join->whereRaw("rc.id = rm.exam_id AND rc.sub_institute_id = rm.sub_institute_id
+    AND rc.standard_id = se.standard_id AND rc.syear = '" . $syear . "' AND rc.term_id = '" . $term_id . "'");
             })
             ->selectRaw("s.id AS student_id,s.roll_no,concat_ws(' ',s.first_name,s.middle_name,s.last_name) as student_name,
     SUM(IFNULL(rm.points,0)) AS obtainedMarks,SUM(IFNULL(rc.points,0)) AS totalMarks,
-    ((SUM(IFNULL(rm.points,0))/ SUM(IFNULL(rc.points,0)))*100) AS percentage,COUNT(if(((IFNULL(rm.points,0)/rc.points)*100) 
+    ((SUM(IFNULL(rm.points,0))/ SUM(IFNULL(rc.points,0)))*100) AS percentage,COUNT(if(((IFNULL(rm.points,0)/rc.points)*100)
     < ".$passing_ratio.",1, NULL)) AS failed")
             ->where("se.syear", "=", $syear)
             ->where("se.standard_id", "=", $standard_id)
