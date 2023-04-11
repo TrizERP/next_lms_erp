@@ -456,14 +456,14 @@ class lms_apiController extends Controller
                     FROM lms_question_mapping l
                     INNER JOIN lms_mapping_type lt ON lt.id = l.mapping_value_id
                     INNER JOIN lms_mapping_type plt ON plt.id = lt.parent_id
-                    LEFT JOIN lms_online_exam_answer e on e.question_id = l.questionmaster_id and e.question_paper_id = '".$val['question_paper_id']."' AND 
-                    e.student_id = '".$val['student_id']."' and e.online_exam_id = '".$val['id']."'
+                    LEFT JOIN lms_online_exam_answer e on e.question_id = l.questionmaster_id and e.question_paper_id = '" . $val['question_paper_id'] . "' AND
+                    e.student_id = '" . $val['student_id'] . "' and e.online_exam_id = '" . $val['id'] . "'
                     WHERE questionmaster_id IN (
                             SELECT question_id
                             FROM lms_online_exam_answer
-                            WHERE question_paper_id = '".$val['question_paper_id']."' AND student_id = '".$val['student_id']."' 
+                            WHERE question_paper_id = '" . $val['question_paper_id'] . "' AND student_id = '" . $val['student_id'] . "'
                             AND online_exam_id = '".$val['id']."'
-                        ) 
+                        )
                     GROUP BY mapping_value_id
                     ORDER BY mapping_type_id,mapping_value_id) as a
                 ");
@@ -516,8 +516,7 @@ class lms_apiController extends Controller
                     $join->whereRaw("se.student_id = s.id and se.sub_institute_id = s.sub_institute_id");
                 })->join('lb_master as m', function ($join) use ($sub_institute_id, $syear) {
                     $join->whereRaw("l.module_name = m.module_name and m.standard_id = se.standard_id");
-                })->selectRaw('le.id,le.student_id,le.question_paper_id,le.total_right,le.total_wrong,
-                    (le.total_right) as obtain_marks,le.start_time,le.created_at,le.id as online_exam_id,qp.paper_name')
+                })->selectRaw('l.*,m.icon,se.standard_id,se.section_id')
                 ->where('l.sub_institute_id', $sub_institute_id)
                 ->where('l.user_id', $student_id)
                 ->where('l.syear', $syear)
@@ -557,7 +556,7 @@ class lms_apiController extends Controller
                 $data['1']['type'] = "My Points";
                 $data['1']['total_points'] = $total_points;
                 $data['1']['icon'] = "mdi:progress-star";
-                //$data['modulewise_points'] = $modulewise_points; 
+                //$data['modulewise_points'] = $modulewise_points;
                 $data['2']['type'] = "My Leaderboard";
                 $data['2']['student_rank'] = "#".(array_search($student_id,
                             array_column($classdata, 'user_id')) + 1)." In Site";
@@ -664,7 +663,7 @@ class lms_apiController extends Controller
                 url,event_date,v.subject_id,s.display_name AS subject_name
                 FROM lms_virtual_classroom v
                 INNER JOIN sub_std_map s ON s.subject_id = v.subject_id and s.standard_id = v.standard_id
-                WHERE event_date = CURRENT_DATE() AND v.sub_institute_id = '".$sub_institute_id."' AND v.standard_id = '".$stu_data[0]['standard_id']."' 
+                WHERE event_date = CURRENT_DATE() AND v.sub_institute_id = '" . $sub_institute_id . "' AND v.standard_id = '" . $stu_data[0]['standard_id'] . "'
 
                 UNION
 
@@ -684,14 +683,14 @@ class lms_apiController extends Controller
                 url,event_date,v.subject_id,s.display_name AS subject_name
                 FROM lms_virtual_classroom v
                 INNER JOIN sub_std_map s ON s.subject_id = v.subject_id and s.standard_id = v.standard_id
-                WHERE event_date BETWEEN CURRENT_DATE() AND DATE_ADD(CURRENT_DATE(), INTERVAL 7 DAY) AND v.sub_institute_id = '".$sub_institute_id."' AND v.standard_id = '".$stu_data[0]['standard_id']."' 
+                WHERE event_date BETWEEN CURRENT_DATE() AND DATE_ADD(CURRENT_DATE(), INTERVAL 7 DAY) AND v.sub_institute_id = '" . $sub_institute_id . "' AND v.standard_id = '" . $stu_data[0]['standard_id'] . "'
 
                 UNION
 
                 SELECT 'Homework' as action,h.id,h.standard_id,title,description,'',submission_date AS event_date,h.subject_id,s.display_name as subject_name
                 FROM homework h
                 INNER JOIN sub_std_map s ON s.subject_id = h.subject_id and s.standard_id = h.standard_id
-                WHERE h.sub_institute_id = '".$sub_institute_id."' AND h.standard_id = '".$stu_data[0]['standard_id']."'  
+                WHERE h.sub_institute_id = '" . $sub_institute_id . "' AND h.standard_id = '" . $stu_data[0]['standard_id'] . "'
                 AND submission_date BETWEEN CURRENT_DATE() AND DATE_ADD(CURRENT_DATE(), INTERVAL 7 DAY)
                 ) AS a
                 ORDER BY event_date
@@ -705,20 +704,20 @@ class lms_apiController extends Controller
                 url,event_date,v.subject_id,s.display_name AS subject_name
                 FROM lms_virtual_classroom v
                 INNER JOIN sub_std_map s ON s.subject_id = v.subject_id and s.standard_id = v.standard_id
-                WHERE v.sub_institute_id = '".$sub_institute_id."' AND v.standard_id = '".$stu_data[0]['standard_id']."' AND
-                event_date BETWEEN DATE_SUB(CURRENT_DATE(), INTERVAL 7 DAY) ANd CURRENT_DATE() 
+                WHERE v.sub_institute_id = '" . $sub_institute_id . "' AND v.standard_id = '" . $stu_data[0]['standard_id'] . "' AND
+                event_date BETWEEN DATE_SUB(CURRENT_DATE(), INTERVAL 7 DAY) ANd CURRENT_DATE()
 
                 UNION
 
                 SELECT 'Homework' as action,h.id,h.standard_id,title,description,'',submission_date AS event_date,h.subject_id,s.display_name as subject_name
                 FROM homework h
                 INNER JOIN sub_std_map s ON s.subject_id = h.subject_id and s.standard_id = h.standard_id
-                WHERE h.sub_institute_id = '".$sub_institute_id."' AND h.standard_id = '".$stu_data[0]['standard_id']."'  
+                WHERE h.sub_institute_id = '" . $sub_institute_id . "' AND h.standard_id = '" . $stu_data[0]['standard_id'] . "'
                 AND submission_date BETWEEN DATE_SUB(CURRENT_DATE(), INTERVAL 7 DAY) AND CURRENT_DATE()
                 ) AS a
                 ORDER BY event_date
                 ");
-            //END Previous Event Query        
+            //END Previous Event Query
 
             $res['status'] = 1;
             $res['message'] = "Success";
@@ -924,10 +923,10 @@ class lms_apiController extends Controller
                  WHERE student_id = '".$student_id."' AND le.id = '".$online_exam_id."'");
             $online_answer_data = DB::select("SELECT a.*, GROUP_CONCAT(am.answer) AS actual_answer,q.question_type_id,q.multiple_answer,
                 (
-                CASE 
-                WHEN question_type_id = 2 THEN IF(given_answer is null,'wrong','right') 
-                WHEN question_type_id = 1 AND multiple_answer = 0 THEN IF(given_answer=GROUP_CONCAT(am.answer),'right','wrong') 
-                WHEN question_type_id = 1 AND multiple_answer = 1 THEN IF(given_answer=GROUP_CONCAT(am.answer),'right','wrong') 
+                CASE
+                WHEN question_type_id = 2 THEN IF(given_answer is null,'wrong','right')
+                WHEN question_type_id = 1 AND multiple_answer = 0 THEN IF(given_answer=GROUP_CONCAT(am.answer),'right','wrong')
+                WHEN question_type_id = 1 AND multiple_answer = 1 THEN IF(given_answer=GROUP_CONCAT(am.answer),'right','wrong')
                 END
                 ) AS right_wrong ,q.question_title
                 FROM (
@@ -990,22 +989,22 @@ class lms_apiController extends Controller
         $syear = $request->input("syear");
 
         if ($sub_institute_id != "" && $student_id != "") {
-            //$content_category = lmsContentCategoryModel::where('status','1')->get()->toArray();       
+            //$content_category = lmsContentCategoryModel::where('status','1')->get()->toArray();
 
             $stu_data = tblstudentEnrollmentModel::select('standard_id')
                 ->where([
                     'student_id' => $student_id, 'syear' => $syear, 'sub_institute_id' => $sub_institute_id,
                 ])->get()->toArray();
 
-            $extra = " AND 
+            $extra = " AND
                 find_in_set(
                     s.standard_id,
-                    (SELECT concat_ws(',','".$stu_data[0]['standard_id']."',group_concat(id))
+                    (SELECT concat_ws(',','" . $stu_data[0]['standard_id'] . "',group_concat(id))
                     FROM standard
-                    WHERE sub_institute_id = '".$sub_institute_id."' AND grade_id IN (
+                    WHERE sub_institute_id = '" . $sub_institute_id . "' AND grade_id IN (
                     SELECT id
                     FROM academic_section
-                    WHERE sub_institute_id = '".$sub_institute_id."' AND title = 'Other'))
+                    WHERE sub_institute_id = '" . $sub_institute_id . "' AND title = 'Other'))
                 )";
 
             $arr = DB::select("SELECT STD.name AS standard_name,s.display_name AS subject_name,s.subject_id,STD.id AS standard_id,

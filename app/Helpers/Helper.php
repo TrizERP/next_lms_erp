@@ -13,8 +13,9 @@ use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Facades\Validator;
 
-
-define('BEST_OF', 2);
+if (!defined('BEST_OF')) {
+    define('BEST_OF', 2);
+}
 
 if (!function_exists('is_mobile')) {
 

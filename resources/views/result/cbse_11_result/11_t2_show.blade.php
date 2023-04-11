@@ -91,16 +91,17 @@
                                             </tr>
                                             <tr>
                                                 <td>Date Of Birth :
-                                                    <label><?php 
-                                                    $date = date_create($all_data['date_of_birth']);
-                                                        echo date_format($date,"d-m-Y"); 
+                                                    <label><?php
+                                                        $date = date_create($all_data['date_of_birth']);
+                                                        echo date_format($date, "d-m-Y");
                                                         ?></label></td>
                                                 <td></td>
                                                 <td>G.R. No. : <label><?php echo $all_data['gr_no']; ?> </label></td>
                                             </tr>
                                         </tbody>
-                                    </table><br><br>
-                                    
+                                    </table>
+                                    <br><br>
+
                                     <table border=1 style="border-collapse:collapse;" width="100%" cellspacing="0"
                                         cellpadding="0">
                                         <tbody>
@@ -146,11 +147,11 @@
 
                                                 <th style="text-align:center">MAX. MARKS</th>
                                                 <th style="text-align:center">OBT. MARKS</th>
-                                                
+
                                                 <th style="text-align:center">MAX. MARKS</th>
                                                 <th style="text-align:center">OBT. MARKS</th>
                                             </tr>
-                                            <?php 
+                                            <?php
                                             $term1 = $all_data['term-1'];
                                             $term2 = $all_data['term-2'];
                                             // echo "<pre>";
@@ -158,31 +159,31 @@
                                             // exit;
                                             $exams = array();
                                             $result = "pass";
-                                            
-                                            $pass = true;
-                                            foreach($all_data['exam_subject_wise'] as $subject=>$exam_data){ 
 
-                                            foreach($exam_data as $term_id=>$exam_arr){ 
-                                                foreach($exam_arr as $id=>$arr){ 
-                                                    $exams[$subject][$term_id][$arr['exam']] = $arr['mark'];
+                                            $pass = true;
+                                            foreach ($all_data['exam_subject_wise'] as $subject => $exam_data) {
+
+                                                foreach ($exam_data as $term_id => $exam_arr) {
+                                                    foreach ($exam_arr as $id => $arr) {
+                                                        $exams[$subject][$term_id][$arr['exam']] = $arr['mark'];
+                                                    }
                                                 }
-                                            }
 
                                             }
                                             $total_get_mark_all_subject = array();
                                             $continue = array();
                                             foreach ($all_data['mark'] as $subject => $subject_data) {
-                                                // echo "<pre>";
-                                                // print_r($all_data);
-                                                // exit;
-                                            ?> 
+                                            // echo "<pre>";
+                                            // print_r($all_data);
+                                            // exit;
+                                            ?>
 
                                             <tr>
                                             <td style="text-align:center"><?php echo $subject; ?></td>
                                             <?php
 
                                             foreach($subject_data as $stud_id => $stud_data){
-                                           
+
                                             if(isset($stud_data['Half Yearly'])||isset($stud_data['Yearly'])||isset($stud_data['Practical/ASL/Project'])||isset($stud_data['UT1'])||isset($stud_data['UT2'])){
 
                                                 $unit_1 = $stud_data['UT1'];
@@ -194,54 +195,55 @@
                                                ?>
                                                 <td style="text-align:center"><?php echo $unit_1; ?></td>
                                                 <td style="text-align:center"><?php echo $unit_2; ?></td>
-         <?php   
-         // foreach($stud_id as $keys => $total_points){
-                                                    // echo "<pre>";
-                                                    // print_r($all_data['mark'][$subject]['total_points'][$stud_id]);
-                                                    // exit;
-                                                // } 
+                                                <?php
+                                                // foreach($stud_id as $keys => $total_points){
+                                                // echo "<pre>";
+                                                // print_r($all_data['mark'][$subject]['total_points'][$stud_id]);
+                                                // exit;
+                                                // }
                                                 ?>
-                        
+
                                                 <td style="text-align:center"><?php echo $subject_data['total_points'][$stud_id]['Half Yearly'] ?></td>
                                                 <td style="text-align:center"><?php echo $half; ?></td>
                                                 <td style="text-align:center"><?php echo $subject_data['total_points'][$stud_id]['Practical/ASL/Project'] ?></td>
                                                 <td style="text-align:center"><?php echo $practical; ?></td>
                                                <td style="text-align:center"><?php echo $subject_data['total_points'][$stud_id]['Yearly'] ?></td>
-                                                
+
                                                 <td style="text-align:center"><?php echo $year; ?></td>
                                                 <?php
-                                                $total_avg=0;
+                                                $total_avg = 0;
                                                 $out_of_100 = $subject_data['TOTAL_GAIN'];
-                                                if($out_of_100 > 0){
-                                                foreach ($subject_data['total_points'][$stud_id] as $key => $value) {
-                                                    // code...
-                                                    $r = array_sum($subject_data['total_points'][$stud_id]);
-                                                     $total_avg = round($out_of_100*100 /$r);
-                                               
+                                                if ($out_of_100 > 0) {
+                                                    foreach ($subject_data['total_points'][$stud_id] as $key => $value) {
+                                                        // code...
+                                                        $r = array_sum($subject_data['total_points'][$stud_id]);
+                                                        $total_avg = round(floatval($out_of_100) * 100 / $r);
+
+                                                    }
                                                 }
-                                            }
                                                 // $count = count($stud_data);
-                                            }
-                                        }  
-                                                 ?>
+                                                }
+                                                }
+                                                ?>
                                                  <td style="text-align:center" colspan="2"><?php echo  $out_of_100?? 0; ?></td>
                                                  <td style="text-align:center" colspan="4"><?php echo $total_avg ?? 0; ?></td>
-                                                 </tr> 
-                                                 <?php
-                                                 $total_get_mark_all_subject[]=$total_avg;
-                                                  }                
+                                            </tr>
+                                            <?php
+                                            $total_get_mark_all_subject[] = $total_avg;
+                                            }
                                             $total_mark = count($total_get_mark_all_subject) * 100;
                                             $total_get_mark = 0;
-                                            
-                                            foreach($total_get_mark_all_subject as $id=>$val){
+
+                                            foreach ($total_get_mark_all_subject as $id => $val) {
                                                 $total_get_mark = $total_get_mark + $val;
-                                                if($total_get_mark_all_subject < 35){
-                                                    $result="fail";
+                                                if ($total_get_mark_all_subject < 35) {
+                                                    $result = "fail";
                                                 }
                                             }
-                                            
-                                            if($total_get_mark != 0){
-                                                $per = number_format(100*$total_get_mark/$total_mark,2);}else{
+
+                                            if ($total_get_mark != 0) {
+                                                $per = number_format(100 * floatval($total_get_mark) / $total_mark, 2);
+                                            } else {
                                                 $per = "-";
                                             }
                                             ?>
@@ -276,11 +278,11 @@
                                                                 foreach ($co_scholastic_area as $co_area => $arr) {
                                                                 $term1co = $all_data['co_scholastic_area'][$co_area] ?? [];
                                                                 $term2co = $term_2_data[$stuent_id]['co_scholastic_area'][$co_area] ?? [];
-                                                                
+
                                                                 foreach ($arr as $parent => $child_arr) {
                                                                 $term1arr = $term1co[$parent] ?? [];
                                                                 $term2arr = $term2co[$parent] ?? [];
-                                                                
+
                                                                 $count = $count + 1;
                                                                 if ($count % 2 == 0) {
                                                                     $margin = "margin-left:2.5%;";
@@ -299,7 +301,7 @@
                                                                     </tr>
                                                                     <tr>
                                                                         <th width="50%" style="text-align: left;"><b>Optional Subject</b></th>
-                                                                        
+
                                                                         <th width="25%" style="text-align: center;">
                                                                             <b>Term 1</b></th>
                                                                         <th width="25%" style="text-align: center;">
@@ -314,7 +316,7 @@
                                                                         <td><?php echo $subject; ?></td>
                                                                         <td align="center">-</td>
                                                                         <td><?php echo $obtain_grade[$term1]; ?></td>
-                                                                
+
                                                                     </tr>
 
                                                                     <?php } ?>
@@ -333,15 +335,15 @@
                                                             }
                                                             }
                                                             ?>
-                                                                <!--</div>-->
-                                                        </td>
-                            </tr>                            
-<!-- co-scholastic end -->
+                                                            <!--</div>-->
+                                </td>
+                            </tr>
+                            <!-- co-scholastic end -->
                             <tr>
-                            
+
                                 <td><br><br>
                                     <table border=1 style="border-collapse:collapse;" width="100%" cellspacing="0"
-                                        cellpadding="0">
+                                           cellpadding="0">
                                         <tr>
                                             <th>
                                                 Attendance (Term I+II)
@@ -361,11 +363,11 @@
                                                 :
                                             </td>
                                             <td>
-                                                <?php 
-                                                if($pass === true){
-                                                    echo "Passed and Promoted to Grade XII ".$all_data['medium'];
-                                                }else{
-                                                    echo "Detained  in  Grade  XI ".$all_data['medium'];
+                                                <?php
+                                                if ($pass === true) {
+                                                    echo "Passed and Promoted to Grade XII " . $all_data['medium'];
+                                                } else {
+                                                    echo "Detained  in  Grade  XI " . $all_data['medium'];
                                                 }
                                                 // if($result == "pass"){
                                                 //     echo "Passed and Prometed to Grade XII Science";
@@ -384,11 +386,11 @@
                                             </td>
                                             <td>
                                                 <?php
-                                                    $date = date_create($all_data['exam_master_settig']['reopen_date']);
-                                                        echo date_format($date,"d-m-Y"); 
-                                                         
-                                                    // echo $all_data['exam_master_settig']['reopen_date']; 
-                                                    ?>
+                                                $date = date_create($all_data['exam_master_settig']['reopen_date']);
+                                                echo date_format($date, "d-m-Y");
+
+                                                // echo $all_data['exam_master_settig']['reopen_date'];
+                                                ?>
                                             </td>
                                         </tr>
                                         <tr>
@@ -446,7 +448,7 @@
         var popupWin = window.open('', '_blank', 'width=300,height=300');
         popupWin.document.open();
         popupWin.document.write('<html>');
-        
+
         popupWin.document.write('<body onload="window.print()">' + divToPrint.innerHTML + '</html>');
         popupWin.document.close();
     }

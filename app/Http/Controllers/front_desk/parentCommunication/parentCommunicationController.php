@@ -90,8 +90,14 @@ class parentCommunicationController extends Controller
         CONCAT_WS(' ',u.first_name,u.middle_name,u.last_name) as reply_by_teacher,reply_on")
             ->where("s.sub_institute_id", "=", $sub_institute_id)
             ->where("se.syear", "=", $syear)
-            ->where("pc.date_", ">=", $_REQUEST['from_date'])
-            ->where("pc.date_", "<=", $_REQUEST['from_date'])
+            ->where(function ($q) {
+                if (isset($_REQUEST['from_date'])) {
+                    $q->where("pc.date_", ">=", $_REQUEST['from_date']);
+                }
+                if (isset($_REQUEST['to_date'])) {
+                    $q->where("pc.date_", "<=", $_REQUEST['to_date']);
+                }
+            })
             ->where(function ($q) {
                 $classTeacherStdArr = session()->get('classTeacherStdArr');
                 if (isset($classTeacherStdArr)) {
