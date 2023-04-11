@@ -253,17 +253,11 @@
                                                             $negative_disable = 'disabled';
                                                             $individual_enable = "disabled";
                                                         }
-<<<<<<< HEAD
+
                                                         if ($id != 'Total') {   
-                                                            // print_r($data['final_fee_name']);                                                   
-                                                             
+                                                         
                                                             echo "<td style='width: 20%'><input  $individual_enable $negative_disable type='number'  min=0 max=".($val['amount'] ?? 0)." value=" . ($val['amount'] ?? 0) . " name='fees_data[" . $data['final_fee_name'][$id] . "]' class='form-control allField1'>
                                                             <input type='hidden' value=" .($val['amount'] ?? 0) . " name='hid_fees_data[" . $data['final_fee_name'][$id] . "]' class='hid_allField1' $individual_enable>
-=======
-                                                        if ($id != 'Total') {
-                                                            echo "<td style='width: 20%'><input  $individual_enable $negative_disable type='number'  min=0 max=" . ($val['amount'] ?? 0) . " value=" . ($val['amount'] ?? 0) . " name='fees_data[" . $data['final_fee_name'][$id] . "]' class='form-control allField1'>
-                                                            <input type='hidden' value=" . ($val['amount'] ?? 0) . " name='hid_fees_data[" . $data['final_fee_name'][$id] . "]' class='hid_allField1' $individual_enable>
->>>>>>> 3caf7f6983ca8062bc47a1c7aa3a98aaf02f2e51
                                                             </td>";
                                                             echo "<td style='width: 20%'><input type='number' value=0 name='discount_data[" . $data['final_fee_name'][$id] . "]' $individual_enable class='form-control allDisField' style='min-width:150px;'></td>"; // min=0 max=$val
                                                             echo "<td style='width: 20%'><input type='number' $individual_enable min=0 value=0 name='fine_data[" . $data['final_fee_name'][$id] . "]' class='form-control allFinField' style='min-width:150px;'></td>";

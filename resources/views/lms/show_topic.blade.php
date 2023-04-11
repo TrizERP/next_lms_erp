@@ -109,7 +109,6 @@ use DB;
 
                                         <!-- <button type="button" class="btn btn-info" data-toggle="modal" data-target="#TopicModal"><i class="fa fa-plus"></i> Add Content for {{$topicvalue1->name}}</button> -->
                                             <div class="row">
-<<<<<<< HEAD
                                             @if(isset($data['content_data'][$topicvalue1->id]))
                                                 @foreach($data['content_data'][$topicvalue1->id] as $ckey => $cval)
                                                 <div class="col-md-3 mb-3">
@@ -158,70 +157,6 @@ use DB;
                                                                         </div>                                                                   
                                                                     @endforeach
                                                                 @endif
-=======
-                                                @if(isset($data['content_data'][$topicvalue1->id]))
-                                                    @foreach($data['content_data'][$topicvalue1->id] as $ckey => $cval)
-                                                        <div class="col-md-3 mb-3">
-                                                            <div class="video-box">
-                                                                <div class="video-img-box">
-                                                                    <div class="video-img">
-                                                                        <!-- <img src="assets/images/slide1.jpg" alt=""> -->
-                                                                    <!-- <iframe width="560" height="315" src="../../../storage{{$cval['file_folder']}}/{{$cval['filename']}}" frameborder="0" allowfullscreen></iframe> -->
-                                                                        @if($cval['file_type'] == "link")
-                                                                            <center>
-                                                                                <a target="_blank"
-                                                                                   href="{{$cval['filename']}}"><img
-                                                                                        src="../admin_dep/images/clickhere.jpg"
-                                                                                        style="margin-top:30px;width:100px;height:100px;"/></a>
-                                                                            </center>
-                                                                        @else
-                                                                            <video controls="true" width="220"
-                                                                                   height="140"
-                                                                                   class="w-100 h-100 object-cover mh-100">
-                                                                                <source
-                                                                                    src="{{route('topic_master.show',$cval['id'])}}"
-                                                                                    type="video/mp4"/>
-                                                                            </video>
-                                                                        <!-- <a href="{{route('topic_master.show',$cval['id'])}}" class="view-box">
-                                                                        <i class="mdi mdi-eye-outline"></i>
-                                                                    </a> -->
-                                                                        @endif
-                                                                    </div>
-                                                                <!-- <a href="{{route('topic_master.show',$cval['id'])}}" class="view-box">
-                                                                <i class="mdi mdi-eye-outline"></i>
-                                                            </a> -->
-                                                                    @if($cval['file_type'] == "link")
-                                                                        <a href="{{$cval['filename']}}" target="_blank"
-                                                                           class="view-box">
-                                                                            <i class="mdi mdi-eye-outline"></i>
-                                                                        </a>
-                                                                    @else
-                                                                        <a href="{{route('topic_master.show',$cval['id'])}}"
-                                                                           class="view-box">
-                                                                            <i class="mdi mdi-eye-outline"></i>
-                                                                        </a>
-                                                                    <!-- <a href="../../../storage{{$cval['file_folder']}}/{{$cval['filename']}}" target="_blank" class="view-box">
-                                                                    <i class="mdi mdi-eye-outline"></i>
-                                                                </a> -->
-                                                                    @endif
-                                                                </div>
-                                                                <div class="video-details">
-                                                                <!-- <a href="{{route('topic_master.show',$cval['id'])}}" class="video-title">{{$cval['title']}}</a> -->
-                                                                    <a class="video-title">{{$cval['title']}}</a>
-                                                                    <div class="d-flex justify-content-between"></div>
-                                                                    <div class="row gutter-10">
-                                                                        @if(isset($cval['FLASHCARD']))
-                                                                            @foreach($cval['FLASHCARD'] as $fkey => $fval)
-                                                                                <div class="col-md-4">
-                                                                                    <div style="width:100%"
-                                                                                         onclick="openModal({{$ckey}},{{$fkey}});currentSlide({{$ckey}}{{$fkey}})"
-                                                                                         class="hover-shadow cursor card py-3 px-2">{{$fval['title']}}</div>
-                                                                                </div>
-                                                                            @endforeach
-                                                                        @endif
-                                                                    </div>
-                                                                </div>
->>>>>>> 3caf7f6983ca8062bc47a1c7aa3a98aaf02f2e51
                                                             </div>
                                                         </div>
                                                     @endforeach

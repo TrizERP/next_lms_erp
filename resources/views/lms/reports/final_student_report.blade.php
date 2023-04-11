@@ -610,11 +610,7 @@ responsive: {
 function redirectthis(subject_id) {
     var student_id = $("#student_id").val();
     //var subject_id = $("#subject_type").val();
-<<<<<<< HEAD
     var path1 = "{{route('lmsStudent_report.edit',['student_id','subject_ids'])}}";
-=======
-    var path1 = "{{route('lmsStudent_report.edit',['lmsStudent_report'=>'student_id','subject_id'=>'subject_ids'])}}";
->>>>>>> 3caf7f6983ca8062bc47a1c7aa3a98aaf02f2e51
     path1 = path1.replace('student_id', student_id);
     path1 = path1.replace('subject_ids', subject_id);
     document.location.href = path1;

@@ -15,15 +15,6 @@ use function App\Helpers\htmlToPDF;
 class cbse_1t5_result_controller extends Controller
 {
 
-<<<<<<< HEAD
-=======
-//    public function __construct()
-//    {
-//
-//    }
-
-
->>>>>>> 3caf7f6983ca8062bc47a1c7aa3a98aaf02f2e51
     use GetsJwtToken;
 
     public function index(Request $request)
