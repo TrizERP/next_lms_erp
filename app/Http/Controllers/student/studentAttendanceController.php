@@ -432,6 +432,8 @@ class studentAttendanceController extends Controller
 
     public function studentAttendanceAPI(Request $request)
     {
+
+        // return "hello";exit;
         try {
             if (!$this->jwtToken()->validate()) {
                 $response = ['status' => '2', 'message' => 'Token Auth Failed', 'data' => []];

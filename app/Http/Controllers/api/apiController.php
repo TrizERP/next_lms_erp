@@ -123,16 +123,17 @@ class apiController extends Controller
                     $join->whereRaw('p.sub_institute_id = u.sub_institute_id AND u.user_profile_id = p.id');
                 })->join('school_setup as ss', function ($join) {
                     $join->whereRaw('ss.id = u.sub_institute_id');
-                })->join('class_teacher as c', function ($join) {
+                })->leftjoin('class_teacher as c', function ($join) {
                     $join->whereRaw('c.teacher_id = u.id AND c.sub_institute_id = u.sub_institute_id');
-                })->join('standard as s', function ($join) {
+                })->leftjoin('standard as s', function ($join) {
                     $join->whereRaw('s.id = c.standard_id AND s.sub_institute_id = c.sub_institute_id');
-                })->join('division as d', function ($join) {
+                })->leftjoin('division as d', function ($join) {
                     $join->whereRaw('d.id = c.division_id AND d.sub_institute_id = c.sub_institute_id');
                 })->selectRaw("u.id,u.user_name,u.first_name,u.middle_name,u.last_name,u.sub_institute_id,u.email,u.mobile,
                     u.birthdate,u.address,u.gender,u.join_year,if(u.image = '','',concat('https://".$_SERVER['SERVER_NAME']."/storage/user/',
                     u.image)) as image,p.name as user_profile_name,u.user_profile_id,group_concat(concat_ws('||',c.standard_id,c.division_id))
                     as standard_division,group_concat(concat_ws('||',s.name,d.name)) as standard_division_title,ss.syear,ss.SchoolName,ss.Logo")
+                ->where('u.status', '1')
                 ->where('u.mobile', $_REQUEST['mobile'])->get()->toArray();
 
             $data = json_decode(json_encode($data), true);
@@ -348,7 +349,7 @@ class apiController extends Controller
                 })->join('school_setup as ss', function ($join) {
                     $join->whereRaw("ss.id = u.sub_institute_id");
                 })->leftJoin('class_teacher as c', function ($join) {
-                    $join->whereRaw("c.teacher_id = u.id AND c.sub_institute_id = u.sub_institute_id");
+                    $join->whereRaw("c.teacher_id = u.id AND c.sub_institute_id = u.sub_institute_id AND ss.syear = c.syear");
                 })->leftJoin('standard as s', function ($join) {
                     $join->whereRaw("s.id = c.standard_id AND s.sub_institute_id = c.sub_institute_id");
                 })->leftJoin('division as d', function ($join) {

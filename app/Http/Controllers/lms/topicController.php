@@ -130,7 +130,7 @@ class topicController extends Controller
             ->whereRaw($where_institute_id)
             ->where('c.id', $chapter_id)->get()->toArray();
 
-        return $breadcrum_data[0];
+        return $breadcrum_data[0]??[];
 
     }
 
@@ -277,15 +277,21 @@ class topicController extends Controller
         $data['message'] = "SUCCESS";
         $data['content_data'] = $content_data[0];
 
-        if ($content_data[0]['file_type'] == 'jpg' || $content_data[0]['file_type'] == 'gif' || $content_data[0]['file_type'] == 'png') {
+
+       
+        if($content_data[0]['file_type'] == 'jpg' || $content_data[0]['file_type'] == 'gif' || $content_data[0]['file_type'] == 'png')
+        {
             return is_mobile($type, "lms/view_content_image", $data, "view");
-        } else {
-            if ($content_data[0]['file_type'] == 'mp3' || $content_data[0]['file_type'] == 'mp4' || $content_data[0]['file_type'] == 'mkv') {
-                return is_mobile($type, "lms/view_content_video", $data, "view");
-            } else {
-                return is_mobile($type, "lms/view_content", $data, "view");
-            }
         }
+        else if($content_data[0]['file_type'] == 'mp3' || $content_data[0]['file_type'] == 'mp4' || $content_data[0]['file_type'] == 'mkv')
+        {
+            return is_mobile($type, "lms/view_content_video", $data, "view");
+        }
+        else
+        {
+            return is_mobile($type, "lms/view_content", $data, "view");
+        }
+        
     }
 
     public function addtopic(Request $request)

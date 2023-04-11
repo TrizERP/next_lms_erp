@@ -23,6 +23,7 @@ class signupController extends Controller
             ->join('academic_section as a', function ($join) {
                 $join->whereRaw('s.sub_institute_id = a.sub_institute_id AND s.grade_id = a.id');
             })->where("s.sub_institute_id", '=', '1')->where('a.title', '!=', 'OTHERS')
+            ->selectRaw('s.*')
             ->get()->toArray();
 
         return json_decode(json_encode($data), true);

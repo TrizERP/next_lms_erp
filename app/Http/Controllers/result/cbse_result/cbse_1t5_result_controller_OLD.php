@@ -12,7 +12,7 @@ use function App\Helpers\aut_token;
 use function App\Helpers\FeeBreackoff;
 use function App\Helpers\htmlToPDF;
 
-class cbse_1t5_result_controller extends Controller
+class cbse_1t5_result_controller_OLD extends Controller
 {
 
     public function __construct()

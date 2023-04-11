@@ -32,7 +32,7 @@ br {
         </div>
         <div class="card border-0">
             <div class="card-body">
-                <form method="post" action="{{ route('question_master.update',['id'=>$data['questionmaster_data']['id']]) }}" enctype='multipart/form-data'>
+                <form method="post" action="{{ route('question_master.update',[$data['questionmaster_data']['id']]) }}" enctype='multipart/form-data'>
                     {{ method_field("PUT") }}
                     @csrf
                     <input type="hidden" name="grade_id" id="grade_id" value="@if(isset($data['questionmaster_data']['grade_id'])){{$data['questionmaster_data']['grade_id']}}@endif">

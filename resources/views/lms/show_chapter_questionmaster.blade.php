@@ -88,7 +88,7 @@
                                                     <td>
                                                         <div class="d-flex align-items-center justify-content-end">
                                                             <a class="btn btn-outline-success"
-                                                                href="{{ route('question_master.edit', ['id' => $quesdata->id]) }}">
+                                                                href="{{ route('question_master.edit', [$quesdata->id]) }}">
                                                                 <i class="ti-pencil-alt"></i>
                                                             </a>
                                                             <form class="d-inline"

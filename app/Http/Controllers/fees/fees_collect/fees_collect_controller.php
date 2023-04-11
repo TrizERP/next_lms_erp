@@ -1771,7 +1771,10 @@ class fees_collect_controller extends Controller
 
         $full_bk = array_merge($reg_bk_month_wise, $other_bk_off);
         $full_bk_new = array_merge($reg_month_wise, $other_bk_off);
-
+//echo "<pre>";
+//print_r($full_bk);
+//print_r($full_bk_new);
+//die();
         //24-04-2021 START Check Cheque Return charges
 
         $get_cheque_return_amt = SchoolModel::where(['id' => $sub_institute_id])->get()->toArray();

@@ -1034,9 +1034,11 @@ if (! function_exists('OtherBreackOff')) {
             ->where('sub_institute_id', $sub_institute_id)
             ->where('syear', $syear)
             ->where('student_id', $student_id)
-            ->where('month_id', $month_arr)
+            ->whereIn('month_id', $month_arr)
             ->groupByRaw('fee_type_id,month_id')->get()->toArray();
-
+//echo "<pre>";
+//print_r($fees_breckoff);
+//exit();
         //START for fees over all headwise report
         $extra_condition = '';
 
@@ -1052,8 +1054,8 @@ if (! function_exists('OtherBreackOff')) {
 
             $request = $_REQUEST;
 
-            $paid_fees = DB::table('fees_paid_other')
-                ->selectRaw("sum(ifnull($fees_title,0)) total_paid")
+            $paid_fees = DB::table('fees_paid_other as fpo')
+                ->selectRaw("sum(ifnull(fpo.$fees_title,0)) total_paid")
                 ->where('month_id', $month_id)
                 ->where('syear', $syear)
                 ->where('sub_institute_id', $sub_institute_id)

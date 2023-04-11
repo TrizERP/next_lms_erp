@@ -48,7 +48,7 @@ class photo_video_gallaryController extends Controller
                 $join->whereRaw("s.id = c.standard_id AND s.sub_institute_id = c.sub_institute_id");
             })
             ->leftJoin('division as d', function ($join) {
-                $join->whereRaw("c.division_id AND d.sub_institute_id = c.sub_institute_id");
+                $join->whereRaw("d.id = c.division_id AND d.sub_institute_id = c.sub_institute_id");
             })
             ->selectRaw('c.*,s.name std_name,d.name div_name')
             ->where("c.syear", "=", session()->get('syear'))
@@ -124,7 +124,7 @@ class photo_video_gallaryController extends Controller
                 $response['response'] = $result_data;
                 $response['success'] = true;
             } else {
-                $response['response'] = ["student_id" => ["No student found."]];
+                $response['response'] = ["student_id" => ["No data found."]];
             }
         }
 
@@ -564,14 +564,20 @@ class photo_video_gallaryController extends Controller
                 ->orderBy('p.date_', 'DESC')
                 ->get()->toArray();
 
-            $new_data = [];
-            foreach ($data as $key => $val) {
-                $new_data[$val->album_title][] = $val;
+            if(!empty($data))
+            {
+                $new_data = [];
+                foreach ($data as $key => $val) {
+                    $new_data[$val->album_title][] = $val;
+                }
+            
+                $res['status'] = 1;
+                $res['message'] = "Success";
+                $res['data'] = $new_data;
+            }else{
+                $res['status'] = 0;
+                $res['message'] = "No Data Found";
             }
-
-            $res['status'] = 1;
-            $res['message'] = "Success";
-            $res['data'] = $new_data;
         } else {
             $res['status'] = 0;
             $res['message'] = "Parameter Missing";

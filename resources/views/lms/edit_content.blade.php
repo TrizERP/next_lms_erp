@@ -32,6 +32,13 @@
     <div class="container-fluid mb-5">
         <div class="card border-0">
             <div class="card-body">
+            @if ($message = Session::get('data'))
+            <div class="alert alert-success alert-block">
+                <button type="button" class="close" data-dismiss="alert">×</button>
+                <strong>{{ $message }}</strong>
+            </div>
+            @endif
+            <div class="card-body">
                 <form action="{{ route('content_master.update',$data['content_data']['id'])}}" method="post" enctype='multipart/form-data'>
                     {{ method_field("PUT") }}
                     @csrf
@@ -256,7 +263,9 @@
                         <div class="col-md-4">
                             <div class="form-group">
                                 <label for="subject">Select Content Catergory:</label>
-                                <select name="content_category" id="content_category" class="form-control">                                                                
+                                <select name="content_category" id="content_category" class="form-control">         
+                                  <option value="{{$data['content_data']['content_category']}}">{{$data['content_data']['content_category']}}</option>                 
+                                                       
                                     @if(isset($data['content_category'])) 
                                         @foreach($data['content_category'] as $key => $value)
                                         <option value="{{$value['category_name']}}" @if(isset($data['content_data']['content_category'])) @if( $data['content_data']['content_category'] == $value['category_name'] ) selected='selected' @endif @endif >{{$value['category_name']}}</option>

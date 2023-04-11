@@ -50,7 +50,7 @@ class NewLMS_StudentApiController extends Controller
 
                     $otp = rand(100000, 999999);
                     $sub_institute_id = 1; // Triz Innovation
-                    $text = "OTP for login is ".$otp." and is valid for 5 minutes";
+                    $text = "Dear Parent, Your OTP is ".$otp.".";
                     $res = sendSMS($mobile, $text, $sub_institute_id);
 
                     if ($res["error"] == 1) {
@@ -400,7 +400,7 @@ class NewLMS_StudentApiController extends Controller
             $arr_name = strtolower($profileval['name'])."_rights";
             $profile_id = $profileval['id'];
 
-            if (isset($arr_name)) {
+            if (isset($arr_name) && is_array($arr_name)) {
                 foreach ($arr_name as $key => $val) {
 
                     $check_sql = DB::table('tblgroupwise_rights')

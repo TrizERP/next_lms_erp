@@ -58,7 +58,7 @@ class adminapiController extends Controller
                     u.email,u.mobile,u.birthdate,u.address,u.gender,u.join_year,
                     if(u.image = '','',concat('https://".$_SERVER['SERVER_NAME']."/storage/user/',u.image)) as image,
                     p.name as user_profile_name,u.user_profile_id,ss.syear,ss.SchoolName,ss.Logo")
-                ->where('u.status', 1)
+                ->where('u.status', '1')
                 ->where('u.mobile', $_REQUEST['mobile'])->get()->toArray();
 
             $data = json_decode(json_encode($data), true);
@@ -89,12 +89,15 @@ class adminapiController extends Controller
 
                     }
                 }
-
+//DB::enableQueryLog();
                 $data = DB::table("tbluser AS tu")
                     ->join('tbluserprofilemaster AS tpm', 'tpm.id', '=', 'tu.user_profile_id')
                     ->where(["tu.mobile" => $_REQUEST['mobile'], "tpm.parent_id" => '1'])
                     ->update(["tu.otp" => $otp]);
-
+//dd(DB::getQueryLog($data));                    
+//echo "<pre>";
+//print_r($data);
+//exit();
                 $response['status'] = '1';
                 $response['message'] = 'success';
             }
@@ -127,7 +130,7 @@ class adminapiController extends Controller
                     u.email,u.mobile,u.birthdate,u.address,u.gender,u.join_year,
                     if(u.image = '','',concat('https://".$_SERVER['SERVER_NAME']."/storage/user/',u.image)) as image,
                     p.name as user_profile_name,u.user_profile_id,ss.syear,ss.SchoolName,ss.Logo")
-                ->where('u.status', 1)
+                ->where('u.status', '1')
                 ->where('u.otp', $_REQUEST['otp'])
                 ->where('u.mobile', $_REQUEST['mobile'])->get()->toArray();
 

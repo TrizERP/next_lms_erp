@@ -440,7 +440,7 @@ class contentController extends Controller
         $data['content_mapping_type'] = $final_content_mapping_type;
 
         //START Get Content Category        
-        $data['content_category'] = lmsContentCategoryModel::where('status', '1')->get()->toArray();
+        $data['content_category'] = lmsContentCategoryModel::where('status', '2')->get()->toArray();
         //END Get Content Category 
 
         //START Get Pre Topic
@@ -636,7 +636,8 @@ class contentController extends Controller
         ];
         $type = $request->input('type');
 
-        return redirect()->route('topic_master.index', ['id' => $request->get('chapter')]);
+        // return redirect()->route('topic_master.index', ['id' => $request->get('chapter')]);
+        return redirect('/lms/chapter_master?standard_id='.$request->get('standard').'&subject_id='.$request->get('subject').' ');
     }
 
     public function destroy(Request $request,$id){

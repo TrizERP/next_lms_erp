@@ -258,7 +258,7 @@ $loginpage_backgrond = session()->get('loginpage_backgrond');
               <div class="form-group  m-t-10">
                 <div class="col-xs-12">
                   <label>Mobile No.<span style="color: red;font-size: large;">*</span></label>
-                  <input class="form-control" name="mobile" type="text" required placeholder="Enter mobile no." onchange="return validate_mobile(this);" minlength="10" maxlength="10">
+                  <input class="form-control" name="mobile" type="text" required placeholder="Enter mobile no." minlength="10" maxlength="10"><!--onchange="return validate_mobile(this);"-->
                 </div>
               </div>
               <div class="form-group  m-t-10" id="institute_name_div">

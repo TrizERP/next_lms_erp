@@ -233,7 +233,9 @@
                                                             $negative_disable = 'disabled';
                                                             $individual_enable = "disabled";
                                                         }
-                                                        if ($id != 'Total') {        
+                                                        if ($id != 'Total') {   
+                                                            // print_r($data['final_fee_name']);                                                   
+                                                             
                                                             echo "<td style='width: 20%'><input  $individual_enable $negative_disable type='number'  min=0 max=".($val['amount'] ?? 0)." value=" . ($val['amount'] ?? 0) . " name='fees_data[" . $data['final_fee_name'][$id] . "]' class='form-control allField1'>
                                                             <input type='hidden' value=" .($val['amount'] ?? 0) . " name='hid_fees_data[" . $data['final_fee_name'][$id] . "]' class='hid_allField1' $individual_enable>
                                                             </td>";

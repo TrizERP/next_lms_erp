@@ -120,14 +120,13 @@ use DB;
                                                                     </center>
                                                                 @else
                                                                     <video controls="true" width="220" height="140" class="w-100 h-100 object-cover mh-100"> 
-                                                                        <source src="{{route('topic_master.show',['content_id'=>$cval['id']])}}" type="video/mp4" /> 
+                                                                        <source src="{{ route('topic_master.show',$cval['id']) }}" type="video/mp4" /> 
+
                                                                     </video>
-                                                                    <!-- <a href="{{route('topic_master.show',['content_id'=>$cval['id']])}}" class="view-box">
-                                                                        <i class="mdi mdi-eye-outline"></i>
-                                                                    </a> -->
+                                                                    
                                                                 @endif
                                                             </div>
-                                                            <!-- <a href="{{route('topic_master.show',['content_id'=>$cval['id']])}}" class="view-box">
+                                                            <!-- <a href="{{route('topic_master.show',$cval['id'])}}" class="view-box">
                                                                 <i class="mdi mdi-eye-outline"></i>
                                                             </a> -->
                                                             @if($cval['file_type'] == "link")
@@ -135,7 +134,7 @@ use DB;
                                                                     <i class="mdi mdi-eye-outline"></i>
                                                                 </a>
                                                             @else
-                                                                <a href="{{route('topic_master.show',['content_id'=>$cval['id']])}}" class="view-box">
+                                                                <a href="{{ route('topic_master.show',$cval['id']) }}" class="view-box">
                                                                     <i class="mdi mdi-eye-outline"></i>
                                                                 </a>
                                                                 <!-- <a href="../../../storage{{$cval['file_folder']}}/{{$cval['filename']}}" target="_blank" class="view-box">
@@ -144,7 +143,7 @@ use DB;
                                                             @endif
                                                         </div>
                                                         <div class="video-details">
-                                                            <!-- <a href="{{route('topic_master.show',['content_id'=>$cval['id']])}}" class="video-title">{{$cval['title']}}</a> -->
+                                                            <!-- <a href="{{route('topic_master.show',$cval['id'])}}" class="video-title">{{$cval['title']}}</a> -->
                                                             <a class="video-title">{{$cval['title']}}</a>
                                                             <div class="d-flex justify-content-between"></div>
                                                             <div class="row gutter-10">                                                            
@@ -253,7 +252,7 @@ use DB;
                                                         <source src="../../../storage{{$cval['file_folder']}}/{{$cval['filename']}}" type="video/mp4" /> 
                                                     </video> 
                                                 </div>
-                                                    <a href="{{route('topic_master.show',['content_id'=>$cval['id']])}}" target="_blank" class="view-box">
+                                                    <a href="{{route('topic_master.show',$cval['id'])}}" target="_blank" class="view-box">
                                                         <i class="mdi mdi-eye-outline"></i>
                                                     </a>                                                
                                             </div>
@@ -535,7 +534,7 @@ use DB;
 
                                                 </div>
                                                 
-                                                    <a href="{{route('topic_master.show',['content_id'=>$cval['id']])}}" target="_blank" class="view-box">
+                                                    <a href="{{route('topic_master.show',$cval['id'])}}" target="_blank" class="view-box">
                                                         <i class="mdi mdi-eye-outline"></i>
                                                     </a>                                                
                                                 
@@ -545,7 +544,7 @@ use DB;
                                             </div>
                                             @endif
                                             <div class="video-details">
-                                                <!-- <a href="{{route('topic_master.show',['content_id'=>$cval['id']])}}" class="video-title">{{$cval['title']}}</a> -->
+                                                <!-- <a href="{{route('topic_master.show',$cval['id'])}}" class="video-title">{{$cval['title']}}</a> -->
                                                 <a class="video-title">{{$cval['title']}}</a>                                                
                                                 <div class="video-des">{{$cval['description']}}</div>                                                
                                             </div>

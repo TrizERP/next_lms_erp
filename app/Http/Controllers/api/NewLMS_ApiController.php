@@ -59,7 +59,7 @@ class NewLMS_ApiController extends Controller
 
                     $otp = rand(100000, 999999);
                     $sub_institute_id = 1; // Triz Innovation
-                    $text = "OTP for login is ".$otp." and is valid for 5 minutes";
+                    $text = "Dear Parent, Your OTP is ".$otp.".";
                     $res = sendSMS($mobile, $text, $sub_institute_id);
                     $res = ["error" => "0"];
 
@@ -633,7 +633,7 @@ class NewLMS_ApiController extends Controller
         $mobile_no = $request->get('mobile');
         $otp = rand(100000, 999999);
         $sub_institute_id = 1; // Triz Innovation
-        $text = "OTP for login is ".$otp." and is valid for 5 minutes";
+        $text = "Dear Parent, Your OTP is ".$otp.".";
         $res = sendSMS($mobile_no, $text, $sub_institute_id);
 
         if ($res["error"] == 1) {

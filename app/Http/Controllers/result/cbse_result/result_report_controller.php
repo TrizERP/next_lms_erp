@@ -63,7 +63,7 @@ class result_report_controller extends Controller
             session()->put('standard', $_REQUEST['standard']);
             //getting year detail
             //getting all exam name with mark
-            $all_exam = $controller->getAllExam($_REQUEST['standard']);
+            $all_exam = $controller->getAllExam($_REQUEST['standard'], $academicTerms[0]->term_id);
 
             //getting all subject name
             $all_subject = $controller->getAllSubject($_REQUEST['standard']);
@@ -122,7 +122,7 @@ class result_report_controller extends Controller
             session()->put('term_id', $academicTerms[1]->term_id);
             //getting year detail
             //getting all exam name with mark
-            $all_exam = $controller->getAllExam($_REQUEST['standard']);
+            $all_exam = $controller->getAllExam($_REQUEST['standard'], $academicTerms[1]->term_id);
 
             //getting all subject name
             $all_subject = $controller->getAllSubject($_REQUEST['standard']);
@@ -246,7 +246,7 @@ class result_report_controller extends Controller
                 $result = $result->whereRaw("DATE_FORMAT(e.exam_date, '%Y-%m-%d') BETWEEN '".$from_date."' AND '".$to_date."' ");
             }
 
-            $result = $result->oredrBy('e.title')->get()->toArray();
+            $result = $result->orderBy('e.title')->get()->toArray();
 
             $result = json_decode(json_encode($result), true);
 
@@ -317,7 +317,7 @@ class result_report_controller extends Controller
             }
 
             $result = $result->groupByRaw('rm.student_id,e.subject_id')
-                ->oredrBy('e.sort_order')->get()->toarray();
+                ->orderBy('e.sort_order')->get()->toarray();
 
             $result = json_decode(json_encode($result), true);
             $date_arr = [];
@@ -391,7 +391,7 @@ class result_report_controller extends Controller
         }
 
         $result = $result->groupByRaw('rm.student_id,e.subject_id')
-            ->oredrBy('s.sort_order')->get()->toarray();
+            ->orderBy('s.sort_order')->get()->toarray();
 
         $result = json_decode(json_encode($result), true);
         $cbse_1t5_result_controller = new cbse_1t5_result_controller;
@@ -485,7 +485,7 @@ class result_report_controller extends Controller
         if ($from_date != '' && $to_date != '') {
             $result = $result->whereRaw("DATE_FORMAT(e.exam_date, '%Y-%m-%d') BETWEEN '".$from_date."' AND '".$to_date."' ");
         }
-        $result = $result->oredrBy('e.title')->get()->toarray();
+        $result = $result->orderBy('e.title')->get()->toarray();
 
         $result = json_decode(json_encode($result), true);
         $cbse_1t5_result_controller = new cbse_1t5_result_controller;

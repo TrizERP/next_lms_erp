@@ -452,7 +452,7 @@ class studentHomeworkController extends Controller
                 ->where('h.syear', $syear)
                 ->where('h.student_id', $student_id)
                 ->where('h.type', $action)
-                ->groupBy('h.date', 'DESC')
+                ->orderBy('h.date', 'DESC')
                 ->get()->toArray();
 
             $res['status'] = 1;

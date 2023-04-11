@@ -38,8 +38,8 @@ class cbse_1t5_t2_result_controller extends Controller
 
     public function show_result(Request $request)
     {
+        // echo session()->get('sub_institute_id');exit;
         $term = session()->get('term_id');
-
         $all_student = SearchStudent($_REQUEST['grade'], $_REQUEST['standard'], $_REQUEST['division']);
         $responce_arr = [];
 
@@ -76,7 +76,7 @@ class cbse_1t5_t2_result_controller extends Controller
         $headings = $this->getHeadings();
 
         //get exam master settigs
-        $exam_master_settigs = $this->getExamMasterSettigs();
+        $exam_master_settigs = $this->getExamMasterSettigs($_REQUEST['standard']);
 
         //getting all student detail
         foreach ($all_student as $id => $arr) {
@@ -335,7 +335,7 @@ class cbse_1t5_t2_result_controller extends Controller
         foreach ($result as $id => $arr) {
             $temp_arr['id'] = $arr->id;
             $temp_arr['student_id'] = $arr->student_id;
-            $temp_arr['subject_name'] = $arr->subject_name;
+            $temp_arr['display_name'] = $arr->display_name;
             $temp_arr['total_points'] = $arr->total_points;
             $temp_arr['con_point'] = $arr->con_point;
             $temp_arr['points'] = $arr->points;
@@ -387,7 +387,7 @@ class cbse_1t5_t2_result_controller extends Controller
                 $responce_arr[$arr_student['student_id']][$subject]['GRADE'] = $this->getGrade($grade_arr, $total_mark, $total_gain_mark);
             }
         }
-
+        // echo "<pre>";print_r($responce_arr);exit;
         return $responce_arr;
     }
 
@@ -544,16 +544,18 @@ class cbse_1t5_t2_result_controller extends Controller
         return $responce;
     }
 
-    public function getExamMasterSettigs()
+    public function getExamMasterSettigs($standard_id)
     {
-        $result = DB::table('result_book_master as rm')
-            ->selectRaw('rm.*')
-            ->where('rm.standard', $_REQUEST['standard'])
-            ->where('rm.sub_institute_id', session()->get('sub_institute_id'))
-            ->get()->toArray();
+       $str = 'select rm.*
+                from result_master_confrigration rm
+                where rm.standard_id = ' . $standard_id . '
+                and rm.sub_institute_id = ' . session()->get('sub_institute_id') . '';
+        $str = str_replace("\r\n", "", $str);
+        $result = DB::select(DB::raw($str));
 
         $responce = array();
         foreach ($result as $id => $obj) {
+            // print_r($obj);exit;
             $responce['teacher_sign'] = $obj->teacher_sign;
             $responce['principal_sign'] = $obj->principal_sign;
             $responce['director_signatiure'] = $obj->director_signatiure;
