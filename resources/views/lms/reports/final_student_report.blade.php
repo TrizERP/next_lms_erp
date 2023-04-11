@@ -1,20 +1,20 @@
 
 <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
 <link href="{{ asset("/plugins/bower_components/report/css/aos.css") }}" rel="stylesheet" type="text/css" />
-<link href="{{ asset("/plugins/bower_components/report/css/styleReport.css") }}" rel="stylesheet" type="text/css" />
+<link href="{{ asset("/plugins/bower_components/report/css/styleReport.css") }}" rel="stylesheet" type="text/css"/>
 <style>
     .highcharts-figure, .highcharts-data-table table {
-    min-width: 360px; 
-    max-width: 800px;
-    margin: 1em auto;
-}
+        min-width: 360px;
+        max-width: 800px;
+        margin: 1em auto;
+    }
 
-.highcharts-data-table table {
-    font-family: Verdana, sans-serif;
-    border-collapse: collapse;
-    border: 1px solid #EBEBEB;
-    margin: 10px auto;
-    text-align: center;
+    .highcharts-data-table table {
+        font-family: Verdana, sans-serif;
+        border-collapse: collapse;
+        border: 1px solid #EBEBEB;
+        margin: 10px auto;
+        text-align: center;
     width: 100%;
     max-width: 500px;
 }
@@ -49,18 +49,17 @@
                                     <div class="student-details">
                                         <div class="student-dp">
                                             <input type="hidden" name="student_id" id="student_id" value="{{$data['student_id']}}">
-                                            <?php                                           
-                                                $image_path =  asset("/storage/student/");
-                                                if($data['student_data']['image'] == "")
-                                                {
-                                                    $data['student_data']['image'] = "no-image.jpg";
-                                                }
-                                                $image_path .= "/".$data['student_data']['image'];
+                                            <?php
+                                            $image_path = asset("/storage/student/");
+                                            if ($data['student_data']['image'] == "") {
+                                                $data['student_data']['image'] = "no-image.jpg";
+                                            }
+                                            $image_path .= "/" . $data['student_data']['image'];
                                             ?>
                                             <img src="{{$image_path}}"
                                                 alt="" height="80px" width="80px">
                                         </div>
-                                                                                
+
                                         <table class="profile-info">
                                             <tbody>
                                                 <tr>
@@ -117,40 +116,38 @@
                                             <option value="" >--Select--</option>
                                             @if(isset($data['all_subject_arr']))
                                                 @foreach ($data['all_subject_arr'] as $item => $val)
-                                                @php                                                
+                                                    @php
                                                 if ($data['current_subject'] == $val['subject_id']){
                                                     $selected = "selected=selected";
                                                 }else{
                                                     $selected = "";
                                                 }
-                                                @endphp                                               
+                                                    @endphp
                                                 <option {{$selected}} value="{{$val['subject_id']}}">{{ $val['display_name'] }}</option>
                                                 @endforeach
                                             @endif
                                         </select>
-                                       
+
                                     </div>
                                 </div>
-                               
+
                                 <div class="col-md-9">
                                     <div class="subject-list">
                                         <h5>Subjects</h5>
                                         <ul>
                                             <?php
                                             $color_arr = array(
-                                                "red-btn","navy-btn","yellow-btn","pink-btn","blue-btn"
+                                                "red-btn", "navy-btn", "yellow-btn", "pink-btn", "blue-btn"
                                             );
-                                            $a = 0; 
+                                            $a = 0;
 
-                                            foreach($data['all_subject_arr'] as $item => $val)
-                                            {
-                                                if($a == 5)
-                                                {
+                                            foreach ($data['all_subject_arr'] as $item => $val) {
+                                                if ($a == 5) {
                                                     $a = 0;
-                                                } 
-                                                echo '<li><a href="javascript:redirectthis('.$val['subject_id'].');" class="'.$color_arr[$a].'">'.$val['display_name'].'</a></li>';                                                                                                    
+                                                }
+                                                echo '<li><a href="javascript:redirectthis(' . $val['subject_id'] . ');" class="' . $color_arr[$a] . '">' . $val['display_name'] . '</a></li>';
                                                 $a++;
-                                            }                                                                                       
+                                            }
                                             ?>
                                         </ul>
                                     </div>
@@ -160,19 +157,19 @@
                         </div>
                     </header>
 
-                    <div class="container-fluid" data-aos="fade-up" data-aos-duration="2000" >
+                    <div class="container-fluid" data-aos="fade-up" data-aos-duration="2000">
                         <div class="row justify-content-center">
                             <div class="col-md-10 text-center">
                                 <h2 class="std-details">
-                                    <strong>{{ $data['student_data']['student_name'] }}</strong> has scored 
-                                    {{$data['grand_obtained']}} out of {{$data['grand_total']}}                                    
+                                    <strong>{{ $data['student_data']['student_name'] }}</strong> has scored
+                                    {{$data['grand_obtained']}} out of {{$data['grand_total']}}
                                 </h2>
                             </div>
                         </div>
                     </div>
 
                     <!-- Subject Report Start -->
-                    <div class="subject-report py-4" data-aos="fade-up" data-aos-duration="2000" >
+                    <div class="subject-report py-4" data-aos="fade-up" data-aos-duration="2000">
                         <div class="container">
                             <div class="row justify-content-center">
                                 <div class="col-md-12">
@@ -180,24 +177,28 @@
                                         <h2>Subject Report</h2>
                                     </div>
                                     <div class="row">
-                                       @if(isset($data['exam_arr'])) 
-                                           @foreach ($data['exam_arr'] as $id => $exam)
-                                            <div class="col">
-                                                <div class="subject-area">
-                                                    <div class="low" style="height: {{ (100 - $exam['obtained_percentage']) }}%;"
-                                                        tabindex="0" data-toggle="tooltip" data-placement="top" >
-                                                        <span>Not Achieved</span></div>                                                
-                                                    <div class="high" style="height: {{ $exam['obtained_percentage'] }}%;"
-                                                        tabindex="0" data-toggle="tooltip" data-placement="top"><span>Achieved</span>
+                                        @if(isset($data['exam_arr']))
+                                            @foreach ($data['exam_arr'] as $id => $exam)
+                                                <div class="col">
+                                                    <div class="subject-area">
+                                                        <div class="low"
+                                                             style="height: {{ (100 - $exam['obtained_percentage']) }}%;"
+                                                             tabindex="0" data-toggle="tooltip" data-placement="top">
+                                                            <span>Not Achieved</span></div>
+                                                        <div class="high"
+                                                             style="height: {{ $exam['obtained_percentage'] }}%;"
+                                                             tabindex="0" data-toggle="tooltip" data-placement="top">
+                                                            <span>Achieved</span>
+                                                        </div>
+                                                    </div>
+                                                    <div class="total-mark">
+                                                        <h5>{{ $exam['paper_name'] }}</h5>
+                                                        <div class="sub-mark"> {{ $exam['obtained_marks'] }}
+                                                            / {{ $exam['total_marks'] }} </div>
                                                     </div>
                                                 </div>
-                                                <div class="total-mark">
-                                                    <h5>{{ $exam['paper_name'] }}</h5>                                               
-                                                    <div class="sub-mark"> {{ $exam['obtained_marks'] }}/ {{ $exam['total_marks'] }} </div>
-                                                </div>
-                                            </div>
-                                            @endforeach               
-                                        @endif                         
+                                            @endforeach
+                                        @endif
                                     </div>
                                 </div>
                             </div>
@@ -206,7 +207,7 @@
                     <!-- Subject Report End -->
 
                     <!-- Subject Graph Start -->
-                    <div class="sub-graph mb-5" data-aos="fade-up" data-aos-duration="2000" >
+                    <div class="sub-graph mb-5" data-aos="fade-up" data-aos-duration="2000">
                         <div class="container">
                             <div class="row">
                                 <!-- <div class="col-md-4">
@@ -233,12 +234,12 @@
                                     <div class="school-heading">
                                         <h2>Learning Outcome</h2>
                                     </div>
-                                </div>                                
+                                </div>
                             </div>
                             <div class="table-responsive">
                                 <table class="table table-hover table-borderless student-table">
                                     @php $k=0; @endphp
-                                    @if( count($data['lo_arr']) > 0 )                                     
+                                    @if( count($data['lo_arr']) > 0 )
                                         @foreach ($data['lo_arr'] as $exam => $lo_data)
                                         <tr>
                                             <th width="200">
@@ -247,19 +248,19 @@
                                             <td>
                                                 <ul class="student-total-per">
                                                     @foreach ($lo_data as $lo => $per)
-                                                    <li>
-                                                        <div class="total-per-box">
-                                                        <h5>{{$lo}}</h5>
-                                                        <div class="total-per">{{ $per }}%</div>
-                                                        </div>                                                    
-                                                    </li>
-                                                    @endforeach                                                
+                                                        <li>
+                                                            <div class="total-per-box">
+                                                                <h5>{{$lo}}</h5>
+                                                                <div class="total-per">{{ $per }}%</div>
+                                                            </div>
+                                                        </li>
+                                                    @endforeach
                                                 </ul>
                                             </td>
                                         </tr>
-                                         @php $k++; @endphp 
-                                        @endforeach                                                                         
-                                    @endif                                                                         
+                                            @php $k++; @endphp
+                                        @endforeach
+                                    @endif
                                 </table>
                             </div>
                         </div>
@@ -303,7 +304,7 @@
                                         </div>
                                     </li>
                                 </ul>
-                
+
                                 <ul class="performance-star text-center">
                                     <li>
                                         <h5>Best Performance</h5>
@@ -342,7 +343,7 @@
                                         </div>
                                     </li>
                                 </ul>
-                
+
                             </div>
                         </div>
                         <div class="col-md-12 col-lg-6 subject-analysis" data-aos="fade-left" data-aos-duration="2000">
@@ -350,17 +351,17 @@
                                 <div class="subject-list style-2">
                                     <h5>Subjects</h5>
                                     <ul class="nav nav-tabs" id="myTab" role="tablist">
-                                    @php $i=1; @endphp    
+                                        @php $i=1; @endphp
                                     @foreach ($data['lo_arr'] as $exam => $lo_data)
                                         @php
-                                        $newexam = str_replace(' ', '', $exam); 
-                                        $main_active = "";
-                                        if($i == 1) 
-                                        {
-                                            $main_active = "active";
-                                        }
-                                        $i++;
-                                        @endphp    
+                                            $newexam = str_replace(' ', '', $exam);
+                                            $main_active = "";
+                                            if($i == 1)
+                                            {
+                                                $main_active = "active";
+                                            }
+                                            $i++;
+                                        @endphp
                                         <li class="nav-item">
                                             <a class="nav-link {{$main_active}}" id="tab-{{$newexam}}" data-toggle="tab" href="#{{$newexam}}" role="tab" aria-controls="{{$newexam}}" aria-selected="true">{{$exam}}</a>
                                         </li>
@@ -369,16 +370,16 @@
                                 </div>
 
                                 <div class="tab-content std-process" id="myTabContent">
-                                    @php $j=1; @endphp 
+                                    @php $j=1; @endphp
                                     @foreach ($data['lo_arr'] as $exam1 => $lo_data1)
                                         @php
-                                        $inner_div = str_replace(' ', '', $exam1);  
-                                        $inner_active = "";
-                                        if($j == 1) 
-                                        {
-                                            $inner_active = "show active";
-                                        }
-                                        $j++;                                                                   
+                                            $inner_div = str_replace(' ', '', $exam1);
+                                            $inner_active = "";
+                                            if($j == 1)
+                                            {
+                                                $inner_active = "show active";
+                                            }
+                                            $j++;
                                         @endphp
                                         <div class="tab-pane fade {{$inner_active}}" id="{{$inner_div}}" role="tabpanel" aria-labelledby="tab-{{$inner_div}}">
                                             @foreach ($lo_data1 as $lo => $per)
@@ -436,7 +437,7 @@
                             </div>
                         </div>
                     </div> -->
-                </footer> 
+                </footer>
             </div>
         </div>
     </div>
@@ -606,12 +607,16 @@ responsive: {
 });
 });
 
- function redirectthis(subject_id){
+function redirectthis(subject_id) {
     var student_id = $("#student_id").val();
     //var subject_id = $("#subject_type").val();
+<<<<<<< HEAD
     var path1 = "{{route('lmsStudent_report.edit',['student_id','subject_ids'])}}";
+=======
+    var path1 = "{{route('lmsStudent_report.edit',['lmsStudent_report'=>'student_id','subject_id'=>'subject_ids'])}}";
+>>>>>>> 3caf7f6983ca8062bc47a1c7aa3a98aaf02f2e51
     path1 = path1.replace('student_id', student_id);
-    path1 = path1.replace('subject_ids', subject_id);   
+    path1 = path1.replace('subject_ids', subject_id);
     document.location.href = path1;
 }
 

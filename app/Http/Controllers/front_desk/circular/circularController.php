@@ -6,6 +6,10 @@ use App\Http\Controllers\Controller;
 use App\Models\front_desk\circular\circular;
 use App\Models\school_setup\SchoolModel;
 use GenTux\Jwt\GetsJwtToken;
+use Illuminate\Contracts\Foundation\Application;
+use Illuminate\Contracts\View\Factory;
+use Illuminate\Contracts\View\View;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
@@ -24,7 +28,8 @@ class circularController extends Controller
     /**
      * Display a listing of the resource.
      *
-     * @return Response
+     * @param Request $request
+     * @return false|Application|Factory|View|RedirectResponse|string
      */
     public function index(Request $request)
     {
@@ -100,7 +105,7 @@ class circularController extends Controller
             $student_id = isset($_REQUEST['student_id']) ? $_REQUEST['student_id'] : '0';
             $action = $_REQUEST['action'];
 
-            if ($student_id == $payload['student_id'] && $sub_institute_id == $payload['sub_institute_id']) {
+            if (isset($payload['student_id']) && $student_id == $payload['student_id'] && $sub_institute_id == $payload['sub_institute_id']) {
 
                 $result = DB::table("tblstudent as s")
                     ->join('tblstudent_enrollment as se', function ($join) {
@@ -336,7 +341,7 @@ class circularController extends Controller
 
                                 }
                             }
-                            //END Send Notification Code                            
+                            //END Send Notification Code
                         }
                     }
                 }
