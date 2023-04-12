@@ -622,7 +622,7 @@
                                                    target="_blank" class="btn btn-outline-warning btn-sm mx-1"
                                                    data-toggle="tooltip" title="Add Flash Card"><i
                                                         class="mdi mdi-cards-playing-outline"></i></a>
-                                                <a href="{{ route('content_master.edit',['id'=>$cval['id'],'std_id'=>$cval['standard_id']])}}"
+                                                <a href="{{ route('content_master.edit',[$cval['id'],$cval['standard_id']])}}"
                                                    class="btn btn-outline-success btn-sm mx-1"><i
                                                         class="mdi mdi-pencil-outline"></i></a>
                                                 <form action="{{ route('content_master.destroy', $cval['id'] )}}"
@@ -814,6 +814,7 @@
         if (topic_show_hide == 1) {
             $('#topic_show_hide').prop('checked', true);
         }
+        
         $('#submit').val('Update');
         $('#heading').html('Update Topic');
         $('#topic_form').attr('action', url);

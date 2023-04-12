@@ -1019,7 +1019,7 @@ END as color_code
                     $join->whereRaw("d.id = ct.division_id AND d.sub_institute_id = ct.sub_institute_id");
                 })->join('tblstudent_enrollment as se', function ($join) {
                     $join->whereRaw("se.standard_id = ct.standard_id AND se.section_id = ct.division_id
-                        AND se.sub_institute_id = ct.sub_institute_id");
+                        AND se.sub_institute_id = ct.sub_institute_id AND se.end_date IS null");
                 })->join('tblstudent as ts', function ($join) {
                     $join->whereRaw("ts.id = se.student_id AND ts.sub_institute_id = ct.sub_institute_id");
                 })->selectRaw("ts.id,concat_ws(' ',ts.first_name,ts.middle_name,ts.last_name) as student_name,

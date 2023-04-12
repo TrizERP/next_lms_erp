@@ -194,18 +194,18 @@ class chapterController extends Controller
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $syear = $request->session()->get('syear');
         $user_id = $request->session()->get('user_id');
-
+// print_r($request->get('show_hide')[0]);EXIT;
         $data = [
             'grade_id'         => $request->get('grade'),
             'standard_id'      => $request->get('standard'),
             'subject_id'       => $request->get('subject'),
-            'chapter_name'     => $request->get('chapter_name')[0],
-            'availability'     => $request->get('availability')[0],
-            'show_hide'        => $request->get('show_hide')[0],
-            'chapter_desc'     => $request->get('chapter_desc')[0],
+            'chapter_name'     => $request->get('chapter_name')[0] ?? '',
+            'availability'     => $request->get('availability')[0] ?? '',
+            'show_hide'        => $request->get('show_hide')[0] ?? '',
+            'chapter_desc'     => $request->get('chapter_desc')[0] ?? '',
             'created_by'       => $user_id,
             'sub_institute_id' => $sub_institute_id,
-            'sort_order'       => $request->get('sort_order')[0],
+            'sort_order'       => $request->get('sort_order')[0] ?? '',
             'syear'            => $syear,
         ];
 

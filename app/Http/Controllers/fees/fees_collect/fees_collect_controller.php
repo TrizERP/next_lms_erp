@@ -1956,16 +1956,18 @@ class fees_collect_controller extends Controller
                 $online_link = "http://".$_SERVER['SERVER_NAME']."/fees/online_fees_collect";
             }
 
-            $fees_data = $this->getBk($request, $student_id);
-            foreach ($fees_data['total_fees'] as $key => $val) {
-                unset($val['bk']);
-                unset($val['paid']);
-                //Set link in PAY NOW
-                if ($online_link != "") {
-                    $val['PayNow'] = $online_link;
-                }
-                if ($val['remain'] != 0 && $val['month'] != 'Total') {
-                    $new_pending_arr[] = (object) $val;
+            if (isset($fees_data['total_fees'])) {
+                $fees_data = $this->getBk($request, $student_id);
+                foreach ($fees_data['total_fees'] as $key => $val) {
+                    unset($val['bk']);
+                    unset($val['paid']);
+                    //Set link in PAY NOW
+                    if ($online_link != "") {
+                        $val['PayNow'] = $online_link;
+                    }
+                    if ($val['remain'] != 0 && $val['month'] != 'Total') {
+                        $new_pending_arr[] = (object) $val;
+                    }
                 }
             }
 

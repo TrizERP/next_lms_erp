@@ -186,9 +186,9 @@ class cbse_1t5_result_controller extends Controller
         $type = $request->input('type');
         // return session()->get('sub_institute_id');exit;
         if (session()->get('sub_institute_id') == 61 && $_REQUEST['standard'] == 2898) {
-            return \App\Helpers\is_mobile($type, "result/cbse_result/new_show", $data, "view");
+            return \App\Helpers\is_mobile($type, "result/cbse_result/1t5_s1_show", $data, "view");
         } elseif (session()->get('sub_institute_id') == 61) {
-            return \App\Helpers\is_mobile($type, "result/cbse_result/new_show", $data, "view");
+            return \App\Helpers\is_mobile($type, "result/cbse_result/1t5_s1_show", $data, "view");
         } else {
             return \App\Helpers\is_mobile($type, "result/cbse_result/1t5_s1_show2", $data, "view");
         }
@@ -509,7 +509,7 @@ class cbse_1t5_result_controller extends Controller
         $srNo = 0;
         foreach ($elemArr as $value) {
             $srNo++;
-            if ($srNo <= BEST_OF) {
+            if ($srNo <= 2) {
                 $newArr[] = $value;
             }
         }

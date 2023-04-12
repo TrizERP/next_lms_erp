@@ -15,11 +15,6 @@ use function App\Helpers\htmlToPDF;
 class cbse_1t5_result_controller_OLD2 extends Controller
 {
 
-//    public function __construct()
-//    {
-//        define('BEST_OF', 2);
-//    }
-
     use GetsJwtToken;
 
     public function index(Request $request)

@@ -129,7 +129,7 @@
                                         }
                                         if (isset($finalData['standard_id'])) {
                                             foreach ($finalData['standard_id'] as $id=>$value) {
-                                                echo '<input type="hidden" name="standard_id[]" value="' . $value . '">';
+                                                echo '<input type="hidden" name="standard_id[]" id="sid" value="' . $value . '">';
                                             }
                                         }
                                         ?>
@@ -153,10 +153,13 @@
     $(document).on('change', '#standard', function () {
         var standard_id = $(this).val();
         var path = "{{ route('ajax_getHomeworkSubjects') }}";
+
         $.ajax({
             url: path,
             data: 'standard_id=' + standard_id,
             success: function (result) {
+                console.log(result);
+
                 var e = $('select[name="subject"]');
                 $(e).find('option').remove().end();
                 $(e).append($("<option></option>").val("").html('Select Subject'));

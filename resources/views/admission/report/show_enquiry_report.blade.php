@@ -35,38 +35,12 @@
                                 <input type="text" id='to_date' required name="to_date" @if(isset($data['to_date'])) value="{{$data['to_date']}}" @endif class="form-control mydatepicker" autocomplete="off">
                             </div>
                             <div class="col-md-3 form-group">
-                                <label>Standard </label>
-                                <select id='standard' name="standard" class="form-control">
-                                    <option value=""> Select Standard </option>
-                                    <option value="NURSERY" @if(isset($data['standard'])) @if($data['standard'] == "NURSERY") selected="selected" @endif @endif> Nursery </option>
-                                    <option value="JRKG" @if(isset($data['standard'])) @if($data['standard'] == "JRKG") selected="selected" @endif @endif> Jrkg </option>
-                                    <option value="SRKG" @if(isset($data['standard'])) @if($data['standard'] == "SRKG") selected="selected" @endif @endif> Srkg </option>
-                                    <option value="1" @if(isset($data['standard'])) @if($data['standard'] == "1") selected="selected" @endif @endif> 1 </option>
-                                    <option value="2" @if(isset($data['standard'])) @if($data['standard'] == "2") selected="selected" @endif @endif> 2 </option>
-                                    <option value="3" @if(isset($data['standard'])) @if($data['standard'] == "3") selected="selected" @endif @endif> 3 </option>
-                                    <option value="4" @if(isset($data['standard'])) @if($data['standard'] == "4") selected="selected" @endif @endif> 4 </option>
-                                    <option value="5" @if(isset($data['standard'])) @if($data['standard'] == "5") selected="selected" @endif @endif> 5 </option>
-                                    <option value="6" @if(isset($data['standard'])) @if($data['standard'] == "6") selected="selected" @endif @endif> 6 </option>
-                                    <option value="7" @if(isset($data['standard'])) @if($data['standard'] == "7") selected="selected" @endif @endif> 7 </option>
-                                    <option value="8" @if(isset($data['standard'])) @if($data['standard'] == "8") selected="selected" @endif @endif> 8 </option>
-                                    <option value="9" @if(isset($data['standard'])) @if($data['standard'] == "9") selected="selected" @endif @endif> 9 </option>
-                                    <option value="10" @if(isset($data['standard'])) @if($data['standard'] == "10") selected="selected" @endif @endif> 10 </option>
-                                    <option value="11COM" @if(isset($data['standard'])) @if($data['standard'] == "11COM") selected="selected" @endif @endif> 11 COM </option>
-                                    <option value="11ART" @if(isset($data['standard'])) @if($data['standard'] == "11ART") selected="selected" @endif @endif> 11 ART </option>
-                                    <option value="11SCI" @if(isset($data['standard'])) @if($data['standard'] == "11SCI") selected="selected" @endif @endif> 11 SCI </option>
-                                    <option value="12COM" @if(isset($data['standard'])) @if($data['standard'] == "12COM") selected="selected" @endif @endif> 12 COM </option>
-                                    <option value="12ART" @if(isset($data['standard'])) @if($data['standard'] == "12ART") selected="selected" @endif @endif> 12 ART </option>
-                                    <option value="12SCI" @if(isset($data['standard'])) @if($data['standard'] == "12SCI") selected="selected" @endif @endif> 12 SCI </option>
-                                </select>
-                            </div>
-
-                            <div class="col-md-3 form-group">
                                 <label>User </label>
                                 <select id='user' name="user" class="form-control">
                                     <option value=""> Select User </option>
                                     @if ( isset( $data['users'] ) )        
                                         @foreach ( $data['users'] as $user )
-                                            <option value="{{ $user->id }}" @php echo ( isset($data['ser_user']) && $data['ser_user'] == $user->id ) ? 'selected' : '' @endphp >{{ $user->name_suffix.' '.$user->first_name.' '.$user->last_name }}</option>
+                                            <option value="{{ $user->id }}" @php echo ( isset($data['ser_user']) && $data['ser_user'] == $user->id ) ? 'selected' : '' @endphp >{{ $user->first_name.' '.$user->last_name }}</option>
                                         @endforeach
                                     @endif
                                 </select>
@@ -121,8 +95,6 @@
                                                     <button type="button" class="btn btn-info float-right" data-toggle="modal" onclick="javascript:add_data({{$value['id']}});">Circular</button>
                                                     <input type="hidden" name="fees_html_{{$value['id']}}" id="fees_html_{{$value['id']}}" value="{{$value[$header]}}">
                                                 </td>
-                                            @elseif($header == 'followup_date' || $header == 'created_on' || $header == 'date_of_birth')
-                                                <td> {{date('d-m-Y H:i:s', strtotime($value[$header]))}} </td>    
                                             @else
                                                 <td> {{$value[$header]}} </td>
                                             @endif

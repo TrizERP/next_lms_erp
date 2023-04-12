@@ -201,13 +201,12 @@ class topicController extends Controller
         $syear = $request->session()->get('syear');
         $user_id = $request->session()->get('user_id');
 
-        $show_hide = $request->get("topic_show_hide")[0];
-        $show_hide_val = $show_hide ?? '';
+        $show_hide_val = $request->get("topic_show_hide")[0] ?? '';
 
         $data = [
-            'name'             => $request->get('topic_name')[0],
-            'description'      => $request->get('topic_desc')[0],
-            'topic_sort_order' => $request->get('topic_sort_order')[0],
+            'name'             => $request->get('topic_name')[0] ?? '',
+            'description'      => $request->get('topic_desc')[0] ?? '',
+            'topic_sort_order' => $request->get('topic_sort_order')[0] ?? '',
             'topic_show_hide'  => $show_hide_val,
             'created_by'       => $user_id,
             'sub_institute_id' => $sub_institute_id,

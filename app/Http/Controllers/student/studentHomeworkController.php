@@ -555,6 +555,7 @@ class studentHomeworkController extends Controller
                 ->selectRaw("s.subject_id,s.display_name,t.academic_section_id,t.standard_id,t.division_id,t.teacher_id")
                 ->where('s.sub_institute_id', $sub_institute_id)
                 ->where('s.standard_id', $standard_id)
+                ->where('t.teacher_id', $teacher_id)
                 ->groupByRaw('s.subject_id,s.standard_id')
                 ->orderBy('s.display_name')->get()->toArray();
         }

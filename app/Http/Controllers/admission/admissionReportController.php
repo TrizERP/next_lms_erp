@@ -40,15 +40,15 @@ class admissionReportController extends Controller
             $getQuery = DB::table('admission_enquiry as ai')
                 ->join('tbluser as ts', function ($join) {
                     $join->whereRaw('ts.id = ai.created_by AND ts.sub_institute_id = ai.sub_institute_id');
-                })->join('caste as cs', function ($join) {
+                })->leftJoin('caste as cs', function ($join) {
                     $join->whereRaw('cs.id = ai.category');
                 })->leftJoin('follow_up as fu', function ($join) {
                     $join->whereRaw('fu.enquiry_id = ai.id AND fu.sub_institute_id = ai.sub_institute_id');
                 })->join('standard as s', function ($join) {
                     $join->whereRaw('s.id = ai.admission_standard AND s.sub_institute_id = ai.sub_institute_id');
                 })
-                ->selectRaw("ai.enquiry_no, ai.created_on,ai.followup_date, ai.first_name, ai.middle_name, ai.last_name,
-                    ai.gender, ai.mobile, ai.email, ai.address, ai.date_of_birth, ai.age, ai.syear, ai.previous_school_name,ai.previous_standard,
+                ->selectRaw("ai.enquiry_no, DATE_FORMAT(ai.created_on, '%d-%m-%Y %h:%i:%s') as created_on, DATE_FORMAT(ai.followup_date, '%d-%m-%Y') as followup_date, ai.first_name, ai.middle_name, ai.last_name,
+                    ai.gender, ai.mobile, ai.email, ai.address, DATE_FORMAT(ai.date_of_birth, '%d-%m-%Y') as date_of_birth, ai.age, ai.syear, ai.previous_school_name,ai.previous_standard,
                     s.name as admission_standard, ai.remarks,fu.status as enquiry_status, ai.source_of_enquiry, ai.created_by,
                     ai.counciler_name, ai.father_name,CONCAT_WS(' ',ts.first_name,ts.last_name) AS created_by, cs.caste_name $extra")
                 ->whereRaw("(DATE_FORMAT(ai.created_on, '%Y-%m-%d') BETWEEN '" . $from_date . "' AND '" . $to_date . "')
@@ -232,13 +232,26 @@ class admissionReportController extends Controller
         }
 
         if (isset($report)) {
-            $getQuery = DB::table('admission_registration as ar')
-                ->join('admission_enquiry as ae', function ($join) {
+            // "SELECT DISTINCT(ae.id),s.admission_id,ae.admission_standard, ae.first_name, ae.middle_name, ae.last_name, ae.mobile, ae.email,s.admission_id FROM admission_enquiry  ae
+            //     INNER JOIN admission_registration ar ON ae.sub_institute_id = ar.sub_institute_id and ar.enquiry_id = ae.id
+            //     Left JOIN tblstudent s ON s.sub_institute_id = ae.sub_institute_id and s.admission_id = ae.id
+            //     WHERE DATE_FORMAT(ae.created_on, '%Y-%m-%d') BETWEEN '".$from_date."' AND '".$to_date."'
+            //      AND ae.sub_institute_id = '".$sub_institute_id."' AND ae.syear = '".$syear."' and s.admission_id is null";
+        
+            $getQuery = DB::table('admission_enquiry as ae')
+                ->join('admission_registration as ar', function ($join) {
                     $join->whereRaw('ar.enquiry_id = ae.id');
                 })
+                ->join('tblstudent as s',function($join){
+                    $join->whereRaw('s.admission_id = ae.id');
+                })
                 ->selectRaw('ar.*, ae.admission_standard, ae.first_name, ae.middle_name, ae.last_name, ae.mobile, ae.email')
-                ->whereRaw("DATE_FORMAT(ar.created_on, '%Y-%m-%d') BETWEEN '" . $from_date . "' AND '" . $to_date . "'
-                    AND ae.sub_institute_id = '" . $sub_institute_id . "' AND ae.syear = '" . $syear . "'");
+                ->whereRaw("DATE_FORMAT(ar.created_on, '%Y-%m-%d') BETWEEN '" . $from_date . "' AND '" . $to_date . "' ")
+                ->where([
+                    'ae.syear'=>$syear,
+                    'ae.sub_institute_id'=>$sub_institute_id
+                ])
+                ->whereNull('s.admission_id');
 
             if ($standard != '') {
                 $getQuery = $getQuery->where('ae.admission_standard', $standard);

@@ -1629,10 +1629,12 @@ if (! function_exists('LMSSearchChain')) {
 if (! function_exists('getGrade')) {
     function getGrade($grade_arr, $total_mark, $total_gain_mark)
     {
-        $per = 0;
-        if ($total_mark != 0) {
-            $per = (100 * $total_gain_mark) / $total_mark;
+        if ($total_mark == 0) {
+            return "-";
         }
+
+        $per = round((100 * $total_gain_mark) / $total_mark,0);
+
         foreach ($grade_arr as $id => $data) {
             if (!isset($grade)) {
                 if ($per >= $data['breakoff']) {
@@ -1640,12 +1642,35 @@ if (! function_exists('getGrade')) {
                 }
             }
         }
+
         if (!isset($grade)) {
             $grade = "-";
         }
-
         return $grade;
     }
+}
+
+if (! function_exists('getGradeComment')) {
+    function getGradeComment($grade_arr, $total_mark, $total_gain_mark)
+{
+    if (!is_numeric($total_mark) || !is_numeric($total_gain_mark)) {
+        return 0;
+    }
+    $per = round((100 * $total_gain_mark) / $total_mark,0);
+    foreach ($grade_arr as $id => $data) {
+        if (! isset($comment)) {
+            if ($per >= $data['breakoff']) {
+                $comment = $data['comment'];
+            }
+        }
+    }
+    if (! isset($comment)) {
+        $comment = "-";
+    }
+
+    return $comment;
+}
+
 }
 
 
@@ -1656,16 +1681,16 @@ if (! function_exists('getGradeScale')) {
         $syear = session()->get('syear');
         $standard_id = session()->get('standard');
 
-        $sql_grade = "SELECT dt.*
-                    FROM result_std_grd_maping  sgm
-                    INNER JOIN grade_master_data dt on dt.grade_id = sgm.grade_scale AND dt.syear = " . $syear . "
-                    WHERE sgm.standard = " . $standard_id . " AND
-                    sgm.sub_institute_id = " . $sub_institute_id . "
-                    ORDER BY dt.breakoff DESC
-                ";
-        $ret_grade = DB::select(DB::raw($sql_grade));
+        $ret_grade = DB::table('result_std_grd_maping as sgm')
+        ->join('grade_master_data as dt', 'dt.grade_id', '=', 'sgm.grade_scale')
+        ->select('dt.*')
+        ->where('sgm.standard', $standard_id)
+        ->where('sgm.sub_institute_id', $sub_institute_id)
+        ->where('dt.syear', $syear)
+        ->orderBy('dt.breakoff', 'DESC')
+        ->get()->toArray();
 
-        //converting it into array
+        //converting it into array 
         $grade_arr = array();
         foreach ($ret_grade as $id => $arr) {
             $grade_arr[$id]['id'] = $arr->id;
@@ -1684,22 +1709,17 @@ if (! function_exists('getGradeScale')) {
     }
 }
 
-if (!function_exists('getGradeComment')) {
-    function getGradeComment($grade_arr, $total_mark, $total_gain_mark)
-    {
-        $per = (100 * $total_gain_mark) / $total_mark;
-        foreach ($grade_arr as $id => $data) {
-            if (!isset($comment)) {
-                if ($per >= $data['breakoff']) {
-                    $comment = $data['comment'];
-                }
+if (! function_exists('getBestOf')) {
+    function getBestOf($elemArr) {
+        $newArr = array();
+        rsort($elemArr);
+        $srNo = 0;
+        foreach ($elemArr as $value) {
+            $srNo++;
+            if ($srNo <= 2) {
+                $newArr[] = $value;
             }
         }
-        if (!isset($comment)) {
-            $comment = "-";
-        }
-
-        return $comment;
+        return $newArr;
     }
 }
-

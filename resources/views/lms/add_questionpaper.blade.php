@@ -41,7 +41,7 @@ br{
                 </div>
                 @endif
                <form action="@if (isset($data['questionpaper_data']))
-                    {{ route('question_paper.update',['div_id'=>$data['questionpaper_data']['id']])}}
+                    {{ route('question_paper.update',[$data['questionpaper_data']['id']])}}
                     @else
                     {{ route('question_paper.store') }}
                     @endif" method="post" enctype='multipart/form-data' onsubmit="return check_validation();">                          

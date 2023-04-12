@@ -21,7 +21,9 @@ class cbse_11_t2_result_controller extends Controller
             if (isset($data_arr['message'])) {
                 $data['message'] = $data_arr['message'];
             }
-        }
+        }/*else{
+            return "hello";
+        }*/
 //        $data['data'] = $this->getData();
         $data['data'] = array();
         $type = $request->input('type');
@@ -37,17 +39,23 @@ class cbse_11_t2_result_controller extends Controller
 //        return \App\Helpers\is_mobile($type, "result/cbse_result_t2/1t9_s1_t2_show", $data, "view");
 
         // dd(session()->all());
+        $term = session()->get('term_id');
+
 
         $all_student = \App\Helpers\SearchStudent($_REQUEST['grade'], $_REQUEST['standard'], $_REQUEST['division']);
         // echo ('<pre>');print_r($all_student);exit;
         $responce_arr = array();
 
-        $term = session()->get('term_id');
         $next_term = session()->get('term_id') + 1;
-        $syear = session()->get('syear');
-        $next_year = session()->get('syear') + 1;
-        $result_year = $syear . "-" . $next_year;
+        $my_array = array(
+            'year' => session()->get('syear'),
+        );
 
+        $syear = $my_array['year'];
+        $next_year = $syear + 1;
+        $result_year = $syear . "-" . $next_year;
+        //echo $result_year;return "hello";exit;
+        session()->put('standard', $_REQUEST['standard']);
         //getting year detail
         //getting all exam name with mark
         $all_exam = $this->getAllExam($_REQUEST['standard']);
@@ -76,11 +84,10 @@ class cbse_11_t2_result_controller extends Controller
 
 
         //getting heading
-        $headings = $this->getHeadings();
+        $header_data = $this->getHeader($_REQUEST['standard']);
         
         //get exam master settigs
-        $exam_master_settigs = $this->getExamMasterSettigs();
-
+        $footer_data = $this->getExamMasterSettigs($_REQUEST['standard']);
 
 
         //getting all student detail
@@ -99,8 +106,9 @@ class cbse_11_t2_result_controller extends Controller
             $responce_arr[$cur_student_id]['medium'] = $arr['medium'];
             $responce_arr[$cur_student_id]['father_name'] = $arr['father_name'];
             $responce_arr[$cur_student_id]['division'] = $arr['division_name'];
-            $responce_arr[$cur_student_id]['date_of_birth'] = $arr['dob'];
+            $responce_arr[$cur_student_id]['date_of_birth'] = date("d-m-Y", strtotime($arr['dob']));
             $responce_arr[$cur_student_id]['gr_no'] = $arr['enrollment_no'];
+            $responce_arr[$cur_student_id]['image'] = $arr['image'];
             $responce_arr[$cur_student_id]['exam'] = isset($all_exam) ? $all_exam : '';
             $responce_arr[$cur_student_id]['exam_subject_wise'] = isset($all_subject_wise_exam) ? $all_subject_wise_exam : '';
             $responce_arr[$cur_student_id]['mark'] = isset($all_subject_mark[$cur_student_id]) ? $all_subject_mark[$cur_student_id] : '';
@@ -111,9 +119,15 @@ class cbse_11_t2_result_controller extends Controller
             } else {
                 $responce_arr[$cur_student_id]['co_scholastic_area'] = array();
             }
-            $responce_arr[$cur_student_id]['att'] = isset($all_att_data[$cur_student_id]) ? $all_att_data[$cur_student_id] : '';
-            $responce_arr[$cur_student_id]['headings'] = $headings;
-            $responce_arr[$cur_student_id]['exam_master_settig'] =$exam_master_settigs;
+            $responce_arr[$cur_student_id]['att'] = '';
+            $responce_arr[$cur_student_id]['total_working_day'] = '';
+            $responce_arr[$cur_student_id]['teacher_remark'] = '';
+            if(isset($all_att_data[$cur_student_id]))
+            {
+                $responce_arr[$cur_student_id]['att'] = $all_att_data[$cur_student_id]['attendance'];
+                $responce_arr[$cur_student_id]['total_working_day'] = $all_att_data[$cur_student_id]['total_working_day'];
+                $responce_arr[$cur_student_id]['teacher_remark'] = $all_att_data[$cur_student_id]['teacher_remark'];
+            }
             // $responce_arr[$cur_student_id]['grade_range'] = $all_grd_data;
         }
         // echo('<pre>');
@@ -123,9 +137,11 @@ class cbse_11_t2_result_controller extends Controller
         // $data['data'] = array();
         // return $responce_arr;
         $data['data'] = $responce_arr;
+        $data['header_data'] = $header_data;
+        $data['footer_data'] = $footer_data;
         $type = $request->input('type');
         return \App\Helpers\is_mobile($type, "result/cbse_11_result/11_t2_show", $data, "view");
-
+    
     }
 
     public function getAllExam($standard_id)
@@ -372,10 +388,13 @@ class cbse_11_t2_result_controller extends Controller
 
                             if(isset($is_absent) && $is_absent == "N.A."){
                                 $naFlag = 1;
+                                  $total_mark = $marks_arr[$arr_student['student_id']][$subject][$term_id][$exam_detail['exam_title']]['total_points'];
                                 //continue;
                             }
                             elseif(isset($is_absent) && $is_absent == "EX"){
                                 $exFlag = 1;
+                                  $total_mark = $marks_arr[$arr_student['student_id']][$subject][$term_id][$exam_detail['exam_title']]['total_points'];
+                              
                                 //continue;
                             }
                             elseif(isset($is_absent) && $is_absent == "AB"){
@@ -399,9 +418,6 @@ class cbse_11_t2_result_controller extends Controller
                                 if ($con_point != NULL && $con_point != $total_mark) {
                                 $mark = ($con_point * $mark) / $total_mark;
                                 }
-  // echo "<pre>";
-  //          print_r( $total_mark);
-  //          exit;
                                 $total_gain_mark = $total_gain_mark + $mark;
                                 $total_con_point = $total_con_point + $con_point;
                             
@@ -428,7 +444,6 @@ class cbse_11_t2_result_controller extends Controller
                                     $e_points = number_format($mark,0);
                                 }
                               
-
                                 $responce_arr[$arr_student['student_id']][$subject][$term_id][$exam_detail['exam_title']] = $e_points;
                                 $responce_arr[$arr_student['student_id']][$subject]['total_points'][$term_id][$exam_detail['exam_title']] = $total_mark;
 
@@ -456,34 +471,41 @@ class cbse_11_t2_result_controller extends Controller
                 {   
                     //echo "totoa-".$total_con_point."<br/>";die();
                    $responce_arr[$arr_student['student_id']][$subject]['TOTAL_GAIN'] = $total_gain_mark;
-                $responce_arr[$arr_student['student_id']][$subject]['GRADE'] = $this->getGrade($grade_arr, $total_mark, $total_gain_mark);
+                    $responce_arr[$arr_student['student_id']][$subject]['GRADE'] = $this->getGrade($grade_arr, $total_mark, $total_gain_mark);
             }
             
             }
                 }
         }
            // echo "<pre>";
-           // print_r( $total_mark);
+           // print_r( $responce_arr);
            // exit;
-// echo "<pre>";
-//            print_r( $responce_arr);
-//            exit;
 
         return $responce_arr;
     }
 
-    public function getGradeScale()
-    {
+    public static function getGradeScale($standard_id = '',$type = '') {
+        if($type == 'API')
+        {
+            $sub_institute_id = $_REQUEST['sub_institute_id'];
+            $syear = $_REQUEST['syear'];
+            $standard_id = $standard_id;
+        }else{
+            $sub_institute_id = session()->get('sub_institute_id');
+            $syear = session()->get('syear');
+            $standard_id = $_REQUEST['standard'];
+        }
+
         $sql_grade = "SELECT dt.* 
                     FROM result_std_grd_maping  sgm
-                    INNER JOIN grade_master_data dt on dt.grade_id = sgm.grade_scale AND dt.syear = " . session()->get('syear') . "
-                    WHERE sgm.standard = " . $_REQUEST['standard'] . " AND 
-                    sgm.sub_institute_id = " . session()->get('sub_institute_id') . "
+                    INNER JOIN grade_master_data dt on dt.grade_id = sgm.grade_scale AND dt.syear = " . $syear . "
+                    WHERE sgm.standard = " . $standard_id. " AND 
+                    sgm.sub_institute_id = " .$sub_institute_id. "
                     ORDER BY dt.breakoff DESC
                 ";
         $ret_grade = DB::select(DB::raw($sql_grade));
 
-        //converting it into array
+        //converting it into array 
         $grade_arr = array();
         foreach ($ret_grade as $id => $arr) {
             $grade_arr[$id]['id'] = $arr->id;
@@ -539,7 +561,7 @@ class cbse_11_t2_result_controller extends Controller
         if (count($ret_mark_grade) > 0) {
             $type = $ret_mark_grade[0]->mark_type;
             if ($type == "GRADE") {
-                $sql_data = "select comark.student_id,comark.co_scholastic_id, cop.title parent_title,co.title child_title,cograde.title obtain_grade,comark.term_id
+                $sql_data = "select comark.student_id,comark.co_scholastic_id, cop.title parent_title,REPLACE(co.title, '(Grade 11)', '') child_title,cograde.title obtain_grade,comark.term_id
                                 from result_co_scholastic_marks_entries comark
                                 inner join result_co_scholastic_grades cograde on cograde.id = comark.grade
                                 inner join result_co_scholastic co on co.id = comark.co_scholastic_id
@@ -579,26 +601,24 @@ class cbse_11_t2_result_controller extends Controller
         return $responce_arr;
     }
 
-    public function getAttendance($all_student)
-    {
+    public function getAttendance($all_student) {
 //        echo "<pre>";
 //        print_r($all_student);
 //        exit;
-        $sql_data = "select atd.student_id,wrkd.total_working_day,atd.attendance 
+        $sql_data = "select atd.student_id,wrkd.total_working_day,atd.attendance,atd.teacher_remark
                 from result_student_attendance_master atd
                 inner join result_working_day_master wrkd on wrkd.standard = atd.standard and wrkd.sub_institute_id = atd.sub_institute_id
                 where atd.standard = " . $_REQUEST['standard'] . " and 
                     atd.sub_institute_id = " . session()->get('sub_institute_id') . " and 
-                    atd.syear = " . session()->get('syear') . "
+                    atd.syear = " . session()->get('syear') . " and atd.term_id = " . session()->get('term_id') . "
                 ";
         $ret_data = DB::select(DB::raw($sql_data));
         $data_arr = array();
         foreach ($ret_data as $id => $arr) {
-            $data_arr[$arr->student_id] = $arr->attendance . "/" . $arr->total_working_day;
+            $data_arr[$arr->student_id]['attendance'] = $arr->attendance ?? '0';
+            $data_arr[$arr->student_id]['total_working_day'] = $arr->total_working_day ?? '0';
+            $data_arr[$arr->student_id]['teacher_remark'] = $arr->teacher_remark ?? '-';
         }
-//        echo "<pre>";
-//        print_r($data_arr);
-//        exit;
 
         return $data_arr;
     }
@@ -670,46 +690,26 @@ class cbse_11_t2_result_controller extends Controller
         }
         return $grade;
     }
-    public function getHeadings()
+    public function getHeader($standard_id)
     {
-        // echo('<pre>');
-        // print_r($_REQUEST);
-        // exit;
-        $str = 'select rt.* 
-                from result_book_master rm
-                inner join result_trust_master rt on rt.id = rm.trust_id
-                where rm.standard = ' . $_REQUEST['standard'] . ' 
-                and rm.sub_institute_id = ' . session()->get('sub_institute_id') . '';
-        $str=str_replace("\r\n", "", $str);
+        $str = "SELECT * from result_book_master b
+                INNER JOIN result_trust_master t on b.trust_id = t.id
+                WHERE b.standard = '".$standard_id."' AND b.sub_institute_id = '".session()->get('sub_institute_id')."'
+                LIMIT 1";
         $result = DB::select(DB::raw($str));
+        $result = json_decode(json_encode($result),true);
 
-        // echo ('<pre>');print_r($result);exit;
-        $responce = array();
-        foreach ($result as $id => $obj) {
-            $responce['line1'] = $obj->line1;
-            $responce['line2'] = $obj->line2;
-            $responce['line3'] = $obj->line3;
-            $responce['line4'] = $obj->line4;
-        }
-        // echo('<pre>');
-        // print_r($responce);
-        // exit;
-
-        return $responce;
+        return $result[0];        
     }
-    public function getExamMasterSettigs()
-    {
-        // echo('<pre>');
-        // print_r($_REQUEST);
-        // exit;
+    public function getExamMasterSettigs($standard_id)
+    {        
         $str = 'select rm.* 
                 from result_master_confrigration rm
-                where rm.standard_id = ' . $_REQUEST['standard'] . ' 
+                where rm.standard_id = ' . $standard_id . ' 
                 and rm.sub_institute_id = ' . session()->get('sub_institute_id') . '';
         $str=str_replace("\r\n", "", $str);
         $result = DB::select(DB::raw($str));
-
-        // echo ('<pre>');print_r($result);exit;
+       
         $responce = array();
         foreach ($result as $id => $obj) {
             $responce['teacher_sign'] = $obj->teacher_sign;
@@ -717,9 +717,6 @@ class cbse_11_t2_result_controller extends Controller
             $responce['director_signatiure'] = $obj->director_signatiure;
             $responce['reopen_date'] = $obj->reopen_date;
         }
-        // echo('<pre>');
-        // print_r($responce);
-        // exit;
 
         return $responce;
     }

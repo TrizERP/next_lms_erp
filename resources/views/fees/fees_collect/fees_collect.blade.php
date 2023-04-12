@@ -100,18 +100,18 @@
                                         <div class="table-responsive">
                                             <table class="table table-stripped">
                                                 <tr>
-                                                    <td>Reg. No</td>
+                                                    <td>GR. No</td>
                                                     <td><?php echo $data['stu_data']['enrollment']; ?></td>
                                                 </tr>
                                                 <tr>
-                                                    <td>Sport/Coach</td>
+                                                    <td>Std/Div</td>
                                                     <td><?php echo $data['stu_data']['stddiv']; ?></td>
                                                 </tr>
                                                 <tr>
                                                     <td>Contact No</td>
                                                     <td><?php echo $data['stu_data']['mobile']; ?></td>
                                                 </tr>
-                                                <tr style="color: red; visibility:hidden">
+                                                <tr style="color: red;">
                                                     <td>Pending Fees</td>
                                                     <td><?php echo $data['stu_data']['pending']; ?></td>
                                                 </tr>

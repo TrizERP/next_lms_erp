@@ -97,15 +97,12 @@ class questionmasterController extends Controller
             $breadcrum_data->join('topic_master as t', 't.chapter_id', '=', 'c.id');
         }
 
-        $breadcrum_data = $breadcrum_data->where('c.sub_institute_id', '1')
-            ->where('c.id', '68')
-            ->get()
-            ->toArray();
-
-
         // dd($breadcrum_data);
-
-        return $breadcrum_data[0];
+        if (!empty($breadcrum_data)) {
+            return $breadcrum_data->first();
+        } else {
+            return 0;
+        }
     }
 
     /**

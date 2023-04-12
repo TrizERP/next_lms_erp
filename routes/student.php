@@ -139,7 +139,7 @@ Route::group(['prefix' => 'student', 'middleware' => ['session', 'menu', 'logRou
     Route::post('ajax_getBatch', [tblstudentController::class, 'ajax_getBatch'])->name('ajax_getBatch');
     Route::post('ajax_getOptionalSubject', [tblstudentController::class, 'ajax_getOptionalSubject'])->name('ajax_getOptionalSubject');
 
-    Route::post('ajax_getHomeworkSubjects', [studentHomeworkController::class, 'ajax_getHomeworkSubjects'])->name('ajax_getHomeworkSubjects');
+    Route::get('ajax_getHomeworkSubjects', [studentHomeworkController::class, 'ajax_getHomeworkSubjects'])->name('ajax_getHomeworkSubjects');
 
 });
 

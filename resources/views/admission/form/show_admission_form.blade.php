@@ -84,8 +84,8 @@
                                     @if (Session::get('sub_institute_id') == '74')
                                     <td>{{$data['form_no']}}</td>
                                     @endif
-                                    <td>{{date('d-m-Y', strtotime($data['created_on']))}}</td>
-                                    <td>{{date('d-m-Y', strtotime($data['followup_date']))}}</td>
+                                    <td>{{$data['created_on']}}</td>
+                                    <td>{{$data['followup_date']}}</td>
                                     <td>{{$data['first_name']}}</td>
                                     {{-- For Maheshvari School --}}
                                     @if (Session::get('sub_institute_id') != '198')
@@ -105,7 +105,7 @@
                                     @endif
                                     <td>{{$data['mobile']}}</td>
                                     <td>{{$data['email']}}</td>
-                                    <td>{{date('d-m-Y', strtotime($data['date_of_birth']))}}</td>
+                                    <td>{{$data['date_of_birth']}}</td>
                                     <td>{{$data['age']}}</td>
                                     <td>{{$data['previous_school_name']}}</td>
                                     <td>{{$data['previous_standard']}}</td>

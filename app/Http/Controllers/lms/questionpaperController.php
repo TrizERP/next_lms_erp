@@ -296,7 +296,7 @@ class questionpaperController extends Controller
             })->leftJoin('answer_master as am', function ($join) {
                 $join->whereRaw('am.question_id = qm.id AND correct_answer=1');
             })->selectRaw("qm.id,question_title,points,t.question_type,
-                ifnull(answer,'-') AS correct_answer,c.chapter_name,c.sort_order")
+                ifnull(am.answer,'-') AS correct_answer,c.chapter_name,c.sort_order")
             ->where('qm.standard_id', $std_id)
             ->where('qm.subject_id', $sub_id)
             ->where('qm.sub_institute_id', $sub_institute_id)
@@ -463,7 +463,7 @@ class questionpaperController extends Controller
         $sql = "
             SELECT * FROM 
             (SELECT qm.id,question_title,points,t.question_type,
-            ifnull(GROUP_CONCAT(answer),'-') AS correct_answer,c.chapter_name,c.sort_order,
+            ifnull(GROUP_CONCAT(DISTINCT(am.answer)),'-') AS correct_answer,c.chapter_name,c.sort_order,
             tm.name as topic_name,GROUP_CONCAT(lqm.mapping_type_id) as mapping_type,GROUP_CONCAT(lqm.mapping_value_id) as mapping_value
             FROM lms_question_master qm
             INNER JOIN question_type_master t ON t.id = qm.question_type_id 

@@ -65,8 +65,8 @@
                                     @endif    
                                     <td>{{$j}}</td>
                                     <td>{{$data['enquiry_no']}}</td>
-                                    <td>{{date('d-m-Y', strtotime($data['created_on']))}}</td>
-                                    <td>{{date('d-m-Y', strtotime($data['followup_date']))}}</td>
+                                    <td>{{$data['created_on']}}</td>
+                                    <td>{{$data['followup_date']}}</td>
                                     <td>{{$data['first_name']}}</td>
                                     @if (Session::get('sub_institute_id') != '198')
                                     <td>{{$data['middle_name']}}</td>
@@ -74,7 +74,7 @@
                                     <td>{{$data['last_name']}}</td>
                                     <td>{{$data['mobile']}}</td>
                                     <td>{{$data['email']}}</td>
-                                    <td>{{date('d-m-Y', strtotime($data['date_of_birth']))}}</td>
+                                    <td>{{$data['date_of_birth']}}</td>
                                     <td>{{$data['age']}}</td>
                                     <td>{{$data['previous_school_name']}}</td>
                                     <td>{{$data['previous_standard']}}</td>
