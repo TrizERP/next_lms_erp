@@ -87,7 +87,7 @@
                                     <thead>
                                     <tr>
                                         <th></th>
-                                        <th>Sr. No.</th>
+                                        <th>Sr.No.</th>
                                         <th>Date</th>
                                         <th>Week Day</th>
                                         <th>Standard</th>
@@ -95,7 +95,7 @@
                                         <th>Batch</th>
                                         <th>Period</th>
                                         <th>Subject</th>
-                                        <th>Proxy Teaher</th>
+                                        <th>Proxy Teacher</th>
                                     </tr>
                                     </thead>
                                     <tbody>

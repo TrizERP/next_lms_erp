@@ -232,26 +232,17 @@ class admissionReportController extends Controller
         }
 
         if (isset($report)) {
-            // "SELECT DISTINCT(ae.id),s.admission_id,ae.admission_standard, ae.first_name, ae.middle_name, ae.last_name, ae.mobile, ae.email,s.admission_id FROM admission_enquiry  ae
-            //     INNER JOIN admission_registration ar ON ae.sub_institute_id = ar.sub_institute_id and ar.enquiry_id = ae.id
-            //     Left JOIN tblstudent s ON s.sub_institute_id = ae.sub_institute_id and s.admission_id = ae.id
-            //     WHERE DATE_FORMAT(ae.created_on, '%Y-%m-%d') BETWEEN '".$from_date."' AND '".$to_date."'
-            //      AND ae.sub_institute_id = '".$sub_institute_id."' AND ae.syear = '".$syear."' and s.admission_id is null";
-        
-            $getQuery = DB::table('admission_enquiry as ae')
-                ->join('admission_registration as ar', function ($join) {
+            $getQuery = DB::table('admission_registration as ar')
+                ->join('admission_enquiry as ae', function ($join) {
                     $join->whereRaw('ar.enquiry_id = ae.id');
                 })
-                ->join('tblstudent as s',function($join){
+                ->leftJoin('tblstudent as s',function($join){
                     $join->whereRaw('s.admission_id = ae.id');
                 })
                 ->selectRaw('ar.*, ae.admission_standard, ae.first_name, ae.middle_name, ae.last_name, ae.mobile, ae.email')
-                ->whereRaw("DATE_FORMAT(ar.created_on, '%Y-%m-%d') BETWEEN '" . $from_date . "' AND '" . $to_date . "' ")
-                ->where([
-                    'ae.syear'=>$syear,
-                    'ae.sub_institute_id'=>$sub_institute_id
-                ])
-                ->whereNull('s.admission_id');
+                ->whereRaw("DATE_FORMAT(ar.created_on, '%Y-%m-%d') BETWEEN '" . $from_date . "' AND '" . $to_date . "'
+                    AND ae.sub_institute_id = '" . $sub_institute_id . "' AND ae.syear = '" . $syear . "'") ->whereNull('s.admission_id');
+
 
             if ($standard != '') {
                 $getQuery = $getQuery->where('ae.admission_standard', $standard);

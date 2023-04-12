@@ -196,7 +196,7 @@ class proxyController extends Controller
             );
             foreach ($dates as $key => $val) {
                 //Get free teacher according to period and day
-                $teacher_data = timetableModel::select(
+                /*$teacher_data = timetableModel::select(
                     'timetable.teacher_id as id',
                     DB::raw('concat(tbluser.first_name," ",tbluser.middle_name," ",tbluser.last_name) as teacher_name,
                         group_concat(timetable.period_id) as teacher_periods')
@@ -211,7 +211,57 @@ class proxyController extends Controller
                     //->where('timetable.period_id', '<>', $tval['period_id'])
                     ->groupBy('timetable.teacher_id')
                     ->havingraw(DB::raw('not find_in_set ("'.$tval["period_id"].'",teacher_periods)'))
-                    ->get();
+                    ->get();*/
+/*
+            $teacher_data = DB::table('tbluser as t')
+                ->select(DB::raw("CONCAT_WS(' ', t.first_name, t.middle_name, t.last_name) as teacher, cp.teacher_id, cp.period_id, t.user_group_id, t.user_name"))
+                ->join('tbluserprofilemaster as u', function ($join) {
+                    $join->on('u.id', '=', 't.user_group_id')
+                         ->where('u.name', '=', 'Teacher');
+                })
+                ->leftJoin('timetable as ti', 't.id', '=', 'ti.teacher_id')
+                ->where('ti.period_id', '<>', $tval["period_id"])
+                ->where('ti.teacher_id', '<>', $proxy_teacher_id)
+                ->where('ti.days', 'like', '%$tval["week_day"]%')
+                ->where('ti.syear', '=', $syear)
+                ->whereNull('t.is_active')
+                ->whereNotIn('ti.teacher_id', function($query) {
+                    $query->select('tt.teacher_id')
+                          ->from('timetable as tt')
+                          ->where('tt.syear', '=', $syear)
+                          ->where('tt.period_id', '=', $tval["period_id"])
+                          ->where('tt.days', 'like', '%$tval["week_day"]%');
+                })
+                ->groupBy('ti.teacher_id')
+                ->orderBy('t.first_name')
+                ->get();
+*/
+
+            $teacher_data = DB::table('tbluser as t')
+                ->select(DB::raw("CONCAT_WS(' ', t.first_name, t.middle_name, t.last_name) as teacher_name, t.id"))
+                ->join('tbluserprofilemaster as u', function ($join) use ($syear,$sub_institute_id) {
+                    $join->on('u.id', '=', 't.user_profile_id')
+                         ->where('u.name', '=', 'Teacher')
+                         ->where('u.sub_institute_id', '=', $sub_institute_id);
+                })
+                ->leftJoin('timetable as ti', 't.id', '=', 'ti.teacher_id')
+                ->where('ti.period_id', '<>', $tval["period_id"])
+                ->where('ti.teacher_id', '<>', $proxy_teacher_id)
+                ->where('ti.week_day', '=', $tval["week_day"])
+                ->where('ti.syear', '=', $syear)
+                ->where('ti.sub_institute_id', '=', $sub_institute_id)
+                ->where('t.status', '=', 1)
+                ->whereNotIn('ti.teacher_id', function($query) use ($tval, $syear,$sub_institute_id) {
+                    $query->select('tt.teacher_id')
+                          ->from('timetable as tt')
+                          ->where('tt.syear', '=', $syear)
+                          ->where('tt.sub_institute_id', '=', $sub_institute_id)
+                          ->where('tt.period_id', '=', $tval["period_id"])
+                          ->where('tt.week_day', '=', $tval["week_day"]);
+                })
+                ->groupBy('ti.teacher_id')
+                ->orderBy('t.first_name')
+                ->get();
 
                 $proxydata[] = [
                     'date'          => $val,
