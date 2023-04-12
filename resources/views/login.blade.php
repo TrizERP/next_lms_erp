@@ -1,9 +1,9 @@
-<!DOCTYPE html>  
+<!DOCTYPE html>
 <html lang="en">
 
 <!-- Mirrored from www.ampleadmin.wrappixel.com/ampleadmin-html/ampleadmin-minimal/login.html by HTTrack Website Copier/3.x [XR&CO'2014], Thu, 30 Aug 2018 10:12:45 GMT -->
 
-<?php 
+<?php
 
 $loginpage_link = session()->get('loginpage_link');
 $loginpage_logo = session()->get('loginpage_logo');
@@ -22,7 +22,7 @@ $loginpage_backgrond = session()->get('loginpage_backgrond');
 <meta name="author" content="">
 @if(!empty($loginpage_favicon))
   <link rel="icon" type="image/png" sizes="16x16" href={{$loginpage_favicon}} >
-@else             
+    @else
   <link rel="icon" type="image/png" sizes="16x16" href="../admin_dep/images/icon.png">
 @endif
 <title>TRIZ-ERP || LOGIN</title>
@@ -60,40 +60,40 @@ $loginpage_backgrond = session()->get('loginpage_backgrond');
           <div class="lg-info-panel h-100 d-flex align-items-center p-3" style="background:url({{$loginpage_backgrond}}) center;">
       @else
         <div class="lg-info-panel h-100 d-flex align-items-center p-3" style="background:url(https://p0.pikist.com/photos/545/980/students-women-female-woman-happy-girl-young-college-education.jpg) center;">
-      @endif 
+            @endif
           <div class="inner-panel">
             <!--<a href="javascript:void(0)" class="p-20 di"><img src="{{ asset("admin_dep/images/icon.png") }}"></a>-->
             <div class="lg-content">
                 @if(!empty($loginpage_logo))
                     {!!$loginpage_logo!!}
                 @else
-                  <center>
-                    <img src="https://erp.triz.co.in/admin_dep/images/triz.png" width="250px">
-                  </center>                
+                    <center>
+                        <img src="https://erp.triz.co.in/admin_dep/images/triz.png" width="250px">
+                    </center>
                 @endif
 
                 @if(!empty($loginpage_title))
-                  {!!$loginpage_title!!}
+                    {!!$loginpage_title!!}
                 @else
-                  <h2 class="text-light">Triz Institute of Maximize Learning</h2>                
-                @endif 
+                    <h2 class="text-light">Triz Institute of Maximize Learning</h2>
+                @endif
 
                 @if(!empty($loginpage_description))
-                  {!!$loginpage_description!!}
+                    {!!$loginpage_description!!}
                 @else
-                  <p class="text-light">Integrated Solution for digital needs</p>
-                @endif
-                <!-- <a href="#" class="btn btn-rounded btn-danger p-l-20 p-r-20"> Buy now</a> -->
+                    <p class="text-light">Integrated Solution for digital needs</p>
+            @endif
+            <!-- <a href="#" class="btn btn-rounded btn-danger p-l-20 p-r-20"> Buy now</a> -->
             </div>
           </div>
-      </div>
-    </div>
-    <div class="col-md-6">
-      <div class="new-login-box row align-items-center justify-content-center py-4">
-        <div class="col-md-8">
-          <div class="white-box123">            
-            <form class="form-horizontal new-lg-form" id="loginform" method="POST" action="/login">
-                @csrf
+        </div>
+          </div>
+            <div class="col-md-6">
+                <div class="new-login-box row align-items-center justify-content-center py-4">
+                    <div class="col-md-8">
+                        <div class="white-box123">
+                            <form class="form-horizontal new-lg-form" id="loginform" method="POST" action="/login">
+                                @csrf
               <h3 class="box-title m-b-0">Sign In to User</h3>
 
               @if(!empty($successMsg))
@@ -102,7 +102,7 @@ $loginpage_backgrond = session()->get('loginpage_backgrond');
 
               @if(!empty($data))
               <div class="alert alert-danger" role="alert">
-                {{ $data['message'] }} 
+                  {{ $data['message'] }}
               </div>
               @endif
               <div class="form-group  m-t-10">
@@ -126,7 +126,7 @@ $loginpage_backgrond = session()->get('loginpage_backgrond');
                         </div>
 
                         <div class="col-6">
-                            <img src="{{ asset('captcha/captcha.php') }}" width="100%"/>
+                            {!! captcha_img() !!}
                             <input type="hidden" name='hid_captcha' id="hid_captcha">
                         </div>
                     </div>
@@ -146,7 +146,7 @@ $loginpage_backgrond = session()->get('loginpage_backgrond');
                   <button class="btn btn-primary btn-lg btn-block" type="submit">Log In</button>
                 </div>
               </div>
-             
+
               <div class="form-group m-b-0">
                 <div class="col-sm-12 text-center h4">
                   <p>Not a member? <a href="{{ route('signup') }}" class="text-primary m-l-5"><b>Signup now</b></a></p>
@@ -182,13 +182,13 @@ $loginpage_backgrond = session()->get('loginpage_backgrond');
                 </div>
               </div>
             </form> -->
-          </div>
-        </div>  
-      </div>  
+                        </div>
+                    </div>
+                </div>
+            </div>
     </div>
-  </div>          
-  
-  
+
+
 </section>
 <!-- jQuery -->
 <script src="{{ asset("plugins/bower_components/jquery/dist/jquery.min.js") }}"></script>
@@ -219,7 +219,7 @@ $loginpage_backgrond = session()->get('loginpage_backgrond');
     //   $("#recoverform").hide(500);
     //   $("#loginform").show(500);
     // });
-    
+
   });
 </script>
 

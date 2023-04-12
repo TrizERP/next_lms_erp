@@ -168,6 +168,7 @@ return [
          * Package Service Providers...
          */
         GenTux\Jwt\Support\LaravelServiceProvider::class,
+        Mews\Captcha\CaptchaServiceProvider::class,
 
         /*
          * Application Service Providers...
@@ -192,7 +193,7 @@ return [
     */
 
     'aliases' => Facade::defaultAliases()->merge([
-        // ...
+        'Captcha' => Mews\Captcha\Facades\Captcha::class,
     ])->toArray(),
 
     'debug_blacklist' => [

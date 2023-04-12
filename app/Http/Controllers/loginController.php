@@ -37,13 +37,23 @@ class loginController extends Controller
             return $data;
         }
 
+
         $email = $request->input("email");
         $password = $request->input("password");
         $captchaText = $request->input("captchaText");
-        $hid_captcha = $request->input("hid_captcha");
+//        $hid_captcha = $request->input("hid_captcha");
 
-        if ($captchaText == env('CAPTCHA')) {
-            $captchaText = $hid_captcha;
+        if ($captchaText != env('CAPTCHA')) {
+            $validator = Validator::make($request->all(), [
+                'captchaText' => 'required|captcha',
+            ]);
+            if ($validator->fails()) {
+                $res['status_code'] = 0;
+                $res['message'] = "Invalid Captcha";
+
+                return is_mobile($type, "login", $res, "view");
+            }
+//            $captchaText = $hid_captcha;
         }
 
         // $data = loginModel::where(['email' => $email, 'password' => $password])->first();
@@ -114,7 +124,7 @@ class loginController extends Controller
                     })->leftJoin('tblgroupwise_rights as g', function ($join) {
                         $join->whereRaw('u.user_profile_id = g.profile_id AND u.sub_institute_id = g.sub_institute_id');
                     })->join('tblmenumaster as m', function ($join) use ($udata) {
-                        $join->whereRaw("(i.menu_id = m.id OR g.menu_id = m.id) AND FIND_IN_SET(".$udata['sub_institute_id'].", 
+                        $join->whereRaw("(i.menu_id = m.id OR g.menu_id = m.id) AND FIND_IN_SET(" . $udata['sub_institute_id'] . ",
                         m.sub_institute_id)");
                     })->selectRaw('GROUP_CONCAT(distinct m.id) AS MID')
                     ->whereIn('u.sub_institute_id', explode(',', $udata['sub_institute_id']))
@@ -130,12 +140,12 @@ class loginController extends Controller
                         })->leftJoin('tblgroupwise_rights as g', function ($join) {
                             $join->whereRaw('u.user_profile_id = g.profile_id AND u.sub_institute_id = g.sub_institute_id');
                         })->join('tblmenumaster as m', function ($join) use ($udata) {
-                            $join->whereRaw("(i.menu_id = m.id OR g.menu_id = m.id) AND FIND_IN_SET(".$udata['client_id'].", 
+                            $join->whereRaw("(i.menu_id = m.id OR g.menu_id = m.id) AND FIND_IN_SET(" . $udata['client_id'] . ",
                         m.client_id)");
                         })->selectRaw('GROUP_CONCAT(distinct m.id) AS MID')
                         ->whereIn('u.sub_institute_id', explode(',', $udata['sub_institute_id']))
                         ->where('u.id', $udata['id'])->get()->toArray();
-                    //END FOR MULTI-INSTITUTE		            
+                    //END FOR MULTI-INSTITUTE
                 } else {
                     $rightsQuery = DB::table('tbluser as u')
                         ->leftJoin('tblindividual_rights as i', function ($join) {
@@ -143,7 +153,7 @@ class loginController extends Controller
                         })->leftJoin('tblgroupwise_rights as g', function ($join) {
                             $join->whereRaw('u.user_profile_id = g.profile_id AND u.sub_institute_id = g.sub_institute_id');
                         })->join('tblmenumaster as m', function ($join) use ($udata) {
-                            $join->whereRaw("(i.menu_id = m.id OR g.menu_id = m.id) AND FIND_IN_SET(".$udata['sub_institute_id'].", 
+                            $join->whereRaw("(i.menu_id = m.id OR g.menu_id = m.id) AND FIND_IN_SET(" . $udata['sub_institute_id'] . ",
                         m.sub_institute_id)");
                         })->selectRaw('GROUP_CONCAT(distinct m.id) AS MID')
                         ->whereIn('u.sub_institute_id', explode(',', $udata['sub_institute_id']))
@@ -152,7 +162,7 @@ class loginController extends Controller
             }
 
             $rightsQuery = array_map(function ($value) {
-                return (array) $value;
+                return (array)$value;
             }, $rightsQuery);
             if (isset($rightsQuery['0']['MID'])) {
                 $rightsMenusIds = $rightsQuery['0']['MID'];
@@ -160,24 +170,25 @@ class loginController extends Controller
         }
         //END Check user Rights
 
-        if ($captchaText != $hid_captcha) {
-            if ($type != 'API' || $type != 'direct') {
-                $res['status_code'] = 0;
-                $res['message'] = "Invalid Captcha";
+//        if ($captchaText != $hid_captcha) {
+//        if (false) {
+//            if ($type != 'API' || $type != 'direct') {
+//                $res['status_code'] = 0;
+//                $res['message'] = "Invalid Captcha";
+//
+//                return is_mobile($type, "login", $res, "view");
+//            }
+//
+//        } else {
+        if (count($data) == 0) {
+            $res['status_code'] = 0;
+            $res['message'] = "Invalid User Id And Password";
 
-                return is_mobile($type, "login", $res, "view");
-            }
-
+            return is_mobile($type, "login", $res, "view");
         } else {
-            if (count($data) == 0) {
+            if ($rightsMenusIds == 0) { //Check user Rights
                 $res['status_code'] = 0;
-                $res['message'] = "Invalid User Id And Password";
-
-                return is_mobile($type, "login", $res, "view");
-            } else {
-                if ($rightsMenusIds == 0) { //Check user Rights
-                    $res['status_code'] = 0;
-                    $res['message'] = "Please Contact Administrator For ERP Rights";
+                $res['message'] = "Please Contact Administrator For ERP Rights";
 
                     return is_mobile($type, "login", $res, "view");
                 } else {
@@ -186,7 +197,7 @@ class loginController extends Controller
 
                     $userprofiledetails = tbluserprofilemasterModel::where(['id' => $user['user_profile_id']])->get()->toArray();
 
-                    //START FOR MULTI-INSTITUTE	            
+                //START FOR MULTI-INSTITUTE
                     if ($user['is_admin'] == 1) {
                         $schoolData = DB::table('tblclient')->where(['id' => $user['client_id']])->get()->toArray();
                         $schoolData = json_decode(json_encode($schoolData), true);
@@ -225,7 +236,7 @@ class loginController extends Controller
                         $request->session()->put('erpTour', '');
 
                         /*$checkUserTour = tourModel::where(['user_id' => $user['id'], 'sub_institute_id' => $user['sub_institute_id']])->get()->toArray();
-        
+
                         if (count($checkUserTour) > 0)
                         {
                             $inTour = $checkUserTour[0];
@@ -280,7 +291,7 @@ class loginController extends Controller
                             $request->session()->put('classTeacherStdArr', $classTeacherStdArr);
                             $request->session()->put('classTeacherDivArr', $classTeacherDivArr);
                         }
-                        //END set class teacher standard , grade , division        
+                        //END set class teacher standard , grade , division
 
 
                         $hrms_rights = DB::table('school_setup as s')->join('tblclient as c', function ($join) {
@@ -349,7 +360,7 @@ class loginController extends Controller
                     return is_mobile($type, "dashboard", $res);
                 }
             }
-        }
+//        }
     }
 
     public function logout(Request $request)

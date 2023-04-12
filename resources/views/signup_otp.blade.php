@@ -169,11 +169,11 @@ $loginpage_backgrond = session()->get('loginpage_backgrond');
 <script src="{{ asset("plugins/bower_components/bootstrap-datepicker/bootstrap-datepicker.min.js") }}"></script>
 <script>
     $(document).ready(function () {
-        $.ajax({
-            url: "../captcha/getcaptcha.php", success: function (result) {
-                $("#hid_captcha").val(result);
-            }
-        });
+        // $.ajax({
+        //     url: "../captcha/getcaptcha.php", success: function (result) {
+        //         $("#hid_captcha").val(result);
+        //     }
+        // });
 
         jQuery('.mydatepicker, #datepicker').datepicker({
             autoclose: true,
