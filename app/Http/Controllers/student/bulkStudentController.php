@@ -371,19 +371,19 @@ class bulkStudentController extends Controller
         return is_mobile($type, "student/bulk_student_update", $res, "view");
     }
 
-    public function bulkUpdate(Request $request)
-    {
-
+    public function bulkUpdate(Request $request) {
+        
         $type = $request->input('type');
         $syear = $request->session()->get('syear');
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $values = $request->post('values');
         $file = $request->file('values');
+        //dd($file);        
 
         foreach ($values as $key => $value) {
 
             $value['id'] = $key;
-            $studentEnrollment = [];
+            $studentEnrollment = array();
             if (isset($value['standard'])) {
                 $studentEnrollment['standard_id'] = $value['standard'];
             }
@@ -400,47 +400,45 @@ class bulkStudentController extends Controller
                 $studentEnrollment['house_id'] = $value['house'];
             }
 
-            if (count($studentEnrollment) > 0) {
-
+            if (count($studentEnrollment) > 0) {               
+                
                 $studentEnrollment['updated_on'] = date('Y-m-d H:i:s');
                 tblstudentEnrollmentModel::where(['student_id' => $key, 'syear' => $syear])->update($studentEnrollment);
             }
 
             $this->updateData($value);
 
-        }
-
+        }    
+        
 
         if (isset($file)) {
             foreach ($file as $student_id => $req) {
 
-                $dataCustomFields = tblcustomfieldsModel::select('field_name')->where([
-                    'status' => "1",
-                    'table_name' => "tblstudent",
-                    'field_type' => "file",
-                ])
+                $dataCustomFields = tblcustomfieldsModel::select('field_name')->where(['status' => "1", 'table_name' => "tblstudent", 'field_type' => "file"])
                     ->whereRaw('(sub_institute_id = ' . $sub_institute_id . ' OR common_to_all = 1)')
                     ->get()
                     ->toArray();
-                $files = [];
-                $studentEnrollmentData = [];
+                $files = array();
+                $studentEnrollmentData = array();
                 $studentEnrollmentData['id'] = $student_id;
-
+                
                 //For compulsory image field
-                foreach ($req as $key1 => $val1) {
+                foreach($req as $key1 => $val1)
+                {
                     $files = $request->file('values')[$student_id];
-                    if (!in_array($key1, $dataCustomFields[0])) {
-                        if (isset($files[$key1])) {
+                    if( !in_array($key1,$dataCustomFields[0]) )
+                    {
+                        if (isset($files[$key1])) {                     
                             $file = $files[$key1];
                             $originalname = $file->getClientOriginalName();
-                            $ext = File::extension($originalname);
-                            $file_name = $student_id . '.' . $ext;
+                            $ext = \File::extension($originalname);
+                            $file_name = $student_id . '.' . $ext;                      
                             $path = $file->storeAs('public/student/', $file_name);
                             $studentEnrollmentData[$key1] = $file_name;
                         }
-                    }
+                    }                   
                 }
-
+                
                 //for custom image fields
                 foreach ($dataCustomFields as $key => $value) {
                     $files = $request->file('values')[$student_id];
@@ -456,6 +454,7 @@ class bulkStudentController extends Controller
                     }
 
                 }
+                // dd($studentEnrollmentData);
                 $this->updateData($studentEnrollmentData);
             }
         }
@@ -467,8 +466,7 @@ class bulkStudentController extends Controller
 
     }
 
-    public function updateData($data)
-    {
+    public function updateData($data) {
         $newRequest = $data;
         $student_id = $newRequest['id'];
         // $sub_institute_id = $request->session()->get('sub_institute_id');
@@ -476,28 +474,27 @@ class bulkStudentController extends Controller
         // $finalArray['password'] = md5('student');
         // $finalArray['status'] = 1;
         // unset($newRequest['student_image']);
-        $finalArray = [];
+        $finalArray = array();
         foreach ($newRequest as $key => $value) {
             if ($key != '_method' && $key != '_token' && $key != 'submit' && $key != 'grade' && $key != 'standard' && $key != 'division' && $key != 'student_quota' && $key != 'id' && $key != 'house') {
                 if (is_array($value)) {
                     $value = implode(",", $value);
                 }
-                if ($key == 'dob' || $key == 'admission_date') {
-                    if (isset($value)) {
+                if ( $key == 'dob' || $key == 'admission_date') {
+                    if(isset($value))
                         $value = date('Y-m-d', strtotime($value));
-                    } else {
+                    else
                         $value = null;
-                    }
                 }
                 $finalArray[$key] = $value;
             }
         }
-
-        if (count($finalArray) > 0) {
+        // dd($finalArray);
+        if(count($finalArray) > 0){
             $finalArray['updated_on'] = date('Y-m-d H:i:s');
             $data = tblstudentModel::where(['id' => $student_id])->update($finalArray);
         }
-
         return $data;
+
     }
 }

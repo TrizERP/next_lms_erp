@@ -88,7 +88,7 @@ class examWiseProgressReportController extends Controller
 
         $grade_data = DB::table('result_std_grd_maping as rgm')
             ->join('grade_master_data as gm', function ($join) {
-                $join->where('gm.grade_id = rgm.grade_scale AND gm.sub_institute_id = rgm.sub_institute_id');
+                $join->whereRaw('gm.grade_id = rgm.grade_scale AND gm.sub_institute_id = rgm.sub_institute_id');
             })->selectRaw('gm.title,gm.breakoff')
             ->where('rgm.standard', $standard)
             ->where('rgm.sub_institute_id', $sub_institute_id)->get()->toArray();

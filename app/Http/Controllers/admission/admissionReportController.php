@@ -232,24 +232,21 @@ class admissionReportController extends Controller
         }
 
         if (isset($report)) {
-            $getQuery = DB::table('admission_registration as ar')
-                ->join('admission_enquiry as ae', function ($join) {
-                    $join->whereRaw('ar.enquiry_id = ae.id');
-                })
-                ->leftJoin('tblstudent as s',function($join){
-                    $join->whereRaw('s.admission_id = ae.id');
-                })
-                ->selectRaw('ar.*, ae.admission_standard, ae.first_name, ae.middle_name, ae.last_name, ae.mobile, ae.email')
-                ->whereRaw("DATE_FORMAT(ar.created_on, '%Y-%m-%d') BETWEEN '" . $from_date . "' AND '" . $to_date . "'
-                    AND ae.sub_institute_id = '" . $sub_institute_id . "' AND ae.syear = '" . $syear . "'") ->whereNull('s.admission_id');
-
+            $getQuery = DB::table('admission_form as af')
+                    ->select('af.*','ar.*', 'ae.admission_standard', 'ae.first_name', 'ae.middle_name', 'ae.last_name', 'ae.mobile', 'ae.email')
+                    ->join('admission_enquiry as ae', 'af.enquiry_id', '=', 'ae.id')
+                    ->leftJoin('admission_registration as ar', 'ar.enquiry_id', '=', 'ae.id')
+                    ->whereBetween(DB::raw('DATE_FORMAT(af.created_on, "%Y-%m-%d")'), [$from_date, $to_date])
+                    ->where('ae.sub_institute_id', '=', $sub_institute_id)
+                    ->where('ae.syear', '=', $syear)
+                    ->whereNull('ar.id');
 
             if ($standard != '') {
                 $getQuery = $getQuery->where('ae.admission_standard', $standard);
             }
 
             if ($status != '') {
-                $getQuery = $getQuery->where('ar.status', $standard);
+                $getQuery = $getQuery->where('af.status', $status);
             }
 
             $data = $getQuery->get()->toArray();

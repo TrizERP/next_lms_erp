@@ -17,6 +17,7 @@
         "mews/captcha": "^3.3",
         "opcodesio/log-viewer": "^2.4",
         "phpmailer/phpmailer": "^6.7",
+        "phpoffice/phpexcel": "^1.8",
         "razorpay/razorpay": "^2.8"
     },
     "require-dev": {

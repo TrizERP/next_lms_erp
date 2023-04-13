@@ -4,20 +4,21 @@
 @include('includes.sideNavigation')
 
 <style>
-    .filter-button {
+    .filter-button 
+    {
         margin: 0;
     }
 </style>
 <div id="page-wrapper">
     <div class="container-fluid">
-        <div class="row bg-title">
-            <div class="col-lg-3 col-md-4 col-sm-4 col-xs-12">
-                <h4 class="page-title">Bulk Student Update</h4>
+            <div class="row bg-title">
+                <div class="col-lg-3 col-md-4 col-sm-4 col-xs-12">
+                    <h4 class="page-title">Bulk Student Update</h4> 
+                </div>
             </div>
-        </div>
         @php
         $grade_id = $standard_id = $division_id = $order_by = '';
-
+        
             if(isset($data['grade_id'])){
                 $grade_id = $data['grade_id'];
                 $standard_id = $data['standard_id'];
@@ -26,7 +27,7 @@
              if(isset($data['order_by'])){
                 $order_by = $data['order_by'];
             }
-        @endphp
+        @endphp       
             <div class="card">
                 <div class="panel-body">
                     @if ($sessionData = Session::get('data'))
@@ -40,7 +41,6 @@
                     </div>
                     @endif
                     <form action="{{ route('show_bulk_student') }}" enctype="multipart/form-data" method="post">
-                        @csrf
                         <div class="row">
                             {{ App\Helpers\SearchChain('3','single','grade,std,div',$grade_id,$standard_id,$division_id) }}
                         </div>
@@ -51,19 +51,16 @@
                                 <option @if($order_by == 'student_name') selected="selected" @endif value="student_name">Student Name</option>
                                 <option @if($order_by == 'standard_id') selected="selected" @endif value="standard_id">Standard</option>
                                 <option @if($order_by == 'enrollment_no') selected="selected" @endif value="enrollment_no">Enrollment No</option>
-                                <option @if($order_by == 'roll_no') selected="selected" @endif value="roll_no">Roll No
-                                </option>
+                                <option @if($order_by == 'roll_no') selected="selected" @endif value="roll_no">Roll No</option>
                             </select>
-                        </div>
+						</div>
                         <div class="col-md-3 col-sm-offset-4 text-center form-group">
-                            <input type="submit" name="submit" value="Search" class="btn btn-success triz-btn">
-                            <div class="btn btn-outline-primary btn-sm ml-2 py-2 px-3 cursor-pointer"
-                                 data-toggle="modal" data-target="#modalCenter"><span class="mdi mdi-tune"></span></div>
+                            <input type="submit" name="submit" value="Search" class="btn btn-success triz-btn" >    
+                            <div class="btn btn-outline-primary btn-sm ml-2 py-2 px-3 cursor-pointer" data-toggle="modal" data-target="#modalCenter"><span class="mdi mdi-tune"></span></div>
                         </div>
 
                         <!-- Modal -->
-                        <div class="modal fade bd-example-modal-lg" id="modalCenter" tabindex="-1" role="dialog"
-                             aria-labelledby="modalCenterTitle" aria-hidden="true">
+                        <div class="modal fade bd-example-modal-lg" id="modalCenter" tabindex="-1" role="dialog" aria-labelledby="modalCenterTitle" aria-hidden="true">
                             <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
                                 <div class="modal-content">
                                     <div class="modal-header">
@@ -87,7 +84,7 @@
                                                 $i = 1;
                                                 @endphp
                                                 @if(isset($data['data']))
-                                                    @foreach($data['data'] as $key => $value)
+                                                @foreach($data['data'] as $key => $value)                                                
                                                 <div class="col-md-4 form-group mt-1">
                                                     <div class="custom-control custom-checkbox">
                                                         @php
@@ -113,22 +110,21 @@
                                 </div>
 
                             </div>
-                        </div>
-
-                    </form>
-                    </div>
+                        </div>                    
+                            
+                    </form>       
                 </div>
+            </div>        
 
-                @if(isset($data['student_data']))
+        @if(isset($data['student_data']))
         @php
             if(isset($data['student_data'])){
                 $student_data = $data['student_data'];
-            }
+            }                
         @endphp
-                    <div class="white-box card">
-                        <h5 class="box-title">Student Fieldwise Report </h5>
-                        <form method="POST" action="{{route('bulk_update')}}" class="" enctype="multipart/form-data">
-                            @csrf
+        <div class="white-box card">
+            <h5 class="box-title">Student Fieldwise Report </h3>
+            <form method="POST" action="{{route('bulk_update')}}" class="" enctype="multipart/form-data">
                 <div class="table-responsive">
                     <table class="table table-striped table-bordered display">
                         <thead>
@@ -137,12 +133,12 @@
                                     <th data-toggle="tooltip" title="{{$header['name']}}"> {{$header['name']}} </th>
                                 @endforeach
                             </tr>
-                        </thead>
+                        </thead> 
                         <tbody>
-
-                        @foreach($student_data as $key => $value)
-                            <tr>
-                                @foreach($data['headers'] as $hkey => $header)
+                            
+                            @foreach($student_data as $key => $value)
+                                <tr>    
+                                    @foreach($data['headers'] as $hkey => $header)
                                         @if($hkey == "student_name")
                                         <td>{{$value->$hkey}}</td>
                                         @else
@@ -153,9 +149,9 @@
                                                 <td>{{$value->$hkey}}</td>
                                                 @else
                                                 <td><input type="text" name="values[{{$value->id}}][{{$hkey}}]" value="{{$value->$hkey}}"></td>
-                                            @endif
-                                        @elseif($header['type'] == "dropdown")
-                                            <td>
+                                                @endif                                                    
+                                            @elseif($header['type'] == "dropdown")
+                                            <td>													
                                                 @php
                                                     $disable = "";
                                                     if($hkey == "student_quota" && $value->total_amount > 0)
@@ -176,28 +172,24 @@
                                             <td>
                                                 @if(isset($data['fieldsData'][$hkey]))
                                                     @foreach($data['fieldsData'][$hkey] as $dkey => $dvalue)
-                                                        <input type="checkbox" name="values[{{$value->id}}][{{$hkey}}]"
-                                                               @if($dkey == $value->$hkey)  selected="selected" @endif>
+                                                        <input type="checkbox" name="values[{{$value->id}}][{{$hkey}}]" @if($dkey == $value->$hkey)  selected="selected" @endif>
                                                     @endforeach
                                                 @endif
                                             </td>
-                                        @elseif($header['type'] == "date")
-                                            <td><input type="text" class="mydatepicker"
-                                                       name="values[{{$value->id}}][{{$hkey}}]"
-                                                       value="{{$value->$hkey}}"></td>
-                                        @elseif($header['type'] == "file")
-                                            <td><input type="file" name="values[{{$value->id}}][{{$hkey}}]">
-                                                @if($value->$hkey != '')
-                                                    <image height="50px" width="50px"
-                                                           src="/storage/student/{{$value->$hkey}}">
-                                                @endif
-                                            </td>
+                                            @elseif($header['type'] == "date")
+                                                <td><input type="text" class="mydatepicker" name="values[{{$value->id}}][{{$hkey}}]" value="{{$value->$hkey}}"></td>
+                                            @elseif($header['type'] == "file")
+                                                <td><input type="file" name="values[{{$value->id}}][{{$hkey}}]">
+                                                    @if($value->$hkey != '')
+                                                    <image height="50px" width="50px" src="/storage/student/{{$value->$hkey}}"> 
+                                                    @endif
+                                                </td>
+                                            @endif
                                         @endif
-                                    @endif
 
-                                @endforeach
-                            </tr>
-                        @endforeach
+                                    @endforeach 
+                                </tr>
+                            @endforeach 
                         </tbody>
                     </table>
                 </div>
@@ -217,39 +209,41 @@
 @include('includes.footerJs')
 <script>
     var checked = false;
-function checkedAll() {
+function checkedAll()
+{
     if (checked == false) {
         checked = true
     } else {
         checked = false
     }
-    for (var i = 0; i < document.getElementsByName('dynamicFields[]').length; i++) {
+    for (var i = 0; i < document.getElementsByName('dynamicFields[]').length; i++)
+    {
         document.getElementsByName('dynamicFields[]')[i].checked = checked;
     }
-}
+}    
 </script>
     <script>
-        $('#grade').attr('required', true);
-        $('#standard').attr('required', true);
+    $('#grade').attr('required',true);
+    $('#standard').attr('required',true);    
 
-        $(document).ready(function () {
-            var table = $('#example').DataTable({
-                select: true,
-                lengthMenu: [
-                    [100, 500, 1000, -1],
-                    ['100', '500', '1000', 'Show All']
-                ]
-            });
+   $(document).ready(function() {
+     var table = $('#example').DataTable( {
+         select: true,          
+         lengthMenu: [ 
+                        [100, 500, 1000, -1], 
+                        ['100', '500', '1000', 'Show All'] 
+        ] 
+        }); 
 
-            $('#example thead tr').clone(true).appendTo('#example thead');
-            $('#example thead tr:eq(1) th').each(function (i) {
-                var title = $(this).text();
-                $(this).html('<input type="text" placeholder="Search ' + title + '" />');
+        $('#example thead tr').clone(true).appendTo( '#example thead' );
+        $('#example thead tr:eq(1) th').each( function (i) {
+            var title = $(this).text();
+            $(this).html( '<input type="text" placeholder="Search '+title+'" />' );
 
-                $('input', this).on('keyup change', function () {
-                    if (table.column(i).search() !== this.value) {
-                        table
-                            .column(i)
+            $( 'input', this ).on( 'keyup change', function () {
+                if ( table.column(i).search() !== this.value ) {
+                    table
+                        .column(i)
                         .search( this.value )
                         .draw();
                 }

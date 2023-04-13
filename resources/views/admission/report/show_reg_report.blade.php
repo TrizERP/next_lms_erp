@@ -49,7 +49,7 @@
                     <div class="col-md-12">
                         <center>                            
                             <input type="submit" name="report" value="Search" class="btn btn-success"> 
-                            <button type="button" class="btn btn-info" data-toggle="modal" data-target="#exampleModal"><i class="mdi mdi-tune"></i></button>
+                            <!--<button type="button" class="btn btn-info" data-toggle="modal" data-target="#exampleModal"><i class="mdi mdi-tune"></i></button>-->
                         </center>
                     </div>
 
@@ -107,7 +107,7 @@
                         </div>
                       </div>
                     </div>
-                </div>                   
+                </div>
             </form> 
         </div>       
                     
