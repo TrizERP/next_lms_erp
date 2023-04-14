@@ -89,6 +89,7 @@ Route::group(['prefix' => 'lms', 'middleware' => ['session', 'menu', 'logRoute']
     Route::get('question_chapter_master', [questionmasterController::class, 'indexChapter'])->name('question_chapter_master');
 
     Route::resource('question_paper', questionpaperController::class);
+    Route::post('question_paper/search', [questionpaperController::class,'search']);
     Route::resource('bulk_chapter_upload', bulk_chapter_uploadController::class);
     Route::get('ajax_SubjectwiseQuestion', [questionpaperController::class, 'ajax_SubjectwiseQuestion'])->name('ajax_SubjectwiseQuestion');
 

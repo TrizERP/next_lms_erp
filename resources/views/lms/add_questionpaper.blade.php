@@ -40,11 +40,19 @@ br{
                     <strong>{{ $message }}</strong>
                 </div>
                 @endif
-               <form action="@if (isset($data['questionpaper_data']))
+@if ($message = Session::get('failed'))
+                <div class="alert alert-danger alert-block">
+                    <button type="button" class="close" data-dismiss="alert">×</button>
+                    <strong>{{ $message }}</strong>
+                </div>
+                @endif
+
+               <!-- <form action="@if (isset($data['questionpaper_data']))
                     {{ route('question_paper.update',[$data['questionpaper_data']['id']])}}
                     @else
                     {{ route('question_paper.store') }}
-                    @endif" method="post" enctype='multipart/form-data' onsubmit="return check_validation();">                          
+                    @endif" method="post" enctype='multipart/form-data' onsubmit="return check_validation();"> -->  
+                    <form action="{{url('/lms/question_paper/search')}}" method="post">                       
                         @if(!isset($data['questionpaper_data']))
                         {{ method_field("POST") }}
                         @else
@@ -63,7 +71,7 @@ br{
                                 @endif 
                                 <div class="col-md-4 form-group">                        
                                     <label for="subject">Select Subject:</label>
-                                    <select name="subject" id="subject" class="form-control mb-0" required>
+                                    <select name="subject" id="subject" class="form-control mb-0" >
                                         <option value="">Select Subject</option> 
                                         @if(isset($data['questionpaper_data'])) 
                                         @foreach($data['subjects'] as $key => $value)
@@ -103,7 +111,9 @@ br{
                                     </select>               
                                 </div> 
                                 <div class="col-md-1 form-group">
-                                    <input type="button" name="search" value="Search" class="btn btn-success" onclick="search_questionList();">
+                                    <input type="submit" name="submit" value="Search" class="btn btn-success">
+                                    <!-- <input type="button" name="search" value="hello" class="btn btn-success" onclick="search_questionList();"> -->
+
                                 </div> 
 
                             </div>
@@ -111,17 +121,17 @@ br{
                     
                         <div class="col-md-4 form-group">
                             <label>Exam Name / Paper Name</label>
-                            <input type="text" id='paper_name' name="paper_name" value="@if(isset($data['questionpaper_data']['paper_name'])){{$data['questionpaper_data']['paper_name']}}@endif" class="form-control mb-0" required>
+                            <input type="text" id='paper_name' name="paper_name" value="@if(isset($data['questionpaper_data']['paper_name'])){{$data['questionpaper_data']['paper_name']}}@endif" class="form-control mb-0" >
                         </div>
                                                                                                            
                         <div class="col-md-4 form-group">
                             <label>Exam Description / Paper Description</label>
-                            <input type="text" id='paper_desc' name="paper_desc" value="@if(isset($data['questionpaper_data']['paper_desc'])){{$data['questionpaper_data']['paper_desc']}}@endif" class="form-control mb-0" required>
+                            <input type="text" id='paper_desc' name="paper_desc" value="@if(isset($data['questionpaper_data']['paper_desc'])){{$data['questionpaper_data']['paper_desc']}}@endif" class="form-control mb-0" >
                         </div> 
                         
                         <div class="col-md-4 form-group">
                             <label for="subject">Attempt Allowed:</label>
-                            <select name="attempt_allowed" id="attempt_allowed" class="form-control mb-0" required onchange="show_ans(this.value);">
+                            <select name="attempt_allowed" id="attempt_allowed" class="form-control mb-0"  onchange="show_ans(this.value);">
                                 <option value="">Select Attempt Allowed</option>                                 
                                     <option value="unlimited" @if(isset($data['questionpaper_data']['attempt_allowed'])) @if($data['questionpaper_data']['attempt_allowed']=='unlimited') selected='selected' @endif @endif>Unlimited</option>
                                     @for($i=1;$i<=10;$i++)
@@ -164,7 +174,7 @@ br{
                             @if( isset($data['questionpaper_data']['timelimit_enable']) && $data['questionpaper_data']['timelimit_enable'] == 0) 
                             readonly
                             @endif
-                            class="form-control" style="width: 100px;" required><b></b>
+                            class="form-control" style="width: 100px;" ><b></b>
                         </div>
 
                         <div class="col-md-4 form-group">
@@ -172,7 +182,7 @@ br{
                             <div class="radio-list">
                                 <label class="radio-inline p-0">
                                     <div class="radio radio-success">
-                                        <input type="radio" name="exam_type" value="online" required 
+                                        <input type="radio" name="exam_type" value="online"  
                                         @if( isset($data['questionpaper_data']['exam_type']) && $data['questionpaper_data']['exam_type'] == "online") 
                                         checked
                                         @else if( !isset($data['questionpaper_data']['exam_type']) )
@@ -183,7 +193,7 @@ br{
                                 </label>
                                 <label class="radio-inline">
                                     <div class="radio radio-success">
-                                        <input type="radio" name="exam_type" value="offline" required 
+                                        <input type="radio" name="exam_type" value="offline"  
                                         @if( isset($data['questionpaper_data']['exam_type']) && $data['questionpaper_data']['exam_type'] == "offline") 
                                         checked                                        
                                         @endif>                                        
@@ -246,10 +256,10 @@ br{
                             <label for='total_marks'>Total Marks</label>
                             <input type="text" id='total_marks' name="total_marks" value="@if(isset($data['questionpaper_data']['total_marks'])){{$data['questionpaper_data']['total_marks']}}@endif" class="form-control mb-0" readonly>
                         </div>  
-
-                        <div class="col-md-12 form-group border border-dark" id="questiondiv" style="display:none;">
-                            <table id="questiontable" class="table table-striped table-bordered mb-0" style="width:100%">
-                                
+                        @if(isset($questionData) && count($questionData) > 0)
+                               
+                        <div class="col-md-12 form-group border border-dark" >
+                            <table id="questiontable" class="table table-striped table-bordered mb-0">
                                 <thead>
                                     <tr>
                                         <th></th>
@@ -260,13 +270,31 @@ br{
                                         <th>Question Type</th>
                                         <th>Correct Answer</th>
                                         <th>Marks</th>
-                                        <th>Action</th>
+                                        <th>Mappings</th>
                                     </tr>
                                 </thead>
-                                <tbody id="questiontable_tbody">                                    
+                                <tbody>   
+            
+            @php $j = 0; @endphp
+
+
+                                @foreach($questionData as $data)
+                                <tr>
+                                    <td><input type="checkbox" onclick="add_question();" name="questions[]" title="{{$data['points']}}'" value="{{$data['points']}}"></td>
+                                    <td>{{$data['question_title']}}</td>
+                                    <td>{{$data['chapter_name']}}</td>
+                                    <td>{{$data['sort_order']}}</td>
+                                    <td>{{$data['topic_name']}}</td>
+                                    <td>{{$data['question_type']}}</td>
+                                    <td>{{$data['correct_answer']}}</td>
+                                    <td>{{$data['points']}}</td>
+                                    <td>@if(isset($data['LMS_MAPPING_DATA'])){!! $data['LMS_MAPPING_DATA'] !!}@endif</td>
+                                    </tr>
+                                @endforeach      
                                 </tbody>
                             </table>
                         </div> 
+                        @endif  
                         @php
                         $question_ids = "";
                         if( isset($data['questionpaper_data']['question_ids']) )
@@ -285,7 +313,7 @@ br{
             </div>
         </div>
     </div>
-
+                                     
 </div>
 
 
@@ -413,9 +441,13 @@ $( document ).ready(function() {
 
 function show_mappings(id)
 {                   
-    var data_html = $("#mapping_data_"+id).val();    
+    var data_html = $("#mapping_data_"+id).val();
+    $('#map').html(data_html);
+
     $('#modal-body').html(data_html);
+
     $('#myModal').modal('show');
+
 }
 
 //START Load Questions
@@ -439,7 +471,7 @@ $("#subject").change(function(){
     // END Bind subject-wise chapter   
 
 
-    get_questionList(); //Bind Question List
+    // get_questionList(); //Bind Question List
 })
 //END Load Questions
 
@@ -482,11 +514,12 @@ function get_questionList()
         success:function(result){             
             $("#questiondiv").css("display", "block")           
             $("#questiontable_tbody").empty();                        
+                console.log(result);
 
             var hidden_question_ids = $("#hidden_question_ids").val();   
             for(var i=0;i <= result.length ;i++)
             {
-                //console.log(result[i]['question_title']);
+                // console.log(result[i]['question_title']);
                 var sel = "";
                      
                 if(hidden_question_ids != "")
@@ -500,7 +533,7 @@ function get_questionList()
                     }
                 } 
 
-                $("#questiontable_tbody").append('<tr class="child"><td><input type="checkbox" '+sel+' onclick="add_question();" name="questions[]" title="'+result[i]['points']+'" value="'+result[i]['id']+'"></td><td>'+result[i]['question_title']+'</td><td>'+result[i]['chapter_name']+'</td><td>'+result[i]['sort_order']+'</td><td>'+result[i]['topic_name']+'</td><td>'+result[i]['question_type']+'</td><td>'+result[i]['correct_answer']+'</td><td>'+result[i]['points']+'</td><td><input type="hidden" name="mapping_data_'+result[i]['id']+'" id="mapping_data_'+result[i]['id']+'" value="'+result[i]['LMS_MAPPING_DATA']+'"><button class="btn btn-primary btn-lg" data-toggle="modal" onclick="show_mappings('+result[i]['id']+');">Show Mappings</button></td></tr>');            
+                $("#questiontable_tbody").append('<tr class="child"><td><input type="checkbox" '+sel+' onclick="add_question();" name="questions[]" title="'+result[i]['points']+'" value="'+result[i]['id']+'"></td><td>'+result[i]['question_title']+'</td><td>'+result[i]['chapter_name']+'</td><td>'+result[i]['sort_order']+'</td><td>'+result[i]['topic_name']+'</td><td>'+result[i]['question_type']+'</td><td>'+result[i]['correct_answer']+'</td><td>'+result[i]['points']+'</td><td>'+result[i]['LMS_MAPPING_DATA']+'<td></td></tr>');            
                   MathJax.Hub.Queue(["Typeset",MathJax.Hub,"questiontable_tbody"]);                
             }
 
