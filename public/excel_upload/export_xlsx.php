@@ -148,8 +148,6 @@ if (isset($_REQUEST['sub_institute_iderp']) && $_REQUEST['sub_institute_iderp'] 
                             echo "</FORM>";
 
                             if (isset($_REQUEST['sbtsubmit']) && $_REQUEST['sbtsubmit'] == 'Submit') {
-                                echo 'svsksf';
-                                die;
                                 $coexamSql = '';
                                 $titleArr = array();
                                 $stuSqlRet = array();
@@ -177,12 +175,14 @@ if (isset($_REQUEST['sub_institute_iderp']) && $_REQUEST['sub_institute_iderp'] 
                                 //print_r($titleArr);
                                 $fileName = exportExcel($titleArr, $stuSqlRet, $exportfileName, $excelVersion, $sheetPaasWord);
 
-                                $valid_str = "";
-                                $valid_str .= "<script language='javascript'>";
-                                $valid_str .= 'console.log(324)';
-                                $valid_str .= 'window.location.href = "export_xlsx.php?fileName=' . $fileName . '"';
-                                $valid_str .= "</script>";
-                                echo $valid_str;
+                                header('Location: export_xlsx.php?fileName=' . $fileName);
+//
+//                                $valid_str = "";
+//                                $valid_str .= "<script language='javascript'>";
+//                                $valid_str .= 'console.log(324)';
+//                                $valid_str .= 'window.location.href = "export_xlsx.php?fileName=' . $fileName . '"';
+//                                $valid_str .= "</script>";
+//                                echo $valid_str;
                             }
 
                             if (isset($_REQUEST['fileName']) && $_REQUEST['fileName'] != '') {
@@ -329,8 +329,7 @@ if (isset($_REQUEST['sub_institute_iderp']) && $_REQUEST['sub_institute_iderp'] 
 
     <script type="text/javascript">
         function updateTour(module) {
-            var url = https
-        ://erp.triz.co.in/tourUpdate + "?module="+module;
+            var url = 'https://erp.triz.co.in/tourUpdate' + "?module=" + module;
             var xhttp = new XMLHttpRequest();
             xhttp.onreadystatechange = function () {
                 if (this.readyState == 4 && this.status == 200) {
