@@ -175,13 +175,6 @@ if (isset($_REQUEST['sub_institute_iderp']) && $_REQUEST['sub_institute_iderp'] 
                                 //print_r($titleArr);
                                 $fileName = exportExcel($titleArr, $stuSqlRet, $exportfileName, $excelVersion, $sheetPaasWord);
 
-//                                header('Location: export_xlsx.php?fileName=' . $fileName);
-                                ?>
-                                <script>
-                                    console.log(325);
-                                    window.location.href = "export_xlsx.php?fileName=' <?php echo $fileName; ?> '";
-                                </script>
-                                <?php
 //                                $valid_str = "";
 //                                $valid_str .= "<script>";
 //                                $valid_str .= "console.log(324)";
