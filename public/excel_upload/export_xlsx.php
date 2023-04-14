@@ -148,7 +148,6 @@ if (isset($_REQUEST['sub_institute_iderp']) && $_REQUEST['sub_institute_iderp'] 
                             echo "</form>";
 
                             if (isset($_REQUEST['sbtsubmit']) && $_REQUEST['sbtsubmit'] == 'Submit') {
-                                echo "sbtsubmit : Submit";
 //                                $coexamSql = '';
 //                                $titleArr = array();
 //                                $stuSqlRet = array();
@@ -184,9 +183,8 @@ if (isset($_REQUEST['sub_institute_iderp']) && $_REQUEST['sub_institute_iderp'] 
 //                                echo $valid_str;
                             }
                             if (isset($_GET['fileName']) && $_GET['fileName'] != '') {
-                                echo 'gvsdg';
                                 $fileName = $_REQUEST['fileName'];
-                                echo "<div" >;
+                                echo "<div>";
                                 echo "<form enctype=\"multipart/form-data\" name=downloadForm id=downloadForm METHOD='POST'>";
                                 if (file_exists('assets/' . $fileName)) {
                                     echo "<table border=0>";
