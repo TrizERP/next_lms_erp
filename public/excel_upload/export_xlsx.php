@@ -123,7 +123,7 @@ if (isset($_REQUEST['sub_institute_iderp']) && $_REQUEST['sub_institute_iderp'] 
 
                             $getTables = mysqli_query($cn, "SELECT * FROM import_table_fields group by table_name order by id");
 
-                            echo "<FORM name=subexam class=form-inline id=subexam method='GET'>";
+                            echo "<form name=subexam class=form-inline id=subexam method='GET'>";
 
                             ?>
                             <div class="form-group">
@@ -145,7 +145,7 @@ if (isset($_REQUEST['sub_institute_iderp']) && $_REQUEST['sub_institute_iderp'] 
                             <?php
 
                             echo '          <input type="submit" name="sbtsubmit" value="Submit" class="btn btn-default"/>';
-                            echo "</FORM>";
+                            echo "</form>";
 
                             if (isset($_REQUEST['sbtsubmit']) && $_REQUEST['sbtsubmit'] == 'Submit') {
                                 $coexamSql = '';
@@ -182,11 +182,10 @@ if (isset($_REQUEST['sub_institute_iderp']) && $_REQUEST['sub_institute_iderp'] 
 //                                $valid_str .= "</script>";
 //                                echo $valid_str;
                             }
-                            print_r($_GET);
                             if (isset($_GET['fileName']) && $_GET['fileName'] != '') {
                                 echo 'gvsdg';
                                 $fileName = $_REQUEST['fileName'];
-
+                                echo "<div" >;
                                 echo "<form enctype=\"multipart/form-data\" name=downloadForm id=downloadForm METHOD='POST'>";
                                 if (file_exists('assets/' . $fileName)) {
                                     echo "<table border=0>";
@@ -195,6 +194,7 @@ if (isset($_REQUEST['sub_institute_iderp']) && $_REQUEST['sub_institute_iderp'] 
                                     echo "</table>";
                                 }
                                 echo "</form>";
+                                echo "</div>";
                             }
 
                             ?>
