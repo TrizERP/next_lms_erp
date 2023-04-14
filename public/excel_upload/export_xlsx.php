@@ -182,8 +182,8 @@ if (isset($_REQUEST['sub_institute_iderp']) && $_REQUEST['sub_institute_iderp'] 
 //                                $valid_str .= "</script>";
 //                                echo $valid_str;
                             }
-
-                            if (isset($_REQUEST['fileName']) && $_REQUEST['fileName'] != '') {
+                            print_r($_GET);
+                            if (isset($_GET['fileName']) && $_GET['fileName'] != '') {
                                 echo 'gvsdg';
                                 $fileName = $_REQUEST['fileName'];
 
