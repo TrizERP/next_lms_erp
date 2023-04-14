@@ -123,7 +123,7 @@ if (isset($_REQUEST['sub_institute_iderp']) && $_REQUEST['sub_institute_iderp'] 
 
                             $getTables = mysqli_query($cn, "SELECT * FROM import_table_fields group by table_name order by id");
 
-                            echo "<FORM name=subexam class=form-inline id=subexam method=post>";
+                            echo "<FORM name=subexam class=form-inline id=subexam method='GET'>";
 
                             ?>
                             <div class="form-group">
