@@ -123,7 +123,7 @@ if (isset($_REQUEST['sub_institute_iderp']) && $_REQUEST['sub_institute_iderp'] 
 
                             $getTables = mysqli_query($cn, "SELECT * FROM import_table_fields group by table_name order by id");
 
-                            echo "<FORM name=subexam class=form-inline id=subexam method='GET'>";
+                            echo "<FORM name=subexam class=form-inline id=subexam method='POST'>";
 
                             ?>
                             <div class="form-group">
@@ -148,6 +148,8 @@ if (isset($_REQUEST['sub_institute_iderp']) && $_REQUEST['sub_institute_iderp'] 
                             echo "</FORM>";
 
                             if (isset($_REQUEST['sbtsubmit']) && $_REQUEST['sbtsubmit'] == 'Submit') {
+                                echo 'svsksf';
+                                die;
                                 $coexamSql = '';
                                 $titleArr = array();
                                 $stuSqlRet = array();
