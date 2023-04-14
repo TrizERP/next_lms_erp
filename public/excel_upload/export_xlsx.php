@@ -123,7 +123,7 @@ if (isset($_REQUEST['sub_institute_iderp']) && $_REQUEST['sub_institute_iderp'] 
 
                             $getTables = mysqli_query($cn, "SELECT * FROM import_table_fields group by table_name order by id");
 
-                            echo "<FORM name=subexam class=form-inline id=subexam method='POST'>";
+                            echo "<FORM name=subexam class=form-inline id=subexam method='GET'>";
 
                             ?>
                             <div class="form-group">
@@ -134,26 +134,9 @@ if (isset($_REQUEST['sub_institute_iderp']) && $_REQUEST['sub_institute_iderp'] 
                                     <option value=""> Select Module Name</option>
                                     <?php
                                     while ($value = mysqli_fetch_assoc($getTables)) {
-                                        $coexamSql = '';
-                                        $titleArr = array();
-                                        $stuSqlRet = array();
-                                        $coexamSql .= "SELECT * FROM import_table_fields WHERE table_name = '" . $value['table_name'] . "' AND display_status = 1";
-                                        $coexamSqlRET = mysqli_query($cn, $coexamSql);
-                                        while ($dbRows = mysqli_fetch_assoc($coexamSqlRET)) {
-                                            $titleArr[$dbRows['field']] = $dbRows['field'];
-                                        }
-                                        $sheetPaasWord = '';
-                                        $excelVersion = '2007';
-                                        if ($excelVersion == '2003') {
-                                            $exportfileName = "UPLOAD_" . $_REQUEST['table'] . ".xls";
-                                        } else if ($excelVersion == '2007') {
-                                            $exportfileName = "UPLOAD_" . $_REQUEST['table'] . ".xlsx";
-                                        }
-                                        $fileName = exportExcel($titleArr, $stuSqlRet, $exportfileName, $excelVersion, $sheetPaasWord);
-
                                         ?>
                                         <option
-                                            value="<?php echo $fileName ?>"><?php echo $value['display_table_name'] ?></option>
+                                            value="<?php echo "UPLOAD_" . $value['table_name'] . ".xlsx" ?>"><?php echo $value['display_table_name'] ?></option>
                                         <?php
                                     }
                                     ?>
@@ -165,32 +148,32 @@ if (isset($_REQUEST['sub_institute_iderp']) && $_REQUEST['sub_institute_iderp'] 
                             echo "</FORM>";
 
                             if (isset($_REQUEST['sbtsubmit']) && $_REQUEST['sbtsubmit'] == 'Submit') {
-//                                $coexamSql = '';
-//                                $titleArr = array();
-//                                $stuSqlRet = array();
-//                                $coexamSql .= "SELECT * FROM import_table_fields WHERE table_name = '" . $_REQUEST['table'] . "' AND display_status = 1";
-//                                //echo $coexamSql;die();
-//                                $coexamSqlRET = mysqli_query($cn, $coexamSql);
-//                                while ($dbRows = mysqli_fetch_assoc($coexamSqlRET)) {
-//                                    $titleArr[$dbRows['field']] = $dbRows['field'];
-//                                }
-//
-////    $titleArr['Pass & Promoted to'] = 'Pass & Promoted to';
-//                                /*
-//                                     *  Export Code Start
-//                            */
-//                                // $sheetPaasWord = 'Tr!z~!NnOv@t!0N';
-//                                $sheetPaasWord = '';
-//                                $excelVersion = '2007';
-//
-//                                if ($excelVersion == '2003') {
-//                                    $exportfileName = "UPLOAD_" . $_REQUEST['table'] . ".xls";
-//                                } else if ($excelVersion == '2007') {
-//                                    $exportfileName = "UPLOAD_" . $_REQUEST['table'] . ".xlsx";
-//                                }
-//                                //echo "<pre>";
-//                                //print_r($titleArr);
-//                                $fileName = exportExcel($titleArr, $stuSqlRet, $exportfileName, $excelVersion, $sheetPaasWord);
+                                $coexamSql = '';
+                                $titleArr = array();
+                                $stuSqlRet = array();
+                                $coexamSql .= "SELECT * FROM import_table_fields WHERE table_name = '" . $_REQUEST['table'] . "' AND display_status = 1";
+                                //echo $coexamSql;die();
+                                $coexamSqlRET = mysqli_query($cn, $coexamSql);
+                                while ($dbRows = mysqli_fetch_assoc($coexamSqlRET)) {
+                                    $titleArr[$dbRows['field']] = $dbRows['field'];
+                                }
+
+//    $titleArr['Pass & Promoted to'] = 'Pass & Promoted to';
+                                /*
+                                     *  Export Code Start
+                            */
+                                // $sheetPaasWord = 'Tr!z~!NnOv@t!0N';
+                                $sheetPaasWord = '';
+                                $excelVersion = '2007';
+
+                                if ($excelVersion == '2003') {
+                                    $exportfileName = "UPLOAD_" . $_REQUEST['table'] . ".xls";
+                                } else if ($excelVersion == '2007') {
+                                    $exportfileName = "UPLOAD_" . $_REQUEST['table'] . ".xlsx";
+                                }
+                                //echo "<pre>";
+                                //print_r($titleArr);
+                                $fileName = exportExcel($titleArr, $stuSqlRet, $exportfileName, $excelVersion, $sheetPaasWord);
 
 //                                header('Location: export_xlsx.php?fileName=' . $fileName);
                                 ?>
