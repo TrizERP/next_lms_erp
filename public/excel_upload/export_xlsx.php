@@ -177,6 +177,7 @@ if (isset($_REQUEST['sub_institute_iderp']) && $_REQUEST['sub_institute_iderp'] 
 
                                 $valid_str = "";
                                 $valid_str .= "<script language='javascript'>";
+                                $valid_str .= 'console.log(324)';
                                 $valid_str .= 'window.location.href = "export_xlsx.php?fileName=' . $fileName . '"';
                                 $valid_str .= "</script>";
                                 echo $valid_str;
