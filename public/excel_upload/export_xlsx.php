@@ -191,16 +191,17 @@ if (isset($_REQUEST['sub_institute_iderp']) && $_REQUEST['sub_institute_iderp'] 
                             }
 
                             if (isset($_REQUEST['fileName']) && $_REQUEST['fileName'] != '') {
+                                echo 'gvsdg';
                                 $fileName = $_REQUEST['fileName'];
 
-                                echo "<FORM enctype=\"multipart/form-data\" name=downloadForm id=downloadForm METHOD='POST'>";
+                                echo "<form enctype=\"multipart/form-data\" name=downloadForm id=downloadForm METHOD='POST'>";
                                 if (file_exists('assets/' . $fileName)) {
-                                    echo "<TABLE border=0>";
+                                    echo "<table border=0>";
                                     echo "<p>Please download file and click on upload button to upload data.</p>";
-                                    echo '<TR><TD align=center><a href="assets/' . $fileName . '" class="btn_medium downloadBtn">Download File</a></TD><TD align=center><a href="Import_xlsx_data.php" class="btn_medium downloadBtn">Upload Excel File</a></TD></TR>';
-                                    echo "</TABLE>";
+                                    echo '<tr><td align=center><a href="assets/' . $fileName . '" class="btn_medium downloadBtn">Download File</a></td><td align=center><a href="Import_xlsx_data.php" class="btn_medium downloadBtn">Upload Excel File</a></td></tr>';
+                                    echo "</table>";
                                 }
-                                echo "</FORM>";
+                                echo "</form>";
                             }
 
                             ?>
