@@ -221,8 +221,6 @@ if($it=="it"){
 
 //Start: Code for getting college wise databases
 $connection = @new mysqli($host, $user_name, $passwd, $library_database, '3306');
-echo "as";
-die;
 
 if ($connection) {
     // mysql_select_db($inte_schema);
