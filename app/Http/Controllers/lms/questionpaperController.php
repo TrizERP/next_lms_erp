@@ -51,6 +51,7 @@ class questionpaperController extends Controller
             if (count($stu_data) > 0) {
 
                 $where_array['question_paper.sub_institute_id'] = $sub_institute_id;
+                $where_array['question_paper.syear'] = $syear;
                 $where_array['standard.id'] = $stu_data[0]['standard_id'];
                 $where_array['question_paper.exam_type'] = "online";
 
@@ -79,6 +80,7 @@ class questionpaperController extends Controller
                 ->join('academic_section', 'academic_section.id', '=', 'question_paper.grade_id')
                 ->join('subject', 'subject.id', '=', 'question_paper.subject_id')
                 ->where('question_paper.sub_institute_id', $sub_institute_id)
+                ->where('question_paper.syear', $syear)
                 ->get();
         }
 

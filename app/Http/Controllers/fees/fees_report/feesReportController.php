@@ -178,7 +178,6 @@ class feesReportController extends Controller
             FROM (
             SELECT fp.student_id,t.enrollment_no,t.roll_no,t.uniqueid,CONCAT_WS(' ',t.first_name,t.middle_name,t.last_name) AS student_name,t.mobile,ac.title AS grade,s.name AS standard_name,d.name AS division_name,fp.created_date,CONCAT_WS(' ',u.first_name,u.last_name) AS user_name,fp.term_id,fp.receiptdate,fp.receipt_no,fp.payment_mode,fp.cheque_bank_name,fp.bank_branch,fp.cheque_no,fp.cheque_date,SUM(IFNULL(fp.amount,0)) AS amount
             FROM tblstudent t
-            -- WHERE t.first_name = $name OR t.middle_name = $name OR t.last_name = $name
             INNER JOIN tblstudent_enrollment te ON t.id = te.student_id
             INNER JOIN academic_section ac ON ac.id = te.grade_id
             INNER JOIN standard s ON s.id = te.standard_id
@@ -201,7 +200,9 @@ class feesReportController extends Controller
             ORDER BY fo.receiptdate ASC, fo.reciept_id ASC) AS N ON M.student_id = N.student_id
             HAVING (M.receiptdate IS NOT NULL)
             ORDER BY M.receiptdate,CAST(M.receipt_no AS SIGNED)";
-
+            //            -- WHERE t.first_name = $name OR t.middle_name = $name OR t.last_name = $name SET LINE 180
+//echo $sql;
+//die();
         $result = DB::select(DB::raw($sql));
         $feesData = json_decode(json_encode($result), true);
 

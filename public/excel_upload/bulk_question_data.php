@@ -252,12 +252,10 @@ $gradeArr = mysqli_query($cn, "SELECT * FROM academic_section WHERE sub_institut
         <select name="chapter" id="chapter" required>
             <option value=""> Select Chapter</option>
         </select>
-        <!--
-                <label for="topic"><b>Topic</b></label>
-                <select name="topic" id="topic">
-                    <option value=""> Select Topic </option>
-                </select>
-        -->
+            <label for="topic"><b>Topic</b></label>
+            <select name="topic" id="topic">
+            <option value=""> Select Topic </option>
+        </select>
 
         <label for="fname"><b>Excel File</b></label>
         <input type="file" name="filename" id="filename" required>

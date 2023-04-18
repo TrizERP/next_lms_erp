@@ -280,7 +280,7 @@ br{
 
                                 @foreach($questionData as $data)
                                 <tr>
-                                    <td><input type="checkbox" onclick="add_question();" name="questions[]" title="{{$data['points']}}'" value="{{$data['points']}}"></td>
+                                    <td><input type="checkbox" onclick="add_question();" name="questions[]" title="{{$data['points']}}'" value="{{$data['id']}}"></td>
                                     <td>{{$data['question_title']}}</td>
                                     <td>{{$data['chapter_name']}}</td>
                                     <td>{{$data['sort_order']}}</td>
