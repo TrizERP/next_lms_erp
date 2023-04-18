@@ -220,17 +220,19 @@ if($it=="it"){
 }
 
 //Start: Code for getting college wise databases
-  $connection = @new mysqli($host, $user_name, $passwd, $library_database, '3306');
+$connection = @new mysqli($host, $user_name, $passwd, $library_database, '3306');
+echo "as";
+die;
 
-  if($connection){
-        // mysql_select_db($inte_schema);
+if ($connection) {
+    // mysql_select_db($inte_schema);
 
-        $INVENTORY_PRODUCT_TYPE_CONST='INVENTORY';
-        $LIBRARY_PRODUCT_TYPE_CONST='LIBRARY';
-        //For Central Admin Users
-        if($_SESSION[USER_GROUP_ID] == 1){
-            if($_REQUEST[is_library_prod_glob] != "" && $_REQUEST[is_library_prod_glob] == "YES"){
-              $sql="SELECT DISTINCT tcd.COLLEGE_ID,tcd.DATABASE_NAME,tcd.TITLE
+    $INVENTORY_PRODUCT_TYPE_CONST = 'INVENTORY';
+    $LIBRARY_PRODUCT_TYPE_CONST = 'LIBRARY';
+    //For Central Admin Users
+    if ($_SESSION[USER_GROUP_ID] == 1) {
+        if ($_REQUEST[is_library_prod_glob] != "" && $_REQUEST[is_library_prod_glob] == "YES") {
+            $sql = "SELECT DISTINCT tcd.COLLEGE_ID,tcd.DATABASE_NAME,tcd.TITLE
                     FROM
                     $inte_schema.tbladmin ta
                     INNER JOIN $inte_schema.tblcollege_database tcd ON tcd.COLLEGE_ID = ta.SUB_INSTITUTE_ID
