@@ -18,8 +18,7 @@
         "opcodesio/log-viewer": "^2.4",
         "phpmailer/phpmailer": "^6.7",
         "phpoffice/phpexcel": "^1.8",
-        "razorpay/razorpay": "^2.8",
-        "ext-mysqli": "*"
+        "razorpay/razorpay": "^2.8"
     },
     "require-dev": {
         "fakerphp/faker": "^1.9.1",
