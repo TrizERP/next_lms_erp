@@ -324,6 +324,8 @@ if (extension_loaded('mysqli')) {
     include SIMBIO_BASE_DIR . 'simbio_DB/mysql/simbio_mysql.inc.php';
     $dbs = @new simbio_mysql(DB_HOST, DB_USERNAME, DB_PASSWORD, DB_NAME, DB_PORT);
 }
+echo 'asas';
+die;
 /* session login timeout in second */
 $sysconf['session_timeout'] = 7200;
 
