@@ -37,7 +37,7 @@
                             <td class="text-center fw-bold" rowspan="2" colspan="2"></td>
                             @foreach(collect($data['data'])->first()['mark'] as $subject => $value)
                                 <td class="text-center"
-                                    colspan="{{ count(collect($data['data'])->first()['exam']) + count(collect($data['term_2_data'])->first()['exam']) + count(collect($data['term_3_data'])->first()['exam']) + count(collect($data['term_4_data'])->first()['exam']) + 6  }}">{{$subject }}</td>
+                                    colspan="{{ count(collect($data['data'])->first()['exam']) + count(collect($data['term_2_data'])->first()['exam']) + count(collect($data['term_3_data'])->first()['exam']) + count(collect($data['term_4_data'])->first()['exam']) + 6 }}">{{$subject }}</td>
                             @endforeach
                             <td class="text-center fw-bold" rowspan="2" colspan="3">FINAL RESULT</td>
                         </tr>
