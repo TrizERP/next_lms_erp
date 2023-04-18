@@ -16,36 +16,32 @@ define('DB_USERNAME', 'dev_db');
 define('DB_PASSWORD', 'dev@sql');
 $dbs = @new mysqli(DB_HOST, DB_USERNAME, DB_PASSWORD, DB_NAME, DB_PORT);*/
 
-//mysql_connect("localhost","mysql_user","mysql_pwd");
+//mysqli_connect("localhost","mysql_user","mysql_pwd");
 
-mysql_connect("trizapps.in","dev_db","dev@sql");
-mysql_select_db("trizino_slibrary");
+mysqli_connect("trizapps.in", "dev_db", "dev@sql");
+mysqli_select_db("trizino_slibrary");
 
 //include SENAYAN_BASE_DIR.'admin/modules/circulation/loan_list.php';
 
-$select = "SELECT SQL_CALC_FOUND_ROWS l.item_code AS 'Item Code', b.title AS 'Title', l.loan_date AS 'Loan Date', IF(return_date IS NULL, 'Not Returned Yet', return_date) AS 'Return Date' FROM loan AS l 
-        LEFT JOIN item AS i ON l.item_code=i.item_code 
-        LEFT JOIN biblio AS b ON i.biblio_id=b.biblio_id 
+$select = "SELECT SQL_CALC_FOUND_ROWS l.item_code AS 'Item Code', b.title AS 'Title', l.loan_date AS 'Loan Date', IF(return_date IS NULL, 'Not Returned Yet', return_date) AS 'Return Date' FROM loan AS l
+        LEFT JOIN item AS i ON l.item_code=i.item_code
+        LEFT JOIN biblio AS b ON i.biblio_id=b.biblio_id
         WHERE l.member_id='$_SESSION[memberID]' and l.return_date is null ORDER BY l.loan_date DESC";
 
 
-
 //$select = "SELECT loan_id as LoanID,item_code as Barcode,member_id as MemberID ,DATE_FORMAT(loan_date,'%d-%m-%Y') as Loandate,DATE_FORMAT(due_date,'%d-%m-%Y') as Duedate,case renewed when '1' then 'Yes' else 'No' end as renewed,ifnull(return_date,'Not Returned Yet')  as return_date,time as Time from loan where member_id='".$_REQUEST['memberid']."'";
- 
-$export = mysql_query ( $select ) or die ( "Sql error : " . mysql_error( ) );
- 
-$fields = mysql_num_fields ( $export );
- 
-for ( $i = 0; $i < $fields; $i++ )
-{
-    $header .= mysql_field_name( $export , $i ) . "\t";
+
+$export = mysql_query($select) or die ("Sql error : " . mysqli_error());
+
+$fields = mysql_num_fields($export);
+
+for ($i = 0; $i < $fields; $i++) {
+    $header .= mysql_field_name($export, $i) . "\t";
 }
- 
-while( $row = mysql_fetch_row( $export ) )
-{
+
+while ($row = mysql_fetch_row($export)) {
     $line = '';
-    foreach( $row as $value )
-    {                                           
+    foreach( $row as $value ) {
         if ( ( !isset( $value ) ) || ( $value == "" ) )
         {
             $value = "\t";
@@ -60,16 +56,16 @@ while( $row = mysql_fetch_row( $export ) )
     $data .= trim( $line ) . "\n";
 }
 $data = str_replace( "\r" , "" , $data );
- 
+
 if ( $data == "" )
 {
-    $data = "\n(0) Records Found!\n";                       
+    $data = "\n(0) Records Found!\n";
 }
- 
+
 header("Content-type: application/octet-stream");
 header("Content-Disposition: attachment; filename=member_loan_report.xls");
 header("Pragma: no-cache");
 header("Expires: 0");
 print "$header\n$data";
- 
+
 ?>

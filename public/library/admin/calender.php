@@ -1,16 +1,17 @@
 <?php
-//$link = mysql_connect('localhost','triz','triz@sql');
-//$con = mysql_select_db('trizino_slibrary',$link);
+//$link = mysqli_connect('localhost','triz','triz@sql');
+//$con = mysqli_select_db('trizino_slibrary',$link);
 include_once '../sysconfig.inc.php';
 ?>
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
-<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-<title>Untitled Document</title>
-<script>
-// Popup window code
-function newPopup(url) {
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+    <title>Untitled Document</title>
+    <script>
+        // Popup window code
+        function newPopup(url) {
 	popupWindow = window.open(
 		url,'popUpWindow','height=600,width=600,left=0,top=0, 	resizable=no,scrollbars=yes,toolbar=no,menubar=no,location=no,directories=no,status=no')
 }
@@ -205,27 +206,27 @@ $dateToCompare = $eMonth . '/' . $eDay . '/' . $eYear;
 if($todaysDate == $dateToCompare){
 //$aClass = '<span>' . $tDayName . '</span>';
 $aClass='class="today"';
-}else{
+}else {
 //$dateToCompare = $eMonth . '/' . $eDay . '/' . $eYear;
 //echo $todaysDate;
 //return;
-$sql=$dbs->query("select count(calDate) as eCount from calTbl where calDate = '" . $eMonth . '/' . $eDay . '/' . $eYear . "'");
-$sql1=$dbs->query("select count(holiday_date) as eCount1 from holiday where holiday_date = '" . $eYear . '/' . $eMonth . '/' . $eDay . "'");
-//$result1 = mysql_query($sql1);
+    $sql = $dbs->query("select count(calDate) as eCount from calTbl where calDate = '" . $eMonth . '/' . $eDay . '/' . $eYear . "'");
+    $sql1 = $dbs->query("select count(holiday_date) as eCount1 from holiday where holiday_date = '" . $eYear . '/' . $eMonth . '/' . $eDay . "'");
+//$result1 = mysqli_query($sql1);
 //echo $sql;
 //return;
-//$result = mysql_query($sql);
-//while($row= mysql_fetch_array($result)){
-while($row= $sql->fetch_assoc()){
-if($row['eCount'] >=1){
-$aClass = 'class="event"';
-}elseif($row['eCount'] ==0){
-$aClass ='class="normal"';
-}
-}
-//while($row1= mysql_fetch_array($result1)){
-while($row1= $sql1->fetch_assoc()){
-if($row1['eCount1'] >=1){
+//$result = mysqli_query($sql);
+//while($row= mysqli_fetch_array($result)){
+    while ($row = $sql->fetch_assoc()) {
+        if ($row['eCount'] >= 1) {
+            $aClass = 'class="event"';
+        } elseif ($row['eCount'] == 0) {
+            $aClass = 'class="normal"';
+        }
+    }
+//while($row1= mysqli_fetch_array($result1)){
+    while ($row1 = $sql1->fetch_assoc()) {
+        if ($row1['eCount1'] >= 1) {
 $aClass = 'class="event1"';
 }
 }
@@ -278,9 +279,9 @@ if($counter % 7 == 0){
 
 <td width="8px" <?php echo hiLightEvt($month,$i,$year);?>>
 <a href="JavaScript:newPopup('calForm.php?month=<?php echo $month . '&day=' . $i . '&year=' . $year;?>&v=1');" style="text-decoration:none;"><?php echo $i;?></a>
-</td> 
+</td>
 
-<?php
+        <?php
 }
 ?>
 </table>
@@ -289,14 +290,14 @@ if($counter % 7 == 0){
 <?php
 if(isset($_GET['v'])){
 if(isset($_POST['Submit'])){
-$sql="insert into calTbl(calName,calDesc,calDate,calStamp) values('" . $_POST['calName'] ."','" . $_POST['calDesc'] . "','" . $_POST['calDate'] . "',now())";
-mysql_query($sql);
+    $sql = "insert into calTbl(calName,calDesc,calDate,calStamp) values('" . $_POST['calName'] . "','" . $_POST['calDesc'] . "','" . $_POST['calDate'] . "',now())";
+    mysqli_query($sql);
 }
 $sql="select calName,calDesc, DATE_FORMAT(calStamp, '%a %b %e %Y') as calStamp from calTbl where calDate = '" . $month . '/' . $day . '/' . $year . "'";
 //echo $sql;
 //return;
-$result = mysql_query($sql);
-$numRows = mysql_num_rows($result);
+    $result = mysqli_query($sql);
+    $numRows = mysql_num_rows($result);
 ?>
 
 <a href="<?=$_SERVER['PHP_SELF'];?>?month=<?=$_GET['month'] . '&day=' . $_GET['day'] . '&year=' . $_GET['year'];?>&v=1&f=true">New Event</a><br/>
@@ -316,27 +317,27 @@ $sql="update calTbl set calName='" . $_POST['calName'] . "', calDesc='" . $_POST
 $sql.=" where calID = '" . $_POST['id'] . "'";
 break;
 }//end switch
-mysql_query($sql);
+    mysqli_query($sql);
 //echo $sql;
 //return;
 }
 }
 }
-/*if($numRows == 0 ){
-echo '<h3>No Events</h3>';
-}else{
-//echo '<ul>';
-echo '<h3>Events Listed</h3>';
-while($row = mysql_fetch_array($result)){
-?>
-<div class="output">
-<h5><?=$row['calName'];?></h5>
-<?=$row['calDesc'];?><br/>
-Listed On: <?=$row['calStamp'];?>
-</div>
-<?php
-}
-}*/
+    /*if($numRows == 0 ){
+    echo '<h3>No Events</h3>';
+    }else{
+    //echo '<ul>';
+    echo '<h3>Events Listed</h3>';
+    while($row = mysqli_fetch_array($result)){
+    ?>
+    <div class="output">
+    <h5><?=$row['calName'];?></h5>
+    <?=$row['calDesc'];?><br/>
+    Listed On: <?=$row['calStamp'];?>
+    </div>
+    <?php
+    }
+    }*/
 }
 ?>
 </body>

@@ -24,23 +24,23 @@
 
 if ($_SERVER['SERVER_ADDR'] == '') {
 
-    include ('../../sysconfig.inc.php');
-    mysql_connect(DB_HOST, DB_USERNAME, DB_PASSWORD);
-    mysql_select_db(DB_NAME);
+    include('../../sysconfig.inc.php');
+    mysqli_connect(DB_HOST, DB_USERNAME, DB_PASSWORD);
+    mysqli_select_db(DB_NAME);
     $sql = "SELECT files.file_id,files.file_dir,files.file_name FROM files,biblio_attachment WHERE mime_type='application/pdf' AND biblio_attachment.file_id=files.file_id";
-    $query = mysql_query($sql);
+    $query = mysqli_query($sql);
 
-    while ($data = mysql_fetch_array($query)) {
+    while ($data = mysqli_fetch_array($query)) {
         $sha1_name = sha1($data['file_name']);
-        $swf = $sha1_name.'.swf';
-        $file_loc = REPO_BASE_DIR.str_ireplace('/', DIRECTORY_SEPARATOR, $data['file_dir']).DIRECTORY_SEPARATOR.$data['file_name'];
+        $swf = $sha1_name . '.swf';
+        $file_loc = REPO_BASE_DIR . str_ireplace('/', DIRECTORY_SEPARATOR, $data['file_dir']) . DIRECTORY_SEPARATOR . $data['file_name'];
         $file_loc = preg_replace("/\/\//i", "/", $file_loc);
 
-        echo 'Processing ...'."\n\n";
-        echo $data['file_id'].'-'.$data['file_name'].' - '.$sha1_name."\n";
-        echo $file_loc."\n";
+        echo 'Processing ...' . "\n\n";
+        echo $data['file_id'] . '-' . $data['file_name'] . ' - ' . $sha1_name . "\n";
+        echo $file_loc . "\n";
 
-        if (!file_exists('../../files/swfs/'.$swf.'')) {
+        if (!file_exists('../../files/swfs/' . $swf . '')) {
             if (stripos(PHP_OS, 'Darwin') !== false) {
                 exec('../swftools/bin/darwin/pdf2swf -o ../../files/swfs/'.$swf.' '.$file_loc.'');
             } else if (stripos(PHP_OS, 'Linux') !== false) {

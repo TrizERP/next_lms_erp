@@ -223,7 +223,7 @@ if($it=="it"){
 $connection = @new mysqli($host, $user_name, $passwd, $library_database, '3306');
 
 if ($connection) {
-    // mysql_select_db($inte_schema);
+    // mysqli_select_db($inte_schema);
 
     $INVENTORY_PRODUCT_TYPE_CONST = 'INVENTORY';
     $LIBRARY_PRODUCT_TYPE_CONST = 'LIBRARY';
@@ -236,7 +236,7 @@ if ($connection) {
                     INNER JOIN $inte_schema.tblcollege_database tcd ON tcd.COLLEGE_ID = ta.SUB_INSTITUTE_ID
                     WHERE tcd.PRODUCT_TYPE='$LIBRARY_PRODUCT_TYPE_CONST'
                    ";
-              $user_data=mysql_query($sql);
+            $user_data = mysqli_query($sql);
 
               if($_REQUEST[hid_frm_clg_wise_dbs_val]==""){
                   echo "<style>
@@ -249,7 +249,7 @@ if ($connection) {
                   echo "<div class='cls_clg_wise_dbs_div'>";
                   echo "<span>Institute : </span>";
                   echo "<select name='sel_db_names'>";
-                  while($data=mysql_fetch_assoc($user_data)) {
+                  while ($data = mysqli_fetch_assoc($user_data)) {
                       $COLLEGE_DATABASE_NAME = $data[DATABASE_NAME];
                       $COLLEGE_TITLE = $data[TITLE];
 
@@ -311,8 +311,6 @@ define('REPO_BASE_DIR', SENAYAN_BASE_DIR.repository.DIRECTORY_SEPARATOR);
 // echo '<pre> DB_NAME '; print_r(DB_NAME);
 // echo '<pre> DB_PORT '; print_r(DB_PORT);
 // die;
-echo '1';
-die;
 if (extension_loaded('mysqli')) {
     /* MYSQLI */
     $dbs = @new mysqli(DB_HOST, DB_USERNAME, DB_PASSWORD, DB_NAME, DB_PORT);

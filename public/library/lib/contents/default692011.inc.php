@@ -38,86 +38,83 @@ if (isset($sysconf['enable_xml_detail']) && !$sysconf['enable_xml_detail']) {
 //added by parth 30/06/2011
 if($_GET['Search'] == "Keyword Search")
 {
-$is_adv = false;
+    $is_adv = false;
     $keywords = '';
     $criteria = '';
-if($_GET['material_sub_type_select']!="SELECT")
-{
-$_GET['material_sub_type_select1']=$_GET['material_sub_type_select'];
-}
-	//$_GET['subtype'] = str_replace(',',' ',$_GET['subtype']); 
-   //$keywords = trim(strip_tags(urldecode($_GET['subtype'])));
-	//$qry = $dbs->query("select material_sub_id from mst_material_sub_type where material_sub_name ='".$_GET['subtype']."'");
+    if ($_GET['material_sub_type_select'] != "SELECT") {
+        $_GET['material_sub_type_select1'] = $_GET['material_sub_type_select'];
+    }
+    //$_GET['subtype'] = str_replace(',',' ',$_GET['subtype']);
+    //$keywords = trim(strip_tags(urldecode($_GET['subtype'])));
+    //$qry = $dbs->query("select material_sub_id from mst_material_sub_type where material_sub_name ='".$_GET['subtype']."'");
     //$qry = $qry->fetch_row();
-	//$result = mysql_query($qry);
-	//echo "hi";
-	$criteria.= ' searchkeyword='.$_GET['q'];
-	$criteria = trim($criteria);
-	$biblio_list->setSQLcriteria($criteria);
+    //$result = mysqli_query($qry);
+    //echo "hi";
+    $criteria .= ' searchkeyword=' . $_GET['q'];
+    $criteria = trim($criteria);
+    $biblio_list->setSQLcriteria($criteria);
 }
-if(isset($_GET['subtype']) && !empty($_GET['subtype']))
-{
-	$is_adv = false;
+if(isset($_GET['subtype']) && !empty($_GET['subtype'])) {
+    $is_adv = false;
     $keywords = '';
     $criteria = '';
-	//$_GET['subtype'] = str_replace(',',' ',$_GET['subtype']); 
-   //$keywords = trim(strip_tags(urldecode($_GET['subtype'])));
-	//$qry = $dbs->query("select material_sub_id from mst_material_sub_type where material_sub_name ='".$_GET['subtype']."'");
+    //$_GET['subtype'] = str_replace(',',' ',$_GET['subtype']);
+    //$keywords = trim(strip_tags(urldecode($_GET['subtype'])));
+    //$qry = $dbs->query("select material_sub_id from mst_material_sub_type where material_sub_name ='".$_GET['subtype']."'");
     //$qry = $qry->fetch_row();
-	//$result = mysql_query($qry);
-	
-	$criteria.= ' subtype='.$_GET['subid'];
-	$criteria = trim($criteria);
-	$biblio_list->setSQLcriteria($criteria);
-	// simple search
+    //$result = mysqli_query($qry);
+
+    $criteria .= ' subtype=' . $_GET['subid'];
+    $criteria = trim($criteria);
+    $biblio_list->setSQLcriteria($criteria);
+    // simple search
     /*if (isset($_GET['subtype'])) {
         $keywords = trim(strip_tags(urldecode($_GET['subtype'])));
     }
     if ($keywords && !preg_match('@[a-z0-9_.]+=[^=]+\s+@i', $keywords.' ')) {
         $criteria = "subtype LIKE $keywords%";
        $biblio_list->setSQLcriteria($criteria);
-	
+
     } else {
         $biblio_list->setSQLcriteria($keywords);
     }*/
 
 }
 if (isset($_GET['search1']) && !empty($_GET['search1']) && empty($_GET['Search'])) {
-$is_adv = false;
+    $is_adv = false;
     $keywords = '';
     $criteria = '';
-	//$_GET['subtype'] = str_replace(',',' ',$_GET['subtype']); 
-   //$keywords = trim(strip_tags(urldecode($_GET['subtype'])));
-	//$qry = $dbs->query("select material_sub_id from mst_material_sub_type where material_sub_name ='".$_GET['subtype']."'");
+    //$_GET['subtype'] = str_replace(',',' ',$_GET['subtype']);
+    //$keywords = trim(strip_tags(urldecode($_GET['subtype'])));
+    //$qry = $dbs->query("select material_sub_id from mst_material_sub_type where material_sub_name ='".$_GET['subtype']."'");
     //$qry = $qry->fetch_row();
-	
-	//$result = mysql_query($qry);
 
-	$_GET['subtype1'] = $_GET['subid']; 
-if($_GET['material_sub_type_select']!="SELECT")
-{
-$_GET['material_sub_type_select1']=$_GET['material_sub_type_select'];
-}
-	$criteria.= ' searchsimple='.$_GET['keywords'];
-	$criteria = trim($criteria);
-	$biblio_list->setSQLcriteria($criteria);
+    //$result = mysqli_query($qry);
+
+    $_GET['subtype1'] = $_GET['subid'];
+    if ($_GET['material_sub_type_select'] != "SELECT") {
+        $_GET['material_sub_type_select1'] = $_GET['material_sub_type_select'];
+    }
+    $criteria .= ' searchsimple=' . $_GET['keywords'];
+    $criteria = trim($criteria);
+    $biblio_list->setSQLcriteria($criteria);
 }
 if (isset($_GET['letternew']) && !empty($_GET['letternew'])) {
-$is_adv = false;
+    $is_adv = false;
     $keywords = '';
     $criteria = '';
-	//$_GET['subtype'] = str_replace(',',' ',$_GET['subtype']); 
-   //$keywords = trim(strip_tags(urldecode($_GET['subtype'])));
-	//$qry = $dbs->query("select material_sub_id from mst_material_sub_type where material_sub_name ='".$_GET['subtype']."'");
+    //$_GET['subtype'] = str_replace(',',' ',$_GET['subtype']);
+    //$keywords = trim(strip_tags(urldecode($_GET['subtype'])));
+    //$qry = $dbs->query("select material_sub_id from mst_material_sub_type where material_sub_name ='".$_GET['subtype']."'");
     //$qry = $qry->fetch_row();
-	
-	//$result = mysql_query($qry);
 
-	//$_GET['subtype1'] = $qry[0]; 
-	$_GET['subtype1'] = $_GET['subid'];
-	$criteria.= ' letternew='.$_GET['letternew'];
-	$criteria = trim($criteria);
-	$biblio_list->setSQLcriteria($criteria);
+    //$result = mysqli_query($qry);
+
+    //$_GET['subtype1'] = $qry[0];
+    $_GET['subtype1'] = $_GET['subid'];
+    $criteria .= ' letternew=' . $_GET['letternew'];
+    $criteria = trim($criteria);
+    $biblio_list->setSQLcriteria($criteria);
 }
 //ended by parth 30/06/2011
 if (isset($_GET['letter']) && !empty($_GET['letter']))//added by iresh on 17-3-2011 For alphabetical searching
@@ -135,7 +132,7 @@ if (isset($_GET['letter']) && !empty($_GET['letter']))//added by iresh on 17-3-2
     if ($keywords && !preg_match('@[a-z0-9_.]+=[^=]+\s+@i', $keywords.' ')) {
         $criteria = "title LIKE $keywords%";
        $biblio_list->setSQLcriteria($criteria);
-	
+
     } else {
         $biblio_list->setSQLcriteria($keywords);
     }
@@ -157,7 +154,7 @@ if (!empty($_GET['standard'])) {
 
 	}
 
-	         
+
         }
 */
 $subject_ajax='';
@@ -172,7 +169,7 @@ if (isset($_GET['subjectajax'])!='0') {
 
 	}
 
-	         
+
         }
 */
 $subject='';
@@ -186,7 +183,7 @@ $subject='';
 
 	}
 
-	         
+
         }
 */
 $subjecttype='';
@@ -202,7 +199,7 @@ if (isset($_GET['subjecttype'])) {
 
 	}
 
-	         
+
         }
 */
 
@@ -219,7 +216,7 @@ if (isset($_GET['material_sub_type'])) {
 
 	}
 
-	         
+
         }
 
 */
@@ -251,9 +248,9 @@ if (isset($_GET['search']) && !empty($_GET['search'])) {
         $keywords = trim(strip_tags(urldecode($_GET['keywords'])));
     }
     if ($keywords && !preg_match('@[a-z0-9_.]+=[^=]+\s+@i', $keywords.' ')) {
-        
-	$criteria = 'title='.$keywords.' OR author='.$keywords.' OR subject='.$keywords.' OR barcode='.$keywords;
-      
+
+        $criteria = 'title='.$keywords.' OR author='.$keywords.' OR subject='.$keywords.' OR barcode='.$keywords;
+
         $biblio_list->setSQLcriteria($criteria);
     } else {
         $biblio_list->setSQLcriteria($keywords);
@@ -263,7 +260,7 @@ if (isset($_GET['search']) && !empty($_GET['search'])) {
         || isset($_GET['subject']) || isset($_GET['location'])
         || isset($_GET['gmd']) || isset($_GET['mst_sub']) || isset($_GET['colltype']) || isset($_GET['classification']) || isset($_GET['publish_year']) || isset($_GET['publish_name']) || isset($_GET['keywords_tag']);
     if ($is_adv) {
- 	
+
         $title = '';
         if (isset($_GET['title'])) {
            $title = trim(strip_tags(urldecode($_GET['title'])));
@@ -300,19 +297,19 @@ if (isset($_GET['search']) && !empty($_GET['search'])) {
         $class = '';
         if (isset($_GET['classification'])) {
             $class = trim(strip_tags(urldecode($_GET['classification'])));
-        } 
+        }
         $publish_year = '';
         if (isset($_GET['publish_year'])) {
             $publish_year = trim(strip_tags(urldecode($_GET['publish_year'])));
-        } 
+        }
         $publish_name = '';
         if (isset($_GET['publish_name'])) {
             $publish_name = trim(strip_tags(urldecode($_GET['publish_name'])));
         }
         $keywords_tag = '';
         if(isset($_GET['keywords_tag'])) {
-            $keywords_tag = trim(strip_tags(urldecode($_GET['keywords_tag'])));  
-        }   
+            $keywords_tag = trim(strip_tags(urldecode($_GET['keywords_tag'])));
+        }
         // UCS only
         $node = '';
         if (isset($_GET['node'])) {
@@ -326,18 +323,32 @@ if (isset($_GET['search']) && !empty($_GET['search'])) {
             if ($subject) { $criteria .= ' subject='.$subject;  }
             if ($isbn) { $criteria .= ' isbn='.$isbn; }
             if ($gmd) { $criteria .= ' gmd="'.$gmd.'"'; }
-	    if ($mst_sub) { $criteria .= ' mst_sub="'.$mst_sub.'"'; }
-            if ($colltype) { $criteria .= ' colltype="'.$colltype.'"'; }           
-            if ($class) { $criteria .= ' class="'.$class.'"'; }
-            if ($publish_year) { $criteria .= ' publishyear="'.$publish_year.'"'; } 
-            if ($publish_name) { $criteria .= ' publisher="'.$publish_name.'"'; }
-            if ($keywords_tag) { $criteria .= ' keywords_tag="'.$keywords_tag.'"'; }  
-            if ($location) { $criteria .= ' location="'.$location.'"'; }
+            if ($mst_sub) {
+                $criteria .= ' mst_sub="' . $mst_sub . '"';
+            }
+            if ($colltype) {
+                $criteria .= ' colltype="' . $colltype . '"';
+            }
+            if ($class) {
+                $criteria .= ' class="' . $class . '"';
+            }
+            if ($publish_year) {
+                $criteria .= ' publishyear="' . $publish_year . '"';
+            }
+            if ($publish_name) {
+                $criteria .= ' publisher="' . $publish_name . '"';
+            }
+            if ($keywords_tag) {
+                $criteria .= ' keywords_tag="' . $keywords_tag . '"';
+            }
+            if ($location) {
+                $criteria .= ' location="' . $location . '"';
+            }
             if ($node && defined('UCS_BASE_DIR')) { $criteria .= ' location="'.$node.'"'; }
              $criteria = trim($criteria);
-		
+
             $biblio_list->setSQLcriteria($criteria);
-	
+
         }
     }
 
@@ -360,7 +371,7 @@ if (isset($_GET['search']) && !empty($_GET['search'])) {
     // show promoted titles
     if (isset($sysconf['enable_promote_titles']) && $sysconf['enable_promote_titles']) {
         $biblio_list->only_promoted = true;
-	
+
     }
 }
 

@@ -1,37 +1,35 @@
  <?php
 /*
-$con = mysql_connect("localhost","root","triz");
+$con = mysqli_connect("localhost","root","triz");
 if (!$con)
  {
-	 die('Could not connect: ' . mysql_error());
+	 die('Could not connect: ' . mysqli_error());
  }
 
-mysql_select_db("new", $con);
-$sql = "INSERT INTO Orders(OrderNo) values('iresh')";		
-mysql_query($sql);
+mysqli_select_db("new", $con);
+$sql = "INSERT INTO Orders(OrderNo) values('iresh')";
+mysqli_query($sql);
 */
-$con = mysql_connect("localhost","root","triz");
-if (!$con)
- {
-	 die('Could not connect: ' . mysql_error());
- }
+ $con = mysqli_connect("localhost", "root", "triz");
+if (!$con) {
+    die('Could not connect: ' . mysqli_error());
+}
 
-mysql_select_db("libb", $con);
-$sql="SELECT l.member_id,m.member_email AS mail,m.member_name AS membername,i.biblio_id,b.title AS title,l.item_code,l.due_date from loan l
+ mysqli_select_db("libb", $con);
+ $sql = "SELECT l.member_id,m.member_email AS mail,m.member_name AS membername,i.biblio_id,b.title AS title,l.item_code,l.due_date from loan l
 left join member m on m.member_id=l.member_id
 left join item i on i.item_code=l.item_code
 left join biblio b on b.biblio_id=i.biblio_id
 where l.is_return=0 AND l.due_date=CURDATE()+1";
-$sql=mysql_query($sql);
-while($row=mysql_fetch_assoc($sql))
-{
-echo $to =$row['mail'];
-$subject = "DueDate Book Notice";
+ $sql = mysqli_query($sql);
+ while ($row = mysqli_fetch_assoc($sql)) {
+     echo $to = $row['mail'];
+     $subject = "DueDate Book Notice";
 //$message ="Tommorow You Have Last Date TO Return This Book :-".$row['title'];
-echo $message ="Dear ".$row['membername']."
+     echo $message = "Dear " . $row['membername'] . "
 
-	   	We would like to inform you that 
-	        Tommorow is last date to return this Book :-".$row['title']."
+	   	We would like to inform you that
+	        Tommorow is last date to return this Book :-" . $row['title'] . "
 
  Best Regards
  Library Management";
@@ -43,10 +41,10 @@ mail($to,$subject,$message,$headers);
 echo "<br>";
 echo "Mail Sent.";
 
-?> 
+ ?>
 <!--
 
-<?php 
+<?php
 
 function ae_send_mail($from, $to, $subject, $text, $headers="")
 {

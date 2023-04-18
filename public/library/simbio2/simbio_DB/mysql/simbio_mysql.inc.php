@@ -26,7 +26,7 @@ require 'simbio_mysql_result.inc.php';
 
 class simbio_mysql extends simbio
 {
- 
+
     private $db_host = '127.0.0.1';
     private $db_port = 3306;
     private $db_socket = '';
@@ -71,9 +71,9 @@ class simbio_mysql extends simbio
     private function connect()
     {
         if ($this->db_socket) {
-            $this->res_conn = @mysql_connect($this->db_host.":".$this->db_socket, $this->db_username, $this->db_passwd);
+            $this->res_conn = @mysqli_connect($this->db_host . ":" . $this->db_socket, $this->db_username, $this->db_passwd);
         } else {
-            $this->res_conn = @mysql_connect($this->db_host.":".$this->db_port, $this->db_username, $this->db_passwd);
+            $this->res_conn = @mysqli_connect($this->db_host . ":" . $this->db_port, $this->db_username, $this->db_passwd);
         }
         // check the connection status
         if (!$this->res_conn) {
@@ -81,38 +81,34 @@ class simbio_mysql extends simbio
             parent::showError(true);
         } else {
             // select the database
-            $db = @mysql_select_db($this->db_name, $this->res_conn);
+            $db = @mysqli_select_db($this->db_name, $this->res_conn);
             if (!$db) {
                 $this->error = 'Error Opening Database';
                 parent::showError(true);
             }
         }
     }
-   
+
     public function query($str_query = '')
     {
         utility::jsAlert('hello');
         exit();
-        
+
         if (empty($str_query))
         {
             $this->error = "Error on simbio_mysql::query() method : query empty";
             parent::showError(true);
         }
-        else
-        {
-        
-            $result = new simbio_mysql_result($str_query, $this->res_conn);            
+        else {
+
+            $result = new simbio_mysql_result($str_query, $this->res_conn);
             $this->affected_rows = $result->affected_rows;
             $this->errno = $result->errno;
             $this->error = $result->error;
-            $this->insert_id = $result->insert_id;            
-            if ($this->error) 
-            {
+            $this->insert_id = $result->insert_id;
+            if ($this->error) {
                 return false;
-            }
-            else
-            {
+            } else {
                 return $result;
             }
         }

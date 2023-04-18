@@ -123,9 +123,9 @@ session_start();
 
 //Start: Code for getting college wise databases
   //$connection = @new mysqli($host, $user_name, $passwd, $library_database, '3306');
-$connection = mysql_connect($host, $user_name, $passwd);
+$connection = mysqli_connect($host, $user_name, $passwd);
   if($connection) {
-        mysql_select_db($inte_schema);
+      mysqli_select_db($inte_schema);
 
         $INVENTORY_PRODUCT_TYPE_CONST='INVENTORY';
         $LIBRARY_PRODUCT_TYPE_CONST='LIBRARY';
@@ -136,13 +136,13 @@ $connection = mysql_connect($host, $user_name, $passwd);
 
             if($_REQUEST[is_library_prod_glob] != "" && $_REQUEST[is_library_prod_glob] == "YES")
             {
-              $sql="SELECT DISTINCT tcd.COLLEGE_ID,tcd.DATABASE_NAME,tcd.TITLE
+                $sql = "SELECT DISTINCT tcd.COLLEGE_ID,tcd.DATABASE_NAME,tcd.TITLE
                     FROM
                     $inte_schema.tbladmin ta
                     INNER JOIN $inte_schema.tblcollege_database tcd ON tcd.COLLEGE_ID = ta.SUB_INSTITUTE_ID
                     WHERE tcd.PRODUCT_TYPE='$LIBRARY_PRODUCT_TYPE_CONST'
                    ";
-              $user_data=mysql_query($sql);
+                $user_data = mysqli_query($sql);
 
               if($_REQUEST[hid_frm_clg_wise_dbs_val]=="")
               {
@@ -156,7 +156,7 @@ $connection = mysql_connect($host, $user_name, $passwd);
                   echo "<div class='cls_clg_wise_dbs_div'>";
                   echo "<span>Institute : </span>";
                   echo "<select name='sel_db_names'>";
-                  while($data=mysql_fetch_assoc($user_data)) {
+                  while ($data = mysqli_fetch_assoc($user_data)) {
                       $COLLEGE_DATABASE_NAME = $data[DATABASE_NAME];
                       $COLLEGE_TITLE = $data[TITLE];
 
@@ -194,16 +194,16 @@ $connection = mysql_connect($host, $user_name, $passwd);
                ";
           //echo $sql;
           //echo "<pre>";print_r($_SESSION);
-          $user_data = mysql_query($sql);
-          while ($data = mysql_fetch_assoc($user_data)) {
+          $user_data = mysqli_query($sql);
+          while ($data = mysqli_fetch_assoc($user_data)) {
               $COLLEGE_DATABASE_NAME = $data[DATABASE_NAME];
               $COLLEGE_TITLE = $data[TITLE];
           }
           if ($COLLEGE_DATABASE_NAME != "") {
               $library_database = $COLLEGE_DATABASE_NAME;
           }
-		  //echo $library_database;
-		}
+          //echo $library_database;
+      }
   mysql_close($connection);
   }
 //End: Code for getting college wise databases
