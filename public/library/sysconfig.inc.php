@@ -312,23 +312,20 @@ define('REPO_BASE_DIR', SENAYAN_BASE_DIR.repository.DIRECTORY_SEPARATOR);
 // echo '<pre> DB_PORT '; print_r(DB_PORT);
 // die;
 echo '1';
+die;
 if (extension_loaded('mysqli')) {
-    echo '2';
     /* MYSQLI */
     $dbs = @new mysqli(DB_HOST, DB_USERNAME, DB_PASSWORD, DB_NAME, DB_PORT);
     if (mysqli_connect_error()) {
         die('<div style="border: 1px dotted #FF0000; color: #FF0000; padding: 5px;">Error Connecting to Database. Please check your configuration</div>');
     }
-}
-else {
-    echo '3';
+} else {
     /* MYSQL */
     // require the simbio mysql class
 
     include SIMBIO_BASE_DIR . 'simbio_DB/mysql/simbio_mysql.inc.php';
     $dbs = @new simbio_mysql(DB_HOST, DB_USERNAME, DB_PASSWORD, DB_NAME, DB_PORT);
 }
-die;
 /* session login timeout in second */
 $sysconf['session_timeout'] = 7200;
 
