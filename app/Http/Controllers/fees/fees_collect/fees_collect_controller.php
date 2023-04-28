@@ -58,10 +58,6 @@ class fees_collect_controller extends Controller
      *
      * @return void
      */
-    public function create()
-    {
-        //
-    }
 
     public function show_student()
     {
@@ -443,7 +439,6 @@ class fees_collect_controller extends Controller
 
                 $insert_id = DB::table('fees_collect')->insertGetId($insert_arr);
                 $regular_insert_arr[] = $insert_id;
-
             }
         }
 
@@ -1583,15 +1578,8 @@ class fees_collect_controller extends Controller
        FROM(
             select SUM(fc.amount)+SUM(fc.fees_discount) amount,fc.term_id
                 FROM tblstudent s
-                INNER JOIN fees_collect fc ON
-                        (
-                         fc.student_id = s.id AND
-                         fc.is_deleted = 'N' AND
-                         fc.sub_institute_id = '" . session()->get('sub_institute_id') . "' AND
-                         fc.syear = '" . session()->get('syear') . "'
-                             $fees_join
-                        )
-
+                INNER JOIN fees_collect fc ON(fc.student_id = s.id AND fc.is_deleted = 'N' AND fc.sub_institute_id = '" . session()->get('sub_institute_id') . "' AND
+                         fc.syear = '" . session()->get('syear') . "' $fees_join )
                 WHERE s.sub_institute_id = '" . session()->get('sub_institute_id') . "' AND s.id = $student_id
                 GROUP BY s.id,fc.term_id
                 UNION ALL
@@ -1602,9 +1590,8 @@ class fees_collect_controller extends Controller
                 WHERE s.sub_institute_id = '" . session()->get('sub_institute_id') . "' AND s.id = $student_id
                 GROUP BY s.id,fpo.month_id
             ) temp_table
-            GROUP BY term_id
+            GROUP BY term_id";
 
-                ";
         $sql = preg_replace('/\n+/', '', $sql);
         $paid_result = DB::select($sql);
 
@@ -1781,7 +1768,6 @@ class fees_collect_controller extends Controller
         $get_cheque_return_amt = SchoolModel::where(['id' => $sub_institute_id])->get()->toArray();
         $cheque_return_charges = $get_cheque_return_amt[0]['cheque_return_charges'];
 
-
         $cheque_return_exist_RET = DB::table('fees_collect as fc')
             ->join('fees_cancel as f', function ($join) {
                 $join->whereRaw('f.reciept_id = fc.receipt_no AND f.student_id = fc.student_id
@@ -1815,7 +1801,6 @@ class fees_collect_controller extends Controller
         }
 
         //24-04-2021 END Check Cheque Return charges
-
 
         foreach ($full_bk as $id => $val) {
             $total += $val;

@@ -4,7 +4,7 @@ require_once('PHPExcel.php');
 session_start();
 //echo "<pre>";
 //print_r($_REQUEST);
-print_r($_SESSION);
+//print_r($_SESSION);
 //die();
 
 // if($_REQUEST['modfunc'] == "SAVE"){
@@ -98,7 +98,7 @@ if (isset($_REQUEST['submit'])) {
             $valueQuery .= ' (';
             foreach ($valueFields1 as $kvf => $valueFields) {
                 if ($valueFields['field'] == "SYEAR" || $valueFields['field'] == "syear") {
-                    $valueQuery .= "'2022',";
+                    $valueQuery .= "'2023',";
                 } else if ($valueFields['field'] == "SCHOOL_ID" || $valueFields['field'] == "school_id") {
                     $valueQuery .= "'" . $_SESSION['SUB_INSTITUTE_ID'] . "',";
                 } else if ($valueFields['field'] == "SUB_INSTITUTE_ID" || $valueFields['field'] == "sub_institute_id" || $valueFields['field'] == "sub_inst_id") {
@@ -117,7 +117,7 @@ if (isset($_REQUEST['submit'])) {
                     if (in_array($valueFields['field'], $relationFields)) {
                         $relationQuery = "SELECT " . strtoupper($relationTable[$valueFields['field']]['INSERT_FIELD']) . " FROM " . $relationTable[$valueFields['field']]['TABLE_NAME'] . "  WHERE  " . $relationTable[$valueFields['field']]['TABLE_FIELD'] . " = '" . mysqli_real_escape_string($cn, $value[$valueFields['field']]) . "' AND sub_institute_id = '" . $_SESSION['SUB_INSTITUTE_ID'] . "'";
 
-                        $checkSubInstitute = mysqli_query($cn, "SELECT DISTINCT TABLE_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE COLUMN_NAME IN ('sub_institute_id','SUB_INSTITUTE_ID') AND TABLE_SCHEMA='triz_erp' AND TABLE_NAME = '" . $relationTable[$valueFields['field']]['TABLE_NAME'] . "'");
+                        $checkSubInstitute = mysqli_query($cn, "SELECT DISTINCT TABLE_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE COLUMN_NAME IN ('sub_institute_id','SUB_INSTITUTE_ID') AND TABLE_SCHEMA='triz_erp_21' AND TABLE_NAME = '" . $relationTable[$valueFields['field']]['TABLE_NAME'] . "'");
                         if (mysqli_num_rows($checkSubInstitute) > 0) {
                             $relationQuery .= "   AND (SUB_INSTITUTE_ID = '" . $_SESSION['SUB_INSTITUTE_ID'] . "' OR SUB_INSTITUTE_ID IS NULL OR SUB_INSTITUTE_ID = 0) ";
                         }

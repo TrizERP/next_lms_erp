@@ -6,6 +6,7 @@ use App\Http\Controllers\fees\bank_master\bank_master_controller;
 use App\Http\Controllers\fees\cheque_cash\cheque_cash_controller;
 use App\Http\Controllers\fees\college_fees_collect\college_fees_collect_controller;
 use App\Http\Controllers\fees\fees_breackoff\fees_breackoff_controller;
+use App\Http\Controllers\fees\cheque_reconciliation\ChequeReconciliationController;
 use App\Http\Controllers\fees\fees_cancel\feesCancelController;
 use App\Http\Controllers\fees\fees_cancel\feesRefundController;
 use App\Http\Controllers\fees\fees_circular\feesCircularController;
@@ -93,7 +94,11 @@ Route::group(['prefix' => 'fees', 'middleware' => ['session', 'menu', 'logRoute'
     Route::resource('college_fees_collect', college_fees_collect_controller::class);
     Route::resource('online_fees', online_fees_settigs_controller::class);
     Route::resource('online_fees_split', online_fees_split_controller::class);
+    Route::resource('cheque_reconciliation', ChequeReconciliationController::class);
+
     // Route::get('online_fees\show_online_type', 'fees\online_fees\online_fees_collect_controller@showTypes')->name('online_show_type');
+    Route::get('show_reports', [ChequeReconciliationController::class, 'show_details'])->name('show_details');
+    Route::get('search_details', [ChequeReconciliationController::class, 'search_details'])->name('search_details');
 
     Route::get('hdfcpayment', function ($id = null) {
         return view('fees/online_fees/hdfcpayment', ['name' => 'James']);

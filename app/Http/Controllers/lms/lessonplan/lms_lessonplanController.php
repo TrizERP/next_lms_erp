@@ -5,30 +5,192 @@ namespace App\Http\Controllers\lms\lessonplan;
 use App\Http\Controllers\Controller;
 use App\Models\FormSubmitData;
 use App\Models\FormTable;
+use App\Models\lms\chapterModel;
+use App\Models\lms\contentModel;
+use App\Models\lms\LmsLessonPlan;
+use App\Models\lms\LmsLessonPlanDayWise;
+use App\Models\lms\questionpaperModel;
+use App\Models\lms\topicModel;
 use App\Models\school_setup\lessonplanningModel;
 use App\Models\school_setup\standardModel;
 use App\Models\school_setup\std_div_mappingModel;
 use App\Models\school_setup\subjectModel;
 use App\Models\school_setup\timetableModel;
+use Exception;
+use function App\Helpers\is_mobile;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use function App\Helpers\is_mobile;
+use Illuminate\Support\Facades\View;
 
 class lms_lessonplanController extends Controller
 {
     public function index(Request $request)
     {
+        $sub_institute_id = session()->get('sub_institute_id');
         $type = $request->input('type');
+        $id = $request->id;
 
         $formData = $this->getFormData($request);
 
-        $data = $this->getData($request);
+        $lessonData = LmsLessonPlan::when($id, function ($q) use ($id) {
+            $q->whereId($id);
+        })
+            ->when(is_null($id), function ($q) use ($request) {
+                $q->where('standard_id', $request->standard_id);
+                $q->where('subject_id', $request->subject_id);
+                $q->where('chapter_id', $request->chapter_id);
+            })
+            ->with(['standard', 'subject', 'chapter', 'topic', 'lessonDays'])
+            ->first() ?? new LmsLessonPlan();
+        $lessonData->standard_id = $lessonData->standard_id ?? $request->standard_id;
+        $lessonData->subject_id = $lessonData->subject_id ?? $request->subject_id;
+        $lessonData->chapter_id = $lessonData->chapter_id ?? $request->chapter_id;
+        $standards = standardModel::select('id', 'name')
+            ->where('sub_institute_id', $sub_institute_id)
+            ->get();
+        $subjects = subjectModel::select('id', 'subject_name')
+            ->where('sub_institute_id', $sub_institute_id)
+            ->get();
+        $chapters = chapterModel::select('id', 'chapter_name')
+            ->where('sub_institute_id', $sub_institute_id)
+            ->where('standard_id', $lessonData->standard_id)
+            ->where('subject_id', $lessonData->subject_id)
+            ->get();
+        $topics = topicModel::select('id', 'name')
+            ->where('sub_institute_id', $sub_institute_id)
+            ->where('chapter_id', $lessonData->chapter_id)
+            ->get();
+        // dd($lessonData);
         $res['status_code'] = 1;
         $res['message'] = "SUCCESS";
-        $res['lessonplan_data'] = $data;
+        $res['lessonplan_data'] = $lessonData;
         $res['form_data'] = $formData;
-
+        $res['topics'] = $topics;
+        $res['chapters'] = $chapters;
+        $res['subjects'] = $subjects;
+        $res['standards'] = $standards;
         return is_mobile($type, 'lms/lessonplan/add_lessonplan', $res, "view");
+    }
+
+    public function create(Request $request)
+    {
+        $sub_institute_id = session()->get('sub_institute_id');
+        $type = $request->input('type');
+        $id = $request->id;
+
+        $formData = $this->getFormData($request);
+
+        $lessonData = LmsLessonPlan::when($id, function ($q) use ($id) {
+            $q->whereId($id);
+        })
+            ->when(is_null($id), function ($q) use ($request) {
+                $q->where('standard_id', $request->standard_id);
+                $q->where('subject_id', $request->subject_id);
+                $q->where('chapter_id', $request->chapter_id);
+            })
+            ->withCount('lessonDays')
+            ->first() ?? new LmsLessonPlan();
+        $lessonData->standard_id = $lessonData->standard_id ?? $request->standard_id;
+        $lessonData->subject_id = $lessonData->subject_id ?? $request->subject_id;
+        $lessonData->chapter_id = $lessonData->chapter_id ?? $request->chapter_id;
+        $standards = standardModel::select('id as value', 'name as label')
+            ->where('sub_institute_id', $sub_institute_id)
+            ->get();
+        $subjects = subjectModel::select('id as value', 'subject_name as label')
+            ->where('sub_institute_id', $sub_institute_id)
+            ->get();
+        $chapters = chapterModel::select('id as value', 'chapter_name as label')
+            ->where('sub_institute_id', $sub_institute_id)
+            ->where('standard_id', $lessonData->standard_id)
+            ->where('subject_id', $lessonData->subject_id)
+            ->get();
+        $topics = topicModel::select('id as value', 'name as label')
+            ->where('sub_institute_id', $sub_institute_id)
+            ->where('chapter_id', $lessonData->chapter_id)
+            ->get();
+        // dd($lessonData);
+        $res['status_code'] = 1;
+        $res['message'] = "SUCCESS";
+        $res['lessonplan_data'] = $lessonData;
+        $res['form_data'] = $formData;
+        $res['topics'] = $topics;
+        $res['chapters'] = $chapters;
+        $res['subjects'] = $subjects;
+        $res['standards'] = $standards;
+        return is_mobile($type, 'lms/lessonplan/create', $res, "view");
+    }
+
+    public function ajax_DayWiseData(Request $request)
+    {
+        $day = $request->day;
+        $id = $request->id;
+        $standard_id = $request->standard_id;
+        $chapter_id = $request->chapter_id;
+        $subject_id = $request->subject_id;
+        $topic_id = $request->topic_id;
+        $content_master = contentModel::select('id', 'title')
+            ->when($request->standard_id, function ($q) use ($standard_id) {
+                $q->where('standard_id', $standard_id);
+            })
+            ->when($request->chapter_id, function ($q) use ($chapter_id) {
+                $q->where('chapter_id', $chapter_id);
+            })
+            ->when($request->subject_id, function ($q) use ($subject_id) {
+                $q->where('subject_id', $subject_id);
+            })
+            ->when($request->topic_id, function ($q) use ($topic_id) {
+                $q->where('topic_id', $topic_id);
+            })
+            ->get();
+        $question_master = questionpaperModel::select('id', 'paper_name as title')
+            ->when($request->standard_id, function ($q) use ($standard_id) {
+                $q->where('standard_id', $standard_id);
+            })
+            ->when($request->subject_id, function ($q) use ($subject_id) {
+                $q->where('subject_id', $subject_id);
+            })
+            ->get();
+        $objDayWise = LmsLessonPlanDayWise::where('lpid', $id)->get();
+        $data = View::make('lms.lessonplan.day_wise_lesson_plan', compact('day', 'objDayWise', 'content_master', 'question_master'));
+        return $data;
+    }
+
+    public function ajax_contentMasterData(Request $request)
+    {
+        $standard_id = $request->standard_id;
+        $chapter_id = $request->chapter_id;
+        $subject_id = $request->subject_id;
+        $topic_id = $request->topic_id;
+        $content_master = contentModel::select('id', 'title')
+            ->when($request->standard_id, function ($q) use ($standard_id) {
+                $q->where('standard_id', $standard_id);
+            })
+            ->when($request->chapter_id, function ($q) use ($chapter_id) {
+                $q->where('chapter_id', $chapter_id);
+            })
+            ->when($request->subject_id, function ($q) use ($subject_id) {
+                $q->where('subject_id', $subject_id);
+            })
+            ->when($request->topic_id, function ($q) use ($topic_id) {
+                $q->where('topic_id', $topic_id);
+            })
+            ->get();
+        return response($content_master, 200);
+    }
+
+    public function ajax_questionPaperData(Request $request)
+    {
+        $standard_id = $request->standard_id;
+        $subject_id = $request->subject_id;
+        $content_master = questionpaperModel::select('id', 'paper_name as title')
+            ->when($request->standard_id, function ($q) use ($standard_id) {
+                $q->where('standard_id', $standard_id);
+            })
+            ->when($request->subject_id, function ($q) use ($subject_id) {
+                $q->where('subject_id', $subject_id);
+            })
+            ->get();
+        return response($content_master, 200);
     }
 
     /**
@@ -37,14 +199,15 @@ class lms_lessonplanController extends Controller
      */
     public function getFormData($request)
     {
+        // $form_id = 1;
         $user_id = $request->session()->get('user_id');
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $standard_id = $request->standard_id;
         $subject_id = $request->subject_id;
         $chapter_id = $request->chapter_id;
 
-
         // get form submitted Data
+        // DB::enableQueryLog();
         $get_form_data = FormSubmitData::where('user_id', $user_id)
             ->where('sub_institute_id', $sub_institute_id)
             ->where('standard', $standard_id)
@@ -59,10 +222,10 @@ class lms_lessonplanController extends Controller
 
             // echo "<pre>"; print_r($get_form_data); exit;
             $form_fields_object = json_decode($get_from_fields_json->form_json);
-            if (! empty($form_fields_object) && ! empty($get_form_data)) {
+            if (!empty($form_fields_object) && !empty($get_form_data)) {
                 $form_data = (array) json_decode($get_form_data->form_data);
                 $fieldObject = [
-                    'form_id'    => $get_form_data['form_id'],
+                    'form_id' => $get_form_data['form_id'],
                     'chapter_id' => $chapter_id,
                 ];
 
@@ -97,46 +260,50 @@ class lms_lessonplanController extends Controller
                                     ->first();
 
                                 $formField->values = $form_data[$formField->name];
+                                // dd($get_standard->name);
                                 $fieldObject[$formField->label] = $get_standard->name;
                             }
-                        } else {
-                            if ($formField->label == 'Subject') {
+                        } else if ($formField->label == 'Subject') {
 
-                                if (isset($form_data[$formField->name])) {
-                                    $get_subject = DB::table('subject')
-                                        ->select('subject_name')
-                                        ->where('id', $form_data[$formField->name])
-                                        ->where('sub_institute_id', $sub_institute_id)
-                                        ->first();
+                            // dd($form_data[$formField->name]);
+                            if (isset($form_data[$formField->name])) {
+                                // DB::enableQueryLog();
+                                $get_subject = DB::table('subject')
+                                    ->select('subject_name')
+                                    ->where('id', $form_data[$formField->name])
+                                    ->where('sub_institute_id', $sub_institute_id)
+                                    ->first();
+                                // dd(DB::getQueryLog());
 
-                                    $formField->values = $form_data[$formField->name];
-                                    $fieldObject[$formField->label] = $get_subject->subject_name;
-                                }
-                            } else {
-                                if ($formField->label == 'Chapters') {
+                                // dd($get_subject);
 
-                                    if (isset($form_data[$formField->name])) {
-                                        $get_chapter = DB::table('chapter_master')
-                                            ->select('chapter_name')
-                                            ->where('id', $form_data[$formField->name])
-                                            ->where('sub_institute_id', $sub_institute_id)
-                                            ->first();
+                                $formField->values = $form_data[$formField->name];
+                                $fieldObject[$formField->label] = $get_subject->subject_name;
+                            }
+                        } else if ($formField->label == 'Chapters') {
 
-                                        $formField->values = $form_data[$formField->name];
-                                        $fieldObject[$formField->label] = $get_chapter->chapter_name;
-                                    }
-                                }
+                            // dd($form_data[$formField->name]);
+                            if (isset($form_data[$formField->name])) {
+                                // DB::enableQueryLog();
+                                $get_chapter = DB::table('chapter_master')
+                                    ->select('chapter_name')
+                                    ->where('id', $form_data[$formField->name])
+                                    ->where('sub_institute_id', $sub_institute_id)
+                                    ->first();
+                                // dd(DB::getQueryLog());
+
+                                // dd($get_chapter);
+
+                                $formField->values = $form_data[$formField->name];
+                                $fieldObject[$formField->label] = $get_chapter->chapter_name;
                             }
                         }
 
-
                     }
                 }
-
                 return $fieldObject;
             }
         }
-
         return false;
     }
 
@@ -165,7 +332,7 @@ class lms_lessonplanController extends Controller
         $lessonplan_data['standard_id'] = $standard_id;
         $lessonplan_data['grade_id'] = $std_data[0]['grade_id'];
         if ($title != null) {
-            $lessonplan_data['subject_name'] = $sub_data[0]['subject_name'].' - '.$title;
+            $lessonplan_data['subject_name'] = $sub_data[0]['subject_name'] . ' - ' . $title;
         } else {
             $lessonplan_data['subject_name'] = $sub_data[0]['subject_name'];
         }
@@ -178,48 +345,91 @@ class lms_lessonplanController extends Controller
 
     public function store(Request $request)
     {
-        $sub_institute_id = $request->session()->get('sub_institute_id');
-        $syear = $request->session()->get('syear');
-        $user_id = $request->session()->get('user_id');
-        $lecture_ids = $request->input("lecture_ids");
-        $lecture_date = $request->input("lecture_date");
-        $lecture_title = $request->input("lecture_title");
-        $lecture_desc = $request->input("lecture_desc");
-        $teachers = $request->input("teacher_id");
-        $tarr = explode("####", $teachers);
-        $teacher_id = $tarr[0];
-        $teacher_profile_id = $tarr[1];
+        // dd($request->all());
+        $request->validate([
+            'focauspoint' => 'required',
+            'pedagogicalprocess' => 'required',
+            'resource' => 'required',
+            'classroompresentation' => 'required',
+            'classroomdiversity' => 'required',
+            'id' => 'nullable|exists:lms_lesson_plan,id',
+        ]);
+        try {
+            $objLessonPlan = LmsLessonPlan::find($request->id) ?? new LmsLessonPlan();
+            $objLessonPlan->sub_institute_id = session()->get('sub_institute_id');
+            $objLessonPlan->syear = session()->get('syear');
+            $objLessonPlan->standard_id = $request->standard_id;
+            $objLessonPlan->subject_id = $request->subject_id;
+            $objLessonPlan->chapter_id = $request->chapter_id;
+            $objLessonPlan->topic_id = $request->topic;
+            $objLessonPlan->standard_id = $request->standard;
+            $objLessonPlan->numberofperiod = $request->numberofperiod;
+            $objLessonPlan->teachingtime = $request->teachingtime;
+            $objLessonPlan->assessmenttime = $request->assessmenttime;
+            $objLessonPlan->learningtime = $request->learningtime;
+            $objLessonPlan->assessmentqualifying = $request->assessmentqualifying;
+            $objLessonPlan->focauspoint = $request->focauspoint;
+            $objLessonPlan->pedagogicalprocess = $request->pedagogicalprocess;
+            $objLessonPlan->resource = $request->resource;
+            $objLessonPlan->classroompresentation = $request->classroompresentation;
+            $objLessonPlan->classroomactivity = implode(',', $request->classroomactivity);
+            $objLessonPlan->classroomdiversity = $request->classroomdiversity;
+            $objLessonPlan->prerequisite = $request->prerequisite;
+            $objLessonPlan->learningobjective = $request->learningobjective;
+            $objLessonPlan->learningknowledge = $request->learningknowledge;
+            $objLessonPlan->learningskill = $request->learningskill;
+            $objLessonPlan->selfstudyhomework = $request->selfstudyhomework;
+            $objLessonPlan->selfstudyactivity = implode(',', $request->selfstudyactivity);
+            $objLessonPlan->assessment = $request->assessment;
+            $objLessonPlan->assessmentactivity = implode(',', $request->assessmentactivity);
+            $objLessonPlan->hardword = $request->hardword;
+            $objLessonPlan->tagmetatag = $request->tagmetatag;
+            $objLessonPlan->valueintegration = $request->valueintegration;
+            $objLessonPlan->globalconnection = $request->globalconnection;
+            $objLessonPlan->sel = $request->sel;
+            $objLessonPlan->stem = $request->stem;
+            $objLessonPlan->vocationaltraining = $request->vocationaltraining;
+            $objLessonPlan->simulation = $request->simulation;
+            $objLessonPlan->games = $request->games;
+            $objLessonPlan->activities = $request->activities;
+            $objLessonPlan->reallifeapplication = $request->reallifeapplication;
+            if ($objLessonPlan->save()) {
+                $dayWiseData = LmsLessonPlanDayWise::where('lpid', $objLessonPlan->id)->pluck('days')->toArray();
+                $inputDays = $request->days ?? [];
+                $deleteData = array_diff($dayWiseData, $inputDays);
+                LmsLessonPlanDayWise::whereIn('days', $deleteData)->where('lpid', $objLessonPlan->id)->delete();
 
-        foreach ($lecture_ids as $key => $val) {
-            $arr = [
-                'title'            => $lecture_title[$key],
-                'description'      => $lecture_desc[$key],
-                'standard_id'      => $request->get('hid_standard_id'),
-                'subject_id'       => $request->get('hid_subject_id'),
-                'school_date'      => $lecture_date[$key],
-                'division_id'      => $request->get('division'),
-                'grade_id'         => $request->get('hid_grade_id'),
-                'user_group_id'    => $teacher_profile_id,
-                'teacher_id'       => $teacher_id,
-                'syear'            => $syear,
-                'sub_institute_id' => $sub_institute_id,
-                'created_at'       => now(),
-                'updated_at'       => now(),
-                'total_marks'      => $request->get('total_marks'),
-                'book_link'        => $request->get('book_link'),
-            ];
-
-            lessonplanningModel::insert($arr);
-
+                foreach ($inputDays as $i => $value) {
+                    $objDayWise = LmsLessonPlanDayWise::where('days', $value)->where('lpid', $objLessonPlan->id)->first() ?? new LmsLessonPlanDayWise();
+                    $objDayWise->lpid = $objLessonPlan->id;
+                    $objDayWise->days = $value;
+                    $objDayWise->topicname = $request->topicname[$value] ?? '';
+                    $objDayWise->classtime = $request->classtime[$value] ?? '';
+                    $objDayWise->duringcontent = $request->duringcontent[$value] ?? '';
+                    $objDayWise->assessmentqualifying = $request->assessmentqualifyingday[$value] ?? '';
+                    $objDayWise->learningobjective = $request->learningobjectiveday[$value] ?? '';
+                    $objDayWise->learningoutcome = $request->learningoutcome[$value] ?? '';
+                    $objDayWise->pedagogicalprocess = $request->pedagogicalprocessday[$value] ?? '';
+                    $objDayWise->resource = $request->resourceday[$value] ?? '';
+                    $objDayWise->closure = $request->closure[$value] ?? '';
+                    $objDayWise->selfstudyhomework = $request->selfstudyhomeworkday[$value] ?? '';
+                    $objDayWise->selfstudyactivity = implode(',', $request->selfstudyactivityday[$value] ?? []);
+                    $objDayWise->assessment = $request->assessmentday[$value] ?? '';
+                    $objDayWise->assessmentactivity = implode(',', $request->assessmentactivityday[$value] ?? []);
+                    // dd($objDayWise);
+                    $objDayWise->save();
+                }
+                $res = array(
+                    "status_code" => 1,
+                    "url" => route('lms_lessonplan.index', ['standard_id' => $objLessonPlan->standard_id, 'subject_id' => $objLessonPlan->subject_id, 'chapter_id' => $objLessonPlan->chapter_id]),
+                    "message" => "Lesson Plan Added Successfully",
+                );
+                return response()->json($res);
+            }
+        } catch (Exception $e) {
+            dump($e);
+            $e->getMessage();
         }
-
-        $res = [
-            "status_code" => 1,
-            "message"     => "Lesson Plan Added Successfully",
-        ];
-        $type = $request->input('type');
-
-        return redirect()->route('course_master.index');
     }
 
     public function ajax_getTeacher(Request $request)
@@ -231,18 +441,16 @@ class lms_lessonplanController extends Controller
         $standard_id = $request->input("standard_id");
         $subject_id = $request->input("subject_id");
 
-        $teacherData = DB::table('timetable as t')
-            ->join('tbluser as u', function ($join) {
-                $join->whereRaw('u.id = t.teacher_id AND u.sub_institute_id = t.sub_institute_id');
-            })
-            ->selectRaw("DISTINCT(teacher_id), CONCAT_WS(' ',u.first_name,u.middle_name,u.last_name) AS teacher_name,u.user_profile_id")
-            ->where('t.sub_institute_id', $sub_institute_id)
-            ->where('t.standard_id', $standard_id)
-            ->where('t.division_id', $division_id)
-            ->where('t.subject_id', $subject_id)
-            ->where('t.syear', $syear)->orderBy('first_name')->get()->toArray();
+        $teacherData = DB::select("SELECT DISTINCT(teacher_id), CONCAT_WS(' ',u.first_name,u.middle_name,u.last_name) AS teacher_name,u.user_profile_id
+            FROM timetable t
+            INNER JOIN tbluser u ON u.id = t.teacher_id AND u.sub_institute_id = t.sub_institute_id
+            WHERE t.sub_institute_id = '" . $sub_institute_id . "' AND t.standard_id = '" . $standard_id . "'
+            AND t.division_id = '" . $division_id . "' AND t.subject_id = '" . $subject_id . "' AND t.syear = '" . $syear . "'
+            ORDER BY first_name asc
+        ");
+        $teacherData = json_decode(json_encode($teacherData), true);
 
-        return json_decode(json_encode($teacherData), true);
+        return $teacherData;
     }
 
     public function ajax_Timetable(Request $request)
@@ -258,7 +466,7 @@ class lms_lessonplanController extends Controller
 
         //START Get weekday and date between from-date & to-date
         $days_arr = $this->getcountdays($from_date, $to_date);
-        //END Get weekday and date between from-date & to-date           
+        //END Get weekday and date between from-date & to-date
 
         //START Get Timetable data
         $timetableData = timetableModel::select('*')
@@ -266,16 +474,16 @@ class lms_lessonplanController extends Controller
             ->where(
                 [
                     'timetable.sub_institute_id' => $sub_institute_id,
-                    'timetable.standard_id'      => $standard_id,
-                    'timetable.division_id'      => $division_id,
-                    'timetable.subject_id'       => $subject_id,
-                    'timetable.teacher_id'       => $teacher_id,
-                    'timetable.syear'            => $syear,
+                    'timetable.standard_id' => $standard_id,
+                    'timetable.division_id' => $division_id,
+                    'timetable.subject_id' => $subject_id,
+                    'timetable.teacher_id' => $teacher_id,
+                    'timetable.syear' => $syear,
                 ]
             )
             ->get()->toArray();
 
-        $period = [];
+        $period = array();
         if (count($timetableData) > 0) {
             foreach ($timetableData as $key => $tdata) {
                 $period[$tdata['week_day']][] = $tdata['title'];
@@ -285,19 +493,21 @@ class lms_lessonplanController extends Controller
 
         //START Get Already lesson planning data
         $lessonplanData = lessonplanningModel::select('*')
-            ->where([
-                'sub_institute_id' => $sub_institute_id,
-                'standard_id'      => $standard_id,
-                'division_id'      => $division_id,
-                'subject_id'       => $subject_id,
-                'teacher_id'       => $teacher_id,
-                'syear'            => $syear,
-            ])
+            ->where(
+                [
+                    'sub_institute_id' => $sub_institute_id,
+                    'standard_id' => $standard_id,
+                    'division_id' => $division_id,
+                    'subject_id' => $subject_id,
+                    'teacher_id' => $teacher_id,
+                    'syear' => $syear,
+                ]
+            )
             ->groupBy('school_date', 'standard_id', 'division_id', 'subject_id')
             ->get()
             ->toArray();
 
-        $lpData = [];
+        $lpData = array();
         if (count($lessonplanData) > 0) {
             foreach ($lessonplanData as $lkey => $lval) {
                 $lpData[] = $lval['school_date'];
@@ -306,8 +516,8 @@ class lms_lessonplanController extends Controller
         //END Get Already lesson planning data
 
         $from_date1 = $from_date;
-        $days = ['1' => 'M', '2' => 'T', '3' => 'W', '4' => 'H', '5' => 'F', '6' => 'S'];
-        $final_timetable_data = [];
+        $days = array('1' => 'M', '2' => 'T', '3' => 'W', '4' => 'H', '5' => 'F', '6' => 'S');
+        $final_timetable_data = array();
         while (strtotime($from_date1) <= strtotime($to_date)) {
             $week_no = date("N", strtotime($from_date1));
             if ($week_no != 7) {
@@ -315,9 +525,9 @@ class lms_lessonplanController extends Controller
                 if (array_key_exists($week_day, $period)) {
                     foreach ($days_arr[$week_day] as $dkey => $dval) {
                         foreach ($period[$week_day] as $wkey => $wval) {
-                            if (! in_array($dval, $lpData))//If lesson planning exist that dont add that date again
+                            if (!in_array($dval, $lpData)) //If lesson planning exist that dont add that date again
                             {
-                                $final_timetable_data[$dval.'####'.$wval] = $dval.' / '.$wval;
+                                $final_timetable_data[$dval . '####' . $wval] = $dval . ' / ' . $wval;
                             }
                         }
                     }
@@ -344,9 +554,7 @@ class lms_lessonplanController extends Controller
                 $from_date1 = date("Y-m-d", strtotime("+1 day", strtotime($from_date1)));
             }
         }
-
         return $counter;
     }
-
 
 }

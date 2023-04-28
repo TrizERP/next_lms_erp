@@ -863,9 +863,7 @@ if (! function_exists('FeeBreakoffHeadWise')) {
             ->where('se.syear', $syear)
             ->whereIn('s.id', $student_ids)
             ->groupByRaw('s.id,fb.month_id,fb.fee_type_id')
-            ->orderByRaw('sort_year,sort_month,ft.display_name')->get()->toArray();
-
-
+            ->orderByRaw('sort_year,sort_month,ft.display_name ASC')->get()->toArray();
         $data = array();
         $student_data = array();
         foreach ($result as $key => $value) {
@@ -874,7 +872,6 @@ if (! function_exists('FeeBreakoffHeadWise')) {
             $sub_institute_id = session()->get('sub_institute_id');
 
             $request = $_REQUEST;
-
 
             $paid_fees = $paid_fees = DB::table('fees_collect')
                 ->selectRaw("sum(ifnull($fees_title,0)) total_paid,receiptdate")
@@ -1086,7 +1083,7 @@ if (! function_exists('OtherBreackOff')) {
                 'sub_institute_id' => session()->get('sub_institute_id'),
                 'syear'            => session()->get('syear'),
                 'fees_title_id'    => 1,
-            ])->get()->toArray();
+            ])->orderBy('display_name','ASC')->get()->toArray();
 
         $bk_off_with_name = array();
         foreach ($fees_title as $id => $arr) {

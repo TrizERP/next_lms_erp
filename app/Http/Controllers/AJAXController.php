@@ -17,6 +17,9 @@ use function App\Helpers\htmlToPDFPortrait;
 use function App\Helpers\OtherBreackOff;
 use function App\Helpers\OtherBreackOffHead;
 use function App\Helpers\OtherBreackOfMonth;
+use App\Models\school_setup\standardModel;
+use App\Models\school_setup\divisionModel;
+use App\Models\school_setup\academic_sectionModel;
 
 //use function App\Helpers\FeeBreakoffHeadWise;
 
@@ -54,7 +57,7 @@ class AJAXController extends Controller
                 $join->whereRaw('qp.subject_id = ssm.subject_id and qp.standard_id = sdm.standard_id');
             })->join('lms_question_master as lqm', function ($join) {
                 $join->whereRaw('lqm.subject_id = ssm.subject_id and lqm.standard_id = sdm.standard_id and lqm.id in
-                (SELECT FROM lms_question_master as lqm, WHERE qp.id = qp2.id AND FIND_IN_SET(lqm.id, qp.question_ids))');
+                (SELECT lqm.id FROM lms_question_master as lqm,question_paper as qp2 WHERE qp.id = qp2.id AND FIND_IN_SET(lqm.id, qp.question_ids))');
             })->join('lms_online_exam_answer as am', function ($join) {
                 $join->whereRaw('am.question_paper_id = qp.id and am.student_id = ts.id and am.question_id = lqm.id');
             })
@@ -1245,12 +1248,12 @@ class AJAXController extends Controller
     public function ajax_PDF_Bulk_OtherFeesReceipt(Request $request)
     {
         //Start For Empty folder before creating new PDF
-        $folder_path = $_SERVER['DOCUMENT_ROOT'].'/storage/print_receipt_pdf/*';
+        $folder_path = $_SERVER['DOCUMENT_ROOT'] . '/storage/print_receipt_pdf/*';
         $files = glob($folder_path); // get all file names
-        foreach ($files as $file) { // iterate files
-            if (is_file($file)) {
-                unlink($file); // delete file
-            }
+        foreach($files as $file){ // iterate files
+          if(is_file($file)) {
+            unlink($file); // delete file
+          }
         }
         //END For Empty folder before creating new PDF
 
@@ -1259,64 +1262,66 @@ class AJAXController extends Controller
         $last_inserted_ids = $request->input('inserted_ids');
         $action = $request->input('action');
 
-        $inserted_ids_arr = explode(',', $last_inserted_ids);
+        $inserted_ids_arr = explode(',',$last_inserted_ids);
 
         $html = '';
-        foreach ($inserted_ids_arr as $key => $value) {
+        foreach ($inserted_ids_arr as $key => $value) 
+        { 
 
-            $html_data = $this->get_FeesHtmlForBulk($action, $value);
-            $student_id = $html_data['student_id'];
-            $fees_receipt_html = $html_data['fees_receipt_html'];
-            // dd($html_data);
+           $html_data = $this->get_FeesHtmlForBulk($action,$value);
+           $student_id = $html_data['student_id'];
+           $fees_receipt_html = $html_data['fees_receipt_html'];
+           // dd($html_data);
 
-            if ($fees_receipt_html != '') {
-                $dom = '<!DOCTYPE html>
+           if($fees_receipt_html != '') 
+           {
+                 $dom = '<!DOCTYPE html>
                         <html>
                             <head>
                                <title></title>
                                <meta charset="UTF-8">
-                               <meta name="viewport" content="width=erpice-width, initial-scale=1.0">
+                               <meta name="viewport" content="width=erpice-width, initial-scale=1.0">                           
                             </head>
                             <style>
-                                .last_page:last-child {
-                                     page-break-after: auto;
-                                }
+                            .fees-receipt tbody tr{
+                                 page-break-inside: avoid;
+                            }
                             </style>
                             <body>
-                                <div>
+                                <div style="page-break-inside: avoid">
                                     ##HTML_SEC##
                                 </div>
                             </body>
                         </html>';
 
-                $save_path = $_SERVER['DOCUMENT_ROOT'].'/storage/print_receipt_pdf';
+                $save_path = $_SERVER['DOCUMENT_ROOT'] . '/storage/print_receipt_pdf';
 
                 $CUR_TIME = date('YmdHis');
-                $html_filename = $student_id.'_'.$CUR_TIME.".html";
-                $pdf_filename = $student_id.'_'.$CUR_TIME.".pdf";
+                $html_filename = $student_id.'_'.$CUR_TIME . ".html";
+                $pdf_filename = $student_id.'_'.$CUR_TIME . ".pdf";
 
                 // $html = '';
-                $html .= $fees_receipt_html.'<div class="last_page" style="page-break-before: always !important;"></div>';
+                $html .= $fees_receipt_html;//.'<div class="last_page" style="page-break-before: always !important;"></div>';
                 $html = str_replace('##HTML_SEC##', $html, $dom);
 
-                $html_file_path = $save_path.'/'.$html_filename;
-                $pdf_file_path = $save_path.'/'.$pdf_filename;
+                $html_file_path = $save_path . '/' . $html_filename;
+                $pdf_file_path = $save_path . '/' . $pdf_filename;
                 file_put_contents($html_file_path, $html);
 
-                if ($action == 'Bonafide' || $action == 'Character Certificate' || $action == 'other_fees_collect_receipt' || $action == 'imprest_fees_cancel_refund_receipt') {
+                if($action == 'Bonafide' || $action == 'Character Certificate' || $action == 'other_fees_collect_receipt' || $action == 'imprest_fees_cancel_refund_receipt')
+                {
                     htmlToPDFLandscapeCertificate($html_file_path, $pdf_file_path);
-                } else {
+                }else{
                     htmlToPDF($html_file_path, $pdf_file_path);
                 }
-
-
+         
                 unlink($html_file_path);
 
                 $PDF_path_for_open = "http://".$_SERVER['HTTP_HOST'].'/storage/print_receipt_pdf/'.$pdf_filename;
             }
         }
-
         return $PDF_path_for_open;
+
     }
 
     public function get_FeesHtml($student_id, $action, $receipt_id)
@@ -1614,6 +1619,31 @@ class AJAXController extends Controller
 
             return $result;
         }
+    }
+ public function collectsct(Request $req){
+        $option ='<option>Select</option>';
+        if($req->sectionId == 1){
+            $academy = academic_sectionModel::where('sub_institute_id', $req->session()->get('sub_institute_id'))->get(['id','title','short_name','sort_order','shift','medium']);
+            foreach($academy as $row){
+                $option .= '<option value='.$row['id'].'>'.$row['title'].'</option>';
+            }
+        }else if($req->sectionId == 2){
+            $std = standardModel::where('sub_institute_id', $req->session()->get('sub_institute_id'))->get(['id','short_name']);
+            foreach($std as $row){
+                $option .= '<option value='.$row['id'].'>'.$row['short_name'].'</option>';
+            }
+        }else if($req->sectionId == 3){
+            $divs = divisionModel::where('sub_institute_id', $req->session()->get('sub_institute_id'))->get(['id','name']);
+            foreach($divs as $row){
+                $option .= '<option value='.$row['id'].'>'.$row['name'].'</option>';
+            }
+        }else if($req->sectionId == 5){
+            $std = standardModel::where(['sub_institute_id'=> $req->session()->get('sub_institute_id'),'grade_id'=>$req->grade])->get(['id','short_name']);
+            foreach($std as $row){
+                $option .= '<option value='.$row['id'].'>'.$row['short_name'].'</option>';
+            }
+        }
+        return $option;
     }
 
 }

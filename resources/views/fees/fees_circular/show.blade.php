@@ -31,18 +31,6 @@
             <form action="{{ route('fees_circular.show_student') }}" enctype="multipart/form-data" method="post">
                 {{ method_field("POST") }}
                 @csrf
-                <!-- <div class="col-md-3 form-group">
-                    <label>Gr No</label>
-                    <input type="text" id="grno" name="grno" class="form-control">
-                </div>
-                <div class="col-md-3 form-group">
-                    <label>Name</label>
-                    <input type="text" id="stu_name" name="stu_name" class="form-control">
-                </div>
-                <div class="col-md-3 form-group">
-                    <label>Mobile</label>
-                    <input type="text" id="mobile" name="mobile" class="form-control">
-                </div> -->
                 <div class="row">
                     {{ App\Helpers\SearchChain('4','single','grade,std,div',$grade_id,$standard_id,$division_id) }}
 
@@ -98,7 +86,6 @@
                                         <th>Enrollment No.</th>
                                         <th>Student Name</th>
                                         <th>Standard</th>
-                                        <th>Division</th>
                                         @if (Session::get('sub_institute_id') == '201' || Session::get('sub_institute_id') == '202' || Session::get('sub_institute_id') == '203' || Session::get('sub_institute_id') == '204')
                                         <th>Fees Breakoff</th>
                                         <th>Fees Circular Amount</th>
@@ -107,24 +94,30 @@
                                     </tr>
                                 </thead>
                                 <tbody>
+
                                 @php
                                 $j=1;
+                                $month_id = implode(',',$data['month']);
                                 @endphp
                                 @if(isset($data['data']))
                                     @foreach($data['data'] as $key => $value)
                                     <tr>
-                                        <td><input id="{{$value['id']}}" value="{{$value['id']}}" name="students[]" type="checkbox"></td>
-                                        <td>{{$value['enrollment_no']}}</td>
-                                        <td>{{$value['first_name']}} {{$value['last_name']}}</td>
-                                        <td>{{$value['standard_name']}}</td>
-                                        <td>{{$value['division_name']}}</td>
-                                        @if (Session::get('sub_institute_id') == '201' || Session::get('sub_institute_id') == '202' || Session::get('sub_institute_id') == '203' || Session::get('sub_institute_id') == '204')
-                                        <td>{{$value['total_breakoff']}}</td>
-                                        <td>
-                                            <input type="text" name="fees_circular_amount[{{$value['id']}}]" class="form-control" placeholder="Amount">
+                                        <td><input id="{{$value['stu_data']['student_id']}}" value="{{$value['stu_data']['student_id']}}" name="students[]" type="checkbox"></td>
+                                        <td>{{$value['stu_data']['enrollment']}}</td>
+                                            <td>{{$value['stu_data']['name']}}</td>
+                                            <td>{{$value['stu_data']['stddiv']}}</td>
+                                            @if (Session::get('sub_institute_id') == '201' || Session::get('sub_institute_id') == '202' || Session::get('sub_institute_id') == '203' || Session::get('sub_institute_id') == '204')
+                                        <td>@foreach($value['total_fees'] as $i=>$val)
+                                            @if($value['total_fees'][$i]['month_id'] == $month_id)
+                                            {{$val['remain']}}
+                                            @endif
+                                        @endforeach
+                                    </td>
+                                            <td>
+                                                <input type="text" name="fees_circular_amount[{{$value['stu_data']['student_id']}}]" class="form-control" placeholder="Amount">
                                         </td>
                                         <td>
-                                            <input type="text" name="fees_circular_remarks[{{$value['id']}}]" class="form-control" placeholder="Remarks">
+                                            <input type="text" name="fees_circular_remarks[{{$value['stu_data']['student_id']}}]" class="form-control" placeholder="Remarks">
                                         </td>
                                         @endif
                                     </tr>
@@ -150,7 +143,7 @@
                 </div>
             </form>
         </div>
-                    @endif
+        @endif
     </div>
 </div>
 

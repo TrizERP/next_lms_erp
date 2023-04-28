@@ -73,12 +73,13 @@ class examWiseProgressReportController extends Controller
                 $join->whereRaw('le.question_paper_id = qp.id AND le.student_id = s.id');
             })->selectRaw("s.id,s.enrollment_no,CONCAT_WS(' ',s.first_name,s.middle_name,s.last_name) AS student_name,
                 st.name AS std_name,d.name AS div_name,se.standard_id,se.grade_id,qp.id AS question_paper_id,qp.paper_name,
-                qp.total_marks,ifnull(le.obtain_marks,'-') AS obtain_marks")
+                qp.total_marks,ifnull(le.total_right,'-') AS obtain_marks")
             ->where('s.sub_institute_id', $sub_institute_id)
             ->where('se.grade_id', $grade)
             ->where('se.standard_id', $standard)
             ->where('qp.id', $exams)
-            ->groupByRaw('s.id,qp.id')->get()->toArray();
+            ->groupByRaw('s.id,qp.id')
+            ->orderByRaw('s.roll_no ASC')->get()->toArray();
 
 
         $data = json_decode(json_encode($data), true);

@@ -46,7 +46,8 @@ class contentController extends Controller
     {
         $where = '';
         $topic = '';
-
+        // return $chapter_id;exit;
+        // $breadcrum_data = array();
         if ($topic_id != '') {
             $topic = 't.id as topic_id,';
         }
@@ -69,8 +70,13 @@ class contentController extends Controller
         }
 
         $breadcrum_data = $breadcrum_data->get()->toArray();
-
+        // dd($breadcrum_data);
+        if(isset($breadcrum_data[0]) && $breadcrum_data != " "){
         return $breadcrum_data[0];
+        }
+        else{
+            return back();
+        }
     }
 
     public function create(Request $request)
@@ -546,11 +552,15 @@ class contentController extends Controller
         $user_id = $request->session()->get('user_id');
         $show_hide = $request->get('show_hide');
         $show_hide_val = $show_hide ?? '';
+        $filePath = "public/lms_content_file/"; 
 
         $image_data = [];
         if ($request->hasFile('filename')) {
             if ($request->has('hid_filename')) {
+                        if (file_exists($filePath.$request->hasFile('filename'))){
+
                 unlink('storage'.$request->input('hid_filename'));
+            }
             }
             $img = $request->file('filename');
             $filename = $img->getClientOriginalName();

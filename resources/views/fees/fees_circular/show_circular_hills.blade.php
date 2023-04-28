@@ -54,6 +54,7 @@ use DB;
 $table = '';
 $total = 0;
 
+$sub_institute_id = session()->get('sub_institute_id');
 
 
 
@@ -67,7 +68,9 @@ if (isset($data['breakoff'][$value['id']]))
         $total += $damount;
     }
 
-    if($data['fees_circular_amount'][$value['id']] != '')
+   
+}
+ if(isset($data['fees_circular_amount'][$value['id']]) && $data['fees_circular_amount'][$value['id']] != ' ' ) 
     {
         $total = $data['fees_circular_amount'][$value['id']];
     }
@@ -77,7 +80,6 @@ if (isset($data['breakoff'][$value['id']]))
               <td>&nbsp;' . $total . '</td>
            </tr>';
 
-}
 {{ $amountInWords = App\Helpers\getStringOfAmount($total); }}
 $str = str_replace(htmlspecialchars("<<student_name>>"), $value['student_name'], $string);
 $str = str_replace(htmlspecialchars("<<surname>>"), $value['surname'], $str);

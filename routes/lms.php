@@ -39,6 +39,8 @@ use App\Http\Controllers\lms\reports\studentReportController;
 use App\Http\Controllers\lms\subtopicController;
 use App\Http\Controllers\lms\teacher_resource\lms_teacherResourceController;
 use App\Http\Controllers\lms\topicController;
+use App\Http\Controllers\lms\questionWiseReportController;
+
 use App\Http\Controllers\lms\virtualclassroomController;
 use App\Http\Controllers\school_setup\sub_std_mapController;
 use Illuminate\Support\Facades\Route;
@@ -152,8 +154,16 @@ Route::group(['prefix' => 'lms', 'middleware' => ['session', 'menu', 'logRoute']
 
     Route::resource('lms_lessonplan', lms_lessonplanController::class);
     Route::get('ajax_Timetable', [lms_lessonplanController::class, 'ajax_Timetable'])->name('ajax_Timetable');
+     Route::GET('ajax_daywisedata', 'lms\lessonplan\lms_lessonplanController@ajax_DayWiseData')->name('ajax_daywisedata');
+    Route::GET('ajax_contentmasterdata', 'lms\lessonplan\lms_lessonplanController@ajax_contentMasterData')->name('ajax_contentmasterdata');
+    Route::GET('ajax_questionpaperdata', 'lms\lessonplan\lms_lessonplanController@ajax_questionPaperData')->name('ajax_questionpaperdata');
+    Route::GET('ajax_daywisedata', 'lms\lessonplan\lms_lessonplanController@ajax_DayWiseData')->name('ajax_daywisedata');
+   
     Route::get('ajax_getTeacher', [lms_lessonplanController::class, 'ajax_getTeacher'])->name('ajax_getTeacher');
 
+Route::get('questionReport', [questionWiseReportController::class, 'index'])->name('question_wise_report');
+Route::post('show_question_wise_report',
+    [questionWiseReportController::class, 'show_question_wise_report'])->name('show_question_wise_report');
     Route::resource('lms_content_category', lms_contentCategoryController::class);
 
     Route::get('ajax_getYouTubeSuggestion', [contentController::class, 'ajax_getYouTubeSuggestion'])->name('ajax_getYouTubeSuggestion');

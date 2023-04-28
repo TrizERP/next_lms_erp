@@ -1070,8 +1070,7 @@ END as color_code
                 })->join('division as d', function ($join) {
                     $join->whereRaw("d.id = se.section_id AND d.sub_institute_id = se.sub_institute_id");
                 })->selectRaw("ts.id,concat_ws(' ',ts.first_name,ts.middle_name,ts.last_name) as student_name,
-                    ts.enrollment_no,ts.roll_no,ts.dob,ts.address,ts.mobile,ts.email,if(ts.image = '','',
-                    concat('https://".$_SERVER['SERVER_NAME']."/storage/student/',ts.image)) as student_image,se.standard_id,
+                    ts.enrollment_no,ts.roll_no,ts.dob,ts.address,ts.mobile,ts.email,if(ts.image = '','https://".$_SERVER['SERVER_NAME']."/storage/student/noimages.png',concat('https://".$_SERVER['SERVER_NAME']."/storage/student/',ts.image)) as student_image,se.standard_id,
                     se.section_id AS division_id,s.name AS standard_name,d.name AS division_name")
                 ->where('ts.sub_institute_id', $sub_institute_id)
                 ->where('se.syear', $syear);

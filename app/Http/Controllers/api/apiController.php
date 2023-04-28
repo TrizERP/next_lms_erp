@@ -130,8 +130,7 @@ class apiController extends Controller
                 })->leftjoin('division as d', function ($join) {
                     $join->whereRaw('d.id = c.division_id AND d.sub_institute_id = c.sub_institute_id');
                 })->selectRaw("u.id,u.user_name,u.first_name,u.middle_name,u.last_name,u.sub_institute_id,u.email,u.mobile,
-                    u.birthdate,u.address,u.gender,u.join_year,if(u.image = '','',concat('https://".$_SERVER['SERVER_NAME']."/storage/user/',
-                    u.image)) as image,p.name as user_profile_name,u.user_profile_id,group_concat(concat_ws('||',c.standard_id,c.division_id))
+                    u.birthdate,u.address,u.gender,u.join_year,if(u.image = '','https://".$_SERVER['SERVER_NAME']."/storage/student/noimages.png',concat('https://".$_SERVER['SERVER_NAME']."/storage/user/',u.image)) as image,p.name as user_profile_name,u.user_profile_id,group_concat(concat_ws('||',c.standard_id,c.division_id))
                     as standard_division,group_concat(concat_ws('||',s.name,d.name)) as standard_division_title,ss.syear,ss.SchoolName,ss.Logo")
                 ->where('u.status', '1')
                 ->where('u.mobile', $_REQUEST['mobile'])->get()->toArray();
@@ -356,8 +355,7 @@ class apiController extends Controller
                     $join->whereRaw("d.id = c.division_id AND d.sub_institute_id = c.sub_institute_id");
                 })
                 ->selectRaw("u.id,u.user_name,u.first_name,u.middle_name,u.last_name,u.sub_institute_id,u.email,
-                    u.mobile,u.birthdate,u.address,u.gender,u.join_year,if(u.image = '','',
-                    concat('https://".$_SERVER['SERVER_NAME']."/storage/user/',u.image)) as image,p.name as user_profile_name,
+                    u.mobile,u.birthdate,u.address,u.gender,u.join_year,if(u.image = '','https://".$_SERVER['SERVER_NAME']."/storage/student/noimages.png',concat('https://".$_SERVER['SERVER_NAME']."/storage/user/',u.image)) as image,p.name as user_profile_name,
                     u.user_profile_id,group_concat(concat_ws('||',c.standard_id,c.division_id)) as standard_division,
                     group_concat(concat_ws('||',s.name,d.name)) as standard_division_title,ss.syear,ss.SchoolName,ss.Logo")
                 ->where('u.mobile', $_REQUEST['mobile'])

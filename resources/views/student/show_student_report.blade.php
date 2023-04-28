@@ -50,7 +50,7 @@
                                                     @endif value="standard_id">Standard
                                             </option>
                                             <option @if($order_by == 'enrollment_no') selected="selected"
-                                                    @endif value="enrollment_no">Enrollment No
+                                                    @endif value="enrollment_no">GR No
                                             </option>
                                             <option @if($order_by == 'roll_no') selected="selected"
                                                     @endif value="roll_no">Roll No
@@ -152,7 +152,7 @@
                                             <td><img height="60" width="60" src="../storage/student/{{$value->$hkey}}"/>
                                             </td>
                                         @elseif($hkey == 'admission_date' || $hkey == 'dob' || $hkey == 'date' || $hkey == 'birthdate' || $hkey == 'created_on' || $hkey == 'birthday' || $hkey == 'created_at')
-                                            <td> {{date('d-m-Y', strtotime($value->$hkey))}} </td>
+                                            <td> {{$value->$hkey ? date('d-m-Y', strtotime($value->$hkey)) : '-'}} </td>
                                         @elseif($hkey == 'dise_uid')
                                             <td>{{$value->$hkey}}</td>
                                         @else
