@@ -78,7 +78,7 @@ if (isset($_GET['inPopUp'])) {
     $form->table_attr = 'align="center" id="dataList" border=0 cellpadding="5" cellspacing="0"';
    $form->table_header_attr = 'class="alterCell" style="font-weight: bold;"';
     $form->table_content_attr = 'class="alterCell2"';
-    
+
     $visibility = 'makeVisible';
  if (file_exists(MODULES_BASE_DIR.'bibliography/custom_fields.inc.php')) {
 
@@ -93,51 +93,50 @@ $str_input .= ' Maximum '.$sysconf['max_upload'].' KB';
 /*$gmd_q = $dbs->query('SELECT gmd_id, gmd_name FROM mst_gmd');
 	//$gmd_options='';
        $gmd_options = array('N/A');
-        while ($gmd_d = $gmd_q->fetch_row()) 
-	//while ($gmd_d = $gmd_q->fetch_assoc())		
+        while ($gmd_d = $gmd_q->fetch_row())
+	//while ($gmd_d = $gmd_q->fetch_assoc())
 	{
             $gmd_options[] = array($gmd_d[0], $gmd_d[1]);
 		//$gmd_options.=$gmd_d['gmd_id'].',';
         }*/
- $material_q = $dbs->query('SELECT material_resource_id, material_resource_name FROM mst_material_resource_type where active_inactive="1"');
-	//$gmd_options='';
-       $material_options = array('N/A');
-        while ($material_d = $material_q->fetch_row()) 
-	//while ($gmd_d = $gmd_q->fetch_assoc())		
-	{
-            $material_options[] = array($material_d[0], $material_d[1]);
-		//$gmd_options.=$gmd_d['gmd_id'].',';
-        }
+$material_q = $dbs->query('SELECT material_resource_id, material_resource_name FROM mst_material_resource_type where active_inactive="1"');
+//$gmd_options='';
+$material_options = array('N/A');
+while ($material_d = $material_q->fetch_row()) //while ($gmd_d = $gmd_q->fetch_assoc())
+{
+    $material_options[] = array($material_d[0], $material_d[1]);
+    //$gmd_options.=$gmd_d['gmd_id'].',';
+}
 
-$ajax = "ajaxFillSelect('".SENAYAN_WEB_ROOT_DIR."admin/AJAX_material_sub_type_handler.php', 'mst_gmd', 'gmd_id:gmd_name:material_resource_id', 'gmdID', $('materialresourceid').getValue())";
+$ajax = "ajaxFillSelect('" . SENAYAN_WEB_ROOT_DIR . "admin/AJAX_material_sub_type_handler.php', 'mst_gmd', 'gmd_id:gmd_name:material_resource_id', 'gmdID', $('materialresourceid').getValue())";
 
-       if ($rec_d['gmd_name']) {
-            $mst_options[] = array($rec_d['gmd_id'],$rec_d['gmd_name']);
-        }
-	$mst_options[] = array('0', __('Material Type'));
+if ($rec_d['gmd_name']) {
+    $mst_options[] = array($rec_d['gmd_id'], $rec_d['gmd_name']);
+}
+$mst_options[] = array('0', __('Material Type'));
 
 
- $ajax_exp = "ajaxFillSelect('".SENAYAN_WEB_ROOT_DIR."admin/AJAX_material_sub_type_handler.php', 'mst_material_sub_type', 'material_sub_id:material_sub_name:gmd_id', 'materialsubid', $('gmdID').getValue())";
+$ajax_exp = "ajaxFillSelect('" . SENAYAN_WEB_ROOT_DIR . "admin/AJAX_material_sub_type_handler.php', 'mst_material_sub_type', 'material_sub_id:material_sub_name:gmd_id', 'materialsubid', $('gmdID').getValue())";
 
-       if ($rec_d['material_sub_name']) {
-            $mst_material_sub_type_options[] = array($rec_d['material_sub_id'],$rec_d['material_sub_name']);
-        }
-	$mst_material_sub_type_options[] = array('0', __('Material Sub Type'));
-        // string element
-       
-//$str_input='';       
-$str_input .= simbio_form_element::selectList('materialresourceid',$material_options, $rec_d['material_resource_id'],'onchange="'.$ajax.'"');
-$str_input .= simbio_form_element::selectList('gmdID', $mst_options, $rec_d['gmd_id'],'onchange="'.$ajax_exp.'"');
+if ($rec_d['material_sub_name']) {
+    $mst_material_sub_type_options[] = array($rec_d['material_sub_id'], $rec_d['material_sub_name']);
+}
+$mst_material_sub_type_options[] = array('0', __('Material Sub Type'));
+// string element
+
+//$str_input='';
+$str_input .= simbio_form_element::selectList('materialresourceid', $material_options, $rec_d['material_resource_id'], 'onchange="' . $ajax . '"');
+$str_input .= simbio_form_element::selectList('gmdID', $mst_options, $rec_d['gmd_id'], 'onchange="' . $ajax_exp . '"');
 //$str_input .= simbio_form_element::selectList('gmdID', $mst_options, $rec_d['gmd_id'],'onchange="ccc(this.value);'.$ajax_exp.'"');
 $str_input .= '&nbsp;';
 $str_input .= simbio_form_element::selectList('materialsubid', $mst_material_sub_type_options, $rec_d['material_sub_id'], 'style="width: 20%;"');
 $str_input .= '<tr><td id="txtHint" class="alterCell2" colspan="3"></td></tr>';
- // $str_input .= '<tr><td id="txtsubmaterial" class="alterCell2" colspan="3"></td></tr>';  
-       // $str_input .= '&nbsp;';
-       //$str_input .= simbio_form_element::textField('text', 'plc_search_str', $rec_d['place_name'], 'style="width: 45%;" onkeyup="'.$ajax_exp.'"');
- $form->addAnything(__('Material Type'), $str_input);
+// $str_input .= '<tr><td id="txtsubmaterial" class="alterCell2" colspan="3"></td></tr>';
+// $str_input .= '&nbsp;';
+//$str_input .= simbio_form_element::textField('text', 'plc_search_str', $rec_d['place_name'], 'style="width: 45%;" onkeyup="'.$ajax_exp.'"');
+$form->addAnything(__('Material Type'), $str_input);
 //$form->addAnything(__('Upload Mrc File'), $str_input);
-    
+
  echo $form->printOut();
 ?>
 <?php
@@ -147,13 +146,13 @@ if(isset($_POST['saveData']) AND $can_read AND $can_write)
 
 
 $max_chars = 1024*1000;
- 
+
     // check for form validity
     if (!$_FILES['importFile']['name']) {
         utility::jsAlert(__('Please select the file to import!'));
         exit();
     }  else {
- 
+
         $start_time = time();
         // set PHP time limit
         set_time_limit(0);
@@ -206,7 +205,7 @@ $biblio = new Biblio();
   for ($l=0; $l<strlen($header); $l += 12) {
     $code=substr($header,$l,12);
 	$codes[]=substr($code,0,3);
-  
+
   }
  $j=0;
  foreach(split($fieldterminator,substr($record,$start)) as $field) {
@@ -285,116 +284,110 @@ $classification_number = '';
 		{
 			$title = H($field->getFieldData());
 			//echo "Title -->".$title."</br>";
-						
+
 		}
 	if(H($field->getTag())=="245" && H($field->getSubfieldCd())=="b")
 		{
 			$sub_title = H($field->getFieldData());
 			//echo "Sub Title -->".$sub_title."</br>";
 		}
-	if(H($field->getTag())=="650" && H($field->getSubfieldCd())=="a")
-		{
-			$tag_new.= ",".H($field->getFieldData());			
-			//echo "tags -->".$tag_new."</br>";
-		}	
-	if(H($field->getTag())=="250" && H($field->getSubfieldCd())=="a")
-		{
-			$edition = H($field->getFieldData());			
-			//echo "Edition -->".$edition."</br>";
-		}
-	
+	if(H($field->getTag())=="650" && H($field->getSubfieldCd())=="a") {
+        $tag_new .= "," . H($field->getFieldData());
+        //echo "tags -->".$tag_new."</br>";
+    }
+	if(H($field->getTag())=="250" && H($field->getSubfieldCd())=="a") {
+        $edition = H($field->getFieldData());
+        //echo "Edition -->".$edition."</br>";
+    }
+
 	if(H($field->getTag())=="020" && H($field->getSubfieldCd())=="a")
 		{
 			if(!empty($isbn_issn))
 			{
 			}
-			else
-			{
-			$isbn_issn.= H($field->getFieldData());			
-			//echo "isbn_issn -->".$isbn_issn."</br>";
-			}
+			else {
+                $isbn_issn .= H($field->getFieldData());
+                //echo "isbn_issn -->".$isbn_issn."</br>";
+            }
 		}
-	if(H($field->getTag())=="260" && H($field->getSubfieldCd())=="b")
-		{
-			$publisher_name = H($field->getFieldData());			
-			//echo "Publisher_Name -->".$publisher_name."</br>";
-			
-		}
-	if(H($field->getTag())=="260" && H($field->getSubfieldCd())=="c")
-		{
-		$publisher_year = H($field->getFieldData());
-		$bodytag = str_replace("[", "", $publisher_year);
-		$publisher_year = str_replace("]", "", $bodytag);
-		$publisher_year = str_replace(".", "", $publisher_year);	
-		$publisher_year = str_replace(";", "", $publisher_year);	
-		$publisher_year = str_replace("(", "", $publisher_year);	
-		$publisher_year = str_replace(")", "", $publisher_year);	
-			//echo "Publisher_Year -->".$publisher_year."</br>";
-			
-		}
+	if(H($field->getTag())=="260" && H($field->getSubfieldCd())=="b") {
+        $publisher_name = H($field->getFieldData());
+        //echo "Publisher_Name -->".$publisher_name."</br>";
+
+    }
+	if(H($field->getTag())=="260" && H($field->getSubfieldCd())=="c") {
+        $publisher_year = H($field->getFieldData());
+        $bodytag = str_replace("[", "", $publisher_year);
+        $publisher_year = str_replace("]", "", $bodytag);
+        $publisher_year = str_replace(".", "", $publisher_year);
+        $publisher_year = str_replace(";", "", $publisher_year);
+        $publisher_year = str_replace("(", "", $publisher_year);
+        $publisher_year = str_replace(")", "", $publisher_year);
+        //echo "Publisher_Year -->".$publisher_year."</br>";
+
+    }
 	if(H($field->getTag())=="041" && H($field->getSubfieldCd())=="g")
 		{
 			$language  = H($field->getFieldData());
 			//echo "Language -->".$language."</br>";
-			
-		}
+
+        }
 	if(H($field->getTag())=="041" && H($field->getSubfieldCd())=="2")
 		{
 			$source = H($field->getFieldData());
 			//echo "Source -->".$source."</br>";
-			
-		}
-	if(H($field->getTag())=="260" && H($field->getSubfieldCd())=="a")
-		{
-			$publisher_place = H($field->getFieldData());
-			 $bodytag = str_replace(":", "", $publisher_place);
-		$publisher_place = str_replace(";", "", $bodytag);
-		$publisher_place = str_replace(",", "", $publisher_place);	
-		$publisher_place = str_replace("[", "", $publisher_place);
-		$publisher_place = str_replace("]", "", $publisher_place);
-			//echo "Publisher_Place -->".$publisher_place."</br>";
-			
-		}
+
+        }
+	if(H($field->getTag())=="260" && H($field->getSubfieldCd())=="a") {
+        $publisher_place = H($field->getFieldData());
+        $bodytag = str_replace(":", "", $publisher_place);
+        $publisher_place = str_replace(";", "", $bodytag);
+        $publisher_place = str_replace(",", "", $publisher_place);
+        $publisher_place = str_replace("[", "", $publisher_place);
+        $publisher_place = str_replace("]", "", $publisher_place);
+        //echo "Publisher_Place -->".$publisher_place."</br>";
+
+    }
 	if(H($field->getTag())=="520" && H($field->getSubfieldCd())=="a")
 		{
 			$specific_detail_info = H($field->getFieldData());
 			//echo "Specific Detail Info -->".$specific_detail_info."</br>";
-			
-		}
+
+        }
 	if(H($field->getTag())=="260" && H($field->getSubfieldCd())=="c")
 		{
 			$publisher_date = H($field->getFieldData());
 			//echo "Publisher_Date -->".$publisher_date."</br>";
-			
-		}
+
+        }
 	if(H($field->getTag())=="050" && H($field->getSubfieldCd())=="a")
 		{
 			$classification_number = H($field->getFieldData());
 
 			//echo "Classification Number -->".$classification_number."</br>";
-			
-		}
+
+        }
 	if(H($field->getTag())=="050" && H($field->getSubfieldCd())=="b")
 		{
 			$classification_number.= H($field->getFieldData());
 
 			//echo "Classification Number -->".$classification_number."</br>";
-			
-		}
+
+        }
 	if(H($field->getTag())=="504" && H($field->getSubfieldCd())=="a")
 		{
-			
-			$note = H($field->getFieldData());
+
+            $note = H($field->getFieldData());
 			//echo "Note -->".$note."</br>";
-			
-		}
+
+        }
 	if(H($field->getTag())=="100" && H($field->getSubfieldCd())=="a")
 		{
 
 			$author = H($field->getFieldData());
 			//echo "Author -->".$author."</br>";
-			
-		}
+
+        }
     }
 echo "Title->".$title."<br/>";
 echo "Sub Title->".$sub_title."<br/>";
@@ -416,13 +409,13 @@ if(!empty($author))
 $qry_author = "INSERT IGNORE into mst_author (author_name,authority_type,input_date,last_update) values ('$author','p',sysdate(),sysdate())";
 $dbs->query($qry_author);
 $author_id = $dbs->insert_id;
-//$result_author = mysql_query($qry_author); 
+//$result_author = mysqli_query($qry_author);
 //$author_id = mysql_insert_id();
  	}
 if(!empty($publisher_name))
 	{
 $qry_publisher = "INSERT IGNORE into mst_publisher (publisher_name,input_date,last_update) values ('$publisher_name',sysdate(),sysdate())";
-//$result_publisher = mysql_query($qry_publisher); 
+//$result_publisher = mysqli_query($qry_publisher);
 $dbs->query($qry_publisher);
 $publisher_id = $dbs->insert_id;
  	}
@@ -430,13 +423,13 @@ if(!empty($publisher_place))
 	{
 $qry_publisher_place = "INSERT IGNORE into mst_place (place_name,input_date,last_update) values ('$publisher_place',sysdate(),sysdate())";
 $dbs->query($qry_publisher_place);
-//$result_publisher_place = mysql_query($qry_publisher_place); 
+//$result_publisher_place = mysqli_query($qry_publisher_place);
 $publisher_place_id = $dbs->insert_id;
  	}
 $qry_insert_biblio = "INSERT IGNORE into biblio (	material_resource_id,gmd_id,material_sub_id,title,sub_title,tags,edition,isbn_issn,publisher_id,publish_year,language_id,source,publish_place_id,classification,notes,spec_detail_info,publication_date,input_date,last_update) values ('$_POST[materialresourceid]','$_POST[gmdID]','$_POST[materialsubid]','$title','$sub_title','$tags','$edition','$isbn_issn','$publisher_id','$publisher_year','$language','$source','$publisher_place_id','$classification_number','$note','$specific_detail_info','$publisher_date',sysdate(),sysdate())";
  //utility::jsAlert($qry_insert_biblio); //mfc
 $dbs->query($qry_insert_biblio);
-//$result_insert_biblio = mysql_query($qry_insert_biblio);
+//$result_insert_biblio = mysqli_query($qry_insert_biblio);
 $result_biblio_id = $dbs->insert_id;
 if(isset($result_biblio_id))
 	{
@@ -461,7 +454,7 @@ class Biblio
       } else {
         $keySuffix = $keySuffix + 1;
       }
-    }    
+    }
     $this->_biblioFields[$index.$keySuffix] = $value;
   }
  function getBiblioFields() {

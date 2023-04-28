@@ -30,7 +30,7 @@ $biblio = new Biblio();
   for ($l=0; $l<strlen($header); $l += 12) {
     $code=substr($header,$l,12);
     $codes[]=substr($code,0,3);
-  
+
   }
  $j=0;
  foreach(split($fieldterminator,substr($record,$start)) as $field) {
@@ -109,7 +109,7 @@ $classification_number = '';
 		{
 			$title = H($field->getFieldData());
 			//echo "Title -->".$title."</br>";
-						
+
 		}
 	if(H($field->getTag())=="245" && H($field->getSubfieldCd())=="b")
 		{
@@ -118,105 +118,100 @@ $classification_number = '';
 		}
 	if(H($field->getTag())=="650" && H($field->getSubfieldCd())=="a")
 		{
-			$tag_new.= ",".H($field->getFieldData());			
-			//echo "tags -->".$tag_new."</br>";
-		}	
-	if(H($field->getTag())=="250" && H($field->getSubfieldCd())=="a")
-		{
-			$edition = H($field->getFieldData());			
-			//echo "Edition -->".$edition."</br>";
-		}
-	
+            $tag_new .= "," . H($field->getFieldData());
+            //echo "tags -->".$tag_new."</br>";
+        }
+	if(H($field->getTag())=="250" && H($field->getSubfieldCd())=="a") {
+        $edition = H($field->getFieldData());
+        //echo "Edition -->".$edition."</br>";
+    }
+
 	if(H($field->getTag())=="020" && H($field->getSubfieldCd())=="a")
 		{
 			if(!empty($isbn_issn))
 			{
 			}
-			else
-			{
-			$isbn_issn.= H($field->getFieldData());			
-			//echo "isbn_issn -->".$isbn_issn."</br>";
-			}
+			else {
+                $isbn_issn .= H($field->getFieldData());
+                //echo "isbn_issn -->".$isbn_issn."</br>";
+            }
 		}
-	if(H($field->getTag())=="260" && H($field->getSubfieldCd())=="b")
-		{
-			$publisher_name = H($field->getFieldData());			
-			//echo "Publisher_Name -->".$publisher_name."</br>";
-			
-		}
-	if(H($field->getTag())=="260" && H($field->getSubfieldCd())=="c")
-		{
-		$publisher_year = H($field->getFieldData());
-		$bodytag = str_replace("[", "", $publisher_year);
-		$publisher_year = str_replace("]", "", $bodytag);
-		$publisher_year = str_replace(".", "", $publisher_year);	
-		$publisher_year = str_replace(";", "", $publisher_year);	
-			//echo "Publisher_Year -->".$publisher_year."</br>";
-			
-		}
+	if(H($field->getTag())=="260" && H($field->getSubfieldCd())=="b") {
+        $publisher_name = H($field->getFieldData());
+        //echo "Publisher_Name -->".$publisher_name."</br>";
+
+    }
+	if(H($field->getTag())=="260" && H($field->getSubfieldCd())=="c") {
+        $publisher_year = H($field->getFieldData());
+        $bodytag = str_replace("[", "", $publisher_year);
+        $publisher_year = str_replace("]", "", $bodytag);
+        $publisher_year = str_replace(".", "", $publisher_year);
+        $publisher_year = str_replace(";", "", $publisher_year);
+        //echo "Publisher_Year -->".$publisher_year."</br>";
+
+    }
 	if(H($field->getTag())=="041" && H($field->getSubfieldCd())=="g")
 		{
 			$language  = H($field->getFieldData());
 			//echo "Language -->".$language."</br>";
-			
+
 		}
 	if(H($field->getTag())=="041" && H($field->getSubfieldCd())=="2")
 		{
 			$source = H($field->getFieldData());
 			//echo "Source -->".$source."</br>";
-			
+
 		}
-	if(H($field->getTag())=="260" && H($field->getSubfieldCd())=="a")
-		{
-			$publisher_place = H($field->getFieldData());
-			 $bodytag = str_replace(":", "", $publisher_place);
-		$publisher_place = str_replace(";", "", $bodytag);
-		$publisher_place = str_replace(",", "", $publisher_place);	
-		$publisher_place = str_replace("[", "", $publisher_place);
-		$publisher_place = str_replace("]", "", $publisher_place);
-			//echo "Publisher_Place -->".$publisher_place."</br>";
-			
-		}
+	if(H($field->getTag())=="260" && H($field->getSubfieldCd())=="a") {
+        $publisher_place = H($field->getFieldData());
+        $bodytag = str_replace(":", "", $publisher_place);
+        $publisher_place = str_replace(";", "", $bodytag);
+        $publisher_place = str_replace(",", "", $publisher_place);
+        $publisher_place = str_replace("[", "", $publisher_place);
+        $publisher_place = str_replace("]", "", $publisher_place);
+        //echo "Publisher_Place -->".$publisher_place."</br>";
+
+    }
 	if(H($field->getTag())=="520" && H($field->getSubfieldCd())=="a")
 		{
 			$specific_detail_info = H($field->getFieldData());
 			//echo "Specific Detail Info -->".$specific_detail_info."</br>";
-			
+
 		}
 	if(H($field->getTag())=="260" && H($field->getSubfieldCd())=="c")
 		{
 			$publisher_date = H($field->getFieldData());
 			//echo "Publisher_Date -->".$publisher_date."</br>";
-			
-		}
+
+        }
 	if(H($field->getTag())=="050" && H($field->getSubfieldCd())=="a")
 		{
 			$classification_number = H($field->getFieldData());
 
 			//echo "Classification Number -->".$classification_number."</br>";
-			
-		}
+
+        }
 	if(H($field->getTag())=="050" && H($field->getSubfieldCd())=="b")
 		{
 			$classification_number.= H($field->getFieldData());
 
 			//echo "Classification Number -->".$classification_number."</br>";
-			
-		}
+
+        }
 	if(H($field->getTag())=="504" && H($field->getSubfieldCd())=="a")
 		{
-			
-			$note = H($field->getFieldData());
+
+            $note = H($field->getFieldData());
 			//echo "Note -->".$note."</br>";
-			
-		}
+
+        }
 	if(H($field->getTag())=="100" && H($field->getSubfieldCd())=="a")
 		{
 
 			$author = H($field->getFieldData());
 			//echo "Author -->".$author."</br>";
-			
-		}
+
+        }
     }
 /*echo "Title->".$title."<br/>";
 echo "Sub Title->".$sub_title."<br/>";
@@ -235,30 +230,29 @@ echo "Author ->".$author."<br/>";
 echo "Classification Number ->".$classification_number."<br/>";*/
 if(!empty($author))
 	{
-$qry_author = "INSERT IGNORE into mst_author (author_name,authority_type,input_date,last_update) values ('$author','p',sysdate(),sysdate())";
-$result_author = mysql_query($qry_author); 
-$author_id = mysql_insert_id();
+        $qry_author = "INSERT IGNORE into mst_author (author_name,authority_type,input_date,last_update) values ('$author','p',sysdate(),sysdate())";
+        $result_author = mysqli_query($qry_author);
+        $author_id = mysql_insert_id();
  	}
 if(!empty($publisher_name))
 	{
-$qry_publisher = "INSERT IGNORE into mst_publisher (publisher_name,input_date,last_update) values ('$publisher_name',sysdate(),sysdate())";
-$result_publisher = mysql_query($qry_publisher); 
-$publisher_id = mysql_insert_id();
+        $qry_publisher = "INSERT IGNORE into mst_publisher (publisher_name,input_date,last_update) values ('$publisher_name',sysdate(),sysdate())";
+        $result_publisher = mysqli_query($qry_publisher);
+        $publisher_id = mysql_insert_id();
  	}
 if(!empty($publisher_place))
 	{
-$qry_publisher_place = "INSERT IGNORE into mst_place (place_name,input_date,last_update) values ('$publisher_place',sysdate(),sysdate())";
-$result_publisher_place = mysql_query($qry_publisher_place); 
-$publisher_place_id = mysql_insert_id();
+        $qry_publisher_place = "INSERT IGNORE into mst_place (place_name,input_date,last_update) values ('$publisher_place',sysdate(),sysdate())";
+        $result_publisher_place = mysqli_query($qry_publisher_place);
+        $publisher_place_id = mysql_insert_id();
  	}
-$qry_insert_biblio = "INSERT IGNORE into biblio (title,sub_title,tags,edition,isbn_issn,publisher_id,publish_year,language_id,source,publish_place_id,classification,notes,spec_detail_info,publication_date,input_date,last_update) values ('$title','$sub_title','$tags','$edition','$isbn_issn','$publisher_id','$publisher_year','$language','$source','$publisher_place_id','$classification_number','$note','$specific_detail_info','$publisher_date',sysdate(),sysdate())";
-$result_insert_biblio = mysql_query($qry_insert_biblio);
-$result_biblio_id = mysql_insert_id();
-if(isset($result_biblio_id))
-	{
-	$qry_biblio_author = "INSERT IGNORE into biblio_author (biblio_id,author_id,level) values ('$result_biblio_id','$author_id','2')";
-	$result_biblio_author = mysql_query($qry_biblio_author);
-	}
+     $qry_insert_biblio = "INSERT IGNORE into biblio (title,sub_title,tags,edition,isbn_issn,publisher_id,publish_year,language_id,source,publish_place_id,classification,notes,spec_detail_info,publication_date,input_date,last_update) values ('$title','$sub_title','$tags','$edition','$isbn_issn','$publisher_id','$publisher_year','$language','$source','$publisher_place_id','$classification_number','$note','$specific_detail_info','$publisher_date',sysdate(),sysdate())";
+     $result_insert_biblio = mysqli_query($qry_insert_biblio);
+     $result_biblio_id = mysql_insert_id();
+if(isset($result_biblio_id)) {
+    $qry_biblio_author = "INSERT IGNORE into biblio_author (biblio_id,author_id,level) values ('$result_biblio_id','$author_id','2')";
+    $result_biblio_author = mysqli_query($qry_biblio_author);
+}
     echo '</table>';
   }
 header('Location: ../../index.php?mod=bibliography');
@@ -277,7 +271,7 @@ class Biblio
       } else {
         $keySuffix = $keySuffix + 1;
       }
-    }    
+    }
     $this->_biblioFields[$index.$keySuffix] = $value;
   }
  function getBiblioFields() {

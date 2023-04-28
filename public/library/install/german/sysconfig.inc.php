@@ -30,7 +30,7 @@ if (basename($_SERVER['PHP_SELF']) == basename(__FILE__)) {
 @ini_set('magic_quotes_runtime', false);
 @ini_set('magic_quotes_sybase', false);
 // force disabling magic quotes
-if (get_magic_quotes_gpc()) {
+//if (get_magic_quotes_gpc()) {
     function stripslashes_deep($value)
     {
         $value = is_array($value)?array_map('stripslashes_deep', $value):stripslashes($value);
@@ -41,7 +41,7 @@ if (get_magic_quotes_gpc()) {
     $_GET = array_map('stripslashes_deep', $_GET);
     $_COOKIE = array_map('stripslashes_deep', $_COOKIE);
     $_REQUEST = array_map('stripslashes_deep', $_REQUEST);
-}
+//}
 // turn off all error messages for security reason
 @ini_set('display_errors', true);
 // check if safe mode is on

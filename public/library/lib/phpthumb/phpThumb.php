@@ -107,8 +107,8 @@ if (@$_GET['phpThumbDebug'] == '0') {
 ////////////////////////////////////////////////////////////////
 
 // returned the fixed string if the evil "magic_quotes_gpc" setting is on
-if (get_magic_quotes_gpc()) {
-	// deprecated: 'err', 'file', 'goto',
+//if (get_magic_quotes_gpc()) {
+// deprecated: 'err', 'file', 'goto',
 	$RequestVarsToStripSlashes = array('src', 'wmf', 'down');
 	foreach ($RequestVarsToStripSlashes as $key) {
 		if (isset($_GET[$key])) {
@@ -119,7 +119,7 @@ if (get_magic_quotes_gpc()) {
 			}
 		}
 	}
-}
+//}
 
 if (!@$_SERVER['PATH_INFO'] && !@$_SERVER['QUERY_STRING']) {
 	$phpThumb->ErrorImage('phpThumb() v'.$phpThumb->phpthumb_version.'<br><a href="http://phpthumb.sourceforge.net">http://phpthumb.sourceforge.net</a><br><br>ERROR: no parameters specified');
@@ -179,29 +179,29 @@ if ($phpThumb->config_nohotlink_enabled && $phpThumb->config_nohotlink_erase_ima
 }
 
 if ($phpThumb->config_mysql_query) {
-	if ($cid = @mysql_connect($phpThumb->config_mysql_hostname, $phpThumb->config_mysql_username, $phpThumb->config_mysql_password)) {
-		if (@mysql_select_db($phpThumb->config_mysql_database, $cid)) {
-			if ($result = @mysql_query($phpThumb->config_mysql_query, $cid)) {
-				if ($row = @mysql_fetch_array($result)) {
+    if ($cid = @mysqli_connect($phpThumb->config_mysql_hostname, $phpThumb->config_mysql_username, $phpThumb->config_mysql_password)) {
+        if (@mysqli_select_db($phpThumb->config_mysql_database, $cid)) {
+            if ($result = @mysqli_query($phpThumb->config_mysql_query, $cid)) {
+                if ($row = @mysqli_fetch_array($result)) {
 
-					mysql_free_result($result);
-					mysql_close($cid);
-					$phpThumb->setSourceData($row[0]);
-					unset($row);
+                    mysql_free_result($result);
+                    mysql_close($cid);
+                    $phpThumb->setSourceData($row[0]);
+                    unset($row);
 
-				} else {
-					mysql_free_result($result);
-					mysql_close($cid);
-					$phpThumb->ErrorImage('no matching data in database.');
+                } else {
+                    mysql_free_result($result);
+                    mysql_close($cid);
+                    $phpThumb->ErrorImage('no matching data in database.');
 				}
 			} else {
-				mysql_close($cid);
-				$phpThumb->ErrorImage('Error in MySQL query: "'.mysql_error($cid).'"');
-			}
+                mysql_close($cid);
+                $phpThumb->ErrorImage('Error in MySQL query: "' . mysqli_error($cid) . '"');
+            }
 		} else {
-			mysql_close($cid);
-			$phpThumb->ErrorImage('cannot select MySQL database: "'.mysql_error($cid).'"');
-		}
+            mysql_close($cid);
+            $phpThumb->ErrorImage('cannot select MySQL database: "' . mysqli_error($cid) . '"');
+        }
 	} else {
 		$phpThumb->ErrorImage('cannot connect to MySQL server');
 	}

@@ -23,31 +23,31 @@ $mail->IsSMTP(); // telling the class to use SMTP
 $mail->Host          = "smtp1.site.com;smtp2.site.com";
 $mail->SMTPAuth      = true;                  // enable SMTP authentication
 $mail->SMTPKeepAlive = true;                  // SMTP connection will not close after each email sent
-$mail->Host          = "mail.yourdomain.com"; // sets the SMTP server
-$mail->Port          = 26;                    // set the SMTP port for the GMAIL server
-$mail->Username      = "yourname@yourdomain"; // SMTP account username
-$mail->Password      = "yourpassword";        // SMTP account password
+$mail->Host = "mail.yourdomain.com"; // sets the SMTP server
+$mail->Port = 26;                    // set the SMTP port for the GMAIL server
+$mail->Username = "yourname@yourdomain"; // SMTP account username
+$mail->Password = "yourpassword";        // SMTP account password
 $mail->SetFrom('list@mydomain.com', 'List manager');
 $mail->AddReplyTo('list@mydomain.com', 'List manager');
 
-$mail->Subject       = "PHPMailer Test Subject via smtp, basic with authentication";
+$mail->Subject = "PHPMailer Test Subject via smtp, basic with authentication";
 
-@MYSQL_CONNECT("localhost","root","password");
-@mysql_select_db("my_company");
-$query  = "SELECT full_name, email, photo FROM employee WHERE id=$id";
-$result = @MYSQL_QUERY($query);
+@MYSQLI_CONNECT("localhost", "root", "password");
+@mysqli_select_db("my_company");
+$query = "SELECT full_name, email, photo FROM employee WHERE id=$id";
+$result = @mysqli_query($query);
 
-while ($row = mysql_fetch_array ($result)) {
-  $mail->AltBody    = "To view the message, please use an HTML compatible email viewer!"; // optional, comment out and test
-  $mail->MsgHTML($body);
-  $mail->AddAddress($row["email"], $row["full_name"]);
-  $mail->AddStringAttachment($row["photo"], "YourPhoto.jpg");
+while ($row = mysqli_fetch_array($result)) {
+    $mail->AltBody = "To view the message, please use an HTML compatible email viewer!"; // optional, comment out and test
+    $mail->MsgHTML($body);
+    $mail->AddAddress($row["email"], $row["full_name"]);
+    $mail->AddStringAttachment($row["photo"], "YourPhoto.jpg");
 
-  if(!$mail->Send()) {
-    echo "Mailer Error (" . str_replace("@", "&#64;", $row["email"]) . ') ' . $mail->ErrorInfo . '<br />';
-  } else {
-    echo "Message sent to :" . $row["full_name"] . ' (' . str_replace("@", "&#64;", $row["email"]) . ')<br />';
-  }
+    if (!$mail->Send()) {
+        echo "Mailer Error (" . str_replace("@", "&#64;", $row["email"]) . ') ' . $mail->ErrorInfo . '<br />';
+    } else {
+        echo "Message sent to :" . $row["full_name"] . ' (' . str_replace("@", "&#64;", $row["email"]) . ')<br />';
+    }
   // Clear all addresses and attachments for next loop
   $mail->ClearAddresses();
   $mail->ClearAttachments();

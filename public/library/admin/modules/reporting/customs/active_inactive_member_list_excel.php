@@ -1,24 +1,21 @@
 <?php
-mysql_connect("localhost","root","triz");
-mysql_select_db("school_library_final");
+mysqli_connect("localhost", "root", "triz");
+mysqli_select_db("school_library_final");
 //include SENAYAN_BASE_DIR.'admin/modules/circulation/loan_list.php';
 
- $select = "SELECT loan_id as LoanID,item_code as Barcode,member_id as MemberID ,DATE_FORMAT(loan_date,'%d-%m-%Y') as Loandate,DATE_FORMAT(due_date,'%d-%m-%Y') as Duedate,case renewed when '1' then 'Yes' else 'No' end as renewed,case is_return when '0' then 'No' else 'Yes' end as is_return,TO_DAYS(DATE(NOW()))-TO_DAYS(due_date) as Overdue_Days, time as Time from loan where is_return=0 and TO_DAYS(DATE(NOW()))>TO_DAYS(due_date)";
- 
-$export = mysql_query ( $select ) or die ( "Sql error : " . mysql_error( ) );
- 
-$fields = mysql_num_fields ( $export );
- 
-for ( $i = 0; $i < $fields; $i++ )
-{
-    $header .= mysql_field_name( $export , $i ) . "\t";
+$select = "SELECT loan_id as LoanID,item_code as Barcode,member_id as MemberID ,DATE_FORMAT(loan_date,'%d-%m-%Y') as Loandate,DATE_FORMAT(due_date,'%d-%m-%Y') as Duedate,case renewed when '1' then 'Yes' else 'No' end as renewed,case is_return when '0' then 'No' else 'Yes' end as is_return,TO_DAYS(DATE(NOW()))-TO_DAYS(due_date) as Overdue_Days, time as Time from loan where is_return=0 and TO_DAYS(DATE(NOW()))>TO_DAYS(due_date)";
+
+$export = mysql_query($select) or die ("Sql error : " . mysqli_error());
+
+$fields = mysql_num_fields($export);
+
+for ($i = 0; $i < $fields; $i++) {
+    $header .= mysql_field_name($export, $i) . "\t";
 }
- 
-while( $row = mysql_fetch_row( $export ) )
-{
+
+while ($row = mysql_fetch_row($export)) {
     $line = '';
-    foreach( $row as $value )
-    {                                           
+    foreach( $row as $value ) {
         if ( ( !isset( $value ) ) || ( $value == "" ) )
         {
             $value = "\t";
@@ -33,16 +30,16 @@ while( $row = mysql_fetch_row( $export ) )
     $data .= trim( $line ) . "\n";
 }
 $data = str_replace( "\r" , "" , $data );
- 
+
 if ( $data == "" )
 {
-    $data = "\n(0) Records Found!\n";                       
+    $data = "\n(0) Records Found!\n";
 }
- 
+
 header("Content-type: application/octet-stream");
 header("Content-Disposition: attachment; filename=member_overdue_loan_report.xls");
 header("Pragma: no-cache");
 header("Expires: 0");
 print "$header\n$data";
- 
+
 ?>

@@ -41,7 +41,7 @@ class lms_apiController extends Controller
         if ($student_id != "" && $sub_institute_id != "" && $syear != "") {
             $data = DB::table('tblstudent_enrollment as s')
                 ->join('lms_virtual_classroom as v', function ($join) {
-                    $join->whereRaw('s.standard_id = v.standard_id AND s.sub_institute_id = v.sub_institute_id');
+                    $join->whereRaw('s.standard_id = v.standard_id AND s.sub_institute_id = v.sub_institute_id AND s.syear = v.syear');
                 })->join('standard as st', function ($join) {
                     $join->whereRaw('st.id = v.standard_id AND st.sub_institute_id = s.sub_institute_id');
                 })->join('subject as sub', function ($join) {
@@ -327,7 +327,7 @@ class lms_apiController extends Controller
                 ->join('tblstudent_enrollment as se', function ($join) {
                     $join->whereRaw('s.id = se.student_id AND s.sub_institute_id = se.sub_institute_id');
                 })->join('question_paper as q', function ($join) {
-                    $join->whereRaw('q.standard_id = se.standard_id AND q.sub_institute_id = se.sub_institute_id AND q.show_hide=1');
+                    $join->whereRaw('q.standard_id = se.standard_id AND q.sub_institute_id = se.sub_institute_id AND q.syear = se.syear AND q.show_hide=1');
                 })->selectRaw('q.*,q.id as question_paper_id')
                 ->where('s.sub_institute_id', $sub_institute_id)
                 ->where('s.id', $student_id)

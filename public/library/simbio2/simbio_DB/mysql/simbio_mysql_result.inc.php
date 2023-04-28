@@ -63,10 +63,10 @@ class simbio_mysql_result extends simbio
         // checking query type
         // if the query return recordset or not
         if (preg_match("/^SELECT|DESCRIBE|SHOW|EXPLAIN\s/i", $this->sql_string)) {
-            $this->res_result = @mysql_query($this->sql_string, $res_conn);
+            $this->res_result = @mysqli_query($this->sql_string, $res_conn);
             // error checking
             if (!$this->res_result) {
-                $this->error = 'Query ('.$this->sql_string.") failed to executed. Please check your query again \n".mysql_error($res_conn);
+                $this->error = 'Query (' . $this->sql_string . ") failed to executed. Please check your query again \n" . mysqli_error($res_conn);
                 $this->errno = mysql_errno($res_conn);
             } else {
                 // count number of rows
@@ -74,11 +74,11 @@ class simbio_mysql_result extends simbio
                 $this->field_count = @mysql_num_fields($this->res_result);
             }
         } else {
-            $query = @mysql_query($this->sql_string, $res_conn);
+            $query = @mysqli_query($this->sql_string, $res_conn);
             $this->insert_id = @mysql_insert_id($res_conn);
             // error checking
             if (!$query) {
-                $this->error = 'Query ('.$this->sql_string.") failed to executed. Please check your query again \n".mysql_error($res_conn);
+                $this->error = 'Query (' . $this->sql_string . ") failed to executed. Please check your query again \n" . mysqli_error($res_conn);
                 $this->errno = mysql_errno($res_conn);
             } else {
                 // get number of affected row
@@ -97,11 +97,11 @@ class simbio_mysql_result extends simbio
      */
     public function fetch_assoc()
     {
-        return @mysql_fetch_assoc($this->res_result);
+        return @mysqli_fetch_assoc($this->res_result);
     }
      public function fetch_array()
     {
-        return @mysql_fetch_array($this->res_result);
+        return @mysqli_fetch_array($this->res_result);
     }
 
     /**
@@ -113,7 +113,7 @@ class simbio_mysql_result extends simbio
     {
         return @mysql_fetch_row($this->res_result);
     }
-   
+
     /**
      * Method to fetch fields information of resultset
      *

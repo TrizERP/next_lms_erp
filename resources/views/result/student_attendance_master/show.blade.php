@@ -17,16 +17,15 @@
                         {{ method_field("GET") }}
                         {{csrf_field()}}
                         <div class="row">                            
-                            {{ App\Helpers\SearchChain('4','single','grade,std') }}
+                            {{ App\Helpers\SearchChain('4','single','grade,std,div') }}
+                            <!-- <input type="text" name=""> -->
                             {{ App\Helpers\TermDD() }}
-                            <div class="col-md-12 form-group">
+                            <div class="col-md-12 form-group mt-2">
                                 <center>
                                     <input type="submit" name="submit" value="Save" class="btn btn-success" >
                                 </center>
                             </div>
                         </div>
-                       
-
 
                     </form>
                 </div>

@@ -534,7 +534,7 @@ class studentAttendanceController extends Controller
                     })->join('sub_std_map as s', function ($join) {
                         $join->whereRaw('s.subject_id = t.subject_id');
                     })->selectRaw("CONCAT_WS(' ',u.first_name,u.middle_name,u.last_name) AS teacher_name,
-                        if(u.image = '','',concat('https://" . $_SERVER['SERVER_NAME'] . "/storage/user/',u.image)) as image,
+                        if(u.image = '','https://".$_SERVER['SERVER_NAME']."/storage/student/noimages.png',concat('https://" . $_SERVER['SERVER_NAME'] . "/storage/user/',u.image)) as image,
                         u.mobile,s.display_name as subject_name")
                     ->where('t.syear', $syear)
                     ->where('t.sub_institute_id', $sub_institute_id)

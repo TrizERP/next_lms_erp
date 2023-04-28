@@ -552,8 +552,8 @@ class photo_video_gallaryController extends Controller
 
         if ($student_id != "" && $sub_institute_id != "" && $syear != "" && $action != "") {
             $data = DB::table("tblstudent_enrollment as s")
-                ->leftJoin('photo_video_gallary as p', function ($join) {
-                    $join->whereRaw("p.standard_id = s.standard_id AND p.division_id = s.section_id AND ai = 'Active'");
+                ->join('photo_video_gallary as p', function ($join) {
+                    $join->whereRaw("p.standard_id = s.standard_id AND p.division_id = s.section_id AND p.syear = s.syear AND ai = 'Active'");
                 })
                 ->selectRaw("p.album_title,p.title,if(p.type = 'Video',p.file_name,concat('https://".$_SERVER['SERVER_NAME']
                     ."/storage/photo_video_gallary/',p.file_name)) as file_name,p.date_ ,ai,`type`")

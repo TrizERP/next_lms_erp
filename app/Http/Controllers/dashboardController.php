@@ -113,7 +113,29 @@ class dashboardController extends Controller
                     ->whereRaw("date_format(fees_collect.created_date,'%Y-%m-%d') = '".$date."'")
                     ->groupBy('payment_mode')
                     ->take(10)->get()->toArray();
-
+                
+                /*$fees_collection = DB::table(function ($query) use ($sub_institute_id, $date) {
+                    $query->select('fc.payment_mode', DB::raw('SUM(fc.amount) as total_fees'))
+                        ->from('tblstudent as t')
+                        ->join('fees_collect as fc', 't.id', '=', 'fc.student_id')
+                        ->where('t.sub_institute_id', $sub_institute_id)
+                        ->where('fc.is_deleted', 'N')
+                        ->where(DB::raw("DATE_FORMAT(fc.receiptdate, '%Y-%m-%d')"), $date)
+                        ->groupBy('fc.payment_mode')
+                        ->unionAll(
+                            DB::table('tblstudent as t')
+                                ->join('fees_paid_other as fo', 't.id', '=', 'fo.student_id')
+                                ->select('fo.payment_mode', DB::raw('SUM(fo.actual_amountpaid) as total_fees'))
+                                ->where('t.sub_institute_id', $sub_institute_id)
+                                ->where('fo.is_deleted', 'N')
+                                ->where(DB::raw("DATE_FORMAT(fo.receiptdate, '%Y-%m-%d')"), $date)
+                                ->groupBy('fo.payment_mode')
+                        );
+                }, 'X')
+                    ->select('X.payment_mode', DB::raw('SUM(X.total_fees) as total_fees'))
+                    ->groupBy('X.payment_mode')
+                    ->get()->toArray();
+*/
                 $admissionBlock = DB::table("standard as s")
                     ->leftJoin("admission_enquiry as e", function ($join) {
                         $join->whereRaw('s.id = e.admission_standard and e.sub_institute_id=s.sub_institute_id');
@@ -1462,7 +1484,30 @@ class dashboardController extends Controller
                 ->where(['fees_collect.sub_institute_id' => $sub_institute_id, 'fees_collect.is_deleted' => "N"])
                 ->whereRaw("date_format(fees_collect.created_date,'%Y-%m-%d') = '".$date."'")
                 ->groupBy('payment_mode')
-                ->take(10)->get()->toArray();
+               ->take(10)->get()->toArray();
+            
+            /*$fees_collection = DB::table(function ($query) use ($sub_institute_id, $date) {
+                    $query->select('fc.payment_mode', DB::raw('SUM(fc.amount) as total_fees'))
+                        ->from('tblstudent as t')
+                        ->join('fees_collect as fc', 't.id', '=', 'fc.student_id')
+                        ->where('t.sub_institute_id', $sub_institute_id)
+                        ->where('fc.is_deleted', 'N')
+                        ->where(DB::raw("DATE_FORMAT(fc.receiptdate, '%Y-%m-%d')"), $date)
+                        ->groupBy('fc.payment_mode')
+                        ->unionAll(
+                            DB::table('tblstudent as t')
+                                ->join('fees_paid_other as fo', 't.id', '=', 'fo.student_id')
+                                ->select('fo.payment_mode', DB::raw('SUM(fo.actual_amountpaid) as total_fees'))
+                                ->where('t.sub_institute_id', $sub_institute_id)
+                                ->where('fo.is_deleted', 'N')
+                                ->where(DB::raw("DATE_FORMAT(fo.receiptdate, '%Y-%m-%d')"), $date)
+                                ->groupBy('fo.payment_mode')
+                        );
+                }, 'X')
+                    ->select('X.payment_mode', DB::raw('SUM(X.total_fees) as total_fees'))
+                    ->groupBy('X.payment_mode')
+                    ->get()->toArray();
+                    */
 
             $studentBirthdays = DB::table('tblstudent as s')
                 ->join('tblstudent_enrollment as ts', function($join) use($syear) {

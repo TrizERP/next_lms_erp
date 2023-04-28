@@ -34,19 +34,30 @@
                     <table id="example" class="table table-striped">
                         <thead>
                         <tr>
-                            <td class="text-center fw-bold" rowspan="2" colspan="2">VI-A</td>
-                            @foreach(collect($data['data'])->first()['mark'] as $subject => $value)
-                                <td class="text-center"
-                                    colspan="{{ count(collect($data['data'])->first()['exam']) + count(collect($data['term_2_data'])->first()['exam']) + 4  }}">{{ $subject }}</td>
-                            @endforeach
+                            <td class="text-center fw-bold" rowspan="2" colspan="2"></td>
                             <td class="text-center fw-bold" rowspan="2" colspan="3">FINAL RESULT</td>
                         </tr>
                         <tr>
                             @foreach(collect($data['data'])->first()['mark'] as $subject => $value)
+                            @if(isset($data))
                                 <td class="text-center fw-bold"
                                     colspan="{{ count(collect($data['data'])->first()['exam']) + 1 }}">{{ collect($data['data'])->first()['term'] }}</td>
+                            @endif
+                            @if(isset($data['term_2_data']))
                                 <td class="text-center fw-bold"
                                     colspan="{{ count(collect($data['term_2_data'])->first()['exam']) + 1 }}">{{ collect($data['term_2_data'])->first()['term'] }}</td>
+                            @endif
+                            @if(isset($data['term_3_data']) && $data['term_3_data']!=null)
+                            
+                                <td class="text-center fw-bold"
+                                    colspan="{{ count(collect($data['term_3_data'])->first()['exam']) + 1 }}">{{ collect($data['term_3_data'])->first()['term'] }}</td>
+                            @endif
+                            @if(isset($data['term_4_data']) && $data['term_3_data']!=null)
+                            
+                                <td class="text-center fw-bold"
+                                    colspan="{{ count(collect($data['term_4_data'])->first()['exam']) + 1 }}">{{ collect($data['term_4_data'])->first()['term'] }}</td>
+                            @endif
+                            
                                 <td class="text-center fw-bold" colspan="2">MARKS & GRADES</td>
                             @endforeach
                         </tr>
@@ -58,8 +69,7 @@
                             @endphp
                             @foreach(collect($data['data'])->first()['mark'] as $subject => $value)
                                 @php
-                                    $term1Total = 0;
-                                    $term2Total = 0;
+                                    $term1Total = $term2Total = $term3Total = $term4Total = 0;
                                 @endphp
                                 @foreach(collect($data['data'])->first()['exam'] as $exam)
                                     @if($exam['exam'] == 'Marks Obtained')
@@ -85,12 +95,50 @@
                                 <td class="fw-bold">
                                     Total ({{ $term2Total }})
                                 </td>
+                            @if(isset($data['term_3_data']) && $data['term_3_data']!=null)
+
                                 <td class="fw-bold">Grade</td>
 
-                                <td class="fw-bold">MARKS ({{ $term1Total + $term2Total }})</td>
+                                @foreach(collect($data['term_3_data'])->first()['exam'] as $exam)
+                                    @if($exam['exam'] == 'Marks Obtained')
+                                        @continue
+                                    @endif
+                                    @php
+                                        $term3Total += $exam['mark'];
+                                    @endphp
+                                    <td class="fw-bold">{{ $exam['exam'] }} ({{ $exam['mark'] }})</td>
+                                @endforeach
+
+                                <td class="fw-bold">
+                                    Total ({{ $term3Total ?? 0 }})
+                                </td>
+                                @endif
+
+                            @if(isset($data['term_4_data']) && $data['term_3_data']!=null)
+
+                                <td class="fw-bold">Grade</td>
+
+                                @foreach(collect($data['term_4_data'])->first()['exam'] as $exam)
+                                    @if($exam['exam'] == 'Marks Obtained')
+                                        @continue
+                                    @endif
+                                    @php
+                                        $term4Total += $exam['mark'];
+                                    @endphp
+                                    <td class="fw-bold">{{ $exam['exam'] }} ({{ $exam['mark'] }})</td>
+                                @endforeach
+
+                                <td class="fw-bold">
+                                    Total ({{ $term4Total ?? 0 }})
+                                </td>
+                                @endif
+
+                                <td class="fw-bold">Grade</td>
+
+                                <td class="fw-bold">MARKS ({{ $term1Total + $term2Total + $term3Total + $term4Total }})</td>
                                 <td class="fw-bold">GRADES</td>
                                 @php
-                                    $mainFinalTotal += $term1Total + $term2Total;
+                                    $mainFinalTotal += $term1Total + $term2Total + $term3Total ?? 0 + $term4Total ?? 0;
                                 @endphp
                             @endforeach
                             <td>FINAL TOTAL ({{ $mainFinalTotal }})</td>
@@ -108,10 +156,8 @@
                                 @endphp
                                 @foreach($sdata['mark'] as $subject => $value)
                                     @php
-                                        $term1Total = 0;
-                                        $term2Total = 0;
-                                        $mainTerm1Total = 0;
-                                        $mainTerm2Total = 0;
+                                        $term1Total = $term2Total = $term3Total = $term4Total = 0;
+                                        $mainTerm1Total = $mainTerm2Total = $mainTerm3Total = $mainTerm4Total = 0;
                                     @endphp
 
                                     @foreach($sdata['exam'] as $exam)
@@ -122,7 +168,7 @@
                                             $mainTerm1Total += $exam['mark'];
                                             $term1Total += (float) ($value[$exam['exam']] ?? 00);
                                         @endphp
-                                        <td>{{ $value[$exam['exam']] ?? 00 }}</td>
+                                        <td>{{ $value[$exam['exam']] ?? 0 }}</td>
                                     @endforeach
                                     <td class="fw-bold">{{ $term1Total }}</td>
                                     <td class="fw-bold">{{ \App\Helpers\getGrade($gradeScale, $mainTerm1Total, $term1Total) }}</td>
@@ -140,11 +186,42 @@
                                     <td class="fw-bold">{{ $term2Total }}</td>
                                     <td class="fw-bold">{{ \App\Helpers\getGrade($gradeScale, $mainTerm2Total, $term2Total) }}</td>
 
-                                    <td style="color:#212529; font-weight: 500">{{ $term1Total + $term2Total }}</td>
-                                    <td style="color:#212529; font-weight: 500">{{ \App\Helpers\getGrade($gradeScale, $mainTerm1Total + $mainTerm2Total, 
-                                        $term1Total + $term2Total) }}</td>
+                                    @if(isset($data['term_3_data']) && $data['term_3_data']!=null)
+
+                                    @foreach($data['term_3_data'][$studendId]['exam'] as $exam)
+                                        @if($exam['exam'] == 'Marks Obtained')
+                                            @continue
+                                        @endif
+                                        @php
+                                            $mainTerm3Total += $exam['mark'];
+                                            $term3Total += (float) ($data['term_3_data'][$studendId]['mark'][$subject][$exam['exam']] ?? 0);
+                                        @endphp
+                                        <td>{{ $data['term_3_data'][$studendId]['mark'][$subject][$exam['exam']] ?? 0}}</td>
+                                    @endforeach
+                                    <td class="fw-bold">{{ $term3Total ?? 0 }}</td>
+                                    <td class="fw-bold">{{ \App\Helpers\getGrade($gradeScale, $mainTerm3Total, $term3Total) }}</td>  
+                                @endif
+
+                            @if(isset($data['term_4_data']) && $data['term_4_data']!=null)
+
+                                    @foreach($data['term_4_data'][$studendId]['exam'] as $exam)
+                                        @if($exam['exam'] == 'Marks Obtained')
+                                            @continue
+                                        @endif
+                                        @php
+                                            $mainTerm4Total += $exam['mark'];
+                                            $term4Total += (float) ($data['term_4_data'][$studendId]['mark'][$subject][$exam['exam']] ?? 0);
+                                        @endphp
+                                        <td>{{ $data['term_4_data'][$studendId]['mark'][$subject][$exam['exam']] ?? 0}}</td>
+                                    @endforeach
+                                    <td class="fw-bold">{{ $term4Total ?? 0 }}</td>
+                                    <td class="fw-bold">{{ \App\Helpers\getGrade($gradeScale, $mainTerm4Total ?? 0, $term4Total ) }}</td>
+                                @endif
+
+                                    <td style="color:#212529; font-weight: 500">{{ $term1Total + $term2Total + $term3Total ?? 0 + $term4Total ?? 0 }}</td>
+                                    <td style="color:#212529; font-weight: 500">{{ \App\Helpers\getGrade($gradeScale, $mainTerm1Total + $mainTerm2Total + $mainTerm3Total + $mainTerm4Total, $term1Total + $term2Total + $term3Total + $term4Total) }}</td>
                                     @php
-                                        $finalTotal += $term1Total + $term2Total;
+                                        $finalTotal += $term1Total + $term2Total + $term3Total + $term4Total;
                                     @endphp
                                 @endforeach
                                 <td>{{ $finalTotal }}</td>

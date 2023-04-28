@@ -9,7 +9,7 @@ if (basename($_SERVER['PHP_SELF']) == basename(__FILE__)) {
 @ini_set('magic_quotes_runtime', false);
 @ini_set('magic_quotes_sybase', false);
 // force disabling magic quotes
-if (get_magic_quotes_gpc()) {
+//if (get_magic_quotes_gpc()) {
     function stripslashes_deep($value)
     {
         $value = is_array($value)?array_map('stripslashes_deep', $value):stripslashes($value);
@@ -20,7 +20,7 @@ if (get_magic_quotes_gpc()) {
     $_GET = array_map('stripslashes_deep', $_GET);
     $_COOKIE = array_map('stripslashes_deep', $_COOKIE);
     $_REQUEST = array_map('stripslashes_deep', $_REQUEST);
-}
+//}
 
 // turn off all error messages for security reason
 @ini_set('display_errors', true);
@@ -101,7 +101,7 @@ require SIMBIO_BASE_DIR.'simbio.inc.php';
 // simbio security class
 require SIMBIO_BASE_DIR.'simbio_UTILS'.DIRECTORY_SEPARATOR.'simbio_security.inc.php';
 
-include_once SIMBIO_BASE_DIR.'simbio_DB/mysql/simbio_mysql_result.inc.php';  
+include_once SIMBIO_BASE_DIR . 'simbio_DB/mysql/simbio_mysql_result.inc.php';
 // we must include utility library first
 require LIB_DIR.'utility.inc.php';
 
@@ -123,27 +123,26 @@ session_start();
 
 //Start: Code for getting college wise databases
   //$connection = @new mysqli($host, $user_name, $passwd, $library_database, '3306');
-$connection = mysql_connect($host, $user_name, $passwd);
-  if($connection)
-  {   
-        mysql_select_db($inte_schema);
-    
+$connection = mysqli_connect($host, $user_name, $passwd);
+  if($connection) {
+      mysqli_select_db($inte_schema);
+
         $INVENTORY_PRODUCT_TYPE_CONST='INVENTORY';
         $LIBRARY_PRODUCT_TYPE_CONST='LIBRARY';
-    
+
         //For Central Admin Users
         if($_SESSION[USER_GROUP_ID] == 1)
         {
-            
+
             if($_REQUEST[is_library_prod_glob] != "" && $_REQUEST[is_library_prod_glob] == "YES")
             {
-              $sql="SELECT DISTINCT tcd.COLLEGE_ID,tcd.DATABASE_NAME,tcd.TITLE
+                $sql = "SELECT DISTINCT tcd.COLLEGE_ID,tcd.DATABASE_NAME,tcd.TITLE
                     FROM
                     $inte_schema.tbladmin ta
                     INNER JOIN $inte_schema.tblcollege_database tcd ON tcd.COLLEGE_ID = ta.SUB_INSTITUTE_ID
                     WHERE tcd.PRODUCT_TYPE='$LIBRARY_PRODUCT_TYPE_CONST'
                    ";
-              $user_data=mysql_query($sql);
+                $user_data = mysqli_query($sql);
 
               if($_REQUEST[hid_frm_clg_wise_dbs_val]=="")
               {
@@ -157,13 +156,12 @@ $connection = mysql_connect($host, $user_name, $passwd);
                   echo "<div class='cls_clg_wise_dbs_div'>";
                   echo "<span>Institute : </span>";
                   echo "<select name='sel_db_names'>";
-                  while($data=mysql_fetch_assoc($user_data))
-                  {
-                      $COLLEGE_DATABASE_NAME=$data[DATABASE_NAME];
-                      $COLLEGE_TITLE=$data[TITLE];
+                  while ($data = mysqli_fetch_assoc($user_data)) {
+                      $COLLEGE_DATABASE_NAME = $data[DATABASE_NAME];
+                      $COLLEGE_TITLE = $data[TITLE];
 
-                      echo "<option value='$COLLEGE_DATABASE_NAME'>$COLLEGE_TITLE</option>";      
-                  }   
+                      echo "<option value='$COLLEGE_DATABASE_NAME'>$COLLEGE_TITLE</option>";
+                  }
                   echo "</select>";
                   echo "<input type='hidden' name='hid_frm_clg_wise_dbs_val' value='YES'>";
                   echo "<input type='hidden' name='is_library_prod_glob' value='YES'>";
@@ -178,38 +176,34 @@ $connection = mysql_connect($host, $user_name, $passwd);
                 $_SESSION[REQ_COLLEGE_DB_VAL]=$_REQUEST[sel_db_names];
              }
            }
-            
-         if($_SESSION[REQ_COLLEGE_DB_VAL] != "")
-            {                
+
+         if($_SESSION[REQ_COLLEGE_DB_VAL] != "") {
                 $library_database=$_SESSION[REQ_COLLEGE_DB_VAL];
             }
         }
-    
-      if($_SESSION[USER_GROUP_ID] != 1)
-        { 
-			
-          $sql="SELECT tcd.DATABASE_NAME,tcd.TITLE
+
+      if ($_SESSION[USER_GROUP_ID] != 1) {
+
+          $sql = "SELECT tcd.DATABASE_NAME,tcd.TITLE
                 FROM
                 $inte_schema.tbladmin ta
                 INNER JOIN $inte_schema.tblcollege_database tcd ON tcd.COLLEGE_ID = ta.SUB_INSTITUTE_ID
                 WHERE tcd.PRODUCT_TYPE='$LIBRARY_PRODUCT_TYPE_CONST'
                 AND ta.SUB_INSTITUTE_ID='$_SESSION[SUB_INSTITUTE_ID]'
 				GROUP BY tcd.ID
-               ";  
-			   //echo $sql;        
-			   //echo "<pre>";print_r($_SESSION);
-          $user_data=mysql_query($sql);
-          while($data=mysql_fetch_assoc($user_data))
-          {
-              $COLLEGE_DATABASE_NAME=$data[DATABASE_NAME];
-              $COLLEGE_TITLE=$data[TITLE];
-          } 
-          if($COLLEGE_DATABASE_NAME != "")
-          {
-            $library_database=$COLLEGE_DATABASE_NAME;
-          } 
-		  //echo $library_database;
-		}
+               ";
+          //echo $sql;
+          //echo "<pre>";print_r($_SESSION);
+          $user_data = mysqli_query($sql);
+          while ($data = mysqli_fetch_assoc($user_data)) {
+              $COLLEGE_DATABASE_NAME = $data[DATABASE_NAME];
+              $COLLEGE_TITLE = $data[TITLE];
+          }
+          if ($COLLEGE_DATABASE_NAME != "") {
+              $library_database = $COLLEGE_DATABASE_NAME;
+          }
+          //echo $library_database;
+      }
   mysql_close($connection);
   }
 //End: Code for getting college wise databases
@@ -224,25 +218,22 @@ $id1 = $id1.".php";
 
 define('REPO_BASE_DIR', SENAYAN_BASE_DIR.repository.DIRECTORY_SEPARATOR);
 // we prefer to use mysqli extensions if its available
-if (extension_loaded('mysqli')) 
-{
+if (extension_loaded('mysqli')) {
 //    echo "Loaded";
-    
+
     /* MYSQLI */
-    $dbs = @new mysqli(DB_HOST, DB_USERNAME, DB_PASSWORD, DB_NAME, DB_PORT);    
-    if (mysqli_connect_error()) 
-    {
-        
+    $dbs = @new mysqli(DB_HOST, DB_USERNAME, DB_PASSWORD, DB_NAME, DB_PORT);
+    if (mysqli_connect_error()) {
+
         die('<div style="border: 1px dotted #FF0000; color: #FF0000; padding: 5px;">Error Connecting to Database. Please check your configuration</div>');
     }
-    
-} 
-else
-{    
+
+}
+else {
     /* MYSQL */
     // require the simbio mysql class
-    
-    include SIMBIO_BASE_DIR.'simbio_DB/mysql/simbio_mysql.inc.php';    
+
+    include SIMBIO_BASE_DIR . 'simbio_DB/mysql/simbio_mysql.inc.php';
     $dbs = @new simbio_mysql(DB_HOST, DB_USERNAME, DB_PASSWORD, DB_NAME, DB_PORT);
 }
 
