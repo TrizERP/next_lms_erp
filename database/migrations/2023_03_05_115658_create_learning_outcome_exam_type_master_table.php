@@ -14,7 +14,7 @@ return new class extends Migration {
     {
         Schema::create('learning_outcome_exam_type_master', function (Blueprint $table) {
             $table->comment('');
-            $table->integer('ID', true);
+            $table->bigIncrements('ID');
             $table->string('EXAM_TYPE', 50)->nullable();
         });
     }

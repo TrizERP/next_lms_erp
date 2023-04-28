@@ -14,7 +14,7 @@ return new class extends Migration {
     {
         Schema::create('fees_paid_other', function (Blueprint $table) {
             $table->comment('');
-            $table->integer('id', true);
+            $table->bigIncrements('id');
             $table->string('reciept_id', 100)->nullable();
             $table->decimal('syear', 4, 0)->index('syear');
             $table->string('sub_institute_id', 50);

@@ -14,7 +14,7 @@ return new class extends Migration {
     {
         Schema::create('erp_status', function (Blueprint $table) {
             $table->comment('');
-            $table->integer('id', true);
+            $table->bigIncrements('id');
             $table->string('modulename', 255)->nullable();
             $table->string('status', 50)->nullable();
         });

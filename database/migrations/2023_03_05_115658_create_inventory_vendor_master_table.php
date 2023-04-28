@@ -14,7 +14,7 @@ return new class extends Migration {
     {
         Schema::create('inventory_vendor_master', function (Blueprint $table) {
             $table->comment('');
-            $table->integer('id', true);
+            $table->bigIncrements('id');
             $table->decimal('syear', 4, 0)->nullable();
             $table->integer('sub_institute_id')->nullable();
             $table->string('vendor_name', 100)->nullable();

@@ -14,7 +14,7 @@ return new class extends Migration {
     {
         Schema::create('mbti_answer', function (Blueprint $table) {
             $table->comment('');
-            $table->integer('id', true);
+            $table->bigIncrements('id');
             $table->string('ans_key', 50)->nullable();
             $table->longText('answer_html')->nullable();
         });

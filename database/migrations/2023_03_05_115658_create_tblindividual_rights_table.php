@@ -14,7 +14,7 @@ return new class extends Migration {
     {
         Schema::create('tblindividual_rights', function (Blueprint $table) {
             $table->comment('');
-            $table->integer('id', true);
+            $table->bigIncrements('id');
             $table->integer('user_id')->default(0);
             $table->integer('menu_id')->default(0);
             $table->integer('profile_id')->default(0);

@@ -14,7 +14,7 @@ return new class extends Migration {
     {
         Schema::create('new_admission_inquiry_registration', function (Blueprint $table) {
             $table->comment('');
-            $table->integer('id', true);
+            $table->bigIncrements('id');
             $table->integer('syear')->default(0);
             $table->integer('sub_institute_id')->nullable();
             $table->string('admission_std', 50)->nullable();

@@ -14,7 +14,7 @@ return new class extends Migration {
     {
         Schema::create('dashboard_master', function (Blueprint $table) {
             $table->comment('');
-            $table->integer('id', true);
+            $table->bigIncrements('id');
             $table->string('module_name', 50)->nullable();
             $table->string('module_description', 50)->nullable();
             $table->string('type', 50)->nullable();

@@ -14,7 +14,7 @@ return new class extends Migration {
     {
         Schema::create('standard', function (Blueprint $table) {
             $table->comment('');
-            $table->increments('id');
+            $table->bigIncrements('id');
             $table->integer('grade_id');
             $table->string('name', 255);
             $table->string('short_name', 255);

@@ -14,7 +14,7 @@ return new class extends Migration {
     {
         Schema::create('std_div_map', function (Blueprint $table) {
             $table->comment('');
-            $table->increments('id');
+            $table->bigIncrements('id');
             $table->unsignedInteger('standard_id')->index('std_div_map_standard_id_foreign');
             $table->unsignedInteger('division_id')->index('std_div_map_division_id_foreign');
             $table->integer('sub_institute_id');

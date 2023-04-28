@@ -15,12 +15,12 @@ return new class extends Migration {
         Schema::create('fees_hdffc', function (Blueprint $table) {
             $table->comment('');
             $table->bigIncrements('id');
-            $table->string('syear', 150);
-            $table->string('merchant_id', 150);
+            $table->integer('syear');
+            $table->bigInteger('merchant_id');
             $table->string('account_name', 150);
             $table->string('access_code', 150);
             $table->string('working_code', 150);
-            $table->bigInteger('sub_institute_id');
+            $table->integer('sub_institute_id');
             $table->timestamp('created_at')->nullable()->useCurrent();
             $table->dateTime('updated_at')->nullable();
         });

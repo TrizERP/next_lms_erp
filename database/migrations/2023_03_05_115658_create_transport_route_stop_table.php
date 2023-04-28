@@ -14,7 +14,7 @@ return new class extends Migration {
     {
         Schema::create('transport_route_stop', function (Blueprint $table) {
             $table->comment('');
-            $table->bigInteger('id', true);
+            $table->bigIncrements('id');
             $table->bigInteger('syear');
             $table->bigInteger('route_id')->index('FK_transport_route_stop_transport_route');
             $table->bigInteger('stop_id')->index('FK_transport_route_stop_transport_stop');

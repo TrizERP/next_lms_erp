@@ -14,7 +14,7 @@ return new class extends Migration {
     {
         Schema::create('erptour', function (Blueprint $table) {
             $table->comment('');
-            $table->integer('id', true);
+            $table->bigIncrements('id');
             $table->integer('dashboard')->nullable();
             $table->integer('school_sidebar')->nullable();
             $table->integer('student_quota')->nullable();

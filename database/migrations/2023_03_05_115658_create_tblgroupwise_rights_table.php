@@ -14,7 +14,7 @@ return new class extends Migration {
     {
         Schema::create('tblgroupwise_rights', function (Blueprint $table) {
             $table->comment('');
-            $table->integer('id', true);
+            $table->bigIncrements('id');
             $table->integer('menu_id')->nullable();
             $table->integer('profile_id')->nullable();
             $table->integer('can_view')->nullable()->default(0);

@@ -14,7 +14,7 @@ return new class extends Migration {
     {
         Schema::create('blood_group', function (Blueprint $table) {
             $table->comment('');
-            $table->integer('id', true);
+            $table->bigIncrements('id');
             $table->string('bloodgroup', 50)->nullable();
         });
     }

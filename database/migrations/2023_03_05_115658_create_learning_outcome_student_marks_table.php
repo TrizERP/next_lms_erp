@@ -14,7 +14,7 @@ return new class extends Migration {
     {
         Schema::create('learning_outcome_student_marks', function (Blueprint $table) {
             $table->comment('');
-            $table->integer('ID', true);
+            $table->bigIncrements('ID');
             $table->integer('SUB_INSTITUTE_ID')->nullable()->index('SUB_INSTITUTE_ID');
             $table->integer('STUDENT_ID')->nullable()->index('STUDENT_ID');
             $table->string('MEDIUM', 50)->nullable()->index('MEDIUM');

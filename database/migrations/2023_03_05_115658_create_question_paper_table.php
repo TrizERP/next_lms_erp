@@ -14,7 +14,7 @@ return new class extends Migration {
     {
         Schema::create('question_paper', function (Blueprint $table) {
             $table->comment('');
-            $table->integer('id', true);
+            $table->bigIncrements('id');
             $table->integer('grade_id')->nullable();
             $table->integer('standard_id')->nullable();
             $table->integer('subject_id')->nullable();

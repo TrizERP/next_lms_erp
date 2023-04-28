@@ -14,7 +14,7 @@ return new class extends Migration {
     {
         Schema::create('lms_lessonplan_dayswise', function (Blueprint $table) {
             $table->comment('This table contain all days wise plan');
-            $table->bigInteger('id', true);
+            $table->bigIncrements('id');
             $table->integer('sub_institute_id')->nullable();
             $table->bigInteger('lpid')->nullable();
             $table->integer('days')->nullable();

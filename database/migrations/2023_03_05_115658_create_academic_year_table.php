@@ -14,7 +14,7 @@ return new class extends Migration {
     {
         Schema::create('academic_year', function (Blueprint $table) {
             $table->comment('');
-            $table->increments('id');
+            $table->bigIncrements('id');
             $table->integer('term_id');
             $table->integer('syear');
             $table->integer('sub_institute_id');

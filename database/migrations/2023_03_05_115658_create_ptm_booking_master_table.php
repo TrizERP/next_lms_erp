@@ -14,7 +14,7 @@ return new class extends Migration {
     {
         Schema::create('ptm_booking_master', function (Blueprint $table) {
             $table->comment('');
-            $table->integer('ID', true);
+            $table->bigIncrements('ID');
             $table->date('DATE')->nullable();
             $table->integer('TEACHER_ID')->nullable();
             $table->integer('TIME_SLOT_ID')->nullable();

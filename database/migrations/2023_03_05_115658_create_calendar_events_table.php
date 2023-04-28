@@ -14,7 +14,7 @@ return new class extends Migration {
     {
         Schema::create('calendar_events', function (Blueprint $table) {
             $table->comment('');
-            $table->integer('id', true);
+            $table->bigIncrements('id');
             $table->integer('syear')->nullable();
             $table->date('school_date')->nullable();
             $table->string('title', 50)->nullable();

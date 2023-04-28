@@ -14,7 +14,7 @@ return new class extends Migration {
     {
         Schema::create('visitor_master_settings', function (Blueprint $table) {
             $table->comment('');
-            $table->integer('id', true);
+            $table->bigIncrements('id');
             $table->mediumText('welcome_staff_msg')->nullable();
             $table->mediumText('welcome_visitor_msg')->nullable();
             $table->mediumText('exit_visitor_msg')->nullable();

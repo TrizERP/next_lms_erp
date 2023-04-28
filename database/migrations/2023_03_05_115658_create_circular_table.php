@@ -15,14 +15,14 @@ return new class extends Migration {
         Schema::create('circular', function (Blueprint $table) {
             $table->comment('');
             $table->bigIncrements('id');
-            $table->string('syear', 150);
-            $table->string('standard_id', 150);
-            $table->string('division_id', 150)->nullable();
+            $table->integer('syear');
+            $table->bigInteger('standard_id');
+            $table->bigInteger('division_id')->nullable();
             $table->string('title', 250);
             $table->text('message');
-            $table->text('file_name')->nullable();
+            $table->string('file_name')->nullable();
             $table->date('date_');
-            $table->bigInteger('sub_institute_id');
+            $table->integer('sub_institute_id');
             $table->integer('type');
             $table->timestamp('created_at')->nullable()->useCurrent();
             $table->dateTime('updated_at')->nullable();

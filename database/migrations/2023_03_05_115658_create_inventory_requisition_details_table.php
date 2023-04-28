@@ -14,7 +14,7 @@ return new class extends Migration {
     {
         Schema::create('inventory_requisition_details', function (Blueprint $table) {
             $table->comment('');
-            $table->integer('id', true);
+            $table->bigIncrements('id');
             $table->string('syear', 50)->nullable();
             $table->integer('sub_institute_id')->nullable();
             $table->integer('marking_period_id')->nullable();

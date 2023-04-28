@@ -15,12 +15,12 @@ return new class extends Migration {
         Schema::create('fees_axis', function (Blueprint $table) {
             $table->comment('');
             $table->bigIncrements('id');
-            $table->string('syear', 150);
+            $table->integer('syear');
             $table->string('encryption_key', 150);
             $table->string('checksum_key', 150);
-            $table->string('cid', 150);
+            $table->integer('cid');
             $table->string('merchant_id', 150)->nullable();
-            $table->bigInteger('sub_institute_id');
+            $table->integer('sub_institute_id');
             $table->timestamp('created_at')->nullable()->useCurrent();
             $table->dateTime('updated_at')->nullable();
         });

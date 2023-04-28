@@ -14,19 +14,19 @@ return new class extends Migration {
     {
         Schema::create('fees_collect', function (Blueprint $table) {
             $table->comment('');
-            $table->bigInteger('id', true);
+            $table->bigIncrements('id');
             $table->bigInteger('student_id')->nullable()->index('student_id');
             $table->bigInteger('term_id')->nullable();
-            $table->bigInteger('syear')->nullable();
-            $table->bigInteger('sub_institute_id')->nullable();
-            $table->string('receipt_no', 50)->nullable();
+            $table->integer('syear')->nullable();
+            $table->integer('sub_institute_id')->nullable();
+            $table->integer('receipt_no')->nullable();
             $table->mediumText('fees_html')->nullable();
             $table->string('created_by', 50)->nullable();
             $table->string('created_ip_address', 150)->nullable();
             $table->string('payment_mode', 150)->nullable();
             $table->string('bank_branch', 150)->nullable();
             $table->date('receiptdate')->nullable();
-            $table->string('cheque_no', 50)->nullable();
+            $table->integer('cheque_no')->nullable();
             $table->string('bank_name', 150)->nullable();
             $table->date('cheque_date')->nullable();
             $table->string('cheque_bank_name', 50)->nullable();

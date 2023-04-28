@@ -14,7 +14,7 @@ return new class extends Migration {
     {
         Schema::create('ptm_time_slots_master', function (Blueprint $table) {
             $table->comment('');
-            $table->integer('id', true);
+            $table->bigIncrements('id');
             $table->string('syear', 50)->nullable();
             $table->integer('sub_institute_id')->nullable();
             $table->date('ptm_date')->nullable();

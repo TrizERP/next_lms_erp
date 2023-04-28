@@ -22,10 +22,10 @@ return new class extends Migration {
             $table->integer('topic_id')->default(0);
             $table->string('title', 250);
             $table->text('message');
-            $table->text('file_name');
+            $table->string('file_name');
             $table->string('link', 250)->nullable();
             $table->date('date_');
-            $table->bigInteger('sub_institute_id');
+            $table->integer('sub_institute_id');
             $table->timestamp('created_at')->nullable()->useCurrent();
             $table->dateTime('updated_at')->nullable();
         });

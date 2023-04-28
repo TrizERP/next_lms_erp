@@ -14,7 +14,7 @@ return new class extends Migration {
     {
         Schema::create('mobile_homescreen', function (Blueprint $table) {
             $table->comment('');
-            $table->integer('id', true);
+            $table->bigIncrements('id');
             $table->integer('sub_institute_id')->nullable();
             $table->integer('user_profile_id')->nullable();
             $table->string('user_profile_name', 50)->nullable();

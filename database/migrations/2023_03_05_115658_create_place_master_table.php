@@ -14,7 +14,7 @@ return new class extends Migration {
     {
         Schema::create('place_master', function (Blueprint $table) {
             $table->comment('');
-            $table->increments('id');
+            $table->bigIncrements('id');
             $table->integer('sub_institute_id')->nullable();
             $table->string('title', 255);
             $table->string('description', 255);

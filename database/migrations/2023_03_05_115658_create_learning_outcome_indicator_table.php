@@ -14,7 +14,7 @@ return new class extends Migration {
     {
         Schema::create('learning_outcome_indicator', function (Blueprint $table) {
             $table->comment('');
-            $table->integer('ID', true);
+            $table->bigIncrements('ID');
             $table->string('MEDIUM', 50)->nullable()->index('MEDIUM');
             $table->string('STANDARD', 50)->nullable()->index('STANDARD');
             $table->string('SUBJECT', 50)->nullable()->index('SUBJECT');

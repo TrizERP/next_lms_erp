@@ -14,7 +14,7 @@ return new class extends Migration {
     {
         Schema::create('admission_form', function (Blueprint $table) {
             $table->comment('');
-            $table->integer('id', true);
+            $table->bigIncrements('id');
             $table->string('enquiry_id', 50)->nullable();
             $table->string('enquiry_no', 50)->nullable();
             $table->string('form_no', 100)->nullable();

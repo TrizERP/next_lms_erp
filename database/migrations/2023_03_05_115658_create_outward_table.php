@@ -14,7 +14,7 @@ return new class extends Migration {
     {
         Schema::create('outward', function (Blueprint $table) {
             $table->comment('');
-            $table->increments('id');
+            $table->bigIncrements('id');
             $table->integer('sub_institute_id')->nullable();
             $table->string('syear', 50)->nullable();
             $table->unsignedInteger('place_id')->index('outward_place_id_foreign');

@@ -14,7 +14,7 @@ return new class extends Migration {
     {
         Schema::create('follow_up', function (Blueprint $table) {
             $table->comment('');
-            $table->integer('id', true);
+            $table->bigIncrements('id');
             $table->integer('sub_institute_id')->nullable();
             $table->integer('enquiry_id')->nullable();
             $table->date('follow_up_date')->nullable();

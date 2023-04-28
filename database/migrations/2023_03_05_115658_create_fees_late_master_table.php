@@ -14,11 +14,11 @@ return new class extends Migration {
     {
         Schema::create('fees_late_master', function (Blueprint $table) {
             $table->comment('');
-            $table->integer('id', true);
+            $table->bigIncrements('id');
             $table->date('late_date');
             $table->string('standard_id', 50)->default('0');
             $table->integer('syear')->default(0);
-            $table->string('term_id', 50)->default('0');
+            $table->bigInteger('term_id')->default('0');
             $table->integer('sub_institute_id')->default(0);
             $table->integer('created_by')->default(0);
             $table->timestamp('created_on')->useCurrent();

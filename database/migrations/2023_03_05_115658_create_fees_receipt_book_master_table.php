@@ -14,7 +14,7 @@ return new class extends Migration {
     {
         Schema::create('fees_receipt_book_master', function (Blueprint $table) {
             $table->comment('');
-            $table->integer('id', true);
+            $table->bigIncrements('id');
             $table->integer('syear')->nullable();
             $table->integer('receipt_id')->default(0)->index('receipt_id');
             $table->string('receipt_line_1')->nullable();

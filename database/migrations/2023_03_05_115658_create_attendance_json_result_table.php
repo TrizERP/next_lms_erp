@@ -14,7 +14,7 @@ return new class extends Migration {
     {
         Schema::create('attendance_json_result', function (Blueprint $table) {
             $table->comment('');
-            $table->integer('id', true);
+            $table->bigIncrements('id');
             $table->integer('syear')->nullable();
             $table->integer('sub_institute_id')->nullable();
             $table->longText('json_data')->nullable();

@@ -14,7 +14,7 @@ return new class extends Migration {
     {
         Schema::create('school_sections', function (Blueprint $table) {
             $table->comment('');
-            $table->integer('id', true);
+            $table->bigIncrements('id');
             $table->integer('section_id')->nullable();
             $table->string('section_name', 10);
             $table->decimal('school_id', 10, 0);

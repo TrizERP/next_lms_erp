@@ -14,11 +14,11 @@ return new class extends Migration {
     {
         Schema::create('fees_circular_master', function (Blueprint $table) {
             $table->comment('');
-            $table->integer('id', true);
-            $table->string('syear', 50)->nullable();
+            $table->bigIncrements('id');
+            $table->integer('syear')->nullable();
             $table->integer('sub_institute_id')->nullable();
-            $table->integer('grade_id')->nullable();
-            $table->integer('standard_id')->nullable();
+            $table->bigInteger('grade_id')->nullable();
+            $table->bigInteger('standard_id')->nullable();
             $table->string('bank_name', 150)->nullable();
             $table->string('address_line1', 250)->nullable();
             $table->string('address_line2', 250)->nullable();

@@ -14,23 +14,23 @@ return new class extends Migration {
     {
         Schema::create('content_master', function (Blueprint $table) {
             $table->comment('');
-            $table->integer('id', true);
+            $table->bigIncrements('id');
             $table->integer('grade_id')->default(0);
             $table->integer('standard_id')->default(0);
             $table->integer('subject_id')->default(0);
             $table->integer('chapter_id')->nullable();
             $table->integer('topic_id')->nullable();
             $table->integer('sub_topic_id')->nullable();
-            $table->string('lo_master_ids', 250)->nullable();
-            $table->string('lo_indicator_ids', 250)->nullable();
+            $table->integer('lo_master_ids')->nullable();
+            $table->integer('lo_indicator_ids')->nullable();
             $table->integer('lo_category_id')->nullable();
             $table->string('title', 250)->nullable();
-            $table->longText('description')->nullable();
-            $table->longText('file_folder')->nullable();
-            $table->longText('filename')->nullable();
+            $table->mediumText('description')->nullable();
+            $table->mediumText('file_folder')->nullable();
+            $table->mediumText('filename')->nullable();
             $table->string('file_type', 250)->nullable();
-            $table->string('file_size', 250)->nullable();
-            $table->longText('url')->nullable();
+            $table->integer('file_size')->nullable();
+            $table->mediumText('url')->nullable();
             $table->integer('sort_order')->nullable();
             $table->integer('show_hide')->nullable();
             $table->string('meta_tags', 250)->nullable();

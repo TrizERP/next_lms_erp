@@ -14,7 +14,7 @@ return new class extends Migration {
     {
         Schema::create('gcm_users', function (Blueprint $table) {
             $table->comment('');
-            $table->integer('id', true);
+            $table->bigIncrements('id');
             $table->integer('sub_institute_id')->nullable();
             $table->longText('gcm_regid')->nullable();
             $table->string('imei_no', 50)->nullable();

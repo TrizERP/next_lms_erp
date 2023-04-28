@@ -14,7 +14,7 @@ return new class extends Migration {
     {
         Schema::create('tblapplications', function (Blueprint $table) {
             $table->comment('');
-            $table->increments('id');
+            $table->bigIncrements('id');
             $table->integer('client_id');
             $table->string('app_secret_key', 255);
             $table->timestamp('created_at')->nullable()->useCurrent();

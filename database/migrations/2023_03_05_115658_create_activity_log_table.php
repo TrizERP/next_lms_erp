@@ -16,12 +16,12 @@ return new class extends Migration {
             $table->comment('');
             $table->bigIncrements('id');
             $table->string('log_name', 255)->nullable()->index();
-            $table->text('description');
+            $table->string('description', 255);
             $table->string('subject_type', 255)->nullable();
             $table->unsignedBigInteger('subject_id')->nullable();
             $table->string('causer_type', 255)->nullable();
             $table->unsignedBigInteger('causer_id')->nullable();
-            $table->longText('properties')->nullable();
+            $table->string('properties', 255)->nullable();
             $table->timestamp('created_at')->nullable()->useCurrent();
             $table->dateTime('updated_at')->nullable();
 

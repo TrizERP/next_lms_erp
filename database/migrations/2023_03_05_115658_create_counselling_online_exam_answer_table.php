@@ -14,7 +14,7 @@ return new class extends Migration {
     {
         Schema::create('counselling_online_exam_answer', function (Blueprint $table) {
             $table->comment('');
-            $table->integer('id', true);
+            $table->bigIncrements('id');
             $table->integer('online_exam_id')->nullable();
             $table->integer('user_id')->nullable();
             $table->integer('question_id')->nullable();

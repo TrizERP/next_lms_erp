@@ -18,10 +18,10 @@ return new class extends Migration {
             $table->integer('syear')->default(0);
             $table->integer('student_id')->default(0);
             $table->string('name', 150);
-            $table->text('dicipline');
-            $table->text('message');
+            $table->string('dicipline');
+            $table->string('message');
             $table->date('date_');
-            $table->bigInteger('sub_institute_id');
+            $table->integer('sub_institute_id');
             $table->integer('created_by');
             $table->timestamp('created_at')->nullable()->useCurrent();
             $table->dateTime('updated_at')->nullable();

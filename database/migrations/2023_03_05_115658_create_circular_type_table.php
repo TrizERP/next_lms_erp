@@ -14,7 +14,7 @@ return new class extends Migration {
     {
         Schema::create('circular_type', function (Blueprint $table) {
             $table->comment('');
-            $table->integer('id', true);
+            $table->bigIncrements('id');
             $table->string('type', 250)->nullable();
         });
     }

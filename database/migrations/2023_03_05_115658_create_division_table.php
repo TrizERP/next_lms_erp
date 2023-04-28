@@ -14,7 +14,7 @@ return new class extends Migration {
     {
         Schema::create('division', function (Blueprint $table) {
             $table->comment('');
-            $table->increments('id');
+            $table->bigIncrements('id');
             $table->string('name', 255);
             $table->integer('sub_institute_id');
             $table->timestamp('created_at')->nullable()->useCurrent();

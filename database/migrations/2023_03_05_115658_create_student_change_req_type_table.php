@@ -14,7 +14,7 @@ return new class extends Migration {
     {
         Schema::create('student_change_req_type', function (Blueprint $table) {
             $table->comment('');
-            $table->integer('ID', true);
+            $table->bigIncrements('ID');
             $table->string('SYEAR', 10)->nullable();
             $table->integer('SUB_INSTITUTE_ID')->nullable();
             $table->string('REQUEST_TITLE', 50)->nullable();

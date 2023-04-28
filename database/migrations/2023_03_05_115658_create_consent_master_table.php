@@ -14,17 +14,17 @@ return new class extends Migration {
     {
         Schema::create('consent_master', function (Blueprint $table) {
             $table->comment('');
-            $table->integer('ID', true);
+            $table->bigIncrements('ID');
             $table->integer('student_id')->nullable();
-            $table->string('syear', 50)->nullable();
+            $table->integer('syear')->nullable();
             $table->integer('standard_id')->nullable();
             $table->integer('sub_institute_id')->nullable();
             $table->integer('division_id')->nullable();
             $table->string('title', 50)->nullable();
             $table->date('date')->nullable();
             $table->string('accountable_status', 50)->nullable();
-            $table->string('amount', 50)->nullable();
-            $table->string('imprest_head_id', 50)->nullable();
+            $table->integer('amount')->nullable();
+            $table->integer('imprest_head_id')->nullable();
             $table->string('status', 50)->nullable();
             $table->timestamp('created_on')->nullable()->useCurrent();
             $table->string('created_by', 50)->nullable();

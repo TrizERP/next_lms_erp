@@ -14,9 +14,9 @@ return new class extends Migration {
     {
         Schema::create('biomatrix', function (Blueprint $table) {
             $table->comment('');
-            $table->bigIncrements('id');
+            $table->integer('id');
             $table->text('biomatrix_id');
-            $table->string('sub_institute_id');
+            $table->integer('sub_institute_id');
             $table->timestamp('created_at')->nullable()->useCurrent();
             $table->dateTime('updated_at')->nullable();
         });

@@ -14,7 +14,7 @@ return new class extends Migration {
     {
         Schema::create('petty_cash_master', function (Blueprint $table) {
             $table->comment('');
-            $table->increments('id');
+            $table->bigIncrements('id');
             $table->integer('sub_institute_id');
             $table->string('title', 255);
         });

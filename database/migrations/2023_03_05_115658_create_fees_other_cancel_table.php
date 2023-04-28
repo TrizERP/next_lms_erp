@@ -14,13 +14,13 @@ return new class extends Migration {
     {
         Schema::create('fees_other_cancel', function (Blueprint $table) {
             $table->comment('');
-            $table->integer('id', true);
-            $table->string('receipt_id', 50)->nullable();
-            $table->decimal('syear', 4, 0)->nullable();
-            $table->string('sub_institute_id', 11)->nullable();
+            $table->bigIncrements('id');
+            $table->bigInteger('receipt_id')->nullable();
+            $table->integer('syear')->nullable();
+            $table->integer('sub_institute_id')->nullable();
             $table->integer('fees_other_collection_id')->nullable();
-            $table->integer('deduction_head_id')->nullable();
-            $table->string('student_id', 50)->nullable();
+            $table->bigInteger('deduction_head_id')->nullable();
+            $table->bigInteger('student_id')->nullable();
             $table->date('cancellation_date')->nullable();
             $table->string('cancellation_remarks', 250)->nullable();
             $table->string('cancellation_amount', 250)->nullable();

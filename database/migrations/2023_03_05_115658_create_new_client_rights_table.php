@@ -14,7 +14,7 @@ return new class extends Migration {
     {
         Schema::create('new_client_rights', function (Blueprint $table) {
             $table->comment('');
-            $table->integer('id', true);
+            $table->bigIncrements('id');
             $table->string('title', 250)->nullable();
         });
     }

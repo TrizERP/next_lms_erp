@@ -14,7 +14,7 @@ return new class extends Migration {
     {
         Schema::create('tblmenumaster_old', function (Blueprint $table) {
             $table->comment('');
-            $table->increments('id');
+            $table->bigIncrements('id');
             $table->string('name', 255);
             $table->string('description', 255);
             $table->integer('parent_menu_id');

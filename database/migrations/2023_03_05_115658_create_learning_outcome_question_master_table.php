@@ -14,7 +14,7 @@ return new class extends Migration {
     {
         Schema::create('learning_outcome_question_master', function (Blueprint $table) {
             $table->comment('');
-            $table->integer('ID', true);
+            $table->bigIncrements('ID');
             $table->date('DATE')->nullable()->index('DATE');
             $table->string('MEDIUM', 50)->nullable()->index('MEDIUM');
             $table->string('STANDARD', 50)->nullable()->index('STANDARD');

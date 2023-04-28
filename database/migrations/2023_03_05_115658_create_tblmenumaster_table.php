@@ -14,7 +14,7 @@ return new class extends Migration {
     {
         Schema::create('tblmenumaster', function (Blueprint $table) {
             $table->comment('');
-            $table->increments('id');
+            $table->bigIncrements('id');
             $table->string('name', 255);
             $table->string('menu_title', 255)->nullable();
             $table->string('menu_sortorder', 255)->nullable();

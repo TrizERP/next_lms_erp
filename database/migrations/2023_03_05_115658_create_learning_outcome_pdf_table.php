@@ -14,7 +14,7 @@ return new class extends Migration {
     {
         Schema::create('learning_outcome_pdf', function (Blueprint $table) {
             $table->comment('');
-            $table->integer('ID', true);
+            $table->bigIncrements('ID');
             $table->string('MEDIUM', 50)->nullable();
             $table->string('STANDARD', 200)->nullable();
             $table->string('SUBJECTS', 200)->nullable();

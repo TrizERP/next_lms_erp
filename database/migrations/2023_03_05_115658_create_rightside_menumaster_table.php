@@ -14,7 +14,7 @@ return new class extends Migration {
     {
         Schema::create('rightside_menumaster', function (Blueprint $table) {
             $table->comment('');
-            $table->integer('id', true);
+            $table->bigIncrements('id');
             $table->string('name', 50);
             $table->string('description', 250);
             $table->integer('main_menu_id');

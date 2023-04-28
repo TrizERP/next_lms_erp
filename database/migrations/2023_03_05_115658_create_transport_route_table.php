@@ -14,7 +14,7 @@ return new class extends Migration {
     {
         Schema::create('transport_route', function (Blueprint $table) {
             $table->comment('');
-            $table->bigInteger('id', true);
+            $table->bigIncrements('id');
             $table->bigInteger('syear');
             $table->string('route_name', 50);
             $table->string('from_time', 50);

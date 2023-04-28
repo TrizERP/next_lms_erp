@@ -14,7 +14,7 @@ return new class extends Migration {
     {
         Schema::create('visitor_master', function (Blueprint $table) {
             $table->comment('');
-            $table->increments('id');
+            $table->bigIncrements('id');
             $table->string('appointment_type', 50);
             $table->integer('visitor_type');
             $table->string('name', 255);

@@ -14,7 +14,7 @@ return new class extends Migration {
     {
         Schema::create('period', function (Blueprint $table) {
             $table->comment('');
-            $table->increments('id');
+            $table->bigIncrements('id');
             $table->string('title', 255);
             $table->string('short_name', 255);
             $table->integer('sort_order');

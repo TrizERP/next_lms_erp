@@ -14,7 +14,7 @@ return new class extends Migration {
     {
         Schema::create('inventory_item_type', function (Blueprint $table) {
             $table->comment('');
-            $table->increments('id');
+            $table->bigIncrements('id');
             $table->integer('sub_institute_id')->nullable();
             $table->string('title', 255);
             $table->timestamp('created_at')->nullable()->useCurrent();

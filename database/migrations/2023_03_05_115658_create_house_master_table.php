@@ -14,7 +14,7 @@ return new class extends Migration {
     {
         Schema::create('house_master', function (Blueprint $table) {
             $table->comment('');
-            $table->integer('id', true);
+            $table->bigIncrements('id');
             $table->integer('sub_institute_id')->nullable();
             $table->integer('syear')->nullable();
             $table->text('house_name')->nullable();

@@ -14,7 +14,7 @@ return new class extends Migration {
     {
         Schema::create('sub_std_map', function (Blueprint $table) {
             $table->comment('');
-            $table->increments('id');
+            $table->bigIncrements('id');
             $table->unsignedInteger('subject_id')->index('sub_std_map_subject_id_foreign');
             $table->unsignedInteger('standard_id')->index('sub_std_map_standard_id_foreign');
             $table->string('allow_grades', 255)->nullable();
