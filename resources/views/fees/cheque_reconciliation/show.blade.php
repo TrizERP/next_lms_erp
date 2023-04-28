@@ -68,7 +68,7 @@
                 $j = 1;
                 @endphp
                 @if(isset($data['details']) && !empty($data['details']))
-                <form action="{{route('cheque_reconciliation.store')}}" enctype="multipart/form-data" method="post" id="chequeForm"  onsubmit="check_validation();">
+                <form action="{{route('cheque_reconciliation.store')}}" enctype="multipart/form-data" method="post" id="chequeForm"  onsubmit="check_submit();">
                     {{ method_field("POST") }}
                     @csrf
                     <div class="table-responsive">
@@ -161,37 +161,27 @@
 @include('includes.footerJs')
 
 <script>
-    $(document).ready(function(){
-$('#mode option').each(function() {
-    if ($(this).prop("selected") == true) {
-       // do something
-        alert('clear');
-    } else {
-       // do something
-    }
-});​
-})
-function check_validation()
-{    
+ function check_submit(){
+
     var checked_questions = err = 0;
-$('#mode').change(function () {
- var job =  $('#mode').val();
- alert(job);
-})
-   // if($('#mode').val() == ''){
-   //    alert('Please selecte one payment mode ');
-   //      err = 1;
-   // }
-    $("input[name='questions[]']:checked").each(function ()
+
+
+    $("input[name='cheque[]']:checked").each(function ()
     {             
         checked_questions = checked_questions + 1;
     });
     if(checked_questions == 0)
     {
-        alert("Please Select Atleast one ckeckbox");
+        alert("Please Select Atleast one checkbox");
         err = 1;
     }
+    }
+    
+    if($('#mode').val() == ''){
+      alert('Payment Mode can not be empty');
+        err = 1;
 
+   }
     if(err == 1)
     {
         return false;
@@ -199,7 +189,6 @@ $('#mode').change(function () {
         return true;
     }
 }
-
 function checkAll(ele) {
          var checkboxes = document.getElementsByTagName('input');
          if (ele.checked) {

@@ -168,10 +168,10 @@ class ChequeReconciliationController extends Controller
                     $mes= array("failed","Failed to Add");
                 }
             }
-            if(empty($mode) && empty($cheque)){
+            if(empty($mode) || empty($cheque)){
                 $mes= array("failed","Please select mode");
             }
-            // return $mes;exit;
+            // return $mes;exit 62623;
             $res = "";
         $type = $request->input('type');
         return back()->with($mes);
