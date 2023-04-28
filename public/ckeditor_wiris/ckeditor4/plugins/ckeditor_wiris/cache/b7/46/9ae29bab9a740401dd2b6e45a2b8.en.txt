@@ -1,1 +1,0 @@
-{"result":{"text":"square root of A B squared end root"},"status":"ok"}

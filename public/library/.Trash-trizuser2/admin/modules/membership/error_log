@@ -1,1 +1,0 @@
-[06-Jun-2011 14:01:15] PHP Fatal error:  Call to a member function fetch_assoc() on a non-object in /home/trizcoin/public_html/schoollib/admin/modules/membership/select_checkbox_ajax.php on line 16

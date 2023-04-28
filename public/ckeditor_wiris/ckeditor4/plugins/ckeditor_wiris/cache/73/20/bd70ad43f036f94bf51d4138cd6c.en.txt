@@ -1,1 +1,0 @@
-{"result":{"text":"less or equal than"},"status":"ok"}
