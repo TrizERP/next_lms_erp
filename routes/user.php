@@ -18,6 +18,8 @@ Route::group(['prefix' => 'user', 'middleware' => ['session', 'menu', 'logRoute'
     Route::resource('add_user_past_education', tbluserPastEducationController::class);
     Route::resource('user_report', userReportController::Class);
     Route::post('show_user_report', [userReportController::class, 'searchUser'])->name("show_user_report");
+     Route::post('ajax_userProfile_Data_Create',
+        [tblgroupwise_rightsController::class, 'ajax_userProfile_Data_Create'])->name('ajax_userProfile_Data_Create');
     Route::get('ajax_groupwiserights',
         [tblgroupwise_rightsController::class, 'displayGroupwiseRights'])->name('ajax_groupwiserights');
     Route::get('ajax_pasteducation',

@@ -144,7 +144,7 @@ Route::group(['prefix' => 'student', 'middleware' => ['session', 'menu', 'logRou
 });
 
 
-Route::post('ajax_saveData', 'student\studentCertificateController@ajax_saveData')->name('ajax_saveData');
+Route::get('ajax_saveData', 'student\studentCertificateController@ajax_saveData')->name('ajax_saveData');
 
 Route::post('/studentAttendanceAPI', [studentAttendanceController::class, 'studentAttendanceAPI']);
 Route::post('/studentTeacherListAPI', [studentAttendanceController::Class, 'studentTeacherListAPI']);

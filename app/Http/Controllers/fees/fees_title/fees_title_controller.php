@@ -46,7 +46,7 @@ class fees_title_controller extends Controller
             ->where([
                 'sub_institute_id' => session()->get('sub_institute_id'),
                 'syear' => session()->get('syear')
-            ])->get()->toArray();
+            ])->OrderBy('display_name','ASC')->get()->toArray();
         $responce_arr = array();
         if (count($data) > 0) {
             foreach ($data as $id => $arr) {

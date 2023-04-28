@@ -17,7 +17,7 @@
                         {{ method_field("GET") }}
                         {{csrf_field()}}
                         <div class="row">                            
-                            {{ App\Helpers\SearchChain('4','single','grade,std',$data['grade'],$data['standard']) }}
+                            {{ App\Helpers\SearchChain('4','single','grade,std,div',$data['grade'],$data['standard'],$data['division']) }}
                             {{ App\Helpers\TermDD($data['term_id']) }}
                             <div class="col-md-12 form-group">
                                 <center>
@@ -84,7 +84,7 @@
                             </table>
                         </div>
 
-                        <div class="col-md-12 form-group">
+                        <div class="col-md-12 mt-2 form-group">
                             <center>
                                 <input type="submit" name="submit" value="Save" class="btn btn-success" >
                             </center>

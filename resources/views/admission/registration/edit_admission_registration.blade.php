@@ -192,18 +192,22 @@ $editData = array();
                             <div class="col-md-3 form-group">
                                 <label>Student Quota </label>
                                 <select id='student_quota' required="required" name="student_quota" class="form-control">
-                                <option value=""> Select Quota </option>
-                                    @if(isset($data['category']))
+                                <!-- <option value=""> Select Quota </option> -->
+                                @if(isset($data['category']))
+                                    <p style="display: none;">{{$ids = DB::table('student_quota')->where(['sub_institute_id'=>Session::get('sub_institute_id'),'title'=>'General'])->get()}}</p>
+                                         <option value="@foreach($ids as $id){{$id->id}}@endforeach" >General</option>
+
                                         @foreach($data['category'] as $key => $value)
                                             <option value="{{$value['id']}}" @if(isset($editData['student_quota'])) @if($editData['student_quota'] == $value['id']) selected="selected" @endif @endif>{{$value['title']}}</option>
                                         @endforeach
                                     @endif
+
                                 </select>
                             </div>
                             <div class="col-md-3 form-group">
                                 <label>Division </label>
                                 <select id='admission_division' required="required" name="admission_division" class="form-control">
-                                <option value=""> Select Division </option>
+                                <!-- <option value=""> Select Division </option> -->
                                     @if(isset($data['division']))
                                         @foreach($data['division'] as $key => $value)
                                             <option value="{{$value['id']}}" @if(isset($editData['admission_division'])) @if($editData['admission_division'] == $value['id']) selected="selected" @endif @endif>{{$value['name']}}</option>

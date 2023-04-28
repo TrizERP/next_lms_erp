@@ -46,7 +46,7 @@ class contentController extends Controller
     {
         $where = '';
         $topic = '';
-
+        // $breadcrum_data = array();
         if ($topic_id != '') {
             $topic = 't.id as topic_id,';
         }
@@ -69,8 +69,8 @@ class contentController extends Controller
         }
 
         $breadcrum_data = $breadcrum_data->get()->toArray();
-
-        return $breadcrum_data[0];
+        // dd($breadcrum_data);
+        return $breadcrum_data[0] ?? 0 ;
     }
 
     public function create(Request $request)

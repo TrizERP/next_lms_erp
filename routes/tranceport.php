@@ -10,6 +10,8 @@ use App\Http\Controllers\transportation\map_route_stop\map_route_stop_controller
 use App\Http\Controllers\transportation\map_student\map_student_controller;
 use App\Http\Controllers\transportation\send_late_sms\send_late_sms_controller;
 use App\Http\Controllers\transportation\van_wise_report\van_wise_report_controller;
+use App\Http\Controllers\transportation\transport_rate\transportRateController;
+
 use Illuminate\Support\Facades\Route;
 
 Route::group(['prefix' => 'transportation', 'middleware' => ['session', 'menu', 'logRoute']], function () {
@@ -22,6 +24,8 @@ Route::group(['prefix' => 'transportation', 'middleware' => ['session', 'menu', 
     Route::resource('map_student', map_student_controller::class);
     Route::resource('send_late_sms', send_late_sms_controller::class);
     Route::resource('van_wise_report', van_wise_report_controller::class);
+    Route::resource('transport_rate', transportRateController::class);
+
 
     Route::post('show_van_wise_report', [van_wise_report_controller::Class, 'showVanWiseReport'])->name('show_van_wise_report');
 });

@@ -261,7 +261,13 @@ class marks_entry_controller extends Controller
 
                             if ($temp_arr['is_absent'] == "AB") {
                                 $responce_arr['stu_data'][$id]['points'] = $temp_arr['is_absent'];
-                            } else {
+                            }elseif($temp_arr['is_absent'] == "N.A."){
+                                $responce_arr['stu_data'][$id]['points'] = $temp_arr['is_absent'];
+
+                            }elseif($temp_arr['is_absent'] == "EX"){
+                                $responce_arr['stu_data'][$id]['points'] = $temp_arr['is_absent'];
+                                
+                            }else {
                                 $responce_arr['stu_data'][$id]['points'] = $points;
                             }
                             $responce_arr['stu_data'][$id]['outof'] = $working_day[0]["points"];
@@ -297,7 +303,11 @@ class marks_entry_controller extends Controller
 
                         if ($temp_arr['is_absent'] == "AB") {
                             $responce_arr['stu_data'][$id]['points'] = $temp_arr['is_absent'];
-                        } else {
+                        }elseif($temp_arr['is_absent'] == "N.A."){
+                             $responce_arr['stu_data'][$id]['points'] = $temp_arr['is_absent'];
+                        }elseif($temp_arr['is_absent'] == "EX"){
+                             $responce_arr['stu_data'][$id]['points'] = $temp_arr['is_absent'];
+                        }else {
                             $responce_arr['stu_data'][$id]['points'] = $points;
                         }
                         $responce_arr['stu_data'][$id]['outof'] = $working_day[0]["points"];
@@ -570,16 +580,44 @@ class marks_entry_controller extends Controller
                 if (preg_match("/[a-z]/i", $arr['points'])) {
                     if (strtoupper($arr['points']) == "AB") {
                         $data = new marks_entry([
-                            'student_id'       => $student_id,
-                            'exam_id'          => $arr['exam_id'],
-                            'points'           => 0,
-                            'per'              => 0,
-                            'grade'            => '-',
-                            'comment'          => $arr['comment'],
-                            'is_absent'        => "AB",
+                            'student_id' => $student_id,
+                            'exam_id' => $arr['exam_id'],
+                            'points' => 0,
+                            'per' => 0,
+                            'grade' => '-',
+                            'comment' => $arr['comment'],
+                            'is_absent' => "AB",
                             'sub_institute_id' => $sub_institute_id,
                         ]);
                         $data->save();
+                    }
+                    elseif (strtoupper($arr['points']) == "N.A.") {
+                         $data = new marks_entry([
+                            'student_id' => $student_id,
+                            'exam_id' => $arr['exam_id'],
+                            'points' => 0,
+                            'per' => 0,
+                            'grade' => '-',
+                            'comment' => $arr['comment'],
+                            'is_absent' => "N.A.",
+                            'sub_institute_id' => $sub_institute_id,
+                        ]);
+                        $data->save();
+                    
+                    }
+                    elseif (strtoupper($arr['points']) == "EX") {
+                         $data = new marks_entry([
+                            'student_id' => $student_id,
+                            'exam_id' => $arr['exam_id'],
+                            'points' => 0,
+                            'per' => 0,
+                            'grade' => '-',
+                            'comment' => $arr['comment'],
+                            'is_absent' => "EX",
+                            'sub_institute_id' => $sub_institute_id,
+                        ]);
+                        $data->save();
+                    
                     }
                 } else {
                     $arr['per'] = rtrim($arr['per'], '%');

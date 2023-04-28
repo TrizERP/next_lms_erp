@@ -34,7 +34,7 @@ use App\Http\Controllers\school_setup\todaysproxyReportController;
 use App\Http\Controllers\school_setup\topicController;
 use App\Http\Controllers\school_setup\workflowController;
 use App\Http\Controllers\signupController;
-use App\Http\Controllers\student\questionWiseReportController;
+use App\Http\Controllers\lms\questionWiseReportController;
 use App\Http\Controllers\template_result\TemplateResult;
 use App\Http\Controllers\tourController;
 use App\Http\Controllers\used_storage_graphController;
@@ -175,6 +175,10 @@ Route::group(['prefix' => 'school_setup', 'middleware' => ['session', 'menu', 'l
     Route::get('ajax_AcademicwiseStandard', [timetableController::class, 'AcademicwiseStandard'])->name('ajax_AcademicwiseStandard');
     Route::post('ajax_getTimetable', [timetableController::class, 'getTimetable'])->name('ajax_getTimetable');
 
+    Route::post('insert_data', [subject1Controller::class, 'insert_data'])->name('insert_data');
+    
+    // Route::post('/school_setup/subject_master/insert_data','school_setup\subject1Controller@insert_data');
+
     Route::resource('classwisetimetable', classwisetimetableController::class);
     Route::post('ajax_getClasswiseTimetable', [classwisetimetableController::class, 'getClasswiseTimetable'])->name('ajax_getClasswiseTimetable');
     Route::get('ajax_Batch_Timetable', [timetableController::class, 'getBatchTimetable'])->name('ajax_Batch_Timetable');
@@ -227,6 +231,9 @@ Route::get('ajax_load_helpguide', [AJAXController::class, 'ajax_load_helpguide']
 
 Route::post('ajax_sendmail', [AJAXController::class, 'ajax_sendmail'])->name('ajax_sendmail');
 
+Route::post('collectsct', [AJAXController::class, 'collectsct'])->name('collectsct');
+
+
 Route::get('ckeditor/create', [CkeditorFileUploadController::class, 'create'])->name('ckeditor.create');
 Route::post('ckeditor', [CkeditorFileUploadController::class, 'store'])->name('uploadimage');
 
@@ -262,8 +269,8 @@ Route::get('send_birthday_notification',
     [send_birthday_notification_controller::class, 'send_birthday_notification'])->name('send_birthday_notification');
 
 // Question Wise Report
-Route::get('questionReport', [questionWiseReportController::class, 'index'])->name('question_wise_report');
-Route::post('show_question_wise_report',
+Route::get('/questionReport', [questionWiseReportController::class, 'index'])->name('question_wise_report');
+Route::post('/show_question_wise_report',
     [questionWiseReportController::class, 'show_question_wise_report'])->name('show_question_wise_report');
 
 // Admin Authorization (Show Result)
