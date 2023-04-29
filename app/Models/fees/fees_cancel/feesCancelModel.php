@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class feesCancelModel extends Model
 {
+   public $timestamps = false;
     protected $table = 'fees_cancel';
 
     protected $fillable = [
