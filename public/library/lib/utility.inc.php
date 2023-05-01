@@ -52,10 +52,14 @@ class utility
     public static function loadSettings($obj_db)
     {
         global $sysconf;
-        $_setting_query = $obj_db->query('SELECT * FROM setting');
+        $_setting_query = $obj_db->query('SELECT * FROM setting order by setting_id');
         if (!$obj_db->errno) {
             while ($_setting_data = $_setting_query->fetch_assoc()) {
-                $_value = unserialize($_setting_data['setting_value']);
+                // print_r(serialize($_setting_data['setting_value']));
+                $_value = unserialize(serialize($_setting_data['setting_value']));
+                // $_value = unserialize(preg_replace('/;\s*(?=s:|\z)/', '', $_setting_data['setting_value']));
+                // print_r($_value);
+
                 if (is_array($_value)) {
                     foreach ($_value as $_idx=>$_curr_value) {
                         $sysconf[$_setting_data['setting_name']][$_idx] = $_curr_value;

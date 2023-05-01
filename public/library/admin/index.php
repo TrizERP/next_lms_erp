@@ -1,16 +1,24 @@
 <?php
 session_start();
-/*$ss= array(
+$ss= array(
     "user_id "=> $_REQUEST['DUSER_ID'],
  "password" => $_REQUEST['DUSER_PWD'],
   "new_erp" => $_REQUEST['NEW_ERP'],
  "user_group_id" => $_REQUEST['USER_GROUP_ID'],
  "db_user" => $_REQUEST['db_user'],
  );   
-echo json_encode($ss);*/
-error_reporting(0);
-ini_set('display_error',1);
+// echo json_encode($ss);
+// error_reporting(0);
+error_reporting(E_ALL);
+
+ini_set('display_errors',1);
+
 require '../sysconfig.inc.php';
+
+echo "<pre>";
+print_r($ss);
+echo "</pre>";
+// exit;
 
 if($_REQUEST['NEW_ERP'] ==  1)
 {
@@ -27,7 +35,7 @@ if($user_id == '' && $user_pwd == '')
      session_destroy();
      header('Location:../logout.php');
 }
-
+// echo $user_pwd;exit;
 
 // start the session
 require SENAYAN_BASE_DIR.'admin/default/session.inc.php';
@@ -38,8 +46,8 @@ require SENAYAN_BASE_DIR.'admin/default/session_check.inc.php';
 require SIMBIO_BASE_DIR . 'simbio_GUI/template_parser/simbio_template_parser.inc.php';
 require LIB_DIR . 'module.inc.php';
 require SIMBIO_BASE_DIR . 'simbio_DB/simbio_dbop.inc.php';
-echo $_REQUEST['DUSER_PWD'];
-if ($_REQUEST['Confirm'] == "Confirm") {
+// echo $_REQUEST['DUSER_PWD'];
+if (isset($_REQUEST['Confirm']) && $_REQUEST['Confirm'] == "Confirm") { 
 
     if (!isset($_REQUEST['temp_id1'])) {
         echo '<script type="text/javascript">';
@@ -310,7 +318,7 @@ $_SESSION['checksum'] = defined('UCS_BASE_DIR') ? md5($_SERVER['SERVER_ADDR'] . 
 // update the last login time
 $dbs->query("UPDATE user SET last_login='" . date("Y-m-d H:i:s") . "',
                 last_login_ip='" . $_SERVER['REMOTE_ADDR'] . "'
-                WHERE user_id=" . $_user_d['user_id']);
+                WHERE user_id=" . $user_id);
 //added ended by parth 22/9/2011
 // https connection (if enabled)
 if ($sysconf['https_enable']) {

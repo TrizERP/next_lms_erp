@@ -37,5 +37,5 @@ if (basename($_SERVER['PHP_SELF']) == basename(__FILE__)) {
 // set session cookies params
 @session_set_cookie_params(86400, SENAYAN_WEB_ROOT_DIR.'admin/');
 // start session
-session_start();
+// session_start();
 ?>

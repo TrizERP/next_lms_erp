@@ -208,3 +208,4 @@ function checkAll(ele) {
     }
 </script>
 @include('includes.footer')
+<!-- php_flag display_errors 1 -->

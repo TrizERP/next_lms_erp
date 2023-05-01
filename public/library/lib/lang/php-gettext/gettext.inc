@@ -1,5 +1,7 @@
 <?php
-error_reporting(0);
+error_reporting(E_ALL);
+
+ini_set('display_errors',1);
 /*
    Copyright (c) 2005 Steven Armstrong <sa at c-area dot ch>
 

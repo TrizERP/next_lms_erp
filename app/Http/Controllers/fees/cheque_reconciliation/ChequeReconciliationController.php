@@ -247,7 +247,7 @@ class ChequeReconciliationController extends Controller
             })->selectRaw("fc.*,fct.cheque_bank_name,fct.bank_branch,fct.cheque_no,fct.cheque_date,s.enrollment_no,CONCAT_WS(' ',s.first_name,s.middle_name,s.last_name) AS student_name,s.mobile,s.roll_no,st.medium,st.name as standard_name,d.id,d.name as divison_name,t.title as term_name,se.term_id as sterm_id")
             ->where(['fc.sub_institute_id'=>$sub_institute_id,'fc.syear'=>$syear])
             ->whereBetween("fc.cancel_date",[$from_date,$to_date])
-            ->groupBy('fc.student_id')->get()->toArray();
+            ->get()->toArray();
         }
         $res['from_date'] = $from_date;
         $res['to_date'] = $to_date;
