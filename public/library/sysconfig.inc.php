@@ -241,10 +241,10 @@ if ($connection) {
     $INVENTORY_PRODUCT_TYPE_CONST = 'INVENTORY';
     $LIBRARY_PRODUCT_TYPE_CONST = 'LIBRARY';
     //For Central Admin Users
-/*
+
     if ($_SESSION['USER_GROUP_ID'] == 1) {
 
-        if ($_REQUEST[is_library_prod_glob] != "" && $_REQUEST[is_library_prod_glob] == "YES") {
+        if (isset($_REQUEST['is_library_prod_glob']) && $_REQUEST['is_library_prod_glob'] != "" && $_REQUEST['is_library_prod_glob'] == "YES") {
             $sql = "SELECT DISTINCT tcd.COLLEGE_ID,tcd.DATABASE_NAME,tcd.TITLE
                     FROM
                     $inte_schema.tbladmin ta
@@ -253,7 +253,7 @@ if ($connection) {
                    ";
             $user_data = mysqli_query($sql);
 
-              if($_REQUEST[hid_frm_clg_wise_dbs_val]==""){
+              if($_REQUEST['hid_frm_clg_wise_dbs_val']==""){
                   echo "<style>
                         .cls_clg_wise_dbs_div{
                             text-align:center;
@@ -265,8 +265,8 @@ if ($connection) {
                   echo "<span>Institute : </span>";
                   echo "<select name='sel_db_names'>";
                   while ($data = mysqli_fetch_assoc($user_data)) {
-                      $COLLEGE_DATABASE_NAME = $data[DATABASE_NAME];
-                      $COLLEGE_TITLE = $data[TITLE];
+                      $COLLEGE_DATABASE_NAME = $data['DATABASE_NAME'];
+                      $COLLEGE_TITLE = $data['TITLE'];
 
                       echo "<option value='$COLLEGE_DATABASE_NAME'>$COLLEGE_TITLE</option>";
                   }
@@ -278,17 +278,17 @@ if ($connection) {
                   echo "</form>";
                   die;
              }
-             else if($_REQUEST[hid_frm_clg_wise_dbs_val]!="" && $_REQUEST[sel_db_names]!=""){
+             else if($_REQUEST['hid_frm_clg_wise_dbs_val']!="" && $_REQUEST['sel_db_names']!=""){
                 //$library_database=$_REQUEST[sel_db_names];
-                $_SESSION[REQ_COLLEGE_DB_VAL]=$_REQUEST[sel_db_names];
+                $_SESSION['REQ_COLLEGE_DB_VAL']=$_REQUEST['sel_db_names'];
              }
            }
 
-            if($_SESSION[REQ_COLLEGE_DB_VAL] != ""){
-                $library_database=$_SESSION[REQ_COLLEGE_DB_VAL];
+            if(isset($_SESSION['REQ_COLLEGE_DB_VAL']) && $_SESSION['REQ_COLLEGE_DB_VAL'] != ""){
+                $library_database=$_SESSION['REQ_COLLEGE_DB_VAL'];
             }
         }
-*/
+
       if($_SESSION['USER_GROUP_ID'] != 1){
           $COLLEGE_DATABASE_NAME=$_SESSION['library_database'];
           $COLLEGE_TITLE=$_REQUEST['school_name'];
@@ -354,6 +354,12 @@ $dbs->query('SET NAMES \'utf8\'');
 $sysconf['template']['dir'] = 'template';
 $sysconf['template']['theme'] = 'default';
 $sysconf['template']['css'] = $sysconf['template']['dir'].'/'.$sysconf['template']['theme'].'/style.css';
+
+if (!file_exists($sysconf['template']['dir'].'/'.$sysconf['template']['theme'].'/tinfo.inc.php')) {
+    $sysconf['template']['base'] = 'php'; /* html OR php */
+} else {
+    require $sysconf['template']['dir'].'/'.$sysconf['template']['theme'].'/tinfo.inc.php';
+}
 #require $sysconf['template']['dir'].'/'.$sysconf['template']['theme'].'/tinfo.inc.php';
 
 /* ADMIN SECTION GUI Template config */
@@ -539,52 +545,37 @@ $physical_final=$virtual_name[1];
 //$teacher_final=$virtual_name[3];
 //$parent_final=$virtual_name[4];
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// print_r(LANGUAGES_BASE_DIR); die();
+
 require LANGUAGES_BASE_DIR.'localisation.php';
+
 // require LIB_DIR.'detail.inc.php';
-
 /* AUTHORITY TYPE */
-// $sysconf['authority_type']['p'] = __('Personal Name');
-// $sysconf['authority_type']['o'] = __('Organizational Body');
-// $sysconf['authority_type']['c'] = __('Conference');
+$sysconf['authority_type']['p'] = gettext('Personal Name');
+$sysconf['authority_type']['o'] = gettext('Organizational Body');
+$sysconf['authority_type']['c'] = gettext('Conference');
+/* SUBJECT/AUTHORITY TYPE */
+$sysconf['subject_type']['t'] = gettext('Topic');
+$sysconf['subject_type']['g'] = gettext('Geographic');
+$sysconf['subject_type']['n'] = gettext('Name');
+$sysconf['subject_type']['tm'] = gettext('Temporal');
+$sysconf['subject_type']['gr'] = gettext('Genre');
+$sysconf['subject_type']['oc'] = gettext('Occupation');
 
-// /* SUBJECT/AUTHORITY TYPE */
-// $sysconf['subject_type']['t'] = __('Topic');
-// $sysconf['subject_type']['g'] = __('Geographic');
-// $sysconf['subject_type']['n'] = __('Name');
-// $sysconf['subject_type']['tm'] = __('Temporal');
-// $sysconf['subject_type']['gr'] = __('Genre');
-// $sysconf['subject_type']['oc'] = __('Occupation');
-
-// /* AUTHORITY LEVEL */
-// $sysconf['authority_level'][1] = __('Primary Author');
-// $sysconf['authority_level'][2] = __('Additional Author');
-// $sysconf['authority_level'][3] = __('Editor');
-// $sysconf['authority_level'][4] = __('Translator');
-// $sysconf['authority_level'][5] = __('Director');
-// $sysconf['authority_level'][6] = __('Producer');
-// $sysconf['authority_level'][7] = __('Composer');
-// $sysconf['authority_level'][8] = __('Illustrator');
-// $sysconf['authority_level'][9] = __('Creator');
-// $sysconf['authority_level'][10] = __('Contributor');
-
+/* AUTHORITY LEVEL */
+$sysconf['authority_level'][1] = gettext('Primary Author');
+$sysconf['authority_level'][2] = gettext('Additional Author');
+$sysconf['authority_level'][3] = gettext('Editor');
+$sysconf['authority_level'][4] = gettext('Translator');
+$sysconf['authority_level'][5] = gettext('Director');
+$sysconf['authority_level'][6] = gettext('Producer');
+$sysconf['authority_level'][7] = gettext('Composer');
+$sysconf['authority_level'][8] = gettext('Illustrator');
+$sysconf['authority_level'][9] = gettext('Creator');
+$sysconf['authority_level'][10] = gettext('Contributor');
+// print_r($sysconf);exit;
+// 
 // template info config
-// if (!file_exists($sysconf['template']['dir'].'/'.$sysconf['template']['theme'].'/tinfo.inc.php')) {
-//     $sysconf['template']['base'] = 'php'; /* html OR php */
-// } else {
-//     require $sysconf['template']['dir'].'/'.$sysconf['template']['theme'].'/tinfo.inc.php';
-// }
-if (!isset($sysconf['template']['dir']) || !is_string($sysconf['template']['dir'])) {
-    echo "Error: \$sysconf['template']['dir'] is not set or is not a string";
-    exit;
-}
 
-if (!isset($sysconf['template']['theme']) || !is_string($sysconf['template']['theme'])) {
-    echo "Error: \$sysconf['template']['theme'] is not set or is not a string";
-    exit;
-}
-
-$sysconf['template']['css'] = $sysconf['template']['dir'].'/'.$sysconf['template']['theme'].'/style.css';
 
 #require $sysconf['template']['dir'].'/'.$sysconf['template']['theme'].'/tinfo.inc.php';
 // redirect to mobile template on mobile mode

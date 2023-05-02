@@ -18,6 +18,9 @@ require '../sysconfig.inc.php';
 echo "<pre>";
 print_r($ss);
 echo "</pre>";
+// echo "<pre>";
+// print_r($sysconf);
+// echo "</pre>";
 // exit;
 
 if($_REQUEST['NEW_ERP'] ==  1)
@@ -47,8 +50,9 @@ require SIMBIO_BASE_DIR . 'simbio_GUI/template_parser/simbio_template_parser.inc
 require LIB_DIR . 'module.inc.php';
 require SIMBIO_BASE_DIR . 'simbio_DB/simbio_dbop.inc.php';
 // echo $_REQUEST['DUSER_PWD'];
-if (isset($_REQUEST['Confirm']) && $_REQUEST['Confirm'] == "Confirm") { 
+if (isset($_REQUEST['Confirm']) && $_REQUEST['Confirm'] == "Confirm") {
 
+// echo "hello";
     if (!isset($_REQUEST['temp_id1'])) {
         echo '<script type="text/javascript">';
         echo 'alert(\'' . __('Please Select Any Item !') . '\');';
@@ -274,11 +278,13 @@ if (isset($_REQUEST['Confirm']) && $_REQUEST['Confirm'] == "Confirm") {
 
     }
 }
-
+// require_once '../sysconfig.inc.php';
 //added started by parth 22/9/2011
 $_priv_q = $dbs->query('SELECT ga.*,mdl.module_path FROM group_access AS ga
                         LEFT JOIN mst_module AS mdl ON ga.module_id=mdl.module_id WHERE ga.group_id=1');
+ // print_r($_priv_q);
 while ($_priv_d = $_priv_q->fetch_assoc()) {
+    // echo "hello";
     // init privileges
     // $_SESSION['priv'][$_priv_d['module_path']]['r'] = false;
     // $_SESSION['priv'][$_priv_d['module_path']]['w'] = false;
@@ -297,6 +303,7 @@ $_SESSION['biblioTopic'] = array();
 $_SESSION['biblioAttach'] = array();
 $_SESSION['biblioStandard'] = array();
 if (!defined('UCS_VERSION')) {
+
     // load holiday data from database
     $_holiday_dayname_q = $dbs->query('SELECT holiday_dayname FROM holiday WHERE holiday_date IS NULL');
     $_SESSION['holiday_dayname'] = array();
@@ -322,14 +329,17 @@ $dbs->query("UPDATE user SET last_login='" . date("Y-m-d H:i:s") . "',
 //added ended by parth 22/9/2011
 // https connection (if enabled)
 if ($sysconf['https_enable']) {
+// echo "hello";
+
     simbio_security::doCheckHttps($sysconf['https_port']);
 }
-
+// echo $sysconf['admin_template']['dir'] . '/' . $sysconf['admin_template']['theme'] . '/index_template.html';exit;
 // create the template object
-$template = new simbio_template_parser($sysconf['admin_template']['dir'] . '/' . $sysconf['admin_template']['theme'] . '/index_template.html');
-
+$template = new simbio_template_parser('admin_template/default/index_template.html');
 // page title
 $page_title = $sysconf['library_name'] . ' :: Library Automation System';
+
+
 // main menu
 $module = new module();
 $module->setModulesDir(MODULES_BASE_DIR);
@@ -631,7 +641,6 @@ if ($_POST['category_user'] == 'category_user' && $_POST['saveData'] == 'Update'
             echo "<pre>";
             print_r($parent_post);
     */
-
 }
 
 if ($current_module && $can_read) {

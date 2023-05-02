@@ -97,7 +97,7 @@ class module extends simbio {
 				//$menu_name = $_formated_module_name;
 
 				if (isset($_SESSION['priv'][$_module['path']]['r']) && $_SESSION['priv'][$_module['path']]['r'] && file_exists($this->modules_dir . $_mod_dir)) {
-					$_menu .= '<li onclick="showSubMenu(this);"><a class="waves-effect"' . ((isset($_GET['mod']) && $_GET['mod'] == $_module['path']) ? ' menuCurrent' : '') . '" title="' . $_module['desc'] . '" ><i class="mdi ' . $menu_icons[$_formated_module_name] . ' fa-fw" data-icon="v"></i> <span class="hide-menu">' . __($_formated_module_name) . '</span></a>';
+					$_menu .= '<li onclick="showSubMenu(this);"><a class="waves-effect"' . ((isset($_GET['mod']) && $_GET['mod'] == $_module['path']) ? ' menuCurrent' : '') . '" title="' . $_module['desc'] . '" ><i class="mdi ' . $menu_icons[$_formated_module_name] . ' fa-fw" data-icon="v"></i> <span class="hide-menu">' . gettext($_formated_module_name) . '</span></a>';
 					$menu = array();
 					if ($_formated_module_name != 'Home') {
 						$_submenu = '';
