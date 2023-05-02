@@ -278,6 +278,7 @@ if (isset($_REQUEST['Confirm']) && $_REQUEST['Confirm'] == "Confirm") {
 
     }
 }
+// echo "hello";
 // require_once '../sysconfig.inc.php';
 //added started by parth 22/9/2011
 $_priv_q = $dbs->query('SELECT ga.*,mdl.module_path FROM group_access AS ga
