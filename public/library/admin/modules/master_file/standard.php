@@ -17,7 +17,7 @@ $can_write = utility::havePrivilege('master_file', 'w');
 
 if (!$can_read) 
 {
-    die('<div class="errorBox">'.__('You don\'t have enough privileges to access this area!').'</div>');
+    die('<div class="errorBox">'.gettext('You don\'t have enough privileges to access this area!').'</div>');
 }
 
 /* RECORD OPERATION */
@@ -26,14 +26,14 @@ if (isset($_POST['saveData']) AND $can_read AND $can_write)
     $standardName = trim(strip_tags($_POST['standardName']));
     if (empty($standardName)) 
     {
-        utility::jsAlert(__('Standard Name can\'t be empty')); //mfc
+        utility::jsAlert(gettext('Standard Name can\'t be empty')); //mfc
         exit();
     }
     else
     {
         if (number_format($standardName)) 
         {
-            utility::jsAlert(__('Standard Name can\'t be Numeric!')); //mfc
+            utility::jsAlert(gettext('Standard Name can\'t be Numeric!')); //mfc
             exit();
         }
         
@@ -54,9 +54,9 @@ if (isset($_POST['saveData']) AND $can_read AND $can_write)
             // update the data
             $update = $sql_op->update('mst_standard', $data, 'standard_id='.$updateRecordID);
             if ($update) {
-                utility::jsAlert(__('Standard Data Successfully Updated'));
+                utility::jsAlert(gettext('Standard Data Successfully Updated'));
                 echo '<script type="text/javascript">parent.setContent(\'mainContent\', parent.getPreviousAJAXurl(), \'post\');</script>';
-            } else { utility::jsAlert(__('STANDARD Data FAILED to Updated. Please Contact System Administrator')."\nDEBUG : ".$sql_op->error); }
+            } else { utility::jsAlert(gettext('STANDARD Data FAILED to Updated. Please Contact System Administrator')."\nDEBUG : ".$sql_op->error); }
             exit();
         } 
        else
@@ -66,7 +66,7 @@ if (isset($_POST['saveData']) AND $can_read AND $can_write)
             $data_available = $dbs->query($sql);
             if ($data_available->num_rows>0) 
             {
-                utility::jsAlert(__('Same Standard Name is already Exists!'));
+                utility::jsAlert(gettext('Same Standard Name is already Exists!'));
                 exit();
             } 
            
@@ -76,9 +76,9 @@ if (isset($_POST['saveData']) AND $can_read AND $can_write)
             // insert the data
             $insert = $sql_op->insert('mst_standard', $data);
             if ($insert) {
-                utility::jsAlert(__('New Standard Data Successfully Saved'));
+                utility::jsAlert(gettext('New Standard Data Successfully Saved'));
                 echo '<script type="text/javascript">parent.setContent(\'mainContent\', \''.$_SERVER['PHP_SELF'].'\', \'post\');</script>';
-            } else { utility::jsAlert(__('Standard Data FAILED to Save. Please Contact System Administrator')."\nDEBUG : ".$sql_op->error); }
+            } else { utility::jsAlert(gettext('Standard Data FAILED to Save. Please Contact System Administrator')."\nDEBUG : ".$sql_op->error); }
             exit();
         }
     }
@@ -112,7 +112,7 @@ if (isset($_POST['saveData']) AND $can_read AND $can_write)
 			$author_name_set = $rownew['standard_name'];	
 		}
                 $error_num++;
-		 utility::jsAlert(__('You can not Delete standard :'.$author_name_set.'; because it is associate with the book.'));
+		 utility::jsAlert(gettext('You can not Delete standard :'.$author_name_set.'; because it is associate with the book.'));
 	}
 	else
 	{
@@ -123,10 +123,10 @@ if (isset($_POST['saveData']) AND $can_read AND $can_write)
     }
     // error alerting
     if ($error_num == 0) {
-        utility::jsAlert(__('All Data Successfully Deleted'));
+        utility::jsAlert(gettext('All Data Successfully Deleted'));
         echo '<script type="text/javascript">parent.setContent(\'mainContent\', \''.$_SERVER['PHP_SELF'].'?'.$_POST['lastQueryStr'].'\', \'post\');</script>';
     } else {
-        utility::jsAlert(__('Some or All Data NOT deleted successfully! Please contact system administrator'));
+        utility::jsAlert(gettext('Some or All Data NOT deleted successfully! Please contact system administrator'));
         echo '<script type="text/javascript">parent.setContent(\'mainContent\', \''.$_SERVER['PHP_SELF'].'?'.$_POST['lastQueryStr'].'\', \'post\');</script>';
     }
     exit();
@@ -169,22 +169,22 @@ echo $bradecum;
 	<td class="tab_menu_top">
                             <ul class="tabs"> 
 				<li>
-<a href="<?php echo MODULES_WEB_ROOT_DIR; ?>master_file/standard.php?action=detail" class="headerText2"><?php echo __('Add New Standard'); ?></a></li>
+<a href="<?php echo MODULES_WEB_ROOT_DIR; ?>master_file/standard.php?action=detail" class="headerText2"><?php echo gettext('Add New Standard'); ?></a></li>
 <li> 
-<a href="<?php echo MODULES_WEB_ROOT_DIR; ?>master_file/standard.php" class="headerText2"><?php echo __('Standard List'); ?></a> </li>
+<a href="<?php echo MODULES_WEB_ROOT_DIR; ?>master_file/standard.php" class="headerText2"><?php echo gettext('Standard List'); ?></a> </li>
 </ul>
 	</td>
 </tr>
 </table>
 <fieldset class="menuBox">
 <div class="menuBoxInner masterFileIcon">
-    <!--<?php echo strtoupper(__('Standard')); ?> - <a href="<?php echo MODULES_WEB_ROOT_DIR; ?>master_file/standard.php?action=detail" class="headerText2"><?php echo __('Add New Standard'); ?></a>
+    <!--<?php echo strtoupper(gettext('Standard')); ?> - <a href="<?php echo MODULES_WEB_ROOT_DIR; ?>master_file/standard.php?action=detail" class="headerText2"><?php echo __('Add New Standard'); ?></a>
     &nbsp; <a href="<?php echo MODULES_WEB_ROOT_DIR; ?>master_file/standard.php" class="headerText2"><?php echo __('Standard List'); ?></a>-->
     <p class="only_border">&nbsp;</p>
-    <form name="search" action="<?php echo MODULES_WEB_ROOT_DIR; ?>master_file/standard.php" id="search" method="get" style="display: inline;"><?php echo __('Search'); ?> :
+    <form name="search" action="<?php echo MODULES_WEB_ROOT_DIR; ?>master_file/standard.php" id="search" method="get" style="display: inline;"><?php echo gettext('Search'); ?> :
      <!--commnet by iresh on 25-1-2011  <input type="text" name="keywords" id="keywords" size="30" />-->
    <!-- added by iresh on 25-1-2011 --> <input type="text" name="keywords" id="keywords" width=140px/>
-    <input type="submit" id="doSearch" value="<?php echo __('Search'); ?>" class="button" />
+    <input type="submit" id="doSearch" value="<?php echo gettext('Search'); ?>" class="button" />
     </form>
 </div>
 </fieldset>
@@ -193,7 +193,7 @@ echo $bradecum;
 /* main content */
 if (isset($_POST['detail']) OR (isset($_GET['action']) AND $_GET['action'] == 'detail')) {
     if (!($can_read AND $can_write)) {
-        die('<div class="errorBox">'.__('You don\'t have enough privileges to access this area!').'</div>');
+        die('<div class="errorBox">'.gettext('You don\'t have enough privileges to access this area!').'</div>');
     }
     /* RECORD FORM */
     $itemID = (integer)isset($_POST['itemID'])?$_POST['itemID']:0;
@@ -202,7 +202,7 @@ if (isset($_POST['detail']) OR (isset($_GET['action']) AND $_GET['action'] == 'd
 
     // create new instance
     $form = new simbio_form_table_AJAX('mainForm', $_SERVER['PHP_SELF'].'?'.$_SERVER['QUERY_STRING'], 'post');
-    $form->submit_button_attr = 'name="saveData" value="'.__('Save').'" class="button"';
+    $form->submit_button_attr = 'name="saveData" value="'.gettext('Save').'" class="button"';
 
     // form table attributes
     $form->table_attr = 'align="center" id="dataList" cellpadding="5" cellspacing="0"';
@@ -217,17 +217,17 @@ if (isset($_POST['detail']) OR (isset($_GET['action']) AND $_GET['action'] == 'd
         // form record title
         $form->record_title = $rec_d['standard_name'];
         // submit button attribute
-        $form->submit_button_attr = 'name="saveData" value="'.__('Update').'" class="button"';
+        $form->submit_button_attr = 'name="saveData" value="'.gettext('Update').'" class="button"';
     }
 
     /* Form Element(s) */
     // publisher name
    //comment by iresh on 25-1-2011 $form->addTextField('text', 'publisherName', __('Publisher Name').'*', $rec_d['publisher_name'], 'style="width: 60%;"');
-   /*added by iresh on 25-1-2011*/ $form->addTextField('text', 'standardName', __('Standard Name').'*', $rec_d['standard_name'], 'style="width: 140px;"onkeyup="return checkspecialcharacterdynamic(this.name);"onblur="return charactercheck(this.name);"');
+   /*added by iresh on 25-1-2011*/ $form->addTextField('text', 'standardName', gettext('Standard Name').'*', $rec_d['standard_name'], 'style="width: 140px;"onkeyup="return checkspecialcharacterdynamic(this.name);"onblur="return charactercheck(this.name);"');
 
     // edit mode messagge
     if ($form->edit_mode) {
-        echo '<div class="infoBox">'.__('You are going to edit data').' : <b>'.$rec_d['standard_name'].'</b> <br />'.__('Last Update').$rec_d['last_update'] //mfc
+        echo '<div class="infoBox">'.gettext('You are going to edit data').' : <b>'.$rec_d['standard_name'].'</b> <br />'.gettext('Last Update').$rec_d['last_update'] //mfc
             .'</div>'."\n";
     }
     // print out the form object
@@ -241,13 +241,13 @@ if (isset($_POST['detail']) OR (isset($_GET['action']) AND $_GET['action'] == 'd
     $datagrid = new simbio_datagrid();
     if ($can_read AND $can_write) {
         $datagrid->setSQLColumn('s.standard_id',
-            's.standard_name AS \''.__('Standard Name').'\'',
-            'DATE_FORMAT(s.last_update,"%d-%m-%Y") AS \''.__('Last Update').'\'');
+            's.standard_name AS \''.gettext('Standard Name').'\'',
+            'DATE_FORMAT(s.last_update,"%d-%m-%Y") AS \''.gettext('Last Update').'\'');
     } else {
     	
        $datagrid->setSQLColumn('s.standard_id',
-            's.standard_name AS \''.__('Standard Name').'\'',
-            'DATE_FORMAT(s.last_update,"%d-%m-%Y") AS \''.__('Last Update').'\'');
+            's.standard_name AS \''.gettext('Standard Name').'\'',
+            'DATE_FORMAT(s.last_update,"%d-%m-%Y") AS \''.gettext('Last Update').'\'');
     }
     $datagrid->setSQLorder('standard_name ASC');
 
@@ -267,7 +267,7 @@ if (isset($_POST['detail']) OR (isset($_GET['action']) AND $_GET['action'] == 'd
     $datagrid_result = $datagrid->createDataGrid($dbs, $table_spec, 20, ($can_read AND $can_write));
     if (isset($_GET['keywords']) AND $_GET['keywords']) {
         echo '<table cellpadding="3" cellspacing="0" class="infoBox">';
-        $msg = str_replace('{result->num_rows}', $datagrid->num_rows, __('Found <strong>{result->num_rows}</strong> from your keywords')); //mfc
+        $msg = str_replace('{result->num_rows}', $datagrid->num_rows, gettext('Found <strong>{result->num_rows}</strong> from your keywords')); //mfc
         echo '<tr><th>'.$msg.' : "'.$_GET['keywords'].'"</th></tr>';
         echo '</table>';
     }

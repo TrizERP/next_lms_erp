@@ -21,12 +21,12 @@
 /* Membership module submenu items */
 $menu[] = array('Header2', 'Member Area');
 //$menu[] = array('Header', __('Membership'));
-$menu[] = array(__('Membership'), MODULES_WEB_ROOT_DIR.'membership/index.php', __('View Library Member List'));
+$menu[] = array(gettext('Membership'), MODULES_WEB_ROOT_DIR.'membership/index.php', gettext('View Library Member List'));
 //$menu[] = array(__('Add New Member'), MODULES_WEB_ROOT_DIR.'membership/index.php?action=detail', __('Add New Library Member Data'));
 //$menu[] = array(__('Member Type'), MODULES_WEB_ROOT_DIR.'membership/member_type.php', __('View and modify member type'));
 //$menu[] = array('Header', __('Tools'));
-$menu[] = array(__('Tools'), MODULES_WEB_ROOT_DIR.'membership/member_card_generator.php', __('Print Member Card'));
-$menu[] = array(__('Category Master'), MODULES_WEB_ROOT_DIR.'membership/category_master.php', __('Category Master'));
+$menu[] = array(gettext('Tools'), MODULES_WEB_ROOT_DIR.'membership/member_card_generator.php', gettext('Print Member Card'));
+$menu[] = array(gettext('Category Master'), MODULES_WEB_ROOT_DIR.'membership/category_master.php', gettext('Category Master'));
 //$menu[] = array(__('Import Data'), MODULES_WEB_ROOT_DIR.'membership/import.php', __('Import Members Data From CSV File'));
 //$menu[] = array(__('Export Data'), MODULES_WEB_ROOT_DIR.'membership/export.php', __('Export Members Data To CSV File'));
 ?>

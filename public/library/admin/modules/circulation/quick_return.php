@@ -21,11 +21,11 @@ $can_read = utility::havePrivilege('master_file', 'r');
 $can_write = utility::havePrivilege('master_file', 'w');
 
 if (!$can_read) {
-    die('<div class="errorBox">'.__('You don\'t have enough privileges to access this area!').'</div>');
+    die('<div class="errorBox">'.gettext('You don\'t have enough privileges to access this area!').'</div>');
 }
 
 // item status rules
-$rules_option[] = array(NO_LOAN_TRANSACTION, __('No Books'));
+$rules_option[] = array(NO_LOAN_TRANSACTION, gettext('No Books'));
 
 /* RECORD OPERATION */
 if (isset($_POST['saveData']) AND $can_read AND $can_write) 
@@ -67,10 +67,10 @@ else if (isset($_POST['itemID']) AND !empty($_POST['itemID']) AND isset($_POST['
 
     // error alerting
     if ($error_num == 0) {
-        utility::jsAlert(__('Book Return Successfully'));
+        utility::jsAlert(gettext('Book Return Successfully'));
         echo '<script type="text/javascript">parent.setContent(\'mainContent\', \''.$_SERVER['PHP_SELF'].'?'.$_POST['lastQueryStr'].'\', \'post\');</script>';
     } else {
-        utility::jsAlert(__('Some or All Data NOT deleted successfully! Please contact system administrator'));
+        utility::jsAlert(gettext('Some or All Data NOT deleted successfully! Please contact system administrator'));
         echo '<script type="text/javascript">parent.setContent(\'mainContent\', \''.$_SERVER['PHP_SELF'].'?'.$_POST['lastQueryStr'].'\', \'post\');</script>';
     }
     exit();
@@ -107,7 +107,7 @@ echo $bradecum;
       <ul class="tabs"> 
 
 <li> 
-<a href="<?php echo MODULES_WEB_ROOT_DIR; ?>circulation/quick_return.php" class="headerText2"><?php echo __('Quick Return'); ?></a> </li>
+<a href="<?php echo MODULES_WEB_ROOT_DIR; ?>circulation/quick_return.php" class="headerText2"><?php echo gettext('Quick Return'); ?></a> </li>
 </ul>
 	</td>
 </tr>
@@ -121,9 +121,9 @@ if (isset($_POST['detail']) OR (!isset($_GET['action']) AND $_GET['action'] != '
 <fieldset class="menuBox">
 <div class="menuBoxInner masterFileIcon">
     <p class="only_border">&nbsp;</p>
-    <form name="search" action="<?php echo MODULES_WEB_ROOT_DIR; ?>circulation/quick_return.php" id="search" method="get" style="display: inline;"><?php echo __('Item Code'); ?> :
+    <form name="search" action="<?php echo MODULES_WEB_ROOT_DIR; ?>circulation/quick_return.php" id="search" method="get" style="display: inline;"><?php echo gettext('Item Code'); ?> :
     <input type="text" name="keywords_for_quick_return" size="30" required />
-    <input type="submit" id="doSearch" value="<?php echo __('Search'); ?>" class="button" />
+    <input type="submit" id="doSearch" value="<?php echo gettext('Search'); ?>" class="button" />
     </form>
 </div>
 </fieldset>
@@ -154,29 +154,29 @@ if(isset($_REQUEST['keywords_for_quick_return']))
     $datagrid = new simbio_datagrid();
     if ($can_read AND $can_write) {
         $datagrid->setSQLColumn(
-        'm.enrollment_no AS \''.__('Gr.No.').'\'',
-        'm.enrollment_no AS \''.__('Gr.No.').'\'',
-        'concat_ws(" ",m.first_name,m.middle_name,m.last_name) AS \''.__('Member Name').'\'',
-		'concat_ws ("-",CS.name,SS.name) AS \''.__('Std').'\'',
-		'l.item_code AS \''.__('Item Code').'\'',
-		'b.title AS \''.__('Book Title').'\'',
-        'DATE_FORMAT(l.loan_date,"%d-%m-%Y") AS \''.__('Loan Date').'\'',//DATE_FORMAT(l.loan_date,"%d-%m-%Y")
-        'DATE_FORMAT(l.due_date,"%d-%m-%Y") AS \''.__('Due Date').'\'',                 
+        'm.enrollment_no AS \''.gettext('Gr.No.').'\'',
+        'm.enrollment_no AS \''.gettext('Gr.No.').'\'',
+        'concat_ws(" ",m.first_name,m.middle_name,m.last_name) AS \''.gettext('Member Name').'\'',
+		'concat_ws ("-",CS.name,SS.name) AS \''.gettext('Std').'\'',
+		'l.item_code AS \''.gettext('Item Code').'\'',
+		'b.title AS \''.gettext('Book Title').'\'',
+        'DATE_FORMAT(l.loan_date,"%d-%m-%Y") AS \''.gettext('Loan Date').'\'',//DATE_FORMAT(l.loan_date,"%d-%m-%Y")
+        'DATE_FORMAT(l.due_date,"%d-%m-%Y") AS \''.gettext('Due Date').'\'',                 
         //'l.return_date is not null AS \''.__('Loan Status').'\'',
-        'DATE_FORMAT(l.return_date,"%d-%m-%Y") AS \''.__('Return Date').'\''
+        'DATE_FORMAT(l.return_date,"%d-%m-%Y") AS \''.gettext('Return Date').'\''
             );
     } else {
         $datagrid->setSQLColumn(
-        'm.enrollment_no AS \''.__('Gr.No.').'\'',
-        'm.enrollment_no AS \''.__('Gr.No.').'\'',
-        'concat_ws(" ",m.first_name,m.middle_name,m.last_name) AS \''.__('Member Name').'\'',    
-		'concat_ws ("-",CS.name,SS.name) AS \''.__('Std').'\'',
-		'l.item_code AS \''.__('Item Code').'\'',
-		'b.title AS \''.__('Book Title').'\'',
-        'DATE_FORMAT(l.loan_date,"%d-%m-%Y") AS \''.__('Loan Date').'\'',//DATE_FORMAT(l.loan_date,"%d-%m-%Y")
-        'DATE_FORMAT(l.due_date,"%d-%m-%Y") AS \''.__('Due Date').'\'',                 
+        'm.enrollment_no AS \''.gettext('Gr.No.').'\'',
+        'm.enrollment_no AS \''.gettext('Gr.No.').'\'',
+        'concat_ws(" ",m.first_name,m.middle_name,m.last_name) AS \''.gettext('Member Name').'\'',    
+		'concat_ws ("-",CS.name,SS.name) AS \''.gettext('Std').'\'',
+		'l.item_code AS \''.gettext('Item Code').'\'',
+		'b.title AS \''.gettext('Book Title').'\'',
+        'DATE_FORMAT(l.loan_date,"%d-%m-%Y") AS \''.gettext('Loan Date').'\'',//DATE_FORMAT(l.loan_date,"%d-%m-%Y")
+        'DATE_FORMAT(l.due_date,"%d-%m-%Y") AS \''.gettext('Due Date').'\'',                 
         //'l.return_date is not null AS \''.__('Loan Status').'\'',
-        'DATE_FORMAT(l.return_date,"%d-%m-%Y") AS \''.__('Return Date').'\''
+        'DATE_FORMAT(l.return_date,"%d-%m-%Y") AS \''.gettext('Return Date').'\''
             );
     }
     $datagrid->setSQLorder('l.loan_date DESC');
@@ -208,7 +208,7 @@ if(isset($_REQUEST['keywords_for_quick_return']))
 	// echo '<pre>';
 	// print_r($datagrid_result);
     if (isset($_GET['keywords']) AND $_GET['keywords']) {
-        $msg = str_replace('{result->num_rows}', $datagrid->num_rows, __('Found <strong>{result->num_rows}</strong> from your keywords')); //mfc
+        $msg = str_replace('{result->num_rows}', $datagrid->num_rows, gettext('Found <strong>{result->num_rows}</strong> from your keywords')); //mfc
         echo '<div class="infoBox">'.$msg.' : "'.$_GET['keywords'].'"</div>';
     }
 

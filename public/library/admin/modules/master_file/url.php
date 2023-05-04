@@ -17,7 +17,7 @@ $can_write = utility::havePrivilege('master_file', 'w');
   $label_cache = array();
 
 if (!$can_read) {
-    die('<div class="errorBox">'.__('You don\'t have enough privileges to view this section').'</div>');
+    die('<div class="errorBox">'.gettext('You don\'t have enough privileges to view this section').'</div>');
 }
 function check_url($url)
 {

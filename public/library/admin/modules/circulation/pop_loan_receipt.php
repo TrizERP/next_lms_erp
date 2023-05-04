@@ -73,7 +73,7 @@ table td {
     <div id="receiptInfo">
         <!-- LOAN -->
         <?php if (isset($_SESSION['receipt_record']['loan']) || isset($_SESSION['receipt_record']['extend'])) { ?>
-        <div class="receiptHeader">Type of Transaction: <?php echo __('Loan'); ?>/<?php echo __('Extended'); ?> (<?php echo mt_rand(000000000, 999999999); ?>)</div>
+        <div class="receiptHeader">Type of Transaction: <?php echo gettext('Loan'); ?>/<?php echo gettext('Extended'); ?> (<?php echo mt_rand(000000000, 999999999); ?>)</div>
         <hr size="1" noshade="noshade" />
         <table width="100%">
         <tr><td>Code</td><td>Title</td><td>Loan</td><td>Due</td></tr>
@@ -128,7 +128,7 @@ table td {
 
         <!-- RETURN -->
         <?php if (isset($_SESSION['receipt_record']['return']) AND (count($_SESSION['receipt_record']['return']) != 0)) { ?>
-        <div class="receiptHeader">Type of Transaction: <?php echo __('Return'); ?> (<?php echo mt_rand(000000000, 999999999); ?>)</div>
+        <div class="receiptHeader">Type of Transaction: <?php echo gettext('Return'); ?> (<?php echo mt_rand(000000000, 999999999); ?>)</div>
         <hr size="1" noshade="noshade" />
         <table width="100%">
         <tr><td>Code</td><td>Title</td><td>Return</td><td>Ovd.</td></tr>
@@ -166,5 +166,5 @@ table td {
 /* main content end */
 $content = ob_get_clean();
 // include the page template
-require SENAYAN_BASE_DIR.'/admin/'.$sysconf['admin_template']['dir'].'/notemplate_page_tpl.php';
+require SENAYAN_BASE_DIR.'/admin/admin_template/notemplate_page_tpl.php';
 ?>

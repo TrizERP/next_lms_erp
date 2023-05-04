@@ -1,4 +1,7 @@
 <?php
+// ini_set('display_errors', 1);
+// ini_set('display_startup_errors', 1);
+// error_reporting(E_ALL);
 include('db.php');
 require_once('PHPExcel.php');
 session_start();
@@ -122,8 +125,9 @@ if (isset($_REQUEST['submit'])) {
                             $relationQuery .= "   AND (SUB_INSTITUTE_ID = '" . $_SESSION['SUB_INSTITUTE_ID'] . "' OR SUB_INSTITUTE_ID IS NULL OR SUB_INSTITUTE_ID = 0) ";
                         }
                         $getRelationValue = mysqli_fetch_assoc(mysqli_query($cn, $relationQuery));
+                        // print_r($getRelationValue);die();
                         $keyId = strtoupper($relationTable[$valueFields['field']]['INSERT_FIELD']);
-                        if (count($getRelationValue) > 0) {
+                        if (isset($getRelationValue) && count($getRelationValue) > 0) {
                             $finalValue = $getRelationValue[$keyId];
                             $valueQuery .= "'" . $finalValue . "',";
                         } else {

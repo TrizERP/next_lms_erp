@@ -27,10 +27,10 @@ if (isset($_SESSION['memberID']) AND !empty($_SESSION['memberID'])) {
     // create datagrid
     $datagrid = new simbio_datagrid();
     $datagrid->setSQLColumn(
-        'l.item_code AS \''.__('Item Code').'\'',
-        'b.title AS \''.__('Title').'\'',
-        'DATE_FORMAT(l.loan_date,"%d-%m-%Y") AS \''.__('Issue Date').'\'',
-        'IF(return_date IS NULL, \'<i>'.__('Not Returned Yet').'</i>\', DATE_FORMAT(return_date,"%d-%m-%Y")) AS \''.__('Return Date').'\'');
+        'l.item_code AS \''.gettext('Item Code').'\'',
+        'b.title AS \''.gettext('Title').'\'',
+        'DATE_FORMAT(l.loan_date,"%d-%m-%Y") AS \''.gettext('Issue Date').'\'',
+        'IF(return_date IS NULL, \'<i>'.gettext('Not Returned Yet').'</i>\', DATE_FORMAT(return_date,"%d-%m-%Y")) AS \''.gettext('Return Date').'\'');
     $datagrid->setSQLorder("l.loan_date DESC");
 
     $criteria = 'l.member_id=\''.$dbs->escape_string($memberID).'\' ';
@@ -53,7 +53,7 @@ if (isset($_SESSION['memberID']) AND !empty($_SESSION['memberID'])) {
     // put the result into variables
     $datagrid_result = $datagrid->createDataGrid($dbs, $table_spec, 20, false);
     if (isset($_GET['keywords']) AND $_GET['keywords']) {
-        $msg = str_replace('{result->num_rows}', $datagrid->num_rows, __('Found <strong>{result->num_rows}</strong> from your keywords')); //mfc
+        $msg = str_replace('{result->num_rows}', $datagrid->num_rows, gettext('Found <strong>{result->num_rows}</strong> from your keywords')); //mfc
         echo '<div class="infoBox">'.$msg.' : "'.$_GET['keywords'].'"</div>';
     }
 
@@ -65,5 +65,5 @@ $content = ob_get_clean();
 //echo '<div><a style="color:#990000;" target="_blank" href="export_loan_historydata_excel.php?memberid='.$memberID.'" title="Click To View File"><strong>[Export To Excel]</strong></a></div>';
 // include the page template
 //echo SENAYAN_BASE_DIR.'/admin/'.$sysconf['admin_template']['dir'].'/notemplate_page_tpl.php';die;
-require SENAYAN_BASE_DIR.'/admin/'.$sysconf['admin_template']['dir'].'/notemplate_page_tpl.php';
+require SENAYAN_BASE_DIR.'/admin/admin_template/notemplate_page_tpl.php';
 ?>

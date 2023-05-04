@@ -31,7 +31,7 @@ $can_read = utility::havePrivilege('reporting', 'r');
 $can_write = utility::havePrivilege('reporting', 'w');
 
 if (!$can_read) {
-    die('<div class="errorBox">'.__('You don\'t have enough privileges to access this area!').'</div>');
+    die('<div class="errorBox">'.gettext('You don\'t have enough privileges to access this area!').'</div>');
 }
 
 require SIMBIO_BASE_DIR.'simbio_GUI/template_parser/simbio_template_parser.inc.php';
@@ -81,11 +81,11 @@ echo $bradecum;
 </table>
     <!-- filter -->
     <fieldset style="margin-bottom: 3px;">
-    <legend style="font-weight: bold"><?php echo strtoupper(__('Visitor List')); ?> - <?php echo __('Report Filter'); ?></legend>
+    <legend style="font-weight: bold"><?php echo strtoupper(gettext('Visitor List')); ?> - <?php echo gettext('Report Filter'); ?></legend>
     <form method="get" action="<?php echo $_SERVER['PHP_SELF']; ?>" target="reportView">
     <div id="filterForm">
         <div class="divRow">
-            <div class="divRowLabel"><?php echo __('Membership Type'); ?></div>
+            <div class="divRowLabel"><?php echo gettext('Membership Type'); ?></div>
             <div class="divRowContent">
             <?php
             /*$mtype_q = $dbs->query('SELECT member_type_id, member_type_name FROM mst_member_type');
@@ -96,7 +96,7 @@ echo $bradecum;
                 $mtype_options[] = array($mtype_d[0], $mtype_d[1]);
             }*/
              $select_member_type=$dbs->query('select user_id,user_name from category_user');
-	      $member_type_options[] = array('0', strtoupper(__('N/A')));
+	      $member_type_options[] = array('0', strtoupper(gettext('N/A')));
      		   while ($member_type_d = $select_member_type->fetch_row()) {
           		  $member_type_options[] = array($member_type_d[0], $member_type_d[1]);
         			}
@@ -106,7 +106,7 @@ echo $bradecum;
             </div>
         </div>
         <div class="divRow">
-            <div class="divRowLabel"><?php echo __('Visitor ID').'/'.__('Visitor Name'); ?></div>
+            <div class="divRowLabel"><?php echo gettext('Visitor ID').'/'.gettext('Visitor Name'); ?></div>
             <div class="divRowContent">
             <?php 
              //comment by iresh on 25-1-2011 echo simbio_form_element::textField('text', 'id_name', '', 'style="width: 50%"'); 
@@ -115,7 +115,7 @@ echo $bradecum;
             </div>
         </div>
         <div class="divRow">
-            <div class="divRowLabel"><?php echo __('Institution'); ?></div>
+            <div class="divRowLabel"><?php echo gettext('Institution'); ?></div>
             <div class="divRowContent">
             <?php
               //comment by iresh on 25-1-2011  echo simbio_form_element::textField('text', 'institution', '', 'style="width: 50%"');
@@ -124,25 +124,25 @@ echo $bradecum;
             </div>
         </div>
         <div class="divRow">
-            <div class="divRowLabel"><?php echo __('Visit Date From'); ?></div>
+            <div class="divRowLabel"><?php echo gettext('Visit Date From'); ?></div>
             <div class="divRowContent">
             <?php echo simbio_form_element::dateField('startDate', '2000-01-01'); ?>
             </div>
         </div>
         <div class="divRow">
-            <div class="divRowLabel"><?php echo __('Visit Date Until'); ?></div>
+            <div class="divRowLabel"><?php echo gettext('Visit Date Until'); ?></div>
             <div class="divRowContent">
             <?php echo simbio_form_element::dateField('untilDate', date('Y-m-d')); ?>
             </div>
         </div>
         <div class="divRow">
-            <div class="divRowLabel"><?php echo __('Record each page'); ?></div>
-            <div class="divRowContent"><input type="text" name="recsEachPage" size="3" maxlength="3" value="<?php echo $num_recs_show; ?>" /> <?php echo __('Set between 20 and 200'); ?></div>
+            <div class="divRowLabel"><?php echo gettext('Record each page'); ?></div>
+            <div class="divRowContent"><input type="text" name="recsEachPage" size="3" maxlength="3" value="<?php echo $num_recs_show; ?>" /> <?php echo gettext('Set between 20 and 200'); ?></div>
         </div>
     </div>
     <div style="padding-top: 10px; clear: both;">
-    <input type="submit" name="applyFilter" value="<?php echo __('Search'); ?>" />
-    <input type="button" name="moreFilter" value="<?php echo __('Advance Search'); ?>" onclick="showHideTableRows('filterForm', 1, this, '<?php echo __('Show More Search Options'); ?>', '<?php echo __('Hide Search Options'); ?>')" />
+    <input type="submit" name="applyFilter" value="<?php echo gettext('Search'); ?>"/>
+    <input type="button" name="moreFilter" value="<?php echo gettext('Advance Search'); ?>" onclick="showHideTableRows('filterForm', 1, this, '<?php echo gettext('Show More Search Options'); ?>', '<?php echo gettext('Hide Search Options'); ?>')" />
     <input type="hidden" name="reportView" value="true" />
     </div>
     </form>
@@ -169,11 +169,11 @@ echo $bradecum;
         'IF(mt.member_type_name IS NOT NULL, mt.member_type_name, \'NON-MEMBER\') AS \''.__('Membership Type').'\'',
         'vc.institution AS \''.__('Institution').'\'',
         'vc.checkin_date AS \''.__('Visit Date').'\'');*/
-    $reportgrid->setSQLColumn('IF(vc.member_id IS NOT NULL, vc.member_id, \'NON-MEMBER\')  AS \''.__('Member ID').'\'',
-        'vc.member_name AS \''.__('Visitor Name').'\'',
-        'IF(mt.user_name IS NOT NULL, mt.user_name, \'NON-MEMBER\') AS \''.__('Membership Type').'\'',
-        'vc.institution AS \''.__('Institution').'\'',
-        'vc.checkin_date AS \''.__('Visit Date').'\'');
+    $reportgrid->setSQLColumn('IF(vc.member_id IS NOT NULL, vc.member_id, \'NON-MEMBER\')  AS \''.gettext('Member ID').'\'',
+        'vc.member_name AS \''.gettext('Visitor Name').'\'',
+        'IF(mt.user_name IS NOT NULL, mt.user_name, \'NON-MEMBER\') AS \''.gettext('Membership Type').'\'',
+        'vc.institution AS \''.gettext('Institution').'\'',
+        'vc.checkin_date AS \''.gettext('Visit Date').'\'');
     $reportgrid->setSQLorder('vc.member_id ASC');
 
     // is there any search
@@ -215,6 +215,6 @@ echo $bradecum;
 
     $content = ob_get_clean();
     // include the page template
-    require SENAYAN_BASE_DIR.'/admin/'.$sysconf['admin_template']['dir'].'/printed_page_tpl.php';
+    require SENAYAN_BASE_DIR.'/admin/admin_template/printed_page_tpl.php';
 }
 ?>

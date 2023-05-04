@@ -33,7 +33,7 @@ $can_read = utility::havePrivilege('bibliography', 'r');
 $can_write = utility::havePrivilege('bibliography', 'w');
 
 if (!$can_read) {
-    die('<div class="errorBox">'.__('You are not authorized to view this section').'</div>');
+    die('<div class="errorBox">'.gettext('You are not authorized to view this section').'</div>');
 }
 if ( !function_exists('sys_get_temp_dir') )
 {
@@ -61,12 +61,12 @@ if (isset($_POST['doImport']))
     // check for form validity
     if (!$_FILES['importFile']['name']) 
     {
-        utility::jsAlert(__('Please select the file to import!'));
+        utility::jsAlert(gettext('Please select the file to import!'));
         exit();
     }
     else if (empty($_POST['fieldSep']) OR empty($_POST['fieldEnc'])) 
     {
-        utility::jsAlert(__('Required fields (*)  must be filled correctly!'));
+        utility::jsAlert(gettext('Required fields (*)  must be filled correctly!'));
         exit();
     }
     else 
@@ -93,7 +93,7 @@ if (isset($_POST['doImport']))
         $upload_status = $upload->doUpload('importFile');
         if ($upload_status != UPLOAD_SUCCESS) 
         {
-            utility::jsAlert(__('Upload failed! File type not allowed or the size is more than').($sysconf['max_upload']/1024).' MB'); //mfc
+            utility::jsAlert(gettext('Upload failed! File type not allowed or the size is more than').($sysconf['max_upload']/1024).' MB'); //mfc
             exit();
         }
                             
@@ -213,7 +213,7 @@ if (isset($_POST['doImport']))
 	<td valign=top>
 	<?php
 	$bradecum = '';       
-        $basedir = basename(dirname(__FILE__));
+        $basedir = basename(dirname(gettextFILEgettext));
         $bradecum = "<a href=javascript:void(0); onclick=javascript:new_set_home(); >Home</a>-><a class='' href=javascript:void(0); onclick=javascript:new_set('".$basedir."');>"; 
 	$query = "select module_name from mst_module where module_path = '".$basedir."'";
 	$set_query = $dbs->query($query);
@@ -242,15 +242,15 @@ echo $bradecum;
 	<td class="tab_menu_top">
                             <ul class="tabs"> 
 				<li>
-<a href="<?php echo MODULES_WEB_ROOT_DIR; ?>bibliography/import.php" class="headerText2"><?php echo __('Import Data'); ?></a> </li><li> <a href="<?php echo  MODULES_WEB_ROOT_DIR; ?>bibliography/item_import.php" class="headerText2"><?php echo __('Import Item'); ?></a> </li></ul>
+<a href="<?php echo MODULES_WEB_ROOT_DIR; ?>bibliography/import.php" class="headerText2"><?php echo gettext('Import Data'); ?></a> </li><li> <a href="<?php echo  MODULES_WEB_ROOT_DIR; ?>bibliography/item_import.php" class="headerText2"><?php echo gettext('Import Item'); ?></a> </li></ul>
 	</td>
 </tr>
 </table>
 <fieldset class="menuBox">
 <div class="menuBoxInner importIcon">
-    <?php echo __('ITEM IMPORT TOOL'); ?>
+    <?php echo gettext('ITEM IMPORT TOOL'); ?>
     <p class="only_border">&nbsp;</p>
-    <?php echo __('Import for item data from CSV file'); ?>
+    <?php echo gettext('Import for item data from CSV file'); ?>
     <a href="javascript:void(0)" onclick="openHTMLpop('<?php echo MODULES_WEB_ROOT_DIR.'bibliography/item.xls';?>', 500, 500, '<?php echo MODULES_WEB_ROOT_DIR.'bibliography/item.xls';?>')">Download Formate</a>  
 </div>
 </fieldset>
@@ -258,7 +258,7 @@ echo $bradecum;
 <?php
 // create new instance
 $form = new simbio_form_table_AJAX('mainForm', $_SERVER['PHP_SELF'], 'post');
-$form->submit_button_attr = 'name="doImport" value="'.__('Import Now').'" class="button"';
+$form->submit_button_attr = 'name="doImport" value="'.gettext('Import Now').'" class="button"';
 // form table attributes
 $form->table_attr = 'align="center" id="dataList" cellpadding="5" cellspacing="0"';
 $form->table_header_attr = 'class="alterCell" style="font-weight: bold;"';
@@ -268,15 +268,15 @@ $form->table_content_attr = 'class="alterCell2"';
 // csv files
 $str_input = simbio_form_element::textField('file', 'importFile');
 $str_input .= ' Maximum '.$sysconf['max_upload'].' KB';
-$form->addAnything(__('File To Import'), $str_input);
+$form->addAnything(gettext('File To Import'), $str_input);
 // field separator
-$form->addTextField('text', 'fieldSep', __('Field Separator').'*', ''.htmlentities(',').'', 'style="width: 10%;" maxlength="3"');
+$form->addTextField('text', 'fieldSep', gettext('Field Separator').'*', ''.htmlentities(',').'', 'style="width: 10%;" maxlength="3"');
 //  field enclosed
-$form->addTextField('text', 'fieldEnc', __('Field Enclosed With').'*', ''.htmlentities('"').'', 'style="width: 10%;"');
+$form->addTextField('text', 'fieldEnc', gettext('Field Enclosed With').'*', ''.htmlentities('"').'', 'style="width: 10%;"');
 // number of records to import
-$form->addTextField('text', 'recordNum', __('Number of Records To Export (0 for all records)'), '0', 'style="width: 10%;"');
+$form->addTextField('text', 'recordNum', gettext('Number of Records To Export (0 for all records)'), '0', 'style="width: 10%;"');
 // records offset
-$form->addTextField('text', 'recordOffset', __('Start From Record'), '1', 'style="width: 10%;"');
+$form->addTextField('text', 'recordOffset', gettext('Start From Record'), '1', 'style="width: 10%;"');
 // output the form
 echo $form->printOut();
 ?>

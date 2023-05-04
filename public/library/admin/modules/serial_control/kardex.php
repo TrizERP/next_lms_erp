@@ -35,7 +35,7 @@ $can_read = utility::havePrivilege('serial_control', 'r');
 $can_write = utility::havePrivilege('serial_control', 'w');
 
 if (!$can_read) {
-    die('<div class="errorBox">'.__('You are not authorized to view this section').'</div>');
+    die('<div class="errorBox">'.gettext('You are not authorized to view this section').'</div>');
 }
 
 // page title
@@ -55,13 +55,13 @@ $serial = new serial($dbs, $serialID);
 if (isset($_POST['saveKardexes'])) {
     // save kardexes
     $serial->saveKardexes();
-    utility::jsAlert(__('Kardex data updated!'));
+    utility::jsAlert(gettext('Kardex data updated!'));
 } else if (isset($_POST['remove'])) {
     // remove kardex
     $removeID = (integer)$_POST['remove'];
     $removed = $serial->deleteKardex($removeID);
     if ($removed) {
-        utility::jsAlert(__('Kardex data deleted!'));
+        utility::jsAlert(gettext('Kardex data deleted!'));
     }
 }
 // view kardexes list
@@ -71,5 +71,5 @@ $content = ob_get_clean();
 // js include
 $js = '<script type="text/javascript" src="'.JS_WEB_ROOT_DIR.'calendar.js"></script>';
 // include the page template
-require SENAYAN_BASE_DIR.'/admin/'.$sysconf['admin_template']['dir'].'/notemplate_page_tpl.php';
+require SENAYAN_BASE_DIR.'/admin/admin_template/notemplate_page_tpl.php';
 ?>

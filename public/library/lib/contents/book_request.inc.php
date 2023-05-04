@@ -59,9 +59,9 @@ require LIB_DIR.'member_logon.inc.php';
 error_reporting(0);
 
 echo "<ul class=tabs>";
-echo '<li><a href="#" onclick="getReserveBook();"><b>'.__('Reserve Book').'</b></a></li>';
-echo '<li><a href="#" onclick="getCurrentLoan();"><b>'.__('Your Current Loan').'</b>'."\n".'</a></li>';
-echo '<li><a href="#" onclick="getBookRequest();"><b>'.__('My Book Request').'</b>'."\n".'</a></li>';
+echo '<li><a href="#" onclick="getReserveBook();"><b>'.gettext('Reserve Book').'</b></a></li>';
+echo '<li><a href="#" onclick="getCurrentLoan();"><b>'.gettext('Your Current Loan').'</b>'."\n".'</a></li>';
+echo '<li><a href="#" onclick="getBookRequest();"><b>'.gettext('My Book Request').'</b>'."\n".'</a></li>';
 echo '</ul>';
 //echo "<pre>";
 //print_r($_REQUEST);
@@ -171,8 +171,8 @@ echo '</ul>';
     </tr>
 </table>
 <input type="hidden" name="cal" id="cal" value="" />
-     <?php echo __('Material Type'); ?>                                     
-     <?php echo __('Material Sub Type'); ?> :
+     <?php echo gettext('Material Type'); ?>                                     
+     <?php echo gettext('Material Sub Type'); ?> :
      <?php echo '<table><tr><td valign=top>';
         
     $mst_sub_q = $dbs->query('SELECT material_sub_name FROM mst_material_sub_type LIMIT 50');
@@ -191,13 +191,13 @@ echo '</ul>';
 	    ?>	 
 
       
- <?php echo __('Collection Type'); ?> :       
+ <?php echo gettext('Collection Type'); ?> :       
  <?php echo $colltype_list; ?>    
- <?php echo __('Location'); ?> :
+ <?php echo gettext('Location'); ?> :
  <?php echo $location_list; ?>
        
      <br/> 
-            <input type="submit" name="search" value="<?php echo __('Search'); ?>" />
+            <input type="submit" name="search" value="<?php echo gettext('Search'); ?>" />
 	<input type="hidden" name="advancesearch" value="set" /> 		
             
             </form>
@@ -325,10 +325,10 @@ function showLoanList($num_recs_show = 20)
 
         // create datagrid
         $_loan_list = new simbio_datagrid();
-        $_loan_list->setSQLColumn('l.item_code AS \''.__('Item Code').'\'',
-            'b.title AS \''.__('Title').'\'',
-            'l.loan_date AS \''.__('Loan Date').'\'',
-            'l.due_date AS \''.__('Due Date').'\'');
+        $_loan_list->setSQLColumn('l.item_code AS \''.gettext('Item Code').'\'',
+            'b.title AS \''.gettext('Title').'\'',
+            'l.loan_date AS \''.gettext('Loan Date').'\'',
+            'l.due_date AS \''.gettext('Due Date').'\'');
         $_loan_list->setSQLorder('l.loan_date DESC');
         $_criteria = sprintf('m.enrollment_no=\'%s\'', $_SESSION['mid']);
         $_loan_list->setSQLCriteria($_criteria);
@@ -341,7 +341,7 @@ function showLoanList($num_recs_show = 20)
         $_loan_list->using_AJAX = false;
         // return the result
         $_result = $_loan_list->createDataGrid($dbs, $_table_spec, $num_recs_show);
-        $_result = '<div class="memberLoanListInfo">'.$_loan_list->num_rows.' '.__('item(s) currently on loan').'</div>'."\n".$_result;
+        $_result = '<div class="memberLoanListInfo">'.$_loan_list->num_rows.' '.gettext('item(s) currently on loan').'</div>'."\n".$_result;
         return $_result;
        
 }

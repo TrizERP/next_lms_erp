@@ -21,7 +21,7 @@ $can_read = utility::havePrivilege('master_file', 'r');
 $can_write = utility::havePrivilege('master_file', 'w');
 
 if (!$can_read) {
-    die('<div class="errorBox">'.__('You don\'t have enough privileges to view this section').'</div>');
+    die('<div class="errorBox">'.gettext('You don\'t have enough privileges to view this section').'</div>');
 }
 
 /* RECORD OPERATION */
@@ -30,7 +30,7 @@ if (isset($_POST['saveData']) AND $can_read AND $can_write) {
     $materialsubname=trim(strip_tags($_POST['materialsubname']));
     // check form validity
     if (!empty($material_resource_name)) {
-       utility::jsAlert(__('Material Resource Name can\'t be empty'));
+       utility::jsAlert(gettext('Material Resource Name can\'t be empty'));
        exit();
     } else {
         $data['gmd_id'] = $dbs->escape_string($materialsubtype);
@@ -46,7 +46,7 @@ if (isset($_POST['saveData']) AND $can_read AND $can_write) {
             // remove input date
 if($_POST['gmd_id']=="--Select--")
 {
-utility::jsAlert(__('Please Select Material Type'));
+utility::jsAlert(gettext('Please Select Material Type'));
 }
 else
 {
@@ -73,15 +73,15 @@ $qry2 = 'SELECT * from mst_material_sub_type where material_sub_id ='.$row1['mat
 		}
 if($checkflag1==1)
 {
-utility::jsAlert(__('Duplicate Record Can not inserted'));
+utility::jsAlert(gettext('Duplicate Record Can not inserted'));
 }
 else
 {
             $update = $sql_op->update('mst_material_sub_type', $data, 'material_sub_id='.$updateRecordID);
             if ($update) {
-                utility::jsAlert(__('Material Sub Type Data Successfully Updated'));
+                utility::jsAlert(gettext('Material Sub Type Data Successfully Updated'));
                 echo '<script type="text/javascript">parent.setContent(\'mainContent\', parent.getPreviousAJAXurl(), \'post\');</script>';
-            } else { utility::jsAlert(__('Material Resource Data FAILED to Updated. Please Contact System Administrator')."\nDEBUG : ".$sql_op->error); }
+            } else { utility::jsAlert(gettext('Material Resource Data FAILED to Updated. Please Contact System Administrator')."\nDEBUG : ".$sql_op->error); }
 }
 }
             exit();
@@ -92,7 +92,7 @@ else
 utility::jsAlert($data['materialsubtype']);
 if($_POST['materialsubtype']=="--Select--")
 {
-utility::jsAlert(__('Please Select Material Type'));
+utility::jsAlert(gettext('Please Select Material Type'));
 }
 else
 {
@@ -108,15 +108,15 @@ $rec_f = $dbs->query('SELECT * from mst_material_sub_type where material_sub_nam
 		}
 	if($checkflag==1)
 	{
-	utility::jsAlert(__('Duplicate Record Can not inserted'));
+	utility::jsAlert(gettext('Duplicate Record Can not inserted'));
 	}
 	else
 	{
 //added end by Parth 16/7/2011    
         if ($sql_op->insert('mst_material_sub_type', $data)) {
-                utility::jsAlert(__('New Material Resource Data Successfully Saved'));
+                utility::jsAlert(gettext('New Material Resource Data Successfully Saved'));
                 echo '<script type="text/javascript">parent.setContent(\'mainContent\', \''.$_SERVER['PHP_SELF'].'\', \'post\');</script>';
-            } else { utility::jsAlert(__('Material Resource Data FAILED to Save. Please Contact System Administrator')."\nDEBUG : ".$sql_op->error); }
+            } else { utility::jsAlert(gettext('Material Resource Data FAILED to Save. Please Contact System Administrator')."\nDEBUG : ".$sql_op->error); }
 //added start by Parth 19/7/2011
 	}
 //added ended by Parth 19/7/2011
@@ -160,7 +160,7 @@ $checkflag = 0;
 		{
 			$gmd_name_set = $rownew['material_sub_name'];	
 		}
-		 utility::jsAlert(__('You can not Delete Material Type '.$gmd_name_set));
+		 utility::jsAlert(gettext('You can not Delete Material Type '.$gmd_name_set));
 	}
 	else
 	{
@@ -175,10 +175,10 @@ $checkflag = 0;
 
     // error alerting
     if ($error_num == 0) {
-        utility::jsAlert(__('All Data Successfully Deleted'));
+        utility::jsAlert(gettext('All Data Successfully Deleted'));
         echo '<script type="text/javascript">parent.setContent(\'mainContent\', \''.$_SERVER['PHP_SELF'].'?'.$_POST['lastQueryStr'].'\', \'post\');</script>';
     } else {
-        utility::jsAlert(__('Some or All Data NOT deleted successfully!\nPlease contact system administrator'));
+        utility::jsAlert(gettext('Some or All Data NOT deleted successfully!\nPlease contact system administrator'));
         echo '<script type="text/javascript">parent.setContent(\'mainContent\', \''.$_SERVER['PHP_SELF'].'?'.$_POST['lastQueryStr'].'\', \'post\');</script>';
     }
     exit();
@@ -225,7 +225,7 @@ echo $bradecum;
 <li> 
 <!--<a href="<?php echo MODULES_WEB_ROOT_DIR; ?>master_file/index.php" class="headerText2"><?php //echo __('Resource Type List'); ?></a> </li>-->
 <li>
-<a href="<?php echo MODULES_WEB_ROOT_DIR; ?>master_file/material_sub_type.php" class="headerText2"><?php echo __('Resource Material Sub Type List'); ?></a></li>
+<a href="<?php echo MODULES_WEB_ROOT_DIR; ?>master_file/material_sub_type.php" class="headerText2"><?php echo gettext('Resource Material Sub Type List'); ?></a></li>
 </ul>
 	</td>
 </tr>
@@ -238,13 +238,13 @@ if (isset($_POST['detail']) OR (!isset($_GET['action']) AND $_GET['action'] != '
 
 <fieldset class="menuBox">
 <div class="menuBoxInner masterFileIcon">
-    <?php echo strtoupper(__('Resource Material Sub Type')); ?> - <a href="<?php echo MODULES_WEB_ROOT_DIR; ?>master_file/material_sub_type.php?action=detail" class="headerText3"><?php echo __('Add Resource Material Sub Type'); ?></a>
+    <?php echo strtoupper(gettext('Resource Material Sub Type')); ?> - <a href="<?php echo MODULES_WEB_ROOT_DIR; ?>master_file/material_sub_type.php?action=detail" class="headerText3"><?php echo gettext('Add Resource Material Sub Type'); ?></a>
     &nbsp;<!-- <a href="<?php // echo MODULES_WEB_ROOT_DIR; ?>master_file/material_sub_type.php" class="headerText3"><?php //echo __('Resource Material Sub Type List'); ?></a>-->
     <p class="only_border">&nbsp;</p>
-    <form name="search" action="<?php echo MODULES_WEB_ROOT_DIR; ?>master_file/material_sub_type.php" id="search" method="get" style="display: inline;"><?php echo __('Search'); ?> :
+    <form name="search" action="<?php echo MODULES_WEB_ROOT_DIR; ?>master_file/material_sub_type.php" id="search" method="get" style="display: inline;"><?php echo gettext('Search'); ?> :
      <!--commnet by iresh on 25-1-2011  <input type="text" name="keywords" id="keywords" size="30" />-->
    <!-- added by iresh on 25-1-2011 --> <input type="text" name="keywords" id="keywords" width=140px/>
-    <input type="submit" id="doSearch" value="<?php echo __('Search'); ?>" class="button" />
+    <input type="submit" id="doSearch" value="<?php echo gettext('Search'); ?>" class="button" />
     </form>
 </div>
 </fieldset>
@@ -258,7 +258,7 @@ if (isset($_POST['detail']) OR (!isset($_GET['action']) AND $_GET['action'] != '
 /* main content */
 if (isset($_POST['detail']) OR (isset($_GET['action']) AND $_GET['action'] == 'detail')) {
     if (!($can_read AND $can_write)) {
-        die('<div class="errorBox">'.__('You don\'t have enough privileges to view this section').'</div>');
+        die('<div class="errorBox">'.gettext('You don\'t have enough privileges to view this section').'</div>');
     }
     /* RECORD FORM */
     $itemID = (integer)isset($_POST['itemID'])?$_POST['itemID']:0;
@@ -269,7 +269,7 @@ if (isset($_POST['detail']) OR (isset($_GET['action']) AND $_GET['action'] == 'd
 
     // create new instance
     $form = new simbio_form_table_AJAX('mainForm', $_SERVER['PHP_SELF'].'?'.$_SERVER['QUERY_STRING'], 'post');
-    $form->submit_button_attr = 'name="saveData" value="'.__('Save').'" class="button"';
+    $form->submit_button_attr = 'name="saveData" value="'.gettext('Save').'" class="button"';
 
     // form table attributes
     $form->table_attr = 'align="center" id="dataList" cellpadding="5" cellspacing="0"';
@@ -284,7 +284,7 @@ if (isset($_POST['detail']) OR (isset($_GET['action']) AND $_GET['action'] == 'd
         // form record title
         $form->record_title = $rec_d['material_sub_name'];
         // submit button attribute
-        $form->submit_button_attr = 'name="saveData" value="'.__('Update').'" class="button"';
+        $form->submit_button_attr = 'name="saveData" value="'.gettext('Update').'" class="button"';
     }
 
     /* Form Element(s) */
@@ -295,16 +295,16 @@ while($row = $sql_sub_material->fetch_row())
 	$sql_sub_material_resource[]=array($row[0],$row[1]);
 }  
 
-$form->addSelectList('materialsubtype', __('Material Type').'*',$sql_sub_material_resource, $rec_d['gmd_id'], 'style="width: 140px;" maxlength="30"');
+$form->addSelectList('materialsubtype', gettext('Material Type').'*',$sql_sub_material_resource, $rec_d['gmd_id'], 'style="width: 140px;" maxlength="30"');
 
     // gmd code
     //comment by iresh on 25-1-2011 $form->addTextField('text', 'gmdCode', __('GMD Code').'*', $rec_d['gmd_code'], 'style="width: 20%;" maxlength="3"');
     /*added by iresh on 25-1-2011 $form->addTextField('text', 'gmdCode', __('Material Type Code').'*', $rec_d['gmd_code'], 'style="width: 140px;" maxlength="30"');*/
-    $form->addTextField('text', 'materialsubname', __('Material Sub Type').'*', $rec_d['material_sub_name'], 'style="width: 140px;" maxlength="30" onkeyup="return checkspecialcharacterdynamic(this.name);"onblur="return charactercheck(this.name);" ');
+    $form->addTextField('text', 'materialsubname', gettext('Material Sub Type').'*', $rec_d['material_sub_name'], 'style="width: 140px;" maxlength="30" onkeyup="return checkspecialcharacterdynamic(this.name);"onblur="return charactercheck(this.name);" ');
     
     // edit mode messagge
     if ($form->edit_mode) {
-        echo '<div class="infoBox">'.__('You are going to edit Material Resource data').' : <b>'.$rec_d['material_sub_name'].'</b>  <br />'.__('Last Update').$rec_d['last_update'].'</div>'; //mfc
+        echo '<div class="infoBox">'.gettext('You are going to edit Material Resource data').' : <b>'.$rec_d['material_sub_name'].'</b>  <br />'.gettext('Last Update').$rec_d['last_update'].'</div>'; //mfc
     }
     // print out the form object
     echo $form->printOut();
@@ -317,14 +317,14 @@ $form->addSelectList('materialsubtype', __('Material Type').'*',$sql_sub_materia
     $datagrid = new simbio_datagrid();
     if ($can_read AND $can_write) {
         $datagrid->setSQLColumn('mst.material_sub_id',
-            'g.gmd_name AS \''.__('Material Type').'\'',
-	     'mst.material_sub_name AS \''.__('Material Sub Type').'\'',
-            'DATE_FORMAT(mst.last_update,"%d-%m-%Y") AS \''.__('Last Update').'\'');
+            'g.gmd_name AS \''.gettext('Material Type').'\'',
+	     'mst.material_sub_name AS \''.gettext('Material Sub Type').'\'',
+            'DATE_FORMAT(mst.last_update,"%d-%m-%Y") AS \''.gettext('Last Update').'\'');
     } else {
         $datagrid->setSQLColumn('mst.material_sub_id',
-	    'g.gmd_name AS \''.__('Material Type').'\'',
-            'mst.material_sub_name AS \''.__('Material Sub Type').'\'',
-            'DATE_FORMAT(mst.last_update,"%d-%m-%Y") AS \''.__('Last Update').'\'');
+	    'g.gmd_name AS \''.gettext('Material Type').'\'',
+            'mst.material_sub_name AS \''.gettext('Material Sub Type').'\'',
+            'DATE_FORMAT(mst.last_update,"%d-%m-%Y") AS \''.gettext('Last Update').'\'');
     }
     $datagrid->setSQLorder('material_sub_name ASC');
 
@@ -343,7 +343,7 @@ $form->addSelectList('materialsubtype', __('Material Type').'*',$sql_sub_materia
     // put the result into variables
     $datagrid_result = $datagrid->createDataGrid($dbs, $table_spec, 20, ($can_read AND $can_write));
     if (isset($_GET['keywords']) AND $_GET['keywords']) {
-        $msg = str_replace('{result->num_rows}', $datagrid->num_rows, __('Found <strong>{result->num_rows}</strong> from your keywords')); //mfc
+        $msg = str_replace('{result->num_rows}', $datagrid->num_rows, gettext('Found <strong>{result->num_rows}</strong> from your keywords')); //mfc
         echo '<div class="infoBox">'.$msg.' : "'.$_GET['keywords'].'"</div>';
     }
 

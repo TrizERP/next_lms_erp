@@ -122,7 +122,7 @@ $loan_list_query = $dbs->query("SELECT L.temp_id, b.title, i.item_code, L.reques
 }
 
 //echo '<tr><td><input  name="button" value="Confirm" type="button" onclick="showHint(this.value)"></td></tr>';	
-echo '<tr><td><input type="button" value="'.__('Confirm').'" onclick="ccc(\'f1\', \''.__('Are you sure want to confirm?').'\')" /><input type="hidden" name="Confirm" value="true" /></td></tr>';	
+echo '<tr><td><input type="button" value="'.gettext('Confirm').'" onclick="ccc(\'f1\', \''.gettext('Are you sure want to confirm?').'\')" /><input type="hidden" name="Confirm" value="true" /></td></tr>';	
 
 echo "</table>";
 echo"</form>";
@@ -133,5 +133,5 @@ echo"</form>";
 // get the buffered content
 $content = ob_get_clean();
 // include the page template
-require SENAYAN_BASE_DIR.'/admin/'.$sysconf['admin_template']['dir'].'/notemplate_page_tpl.php';
+require SENAYAN_BASE_DIR.'/admin/admin_template/notemplate_page_tpl.php';
 ?>

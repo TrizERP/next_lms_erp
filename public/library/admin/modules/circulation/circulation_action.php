@@ -52,7 +52,7 @@ if (isset($_POST['finish']))
         // write log
         utility::writeLogs($dbs, 'tblstudent', $memberID, 'circulation', 'ERROR : '.$_SESSION['realname'].' FAILED finish circulation transaction with member ('.$memberID.')');
         echo '<script type="text/javascript">';
-        echo 'alert(\''.__('ERROR! Issue data can\'t be saved to database').'\');';
+        echo 'alert(\''.gettext('ERROR! Issue data can\'t be saved to database').'\');';
         echo '</script>';
     } else {
 
@@ -61,7 +61,7 @@ if (isset($_POST['finish']))
         // send message
         echo '<script type="text/javascript">';
         if ($sysconf['transaction_finished_notification']) {
-            echo 'alert(\''.__('Transaction finished').'\');';
+            echo 'alert(\''.gettext('Transaction finished').'\');';
 	    
         }
 	
@@ -92,7 +92,7 @@ if((isset($_POST['submit'])=='Return Selected Data'))
     if (empty($_POST['loanID']))
     {       
        echo '<script type="text/javascript">';       
-       echo "\n".'alert(\''.__('Please Select item code!').'\');'."\n";		    
+       echo "\n".'alert(\''.gettext('Please Select item code!').'\');'."\n";		    
        echo 'location.href = \'loan_list.php\';';      
        echo '</script>';
      exit;  
@@ -138,7 +138,7 @@ if((isset($_POST['submit'])=='Return Selected Data'))
                         }
                         else
                         {
-                            echo "\n".'alert(\''.__('Issue Item With '.$loan_reserve_data.' has been Returned On '.date('d-m-Y').' Dated ').'\');';
+                            echo "\n".'alert(\''.gettext('Issue Item With '.$loan_reserve_data.' has been Returned On '.date('d-m-Y').' Dated ').'\');';
                             echo 'location.href = \'loan_list.php\';'; 
                           
                          }
@@ -146,7 +146,7 @@ if((isset($_POST['submit'])=='Return Selected Data'))
                         echo '<script type="text/javascript">';
                         if ($circulation->loan_have_overdue) 
                         {
-                            echo "\n".'alert(\''.__('Overdue fines inserted to fines database').'\');'."\n";
+                            echo "\n".'alert(\''.gettext('Overdue fines inserted to fines database').'\');'."\n";
                         }
 
                         echo '</script>';
@@ -184,7 +184,7 @@ else {
     if (empty($_POST['loanID']))
     {       
        echo '<script type="text/javascript">';       
-       echo "\n".'alert(\''.__('Please Select item code!').'\');'."\n";		    
+       echo "\n".'alert(\''.gettext('Please Select item code!').'\');'."\n";		    
        echo 'location.href = \'loan_list.php\';';      
        echo '</script>';
      exit;  
@@ -226,7 +226,7 @@ else {
                 {   
                     echo 'ReborrowLimitOver';
                     echo '<script type="text/javascript">';
-		    echo 'alert(\''.__('Your Re-Issue Limit Is Over').'\');';
+		    echo 'alert(\''.gettext('Your Re-Issue Limit Is Over').'\');';
 		    echo 'location.href = \'loan_list.php\';';
 		    echo '</script>';
                                         
@@ -237,10 +237,10 @@ else {
                      // write log
 		    utility::writeLogs($dbs, 'tblstudent', $_SESSION['memberID'], 'circulation', $_SESSION['realname'].' extend issue for item '.$loan_d[0].' for member ('.$_SESSION['memberID'].')');
 		    echo '<script type="text/javascript">';
-		    echo 'alert(\''.__('Issue Extended').'\');';
+		    echo 'alert(\''.gettext('Issue Extended').'\');';
 		    if ($circulation->loan_have_overdue) 
                     {
-		        echo "\n".'alert(\''.__('Overdue fines inserted to fines database').'\');'."\n";
+		        echo "\n".'alert(\''.gettext('Overdue fines inserted to fines database').'\');'."\n";
 		    }
 		    echo 'location.href = \'loan_list.php\';';
 		    echo '</script>';
@@ -291,7 +291,7 @@ if (isset($_POST['tempLoanID']))
 		if(in_array($bib3,$explode1))
 		{
 			    echo '<script type="text/javascript">';
-			    echo 'alert(\''.__('You have already Request for this book Please confirm it From There!').'\');';				   
+			    echo 'alert(\''.gettext('You have already Request for this book Please confirm it From There!').'\');';				   
 			    echo '</script>';
 			    die();
 		}
@@ -302,7 +302,7 @@ if (isset($_POST['tempLoanID']))
                 if ($time_of_other_request1->num_rows>0)
                 {
                             echo '<script type="text/javascript">';
-			    echo 'alert(\''.__('This Item is issued oR Reserved By Other Please User Other Item Code!').'\');';				   
+			    echo 'alert(\''.gettext('This Item is issued oR Reserved By Other Please User Other Item Code!').'\');';				   
 			    echo '</script>';
 			    die();
                 }
@@ -397,7 +397,7 @@ if (isset($_POST['tempLoanID']))
 						if(in_array($bib3,$explode1))
 						{
 						    echo '<script type="text/javascript">';
-						    echo 'alert(\''.__('You Cannot Issue Same Copy Of Books').'\');';
+						    echo 'alert(\''.gettext('You Cannot Issue Same Copy Of Books').'\');';
 						   echo '</script>';
 						    die();
 						} //-- End If
@@ -425,7 +425,7 @@ if (isset($_POST['tempLoanID']))
                                 echo '<form method="post" name="overrideForm" action="'.MODULES_WEB_ROOT_DIR.'circulation/circulation_action.php">';
                                 echo '<input type="hidden" name="overrideID" value="'.$_POST['tempLoanID'].'" /></form>';
                                 echo '<script type="text/javascript">';
-                                echo 'var confOverride = confirm(\''.__('WARNING! This Item is reserved by You Or another member').'\' + "\n" + \''.__('Do You Want To Overide This?').'\');';
+                                echo 'var confOverride = confirm(\''.gettext('WARNING! This Item is reserved by You Or another member').'\' + "\n" + \''.__('Do You Want To Overide This?').'\');';
                                 echo 'if (confOverride) { ';
                                 echo 'document.overrideForm.submit();';
                                 echo '} else { self.location.href = \'loan.php\';}';
@@ -437,7 +437,7 @@ if (isset($_POST['tempLoanID']))
                             else if ($add == ITEM_NOT_FOUND) 
                             {
                                 echo '<script type="text/javascript">';
-                                echo 'alert(\''.__('This Item is not registered in database').'\');';
+                                echo 'alert(\''.gettext('This Item is not registered in database').'\');';
                                 echo 'location.href = \'loan.php\';';
                                 echo '</script>';
                                 exit();
@@ -445,7 +445,7 @@ if (isset($_POST['tempLoanID']))
                             else if ($add == ITEM_UNAVAILABLE) 
                             {
                                 echo '<script type="text/javascript">';
-                                echo 'alert(\''.__('This Item is currently not available').'\');';
+                                echo 'alert(\''.gettext('This Item is currently not available').'\');';
                                 echo 'location.href = \'loan.php\';';
                                 echo '</script>';
                                 exit();
@@ -453,7 +453,7 @@ if (isset($_POST['tempLoanID']))
                             else if ($add == LOAN_NOT_PERMITTED) 
                             {
                                 echo '<script type="text/javascript">';
-                                echo 'alert(\''.__('Issue NOT PERMITTED! Membership already EXPIRED! TEST').'\');';
+                                echo 'alert(\''.gettext('Issue NOT PERMITTED! Membership already EXPIRED! TEST').'\');';
                                 echo 'location.href = \'loan.php\';';
                                 echo '</script>';
                                 exit();
@@ -461,7 +461,7 @@ if (isset($_POST['tempLoanID']))
                             else if ($add == ITEM_LOAN_FORBID) 
                             {
                                 echo '<script type="text/javascript">';
-                                echo 'alert(\''.__('The Item cannot be taken for loan!').'\');';
+                                echo 'alert(\''.gettext('The Item cannot be taken for loan!').'\');';
                                 echo 'location.href = \'loan.php\';';
                                 echo '</script>';
                                 exit();
@@ -549,7 +549,7 @@ if (isset($_POST['tempLoanID']))
                                                         if ($insert)
                                                         {
                                                               echo '<script type="text/javascript">';
-                                                              echo 'alert(\''.__('Loan Data Has Been Issued!').'\');';
+                                                              echo 'alert(\''.gettext('Loan Data Has Been Issued!').'\');';
                                                               echo 'location.href = \'loan.php\';';
                                                               echo '</script>'; 
                                                               exit();
@@ -714,7 +714,7 @@ if (isset($_POST['tempLoanID']))
                                          if(in_array($bib3,$explode1))
                                          {
                                              echo '<script type="text/javascript">';
-                                             echo 'alert(\''.__('You Cannot Issue Same Copy Of Books').'\');';
+                                             echo 'alert(\''.gettext('You Cannot Issue Same Copy Of Books').'\');';
                                              echo '</script>';
                                              die();
                                          }
@@ -739,7 +739,7 @@ if (isset($_POST['tempLoanID']))
                                                 echo '<form method="post" name="overrideForm" action="'.MODULES_WEB_ROOT_DIR.'circulation/circulation_action.php">';
                                                 echo '<input type="hidden" name="overrideID" value="'.$_POST['tempLoanID'].'" /></form>';
                                                 echo '<script type="text/javascript">';
-                                                echo 'var confOverride = confirm(\''.__('WARNING! This Item is reserved by You Or another member').'\' + "\n" + \''.__('Do You Want To Overide This?').'\');';
+                                                echo 'var confOverride = confirm(\''.gettext('WARNING! This Item is reserved by You Or another member').'\' + "\n" + \''.gettext('Do You Want To Overide This?').'\');';
                                                 echo 'if (confOverride) { ';
                                                 echo 'document.overrideForm.submit();';
                                                 echo '} else { self.location.href = \'loan.php\';}';
@@ -752,7 +752,7 @@ if (isset($_POST['tempLoanID']))
                                             else if ($add == ITEM_NOT_FOUND) 
                                             {
                                                 echo '<script type="text/javascript">';
-                                                echo 'alert(\''.__('This Item is not registered in database').'\');';
+                                                echo 'alert(\''.gettext('This Item is not registered in database').'\');';
                                                 echo 'location.href = \'loan.php\';';
                                                 echo '</script>';
                                                 exit();
@@ -760,7 +760,7 @@ if (isset($_POST['tempLoanID']))
                                             else if ($add == ITEM_UNAVAILABLE) 
                                             {
                                                 echo '<script type="text/javascript">';
-                                                echo 'alert(\''.__('This Item is currently not available').'\');';
+                                                echo 'alert(\''.gettext('This Item is currently not available').'\');';
                                                 echo 'location.href = \'loan.php\';';
                                                 echo '</script>';
                                                 exit();
@@ -768,7 +768,7 @@ if (isset($_POST['tempLoanID']))
                                             else if ($add == LOAN_NOT_PERMITTED) 
                                             {
                                                 echo '<script type="text/javascript">';
-                                                echo 'alert(\''.__('Issue NOT PERMITTED! Membership already EXPIRED!').'\');';
+                                                echo 'alert(\''.gettext('Issue NOT PERMITTED! Membership already EXPIRED!').'\');';
                                                 echo 'location.href = \'loan.php\';';
                                                 echo '</script>';
                                                 exit();
@@ -776,7 +776,7 @@ if (isset($_POST['tempLoanID']))
                                             else if ($add == LOAN_NOT_PERMITTED_PENDING) 
                                             {
                                                 echo '<script type="text/javascript">';
-                                                echo 'alert(\''.__('Loan NOT PERMITTED! Membership under PENDING State!').'\');';
+                                                echo 'alert(\''.gettext('Loan NOT PERMITTED! Membership under PENDING State!').'\');';
                                                 echo 'location.href = \'loan.php\';';
                                                 echo '</script>';
                                                 exit();
@@ -784,7 +784,7 @@ if (isset($_POST['tempLoanID']))
                                             else if ($add == ITEM_LOAN_FORBID) 
                                             {
                                                 echo '<script type="text/javascript">';
-                                                echo 'alert(\''.__('The Item cannot be taken for loan!').'\');';
+                                                echo 'alert(\''.gettext('The Item cannot be taken for loan!').'\');';
                                                 echo 'location.href = \'loan.php\';';
                                                 echo '</script>';
                                                 exit();
@@ -988,7 +988,7 @@ if (isset($_POST['tempLoanID']))
 			{
                             
 					    echo '<script type="text/javascript">';
-					    echo 'alert(\''.__('You Cannot Issue Book').'\');';
+					    echo 'alert(\''.gettext('You Cannot Issue Book').'\');';
 					   
 				            echo '</script>';
 					   // die();
@@ -1028,7 +1028,7 @@ if (isset($_GET['removeID']))
     // remove item from loan session
     $circulation->removeLoanSession($_GET['removeID']);
     echo '<script type="text/javascript">';
-    $msg = str_replace('{removeID}', $_GET['removeID'], __('Item {removeID} removed from session')); //mfc
+    $msg = str_replace('{removeID}', $_GET['removeID'], gettext('Item {removeID} removed from session')); //mfc
     echo 'alert(\''.$msg.'\');';
     echo 'location.href = \'loan.php\';';
     echo '</script>';
@@ -1043,7 +1043,7 @@ if (isset($_POST['quickReturnID']) )
     if (empty($_POST['quickReturnID']) ) 
     {       
            echo '<script type="text/javascript">';       
-           echo "\n".'alert(\''.__('Please Enter item code!').'\');'."\n";		    
+           echo "\n".'alert(\''.gettext('Please Enter item code!').'\');'."\n";		    
            echo 'location.href = \'index.php?mod=circulation\';';
            echo '</script>';
            exit; 
@@ -1069,7 +1069,7 @@ if (isset($_POST['quickReturnID']) )
     if ($loan_info_q->num_rows < 1) 
     {
         $i++;
-        echo '<div class="errorBox">'.__('This is item already returned or not exists in loan database').'</div>';
+        echo '<div class="errorBox">'.gettext('This is item already returned or not exists in loan database').'</div>';
     } 
     else
     {
@@ -1082,7 +1082,7 @@ if (isset($_POST['quickReturnID']) )
         
         if ($overdue)
         {
-            $msg = str_replace('{overdueDays}', $overdue['days'],__('OVERDUED for {overdueDays} days(s) with fines value of')); //mfc
+            $msg = str_replace('{overdueDays}', $overdue['days'],gettext('OVERDUED for {overdueDays} days(s) with fines value of')); //mfc
             $loan_d['title'] .= '<div style="color: red; font-weight: bold;">'.$msg.$overdue['value'].'</div>';
         }
         
@@ -1113,10 +1113,10 @@ if (isset($_POST['quickReturnID']) )
         $table->table_attr = 'class="border" style="width: 100%; margin-bottom: 5px;" cellpadding="5" cellspacing="0"';
         // append data to table row
         $table->appendTableRow(array('Item '.$_POST['quickReturnID'].'  '.('Successfully returned on').'  '.date('d-m-Y',strtotime($return_date)))); //mfc
-        $table->appendTableRow(array(__('Title'), $loan_d['title']));
-        $table->appendTableRow(array(__('Member Name'),$loan_d['first_name'], __('Member ID'), $loan_d['enrollment_no']));
-        $table->appendTableRow(array(__('Issue Date'),date('d-m-Y',strtotime( $loan_d['loan_date'])), __('Due Date'),date('d-m-Y',strtotime($loan_d['due_date']))));
-        // set the cell attributes
+        $table->appendTableRow(array(gettext('Title'), $loan_d['title']));
+        $table->appendTableRow(array(gettext('Member Name'),$loan_d['first_name'], gettext('Member ID'), $loan_d['enrollment_no']));
+        $table->appendTableRow(array(gettext('Issue Date'),date('d-m-Y',strtotime( $loan_d['loan_date'])), gettext('Due Date'),date('d-m-Y',strtotime($loan_d['due_date']))));
+        // set the cell gettext
         $table->setCellAttr(1, null, 'class="dataListHeader" style="color: #FFFFFF; font-weight: bold;" colspan="4"');
         $table->setCellAttr(2, 0, 'class="alterCell"');
         $table->setCellAttr(2, 1, 'class="alterCell2" colspan="3"');
@@ -1137,7 +1137,7 @@ if (isset($_POST['quickReturnID']) )
     if($i==0)
     { 
             echo '<script type="text/javascript">';       
-           echo "\n".'alert(\''.__('Item has been Return '.$loan_d['item_code']).'\');'."\n";		               
+           echo "\n".'alert(\''.gettext('Item has been Return '.$loan_d['item_code']).'\');'."\n";		               
            echo '</script>';           
     }
            
@@ -1156,7 +1156,7 @@ if (isset($_POST['reserveItemID']))
     $item_id = trim($_POST['reserveItemID']);
     if (!$item_id) {
         echo '<script type="text/javascript">';
-        echo 'alert(\''.__('NO DATA Selected to reserve!').'\');';
+        echo 'alert(\''.gettext('NO DATA Selected to reserve!').'\');';
         echo 'location.href = \'reserve_list.php\';';
         echo '</script>';
         die();
@@ -1169,7 +1169,7 @@ if (isset($_POST['reserveItemID']))
     $current_reserve_d = $current_reserve_q->fetch_row();
     if ($current_reserve_d[0] >= $reserve_limit_d[0]) {
         echo '<script type="text/javascript">';
-        echo 'alert(\''.__('Can not add more reservation. Maximum limit reached').'\');';
+        echo 'alert(\''.gettext('Can not add more reservation. Maximum limit reached').'\');';
         echo 'location.href = \'reserve_list.php\';';
         echo '</script>';
         die();
@@ -1239,7 +1239,7 @@ if (in_array($res_d,$current_reserve_val))
         if ($arr_rules) {
             if (in_array(NO_LOAN_TRANSACTION, $arr_rules)) {
                 echo '<script type="text/javascript">';
-                echo 'alert(\''.__('Can\'t reserve this Item. Issue Forbidden!').'\');';
+                echo 'alert(\''.gettext('Can\'t reserve this Item. Issue Forbidden!').'\');';
                 echo 'location.href = \'reserve_list.php\';';
                 echo '</script>';
                 die();
@@ -1257,12 +1257,12 @@ if (in_array($res_d,$current_reserve_val))
         $reserve_date = date('Y-m-d H:i:s');
         $dbs->query('INSERT INTO reserve(member_id, biblio_id, item_code, reserve_date) VALUES (\''.$_SESSION['memberID'].'\', \''.$biblio_d[0].'\', \''.$item_id.'\', \''.$reserve_date.'\')');
         echo '<script type="text/javascript">';
-        echo 'alert(\''.__('Reservation added').'\');';
+        echo 'alert(\''.gettext('Reservation added').'\');';
         echo 'location.href = \'reserve_list.php\';';
         echo '</script>';
     } else {
         echo '<script type="text/javascript">';
-        echo 'alert(\''.__('Item for this title is already available or already on hold by this member!').'\');';
+        echo 'alert(\''.gettext('Item for this title is already available or already on hold by this member!').'\');';
         echo 'location.href = \'reserve_list.php\';';
         echo '</script>';
     }
@@ -1284,7 +1284,7 @@ if (isset($_POST['reserveID']) AND !empty($_POST['reserveID']))
     // write log
     utility::writeLogs($dbs, 'tblstudent', $_SESSION['memberID'], 'circulation', $_SESSION['realname'].' remove reservation for item '.$reserve_d[0].' for member ('.$_SESSION['memberID'].')');
     echo '<script type="text/javascript">';
-    echo 'alert(\''.__('Reservation removed').'\');';
+    echo 'alert(\''.gettext('Reservation removed').'\');';
     echo 'location.href = \'reserve_list.php\';';
     echo '</script>';
 exit();
@@ -1330,7 +1330,7 @@ if(isset($_POST['memberID']) OR isset($_SESSION['memberID1']))
     if(!$member->valid())
     {        
             echo '<script type="text/javascript">';
-            echo 'alert(\''.__('Please Enter valid enrollment no!').'\');';
+            echo 'alert(\''.gettext('Please Enter valid enrollment no!').'\');';
             echo 'location.href = \'index.php?mod=circulation\';';
             echo '</script>';
             exit();
@@ -1357,13 +1357,13 @@ if(isset($_POST['memberID']) OR isset($_SESSION['memberID1']))
         echo '<table width="100%" class="border" style="margin-bottom: 5px;" cellpadding="5" cellspacing="0">'."\n";
         echo '<tr>'."\n";
         echo '<td class="dataListHeader" colspan="5">';        
-        echo '<form id="finishForm" method="post" target="blindSubmit" action="'.MODULES_WEB_ROOT_DIR.'circulation/circulation_action.php" style="display: inline;"><input type="button" value="'.__('Finish Transaction').'" onclick="confSubmit(\'finishForm\', \''.__('Are you sure want to finish current transaction?').'\')" /><input type="hidden" name="finish" value="true" /></form>';
+        echo '<form id="finishForm" method="post" target="blindSubmit" action="'.MODULES_WEB_ROOT_DIR.'circulation/circulation_action.php" style="display: inline;"><input type="button" value="'.gettext('Finish Transaction').'" onclick="confSubmit(\'finishForm\', \''.gettext('Are you sure want to finish current transaction?').'\')" /><input type="hidden" name="finish" value="true" /></form>';
 
         echo '</td>';
         echo '</tr>'."\n";
         echo '<tr>'."\n";
-        echo '<td class="alterCell" width="15%"><strong>'.__('Member Name').'</strong></td><td class="alterCell2" width="30%">'.$member->member_name.'</td>';
-        echo '<td class="alterCell" width="15%"><strong>'.__('GR No/Staff ID').'</strong></td><td class="alterCell2" width="30%">'.$member->member_id.'</td>';        
+        echo '<td class="alterCell" width="15%"><strong>'.gettext('Member Name').'</strong></td><td class="alterCell2" width="30%">'.$member->member_name.'</td>';
+        echo '<td class="alterCell" width="15%"><strong>'.gettext('GR No/Staff ID').'</strong></td><td class="alterCell2" width="30%">'.$member->member_id.'</td>';        
 /*        {
             //  if (file_exists(IMAGES_BASE_DIR.'persons/'.$member->member_image)) 
             {
@@ -1390,8 +1390,8 @@ if(isset($_POST['memberID']) OR isset($_SESSION['memberID1']))
         }   
         echo '</tr>'."\n";
         echo '<tr>'."\n";
-        echo '<td class="alterCell" width="15%"><strong>'.__('Std-Div').'</strong></td><td class="alterCell2" width="30%">'.$member->member_standard.'</td>';
-		echo '<td class="alterCell" width="15%"><strong>'.__('Member Mobile').'</strong></td><td class="alterCell2" width="30%">'.$member->member_mobile.'</td>';
+        echo '<td class="alterCell" width="15%"><strong>'.gettext('Std-Div').'</strong></td><td class="alterCell2" width="30%">'.$member->member_standard.'</td>';
+		echo '<td class="alterCell" width="15%"><strong>'.gettext('Member Mobile').'</strong></td><td class="alterCell2" width="30%">'.$member->member_mobile.'</td>';
         echo '</tr>'."\n";
 /*        echo '<tr>'."\n";
 //        echo '<td class="alterCell" width="15%"><strong>'.__('Register Date').'</strong></td><td class="alterCell2" width="30%">'.date("d-m-Y", strtotime($member->register_date)).'</td>';
@@ -1406,14 +1406,14 @@ if(isset($_POST['memberID']) OR isset($_SESSION['memberID1']))
         echo '</tr>'."\n";
 */		
         echo '</table>'."\n";
-        echo '<input  type="button" style="width: 19%;'.$add_style.'" class="tab tabSelected" value="'.__('Issue').'" onclick="setIframeContent(\'listsFrame\', \''.MODULES_WEB_ROOT_DIR.'circulation/loan.php\'); setTabClass(this);"/>';
-        echo '<input type="button" style="width: 19%;" class="tab" value="'.__('Current Issue').'" onclick="setIframeContent(\'listsFrame\', \''.MODULES_WEB_ROOT_DIR.'circulation/loan_list.php\'); setTabClass(this);" '.$disabled.'  />';
+        echo '<input  type="button" style="width: 19%;'.$add_style.'" class="tab tabSelected" value="'.gettext('Issue').'" onclick="setIframeContent(\'listsFrame\', \''.MODULES_WEB_ROOT_DIR.'circulation/loan.php\'); setTabClass(this);"/>';
+        echo '<input type="button" style="width: 19%;" class="tab" value="'.gettext('Current Issue').'" onclick="setIframeContent(\'listsFrame\', \''.MODULES_WEB_ROOT_DIR.'circulation/loan_list.php\'); setTabClass(this);" '.$disabled.'  />';
         if ($member_type_d['enable_reserve'])
         {
            // echo '<input type="button" style="width: 19%;'.$add_style.'" class="tab" value="'.__('Reserve').'" onclick="setIframeContent(\'listsFrame\', \''.MODULES_WEB_ROOT_DIR.'circulation/reserve_list.php\'); setTabClass(this);" '.$disabled.' />';
         }
-        echo '<input type="button" style="width: 19%;" class="tab" value="'.__('Fines').'" onclick="setIframeContent(\'listsFrame\', \''.MODULES_WEB_ROOT_DIR.'circulation/fines_list.php\'); setTabClass(this);" />';
-        echo '<input type="button" style="width: 19%;" class="tab" value="'.__('Member History').'" onclick="setIframeContent(\'listsFrame\', \''.MODULES_WEB_ROOT_DIR.'circulation/member_loan_hist.php\'); setTabClass(this);" /><br />'."\n";
+        echo '<input type="button" style="width: 19%;" class="tab" value="'.gettext('Fines').'" onclick="setIframeContent(\'listsFrame\', \''.MODULES_WEB_ROOT_DIR.'circulation/fines_list.php\'); setTabClass(this);" />';
+        echo '<input type="button" style="width: 19%;" class="tab" value="'.gettext('Member History').'" onclick="setIframeContent(\'listsFrame\', \''.MODULES_WEB_ROOT_DIR.'circulation/member_loan_hist.php\'); setTabClass(this);" /><br />'."\n";
   // echo '<input type="button" style="width: 19%;" class="tab" value="'.__('Member Book Request').'" onclick="setIframeContent(\'listsFrame\', \''.MODULES_WEB_ROOT_DIR.'circulation/member_book_request_list.php\'); setTabClass(this);" /><br />'."\n";
       
         echo '<iframe src="modules/circulation/loan.php" id="listsFrame" class="border" style="width: 100%; height: 300px;"></iframe>'."\n";

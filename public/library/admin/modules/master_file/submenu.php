@@ -1,5 +1,5 @@
 <?php
-session_start();
+// session_start();
 /**
  * Copyright (C) 2007,2008  Arie Nugraha (dicarve@yahoo.com)
  *
@@ -28,26 +28,26 @@ $menu[] = array('Header2', 'Master File');
 
 
 
-$menu[] = array(__('Publisher'), MODULES_WEB_ROOT_DIR.'master_file/publisher.php', __('Document Publisher'));
-$menu[] = array(__('Supplier'), MODULES_WEB_ROOT_DIR.'master_file/supplier.php', __('Item Supplier'));
-$menu[] = array(__('Author'), MODULES_WEB_ROOT_DIR.'master_file/author.php', __('Document Authors'));
+$menu[] = array(gettext('Publisher'), MODULES_WEB_ROOT_DIR.'master_file/publisher.php', gettext('Document Publisher'));
+$menu[] = array(gettext('Supplier'), MODULES_WEB_ROOT_DIR.'master_file/supplier.php', gettext('Item Supplier'));
+$menu[] = array(gettext('Author'), MODULES_WEB_ROOT_DIR.'master_file/author.php', gettext('Document Authors'));
 //$menu[] = array(__('Subject Type'), MODULES_WEB_ROOT_DIR.'master_file/topic.php', __('Subject Type'));
-$menu[] = array(__('Subject'), MODULES_WEB_ROOT_DIR.'master_file/subject_type.php', __('Subject'));
-$menu[] = array(__('Standard/Class'), MODULES_WEB_ROOT_DIR.'master_file/standard.php', __('Standard'));
-$menu[] = array(__('Book Rack/Shelf'), MODULES_WEB_ROOT_DIR.'master_file/location.php', __('Item Location'));
+$menu[] = array(gettext('Subject'), MODULES_WEB_ROOT_DIR.'master_file/subject_type.php', gettext('Subject'));
+$menu[] = array(gettext('Standard/Class'), MODULES_WEB_ROOT_DIR.'master_file/standard.php', gettext('Standard'));
+$menu[] = array(gettext('Book Rack/Shelf'), MODULES_WEB_ROOT_DIR.'master_file/location.php', gettext('Item Location'));
 //$menu[] = array('Header', __('Lookup Files'));
-$menu[] = array(__('Publishing Place'), MODULES_WEB_ROOT_DIR.'master_file/place.php', __('Place Name'));
-$menu[] = array(__('Item Status'), MODULES_WEB_ROOT_DIR.'master_file/item_status.php', __('Item Status'));
-$menu[] = array(__('Book Collection Type'), MODULES_WEB_ROOT_DIR.'master_file/coll_type.php', __('Collection Type'));
+$menu[] = array(gettext('Publishing Place'), MODULES_WEB_ROOT_DIR.'master_file/place.php', gettext('Place Name'));
+$menu[] = array(gettext('Item Status'), MODULES_WEB_ROOT_DIR.'master_file/item_status.php', gettext('Item Status'));
+$menu[] = array(gettext('Book Collection Type'), MODULES_WEB_ROOT_DIR.'master_file/coll_type.php', gettext('Collection Type'));
 // Start commented by parth 11/7/2011
 /*$menu[] = array(__('Doc. Language'), MODULES_WEB_ROOT_DIR.'master_file/doc_language.php', __('Document Content Language'));*/
 //End commented by Parth 11/7/2011
-$menu[] = array(__('Labels'), MODULES_WEB_ROOT_DIR.'master_file/label.php', __('Special Labels for Titles to Show Up On Homepage'));
+$menu[] = array(gettext('Labels'), MODULES_WEB_ROOT_DIR.'master_file/label.php', gettext('Special Labels for Titles to Show Up On Homepage'));
 // Start commented by parth 11/7/2011
 /*$menu[] = array(__('Frequency'), MODULES_WEB_ROOT_DIR.'master_file/frequency.php', __('Frequency'));*/
 //End commented by Parth 11/7/2011
 //Following menu Start Added by Parth 12/11/2011
-$menu[] = array(__('Check URL Status'), MODULES_WEB_ROOT_DIR.'master_file/url_confirm.php', __('URL Check'));
+$menu[] = array(gettext('Check URL Status'), MODULES_WEB_ROOT_DIR.'master_file/url_confirm.php', gettext('URL Check'));
 //Addition of Menu Ended by Parth 12/11/2011
 
 //$menu[] = array(__('Book Size'), MODULES_WEB_ROOT_DIR.'master_file/book_size.php', __('Book Size'));

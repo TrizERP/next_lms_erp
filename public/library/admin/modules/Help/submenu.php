@@ -20,6 +20,6 @@
 
 /* Reporting module submenu items */
 $menu[] = array('Header2', 'Help');
-$menu[] = array(__('Help'), MODULES_WEB_ROOT_DIR.'Help/index.php', __('Help'));
+$menu[] = array(gettext('Help'), MODULES_WEB_ROOT_DIR.'Help/index.php', gettext('Help'));
 // other/custom report menu
 ?>

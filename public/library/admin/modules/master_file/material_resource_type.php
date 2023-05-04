@@ -22,7 +22,7 @@ $can_write = utility::havePrivilege('master_file', 'w');
 
 
 if (!$can_read) {
-    die('<div class="errorBox">'.__('You don\'t have enough privileges to view this section').'</div>');
+    die('<div class="errorBox">'.gettext('You don\'t have enough privileges to view this section').'</div>');
 }
 
 /* RECORD OPERATION */
@@ -36,7 +36,7 @@ if (isset($_POST['saveData']) AND $can_read AND $can_write)
     // check form validity
     if (empty($material_resource_name)) 
     {
-        utility::jsAlert(__('Material Resource Name can\'t be empty'));
+        utility::jsAlert(gettext('Material Resource Name can\'t be empty'));
         exit();
     }
     else
@@ -74,16 +74,16 @@ $qry2 = 'SELECT * from mst_material_resource_type where material_resource_id ='.
 		}
 if($checkflag1==1)
 {
-utility::jsAlert(__('Duplicate Record Can not inserted'));
+utility::jsAlert(gettext('Duplicate Record Can not inserted'));
 }
 else
 {
             // update the data
             $update = $sql_op->update('mst_material_resource_type', $data, 'material_resource_id='.$updateRecordID);
             if ($update) {
-                utility::jsAlert(__('Material Resource Data Successfully Updated'));
+                utility::jsAlert(gettext('Material Resource Data Successfully Updated'));
                 echo '<script type="text/javascript">parent.setContent(\'mainContent\', parent.getPreviousAJAXurl(), \'post\');</script>';
-            } else { utility::jsAlert(__('Material Resource Data FAILED to Updated. Please Contact System Administrator')."\nDEBUG : ".$sql_op->error); }
+            } else { utility::jsAlert(gettext('Material Resource Data FAILED to Updated. Please Contact System Administrator')."\nDEBUG : ".$sql_op->error); }
 }
             exit();
         } else {
@@ -102,15 +102,15 @@ $rec_f = $dbs->query('SELECT * from mst_material_resource_type where material_re
 		}
 if($checkflag==1)
 {
-    utility::jsAlert(__('Duplicate Record Can not inserted'));
+    utility::jsAlert(gettext('Duplicate Record Can not inserted'));
 }
 else
 {
 //added end by Parth 16/7/2011
             if ($sql_op->insert('mst_material_resource_type', $data)) {
-                utility::jsAlert(__('New Material Resource Data Successfully Saved'));
+                utility::jsAlert(gettext('New Material Resource Data Successfully Saved'));
                echo '<script type="text/javascript">parent.setContent(\'mainContent\', \''.$_SERVER['PHP_SELF'].'\', \'post\');</script>';
-        } else { utility::jsAlert(__('Material Resource Data FAILED to Save. Please Contact System Administrator')."\nDEBUG : ".$sql_op->error); }
+        } else { utility::jsAlert(gettext('Material Resource Data FAILED to Save. Please Contact System Administrator')."\nDEBUG : ".$sql_op->error); }
 //added start by Parth 16/7/2011
 }
 //added ended by Parth 16/7/2011
@@ -146,7 +146,7 @@ else
 		{
 			$gmd_name_set = $rownew['material_resource_name'];	
 		}
-		 utility::jsAlert(__('You can not Delete Material Resource Type '.$gmd_name_set));
+		 utility::jsAlert(gettext('You can not Delete Material Resource Type '.$gmd_name_set));
 	}
 	else
 	{
@@ -158,10 +158,10 @@ else
 
     // error alerting
     if ($error_num == 0) {
-        utility::jsAlert(__('All Selected Data successfully saved'));
+        utility::jsAlert(gettext('All Selected Data successfully saved'));
         echo '<script type="text/javascript">parent.setContent(\'mainContent\', \''.$_SERVER['PHP_SELF'].'?'.$_POST['lastQueryStr'].'\', \'post\');</script>';
     } else {
-        utility::jsAlert(__('Some or All Data NOT deleted successfully!\nPlease contact system administrator'));
+        utility::jsAlert(gettext('Some or All Data NOT deleted successfully!\nPlease contact system administrator'));
         echo '<script type="text/javascript">parent.setContent(\'mainContent\', \''.$_SERVER['PHP_SELF'].'?'.$_POST['lastQueryStr'].'\', \'post\');</script>';
     }
     exit();
@@ -207,7 +207,7 @@ echo $bradecum;
 <a href="//<?php echo MODULES_WEB_ROOT_DIR; ?>master_file/material_resource_type.php" class="headerText2"><?php //echo __('Library Resource Type'); ?></a> </li>-->
 				<li>
 <!--<a href="<?php echo MODULES_WEB_ROOT_DIR; ?>master_file/index.php" class="headerText2"><?php //echo __('Material Type List'); ?></a> </li>--><li>  
-<a href="<?php echo MODULES_WEB_ROOT_DIR; ?>master_file/material_sub_type.php" class=""><?php echo __('Material Sub Type List'); ?></a></li>
+<a href="<?php echo MODULES_WEB_ROOT_DIR; ?>master_file/material_sub_type.php" class=""><?php echo gettext('Material Sub Type List'); ?></a></li>
 				</ul>
 	</td>
 </tr>
@@ -219,13 +219,13 @@ echo $bradecum;
 ?>
 <fieldset class="menuBox">
     <div class="menuBoxInner masterFileIcon">
-    <?php echo strtoupper(__('Library Resource Type')); ?> - <a href="<?php echo MODULES_WEB_ROOT_DIR; ?>master_file/material_resource_type.php?action=detail" class="headerText3"><?php echo __('Add Library Resource Type'); ?></a>
+    <?php echo strtoupper(gettext('Library Resource Type')); ?> - <a href="<?php echo MODULES_WEB_ROOT_DIR; ?>master_file/material_resource_type.php?action=detail" class="headerText3"><?php echo gettext('Add Library Resource Type'); ?></a>
     &nbsp;<!-- <a href="<?php //echo MODULES_WEB_ROOT_DIR; ?>master_file/material_resource_type.php" class="headerText2"><?php //echo __('Material Resource Type List'); ?></a>-->
     <p class="only_border">&nbsp;</p>
-    <form name="search" action="<?php echo MODULES_WEB_ROOT_DIR; ?>master_file/material_resource_type.php" id="search" method="get" style="display: inline;"><?php echo __('Search'); ?> :
+    <form name="search" action="<?php echo MODULES_WEB_ROOT_DIR; ?>master_file/material_resource_type.php" id="search" method="get" style="display: inline;"><?php echo gettext('Search'); ?> :
      <!--commnet by iresh on 25-1-2011  <input type="text" name="keywords" id="keywords" size="30" />-->
    <!-- added by iresh on 25-1-2011 --> <input type="text" name="keywords" id="keywords" width=140px/>
-    <input type="submit" id="doSearch" value="<?php echo __('Search'); ?>" class="button" />
+    <input type="submit" id="doSearch" value="<?php echo gettext('Search'); ?>" class="button" />
     </form>
 </div>
 </fieldset>
@@ -238,7 +238,7 @@ echo $bradecum;
 /* main content */
 if (isset($_POST['detail']) OR (isset($_GET['action']) AND $_GET['action'] == 'detail')) {
     if (!($can_read AND $can_write)) {
-        die('<div class="errorBox">'.__('You don\'t have enough privileges to view this section').'</div>');
+        die('<div class="errorBox">'.gettext('You don\'t have enough privileges to view this section').'</div>');
     }
     /* RECORD FORM */
     $itemID = (integer)isset($_POST['itemID'])?$_POST['itemID']:0;
@@ -247,7 +247,7 @@ if (isset($_POST['detail']) OR (isset($_GET['action']) AND $_GET['action'] == 'd
 
     // create new instance
     $form = new simbio_form_table_AJAX('mainForm', $_SERVER['PHP_SELF'].'?'.$_SERVER['QUERY_STRING'], 'post');
-    $form->submit_button_attr = 'name="saveData" value="'.__('Save').'" class="button"';
+    $form->submit_button_attr = 'name="saveData" value="'.gettext('Save').'" class="button"';
 
     // form table attributes
     $form->table_attr = 'align="center" id="dataList" cellpadding="5" cellspacing="0"';
@@ -266,7 +266,7 @@ if (isset($_POST['detail']) OR (isset($_GET['action']) AND $_GET['action'] == 'd
         $form->record_title = $rec_d['material_resource_name'];
         
         // submit button attribute
-        $form->submit_button_attr = 'name="saveData" value="'.__('Update').'" class="button"';
+        $form->submit_button_attr = 'name="saveData" value="'.gettext('Update').'" class="button"';
     }
 
     /* Form Element(s) */
@@ -275,22 +275,22 @@ if (isset($_POST['detail']) OR (isset($_GET['action']) AND $_GET['action'] == 'd
     /*added by iresh on 25-1-2011 $form->addTextField('text', 'gmdCode', __('Material Type Code').'*', $rec_d['gmd_code'], 'style="width: 140px;" maxlength="30"');*/
 //    $form->addTextField('text', 'material_resource_name', __('Material Resource Type').'*', $rec_d['material_resource_name'], 'style="width: 140px;" maxlength="30"');
     
-    $form->addTextField('text', 'material_resource_name', __('Material Resource Type').'*', $rec_d['material_resource_name'], 'style="width: 140px;"maxlength="30" onkeyup="return checkspecialcharacterdynamic(this.name);"onblur="charactercheck(this.name);"');
+    $form->addTextField('text', 'material_resource_name', gettext('Material Resource Type').'*', $rec_d['material_resource_name'], 'style="width: 140px;"maxlength="30" onkeyup="return checkspecialcharacterdynamic(this.name);"onblur="charactercheck(this.name);"');
     
     // resource active/inactive
-    $active_chbox[0] = array('1', __('Active'));
-    $active_chbox[1] = array('0', __('Inactive'));
+    $active_chbox[0] = array('1', gettext('Active'));
+    $active_chbox[1] = array('0', gettext('Inactive'));
  if ($form->edit_mode) {
-	$form->addRadio('activeinactive', __('Status'), $active_chbox, !empty($rec_d['active_inactive'])?$rec_d['active_inactive']:'0');
+	$form->addRadio('activeinactive', gettext('Status'), $active_chbox, !empty($rec_d['active_inactive'])?$rec_d['active_inactive']:'0');
 }
 else
 {    
-	$form->addRadio('activeinactive', __('Status'), $active_chbox, !empty($rec_d['active_inactive'])?$rec_d['active_inactive']:'1');
+	$form->addRadio('activeinactive', gettext('Status'), $active_chbox, !empty($rec_d['active_inactive'])?$rec_d['active_inactive']:'1');
 }
     
     // edit mode messagge
     if ($form->edit_mode) {
-        echo '<div class="infoBox">'.__('You are going to edit data').' : <b>'.$rec_d['material_resource_name'].'</b>  <br />'.__('Last Update').$rec_d['last_update'].'</div>'; //mfc
+        echo '<div class="infoBox">'.gettext('You are going to edit data').' : <b>'.$rec_d['material_resource_name'].'</b>  <br />'.gettext('Last Update').$rec_d['last_update'].'</div>'; //mfc
     }
     // print out the form object
     echo $form->printOut();
@@ -303,12 +303,12 @@ else
     $datagrid = new simbio_datagrid();
     if ($can_read AND $can_write) {
         $datagrid->setSQLColumn('mr.material_resource_id',
-            'mr.material_resource_name AS \''.__('Material Resource Type').'\'',
-            'DATE_FORMAT(mr.last_update,"%d-%m-%Y") AS \''.__('Last Update').'\'');
+            'mr.material_resource_name AS \''.gettext('Material Resource Type').'\'',
+            'DATE_FORMAT(mr.last_update,"%d-%m-%Y") AS \''.gettext('Last Update').'\'');
     } else {
         $datagrid->setSQLColumn('mr.material_resource_id',
-            'mr.material_resource_name AS \''.__('Material Resource Type').'\'',
-            'DATE_FORMAT(mr.last_update,"%d-%m-%Y") AS \''.__('Last Update').'\'');
+            'mr.material_resource_name AS \''.gettext('Material Resource Type').'\'',
+            'DATE_FORMAT(mr.last_update,"%d-%m-%Y") AS \''.gettext('Last Update').'\'');
     }
     $datagrid->setSQLorder('material_resource_name ASC');
 
@@ -327,7 +327,7 @@ else
     // put the result into variables
     $datagrid_result = $datagrid->createDataGrid($dbs, $table_spec, 20, ($can_read AND $can_write));
     if (isset($_GET['keywords']) AND $_GET['keywords']) {
-        $msg = str_replace('{result->num_rows}', $datagrid->num_rows, __('Found <strong>{result->num_rows}</strong> from your keywords')); //mfc
+        $msg = str_replace('{result->num_rows}', $datagrid->num_rows, gettext('Found <strong>{result->num_rows}</strong> from your keywords')); //mfc
         echo '<div class="infoBox">'.$msg.' : "'.$_GET['keywords'].'"</div>';
     }
 

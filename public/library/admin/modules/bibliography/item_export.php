@@ -34,13 +34,13 @@ $can_read = utility::havePrivilege('bibliography', 'r');
 $can_write = utility::havePrivilege('bibliography', 'w');
 
 if (!$can_read) {
-    die('<div class="errorBox">'.__('You are not authorized to view this section').'</div>');
+    die('<div class="errorBox">'.gettext('You are not authorized to view this section').'</div>');
 }
 
 if (isset($_POST['doExport'])) {
     // check for form validity
     if (empty($_POST['fieldSep']) OR empty($_POST['fieldEnc'])) {
-        utility::jsAlert(__('Required fields (*)  must be filled correctly!'));
+        utility::jsAlert(gettext('Required fields (*)  must be filled correctly!'));
         exit();
     } else {
         // set PHP time limit
@@ -101,7 +101,7 @@ if (isset($_POST['doExport'])) {
         // die($sql);
         $all_data_q = $dbs->query($sql);
         if ($dbs->error) {
-            utility::jsAlert(__('Error on query to database, Export FAILED!'.$dbs->error));
+            utility::jsAlert(gettext('Error on query to database, Export FAILED!'.$dbs->error));
         } else {
             if ($all_data_q->num_rows > 0) {
                 header('Content-type: text/plain');
@@ -120,7 +120,7 @@ if (isset($_POST['doExport'])) {
                 }
                 exit();
             } else {
-                utility::jsAlert(__('There is no record in item database yet, Export FAILED!'));
+                utility::jsAlert(gettext('There is no record in item database yet, Export FAILED!'));
             }
         }
     }
@@ -161,22 +161,22 @@ echo $bradecum;
 	<td class="tab_menu_top">
                             <ul class="tabs"> 
 				<li>
-<a href="<?php echo MODULES_WEB_ROOT_DIR; ?>bibliography/export.php" class="headerText2"><?php echo __('Export Data'); ?></a> </li><li><a href="<?php echo  MODULES_WEB_ROOT_DIR; ?>bibliography/item_export.php" class="headerText2"><?php echo __('Export Item'); ?></a> </li></ul>
+<a href="<?php echo MODULES_WEB_ROOT_DIR; ?>bibliography/export.php" class="headerText2"><?php echo gettext('Export Data'); ?></a> </li><li><a href="<?php echo  MODULES_WEB_ROOT_DIR; ?>bibliography/item_export.php" class="headerText2"><?php echo gettext('Export Item'); ?></a> </li></ul>
 	</td>
 </tr>
 </table>
 <fieldset class="menuBox">
 <div class="menuBoxInner exportIcon">
-    <?php echo __('ITEM EXPORT TOOL'); ?>
+    <?php echo gettext('ITEM EXPORT TOOL'); ?>
     <p class="only_border">&nbsp;</p>
-    <?php echo __('Export item data to CSV file'); ?>
+    <?php echo gettext('Export item data to CSV file'); ?>
 </div>
 </fieldset>
 <?php
 
 // create new instance
 $form = new simbio_form_table_AJAX('mainForm', $_SERVER['PHP_SELF'], 'post');
-$form->submit_button_attr = 'name="doExport" value="'.__('Export Now').'" class="button"';
+$form->submit_button_attr = 'name="doExport" value="'.gettext('Export Now').'" class="button"';
 
 // form table attributes
 $form->table_attr = 'align="center" id="dataList" cellpadding="5" cellspacing="0"';
@@ -185,17 +185,17 @@ $form->table_content_attr = 'class="alterCell2"';
 
 /* Form Element(s) */
 // field separator
-$form->addTextField('text', 'fieldSep', __('Field Separator').'*', ''.htmlentities(',').'', 'style="width: 10%;" maxlength="3"');
+$form->addTextField('text', 'fieldSep', gettext('Field Separator').'*', ''.htmlentities(',').'', 'style="width: 10%;" maxlength="3"');
 //  field enclosed
-$form->addTextField('text', 'fieldEnc', __('Field Enclosed With').'*', ''.htmlentities('"').'', 'style="width: 10%;"');
+$form->addTextField('text', 'fieldEnc', gettext('Field Enclosed With').'*', ''.htmlentities('"').'', 'style="width: 10%;"');
 // record separator
 $rec_sep_options[] = array('NEWLINE', 'NEWLINE');
 $rec_sep_options[] = array('RETURN', 'CARRIAGE RETURN');
-$form->addSelectList('recordSep', __('Record Separator'), $rec_sep_options);
+$form->addSelectList('recordSep', gettext('Record Separator'), $rec_sep_options);
 // number of records to export
-$form->addTextField('text', 'recordNum', __('Number of Records To Export (0 for all records)'), '0', 'style="width: 10%;"');
+$form->addTextField('text', 'recordNum', gettext('Number of Records To Export (0 for all records)'), '0', 'style="width: 10%;"');
 // records offset
-$form->addTextField('text', 'recordOffset', __('Start From Record'), '1', 'style="width: 10%;"');
+$form->addTextField('text', 'recordOffset', gettext('Start From Record'), '1', 'style="width: 10%;"');
 // output the form
 echo $form->printOut();
 ?>

@@ -32,7 +32,7 @@ $can_read = utility::havePrivilege('reporting', 'r');
 $can_write = utility::havePrivilege('reporting', 'w');
 
 if (!$can_read) {
-    die('<div class="errorBox">'.__('You don\'t have enough privileges to access this area!').'</div>');
+    die('<div class="errorBox">'.gettext('You don\'t have enough privileges to access this area!').'</div>');
 }
 
 require SIMBIO_BASE_DIR.'simbio_GUI/form_maker/simbio_form_element.inc.php';
@@ -76,36 +76,36 @@ echo $bradecum;
 </table>
     <!-- filter -->
     <fieldset style="margin-bottom: 3px;">
-    <legend style="font-weight: bold"><?php echo strtoupper(__('Loans by Classification')); ?> - <?php echo __('Report Filter'); ?></legend>
+    <legend style="font-weight: bold"><?php echo strtoupper(gettext('Loans by Classification')); ?> - <?php echo gettext('Report Filter'); ?></legend>
     <form method="get" action="<?php echo $_SERVER['PHP_SELF']; ?>" target="reportView">
     <div id="filterForm">
         <div class="divRow">
             <div class="divRowLabel"><?php echo __('Classification'); ?>:</div>
             <div class="divRowContent">
             <?php
-            $class_options[] = array('0', __('0 Classes'));
-            $class_options[] = array('1', __('1 Classes'));
-            $class_options[] = array('2', __('2 Classes'));
-            $class_options[] = array('2X', __('2X Classes (Islamic Related)'));
-            $class_options[] = array('3', __('3 Classes'));
-            $class_options[] = array('4', __('4 Classes'));
-            $class_options[] = array('5', __('5 Classes'));
-            $class_options[] = array('6', __('6 Classes'));
-            $class_options[] = array('7', __('7 Classes'));
-            $class_options[] = array('8', __('8 Classes'));
-            $class_options[] = array('9', __('9 Classes'));
-            $class_options[] = array('NONDECIMAL', __('NON Decimal Classes'));
+            $class_options[] = array('0', gettext('0 Classes'));
+            $class_options[] = array('1', gettext('1 Classes'));
+            $class_options[] = array('2', gettext('2 Classes'));
+            $class_options[] = array('2X', gettext('2X Classes (Islamic Related)'));
+            $class_options[] = array('3', gettext('3 Classes'));
+            $class_options[] = array('4', gettext('4 Classes'));
+            $class_options[] = array('5', gettext('5 Classes'));
+            $class_options[] = array('6', gettext('6 Classes'));
+            $class_options[] = array('7', gettext('7 Classes'));
+            $class_options[] = array('8', gettext('8 Classes'));
+            $class_options[] = array('9', gettext('9 Classes'));
+            $class_options[] = array('NONDECIMAL', gettext('NON Decimal Classes'));
             echo simbio_form_element::selectList('class', $class_options);
             ?>
             </div>
         </div>
         <div class="divRow">
-            <div class="divRowLabel"><?php echo __('Collection Type'); ?></div>
+            <div class="divRowLabel"><?php echo gettext('Collection Type'); ?></div>
             <div class="divRowContent">
             <?php
             $coll_type_q = $dbs->query('SELECT coll_type_id, coll_type_name FROM mst_coll_type');
             $coll_type_options = array();
-            $coll_type_options[] = array('0', __('ALL'));
+            $coll_type_options[] = array('0', gettext('ALL'));
             while ($coll_type_d = $coll_type_q->fetch_row()) {
                 $coll_type_options[] = array($coll_type_d[0], $coll_type_d[1]);
             }
@@ -114,7 +114,7 @@ echo $bradecum;
             </div>
         </div>
         <div class="divRow">
-            <div class="divRowLabel"><?php echo __('Year'); ?></div>
+            <div class="divRowLabel"><?php echo gettext('Year'); ?></div>
             <div class="divRowContent">
             <?php
             $current_year = date('Y');
@@ -128,7 +128,7 @@ echo $bradecum;
         </div>
     </div>
     <div style="padding-top: 10px; clear: both;">
-    <input type="submit" name="applyFilter" value="<?php echo __('Search'); ?>" />
+    <input type="submit" name="applyFilter" value="<?php echo gettext('Search'); ?>" />
     <input type="hidden" name="reportView" value="true" />
     </div>
     </form>
@@ -139,18 +139,18 @@ echo $bradecum;
 } else {
     ob_start();
     // months array
-    $months['01'] = __('Jan');
-    $months['02'] = __('Feb');
-    $months['03'] = __('Mar');
-    $months['04'] = __('Apr');
-    $months['05'] = __('May');
-    $months['06'] = __('Jun');
-    $months['07'] = __('Jul');
-    $months['08'] = __('Aug');
-    $months['09'] = __('Sep');
-    $months['10'] = __('Oct');
-    $months['11'] = __('Nov');
-    $months['12'] = __('Dec');
+    $months['01'] = gettext('Jan');
+    $months['02'] = gettext('Feb');
+    $months['03'] = gettext('Mar');
+    $months['04'] = gettext('Apr');
+    $months['05'] = gettext('May');
+    $months['06'] = gettext('Jun');
+    $months['07'] = gettext('Jul');
+    $months['08'] = gettext('Aug');
+    $months['09'] = gettext('Sep');
+    $months['10'] = gettext('Oct');
+    $months['11'] = gettext('Nov');
+    $months['12'] = gettext('Dec');
 
     // table start
     $row_class = 'alterCellPrinted';
@@ -158,7 +158,7 @@ echo $bradecum;
 
     // header
     $output .= '<tr>';
-    $output .= '<td class="dataListHeaderPrinted">'.__('Classification').'</td>';
+    $output .= '<td class="dataListHeaderPrinted">'.gettext('Classification').'</td>';
     foreach ($months as $month) {
         $output .= '<td class="dataListHeaderPrinted">'.$month.'</td>';
     }
@@ -250,6 +250,6 @@ echo $bradecum;
 
     $content = ob_get_clean();
     // include the page template
-    require SENAYAN_BASE_DIR.'/admin/'.$sysconf['admin_template']['dir'].'/printed_page_tpl.php';
+    require SENAYAN_BASE_DIR.'/admin/admin_template/printed_page_tpl.php';
 }
 ?>

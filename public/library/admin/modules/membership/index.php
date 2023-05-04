@@ -43,13 +43,13 @@ if (isset($_POST['saveData']) AND $can_read AND $can_write)
    
     if (empty($memberID) OR empty($memberName))
     {
-        utility::jsAlert(__('Member ID and Name can\'t be empty')); //mfc
+        utility::jsAlert(gettext('Member ID and Name can\'t be empty')); //mfc
         exit();
     }
     
     if (empty($_POST['memberEmail']))
     {
-        utility::jsAlert(__('Member Email Id can\'t be empty')); //mfc
+        utility::jsAlert(gettext('Member Email Id can\'t be empty')); //mfc
         exit();
     }
     
@@ -161,23 +161,23 @@ if (isset($_POST['saveData']) AND $can_read AND $can_write)
                 // update other tables contain this member ID
                 @$dbs->query('UPDATE loan SET member_id=\''.$data['member_id'].'\' WHERE member_id=\''.$old_member_ID.'\'');
                 @$dbs->query('UPDATE fines SET member_id=\''.$data['member_id'].'\' WHERE member_id=\''.$old_member_ID.'\'');
-                utility::jsAlert(__('Member Data Successfully Updated'));
+                utility::jsAlert(gettext('Member Data Successfully Updated'));
 
                 if (isset($upload_status)) {
                     if ($upload_status == UPLOAD_SUCCESS) {
                         // write log
                         utility::writeLogs($dbs, 'staff', $_SESSION['uid'], 'membership', $_SESSION['realname'].' upload image file '.$upload->new_filename);
-                        utility::jsAlert(__('Image Uploaded Successfully'));
+                        utility::jsAlert(gettext('Image Uploaded Successfully'));
                     } else {
                         // write log
                         utility::writeLogs($dbs, 'staff', $_SESSION['uid'], 'membership', 'ERROR : '.$_SESSION['realname'].' FAILED TO upload image file '.$upload->new_filename.', with error ('.$upload->error.')');
-                        utility::jsAlert(__('Image FAILED to upload'));
+                        utility::jsAlert(gettext('Image FAILED to upload'));
                     }
                 }
                 // write log
                 utility::writeLogs($dbs, 'staff', $_SESSION['uid'], 'membership', $_SESSION['realname'].' update member data ('.$memberName.') with ID ('.$memberID.')');
                 echo '<script type="text/javascript">parent.setContent(\'mainContent\', parent.getPreviousAJAXurl(), \'post\');</script>';
-            } else { utility::jsAlert(__('Member Data FAILED to Save/Update. Please Contact System Administrator')."\nDEBUG : ".$sql_op->error); }
+            } else { utility::jsAlert(gettext('Member Data FAILED to Save/Update. Please Contact System Administrator')."\nDEBUG : ".$sql_op->error); }
             exit();
         } 
         else 
@@ -193,22 +193,22 @@ if (isset($_POST['saveData']) AND $can_read AND $can_write)
             
             $insert = $sql_op->insert($inte_schema.'.tblstudent', $data);
             if ($insert) {
-                utility::jsAlert(__('New Member Data Successfully Saved'));
+                utility::jsAlert(gettext('New Member Data Successfully Saved'));
 		if (isset($upload_status)) {
                     if ($upload_status == UPLOAD_SUCCESS) {
                         // write log
                         utility::writeLogs($dbs, 'staff', $_SESSION['uid'], 'membership', $_SESSION['realname'].' upload image file '.$upload->new_filename);
-                        utility::jsAlert(__('Image Uploaded Successfully'));
+                        utility::jsAlert(gettext('Image Uploaded Successfully'));
                     } else {
                         // write log
                         utility::writeLogs($dbs, 'staff', $_SESSION['uid'], 'membership', 'ERROR : '.$_SESSION['realname'].' FAILED TO upload image file '.$upload->new_filename.', with error ('.$upload->error.')');
-                        utility::jsAlert(__('Image FAILED to upload'));
+                        utility::jsAlert(gettext('Image FAILED to upload'));
                     }
                 }
                 // write log
                 utility::writeLogs($dbs, 'staff', $_SESSION['uid'], 'membership', $_SESSION['realname'].' add new member ('.$memberName.') with ID ('.$memberID.')');
                 echo '<script type="text/javascript">parent.setContent(\'mainContent\', \''.$_SERVER['PHP_SELF'].'\', \'get\');</script>';
-            } else { utility::jsAlert(__('Member Data FAILED to Save/Update. Please Contact System Administrator')."\nDEBUG : ".$sql_op->error); }
+            } else { utility::jsAlert(gettext('Member Data FAILED to Save/Update. Please Contact System Administrator')."\nDEBUG : ".$sql_op->error); }
             exit();
         }
     }
@@ -289,19 +289,19 @@ else if (isset($_POST['itemID']) AND !empty($_POST['itemID']) AND isset($_POST['
         {
             $members .= $mbr."\n";
         }
-        utility::jsAlert(__('Below member data can\'t be deleted because still have unreturned item(s)').' : '."\n".$mbr);
+        utility::jsAlert(gettext('Below member data can\'t be deleted because still have unreturned item(s)').' : '."\n".$mbr);
         exit();
     }
     // error alerting
     if ($error_num == 0) 
     {
-        utility::jsAlert(__('All Data Successfully Deleted'));
+        utility::jsAlert(gettext('All Data Successfully Deleted'));
         echo '<script type="text/javascript">parent.setContent(\'mainContent\', \''.$_SERVER['PHP_SELF'].'?'.$_POST['lastQueryStr'].'\', \'post\');</script>';
 	
     }
     else 
     {
-        utility::jsAlert(__('Some or All Data NOT deleted successfully! Please contact system administrator'));
+        utility::jsAlert(gettext('Some or All Data NOT deleted successfully! Please contact system administrator'));
         echo '<script type="text/javascript">parent.setContent(\'mainContent\', \''.$_SERVER['PHP_SELF'].'?'.$_POST['lastQueryStr'].'\', \'post\');</script>';
     }
     exit();
@@ -315,7 +315,7 @@ else if (isset($_POST['itemID']) AND !empty($_POST['itemID']) AND isset($_POST['
 	<td valign=top>
 	<?php
 	$bradecum = '';       
-        $basedir = basename(dirname(__FILE__));
+        $basedir = basename(dirname(gettextFILEgettext));
         $bradecum = "<a href=javascript:void(0); onclick=javascript:new_set_home(); >Home</a>-><a class='' href=javascript:void(0); onclick=javascript:new_set('".$basedir."');>"; 
 	$query = "select module_name from mst_module where module_path = '".$basedir."'";
 	$set_query = $dbs->query($query);
@@ -348,11 +348,11 @@ echo $bradecum;
 	<td class="tab_menu_top">
                             <ul class="tabs"> 
 				<li>
-<a href="<?php echo MODULES_WEB_ROOT_DIR; ?>membership/index.php" class="headerText2"><?php echo __('View Member List'); ?></a> </li>
-<!--<li><a href="<?php //echo  MODULES_WEB_ROOT_DIR; ?>membership/index.php?action=detail" class="headerText2"><?php //echo __('Add New Member'); ?></a> </li>-->
-<!--<li> <a href="<?php //echo  MODULES_WEB_ROOT_DIR; ?>membership/member_type.php" class="headerText2"><?php // echo __('Assign member Role'); ?></a> </li>-->
+<a href="<?php echo MODULES_WEB_ROOT_DIR; ?>membership/index.php" class="headerText2"><?php echo gettext('View Member List'); ?></a> </li>
+<!--<li><a href="<?php //echo  MODULES_WEB_ROOT_DIR; ?>membership/index.php?action=detail" class="headerText2"><?php //echo gettext('Add New Member'); ?></a> </li>-->
+<!--<li> <a href="<?php //echo  MODULES_WEB_ROOT_DIR; ?>membership/member_type.php" class="headerText2"><?php // echo gettext('Assign member Role'); ?></a> </li>-->
 <li>
-<a href="<?php echo  MODULES_WEB_ROOT_DIR; ?>membership/index.php?expire=true" class="headerText2"><?php echo __('View Expired Member'); ?></a> 
+<a href="<?php echo  MODULES_WEB_ROOT_DIR; ?>membership/index.php?expire=true" class="headerText2"><?php echo gettext('View Expired Member'); ?></a> 
 </li>
 </ul>
 	</td>
@@ -364,15 +364,15 @@ echo $bradecum;
 ?>
 <fieldset class="menuBox">
 <div class="menuBoxInner memberIcon">
-    <?php echo strtoupper(__('Member Area')); ?> <!-- <a href="<?php echo MODULES_WEB_ROOT_DIR; ?>membership/index.php?action=detail" class="headerText2"><?php //echo __('Add New Member'); ?></a>
-    &nbsp; <a href="//<?php //echo MODULES_WEB_ROOT_DIR; ?>membership/index.php" class="headerText2"><?php //echo __('Member List'); ?></a>
-    &nbsp; <a href="<?php //echo MODULES_WEB_ROOT_DIR; ?>membership/index.php?expire=true" class="headerText2" style="color: #990000;"><?php //echo __('View Expired Member'); ?></a>-->
+    <?php echo strtoupper(gettext('Member Area')); ?> <!-- <a href="<?php echo MODULES_WEB_ROOT_DIR; ?>membership/index.php?action=detail" class="headerText2"><?php //echo gettext('Add New Member'); ?></a>
+    &nbsp; <a href="//<?php //echo MODULES_WEB_ROOT_DIR; ?>membership/index.php" class="headerText2"><?php //echo gettext('Member List'); ?></a>
+    &nbsp; <a href="<?php //echo MODULES_WEB_ROOT_DIR; ?>membership/index.php?expire=true" class="headerText2" style="color: #990000;"><?php //echo gettext('View Expired Member'); ?></a>-->
     <p class="only_border">&nbsp;</p>
-    <form name="search" action="<?php echo MODULES_WEB_ROOT_DIR; ?>membership/index.php" id="search" method="get" style="display: inline;"><?php echo __('Member Search'); ?> :
+    <form name="search" action="<?php echo MODULES_WEB_ROOT_DIR; ?>membership/index.php" id="search" method="get" style="display: inline;"><?php echo gettext('Member Search'); ?> :
    <!--comment by iresh on 25-1-2011--> <input type="text" name="keywords"  /><?php if (isset($_GET['expire'])) { echo '<input type="hidden" name="expire" value="true" />'; } ?>
 
  <!--added by iresh on 25-1-2011 <input type="text" name="keywords" width=140px/><?php if (isset($_GET['expire'])) { echo '<input type="hidden" name="expire" value="true" />'; } ?>-->
-    <input type="submit" id="doSearch" value="<?php echo __('Search'); ?>" class="button" />
+    <input type="submit" id="doSearch" value="<?php echo gettext('Search'); ?>" class="button" />
 </form>
 </div>
 </fieldset>
@@ -388,7 +388,7 @@ if (isset($_POST['detail']) OR (isset($_GET['action']) AND $_GET['action'] == 'd
 {
     
    if (!($can_read AND $can_write)) {
-        die('<div class="errorBox">'.__('You don\'t have enough privileges to view this section').'</div>');
+        die('<div class="errorBox">'.gettext('You don\'t have enough privileges to view this section').'</div>');
     }
     /* RECORD FORM */
     $itemID = $dbs->escape_string(trim(isset($_POST['itemID'])?$_POST['itemID']:''));
@@ -400,8 +400,8 @@ if (isset($_POST['detail']) OR (isset($_GET['action']) AND $_GET['action'] == 'd
     
    // $form->button = 'name = "Reset"';
   
-   // $form->submit_button_attr = 'name="saveData" value="'.__('Save').'" class="button" ';
-    //$form->submit_button_attr = 'name="resetData" value="'.__('Reset').'" class="button" ';
+   // $form->submit_button_attr = 'name="saveData" value="'.gettext('Save').'" class="button" ';
+    //$form->submit_button_attr = 'name="resetData" value="'.gettext('Reset').'" class="button" ';
     
     // form table attributes
     $form->table_attr = 'align="center" id="dataList" cellpadding="5" cellspacing="0"';
@@ -416,7 +416,7 @@ if (isset($_POST['detail']) OR (isset($_GET['action']) AND $_GET['action'] == 'd
         // form record title
         $form->record_title = $rec_d['first_name'];
         // submit button attribute
-//       $form->submit_button_attr = 'name="saveData" value="'.__('Update').'" class="button"';
+//       $form->submit_button_attr = 'name="saveData" value="'.gettext('Update').'" class="button"';
     }
 
     /* Form Element(s) */
@@ -428,9 +428,9 @@ if (isset($_POST['detail']) OR (isset($_GET['action']) AND $_GET['action'] == 'd
         $expired_message = '';
         if ($is_expired) {
             // extend membership
-            $chbox_array[] = array('1', __('Extend'));
-            $form->addCheckBox('extend', __('Extend Membership'), $chbox_array);
-            $expired_message = '<b style="color: #990000;">('.__('Membership Already Expired').')</b>';
+            $chbox_array[] = array('1', gettext('Extend'));
+            $form->addCheckBox('extend', gettext('Extend Membership'), $chbox_array);
+            $expired_message = '<b style="color: #990000;">('.gettext('Membership Already Expired').')</b>';
         }
     }
 
@@ -451,17 +451,17 @@ if (isset($_POST['detail']) OR (isset($_GET['action']) AND $_GET['action'] == 'd
     
 //$str_input = simbio_form_element::selectlist('memberTypeID', $mtype_options, $rec_d['member_type_id'],'onchange=selectcheckbox(this.value);');
 $str_input = simbio_form_element::selectlist('memberTypeID', $mtype_options, $rec_d['user_group_id']);
-$form->addAnything(__('Membership Type').'*', $str_input);
+$form->addAnything(gettext('Membership Type').'*', $str_input);
     // member code
     $str_input = simbio_form_element::textField('text', 'memberID', $rec_d['enrollment_no'], 'id="memberID" onblur="ajaxCheckID(\''.SENAYAN_WEB_ROOT_DIR.'admin/AJAX_check_id.php\', \'tblstudent\', \'student_id\', \'msgBox\', \'memberID\')" style="width: 30%;"onkeyup="return checkspecialcharacterdynamic(this.name);"onchange="maxlength(this.name,12);"');
     $str_input .= ' &nbsp; <span id="msgBox">&nbsp;</span>';
      //$form->addButton('button', 'reset');
     
-    $form->addAnything(__('Member ID').'*', $str_input);
+    $form->addAnything(gettext('Member ID').'*', $str_input);
     
     
     
-    //$form->addTextField('text', 'memberName', __('Member Name').'*', $rec_d['member_name'], 'style="width:100%;" onchange="return checkspecialcharacterdynamic(this.name);"');
+    //$form->addTextField('text', 'memberName', gettext('Member Name').'*', $rec_d['member_name'], 'style="width:100%;" onchange="return checkspecialcharacterdynamic(this.name);"');
      
     $table = new simbio_table();
     
@@ -472,43 +472,43 @@ $form->addAnything(__('Membership Type').'*', $str_input);
     $form->addAnything("Member name", $text);
   
     
-    $form->addTextField('text', 'memberEmail', __('E-mail*'), $rec_d['email'], 'style="width: 40%;" onchange="return emailcheck(this.name);"');
+    $form->addTextField('text', 'memberEmail', gettext('E-mail*'), $rec_d['email'], 'style="width: 40%;" onchange="return emailcheck(this.name);"');
     ?>
 
 <?php
         
     // member birth date
-    $form->addDateField('birthDate', __('Birth Date*'),$form->edit_mode?date('d-m-Y',strtotime($rec_d['birthdate'])):date('d-m-Y'));
+    $form->addDateField('birthDate', gettext('Birth Date*'),$form->edit_mode?date('d-m-Y',strtotime($rec_d['birthdate'])):date('d-m-Y'));
     // member since date
     
-    $form->addDateField('sinceDate', __('Member Since').'*', $form->edit_mode?$rec_d['created_on']:date('d-m-Y'));
+    $form->addDateField('sinceDate', gettext('Member Since').'*', $form->edit_mode?$rec_d['created_on']:date('d-m-Y'));
     // member register date
     //:date('d-m-Y')
-    $form->addDateField('regDate', __('Register Date').'*', $form->edit_mode?date('d-m-Y',strtotime($rec_d['created_on'])):date('d-m-Y'));
+    $form->addDateField('regDate', gettext('Register Date').'*', $form->edit_mode?date('d-m-Y',strtotime($rec_d['created_on'])):date('d-m-Y'));
     // member expire date
     if ($form->edit_mode) 
     {
         
-      //  $form->addDateField('expDate', __('Expiry Date').'*', $rec_d['expire_date']);
-        $form->addDateField('expDate', __('Expiry Date').'*',$rec_d['expire_date']?date('d-m-Y',strtotime($rec_d['expire_date'])):date('d-m-Y'));
+      //  $form->addDateField('expDate', gettext('Expiry Date').'*', $rec_d['expire_date']);
+        $form->addDateField('expDate', gettext('Expiry Date').'*',$rec_d['expire_date']?date('d-m-Y',strtotime($rec_d['expire_date'])):date('d-m-Y'));
     }
     else
    {
         
-        $form->addDateField('expDate', __('Expiry Date').'*', $form->edit_mode?date('d-m-Y',strtotime($rec_d['expire_date'])):date('d-m-Y'));
+        $form->addDateField('expDate', gettext('Expiry Date').'*', $form->edit_mode?date('d-m-Y',strtotime($rec_d['expire_date'])):date('d-m-Y'));
     }
     // member gender
-    $gender_chbox[0] = array('m', __('Male'));
-    $gender_chbox[1] = array('f', __('Female'));
-    $form->addRadio('gender', __('Gender*'), $gender_chbox, !empty($rec_d['gender'])?$rec_d['gender']:'0');
+    $gender_chbox[0] = array('m', gettext('Male'));
+    $gender_chbox[1] = array('f', gettext('Female'));
+    $form->addRadio('gender', gettext('Gender*'), $gender_chbox, !empty($rec_d['gender'])?$rec_d['gender']:'0');
     // member address
-    $form->addTextField('textarea', 'memberAddress', __('Address'), $rec_d['address'], 'rows="2" style="width: 50%;"onkeyup="return checkspecialcharacterdynamic(this.name);"onchange="maxlength(this.name,150);"');
+    $form->addTextField('textarea', 'memberAddress', gettext('Address'), $rec_d['address'], 'rows="2" style="width: 50%;"onkeyup="return checkspecialcharacterdynamic(this.name);"onchange="maxlength(this.name,150);"');
     // member postal
-    $form->addTextField('text', 'memberPostal', __('Postal Code'), $rec_d['zipcode'], 'style="width: 30%;" "maxlength=20" onchange="return numericcheck(this.name);"');
+    $form->addTextField('text', 'memberPostal', gettext('Postal Code'), $rec_d['zipcode'], 'style="width: 30%;" "maxlength=20" onchange="return numericcheck(this.name);"');
     // member phone
-    $form->addTextField('text', 'memberPhone', __('Mobile Number'), $rec_d['mobile'], 'style="width: 30%;" "maxlength=20" onchange="return numericcheck(this.name);"');
+    $form->addTextField('text', 'memberPhone', gettext('Mobile Number'), $rec_d['mobile'], 'style="width: 30%;" "maxlength=20" onchange="return numericcheck(this.name);"');
     // member fax
-    $form->addTextField('text', 'memberFax', __('Fax Number'), $rec_d['member_fax'], 'style="width: 30%;"  "maxlength=20" onchange="return numericcheck(this.name);"');
+    $form->addTextField('text', 'memberFax', gettext('Fax Number'), $rec_d['member_fax'], 'style="width: 30%;"  "maxlength=20" onchange="return numericcheck(this.name);"');
     // member pin
     /**
      * Custom fields
@@ -544,18 +544,18 @@ $form->addAnything(__('Membership Type').'*', $str_input);
     if ($rec_d['image_file']) {
         $str_input = '<a href="'.SENAYAN_WEB_ROOT_DIR.'images/persons/'.$rec_d['member_image'].'" target="_blank"><strong>'.$rec_d['member_image'].'</strong></a><br />';
         $str_input .= simbio_form_element::textField('file', 'image');
-        $str_input .= ' '.__('Maximum').' '.$sysconf['max_image_upload'].' KB'; //mfc
-        $form->addAnything(__('Photo'), $str_input);
+        $str_input .= ' '.gettext('Maximum').' '.$sysconf['max_image_upload'].' KB'; //mfc
+        $form->addAnything(gettext('Photo'), $str_input);
     } else {
         $str_input = simbio_form_element::textField('file', 'image');
-        $str_input .= ' '.__('Maximum').' '.$sysconf['max_image_upload'].' KB'; //mfc
-        $form->addAnything(__('Photo'), $str_input);
+        $str_input .= ' '.gettext('Maximum').' '.$sysconf['max_image_upload'].' KB'; //mfc
+        $form->addAnything(gettext('Photo'), $str_input);
     }
     // edit mode messagge
     if ($form->edit_mode) {
         echo '<div class="infoBox" style="overflow: auto;">'
-            .'<div style="float: left; width: 80%;">'.__('You are going to edit data').' : <b>'.$rec_d['first_name'].'</b> <br />'.__('Last Updated').' '.$rec_d['expire_date'].' '.$expired_message
-            .'<div>'.__('Leave Password field blank if you don\'t want to change the password').'</div>'
+            .'<div style="float: left; width: 80%;">'.gettext('You are going to edit data').' : <b>'.$rec_d['first_name'].'</b> <br />'.gettext('Last Updated').' '.$rec_d['expire_date'].' '.$expired_message
+            .'<div>'.gettext('Leave Password field blank if you don\'t want to change the password').'</div>'
             .'</div>';
             if ($rec_d['image_file']) {
                 if (file_exists(IMAGES_BASE_DIR.'persons/'.$rec_d['image_file'])) {
@@ -609,22 +609,22 @@ else
     if ($can_read AND $can_write) 
     {
         $datagrid->setSQLColumn('X.enrollment_no',
-          'X.Enrollment_No1 AS \''.__('Member ID').'\'',   
-  		  'X.Roll_no AS \''.__('Roll_no').'\'',           
-            'X.Member_Name AS \''.__('Member Name').'\'',
-            //'X.E_mail AS \''.__('E-mail').'\'',
-			'X.Mobile AS \''.__('Mobile').'\'',
-			'X.Std_Div AS \''.__('Std-Div').'\'',
-            'X.Membership_Type AS \''.__('Membership Type').'\''
+          'X.Enrollment_No1 AS \''.gettext('Member ID').'\'',   
+  		  'X.Roll_no AS \''.gettext('Roll_no').'\'',           
+            'X.Member_Name AS \''.gettext('Member Name').'\'',
+            //'X.E_mail AS \''.gettext('E-mail').'\'',
+			'X.Mobile AS \''.gettext('Mobile').'\'',
+			'X.Std_Div AS \''.gettext('Std-Div').'\'',
+            'X.Membership_Type AS \''.gettext('Membership Type').'\''
             );
     } 
     else 
     {
-        $datagrid->setSQLColumn('X.Enrollment_No AS \''.__('Member ID').'\'');
-        /*    'X.first_name AS \''.__('Member Name').'\'',
-            'X.user_group_name AS \''.__('Membership Type').'\'',
-            'X.email AS \''.__('E-mail').'\'',
-            'DATE_FORMAT(X.updated_on,"%d-%m-%Y") AS \''.__('Last Updated').'\'');*/
+        $datagrid->setSQLColumn('X.Enrollment_No AS \''.gettext('Member ID').'\'');
+        /*    'X.first_name AS \''.gettext('Member Name').'\'',
+            'X.user_group_name AS \''.gettext('Membership Type').'\'',
+            'X.email AS \''.gettext('E-mail').'\'',
+            'DATE_FORMAT(X.updated_on,"%d-%m-%Y") AS \''.gettext('Last Updated').'\'');*/
     }
      //$datagrid->setSQLorder('X.Enrollment_No ASC');
 	//$datagrid->setSQLorder('X.Member_Name ASC');
@@ -645,7 +645,7 @@ else
     
     //$datagrid->setSQLCriteria($criteria);
     
-    $datagrid->icon_edit = SENAYAN_WEB_ROOT_DIR.'admin/'.$sysconf['admin_template']['dir'].'/'.$sysconf['admin_template']['theme'].'/edit.gif';
+    $datagrid->icon_edit = SENAYAN_WEB_ROOT_DIR.'admin/admin_template/'.$sysconf['admin_template']['theme'].'/edit.gif';
     $datagrid->table_name = '';
     $datagrid->table_attr = 'align="center" id="dataList" cellpadding="5" cellspacing="0"';
     $datagrid->table_header_attr = 'class="dataListHeader" style="font-weight: bold;"';    
@@ -657,14 +657,14 @@ else
         echo '<div class="infoBox">';
         if (isset($_GET['expire'])) 
         {
-            echo '<b style="color: #FF0000;">'.__('Expired Member List').'</b><hr size="1" />';
-            //echo '<div><input type="button" value="'.__('Extend Selected Member(s)').'" onclick="javascript: if (confirm(\''.__('Are you sure to EXTEND membership for selected members?').'\')) { setContent(\'mainContent\', \''.MODULES_WEB_ROOT_DIR.'membership/index.php?expire=1\', \'post\', $H($(\'memberList\').serialize(true)).update({ batchExtend: \'true\' }) ); }" class="button" /></div>';
+            echo '<b style="color: #FF0000;">'.gettext('Expired Member List').'</b><hr size="1" />';
+            //echo '<div><input type="button" value="'.gettext('Extend Selected Member(s)').'" onclick="javascript: if (confirm(\''.gettext('Are you sure to EXTEND membership for selected members?').'\')) { setContent(\'mainContent\', \''.MODULES_WEB_ROOT_DIR.'membership/index.php?expire=1\', \'post\', $H($(\'memberList\').serialize(true)).update({ batchExtend: \'true\' }) ); }" class="button" /></div>';
             if (isset($_GET['numExtended']) AND $_GET['numExtended'] > 0) 
-            { echo '<div><strong>'.$_GET['numExtended'].'</strong> '.__('members extended!').'</div>'; }
+            { echo '<div><strong>'.$_GET['numExtended'].'</strong> '.gettext('members extended!').'</div>'; }
         }
         if (isset($_GET['keywords']) AND $_GET['keywords']) 
         {
-            echo __('Found').' '.$datagrid->num_rows.' '.__('from your search with keyword').' : "'.$_GET['keywords'].'"'; //mfc
+            echo gettext('Found').' '.$datagrid->num_rows.' '.gettext('from your search with keyword').' : "'.$_GET['keywords'].'"'; //mfc
         }
         echo '</div>';
     }

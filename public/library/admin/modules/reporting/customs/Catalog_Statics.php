@@ -1,5 +1,8 @@
-<?php
+    <?php
 // main system configuration
+error_reporting(E_ALL);
+
+ini_set('display_errors',1);
 session_start();
 require '../../../../sysconfig.inc.php';
 
@@ -13,7 +16,7 @@ $can_write = utility::havePrivilege('reporting', 'w');
 
 if (!$can_read) 
 {
-     die('<div class="errorBox">'.__('You don\'t have enough privileges to access this area!').'</div>');
+     die('<div class="errorBox">'.gettext('You don\'t have enough privileges to access this area!').'</div>');
 }
 
 require SIMBIO_BASE_DIR.'simbio_GUI/table/simbio_table.inc.php';
@@ -87,7 +90,7 @@ echo $bradecum;
                 <br>
      <fieldset>
     <legend style="font-weight: bold">
-            <?php echo strtoupper(__('Title List')); ?> - <?php echo __('Report Filter'); ?>
+            <?php echo strtoupper(gettext('Title List')); ?> - <?php echo gettext('Report Filter'); ?>
     </legend>
     <form method="get" action="<?php echo $_SERVER['PHP_SELF']; ?>" target="reportView">
     <div id="filterForm">        
@@ -96,7 +99,7 @@ echo $bradecum;
                 <td width="25%">
                     <div class="divRow">
                         <?php //echo __('GMD'); ?>
-                            <div class="divRowLabel"><?php echo __('Report Type :-  '); ?>
+                            <div class="divRowLabel"><?php echo gettext('Report Type :-  '); ?>
                             <?php
                                 /*$gmd_q = $dbs->query('SELECT gmd_id, gmd_name FROM mst_gmd');
                                 $gmd_options[] = array('0', __('ALL'));
@@ -105,10 +108,10 @@ echo $bradecum;
                                     $gmd_options[] = array($gmd_d[0], $gmd_d[1]);
                                 }*/
                             
-                                $gmd_options[] = array(' ', __('--Select Resource Type--'));
-                                $gmd_options[] = array('0', __('Resource Type'));
-                                $gmd_options[] = array('1', __('Material Type'));
-                                $gmd_options[] = array('2', __('Material Sub Type'));
+                                $gmd_options[] = array(' ', gettext('--Select Resource Type--'));
+                                $gmd_options[] = array('0', gettext('Resource Type'));
+                                $gmd_options[] = array('1', gettext('Material Type'));
+                                $gmd_options[] = array('2', gettext('Material Sub Type'));
                                 /*while ($gmd_d = $gmd_q->fetch_row()) 
                                 {
                                     $gmd_options[] = array($gmd_d[0], $gmd_d[1]);
@@ -122,8 +125,8 @@ echo $bradecum;
                 </td>
                 <td>
                     <div class="divRow">
-            <div class="divRowLabel"><?php echo __('Record each page'); ?></div>
-            <div class="divRowContent"><input type="text" name="recsEachPage" size="3" maxlength="3" value="<?php echo $num_recs_show; ?>" /> <?php echo __('Set between 20 and 200'); ?></div>
+            <div class="divRowLabel"><?php echo gettext('Record each page'); ?></div>
+            <div class="divRowContent"><input type="text" name="recsEachPage" size="3" maxlength="3" value="<?php echo $num_recs_show; ?>" /> <?php echo gettext('Set between 20 and 200'); ?></div>
         </div>
                 </td>
                                               
@@ -151,20 +154,20 @@ $ajax_exp1 = "ajaxFillSelectnew('".SENAYAN_WEB_ROOT_DIR."admin/modules/reporting
 $ajax = "a('".SENAYAN_WEB_ROOT_DIR."admin/AJAX_material_sub_type_handler_report.php', 'mst_gmd', 'gmd_id:gmd_name:material_resource_id', 'gmdID', $('materialresourceid').getValue())";
 
 
-       if ($rec_d['gmd_name'])
+       if (isset($rec_d['gmd_name']) && $rec_d['gmd_name'])
        {
             $mst_options[] = array($rec_d['gmd_id'],$rec_d['gmd_name']);
        }
-	$mst_options[] = array('0', __('--Material Type--'));
+	$mst_options[] = array('0', gettext('--Material Type--'));
 
 
     $ajax_exp = "ajaxFillSelect('".SENAYAN_WEB_ROOT_DIR."admin/AJAX_material_sub_type_handler.php', 'mst_material_sub_type', 'material_sub_id:material_sub_name:gmd_id', 'materialsubid', $('gmdID').getValue())";
 
-       if ($rec_d['material_sub_name']) 
+       if (isset($rec_d['material_sub_name']) && $rec_d['material_sub_name']) 
        {
             $mst_material_sub_type_options[] = array($rec_d['material_sub_id'],$rec_d['material_sub_name']);
        }
-	$mst_material_sub_type_options[] = array('0', __('--Material Sub Type--'));
+	$mst_material_sub_type_options[] = array('0', gettext('--Material Sub Type--'));
     
 //echo simbio_form_element::selectList('materialresourceid',$material_options, $rec_d['material_resource_id'],'onchange="'.$ajax.'"');
         
@@ -188,19 +191,13 @@ $ajax = "a('".SENAYAN_WEB_ROOT_DIR."admin/AJAX_material_sub_type_handler_report.
            
                 
             </tr>
-        </table>
-        
-        
-
-        
-        
-        
+        </table>        
     </div>
     <div style="padding-top: 10px; clear: both;">
-    <input type="submit" name="applyFilter" value="<?php echo __('Generate Report'); ?>" />
+    <input type="submit" name="applyFilter" value="<?php echo gettext('Generate Report'); ?>" />
 <!--    &nbsp;&nbsp;&nbsp;<b><font size="2.5px">Set Records Per Page:</font></b><input type="checkbox" id="chk" onclick="fnchecked(this.checked);"/>
            <input type="text" size="2" id="disptxt" name="disptxt" style="display:none"/>-->
-<!--           <input type="button" name="moreFilter" value="<?php  echo __('Advance Search'); ?>" onclick="showHideTableRows('filterForm', 1, this, '<?php echo __('Show More Search Options'); ?>', '<?php echo __('Hide Search Options'); ?>')" />-->
+<!--           <input type="button" name="moreFilter" value="<?php  echo gettext('Advance Search'); ?>" onclick="showHideTableRows('filterForm', 1, this, '<?php echo gettext('Show More Search Options'); ?>', '<?php echo gettext('Hide Search Options'); ?>')" />-->
     <input type="hidden" name="reportView" value="true" />
     </div>
     </form>
@@ -211,8 +208,9 @@ $ajax = "a('".SENAYAN_WEB_ROOT_DIR."admin/AJAX_material_sub_type_handler_report.
     <iframe name="reportView" id="reportView" src="<?php echo $_SERVER['PHP_SELF'].'?reportView=true'; ?>" frameborder="0" style="width: 100%; height: 600px;"></iframe>
 
 <?php
-echo $_REQUEST['disptxt'];die;
+// echo $_REQUEST['disptxt'];die;
 } else {
+
     ob_start();
     // create datagrid
     $reportgrid = new report_datagrid();
@@ -236,11 +234,11 @@ echo $_REQUEST['disptxt'];die;
 if($_GET['gmd_main']=='0')
  {      
    $reportgrid->setSQLColumn('material',
-         'count(distinct biblio) AS \''._('Total_Title').'\'',
-         'IF( item = 0 , 0 , count(distinct item)) AS '.__('Total_Item'),
-         'sum(issue) AS \''.__('Total_Issue').'\'', 
-         'IF( item = 0 , 0 , count(distinct item)) AS '.__('Total_available'),
-         '((IF( item = 0 , 0 , count(distinct item))) - sum(issue) - IF( available = 0 , 0 , (count(distinct available)))-1) AS \''.__('Total_Unavailable').'\'',
+         'count(distinct biblio) AS \''.gettext('Total_Title').'\'',
+         'IF( item = 0 , 0 , count(distinct item)) AS '.gettext('Total_Item'),
+         'sum(issue) AS \''.gettext('Total_Issue').'\'', 
+         'IF( item = 0 , 0 , count(distinct item)) AS '.gettext('Total_available'),
+         '((IF( item = 0 , 0 , count(distinct item))) - sum(issue) - IF( available = 0 , 0 , (count(distinct available)))-1) AS \''.gettext('Total_Unavailable').'\'',
          'm_id AS \''.('ID').'\''
          );   
  
@@ -249,11 +247,11 @@ if($_GET['gmd_main']=='0')
  elseif($_GET['gmd_main']=='1')
  {  
      $reportgrid->setSQLColumn('material',
-         'count(distinct biblio) AS \''._('Total_Title').'\'',
-         'IF( item = 0 , 0 , count(distinct item)) AS '.__('Total_Item'),
-         'sum(issue) AS \''.__('Total_Issue').'\'', 
-         'IF( item = 0 , 0 , count(distinct item)) AS '.__('Total_available'), 
-         '((IF( item = 0 , 0 , count(distinct item))) - sum(issue) - IF( available = 0 , 0 , (count(distinct available)))-1) AS \''.__('Total_Unavailable').'\''   ,
+         'count(distinct biblio) AS \''.gettext('Total_Title').'\'',
+         'IF( item = 0 , 0 , count(distinct item)) AS '.gettext('Total_Item'),
+         'sum(issue) AS \''.gettext('Total_Issue').'\'', 
+         'IF( item = 0 , 0 , count(distinct item)) AS '.gettext('Total_available'), 
+         '((IF( item = 0 , 0 , count(distinct item))) - sum(issue) - IF( available = 0 , 0 , (count(distinct available)))-1) AS \''.gettext('Total_Unavailable').'\''   ,
          'gmd_id AS \''.('ID').'\''  
 );   
  
@@ -262,11 +260,11 @@ if($_GET['gmd_main']=='0')
  elseif($_GET['gmd_main']=='2')
  {
      $reportgrid->setSQLColumn('material',
-         'count(distinct biblio) AS \''._('Total_Title').'\'',
-         'IF( item = 0 , 0 , count(distinct item)) AS '.__('Total_Item'),
-         'sum(issue) AS \''.__('Total_Issue').'\'', 
-         'IF( item = 0 , 0 , count(distinct item)) AS '.__('Total_available'),
-         '((IF( item = 0 , 0 , count(distinct item))) - sum(issue) - IF( available = 0 , 0 , (count(distinct available)))-1) AS \''.__('Total_Unavailable').'\'',
+         'count(distinct biblio) AS \''.gettext('Total_Title').'\'',
+         'IF( item = 0 , 0 , count(distinct item)) AS '.gettext('Total_Item'),
+         'sum(issue) AS \''.gettext('Total_Issue').'\'', 
+         'IF( item = 0 , 0 , count(distinct item)) AS '.gettext('Total_available'),
+         '((IF( item = 0 , 0 , count(distinct item))) - sum(issue) - IF( available = 0 , 0 , (count(distinct available)))-1) AS \''.gettext('Total_Unavailable').'\'',
          'ms_id AS \''.('ID').'\''
          ); 
  
@@ -486,6 +484,6 @@ FROM  (
 
     $content = ob_get_clean();
     // include the page template
-    require SENAYAN_BASE_DIR.'/admin/'.$sysconf['admin_template']['dir'].'/printed_page_tpl.php';
+    require SENAYAN_BASE_DIR.'admin/admin_template/printed_page_tpl.php';
 }
 ?>

@@ -1,5 +1,10 @@
 <?php
 
+// main system configuration
+error_reporting(E_ALL);
+
+ini_set('display_errors',1);
+session_start();
 require '../../../../sysconfig.inc.php';
 require SENAYAN_BASE_DIR.'admin/default/session.inc.php';
 require SENAYAN_BASE_DIR.'admin/default/session_check.inc.php';
@@ -17,7 +22,6 @@ if (isset($_GET['reportView']))
 {
   $reportView = true;
 }
-
  /*$material_q = $dbs->query('SELECT material_resource_id, material_resource_name FROM mst_material_resource_type where active_inactive="1"');
 	//$gmd_options='';
        $material_options = array('--Material Resource Type--');
@@ -66,7 +70,7 @@ if ($_REQUEST['id']=='1')
                 $row_class = 'alterCellPrinted';
                 $output = '<table align="center" class="border" style="width: 100%;" cellpadding="3" cellspacing="0">';
                 $output .= '<tr>';
-                $output .= '<td class="dataListHeaderPrinted">'.__('Resource Type').'</td>';    
+                $output .= '<td class="dataListHeaderPrinted">'.gettext('Resource Type').'</td>';    
                 $output .= '<td class="dataListHeaderPrinted">Total Titles</td>';
                 $output .= '<td class="dataListHeaderPrinted">Total Items</td>';
                 $output .= '<td class="dataListHeaderPrinted">Total issued Item</td>';
@@ -126,17 +130,17 @@ if ($_REQUEST['id']=='1')
     
     
                 $output .= '<tr>';
-                $output .= '<td class="dataListHeaderPrinted">'.__('Total').'</td>';
-                $output .= '<td class="dataListHeaderPrinted">'.__($total_title).'</td>';
-                $output .= '<td class="dataListHeaderPrinted">'.__($total_item).'</td>';
-                $output .= '<td class="dataListHeaderPrinted">'.__($Total_issued_Item).'</td>';
-                $output .= '<td class="dataListHeaderPrinted">'.__($Total_Available_Item).'</td>';
-                $output .= '<td class="dataListHeaderPrinted">'.__($notavailableforloan).'</td>';        
+                $output .= '<td class="dataListHeaderPrinted">'.gettext('Total').'</td>';
+                $output .= '<td class="dataListHeaderPrinted">'.gettext($total_title).'</td>';
+                $output .= '<td class="dataListHeaderPrinted">'.gettext($total_item).'</td>';
+                $output .= '<td class="dataListHeaderPrinted">'.gettext($Total_issued_Item).'</td>';
+                $output .= '<td class="dataListHeaderPrinted">'.gettext($Total_Available_Item).'</td>';
+                $output .= '<td class="dataListHeaderPrinted">'.gettext($notavailableforloan).'</td>';        
                 $output .= '</tr>';
 
                 $output .= '</table>';
     
-                echo '<div class="printPageInfo">Catalog Static Report <strong>'.$selected_year.'</strong> <a class="printReport" onclick="window.print()" href="#">['.__('Print Current Page').']</a></div>'."\n";
+                echo '<div class="printPageInfo">Catalog Static Report <strong>'.$selected_year.'</strong> <a class="printReport" onclick="window.print()" href="#">['.gettext('Print Current Page').']</a></div>'."\n";
                 echo $output;
 
                 //$content = ob_get_clean();
@@ -148,7 +152,7 @@ elseif($_REQUEST['id']=='2')
      $row_class = 'alterCellPrinted';
                 $output = '<table align="center" class="border" style="width: 100%;" cellpadding="3" cellspacing="0">';
                 $output .= '<tr>';
-                $output .= '<td class="dataListHeaderPrinted">'.__('Material Type').'</td>';    
+                $output .= '<td class="dataListHeaderPrinted">'.gettext('Material Type').'</td>';    
                 $output .= '<td class="dataListHeaderPrinted">Total Titles</td>';
                 $output .= '<td class="dataListHeaderPrinted">Total Items</td>';
                 $output .= '<td class="dataListHeaderPrinted">Total issued Item</td>';
@@ -269,17 +273,17 @@ count(*) as ttltitle,
     
     
                 $output .= '<tr>';
-                $output .= '<td class="dataListHeaderPrinted">'.__('Total').'</td>';
-                $output .= '<td class="dataListHeaderPrinted">'.__($total_title).'</td>';
-                $output .= '<td class="dataListHeaderPrinted">'.__($total_item).'</td>';
-                $output .= '<td class="dataListHeaderPrinted">'.__($Total_issued_Item).'</td>';
-                $output .= '<td class="dataListHeaderPrinted">'.__($Total_Available_Item).'</td>';
-                $output .= '<td class="dataListHeaderPrinted">'.__($notavailableforloan).'</td>';        
+                $output .= '<td class="dataListHeaderPrinted">'.gettext('Total').'</td>';
+                $output .= '<td class="dataListHeaderPrinted">'.gettext($total_title).'</td>';
+                $output .= '<td class="dataListHeaderPrinted">'.gettext($total_item).'</td>';
+                $output .= '<td class="dataListHeaderPrinted">'.gettext($Total_issued_Item).'</td>';
+                $output .= '<td class="dataListHeaderPrinted">'.gettext($Total_Available_Item).'</td>';
+                $output .= '<td class="dataListHeaderPrinted">'.gettext($notavailableforloan).'</td>';        
                 $output .= '</tr>';
 
                 $output .= '</table>';
     
-                echo '<div class="printPageInfo">Catalog Static Report <strong>'.$selected_year.'</strong> <a class="printReport" onclick="window.print()" href="#">['.__('Print Current Page').']</a></div>'."\n";
+                echo '<div class="printPageInfo">Catalog Static Report <strong>'.$selected_year.'</strong> <a class="printReport" onclick="window.print()" href="#">['.gettext('Print Current Page').']</a></div>'."\n";
                 echo $output;
 }
 elseif($_REQUEST['id']=='3')
@@ -288,7 +292,7 @@ elseif($_REQUEST['id']=='3')
     $row_class = 'alterCellPrinted';
                 $output = '<table align="center" class="border" style="width: 100%;" cellpadding="3" cellspacing="0">';
                 $output .= '<tr>';
-                $output .= '<td class="dataListHeaderPrinted">'.__('Materrial Type').'</td>';    
+                $output .= '<td class="dataListHeaderPrinted">'.gettext('Materrial Type').'</td>';    
                 //$output .= '<td class="dataListHeaderPrinted">Materrial Type</td>';
                 $output .= '<td class="dataListHeaderPrinted">Item</td>';                
                 $output .= '</tr>';
@@ -325,8 +329,8 @@ elseif($_REQUEST['id']=='3')
     
     
                 $output .= '<tr>';
-                $output .= '<td class="dataListHeaderPrinted">'.__('Total').'</td>';
-                $output .= '<td class="dataListHeaderPrinted">'.__($total_title).'</td>';
+                $output .= '<td class="dataListHeaderPrinted">'.gettext('Total').'</td>';
+                $output .= '<td class="dataListHeaderPrinted">'.gettext($total_title).'</td>';
                /* $output .= '<td class="dataListHeaderPrinted">'.__($total_item).'</td>';
                 $output .= '<td class="dataListHeaderPrinted">'.__($Total_issued_Item).'</td>';
                 $output .= '<td class="dataListHeaderPrinted">'.__($Total_Available_Item).'</td>';
@@ -335,7 +339,7 @@ elseif($_REQUEST['id']=='3')
 
                 $output .= '</table>';
     
-                echo '<div class="printPageInfo">Catalog Static Report <strong>'.$selected_year.'</strong> <a class="printReport" onclick="window.print()" href="#">['.__('Print Current Page').']</a></div>'."\n";
+                echo '<div class="printPageInfo">Catalog Static Report <strong>'.$selected_year.'</strong> <a class="printReport" onclick="window.print()" href="#">['.gettext('Print Current Page').']</a></div>'."\n";
                 echo $output;   
     
 }

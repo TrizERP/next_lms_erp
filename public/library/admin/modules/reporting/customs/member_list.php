@@ -2,6 +2,10 @@
 
 // main system configuration
 session_start();
+// error_reporting(E_ALL);
+
+// ini_set('display_errors',1);
+
 require '../../../../sysconfig.inc.php';
 require SENAYAN_BASE_DIR.'admin/default/session_check.inc.php';
 // privileges checking
@@ -13,7 +17,7 @@ $can_write = utility::havePrivilege('reporting', 'w');
 //echo "<pre>";
 
 if (!$can_read) {
-    die('<div class="errorBox">'.__('You don\'t have enough privileges to access this area!').'</div>');
+    die('<div class="errorBox">'.gettext('You don\'t have enough privileges to access this area!').'</div>');
 }
 
 require SIMBIO_BASE_DIR.'simbio_GUI/template_parser/simbio_template_parser.inc.php';
@@ -64,19 +68,19 @@ echo $bradecum;
 </table>
 <!-- filter -->
     <fieldset style="margin-bottom: 3px;">
-    <legend style="font-weight: bold"><?php echo strtoupper(__('Member List')); ?> - <?php echo __('Report Filter'); ?></legend>
+    <legend style="font-weight: bold"><?php echo strtoupper(gettext('Member List')); ?> - <?php echo gettext('Report Filter'); ?></legend>
     <form method="get" action="<?php echo $_SERVER['PHP_SELF']; ?>" target="reportView">
     <div id="filterForm">
         <div class="divRow">
-            <div class="divRowLabel"><?php echo __('Membership Type'); ?></div>
+            <div class="divRowLabel"><?php echo gettext('Membership Type'); ?></div>
             <div class="divRowContent">
             <?php
             $mtype_options = array();
-            $mtype_options[] = array(' ', __('--Select Membership Type--'));
-             $mtype_options[] = array('0', __('Admin'));
-             $mtype_options[] = array('1', __('Staff'));
-             $mtype_options[] = array('2', __('Student'));
-             //$mtype_options[] = array('3', __('Parent'));
+            $mtype_options[] = array(' ', gettext('--Select Membership Type--'));
+             $mtype_options[] = array('0', gettext('Admin'));
+             $mtype_options[] = array('1', gettext('Staff'));
+             $mtype_options[] = array('2', gettext('Student'));
+             //$mtype_options[] = array('3gettext__('Parent'));
              //$mtype_options[] = array('4', __('Employee'));
             echo simbio_form_element::selectList('member_type', $mtype_options);
             ?>
@@ -84,7 +88,7 @@ echo $bradecum;
             
         </div>
         <div class="divRow">
-            <div class="divRowLabel"><?php echo __('Member ID').'/'.__('Member Name'); ?></div>
+            <div class="divRowLabel"><?php echo gettext('Member ID').'/'.gettext('Member Name'); ?></div>
             <div class="divRowContent">
             <?php 
             //comment by iresh on 25-1-2011 echo simbio_form_element::textField('text', 'id_name', '', 'style="width: 50%"');
@@ -93,7 +97,7 @@ echo $bradecum;
             </div>
         </div>
         <div class="divRow">
-            <div class="divRowLabel"><?php echo __('Standard'); ?></div>
+            <div class="divRowLabel"><?php echo gettext('Standard'); ?></div>
             <div class="divRowContent">
             <?php
             
@@ -103,7 +107,7 @@ echo $bradecum;
                         WHERE sg.sub_institute_id='".$_SESSION['SUB_INSTITUTE_ID']."' ";
 			$std_q = $dbs->query($str);
 			$std_options = array();
-			$std_options[] = array('ALL', __('ALL'));
+			$std_options[] = array('ALL', gettext('ALL'));
 			while ($std_d = $std_q->fetch_row()) {
 				$std_options[] = array($std_d[0], $std_d[1]);
 			}
@@ -112,12 +116,12 @@ echo $bradecum;
             </div>
         </div>
         <div class="divRow">
-            <div class="divRowLabel"><?php echo __('Gender'); ?></div>
+            <div class="divRowLabel"><?php echo gettext('Gender'); ?></div>
             <div class="divRowContent">
             <?php
-            $gender_chbox[0] = array('ALL', __('ALL'));
-            $gender_chbox[1] = array('1', __('Male'));
-            $gender_chbox[2] = array('0', __('Female'));
+            $gender_chbox[0] = array('ALL', gettext('ALL'));
+            $gender_chbox[1] = array('1', gettext('Male'));
+            $gender_chbox[2] = array('0', gettext('Female'));
             echo simbio_form_element::radioButton('gender', $gender_chbox, 'ALL');
             ?>
             </div>
@@ -141,7 +145,7 @@ echo $bradecum;
             <?php //echo __('Register Date Until'); ?>
         </td>
         <td>
-            <?php echo __('Record each page'); ?>
+            <?php echo gettext('Record each page'); ?>
         </td>
     </tr>
     <tr>
@@ -152,13 +156,13 @@ echo $bradecum;
              <?php //echo simbio_form_element::dateField('untilDate', date('Y-m-d')); ?>
         </td>
         <td>
-            <input type="text" name="recsEachPage" size="3" maxlength="3" value="<?php echo $num_recs_show; ?>" /> <?php echo __('Set between 20 and 200'); ?>
+            <input type="text" name="recsEachPage" size="3" maxlength="3" value="<?php echo $num_recs_show; ?>" /> <?php echo gettext('Set between 20 and 200'); ?>
         </td>
     </tr>
 </table>
     <div style="padding-top: 10px; clear: both;">
-    <input type="submit" name="applyFilter" value="<?php echo __('Apply Filter'); ?>" />
-    <input type="button" name="moreFilter" value="<?php echo __('Show More Filter Options'); ?>" onclick="showHideTableRows('filterForm', 1, this, '<?php echo __('Show More Filter Options'); ?>', '<?php echo __('Hide Filter Options'); ?>')" />
+    <input type="submit" name="applyFilter" value="<?php echo gettext('Apply Filter'); ?>" />
+    <input type="button" name="moreFilter" value="<?php echo gettext('Show More Filter Options'); ?>" onclick="showHideTableRows('filterForm', 1, this, '<?php echo gettext('Show More Filter Options'); ?>', '<?php echo gettext('Hide Filter Options'); ?>')" />
     <input type="hidden" name="reportView" value="true" />
     </div>
     </form>
@@ -186,9 +190,9 @@ else
 
         // create datagrid
         $reportgrid = new report_datagrid();
-        $reportgrid->setSQLColumn('m.user_name AS \''.__('Member ID').'\'',
-            'concat_ws(" ",m.first_name,m.middle_name,m.last_name) AS \''.__('Member Name').'\'',
-            'mt.name AS \''.__('Membership Type').'\'');
+        $reportgrid->setSQLColumn('m.user_name AS \''.gettext('Member ID').'\'',
+            'concat_ws(" ",m.first_name,m.middle_name,m.last_name) AS \''.gettext('Member Name').'\'',
+            'mt.name AS \''.gettext('Membership Type').'\'');
         $reportgrid->setSQLorder('concat(m.user_name) ASC');
         $criteria = 'm.id IS NOT NULL AND m.sub_institute_id = '.$_SESSION['SUB_INSTITUTE_ID'].' ';
      
@@ -228,9 +232,9 @@ else
                     inner JOIN ".$inte_schema.".tbluserprofilemaster AS mt ON m.user_profile_id = mt.id AND mt.name = 'Teacher' ";                            
         // create datagrid
         $reportgrid = new report_datagrid();
-        $reportgrid->setSQLColumn('m.user_name AS \''.__('Member ID').'\'',
-            'concat_ws(" ",m.first_name,m.middle_name,m.last_name) AS \''.__('Member Name').'\'',
-            'mt.name AS \''.__('Membership Type').'\'');
+        $reportgrid->setSQLColumn('m.user_name AS \''.gettext('Member ID').'\'',
+            'concat_ws(" ",m.first_name,m.middle_name,m.last_name) AS \''.gettext('Member Name').'\'',
+            'mt.name AS \''.gettext('Membership Type').'\'');
         $reportgrid->setSQLorder('m.user_name ASC');            
         $criteria = 'm.id IS NOT NULL AND m.sub_institute_id = '.$_SESSION['SUB_INSTITUTE_ID'].' ';
         if (isset($_GET['member_type']) AND !empty($_GET['member_type']))
@@ -272,11 +276,11 @@ else
             		inner join ".$inte_schema.".academic_section SG on SG.ID= SE.grade_id AND SE.sub_institute_id = SG.sub_institute_id ";
         // create datagrid
         $reportgrid = new report_datagrid();
-        $reportgrid->setSQLColumn('m.enrollment_no AS \''.__('Member ID').'\'',
-            'concat_ws(" ",m.first_name,m.middle_name,m.last_name) AS \''.__('Member Name').'\'',
-            'mt.name AS \''.__('Membership Type').'\'',
-    		' CS.name AS \''.__('Std').'\'',
-    		' SS.name AS \''.__('Div').'\''
+        $reportgrid->setSQLColumn('m.enrollment_no AS \''.gettext('Member ID').'\'',
+            'concat_ws(" ",m.first_name,m.middle_name,m.last_name) AS \''.gettext('Member Name').'\'',
+            'mt.name AS \''.gettext('Membership Type').'\'',
+    		' CS.name AS \''.gettext('Std').'\'',
+    		' SS.name AS \''.gettext('Div').'\''
     		
     		);
         $reportgrid->setSQLorder('CS.name,SS.name,concat(m.first_name) ASC');
@@ -312,6 +316,6 @@ else
 
     $content = ob_get_clean();
     // include the page template
-    require SENAYAN_BASE_DIR.'/admin/'.$sysconf['admin_template']['dir'].'/printed_page_tpl.php';
+    require SENAYAN_BASE_DIR.'/admin/admin_template/printed_page_tpl.php';
 }
 ?>

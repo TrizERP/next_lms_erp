@@ -37,7 +37,7 @@ $can_read = utility::havePrivilege('system', 'r');
 $can_write = utility::havePrivilege('system', 'w');
 
 if (!($can_read AND $can_write)) {
-    die('<div class="errorBox">'.__('You don\'t have enough privileges to view this section').'</div>');
+    die('<div class="errorBox">'.gettext('You don\'t have enough privileges to view this section').'</div>');
 }
 // if backup process is invoked
 if (isset($_POST['start'])) {
@@ -118,7 +118,7 @@ $datagrid->delete_URL = $_SERVER['PHP_SELF'];
 $datagrid_result = $datagrid->createDataGrid($dbs, $table_spec, 20, false);
 
 if (isset($_GET['keywords']) AND $_GET['keywords']) {
-    $msg = str_replace('{result->num_rows}', $datagrid->num_rows, __('Found <strong>{result->num_rows}</strong> from your keywords')); //mfc
+    $msg = str_replace('{result->num_rows}', $datagrid->num_rows, gettext('Found <strong>{result->num_rows}</strong> from your keywords')); //mfc
     echo '<div class="infoBox">'.$msg.' : "'.$_GET['keywords'].'"</div>';
 }
 

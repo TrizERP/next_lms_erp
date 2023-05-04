@@ -72,7 +72,7 @@ echo $bradecum;
 </table>
 <fieldset class="menuBox">
     <div class="menuBoxInner systemIcon">
-        <?php echo strtoupper(__('System Configuration')).'<p class="only_border">&nbsp;</p>'.__('Modify global application preferences'); ?>
+        <?php echo strtoupper(gettext('System Configuration')).'<p class="only_border">&nbsp;</p>'.gettext('Modify global application preferences'); ?>
     </div>
 </fieldset>
 <?php
@@ -154,14 +154,14 @@ if (isset($_POST['updateData'])) {
 
     // write log
     utility::writeLogs($dbs, 'staff', $_SESSION['uid'], 'system', $_SESSION['realname'].' change application global configuration');
-    utility::jsAlert(__('Settings saved. Refreshing page'));
+    utility::jsAlert(gettext('Settings saved. Refreshing page'));
     echo '<script type="text/javascript">parent.location.href = \'../../index.php?mod=system\';</script>';
 }
 /* Config Vars update process end */
 
 // create new instance
 $form = new simbio_form_table_AJAX('mainForm', $_SERVER['PHP_SELF'], 'post');
-$form->submit_button_attr = 'name="updateData" value="'.__('Save Settings').'" class="button"';
+$form->submit_button_attr = 'name="updateData" value="'.gettext('Save Settings').'" class="button"';
 
 // form table attributes
 $form->table_attr = 'align="center" id="dataList" cellpadding="5" cellspacing="0"';
@@ -175,13 +175,13 @@ utility::loadSettings($dbs);
 //comment given by iresh on 11/1/2011----->$form->addAnything('Senayan Version', '<strong>'.SENAYAN_VERSION.'</strong>');
 
 // library name
-//comment by iresh on 25-1-2011 $form->addTextField('text', 'library_name', __('Library Name'), $sysconf['library_name'], 'style="width: 100%;"');
-/*added by iresh on 25-1-2011 */$form->addTextField('text', 'library_name', __('Library Name'), $sysconf['library_name'], 'style="width: 200px;"');
+//comment by iresh on 25-1-2011 $form->addTextField('text', 'library_name', gettext('Library Name'), $sysconf['library_name'], 'style="width: 100%;"');
+/*added by iresh on 25-1-2011 */$form->addTextField('text', 'library_name', gettext('Library Name'), $sysconf['library_name'], 'style="width: 200px;"');
 
 
 // library subname
-//comment by iresh on 25-1-2011 $form->addTextField('text', 'library_subname', __('Library Subname'), $sysconf['library_subname'], 'style="width: 100%;"');
-/*added by iresh on 25-1-2011 */$form->addTextField('text', 'library_subname', __('Library Subname'), $sysconf['library_subname'], 'style="width: 200px;"');
+//comment by iresh on 25-1-2011 $form->addTextField('text', 'library_subname', gettext('Library Subname'), $sysconf['library_subname'], 'style="width: 100%;"');
+/*added by iresh on 25-1-2011 */$form->addTextField('text', 'library_subname', gettext('Library Subname'), $sysconf['library_subname'], 'style="width: 200px;"');
 
 /* Form Element(s) */
 // public template
@@ -195,7 +195,7 @@ ksort($dir_tree);
 foreach ($dir_tree as $dir) {
     $tpl_options[] = array($dir, $dir);
 }
-$form->addSelectList('template', __('Public Template'), $tpl_options, $sysconf['template']['theme']);
+$form->addSelectList('template', gettext('Public Template'), $tpl_options, $sysconf['template']['theme']);
 
 
 // admin template
@@ -209,11 +209,11 @@ ksort($dir_tree);
 foreach ($dir_tree as $dir) {
     $admin_tpl_options[] = array($dir, $dir);
 }
-$form->addSelectList('admin_template', __('Admin Template'), $admin_tpl_options, $sysconf['admin_template']['theme']);
+$form->addSelectList('admin_template', gettext('Admin Template'), $admin_tpl_options, $sysconf['admin_template']['theme']);
 
 // application language
 require_once(LANGUAGES_BASE_DIR.'localisation.php');
-$form->addSelectList('default_lang', __('Default App. Language'), $available_languages, $sysconf['default_lang']);
+$form->addSelectList('default_lang', gettext('Default App. Language'), $available_languages, $sysconf['default_lang']);
 
 // opac result list number
 $result_num_options[] = array('10', '10');
@@ -221,59 +221,59 @@ $result_num_options[] = array('20', '20');
 $result_num_options[] = array('30', '30');
 $result_num_options[] = array('40', '40');
 $result_num_options[] = array('50', '50');
-$form->addSelectList('opac_result_num', __('Number Of Collections To Show In OPAC Result List'), $result_num_options, $sysconf['opac_result_num'] );
+$form->addSelectList('opac_result_num', gettext('Number Of Collections To Show In OPAC Result List'), $result_num_options, $sysconf['opac_result_num'] );
 
 // homepage setting
 $promote_options[] = array('1', 'Yes');
-$form->addCheckBox('enable_promote_titles', __('Show Promoted Titles at Homepage'), $promote_options, $sysconf['enable_promote_titles']?'1':'0');
+$form->addCheckBox('enable_promote_titles', gettext('Show Promoted Titles at Homepage'), $promote_options, $sysconf['enable_promote_titles']?'1':'0');
 
 // enable quick return
 $options = null;
-$options[] = array('0', __('Disable'));
-$options[] = array('1', __('Enable'));
-$form->addSelectList('quick_return', __('Quick Return'), $options, $sysconf['quick_return']?'1':'0');
+$options[] = array('0', gettext('Disable'));
+$options[] = array('1', gettext('Enable'));
+$form->addSelectList('quick_return', gettext('Quick Return'), $options, $sysconf['quick_return']?'1':'0');
 
 // circulation receipt
 $options = null;
-$options[] = array('0', __('Don\'t Print'));
-$options[] = array('1', __('Print'));
-$form->addSelectList('circulation_receipt', __('Print Circulation Receipt'), $options, $sysconf['circulation_receipt']?'1':'0');
+$options[] = array('0', gettext('Don\'t Print'));
+$options[] = array('1', gettext('Print'));
+$form->addSelectList('circulation_receipt', gettext('Print Circulation Receipt'), $options, $sysconf['circulation_receipt']?'1':'0');
 
 // enable manual changes of loan and due date in circulation transaction
 $options = null;
-$options[] = array('0', __('Disable'));
-$options[] = array('1', __('Enable'));
-$form->addSelectList('allow_loan_date_change', __('Loan and Due Date Manual Change'), $options, $sysconf['allow_loan_date_change']?'1':'0');
+$options[] = array('0', gettext('Disable'));
+$options[] = array('1', gettext('Enable'));
+$form->addSelectList('allow_loan_date_change', gettext('Loan and Due Date Manual Change'), $options, $sysconf['allow_loan_date_change']?'1':'0');
 
 // enable loan limit overriden
 $options = null;
-$options[] = array('0', __('Disable'));
-$options[] = array('1', __('Enable'));
-$form->addSelectList('loan_limit_override', __('Loan Limit Override'), $options, $sysconf['loan_limit_override']?'1':'0');
+$options[] = array('0', gettext('Disable'));
+$options[] = array('1', gettext('Enable'));
+$form->addSelectList('loan_limit_override', gettext('Loan Limit Override'), $options, $sysconf['loan_limit_override']?'1':'0');
 
 // enable bibliography xml detail
 $options = null;
-$options[] = array('0', __('Disable'));
-$options[] = array('1', __('Enable'));
-$form->addSelectList('enable_xml_detail', __('OPAC XML Detail'), $options, $sysconf['enable_xml_detail']?'1':'0');
+$options[] = array('0', gettext('Disable'));
+$options[] = array('1', gettext('Enable'));
+$form->addSelectList('enable_xml_detail', gettext('OPAC XML Detail'), $options, $sysconf['enable_xml_detail']?'1':'0');
 
 // enable bibliography xml result set
 $options = null;
-$options[] = array('0', __('Disable'));
-$options[] = array('1', __('Enable'));
-$form->addSelectList('enable_xml_result', __('OPAC XML Result'), $options, $sysconf['enable_xml_result']?'1':'0');
+$options[] = array('0', gettext('Disable'));
+$options[] = array('1', gettext('Enable'));
+$form->addSelectList('enable_xml_result', gettext('OPAC XML Result'), $options, $sysconf['enable_xml_result']?'1':'0');
 
 // allow file attachment download
 $options = null;
-$options[] = array('0', __('Forbid'));
-$options[] = array('1', __('Allow'));
-$form->addSelectList('allow_file_download', __('Allow OPAC File Download'), $options, $sysconf['allow_file_download']?'1':'0');
+$options[] = array('0', gettext('Forbid'));
+$options[] = array('1', gettext('Allow'));
+$form->addSelectList('allow_file_download', gettext('Allow OPAC File Download'), $options, $sysconf['allow_file_download']?'1':'0');
 
 // session timeout
-$form->addTextField('text', 'session_timeout', __('Session Login Timeout'), $sysconf['session_timeout'], 'style="width: 10%;"');
+$form->addTextField('text', 'session_timeout', gettext('Session Login Timeout'), $sysconf['session_timeout'], 'style="width: 10%;"');
 
 // barcode encoding
-$form->addSelectList('barcode_encoding', __('Barcode Encoding'), $barcodes_encoding, $sysconf['barcode_encoding'] );
+$form->addSelectList('barcode_encoding', gettext('Barcode Encoding'), $barcodes_encoding, $sysconf['barcode_encoding'] );
 
 // print out the object
 echo $form->printOut();

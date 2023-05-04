@@ -20,6 +20,6 @@
 
 /* Reporting module submenu items */
 $menu[] = array('Header2', 'Site Map');
-$menu[] = array(__('Site Map'), MODULES_WEB_ROOT_DIR.'Sitemap/index.php', __('Site Map'));
+$menu[] = array(gettext('Site Map'), MODULES_WEB_ROOT_DIR.'Sitemap/index.php', gettext('Site Map'));
 // other/custom report menu
 ?>

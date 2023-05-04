@@ -18,7 +18,7 @@ $can_read = utility::havePrivilege('master_file', 'r');
 $can_write = utility::havePrivilege('master_file', 'w');
 
 if (!$can_read) {
-    die('<div class="errorBox">'.__('You don\'t have enough privileges to view this section').'</div>');
+    die('<div class="errorBox">'.gettext('You don\'t have enough privileges to view this section').'</div>');
 }
 
 /* RECORD OPERATION */
@@ -28,7 +28,7 @@ if (isset($_POST['saveData']))
     // check form validity
     if (empty($collTypeName)) 
     {
-        utility::jsAlert(__('Collection type name can\'t be empty'));
+        utility::jsAlert(gettext('Collection type name can\'t be empty'));
         exit();
     }
     else
@@ -36,7 +36,7 @@ if (isset($_POST['saveData']))
         
         if (number_format($collTypeName)) 
         {
-            utility::jsAlert(__('Collection type name can\'t be Numeric!'));
+            utility::jsAlert(gettext('Collection type name can\'t be Numeric!'));
             exit();
         }
     
@@ -56,18 +56,18 @@ if (isset($_POST['saveData']))
             // update the data
             $update = $sql_op->update('mst_coll_type', $data, 'coll_type_id='.$updateRecordID);
             if ($update) {
-                utility::jsAlert(__('Colllection Type Data Successfully Updated'));
+                utility::jsAlert(gettext('Colllection Type Data Successfully Updated'));
                 echo '<script type="text/javascript">parent.setContent(\'mainContent\', parent.getPreviousAJAXurl(), \'post\');</script>';
-            } else { utility::jsAlert(__('Colllection Type Data FAILED to Updated. Please Contact System Administrator')."\nDEBUG : ".$sql_op->error); }
+            } else { utility::jsAlert(gettext('Colllection Type Data FAILED to Updated. Please Contact System Administrator')."\nDEBUG : ".$sql_op->error); }
             exit();
         } else {
             /* INSERT RECORD MODE */
             // insert the data
             $insert = $sql_op->insert('mst_coll_type', $data);
             if ($insert) {
-                utility::jsAlert(__('New Colllection Type Data Successfully Saved'));
+                utility::jsAlert(gettext('New Colllection Type Data Successfully Saved'));
                 echo '<script type="text/javascript">parent.setContent(\'mainContent\', \''.$_SERVER['PHP_SELF'].'\', \'post\');</script>';
-            } else { utility::jsAlert(__('Author Data FAILED to Save.')." DEBUG : ".$sql_op->error); }
+            } else { utility::jsAlert(gettext('Author Data FAILED to Save.')." DEBUG : ".$sql_op->error); }
             exit();
         }
     }
@@ -97,7 +97,7 @@ if (isset($_POST['saveData']))
                 $error_num++;
             }
         } else {
-            $msg = str_replace('{item_name}', $item_d[0], __('Location ({item_name}) still used by {number_items} item(s)')); //mfc
+            $msg = str_replace('{item_name}', $item_d[0], gettext('Location ({item_name}) still used by {number_items} item(s)')); //mfc
             $msg = str_replace('{number_items}', $item_d[1], $msg);
             $still_have_item[] = $msg;
             $error_num++;
@@ -109,15 +109,15 @@ if (isset($_POST['saveData']))
         foreach ($still_have_item as $coll_type) {
             $undeleted_coll_types .= $coll_type;
         }
-        utility::jsAlert(__('Below data can not be deleted:').$undeleted_coll_types);
+        utility::jsAlert(gettext('Below data can not be deleted:').$undeleted_coll_types);
         exit();
     }
     // error alerting
     if ($error_num == 0) {
-        utility::jsAlert(__('All Data Successfully Deleted'));
+        utility::jsAlert(gettext('All Data Successfully Deleted'));
         echo '<script type="text/javascript">parent.setContent(\'mainContent\', \''.$_SERVER['PHP_SELF'].'?'.$_POST['lastQueryStr'].'\', \'post\');</script>';
     } else {
-        utility::jsAlert(__('Some or All Data NOT deleted successfully!\nPlease contact system administrator'));
+        utility::jsAlert(gettext('Some or All Data NOT deleted successfully!\nPlease contact system administrator'));
         echo '<script type="text/javascript">parent.setContent(\'mainContent\', \''.$_SERVER['PHP_SELF'].'?'.$_POST['lastQueryStr'].'\', \'post\');</script>';
     }
     exit();
@@ -131,7 +131,7 @@ if (isset($_POST['saveData']))
 	<td valign=top>
 	<?php
 	$bradecum = '';       
-        $basedir = basename(dirname(__FILE__));
+        $basedir = basename(dirname(gettextFILEgettext));
         $bradecum = "<a href=javascript:void(0); onclick=javascript:new_set_home(); >Home</a>-><a class='' href=javascript:void(0); onclick=javascript:new_set('".$basedir."');>"; 
 	$query = "select module_name from mst_module where module_path = '".$basedir."'";
 	$set_query = $dbs->query($query);
@@ -160,10 +160,10 @@ echo $bradecum;
 	<td class="tab_menu_top">
                             <ul class="tabs"> 
 				<li>
-<a href="<?php echo MODULES_WEB_ROOT_DIR; ?>master_file/coll_type.php?action=detail" class="headerText2"><?php echo __('Add New Collection Type'); ?></a>
+<a href="<?php echo MODULES_WEB_ROOT_DIR; ?>master_file/coll_type.php?action=detail" class="headerText2"><?php echo gettext('Add New Collection Type'); ?></a>
 </li>
 <li> 
-<a href="<?php echo MODULES_WEB_ROOT_DIR; ?>master_file/coll_type.php" class="headerText2"><?php echo __('Collection Type List'); ?></a> </li>
+<a href="<?php echo MODULES_WEB_ROOT_DIR; ?>master_file/coll_type.php" class="headerText2"><?php echo gettext('Collection Type List'); ?></a> </li>
 </ul>
 	</td>
 </tr>
@@ -176,12 +176,12 @@ if (isset($_POST['detail']) OR (!isset($_GET['action']) AND $_GET['action'] != '
 
 <fieldset class="menuBox">
 <div class="menuBoxInner masterFileIcon">
-   <!-- <?php echo strtoupper(__('Collection Type')); ?> - <a href="<?php echo MODULES_WEB_ROOT_DIR; ?>master_file/coll_type.php?action=detail" class="headerText2"><?php echo __('Add New Collection Type'); ?></a>
-    &nbsp; <a href="<?php echo MODULES_WEB_ROOT_DIR; ?>master_file/coll_type.php" class="headerText2"><?php echo __('Collection Type List'); ?></a>-->
+   <!-- <?php echo strtoupper(gettext('Collection Type')); ?> - <a href="<?php echo MODULES_WEB_ROOT_DIR; ?>master_file/coll_type.php?action=detail" class="headerText2"><?php echo gettext('Add New Collection Type'); ?></a>
+    &nbsp; <a href="<?php echo MODULES_WEB_ROOT_DIR; ?>master_file/coll_type.php" class="headerText2"><?php echo gettext('Collection Type List'); ?></a>-->
     <hr />
-    <form name="search" action="<?php echo MODULES_WEB_ROOT_DIR; ?>master_file/coll_type.php" id="search" method="get" style="display: inline;"><?php echo __('Search'); ?> :
+    <form name="search" action="<?php echo MODULES_WEB_ROOT_DIR; ?>master_file/coll_type.php" id="search" method="get" style="display: inline;"><?php echo gettext('Search'); ?> :
     <input type="text" name="keywords" size="30" />
-    <input type="submit" id="doSearch" value="<?php echo __('Search'); ?>" class="button" />
+    <input type="submit" id="doSearch" value="<?php echo gettext('Search'); ?>" class="button" />
     </form>
 </div>
 </fieldset>
@@ -195,14 +195,14 @@ if (isset($_POST['detail']) OR (!isset($_GET['action']) AND $_GET['action'] != '
 /* main content */
 if (isset($_POST['detail']) OR (isset($_GET['action']) AND $_GET['action'] == 'detail')) {
     if (!($can_read AND $can_write)) {
-        die('<div class="errorBox">'.__('You don\'t have enough privileges to view this section').'</div>');
+        die('<div class="errorBox">'.gettext('You don\'t have enough privileges to view this section').'</div>');
     }
     $itemID = (integer)isset($_POST['itemID'])?$_POST['itemID']:0;
     $rec_q = $dbs->query("SELECT * FROM mst_coll_type WHERE coll_type_id=$itemID");
     $rec_d = $rec_q->fetch_assoc();
     // create new instance
     $form = new simbio_form_table_AJAX('mainForm', $_SERVER['PHP_SELF'].'?'.$_SERVER['QUERY_STRING'], 'post');
-    $form->submit_button_attr = 'name="saveData" value="'.__('Save').'" class="button"';
+    $form->submit_button_attr = 'name="saveData" value="'.gettext('Save').'" class="button"';
 
     // form table attributes
     $form->table_attr = 'align="center" id="dataList" cellpadding="5" cellspacing="0"';
@@ -217,18 +217,18 @@ if (isset($_POST['detail']) OR (isset($_GET['action']) AND $_GET['action'] == 'd
         // form record title
         $form->record_title = $rec_d['coll_type_name'];
         // submit button attribute
-        $form->submit_button_attr = 'name="saveData" value="'.__('Update').'" class="button"';
+        $form->submit_button_attr = 'name="saveData" value="'.gettext('Update').'" class="button"';
     }
 
     /* Form Element(s) */
     // coll_type_name
-   //comment by iresh on 25-1-2011 $form->addTextField('text', 'collTypeName', __('Collection Type').'*', $rec_d['coll_type_name'], 'style="width: 60%;"');
-  /*added by iresh on 25-1-2011*/  $form->addTextField('text', 'collTypeName', __('Collection Type').'*', $rec_d['coll_type_name'], 'style="width: 140px;" onkeyup="return checkspecialcharacterdynamic(this.name);"onblur="return charactercheck(this.name);"');
+   //comment by iresh on 25-1-2011 $form->addTextField('text', 'collTypeName', gettext('Collection Type').'*', $rec_d['coll_type_name'], 'style="width: 60%;"');
+  /*added by iresh on 25-1-2011*/  $form->addTextField('text', 'collTypeName', gettext('Collection Type').'*', $rec_d['coll_type_name'], 'style="width: 140px;" onkeyup="return checkspecialcharacterdynamic(this.name);"onblur="return charactercheck(this.name);"');
 
 
     // edit mode messagge
     if ($form->edit_mode) {
-        echo '<div class="infoBox">'.__('You are going to edit data').' : <b>'.$rec_d['coll_type_name'].'</b>  <br />'.__('Last Update').$rec_d['last_update'].'</div>'; //mfc
+        echo '<div class="infoBox">'.gettext('You are going to edit data').' : <b>'.$rec_d['coll_type_name'].'</b>  <br />'.gettext('Last Update').$rec_d['last_update'].'</div>'; //mfc
     }
     // print out the form object
     echo $form->printOut();
@@ -240,9 +240,9 @@ if (isset($_POST['detail']) OR (isset($_GET['action']) AND $_GET['action'] == 'd
     // create datagrid
     $datagrid = new simbio_datagrid();
     if ($can_read AND $can_write) {
-        $datagrid->setSQLColumn('ct.coll_type_id', 'ct.coll_type_name AS \''.__('Collection Type').'\'', 'DATE_FORMAT(ct.last_update,"%d-%m-%Y") AS \''.__('Last Update').'\'');
+        $datagrid->setSQLColumn('ct.coll_type_id', 'ct.coll_type_name AS \''.gettext('Collection Type').'\'', 'DATE_FORMAT(ct.last_update,"%d-%m-%Y") AS \''.gettext('Last Update').'\'');
     } else {
-        $datagrid->setSQLColumn('ct.coll_type_name AS \''.__('Collection Type').'\'', 'DATE_FORMAT(ct.last_update,"%d-%m-%Y") AS \''.__('Last Update').'\'');
+        $datagrid->setSQLColumn('ct.coll_type_name AS \''.gettext('Collection Type').'\'', 'DATE_FORMAT(ct.last_update,"%d-%m-%Y") AS \''.gettext('Last Update').'\'');
     }
     $datagrid->setSQLorder('coll_type_name ASC');
 
@@ -266,7 +266,7 @@ if (isset($_POST['detail']) OR (isset($_GET['action']) AND $_GET['action'] == 'd
     // put the result into variables
     $datagrid_result = $datagrid->createDataGrid($dbs, $table_spec, 20, ($can_read AND $can_write));
     if (isset($_GET['keywords']) AND $_GET['keywords']) {
-        $msg = str_replace('{result->num_rows}', $datagrid->num_rows, __('Found <strong>{result->num_rows}</strong> from your keywords')); //mfc
+        $msg = str_replace('{result->num_rows}', $datagrid->num_rows, gettext('Found <strong>{result->num_rows}</strong> from your keywords')); //mfc
         echo '<div class="infoBox">'.$msg.' : "'.$_GET['keywords'].'"</div>';
     }
 

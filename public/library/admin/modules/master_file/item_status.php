@@ -18,11 +18,11 @@ $can_read = utility::havePrivilege('master_file', 'r');
 $can_write = utility::havePrivilege('master_file', 'w');
 
 if (!$can_read) {
-    die('<div class="errorBox">'.__('You don\'t have enough privileges to access this area!').'</div>');
+    die('<div class="errorBox">'.gettext('You don\'t have enough privileges to access this area!').'</div>');
 }
 
 // item status rules
-$rules_option[] = array(NO_LOAN_TRANSACTION, __('No Loan Transaction'));
+$rules_option[] = array(NO_LOAN_TRANSACTION, gettext('No Loan Transaction'));
 //$rules_option[] = array(SKIP_STOCK_TAKE, __('Skipped By Stock Take'));
 
 /* RECORD OPERATION */
@@ -41,12 +41,12 @@ if (isset($_POST['saveData']) AND $can_read AND $can_write)
     }*/
     if (empty($itemStatusName))
     {
-        utility::jsAlert(__('Item Status Name can\'t be empty'));
+        utility::jsAlert(gettext('Item Status Name can\'t be empty'));
         exit();
     }
     if (number_format($itemStatusName))
     {
-        utility::jsAlert(__('Item Status Name can\'t be Numeric!'));
+        utility::jsAlert(gettext('Item Status Name can\'t be Numeric!'));
         exit();
     }
     else
@@ -99,14 +99,14 @@ if (isset($_POST['saveData']) AND $can_read AND $can_write)
             $update = $sql_op->update('mst_item_status', $data, 'item_status_id=\''.$updateRecordID.'\'');
             if ($update) 
             {
-                utility::jsAlert(__('Item Status Data Successfully Updated'));
+                utility::jsAlert(gettext('Item Status Data Successfully Updated'));
                 // update item status ID in item table to keep data integrity
                 $sql_op->update('item', array('item_status_id' => $data['item_status_id']), 'item_status_id=\''.$updateRecordID.'\'');
                 echo '<script type="text/javascript">parent.setContent(\'mainContent\', parent.getPreviousAJAXurl(), \'post\');</script>';
             }
             else
            {
-               utility::jsAlert(__('Item Status Data FAILED to Updated.')."DEBUG : ".$sql_op->error); 
+               utility::jsAlert(gettext('Item Status Data FAILED to Updated.')."DEBUG : ".$sql_op->error); 
            
             }
             exit();
@@ -118,12 +118,12 @@ if (isset($_POST['saveData']) AND $can_read AND $can_write)
             $insert = $sql_op->insert('mst_item_status', $data);
             if ($insert) 
             {
-                utility::jsAlert(__('New Item Status Data Successfully Saved'));
+                utility::jsAlert(gettext('New Item Status Data Successfully Saved'));
                 echo '<script type="text/javascript">parent.setContent(\'mainContent\', \''.$_SERVER['PHP_SELF'].'\', \'post\');</script>';
             }
             else
             {
-                utility::jsAlert(__('Item Status Data FAILED to Save.')." ".$sql_op->error); 
+                utility::jsAlert(gettext('Item Status Data FAILED to Save.')." ".$sql_op->error); 
              
             }
             exit();
@@ -164,7 +164,7 @@ else if (isset($_POST['itemID']) AND !empty($_POST['itemID']) AND isset($_POST['
 			$item_status_name_set = $rownew['item_status_name'];	
 		}
                 $error_num++;
-		 utility::jsAlert(__('You can not Delete Topic '.$item_status_name_set));
+		 utility::jsAlert(gettext('You can not Delete Topic '.$item_status_name_set));
 	}
 	else
 	{
@@ -177,10 +177,10 @@ else if (isset($_POST['itemID']) AND !empty($_POST['itemID']) AND isset($_POST['
 
     // error alerting
     if ($error_num == 0) {
-        utility::jsAlert(__('All Data Successfully Deleted'));
+        utility::jsAlert(gettext('All Data Successfully Deleted'));
         echo '<script type="text/javascript">parent.setContent(\'mainContent\', \''.$_SERVER['PHP_SELF'].'?'.$_POST['lastQueryStr'].'\', \'post\');</script>';
     } else {
-        utility::jsAlert(__('Some or All Data NOT deleted successfully! Please contact system administrator'));
+        utility::jsAlert(gettext('Some or All Data NOT deleted successfully! Please contact system administrator'));
         echo '<script type="text/javascript">parent.setContent(\'mainContent\', \''.$_SERVER['PHP_SELF'].'?'.$_POST['lastQueryStr'].'\', \'post\');</script>';
     }
     exit();
@@ -224,10 +224,10 @@ echo $bradecum;
 	<td class="tab_menu_top">
                             <ul class="tabs"> 
 				<li>
-<a href="<?php echo MODULES_WEB_ROOT_DIR; ?>master_file/item_status.php?action=detail" class="headerText2"><?php echo __('Add New Item Status'); ?></a>
+<a href="<?php echo MODULES_WEB_ROOT_DIR; ?>master_file/item_status.php?action=detail" class="headerText2"><?php echo gettext('Add New Item Status'); ?></a>
 </li>
 <li> 
-<a href="<?php echo MODULES_WEB_ROOT_DIR; ?>master_file/item_status.php" class="headerText2"><?php echo __('Item Status'); ?></a> </li>
+<a href="<?php echo MODULES_WEB_ROOT_DIR; ?>master_file/item_status.php" class="headerText2"><?php echo gettext('Item Status'); ?></a> </li>
 </ul>
 	</td>
 </tr>
@@ -243,9 +243,9 @@ if (isset($_POST['detail']) OR (!isset($_GET['action']) AND $_GET['action'] != '
    <!-- <?php echo strtoupper(__('Item Status')); ?> - <a href="<?php echo MODULES_WEB_ROOT_DIR; ?>master_file/item_status.php?action=detail" class="headerText2"><?php echo __('Add New Item Status'); ?></a>
     &nbsp; <a href="<?php echo MODULES_WEB_ROOT_DIR; ?>master_file/item_status.php" class="headerText2"><?php echo __('Item Status'); ?></a>-->
     <p class="only_border">&nbsp;</p>
-    <form name="search" action="<?php echo MODULES_WEB_ROOT_DIR; ?>master_file/item_status.php" id="search" method="get" style="display: inline;"><?php echo __('Search'); ?> :
+    <form name="search" action="<?php echo MODULES_WEB_ROOT_DIR; ?>master_file/item_status.php" id="search" method="get" style="display: inline;"><?php echo gettext('Search'); ?> :
     <input type="text" name="keywords" size="30" />
-    <input type="submit" id="doSearch" value="<?php echo __('Search'); ?>" class="button" />
+    <input type="submit" id="doSearch" value="<?php echo gettext('Search'); ?>" class="button" />
     </form>
 </div>
 </fieldset>
@@ -262,7 +262,7 @@ if (isset($_POST['detail']) OR (isset($_GET['action']) AND $_GET['action'] == 'd
     
     if (!($can_read AND $can_write)) 
     {
-        die('<div class="errorBox">'.__('You don\'t have enough privileges to access this area!').'</div>');
+        die('<div class="errorBox">'.gettext('You don\'t have enough privileges to access this area!').'</div>');
     }
     /* RECORD FORM */
     $itemID = trim($dbs->escape_string(isset($_POST['itemID'])?$_POST['itemID']:''));
@@ -272,7 +272,7 @@ if (isset($_POST['detail']) OR (isset($_GET['action']) AND $_GET['action'] == 'd
 
     // create new instance
     $form = new simbio_form_table_AJAX('mainForm', $_SERVER['PHP_SELF'].'?'.$_SERVER['QUERY_STRING'], 'post');
-    $form->submit_button_attr = 'name="saveData" value="'.__('Save').'" class="button"';
+    $form->submit_button_attr = 'name="saveData" value="'.gettext('Save').'" class="button"';
 
     // form table attributes
     $form->table_attr = 'align="center" id="dataList" cellpadding="5" cellspacing="0"';
@@ -285,7 +285,7 @@ if (isset($_POST['detail']) OR (isset($_GET['action']) AND $_GET['action'] == 'd
         $form->edit_mode = true;        
         $form->record_id = $itemID;       
         $form->record_title = $rec_d['item_status_name'];    
-        $form->submit_button_attr = 'name="saveData" value="'.__('Update').'" class="button"';
+        $form->submit_button_attr = 'name="saveData" value="'.gettext('Update').'" class="button"';
     }
 
     /* Form Element(s) */
@@ -294,7 +294,7 @@ if (isset($_POST['detail']) OR (isset($_GET['action']) AND $_GET['action'] == 'd
   /*added by iresh on 25-1-2011*/  //$form->addTextField('text', 'itemStatusID', __('Item Status Code').'*', $rec_d['item_status_id'], 'style="width: 140px;" maxlength="3" onkeyup="return checkspecialcharacterdynamic(this.name);"');
     // item status name
     //comment by iresh on 25-1-2011 $form->addTextField('text', 'itemStatus', __('Item Status Name').'*', $rec_d['item_status_name'], 'style="width: 60%;"');
-    $form->addTextField('text', 'itemStatus', __('Item Status Name').'*', $rec_d['item_status_name'], 'style="width: 140px;" onkeyup="return checkspecialcharacterdynamic(this.name);""onblur="return charactercheck(this.name);"');
+    $form->addTextField('text', 'itemStatus', gettext('Item Status Name').'*', $rec_d['item_status_name'], 'style="width: 140px;" onkeyup="return checkspecialcharacterdynamic(this.name);""onblur="return charactercheck(this.name);"');
    
     // item status rules
 	$rules = array();
@@ -304,11 +304,11 @@ if (isset($_POST['detail']) OR (isset($_GET['action']) AND $_GET['action'] == 'd
 	/*if ($rec_d['skip_stock_take']) {
 		$rules[] = SKIP_STOCK_TAKE;
 	}*/
-    $form->addCheckbox('rules', __('Rules'), $rules_option, $rules);
+    $form->addCheckbox('rules', gettext('Rules'), $rules_option, $rules);
 
     // edit mode messagge
     if ($form->edit_mode) {
-        echo '<div class="infoBox">'.__('You are going to edit data').' : <b>'.$rec_d['item_status_name'].'</b>  <br />'.__('Last Update').$rec_d['last_update'].'</div>'; //mfc
+        echo '<div class="infoBox">'.gettext('You are going to edit data').' : <b>'.$rec_d['item_status_name'].'</b>  <br />'.gettext('Last Update').$rec_d['last_update'].'</div>'; //mfc
     }
     // print out the form object
     echo $form->printOut();
@@ -322,13 +322,13 @@ if (isset($_POST['detail']) OR (isset($_GET['action']) AND $_GET['action'] == 'd
     if ($can_read AND $can_write) {
         $datagrid->setSQLColumn('ist.item_status_id',
             //'ist.item_status_id AS \''.__('Item Status Code').'\'',
-            'ist.item_status_name AS \''.__('Item Status Name').'\'',
-            'DATE_FORMAT(ist.last_update,"%d-%m-%Y") AS \''.__('Last Update').'\'');
+            'ist.item_status_name AS \''.gettext('Item Status Name').'\'',
+            'DATE_FORMAT(ist.last_update,"%d-%m-%Y") AS \''.gettext('Last Update').'\'');
     } else {
         $datagrid->setSQLColumn(
 //          'ist.item_status_id AS \''.__('Item Status Code').'\'',
-            'ist.item_status_name AS \''.__('Item Status Name').'\'',
-            'DATE_FORMAT(ist.last_update,"%d-%m-%Y") AS \''.__('Last Update').'\'');
+            'ist.item_status_name AS \''.gettext('Item Status Name').'\'',
+            'DATE_FORMAT(ist.last_update,"%d-%m-%Y") AS \''.gettext('Last Update').'\'');
     }
     $datagrid->setSQLorder('item_status_name ASC');
 
@@ -352,7 +352,7 @@ if (isset($_POST['detail']) OR (isset($_GET['action']) AND $_GET['action'] == 'd
     // put the result into variables
     $datagrid_result = $datagrid->createDataGrid($dbs, $table_spec, 20, ($can_read AND $can_write));
     if (isset($_GET['keywords']) AND $_GET['keywords']) {
-        $msg = str_replace('{result->num_rows}', $datagrid->num_rows, __('Found <strong>{result->num_rows}</strong> from your keywords')); //mfc
+        $msg = str_replace('{result->num_rows}', $datagrid->num_rows, gettext('Found <strong>{result->num_rows}</strong> from your keywords')); //mfc
         echo '<div class="infoBox">'.$msg.' : "'.$_GET['keywords'].'"</div>';
     }
 

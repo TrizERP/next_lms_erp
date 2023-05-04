@@ -27,11 +27,11 @@ $can_write = utility::havePrivilege('master_file', 'w');
 // print_r($_REQUEST);
 // echo 'can_read '.$can_read;
 if (!$can_read) {
-    die('<div class="errorBox">'.__('You don\'t have enough privileges to access this area!').'</div>');
+    die('<div class="errorBox">'.gettext('You don\'t have enough privileges to access this area!').'</div>');
 }
 
 // item status rules
-$rules_option[] = array(NO_LOAN_TRANSACTION, __('No Books'));
+$rules_option[] = array(NO_LOAN_TRANSACTION, gettext('No Books'));
 
 /* RECORD OPERATION */
 if (isset($_REQUEST['keywords_for_scan_book']) AND $_REQUEST['keywords_for_scan_book'] != '') 
@@ -49,10 +49,10 @@ if (isset($_REQUEST['keywords_for_scan_book']) AND $_REQUEST['keywords_for_scan_
         $sql_op->custom_update("INSERT INTO item_scan_details(item_code,scan_status,created_by,created_ip) values('".$itemCode."','Yes','".$_SESSION['ID']."','".$_SERVER['REMOTE_ADDR']."')");
     // error alerting
     if ($sql_op->affected_rows == 1 && $sql_op->affected_rows != 0) {
-        utility::jsAlert(__('Book Scaned Successfully'));
+        utility::jsAlert(gettext('Book Scaned Successfully'));
         // echo '<script type="text/javascript">parent.setContent(\'mainContent\', \''.$_SERVER['PHP_SELF'].'?'.$itemCode.'\', \'post\');</script>';
     } else {
-        utility::jsAlert(__('Some or All Data NOT deleted successfully! Please contact system administrator'));
+        utility::jsAlert(gettext('Some or All Data NOT deleted successfully! Please contact system administrator'));
         // echo '<script type="text/javascript">parent.setContent(\'mainContent\', \''.$_SERVER['PHP_SELF'].'?'.$itemCode.'\', \'post\');</script>';
     }
     // exit();
@@ -89,7 +89,7 @@ echo $bradecum;
       <ul class="tabs"> 
 
 <li> 
-<a href="<?php echo MODULES_WEB_ROOT_DIR; ?>circulation/scan_item.php" class="headerText2"><?php echo __('Scan Books'); ?></a> </li>
+<a href="<?php echo MODULES_WEB_ROOT_DIR; ?>circulation/scan_item.php" class="headerText2"><?php echo gettext('Scan Books'); ?></a> </li>
 </ul>
 	</td>
 </tr>
@@ -103,9 +103,9 @@ if (isset($_POST['detail']) OR (!isset($_GET['action']) AND $_GET['action'] != '
 <fieldset class="menuBox">
 <div class="menuBoxInner masterFileIcon">
     <p class="only_border">&nbsp;</p>
-    <form name="search" action="<?php echo MODULES_WEB_ROOT_DIR; ?>circulation/scan_item.php" id="search" method="get" style="display: inline;"><?php echo __('Item Code'); ?> :
+    <form name="search" action="<?php echo MODULES_WEB_ROOT_DIR; ?>circulation/scan_item.php" id="search" method="get" style="display: inline;"><?php echo gettext('Item Code'); ?> :
     <input type="text" name="keywords_for_scan_book" size="30" required />
-    <input type="submit" id="doSearch" value="<?php echo __('Submit'); ?>" class="button" />
+    <input type="submit" id="doSearch" value="<?php echo gettext('Submit'); ?>" class="button" />
     </form>
 </div>
 </fieldset>
@@ -130,11 +130,11 @@ if(isset($_REQUEST['keywords_for_scan_book'])){
     // create datagrid
     $reportgrid = new report_datagrid();
 
-    $reportgrid->setSQLColumn('i.item_code AS \''.__('Item Code').'\'',
-        'b.title AS \''.__('Title').'\'',
-        'ct.coll_type_name AS \''.__('Collection Type').'\'',
-        'isd.scan_status AS \''.__('Scan Status').'\'',
-        // 's.item_status_name AS \''.__('Item Status').'\'',
+    $reportgrid->setSQLColumn('i.item_code AS \''.gettext('Item Code').'\'',
+        'b.title AS \''.gettext('Title').'\'',
+        'ct.coll_type_name AS \''.gettext('Collection Type').'\'',
+        'isd.scan_status AS \''.gettext('Scan Status').'\'',
+        // 's.item_status_name AS \''.gettext('Item Status').'\'',
         'i.biblio_id');
     $reportgrid->setSQLorder('i.item_code ASC');
     // echo '<pre>';
@@ -180,7 +180,7 @@ if(isset($_REQUEST['keywords_for_scan_book'])){
 
     $content = ob_get_clean();
     // include the page template
-    require SENAYAN_BASE_DIR.'/admin/'.$sysconf['admin_template']['dir'].'/printed_page_tpl.php';
+    require SENAYAN_BASE_DIR.'/admin/admin_template/printed_page_tpl.php';
 
 }
 ?>

@@ -98,9 +98,9 @@ class simbio_form_table_AJAX extends simbio_form_maker
         $_delete_button = '';
         $_reset_button = '';
         $_back_button = '';
-    $_del_value = __('Delete Record');
-    $_cancel_value = __('Cancel');
-    $_reset_value=__('Reset');
+    $_del_value = gettext('Delete Record');
+    $_cancel_value = gettext('Cancel');
+    $_reset_value=gettext('Reset');
         // check if we are on edit form mode
         if ($this->edit_mode)
            {
@@ -217,8 +217,8 @@ class simbio_form_table_AJAX extends simbio_form_maker
         $_edit_link = '';
         $_delete_button = '';
         $_back_button = '';
-    $_del_value = __('Delete Record');
-    $_cancel_value = __('Cancel');
+    $_del_value = gettext('Delete Record');
+    $_cancel_value = gettext('Cancel');
 
         // check if we are on edit form mode
         if ($this->edit_mode) {

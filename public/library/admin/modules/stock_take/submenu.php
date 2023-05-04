@@ -20,19 +20,19 @@
 
 /* Stock Take module submenu items */
 $menu[] = array('Header2', 'Stock Take');
-//$menu[] = array('Header', __('Stock Take'));
-$menu[] = array(__('Stock Take History'), MODULES_WEB_ROOT_DIR.'stock_take/index.php', __('View Stock Take History'));
+//$menu[] = array('Header', gettext('Stock Take'));
+$menu[] = array(gettext('Stock Take History'), MODULES_WEB_ROOT_DIR.'stock_take/index.php', gettext('View Stock Take History'));
 // check if there is any active stock take proccess
 $stk_query = $dbs->query('SELECT * FROM stock_take WHERE is_active=1');
 if ($stk_query->num_rows) {
-    $menu[] = array(__('Current Stock Take'), MODULES_WEB_ROOT_DIR.'stock_take/current.php', __('View Current Stock Take Process'));
-    $menu[] = array(__('Stock Take Report'), MODULES_WEB_ROOT_DIR.'stock_take/st_report.php', __('View Current Stock Take Report'));
-    $menu[] = array(__('Finish Stock Take'), MODULES_WEB_ROOT_DIR.'stock_take/finish.php', __('Finish Current Stock Take Proccess'));
-    $menu[] = array(__('Current Lost Item'), MODULES_WEB_ROOT_DIR.'stock_take/lost_item_list.php', __('View Lost Item in Current Stock Take Proccess'));
-    $menu[] = array(__('Stock Take Log'), MODULES_WEB_ROOT_DIR.'stock_take/st_log.php', __('View Log of Current Stock Take Proccess'));
-    $menu[] = array(__('Resynchronize'), MODULES_WEB_ROOT_DIR.'stock_take/resync.php', __('Resynchronize bibliographic data with current stock take'));
-    $menu[] = array(__('Upload List'), MODULES_WEB_ROOT_DIR.'stock_take/st_upload.php', __('Upload List in text file'));
+    $menu[] = array(gettext('Current Stock Take'), MODULES_WEB_ROOT_DIR.'stock_take/current.php', gettext('View Current Stock Take Process'));
+    $menu[] = array(gettext('Stock Take Report'), MODULES_WEB_ROOT_DIR.'stock_take/st_report.php', gettext('View Current Stock Take Report'));
+    $menu[] = array(gettext('Finish Stock Take'), MODULES_WEB_ROOT_DIR.'stock_take/finish.php', gettext('Finish Current Stock Take Proccess'));
+    $menu[] = array(gettext('Current Lost Item'), MODULES_WEB_ROOT_DIR.'stock_take/lost_item_list.php', gettext('View Lost Item in Current Stock Take Proccess'));
+    $menu[] = array(gettext('Stock Take Log'), MODULES_WEB_ROOT_DIR.'stock_take/st_log.php', gettext('View Log of Current Stock Take Proccess'));
+    $menu[] = array(gettext('Resynchronize'), MODULES_WEB_ROOT_DIR.'stock_take/resync.php', gettext('Resynchronize bibliographic data with current stock take'));
+    $menu[] = array(gettext('Upload List'), MODULES_WEB_ROOT_DIR.'stock_take/st_upload.php', gettext('Upload List in text file'));
 } else {
-    $menu[] = array(__('Initialize'), MODULES_WEB_ROOT_DIR.'stock_take/init.php', __('Initialize New Stock Take Proccess'));
+    $menu[] = array(gettext('Initialize'), MODULES_WEB_ROOT_DIR.'stock_take/init.php', gettext('Initialize New Stock Take Proccess'));
 }
 ?>

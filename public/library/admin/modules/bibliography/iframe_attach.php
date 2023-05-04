@@ -64,7 +64,7 @@ if (isset($_GET['removesess'])) {
     // remove session array
     unset($_SESSION['biblioAttach'][$idx]);
     echo '<script type="text/javascript">';
-    echo 'alert(\''.__('Attachment removed!').'\');';
+    echo 'alert(\''.gettext('Attachment removed!').'\');';
     echo 'location.href = \'iframe_attach.php\';';
     echo '</script>';
 }
@@ -109,7 +109,7 @@ if ($biblioID) {
             style="color: #FF0000; text-decoration: underline;">Delete</a>';
 
         // edit link
-        $edit_link = '<a href="#" onclick="top.openHTMLpop(\''.MODULES_WEB_ROOT_DIR.'bibliography/pop_attach.php?biblioID='.$biblioID.'&fileID='.$biblio_attach_d['file_id'].'\', 600, 300, \''.__('File Attachments').'\')">Edit</a>';
+        $edit_link = '<a href="#" onclick="top.openHTMLpop(\''.MODULES_WEB_ROOT_DIR.'bibliography/pop_attach.php?biblioID='.$biblioID.'&fileID='.$biblio_attach_d['file_id'].'\', 600, 300, \''.gettext('File Attachments').'\')">Edit</a>';
 
         // file link
         if (preg_match('@(video|audio|image)/.+@i', $biblio_attach_d['mime_type'])) {
@@ -153,5 +153,5 @@ if ($biblioID) {
 /* main content end */
 $content = ob_get_clean();
 // include the page template
-require SENAYAN_BASE_DIR.'/admin/'.$sysconf['admin_template']['dir'].'/notemplate_page_tpl.php';
+require SENAYAN_BASE_DIR.'/admin/admin_template/notemplate_page_tpl.php';
 ?>

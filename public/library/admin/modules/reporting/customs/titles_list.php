@@ -2,6 +2,7 @@
 session_start();
 // main system configuration
 require '../../../../sysconfig.inc.php';
+
 // start the session
 require SENAYAN_BASE_DIR.'admin/default/session.inc.php';
 require SENAYAN_BASE_DIR.'admin/default/session_check.inc.php';
@@ -11,7 +12,7 @@ $can_write = utility::havePrivilege('reporting', 'w');
 
 if (!$can_read) 
 {
-     die('<div class="errorBox">'.__('You don\'t have enough privileges to access this area!').'</div>');
+     die('<div class="errorBox">'.gettext('You don\'t have enough privileges to access this area!').'</div>');
 }
 
 require SIMBIO_BASE_DIR.'simbio_GUI/table/simbio_table.inc.php';
@@ -63,7 +64,7 @@ echo $bradecum;
                 <br>
      <fieldset>
     <legend style="font-weight: bold">
-            <?php echo strtoupper(__('Title List')); ?> - <?php echo __('Report Filter'); ?>
+            <?php echo strtoupper(gettext('Title List')); ?> - <?php echo gettext('Report Filter'); ?>
     </legend>
     <form method="get" action="<?php echo $_SERVER['PHP_SELF']; ?>" target="reportView">
     <div id="filterForm">        
@@ -72,21 +73,21 @@ echo $bradecum;
                 <td width="25%">
                     <div class="divRow">
                             <div class="divRowLabel">
-                            <?php echo __('Title/ISBN : '); ?>             
+                            <?php echo gettext('Title/ISBN : '); ?>             
                             <?php  echo simbio_form_element::textField('text', 'title', '', 'style="width: 130px"'); ?>
                             </div>
                      </div>
                 </td>
                 <td width="25%">
                     <div class="divRow">
-                        <div class="divRowLabel"><?php echo __('Author : '); ?>
+                        <div class="divRowLabel"><?php echo gettext('Author : '); ?>
                                 <?php echo simbio_form_element::textField('text', 'author', '', 'style="width: 137px"');?>
                         </div>
                     </div>
                 </td>
                 <td width="25%">
                       <div class="divRow">
-                        <div class="divRowLabel"><?php echo __('Classification : '); ?>
+                        <div class="divRowLabel"><?php echo gettext('Classification : '); ?>
                             
                             <?php echo simbio_form_element::textField('text', 'class', '', 'style="width: 140px"'); ?>
                         </div>
@@ -97,10 +98,10 @@ echo $bradecum;
                 <td width="25%">
                     <div class="divRow">
                         <?php //echo __('GMD'); ?>
-                            <div class="divRowLabel"><?php echo __('Material Type : '); ?>
+                            <div class="divRowLabel"><?php echo gettext('Material Type : '); ?>
                             <?php
                                 $gmd_q = $dbs->query('SELECT gmd_id, gmd_name FROM mst_gmd');
-                                $gmd_options[] = array('0', __('ALL'));
+                                $gmd_options[] = array('0', gettext('ALL'));
                                 while ($gmd_d = $gmd_q->fetch_row()) 
                                 {
                                     $gmd_options[] = array($gmd_d[0], $gmd_d[1]);
@@ -116,11 +117,11 @@ echo $bradecum;
                     
                     <div class="divRow">
                         <div class="divRowLabel">
-                            <?php echo __('Language :'); ?>
+                            <?php echo gettext('Language :'); ?>
                         <?php
                         $lang_q = $dbs->query('SELECT language_id, language_name FROM mst_language');
                         $lang_options = array();
-                        $lang_options[] = array('0', __('ALL'));
+                        $lang_options[] = array('0', gettext('ALL'));
                         while ($lang_d = $lang_q->fetch_row()) 
                         {
                             $lang_options[] = array($lang_d[0], $lang_d[1]);
@@ -133,12 +134,12 @@ echo $bradecum;
                 <td width="25%">
                     <div class="divRow">
                         <div class="divRowLabel">
-                        <?php echo __('Location :'); 
+                        <?php echo gettext('Location :'); 
                                echo '<br>';
             
                                 $loc_q = $dbs->query('SELECT location_id, location_name FROM mst_location');
                                 $loc_options = array();
-                                $loc_options[] = array('0', __('ALL'));
+                                $loc_options[] = array('0', gettext('ALL'));
                                 while ($loc_d = $loc_q->fetch_row()) 
                                 {
                                     $loc_options[] = array($loc_d[0], $loc_d[1]);
@@ -161,8 +162,8 @@ echo $bradecum;
         </div>-->
     </div>
     <div style="padding-top: 10px; clear: both;">
-    <input type="submit" name="applyFilter" value="<?php echo __('Search'); ?>" />
-    <input type="button" name="moreFilter" value="<?php echo __('Advance Search'); ?>" onclick="showHideTableRows('filterForm', 1, this, '<?php echo __('Show More Search Options'); ?>', '<?php echo __('Hide Search Options'); ?>')" />
+    <input type="submit" name="applyFilter" value="<?php echo gettext('Search'); ?>" />
+    <input type="button" name="moreFilter" value="<?php echo gettext('Advance Search'); ?>" onclick="showHideTableRows('filterForm', 1, this, '<?php echo __('Show More Search Options'); ?>', '<?php echo gettext('Hide Search Options'); ?>')" />
 <!--added Started by Parth 23/8/2011 -->
     <!--<input type="reset" name="applyReset" value="<?php //echo __('Reset'); ?>" />	-->
 <!--added Ended by Parth 23/8/2011 -->
@@ -183,10 +184,10 @@ echo $bradecum;
         'b.isbn_issn AS \''.__('ISBN/ISSN').'\'',
         'b.call_number AS \''.__('Call Number').'\'');*/
     $reportgrid->setSQLColumn('b.biblio_id', 
-        'b.title AS \''.__('Title').'\'', 
-        'i.item_code AS \''.__('Item Code').'\'', 
-        'COUNT(item_id) AS '.__('Copies').'',
-        'b.isbn_issn AS \''.__('ISBN/ISSN').'\'');
+        'b.title AS \''.gettext('Title').'\'', 
+        'i.item_code AS \''.gettext('Item Code').'\'', 
+        'COUNT(item_id) AS '.gettext('Copies').'',
+        'b.isbn_issn AS \''.gettext('ISBN/ISSN').'\'');
 //added and commented started by Parth 23/8/2011
     //$reportgrid->setSQLorder('b.title ASC');
     $reportgrid->setSQLorder('b.biblio_id ASC');
@@ -301,6 +302,7 @@ echo $bradecum;
 //print_r($reportgrid);
     // put the result into variables
     echo $reportgrid->createDataGrid($dbs, $table_spec, $num_recs_show);
+    exit;
   //  echo $peging = '<div style="text-align: center;">'.simbio_paging::paging($reportgrid->num_rows, $num_recs_show, 5).'</div>';	
     echo '<script type="text/javascript">'."\n";
     echo 'parent.$(\'pagingBox\').update(\''.str_replace(array("\n", "\r", "\t"), '', $reportgrid->paging_set).'\');'."\n";
@@ -308,6 +310,6 @@ echo $bradecum;
 
     $content = ob_get_clean();
     // include the page template
-    require SENAYAN_BASE_DIR.'/admin/'.$sysconf['admin_template']['dir'].'/printed_page_tpl.php';
+    require SENAYAN_BASE_DIR.'/admin/admin_template/printed_page_tpl.php';
 }
 ?>

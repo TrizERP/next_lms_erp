@@ -26,9 +26,9 @@ $menu[] = array('Header2', 'Circulation');
 // $menu[] = array(__('Book Circulation'), MODULES_WEB_ROOT_DIR.'circulation/circulation_action.php', __('Start Circulation Transaction Proccess'));
 //}
 //else{
- $menu[] = array(__('Book Circulation'), MODULES_WEB_ROOT_DIR.'circulation/index.php?action=start', __('Start Circulation Transaction Proccess'));   
+ $menu[] = array(gettext('Book Circulation'), MODULES_WEB_ROOT_DIR.'circulation/index.php?action=start', gettext('Start Circulation Transaction Proccess'));   
 //}
-$menu[] = array(__('Quick Return'), MODULES_WEB_ROOT_DIR.'circulation/quick_return.php', __('Quick Return Collection'));
+$menu[] = array(gettext('Quick Return'), MODULES_WEB_ROOT_DIR.'circulation/quick_return.php', gettext('Quick Return Collection'));
 
 // $menu[] = array(__('Scan Books'), MODULES_WEB_ROOT_DIR.'circulation/scan_item.php', __('Scan Items'));
 
@@ -36,6 +36,6 @@ $menu[] = array(__('Quick Return'), MODULES_WEB_ROOT_DIR.'circulation/quick_retu
 //$menu[] = array(__('Loan History'), MODULES_WEB_ROOT_DIR.'reporting/customs/loan_history.php', __('Loan History Overview'));
 //$menu[] = array(__('Overdued List'), MODULES_WEB_ROOT_DIR.'reporting/customs/overdued_list.php', __('View Members Having Overdues'));
 //$menu[] = array(__('Reservation'), MODULES_WEB_ROOT_DIR.'reporting/customs/reserve_list.php', __('Reservation'));
-$menu[] = array(__('Reservation'), MODULES_WEB_ROOT_DIR.'circulation/member_book_request_list.php', __('Member Book Request'));
+$menu[] = array(gettext('Reservation'), MODULES_WEB_ROOT_DIR.'circulation/member_book_request_list.php', gettext('Member Book Request'));
 //$menu[] = array(__('Member Book Request'), MODULES_WEB_ROOT_DIR.'reporting/customs/member_book_request_list.php', __('Member Book Request'));
 ?>

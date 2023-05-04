@@ -31,7 +31,7 @@ $can_read = utility::havePrivilege('reporting', 'r');
 $can_write = utility::havePrivilege('reporting', 'w');
 
 if (!$can_read) {
-    die('<div class="errorBox">'.__('You don\'t have enough privileges to access this area!').'</div>');
+    die('<div class="errorBox">'.gettext('You don\'t have enough privileges to access this area!').'</div>');
 }
 
 require SIMBIO_BASE_DIR.'simbio_GUI/table/simbio_table.inc.php';
@@ -81,12 +81,12 @@ echo $bradecum;
 </table>
     <!-- filter -->
     <fieldset style="margin-bottom: 3px;">
-    <legend style="font-weight: bold"><?php echo strtoupper(__('Due Date Warning')); ?> - <?php echo __('Report Filter'); ?></legend>
-    <div><?php echo __('This report loan items which will due in 3 to 0 days'); ?></div>
+    <legend style="font-weight: bold"><?php echo strtoupper(gettext('Due Date Warning')); ?> - <?php echo gettext('Report Filter'); ?></legend>
+    <div><?php echo gettext('This report loan items which will due in 3 to 0 days'); ?></div>
     <form method="get" action="<?php echo $_SERVER['PHP_SELF']; ?>" target="reportView">
     <div id="filterForm">
         <div class="divRow">
-            <div class="divRowLabel"><?php echo __('Member ID').'/'.__('Member Name'); ?></div>
+            <div class="divRowLabel"><?php echo gettext('Member ID').'/'.gettext('Member Name'); ?></div>
             <div class="divRowContent">
             <?php
             //comment by iresh on 25-1-2011  echo simbio_form_element::textField('text', 'id_name', '', 'style="width: 50%"');
@@ -96,7 +96,7 @@ echo $bradecum;
         </div>
         
         <!--<div class="divRow">-->
-            <div class="divRowLabel"><?php echo __('Standard'); ?></div>
+            <div class="divRowLabel"><?php echo gettext('Standard'); ?></div>
             <div class="divRowContent">
             <?php
 			$str = "SELECT cs.id AS subject_id,cs.name AS title
@@ -105,7 +105,7 @@ echo $bradecum;
                         WHERE sg.sub_institute_id='".$_SESSION['SUB_INSTITUTE_ID']."' ";
 			$std_q = $dbs->query($str);
 			$std_options = array();
-			$std_options[] = array('ALL', __('ALL'));
+			$std_options[] = array('ALL', gettext('ALL'));
 			while ($std_d = $std_q->fetch_row()) {
 				$std_options[] = array($std_d[0], $std_d[1]);
 			}
@@ -117,13 +117,13 @@ echo $bradecum;
             </div>
         <!--</div> -->
         <div class="divRow">
-            <div class="divRowLabel"><?php echo __('Division'); ?></div>
+            <div class="divRowLabel"><?php echo gettext('Division'); ?></div>
             <div class="divRowContent">
             <?php
 			$str_section = "select id,name from ".$inte_schema.".division where sub_institute_id='".$_SESSION['SUB_INSTITUTE_ID']."'";
 			$section_q = $dbs->query($str_section);
 			$section_options = array();
-			$section_options[] = array('ALL', __('ALL'));
+			$section_options[] = array('ALL', gettext('ALL'));
 			while ($section_d = $section_q->fetch_row()) {
 				$section_options[] = array($section_d[0], $section_d[1]);
 			}
@@ -134,24 +134,24 @@ echo $bradecum;
         </div>
         <div class="divRow">
         	<div class="divRow">
-            	<div class="divRowLabel"><?php echo __('Due From Date'); ?></div>
+            	<div class="divRowLabel"><?php echo gettext('Due From Date'); ?></div>
 	            <div class="divRowContent"><?php echo simbio_form_element::dateField('startDate', date('Y-m-d')); ?></div>
     	    </div>
         </div>
         <div class="divRow">
         	<div class="divRow">
-            	<div class="divRowLabel"><?php echo __('Due To Date'); ?></div>
+            	<div class="divRowLabel"><?php echo gettext('Due To Date'); ?></div>
 	            <div class="divRowContent"><?php echo simbio_form_element::dateField('toDate', date('Y-m-d')); ?></div>
     	    </div>
         </div>        
         
-            <div class="divRowLabel"><?php echo __('Record each page'); ?></div>
-            <div class="divRowContent"><input type="text" name="recsEachPage" size="3" maxlength="3" value="<?php echo $num_recs_show; ?>" /> <?php echo __('Set between 20 and 200'); ?></div>
+            <div class="divRowLabel"><?php echo gettext('Record each page'); ?></div>
+            <div class="divRowContent"><input type="text" name="recsEachPage" size="3" maxlength="3" value="<?php echo $num_recs_show; ?>" /> <?php echo gettext('Set between 20 and 200'); ?></div>
         </div>
     </div>
     <div style="padding-top: 10px; clear: both;">
-    <input type="submit" name="applyFilter" value="<?php echo __('Search'); ?>" />
-    <input type="button" name="moreFilter" value="<?php echo __('Advance Search'); ?>" onclick="showHideTableRows('filterForm', 1, this, '<?php echo __('Show More Search Options'); ?>', '<?php echo __('Hide Search Options'); ?>')" />
+    <input type="submit" name="applyFilter" value="<?php echo gettext('Search'); ?>" />
+    <input type="button" name="moreFilter" value="<?php echo gettext('Advance Search'); ?>" onclick="showHideTableRows('filterForm', 1, this, '<?php echo gettext('Show More Search Options'); ?>', '<?php echo gettext('Hide Search Options'); ?>')" />
     <input type="hidden" name="reportView" value="true" />
     </div>
     </form>
@@ -169,7 +169,7 @@ echo $bradecum;
 
     // create datagrid
     $reportgrid = new report_datagrid();
-    $reportgrid->setSQLColumn('m.enrollment_no AS \''.__('Member ID').'\'');
+    $reportgrid->setSQLColumn('m.enrollment_no AS \''.gettext('Member ID').'\'');
     $reportgrid->setSQLorder('l.due_date DESC');
     $reportgrid->sql_group_by = 'm.enrollment_no';
 
@@ -202,13 +202,13 @@ echo $bradecum;
                 LEFT JOIN biblio AS b ON i.biblio_id=b.biblio_id
             WHERE (l.is_lent=1 AND l.is_return=0 AND ( (TO_DAYS(\''.date('Y-m-d').'\')-TO_DAYS(due_date)) BETWEEN 0 AND 3) AND l.member_id=\''.$array_data[0].'\')');
         $_buffer = '<div style="font-weight: bold; color: black; font-size: 10pt; margin-bottom: 3px;">'.$member_name.' ('.$array_data[0].')</div>';
-        $_buffer .= '<div style="font-size: 10pt; margin-bottom: 3px;">'.__('E-mail').': <a href="mailto:'.$member_d[1].'">'.$member_d[1].'</a> - '.__('Phone Number').': '.$member_d[2].'</div>';
+        $_buffer .= '<div style="font-size: 10pt; margin-bottom: 3px;">'.gettext('E-mail').': <a href="mailto:'.$member_d[1].'">'.$member_d[1].'</a> - '.gettext('Phone Number').': '.$member_d[2].'</div>';
         $_buffer .= '<table width="100%" cellspacing="0">';
         while ($_title_d = $_title_q->fetch_assoc()) {
             $_buffer .= '<tr>';
             $_buffer .= '<td valign="top" width="10%">'.$_title_d['item_code'].'</td>';
             $_buffer .= '<td valign="top" width="40%">'.$_title_d['title'].'</td>';
-            $_buffer .= '<td width="30%">'.__('Loan Date').': '.$_title_d['loan_date'].' &nbsp; '.__('Due Date').': '.$_title_d['due_date'].'</td>';
+            $_buffer .= '<td width="30%">'.gettext('Loan Date').': '.$_title_d['loan_date'].' &nbsp; '.gettext('Due Date').': '.$_title_d['due_date'].'</td>';
             $_buffer .= '</tr>';
         }
         $_buffer .= '</table>';
@@ -224,6 +224,6 @@ echo $bradecum;
 
     $content = ob_get_clean();
     // include the page template
-    require SENAYAN_BASE_DIR.'/admin/'.$sysconf['admin_template']['dir'].'/printed_page_tpl.php';
+    require SENAYAN_BASE_DIR.'/admin/admin_template/printed_page_tpl.php';
 }
 ?>

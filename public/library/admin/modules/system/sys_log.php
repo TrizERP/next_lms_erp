@@ -36,7 +36,7 @@ $can_read = utility::havePrivilege('system', 'r');
 $can_write = utility::havePrivilege('system', 'w');
 
 if (!$can_read) {
-    die('<div class="errorBox">'.__('You don\'t have enough privileges to view this section').'</div>');
+    die('<div class="errorBox">'.gettext('You don\'t have enough privileges to view this section').'</div>');
 }
 
 // log data save action
@@ -54,7 +54,7 @@ if (isset($_POST['saveLogs']) AND $can_write AND $_SESSION['uid'] == 1) {
 // log data clearance action
 if (isset($_POST['clearLogs']) AND $can_write AND $_SESSION['uid'] == 1) {
     $dbs->query('TRUNCATE TABLE system_log');
-    utility::jsAlert(__('System Log data completely cleared!'));
+    utility::jsAlert(gettext('System Log data completely cleared!'));
     echo '<script type="text/javascript">parent.setContent(\'mainContent\', \''.MODULES_WEB_ROOT_DIR.'system/sys_log.php\', \'get\');</script>';
     exit();
 }
@@ -66,7 +66,7 @@ if (isset($_POST['clearLogs']) AND $can_write AND $_SESSION['uid'] == 1) {
 	<td valign=top>
 	<?php
 	$bradecum = '';       
-        $basedir = basename(dirname(__FILE__));
+        $basedir = basename(dirname(gettextFILEgettext));
         $bradecum = "<a href=javascript:void(0); onclick=javascript:new_set_home(); >Home</a>->";
 //            <a class='' href=javascript:void(0); onclick=javascript:new_set('".$basedir."');>"; 
 //	$query = "select module_name from mst_module where module_path = '".$basedir."'";
@@ -96,25 +96,25 @@ echo $bradecum;
 	<td class="tab_menu_top">
                             <ul class="tabs"> 
 				<li>
-<a href="#" onclick="confSubmit('clearLogsForm', '<?php echo __('Are you SURE to completely clear system log data? This action cannot be undo!'); ?>')" class="notAJAX headerText2" style=""><?php echo __('CLEAR LOGS'); ?></a>
+<a href="#" onclick="confSubmit('clearLogsForm', '<?php echo gettext('Are you SURE to completely clear system log data? This action cannot be undo!'); ?>')" class="notAJAX headerText2" style=""><?php echo gettext('CLEAR LOGS'); ?></a>
 </li>
 <li> 
-<a href="#" onclick="confSubmit('saveLogsForm', '<?php echo __('Save Logs record to file?'); ?>')" class="notAJAX headerText2"><?php echo __('Save Logs To File'); ?></a></li>
+<a href="#" onclick="confSubmit('saveLogsForm', '<?php echo gettext('Save Logs record to file?'); ?>')" class="notAJAX headerText2"><?php echo gettext('Save Logs To File'); ?></a></li>
 </ul>
 	</td>
 </tr>
 </table>
 <fieldset class="menuBox">
 <div class="menuBoxInner syslogIcon">
-   <!-- <?php echo strtoupper(__('System Log'));?> -
+   <!-- <?php echo strtoupper(gettext('System Log'));?> -
     <?php if ($_SESSION['uid'] == 1) { ?>
-    <a href="#" onclick="confSubmit('clearLogsForm', '<?php echo __('Are you SURE to completely clear system log data? This action cannot be undo!'); ?>')" class="notAJAX headerText2" style="color: red;"><?php echo __('CLEAR LOGS'); ?></a>
-    &nbsp; <a href="#" onclick="confSubmit('saveLogsForm', '<?php echo __('Save Logs record to file?'); ?>')" class="notAJAX headerText2"><?php echo __('Save Logs To File'); ?></a>
+    <a href="#" onclick="confSubmit('clearLogsForm', '<?php echo gettext('Are you SURE to completely clear system log data? This action cannot be undo!'); ?>')" class="notAJAX headerText2" style="color: red;"><?php echo gettext('CLEAR LOGS'); ?></a>
+    &nbsp; <a href="#" onclick="confSubmit('saveLogsForm', '<?php echo gettext('Save Logs record to file?'); ?>')" class="notAJAX headerText2"><?php echo gettext('Save Logs To File'); ?></a>
     <?php } ?>-->
     <p class="only_border">&nbsp;</p>
-    <form name="search" action="<?php echo MODULES_WEB_ROOT_DIR; ?>system/sys_log.php" id="search" method="get" style="display: inline;"><?php echo __('Search'); ?> :
+    <form name="search" action="<?php echo MODULES_WEB_ROOT_DIR; ?>system/sys_log.php" id="search" method="get" style="display: inline;"><?php echo gettext('Search'); ?> :
     <input type="text" name="keywords" size="30" />
-    <input type="submit" id="doSearch" value="<?php echo __('Search'); ?>" class="button" />
+    <input type="submit" id="doSearch" value="<?php echo gettext('Search'); ?>" class="button" />
     </form>
     <!-- LOG CLEARANCE FORM -->
     <?php if ($_SESSION['uid'] == 1) { ?>
@@ -133,9 +133,9 @@ $table_spec = 'system_log AS sl';
 // create datagrid
 $datagrid = new simbio_datagrid();
 $datagrid->setSQLColumn(
-    'DATE_FORMAT(sl.log_date,"%d-%m-%Y") AS \''.__('Time').'\'',
-    'sl.log_location AS \''.__('Location').'\'',
-    'sl.log_msg AS \''.__('Message').'\'');
+    'DATE_FORMAT(sl.log_date,"%d-%m-%Y") AS \''.gettext('Time').'\'',
+    'sl.log_location AS \''.gettext('Location').'\'',
+    'sl.log_msg AS \''.gettext('Message').'\'');
 $datagrid->setSQLorder('sl.log_date DESC');
 
 // is there any search
@@ -167,7 +167,7 @@ $datagrid->disableSort('Message');
 // put the result into variables
 $datagrid_result = $datagrid->createDataGrid($dbs, $table_spec, 50, false);
 if (isset($_GET['keywords']) AND $_GET['keywords']) {
-    $msg = str_replace('{result->num_rows}', $datagrid->num_rows, __('Found <strong>{result->num_rows}</strong> from your keywords')); //mfc
+    $msg = str_replace('{result->num_rows}', $datagrid->num_rows, gettext('Found <strong>{result->num_rows}</strong> from your keywords')); //mfc
     echo '<div class="infoBox">'.$msg.' : "'.$_GET['keywords'].'"</div>';
 }
 

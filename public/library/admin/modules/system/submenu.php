@@ -20,23 +20,23 @@
 
 /* Membership module submenu items */
 $menu[] = array('Header2', 'System');
-//$menu[] = array('Header', __('System'));
+//$menu[] = array('Header', gettext('System'));
 // only administrator have privileges for below menus
 //added started by Parth 25/8/2011
-$menu[] = array(__('Change User Profiles'), MODULES_WEB_ROOT_DIR.'system/app_user.php?changecurrent=true&action=detail', __('Change Current User Profiles and Password'));
+$menu[] = array(gettext('Change User Profiles'), MODULES_WEB_ROOT_DIR.'system/app_user.php?changecurrent=true&action=detail', gettext('Change Current User Profiles and Password'));
 //added ended by Parth 25/8/2011
 if ($_SESSION['uid'] == 1) {
-    $menu[] = array(__('System Configuration'), MODULES_WEB_ROOT_DIR.'system/index.php', __('Configure Global System Preferences'));
+    $menu[] = array(gettext('System Configuration'), MODULES_WEB_ROOT_DIR.'system/index.php', gettext('Configure Global System Preferences'));
 }
-$menu[] = array(__('Content'), MODULES_WEB_ROOT_DIR.'system/content.php', __('Content'));
+$menu[] = array(gettext('Content'), MODULES_WEB_ROOT_DIR.'system/content.php', gettext('Content'));
 // only administrator have privileges for below menus
 if ($_SESSION['uid'] == 1) {
-    $menu[] = array(__('Modules'), MODULES_WEB_ROOT_DIR.'system/module.php', __('Configure Application Modules'));
-    $menu[] = array(__('System Users'), MODULES_WEB_ROOT_DIR.'system/app_user.php', __('Manage Application User or Library Staff'));
-    $menu[] = array(__('User Group'), MODULES_WEB_ROOT_DIR.'system/user_group.php', __('Manage Group of Application User'));
+    $menu[] = array(gettext('Modules'), MODULES_WEB_ROOT_DIR.'system/module.php', gettext('Configure Application Modules'));
+    $menu[] = array(gettext('System Users'), MODULES_WEB_ROOT_DIR.'system/app_user.php', gettext('Manage Application User or Library Staff'));
+    $menu[] = array(gettext('User Group'), MODULES_WEB_ROOT_DIR.'system/user_group.php', gettext('Manage Group of Application User'));
 }
-$menu[] = array(__('Holiday Setting'), MODULES_WEB_ROOT_DIR.'system/holiday.php', __('Configure Holiday Setting'));
-$menu[] = array(__('Barcode Generator'), MODULES_WEB_ROOT_DIR.'system/barcode_generator.php', __('Barcode Generator'));
-$menu[] = array(__('System Log'), MODULES_WEB_ROOT_DIR.'system/sys_log.php', __('View Application System Log'));
-$menu[] = array(__('Database Backup'), MODULES_WEB_ROOT_DIR.'system/backup.php', __('Backup Application Database'));
+$menu[] = array(gettext('Holiday Setting'), MODULES_WEB_ROOT_DIR.'system/holiday.php', gettext('Configure Holiday Setting'));
+$menu[] = array(gettext('Barcode Generator'), MODULES_WEB_ROOT_DIR.'system/barcode_generator.php', gettext('Barcode Generator'));
+$menu[] = array(gettext('System Log'), MODULES_WEB_ROOT_DIR.'system/sys_log.php', gettext('View Application System Log'));
+$menu[] = array(gettext('Database Backup'), MODULES_WEB_ROOT_DIR.'system/backup.php', gettext('Backup Application Database'));
 ?>

@@ -24,7 +24,7 @@ echo "<script language=\"javascript\" type=\"text/javascript\" src=\"js/slideitm
 <link rel="shortcut icon" href="webicon.ico" type="image/x-icon" />
 <link href="template/core.style.css" rel="stylesheet" type="text/css" />
 <link href="template/school/960.css" rel="stylesheet" type="text/css" />
-<link href="<?php echo $sysconf['template']['css']; ?>" rel="stylesheet" type="text/css" />
+<link href="<?php echo $template_css; ?>" rel="stylesheet" type="text/css" />
 
 
 
@@ -67,7 +67,7 @@ function changeselectbox()
     <?php     
           if ($_SESSION['USER_GROUP_ID']=='2' || $_SESSION['USER_GROUP_ID']=='3')
           {        
-             echo  '<div id="memberLoginInfo">'.__('Welcome ').': <strong>'.$_SESSION['DUSER_NAME'].' </strong><a id="memberLogout" href="logout.php">['.('Dashboard').']</a></div>'; //added by iresh on 14-5-2011
+             echo  '<div id="memberLoginInfo">'.gettext('Welcome ').': <strong>'.$_SESSION['DUSER_NAME'].' </strong><a id="memberLogout" href="logout.php">['.('Dashboard').']</a></div>'; //added by iresh on 14-5-2011
           }
     ?>
     
@@ -78,21 +78,21 @@ function changeselectbox()
             <td align="left" valign="top" class="left_menu"></td>            
             <td align="left" valign="top" class="main_menu">
         <ul>
-            <li><a class="menu" href="index.php" ><span><?php if(!isset($_REQUEST['p']) && !isset($_REQUEST['subtype'])  ){?> <font color="red"> <?php } ?><?php echo __('Home'); ?></a></span></li>       
-            <li><a class="menu" href="index.php?p=help"><span> <?php if($_REQUEST['p'] == 'help'){?> <font color="red"> <?php } ?> <?php echo __('Help on Search'); ?></span></a></li>
+            <li><a class="menu" href="index.php" ><span><?php if(!isset($_REQUEST['p']) && !isset($_REQUEST['subtype'])  ){?> <font color="red"> <?php } ?><?php echo gettext('Home'); ?></a></span></li>       
+            <li><a class="menu" href="index.php?p=help"><span> <?php if($_REQUEST['p'] == 'help'){?> <font color="red"> <?php } ?> <?php echo gettext('Help on Search'); ?></span></a></li>
 	   <?php 
            if ($_SESSION['USER_GROUP_ID']=='2' || $_SESSION['USER_GROUP_ID']=='3')
             {
            ?> 
-           <li><a class="menu" href="index.php?p=member&login"><span> <?php if($_REQUEST['p'] == 'member'){?> <font color="red"> <?php } ?> <?php echo __('My Profile');?></span></a></li>
+           <li><a class="menu" href="index.php?p=member&login"><span> <?php if($_REQUEST['p'] == 'member'){?> <font color="red"> <?php } ?> <?php echo gettext('My Profile');?></span></a></li>
            
-           <li><a class="menu" href="index.php?p=book_request"><span><?php if($_REQUEST['p'] == 'book_request' || $_REQUEST['subtype']=='Books'){?> <font color="red"> <?php } ?> <?php echo __('My Account'); ?></span></a></li>
+           <li><a class="menu" href="index.php?p=book_request"><span><?php if($_REQUEST['p'] == 'book_request' || $_REQUEST['subtype']=='Books'){?> <font color="red"> <?php } ?> <?php echo gettext('My Account'); ?></span></a></li>
           
-	   <li><a class="menu" href="index.php?p=rescentview"><span><?php if($_REQUEST['p'] == 'rescentview'){?> <font color="red"> <?php } ?><?php echo __('Recently Viewed'); ?></span></a></li>
+	   <li><a class="menu" href="index.php?p=rescentview"><span><?php if($_REQUEST['p'] == 'rescentview'){?> <font color="red"> <?php } ?><?php echo gettext('Recently Viewed'); ?></span></a></li>
          
-	   <li><a class="menu" href="index.php?p=myeself"><span><?php if($_REQUEST['p'] == 'myeself'){?> <font color="red"> <?php } ?><?php echo __('My-Eshelf'); ?></span></a></li>
+	   <li><a class="menu" href="index.php?p=myeself"><span><?php if($_REQUEST['p'] == 'myeself'){?> <font color="red"> <?php } ?><?php echo gettext('My-Eshelf'); ?></span></a></li>
          
-           <li><a class="menu" href="index.php?p=contactus"><span><?php if($_REQUEST['p'] == 'contactus'){?> <font color="red"> <?php } ?><?php echo __('Ask Librarian'); ?></span></a></li>                      
+           <li><a class="menu" href="index.php?p=contactus"><span><?php if($_REQUEST['p'] == 'contactus'){?> <font color="red"> <?php } ?><?php echo gettext('Ask Librarian'); ?></span></a></li>                      
          <?php }?> 
         </ul>
 	</td>
@@ -603,7 +603,7 @@ echo '</td></tr></table>';
 <!--            </select> -->
 <!--ended commented by Parth 9/7/2011-->
 <!--           Added by iresh on 21-1-2011 --> 
-            <input type="submit" name="search" value="<?php echo __('Search'); ?>" />
+            <input type="submit" name="search" value="<?php echo gettext('Search'); ?>" />
 	<input type="hidden" name="advancesearch" value="set" /> 		
 <!--             <input type="button" value="More Options" onclick="" class="button marginTop" /> -->
             </form>

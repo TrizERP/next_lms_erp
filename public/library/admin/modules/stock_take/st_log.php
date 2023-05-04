@@ -39,7 +39,7 @@ $can_read = utility::havePrivilege('stock_take', 'r');
 $can_write = utility::havePrivilege('stock_take', 'w');
 
 if (!$can_read) {
-    die('<div class="errorBox">'.__('You don\'t have enough privileges to access this area!').'</div>');
+    die('<div class="errorBox">'.gettext('You don\'t have enough privileges to access this area!').'</div>');
 }
 /* search form */
 ?>
@@ -74,11 +74,11 @@ echo $bradecum;
 </table>
 <fieldset class="menuBox">
 <div class="menuBoxInner stockTakeIcon">
-    <?php echo strtoupper(__('Stock Take Log')); ?>
+    <?php echo strtoupper(gettext('Stock Take Log')); ?>
    <p class="only_border">&nbsp;</p>
-    <form name="search" action="<?php echo MODULES_WEB_ROOT_DIR; ?>stock_take/st_log.php" id="search" method="get" style="display: inline;"><?php echo __('Search'); ?> :
+    <form name="search" action="<?php echo MODULES_WEB_ROOT_DIR; ?>stock_take/st_log.php" id="search" method="get" style="display: inline;"><?php echo gettext('Search'); ?> :
     <input type="text" name="keywords" size="30" />
-    <input type="submit" id="doSearch" value="<?php echo __('Search'); ?>" class="button" />
+    <input type="submit" id="doSearch" value="<?php echo gettext('Search'); ?>" class="button" />
 </form>
 </div>
 </fieldset>
@@ -127,7 +127,7 @@ $datagrid->disableSort('Message');
 // put the result into variables
 $datagrid_result = $datagrid->createDataGrid($dbs, $table_spec, 50, false);
 if (isset($_GET['keywords']) AND $_GET['keywords']) {
-    $msg = str_replace('{result->num_rows}', $datagrid->num_rows, __('Found <strong>{result->num_rows}</strong> from your keywords')); //mfc
+    $msg = str_replace('{result->num_rows}', $datagrid->num_rows, gettext('Found <strong>{result->num_rows}</strong> from your keywords')); //mfc
     echo '<div class="infoBox">'.$msg.' : "'.$_GET['keywords'].'"</div>';
 }
 

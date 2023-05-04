@@ -14,7 +14,7 @@ $can_write = utility::havePrivilege('circulation', 'w');
 
 if (!($can_read AND $can_write))
 {
-    die('<div class="errorBox">'.__('You don\'t have enough privileges to view this section').'</div>');
+    die('<div class="errorBox">'.gettext('You don\'t have enough privileges to view this section').'</div>');
 }
 // check if there is transaction running
 
@@ -70,16 +70,16 @@ $bradecum .= '<a href='.MODULES_WEB_ROOT_DIR.'bibliography/index.php class="head
 
         
 
-          <li><a href="<?php echo  MODULES_WEB_ROOT_DIR; ?>circulation/index.php"><?php echo __('Book Circulation'); ?></a> </li>
+          <li><a href="<?php echo  MODULES_WEB_ROOT_DIR; ?>circulation/index.php"><?php echo gettext('Book Circulation'); ?></a> </li>
 
                             </ul></td></tr></table>
 
     <fieldset class="menuBox">
         <div class="menuBoxInner circulationIcon">
-            <?php echo __('CIRCULATION - Insert GR.No. to start transaction with keyboard or barcode reader'); ?>
+            <?php echo gettext('CIRCULATION - Insert GR.No. to start transaction with keyboard or barcode reader'); ?>
            <p class="only_border">&nbsp;</p>
             <form id="startCirc" class="notAJAX" method="post" action="#" style="display: inline;" target="blindSubmit" onsubmit="$('start').click();">
-            <?php echo __('GR.No.'); ?> :
+            <?php echo gettext('GR.No.'); ?> :
             <?php
             // create AJAX drop down
             $ajaxDD = new simbio_fe_AJAX_select();
@@ -91,7 +91,7 @@ $bradecum .= '<a href='.MODULES_WEB_ROOT_DIR.'bibliography/index.php class="head
             
             echo $ajaxDD->out();
             ?>
-            <input type="button" value="<?php echo __('Start Transaction'); ?>" id="start" class="button" onclick="setContent('mainContent', '<?php echo MODULES_WEB_ROOT_DIR; ?>circulation/circulation_action.php', 'post', $('startCirc').serialize(), true)" />
+            <input type="button" value="<?php echo gettext('Start Transaction'); ?>" id="start" class="button" onclick="setContent('mainContent', '<?php echo MODULES_WEB_ROOT_DIR; ?>circulation/circulation_action.php', 'post', $('startCirc').serialize(), true)" />
            </form> 
         </div>
     </fieldset>
@@ -101,7 +101,7 @@ $bradecum .= '<a href='.MODULES_WEB_ROOT_DIR.'bibliography/index.php class="head
 
     if (isset($_POST['finishID'])) 
     {
-        $msg = str_ireplace('{enrollment_no}', $_POST['finishID'], __('Transaction with member {enrollment_no} is completed'));
+        $msg = str_ireplace('{enrollment_no}', $_POST['finishID'], gettext('Transaction with member {enrollment_no} is completed'));
         echo '<div class="infoBox">'.$msg.'</div>';
 	$select=$dbs->query("select issue,checkin,reserve from ".$inte_schema.".tblstudent where SUB_INSTITUTE_ID='$_SESSION[SUB_INSTITUTE_ID]' AND enrollment_no=".$_SESSION['memberID']."");
 

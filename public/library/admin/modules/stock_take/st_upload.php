@@ -31,13 +31,13 @@ $can_read = utility::havePrivilege('stock_take', 'r');
 $can_write = utility::havePrivilege('stock_take', 'w');
 
 if (!($can_read AND $can_write)) {
-    die('<div class="errorBox">'.__('You don\'t have enough privileges to access this area!').'</div>');
+    die('<div class="errorBox">'.gettext('You don\'t have enough privileges to access this area!').'</div>');
 }
 
 // check if there is any active stock take proccess
 $stk_query = $dbs->query('SELECT * FROM stock_take WHERE is_active=1');
 if ($stk_query->num_rows < 1) {
-    echo '<div class="errorBox">'.__('NO stock taking proccess initialized yet!').'</div>';
+    echo '<div class="errorBox">'.gettext('NO stock taking proccess initialized yet!').'</div>';
     die();
 }
 
@@ -97,7 +97,7 @@ if (isset($_POST['stUpload']) && isset($_FILES['stFile'])) {
         fclose($stfile);
         // message
         echo '<script type="text/javascript">'."\n";
-        echo 'parent.$(\'stUploadMsg\').update(\''.__('Succesfully upload stock take file').$upload->new_filename.', <b>'.$i.'</b>'.__(' item codes scanned!').'\');'."\n"; //mfc
+        echo 'parent.$(\'stUploadMsg\').update(\''.gettext('Succesfully upload stock take file').$upload->new_filename.', <b>'.$i.'</b>'.gettext(' item codes scanned!').'\');'."\n"; //mfc
         echo 'parent.$(\'stUploadMsg\').setStyle( {display: \'block\'} );'."\n";
         echo '</script>';
     } else {
@@ -118,7 +118,7 @@ if (isset($_POST['stUpload']) && isset($_FILES['stFile'])) {
 	<td valign=top>
 	<?php
 	$bradecum = '';       
-        $basedir = basename(dirname(__FILE__));
+        $basedir = basename(dirname(gettextFILEgettext));
         $bradecum = "<a href=javascript:void(0); onclick=javascript:new_set_home(); >Home</a>-><a class='' href=javascript:void(0); onclick=javascript:new_set('".$basedir."');>"; 
 	$query = "select module_name from mst_module where module_path = '".$basedir."'";
 	$set_query = $dbs->query($query);
@@ -144,10 +144,10 @@ echo $bradecum;
 </table>
 <fieldset class="menuBox">
 <div class="menuBoxInner stockTakeIcon">
-    <?php echo __('STOCK TAKE UPLOAD - Upload a plain text file (.txt) containing list of Item Code to stock take. Each Item Code separated by line.'); ?><p class="only_border">&nbsp;</p>
+    <?php echo gettext('STOCK TAKE UPLOAD - Upload a plain text file (.txt) containing list of Item Code to stock take. Each Item Code separated by line.'); ?><p class="only_border">&nbsp;</p>
     <form name="uploadForm" class="notAJAX" method="post" enctype="multipart/form-data" action="<?php echo MODULES_WEB_ROOT_DIR.'stock_take/st_upload.php'; ?>" target="uploadAction" style="display: inline;">
-    <?php echo __(' File'); //mfc ?>: <input type="file" name="stFile" id="stFile" /> Maximum <?php echo $sysconf['max_upload']; ?> KB
-    <div style="margin: 3px;"><input type="submit" name="stUpload" id="stUpload" value="<?php echo __('Upload File'); ?>" class="button" />
+    <?php echo gettext(' File'); //mfc ?>: <input type="file" name="stFile" id="stFile" /> Maximum <?php echo $sysconf['max_upload']; ?> KB
+    <div style="margin: 3px;"><input type="submit" name="stUpload" id="stUpload" value="<?php echo gettext('Upload File'); ?>" class="button" />
     <iframe name="uploadAction" style="width: 0; height: 0; visibility: hidden;"></iframe>
     </div>
     </form>

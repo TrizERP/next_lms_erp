@@ -79,7 +79,7 @@ class simbio_template_parser
         if (count($_gettext[0]) > 0) {
             foreach ($_gettext[0] as $_trans_mark) {
                 $_trans_text = str_replace(array('<!--__(\'','\')-->'), '', $_trans_mark);
-                $this->result = str_ireplace($_trans_mark, __($_trans_text), $this->result);
+                $this->result = str_ireplace($_trans_mark, librarySubName($_trans_text), $this->result);
             }
         }
     }

@@ -41,7 +41,7 @@ $can_read = utility::havePrivilege('serial_control', 'r');
 $can_write = utility::havePrivilege('serial_control', 'w');
 
 if (!$can_read) {
-    die('<div class="errorBox">'.__('You are not authorized to view this section').'</div>');
+    die('<div class="errorBox">'.gettext('You are not authorized to view this section').'</div>');
 }
 
 /* search form */
@@ -77,12 +77,12 @@ echo $bradecum;
 </table>
 <fieldset class="menuBox">
 <div class="menuBoxInner serialIcon">
-    <?php /*echo strtoupper(__('Serial Control'));*/ ?>
+    <?php /*echo strtoupper(gettext('Serial Control'));*/ ?>
     <p class="only_border">&nbsp;</p>
-    <form name="search" action="<?php echo MODULES_WEB_ROOT_DIR; ?>serial_control/index.php" id="search" method="get" style="display: inline;"><?php echo __('Search'); ?> :
+    <form name="search" action="<?php echo MODULES_WEB_ROOT_DIR; ?>serial_control/index.php" id="search" method="get" style="display: inline;"><?php echo gettext('Search'); ?> :
     <input type="text" name="keywords" id="keywords" size="30" />
-    <select name="field"><option value="0"><?php echo __('ALL'); ?></option><option value="title"><?php echo __('Title'); ?></option><option value="topic"><?php echo __('Subject(s)'); ?></option><option value="author_name"><?php echo __('Author(s)'); ?></option><option value="isbn_issn"><?php echo __('ISBN/ISSN'); ?></option></select>
-    <input type="submit" id="doSearch" value="<?php echo __('Search'); ?>" class="button" />
+    <select name="field"><option value="0"><?php echo gettext('ALL'); ?></option><option value="title"><?php echo gettext('Title'); ?></option><option value="topic"><?php echo gettext('Subject(s)'); ?></option><option value="author_name"><?php echo gettext('Author(s)'); ?></option><option value="isbn_issn"><?php echo gettext('ISBN/ISSN'); ?></option></select>
+    <input type="submit" id="doSearch" value="<?php echo gettext('Search'); ?>" class="button" />
     </form>
 </div>
 </fieldset>
@@ -100,13 +100,13 @@ $count = 1;
 function subscriptionDetail($obj_db, $array_data)
 {
     global $can_read, $can_write, $count;
-    $_output = '<div style="float: left;"><strong style="font-size: 120%;"><a href="#" class="notAJAX" title="Edit Bibliographic Data" onclick="openHTMLpop(\''.MODULES_WEB_ROOT_DIR.'bibliography/pop_biblio.php?action=detail&inPopUp=true&itemID='.$array_data[0].'&itemCollID=0\', 650, 500, \''.__('Edit Bibliographic data').'\')">'.$array_data[1].'</a></strong> ('.$array_data[2].')</div>';
+    $_output = '<div style="float: left;"><strong style="font-size: 120%;"><a href="#" class="notAJAX" title="Edit Bibliographic Data" onclick="openHTMLpop(\''.MODULES_WEB_ROOT_DIR.'bibliography/pop_biblio.php?action=detail&inPopUp=true&itemID='.$array_data[0].'&itemCollID=0\', 650, 500, \''.gettext('Edit Bibliographic data').'\')">'.$array_data[1].'</a></strong> ('.$array_data[2].')</div>';
     if ($can_read AND $can_write) {
-        $_output .= ' <a href="#" class="addSubscription notAJAX" onclick="javascript: $(\'subscriptionListCont'.$count.'\').show(); setIframeContent(\'subscriptionList'.$count.'\', \''.MODULES_WEB_ROOT_DIR.'serial_control/subscription.php?biblioID='.$array_data[0].'&detail=true\');" title="'.__('Add New Subscription').'">&nbsp;</a> ';
+        $_output .= ' <a href="#" class="addSubscription notAJAX" onclick="javascript: $(\'subscriptionListCont'.$count.'\').show(); setIframeContent(\'subscriptionList'.$count.'\', \''.MODULES_WEB_ROOT_DIR.'serial_control/subscription.php?biblioID='.$array_data[0].'&detail=true\');" title="'.gettext('Add New Subscription').'">&nbsp;</a> ';
     }
-    $_output .= ' <a href="#" class="viewSubscription notAJAX" onclick="$(\'subscriptionListCont'.$count.'\').show(); setIframeContent(\'subscriptionList'.$count.'\', \''.MODULES_WEB_ROOT_DIR.'serial_control/subscription.php?biblioID='.$array_data[0].'\');" title="'.__('View Subscriptions').'">&nbsp;</a> ';
+    $_output .= ' <a href="#" class="viewSubscription notAJAX" onclick="$(\'subscriptionListCont'.$count.'\').show(); setIframeContent(\'subscriptionList'.$count.'\', \''.MODULES_WEB_ROOT_DIR.'serial_control/subscription.php?biblioID='.$array_data[0].'\');" title="'.gettext('View Subscriptions').'">&nbsp;</a> ';
     $_output .= '<div id="subscriptionListCont'.$count.'" style="clear: both; display: none;">';
-    $_output .= '<div><a href="#" class="notAJAX" style="font-weight: bold; color: red;" title="Close Box" onclick="$(\'subscriptionListCont'.$count.'\').hide()">'.__('CLOSE').'</a></div>';
+    $_output .= '<div><a href="#" class="notAJAX" style="font-weight: bold; color: red;" title="Close Box" onclick="$(\'subscriptionListCont'.$count.'\').hide()">'.gettext('CLOSE').'</a></div>';
     $_output .= '<iframe id="subscriptionList'.$count.'" src="'.MODULES_WEB_ROOT_DIR.'serial_control/subscription.php?biblioID='.$array_data[0].'" style="width: 100%; height: 270px;"></iframe>';
     $_output .= '</div>';
     $count++;
@@ -114,7 +114,7 @@ function subscriptionDetail($obj_db, $array_data)
 }
 // create datagrid
 $datagrid = new simbio_datagrid();
-$datagrid->setSQLColumn('b.biblio_id', 'b.title AS \''.__('Serial Title').'\'',
+$datagrid->setSQLColumn('b.biblio_id', 'b.title AS \''.gettext('Serial Title').'\'',
     'fr.frequency AS \'Frequency\'');
 $datagrid->invisible_fields = array(0, 2);
 $datagrid->modifyColumnContent(1, 'callback{subscriptionDetail}');
@@ -183,7 +183,7 @@ $datagrid->table_header_attr = 'class="dataListHeader" style="font-weight: bold;
 // put the result into variables
 $datagrid_result = $datagrid->createDataGrid($dbs, $table_spec, 20, false);
 if (isset($_GET['keywords']) AND $_GET['keywords']) {
-    $msg = str_replace('{result->num_rows}', $datagrid->num_rows, __('Found <strong>{result->num_rows}</strong> from your keywords')); //mfc
+    $msg = str_replace('{result->num_rows}', $datagrid->num_rows, gettext('Found <strong>{result->num_rows}</strong> from your keywords')); //mfc
     echo '<div class="infoBox">'.$msg.' : "'.$_GET['keywords'].'"</div>';
 }
 echo $datagrid_result;

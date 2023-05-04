@@ -28,7 +28,7 @@ $max_print = 65;
 if (isset($_GET['action']) AND $_GET['action'] == 'clear') {
     // update print queue count object
     echo '<script type="text/javascript">parent.$(\'queueCount\').update(\'0\');</script>';
-    utility::jsAlert(__('Print queue cleared!'));
+    utility::jsAlert(gettext('Print queue cleared!'));
     unset($_SESSION['card']);
     exit();
 }
@@ -71,12 +71,12 @@ if (isset($_POST['itemID']) AND !empty($_POST['itemID']) AND isset($_POST['itemA
     }
     echo '</script>';
     if (isset($limit_reach)) {
-        $msg = str_replace('{max_print}', $max_print, __('Selected items NOT ADDED to print queue. Only {max_print} can be printed at once')); //mfc
+        $msg = str_replace('{max_print}', $max_print, gettext('Selected items NOT ADDED to print queue. Only {max_print} can be printed at once')); //mfc
         utility::jsAlert($msg);
     } else {
         // update print queue count object
         echo '<script type="text/javascript">parent.$(\'queueCount\').update(\''.$print_count.'\');</script>';
-        utility::jsAlert(__('Selected items added to print queue'));
+        utility::jsAlert(gettext('Selected items added to print queue'));
     }
     exit();
 }
@@ -85,11 +85,11 @@ if (isset($_POST['itemID']) AND !empty($_POST['itemID']) AND isset($_POST['itemA
 if (isset($_GET['action']) AND $_GET['action'] == 'print') {
     // check if label session array is available
     if (!isset($_SESSION['card'])) {
-        utility::jsAlert(__('There is no data to print!'));
+        utility::jsAlert(gettext('There is no data to print!'));
         die();
     }
     if (count($_SESSION['card']) < 1) {
-        utility::jsAlert(__('There is no data to print!'));
+        utility::jsAlert(gettext('There is no data to print!'));
         die();
     }
     // concat all ID together
@@ -197,7 +197,7 @@ if (isset($_GET['action']) AND $_GET['action'] == 'print') {
         // open result in window
         //utility::jsAlert($print_file_name);
         echo "<center>";
-     echo '<script  type="text/javascript">top.openHTMLpop(\''.SENAYAN_WEB_ROOT_DIR.FILES_DIR.'/'.$print_file_name.'\', 900, 500, \''.__('Member Card Printing').'\')</script>';
+     echo '<script  type="text/javascript">top.openHTMLpop(\''.SENAYAN_WEB_ROOT_DIR.FILES_DIR.'/'.$print_file_name.'\', 900, 500, \''.gettext('Member Card Printing').'\')</script>';
    } else { utility::jsAlert('ERROR! Cards failed to generate, possibly because '.SENAYAN_BASE_DIR.FILES_DIR.' directory is not writable'); }
     exit();
 }
@@ -237,7 +237,7 @@ echo $bradecum;
 	<td class="tab_menu_top">
                             <ul class="tabs"> 
 				<li>
-<a href="<?php echo MODULES_WEB_ROOT_DIR; ?>membership/member_card_generator.php" class="headerText2"><?php echo __('Member Card Printing'); ?></a> </li><li>
+<a href="<?php echo MODULES_WEB_ROOT_DIR; ?>membership/member_card_generator.php" class="headerText2"><?php echo gettext('Member Card Printing'); ?></a> </li><li>
 <!--<a href="<?php echo  MODULES_WEB_ROOT_DIR; ?>membership/import.php" class="headerText2"><?php //echo __('Import Member Data'); ?></a> </li><li> <a href="<?php echo  MODULES_WEB_ROOT_DIR; ?>membership/export.php" class="headerText2"><?php //echo __('Export Member Data'); ?></a> </li></ul>-->
 	</td>
 </tr>
@@ -245,21 +245,21 @@ echo $bradecum;
 </fieldset>
 <fieldset class="menuBox">
 <div class="menuBoxInner printIcon">
-    <?php echo __('Member Card Printing'); ?> - <a target="blindSubmit" href="<?php echo MODULES_WEB_ROOT_DIR; ?>membership/member_card_generator.php?action=print" class="notAJAX headerText3"><?php echo __('Print Member Cards for Selected Data'); ?></a>
-    &nbsp;<a target="blindSubmit" href="<?php echo MODULES_WEB_ROOT_DIR; ?>membership/member_card_generator.php?action=clear" class="notAJAX headerText3" style="color: #FF0000;"><?php echo __('Clear Print Queue'); ?></a>
+    <?php echo gettext('Member Card Printing'); ?> - <a target="blindSubmit" href="<?php echo MODULES_WEB_ROOT_DIR; ?>membership/member_card_generator.php?action=print" class="notAJAX headerText3"><?php echo gettext('Print Member Cards for Selected Data'); ?></a>
+    &nbsp;<a target="blindSubmit" href="<?php echo MODULES_WEB_ROOT_DIR; ?>membership/member_card_generator.php?action=clear" class="notAJAX headerText3" style="color: #FF0000;"><?php echo gettext('Clear Print Queue'); ?></a>
     <p class="only_border">&nbsp;</p>
-    <form name="search" action="<?php echo MODULES_WEB_ROOT_DIR; ?>membership/member_card_generator.php" id="search" method="get" style="display: inline;"><?php echo __('Search'); ?>:
+    <form name="search" action="<?php echo MODULES_WEB_ROOT_DIR; ?>membership/member_card_generator.php" id="search" method="get" style="display: inline;"><?php echo gettext('Search'); ?>:
       <!--commnet by iresh on 25-1-2011  <input type="text" name="keywords" id="keywords" size="30" />-->
    <!-- added by iresh on 25-1-2011 --> <input type="text" name="keywords" id="keywords" width=140px/>
-    <input type="submit" id="doSearch" value="<?php echo __('Search'); ?>" class="button" />
+    <input type="submit" id="doSearch" value="<?php echo gettext('Search'); ?>" class="button" />
     </form>
     <div style="margin-top: 3px;">
     <?php
-    echo __('Maximum').' <font style="color: #FF0000">'.$max_print.'</font> '.__('records can be printed at once. Currently there is').' '; //mfc
+    echo gettext('Maximum').' <font style="color: #FF0000">'.$max_print.'</font> '.gettext('records can be printed at once. Currently there is').' '; //mfc
     if (isset($_SESSION['card'])) {
         echo '<font id="queueCount" style="color: #FF0000">'.count($_SESSION['card']).'</font>';
     } else { echo '<font id="queueCount" style="color: #FF0000">0</font>'; }
-    echo ' '.__('in queue waiting to be printed.'); //mfc
+    echo ' '.gettext('in queue waiting to be printed.'); //mfc
     ?>
     </div>
 </div>
@@ -306,11 +306,11 @@ $datagrid = new simbio_datagrid();
 
 
 $datagrid->setSQLColumn('X.enrollment_no',
-    'X.enrollment_no AS \''.__('Member ID').'\'',
-	'X.Roll_no AS \''.__('Roll_no').'\'',
-    'X.Member_Name AS \''.__('Member Name').'\'',
-	'X.Std_Div AS \''.__('Std-Div').'\'',
-    'X.Membership_Type AS \''.__('Membership Type').'\'');
+    'X.enrollment_no AS \''.gettext('Member ID').'\'',
+	'X.Roll_no AS \''.gettext('Roll_no').'\'',
+    'X.Member_Name AS \''.gettext('Member Name').'\'',
+	'X.Std_Div AS \''.gettext('Std-Div').'\'',
+    'X.Membership_Type AS \''.gettext('Membership Type').'\'');
 
 
 $datagrid->setSQLorder('X.Membership_Type,X.Std_Div,CAST(X.Roll_no as SIGNED) ASC');
@@ -340,16 +340,16 @@ $datagrid->table_attr = 'align="center" id="dataList" cellpadding="5" cellspacin
 $datagrid->table_header_attr = 'class="dataListHeader" style="font-weight: bold;"';
 // edit and checkbox property
 $datagrid->edit_property = false;
-$datagrid->chbox_property = array('itemID', __('Add'));
-$datagrid->chbox_action_button = __('Add To Print Queue');
-$datagrid->chbox_confirm_msg = __('Add to print queue?');
+$datagrid->chbox_property = array('itemID', gettext('Add'));
+$datagrid->chbox_action_button = gettext('Add To Print Queue');
+$datagrid->chbox_confirm_msg = gettext('Add to print queue?');
 $datagrid->column_width = array('10%', '10%', '55%','15%','10%');
 // set checkbox action URL
 $datagrid->chbox_form_URL = $_SERVER['PHP_SELF'];
 // put the result into variables
 $datagrid_result = $datagrid->createDataGrid($dbs, $table_spec, 65, $can_read);
 if (isset($_GET['keywords']) AND $_GET['keywords']) {
-    echo '<div class="infoBox">'.__('Found').' '.$datagrid->num_rows.' '.__('from your search with keyword').': "'.$_GET['keywords'].'"</div>'; //mfc
+    echo '<div class="infoBox">'.gettext('Found').' '.$datagrid->num_rows.' '.gettext('from your search with keyword').': "'.$_GET['keywords'].'"</div>'; //mfc
 }
 echo $datagrid_result;
 /* main content end */

@@ -1,3 +1,4 @@
+
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <!--
 	blue1.0 by Eddie Subratha
@@ -17,7 +18,7 @@
 <link rel="shortcut icon" href="webicon.ico" type="image/x-icon" />
 <title><?php echo $page_title; ?></title>
 <link href="template/core.style.css" rel="stylesheet" type="text/css" />
-<link href="<?php echo $sysconf['template']['css']; ?>" rel="stylesheet" type="text/css" />
+<link href="<?php echo $template_css; ?>" rel="stylesheet" type="text/css" />
 <!--[if gte IE 7]>
 <link rel="stylesheet" media="screen" type="text/css" href="ie7.css" />
 <![endif]-->
@@ -31,14 +32,14 @@
     <div id="container">
         <div id="header">
             <img src="template/blue/images/logo.png" border="0" alt="" />
-            <div class="title green"><?php echo $sysconf['library_name']; ?><div class="title2"><?php echo $sysconf['library_subname']; ?></div></div>
+            <div class="title green"><?php echo $page_title; ?><div class="title2"><?php echo $library_subname; ?></div></div>
             <ul id="nav">
-                 <li><a class="menu" href="index.php"><?php echo __('Home'); ?></a></li>
-               <!-- comment by iresh on 11/1/2011  <li><a class="menu" href="index.php?p=libinfo"><?php echo __('Library Information'); ?></a></li>-->
-                 <li><a class="menu" href="index.php?p=help"><?php echo __('Help on Search'); ?></a></li>
-                 <!-- comment by iresh on 11/1/2011 <li><a class="menu" href="index.php?p=member"><?php echo __('Member Area'); ?></a></li>-->
-                <!--added by iresh on 11/1/2011 -->  <li><a class="menu" href="index.php?p=member"><?php echo __('Member Login'); ?></a></li>
-                 <li><a class="menu" href="index.php?p=login"><?php echo __('Librarian LOGIN'); ?></a></li>
+                 <li><a class="menu" href="index.php"><?php echo gettext('Home'); ?></a></li>
+               <!-- comment by iresh on 11/1/2011  <li><a class="menu" href="index.php?p=libinfo"><?php echo gettext('Library Information'); ?></a></li>-->
+                 <li><a class="menu" href="index.php?p=help"><?php echo gettext('Help on Search'); ?></a></li>
+                 <!-- comment by iresh on 11/1/2011 <li><a class="menu" href="index.php?p=member"><?php echo gettext('Member Area'); ?></a></li>-->
+                <!--added by iresh on 11/1/2011 -->  <li><a class="menu" href="index.php?p=member"><?php echo gettext('Member Login'); ?></a></li>
+                 <li><a class="menu" href="index.php?p=login"><?php echo gettext('Librarian LOGIN'); ?></a></li>
             </ul>
         </div>
         <div id="picture"><span>Library Picture</span></div>
@@ -50,7 +51,7 @@
 
         <div id="right">
         <!-- language selection -->
-     <!-- comment by iresh on 11/1/2011 <h1 class="title_bar"><?php echo __('Select Language'); ?></h1>
+     <!-- comment by iresh on 11/1/2011 <h1 class="title_bar"><?php echo gettext('Select Language'); ?></h1>
         <form name="langSelect" action="index.php" method="get">
         <select name="select_lang" style="width: 99%;" onchange="document.langSelect.submit();">
         <?php echo $language_select; ?>
@@ -59,37 +60,37 @@
         <br />
         <br />
         <!-- language selection end -->
-        <h1 class="title_bar"><?php echo __('Simple Search'); ?></h1>
+        <h1 class="title_bar"><?php echo gettext('Simple Search'); ?></h1>
         <form name="simpleSearch" action="index.php" method="get">
         <input type="text" name="keywords" class="search" /><br /><br />
-        <input type="submit" name="search" value="<?php echo __('Search'); ?>" class="submit" />
+        <input type="submit" name="search" value="<?php echo gettext('Search'); ?>" class="submit" />
         </form>
         <br />
         <br />
-        <h1 class="title_bar"><?php echo __('Advanced Search'); ?></h1>
+        <h1 class="title_bar"><?php echo gettext('Advanced Search'); ?></h1>
         <form name="advSearch" action="index.php" method="get">
-        <?php echo __('Title'); ?> :<br />
+        <?php echo gettext('Title'); ?> :<br />
         <input type="text" name="title" class="search" /><br /><br />
-        <?php echo __('Author(s)'); ?> :<br />
+        <?php echo gettext('Author(s)'); ?> :<br />
         <?php echo $advsearch_author; ?><br /><br />
-        <?php echo __('Subject(s)'); ?> :<br />
+        <?php echo gettext('Subject(s)'); ?> :<br />
         <?php echo $advsearch_topic; ?><br /><br />
-        <?php echo __('ISBN/ISSN'); ?> :<br />
+        <?php echo gettext('ISBN/ISSN'); ?> :<br />
         <input type="text" name="isbn" class="search" /><br />
-        <?php echo __('GMD'); ?> :<br />
+        <?php echo gettext('GMD'); ?> :<br />
         <select name="gmd" style="width: 99%;" class="marginTop" />
         <?php echo $gmd_list; ?>
         </select><br /><br />
-        <?php echo __('Collection Type'); ?> :<br />
+        <?php echo gettext('Collection Type'); ?> :<br />
         <select name="colltype" style="width: 99%;" class="marginTop" />
         <?php echo $colltype_list; ?>
         </select><br /><br />
-        <?php echo __('Location'); ?> :<br />
+        <?php echo gettext('Location'); ?> :<br />
         <select name="location" style="width: 99%;" class="marginTop" />
         <?php echo $location_list; ?>
         </select><br />
         <br />
-        <input type="submit" name="search" value="<?php echo __('Search'); ?>" class="submit" />
+        <input type="submit" name="search" value="<?php echo gettext('Search'); ?>" class="submit" />
         <!-- <input type="button" value="More Options" onclick="" class="button marginTop" /> -->
         </form>
         <br />

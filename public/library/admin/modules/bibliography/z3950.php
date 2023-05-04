@@ -24,7 +24,7 @@ $can_write = utility::havePrivilege('bibliography', 'w');
 
 
 if (!$can_read) {
-    die('<div class="errorBox">'.__('You are not authorized to view this section').'</div>');
+    die('<div class="errorBox">'.gettext('You are not authorized to view this section').'</div>');
 }
 
 if (!extension_loaded('yaz')) 
@@ -262,7 +262,7 @@ if(isset($_GET['host_name']))
 		echo '<tr>';
 		echo '<td colspan="3"><table><tr><td>';
  //$form = new simbio_form_table_AJAX('mainForms', $_SERVER['PHP_SELF'].'?'.$_SERVER['QUERY_STRING'], 'post');
-  //  $form->submit_button_attr = 'name="saveData" value="'.__('Save').'" class="button"';
+  //  $form->submit_button_attr = 'name="saveData" value="'.gettext('Save').'" class="button"';
     // form table attributes
 //    $form->table_attr = 'align="center" id="dataList" border=0 cellpadding="5" cellspacing="0"';
  //  $form->table_header_attr = 'class="alterCell" style="font-weight: bold;"';
@@ -288,7 +288,7 @@ $ajax = "ajaxFillSelect('".SENAYAN_WEB_ROOT_DIR."admin/AJAX_material_sub_type_ha
        if ($rec_d['gmd_name']) {
             $mst_options[] = array($rec_d['gmd_id'],$rec_d['gmd_name']);
         }
-	$mst_options[] = array('0', __('Material Type'));
+	$mst_options[] = array('0', gettext('Material Type'));
 
 
  $ajax_exp = "ajaxFillSelect('".SENAYAN_WEB_ROOT_DIR."admin/AJAX_material_sub_type_handler.php', 'mst_material_sub_type', 'material_sub_id:material_sub_name:gmd_id', 'materialsubid', $('gmdID').getValue())";
@@ -296,7 +296,7 @@ $ajax = "ajaxFillSelect('".SENAYAN_WEB_ROOT_DIR."admin/AJAX_material_sub_type_ha
        if ($rec_d['material_sub_name']) {
             $mst_material_sub_type_options[] = array($rec_d['material_sub_id'],$rec_d['material_sub_name']);
         }
-	$mst_material_sub_type_options[] = array('0', __('Material Sub Type'));
+	$mst_material_sub_type_options[] = array('0', gettext('Material Sub Type'));
         // string element
        
 //$str_input='';       
@@ -374,10 +374,10 @@ echo $bradecum;
 <div class="menuBoxInner biblioIcon">
     Z3950 And MARC 21 Search And Import
     <hr />
-    <form name="search" class="notAJAX" action="blank.html" target="blindSubmit" onsubmit="$('doSearch').click();" id="search" method="get" style="display: inline;"><?php echo __('Search'); ?> :
+    <form name="search" class="notAJAX" action="blank.html" target="blindSubmit" onsubmit="$('doSearch').click();" id="search" method="get" style="display: inline;"><?php echo gettext('Search'); ?> :
     <input type="text" name="keywords" id="keywords" size="30" />
-    <select name="field"><option value="isbn"><?php echo __('ISBN/ISSN'); ?></option><option value="ti"><?php echo __('Title/Series Title'); ?></option><option value="au"><?php echo __('Authors'); ?></option></select>
-    <input type="button" id="doSearch" onclick="setContent('searchResult', '<?php echo MODULES_WEB_ROOT_DIR; ?>bibliography/z3950.php?' + $('search').serialize(), 'get')" value="<?php echo __('Search'); ?>" class="button" />
+    <select name="field"><option value="isbn"><?php echo gettext('ISBN/ISSN'); ?></option><option value="ti"><?php echo gettext('Title/Series Title'); ?></option><option value="au"><?php echo gettext('Authors'); ?></option></select>
+    <input type="button" id="doSearch" onclick="setContent('searchResult', '<?php echo MODULES_WEB_ROOT_DIR; ?>bibliography/z3950.php?' + $('search').serialize(), 'get')" value="<?php echo gettext('Search'); ?>" class="button" />
 <table>
 <tr><td><input type="checkbox" name="host_name[]" value="z3950.loc.gov:7090/voyager" /> LIBRARY OF CONGRESS [z3950.loc.gov]</td>
 <td><input type="checkbox" name="host_name[]" value="unicorn.bibliocentre.ca:2200/bibc" /> Bibliocentre [unicorn.bibliocentre.ca]</td></tr>
@@ -404,7 +404,7 @@ echo $bradecum;
 <td><input type="checkbox" name="host_name[]" value="www.bib.ucl.ac.be:3590/DEFAULT" /> UNIVERSITÉ CATHOLIQUE DE LOUVAIN (BELGIUM) [www.bib.ucl.ac.be]	</td></tr>
 <tr><td><input type="checkbox" name="host_name[]" value="z3950.enebakk.folkebibl.no:2109/data" /> ENEBAKK FOLKEBIBLIOTEK [z3950.enebakk.folkebibl.no]	</td><td></td></tr></table>
     </form>
-    <div><?php echo __('* Please make sure you have a working Internet connection.'); ?></div>
+    <div><?php echo gettext('* Please make sure you have a working Internet connection.'); ?></div>
 </div>
 </fieldset>
 <div id="searchResult">&nbsp;</div>

@@ -96,10 +96,10 @@ if (isset($_POST['save']) AND (isset($_POST['subjectID']) OR trim($_POST['search
         }
         else 
         {
-            utility::jsAlert(__('Duplicate Entery Same Subject and Topic is alreadt Exist'));
+            utility::jsAlert(gettext('Duplicate Entery Same Subject and Topic is alreadt Exist'));
          //   $sql_op->update('biblio_topic',$data,"biblio_id=$data[biblio_id] and topic_id=$data[topic_id]");
-            //utility::jsAlert(__('Duplicate Entery Same Subject and Topic is alreadt Exist')."\n".$sql_op->error);
-           // utility::jsAlert(__('Record has been Already There!')."\n".$sql_op->error);
+            //utility::jsAlert(gettext('Duplicate Entery Same Subject and Topic is alreadt Exist')."\n".$sql_op->error);
+           // utility::jsAlert(gettext('Record has been Already There!')."\n".$sql_op->error);
         }
 
     } else {
@@ -132,7 +132,7 @@ if (isset($_POST['save']) AND (isset($_POST['subjectID']) OR trim($_POST['search
        
 	
         echo '<script type="text/javascript">';
-        echo 'alert(\''.__('Subject added!').'\');';
+        echo 'alert(\''.gettext('Subject added!').'\');';
         echo 'parent.setIframeContent(\'topicIframe\', \''.MODULES_WEB_ROOT_DIR.'bibliography/iframe_topic.php\');';
         echo '</script>';
     }
@@ -143,7 +143,7 @@ if (isset($_POST['save']) AND (isset($_POST['subjectID']) OR trim($_POST['search
 <div style="padding: 5px; background: #CCCCCC;">
 <form name="mainForm" action="pop_topic.php?biblioID=<?php echo $biblioID; ?>" method="post">
 <div>
-    <strong><?php echo __('Add Subject'); ?></strong>
+    <strong><?php echo gettext('Add Subject'); ?></strong>
     <hr />
     <form name="searchTopic" method="post" style="display: inline;">
 <?php
@@ -153,15 +153,15 @@ if (isset($_POST['save']) AND (isset($_POST['subjectID']) OR trim($_POST['search
   ///      if ($topic_data['topic']) {
             //$topic_options[] = array($topic_data['topic_id'], $topic_data['topic']);
      //   }
-       // $topic_options[] = array('0', __('subject type'));
+       // $topic_options[] = array('0', gettext('subject type'));
        // $str_input = simbio_form_element::selectList('type', $topic_options, '', 'style="width: 50%;"');
 ?>
     <?php
     $ajax_exp = "ajaxFillSelect('../../AJAX_lookup_handler.php', 'mst_subject_type', 'subject_type_id:subject_type_name', 'subjectID', this.value)";
    //$ajax_exp = "ajaxFillSelect('../../AJAX_lookup_handler.php', 'mst_subject_type', 'subject_type_id:subject_type_name', 'subjectID', $('search_str').getValue())";
       ?>
-    <?php echo __('Keyword'); ?> : <input type="text" name="search_str" id="search_str" style="width: 30%;" onkeyup="<?php echo $ajax_exp;?>" onblur="return charactercheck('search_str');" />
-      <!--  <?php echo __('Keyword'); ?> : <input type="text" name="search_str" id="search_str" style="width: 30%;" onkeyup="<?php //echo $ajax_exp;?>" onclick="<?php //echo $ajax_exp1;?>" />                          -->
+    <?php echo gettext('Keyword'); ?> : <input type="text" name="search_str" id="search_str" style="width: 30%;" onkeyup="<?php echo $ajax_exp;?>" onblur="return charactercheck('search_str');" />
+      <!--  <?php echo gettext('Keyword'); ?> : <input type="text" name="search_str" id="search_str" style="width: 30%;" onkeyup="<?php //echo $ajax_exp;?>" onclick="<?php //echo $ajax_exp1;?>" />                          -->
 <?php
    
    
@@ -196,9 +196,9 @@ while($row=$subject_type->fetch_assoc())
 
 </div>
 <div style="margin-top: 5px;">
-<select name="subjectID" id="subjectID" size="5" style="width: 100%;"><option value="0"><?php echo __('Type to search for existing topics or to add a new one'); ?></option></select>
+<select name="subjectID" id="subjectID" size="5" style="width: 100%;"><option value="0"><?php echo gettext('Type to search for existing topics or to add a new one'); ?></option></select>
 <?php if ($biblioID) { echo '<input type="hidden" name="biblioID" value="'.$biblioID.'" />'; } ?>
-<input type="submit" name="save" value="<?php echo __('Insert To Bibliography'); ?>" style="margin-top: 5px;" />
+<input type="submit" name="save" value="<?php echo gettext('Insert To Bibliography'); ?>" style="margin-top: 5px;" />
 </div>
 </form>
 </div>
@@ -207,5 +207,5 @@ while($row=$subject_type->fetch_assoc())
 /* main content end */
 $content = ob_get_clean();
 // include the page template
-require SENAYAN_BASE_DIR.'/admin/'.$sysconf['admin_template']['dir'].'/notemplate_page_tpl.php';
+require SENAYAN_BASE_DIR.'/admin/admin_template/notemplate_page_tpl.php';
 ?>

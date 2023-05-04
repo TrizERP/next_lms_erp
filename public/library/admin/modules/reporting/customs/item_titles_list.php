@@ -32,7 +32,7 @@ $can_read = utility::havePrivilege('reporting', 'r');
 $can_write = utility::havePrivilege('reporting', 'w');
 
 if (!$can_read) {
-    die('<div class="errorBox">'.__('You don\'t have enough privileges to access this area!').'</div>');
+    die('<div class="errorBox">'.gettext('You don\'t have enough privileges to access this area!').'</div>');
 }
 
 require SIMBIO_BASE_DIR.'simbio_GUI/table/simbio_table.inc.php';
@@ -81,11 +81,11 @@ echo $bradecum;
 </table>
     <!-- filter -->
     <fieldset style="margin-bottom: 3px;">
-    <legend style="font-weight: bold"><?php echo strtoupper(__('Items Title List')); ?> - <?php echo __('Report Filter'); ?></legend>
+    <legend style="font-weight: bold"><?php echo strtoupper(gettext('Items Title List')); ?> - <?php echo gettext('Report Filter'); ?></legend>
     <form method="get" action="<?php echo $_SERVER['PHP_SELF']; ?>" target="reportView">
     <div id="filterForm">
         <div class="divRow">
-            <div class="divRowLabel"><?php echo __('Title/ISBN'); ?></div>
+            <div class="divRowLabel"><?php echo gettext('Title/ISBN'); ?></div>
             <div class="divRowContent">
             <?php
            //comment by iresh on 25-1-2011 echo simbio_form_element::textField('text', 'title', '', 'style="width: 50%"'); 
@@ -94,7 +94,7 @@ echo $bradecum;
             </div>
         </div>
         <div class="divRow">
-            <div class="divRowLabel"><?php echo __('Item Code'); ?></div>
+            <div class="divRowLabel"><?php echo gettext('Item Code'); ?></div>
             <div class="divRowContent">
             <?php 
            //comment by iresh on 25-1-2011  echo simbio_form_element::textField('text', 'itemCode', '', 'style="width: 50%"'); 
@@ -103,7 +103,7 @@ echo $bradecum;
             </div>
         </div>
         <div class="divRow">
-            <div class="divRowLabel"><?php echo __('Classification'); ?></div>
+            <div class="divRowLabel"><?php echo gettext('Classification'); ?></div>
             <div class="divRowContent">
             <?php 
            //comment by iresh on 25-1-2011  echo simbio_form_element::textField('text', 'class', '', 'style="width: 50%"'); 
@@ -112,12 +112,12 @@ echo $bradecum;
             </div>
         </div>
         <div class="divRow">
-            <div class="divRowLabel"><?php echo __('Collection Type'); ?></div>
+            <div class="divRowLabel"><?php echo gettext('Collection Type'); ?></div>
             <div class="divRowContent">
             <?php
             $coll_type_q = $dbs->query('SELECT coll_type_id, coll_type_name FROM mst_coll_type');
             $coll_type_options = array();
-            $coll_type_options[] = array('0', __('ALL'));
+            $coll_type_options[] = array('0', gettext('ALL'));
             while ($coll_type_d = $coll_type_q->fetch_row()) {
                 $coll_type_options[] = array($coll_type_d[0], $coll_type_d[1]);
             }
@@ -126,12 +126,12 @@ echo $bradecum;
             </div>
         </div>
         <div class="divRow">
-            <div class="divRowLabel"><?php echo __('Item Status'); ?></div>
+            <div class="divRowLabel"><?php echo gettext('Item Status'); ?></div>
             <div class="divRowContent">
             <?php
             $status_q = $dbs->query('SELECT item_status_id, item_status_name FROM mst_item_status');
             $status_options = array();
-            $status_options[] = array('0', __('ALL'));
+            $status_options[] = array('0', gettext('ALL'));
             while ($status_d = $status_q->fetch_row()) {
                 $status_options[] = array($status_d[0], $status_d[1]);
             }
@@ -140,12 +140,12 @@ echo $bradecum;
             </div>
         </div>
         <div class="divRow">
-            <div class="divRowLabel"><?php echo __('Location'); ?></div>
+            <div class="divRowLabel"><?php echo gettext('Location'); ?></div>
             <div class="divRowContent">
             <?php
             $loc_q = $dbs->query('SELECT location_id, location_name FROM mst_location');
             $loc_options = array();
-            $loc_options[] = array('0', __('ALL'));
+            $loc_options[] = array('0', gettext('ALL'));
             while ($loc_d = $loc_q->fetch_row()) {
                 $loc_options[] = array($loc_d[0], $loc_d[1]);
             }
@@ -154,15 +154,15 @@ echo $bradecum;
             </div>
         </div>
         <div class="divRow">
-            <div class="divRowLabel"><?php echo __('Record each page'); ?></div>
-            <div class="divRowContent"><input type="text" name="recsEachPage" size="3" maxlength="3" value="<?php echo $num_recs_show; ?>" /> <?php echo __('Set between 20 and 200'); ?></div>
+            <div class="divRowLabel"><?php echo gettext('Record each page'); ?></div>
+            <div class="divRowContent"><input type="text" name="recsEachPage" size="3" maxlength="3" value="<?php echo $num_recs_show; ?>" /> <?php echo gettext('Set between 20 and 200'); ?></div>
         </div>
     </div>
     <div style="padding-top: 10px; clear: both;">
-    <input type="submit" name="applyFilter" value="<?php echo __('Search'); ?>" />
-    <input type="button" name="moreFilter" value="<?php echo __('Advance Search'); ?>" onclick="showHideTableRows('filterForm', 1, this, '<?php echo __('Show More Search Options'); ?>', '<?php echo __('Hide Search Options'); ?>')" />
+    <input type="submit" name="applyFilter" value="<?php echo gettext('Search'); ?>" />
+    <input type="button" name="moreFilter" value="<?php echo gettext('Advance Search'); ?>" onclick="showHideTableRows('filterForm', 1, this, '<?php echo gettext('Show More Search Options'); ?>', '<?php echo gettext('Hide Search Options'); ?>')" />
 <!--added Started by Parth 23/8/2011 -->
-    <input type="reset" name="applyReset" value="<?php echo __('Reset'); ?>" />	
+    <input type="reset" name="applyReset" value="<?php echo gettext('Reset'); ?>" />	
 <!--added Ended by Parth 23/8/2011 -->
     <input type="hidden" name="reportView" value="true" />
     </div>
@@ -190,10 +190,10 @@ echo $bradecum;
         'ct.coll_type_name AS \''.__('Collection Type').'\'',
         's.item_status_name AS \''.__('Item Status').'\'',
         'b.call_number AS \''.__('Call Number').'\'', 'i.biblio_id');*/
-    $reportgrid->setSQLColumn('i.item_code AS \''.__('Item Code').'\'',
-        'b.title AS \''.__('Title').'\'',
-        'ct.coll_type_name AS \''.__('Collection Type').'\'',
-        's.item_status_name AS \''.__('Item Status').'\'',
+    $reportgrid->setSQLColumn('i.item_code AS \''.gettext('Item Code').'\'',
+        'b.title AS \''.gettext('Title').'\'',
+        'ct.coll_type_name AS \''.gettext('Collection Type').'\'',
+        's.item_status_name AS \''.gettext('Item Status').'\'',
         'i.biblio_id');
 //added Ended By Parth 23/8/2011
     $reportgrid->setSQLorder('i.item_code ASC');
@@ -291,6 +291,6 @@ echo $bradecum;
 
     $content = ob_get_clean();
     // include the page template
-    require SENAYAN_BASE_DIR.'/admin/'.$sysconf['admin_template']['dir'].'/printed_page_tpl.php';
+    require SENAYAN_BASE_DIR.'/admin/admin_template/printed_page_tpl.php';
 }
 ?>

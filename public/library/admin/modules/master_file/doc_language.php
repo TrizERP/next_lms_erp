@@ -36,7 +36,7 @@ $can_read = utility::havePrivilege('master_file', 'r');
 $can_write = utility::havePrivilege('master_file', 'w');
 
 if (!$can_read) {
-    die('<div class="errorBox">'.__('You don\'t have enough privileges to access this area!').'</div>');
+    die('<div class="errorBox">'.gettext('You don\'t have enough privileges to access this area!').'</div>');
 }
 
 /* language_name update process */
@@ -45,7 +45,7 @@ if (isset($_POST['saveData']) AND $can_read AND $can_write) {
     $langName = trim(strip_tags($_POST['langName']));
     // check form validity
     if (empty($langName) OR empty($langID)) {
-        utility::jsAlert(__('Language ID or Name can\'t be empty'));
+        utility::jsAlert(gettext('Language ID or Name can\'t be empty'));
         exit();
     } else {
         $data['language_id'] = $dbs->escape_string($langID);
@@ -64,20 +64,20 @@ if (isset($_POST['saveData']) AND $can_read AND $can_write) {
             // update the data
             $update = $sql_op->update('mst_language', $data, 'language_id=\''.$updateRecordID.'\'');
             if ($update) {
-                utility::jsAlert(__('Language Data Successfully Updated'));
+                utility::jsAlert(gettext('Language Data Successfully Updated'));
                 // update language ID in biblio table to keep data integrity
                 $sql_op->update('biblio', array('language_id' => $data['language_id']), 'language_id=\''.$updateRecordID.'\'');
                 echo '<script type="text/javascript">parent.setContent(\'mainContent\', parent.getPreviousAJAXurl(), \'post\');</script>';
-            } else { utility::jsAlert(__('Language Data FAILED to Updated. Please Contact System Administrator')."\nDEBUG : ".$sql_op->error); }
+            } else { utility::jsAlert(gettext('Language Data FAILED to Updated. Please Contact System Administrator')."\nDEBUG : ".$sql_op->error); }
             exit();
         } else {
             /* INSERT RECORD MODE */
             // insert the data
             $insert = $sql_op->insert('mst_language', $data);
             if ($insert) {
-                utility::jsAlert(__('New Language Data Successfully Saved'));
+                utility::jsAlert(gettext('New Language Data Successfully Saved'));
                 echo '<script type="text/javascript">parent.setContent(\'mainContent\', \''.$_SERVER['PHP_SELF'].'\', \'post\');</script>';
-            } else { utility::jsAlert(__('Language Data FAILED to Save. Please Contact System Administrator')."\nDEBUG : ".$sql_op->error); }
+            } else { utility::jsAlert(gettext('Language Data FAILED to Save. Please Contact System Administrator')."\nDEBUG : ".$sql_op->error); }
             exit();
         }
     }
@@ -104,10 +104,10 @@ if (isset($_POST['saveData']) AND $can_read AND $can_write) {
 
     // error alerting
     if ($error_num == 0) {
-        utility::jsAlert(__('All Data Successfully Deleted'));
+        utility::jsAlert(gettext('All Data Successfully Deleted'));
         echo '<script type="text/javascript">parent.setContent(\'mainContent\', \''.$_SERVER['PHP_SELF'].'?'.$_POST['lastQueryStr'].'\', \'post\');</script>';
     } else {
-        utility::jsAlert(__('Some or All Data NOT deleted successfully!\nPlease contact system administrator'));
+        utility::jsAlert(gettext('Some or All Data NOT deleted successfully!\nPlease contact system administrator'));
         echo '<script type="text/javascript">parent.setContent(\'mainContent\', \''.$_SERVER['PHP_SELF'].'?'.$_POST['lastQueryStr'].'\', \'post\');</script>';
     }
     exit();
@@ -118,12 +118,12 @@ if (isset($_POST['saveData']) AND $can_read AND $can_write) {
 ?>
 <fieldset class="menuBox">
 <div class="menuBoxInner masterFileIcon">
-    <?php echo strtoupper(__('Doc. Language')); ?> - <a href="<?php echo MODULES_WEB_ROOT_DIR; ?>master_file/doc_language.php?action=detail" class="headerText2"><?php echo __('Add New Language'); ?></a>
-    &nbsp; <a href="<?php echo MODULES_WEB_ROOT_DIR; ?>master_file/doc_language.php" class="headerText2"><?php echo __('Language List'); ?></a>
+    <?php echo strtoupper(gettext('Doc. Language')); ?> - <a href="<?php echo MODULES_WEB_ROOT_DIR; ?>master_file/doc_language.php?action=detail" class="headerText2"><?php echo gettext('Add New Language'); ?></a>
+    &nbsp; <a href="<?php echo MODULES_WEB_ROOT_DIR; ?>master_file/doc_language.php" class="headerText2"><?php echo gettext('Language List'); ?></a>
     <hr />
-    <form name="search" action="<?php echo MODULES_WEB_ROOT_DIR; ?>master_file/doc_language.php" id="search" method="get" style="display: inline;"><?php echo __('Search'); ?> :
+    <form name="search" action="<?php echo MODULES_WEB_ROOT_DIR; ?>master_file/doc_language.php" id="search" method="get" style="display: inline;"><?php echo gettext('Search'); ?> :
     <input type="text" name="keywords" size="30" />
-    <input type="submit" id="doSearch" value="<?php echo __('Search'); ?>" class="button" />
+    <input type="submit" id="doSearch" value="<?php echo gettext('Search'); ?>" class="button" />
     </form>
 </div>
 </fieldset>
@@ -132,7 +132,7 @@ if (isset($_POST['saveData']) AND $can_read AND $can_write) {
 /* main content */
 if (isset($_POST['detail']) OR (isset($_GET['action']) AND $_GET['action'] == 'detail')) {
     if (!($can_read AND $can_write)) {
-        die('<div class="errorBox">'.__('You don\'t have enough privileges to access this area!').'</div>');
+        die('<div class="errorBox">'.gettext('You don\'t have enough privileges to access this area!').'</div>');
     }
     /* RECORD FORM */
     $itemID = $dbs->escape_string(trim(isset($_POST['itemID'])?$_POST['itemID']:0));
@@ -141,7 +141,7 @@ if (isset($_POST['detail']) OR (isset($_GET['action']) AND $_GET['action'] == 'd
 
     // create new instance
     $form = new simbio_form_table_AJAX('mainForm', $_SERVER['PHP_SELF'].'?'.$_SERVER['QUERY_STRING'], 'post');
-    $form->submit_button_attr = 'name="saveData" value="'.__('Save').'" class="button"';
+    $form->submit_button_attr = 'name="saveData" value="'.gettext('Save').'" class="button"';
 
     // form table attributes
     $form->table_attr = 'align="center" id="dataList" cellpadding="5" cellspacing="0"';
@@ -156,20 +156,20 @@ if (isset($_POST['detail']) OR (isset($_GET['action']) AND $_GET['action'] == 'd
         // form record title
         $form->record_title = $rec_d['language_name'];
         // submit button attribute
-        $form->submit_button_attr = 'name="saveData" value="'.__('Update').'" class="button"';
+        $form->submit_button_attr = 'name="saveData" value="'.gettext('Update').'" class="button"';
     }
 
     /* Form Element(s) */
     // language ID
-    //comment by iresh on 25-1-2011 $form->addTextField('text', 'langID', __('Language Code').'*', $rec_d['language_id'], 'style="width: 20%;" maxlength="5"');
-    /*added by iresh on 25-1-2011*/$form->addTextField('text', 'langID', __('Language Code').'*', $rec_d['language_id'], 'style="width: 140px;" maxlength="5" onkeyup="return checkspecialcharacterdynamic(this.name);"');
+    //comment by iresh on 25-1-2011 $form->addTextField('text', 'langID', gettext('Language Code').'*', $rec_d['language_id'], 'style="width: 20%;" maxlength="5"');
+    /*added by iresh on 25-1-2011*/$form->addTextField('text', 'langID', gettext('Language Code').'*', $rec_d['language_id'], 'style="width: 140px;" maxlength="5" onkeyup="return checkspecialcharacterdynamic(this.name);"');
     // language_name
-   //comment by iresh on 25-1-2011  $form->addTextField('text', 'langName', __('Language').'*', $rec_d['language_name'], 'style="width: 60%;"');
-     /*added by iresh on 25-1-2011*/$form->addTextField('text', 'langName', __('Language').'*', $rec_d['language_name'], 'style="width: 140px;" onkeyup="return checkspecialcharacterdynamic(this.name);"');
+   //comment by iresh on 25-1-2011  $form->addTextField('text', 'langName', _gettext_('Language').'*', $rec_d['language_name'], 'style="width: 60%;"');
+     /*added by iresh on 25-1-2011*/$form->addTextField('text', 'langName', gettext('Language').'*', $rec_d['language_name'], 'style="width: 140px;" onkeyup="return checkspecialcharacterdynamic(this.name);"');
 
 
     // print out the form object
-    echo '<div class="infoBox">'.__('You are going to edit language data').' : <b>'.$rec_d['language_name'].'</b>  <br />'.__('Last Update').$rec_d['last_update'].'</div>'; //mfc
+    echo '<div class="infoBox">'.gettext('You are going to edit language data').' : <b>'.$rec_d['language_name'].'</b>  <br />'.gettext('Last Update').$rec_d['last_update'].'</div>'; //mfc
     echo $form->printOut();
 } else {
     /* DOCUMENT LANGUAGE LIST */
@@ -179,9 +179,9 @@ if (isset($_POST['detail']) OR (isset($_GET['action']) AND $_GET['action'] == 'd
     // create datagrid
     $datagrid = new simbio_datagrid();
     if ($can_read AND $can_write) {
-        $datagrid->setSQLColumn('l.language_id', 'l.language_name AS \''.__('Language').'\'', 'DATE_FORMAT(l.last_update,"%d-%m-%Y") AS \''.__('Last Update').'\'');
+        $datagrid->setSQLColumn('l.language_id', 'l.language_name AS \''.gettext('Language').'\'', 'DATE_FORMAT(l.last_update,"%d-%m-%Y") AS \''.gettext('Last Update').'\'');
     } else {
-        $datagrid->setSQLColumn('l.language_name AS \''.__('Language').'\'', 'DATE_FORMAT(l.last_update,"%d-%m-%Y") AS \''.__('Last Update').'\'');
+        $datagrid->setSQLColumn('l.language_name AS \''.gettext('Language').'\'', 'DATE_FORMAT(l.last_update,"%d-%m-%Y") AS \''.gettext('Last Update').'\'');
     }
     $datagrid->setSQLorder('language_name ASC');
 
@@ -200,7 +200,7 @@ if (isset($_POST['detail']) OR (isset($_GET['action']) AND $_GET['action'] == 'd
     // put the result into variables
     $datagrid_result = $datagrid->createDataGrid($dbs, $table_spec, 20, ($can_read AND $can_write));
     if (isset($_GET['keywords']) AND $_GET['keywords']) {
-        $msg = str_replace('{result->num_rows}', $datagrid->num_rows, __('Found <strong>{result->num_rows}</strong> from your keywords')); //mfc
+        $msg = str_replace('{result->num_rows}', $datagrid->num_rows, gettext('Found <strong>{result->num_rows}</strong> from your keywords')); //mfc
         echo '<div class="infoBox">'.$msg.' : "'.$_GET['keywords'].'"</div>';
     }
 

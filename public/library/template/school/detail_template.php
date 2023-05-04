@@ -1,8 +1,9 @@
 <?php
+session_start();
 // biblio/record detail
 // output the buffer
 ob_start(); /* <- DONT REMOVE THIS COMMAND */
-error_reporting(0);
+error_reporting(E_ALL);
 
 ?>
 
@@ -12,7 +13,7 @@ error_reporting(0);
 <td class="tblContent" style="width: 80%;" valign="top"><?php print ''; ?></td>
 </tr>
 <tr>
-<td class="tblHead" style="width: 20%;" valign="top"><?php print __('Title'); ?></td>
+<td class="tblHead" style="width: 20%;" valign="top"><?php print gettext('Title'); ?></td>
 <td class="tblContent" style="width: 80%;" valign="top">{title}</td>
 </tr>
 <?php if($_REQUEST['gmd_code']!='Virtual-Resources'){?>
@@ -25,12 +26,12 @@ error_reporting(0);
 <td class="tblContent" style="width: 80%;" valign="top">{call_number}</td>
 </tr>-->
 <tr>
-<td class="tblHead" style="width: 20%;" valign="top"><?php print __('ISBN/ISSN'); ?></td>
+<td class="tblHead" style="width: 20%;" valign="top"><?php print gettext('ISBN/ISSN'); ?></td>
 <td class="tblContent" style="width: 80%;" valign="top">{isbn_issn}</td>
 </tr>
 <tr>
 <tr>
-<td class="tblHead" style="width: 20%;" valign="top"><?php print __('Author(s)'); ?></td>
+<td class="tblHead" style="width: 20%;" valign="top"><?php print gettext('Author(s)'); ?></td>
 <td class="tblContent" style="width: 80%;" valign="top">{authors}</td>
 </tr>
 <!--<tr>
@@ -42,7 +43,7 @@ error_reporting(0);
 <td class="tblContent" style="width: 80%;" valign="top">{classification}</td>
 </tr>-->
 <tr>
-<td class="tblHead" style="width: 20%;" valign="top"><?php print __('Series Title'); ?></td>
+<td class="tblHead" style="width: 20%;" valign="top"><?php print gettext('Series Title'); ?></td>
 <td class="tblContent" style="width: 80%;" valign="top">{series_title}</td>
 </tr>
 <!--<tr>
@@ -58,7 +59,7 @@ error_reporting(0);
 <td class="tblContent" style="width: 80%;" valign="top">{publisher_name}</td>
 </tr>-->
 <tr>
-<td class="tblHead" style="width: 20%;" valign="top"><?php print __('Publishing Year'); ?></td>
+<td class="tblHead" style="width: 20%;" valign="top"><?php print gettext('Publishing Year'); ?></td>
 <td class="tblContent" style="width: 80%;" valign="top">{publish_year}</td>
 </tr>
 <!--<tr>
@@ -79,11 +80,11 @@ error_reporting(0);
 <td class="tblContent" style="width: 80%;" valign="top">{notes}</td>
 </tr>-->
 <tr>
-<td class="tblHead" style="width: 20%;" valign="top"><?php print __('Specific Detail Info'); ?></td>
+<td class="tblHead" style="width: 20%;" valign="top"><?php print gettext('Specific Detail Info'); ?></td>
 <td class="tblContent" style="width: 80%;" valign="top">{spec_detail_info}</td>
 </tr>
 <tr>
-<td class="tblHead" style="width: 20%;" valign="top"><?php print __('Image'); ?></td>
+<td class="tblHead" style="width: 20%;" valign="top"><?php print gettext('Image'); ?></td>
 <td class="tblContent" style="width: 80%;" valign="top">{image}</td>
 </tr>
 
@@ -100,7 +101,7 @@ error_reporting(0);
 <?php }?>
 <tr>
 <!--<td class="tblHead" style="width: 20%;" valign="top">&nbsp;</td>
-<td class="tblContent" style="width: 80%;" valign="top">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="javascript: history.back();" ><?php print __('Back To Previousss'); ?></a></td>-->
+<td class="tblContent" style="width: 80%;" valign="top">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="javascript: history.back();" ><?php print gettext('Back To Previousss'); ?></a></td>-->
 
 <!--<td class="tblContent"><td><a href="index.php??title=&author=&subject=&isbn=&gmd=0&colltype=0&location=0&search=Search"><center><font-size=24>Back To Previous</font></center></a></td></td>--><!-- added by iresh on 4-3-2011 -->
 </tr>

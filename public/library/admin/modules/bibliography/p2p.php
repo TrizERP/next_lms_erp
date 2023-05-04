@@ -34,7 +34,7 @@ $can_read = utility::havePrivilege('bibliography', 'r');
 $can_write = utility::havePrivilege('bibliography', 'w');
 
 if (!$can_read) {
-    die('<div class="errorBox">'.__('You are not authorized to view this section').'</div>');
+    die('<div class="errorBox">'.gettext('You are not authorized to view this section').'</div>');
 }
 
 /* RECORD OPERATION */
@@ -199,8 +199,8 @@ if (isset($_GET['keywords']) && $can_read && isset($_GET['p2pserver']))  {
         echo '<input type="hidden" name="p2pserver_save" value="'.$p2pserver.'" />';
         echo '</form>';
     } else {
-       /*comment by iresh on 12/1/2011 echo '<div class="errorBox">'.sprintf(__('Sorry, no result found from %s OR maybe XML result and detail disabled.'), $p2pserver).'</div>';*/
-	/*added by iresh on 12/1/2011 */echo '<div class="errorBox">'.sprintf(__('Sorry, no result found.'), $p2pserver).'</div>';
+       /*comment by iresh on 12/1/2011 echo '<div class="errorBox">'.sprintf(gettext('Sorry, no result found from %s OR maybe XML result and detail disabled.'), $p2pserver).'</div>';*/
+	/*added by iresh on 12/1/2011 */echo '<div class="errorBox">'.sprintf(gettext('Sorry, no result found.'), $p2pserver).'</div>';
     }
     exit();
 }
@@ -212,12 +212,12 @@ if (isset($_GET['keywords']) && $can_read && isset($_GET['p2pserver']))  {
 <div class="menuBoxInner biblioIcon">
     P2P Service
     <hr />
-    <form name="search" class="notAJAX" action="blank.html" target="blindSubmit" onsubmit="$('doSearch').click();" id="search" method="get" style="display: inline;"><?php echo __('Search'); ?> :
+    <form name="search" class="notAJAX" action="blank.html" target="blindSubmit" onsubmit="$('doSearch').click();" id="search" method="get" style="display: inline;"><?php echo gettext('Search'); ?> :
     <input type="text" name="keywords" id="keywords" size="30" />
     Server: <select name="p2pserver" style="width: 20%;"><?php foreach ($sysconf['p2pserver'] as $serverid => $p2pserver) { echo '<option value="'.$serverid.'">'.$p2pserver['name'].'</option>';  } ?></select>
-    <input type="button" id="doSearch" onclick="setContent('searchResult', '<?php echo MODULES_WEB_ROOT_DIR; ?>bibliography/p2p.php?' + $('search').serialize(), 'get')" value="<?php echo __('Search'); ?>" class="button" />
+    <input type="button" id="doSearch" onclick="setContent('searchResult', '<?php echo MODULES_WEB_ROOT_DIR; ?>bibliography/p2p.php?' + $('search').serialize(), 'get')" value="<?php echo gettext('Search'); ?>" class="button" />
     </form>
-    <div><?php echo __('* Please make sure you have a working Internet connection.'); ?></div>
+    <div><?php echo gettext('* Please make sure you have a working Internet connection.'); ?></div>
 </div>
 </fieldset>
 <div id="searchResult">&nbsp;</div>

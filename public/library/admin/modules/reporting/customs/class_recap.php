@@ -11,7 +11,7 @@ $can_write = utility::havePrivilege('reporting', 'w');
 
 if (!$can_read) 
 {
-    die('<div class="errorBox">'.__('You don\'t have enough privileges to access this area!').'</div>');
+    die('<div class="errorBox">'.gettext('You don\'t have enough privileges to access this area!').'</div>');
 }
 
 require SIMBIO_BASE_DIR.'simbio_GUI/table/simbio_table.inc.php';
@@ -61,27 +61,27 @@ echo $bradecum;
 </table>
     <!-- filter -->
     <fieldset style="margin-bottom: 3px;">
-    <legend style="font-weight: bold"><?php echo strtoupper(__('Custom Recapitulations')); ?> - <?php echo __('Report Filter'); ?></legend>
+    <legend style="font-weight: bold"><?php echo strtoupper(gettext('Custom Recapitulations')); ?> - <?php echo gettext('Report Filter'); ?></legend>
     <form method="get" action="<?php echo $_SERVER['PHP_SELF']; ?>" target="reportView">
     <div id="filterForm">
         <div class="divRow">
-            <div class="divRowLabel"><?php echo __('Recap By'); ?>:</div>
+            <div class="divRowLabel"><?php echo gettext('Recap By'); ?>:</div>
             <div class="divRowContent">
             <?php
             //$recapby_options[] = array('', __('Classification'));
-            $recapby_options[] = array('gmd', __('Material Type'));
-	    $recapby_options[] = array('material_sub_type', __('Material Sub Type'));
-            $recapby_options[] = array('collType', __('Collection Type'));
-            $recapby_options[] = array('language', __('Language'));
+            $recapby_options[] = array('gmd', gettext('Material Type'));
+	    $recapby_options[] = array('material_sub_type', gettext('Material Sub Type'));
+            $recapby_options[] = array('collType', gettext('Collection Type'));
+            $recapby_options[] = array('language', gettext('Language'));
             echo simbio_form_element::selectList('recapBy', $recapby_options);
             ?>
             </div>
         </div>
     </div>
     <div style="padding-top: 10px; clear: both;">
-    <input type="submit" name="applyFilter" value="<?php echo __('Search'); ?>" />
+    <input type="submit" name="applyFilter" value="<?php echo gettext('Search'); ?>" />
     <!--
-    <input type="button" name="moreFilter" value="<?php echo __('Advance Search'); ?>" onclick="showHideTableRows('filterForm', 1, this, '<?php echo __('Show More Search Options'); ?>', '<?php echo __('Hide v Options'); ?>')" />
+    <input type="button" name="moreFilter" value="<?php echo __('Advance Search'); ?>" onclick="showHideTableRows('filterForm', 1, this, '<?php echo __('Show More Search Options'); ?>', '<?php echo gettext('Hide v Options'); ?>')" />
     -->
     <input type="hidden" name="reportView" value="true" />
     </div>
@@ -94,16 +94,16 @@ echo $bradecum;
 } else {
     ob_start();
     $row_class = 'alterCellPrinted';
-    $recapby = __('Classification');
-    $output = '<table align="center" class="border" style="width: 100%;" cellpadding="3" cellspacing="0">';
+    $recapby = gettext('Classification');
+    $output = '<table align="center" class="border" style="width: 10gettext%;" cellpadding="3" cellspacing="0">';
     // header
     $output .= '<tr><td class="dataListHeaderPrinted">'.$recapby.'</td>
-        <td class="dataListHeaderPrinted">'.__('Title').'</td>
-        <td class="dataListHeaderPrinted">'.__('Items').'</td></tr>';
+        <td class="dataListHeaderPrinted">'.gettext('Title').'</td>
+        <td class="dataListHeaderPrinted">'.gettext('Items').'</td></tr>';
     if (isset($_GET['recapBy']) AND trim($_GET['recapBy']) != '') {
         switch ($_GET['recapBy']) {
             case 'gmd' :
-            $recapby = __('Material Type');
+            $recapby = gettext('Material Type');
             /* GMD */
             $gmd_q = $dbs->query("SELECT DISTINCT gmd_id, gmd_name FROM mst_gmd");
             while ($gmd_d = $gmd_q->fetch_row()) {
@@ -126,7 +126,7 @@ echo $bradecum;
             /* GMD END */
             break;
 	    case 'material_sub_type' :
-            $recapby = __('Material Sub Type');
+            $recapby = gettext('Material Sub Type');
             /* Material Sub Type */
 //added by Start By Parth 23/8/2011
             //$gmd_q = $dbs->query("SELECT DISTINCT material_sub_id, material_sub_name FROM mst_material_sub_type");
@@ -152,7 +152,7 @@ echo $bradecum;
             /* Material Sub Type END */
             break;	
             case 'language' :
-            $recapby = __('Language');
+            $recapby = gettext('Language');
             /* LANGUAGE */
 //added and commented start by Parth 23/8/2011
         //    $lang_q = $dbs->query("SELECT DISTINCT language_id, language_name FROM mst_language");
@@ -178,7 +178,7 @@ echo $bradecum;
             /* LANGUAGE END */
             break;
             case 'collType' :
-            $recapby = __('Collection Type');
+            $recapby = gettext('Collection Type');
             /* COLLECTION TYPE */
 //added and commented started by Parth 23/8/2011
             //$ctype_q = $dbs->query("SELECT DISTINCT coll_type_id, coll_type_name FROM mst_coll_type group by coll_type_name");
@@ -320,12 +320,12 @@ $gmd_q = $dbs->query("SELECT DISTINCT gmd_id, gmd_name FROM mst_gmd group by gmd
     $output .= '</table>';
 
     // print out
-    echo '<div class="printPageInfo">'.__('Title and Collection Recap by').' <strong>'.$recapby.'</strong> <a class="printReport" onclick="window.print()" href="#">['.__('Print Current Page').']</a></div>'."\n";
+    echo '<div class="printPageInfo">'.gettext('Title and Collection Recap by').' <strong>'.$recapby.'</strong> <a class="printReport" onclick="window.print()" href="#">['.gettext('Print Current Page').']</a></div>'."\n";
     echo $output;
 
     $content = ob_get_clean();
     // include the page template
-    require SENAYAN_BASE_DIR.'/admin/'.$sysconf['admin_template']['dir'].'/printed_page_tpl.php';
+    require SENAYAN_BASE_DIR.'/admin/admin_template/printed_page_tpl.php';
 }
 ?>
 

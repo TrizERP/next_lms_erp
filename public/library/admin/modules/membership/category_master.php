@@ -1,5 +1,5 @@
 <?php
-
+session_start();
 require '../../../sysconfig.inc.php';
 require SENAYAN_BASE_DIR.'admin/default/session.inc.php';
 require SIMBIO_BASE_DIR.'simbio_GUI/table/simbio_table.inc.php';
@@ -46,14 +46,14 @@ echo $bradecum;
 	<td class="tab_menu_top">
                             <ul class="tabs"> 
 				<li>
-<a href="<?php echo MODULES_WEB_ROOT_DIR; ?>membership/category_master.php" class="headerText2"><?php echo __('Category Master'); ?></a> </li>
+<a href="<?php echo MODULES_WEB_ROOT_DIR; ?>membership/category_master.php" class="headerText2"><?php echo gettext('Category Master'); ?></a> </li>
                             </ul>
         </td>
 </tr>
 </table>
                                 <fieldset class="menuBox">
 <div class="menuBoxInner importIcon">
-    <?php echo __('Category Master'); ?>
+    <?php echo gettext('Category Master'); ?>
     <p class="only_border">&nbsp;</p>    
 </div>
 </fieldset>
@@ -130,10 +130,14 @@ echo $bradecum;
 	{      
             
              $i=$row['cat_mast_user'];
-             $record_data[$i][1]=$row['cat_issue_limit'];
-             $record_data[$i][2]=$row['cat_issue_period'];
-             $record_data[$i][3]=$row['cat_re_issue_limit'];
-             $record_data[$i][4]=$row['cat_fine_each_day'];                                                          
+             // $record_data[$i][1]=$row['cat_issue_limit'];
+             // $record_data[$i][2]=$row['cat_issue_period'];
+             // $record_data[$i][3]=$row['cat_re_issue_limit'];
+             // $record_data[$i][4]=$row['cat_fine_each_day'];    
+              $record_data[$user[$i]][1]=$row['cat_issue_limit'];
+             $record_data[$user[$i]][2]=$row['cat_issue_period'];
+             $record_data[$user[$i]][3]=$row['cat_re_issue_limit'];
+             $record_data[$user[$i]][4]=$row['cat_fine_each_day'];                                                                
         }   
                 ?>              
         </tr>   

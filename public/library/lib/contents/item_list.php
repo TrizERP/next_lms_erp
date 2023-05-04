@@ -190,8 +190,8 @@ echo "<td align=center>Book Title </td><td align=center>Total Copies</td><td ali
 			{
 				 $due1.=$due['due_date'];
 			}
-			  // echo "<td>".__('Currently On Loan (Due on').$due1."</td>";
-			echo '<td><strong width="50%" style="color: red;">'.__('All Copy Currently On Loan (One Of The Copy Due on').date($sysconf['date_format'], strtotime( $due1)).')</strong></td>'; 
+			  // echo "<td>".gettext('Currently On Loan (Due on').$due1."</td>";
+			echo '<td><strong width="50%" style="color: red;">'.gettext('All Copy Currently On Loan (One Of The Copy Due on').date($sysconf['date_format'], strtotime( $due1)).')</strong></td>'; 
 
 		}
 		
@@ -238,7 +238,7 @@ echo "</table>";
 }
 else
 {
-	// echo '<strong style="color: red; font-weight: bold;">'.__('No Copy Available For This Book').'</strong>';
+	// echo '<strong style="color: red; font-weight: bold;">'.gettext('No Copy Available For This Book').'</strong>';
 }
 
 

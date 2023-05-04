@@ -16,7 +16,7 @@ $can_write = utility::havePrivilege('master_file', 'w');
 
 if (!$can_read)
 {
-    die('<div class="errorBox">'.__('You don\'t have enough privileges to access this area!').'</div>');
+    die('<div class="errorBox">'.gettext('You don\'t have enough privileges to access this area!').'</div>');
 }
 
 /* RECORD OPERATION */
@@ -27,7 +27,7 @@ if (isset($_POST['saveData']) AND $can_read AND $can_write)
     
     if (empty($authorName)) 
     {
-        utility::jsAlert(__('Author name can\'t be empty!'));
+        utility::jsAlert(gettext('Author name can\'t be empty!'));
         exit();
         
     }
@@ -35,7 +35,7 @@ if (isset($_POST['saveData']) AND $can_read AND $can_write)
     {        
             if (number_format($authorName)) 
             {
-                utility::jsAlert(__('Author name can\'t be Numeric!'));
+                utility::jsAlert(gettext('Author name can\'t be Numeric!'));
                 exit();     
             }                              
                 $data['author_name'] = $dbs->escape_string($authorName);
@@ -58,12 +58,12 @@ if (isset($_POST['saveData']) AND $can_read AND $can_write)
             $update = $sql_op->update('mst_author', $data, 'author_id='.$updateRecordID);
             if ($update) 
             {
-                utility::jsAlert(__('Author Data Successfully Updated'));
+                utility::jsAlert(gettext('Author Data Successfully Updated'));
                 echo '<script type="text/javascript">parent.setContent(\'mainContent\', parent.getPreviousAJAXurl(), \'post\');</script>';
             } 
             else
             { 
-                utility::jsAlert(__('Author Data FAILED to Updated. Please Contact System Administrator')."\nDEBUG : ".$sql_op->error);             
+                utility::jsAlert(gettext('Author Data FAILED to Updated. Please Contact System Administrator')."\nDEBUG : ".$sql_op->error);             
             }
             exit();
         }
@@ -76,7 +76,7 @@ if (isset($_POST['saveData']) AND $can_read AND $can_write)
             $data_available = $dbs->query($sql);
             if ($data_available->num_rows>0) 
             {
-                utility::jsAlert(__('Same Author Name and Type is already Exists!'));
+                utility::jsAlert(gettext('Same Author Name and Type is already Exists!'));
                 exit();
             } 
             /* INSERT RECORD MODE */
@@ -84,12 +84,12 @@ if (isset($_POST['saveData']) AND $can_read AND $can_write)
             $insert = $sql_op->insert('mst_author', $data);
             if ($insert)
             {
-                utility::jsAlert(__('New Author Data Successfully Saved'));
+                utility::jsAlert(gettext('New Author Data Successfully Saved'));
                 echo '<script type="text/javascript">parent.setContent(\'mainContent\', \''.$_SERVER['PHP_SELF'].'\', \'post\');</script>';
             }
             else
             {
-                utility::jsAlert(__('Same Author and Type is Entered!')); 
+                utility::jsAlert(gettext('Same Author and Type is Entered!')); 
               
             }
             exit();
@@ -126,7 +126,7 @@ if (isset($_POST['saveData']) AND $can_read AND $can_write)
 			$author_name_set = $rownew['author_name'];	
 		}
                 $error_num++;
-		 utility::jsAlert(__('You can not Delete Author :'.$author_name_set.'; because it is associate with the book.'));
+		 utility::jsAlert(gettext('You can not Delete Author :'.$author_name_set.'; because it is associate with the book.'));
 	}
 	else
 	{
@@ -138,10 +138,10 @@ if (isset($_POST['saveData']) AND $can_read AND $can_write)
 //ended addition by Parth 8/7/2011
     // error alerting
     if ($error_num == 0) {
-        utility::jsAlert(__('All Data Successfully Deleted'));
+        utility::jsAlert(gettext('All Data Successfully Deleted'));
         echo '<script type="text/javascript">parent.setContent(\'mainContent\', \''.$_SERVER['PHP_SELF'].'?'.$_POST['lastQueryStr'].'\', \'post\');</script>';
     } else {
-        utility::jsAlert(__('Some or All Data NOT deleted successfully! Please contact system administrator'));
+        utility::jsAlert(gettext('Some or All Data NOT deleted successfully! Please contact system administrator'));
         echo '<script type="text/javascript">parent.setContent(\'mainContent\', \''.$_SERVER['PHP_SELF'].'?'.$_POST['lastQueryStr'].'\', \'post\');</script>';
     }
     exit();
@@ -184,9 +184,9 @@ echo $bradecum;
 	<td class="tab_menu_top">
                             <ul class="tabs"> 
 				<li>
-<a href="<?php echo MODULES_WEB_ROOT_DIR; ?>master_file/author.php?action=detail" class="headerText2"><?php echo __('Add New Author'); ?></a></li>
+<a href="<?php echo MODULES_WEB_ROOT_DIR; ?>master_file/author.php?action=detail" class="headerText2"><?php echo gettext('Add New Author'); ?></a></li>
 <li> 
-<a href="<?php echo MODULES_WEB_ROOT_DIR; ?>master_file/author.php" class="headerText2"><?php echo __('Author List'); ?></a> </li>
+<a href="<?php echo MODULES_WEB_ROOT_DIR; ?>master_file/author.php" class="headerText2"><?php echo gettext('Author List'); ?></a> </li>
 </ul>
 	</td>
 </tr>
@@ -202,10 +202,10 @@ if (isset($_POST['detail']) OR (!isset($_GET['action']) AND $_GET['action'] != '
    <!-- <?php echo strtoupper(__('Author')); ?> - <a href="<?php echo MODULES_WEB_ROOT_DIR; ?>master_file/author.php?action=detail" class="headerText2"><?php echo __('Add New Author'); ?></a>
     &nbsp; <a href="<?php echo MODULES_WEB_ROOT_DIR; ?>master_file/author.php" class="headerText2"><?php echo __('Author List'); ?></a>-->
     <p class="only_border">&nbsp;</p>
-    <form name="search" action="<?php echo MODULES_WEB_ROOT_DIR; ?>master_file/author.php" id="search" method="get" style="display: inline;"><?php echo __('Search'); ?> :
+    <form name="search" action="<?php echo MODULES_WEB_ROOT_DIR; ?>master_file/author.php" id="search" method="get" style="display: inline;"><?php echo gettext('Search'); ?> :
      <!--commnet by iresh on 25-1-2011  <input type="text" name="keywords" id="keywords" size="30" />-->
    <!-- added by iresh on 25-1-2011 --> <input type="text" name="keywords" id="keywords" width=140px/>
-    <input type="submit" id="doSearch" value="<?php echo __('Search'); ?>" class="button" />
+    <input type="submit" id="doSearch" value="<?php echo gettext('Search'); ?>" class="button" />
     </form>
 </div>
 </fieldset>
@@ -219,7 +219,7 @@ if (isset($_POST['detail']) OR (!isset($_GET['action']) AND $_GET['action'] != '
 /* main content */
 if (isset($_POST['detail']) OR (isset($_GET['action']) AND $_GET['action'] == 'detail')) {
     if (!($can_read AND $can_write)) {
-        die('<div class="errorBox">'.__('You don\'t have enough privileges to access this area!').'</div>');
+        die('<div class="errorBox">'.gettext('You don\'t have enough privileges to access this area!').'</div>');
     }
 $visibility = 'makeVisible';
     /* RECORD FORM */
@@ -229,7 +229,7 @@ $visibility = 'makeVisible';
 
     // create new instance
     $form = new simbio_form_table_AJAX('mainForm', $_SERVER['PHP_SELF'].'?'.$_SERVER['QUERY_STRING'], 'post');
-    $form->submit_button_attr = 'name="saveData" value="'.__('Save').'" class="button"';
+    $form->submit_button_attr = 'name="saveData" value="'.gettext('Save').'" class="button"';
 
     // form table attributes
     $form->table_attr = 'align="center" id="dataList" cellpadding="5" cellspacing="0"';
@@ -245,14 +245,14 @@ $visibility = 'makeVisible';
         // form record title
         $form->record_title = $rec_d['author_name'];
         // submit button attribute
-        $form->submit_button_attr = 'name="saveData" value="'.__('Update').'" class="button"';
+        $form->submit_button_attr = 'name="saveData" value="'.gettext('Update').'" class="button"';
     }
 
     /* Form Element(s) */
     // author name
     //commnet by iresh on 25-1-2011 $form->addTextField('text', 'authorName', __('Author Name').'*', $rec_d['author_name'], 'style="width: 60%;"');
     
-    $form->addTextField('text', 'authorName', __('Author Name').'*', $rec_d['author_name'], 'style="width: 140px;" onkeyup="return checkspecialcharacterdynamic(this.name);"onblur="charactercheck(this.name);"');
+    $form->addTextField('text', 'authorName', gettext('Author Name').'*', $rec_d['author_name'], 'style="width: 140px;" onkeyup="return checkspecialcharacterdynamic(this.name);"onblur="charactercheck(this.name);"');
     //return charactercheck(this.name);
     //$form->addTextField('text', 'authorName', __('Author Name').'*', $rec_d['author_name'], 'style="width: 140px;" onkeyup="return charactercheck(this.name);"');
     
@@ -261,7 +261,7 @@ $visibility = 'makeVisible';
 //echo $auth_type;
         $auth_type_options[] = array($auth_type_id, $auth_type);
     }
-    $form->addSelectList('authorityType', __('Authority Type'), $auth_type_options, $rec_d['authority_type']);
+    $form->addSelectList('authorityType', gettext('Authority Type'), $auth_type_options, $rec_d['authority_type']);
     // authority list
    //commnet by iresh on 25-1-2011  $form->addTextField('text', 'authList', __('Authority Files'), $rec_d['auth_list'], 'style="width: 30%;"');
    /* added by iresh on 25-1-2011*/ 
@@ -272,7 +272,7 @@ $visibility = 'makeVisible';
 
     // edit mode messagge
     if ($form->edit_mode) {
-        echo '<div class="infoBox">'.__('You are going to edit data').' : <b>'.$rec_d['author_name'].'</b> <br />'.__('Last Update').$rec_d['last_update'].'</div>'; //mfc
+        echo '<div class="infoBox">'.gettext('You are going to edit data').' : <b>'.$rec_d['author_name'].'</b> <br />'.gettext('Last Update').$rec_d['last_update'].'</div>'; //mfc
     }
     // print out the form object
     echo $form->printOut();
@@ -287,15 +287,15 @@ $visibility = 'makeVisible';
     $datagrid = new simbio_datagrid();
     if ($can_read AND $can_write) {
         $auth_type_fld = 2;
-        $datagrid->setSQLColumn('a.author_id', 'a.author_name AS \''.__('Author Name').'\'',
-            'a.authority_type AS \''.__('Authority Type').'\'',
+        $datagrid->setSQLColumn('a.author_id', 'a.author_name AS \''.gettext('Author Name').'\'',
+            'a.authority_type AS \''.gettext('Authority Type').'\'',
       //      'a.auth_list AS \''.__('Authority Files').'\'',
-            'DATE_FORMAT(a.last_update,"%d-%m-%Y") AS \''.__('Last Update').'\'');
+            'DATE_FORMAT(a.last_update,"%d-%m-%Y") AS \''.gettext('Last Update').'\'');
     } else {
-        $datagrid->setSQLColumn('a.author_name AS \''.__('Author Name').'\'',
-            'a.authority_type AS \''.__('Authority Type').'\'',
+        $datagrid->setSQLColumn('a.author_name AS \''.gettext('Author Name').'\'',
+            'a.authority_type AS \''.gettext('Authority Type').'\'',
            // 'a.auth_list AS \''.__('Authority Files').'\'',
-            'DATE_FORMAT(a.last_update,"%d-%m-%Y") AS \''.__('Last Update').'\'');
+            'DATE_FORMAT(a.last_update,"%d-%m-%Y") AS \''.gettext('Last Update').'\'');
     }
     $datagrid->setSQLorder('author_name ASC');
 
@@ -327,7 +327,7 @@ $visibility = 'makeVisible';
     // put the result into variable
     $datagrid_result = $datagrid->createDataGrid($dbs, $table_spec, 20, ($can_read AND $can_write));
     if (isset($_GET['keywords']) AND $_GET['keywords']) {
-        $msg = str_replace('{result->num_rows}', $datagrid->num_rows, __('Found <strong>{result->num_rows}</strong> from your keywords')); //mfc
+        $msg = str_replace('{result->num_rows}', $datagrid->num_rows, gettext('Found <strong>{result->num_rows}</strong> from your keywords')); //mfc
         echo '<div class="infoBox">'.$msg.' : "'.$_GET['keywords'].'"</div>';
     }
 

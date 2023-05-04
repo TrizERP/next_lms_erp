@@ -4,7 +4,7 @@
 
 /* Location list */
 ob_start();
-echo '<option value="0">'.__('All Locations').'</option>';
+echo '<option value="0">'.gettext('All Locations').'</option>';
 $loc_q = $dbs->query('SELECT location_name FROM mst_location LIMIT 50');
 while ($loc_d = $loc_q->fetch_row()) {
     echo '<option value="'.$loc_d[0].'">'.$loc_d[0].'</option>';
@@ -13,7 +13,7 @@ $location_list = ob_get_clean();
 
 /* Collection type List */
 ob_start();
-echo '<option value="0">'.__('All Collections').'</option>';
+echo '<option value="0">'.gettext('All Collections').'</option>';
 $colltype_q = $dbs->query('SELECT coll_type_name FROM mst_coll_type LIMIT 50');
 while ($colltype_d = $colltype_q->fetch_row()) {
     echo '<option value="'.$colltype_d[0].'">'.$colltype_d[0].'</option>';
@@ -22,7 +22,7 @@ $colltype_list = ob_get_clean();
 
 /* GMD List */
 ob_start();
-/*added by iresh on 22-1-2011 */echo '<option value="0">'.__('All Material Type/Media').'</option>';
+/*added by iresh on 22-1-2011 */echo '<option value="0">'.gettext('All Material Type/Media').'</option>';
 $gmd_q = $dbs->query('SELECT gmd_name FROM mst_gmd LIMIT 50');
 while ($gmd_d = $gmd_q->fetch_row()) {
     echo '<option value="'.$gmd_d[0].'">'.$gmd_d[0].'</option>';
@@ -32,7 +32,7 @@ $gmd_list = ob_get_clean();
 //added start by Parth 7/7/2011
 /* Sub Type Data*/
 ob_start();
-/*added by iresh on 22-1-2011 */echo '<option value="0">'.__('All Material Sub Type/Media').'</option>';
+/*added by iresh on 22-1-2011 */echo '<option value="0">'.gettext('All Material Sub Type/Media').'</option>';
 $mst_sub_q = $dbs->query('SELECT material_sub_name FROM mst_material_sub_type LIMIT 50');
 while ($mst_sub_d = $mst_sub_q->fetch_row()) {
     echo '<option value="'.$mst_sub_d[0].'">'.$mst_sub_d[0].'</option>';

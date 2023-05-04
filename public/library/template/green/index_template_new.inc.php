@@ -5,7 +5,7 @@
 <link rel="shortcut icon" href="webicon.ico" type="image/x-icon" />
 <link href="template/core.style.css" rel="stylesheet" type="text/css" />
 <link href="template/igos/960.css" rel="stylesheet" type="text/css" />
-<link href="<?php echo $sysconf['template']['css']; ?>" rel="stylesheet" type="text/css" />
+<link href="<?php echo $template_css; ?>" rel="stylesheet" type="text/css" />
 <script type="text/javascript" src="js/prototype.js"></script>
 <script type="text/javascript" src="js/form.js"></script>
 <script type="text/javascript" src="js/gui.js"></script>
@@ -29,7 +29,7 @@ location.href=<?php echo SENAYAN_WEB_ROOT_DIR; ?>+'index.php?selectlibrary='+doc
     <!--header-->
    <div class="new_header">
     <div  id="header">
-    <h1 id="app-title"><a href="index.php"><?php echo $sysconf['library_name']; ?></a><div><?php echo $sysconf['library_subname']; ?><!--<select name="selectlibrary" id="selectlibrary" onchange="javascript:changeselectbox()"><option value="trizino_slibrary">School Library</option><option value="select library" selected="selected">select library</option><option value="trizino_engg">Engineering Library</option></select>--></div></h1><?php /*if (empty($_REQUEST['p']) and empty($_SESSION['m_member_type'])) {*/ ?><!--<div id="loginlink"> <a href="#" style="text-decoration:none;font-size:15px;"><?php /*include('login_test.php');*/ ?></a></div>--> <?php /*}*/ ?>
+    <h1 id="app-title"><a href="index.php"><?php echo $page_title; ?></a><div><?php echo $library_subname; ?><!--<select name="selectlibrary" id="selectlibrary" onchange="javascript:changeselectbox()"><option value="trizino_slibrary">School Library</option><option value="select library" selected="selected">select library</option><option value="trizino_engg">Engineering Library</option></select>--></div></h1><?php /*if (empty($_REQUEST['p']) and empty($_SESSION['m_member_type'])) {*/ ?><!--<div id="loginlink"> <a href="#" style="text-decoration:none;font-size:15px;"><?php /*include('login_test.php');*/ ?></a></div>--> <?php /*}*/ ?>
     </div>
    
     </div>
@@ -201,7 +201,8 @@ include('lib/frontdisplay.php');
 {  ?>
 <div class="grid_2_new">
 <div align="left" style="margin-left:10px;">
-<?php if(empty($_REQUEST['advancesearch'])) {?><div class="tab-page" id="tabPage3" align="left">
+<?php if(empty($_REQUEST['advancesearch'])) {?>
+<div class="tab-page" id="tabPage3" align="left">
 		<h2 class="tab">Search</h2>
 		
 		<script type="text/javascript">tp1.addTabPage( document.getElementById( "tabPage1" ) );</script>
@@ -213,8 +214,10 @@ include('lib/frontdisplay.php');
 if($_SESSION['m_member_type']=='Teacher')
 {
 $set_select=array("Class Room Data","Teachers Book","Annual Lesson Plan","Repository","Lecture Series","E-Learning","Expert Database","Text Book","E-Books","Journal","Audio/Video","Reports","Article Database","Newspapers","Case Studies","Dictionaries","Directories","Acronyms","Encyclopedia","Biographies","Database","Google scholar","Maps","Quotations","Thesaurus","Yearbook","Right to Information Act","Copyright","Career Development","Search Engines","Government","International education","Travel","Downloads","Education in India","How it work","Hands-on-activities","Reading mission","Symbols","Unit Converter","Currency","World at Glance","Music","Blog","Facebook","Twitter","Orkut");
-$qry2 = "select * from mst_material_sub_type";$stat_queryforstudentsubtype = 	$dbs->query($qry2);while ($datasubtype = $stat_queryforstudentsubtype->fetch_assoc()) {
-$flagset = 0;
+$qry2 = "select * from mst_material_sub_type";
+$stat_queryforstudentsubtype = 	$dbs->query($qry2);
+while ($datasubtype = $stat_queryforstudentsubtype->fetch_assoc()) {
+$flagset = 0;
 										
 				for($i=0;$i<count($set_select);$i++)
 						{
@@ -236,7 +239,10 @@ $qry2 = "select * from mst_material_sub_type";$stat_queryforstudentsubtype = 	$
 if($_SESSION['m_member_type']=='Student')
 {
 $set_select=array("Text Book","E-Books","Journal","Audio/Video","Reports","Article Database","Newspapers","Case Studies","Dictionaries","Directories","Acronyms","Encyclopedia","Biographies","Database","Google scholar","Maps","Quotations","Thesaurus","Yearbook","Right to Information Act","Copyright","Career Development","Search Engines","Government","International education","Travel","Downloads","Education in India","Entertainment & Media","How it work","Hands-on-activities","Reading mission","Symbols","Unit Converter","Currency","World at Glance","Music","Blog","Facebook","Twitter","Orkut");
-$qry2 = "select * from mst_material_sub_type";$stat_queryforstudentsubtype = 	$dbs->query($qry2);while ($datasubtype = $stat_queryforstudentsubtype->fetch_assoc()) {$flagset = 0;
+$qry2 = "select * from mst_material_sub_type";
+$stat_queryforstudentsubtype = 	$dbs->query($qry2);
+while ($datasubtype = $stat_queryforstudentsubtype->fetch_assoc()) {
+$flagset = 0;
 										
 				for($i=0;$i<count($set_select);$i++)
 						{
@@ -259,8 +265,10 @@ $qry2 = "select * from mst_material_sub_type";$stat_queryforstudentsubtype = 	$
 if($_SESSION['m_member_type']=='Parent')
 {
 $set_select=array("Text Book","Newspapers","Assignments","Dictionaries","Directories","Acronyms","Encyclopedia","Biographies","Database","Google scholar","Maps","Quotations","Thesaurus","Yearbook","Right to Information Act","Copyright","Career Development","Search Engines","Government","International education","Travel","Downloads","Education in India","How it work","Hands-on-activities","Reading mission","Symbols","Unit Converter","Currency","World at Glance","Music","Blog","Facebook","Twitter","Orkut");
-$qry2 = "select * from mst_material_sub_type";$stat_queryforstudentsubtype = 	$dbs->query($qry2);while ($datasubtype = $stat_queryforstudentsubtype->fetch_assoc()) {
-$flagset = 0;
+$qry2 = "select * from mst_material_sub_type";
+$stat_queryforstudentsubtype = 	$dbs->query($qry2);
+while ($datasubtype = $stat_queryforstudentsubtype->fetch_assoc()) {
+$flagset = 0;
 										
 				for($i=0;$i<count($set_select);$i++)
 						{
@@ -283,8 +291,10 @@ $qry2 = "select * from mst_material_sub_type";$stat_queryforstudentsubtype = 	$
 if(empty($_SESSION['m_member_type']))
 {
 $set_select=array("Class Room Data","Teachers Book","Annual Lesson Plan","Repository","Lecture Series","E-Learning","Expert Database","Text Book","E-Books","Journal","Audio/Video","Reports","Article Database","Newspapers","Case Studies","Dictionaries","Directories","Acronyms","Encyclopedia","Biographies","Database","Google scholar","Maps","Quotations","Thesaurus","Yearbook","Right to Information Act","Copyright","Career Development","Search Engines","Government","International education","Travel","Downloads","Education in India","How it work","Hands-on-activities","Reading mission","Symbols","Unit Converter","Currency","World at Glance","Music","Blog","Facebook","Twitter","Orkut");
-$qry2 = "select * from mst_material_sub_type";$stat_queryforstudentsubtype = 	$dbs->query($qry2);while ($datasubtype = $stat_queryforstudentsubtype->fetch_assoc()) {
-$flagset = 0;
+$qry2 = "select * from mst_material_sub_type";
+$stat_queryforstudentsubtype = 	$dbs->query($qry2);
+while ($datasubtype = $stat_queryforstudentsubtype->fetch_assoc()) {
+$flagset = 0;
 										
 				for($i=0;$i<count($set_select);$i++)
 						{

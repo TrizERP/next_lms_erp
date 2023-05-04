@@ -9,7 +9,7 @@ $can_write = utility::havePrivilege('circulation', 'w') || utility::havePrivileg
 
 if (!$can_read) 
 {
-    die('<div class="errorBox">'.__('You don\'t have enough privileges to access this area!').'</div>');
+    die('<div class="errorBox">'.gettext('You don\'t have enough privileges to access this area!').'</div>');
 }
 
 require SIMBIO_BASE_DIR.'simbio_GUI/table/simbio_table.inc.php';
@@ -76,7 +76,7 @@ echo $bradecum;
 </table>
     <!-- filter -->
     <fieldset  style="margin-bottom: 3px;">
-    <legend style="font-weight: bold"><?php echo strtoupper(__('Issue Summary Report')); ?> - <?php echo __('Report Filter'); ?></legend>
+    <legend style="font-weight: bold"><?php echo strtoupper(gettext('Issue Summary Report')); ?> - <?php echo gettext('Report Filter'); ?></legend>
     <form method="get" action="<?php echo $_SERVER['PHP_SELF']; ?>" target="reportView">
     <div id="filterForm">
         <table width='100%'>
@@ -85,7 +85,7 @@ echo $bradecum;
                 <td width="25%">
                     <div class="divRow">
                         <?php //echo __('GMD'); ?>
-                            <div class="divRowLabel"><?php echo __('Report Type :-  '); ?>
+                            <div class="divRowLabel"><?php echo gettext('Report Type :-  '); ?>
                             <?php
                                 /*$gmd_q = $dbs->query('SELECT gmd_id, gmd_name FROM mst_gmd');
                                 $gmd_options[] = array('0', __('ALL'));
@@ -94,10 +94,10 @@ echo $bradecum;
                                     $gmd_options[] = array($gmd_d[0], $gmd_d[1]);
                                 }*/
                             
-                                $gmd_options[] = array(' ', __('--Select Resource Type--'));
-                                $gmd_options[] = array('0', __('Resource Type'));
-                                $gmd_options[] = array('1', __('Material Type'));
-                                $gmd_options[] = array('2', __('Material Sub Type'));
+                                $gmd_options[] = array(' ', gettext('--Select Resource Type--'));
+                                $gmd_options[] = array('0', gettext('Resource Type'));
+                                $gmd_options[] = array('1', gettext('Material Type'));
+                                $gmd_options[] = array('2', gettext('Material Sub Type'));
                                 /*while ($gmd_d = $gmd_q->fetch_row()) 
                                 {
                                     $gmd_options[] = array($gmd_d[0], $gmd_d[1]);
@@ -247,14 +247,14 @@ echo $bradecum;
                 <!--<td>-->
                    <!-- <div class="divRow" style="float:left;">
                     <div class="divRowLabel"><?php// echo __('Record each page'); ?></div>
-                    <div class="divRowContent"><input type="text" name="recsEachPage" size="3" maxlength="3" value="<?php echo $num_recs_show; ?>" /> <?php echo __('Set between 20 and 200'); ?></div>
+                    <div class="divRowContent"><input type="text" name="recsEachPage" size="3" maxlength="3" value="<?php echo $num_recs_show; ?>" /> <?php echo gettext('Set between 20 and 200'); ?></div>
                     </div>-->
                 <!--</td>-->
             </tr>
         </table>                                                                                                                                                               
     </div>
     <div style="padding-top: 10px; clear: both;">
-    <input type="submit" name="applyFilter" value="<?php echo __('Generate Report'); ?>" />
+    <input type="submit" name="applyFilter" value="<?php echo gettext('Generate Report'); ?>" />
     <!--<input type="button" name="moreFilter" value="<?php //echo __('Advance Search'); ?>" onclick="showHideTableRows('filterForm', 1, this, '<?php //echo __('Show More Search Options'); ?>', '<?php //echo __('Hide Search Options'); ?>')" />-->
     <input type="hidden" name="reportView" value="true" />
     </div>
@@ -290,7 +290,7 @@ else
    
     elseif ($_GET['gmd_main']=='0')
     {        
-     echo  $subquery_str = '( 								
+       $subquery_str = '( 								
 SELECT  material , biblio , item , issue , available,m_id FROM							
 (																
         SELECT mrt.material_resource_id m_id,mg.gmd_name material , b.biblio_id biblio , if(i.item_code is null , 0 , i.item_code) item ,																
@@ -364,12 +364,12 @@ FROM  (
     if($_GET['gmd_main']=='0')
  {      
    $reportgrid->setSQLColumn('material',
-         'count(distinct biblio) AS \''._('Total_Title').'\'',
-         'IF( item = 0 , 0 , count(distinct item)) AS '.__('Total_Item'),
-         'sum(issue) AS \''.__('Total_Issue').'\'', 
-         'IF( available = 0 , 0 , (count(distinct available)))-1 AS '.__('Total_available'), 
+         'count(distinct biblio) AS \''.gettext('Total_Title').'\'',
+         'IF( item = 0 , 0 , count(distinct item)) AS '.gettext('Total_Item'),
+         'sum(issue) AS \''.gettext('Total_Issue').'\'', 
+         'IF( available = 0 , 0 , (count(distinct available)))-1 AS '.gettext('Total_available'), 
          '((IF( item = 0 , 0 , count(distinct item))) - sum(issue) - 
-             IF( available = 0 , 0 , (count(distinct available)))-1) AS \''.__('Total_Unavailable').'\''   ,
+             IF( available = 0 , 0 , (count(distinct available)))-1) AS \''.gettext('Total_Unavailable').'\''   ,
          'm_id AS \''.('ID').'\''
          );   
  
@@ -378,12 +378,12 @@ FROM  (
  elseif($_GET['gmd_main']=='1')
  {  
      $reportgrid->setSQLColumn('material',
-         'count(distinct biblio) AS \''._('Total_Title').'\'',
-         'IF( item = 0 , 0 , count(distinct item)) AS '.__('Total_Item'),
-         'sum(issue) AS \''.__('Total_Issue').'\'', 
-         'IF( available = 0 , 0 , (count(distinct available)))-1 AS '.__('Total_available'), 
+         'count(distinct biblio) AS \''.gettext('Total_Title').'\'',
+         'IF( item = 0 , 0 , count(distinct item)) AS '.gettext('Total_Item'),
+         'sum(issue) AS \''.gettext('Total_Issue').'\'', 
+         'IF( available = 0 , 0 , (count(distinct available)))-1 AS '.gettext('Total_available'), 
          '((IF( item = 0 , 0 , count(distinct item))) - sum(issue) - 
-             IF( available = 0 , 0 , (count(distinct available)))-1) AS \''.__('Total_Unavailable').'\''   ,
+             IF( available = 0 , 0 , (count(distinct available)))-1) AS \''.gettext('Total_Unavailable').'\''   ,
          'gmd_id AS \''.('ID').'\''  
 );   
  
@@ -392,11 +392,11 @@ FROM  (
  elseif($_GET['gmd_main']=='2')
  {
      $reportgrid->setSQLColumn('material',
-         'count(distinct biblio) AS \''._('Total_Title').'\'',
-         'IF( item = 0 , 0 , count(distinct item)) AS '.__('Total_Item'),
-         'sum(issue) AS \''.__('Total_Issue').'\'', 
-         'IF( available = 0 , 0 , (count(distinct available)))-1 AS '.__('Total_available'), 
-         '((IF( item = 0 , 0 , count(distinct item))) - sum(issue) - IF( available = 0 , 0 , (count(distinct available)))-1) AS \''.__('Total_Unavailable').'\'',
+         'count(distinct biblio) AS \''.gettext('Total_Title').'\'',
+         'IF( item = 0 , 0 , count(distinct item)) AS '.gettext('Total_Item'),
+         'sum(issue) AS \''.gettext('Total_Issue').'\'', 
+         'IF( available = 0 , 0 , (count(distinct available)))-1 AS '.gettext('Total_available'), 
+         '((IF( item = 0 , 0 , count(distinct item))) - sum(issue) - IF( available = 0 , 0 , (count(distinct available)))-1) AS \''.gettext('Total_Unavailable').'\'',
          'ms_id AS \''.('ID').'\''
          );   
  
@@ -412,14 +412,15 @@ FROM  (
         $gmd_main=0;
     // put the result into variables
     echo $reportgrid->createDataGrid_Custom($gmd_main,$dbs, $table_spec, $num_recs_show);
-
+    // print_r($reportgrid);
+// exit;
     echo '<script type="text/javascript">'."\n";
     echo 'parent.$(\'pagingBox\').update(\''.str_replace(array("\n", "\r", "\t"), '', $reportgrid->paging_set).'\');'."\n";
     echo '</script>';
 
     $content = ob_get_clean();
     // include the page template
-    require SENAYAN_BASE_DIR.'/admin/'.$sysconf['admin_template']['dir'].'/printed_page_tpl.php';
+    require SENAYAN_BASE_DIR.'/admin/admin_template/printed_page_tpl.php';
 }
 
   

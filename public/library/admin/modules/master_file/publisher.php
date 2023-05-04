@@ -19,7 +19,7 @@ $can_write = utility::havePrivilege('master_file', 'w');
 
 if (!$can_read) 
 {
-    die('<div class="errorBox">'.__('You don\'t have enough privileges to access this area!').'</div>');
+    die('<div class="errorBox">'.gettext('You don\'t have enough privileges to access this area!').'</div>');
 }
 
 
@@ -29,13 +29,13 @@ if (isset($_POST['saveData']) AND $can_read AND $can_write)
     // check form validity
     if (number_format($publisherName)) 
     {
-        utility::jsAlert(__('Publisher Name Can\'t be Numeric!'));
+        utility::jsAlert(gettext('Publisher Name Can\'t be Numeric!'));
         exit();        
     }
     
     if (empty($publisherName)) 
     {
-        utility::jsAlert(__('Publisher Name can\'t be empty')); //mfc
+        utility::jsAlert(gettext('Publisher Name can\'t be empty')); //mfc
         exit();
     }
     else
@@ -56,9 +56,9 @@ if (isset($_POST['saveData']) AND $can_read AND $can_write)
             // update the data
             $update = $sql_op->update('mst_publisher', $data, 'publisher_id='.$updateRecordID);
             if ($update) {
-                utility::jsAlert(__('Publisher Data Successfully Updated'));
+                utility::jsAlert(gettext('Publisher Data Successfully Updated'));
                 echo '<script type="text/javascript">parent.setContent(\'mainContent\', parent.getPreviousAJAXurl(), \'post\');</script>';
-            } else { utility::jsAlert(__('PUBLISHER Data FAILED to Updated. Please Contact System Administrator')."\nDEBUG : ".$sql_op->error); }
+            } else { utility::jsAlert(gettext('PUBLISHER Data FAILED to Updated. Please Contact System Administrator')."\nDEBUG : ".$sql_op->error); }
             exit();
         } else {
             /* INSERT RECORD MODE */
@@ -67,13 +67,13 @@ if (isset($_POST['saveData']) AND $can_read AND $can_write)
             
             if ($insert) 
             {
-                utility::jsAlert(__('New Publisher Data Successfully Saved'));
+                utility::jsAlert(gettext('New Publisher Data Successfully Saved'));
                 echo '<script type="text/javascript">parent.setContent(\'mainContent\', \''.$_SERVER['PHP_SELF'].'\', \'post\');</script>';
             } 
             else
             {
                 //utility::jsAlert(__('Publisher Data FAILED to Save. Please Contact System Administrator')."\nDEBUG : ".$sql_op->error); 
-                utility::jsAlert(__('Duplicate Entery!Publisher is already Exist')); 
+                utility::jsAlert(gettext('Duplicate Entery!Publisher is already Exist')); 
                 exit();
           
             }
@@ -111,7 +111,7 @@ if (isset($_POST['saveData']) AND $can_read AND $can_write)
 			$publisher_name_set = $rownew['publisher_name'];	
 		}
                 $error_num++;
-		 utility::jsAlert(__('You can not delete the publisher Type: '.$publisher_name_set.'; because it is associate with the book.'));
+		 utility::jsAlert(gettext('You can not delete the publisher Type: '.$publisher_name_set.'; because it is associate with the book.'));
 	}
 	else
 	{
@@ -123,10 +123,10 @@ if (isset($_POST['saveData']) AND $can_read AND $can_write)
 //ended addition by Parth 8/7/2011
     // error alerting
     if ($error_num == 0) {
-        utility::jsAlert(__('All Data Successfully Deleted'));
+        utility::jsAlert(gettext('All Data Successfully Deleted'));
         echo '<script type="text/javascript">parent.setContent(\'mainContent\', \''.$_SERVER['PHP_SELF'].'?'.$_POST['lastQueryStr'].'\', \'post\');</script>';
     } else {
-        utility::jsAlert(__('Some or All Data NOT deleted successfully! Please contact system administrator'));
+        utility::jsAlert(gettext('Some or All Data NOT deleted successfully! Please contact system administrator'));
         echo '<script type="text/javascript">parent.setContent(\'mainContent\', \''.$_SERVER['PHP_SELF'].'?'.$_POST['lastQueryStr'].'\', \'post\');</script>';
     }
     exit();
@@ -169,9 +169,9 @@ echo $bradecum;
 	<td class="tab_menu_top">
                             <ul class="tabs"> 
 				<li>
-<a href="<?php echo MODULES_WEB_ROOT_DIR; ?>master_file/publisher.php?action=detail" class="headerText2"><?php echo __('Add New Publisher'); ?></a> </li>
+<a href="<?php echo MODULES_WEB_ROOT_DIR; ?>master_file/publisher.php?action=detail" class="headerText2"><?php echo gettext('Add New Publisher'); ?></a> </li>
 <li> 
-<a href="<?php echo MODULES_WEB_ROOT_DIR; ?>master_file/publisher.php" class="headerText2"><?php echo __('Publisher List'); ?></a> </li>
+<a href="<?php echo MODULES_WEB_ROOT_DIR; ?>master_file/publisher.php" class="headerText2"><?php echo gettext('Publisher List'); ?></a> </li>
 </ul>
 	</td>
 </tr>
@@ -187,10 +187,10 @@ if (isset($_POST['detail']) OR (!isset($_GET['action']) AND $_GET['action'] != '
    <!-- <?php echo strtoupper(__('Publisher')); ?> - <a href="<?php echo MODULES_WEB_ROOT_DIR; ?>master_file/publisher.php?action=detail" class="headerText2"><?php echo __('Add New Publisher'); ?></a>
     &nbsp; <a href="<?php echo MODULES_WEB_ROOT_DIR; ?>master_file/publisher.php" class="headerText2"><?php echo __('Publisher List'); ?></a>-->
     <p class="only_border">&nbsp;</p>
-    <form name="search" action="<?php echo MODULES_WEB_ROOT_DIR; ?>master_file/publisher.php" id="search" method="get" style="display: inline;"><?php echo __('Search'); ?> :
+    <form name="search" action="<?php echo MODULES_WEB_ROOT_DIR; ?>master_file/publisher.php" id="search" method="get" style="display: inline;"><?php echo gettext('Search'); ?> :
      <!--commnet by iresh on 25-1-2011  <input type="text" name="keywords" id="keywords" size="30" />-->
    <!-- added by iresh on 25-1-2011 --> <input type="text" name="keywords" id="keywords" width=140px/>
-    <input type="submit" id="doSearch" value="<?php echo __('Search'); ?>" class="button" />
+    <input type="submit" id="doSearch" value="<?php echo gettext('Search'); ?>" class="button" />
     </form>
 </div>
 </fieldset>
@@ -204,7 +204,7 @@ if (isset($_POST['detail']) OR (!isset($_GET['action']) AND $_GET['action'] != '
 /* main content */
 if (isset($_POST['detail']) OR (isset($_GET['action']) AND $_GET['action'] == 'detail')) {
     if (!($can_read AND $can_write)) {
-        die('<div class="errorBox">'.__('You don\'t have enough privileges to access this area!').'</div>');
+        die('<div class="errorBox">'.gettext('You don\'t have enough privileges to access this area!').'</div>');
     }
     /* RECORD FORM */
     $itemID = (integer)isset($_POST['itemID'])?$_POST['itemID']:0;
@@ -213,7 +213,7 @@ if (isset($_POST['detail']) OR (isset($_GET['action']) AND $_GET['action'] == 'd
 
     // create new instance
     $form = new simbio_form_table_AJAX('mainForm', $_SERVER['PHP_SELF'].'?'.$_SERVER['QUERY_STRING'], 'post');
-    $form->submit_button_attr = 'name="saveData" value="'.__('Save').'" class="button"';
+    $form->submit_button_attr = 'name="saveData" value="'.gettext('Save').'" class="button"';
 
     // form table attributes
     $form->table_attr = 'align="center" id="dataList" cellpadding="5" cellspacing="0"';
@@ -228,17 +228,17 @@ if (isset($_POST['detail']) OR (isset($_GET['action']) AND $_GET['action'] == 'd
         // form record title
         $form->record_title = $rec_d['publisher_name'];
         // submit button attribute
-        $form->submit_button_attr = 'name="saveData" value="'.__('Update').'" class="button"';
+        $form->submit_button_attr = 'name="saveData" value="'.gettext('Update').'" class="button"';
     }
 
     /* Form Element(s) */
     // publisher name
    //comment by iresh on 25-1-2011 $form->addTextField('text', 'publisherName', __('Publisher Name').'*', $rec_d['publisher_name'], 'style="width: 60%;"');
-    $form->addTextField('text', 'publisherName', __('Publisher Name').'*', $rec_d['publisher_name'], 'style="width: 140px;" onblur="return charactercheck(this.name);" onkeyup="return checkspecialcharacterdynamic(this.name);"');
+    $form->addTextField('text', 'publisherName', gettext('Publisher Name').'*', $rec_d['publisher_name'], 'style="width: 140px;" onblur="return charactercheck(this.name);" onkeyup="return checkspecialcharacterdynamic(this.name);"');
 
     // edit mode messagge
     if ($form->edit_mode) {
-        echo '<div class="infoBox">'.__('You are going to edit data').' : <b>'.$rec_d['publisher_name'].'</b> <br />'.__('Last Update').$rec_d['last_update'] //mfc
+        echo '<div class="infoBox">'.gettext('You are going to edit data').' : <b>'.$rec_d['publisher_name'].'</b> <br />'.gettext('Last Update').$rec_d['last_update'] //mfc
             .'</div>'."\n";
     }
     // print out the form object
@@ -252,13 +252,13 @@ if (isset($_POST['detail']) OR (isset($_GET['action']) AND $_GET['action'] == 'd
     $datagrid = new simbio_datagrid();
     if ($can_read AND $can_write) {
         $datagrid->setSQLColumn('p.publisher_id',
-            'p.publisher_name AS \''.__('Publisher Name').'\'',
-            'DATE_FORMAT(p.last_update,"%d-%m-%Y") AS \''.__('Last Update').'\'');
+            'p.publisher_name AS \''.gettext('Publisher Name').'\'',
+            'DATE_FORMAT(p.last_update,"%d-%m-%Y") AS \''.gettext('Last Update').'\'');
     } else {
     	// TODO: publisher_place was dropped in stable7...?
-        $datagrid->setSQLColumn('p.publisher_name AS \''.__('Publisher Name').'\'',
+        $datagrid->setSQLColumn('p.publisher_name AS \''.gettext('Publisher Name').'\'',
             'p.publisher_place AS \''.lang_mod_masterfile_publisher_form_field_place.'\'',
-            'DATE_FORMAT(p.last_update,"%d-%m-%Y") AS \''.__('Last Update').'\'');
+            'DATE_FORMAT(p.last_update,"%d-%m-%Y") AS \''.gettext('Last Update').'\'');
     }
     $datagrid->setSQLorder('publisher_name ASC');
 
@@ -278,7 +278,7 @@ if (isset($_POST['detail']) OR (isset($_GET['action']) AND $_GET['action'] == 'd
     $datagrid_result = $datagrid->createDataGrid($dbs, $table_spec, 20, ($can_read AND $can_write));
     if (isset($_GET['keywords']) AND $_GET['keywords']) {
         echo '<table cellpadding="3" cellspacing="0" class="infoBox">';
-        $msg = str_replace('{result->num_rows}', $datagrid->num_rows, __('Found <strong>{result->num_rows}</strong> from your keywords')); //mfc
+        $msg = str_replace('{result->num_rows}', $datagrid->num_rows, gettext('Found <strong>{result->num_rows}</strong> from your keywords')); //mfc
         echo '<tr><th>'.$msg.' : "'.$_GET['keywords'].'"</th></tr>';
         echo '</table>';
     }

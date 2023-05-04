@@ -38,7 +38,7 @@ $can_read = utility::havePrivilege('circulation', 'r');
 $can_write = utility::havePrivilege('circulation', 'w');
 
 if (!$can_read) {
-    die('<div class="errorBox">'.__('You don\'t have enough privileges to view this section').'</div>');
+    die('<div class="errorBox">'.gettext('You don\'t have enough privileges to view this section').'</div>');
 }
 
 /* RECORD OPERATION */
@@ -64,17 +64,17 @@ if (isset($_POST['saveData'])) {
         // update the data
         $update = $sql_op->update('mst_loan_rules', $data, 'loan_rules_id='.$updateRecordID);
         if ($update) {
-            utility::jsAlert(__('Loan Rules Successfully Updated'));
+            utility::jsAlert(gettext('Loan Rules Successfully Updated'));
             echo '<script language="Javascript">parent.setContent(\'mainContent\', parent.getPreviousAJAXurl(), \'post\');</script>';
-        } else { utility::jsAlert(__('Loan Rules FAILED to Updated. Please Contact System Administrator')."\nDEBUG : ".$sql_op->error); }
+        } else { utility::jsAlert(gettext('Loan Rules FAILED to Updated. Please Contact System Administrator')."\nDEBUG : ".$sql_op->error); }
         exit();
     } else {
         /* INSERT RECORD MODE */
         $insert = $sql_op->insert('mst_loan_rules', $data);
         if ($insert) {
-            utility::jsAlert(__('New Loan Rules Successfully Saved'));
+            utility::jsAlert(gettext('New Loan Rules Successfully Saved'));
             echo '<script language="Javascript">parent.setContent(\'mainContent\', \''.$_SERVER['PHP_SELF'].'\', \'post\');</script>';
-        } else { utility::jsAlert(__('Loan Rules FAILED to Save. Please Contact System Administrator')."\n".$sql_op->error); }
+        } else { utility::jsAlert(gettext('Loan Rules FAILED to Save. Please Contact System Administrator')."\n".$sql_op->error); }
         exit();
     }
     exit();
@@ -110,10 +110,10 @@ if (isset($_POST['saveData'])) {
 
     // error alerting
     if ($error_num == 0) {
-        utility::jsAlert(__('All Data Successfully Deleted'));
+        utility::jsAlert(gettext('All Data Successfully Deleted'));
         echo '<script language="Javascript">parent.setContent(\'mainContent\', \''.$_SERVER['PHP_SELF'].'?'.$_POST['lastQueryStr'].'\', \'post\');</script>';
     } else {
-        utility::jsAlert(__('Some or All Data NOT deleted successfully!\nPlease contact system administrator'));
+        utility::jsAlert(gettext('Some or All Data NOT deleted successfully!\nPlease contact system administrator'));
         echo '<script language="Javascript">parent.setContent(\'mainContent\', \''.$_SERVER['PHP_SELF'].'?'.$_POST['lastQueryStr'].'\', \'post\');</script>';
     }
     exit();
@@ -124,13 +124,13 @@ if (isset($_POST['saveData'])) {
 ?>
 <fieldset class="menuBox">
 <div class="menuBoxInner loanRulesIcon">
-    <?php echo strtoupper(__('Loan Rules')); ?> - <a href="<?php echo MODULES_WEB_ROOT_DIR; ?>circulation/loan_rules.php?action=detail" class="headerText2"><?php echo __('Add New Loan Rules'); ?></a>
-    &nbsp; <a href="<?php echo MODULES_WEB_ROOT_DIR; ?>circulation/loan_rules.php" class="headerText2"><?php echo __('Loan Rules List'); ?></a>
+    <?php echo strtoupper(gettext('Loan Rules')); ?> - <a href="<?php echo MODULES_WEB_ROOT_DIR; ?>circulation/loan_rules.php?action=detail" class="headerText2"><?php echo gettext('Add New Loan Rules'); ?></a>
+    &nbsp; <a href="<?php echo MODULES_WEB_ROOT_DIR; ?>circulation/loan_rules.php" class="headerText2"><?php echo gettext('Loan Rules List'); ?></a>
    <p class="only_border">&nbsp;</p>
-    <form name="search" action="<?php echo MODULES_WEB_ROOT_DIR; ?>circulation/loan_rules.php" id="search" method="get" style="display: inline;"><?php echo __('Search'); ?> :
+    <form name="search" action="<?php echo MODULES_WEB_ROOT_DIR; ?>circulation/loan_rules.php" id="search" method="get" style="display: inline;"><?php echo gettext('Search'); ?> :
  <!--commnet by iresh on 25-1-2011  <input type="text" name="keywords" id="keywords" size="30" />-->
    <!-- added by iresh on 25-1-2011 --> <input type="text" name="keywords" id="keywords" width=140px/>
-    <input type="submit" id="doSearch" value="<?php echo __('Search'); ?>" class="button">
+    <input type="submit" id="doSearch" value="<?php echo gettext('Search'); ?>" class="button">
     </form>
 </div>
 </fieldset>
@@ -139,7 +139,7 @@ if (isset($_POST['saveData'])) {
 /* main content */
 if (isset($_POST['detail']) OR (isset($_GET['action']) AND $_GET['action'] == 'detail')) {
     if (!($can_read AND $can_write)) {
-        die('<div class="errorBox">'.__('You don\'t have enough privileges to view this section').'</div>');
+        die('<div class="errorBox">'.gettext('You don\'t have enough privileges to view this section').'</div>');
     }
     /* RECORD FORM */
     // try query
@@ -149,7 +149,7 @@ if (isset($_POST['detail']) OR (isset($_GET['action']) AND $_GET['action'] == 'd
 
     // create new instance
     $form = new simbio_form_table_AJAX('mainForm', $_SERVER['PHP_SELF'].'?'.$_SERVER['QUERY_STRING'], 'post');
-    $form->submit_button_attr = 'name="saveData" value="'.__('Save').'" class="button"';
+    $form->submit_button_attr = 'name="saveData" value="'.gettext('Save').'" class="button"';
 
     // form table attributes
     $form->table_attr = 'align="center" id="dataList" cellpadding="5" cellspacing="0"';
@@ -165,7 +165,7 @@ if (isset($_POST['detail']) OR (isset($_GET['action']) AND $_GET['action'] == 'd
         // form record title
         $form->record_title = 'Loan Rules';
         // submit button attribute
-        $form->submit_button_attr = 'name="saveData" value="'.__('Update').'" class="button"';
+        $form->submit_button_attr = 'name="saveData" value="'.gettext('Update').'" class="button"';
     }
 
     /* Form Element(s) */
@@ -176,7 +176,7 @@ if (isset($_POST['detail']) OR (isset($_GET['action']) AND $_GET['action'] == 'd
         while ($mtype_data = $mtype_query->fetch_row()) {
             $mtype_options[] = array($mtype_data[0], $mtype_data[1]);
         }
-    $form->addSelectList('memberTypeID', __('Member Type'), $mtype_options, $rec_d['member_type_id'], 'style="width: 50%;"');
+    $form->addSelectList('memberTypeID', gettext('Member Type'), $mtype_options, $rec_d['member_type_id'], 'style="width: 50%;"');
     // collection type
         // get collection type data related to this record from database
         $ctype_query = $dbs->query('SELECT coll_type_id, coll_type_name FROM mst_coll_type');
@@ -184,30 +184,30 @@ if (isset($_POST['detail']) OR (isset($_GET['action']) AND $_GET['action'] == 'd
         while ($ctype_data = $ctype_query->fetch_row()) {
             $ctype_options[] = array($ctype_data[0], $ctype_data[1]);
         }
-        $ctype_options[] = array('0', __('ALL'));
-    $form->addSelectList('collTypeID', __('Collection Type'), $ctype_options, $rec_d['coll_type_id'], 'style="width: 50%;"');
+        $ctype_options[] = array('0', gettext('ALL'));
+    $form->addSelectList('collTypeID', gettext('Collection Type'), $ctype_options, $rec_d['coll_type_id'], 'style="width: 50%;"');
     // gmd
         // get gmd data related to this record from database
         $gmd_query = $dbs->query('SELECT material_sub_id, material_sub_name FROM mst_material_sub_type where gmd_id=36');
-        $gmd_options[] = array(0, __('ALL'));
+        $gmd_options[] = array(0, gettext('ALL'));
         while ($gmd_data = $gmd_query->fetch_row()) {
             $gmd_options[] = array($gmd_data[0], $gmd_data[1]);
         }
-    $form->addSelectList('gmdID', __('Material Type'), $gmd_options, $rec_d['gmd_id'], 'style="width: 50%;"');
+    $form->addSelectList('gmdID', gettext('Material Type'), $gmd_options, $rec_d['gmd_id'], 'style="width: 50%;"');
     // loan limit
-    $form->addTextField('text', 'loanLimit', __('Loan Limit'), $rec_d['loan_limit'], 'size="5"');
+    $form->addTextField('text', 'loanLimit', gettext('Loan Limit'), $rec_d['loan_limit'], 'size="5"');
     // loan periode
-    $form->addTextField('text', 'loanPeriode', __('Loan Period'), $rec_d['loan_periode'], 'size="5"');
+    $form->addTextField('text', 'loanPeriode', gettext('Loan Period'), $rec_d['loan_periode'], 'size="5"');
     // reborrow limit
-    $form->addTextField('text', 'reborrowLimit', __('Reborrow Limit'), $rec_d['reborrow_limit'], 'size="5"');
+    $form->addTextField('text', 'reborrowLimit', gettext('Reborrow Limit'), $rec_d['reborrow_limit'], 'size="5"');
     // fine each day
-    $form->addTextField('text', 'fineEachDay', __('Fines Each Day'), $rec_d['fine_each_day']);
+    $form->addTextField('text', 'fineEachDay', gettext('Fines Each Day'), $rec_d['fine_each_day']);
     // overdue grace periode
-    $form->addTextField('text', 'gracePeriode', __('Overdue Grace Periode'), $rec_d['grace_periode']);
+    $form->addTextField('text', 'gracePeriode', gettext('Overdue Grace Periode'), $rec_d['grace_periode']);
 
     // edit mode messagge
     if ($form->edit_mode) {
-        echo '<div class="infoBox">'.__('You are going to edit loan rules').' : <br />'.__('Last Update').$rec_d['last_update'].'</div>'."\n"; //mfc
+        echo '<div class="infoBox">'.gettext('You are going to edit loan rules').' : <br />'.gettext('Last Update').$rec_d['last_update'].'</div>'."\n"; //mfc
     }
     // print out the form object
     echo $form->printOut();
@@ -223,19 +223,19 @@ if (isset($_POST['detail']) OR (isset($_GET['action']) AND $_GET['action'] == 'd
     $datagrid = new simbio_datagrid();
     if ($can_read AND $can_write) {
         $datagrid->setSQLColumn('lr.loan_rules_id',
-            'mt.member_type_name AS \''.__('Member Type').'\'',
-            'ct.coll_type_name AS \''.__('Collection Type').'\'',
-            'g.material_sub_name AS \''.__('Material Type').'\'',
-            'lr.loan_limit AS \''.__('Loan Limit').'\'',
-            'lr.loan_periode AS \''.__('Loan Period').'\'',
-            'lr.last_update AS \''.__('Last Update').'\'');
+            'mt.member_type_name AS \''.gettext('Member Type').'\'',
+            'ct.coll_type_name AS \''.gettext('Collection Type').'\'',
+            'g.material_sub_name AS \''.gettext('Material Type').'\'',
+            'lr.loan_limit AS \''.gettext('Loan Limit').'\'',
+            'lr.loan_periode AS \''.gettext('Loan Period').'\'',
+            'lr.last_update AS \''.gettext('Last Update').'\'');
     } else {
-        $datagrid->setSQLColumn('mt.member_type_name AS \''.__('Member Type').'\'',
-            'ct.coll_type_name AS \''.__('Collection Type').'\'',
-            'g.material_sub_name AS \''.__('Material Type').'\'',
-            'lr.loan_limit AS \''.__('Loan Limit').'\'',
-            'lr.loan_periode AS \''.__('Loan Period').'\'',
-            'lr.last_update AS \''.__('Last Update').'\'');
+        $datagrid->setSQLColumn('mt.member_type_name AS \''.gettext('Member Type').'\'',
+            'ct.coll_type_name AS \''.gettext('Collection Type').'\'',
+            'g.material_sub_name AS \''.gettext('Material Type').'\'',
+            'lr.loan_limit AS \''.gettext('Loan Limit').'\'',
+            'lr.loan_periode AS \''.gettext('Loan Period').'\'',
+            'lr.last_update AS \''.gettext('Last Update').'\'');
     }
     $datagrid->setSQLorder('mt.member_type_name ASC');
 
@@ -246,7 +246,7 @@ if (isset($_POST['detail']) OR (isset($_GET['action']) AND $_GET['action'] == 'd
     }
 
     // set table and table header attributes
-    $datagrid->icon_edit = $sysconf['admin_template']['dir'].'/'.$sysconf['admin_template']['theme'].'/edit.gif';
+    $datagrid->icon_edit = 'admin_template/'.$sysconf['admin_template']['theme'].'/edit.gif';
     $datagrid->table_attr = 'align="center" id="dataList" cellpadding="5" cellspacing="0"';
     $datagrid->table_header_attr = 'class="dataListHeader" style="font-weight: bold;"';
     // set delete proccess URL
@@ -255,7 +255,7 @@ if (isset($_POST['detail']) OR (isset($_GET['action']) AND $_GET['action'] == 'd
     // put the result into variables
     $datagrid_result = $datagrid->createDataGrid($dbs, $table_spec, 20, ($can_read AND $can_write));
     if (isset($_GET['keywords']) AND $_GET['keywords']) {
-        $msg = str_replace('{result->num_rows}', $datagrid->num_rows, __('Found <strong>{result->num_rows}</strong> from your keywords')); //mfc
+        $msg = str_replace('{result->num_rows}', $datagrid->num_rows, gettext('Found <strong>{result->num_rows}</strong> from your keywords')); //mfc
         echo '<div class="infoBox">'.$msg.' : "'.$_GET['keywords'].'"</div>';
     }
 

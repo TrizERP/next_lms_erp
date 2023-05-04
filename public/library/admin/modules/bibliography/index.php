@@ -31,7 +31,7 @@ $can_write = utility::havePrivilege('bibliography', 'w');
 
 if (!$can_read) 
 {
-    die('<div class="errorBox">'.__('You are not authorized to view this section').'</div>');
+    die('<div class="errorBox">'.gettext('You are not authorized to view this section').'</div>');
 }
 
 
@@ -53,28 +53,28 @@ if (isset($_POST['submit']))
   // check form validity
     if (empty($title)) 
     {
-        utility::jsAlert(__('Title can not be empty'));
+        utility::jsAlert(gettext('Title can not be empty'));
         exit();
     } 
     elseif (strlen($_POST['title'])>200)
     {
-        utility::jsAlert(__('Please Reduce Title Length!'));
+        utility::jsAlert(gettext('Please Reduce Title Length!'));
         exit();   
     }
      
     if (strlen($_POST['edition'])>50)
     {
-        utility::jsAlert(__('Please Reduce Edition Length!'));
+        utility::jsAlert(gettext('Please Reduce Edition Length!'));
         exit();   
     }
     if (strlen($_POST['tags'])>200)
     {
-        utility::jsAlert(__('Please Reduce Keyword Length!'));
+        utility::jsAlert(gettext('Please Reduce Keyword Length!'));
         exit();   
     }
     if (strlen($_POST['specDetailInfo'])>200)
     {
-        utility::jsAlert(__('Please Reduce Specific Detail Information Length!'));
+        utility::jsAlert(gettext('Please Reduce Specific Detail Information Length!'));
         exit();   
     }
     
@@ -83,18 +83,18 @@ if (isset($_POST['submit']))
     
     if($_POST['materialresourceid']=="N/A")
     {
-	utility::jsAlert(__('Material Resource Type can not be empty'));
+	utility::jsAlert(gettext('Material Resource Type can not be empty'));
         exit();
     }
     if($_POST['gmdID']==0)
     {
-	utility::jsAlert(__('Material Type can not be empty'));
+	utility::jsAlert(gettext('Material Type can not be empty'));
         exit();
     }
     
     if($_POST['materialsubid']==0)
     {
-	utility::jsAlert(__('Material Sub Type can not be empty'));
+	utility::jsAlert(gettext('Material Sub Type can not be empty'));
         exit();
     }
     else
@@ -239,13 +239,13 @@ if (isset($_POST['submit']))
                 $data['image'] = $dbs->escape_string($image_upload->new_filename);
                 // write log
                 utility::writeLogs($dbs, 'tbladmin', $_SESSION['DUSER_ID'], 'bibliography', $_SESSION['realname'].' upload image file '.$image_upload->new_filename);
-                utility::jsAlert(__('Image Uploaded Successfully'));
+                utility::jsAlert(gettext('Image Uploaded Successfully'));
             }
             else
             {
                 // write log
                 utility::writeLogs($dbs, 'tbladmin', $_SESSION['DUSER_ID'], 'bibliography', 'ERROR : '.$_SESSION['realname'].' FAILED TO upload image file '.$image_upload->new_filename.', with error ('.$image_upload->error.')');
-                utility::jsAlert(__('Image Uploaded Successfully'));
+                utility::jsAlert(gettext('Image Uploaded Successfully'));
             }
         }
 
@@ -316,7 +316,7 @@ if (isset($_POST['submit']))
             } 
             else 
             {
-             utility::jsAlert(__('Data FAILED to Updated. Please Contact System Administrator')."\n".$sql_op->error);
+             utility::jsAlert(gettext('Data FAILED to Updated. Please Contact System Administrator')."\n".$sql_op->error);
             }
             exit();
         } 
@@ -355,7 +355,7 @@ if (isset($_POST['submit']))
                 // add authors
                 if ($_SESSION['biblioAuthor']) 
                 {
-                    utility::jsAlert(__($_SESSION['biblioAuthor']));
+                    utility::jsAlert(gettext($_SESSION['biblioAuthor']));
                     foreach ($_SESSION['biblioAuthor'] as $author) 
                     {
                         $sql_op->insert('biblio_author', array('biblio_id' => $last_biblio_id, 'author_id' => $author[0], 'level' => $author[1]));
@@ -396,7 +396,7 @@ if (isset($_POST['submit']))
                     @$sql_op->insert('biblio_custom', $custom_data);
                 }
 
-                utility::jsAlert(__('Data Successfully Saved'));
+                utility::jsAlert(gettext('Data Successfully Saved'));
 	
                 // write log
                 utility::writeLogs($dbs, 'tblstudent', $_SESSION['DUSER_ID'], 'bibliography', $_SESSION['realname'].' insert bibliographic data ('.$data['title'].') with biblio_id ('.$last_biblio_id.')');
@@ -410,7 +410,7 @@ if (isset($_POST['submit']))
                     echo '<script type="text/javascript">parent.ucsUpload(\''.MODULES_WEB_ROOT_DIR.'bibliography/ucs_upload.php\', \'itemID[]='.$last_biblio_id.'\');</script>';
                 }
                 echo '<script type="text/javascript">parent.setContent(\'mainContent\', \''.MODULES_WEB_ROOT_DIR.'bibliography/index.php\', \'post\', \'itemID='.$last_biblio_id.'&detail=true\');</script>';
-            } else { utility::jsAlert(__('Data FAILED to Save. Please Contact System Administrator')."\n".$sql_op->error); }
+            } else { utility::jsAlert(gettext('Data FAILED to Save. Please Contact System Administrator')."\n".$sql_op->error); }
             exit();
         }
     }
@@ -482,10 +482,10 @@ else if (isset($_POST['itemID']) AND !empty($_POST['itemID']) AND isset($_POST['
     }
     // error alerting
     if ($error_num == 0) {
-        utility::jsAlert(__('All Data Successfully Deleted'));
+        utility::jsAlert(gettext('All Data Successfully Deleted'));
         echo '<script type="text/javascript">parent.setContent(\'mainContent\', \''.$_SERVER['PHP_SELF'].'?'.$_POST['lastQueryStr'].'\', \'post\');</script>';
     } else {
-        utility::jsAlert(__('Some or All Data NOT deleted successfully!\nPlease contact system administrator'));
+        utility::jsAlert(gettext('Some or All Data NOT deleted successfully!\nPlease contact system administrator'));
         echo '<script type="text/javascript">parent.setContent(\'mainContent\', \''.$_SERVER['PHP_SELF'].'?'.$_POST['lastQueryStr'].'\', \'post\');</script>';
     }
     exit();
@@ -525,8 +525,8 @@ echo $bradecum;
 	<td class="tab_menu_top">
                             <ul class="tabs"> 
 <!--<li><a href="<?php echo MODULES_WEB_ROOT_DIR; ?>bibliography/index.php" class="headerText2"><?php //echo __('Library Resource List'); ?></a></li>-->
-<li><a href="<?php echo  MODULES_WEB_ROOT_DIR; ?>bibliography/index.php?action1=detail" class="headerText2"><?php echo __('Physical Resources'); ?></a> </li><li>  
-<a href="<?php echo MODULES_WEB_ROOT_DIR; ?>bibliography/virtual_resources.php?virtual" class="headerText2"><?php echo __('Virtual Resources'); ?></a></li>
+<li><a href="<?php echo  MODULES_WEB_ROOT_DIR; ?>bibliography/index.php?action1=detail" class="headerText2"><?php echo gettext('Physical Resources'); ?></a> </li><li>  
+<a href="<?php echo MODULES_WEB_ROOT_DIR; ?>bibliography/virtual_resources.php?virtual" class="headerText2"><?php echo gettext('Virtual Resources'); ?></a></li>
 </ul></td></tr></table>
 <fieldset class="menuBox">
 <div class="menuBoxInner biblioIcon">
@@ -537,8 +537,8 @@ if(isset($_REQUEST['action']) || !isset($_REQUEST['action']))
     
 //echo strtoupper(__('Physical Resources')); ?> 
 <a href="<?php echo MODULES_WEB_ROOT_DIR; ?>bibliography/index.php?action=detail" class="headerText3">
-<?php echo __('Add New Physical Resources'); ?></a>
-    &nbsp; <a href="<?php echo MODULES_WEB_ROOT_DIR; ?>bibliography/index.php?action1=detail" class="headerText3"><?php echo __('Physical Resources List'); ?></a>
+<?php echo gettext('Add New Physical Resources'); ?></a>
+    &nbsp; <a href="<?php echo MODULES_WEB_ROOT_DIR; ?>bibliography/index.php?action1=detail" class="headerText3"><?php echo gettext('Physical Resources List'); ?></a>
 <?php
 }
 //added ended by Parth 2/9/2011
@@ -548,14 +548,14 @@ if(isset($_REQUEST['action']) || !isset($_REQUEST['action']))
     if ($sysconf['ucs']['enable'])
      {
     ?>
-    <div class="marginTop"><a href="#" onclick="ucsUpload('<?php echo MODULES_WEB_ROOT_DIR; ?>bibliography/ucs_upload.php', serializeChbox('dataList'))" class="notAJAX ucsUpload"><?php echo __('Upload Selected Bibliographic data to Union Catalog Server*'); ?></a></div>
+    <div class="marginTop"><a href="#" onclick="ucsUpload('<?php echo MODULES_WEB_ROOT_DIR; ?>bibliography/ucs_upload.php', serializeChbox('dataList'))" class="notAJAX ucsUpload"><?php echo gettext('Upload Selected Bibliographic data to Union Catalog Server*'); ?></a></div>
     <?php
     }
     ?>
     
     <br>
     <br><br><br>
-    <form name="search" action="<?php echo MODULES_WEB_ROOT_DIR; ?>bibliography/index.php" id="search" method="get" style="display: inline;"><?php echo __('Search'); ?> :
+    <form name="search" action="<?php echo MODULES_WEB_ROOT_DIR; ?>bibliography/index.php" id="search" method="get" style="display: inline;"><?php echo gettext('Search'); ?> :
         <!-- comment by iresh on 25-1-2011 <input type="text" name="keywords" id="keywords" size="30" />-->
        <!-- added by iresh on 25-1-2011 --> 
        <!-- <input type="text" name="keywords" id="keywords" width=140px/>
@@ -566,9 +566,9 @@ if(isset($_REQUEST['action']) || !isset($_REQUEST['action']))
 
         <input type="text" name="keywords" id="keywords" class="bookskeywords" width="140px" onkeypress="getbookList(this);"/>
                 <select name="field" id="bookfield">
-                    <option value="0"><?php echo __('All Fields'); ?></option>
-                    <option value="title"><?php echo __('Title/Series Title'); ?> </option><option value="subject"><?php echo __('Topics'); ?></option><option value="author"><?php echo __('Authors'); ?></option><option value="isbn"><?php echo __('ISBN/ISSN'); ?></option><option value="publisher"><?php echo __('Publisher'); ?></option></select>
-                <input type="submit" id="doSearch" value="<?php echo __('Search'); ?>" class="button" />
+                    <option value="0"><?php echo gettext('All Fields'); ?></option>
+                    <option value="title"><?php echo gettext('Title/Series Title'); ?> </option><option value="subject"><?php echo gettext('Topics'); ?></option><option value="author"><?php echo gettext('Authors'); ?></option><option value="isbn"><?php echo gettext('ISBN/ISSN'); ?></option><option value="publisher"><?php echo gettext('Publisher'); ?></option></select>
+                <input type="submit" id="doSearch" value="<?php echo gettext('Search'); ?>" class="button" />
         
     </form>
 </div>
@@ -585,7 +585,7 @@ if (isset($_POST['detail']) OR (isset($_GET['action']) AND $_GET['action'] == 'd
 
     if (!($can_read AND $can_write)) 
     {
-        die('<div class="errorBox">'.__('You are not authorized to view this section').'</div>');
+        die('<div class="errorBox">'.gettext('You are not authorized to view this section').'</div>');
     }
     /* RECORD FORM */
     // try query
@@ -648,7 +648,7 @@ if (isset($_POST['detail']) OR (isset($_GET['action']) AND $_GET['action'] == 'd
 
     /* Form Element(s) */
     // biblio title
-    $form->addTextField('textarea', 'title', __('Title').'*', $rec_d['title'], 'rows="1" style="width: 100%; overflow: auto;" onkeyup="return checkspecialcharacterdynamic(this.name);"onblur="charactercheck(this.name);"');
+    $form->addTextField('textarea', 'title', gettext('Title').'*', $rec_d['title'], 'rows="1" style="width: 100%; overflow: auto;" onkeyup="return checkspecialcharacterdynamic(this.name);"onblur="charactercheck(this.name);"');
 //commented ended by Parth 28/7/2011		
   $material_q = $dbs->query('SELECT material_resource_id, material_resource_name FROM mst_material_resource_type where active_inactive="1" AND material_resource_name="Physical Library"');
 
@@ -663,7 +663,7 @@ $ajax = "ajaxFillSelect('".SENAYAN_WEB_ROOT_DIR."admin/AJAX_material_sub_type_ha
        if ($rec_d['gmd_name']) {
             $mst_options[] = array($rec_d['gmd_id'],$rec_d['gmd_name']);
         }
-	$mst_options[] = array('0', __('--Material Type--'));
+	$mst_options[] = array('0', gettext('--Material Type--'));
 
 
  $ajax_exp = "ajaxFillSelect('".SENAYAN_WEB_ROOT_DIR."admin/AJAX_material_sub_type_handler.php', 'mst_material_sub_type', 'material_sub_id:material_sub_name:gmd_id', 'materialsubid', $('gmdID').getValue())";
@@ -672,7 +672,7 @@ if ($rec_d['material_sub_name'])
 {
    $mst_material_sub_type_options[] = array($rec_d['material_sub_id'],$rec_d['material_sub_name']);
 }
-	$mst_material_sub_type_options[] = array('0', __('--Material Sub Type--'));
+	$mst_material_sub_type_options[] = array('0', gettext('--Material Sub Type--'));
         // string element
         //echo SENAYAN_WEB_ROOT_DIR;
 $ajax_exp1 = "ajaxFillSelectnew('".SENAYAN_WEB_ROOT_DIR."admin/getuser1.php','materialnewid1', $('materialsubid').getValue())";       
@@ -719,42 +719,42 @@ if(isset($_POST['virtual']))
 //biblio publication
 if($rec_d['material_sub_id']==118)
 { 
- $form->addTextField('text', 'publication', __('Publication'), $rec_d['publication'] , 'rows="1" style="width: 100%;"');
+ $form->addTextField('text', 'publication', gettext('Publication'), $rec_d['publication'] , 'rows="1" style="width: 100%;"');
 }
 //biblio sub title
 if($rec_d['material_sub_id']==130 || $rec_d['material_sub_id']==112 || $rec_d['material_sub_id']==113 || $rec_d['material_sub_id']==116 || $rec_d['material_sub_id']==117 || $rec_d['material_sub_id']==88 || $rec_d['material_sub_id']==84 || $rec_d['material_sub_id']==85 || $rec_d['material_sub_id']==87  || $rec_d['material_sub_id']==115)
 {
-$form->addTextField('text', 'subTitle', __('Sub Title'), $rec_d['sub_title'], 'rows="1" style="width: 100%;"');
+$form->addTextField('text', 'subTitle', gettext('Sub Title'), $rec_d['sub_title'], 'rows="1" style="width: 100%;"');
 }
 if($rec_d['material_sub_id']==130 || $rec_d['material_sub_id']==112 || $rec_d['material_sub_id']==113 || $rec_d['material_sub_id']==114  || $rec_d['material_sub_id']==117 || $rec_d['material_sub_id']==77 || $rec_d['material_sub_id']==79 || $rec_d['material_sub_id']==80 || $rec_d['material_sub_id']==81 || $rec_d['material_sub_id']==82 || $rec_d['material_sub_id']==83 || $rec_d['material_sub_id']==88 || $rec_d['material_sub_id']==115)
 {
    // biblio series title
-    $form->addTextField('textarea', 'seriesTitle', __('Series Title'), $rec_d['series_title'], 'rows="1" style="width: 100%;"');
+    $form->addTextField('textarea', 'seriesTitle', gettext('Series Title'), $rec_d['series_title'], 'rows="1" style="width: 100%;"');
 }
 if($rec_d['material_sub_id']==130 || $rec_d['material_sub_id']==112 || $rec_d['material_sub_id']==113 || $rec_d['material_sub_id']==114  || $rec_d['material_sub_id']==117 || $rec_d['material_sub_id']==77 || $rec_d['material_sub_id']==79 || $rec_d['material_sub_id']==80 || $rec_d['material_sub_id']==81 || $rec_d['material_sub_id']==82 || $rec_d['material_sub_id']==83 || $rec_d['material_sub_id']==88 || $rec_d['material_sub_id']==115)
 {
    // biblio series title
-    $form->addTextField('text', 'editorName', __('Editor'), $rec_d['editor'], 'rows="1" style="width: 50%;"');
+    $form->addTextField('text', 'editorName', gettext('Editor'), $rec_d['editor'], 'rows="1" style="width: 50%;"');
 }
 if($rec_d['material_sub_id']==130 || $rec_d['material_sub_id']==131 || $rec_d['material_sub_id']==132 || $rec_d['material_sub_id']==133)
 {
   // biblio edition
-    $form->addTextField('text', 'edition', __('Edition'), $rec_d['edition'], 'style="width: 40%;"');
+    $form->addTextField('text', 'edition', gettext('Edition'), $rec_d['edition'], 'style="width: 40%;"');
 }
 if($rec_d['material_sub_id']==130 || $rec_d['material_sub_id']==131 || $rec_d['material_sub_id']==132 || $rec_d['material_sub_id']==133 || $rec_d['material_sub_id']==115 || $rec_d['material_sub_id']==116 || $rec_d['material_sub_id']==117 || $rec_d['material_sub_id']==118 || $rec_d['material_sub_id']==77 || $rec_d['material_sub_id']==79 || $rec_d['material_sub_id']==80 || $rec_d['material_sub_id']==81 || $rec_d['material_sub_id']==82 || $rec_d['material_sub_id']==83 || $rec_d['material_sub_id']==84 ||$rec_d['material_sub_id']==85 || $rec_d['material_sub_id']==86 || $rec_d['material_sub_id']==87 || $rec_d['material_sub_id']==89 || $rec_d['material_sub_id']==90 || $rec_d['material_sub_id']==91 || $rec_d['material_sub_id']==92 || $rec_d['material_sub_id']==93 || $rec_d['material_sub_id']==94 || $rec_d['material_sub_id']==95 || $rec_d['material_sub_id']==96 || $rec_d['material_sub_id']==88 || $rec_d['material_sub_id']==97 || $rec_d['material_sub_id']==98 || $rec_d['material_sub_id']==99 || $rec_d['material_sub_id']==100 || $rec_d['material_sub_id']==101 || $rec_d['material_sub_id']==102 || $rec_d['material_sub_id']==104 || $rec_d['material_sub_id']==105 || $rec_d['material_sub_id']==106 || $rec_d['material_sub_id']==68 || $rec_d['material_sub_id']==69 || $rec_d['material_sub_id']==70 || $rec_d['material_sub_id']==71 || $rec_d['material_sub_id']==72 || $rec_d['material_sub_id']==73 || $rec_d['material_sub_id']==74 || $rec_d['material_sub_id']==75 || $rec_d['material_sub_id']==76)
 {
        // biblio keywords
-    $form->addTextField('text', 'tags', __('Volume No'), $rec_d['tags'], 'style="width: 40%;"');
+    $form->addTextField('text', 'tags', gettext('Volume No'), $rec_d['tags'], 'style="width: 40%;"');
 }
 if($rec_d['material_sub_id']==130 || $rec_d['material_sub_id']==131 || $rec_d['material_sub_id']==132 || $rec_d['material_sub_id']==133)
 {
     // biblio specific detail info/area
-    $form->addTextField('textarea', 'specDetailInfo', __('Specific Detail Info'), $rec_d['spec_detail_info'], 'rows="2" style="width: 100%"');
+    $form->addTextField('textarea', 'specDetailInfo', gettext('Specific Detail Info'), $rec_d['spec_detail_info'], 'rows="2" style="width: 100%"');
 }
 
 if($rec_d['material_sub_id']==130 || $rec_d['material_sub_id']==131 || $rec_d['material_sub_id']==132 || $rec_d['material_sub_id']==133)
 {                     
-                $str_input = '<div class="'.$visibility.'"><a class="notAJAX" href="javascript: openHTMLpop(\''.MODULES_WEB_ROOT_DIR.'bibliography/pop_item.php?biblioID='.$rec_d['biblio_id'].'\', 600, 500, \''.__('Items/Copies').'\')">'.__('Add New Items').'</a></div>';
+                $str_input = '<div class="'.$visibility.'"><a class="notAJAX" href="javascript: openHTMLpop(\''.MODULES_WEB_ROOT_DIR.'bibliography/pop_item.php?biblioID='.$rec_d['biblio_id'].'\', 600, 500, \''.gettext('Items/Copies').'\')">'.gettext('Add New Items').'</a></div>';
                 $str_input .= '<iframe name="itemIframe" id="itemIframe" class="borderAll" style="width: 100%; height: 70px;" src="'.MODULES_WEB_ROOT_DIR.'bibliography/iframe_item_list.php?biblioID='.$rec_d['biblio_id'].'&block=1"></iframe>'."\n";
                 $form->addAnything('Item(s) Data'.'*', $str_input);
 }
@@ -762,14 +762,14 @@ if($rec_d['material_sub_id']==130 || $rec_d['material_sub_id']==131 || $rec_d['m
 
 if($rec_d['material_sub_id']==130 || $rec_d['material_sub_id']==112 || $rec_d['material_sub_id']==113 || $rec_d['material_sub_id']==116 || $rec_d['material_sub_id']==117 || $rec_d['material_sub_id']==77 || $rec_d['material_sub_id']==79 || $rec_d['material_sub_id']==80 || $rec_d['material_sub_id']==81 || $rec_d['material_sub_id']==82 || $rec_d['material_sub_id']==83 || $rec_d['material_sub_id']==88 || $rec_d['material_sub_id']==84 || $rec_d['material_sub_id']==85 || $rec_d['material_sub_id']==87 || $rec_d['material_sub_id']==115)
 {        
-        $str_input = '<div class="'.$visibility.'"><a class="notAJAX" href="javascript: openHTMLpop(\''.MODULES_WEB_ROOT_DIR.'bibliography/pop_author.php?biblioID='.$rec_d['biblio_id'].'\', 500, 200, \''.__('Authors/Roles').'\')">'.__('Add Author(s)').'</a></div>';
+        $str_input = '<div class="'.$visibility.'"><a class="notAJAX" href="javascript: openHTMLpop(\''.MODULES_WEB_ROOT_DIR.'bibliography/pop_author.php?biblioID='.$rec_d['biblio_id'].'\', 500, 200, \''.gettext('Authors/Roles').'\')">'.gettext('Add Author(s)').'</a></div>';
         $str_input .= '<iframe name="authorIframe" id="authorIframe" class="borderAll" style="width: 100%; height: 70px;" src="'.MODULES_WEB_ROOT_DIR.'bibliography/iframe_author.php?biblioID='.$rec_d['biblio_id'].'&block=1"></iframe>';
-        $form->addAnything(__('Author(s)'), $str_input);
+        $form->addAnything(gettext('Author(s)'), $str_input);
 }
 if($rec_d['material_sub_id']==130 || $rec_d['material_sub_id']==112 || $rec_d['material_sub_id']==113 || $rec_d['material_sub_id']==114 || $rec_d['material_sub_id']==118 || $rec_d['material_sub_id']==77 || $rec_d['material_sub_id']==79 || $rec_d['material_sub_id']==80 || $rec_d['material_sub_id']==81 || $rec_d['material_sub_id']==82 || $rec_d['material_sub_id']==83 || $rec_d['material_sub_id']==88)
 {
         $freq_q = $dbs->query('SELECT frequency_id, frequency FROM mst_frequency');
-        $freq_options[] = array('0', strtoupper(__('Not Applicable')));
+        $freq_options[] = array('0', strtoupper(gettext('Not Applicable')));
         
         while ($freq_d = $freq_q->fetch_row()) 
         {
@@ -783,58 +783,58 @@ if($rec_d['material_sub_id']==130 || $rec_d['material_sub_id']==112 || $rec_d['m
         
         $str_input = simbio_form_element::selectList('frequencyID', $freq_options, $rec_d['frequency_id']);
         $str_input .= '&nbsp;';
-        $str_input .= ' '.__('Use this for Serial publication');
-   	  $form->addAnything(__('Frequency'), $str_input);
+        $str_input .= ' '.gettext('Use this for Serial publication');
+   	  $form->addAnything(gettext('Frequency'), $str_input);
 }
 if($rec_d['material_sub_id']==130 || $rec_d['material_sub_id']==112 || $rec_d['material_sub_id']==113 || $rec_d['material_sub_id']==114 || $rec_d['material_sub_id']==117 || $rec_d['material_sub_id']==77 || $rec_d['material_sub_id']==79 || $rec_d['material_sub_id']==80 || $rec_d['material_sub_id']==81 || $rec_d['material_sub_id']==82 || $rec_d['material_sub_id']==83 || $rec_d['material_sub_id']==88 || $rec_d['material_sub_id']==84 || $rec_d['material_sub_id']==85 || $rec_d['material_sub_id']==87)
 {
     // biblio ISBN/ISSN
-    $form->addTextField('text', 'isbn_issn', __('ISBN/ISSN'), $rec_d['isbn_issn'], 'style="width: 40%;" onchange="return checkspecialcharacterdynamic(this.name);"');
+    $form->addTextField('text', 'isbn_issn', gettext('ISBN/ISSN'), $rec_d['isbn_issn'], 'style="width: 40%;" onchange="return checkspecialcharacterdynamic(this.name);"');
 }
 //biblio company
 if($rec_d['material_sub_id']==115)
 {
-    $form->addTextField('text', 'company', __('Company'), $rec_d['company'] , 'style="width: 40%;"');
+    $form->addTextField('text', 'company', gettext('Company'), $rec_d['company'] , 'style="width: 40%;"');
 }
 //biblio Key Actors
 if($rec_d['material_sub_id']==115)
 {
-    $form->addTextField('text', 'actors', __('Key Actors'), $rec_d['actors'] , 'style="width: 40%;"');
+    $form->addTextField('text', 'actors', gettext('Key Actors'), $rec_d['actors'] , 'style="width: 40%;"');
 }
 //biblio country
 if($rec_d['material_sub_id']==115 || $rec_d['material_sub_id']==118)
 {
-    $form->addTextField('text', 'country', __('Country'), $rec_d['country'] , 'style="width: 40%;"');
+    $form->addTextField('text', 'country', gettext('Country'), $rec_d['country'] , 'style="width: 40%;"');
 }
 //biblio state
 if($rec_d['material_sub_id']==118)
 {
-    $form->addTextField('text', 'state', __('State'), $rec_d['state'] , 'style="width: 40%;"');
+    $form->addTextField('text', 'state', gettext('State'), $rec_d['state'] , 'style="width: 40%;"');
 }
 //biblio city
 if($rec_d['material_sub_id']==118)
 {
-    $form->addTextField('text', 'city', __('City'), $rec_d['city'] , 'style="width: 40%;"');
+    $form->addTextField('text', 'city', gettext('City'), $rec_d['city'] , 'style="width: 40%;"');
 }
 //biblio Age Groups
 if($rec_d['material_sub_id']==115)
 {
-    $form->addTextField('text', 'age_group', __('Age Groups'), $rec_d['age_group'] , 'style="width: 40%;"');
+    $form->addTextField('text', 'age_group', gettext('Age Groups'), $rec_d['age_group'] , 'style="width: 40%;"');
 }
 //biblio Awards
 if($rec_d['material_sub_id']==115)
 {
-    $form->addTextField('text', 'awards', __('Awards'), $rec_d['awards'] , 'style="width: 40%;"');
+    $form->addTextField('text', 'awards', gettext('Awards'), $rec_d['awards'] , 'style="width: 40%;"');
 }
 //biblio editorial
 if($rec_d['material_sub_id']==114 || $rec_d['material_sub_id']==88)
 {
- $form->addTextField('text', 'editorial', __('Editorial'), $rec_d['editorial'], 'style="width: 40%;"');
+ $form->addTextField('text', 'editorial', gettext('Editorial'), $rec_d['editorial'], 'style="width: 40%;"');
 }
 if($rec_d['material_sub_id']==130 || $rec_d['material_sub_id']==112 || $rec_d['material_sub_id']==113  || $rec_d['material_sub_id']==116 || $rec_d['material_sub_id']==88  || $rec_d['material_sub_id']==84 || $rec_d['material_sub_id']==85 || $rec_d['material_sub_id']==87 || $rec_d['material_sub_id']==115)
 {    
   // biblio classification
-   $form->addTextField('text', 'class', __('Classification No.'), $rec_d['classification'], 'style="width: 40%;"');
+   $form->addTextField('text', 'class', gettext('Classification No.'), $rec_d['classification'], 'style="width: 40%;"');
 }
 if($rec_d['material_sub_id']==130 || $rec_d['material_sub_id']==112 || $rec_d['material_sub_id']==113 || $rec_d['material_sub_id']==114 || $rec_d['material_sub_id']==116 || $rec_d['material_sub_id']==118 || $rec_d['material_sub_id']==77 || $rec_d['material_sub_id']==79 || $rec_d['material_sub_id']==80 || $rec_d['material_sub_id']==81 || $rec_d['material_sub_id']==82 || $rec_d['material_sub_id']==83 || $rec_d['material_sub_id']==88 || $rec_d['material_sub_id']==84 || $rec_d['material_sub_id']==85 || $rec_d['material_sub_id']==87)
 {        
@@ -845,18 +845,18 @@ if($rec_d['material_sub_id']==130 || $rec_d['material_sub_id']==112 || $rec_d['m
             $publ_options[] = array($rec_d['publisher_id'], $rec_d['publisher_name']);
         }
         
-		$publ_options[] = array('0', __('Publisher'));
+		$publ_options[] = array('0', gettext('Publisher'));
         
         $str_input = simbio_form_element::selectList('publisherID', $publ_options, '', 'style="width: 50%;"');			
         $str_input .= '&nbsp;';        
 		$str_input .= simbio_form_element::textField('text', 'publ_search_str', $rec_d['publisher_name'], 'style="width: 45%;" onkeyup="'.$ajax_exp.'"');
 		
-		$form->addAnything(__('Publisher'), $str_input);
+		$form->addAnything(gettext('Publisher'), $str_input);
 }
 if($rec_d['material_sub_id']==130 || $rec_d['material_sub_id']==112 || $rec_d['material_sub_id']==113 || $rec_d['material_sub_id']==116 || $rec_d['material_sub_id']==88 || $rec_d['material_sub_id']==84 || $rec_d['material_sub_id']==85 || $rec_d['material_sub_id']==87)
 {
     // biblio publish year
-    $form->addTextField('text', 'year', __('Publishing Year'), $rec_d['publish_year'], 'style="width: 40%;"');
+    $form->addTextField('text', 'year', gettext('Publishing Year'), $rec_d['publish_year'], 'style="width: 40%;"');
 }
 if($rec_d['material_sub_id']==130 || $rec_d['material_sub_id']==112 || $rec_d['material_sub_id']==113  || $rec_d['material_sub_id']==114 || $rec_d['material_sub_id']==116 || $rec_d['material_sub_id']==117 || $rec_d['material_sub_id']==77 || $rec_d['material_sub_id']==79 || $rec_d['material_sub_id']==80 || $rec_d['material_sub_id']==81 || $rec_d['material_sub_id']==82 || $rec_d['material_sub_id']==83 || $rec_d['material_sub_id']==88 || $rec_d['material_sub_id']==84 || $rec_d['material_sub_id']==85 || $rec_d['material_sub_id']==87)
 {
@@ -867,61 +867,61 @@ if($rec_d['material_sub_id']==130 || $rec_d['material_sub_id']==112 || $rec_d['m
         if ($rec_d['place_name']) {
             $plc_options[] = array($rec_d['publish_place_id'], $rec_d['place_name']);
         }
-        $plc_options[] = array('0', __('Publishing Place'));
+        $plc_options[] = array('0', gettext('Publishing Place'));
         $str_input = simbio_form_element::selectList('placeID', $plc_options, '', 'style="width: 50%;"');
         $str_input .= '&nbsp;';
         $str_input .= simbio_form_element::textField('text', 'plc_search_str', $rec_d['place_name'], 'style="width: 45%;" onkeyup="'.$ajax_exp.'"');
-    $form->addAnything(__('Publishing Place'), $str_input);
+    $form->addAnything(gettext('Publishing Place'), $str_input);
 }
 // biblio qualification/degree
 if($rec_d['material_sub_id']==116 || $rec_d['material_sub_id']==88)
 {
-$form->addTextField('text', 'qualification', __('Qualification/Degree'), $rec_d['qualification'], 'style="width: 40%;"');
+$form->addTextField('text', 'qualification', gettext('Qualification/Degree'), $rec_d['qualification'], 'style="width: 40%;"');
 }
 // biblio college/inst/dept
 if($rec_d['material_sub_id']==116 || $rec_d['material_sub_id']==88)
 {
-$form->addTextField('text', 'college_inst_dept', __('College/Inst/Dept'), $rec_d['college_inst_dept'], 'style="width: 40%;"');
+$form->addTextField('text', 'college_inst_dept', gettext('College/Inst/Dept'), $rec_d['college_inst_dept'], 'style="width: 40%;"');
 }
 // biblio university
 if($rec_d['material_sub_id']==116 || $rec_d['material_sub_id']==88)
 {
-$form->addTextField('text', 'university', __('University'), $rec_d['university'], 'style="width: 40%;"');
+$form->addTextField('text', 'university', gettext('University'), $rec_d['university'], 'style="width: 40%;"');
 }
 //biblio volume number
 if($rec_d['material_sub_id']==114 || $rec_d['material_sub_id']==117 || $rec_d['material_sub_id']==88 || $rec_d['material_sub_id']==84 || $rec_d['material_sub_id']==85 || $rec_d['material_sub_id']==87)
 {
-$form->addTextField('text', 'vol_no', __('Volume No.'), $rec_d['vol_no'], 'style="width: 40%;"');
+$form->addTextField('text', 'vol_no', gettext('Volume No.'), $rec_d['vol_no'], 'style="width: 40%;"');
 }
 //biblio index number
 if($rec_d['material_sub_id']==114 || $rec_d['material_sub_id']==117 || $rec_d['material_sub_id']==88 || $rec_d['material_sub_id']==84 || $rec_d['material_sub_id']==85 || $rec_d['material_sub_id']==87)
 {
-$form->addTextField('text', 'index_no', __('Index No.'), $rec_d['index_no'], 'style="width: 40%;"');
+$form->addTextField('text', 'index_no', gettext('Index No.'), $rec_d['index_no'], 'style="width: 40%;"');
 }
 //biblio duration
 if($rec_d['material_sub_id']==114 || $rec_d['material_sub_id']==117 || $rec_d['material_sub_id']==88 || $rec_d['material_sub_id']==115)
 {
-$form->addTextField('text', 'duration', __('Duration'), $rec_d['duration'], 'style="width: 40%;"');
+$form->addTextField('text', 'duration', gettext('Duration'), $rec_d['duration'], 'style="width: 40%;"');
 }
 //biblio issue number
 if($rec_d['material_sub_id']==114 || $rec_d['material_sub_id']==88)
 {
-$form->addTextField('text', 'issue_no', __('Issue No.'), $rec_d['issue_no'], 'style="width: 40%;"');
+$form->addTextField('text', 'issue_no', gettext('Issue No.'), $rec_d['issue_no'], 'style="width: 40%;"');
 }
 //biblio serial no
 if($rec_d['material_sub_id']==117 || $rec_d['material_sub_id']==88)
 {
-$form->addTextField('text', 'serial_no', __('Serial No.'), $rec_d['serial_no'], 'style="width: 40%;"');
+$form->addTextField('text', 'serial_no', gettext('Serial No.'), $rec_d['serial_no'], 'style="width: 40%;"');
 }
 //biblio publication date
 if($rec_d['material_sub_id']==114  || $rec_d['material_sub_id']==117 || $rec_d['material_sub_id']==118 || $rec_d['material_sub_id']==77 || $rec_d['material_sub_id']==79 || $rec_d['material_sub_id']==80 || $rec_d['material_sub_id']==81 || $rec_d['material_sub_id']==82 || $rec_d['material_sub_id']==83 || $rec_d['material_sub_id']==88)
 {
-$form->addDateField('pubdate', __('Publication Date'), $rec_d['publication_date']?$rec_d['publication_date']:date('Y-m-d'));
+$form->addDateField('pubdate', gettext('Publication Date'), $rec_d['publication_date']?$rec_d['publication_date']:date('Y-m-d'));
 }
 if($rec_d['material_sub_id']==130 || $rec_d['material_sub_id']==112 || $rec_d['material_sub_id']==113 || $rec_d['material_sub_id']==88 || $rec_d['material_sub_id']==84 || $rec_d['material_sub_id']==85 || $rec_d['material_sub_id']==87)
 {    
 // biblio collation
-    $form->addTextField('text', 'collation', __('Book Size/ Number of page'), $rec_d['collation'] , 'style="width: 40%;" onchange="return numericcheck(this.name);"');
+    $form->addTextField('text', 'collation', gettext('Book Size/ Number of page'), $rec_d['collation'] , 'style="width: 40%;" onchange="return numericcheck(this.name);"');
 }
 if($rec_d['material_sub_id']==130 || $rec_d['material_sub_id']==112 || $rec_d['material_sub_id']==113 || $rec_d['material_sub_id']==88)
 {   
@@ -932,16 +932,16 @@ if($rec_d['material_sub_id']==130 || $rec_d['material_sub_id']==112 || $rec_d['m
 { 
     // biblio topics
        
-    $str_input = '<div class="'.$visibility.'"><a class="notAJAX"  href="javascript: openHTMLpop(\''.MODULES_WEB_ROOT_DIR.'bibliography/pop_topic.php?biblioID='.$rec_d['biblio_id'].'\', 900, 200, \''.__('Subjects/Topics').'\')">'.__('Add Subject(s)').'</a></div>';
+    $str_input = '<div class="'.$visibility.'"><a class="notAJAX"  href="javascript: openHTMLpop(\''.MODULES_WEB_ROOT_DIR.'bibliography/pop_topic.php?biblioID='.$rec_d['biblio_id'].'\', 900, 200, \''.gettext('Subjects/Topics').'\')">'.gettext('Add Subject(s)').'</a></div>';
         $str_input .= '<iframe name="topicIframe" id="topicIframe" class="borderAll" style="width: 100%; height: 70px;" src="'.MODULES_WEB_ROOT_DIR.'bibliography/iframe_topic.php?biblioID='.$rec_d['biblio_id'].'block=1"></iframe>';
-    $form->addAnything(__('Subject(s)'), $str_input);
+    $form->addAnything(gettext('Subject(s)'), $str_input);
 }
 if($rec_d['material_sub_id']==130 || $rec_d['material_sub_id']==112 || $rec_d['material_sub_id']==113 || $rec_d['material_sub_id']==117 || $rec_d['material_sub_id']==88)
 {
  // biblio standard
-        $str_input = '<div class="'.$visibility.'"><a class="notAJAX"  href="javascript: openHTMLpop(\''.MODULES_WEB_ROOT_DIR.'bibliography/pop_standard.php?biblioID='.$rec_d['biblio_id'].'\', 500, 200, \''.__('Standard').'\')">'.__('Add Standard(s)').'</a></div>';
+        $str_input = '<div class="'.$visibility.'"><a class="notAJAX"  href="javascript: openHTMLpop(\''.MODULES_WEB_ROOT_DIR.'bibliography/pop_standard.php?biblioID='.$rec_d['biblio_id'].'\', 500, 200, \''.gettext('Standard').'\')">'.gettext('Add Standard(s)').'</a></div>';
         $str_input .= '<iframe name="standardIframe" id="standardIframe" class="borderAll" style="width: 100%; height: 70px;" src="'.MODULES_WEB_ROOT_DIR.'bibliography/iframe_standard.php?biblioID='.$rec_d['biblio_id'].'block=1"></iframe>';
-    $form->addAnything(__('Standard(s)'), $str_input);
+    $form->addAnything(gettext('Standard(s)'), $str_input);
 }
 
 if($rec_d['material_sub_id']==130 || $rec_d['material_sub_id']==112 || $rec_d['material_sub_id']==113 || $rec_d['material_sub_id']==114 || $rec_d['material_sub_id']==116 || $rec_d['material_sub_id']==117 || $rec_d['material_sub_id']==118 || $rec_d['material_sub_id']==77 || $rec_d['material_sub_id']==79 || $rec_d['material_sub_id']==80 || $rec_d['material_sub_id']==81 || $rec_d['material_sub_id']==82 || $rec_d['material_sub_id']==83 || $rec_d['material_sub_id']==88)
@@ -958,22 +958,22 @@ if($rec_d['material_sub_id']==130 || $rec_d['material_sub_id']==112 || $rec_d['m
         $lang_q1 = $dbs->query("SELECT language_id FROM mst_language where language_id='".$rec_d['language_id']."' ");        
         $lang_d1 = $lang_q1->fetch_row();
 
-        $form->addSelectList('languageID', __('Language'),$lang_options, $lang_d1[0]);	
+        $form->addSelectList('languageID', gettext('Language'),$lang_options, $lang_d1[0]);	
 }
 if($rec_d['material_sub_id']==130 || $rec_d['material_sub_id']==112 || $rec_d['material_sub_id']==113 || $rec_d['material_sub_id']==114 || $rec_d['material_sub_id']==117 || $rec_d['material_sub_id']==118 || $rec_d['material_sub_id']==88 || $rec_d['material_sub_id']==84 || $rec_d['material_sub_id']==85 || $rec_d['material_sub_id']==87 || $rec_d['material_sub_id']==115)
 {
     // biblio note
-    $form->addTextField('textarea', 'notes', __('Notes'), $rec_d['notes'] , 'style="width: 100%;" rows="2"');
+    $form->addTextField('textarea', 'notes', gettext('Notes'), $rec_d['notes'] , 'style="width: 100%;" rows="2"');
 }
 if($rec_d['material_sub_id']==130 || $rec_d['material_sub_id']==112 || $rec_d['material_sub_id']==113 || $rec_d['material_sub_id']==114 || $rec_d['material_sub_id']==117 || $rec_d['material_sub_id']==118 || $rec_d['material_sub_id']==88 || $rec_d['material_sub_id']==84 || $rec_d['material_sub_id']==85 || $rec_d['material_sub_id']==87 || $rec_d['material_sub_id']==115)
 {
     // biblio abstract
-    $form->addTextField('textarea', 'abstract', __('Abstract'), $rec_d['abstract'] , 'style="width: 100%;" rows="2"');
+    $form->addTextField('textarea', 'abstract', gettext('Abstract'), $rec_d['abstract'] , 'style="width: 100%;" rows="2"');
 }
 if($rec_d['material_sub_id']==130 || $rec_d['material_sub_id']==112 || $rec_d['material_sub_id']==113 || $rec_d['material_sub_id']==118 || $rec_d['material_sub_id']==88)
 {
  // biblio review
-    $form->addTextField('text', 'review', __('Book Review'), $rec_d['review'] , 'style="width: 40%;" rows="2"');
+    $form->addTextField('text', 'review', gettext('Book Review'), $rec_d['review'] , 'style="width: 40%;" rows="2"');
 }
 if($rec_d['material_sub_id']==130 || $rec_d['material_sub_id']==112 || $rec_d['material_sub_id']==113 || $rec_d['material_sub_id']==88)
 {
@@ -981,20 +981,20 @@ if($rec_d['material_sub_id']==130 || $rec_d['material_sub_id']==112 || $rec_d['m
     if (!trim($rec_d['image'])) {
         $str_input = simbio_form_element::textField('file', 'image');
         $str_input .= ' Maximum '.$sysconf['max_image_upload'].' KB';
-        $form->addAnything(__('Image'), $str_input);
+        $form->addAnything(gettext('Image'), $str_input);
     } else {
         $str_input = '<a href="'.SENAYAN_WEB_ROOT_DIR.'images/docs/'.$rec_d['image'].'" target="_blank"><strong>'.$rec_d['image'].'</strong></a><br />';
         $str_input .= simbio_form_element::textField('file', 'image');
         $str_input .= ' Maximum '.$sysconf['max_image_upload'].' KB';
-        $form->addAnything(__('Image'), $str_input);
+        $form->addAnything(gettext('Image'), $str_input);
     }
 }
 if($rec_d['material_sub_id']==130 || $rec_d['material_sub_id']==112 || $rec_d['material_sub_id']==113 || $rec_d['material_sub_id']==115 || $rec_d['material_sub_id']==116 || $rec_d['material_sub_id']==77 || $rec_d['material_sub_id']==79 || $rec_d['material_sub_id']==80 || $rec_d['material_sub_id']==81 || $rec_d['material_sub_id']==82 || $rec_d['material_sub_id']==83 || $rec_d['material_sub_id']==84 || $rec_d['material_sub_id']==85 || $rec_d['material_sub_id']==86 || $rec_d['material_sub_id']==87 || $rec_d['material_sub_id']==89 || $rec_d['material_sub_id']==90 || $rec_d['material_sub_id']==91 || $rec_d['material_sub_id']==92 || $rec_d['material_sub_id']==93 || $rec_d['material_sub_id']==94 || $rec_d['material_sub_id']==95 || $rec_d['material_sub_id']==96 || $rec_d['material_sub_id']==88 || $rec_d['material_sub_id']==97 || $rec_d['material_sub_id']==98 || $rec_d['material_sub_id']==99 || $rec_d['material_sub_id']==100 || $rec_d['material_sub_id']==101 || $rec_d['material_sub_id']==102 || $rec_d['material_sub_id']==104 || $rec_d['material_sub_id']==105 || $rec_d['material_sub_id']==106 || $rec_d['material_sub_id']==68 || $rec_d['material_sub_id']==69 || $rec_d['material_sub_id']==70 || $rec_d['material_sub_id']==71 || $rec_d['material_sub_id']==72 || $rec_d['material_sub_id']==73 || $rec_d['material_sub_id']==74 || $rec_d['material_sub_id']==75 || $rec_d['material_sub_id']==76)
 {
     // biblio file attachment
-    $str_input = '<div class="'.$visibility.'"><a class="notAJAX" href="javascript: openHTMLpop(\''.MODULES_WEB_ROOT_DIR.'bibliography/pop_attach.php?biblioID='.$rec_d['biblio_id'].'\', 1100, 380, \''.__('File Attachments').'\')">'.__('Add Attachment1').'</a></div>'; 
+    $str_input = '<div class="'.$visibility.'"><a class="notAJAX" href="javascript: openHTMLpop(\''.MODULES_WEB_ROOT_DIR.'bibliography/pop_attach.php?biblioID='.$rec_d['biblio_id'].'\', 1100, 380, \''.gettext('File Attachments').'\')">'.gettext('Add Attachment1').'</a></div>'; 
     $str_input .= '<iframe name="attachIframe" id="attachIframe" class="borderAll" style="width: 100%; height: 70px;" src="'.MODULES_WEB_ROOT_DIR.'bibliography/iframe_attach.php?biblioID='.$rec_d['biblio_id'].'&block=1"></iframe>';
-        $form->addAnything(__('File Attachment'), $str_input);
+        $form->addAnything(gettext('File Attachment'), $str_input);
 }
 if($rec_d['material_sub_id']==78 || $rec_d['material_sub_id']==112 || $rec_d['material_sub_id']==113 || $rec_d['material_sub_id']==114 || $rec_d['material_sub_id']==115 || $rec_d['material_sub_id']==116 || $rec_d['material_sub_id']==117 || $rec_d['material_sub_id']==118 || $rec_d['material_sub_id']==77 || $rec_d['material_sub_id']==79 || $rec_d['material_sub_id']==80 || $rec_d['material_sub_id']==81 || $rec_d['material_sub_id']==82 || $rec_d['material_sub_id']==83 || $rec_d['material_sub_id']==84 || $rec_d['material_sub_id']==85 || $rec_d['material_sub_id']==86 || $rec_d['material_sub_id']==87 || $rec_d['material_sub_id']==89 || $rec_d['material_sub_id']==90 || $rec_d['material_sub_id']==91 || $rec_d['material_sub_id']==92 || $rec_d['material_sub_id']==93 || $rec_d['material_sub_id']==94 || $rec_d['material_sub_id']==95 || $rec_d['material_sub_id']==96 || $rec_d['material_sub_id']==88 || $rec_d['material_sub_id']==97 || $rec_d['material_sub_id']==98 || $rec_d['material_sub_id']==99 || $rec_d['material_sub_id']==100 || $rec_d['material_sub_id']==101 || $rec_d['material_sub_id']==102 || $rec_d['material_sub_id']==104 || $rec_d['material_sub_id']==105 || $rec_d['material_sub_id']==106 || $rec_d['material_sub_id']==68 || $rec_d['material_sub_id']==69 || $rec_d['material_sub_id']==70 || $rec_d['material_sub_id']==71 || $rec_d['material_sub_id']==72 || $rec_d['material_sub_id']==73 || $rec_d['material_sub_id']==74 || $rec_d['material_sub_id']==75 || $rec_d['material_sub_id']==76)
 {
@@ -1051,17 +1051,17 @@ if($rec_d['material_sub_id']==78 || $rec_d['material_sub_id']==112 || $rec_d['ma
     }
 
     // biblio hide from opac
-    $hide_options[] = array('0', __('Show'));
-    $hide_options[] = array('1', __('Hide'));
-    $form->addRadio('opacHide', __('Hide For Member Access'), $hide_options, $rec_d['opac_hide']?'1':'0');
+    $hide_options[] = array('0', gettext('Show'));
+    $hide_options[] = array('1', gettext('Hide'));
+    $form->addRadio('opacHide', gettext('Hide For Member Access'), $hide_options, $rec_d['opac_hide']?'1':'0');
     // biblio promote to front page
-    $promote_options[] = array('0', __('Don\'t Promote'));
-    $promote_options[] = array('1', __('Promote'));
-    $form->addRadio('promote', __('Promote To Homepage'), $promote_options, $rec_d['promoted']?'1':'0');
+    $promote_options[] = array('0', gettext('Don\'t Promote'));
+    $promote_options[] = array('1', gettext('Promote'));
+    $form->addRadio('promote', gettext('Promote To Homepage'), $promote_options, $rec_d['promoted']?'1':'0');
     // edit mode messagge
     if ($form->edit_mode) {
         echo '<div class="infoBox" style="overflow: auto;">'
-            .'<div style="float: left; width: 80%;">'.__('You are going to edit data ').' : <b>'.$rec_d['title'].'</b>  <br />'.__('Last Updated').$rec_d['last_update'].'</div>'; //mfc
+            .'<div style="float: left; width: 80%;">'.gettext('You are going to edit data ').' : <b>'.$rec_d['title'].'</b>  <br />'.gettext('Last Updated').$rec_d['last_update'].'</div>'; //mfc
             if ($rec_d['image']) {
                 if (file_exists(IMAGES_BASE_DIR.'docs/'.$rec_d['image'])) {
                     $upper_dir = '';
@@ -1199,18 +1199,18 @@ else
     {
      //echo "hiii";die;
         $datagrid->setSQLColumn('biblio.biblio_id', 'biblio.biblio_id AS bid',
-            'biblio.title AS \''.__('Title').'\'',
+            'biblio.title AS \''.gettext('Title').'\'',
             //'biblio.isbn_issn AS \''.__('ISBN/ISSN').'\'',
-            'biblio.image AS \''.__('').'\''); 
+            'biblio.image AS \''.gettext('').'\''); 
         $datagrid->modifyColumnContent(2, 'callback{showTitleAuthors}');
          $datagrid->modifyColumnContent(3, 'callback{showTitleImage}'); 
     }
     else
     {
      
-           $datagrid->setSQLColumn('biblio.biblio_id AS bid', 'biblio.title AS \''.__('Title').'\'',
+           $datagrid->setSQLColumn('biblio.biblio_id AS bid', 'biblio.title AS \''.gettext('Title').'\'',
            // 'biblio.isbn_issn AS \''.__('ISBN/ISSN').'\'',
-            'biblio.image AS \''.__('').'\'');
+            'biblio.image AS \''.gettext('').'\'');
         // modify column value
         $datagrid->modifyColumnContent(1, 'callback{showTitleAuthors}');
          $datagrid->modifyColumnContent(3, 'callback{showTitleImage}'); 
@@ -1279,8 +1279,8 @@ else
     $datagrid_result = $datagrid->createDataGrid($dbs, $table_spec, $biblio_result_num, ($can_read AND $can_write));
     if (isset($_GET['keywords']) AND $_GET['keywords']) 
     {
-        $msg = str_replace('{result->num_rows}', $datagrid->num_rows, __('Found <strong>{result->num_rows}</strong> from your keywords')); //mfc
-        echo '<div class="infoBox">'.$msg.' : "'.$_GET['keywords'].'"<div>'.__('Query took').' <b>'.$datagrid->query_time.'</b> '.__('second(s) to complete').'</div></div>'; //mfc
+        $msg = str_replace('{result->num_rows}', $datagrid->num_rows, gettext('Found <strong>{result->num_rows}</strong> from your keywords')); //mfc
+        echo '<div class="infoBox">'.$msg.' : "'.$_GET['keywords'].'"<div>'.gettext('Query took').' <b>'.$datagrid->query_time.'</b> '.gettext('second(s) to complete').'</div></div>'; //mfc
     }
 
     echo $datagrid_result;

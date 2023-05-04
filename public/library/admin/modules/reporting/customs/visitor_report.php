@@ -31,7 +31,7 @@ $can_read = utility::havePrivilege('reporting', 'r');
 $can_write = utility::havePrivilege('reporting', 'w');
 
 if (!$can_read) {
-    die('<div class="errorBox">'.__('You don\'t have enough privileges to access this area!').'</div>');
+    die('<div class="errorBox">'.gettext('You don\'t have enough privileges to access this area!').'</div>');
 }
 
 require SIMBIO_BASE_DIR.'simbio_GUI/form_maker/simbio_form_element.inc.php';
@@ -75,11 +75,11 @@ echo $bradecum;
 </table>
     <!-- filter -->
     <fieldset style="margin-bottom: 3px;">
-    <legend style="font-weight: bold"><?php echo strtoupper(__('Library Visitor Report')); ?> - <?php echo __('Report Filter'); ?></legend>
+    <legend style="font-weight: bold"><?php echo strtoupper(gettext('Library Visitor Report')); ?> - <?php echo gettext('Report Filter'); ?></legend>
     <form method="get" action="<?php echo $_SERVER['PHP_SELF']; ?>" target="reportView">
     <div id="filterForm">
         <div class="divRow">
-            <div class="divRowLabel"><?php echo __('Year'); ?></div>
+            <div class="divRowLabel"><?php echo gettext('Year'); ?></div>
             <div class="divRowContent">
             <?php
             $current_year = date('Y');
@@ -93,7 +93,7 @@ echo $bradecum;
         </div>
     </div>
     <div style="padding-top: 10px; clear: both;">
-    <input type="submit" name="applyFilter" value="<?php echo __('Search'); ?>" />
+    <input type="submit" name="applyFilter" value="<?php echo gettext('Search'); ?>" />
     <input type="hidden" name="reportView" value="true" />
     </div>
     </form>
@@ -104,18 +104,18 @@ echo $bradecum;
 } else {
     ob_start();
     // months array
-    $months['01'] = __('Jan');
-    $months['02'] = __('Feb');
-    $months['03'] = __('Mar');
-    $months['04'] = __('Apr');
-    $months['05'] = __('May');
-    $months['06'] = __('Jun');
-    $months['07'] = __('Jul');
-    $months['08'] = __('Aug');
-    $months['09'] = __('Sep');
-    $months['10'] = __('Oct');
-    $months['11'] = __('Nov');
-    $months['12'] = __('Dec');
+    $months['01'] = gettext('Jan');
+    $months['02'] = gettext('Feb');
+    $months['03'] = gettext('Mar');
+    $months['04'] = gettext('Apr');
+    $months['05'] = gettext('May');
+    $months['06'] = gettext('Jun');
+    $months['07'] = gettext('Jul');
+    $months['08'] = gettext('Aug');
+    $months['09'] = gettext('Sep');
+    $months['10'] = gettext('Oct');
+    $months['11'] = gettext('Nov');
+    $months['12'] = gettext('Dec');
 
     // table start
     $row_class = 'alterCellPrinted';
@@ -123,7 +123,7 @@ echo $bradecum;
 
     // header
     $output .= '<tr>';
-    $output .= '<td class="dataListHeaderPrinted">'.__('Member Type').'</td>';
+    $output .= '<td class="dataListHeaderPrinted">'.gettext('Member Type').'</td>';
     foreach ($months as $month_num => $month) {
         $total_month[$month_num] = 0;
         $output .= '<td class="dataListHeaderPrinted">'.$month.'</td>';
@@ -171,7 +171,7 @@ echo $bradecum;
     // non member visitor count
     $row_class = ($r%2 == 0)?'alterCellPrinted':'alterCellPrinted2';
     $output .= '<tr>';
-    $output .= '<td class="'.$row_class.'">'.__('NON-Member Visitor').'</td>'."\n";
+    $output .= '<td class="'.$row_class.'">'.gettext('NON-Member Visitor').'</td>'."\n";
     foreach ($months as $month_num => $month) {
         $sql_str = "SELECT COUNT(visitor_id) FROM visitor_count AS vc
             WHERE (vc.member_id IS NULL OR vc.member_id='') AND vc.checkin_date LIKE '$selected_year-$month_num-%'";
@@ -188,7 +188,7 @@ echo $bradecum;
 
     // total for each month
     $output .= '<tr>';
-    $output .= '<td class="dataListHeaderPrinted">'.__('Total visit/month').'</td>';
+    $output .= '<td class="dataListHeaderPrinted">'.gettext('Total visit/month').'</td>';
     foreach ($months as $month_num => $month) {
         $output .= '<td class="dataListHeaderPrinted">'.$total_month[$month_num].'</td>';
     }
@@ -197,11 +197,11 @@ echo $bradecum;
     $output .= '</table>';
 
     // print out
-    echo '<div class="printPageInfo">Visitor Count Report for year <strong>'.$selected_year.'</strong> <a class="printReport" onclick="window.print()" href="#">['.__('Print Current Page').']</a></div>'."\n";
+    echo '<div class="printPageInfo">Visitor Count Report for year <strong>'.$selected_year.'</strong> <a class="printReport" onclick="window.print()" href="#">['.gettext('Print Current Page').']</a></div>'."\n";
     echo $output;
 
     $content = ob_get_clean();
     // include the page template
-    require SENAYAN_BASE_DIR.'/admin/'.$sysconf['admin_template']['dir'].'/printed_page_tpl.php';
+    require SENAYAN_BASE_DIR.'/admin/admin_template/printed_page_tpl.php';
 }
 ?>

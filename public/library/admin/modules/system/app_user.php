@@ -44,7 +44,7 @@ if (isset($_GET['changecurrent'])) {
 if (!$changecurrent) {
     // only administrator have privileges add/edit users
     if ($_SESSION['uid'] != 1) {
-        die('<div class="errorBox">'.__('You don\'t have enough privileges to view this section').'</div>');
+        die('<div class="errorBox">'.gettext('You don\'t have enough privileges to view this section').'</div>');
     }
 }
 
@@ -56,17 +56,17 @@ if (isset($_POST['saveData'])) {
     $passwd2 = trim($_POST['passwd2']);
     // check form validity
     if (empty($userName) OR empty($realName)) {
-        utility::jsAlert(__('User Name or Real Name can\'t be empty'));
+        utility::jsAlert(gettext('User Name or Real Name can\'t be empty'));
         exit();
     } else if (($userName == 'admin' OR $realName == 'Administrator') AND $_SESSION['uid'] != 1) {
-        utility::jsAlert(__('Login username or Real Name is probihited!'));
+        utility::jsAlert(gettext('Login username or Real Name is probihited!'));
         exit();
     } else if (($passwd1 AND $passwd2) AND ($passwd1 !== $passwd2)) {
-        utility::jsAlert(__('Password confirmation does not match. See if your Caps Lock key is on!'));
+        utility::jsAlert(gettext('Password confirmation does not match. See if your Caps Lock key is on!'));
         exit();
     } 
     else if (($passwd1 !== $passwd2)) {
-        utility::jsAlert(__('Password confirmation does not match. See if your Caps Lock key is on!'));
+        utility::jsAlert(gettext('Password confirmation does not match. See if your Caps Lock key is on!'));
         exit();
     }  
     else {
@@ -101,9 +101,9 @@ if (isset($_POST['saveData'])) {
             if ($update) {
                 // write log
                 utility::writeLogs($dbs, 'staff', $_SESSION['uid'], 'system', $_SESSION['realname'].' update user data ('.$data['realname'].') with username ('.$data['username'].')');
-                utility::jsAlert(__('User Data Successfully Updated'));
+                utility::jsAlert(gettext('User Data Successfully Updated'));
                 echo '<script type="text/javascript">parent.setContent(\'mainContent\', parent.getPreviousAJAXurl(), \'post\');</script>';
-            } else { utility::jsAlert(__('User Data FAILED to Updated. Please Contact System Administrator')."\nDEBUG : ".$sql_op->error); }
+            } else { utility::jsAlert(gettext('User Data FAILED to Updated. Please Contact System Administrator')."\nDEBUG : ".$sql_op->error); }
             exit();
         } else {
             /* INSERT RECORD MODE */
@@ -111,9 +111,9 @@ if (isset($_POST['saveData'])) {
             if ($sql_op->insert('user', $data)) {
                 // write log
                 utility::writeLogs($dbs, 'staff', $_SESSION['uid'], 'system', $_SESSION['realname'].' add new user ('.$data['realname'].') with username ('.$data['username'].')');
-                utility::jsAlert(__('New User Data Successfully Saved'));
+                utility::jsAlert(gettext('New User Data Successfully Saved'));
                 echo '<script type="text/javascript">parent.setContent(\'mainContent\', \''.$_SERVER['PHP_SELF'].'\', \'post\');</script>';
-            } else { utility::jsAlert(__('User Data FAILED to Save. Please Contact System Administrator')."\n".$sql_op->error); }
+            } else { utility::jsAlert(gettext('User Data FAILED to Save. Please Contact System Administrator')."\n".$sql_op->error); }
             exit();
         }
     }
@@ -146,10 +146,10 @@ if (isset($_POST['saveData'])) {
 
     // error alerting
     if ($error_num == 0) {
-        utility::jsAlert(__('All Data Successfully Deleted'));
+        utility::jsAlert(gettext('All Data Successfully Deleted'));
         echo '<script type="text/javascript">parent.setContent(\'mainContent\', \''.$_SERVER['PHP_SELF'].'?'.$_POST['lastQueryStr'].'\', \'post\');</script>';
     } else {
-        utility::jsAlert(__('Some or All Data NOT deleted successfully!\nPlease contact system administrator'));
+        utility::jsAlert(gettext('Some or All Data NOT deleted successfully!\nPlease contact system administrator'));
         echo '<script type="text/javascript">parent.setContent(\'mainContent\', \''.$_SERVER['PHP_SELF'].'?'.$_POST['lastQueryStr'].'\', \'post\');</script>';
     }
     exit();
@@ -195,7 +195,7 @@ echo $bradecum;
 	<td valign=top>
 	<?php
 	$bradecum = '';       
-        $basedir = basename(dirname(__FILE__));
+        $basedir = basename(dirname(gettextFILEgettext));
         $bradecum = "<a href=javascript:void(0); onclick=javascript:new_set_home(); >Home</a>-><a class='' href=javascript:void(0); onclick=javascript:new_set('".$basedir."');>"; 
 	$query = "select module_name from mst_module where module_path = '".$basedir."'";
 	$set_query = $dbs->query($query);
@@ -224,22 +224,22 @@ echo $bradecum;
 	<td class="tab_menu_top">
                             <ul class="tabs"> 
 				<li>
-<a href="<?php echo MODULES_WEB_ROOT_DIR; ?>system/app_user.php?action=detail" class="headerText2"><?php echo __('Add New User'); ?></a>
+<a href="<?php echo MODULES_WEB_ROOT_DIR; ?>system/app_user.php?action=detail" class="headerText2"><?php echo gettext('Add New User'); ?></a>
 </li>
 <li> 
-<a href="<?php echo MODULES_WEB_ROOT_DIR; ?>/system/app_user.php" class="headerText2"><?php echo __('User List'); ?></a></li>
+<a href="<?php echo MODULES_WEB_ROOT_DIR; ?>/system/app_user.php" class="headerText2"><?php echo gettext('User List'); ?></a></li>
 </ul>
 	</td>
 </tr>
 </table>
 <fieldset class="menuBox">
 <div class="menuBoxInner userIcon">
-  <!--  <?php echo strtoupper(__('System Users')); ?> - <a href="<?php echo MODULES_WEB_ROOT_DIR; ?>system/app_user.php?action=detail" class="headerText2"><?php echo __('Add New User'); ?></a>
-    &nbsp; <a href="<?php echo MODULES_WEB_ROOT_DIR; ?>/system/app_user.php" class="headerText2"><?php echo __('User List'); ?></a>-->
+  <!--  <?php echo strtoupper(gettext('System Users')); ?> - <a href="<?php echo MODULES_WEB_ROOT_DIR; ?>system/app_user.php?action=detail" class="headerText2"><?php echo gettext('Add New User'); ?></a>
+    &nbsp; <a href="<?php echo MODULES_WEB_ROOT_DIR; ?>/system/app_user.php" class="headerText2"><?php echo gettext('User List'); ?></a>-->
     <p class="only_border">&nbsp;</p>
-    <form name="search" action="<?php echo MODULES_WEB_ROOT_DIR; ?>system/app_user.php" id="search" method="get" style="display: inline;"><?php echo __('Search'); ?> :
+    <form name="search" action="<?php echo MODULES_WEB_ROOT_DIR; ?>system/app_user.php" id="search" method="get" style="display: inline;"><?php echo gettext('Search'); ?> :
     <input type="text" name="keywords" size="30" />
-    <input type="submit" id="doSearch" value="<?php echo __('Search'); ?>" class="button" />
+    <input type="submit" id="doSearch" value="<?php echo gettext('Search'); ?>" class="button" />
     </form>
 </div>
 </fieldset>
@@ -250,7 +250,7 @@ echo $bradecum;
 /* main content */
 if (isset($_POST['detail']) OR (isset($_GET['action']) AND $_GET['action'] == 'detail')) {
     if (!($can_read AND $can_write) AND !$changecurrent) {
-        die('<div class="errorBox">'.__('You don\'t have enough privileges to view this section').'</div>');
+        die('<div class="errorBox">'.gettext('You don\'t have enough privileges to view this section').'</div>');
     }
     /* RECORD FORM */
     // try query
@@ -263,7 +263,7 @@ if (isset($_POST['detail']) OR (isset($_GET['action']) AND $_GET['action'] == 'd
 
     // create new instance
     $form = new simbio_form_table_AJAX('mainForm', $_SERVER['PHP_SELF'].'?'.$_SERVER['QUERY_STRING'], 'post');
-    $form->submit_button_attr = 'name="saveData" value="'.__('Save').'" class="button"';
+    $form->submit_button_attr = 'name="saveData" value="'.gettext('Save').'" class="button"';
 
     // form table attributes
     $form->table_attr = 'align="center" id="dataList" cellpadding="5" cellspacing="0"';
@@ -284,16 +284,16 @@ if (isset($_POST['detail']) OR (isset($_GET['action']) AND $_GET['action'] == 'd
         // form record title
         $form->record_title = $rec_d['realname'];
         // submit button attribute
-        $form->submit_button_attr = 'name="saveData" value="'.__('Update').'" class="button"';
+        $form->submit_button_attr = 'name="saveData" value="'.gettext('Update').'" class="button"';
     }
 
     /* Form Element(s) */
     // user name
-   //comment by iresh on 25-1-2011   $form->addTextField('text', 'userName', __('Login Username').'*', $rec_d['username'], 'style="width: 20%;"');
-   /*added by iresh on 25-1-2011*/ $form->addTextField('text', 'userName', __('Login Username').'*', $rec_d['username'], 'style="width: 140px;"');
+   //comment by iresh on 25-1-2011   $form->addTextField('text', 'userName', gettext('Login Username').'*', $rec_d['username'], 'style="width: 20%;"');
+   /*added by iresh on 25-1-2011*/ $form->addTextField('text', 'userName', gettext('Login Username').'*', $rec_d['username'], 'style="width: 140px;"');
     // user real name
-   //comment by iresh on 25-1-2011  $form->addTextField('text', 'realName', __('Real Name').'*', $rec_d['realname'], 'style="width: 20%;"');
-    /*added by iresh on 25-1-2011*/ $form->addTextField('text', 'realName', __('Real Name').'*', $rec_d['realname'], 'style="width: 140px;"');
+   //comment by iresh on 25-1-2011  $form->addTextField('text', 'realName', gettext('Real Name').'*', $rec_d['realname'], 'style="width: 20%;"');
+    /*added by iresh on 25-1-2011*/ $form->addTextField('text', 'realName', gettext('Real Name').'*', $rec_d['realname'], 'style="width: 140px;"');
     // user group
     // only appear by user who hold system module privileges
     if (!$changecurrent AND $can_read AND $can_write) {
@@ -307,25 +307,25 @@ if (isset($_POST['detail']) OR (isset($_GET['action']) AND $_GET['action'] == 'd
         while ($group_data = $group_query->fetch_row()) {
             $group_options[] = array($group_data[0], $group_data[1]);
         }
-        $form->addCheckBox('groups', __('Group(s)'), $group_options, unserialize($rec_d['groups']));
+        $form->addCheckBox('groups', gettext('Group(s)'), $group_options, unserialize($rec_d['groups']));
     }
     // user password
-  //comment by iresh on 25-1-2011    $form->addTextField('password', 'passwd1', __('New Password').'*', '', 'style="width: 20%;"');
-   /*added by iresh on 25-1-2011*/   $form->addTextField('password', 'passwd1', __('New Password').'*', '', 'style="width: 140px;"');
+  //comment by iresh on 25-1-2011    $form->addTextField('password', 'passwd1', gettext('New Password').'*', '', 'style="width: 20%;"');
+   /*added by iresh on 25-1-2011*/   $form->addTextField('password', 'passwd1', gettext('New Password').'*', '', 'style="width: 140px;"');
     // user password confirm
-    //comment by iresh on 25-1-2011  $form->addTextField('password', 'passwd2', __('Confirm New Password').'*', '', 'style="width: 20%;"');
-  /*added by iresh on 25-1-2011*/    $form->addTextField('password', 'passwd2', __('Confirm New Password').'*', '', 'style="width: 140px;"');
+    //comment by iresh on 25-1-2011  $form->addTextField('password', 'passwd2', gettext('Confirm New Password').'*', '', 'style="width: 20%;"');
+  /*added by iresh on 25-1-2011*/    $form->addTextField('password', 'passwd2', gettext('Confirm New Password').'*', '', 'style="width: 140px;"');
     // edit mode messagge
     if ($form->edit_mode) {
-        echo '<div class="infoBox">'.__('You are going to edit user profile'),' : <b>'.$rec_d['realname'].'</b> <br />'.__('Last Update').$rec_d['last_update'].' //mfc
-            <br />'.__('Leave Password field blank if you don\'t want to change the password').'</div>';
+        echo '<div class="infoBox">'.gettext('You are going to edit user profile'),' : <b>'.$rec_d['realname'].'</b> <br />'.gettext('Last Update').$rec_d['last_update'].' //mfc
+            <br />'.gettext('Leave Password field blank if you don\'t want to change the password').'</div>';
     }
     // print out the form object
     echo $form->printOut();
 } else {
     // only administrator have privileges to view user list
     if (!($can_read AND $can_write) OR $_SESSION['uid'] != 1) {
-        die('<div class="errorBox">'.__('You don\'t have enough privileges to view this section').'</div>');
+        die('<div class="errorBox">'.gettext('You don\'t have enough privileges to view this section').'</div>');
     }
 
     /* USER LIST */
@@ -336,15 +336,15 @@ if (isset($_POST['detail']) OR (isset($_GET['action']) AND $_GET['action'] == 'd
     $datagrid = new simbio_datagrid();
     if ($can_read AND $can_write) {
         $datagrid->setSQLColumn('u.user_id',
-            'u.realname AS \''.__('Real Name').'\'',
-            'u.username AS \''.__('Login Username').'\'',
-            'u.last_login AS \''.__('Last Login').'\'',
-            'DATE_FORMAT(u.last_update,"%d-%m-%Y") AS \''.__('Last Update').'\'');
+            'u.realname AS \''.gettext('Real Name').'\'',
+            'u.username AS \''.gettext('Login Username').'\'',
+            'u.last_login AS \''.gettext('Last Login').'\'',
+            'DATE_FORMAT(u.last_update,"%d-%m-%Y") AS \''.gettext('Last Update').'\'');
     } else {
-        $datagrid->setSQLColumn('u.realname AS \''.__('Real Name').'\'',
-            'u.username AS \''.__('Real Name').'\'',
-            'u.last_login AS \''.__('Last Login').'\'',
-            'DATE_FORMAT(u.last_update,"%d-%m-%Y") AS \''.__('Last Update').'\'');
+        $datagrid->setSQLColumn('u.realname AS \''.gettext('Real Name').'\'',
+            'u.username AS \''.gettext('Real Name').'\'',
+            'u.last_login AS \''.gettext('Last Login').'\'',
+            'DATE_FORMAT(u.last_update,"%d-%m-%Y") AS \''.gettext('Last Update').'\'');
     }
     $datagrid->setSQLorder('username ASC');
 
@@ -365,7 +365,7 @@ if (isset($_POST['detail']) OR (isset($_GET['action']) AND $_GET['action'] == 'd
     // put the result into variables
     $datagrid_result = $datagrid->createDataGrid($dbs, $table_spec, 20, ($can_read AND $can_write));
     if (isset($_GET['keywords']) AND $_GET['keywords']) {
-        $msg = str_replace('{result->num_rows}', $datagrid->num_rows, __('Found <strong>{result->num_rows}</strong> from your keywords')); //mfc
+        $msg = str_replace('{result->num_rows}', $datagrid->num_rows, gettext('Found <strong>{result->num_rows}</strong> from your keywords')); //mfc
         echo '<div class="infoBox">'.$msg.' : "'.$_GET['keywords'].'"</div>';
     }
 

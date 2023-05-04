@@ -66,7 +66,7 @@ if (isset($_POST['edit']) && $_POST['edit']!=0)
     if ($loan_q->num_rows > 0) 
     {
         echo '<script type="text/javascript">';
-        echo 'alert(\''.__('Item data can not be edited because still on hold by members').'\');';  
+        echo 'alert(\''.gettext('Item data can not be edited because still on hold by members').'\');';  
         echo 'self.location.href = \'iframe_item_list.php?biblioID='.$bid.'\';';
         echo '</script>';
     }
@@ -83,7 +83,7 @@ if (isset($_POST['edit']) && $_POST['edit']!=0)
         echo 'self.location.href = \'iframe_item_list.php?biblioID='.$bid.'\';';
         echo "</script>";
 
-    //      $edit_link = '<a href="#" onclick="top.openHTMLpop(\''.MODULES_WEB_ROOT_DIR.'bibliography/pop_item.php?inPopUp=true&action=detail&biblioID='.$biblioID.'&itemID='.$item_d['item_id'].'\', 650, 400, \''.__('Items/Copies').'\')"
+    //      $edit_link = '<a href="#" onclick="top.openHTMLpop(\''.MODULES_WEB_ROOT_DIR.'bibliography/pop_item.php?inPopUp=true&action=detail&biblioID='.$biblioID.'&itemID='.$item_d['item_id'].'\', 650, 400, \''.gettext('Items/Copies').'\')" >'
       //      style="text-decoration: underline;">Edit</a>';
 
     }
@@ -104,7 +104,7 @@ elseif (isset($_POST['remove']))
     if ($loan_q->num_rows > 0) 
     {
         echo '<script type="text/javascript">';
-        echo 'alert(\''.__('Item data can not be deleted because still on hold by members').'\');';
+        echo 'alert(\''.gettext('Item data can not be deleted because still on hold by members').'\');';
         echo 'self.location.href = \'iframe_item_list.php?biblioID='.$bid.'\';';
         echo '</script>';
     }
@@ -113,14 +113,14 @@ elseif (isset($_POST['remove']))
         if ($sql_op->delete('item', 'item_id='.$id)) 
         {
             echo '<script type="text/javascript">';
-            echo 'alert(\''.__('Item succesfully removed!').'\');';
+            echo 'alert(\''.gettext('Item succesfully removed!').'\');';
             echo 'self.location.href = \'iframe_item_list.php?biblioID='.$bid.'\';';
             echo '</script>';
         } 
         else
         {
             echo '<script type="text/javascript">';
-            echo 'alert(\''.__('Item Cant be Removed Due to its on hold!').'\');';
+            echo 'alert(\''.gettext('Item Cant be Removed Due to its on hold!').'\');';
             echo 'self.location.href = \'iframe_item_list.php?biblioID='.$bid.'\';';
             echo '</script>';
         }
@@ -174,7 +174,7 @@ $b_id = $result['biblio_id'];
 if($b_id!='')
 {
     //utility::jsAlert($item_d['item_id']);die;
-   // $edit_link = '<a href="#" onclick="top.openHTMLpop(\''.MODULES_WEB_ROOT_DIR.'bibliography/pop_item.php?inPopUp=true&action=detail&biblioID='.$biblioID.'&itemID='.$item_d['item_id'].'\', 650, 400, \''.__('Items/Copies').'\')"
+   // $edit_link = '<a href="#" onclick="top.openHTMLpop(\''.MODULES_WEB_ROOT_DIR.'bibliography/pop_item.php?inPopUp=true&action=detail&biblioID='.$biblioID.'&itemID='.$item_d['item_id'].'\', 650, 400, \''.gettext('Items/Copies').'\')"
      //       style="text-decoration: underline;">Edit</a>';
     
     $edit_link = '<a href="#" onclick="confirmedit('.$biblioID.', '.$item_d['item_id'].')" style="text-decoration: underline;">Edit</a>';
@@ -212,5 +212,5 @@ else
 /* main content end */
 $content = ob_get_clean();
 // include the page template
-require SENAYAN_BASE_DIR.'/admin/'.$sysconf['admin_template']['dir'].'/notemplate_page_tpl.php';
+require SENAYAN_BASE_DIR.'/admin/admin_template/notemplate_page_tpl.php';
 ?>

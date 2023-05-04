@@ -166,9 +166,10 @@
                     @endphp
                                            
                     @if(isset($data['fees_data']))
-                        @foreach($fees_data as $key => $fees_value)                  
+                        @foreach($fees_data as $key => $fees_value)      
+                        @if($fees_value['-']['remain']!=0)            
                         <tr>
-                            <td>{{$j}}</td>
+                            <td>{{$j}}</td>                            
                             <td>{{$fees_value['enrollment']}}</td>
                             <td>{{$fees_value['name']}}</td>
                             <td>{{$fees_value['stddiv']}}</td>
@@ -234,6 +235,7 @@
                     @php
                     $j++;
                     @endphp
+                    @endif
                     @endforeach                        
                         <tr class="font-weight-bold">
                             <td>{{$j++}}</td>

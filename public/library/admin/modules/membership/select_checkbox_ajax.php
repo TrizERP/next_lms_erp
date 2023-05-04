@@ -19,9 +19,9 @@ while($row=$select->fetch_assoc())
 	$rec_d1.=$row['checkin'];
 	$rec_d2.=$row['reserve'];
 }
- $issue[]=array('1',__('Issue'));
-    $checkin[]=array('1',__('Return'));
-    $reserve[]=array('1',__('Reserve'));
+ $issue[]=array('1',gettext('Issue'));
+    $checkin[]=array('1',gettext('Return'));
+    $reserve[]=array('1',gettext('Reserve'));
 $form = new simbio_form_table_AJAX('main', $_SERVER['PHP_SELF'].'?'.$_SERVER['QUERY_STRING'], 'post');
 //$form->submit_button_attr = ' value=""';
 $form->table_attr = 'align="center" id="dataList"  border=0 cellpadding="5" cellspacing="0"';
@@ -30,7 +30,7 @@ $form->table_content_attr = 'class="altermain2"';
 $str_input = simbio_form_element::checkbox('issue', $issue, $rec_d['issue'], 'style="width:5%;"');
 $str_input .= simbio_form_element::checkbox('checkin', $checkin, $rec_d1['checkin'], 'style="width:5%;"');
 $str_input .= simbio_form_element::checkbox('reserve', $reserve, $rec_d2['reserve'], 'style="width:5%;"');
-$form->addAnything(__('Member messaging preferences '), $str_input);
+$form->addAnything(gettext('Member messaging preferences '), $str_input);
 
 echo $form->printOut();
 

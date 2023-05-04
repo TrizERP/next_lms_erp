@@ -10,7 +10,7 @@ $can_write = utility::havePrivilege('circulation', 'w') || utility::havePrivileg
 
 if (!$can_read) 
 {
-    die('<div class="errorBox">'.__('You don\'t have enough privileges to access this area!').'</div>');
+    die('<div class="errorBox">'.gettext('You don\'t have enough privileges to access this area!').'</div>');
 }
 
 require SIMBIO_BASE_DIR.'simbio_GUI/table/simbio_table.inc.php';

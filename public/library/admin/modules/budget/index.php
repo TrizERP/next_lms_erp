@@ -66,16 +66,16 @@ if (isset($_POST['itemID']) AND !empty($_POST['itemID']) AND isset($_POST['itemA
 	}
         }
        if ($error_num == 0) {
-        utility::jsAlert(__('All Selected Data successfully saved'));
+        utility::jsAlert(gettext('All Selected Data successfully saved'));
         echo '<script type="text/javascript">parent.setContent(\'mainContent\', \''.$_SERVER['PHP_SELF'].'?'.$_POST['lastQueryStr'].'\', \'post\');</script>';
     } else {
-        utility::jsAlert(__('Some or All Data NOT deleted successfully!\nPlease contact system administrator'));
+        utility::jsAlert(gettext('Some or All Data NOT deleted successfully!\nPlease contact system administrator'));
         echo '<script type="text/javascript">parent.setContent(\'mainContent\', \''.$_SERVER['PHP_SELF'].'?'.$_POST['lastQueryStr'].'\', \'post\');</script>';
     }
     exit();
     }
 //$form = new simbio_form_table_AJAX('mainForm', $_SERVER['PHP_SELF'].'?'.$_SERVER['QUERY_STRING'], 'post');
- //$form->submit_button_attr = 'name="saveData" value="'.__('Save').'" class="button"';
+ //$form->submit_button_attr = 'name="saveData" value="'.gettext('Save').'" class="button"';
     // form table attributes
     
 
@@ -157,7 +157,7 @@ if (isset($_POST['detail']) OR (isset($_GET['action']) AND $_GET['action'] == 'd
     
     if (!($can_read AND $can_write)) 
     {
-        die('<div class="errorBox">'.__('You don\'t have enough privileges to view this section').'</div>');
+        die('<div class="errorBox">'.gettext('You don\'t have enough privileges to view this section').'</div>');
     }
     /* RECORD FORM */
         $itemID = (integer)isset($_POST['itemID'])?$_POST['itemID']:0;
@@ -186,16 +186,16 @@ else
         if ($can_read AND $can_write)         
         {
              $datagrid->setSQLColumn('budget.budget_id', 'budget.budget_id AS bid',
-                'budget.expected_budget AS \''.__('Expected Budget').'\'',
-                'budget.available_budget AS \''.__('Available Budget').'\'',
-                'budget.year AS \''.__('Year').'\'',
-               'budget.total_budget AS \''.__('Total Budget').'\'');
+                'budget.expected_budget AS \''.gettext('Expected Budget').'\'',
+                'budget.available_budget AS \''.gettext('Available Budget').'\'',
+                'budget.year AS \''.gettext('Year').'\'',
+               'budget.total_budget AS \''.gettext('Total Budget').'\'');
             
             /* $datagrid->setSQLColumn('budget.budget_id', 'budget.budget_id AS bid',
-            'budget.expected_budget AS \''.__('Expected Budget').'\'',
-           'budget.available_budget AS \''.__('Available Budget').'\'',
-            'budget.year AS \''.__('Year').'\'',
-            'budget.total_budget AS \''.__('Total Budget').'\'');*/
+            'budget.expected_budget AS \''.gettext('Expected Budget').'\'',
+           'budget.available_budget AS \''.gettext('Available Budget').'\'',
+            'budget.year AS \''.gettext('Year').'\'',
+            'budget.total_budget AS \''.gettext('Total Budget').'\'');*/
         //$datagrid->modifyColumnContent(2, 'callback{showTitleAuthors}');
         }
              
@@ -204,10 +204,10 @@ else
         {
             
             $datagrid->setSQLColumn('budget.budget_id', 'budget.budget_id AS bid',
-            'budget.expected_budget AS \''.__('Expected Budget').'\'',
-            'budget.available_budget AS \''.__('Available Budget').'\'',
-            'budget.year AS \''.__('Year').'\'',
-            'budget.total_budget AS \''.__('Total Budget').'\'');
+            'budget.expected_budget AS \''.gettext('Expected Budget').'\'',
+            'budget.available_budget AS \''.gettext('Available Budget').'\'',
+            'budget.year AS \''.gettext('Year').'\'',
+            'budget.total_budget AS \''.gettext('Total Budget').'\'');
         
         }
     $datagrid->invisible_fields = array(0);
@@ -253,13 +253,13 @@ else
     if ($_SESSION['module']=='budget')
     {
         if (!isset($datagrid->edit_property)) 
-            $datagrid->edit_property = array('itemID', __('VIEW'));    
+            $datagrid->edit_property = array('itemID', gettext('VIEW'));    
     }          
 
     $datagrid_result = $datagrid->createDataGrid($dbs, $table_spec, $biblio_result_num, ($can_read AND $can_write));
     if (isset($_GET['keywords']) AND $_GET['keywords']) {
-        $msg = str_replace('{result->num_rows}', $datagrid->num_rows, __('Found <strong>{result->num_rows}</strong> from your keywords')); //mfc
-        echo '<div class="infoBox">'.$msg.' : "'.$_GET['keywords'].'"<div>'.__('Query took').' <b>'.$datagrid->query_time.'</b> '.__('second(s) to complete').'</div></div>'; //mfc
+        $msg = str_replace('{result->num_rows}', $datagrid->num_rows, gettext('Found <strong>{result->num_rows}</strong> from your keywords')); //mfc
+        echo '<div class="infoBox">'.$msg.' : "'.$_GET['keywords'].'"<div>'.gettext('Query took').' <b>'.$datagrid->query_time.'</b> '.gettext('second(s) to complete').'</div></div>'; //mfc
     }
 
     echo $datagrid_result;

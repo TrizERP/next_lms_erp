@@ -35,13 +35,13 @@ if (isset($_POST['saveData']))
     // check form validity
     if (empty($_POST['finesDate']) OR empty($debet)) 
     {
-        utility::jsAlert(''.__('Fines Date can\'t be empty').'');
+        utility::jsAlert(''.gettext('Fines Date can\'t be empty').'');
     }
     else if (empty($_POST['finesDesc']) OR empty($debet)) 
     {
-        utility::jsAlert(''.__('Fines Description and Debet value can\'t be empty').'');
+        utility::jsAlert(''.gettext('Fines Description and Debet value can\'t be empty').'');
     } else if ($credit > $debet) {
-        utility::jsAlert(''.__('Value of Credit can not be higher that Debet Value').'');
+        utility::jsAlert(''.gettext('Value of Credit can not be higher that Debet Value').'');
     } else {
         $data['member_id'] = $_SESSION['memberID'];
         $data['fines_date'] = trim($dbs->escape_string(strip_tags($_POST['finesDate'])));
@@ -59,16 +59,16 @@ if (isset($_POST['saveData']))
             // update the data
             $update = $sql_op->update('fines', $data, 'fines_id='.$updateRecordID);
             if ($update) {
-                utility::jsAlert(__('Fines Data Successfully Updated'));
-            } else { utility::jsAlert(__('Fines Data FAILED to Updated. Please Contact System Administrator')."\nDEBUG : ".$sql_op->error); }
+                utility::jsAlert(gettext('Fines Data Successfully Updated'));
+            } else { utility::jsAlert(gettext('Fines Data FAILED to Updated. Please Contact System Administrator')."\nDEBUG : ".$sql_op->error); }
         } else {
             /* INSERT RECORD MODE */
             // insert the data
 			
             $insert = $sql_op->insert('fines', $data);
             if ($insert) {
-                utility::jsAlert(__('New Fines Data Successfully Saved'));
-            } else { utility::jsAlert(__('Fines Data FAILED to Save. Please Contact System Administrator')."\n".$sql_op->error); }
+                utility::jsAlert(gettext('New Fines Data Successfully Saved'));
+            } else { utility::jsAlert(gettext('Fines Data FAILED to Save. Please Contact System Administrator')."\n".$sql_op->error); }
         }
     }
 } 
@@ -105,9 +105,9 @@ else if ($_SESSION['uid'] == 1 && isset($_POST['itemID']) && !empty($_POST['item
 
 ?>
 <div style="padding: 5px; background-color: #CCCCCC;">
-    <a href="fines_list.php?action=detail" class="headerText2" style="color: #FF0000;"><?php echo __('Add New Fines'); ?></a> &nbsp;&nbsp;&nbsp;&nbsp;
-    <a href="fines_list.php" class="headerText2"><?php echo __('Fines List'); ?></a>&nbsp;&nbsp;&nbsp;&nbsp;
-    <a href="fines_list.php?balance=true" class="headerText2"><?php echo __('View Balanced Overdue'); ?></a>
+    <a href="fines_list.php?action=detail" class="headerText2" style="color: #FF0000;"><?php echo gettext('Add New Fines'); ?></a> &nbsp;&nbsp;&nbsp;&nbsp;
+    <a href="fines_list.php" class="headerText2"><?php echo gettext('Fines List'); ?></a>&nbsp;&nbsp;&nbsp;&nbsp;
+    <a href="fines_list.php?balance=true" class="headerText2"><?php echo gettext('View Balanced Overdue'); ?></a>
 </div>
 <?php
 /* search form end */
@@ -122,7 +122,7 @@ if ((isset($_GET['detail']) && isset($_GET['itemID'])) || (isset($_GET['action']
 
     // create new instance
     $form = new simbio_form_table('mainForm', $_SERVER['PHP_SELF'].'?'.$_SERVER['QUERY_STRING'], 'post');
-    $form->submit_button_attr = 'name="saveData" value="'.__('Save').'" class="button"';
+    $form->submit_button_attr = 'name="saveData" value="'.gettext('Save').'" class="button"';
 
     // form table attributes
     $form->table_attr = 'align="center" id="dataList" style="width: 100%;" cellpadding="5" cellspacing="0"';
@@ -141,22 +141,22 @@ if ((isset($_GET['detail']) && isset($_GET['itemID'])) || (isset($_GET['action']
         // form record title
         $form->record_title = 'Fines Detail';
         // submit button attribute
-        $form->submit_button_attr = 'name="saveData" value="'.__('Update').'" class="button"';
+        $form->submit_button_attr = 'name="saveData" value="'.gettext('Update').'" class="button"';
     }
 
     /* Form Element(s) */
     // fines dates
-    $form->addDateField('finesDate', __('Fines Date'), $rec_d['fines_date']);
+    $form->addDateField('finesDate', gettext('Fines Date'), $rec_d['fines_date']);
     // fines description
-    $form->addTextField('text', 'finesDesc', __('Description/Name').'*', $rec_d['description'], 'style="width: 60%;"onkeyup="return checkspecialcharacterdynamic(this.name);"onchange="return maxlength(this.name,20);"');
+    $form->addTextField('text', 'finesDesc', gettext('Description/Name').'*', $rec_d['description'], 'style="width: 60%;"onkeyup="return checkspecialcharacterdynamic(this.name);"onchange="return maxlength(this.name,20);"');
     // fines debet
-    $form->addTextField('text', 'debet', __('Debit').'*', !empty($rec_d['debet'])?$rec_d['debet']:'0', 'style="width: 60%;"onkeyup="return checkspecialcharacterdynamic(this.name);"onchange="return numericcheck(this.name);"');
+    $form->addTextField('text', 'debet', gettext('Debit').'*', !empty($rec_d['debet'])?$rec_d['debet']:'0', 'style="width: 60%;"onkeyup="return checkspecialcharacterdynamic(this.name);"onchange="return numericcheck(this.name);"');
     // fines credit
-    $form->addTextField('text', 'credit', __('Credit'), !empty($rec_d['credit'])?$rec_d['credit']:'0', 'style="width: 60%;"onkeyup="return checkspecialcharacterdynamic(this.name);"onchange="return numericcheck(this.name);"');
+    $form->addTextField('text', 'credit', gettext('Credit'), !empty($rec_d['credit'])?$rec_d['credit']:'0', 'style="width: 60%;"onkeyup="return checkspecialcharacterdynamic(this.name);"onchange="return numericcheck(this.name);"');
 
     // edit mode messagge
     if ($form->edit_mode) {
-        echo '<div class="infoBox">'.__('You are going to edit fines data').' : <b>'.$rec_d['description'].'</b></div>'; //mfc
+        echo '<div class="infoBox">'.gettext('You are going to edit fines data').' : <b>'.$rec_d['description'].'</b></div>'; //mfc
     }
     // print out the form object
     echo $form->printOut();
@@ -170,10 +170,10 @@ if ((isset($_GET['detail']) && isset($_GET['itemID'])) || (isset($_GET['action']
     // create datagrid
     $datagrid = new simbio_datagrid();
     $datagrid->setSQLColumn('f.fines_id AS \'EDIT\'',
-        'f.description AS \''.__('Description/Name').'\'',
-        'date_format(f.fines_date,"%d-%m-%Y") AS \''.__('Fines Date').'\'',
-        'f.debet AS \''.__('Debit').'\'',
-        'f.credit AS \''.__('Credit').'\'');
+        'f.description AS \''.gettext('Description/Name').'\'',
+        'date_format(f.fines_date,"%d-%m-%Y") AS \''.gettext('Fines Date').'\'',
+        'f.debet AS \''.gettext('Debit').'\'',
+        'f.credit AS \''.gettext('Credit').'\'');
     
     $datagrid->setSQLorder("f.fines_date DESC");
 
@@ -207,7 +207,7 @@ if ((isset($_GET['detail']) && isset($_GET['itemID'])) || (isset($_GET['action']
     // put the result into variables
     $datagrid_result = $datagrid->createDataGrid($dbs, $table_spec, 20, true);
     if (isset($_GET['keywords']) AND $_GET['keywords']) {
-        $msg = str_replace('{result->num_rows}', $datagrid->num_rows, __('Found <strong>{result->num_rows}</strong> from your keywords')); //mfc
+        $msg = str_replace('{result->num_rows}', $datagrid->num_rows, gettext('Found <strong>{result->num_rows}</strong> from your keywords')); //mfc
         echo '<div class="infoBox">'.$msg.' : "'.$_GET['keywords'].'"</div>';
     }
 
@@ -220,5 +220,5 @@ $content = ob_get_clean();
 // js include
 $js = '<script type="text/javascript" src="'.JS_WEB_ROOT_DIR.'calendar.js"></script>';
 // include the page template
-require SENAYAN_BASE_DIR.'/admin/'.$sysconf['admin_template']['dir'].'/notemplate_page_tpl.php';
+require SENAYAN_BASE_DIR.'/admin/admin_template/notemplate_page_tpl.php';
 ?>

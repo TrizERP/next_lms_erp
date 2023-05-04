@@ -36,7 +36,7 @@ $can_read = utility::havePrivilege('membership', 'r');
 $can_write = utility::havePrivilege('membership', 'w');
 
 if (!$can_read) {
-    die('<div class="errorBox">'.__('You don\'t have enough privileges to access this area!').'</div>');
+    die('<div class="errorBox">'.gettext('You don\'t have enough privileges to access this area!').'</div>');
 }
 
 /* RECORD OPERATION */
@@ -44,7 +44,7 @@ if (isset($_POST['saveData']) AND $can_read AND $can_write) {
     // check form validity
     $memberTypeName = trim(strip_tags($_POST['memberTypeName']));
     if (empty($memberTypeName)) {
-        utility::jsAlert(__('Member Type Name can\'t be empty')); //mfc
+        utility::jsAlert(gettext('Member Type Name can\'t be empty')); //mfc
         exit();
     } else {
         $data['member_type_name'] = $dbs->escape_string($memberTypeName);
@@ -72,20 +72,20 @@ if (isset($_POST['saveData']) AND $can_read AND $can_write) {
             // update the data
             $update = $sql_op->update('mst_member_type', $data, 'member_type_id='.$updateRecordID);
             if ($update) {
-                utility::jsAlert(__('Member Type Successfully Updated'));
+                utility::jsAlert(gettext('Member Type Successfully Updated'));
                 // update all member expire date
                 @$dbs->query('UPDATE member AS m SET expire_date=DATE_ADD(register_date,INTERVAL '.$data['member_periode'].'  DAY)
                     WHERE member_type_id='.$updateRecordID);
                 echo '<script type="text/javascript">parent.setContent(\'mainContent\', \''.$_SERVER['PHP_SELF'].'\', \'post\');</script>';
-            } else { utility::jsAlert(__('Member Type Data FAILED to Save/Update. Please Contact System Administrator')."\nDEBUG : ".$sql_op->error); }
+            } else { utility::jsAlert(gettext('Member Type Data FAILED to Save/Update. Please Contact System Administrator')."\nDEBUG : ".$sql_op->error); }
             exit();
         } else {
             /* INSERT RECORD MODE */
             // insert the data
             if ($sql_op->insert('mst_member_type', $data)) {
-                utility::jsAlert(__('New Member Type Successfully Saved'));
+                utility::jsAlert(gettext('New Member Type Successfully Saved'));
                 echo '<script type="text/javascript">parent.setContent(\'mainContent\', \''.$_SERVER['PHP_SELF'].'\', \'post\');</script>';
-            } else { utility::jsAlert(__('Member Type Data FAILED to Save/Update. Please Contact System Administrator')."\n".$sql_op->error); }
+            } else { utility::jsAlert(gettext('Member Type Data FAILED to Save/Update. Please Contact System Administrator')."\n".$sql_op->error); }
             exit();
         }
     }
@@ -112,10 +112,10 @@ if (isset($_POST['saveData']) AND $can_read AND $can_write) {
 
     // error alerting
     if ($error_num == 0) {
-        utility::jsAlert(__('All Data Successfully Deleted'));
+        utility::jsAlert(gettext('All Data Successfully Deleted'));
         echo '<script type="text/javascript">parent.setContent(\'mainContent\', \''.$_SERVER['PHP_SELF'].'?'.$_POST['lastQueryStr'].'\', \'post\');</script>';
     } else {
-        utility::jsAlert(__('Some or All Data NOT deleted successfully!\nPlease contact system administrator'));
+        utility::jsAlert(gettext('Some or All Data NOT deleted successfully!\nPlease contact system administrator'));
         echo '<script type="text/javascript">parent.setContent(\'mainContent\', \''.$_SERVER['PHP_SELF'].'?'.$_POST['lastQueryStr'].'\', \'post\');</script>';
     }
     exit();
@@ -126,13 +126,13 @@ if (isset($_POST['saveData']) AND $can_read AND $can_write) {
 ?>
 <fieldset class="menuBox">
 <div class="menuBoxInner memberTypeIcon">
-    <?php echo strtoupper(__('Member Type')); ?> - <a href="<?php echo MODULES_WEB_ROOT_DIR; ?>membership/member_type.php?action=detail" class="headerText2"><?php echo __('Add New Member Type'); ?></a>
-    &nbsp; <a href="<?php echo MODULES_WEB_ROOT_DIR; ?>membership/member_type.php" class="headerText2"><?php echo __('Member Type List'); ?></a>
+    <?php echo strtoupper(gettext('Member Type')); ?> - <a href="<?php echo MODULES_WEB_ROOT_DIR; ?>membership/member_type.php?action=detail" class="headerText2"><?php echo gettext('Add New Member Type'); ?></a>
+    &nbsp; <a href="<?php echo MODULES_WEB_ROOT_DIR; ?>membership/member_type.php" class="headerText2"><?php echo gettext('Member Type List'); ?></a>
     <p class="only_border">&nbsp;</p>
     <form name="search" action="<?php echo MODULES_WEB_ROOT_DIR; ?>membership/member_type.php" id="search" method="get" style="display: inline;"><?php echo __('Search'); ?> :
   <!--commnet by iresh on 25-1-2011  <input type="text" name="keywords" id="keywords" size="30" />-->
    <!-- added by iresh on 25-1-2011 --> <input type="text" name="keywords" id="keywords" width=140px/>
-    <input type="submit" id="doSearch" value="<?php echo __('Search'); ?>" class="button" />
+    <input type="submit" id="doSearch" value="<?php echo gettext('Search'); ?>" class="button" />
     </form>
 </div>
 </fieldset>
@@ -141,7 +141,7 @@ if (isset($_POST['saveData']) AND $can_read AND $can_write) {
 /* main content */
 if (isset($_POST['detail']) OR (isset($_GET['action']) AND $_GET['action'] == 'detail')) {
     if (!($can_read AND $can_write)) {
-        die('<div class="errorBox">'.__('You don\'t have enough privileges to view this section').'</div>');
+        die('<div class="errorBox">'.gettext('You don\'t have enough privileges to view this section').'</div>');
     }
     /* RECORD FORM */
     $itemID = (integer)isset($_POST['itemID'])?$_POST['itemID']:0;
@@ -150,7 +150,7 @@ if (isset($_POST['detail']) OR (isset($_GET['action']) AND $_GET['action'] == 'd
 
     // create new instance
     $form = new simbio_form_table_AJAX('mainForm', $_SERVER['PHP_SELF'].'?'.$_SERVER['QUERY_STRING'], 'post');
-    $form->submit_button_attr = 'name="saveData" value="'.__('Save').'" class="button"';
+    $form->submit_button_attr = 'name="saveData" value="'.gettext('Save').'" class="button"';
 
     // form table attributes
     $form->table_attr = 'align="center" id="dataList" cellpadding="5" cellspacing="0"';
@@ -165,22 +165,22 @@ if (isset($_POST['detail']) OR (isset($_GET['action']) AND $_GET['action'] == 'd
         // form record title
         $form->record_title = $rec_d['member_type_name'];
         // submit button attribute
-        $form->submit_button_attr = 'name="saveData" value="'.__('Update').'" class="button"';
+        $form->submit_button_attr = 'name="saveData" value="'.gettext('Update').'" class="button"';
     }
 
     /* Form Element(s) */
     // member type name
-    $form->addTextField('text', 'memberTypeName', __('Member Type Name').'*', $rec_d['member_type_name'], 'style="width: 100%;"');
+    $form->addTextField('text', 'memberTypeName', gettext('Member Type Name').'*', $rec_d['member_type_name'], 'style="width: 100%;"');
     // loan limit
-    $form->addTextField('text', 'loanLimit', __('Book Issue Limit'), $rec_d['loan_limit'], 'size="5" onchange="return numericcheck(this.name);"');
+    $form->addTextField('text', 'loanLimit', gettext('Book Issue Limit'), $rec_d['loan_limit'], 'size="5" onchange="return numericcheck(this.name);"');
     // loan periode
-    $form->addTextField('text', 'loanPeriode', __('Book Issue Periode (In Days)'), $rec_d['loan_periode'], 'size="5" onchange="return numericcheck(this.name);"');
+    $form->addTextField('text', 'loanPeriode', gettext('Book Issue Periode (In Days)'), $rec_d['loan_periode'], 'size="5" onchange="return numericcheck(this.name);"');
     // enable reserve
-    $enable_resv_chbox[0] = array('1', __('Enable'));
-    $enable_resv_chbox[1] = array('0', __('Disable'));
-    $form->addRadio('enableReserve', __('Reserve'), $enable_resv_chbox, !empty($rec_d['enable_reserve'])?$rec_d['enable_reserve']:'1');
+    $enable_resv_chbox[0] = array('1', gettext('Enable'));
+    $enable_resv_chbox[1] = array('0', gettext('Disable'));
+    $form->addRadio('enableReserve', gettext('Reserve'), $enable_resv_chbox, !empty($rec_d['enable_reserve'])?$rec_d['enable_reserve']:'1');
     // reserve limit
-    $form->addTextField('text', 'reserveLimit', __('Reserve Limit'), $rec_d['reserve_limit'], 'size="5" onchange="return numericcheck(this.name);"');
+    $form->addTextField('text', 'reserveLimit', gettext('Reserve Limit'), $rec_d['reserve_limit'], 'size="5" onchange="return numericcheck(this.name);"');
     // resource issue limit
 
    // $sql=$dbs->query('select gmd_name from mst_gmd where gmd_code=5');
@@ -193,25 +193,25 @@ if (isset($_POST['detail']) OR (isset($_GET['action']) AND $_GET['action'] == 'd
   //  $form->addAnything(__('Resource Issue Limit'), $str_input);
   
     // membership periode
-    $form->addTextField('text', 'memberPeriode', __('Membership Periode (In Days)'), $rec_d['member_periode'], 'size="5" onchange="return numericcheck(this.name);"');
+    $form->addTextField('text', 'memberPeriode', gettext('Membership Periode (In Days)'), $rec_d['member_periode'], 'size="5" onchange="return numericcheck(this.name);"');
     // reborrow limit
-    $form->addTextField('text', 'reborrowLimit', __('Reborrow Limit'), $rec_d['reborrow_limit'], 'size="5" onchange="return numericcheck(this.name);"');
+    $form->addTextField('text', 'reborrowLimit', gettext('Reborrow Limit'), $rec_d['reborrow_limit'], 'size="5" onchange="return numericcheck(this.name);"');
     // fine each day
-    $form->addTextField('text', 'fineEachDay', __('Fine Each Day'), $rec_d['fine_each_day'],'onchange="return numericcheck(this.name);"');
+    $form->addTextField('text', 'fineEachDay', gettext('Fine Each Day'), $rec_d['fine_each_day'],'onchange="return numericcheck(this.name);"');
     // overdue grace periode
-    $form->addTextField('text', 'gracePeriode', __('Overdue Grace Periode'), $rec_d['grace_periode'],'onchange="return numericcheck(this.name);"');
+    $form->addTextField('text', 'gracePeriode', gettext('Overdue Grace Periode'), $rec_d['grace_periode'],'onchange="return numericcheck(this.name);"');
    //  Member messaging preferences 
-    $issue[]=array('1',__('Issue'));
-    $checkin[]=array('1',__('Return'));
-    $reserve[]=array('1',__('Reserve'));
+    $issue[]=array('1',gettext('Issue'));
+    $checkin[]=array('1',gettext('Return'));
+    $reserve[]=array('1',gettext('Reserve'));
 //$form->addCheckBox('alert', __('Member messaging preferences '), $issue, $rec_d['is_pending']);
 $str_input = simbio_form_element::checkbox('issue', $issue, $rec_d['issue'], 'style="width:5%;"');
 $str_input .= simbio_form_element::checkbox('checkin', $checkin, $rec_d['checkin'], 'style="width:5%;"');
 $str_input .= simbio_form_element::checkbox('reserve', $reserve, $rec_d['reserve'], 'style="width:5%;"');
- $form->addAnything(__('Member messaging preferences '), $str_input);
+ $form->addAnything(gettext('Member messaging preferences '), $str_input);
     // edit mode messagge
     if ($form->edit_mode) {
-        echo '<div class="infoBox">'.__('You are going to edit member data').' : <b>'.$rec_d['member_type_name'].'</b> <br />'.__('Last Updated').' '.$rec_d['last_update'].'</div>'."\n"; //mfc
+        echo '<div class="infoBox">'.gettext('You are going to edit member data').' : <b>'.$rec_d['member_type_name'].'</b> <br />'.gettext('Last Updated').' '.$rec_d['last_update'].'</div>'."\n"; //mfc
     }
     // print out the form object
     echo $form->printOut();
@@ -224,17 +224,17 @@ $str_input .= simbio_form_element::checkbox('reserve', $reserve, $rec_d['reserve
     $datagrid = new simbio_datagrid();
     if ($can_read AND $can_write) {
         $datagrid->setSQLColumn('mt.member_type_id',
-            'mt.member_type_name AS \''.__('Membership Type').'\'',
-            'mt.loan_limit AS \''.__('Loan Limit').'\'',
-            'mt.member_periode AS \''.__('Membership Periode (In Days)').'\'',
-            'mt.reborrow_limit AS \''.__('Reborrow Limit').'\'',
-            'DATE_FORMAT(mt.last_update,"%d-%m-%Y") AS \''.__('Last Updated').'\'');
+            'mt.member_type_name AS \''.gettext('Membership Type').'\'',
+            'mt.loan_limit AS \''.gettext('Loan Limit').'\'',
+            'mt.member_periode AS \''.gettext('Membership Periode (In Days)').'\'',
+            'mt.reborrow_limit AS \''.gettext('Reborrow Limit').'\'',
+            'DATE_FORMAT(mt.last_update,"%d-%m-%Y") AS \''.gettext('Last Updated').'\'');
     } else {
-        $datagrid->setSQLColumn('mt.member_type_name AS \''.__('Membership Type').'\'',
-            'mt.loan_limit AS \''.__('Loan Limit').'\'',
-            'mt.member_periode AS \''.__('Membership Periode (In Days)').'\'',
-            'mt.reborrow_limit AS \''.__('Reborrow Limit').'\'',
-            'mt.last_update AS \''.__('Last Updated').'\'');
+        $datagrid->setSQLColumn('mt.member_type_name AS \''.gettext('Membership Type').'\'',
+            'mt.loan_limit AS \''.gettext('Loan Limit').'\'',
+            'mt.member_periode AS \''.gettext('Membership Periode (In Days)').'\'',
+            'mt.reborrow_limit AS \''.gettext('Reborrow Limit').'\'',
+            'mt.last_update AS \''.gettext('Last Updated').'\'');
     }
     $datagrid->setSQLorder('member_type_name ASC');
 
@@ -254,7 +254,7 @@ $str_input .= simbio_form_element::checkbox('reserve', $reserve, $rec_d['reserve
     // put the result into variables
     $datagrid_result = $datagrid->createDataGrid($dbs, $table_spec, 20, ($can_read AND $can_write));
     if (isset($_GET['keywords']) AND $_GET['keywords']) {
-        $msg = str_replace('{result->num_rows}', $datagrid->num_rows, __('Found <strong>{result->num_rows}</strong> from your keywords')); //mfc
+        $msg = str_replace('{result->num_rows}', $datagrid->num_rows, gettext('Found <strong>{result->num_rows}</strong> from your keywords')); //mfc
         echo '<div class="infoBox">'.$msg.' : "'.$_GET['keywords'].'"</div>';
     }
 

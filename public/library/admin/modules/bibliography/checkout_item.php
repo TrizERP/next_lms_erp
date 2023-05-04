@@ -34,7 +34,7 @@ $can_read = utility::havePrivilege('bibliography', 'r');
 $can_write = utility::havePrivilege('bibliography', 'w');
 
 if ($can_read) {
-    die('<div class="errorBox">'.__('You are not authorized to view this section').'</div>');
+    die('<div class="errorBox">'.gettext('You are not authorized to view this section').'</div>');
 }
 /* search form */
 ?>
@@ -72,13 +72,13 @@ echo $bradecum;
 	<td class="tab_menu_top">
                             <ul class="tabs"> 
 				<li>
-<a href="<?php echo MODULES_WEB_ROOT_DIR; ?>bibliography/item.php" class="headerText2"><?php echo __('Item List'); ?></a> </li><li>
-<a href="<?php echo  MODULES_WEB_ROOT_DIR; ?>bibliography/checkout_item.php" class="headerText2"><?php echo __('Checkout items'); ?></a> </li></ul></td></tr></table>
+<a href="<?php echo MODULES_WEB_ROOT_DIR; ?>bibliography/item.php" class="headerText2"><?php echo gettext('Item List'); ?></a> </li><li>
+<a href="<?php echo  MODULES_WEB_ROOT_DIR; ?>bibliography/checkout_item.php" class="headerText2"><?php echo gettext('Checkout items'); ?></a> </li></ul></td></tr></table>
 <fieldset class="menuBox">
 <div class="menuBoxInner itemOutIcon">
-    <?php echo __('Checkout Items'); ?>
+    <?php echo gettext('Checkout Items'); ?>
     <p class="only_border">&nbsp;</p>
-    <form name="search" action="<?php echo MODULES_WEB_ROOT_DIR; ?>bibliography/checkout_item.php" id="search" method="get" style="display: inline;"><?php echo __('Search'); ?> :
+    <form name="search" action="<?php echo MODULES_WEB_ROOT_DIR; ?>bibliography/checkout_item.php" id="search" method="get" style="display: inline;"><?php echo gettext('Search'); ?> :
     <!--commnet by iresh on 25-1-2011  <input type="text" name="keywords" id="keywords" size="30" />-->
    <!-- added by iresh on 25-1-2011 --> <input type="text" name="keywords" id="keywords" width=140px/>
     <input type="submit" id="doSearch" class="button" />
@@ -95,11 +95,11 @@ $table_spec = 'loan AS l
 
 // create datagrid
 $datagrid = new simbio_datagrid();
-$datagrid->setSQLColumn("i.item_code AS '".__('Item Code')."'",
-    "m.enrollment_no AS '".__('Member ID')."'",
-    "b.title AS '".__('Title')."'",
-    "DATE_FORMAT(l.loan_date,'%d-%m-%Y') AS '".__('Loan Date')."'",
-    "DATE_FORMAT(l.due_date,'%d-%m-%Y') AS '".__('Due Date')."'");
+$datagrid->setSQLColumn("i.item_code AS '".gettext('Item Code')."'",
+    "m.enrollment_no AS '".gettext('Member ID')."'",
+    "b.title AS '".gettext('Title')."'",
+    "DATE_FORMAT(l.loan_date,'%d-%m-%Y') AS '".gettext('Loan Date')."'",
+    "DATE_FORMAT(l.due_date,'%d-%m-%Y') AS '".gettext('Due Date')."'");
 $datagrid->setSQLorder("l.loan_date DESC");
 
 // change the record order
@@ -140,7 +140,7 @@ $datagrid->column_width = array(0 => '12%', 1 => '12%', 2 => '50%');
 $datagrid_result = $datagrid->createDataGrid($dbs, $table_spec, 20, false);
 if (isset($_GET['keywords']) AND $_GET['keywords']) {
     echo '<div class="infoBox">';
-    $msg = str_replace('{result->num_rows}', $datagrid->num_rows, __('Found <strong>{result->num_rows}</strong> from your keywords')); //mfc
+    $msg = str_replace('{result->num_rows}', $datagrid->num_rows, gettext('Found <strong>{result->num_rows}</strong> from your keywords')); //mfc
     echo $msg.' : "'.$_GET['keywords'].'"</div>';
 }
 

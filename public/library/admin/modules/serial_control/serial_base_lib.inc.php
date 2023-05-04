@@ -149,9 +149,9 @@ class serial
         $_table->table_attr = 'align="center" class="detailTable" style="width: 100%;" cellpadding="2" cellspacing="0"';
         $_table->table_header_attr = 'class="dataListHeader" style="font-weight: bold;"';
         $_table->highlight_row = true;
-        $_table->setHeader(array('&nbsp;', __('Date Expected'),
-            __('Date Received'), __('Seq. Number'),
-            __('Note')));
+        $_table->setHeader(array('&nbsp;', gettext('Date Expected'),
+            gettext('Date Received'), gettext('Seq. Number'),
+            gettext('Note')));
 
         if ($_can_read AND $_can_write) {
             $_add_link = '<span title="Add New Kardex" class="extendLink">&nbsp;</span>';
@@ -196,10 +196,10 @@ class serial
         }
 
         // button
-        $_button_grp = '<div style="padding: 3px; background: #999999;"><input type="submit" class="button" name="saveKardexes" value="'.__('Save').'" /></div>';
+        $_button_grp = '<div style="padding: 3px; background: #999999;"><input type="submit" class="button" name="saveKardexes" value="'.gettext('Save').'" /></div>';
 
         // header
-        echo '<div style="padding: 5px; background: #CCCCCC;">'.__('Kardex Detail for subscription').' <strong>'.$this->serial_period.'</strong></div>';
+        echo '<div style="padding: 5px; background: #CCCCCC;">'.gettext('Kardex Detail for subscription').' <strong>'.$this->serial_period.'</strong></div>';
         if ($_can_read AND $_can_write) {
             echo '<form method="post" name="kardexListForm" id="kardexListForm" action="'.$_SERVER['PHP_SELF'].'">';
             echo $_button_grp;

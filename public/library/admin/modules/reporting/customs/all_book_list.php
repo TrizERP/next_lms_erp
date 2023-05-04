@@ -33,7 +33,7 @@ $can_read = utility::havePrivilege('reporting', 'r');
 $can_write = utility::havePrivilege('reporting', 'w');
 
 if (!$can_read) {
-    die('<div class="errorBox">'.__('You don\'t have enough privileges to access this area!').'</div>');
+    die('<div class="errorBox">'.gettext('You don\'t have enough privileges to access this area!').'</div>');
 }
 
 require SIMBIO_BASE_DIR.'simbio_GUI/table/simbio_table.inc.php';
@@ -82,11 +82,11 @@ echo $bradecum;
 </table>
     <!-- filter -->
     <fieldset style="margin-bottom: 3px;">
-    <legend style="font-weight: bold"><?php echo strtoupper(__('All Book List')); ?> - <?php echo __('Report Filter'); ?></legend>
+    <legend style="font-weight: bold"><?php echo strtoupper(gettext('All Book List')); ?> - <?php echo gettext('Report Filter'); ?></legend>
     <form method="get" action="<?php echo $_SERVER['PHP_SELF']; ?>" target="reportView">
     <div id="filterForm">
         <div class="divRow">
-            <div class="divRowLabel"><?php echo __('Title'); ?></div>
+            <div class="divRowLabel"><?php echo gettext('Title'); ?></div>
             <div class="divRowContent">
             <?php
            //comment by iresh on 25-1-2011 echo simbio_form_element::textField('text', 'title', '', 'style="width: 50%"'); 
@@ -95,7 +95,7 @@ echo $bradecum;
             </div>
         </div>
         <div class="divRow">
-            <div class="divRowLabel"><?php echo __('Accession Register'); ?></div>
+            <div class="divRowLabel"><?php echo gettext('Accession Register'); ?></div>
             <div class="divRowContent">
             <?php  
            //comment by iresh on 25-1-2011  echo simbio_form_element::textField('text', 'itemCode', '', 'style="width: 50%"'); 
@@ -104,12 +104,12 @@ echo $bradecum;
             </div>
         </div>
 		<div class="divRow">
-            <div class="divRowLabel"><?php echo __('Donated Register'); ?></div>
+            <div class="divRowLabel"><?php echo gettext('Donated Register'); ?></div>
             <div class="divRowContent">
-            <?php
-            $source_options[] = array('0', __('ALL'));
-			$source_options[] = array('1', __('Buy'));
-			$source_options[] = array('2', __('Prize/Grant'));
+           <?php
+            $source_options[] = array('0', gettext('ALL'));
+			$source_options[] = array('1', gettext('Buy'));
+			$source_options[] = array('2', gettext('Prize/Grant'));
         
             
             echo simbio_form_element::selectList('source', $source_options);
@@ -117,12 +117,12 @@ echo $bradecum;
             </div>
         </div>
 		<div class="divRow">
-            <div class="divRowLabel"><?php echo __('Author'); ?></div>
+            <div class="divRowLabel"><?php echo gettext('Author'); ?></div>
             <div class="divRowContent">
             <?php
             $author_q = $dbs->query('SELECT author_id,author_name FROM mst_author');
             $author_options = array();
-            $author_options[] = array('0', __('ALL'));
+            $author_options[] = array('0', gettext('ALL'));
             while ($author_d = $author_q->fetch_row()) {
                 $author_options[] = array($author_d[0], $author_d[1]);
             }
@@ -131,12 +131,12 @@ echo $bradecum;
             </div>
         </div>
 		<div class="divRow">
-            <div class="divRowLabel"><?php echo __('Publisher'); ?></div>
+            <div class="divRowLabel"><?php echo gettext('Publisher'); ?></div>
             <div class="divRowContent">
             <?php
             $publisher_q = $dbs->query('SELECT publisher_id,publisher_name FROM mst_publisher');
             $publisher_options = array();
-            $publisher_options[] = array('0', __('ALL'));
+            $publisher_options[] = array('0', gettext('ALL'));
             while ($publisher_d = $publisher_q->fetch_row()) {
                 $publisher_options[] = array($publisher_d[0], $publisher_d[1]);
             }
@@ -145,12 +145,12 @@ echo $bradecum;
             </div>
         </div>
 		<div class="divRow">
-            <div class="divRowLabel"><?php echo __('Subject'); ?></div>
+            <div class="divRowLabel"><?php echo gettext('Subject'); ?></div>
             <div class="divRowContent">
             <?php
             $subject_q = $dbs->query('SELECT topic_id,topic FROM mst_topic');
             $subject_options = array();
-            $subject_options[] = array('0', __('ALL'));
+            $subject_options[] = array('0', gettext('ALL'));
             while ($subject_d = $subject_q->fetch_row()) {
                 $subject_options[] = array($subject_d[0], $subject_d[1]);
             }
@@ -159,7 +159,7 @@ echo $bradecum;
             </div>
         </div>
         <div class="divRow">
-            <div class="divRowLabel"><?php echo __('Classification'); ?></div>
+            <div class="divRowLabel"><?php echo gettext('Classification'); ?></div>
             <div class="divRowContent">
             <?php 
            //comment by iresh on 25-1-2011  echo simbio_form_element::textField('text', 'class', '', 'style="width: 50%"'); 
@@ -168,12 +168,12 @@ echo $bradecum;
             </div>
         </div>
         <div class="divRow">
-            <div class="divRowLabel"><?php echo __('Book Type'); ?></div>
+            <div class="divRowLabel"><?php echo gettext('Book Type'); ?></div>
             <div class="divRowContent">
             <?php
             $coll_type_q = $dbs->query('SELECT coll_type_id, coll_type_name FROM mst_coll_type');
             $coll_type_options = array();
-            $coll_type_options[] = array('0', __('ALL'));
+            $coll_type_options[] = array('0', gettext('ALL'));
             while ($coll_type_d = $coll_type_q->fetch_row()) {
                 $coll_type_options[] = array($coll_type_d[0], $coll_type_d[1]);
             }
@@ -182,7 +182,7 @@ echo $bradecum;
             </div>
         </div>
         <!--<div class="divRow">
-            <div class="divRowLabel"><?php echo __('Item Status'); ?></div>
+            <div class="divRowLabel"><?php echo gettext('Item Status'); ?></div>
             <div class="divRowContent">
             <?php
             // $status_q = $dbs->query('SELECT item_status_id, item_status_name FROM mst_item_status');
@@ -215,10 +215,10 @@ echo $bradecum;
         </div>-->
     </div>
     <div style="padding-top: 10px; clear: both;">
-    <input type="submit" name="applyFilter" value="<?php echo __('Search'); ?>" />
-    <input type="button" name="moreFilter" value="<?php echo __('Advance Search'); ?>" onclick="showHideTableRows('filterForm', 1, this, '<?php echo __('Show More Search Options'); ?>', '<?php echo __('Hide Search Options'); ?>')" />
+    <input type="submit" name="applyFilter" value="<?php echo gettext('Search'); ?>" />
+    <input type="button" name="moreFilter" value="<?php echo gettext('Advance Search'); ?>" onclick="showHideTableRows('filterForm', 1, this, '<?php echo gettext('Show More Search Options'); ?>', '<?php echo gettext('Hide Search Options'); ?>')" />
 <!--added Started by Parth 23/8/2011 -->
-    <input type="reset" name="applyReset" value="<?php echo __('Reset'); ?>" />	
+    <input type="reset" name="applyReset" value="<?php echo gettext('Reset'); ?>" />	
 <!--added Ended by Parth 23/8/2011 -->
     <input type="hidden" name="reportView" value="true" />
     </div>

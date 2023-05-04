@@ -40,7 +40,7 @@ if (isset($_POST['save']) AND (isset($_POST['authorID']) OR trim($_POST['search_
     $author_name = trim($dbs->escape_string(strip_tags($_POST['search_str'])));
     if (number_format($author_name)) 
     {
-          utility::jsAlert(__('Author name can\'t be Numeric!'));
+          utility::jsAlert(gettext('Author name can\'t be Numeric!'));
          exit();
     }
     // create new sql op object
@@ -78,13 +78,13 @@ if (isset($_POST['save']) AND (isset($_POST['authorID']) OR trim($_POST['search_
         if ($sql_op->insert('biblio_author', $data))
         {
             echo '<script type="text/javascript">';
-            echo 'alert(\''.__('Author succesfully updated!').'\');';
+            echo 'alert(\''.gettext('Author succesfully updated!').'\');';
             echo 'parent.setIframeContent(\'authorIframe\', \''.MODULES_WEB_ROOT_DIR.'bibliography/iframe_author.php?biblioID='.$data['biblio_id'].'\');';
             echo '</script>';
         } 
         else 
         {
-            utility::jsAlert(__('Author FAILED to Add. Please Contact System Administrator')."\n".$sql_op->error);
+            utility::jsAlert(gettext('Author FAILED to Add. Please Contact System Administrator')."\n".$sql_op->error);
         }
     } 
     else
@@ -144,12 +144,12 @@ if (isset($_POST['save']) AND (isset($_POST['authorID']) OR trim($_POST['search_
         echo '<script type="text/javascript">';
         if($author_id==true)
         {
-           echo 'alert(\''.__('Same Author Name and Type is already Entered!').'\');';
+           echo 'alert(\''.gettext('Same Author Name and Type is already Entered!').'\');';
            echo 'parent.setIframeContent(\'authorIframe\', \''.MODULES_WEB_ROOT_DIR.'bibliography/iframe_author.php?biblioID='.$data_add['biblio_id'].'\');';
         }
         else if($flage==true)               
         {            
-            echo 'alert(\''.__('Author added!').'\');';        
+            echo 'alert(\''.gettext('Author added!').'\');';        
             echo 'parent.setIframeContent(\'authorIframe\', \''.MODULES_WEB_ROOT_DIR.'bibliography/iframe_author.php?biblioID='.$data_add['biblio_id'].'\');';
         }
         
@@ -159,12 +159,12 @@ if (isset($_POST['save']) AND (isset($_POST['authorID']) OR trim($_POST['search_
 }
 
   /*$sql = "select * from mst_author where author_name LIKE '$authorName' and authority_type='$author_data[authority_type]'";                               
-                utility::jsAlert(__($sql));
+                utility::jsAlert(gettext($sql));
                 exit();
                 $data_available = @$sql_op->query($sql);
                 if ($data_available->num_rows>1) 
                 {
-                    utility::jsAlert(__('Same Author Name and Type is already Entered!'));
+                    utility::jsAlert(gettext('Same Author Name and Type is already Entered!'));
                     exit();
                 }*/
 ?>
@@ -172,12 +172,12 @@ if (isset($_POST['save']) AND (isset($_POST['authorID']) OR trim($_POST['search_
 <div style="padding: 5px; background: #CCCCCC;">
 <form name="mainForm" action="pop_author.php?biblioID=<?php echo $biblioID; ?>" method="post">
 <div>
-    <strong><?php echo __('Add Author'); ?> </strong>
+    <strong><?php echo gettext('Add Author'); ?> </strong>
     
     <form name="searchAuthor" method="post" style="display: inline;">
     <?php
     $ajax_exp = "ajaxFillSelect('../../AJAX_lookup_handler.php', 'mst_author', 'author_id:author_name', 'authorID', $('search_str').getValue())";
-    echo __('Author Name'); ?> : 
+    echo gettext('Author Name'); ?> : 
     <input type="text" name="search_str" id="search_str" style="width: 30%;" onkeyup="<?php echo $ajax_exp; ?>" onchange="<?php echo $ajax_exp; ?>" onblur="return charactercheck('search_str');" />
     <select name="type" style="width: 25%;">
         <?php
@@ -197,9 +197,9 @@ if (isset($_POST['save']) AND (isset($_POST['authorID']) OR trim($_POST['search_
     </select>-->
 </div>
 <div style="margin-top: 5px;">
-<select name="authorID" id="authorID" size="5" style="width: 100%;"><option value="0"><?php echo __('Type to search for existing authors or to add a new one'); ?></option></select>
+<select name="authorID" id="authorID" size="5" style="width: 100%;"><option value="0"><?php echo gettext('Type to search for existing authors or to add a new one'); ?></option></select>
 <?php if ($biblioID) { echo '<input type="hidden" name="biblioID" value="'.$biblioID.'" />'; } ?>
-<input type="submit" name="save" value="<?php echo __('Insert To Bibliography'); ?>" style="margin-top: 5px;" />
+<input type="submit" name="save" value="<?php echo gettext('Insert To Bibliography'); ?>" style="margin-top: 5px;" />
 </div>
 </form>
 </div>
@@ -208,5 +208,5 @@ if (isset($_POST['save']) AND (isset($_POST['authorID']) OR trim($_POST['search_
 /* main content end */
 $content = ob_get_clean();
 // include the page template
-require SENAYAN_BASE_DIR.'/admin/'.$sysconf['admin_template']['dir'].'/notemplate_page_tpl.php';
+require SENAYAN_BASE_DIR.'/admin/admin_template/notemplate_page_tpl.php';
 ?>

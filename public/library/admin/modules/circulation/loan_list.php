@@ -26,11 +26,11 @@ function confirmProcess(intLoanID, strItemCode, strProcess)
 {
     if(strProcess == 'return') 
     {
-        var confirmBox = confirm('<?php echo __('Are you sure you want to return the item'); ?> ' + strItemCode);
+        var confirmBox = confirm('<?php echo gettext('Are you sure you want to return the item'); ?> ' + strItemCode);
      }
      else
      {
-        var confirmBox = confirm('<?php echo __('Are you sure to extend loan for'); ?> ' + strItemCode); //mfc
+        var confirmBox = confirm('<?php echo gettext('Are you sure to extend loan for'); ?> ' + strItemCode); //mfc
      }
 
     if (confirmBox) 
@@ -83,7 +83,7 @@ if(isset($_SESSION['memberID1']))
     $loan_list->table_header_attr = 'class="dataListHeader" style="font-weight: bold;"';
     $loan_list->highlight_row = true;
     // table header
-    $headers = array(__('Return'), __('Extend'), __('Item Code'), __('Title'), __('Issue Date'), __('Due Date'));
+    $headers = array(gettext('Return'), gettext('Extend'), gettext('Item Code'), gettext('Title'), gettext('Issue Date'), gettext('Due Date'));
     $loan_list->setHeader($headers);
     // row number init
     $row = 1;
@@ -101,7 +101,7 @@ if(isset($_SESSION['memberID1']))
 
         if ($_SESSION['is_expire']) 
         {
-            echo $extend_link = '<span class="noExtendLink" title="'.__('No Extend').'">&nbsp;</span>';
+            echo $extend_link = '<span class="noExtendLink" title="'.gettext('No Extend').'">&nbsp;</span>';
         }
         else
         {
@@ -110,11 +110,11 @@ if(isset($_SESSION['memberID1']))
             // check if this loan just already renewed
             if ($loan_list_data['return_date'] == date('Y-m-d'))
             {
-                 $extend_link = '<span class="noExtendLink" title="'.__('No Extend').'">&nbsp;</span>';
+                 $extend_link = '<span class="noExtendLink" title="'.gettext('No Extend').'">&nbsp;</span>';
             }
             else if (in_array($loan_list_data['loan_id'], $_SESSION['reborrowed'])) 
             {
-                 $extend_link = '<span class="noExtendLink" title="'.__('No Extend').'">&nbsp;</span>';
+                 $extend_link = '<span class="noExtendLink" title="'.gettext('No Extend').'">&nbsp;</span>';
             } 
             else 
             {
@@ -125,14 +125,14 @@ if(isset($_SESSION['memberID1']))
         // renewed flag
         if ($loan_list_data['renewed'] > 0) 
         {
-             echo $loan_list_data['title'] = $loan_list_data['title'].'<strong style="color: blue;">'.__('Extended').'</strong>';
+             echo $loan_list_data['title'] = $loan_list_data['title'].'<strong style="color: blue;">'.gettext('Extended').'</strong>';
         }
         // check for overdue
         $curr_date = date('Y-m-d');
         $overdue = $circulation->countOverdueValue($loan_list_data['loan_id'], $curr_date);
         if ($overdue) 
         {
-            $loan_list_data['title'] .= '<div style="color: red; font-weight: bold;">'.__('OVERDUED for').' '.$overdue['days'].' '.__('days(s) with fines value').' '.$overdue['value'].'</div>'; //mfc
+            $loan_list_data['title'] .= '<div style="color: red; font-weight: bold;">'.gettext('OVERDUED for').' '.$overdue['days'].' '.gettext('days(s) with fines value').' '.$overdue['value'].'</div>'; //mfc
         }
         
         // row colums array
@@ -196,7 +196,7 @@ if(isset($_SESSION['memberID1']))
         $reserve_q = $dbs->query($sql_temp2);
         $reserve_d = $reserve_q->fetch_row();
         $member = $reserve_d[1].' ('.$reserve_d[0].')';
-        $reserve_msg = str_replace(array('{itemCode}', '{member}'), array('<b>'.$reservedItem.'</b>', '<b>'.$member.'</b>'), __('Item {itemCode} is being reserved by member {member}')); //mfc
+        $reserve_msg = str_replace(array('{itemCode}', '{member}'), array('<b>'.$reservedItem.'</b>', '<b>'.$member.'</b>'), gettext('Item {itemCode} is being reserved by member {member}')); //mfc
         echo '<div class="infoBox">'.$reserve_msg.'</div>';
 	
 	
@@ -205,5 +205,5 @@ if(isset($_SESSION['memberID1']))
     echo '</form>';
 }
 //$content = ob_get_clean();
-require SENAYAN_BASE_DIR.'/admin/'.$sysconf['admin_template']['dir'].'/notemplate_page_tpl.php';
+require SENAYAN_BASE_DIR.'/admin/admin_template/notemplate_page_tpl.php';
 ?>

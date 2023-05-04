@@ -31,7 +31,7 @@ $can_read = utility::havePrivilege('reporting', 'r');
 $can_write = utility::havePrivilege('reporting', 'w');
 
 if (!$can_read) {
-    die('<div class="errorBox">'.__('You don\'t have enough privileges to access this area!').'</div>');
+    die('<div class="errorBox">'.gettext('You don\'t have enough privileges to access this area!').'</div>');
 }
 
 require SIMBIO_BASE_DIR.'simbio_GUI/table/simbio_table.inc.php';
@@ -80,25 +80,25 @@ echo $bradecum;
 </table>
     <!-- filter -->
     <fieldset style="margin-bottom: 3px;">
-    <legend style="font-weight: bold"><?php echo strtoupper(__('Staff Activity')); ?> - <?php echo __('Report Filter'); ?></legend>
+    <legend style="font-weight: bold"><?php echo strtoupper(gettext('Staff Activity')); ?> - <?php echo gettext('Report Filter'); ?></legend>
     <form method="get" action="<?php echo $_SERVER['PHP_SELF']; ?>" target="reportView">
     <div id="filterForm">
         <div class="divRow">
-            <div class="divRowLabel"><?php echo __('Activity Date From'); ?></div>
+            <div class="divRowLabel"><?php echo gettext('Activity Date From'); ?></div>
             <div class="divRowContent">
             <?php echo simbio_form_element::dateField('startDate', '2000-01-01'); ?>
             </div>
              </div>
        <div class="divRow">
-            <div class="divRowLabel"><?php echo __('Activity Date Until'); ?></div>
+            <div class="divRowLabel"><?php echo gettext('Activity Date Until'); ?></div>
             <div class="divRowContent">
             <?php echo simbio_form_element::dateField('untilDate', date('Y-m-d')); ?>
             </div>
         </div>
     </div>
     <div style="padding-top: 10px; clear: both;">
-    <input type="submit" name="applyFilter" value="<?php echo __('Apply Filter'); ?>" />
-    <input type="button" name="moreFilter" value="<?php echo __('Show More Filter Options'); ?>" onclick="showHideTableRows('filterForm', 1, this, '<?php echo __('Show More Filter Options'); ?>', '<?php echo __('Hide Filter Options'); ?>')" />
+    <input type="submit" name="applyFilter" value="<?php echo gettext('Apply Filter'); ?>" />
+    <input type="button" name="moreFilter" value="<?php echo gettext('Show More Filter Options'); ?>" onclick="showHideTableRows('filterForm', 1, this, '<?php echo gettext('Show More Filter Options'); ?>', '<?php echo gettext('Hide Filter Options'); ?>')" />
     <input type="hidden" name="reportView" value="true" />
     </div>
     </form>
@@ -116,11 +116,11 @@ echo $bradecum;
     // create datagrid
     $reportgrid = new report_datagrid();
     $reportgrid->setSQLColumn(
-        'u.user_group_name AS \''.__('Login Username').'\'',
-        'u.user_group_id AS \''.__('Bibliography Data Entry').'\'',
-        'u.user_group_id AS \''.__('Item Data Entry').'\'',
-        'u.user_group_id AS \''.__('Member Data Entry').'\'',
-        'u.user_group_id AS \''.__('Circulation Tasks').'\'');
+        'u.user_group_name AS \''.gettext('Login Username').'\'',
+        'u.user_group_id AS \''.gettext('Bibliography Data Entry').'\'',
+        'u.user_group_id AS \''.gettext('Item Data Entry').'\'',
+        'u.user_group_id AS \''.gettext('Member Data Entry').'\'',
+        'u.user_group_id AS \''.gettext('Circulation Tasks').'\'');
     $reportgrid->setSQLorder('user_group_name ASC');
 
     // is there any search
@@ -189,6 +189,6 @@ echo $bradecum;
 
     $content = ob_get_clean();
     // include the page template
-    require SENAYAN_BASE_DIR.'/admin/'.$sysconf['admin_template']['dir'].'/printed_page_tpl.php';
+    require SENAYAN_BASE_DIR.'/admin/admin_template/printed_page_tpl.php';
 }
 ?>

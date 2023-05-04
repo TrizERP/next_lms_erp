@@ -77,7 +77,7 @@ if (isset($_POST['upload']) AND trim(strip_tags($_POST['fileTitle'])) != '')
         else 
         { 
             echo '<script type="text/javascript">';
-            echo 'alert(\''.__('Upload FAILED! Forbidden file type or file size too big!').'\');';
+            echo 'alert(\''.gettext('Upload FAILED! Forbidden file type or file size too big!').'\');';
             echo 'self.close();';
             echo '</script>';
            // die();
@@ -135,20 +135,20 @@ if (isset($_POST['upload']) AND trim(strip_tags($_POST['fileTitle'])) != '')
             $update2 = $sql_op->update('files', array('file_title' => $title, 'file_url' => $url, 'file_desc' => $dbs->escape_string(trim($_POST['fileDesc']))), 'file_id='.$fileID);
             if ($update1) {
                 echo '<script type="text/javascript">';
-                echo 'alert(\''.__('File Attachment data updated!').'\');';
+                echo 'alert(\''.gettext('File Attachment data updated!').'\');';
                 echo 'opener.location.href = \''.MODULES_WEB_ROOT_DIR.'bibliography/iframe_attach.php?biblioID='.$updateBiblioID.'\';';
                 echo '</script>';
             } else {
-                utility::jsAlert(''.__('File Attachment data FAILED to update!').''."\n".$sql_op->error);
+                utility::jsAlert(''.gettext('File Attachment data FAILED to update!').''."\n".$sql_op->error);
             }
         } else {
             if ($sql_op->insert('biblio_attachment', $data)) {
                 echo '<script type="text/javascript">';
-                echo 'alert(\''.__('File Attachment uploaded succesfully!').'\');';
+                echo 'alert(\''.gettext('File Attachment uploaded succesfully!').'\');';
                 echo 'parent.setIframeContent(\'attachIframe\', \''.MODULES_WEB_ROOT_DIR.'bibliography/iframe_attach.php?biblioID='.$data['biblio_id'].'\');';
                 echo '</script>';
             } else {
-                utility::jsAlert(''.__('File Attachment data FAILED to save!').''."\n".$sql_op->error);
+                utility::jsAlert(''.gettext('File Attachment data FAILED to save!').''."\n".$sql_op->error);
             }
         }
         utility::writeLogs($dbs, 'tbladmin', $_SESSION['DUSER_ID'], 'bibliography', $_SESSION['DUSER_NAME'].' updating file attachment data');
@@ -159,7 +159,7 @@ if (isset($_POST['upload']) AND trim(strip_tags($_POST['fileTitle'])) != '')
             $fdata['access_type'] = trim($_POST['accessType']);
             $_SESSION['biblioAttach'][$uploaded_file_id] = $fdata;
             echo '<script type="text/javascript">';
-            echo 'alert(\''.__('File Attachment uploaded succesfully!').'\');';
+            echo 'alert(\''.gettext('File Attachment uploaded succesfully!').'\');';
             echo 'parent.setIframeContent(\'attachIframe\', \''.MODULES_WEB_ROOT_DIR.'bibliography/iframe_attach.php\');';
             echo '</script>';
         }
@@ -168,7 +168,7 @@ if (isset($_POST['upload']) AND trim(strip_tags($_POST['fileTitle'])) != '')
 
 // create new instance
 $form = new simbio_form_table('mainForm', $_SERVER['PHP_SELF'].'?biblioID='.$biblioID, 'post');
-$form->submit_button_attr = 'name="upload" value="'.__('Upload Now').'" class="button"';
+$form->submit_button_attr = 'name="upload" value="'.gettext('Upload Now').'" class="button"';
 // form table attributes
 $form->table_attr = 'align="center" id="dataList" cellpadding="5" cellspacing="0"';
 $form->table_header_attr = 'class="alterCell" style="font-weight: bold;"';
@@ -192,7 +192,7 @@ else if ($biblioID)
 }
 
 // file title
-$form->addTextField('text', 'fileTitle', __('Title').'*', $file_attach_d['file_title'], 'style="width: 100%; overflow: auto;"onkeyup="return checkspecialcharacterdynamic(this.name);"onblur="return blank_value(this.name);"');
+$form->addTextField('text', 'fileTitle', gettext('Title').'*', $file_attach_d['file_title'], 'style="width: 100%; overflow: auto;"onkeyup="return checkspecialcharacterdynamic(this.name);"onblur="return blank_value(this.name);"');
 //is_empty
 // file attachment
 if ($file_attach_d['file_name']) 
@@ -203,7 +203,7 @@ else
 {    
     $repo = new simbio_directory(REPO_BASE_DIR);
     $repo_dir_tree = $repo->getDirectoryTree(5);
-    $repodir_options[] = array('', __('Repository ROOT'));
+    $repodir_options[] = array('', gettext('Repository ROOT'));
     if (is_array($repo_dir_tree)) 
     { 
         ksort($repo_dir_tree);
@@ -213,20 +213,20 @@ else
         }
     }
     // add repo directory options to select list
-    $form->addSelectList('fileDir', __('Repo. Directory'), $repodir_options);
+    $form->addSelectList('fileDir', gettext('Repo. Directory'), $repodir_options);
     // file upload
      $str_input = simbio_form_element::textField('file', 'file2attach');
     $str_input .= ' Maximum '.$sysconf['max_upload'].' KB';
-    $form->addAnything(__('File To Attach'), $str_input);
+    $form->addAnything(gettext('File To Attach'), $str_input);
 }
 // file url
-$form->addTextField('textarea', 'fileURL', __('URL'), $file_attach_d['file_url'], 'rows="1" style="width: 100%; overflow: auto;"');
+$form->addTextField('textarea', 'fileURL', gettext('URL'), $file_attach_d['file_url'], 'rows="1" style="width: 100%; overflow: auto;"');
 // file description
-$form->addTextField('textarea', 'fileDesc', __('Description'), $file_attach_d['file_desc'], 'rows="2" style="width: 100%; overflow: auto;"');
+$form->addTextField('textarea', 'fileDesc', gettext('Description'), $file_attach_d['file_desc'], 'rows="2" style="width: 100%; overflow: auto;"');
 // file access
-$acctype_options[] = array('public', __('Public'));
-$acctype_options[] = array('private', __('Private'));
-$form->addSelectList('accessType', __('Access'), $acctype_options, $file_attach_d['access_type']);
+$acctype_options[] = array('public', gettext('Public'));
+$acctype_options[] = array('private', gettext('Private'));
+$form->addSelectList('accessType', gettext('Access'), $acctype_options, $file_attach_d['access_type']);
 // file access limit if set to public
 //$group_query = $dbs->query('SELECT member_type_id, member_type_name FROM mst_member_type');
 $group_query = $dbs->query('SELECT user_group_id, user_group_name FROM '.$inte_schema.'.tbluser_groups');
@@ -235,12 +235,12 @@ while ($group_data = $group_query->fetch_row())
 {
     $group_options[] = array($group_data[0], $group_data[1]);
 }
-$form->addCheckBox('accLimit', __('Access Limit by Member Type'), $group_options, !empty($file_attach_d['access_limit'])?unserialize($file_attach_d['access_limit']):null );
+$form->addCheckBox('accLimit', gettext('Access Limit by Member Type'), $group_options, !empty($file_attach_d['access_limit'])?unserialize($file_attach_d['access_limit']):null );
 // print out the object
 echo $form->printOut();
 
 /* main content end */
 $content = ob_get_clean();
 // include the page template
-require SENAYAN_BASE_DIR.'/admin/'.$sysconf['admin_template']['dir'].'/notemplate_page_tpl.php';
+require SENAYAN_BASE_DIR.'/admin/admin_template/notemplate_page_tpl.php';
 ?>

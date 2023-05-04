@@ -71,11 +71,11 @@ echo $bradecum;
 </table>
     <!-- filter -->
     <fieldset style="margin-bottom: 3px;">
-    <legend style="font-weight: bold"><?php echo strtoupper(__('Current Lost Item')); ?> - <?php echo __('Report Filter'); ?></legend>
+    <legend style="font-weight: bold"><?php echo strtoupper(gettext('Current Lost Item')); ?> - <?php echo gettext('Report Filter'); ?></legend>
     <form method="get" action="<?php echo $_SERVER['PHP_SELF']; ?>" target="reportView">
     <div id="filterForm">
     <div class="divRow">
-        <div class="divRowLabel"><?php echo __('Title/ISBN'); ?></div>
+        <div class="divRowLabel"><?php echo gettext('Title/ISBN'); ?></div>
         <div class="divRowContent">
         <?php
          //comment by iresh on 25-1-2011 echo simbio_form_element::textField('text', 'title', '', 'style="width: 50%"');
@@ -84,7 +84,7 @@ echo $bradecum;
         </div>
     </div>
     <div class="divRow">
-        <div class="divRowLabel"><?php echo __('Item Code'); ?></div>
+        <div class="divRowLabel"><?php echo gettext('Item Code'); ?></div>
         <div class="divRowContent">
         <?php
          //comment by iresh on 25-1-2011 echo simbio_form_element::textField('text', 'itemCode', '', 'style="width: 50%"');
@@ -93,7 +93,7 @@ echo $bradecum;
         </div>
     </div>
     <div class="divRow">
-        <div class="divRowLabel"><?php echo __('Classification'); ?></div>
+        <div class="divRowLabel"><?php echo gettext('Classification'); ?></div>
         <div class="divRowContent">
         <?php
          //comment by iresh on 25-1-2011 echo simbio_form_element::textField('text', 'class', '', 'style="width: 50%"');
@@ -102,12 +102,12 @@ echo $bradecum;
         </div>
     </div>
     <div class="divRow">
-        <div class="divRowLabel"><?php echo __('Collection Type'); ?></div>
+        <div class="divRowLabel"><?php echo gettext('Collection Type'); ?></div>
         <div class="divRowContent">
         <?php
         $ct_q = $dbs->query('SELECT coll_type_name FROM mst_coll_type');
         $ct_options = array();
-        $ct_options[] = array('0', __('ALL'));
+        $ct_options[] = array('0', gettext('ALL'));
         while ($ct_d = $ct_q->fetch_row()) {
             $ct_options[] = array($ct_d[0], $ct_d[0]);
         }
@@ -116,12 +116,12 @@ echo $bradecum;
         </div>
     </div>
     <div class="divRow">
-        <div class="divRowLabel"><?php echo __('Location'); ?></div>
+        <div class="divRowLabel"><?php echo gettext('Location'); ?></div>
         <div class="divRowContent">
         <?php
         $loc_q = $dbs->query('SELECT location_name FROM mst_location');
         $loc_options = array();
-        $loc_options[] = array('0', __('ALL'));
+        $loc_options[] = array('0', gettext('ALL'));
         while ($loc_d = $loc_q->fetch_row()) {
             $loc_options[] = array($loc_d[0], $loc_d[0]);
         }
@@ -130,8 +130,8 @@ echo $bradecum;
         </div>
     </div>
     <div style="padding-top: 10px; clear: both;">
-    <input type="submit" name="applyFilter" value="<?php echo __('Apply Filter'); ?>" />
-    <input type="button" name="moreFilter" value="<?php echo __('Show More Filter Options'); ?>" onclick="showHideTableRows('filterForm', 1, this, '<?php echo __('Show More Filter Options'); ?>', '<?php echo __('Hide Filter Options'); ?>')" />
+    <input type="submit" name="applyFilter" value="<?php echo gettext('Apply Filter'); ?>" />
+    <input type="button" name="moreFilter" value="<?php echo gettext('Show More Filter Options'); ?>" onclick="showHideTableRows('filterForm', 1, this, '<?php echo gettext('Show More Filter Options'); ?>', '<?php echo gettext('Hide Filter Options'); ?>')" />
     <input type="hidden" name="reportView" value="true" />
     </div>
     </form>
@@ -148,11 +148,11 @@ echo $bradecum;
 
     // create datagrid
     $reportgrid = new report_datagrid();
-    $reportgrid->setSQLColumn('item_code AS \''.__('Item Code').'\'',
-        'title AS \''.__('Title').'\'',
-        'classification AS \''.__('Classification').'\'',
-        'coll_type_name AS \''.__('Collection Type').'\'',
-        'call_number AS \''.__('Call Number').'\'');
+    $reportgrid->setSQLColumn('item_code AS \''.gettext('Item Code').'\'',
+        'title AS \''.gettext('Title').'\'',
+        'classification AS \''.gettext('Classification').'\'',
+        'coll_type_name AS \''.gettext('Collection Type').'\'',
+        'call_number AS \''.gettext('Call Number').'\'');
     $reportgrid->setSQLorder('title ASC');
 
     // is there any search
@@ -200,6 +200,6 @@ echo $bradecum;
 
     $content = ob_get_clean();
     // include the page template
-    require SENAYAN_BASE_DIR.'/admin/'.$sysconf['admin_template']['dir'].'/printed_page_tpl.php';
+    require SENAYAN_BASE_DIR.'/admin/admin_template/printed_page_tpl.php';
 }
 ?>

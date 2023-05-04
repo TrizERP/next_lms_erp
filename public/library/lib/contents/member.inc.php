@@ -58,9 +58,9 @@ if (isset($_POST['logMeIn'])){
 				      
     // check if username or password is empty
     if (!$username OR !$password) {
-        //echo '<div class="errorBox">'.__('Please fill your Username and Password to Login!').'</div>';
+        //echo '<div class="errorBox">'.gettext('Please fill your Username and Password to Login!').'</div>';
 	    echo '<script type="text/javascript">';
-            echo 'alert(\''.__('Please fill your Username and Password to Login!').'\');';
+            echo 'alert(\''.gettext('Please fill your Username and Password to Login!').'\');';
             echo 'location.href = \'index.php\';';
             echo '</script>';
     } else {
@@ -90,7 +90,7 @@ if (isset($_POST['logMeIn'])){
             // write log
             utility::writeLogs($dbs, 'tblstudent', $username, 'Login', 'Login FAILED for member '.$username.' from address '.$_SERVER['REMOTE_ADDR']);
             // message
-            $msg = '<div class="errorBox">'.__('Login FAILED! Wrong username or password!').'</div>';
+            $msg = '<div class="errorBox">'.gettext('Login FAILED! Wrong username or password!').'</div>';
 //added by Parth 28/7/2011	     	
 $id = $_SERVER['REMOTE_ADDR']; 
 $id = $id.".php";
@@ -132,9 +132,9 @@ unlink($myFile);
 
 		if (!$username OR !$password)
                {
-			echo '<script type="text/javascript">alert(\''.__('Please supply valid username and password').'\');</script>';
+			echo '<script type="text/javascript">alert(\''.gettext('Please supply valid username and password').'\');</script>';
 			echo '<script type="text/javascript">';
-                        echo 'alert(\''.__('Please supply valid username and password!').'\');';
+                        echo 'alert(\''.gettext('Please supply valid username and password!').'\');';
                         echo 'location.href = \'index.php\';';
                         echo '</script>';
 			    	
@@ -155,7 +155,7 @@ unlink($myFile);
 			    utility::writeLogs($dbs, 'staff', $username, 'Login', 'Login success for user '.$username.' from address '.$_SERVER['REMOTE_ADDR']);
 			    echo '<script type="text/javascript">';
 			    if ($sysconf['login_message']) {
-				echo 'alert(\''.__('Welcome to Library Automation, ').$logon->real_name.'\');';
+				echo 'alert(\''.gettext('Welcome to Library Automation, ').$logon->real_name.'\');';
 			    }
 			    echo 'location.href = \'admin/index.php\';';
 			    echo '</script>';
@@ -165,7 +165,7 @@ unlink($myFile);
 			    utility::writeLogs($dbs, 'staff', $username, 'Login', 'Login FAILED for user '.$username.' from address '.$_SERVER['REMOTE_ADDR']);
 			    // message
 			    $msg = '<script type="text/javascript">';
-			    $msg .= 'alert(\''.__('Wrong Username or Password. ACCESS DENIED').'\');';
+			    $msg .= 'alert(\''.gettext('Wrong Username or Password. ACCESS DENIED').'\');';
 			    $msg .= 'history.back();';
 			    $msg .= '</script>';
 			    simbio_security::destroySessionCookie($msg, SENAYAN_SESSION_COOKIES_NAME, SENAYAN_WEB_ROOT_DIR.'admin', false);
@@ -175,7 +175,7 @@ unlink($myFile);
 			    //added by iresh on 22-1-2011
 			    utility::writeLogs($dbs, 'tblstudent', $username, 'Login', 'Login FAILED for user '.$username.' from address '.$_SERVER['REMOTE_ADDR']);
 			    // message
-			    $msg = '<div class="errorBox">'.__('Login FAILED! Wrong username or password!').'</div>';
+			    $msg = '<div class="errorBox">'.gettext('Login FAILED! Wrong username or password!').'</div>';
 //added by Parth 28/7/2011	     	
 $id = $_SERVER['REMOTE_ADDR']; 
 $id = $id.".php";
@@ -200,16 +200,16 @@ if (!$is_member_login) {
 ?>
    
    <!--commnet by iresh on 22-1-2011 <fieldset id="memberLogin">-->
-    <!--comment by iresh on 11/1/2011 <legend><?php echo __('Library Member Login'); ?></legend>-->
-    <!-- comment by iresh on 11/1/2011 <div class="loginInfo"><?php echo __('Please insert your member ID and password given by library system administrator. If you are library\'s member and don\'t have a password yet, please contact library staff.'); ?></div>-->
+    <!--comment by iresh on 11/1/2011 <legend><?php echo gettext('Library Member Login'); ?></legend>-->
+    <!-- comment by iresh on 11/1/2011 <div class="loginInfo"><?php echo gettext('Please insert your member ID and password given by library system administrator. If you are library\'s member and don\'t have a password yet, please contact library staff.'); ?></div>-->
    <!--commnet by iresh on 22-1-2011 <form action="index.php?p=member" method="post">-->
- <!-- added by iresh 11/1/2011--> <!--comment by iresh on 22-1-2011 <legend><?php echo __('Library Member Login'); ?></legend>-->
+ <!-- added by iresh 11/1/2011--> <!--comment by iresh on 22-1-2011 <legend><?php echo gettext('Library Member Login'); ?></legend>-->
   <!--commnet by iresh on 22-1-2011  <br/>
-       <div class="fieldLabel"><?php echo __('Member ID'); ?></div>
+       <div class="fieldLabel"><?php echo gettext('Member ID'); ?></div>
         <div><input type="text" name="memberID" /></div>
-    <div class="fieldLabel marginTop"><?php echo __('Password'); ?></div>
+    <div class="fieldLabel marginTop"><?php echo gettext('Password'); ?></div>
         <div><input type="password" name="memberPassWord" /></div>
-    <div class="marginTop"><input type="submit" name="logMeIn" value="<?php echo __('Login'); ?>" />
+    <div class="marginTop"><input type="submit" name="logMeIn" value="<?php echo gettext('Login'); ?>" />
     </div>
     </form>
     </fieldset>-->
@@ -228,19 +228,19 @@ if (!$is_member_login) {
         $_form = '<form id="memberChangePassword" method="post" action="index.php?p=member">'."\n";
         $_form .= '<table class="memberDetail" cellpadding="5" cellspacing="0">'."\n";
         $_form .= '<tr>'."\n";
-        $_form .= '<td class="alterCell" width="20%"><strong>'.__('Current Password').'</strong></td>';
+        $_form .= '<td class="alterCell" width="20%"><strong>'.gettext('Current Password').'</strong></td>';
         $_form .= '<td class="alterCell2"><input type="password" name="currPass" /></td>';
         $_form .= '</tr>'."\n";
         $_form .= '<tr>'."\n";
-        $_form .= '<td class="alterCell" width="20%"><strong>'.__('New Password').'</strong></td>';
+        $_form .= '<td class="alterCell" width="20%"><strong>'.gettext('New Password').'</strong></td>';
         $_form .= '<td class="alterCell2"><input type="password" name="newPass" /></td>';
         $_form .= '</tr>'."\n";
         $_form .= '<tr>'."\n";
-        $_form .= '<td class="alterCell" width="20%"><strong>'.__('Confirm Password').'</strong></td>';
+        $_form .= '<td class="alterCell" width="20%"><strong>'.gettext('Confirm Password').'</strong></td>';
         $_form .= '<td class="alterCell2"><input type="password" name="newPass2" /></td>';
         $_form .= '</tr>'."\n";
         $_form .= '<tr>'."\n";
-        $_form .= '<td class="alterCell2" colspan="2"><input type="submit" name="changePass" value="'.__('Change Password').'" /></td>';
+        $_form .= '<td class="alterCell2" colspan="2"><input type="submit" name="changePass" value="'.gettext('Change Password').'" /></td>';
         $_form .= '</tr>'."\n";
         $_form .= '</table>'."\n";
         $_form .= '</form>'."\n";
@@ -346,7 +346,7 @@ if (!$is_member_login) {
             $_detail .= '<tr>'."\n";
             $_detail .= '<td class="alterCell" width="15%"><strong>Notes</strong></td><td class="alterCell2" colspan="3">';
             if ($_SESSION['is_expired']) {
-                $_detail .= '<div style="color: #f00;">'.__('Your Membership Already EXPIRED! Please extend your membership.').'</div>';
+                $_detail .= '<div style="color: #f00;">'.gettext('Your Membership Already EXPIRED! Please extend your membership.').'</div>';
             }
 
             $_detail .= '</td>';
@@ -355,16 +355,16 @@ if (!$is_member_login) {
           
 	
         $_detail .= '<tr>'."\n";
-        $_detail .= '<td class="alterCell" width="15%"><strong>'.__('Member Name').'</strong></td><td class="alterCell2" width="30%">'.$_SESSION['DUSER_NAME'].'</td>';
-        $_detail .= '<td class="alterCell" width="15%"><strong>'.__('Member ID').'</strong></td><td class="alterCell2" width="30%">'.$_SESSION['DUSER_ID'].'</td>';
+        $_detail .= '<td class="alterCell" width="15%"><strong>'.gettext('Member Name').'</strong></td><td class="alterCell2" width="30%">'.$_SESSION['DUSER_NAME'].'</td>';
+        $_detail .= '<td class="alterCell" width="15%"><strong>'.gettext('Member ID').'</strong></td><td class="alterCell2" width="30%">'.$_SESSION['DUSER_ID'].'</td>';
         $_detail .= '</tr>'."\n";
         $_detail .= '<tr>'."\n";
-        $_detail .= '<td class="alterCell" width="15%"><strong>'.__('Member Email').'</strong></td><td class="alterCell2" width="30%">'.$_SESSION['Email'].'</td>';
-        $_detail .= '<td class="alterCell" width="15%"><strong>'.__('Member Type').'</strong></td><td class="alterCell2" width="30%">'.$_SESSION['USER_GROUP'].'</td>';
+        $_detail .= '<td class="alterCell" width="15%"><strong>'.gettext('Member Email').'</strong></td><td class="alterCell2" width="30%">'.$_SESSION['Email'].'</td>';
+        $_detail .= '<td class="alterCell" width="15%"><strong>'.gettext('Member Type').'</strong></td><td class="alterCell2" width="30%">'.$_SESSION['USER_GROUP'].'</td>';
         $_detail .= '</tr>'."\n";
         $_detail .= '<tr>'."\n";
-        $_detail .= '<td class="alterCell" width="15%"><strong>'.__('Register Date').'</strong></td><td class="alterCell2" width="30%">'.date("d-m-Y", strtotime($detail_info_data['created_on'])).'</td>';
-        $_detail .= '<td class="alterCell" width="15%"><strong>'.__('Expiry Date').'</strong></td><td class="alterCell2" width="30%">'.date("d-m-Y", strtotime($detail_info_data['expire_date'])).'</td>';
+        $_detail .= '<td class="alterCell" width="15%"><strong>'.gettext('Register Date').'</strong></td><td class="alterCell2" width="30%">'.date("d-m-Y", strtotime($detail_info_data['created_on'])).'</td>';
+        $_detail .= '<td class="alterCell" width="15%"><strong>'.gettext('Expiry Date').'</strong></td><td class="alterCell2" width="30%">'.date("d-m-Y", strtotime($detail_info_data['expire_date'])).'</td>';
         $_detail .= '</tr>'."\n";               
         $_detail .= '</table>'."\n";
 
@@ -374,16 +374,16 @@ if (!$is_member_login) {
 
        
         
-        $_detail .= '<h3 class="memberInfoHead">'.__($detail_info_data[material_sub_name]).'</h3>'."\n";
+        $_detail .= '<h3 class="memberInfoHead">'.gettext($detail_info_data[material_sub_name]).'</h3>'."\n";
         $_detail .= '<table class="memberDetail" cellpadding="5" cellspacing="0">'."\n";              
         $_detail .= '<tr>'."\n";        
-            $_detail .= '<td class="alterCell" width="15%"><strong>'.__('Issue Limit ').'</strong></td><td class="alterCell2" width="30%">'.$detail_info_data[cat_issue_limit].'</td>';                               
-            $_detail .= '<td class="alterCell" width="15%"><strong>'.__('Issue Period ').'</strong></td><td class="alterCell2" width="30%">'.$detail_info_data[cat_issue_period].'</td>';                               
+            $_detail .= '<td class="alterCell" width="15%"><strong>'.gettext('Issue Limit ').'</strong></td><td class="alterCell2" width="30%">'.$detail_info_data[cat_issue_limit].'</td>';                               
+            $_detail .= '<td class="alterCell" width="15%"><strong>'.gettext('Issue Period ').'</strong></td><td class="alterCell2" width="30%">'.$detail_info_data[cat_issue_period].'</td>';                               
         $_detail .= '</tr>'."\n";
         
         $_detail .= '<tr>'."\n";        
-                $_detail .= '<td class="alterCell" width="15%"><strong>'.__('Re Issue Limit ').'</strong></td><td class="alterCell2" width="30%">'.$detail_info_data[cat_re_issue_limit].'</td>';                                               
-                $_detail .= '<td class="alterCell" width="15%"><strong>'.__('Fine Each Day ').'</strong></td><td class="alterCell2" width="30%">'.$detail_info_data[cat_fine_each_day].'</td>';                               
+                $_detail .= '<td class="alterCell" width="15%"><strong>'.gettext('Re Issue Limit ').'</strong></td><td class="alterCell2" width="30%">'.$detail_info_data[cat_re_issue_limit].'</td>';                                               
+                $_detail .= '<td class="alterCell" width="15%"><strong>'.gettext('Fine Each Day ').'</strong></td><td class="alterCell2" width="30%">'.$detail_info_data[cat_fine_each_day].'</td>';                               
         $_detail .= '</tr>'."\n";
 
         $_detail .= '</table>';
@@ -398,7 +398,7 @@ if (!$is_member_login) {
     {
         $_curr_date = date('Y-m-d');
         if (simbio_date::compareDates($array_data[3], $_curr_date) == $_curr_date) {
-            return '<strong style="color: #f00;">'.$array_data[3].' '.__('OVERDUED').'</strong>';
+            return '<strong style="color: #f00;">'.$array_data[3].' '.gettext('OVERDUED').'</strong>';
         } else {
             return $array_data[3];
         }
@@ -427,10 +427,10 @@ if (!$is_member_login) {
 
         // create datagrid
         $_loan_list = new simbio_datagrid();
-        $_loan_list->setSQLColumn('l.item_code AS \''.__('Item Code').'\'',
-            'b.title AS \''.__('Title').'\'',
-            'l.loan_date AS \''.__('Loan Date').'\'',
-            'l.due_date AS \''.__('Due Date').'\'');
+        $_loan_list->setSQLColumn('l.item_code AS \''.gettext('Item Code').'\'',
+            'b.title AS \''.gettext('Title').'\'',
+            'l.loan_date AS \''.gettext('Loan Date').'\'',
+            'l.due_date AS \''.gettext('Due Date').'\'');
         $_loan_list->setSQLorder('l.loan_date DESC');
         $_criteria = sprintf('m.enrollment_no=\'%s\' AND l.is_lent=1 AND is_return=0 ', $_SESSION['mid']);
         $_loan_list->setSQLCriteria($_criteria);
@@ -443,7 +443,7 @@ if (!$is_member_login) {
         $_loan_list->using_AJAX = false;
         // return the result
         $_result = $_loan_list->createDataGrid($dbs, $_table_spec, $num_recs_show);
-        $_result = '<div class="memberLoanListInfo">'.$_loan_list->num_rows.' '.__('item(s) currently on loan').'</div>'."\n".$_result;
+        $_result = '<div class="memberLoanListInfo">'.$_loan_list->num_rows.' '.gettext('item(s) currently on loan').'</div>'."\n".$_result;
         return $_result;
     }
 
@@ -466,10 +466,10 @@ if (!$is_member_login) {
 
         // create datagrid
         $_loan_list = new simbio_datagrid();
-        $_loan_list->setSQLColumn('l.item_code AS \''.__('Item Code').'\'',
-            'b.title AS \''.__('Title').'\'',
-            'l.loan_date AS \''.__('Loan Date').'\'',
-            'l.due_date AS \''.__('Due Date').'\'');
+        $_loan_list->setSQLColumn('l.item_code AS \''.gettext('Item Code').'\'',
+            'b.title AS \''.gettext('Title').'\'',
+            'l.loan_date AS \''.gettext('Loan Date').'\'',
+            'l.due_date AS \''.gettext('Due Date').'\'');
         $_loan_list->setSQLorder('l.loan_date DESC');
         $_criteria = sprintf('m.member_id=\'%s\' AND l.is_lent=1 AND is_return=1 ', $_SESSION['mid']);
         $_loan_list->setSQLCriteria($_criteria);
@@ -482,7 +482,7 @@ if (!$is_member_login) {
         $_loan_list->using_AJAX = false;
         // return the result
         $_result = $_loan_list->createDataGrid($dbs, $_table_spec, $num_recs_show);
-        //$_result = '<div class="memberLoanListInfo">'.$_loan_list->num_rows.' '.__('item(s) currently on loan').'</div>'."\n".$_result;
+        //$_result = '<div class="memberLoanListInfo">'.$_loan_list->num_rows.' '.gettext('item(s) currently on loan').'</div>'."\n".$_result;
         return $_result;
     }
 
@@ -541,21 +541,21 @@ echo "</form>";
     if ($is_member_login && isset($_POST['changePass'])) {
         $change_pass = procChangePassword($_POST['currPass'], $_POST['newPass'], $_POST['newPass2']);
         if ($change_pass === true) {
-            $info = '<span style="font-size: 120%; font-weight: bold;">'.__('Your password have been changed successfully.').'</span>';
+            $info = '<span style="font-size: 120%; font-weight: bold;">'.gettext('Your password have been changed successfully.').'</span>';
         } else {
             if ($change_pass === CURR_PASSWD_WRONG) {
-                $info = __('Current password entered WRONG! Please insert the right password!');
+                $info = gettext('Current password entered WRONG! Please insert the right password!');
             } else if ($change_pass === PASSWD_NOT_MATCH) {
-                $info = __('Password confirmation FAILED! Make sure to check undercase or uppercase letters!');
+                $info = gettext('Password confirmation FAILED! Make sure to check undercase or uppercase letters!');
             } else {
-                $info = __('Password update FAILED! ERROR ON DATABASE!');
+                $info = gettext('Password update FAILED! ERROR ON DATABASE!');
             }
             $info = '<span style="font-size: 120%; font-weight: bold; color: red;">'.$info.'</span>';
         }
     }
 
     // show all
-    echo '<h3 class="memberInfoHead">'.__('Member Detail').'</h3>'."\n";
+    echo '<h3 class="memberInfoHead">'.gettext('Member Detail').'</h3>'."\n";
     echo showMemberDetail();
     	
 }

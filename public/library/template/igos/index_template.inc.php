@@ -5,7 +5,7 @@
 <link rel="shortcut icon" href="webicon.ico" type="image/x-icon" />
 <link href="template/core.style.css" rel="stylesheet" type="text/css" />
 <link href="template/igos/960.css" rel="stylesheet" type="text/css" />
-<link href="<?php echo $sysconf['template']['css']; ?>" rel="stylesheet" type="text/css" />
+<link href="<?php echo $template_css; ?>" rel="stylesheet" type="text/css" />
 <script type="text/javascript" src="js/prototype.js"></script>
 <script type="text/javascript" src="js/form.js"></script>
 <script type="text/javascript" src="js/gui.js"></script>
@@ -29,7 +29,7 @@ location.href=<?php echo SENAYAN_WEB_ROOT_DIR; ?>+'index.php?selectlibrary='+doc
     <!--header-->
    <div class="new_header">
     <div  id="header">
-    <h1 id="app-title"><a href="index.php"><?php echo $sysconf['library_name']; ?></a><div><?php echo $sysconf['library_subname']; ?><!--<select name="selectlibrary" id="selectlibrary" onchange="javascript:changeselectbox()"><option value="trizino_slibrary">School Library</option><option value="select library" selected="selected">select library</option><option value="trizino_engg">Engineering Library</option></select>--></div></h1><?php /*if (empty($_REQUEST['p']) and empty($_SESSION['m_member_type'])) {*/ ?><!--<div id="loginlink"> <a href="#" style="text-decoration:none;font-size:15px;"><?php /*include('login_test.php');*/ ?></a></div>--> <?php /*}*/ ?>
+    <h1 id="app-title"><a href="index.php"><?php echo $page_title; ?></a><div><?php echo $library_subname; ?><!--<select name="selectlibrary" id="selectlibrary" onchange="javascript:changeselectbox()"><option value="trizino_slibrary">School Library</option><option value="select library" selected="selected">select library</option><option value="trizino_engg">Engineering Library</option></select>--></div></h1><?php /*if (empty($_REQUEST['p']) and empty($_SESSION['m_member_type'])) {*/ ?><!--<div id="loginlink"> <a href="#" style="text-decoration:none;font-size:15px;"><?php /*include('login_test.php');*/ ?></a></div>--> <?php /*}*/ ?>
     </div>
    
     </div>
@@ -39,28 +39,28 @@ location.href=<?php echo SENAYAN_WEB_ROOT_DIR; ?>+'index.php?selectlibrary='+doc
     <!--application main menu-->
    <div class="menu_bg" id="main-menu">
         <ul id="primary-links">
-            <li><a class="menu" href="index.php"><span><?php echo __('Home'); ?></a></span></li>
-          <!--comment made by iresh on 11/1/2011    <li><a class="menu" href="index.php?p=libinfo"><span><?php echo __('Library Information'); ?></span></a></li>-->
-			<!--comment made by iresh on 11/1/2011 <li><a class="menu" href="index.php?p=member"><span><?php echo __('Member Area'); ?></span></a></li>-->
-		<!--added by iresh on 11/1/2011 --><!--comment by iresh on 22-1-2011	<li><a class="menu" href="index.php?p=member"><span><?php echo __('Member Login'); ?></span></a></li>-->
+            <li><a class="menu" href="index.php"><span><?php echo gettext('Home'); ?></a></span></li>
+          <!--comment made by iresh on 11/1/2011    <li><a class="menu" href="index.php?p=libinfo"><span><?php echo gettext('Library Information'); ?></span></a></li>-->
+			<!--comment made by iresh on 11/1/2011 <li><a class="menu" href="index.php?p=member"><span><?php echo gettext('Member Area'); ?></span></a></li>-->
+		<!--added by iresh on 11/1/2011 --><!--comment by iresh on 22-1-2011	<li><a class="menu" href="index.php?p=member"><span><?php echo gettext('Member Login'); ?></span></a></li>-->
           <!--comment made by iresh on 11/1/2011    <li><a class="menu" href="index.php?p=peta"><span>Show map</span></a></li>-->
-            <li><a class="menu" href="index.php?p=help"><span><?php echo __('Help on Search'); ?></span></a></li>
-       <?php /*if (empty($_REQUEST['p']) and empty($_SESSION['m_member_type'])) {*/ ?>      <!-- <li><a class="menu" href="index.php?p1=login" onclick="javascript:popup"><span>--><?php /*echo __('Login');  }*/?><!--</span></a></li>-->
+            <li><a class="menu" href="index.php?p=help"><span><?php echo gettext('Help on Search'); ?></span></a></li>
+       <?php /*if (empty($_REQUEST['p']) and empty($_SESSION['m_member_type'])) {*/ ?>      <!-- <li><a class="menu" href="index.php?p1=login" onclick="javascript:popup"><span>--><?php /*echo gettext('Login');  }*/?><!--</span></a></li>-->
 	   <?php if (utility::isMemberLogin()) {?><!-- added by iresh on 7-4-2011 -->
-           <li><a class="menu" href="index.php?p=member&login"><span><?php echo __('My Profile'); ?></span></a></li>
+           <li><a class="menu" href="index.php?p=member&login"><span><?php echo gettext('My Profile'); ?></span></a></li>
            <?php }?>
 	   <?php if (utility::isMemberLogin()) {?><!-- added by iresh on 7-4-2011 -->
-           <li><a class="menu" href="index.php?p=book_request"><span><?php echo __('Book Request'); ?></span></a></li>
+           <li><a class="menu" href="index.php?p=book_request"><span><?php echo gettext('Book Request'); ?></span></a></li>
            <?php }?>
             <?php if (utility::isMemberLogin()) {?><!-- added by iresh on 7-4-2011 -->  
-	   <li><a class="menu" href="index.php?p=rescentview"><span><?php echo __('Rescent Views'); ?></span></a></li>
+	   <li><a class="menu" href="index.php?p=rescentview"><span><?php echo gettext('Rescent Views'); ?></span></a></li>
          <?php }?> 
          <?php if (utility::isMemberLogin()) {?><!-- added by iresh on 7-4-2011 -->  
-	   <li><a class="menu" href="index.php?p=myeself"><span><?php echo __('My-Eshelf'); ?></span></a></li>
+	   <li><a class="menu" href="index.php?p=myeself"><span><?php echo gettext('My-Eshelf'); ?></span></a></li>
          <?php }?> 
  <!--comment made by iresh on 11/1/2011    <li><a class="menu" href="http://www.igos.web.id"><span>IGOS</span></a></li>
             <li><a class="menu" href="http://senayan.diknas.go.id"><span>SENAYAN</span></a></li>-->
-           <!--comment by iresh on 22-1-2011 <li><a class="menu" href="index.php?p=login"><span><?php echo __('Librarian LOGIN'); ?></span></a></li>-->
+           <!--comment by iresh on 22-1-2011 <li><a class="menu" href="index.php?p=login"><span><?php echo gettext('Librarian LOGIN'); ?></span></a></li>-->
         </ul>
 	 </div>
      <div>
@@ -210,7 +210,7 @@ $flagset = 0;
 <!-- <div class="grid_9" id="side-menu1"> -->
 
         <!-- language selection -->
-            <!-- comment by iresh on 11/1/2011<div class="block-header"><?php echo __('Select Language'); ?></div>
+            <!-- comment by iresh on 11/1/2011<div class="block-header"><?php echo gettext('Select Language'); ?></div>
             <form name="langSelect" action="index.php" method="get">
             <select name="select_lang" onchange="document.langSelect.submit();">
             <?php echo $language_select; ?>
@@ -329,7 +329,7 @@ echo "<table style=font-weight:Bold;background-color:#990000;color:white; ><tr>"
                      } 
                 </script>
 		<form name="simpleSearch" action="index.php" method="get">
-                <table><tr><td><input type="text" name="keywords" value="<?php echo $_GET['keywords']; ?>" style="width:300px;"/></td><td><input type="submit" name="search1" value="<?php echo __('Search'); ?>" class="button marginTop"/></td><td>
+                <table><tr><td><input type="text" name="keywords" value="<?php echo $_GET['keywords']; ?>" style="width:300px;"/></td><td><input type="submit" name="search1" value="<?php echo gettext('Search'); ?>" class="button marginTop"/></td><td>
 <select name="material_sub_type_select" onchange="javascript:displaychange();"> 
 <option value="SELECT">SELECT</option>
 <?php
@@ -472,51 +472,51 @@ advancesearch=set&subtype=<?php echo $_GET['subtype']; ?>&subid=<?php echo $_GET
 		
         <!-- advanced search -->
             <form name="advSearchForm" id="advSearchForm" action="index.php" method="get">
-            <?php echo __('Title'); ?> :
+            <?php echo gettext('Title'); ?> :
             <input type="text" name="title" value="<?php echo $_GET['title']; ?>"/>
-            <?php echo __('Publisher Name'); ?> :
+            <?php echo gettext('Publisher Name'); ?> :
             <input type="text" name="publish_name" value="<?php echo $_GET['publish_name']; ?>"/>       
-	   <?php echo __('Author(s)'); ?> :
+	   <?php echo gettext('Author(s)'); ?> :
             <?php //echo $advsearch_author; ?>
              <input type="text" name="author" value="<?php echo $_GET['author']; ?>"/> 
-            <?php echo __('Subject(s)'); ?> :
+            <?php echo gettext('Subject(s)'); ?> :
             <?php //echo $advsearch_topic; ?> 
              <input type="text" name="subject" value="<?php echo $_GET['subject']; ?>"/>
-            <?php echo __('ISBN/ISSN'); ?> :
+            <?php echo gettext('ISBN/ISSN'); ?> :
             <input type="text" name="isbn" value="<?php echo $_GET['isbn']; ?>"/>
-            <?php echo __('Classification'); ?> :
+            <?php echo gettext('Classification'); ?> :
             <input type="text" name="classification" value="<?php echo $_GET['classification']; ?>"/>   
-             <?php echo __('Publish Year'); ?> :
+             <?php echo gettext('Publish Year'); ?> :
             <input type="text" name="publish_year" value="<?php echo $_GET['publish_year']; ?>"/>  
-            <?php echo __('Publisher Name'); ?> :
+            <?php echo gettext('Publisher Name'); ?> :
             <input type="text" name="publish_name" value="<?php echo $_GET['publish_name']; ?>"/>
-              <?php echo __('Keywords'); ?> :
+              <?php echo gettext('Keywords'); ?> :
             <input type="text" name="keywords_tag" value="<?php echo $_GET['keywords_tag']; ?>"/>             
-           <!-- commment by iresh on 21-1-2011 <?php echo __('GMD'); ?> :-->
+           <!-- commment by iresh on 21-1-2011 <?php echo gettext('GMD'); ?> :-->
 	    <?php echo "<br>"; ?>
 <!--start commented by Parth 9/7/2011       -->
-   <!--  <?php echo __('Material Type'); ?> :
+   <!--  <?php echo gettext('Material Type'); ?> :
             <select name="gmd" />
             <?php echo $gmd_list; ?>
             </select> -->
 <!--ended commented by Parth 9/7/2011-->
-	    <?php echo __('Material Sub Type'); ?> :
+	    <?php echo gettext('Material Sub Type'); ?> :
             <select name="mst_sub" />
             <?php echo $mst_sub_list; ?>
             </select>
 
 <!--start commented by Parth 9/7/2011           -->
-<!-- <?php echo __('Collection Type'); ?> :
+<!-- <?php echo gettext('Collection Type'); ?> :
             <select name="colltype" />
             <?php echo $colltype_list; ?>
             </select> 
-            <?php echo __('Location'); ?> :
+            <?php echo gettext('Location'); ?> :
             <select name="location" />
             <?php echo $location_list; ?>
             </select> -->
 <!--ended commented by Parth 9/7/2011-->
            <!--Added by iresh on 21-1-2011 --> <br/> 
-            <input type="submit" name="search" value="<?php echo __('Search'); ?>" />
+            <input type="submit" name="search" value="<?php echo gettext('Search'); ?>" />
 	<input type="hidden" name="advancesearch" value="set" /> 		
             <!-- <input type="button" value="More Options" onclick="" class="button marginTop" /> -->
             </form>

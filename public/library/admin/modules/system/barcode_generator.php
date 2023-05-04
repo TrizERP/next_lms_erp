@@ -34,7 +34,7 @@ $can_read = utility::havePrivilege('system', 'r');
 $can_write = utility::havePrivilege('system', 'w');
 
 if (!$can_read) {
-    die('<div class="errorBox">'.__('You don\'t have enough privileges to view this section').'</div>');
+    die('<div class="errorBox">'.gettext('You don\'t have enough privileges to view this section').'</div>');
 }
 
 $max_print = 50;
@@ -80,7 +80,7 @@ if (isset($_SESSION['barcodes'])) {
     $file_write = @file_put_contents(FILES_UPLOAD_DIR.$print_file_name, $html_str);
     if ($file_write) {
         // open result in window
-        echo '<script type="text/javascript">top.openHTMLpop(\''.SENAYAN_WEB_ROOT_DIR.FILES_DIR.'/'.$print_file_name.'\', 800, 500, \''.__('Barcode Generator').'\')</script>';
+        echo '<script type="text/javascript">top.openHTMLpop(\''.SENAYAN_WEB_ROOT_DIR.FILES_DIR.'/'.$print_file_name.'\', 800, 500, \''.gettext('Barcode Generator').'\')</script>';
     } else { utility::jsAlert('ERROR! Barcodes failed to generate, possibly because '.SENAYAN_BASE_DIR.FILES_DIR.' directory is not writable'); }
     exit();
 }
@@ -95,12 +95,12 @@ if (isset($_POST['saveData']) AND $can_write) {
         foreach ($_POST['barcode'] as $barcode_text) {
             if (!empty($barcode_text)) {
                 $barcode_text = trim($barcode_text);
-                echo 'new Ajax.Request(\''.SENAYAN_WEB_ROOT_DIR.'lib/phpbarcode/barcode.php?code='.$barcode_text.'&encoding='.$sysconf['barcode_encoding'].'&scale='.$size.'&mode=png\', { method: \'get\', onFailure: function(sendAlert) { alert(\''.__('Error creating barcode!').'\'); } });'."\n";
+                echo 'new Ajax.Request(\''.SENAYAN_WEB_ROOT_DIR.'lib/phpbarcode/barcode.php?code='.$barcode_text.'&encoding='.$sysconf['barcode_encoding'].'&scale='.$size.'&mode=png\', { method: \'get\', onFailure: function(sendAlert) { alert(\''.gettext('Error creating barcode!').'\'); } });'."\n";
                 // add to sessions
                 $_SESSION['barcodes'][] = $barcode_text;
             }
         }
-        echo 'alert(\''.__('Barcode generation finished').'\')'."\n";
+        echo 'alert(\''.gettext('Barcode generation finished').'\')'."\n";
         echo 'location.href = \''.$_SERVER['PHP_SELF'].'\''."\n";
         echo '</script>';
     }
@@ -139,7 +139,7 @@ echo $bradecum;
 </table>
 <fieldset class="menuBox">
 <div class="menuBoxInner barcodeIcon">
-    <?php echo __('Barcode Generator').'  <p class="only_border">&nbsp;</p>' . __('Type barcodes text to one or more text field below and click'). ' "' .__('Generate Barcodes'). '".'; ?>
+    <?php echo gettext('Barcode Generator').'  <p class="only_border">&nbsp;</p>' . gettext('Type barcodes text to one or more text field below and click'). ' "' .gettext('Generate Barcodes'). '".'; ?>
 </div>
 </fieldset>
 <?php
@@ -153,9 +153,9 @@ $row = 1;
 $row_num = 6;
 
 // submit button
-$table->appendTableRow(array(__('Barcode Size').' : <select name="size"><option value="1">'.__('Small').'</option>
-    <option value="2" selected>'.__('Medium').'</option>
-    <option value="3">'.__('Big').'</option></select>'));
+$table->appendTableRow(array(gettext('Barcode Size').' : <select name="size"><option value="1">'.gettext('Small').'</option>
+    <option value="2" selected>'.gettext('Medium').'</option>
+    <option value="3">'.gettext('Big').'</option></select>'));
 // set cell attribute
 $table->setCellAttr($row, 0, 'colspan="3" class="alterCell"');
 $row++;
@@ -169,7 +169,7 @@ while ($row <= $row_num) {
 }
 
 // submit button
-$table->appendTableRow(array('<input type="submit" name="saveData" value="'.__('Generate Barcodes').'" />'));
+$table->appendTableRow(array('<input type="submit" name="saveData" value="'.gettext('Generate Barcodes').'" />'));
 // set cell attribute
 $table->setCellAttr($row_num+1, 0, 'colspan="3" class="alterCell"');
 

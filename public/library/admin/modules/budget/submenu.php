@@ -20,6 +20,6 @@
 
 /* Reporting module submenu items */
 $menu[] = array('Header2', 'Budget');
-$menu[] = array(__('Budget'), MODULES_WEB_ROOT_DIR.'budget/index.php', __('Budgeting'));
+$menu[] = array(gettext('Budget'), MODULES_WEB_ROOT_DIR.'budget/index.php', gettext('Budgeting'));
 // other/custom report menu
 ?>

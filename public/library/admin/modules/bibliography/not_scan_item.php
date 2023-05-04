@@ -29,11 +29,11 @@ $can_write = utility::havePrivilege('master_file', 'w');
 // die;
 
 if (!$can_read) {
-    die('<div class="errorBox">'.__('You don\'t have enough privileges to access this area!').'</div>');
+    die('<div class="errorBox">'.gettext('You don\'t have enough privileges to access this area!').'</div>');
 }
 
 // item status rules
-$rules_option[] = array(NO_LOAN_TRANSACTION, __('No Books'));
+$rules_option[] = array(NO_LOAN_TRANSACTION, gettext('No Books'));
 
 /* RECORD OPERATION */
 if (isset($_REQUEST['submit_value']) AND $_REQUEST['submit_value'] != '' && $_REQUEST['submit_value'] == 'Save') 
@@ -68,10 +68,10 @@ if (isset($_REQUEST['submit_value']) AND $_REQUEST['submit_value'] != '' && $_RE
 
     // error alerting
     if ($sql_op->affected_rows >= 1 && $sql_op->affected_rows != 0) {
-        utility::jsAlert(__('Update Successfully'));
+        utility::jsAlert(gettext('Update Successfully'));
         echo '<script type="text/javascript">parent.setContent(\'mainContent\', \''.$_SERVER['PHP_SELF'].'?'.$itemcode.'\', \'post\');</script>';
     } else {
-        utility::jsAlert(__('Some or All Data NOT Updated successfully! Please contact system administrator'));
+        utility::jsAlert(gettext('Some or All Data NOT Updated successfully! Please contact system administrator'));
          echo '<script type="text/javascript">parent.setContent(\'mainContent\', \''.$_SERVER['PHP_SELF'].'?'.$itemcode.'\', \'post\');</script>';
     }
 } 
@@ -108,7 +108,7 @@ echo $bradecum;
       <ul class="tabs"> 
 
 <li> 
-<a href="<?php echo MODULES_WEB_ROOT_DIR; ?>bibliography/not_scan_item.php" class="headerText2"><?php echo __('Book Verification Remarks'); ?></a> </li>
+<a href="<?php echo MODULES_WEB_ROOT_DIR; ?>bibliography/not_scan_item.php" class="headerText2"><?php echo gettext('Book Verification Remarks'); ?></a> </li>
 </ul>
     </td>
 </tr>
@@ -122,9 +122,9 @@ if (isset($_POST['detail']) OR (!isset($_GET['action']) AND $_GET['action'] != '
 <fieldset class="menuBox">
 <div class="menuBoxInner masterFileIcon">
     <p class="only_border">&nbsp;</p>
-    <form name="search" action="<?php echo MODULES_WEB_ROOT_DIR; ?>bibliography/not_scan_item.php" id="search" method="get" style="display: inline;"><?php echo __('Item Code'); ?> :
+    <form name="search" action="<?php echo MODULES_WEB_ROOT_DIR; ?>bibliography/not_scan_item.php" id="search" method="get" style="display: inline;"><?php echo gettext('Item Code'); ?> :
     <input type="text" name="keywords_for_scan_book" size="30" />
-    <input type="submit" id="doSearch" value="<?php echo __('Submit'); ?>" class="button" />
+    <input type="submit" id="doSearch" value="<?php echo gettext('Submit'); ?>" class="button" />
     </form>
 </div>
 </fieldset>

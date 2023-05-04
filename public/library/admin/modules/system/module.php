@@ -29,7 +29,7 @@ require SENAYAN_BASE_DIR.'admin/default/session_check.inc.php';
 
 // only administrator have privileges to modify modules data
 if ($_SESSION['uid'] != 1) {
-    die('<div class="errorBox">'.__('You don\'t have enough privileges to view this section').'</div>');
+    die('<div class="errorBox">'.gettext('You don\'t have enough privileges to view this section').'</div>');
 }
 
 require SIMBIO_BASE_DIR.'simbio_GUI/form_maker/simbio_form_table_AJAX.inc.php';
@@ -44,7 +44,7 @@ if (isset($_POST['saveData'])) {
     $moduleName = trim(strip_tags($_POST['moduleName']));
     $modulePath = trim(strip_tags($_POST['modulePath']));
     if (empty($moduleName) OR empty($modulePath)) {
-        utility::jsAlert(__('Module name and path can\'t be empty'));
+        utility::jsAlert(gettext('Module name and path can\'t be empty'));
         exit();
     } else {
         $data['module_path'] = $dbs->escape_string($modulePath);
@@ -67,9 +67,9 @@ if (isset($_POST['saveData'])) {
             if ($update) {
                 // write log
                 utility::writeLogs($dbs, 'staff', $_SESSION['uid'], 'system', $_SESSION['realname'].' update module data ('.$moduleName.') with path ('.$modulePath.')');
-                utility::jsAlert(__('Module Data Successfully Updated'));
+                utility::jsAlert(gettext('Module Data Successfully Updated'));
                 echo '<script type="text/javascript">parent.setContent(\'mainContent\', parent.getPreviousAJAXurl(), \'post\');</script>';
-            } else { utility::jsAlert(__('Module Data FAILED to Updated. Please Contact System Administrator')."\nDEBUG : ".$sql_op->error); }
+            } else { utility::jsAlert(gettext('Module Data FAILED to Updated. Please Contact System Administrator')."\nDEBUG : ".$sql_op->error); }
             exit();
         } else {
             /* INSERT RECORD MODE */
@@ -80,9 +80,9 @@ if (isset($_POST['saveData'])) {
                 $dbs->query('INSERT INTO group_access VALUES (1, '.$module_id.', 1, 1)');
                 // write log
                 utility::writeLogs($dbs, 'staff', $_SESSION['uid'], 'system', $_SESSION['realname'].' add new module ('.$moduleName.') with path ('.$modulePath.')');
-                utility::jsAlert(__('New Module Data Successfully Saved'));
+                utility::jsAlert(gettext('New Module Data Successfully Saved'));
                 echo '<script type="text/javascript">parent.setContent(\'mainContent\', \''.$_SERVER['PHP_SELF'].'\', \'post\');</script>';
-            } else { utility::jsAlert(__('Module Data FAILED to Save. Please Contact System Administrator')."\n".$sql_op->error); }
+            } else { utility::jsAlert(gettext('Module Data FAILED to Save. Please Contact System Administrator')."\n".$sql_op->error); }
             exit();
         }
     }
@@ -118,10 +118,10 @@ if (isset($_POST['saveData'])) {
 
     // error alerting
     if ($error_num == 0) {
-        utility::jsAlert(__('All Data Successfully Deleted'));
+        utility::jsAlert(gettext('All Data Successfully Deleted'));
         echo '<script type="text/javascript">parent.setContent(\'mainContent\', \''.$_SERVER['PHP_SELF'].'?'.$_POST['lastQueryStr'].'\', \'post\');</script>';
     } else {
-        utility::jsAlert(__('Some or All Data NOT deleted successfully!\nPlease contact system administrator'));
+        utility::jsAlert(gettext('Some or All Data NOT deleted successfully!\nPlease contact system administrator'));
         echo '<script type="text/javascript">parent.setContent(\'mainContent\', \''.$_SERVER['PHP_SELF'].'?'.$_POST['lastQueryStr'].'\', \'post\');</script>';
     }
     exit();
@@ -135,7 +135,7 @@ if (isset($_POST['saveData'])) {
 	<td valign=top>
 	<?php
 	$bradecum = '';       
-        $basedir = basename(dirname(__FILE__));
+        $basedir = basename(dirname(gettextFILEgettext));
         $bradecum = "<a href=javascript:void(0); onclick=javascript:new_set_home(); >Home</a>-><a class='' href=javascript:void(0); onclick=javascript:new_set('".$basedir."');>"; 
 	$query = "select module_name from mst_module where module_path = '".$basedir."'";
 	$set_query = $dbs->query($query);
@@ -164,22 +164,22 @@ echo $bradecum;
 	<td class="tab_menu_top">
                             <ul class="tabs"> 
 				<li>
-<a href="<?php echo MODULES_WEB_ROOT_DIR; ?>system/module.php?action=detail" class="headerText2"><?php echo __('Add New Modules'); ?></a>
+<a href="<?php echo MODULES_WEB_ROOT_DIR; ?>system/module.php?action=detail" class="headerText2"><?php echo gettext('Add New Modules'); ?></a>
 </li>
 <li> 
-<a href="<?php echo MODULES_WEB_ROOT_DIR; ?>system/module.php" class="headerText2"><?php echo __('Modules List'); ?></a></li>
+<a href="<?php echo MODULES_WEB_ROOT_DIR; ?>system/module.php" class="headerText2"><?php echo gettext('Modules List'); ?></a></li>
 </ul>
 	</td>
 </tr>
 </table>
 <fieldset class="menuBox">
 <div class="menuBoxInner moduleIcon">
-   <!-- <?php echo strtoupper(__('Modules')); ?> - <a href="<?php echo MODULES_WEB_ROOT_DIR; ?>system/module.php?action=detail" class="headerText2"><?php echo __('Add New Modules'); ?></a>
-    &nbsp; <a href="<?php echo MODULES_WEB_ROOT_DIR; ?>system/module.php" class="headerText2"><?php echo __('Modules List'); ?></a>-->
+   <!-- <?php echo strtoupper(gettext('Modules')); ?> - <a href="<?php echo MODULES_WEB_ROOT_DIR; ?>system/module.php?action=detail" class="headerText2"><?php echo gettext('Add New Modules'); ?></a>
+    &nbsp; <a href="<?php echo MODULES_WEB_ROOT_DIR; ?>system/module.php" class="headerText2"><?php echo gettext('Modules List'); ?></a>-->
     <p class="only_border">&nbsp;</p>
-    <form name="search" action="<?php echo MODULES_WEB_ROOT_DIR; ?>system/module.php" id="search" method="get" style="display: inline;"><?php echo __('Search'); ?> :
+    <form name="search" action="<?php echo MODULES_WEB_ROOT_DIR; ?>system/module.php" id="search" method="get" style="display: inline;"><?php echo gettext('Search'); ?> :
     <input type="text" name="keywords" size="30" />
-    <input type="submit" id="doSearch" value="<?php echo __('Search'); ?>" class="button" />
+    <input type="submit" id="doSearch" value="<?php echo gettext('Search'); ?>" class="button" />
     </form>
 </div>
 </fieldset>
@@ -194,7 +194,7 @@ if (isset($_POST['detail']) OR (isset($_GET['action']) AND $_GET['action'] == 'd
 
     // create new instance
     $form = new simbio_form_table_AJAX('mainForm', $_SERVER['PHP_SELF'].'?'.$_SERVER['QUERY_STRING'], 'post');
-    $form->submit_button_attr = 'name="saveData" value="'.__('Save').'" class="button"';
+    $form->submit_button_attr = 'name="saveData" value="'.gettext('Save').'" class="button"';
 
     // form table attributes
     $form->table_attr = 'align="center" id="dataList" cellpadding="5" cellspacing="0"';
@@ -209,24 +209,24 @@ if (isset($_POST['detail']) OR (isset($_GET['action']) AND $_GET['action'] == 'd
         // form record title
         $form->record_title = $rec_d['module_name'];
         // submit button attribute
-        $form->submit_button_attr = 'name="saveData" value="'.__('Update').'" class="button"';
+        $form->submit_button_attr = 'name="saveData" value="'.gettext('Update').'" class="button"';
     }
 
     /* Form Element(s) */
     // module
-    //comment by iresh on 25-1-2011$form->addTextField('text', 'moduleName', __('Module Name').'*', $rec_d['module_name'], 'style="width: 50%;"');
-    /*added by iresh on 25-1-2011*/ $form->addTextField('text', 'moduleName', __('Module Name').'*', $rec_d['module_name'], 'style="width: 140px;"');
+    //comment by iresh on 25-1-2011$form->addTextField('text', 'moduleName', gettext('Module Name').'*', $rec_d['module_name'], 'style="width: 50%;"');
+    /*added by iresh on 25-1-2011*/ $form->addTextField('text', 'moduleName', gettext('Module Name').'*', $rec_d['module_name'], 'style="width: 140px;"');
     // module path
-  //comment by iresh on 25-1-2011  $form->addTextField('text', 'modulePath', __('Module Path').'*', $rec_d['module_path'], 'style="width: 100%;"');
-    /*added by iresh on 25-1-2011*/ $form->addTextField('text', 'modulePath', __('Module Path').'*', $rec_d['module_path'], 'style="width: 140px;"');
+  //comment by iresh on 25-1-2011  $form->addTextField('text', 'modulePath', gettext('Module Path').'*', $rec_d['module_path'], 'style="width: 100%;"');
+    /*added by iresh on 25-1-2011*/ $form->addTextField('text', 'modulePath', gettext('Module Path').'*', $rec_d['module_path'], 'style="width: 140px;"');
     // module desc
     // module desc
-   //comment by iresh on 25-1-2011 $form->addTextField('text', 'moduleDesc', __('Module Description'), $rec_d['module_desc'], 'style="width: 100%;"');
-     /*added by iresh on 25-1-2011*/$form->addTextField('text', 'moduleDesc', __('Module Description'), $rec_d['module_desc'], 'style="width: 140px;"');
+   //comment by iresh on 25-1-2011 $form->addTextField('text', 'moduleDesc', gettext('Module Description'), $rec_d['module_desc'], 'style="width: 100%;"');
+     /*added by iresh on 25-1-2011*/$form->addTextField('text', 'moduleDesc', gettext('Module Description'), $rec_d['module_desc'], 'style="width: 140px;"');
 
     // edit mode messagge
     if ($form->edit_mode) {
-        echo '<div class="infoBox">'.__('You are going to edit data').' : <b>'.$rec_d['module_name'].'</b></div>'; //mfc
+        echo '<div class="infoBox">'.gettext('You are going to edit data').' : <b>'.$rec_d['module_name'].'</b></div>'; //mfc
     }
     // print out the form object
     echo $form->printOut();
@@ -238,8 +238,8 @@ if (isset($_POST['detail']) OR (isset($_GET['action']) AND $_GET['action'] == 'd
     // create datagrid
     $datagrid = new simbio_datagrid();
     $datagrid->setSQLColumn('mdl.module_id',
-        'mdl.module_name AS \''.__('Module Name').'\'',
-        'mdl.module_desc AS \''.__('Module Description').'\'');
+        'mdl.module_name AS \''.gettext('Module Name').'\'',
+        'mdl.module_desc AS \''.gettext('Module Description').'\'');
     $datagrid->setSQLorder('module_name ASC');
 
     // is there any search
@@ -257,7 +257,7 @@ if (isset($_POST['detail']) OR (isset($_GET['action']) AND $_GET['action'] == 'd
     // put the result into variables
     $datagrid_result = $datagrid->createDataGrid($dbs, $table_spec, 20, true);
     if (isset($_GET['keywords']) AND $_GET['keywords']) {
-        $msg = str_replace('{result->num_rows}', $datagrid->num_rows, __('Found <strong>{result->num_rows}</strong> from your keywords')); //mfc
+        $msg = str_replace('{result->num_rows}', $datagrid->num_rows, gettext('Found <strong>{result->num_rows}</strong> from your keywords')); //mfc
         echo '<div class="infoBox">'.$msg.' : "'.$_GET['keywords'].'"</div>';
     }
 

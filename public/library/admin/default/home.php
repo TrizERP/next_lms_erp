@@ -1,13 +1,15 @@
 <?php
-error_reporting(0);
+// error_reporting(E_ALL);
 
+// ini_set('display_errors',1);
+session_start();
 $sertracking = array();
-$sertracking = explode('/', $_SERVER[SCRIPT_FILENAME]);
+$sertracking = explode('/', $_SERVER['SCRIPT_FILENAME']);
 // $data_file = '/' . $sertracking[1] . '/' . $sertracking[2] . '/' . $sertracking[3] . '/' . $sertracking[4] . '/data.php';
-
+// echo $inte_schema;exit;
 //include_once $data_file;
 //echo basename($_SERVER['PHP_SELF']);
-//echo basename(__FILE__);
+//echo basename(gettextFILEgettext);
 if (basename($_SERVER['PHP_SELF']) == basename(__FILE__)) {
 
     include_once '../../sysconfig.inc.php';
@@ -21,11 +23,11 @@ if (basename($_SERVER['PHP_SELF']) == basename(__FILE__)) {
 $warnings = array();
 // check GD extension
 if (!extension_loaded('gd')) {
-    $warnings[] = __('<strong>PHP GD</strong> extension is not installed. Please install it or application won\'t be able to create image thumbnail and barcode.');
+    $warnings[] = gettext('<strong>PHP GD</strong> extension is not installed. Please install it or application won\'t be able to create image thumbnail and barcode.');
 } else {
     // check GD Freetype
     if (!function_exists('imagettftext')) {
-        $warnings[] = __('<strong>Freetype</strong> support is not enabled in PHP GD extension. Rebuild PHP GD extension with Freetype support or application won\'t be able to create barcode.');
+        $warnings[] = gettext('<strong>Freetype</strong> support is not enabled in PHP GD extension. Rebuild PHP GD extension with Freetype support or application won\'t be able to create barcode.');
     }
 }
 
@@ -33,21 +35,21 @@ if (!extension_loaded('gd')) {
 // check if images dir is writable or not
 if (!is_writable(IMAGES_BASE_DIR) OR ! is_writable(IMAGES_BASE_DIR . 'barcodes') OR ! is_writable(IMAGES_BASE_DIR . 'persons') OR ! is_writable(IMAGES_BASE_DIR . 'docs')) {
 
-    $warnings[] = __('<strong>Images</strong> directory and directories under it is not writable. Make sure it is writable by changing its permission or you won\'t be able to 			upload any images and create barcodes');
+    $warnings[] = gettext('<strong>Images</strong> directory and directories under it is not writable. Make sure it is writable by changing its permission or you won\'t be able to 			upload any images and create barcodes');
 }
 // check if file repository dir is writable or not
 if (!is_writable(REPO_BASE_DIR)) {
 
-    $warnings[] = __('<strong>Repository</strong> directory is not writable. Make sure it is writable (and all directories under it) by changing its permission or you won\'t be able to upload any bibliographic attachments.');
+    $warnings[] = gettext('<strong>Repository</strong> directory is not writable. Make sure it is writable (and all directories under it) by changing its permission or you won\'t be able to upload any bibliographic attachments.');
 }
 // check if file upload dir is writable or not
 if (!is_writable(FILES_UPLOAD_DIR)) {
 
-    $warnings[] = __('<strong>File upload</strong> directory is not writable. Make sure it is writable (and all directories under it) by changing its permission or you won\'t be able to upload any file, create report files and create database backups.');
+    $warnings[] = gettext('<strong>File upload</strong> directory is not writable. Make sure it is writable (and all directories under it) by changing its permission or you won\'t be able to upload any file, create report files and create database backups.');
 }
 // check mysqldump
 if (!file_exists($sysconf['mysqldump'])) {
-    $warnings[] = __('The PATH for <strong>mysqldump</strong> program is not right! Please check configuration file or you won\'t be able to do any database backups.');
+    $warnings[] = gettext('The PATH for <strong>mysqldump</strong> program is not right! Please check configuration file or you won\'t be able to do any database backups.');
 }
 
 // if there any warnings
@@ -172,22 +174,24 @@ echo '</td>';
 echo '</tr>';
 echo '<tr>';
 echo '<td valign=top><div class="due_top_bg"><p class="title1">Due Date Warning</p>';
+// $_buffer1 = "";
+// $_buffer = '';
+// $ovd_title_d = "";
+// $inte_schema="";
 
-
-$_buffer = '';
 // echo 'SELECT l.item_code, m.enrollment_no, m.first_name, m.email, m.phone_no, b.title, l.loan_date, l.due_date, (TO_DAYS(DATE(NOW()))-TO_DAYS(due_date)) AS \'Overdue Days\' FROM loan AS l LEFT JOIN item AS i ON l.item_code=i.item_code  INNER JOIN ' . $inte_schema . '.tblstudent m ON m.enrollment_no=l.member_id LEFT JOIN biblio AS b ON i.biblio_id=b.biblio_id WHERE (l.loan_date is not null AND l.return_date is null AND ((TO_DAYS(\'' . date('Y-m-d') . '\')-TO_DAYS(due_date)) BETWEEN 0 AND 3))';
-$due_date = $dbs->query('SELECT l.item_code, m.enrollment_no, m.first_name, m.email, m.phone_no, b.title, l.loan_date, l.due_date, (TO_DAYS(DATE(NOW()))-TO_DAYS(due_date)) AS \'Overdue Days\' FROM loan AS l LEFT JOIN item AS i ON l.item_code=i.item_code  INNER JOIN ' . $inte_schema . '.tblstudent m ON m.enrollment_no collate utf8_general_ci =l.member_id collate utf8_general_ci and m.sub_institute_id = '.$_SESSION['SUB_INSTITUTE_ID'].' LEFT JOIN biblio AS b ON i.biblio_id=b.biblio_id WHERE m.sub_institute_id = '.$_SESSION['SUB_INSTITUTE_ID'].' AND (l.loan_date is not null AND l.return_date is null AND ((TO_DAYS(\'' . date('Y-m-d') . '\')-TO_DAYS(due_date)) BETWEEN 0 AND 3))');
-
+$due_date = $dbs->query('SELECT l.item_code, m.enrollment_no, m.first_name, m.email, m.mobile, b.title, l.loan_date, l.due_date, (TO_DAYS(DATE(NOW()))-TO_DAYS(due_date)) AS \'Overdue Days\' FROM loan AS l LEFT JOIN item AS i ON l.item_code=i.item_code  INNER JOIN ' . $inte_schema . '.tblstudent m ON m.enrollment_no collate utf8_general_ci =l.member_id collate utf8_general_ci and m.sub_institute_id = '.$_SESSION['SUB_INSTITUTE_ID'].' LEFT JOIN biblio AS b ON i.biblio_id=b.biblio_id WHERE m.sub_institute_id = '.$_SESSION['SUB_INSTITUTE_ID'].' AND (l.loan_date is not null AND l.return_date is null AND ((TO_DAYS(\'' . date('Y-m-d') . '\')-TO_DAYS(due_date)) BETWEEN 0 AND 3))');
 $_buffer .= '<marquee direction="up" onmouseover="this.stop()" onmouseout="this.start()" scrollamount="2"><table cellspacing="0" border=0>';
 $_buffer .= '<tr bgcolor=#CCCCCC><td>GR.No.</td><td>Title</td><td>Date</td></tr>';
-if ($due_date->num_rows) {
+
+if ($due_date !=false && $due_date->num_rows >0) {
     while ($_title_d = $due_date->fetch_assoc()) {
 
         $_buffer .= '<tr>';
         $_buffer .= '<td valign="top" width="10%">' . $_title_d['enrollment_no'] . '</td>';
         // $_buffer .= '<td valign="top" width="10%">'.$_title_d['item_code'].'</td>';
         $_buffer .= '<td valign="top" width="10%">' . $_title_d['title'] . '</td>';
-        $_buffer .= '<td valign="top" width="10%">' . __('Due Date') . ': ' . date('d-m-Y', strtotime($_title_d['due_date'])) . '</td>';
+        $_buffer .= '<td valign="top" width="10%">' . gettext('Due Date') . ': ' . date('d-m-Y', strtotime($_title_d['due_date'])) . '</td>';
         $_buffer .= '</tr>';
     }
 }
@@ -203,16 +207,16 @@ echo '<td valign=top><div class="overdue_top_bg"><p class="title1">Overdue Repor
 $ovd_title_q = $dbs->query('SELECT l.item_code, i.price, i.price_currency, b.title, l.loan_date, l.due_date, m.enrollment_no, m.first_name, m.email, m.phone_no, (TO_DAYS(DATE(NOW()))-TO_DAYS(due_date)) AS \'Overdue Days\' FROM loan AS l LEFT JOIN item AS i ON l.item_code=i.item_code INNER JOIN ' . $inte_schema . '.tblstudent m ON m.enrollment_no collate utf8_general_ci =l.member_id collate utf8_general_ci LEFT JOIN biblio AS b ON i.biblio_id=b.biblio_id WHERE m.sub_institute_id = '.$_SESSION['SUB_INSTITUTE_ID'].' AND (l.loan_date is not null AND l.return_date is null AND TO_DAYS(due_date) < TO_DAYS(\'' . date('Y-m-d') . '\'))');
 $_buffer1 .= '<div  class="overdue_mid_bg"><marquee direction="up" onmouseover="this.stop()" onmouseout="this.start()" scrollamount="2"><table width="100%" cellspacing="0" border=0>';
 $_buffer1 .= '<tr bgcolor=#CCCCCC><td>GR.No.</td><td>Item Code</td><td>Title</td><!--<td>Days</td>--><td>Date</td></tr>';
-if ($ovd_title_d->num_rows) {
+if ($ovd_title_d!=false && $ovd_title_d->num_rows > 0) {
     while ($ovd_title_d = $ovd_title_q->fetch_assoc()) {
 
         $_buffer1 .= '<tr>';
         $_buffer1 .= '<td valign="top" width="10%">' . $ovd_title_d['enrollment_no'] . '</td>';
           $_buffer1 .= '<td valign="top" width="10%">'.$ovd_title_d['item_code'].'</td>';
         $_buffer1 .= '<td valign="top" width="40%">' . $ovd_title_d['title'] . '<div></div></td>';
-        //$_buffer1 .= '<td width="20%">'.__('Overdue').': '.$ovd_title_d['Overdue Days'].' '.__('day(s)').'</td>';
-        $_buffer1 .= '<td width="30%" valign="top">'.__('Loan Date').': '.$ovd_title_d['loan_date'].' &nbsp; '.__('Due Date').': '.$ovd_title_d['due_date'].'</td>';
-        $_buffer1 .= '<td width="30%" valign="top">&nbsp; ' . __('Due Date') . ': ' . date('d-m-Y', $ovd_title_d['due_date']) . '</td>';
+        //$_buffer1 .= '<td width="20%">'.gettext('Overdue').': '.$ovd_title_d['Overdue Days'].' '.gettext('day(s)').'</td>';
+        $_buffer1 .= '<td width="30%" valign="top">'.gettext('Loan Date').': '.$ovd_title_d['loan_date'].' &nbsp; '.gettext('Due Date').': '.$ovd_title_d['due_date'].'</td>';
+        $_buffer1 .= '<td width="30%" valign="top">&nbsp; ' . gettext('Due Date') . ': ' . date('d-m-Y', $ovd_title_d['due_date']) . '</td>';
         $_buffer1 .= '</tr>';
     }
 }
@@ -230,9 +234,10 @@ $report_q = $dbs->query('SELECT gmd_name, COUNT(loan_id) FROM loan AS l
     INNER JOIN biblio AS b ON i.biblio_id=b.biblio_id
     INNER JOIN mst_gmd AS gmd ON b.gmd_id=gmd.gmd_id
     GROUP BY b.gmd_id ORDER BY COUNT(loan_id) DESC');
-$report_a = '<a class="notAJAX" href="#" onclick="openHTMLpop(\'' . MODULES_WEB_ROOT_DIR . 'reporting/charts_report.php?chart=total_loan_gmd\', 700, 470, \'' . __('Total Loan By Material Type') . '\')">' . __('Show in chart/plot') . '</a>';
+$report_a = '<a class="notAJAX" href="#" onclick="openHTMLpop(\'' . MODULES_WEB_ROOT_DIR . 'reporting/charts_report.php?chart=total_loan_gmd\', 700, 470, \'' . gettext('Total Loan By Material Type') . '\')">' . gettext('Show in chart/plot') . '</a>';
 echo $report_a;
-if ($ovd_title_d->num_rows) {
+if ($ovd_title_d!=false && $ovd_title_d->num_rows > 0) {
+
     while ($data = $report_q->fetch_row()) {
         //echo "<tr>";
         $report_d = $data[0];
@@ -241,6 +246,7 @@ if ($ovd_title_d->num_rows) {
         $report_d3 .= '{name:"' . $report_d . '",data:[' . $report_d1 . ']},';
     }
 }
+$report_d3 = "";
 $report_d3 = str_replace(' ', '%20', $report_d3);
 $report_q = $dbs->query('SELECT material_sub_name, COUNT(loan_id) FROM loan AS l
         INNER JOIN item AS i ON l.item_code=i.item_code

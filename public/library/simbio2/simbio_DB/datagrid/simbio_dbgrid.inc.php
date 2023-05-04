@@ -61,11 +61,11 @@ class simbio_datagrid extends simbio_table
         
         //echo "ho";die();
         if (!isset($this->chbox_property))
-                $this->chbox_property = array('itemID', __('DELETE'));
+                $this->chbox_property = array('itemID', gettext('DELETE'));
                         
            
         if (!isset($this->edit_property)) 
-            $this->edit_property = array('itemID', __('EDIT'));
+            $this->edit_property = array('itemID', gettext('EDIT'));
         
 /*        if (!isset($this->$view_property)) 
                 $this->$view_property = array('itemID', __('View'));*/
@@ -86,7 +86,7 @@ class simbio_datagrid extends simbio_table
         if (!$this->chbox_confirm_msg) 
         {
             
-            $this->chbox_confirm_msg = __('Are You Sure Want to DELETE Selected Data?');
+            $this->chbox_confirm_msg = gettext('Are You Sure Want to DELETE Selected Data?');
              
              
         }
@@ -95,7 +95,7 @@ class simbio_datagrid extends simbio_table
         {
                 //added by Parth 8/7/2011            
 		//$this->chbox_action_button = __('Delete Selected Data');
-		$this->chbox_action_button = __('Delete');
+		$this->chbox_action_button = gettext('Delete');
                 //ended by Parth 8/7/2011
         }
 
@@ -124,7 +124,7 @@ class simbio_datagrid extends simbio_table
         
         $_dir = 'ASC';
         $_next_dir = 'DESC';
-        $_sort_dir_info = __('ascendingly');
+        $_sort_dir_info = gettext('ascendingly');
         if (isset($_GET['fld']) AND !empty($_GET['fld']))
         {
             $this->sql_order = 'ORDER BY `'.urldecode($_GET['fld']).'` ';
@@ -139,7 +139,7 @@ class simbio_datagrid extends simbio_table
             else
             {
                 $_next_dir = 'DESC';
-                $_sort_dir_info = __('descendingly');
+                $_sort_dir_info = gettext('descendingly');
             }
             // append sort direction
             $this->sql_order .= $_dir;
@@ -232,7 +232,7 @@ class simbio_datagrid extends simbio_table
             if (!in_array($_fld->name, $this->no_sort_column) AND isset($this->sort_column[$_fld->name])) 
             {
                 $_order_by = 'fld='.urlencode($this->sort_column[$_fld->name]).'&dir='.$_next_dir;
-                $this->grid_result_fields[] = '<a href="'.$_SERVER['PHP_SELF'].'?'.$_url_query_str.$_order_by.'" title="'.__('Order list by').' '.$_fld->name.' '.$_sort_dir_info.'">'.$_fld->name.'</a>';
+                $this->grid_result_fields[] = '<a href="'.$_SERVER['PHP_SELF'].'?'.$_url_query_str.$_order_by.'" title="'.gettext('Order list by').' '.$_fld->name.' '.$_sort_dir_info.'">'.$_fld->name.'</a>';
             }
             else
              {
@@ -385,16 +385,16 @@ class simbio_datagrid extends simbio_table
 		if($this->chbox_form_URL == '/mmiserp/Products/library/admin/modules/circulation/quick_return.php')
 		{
 			if (!isset($this->chbox_property))
-                $this->chbox_property = array('itemID', __('RETURN'));
+                $this->chbox_property = array('itemID', gettext('RETURN'));
 		}else{
 			if (!isset($this->chbox_property))
-                $this->chbox_property = array('itemID', __('DELETE'));
+                $this->chbox_property = array('itemID', gettext('DELETE'));
 		}               
         
 		if($this->chbox_form_URL != '/mmiserp/Products/library/admin/modules/circulation/quick_return.php')
 		{			
 			if (!isset($this->edit_property)) 
-				$this->edit_property = array('itemID', __('EDIT'));
+				$this->edit_property = array('itemID', gettext('EDIT'));
         }
 /*        if (!isset($this->$view_property)) 
                 $this->$view_property = array('itemID', __('View'));*/
@@ -411,11 +411,11 @@ class simbio_datagrid extends simbio_table
 
         // set editable flag
         $this->editable = $bool_editable;
-		if(isset($_REQUEST[keywords_for_quick_return])){
+		if(isset($_REQUEST['keywords_for_quick_return'])){
 			if (!$this->chbox_confirm_msg) 
 			{
 				
-				$this->chbox_confirm_msg = __('Are You Sure Want to Return this Book?');
+				$this->chbox_confirm_msg = gettext('Are You Sure Want to Return this Book?');
 				 
 				 
 			}
@@ -423,7 +423,7 @@ class simbio_datagrid extends simbio_table
 			if (!$this->chbox_confirm_msg) 
 			{
 				
-				$this->chbox_confirm_msg = __('Are You Sure Want to DELETE Selected Data?');
+				$this->chbox_confirm_msg = gettext('Are You Sure Want to DELETE Selected Data?');
 				 
 				 
 			}
@@ -434,10 +434,10 @@ class simbio_datagrid extends simbio_table
 		//$this->chbox_action_button = __('Delete Selected Data');
 		// echo '<pre>';
 		// print_r($_REQUEST);
-		if(isset($_REQUEST[keywords_for_quick_return])){
-			$this->chbox_action_button = __('Return');
+		if(isset($_REQUEST['keywords_for_quick_return'])){
+			$this->chbox_action_button = gettext('Return');
 		}else{
-			$this->chbox_action_button = __('Delete');
+			$this->chbox_action_button = gettext('Delete');
 		}
 		
                 //ended by Parth 8/7/2011
@@ -468,7 +468,7 @@ class simbio_datagrid extends simbio_table
         
         $_dir = 'ASC';
         $_next_dir = 'DESC';
-        $_sort_dir_info = __('ascendingly');
+        $_sort_dir_info = gettext('ascendingly');
         if (isset($_GET['fld']) AND !empty($_GET['fld']))
         {
             $this->sql_order = 'ORDER BY `'.urldecode($_GET['fld']).'` ';
@@ -483,7 +483,7 @@ class simbio_datagrid extends simbio_table
             else
             {
                 $_next_dir = 'DESC';
-                $_sort_dir_info = __('descendingly');
+                $_sort_dir_info = gettext('descendingly');
             }
             // append sort direction
             $this->sql_order .= $_dir;
@@ -576,7 +576,7 @@ class simbio_datagrid extends simbio_table
             if (!in_array($_fld->name, $this->no_sort_column) AND isset($this->sort_column[$_fld->name])) 
             {
                 $_order_by = 'fld='.urlencode($this->sort_column[$_fld->name]).'&dir='.$_next_dir;
-                $this->grid_result_fields[] = '<a href="'.$_SERVER['PHP_SELF'].'?'.$_url_query_str.$_order_by.'" title="'.__('Order list by').' '.$_fld->name.' '.$_sort_dir_info.'">'.$_fld->name.'</a>';
+                $this->grid_result_fields[] = '<a href="'.$_SERVER['PHP_SELF'].'?'.$_url_query_str.$_order_by.'" title="'.gettext('Order list by').' '.$_fld->name.' '.$_sort_dir_info.'">'.$_fld->name.'</a>';
             }
             else
              {
@@ -726,7 +726,7 @@ class simbio_datagrid extends simbio_table
  public function createDataGrid1($obj_db, $str_db_table = '', $int_num2show = 30, $bool_editable = false)
     {
         // Default checkbox properties
-        if (!isset($this->chbox_property)) $this->chbox_property = array('itemID', __('SELECT'));
+        if (!isset($this->chbox_property)) $this->chbox_property = array('itemID', gettext('SELECT'));
       //  if (!isset($this->edit_property)) $this->edit_property = array('itemID', __('EDIT'));
 
 
@@ -742,11 +742,11 @@ class simbio_datagrid extends simbio_table
         $this->editable = $bool_editable;
 
         if (!$this->chbox_confirm_msg) {
-            $this->chbox_confirm_msg = __('Are You Sure Want to Confirm Selected Data?');
+            $this->chbox_confirm_msg = gettext('Are You Sure Want to Confirm Selected Data?');
         }
 
         if (!$this->chbox_action_button) {
-            $this->chbox_action_button = __('Confirm Selected Data');
+            $this->chbox_action_button = gettext('Confirm Selected Data');
         }
 
         $this->sql_table = $str_db_table;
@@ -771,7 +771,7 @@ class simbio_datagrid extends simbio_table
         // change the record sorting if there fld var in URL
         $_dir = 'ASC';
         $_next_dir = 'DESC';
-        $_sort_dir_info = __('ascendingly');
+        $_sort_dir_info = gettext('ascendingly');
         if (isset($_GET['fld']) AND !empty($_GET['fld'])) {
             $this->sql_order = 'ORDER BY `'.urldecode($_GET['fld']).'` ';
         }
@@ -781,7 +781,7 @@ class simbio_datagrid extends simbio_table
                 $_next_dir = 'ASC';
             } else {
                 $_next_dir = 'DESC';
-                $_sort_dir_info = __('descendingly');
+                $_sort_dir_info = gettext('descendingly');
             }
             // append sort direction
             $this->sql_order .= $_dir;
@@ -850,7 +850,7 @@ class simbio_datagrid extends simbio_table
             // check if the column is not listed in no_sort_column array properties
             if (!in_array($_fld->name, $this->no_sort_column) AND isset($this->sort_column[$_fld->name])) {
                 $_order_by = 'fld='.urlencode($this->sort_column[$_fld->name]).'&dir='.$_next_dir;
-                $this->grid_result_fields[] = '<a href="'.$_SERVER['PHP_SELF'].'?'.$_url_query_str.$_order_by.'" title="'.__('Order list by').' '.$_fld->name.' '.$_sort_dir_info.'">'.$_fld->name.'</a>';
+                $this->grid_result_fields[] = '<a href="'.$_SERVER['PHP_SELF'].'?'.$_url_query_str.$_order_by.'" title="'.gettextgettext('Order list by').' '.$_fld->name.' '.$_sort_dir_info.'">'.$_fld->name.'</a>';
             } else {
                 $this->grid_result_fields[] = $_fld->name;
             }
@@ -1016,8 +1016,8 @@ class simbio_datagrid extends simbio_table
         if ($this->editable) {
             $_buffer .= '<form action="'.$this->chbox_form_URL.'" name="'.$this->table_name.'" id="'.$this->table_name.'" target="'.$_target.'" method="post" style="display: inline;">'."\n";
 
-	    $_check_all = __('Check All');
-	    $_uncheck_all = __('Uncheck All');
+	    $_check_all = gettext('Check All');
+	    $_uncheck_all = gettext('Uncheck All');
 
             // action buttons group
             $_button_grp = '<table cellspacing="0" cellpadding="5" style="background-color: #fff; width: 100%;"><tr>';
@@ -1084,11 +1084,11 @@ class simbio_datagrid extends simbio_table
     {                        
         
          if (!isset($this->chbox_property))
-                $this->chbox_property = array('itemID', __('DELETE'));
+                $this->chbox_property = array('itemID', gettext('DELETE'));
                         
            
         if (!isset($this->edit_property)) 
-            $this->edit_property = array('itemID', __('EDIT'));
+            $this->edit_property = array('itemID', gettext('EDIT'));
         
 /*        if (!isset($this->$view_property)) 
                 $this->$view_property = array('itemID', __('View'));*/
@@ -1109,7 +1109,7 @@ class simbio_datagrid extends simbio_table
         if (!$this->chbox_confirm_msg) 
         {
             
-            $this->chbox_confirm_msg = __('Are You Sure Want to DELETE Selected Data?');
+            $this->chbox_confirm_msg = gettext('Are You Sure Want to DELETE Selected Data?');
              
              
         }
@@ -1118,7 +1118,7 @@ class simbio_datagrid extends simbio_table
         {
                 //added by Parth 8/7/2011            
 		//$this->chbox_action_button = __('Delete Selected Data');
-		$this->chbox_action_button = __('Delete');
+		$this->chbox_action_button = gettext('Delete');
                 //ended by Parth 8/7/2011
         }
 
@@ -1149,7 +1149,7 @@ class simbio_datagrid extends simbio_table
         // change the record sorting if there fld var in URL
         $_dir = 'ASC';
         $_next_dir = 'DESC';
-        $_sort_dir_info = __('ascendingly');
+        $_sort_dir_info = gettext('ascendingly');
         if (isset($_GET['fld']) AND !empty($_GET['fld']))
         {
             $this->sql_order = 'ORDER BY `'.urldecode($_GET['fld']).'` ';
@@ -1164,7 +1164,7 @@ class simbio_datagrid extends simbio_table
             else
             {
                 $_next_dir = 'DESC';
-                $_sort_dir_info = __('descendingly');
+                $_sort_dir_info = gettext('descendingly');
             }
             // append sort direction
             $this->sql_order .= $_dir;
@@ -1250,7 +1250,7 @@ class simbio_datagrid extends simbio_table
             if (!in_array($_fld->name, $this->no_sort_column) AND isset($this->sort_column[$_fld->name])) 
             {
                 $_order_by = 'fld='.urlencode($this->sort_column[$_fld->name]).'&dir='.$_next_dir;
-                $this->grid_result_fields[] = '<a href="'.$_SERVER['PHP_SELF'].'?'.$_url_query_str.$_order_by.'" title="'.__('Order list by').' '.$_fld->name.' '.$_sort_dir_info.'">'.$_fld->name.'</a>';
+                $this->grid_result_fields[] = '<a href="'.$_SERVER['PHP_SELF'].'?'.$_url_query_str.$_order_by.'" title="'.gettext('Order list by').' '.$_fld->name.' '.$_sort_dir_info.'">'.$_fld->name.'</a>';
             }
             else
              {
@@ -1351,9 +1351,6 @@ class simbio_datagrid extends simbio_table
 
                     $_del_chbox = '<input type="checkbox" name="'.$this->chbox_property[0].'[]" value="'.$this->grid_result_rows[$_row][0].'" id="cbRow'.$_row.'" onclick="cbHighlightRow(this, \'row'.$_row.'\', event)" />';
                     $_edit_fields[] = $_del_chbox;
-                
-
-
 
 		}
                 // check if edit link array is included
@@ -1444,8 +1441,8 @@ class simbio_datagrid extends simbio_table
         if ($this->editable) {
             $_buffer .= '<form action="'.$this->chbox_form_URL.'" name="'.$this->table_name.'" id="'.$this->table_name.'" target="'.$_target.'" method="post" style="display: inline;">'."\n";
 
-	    $_check_all = __('Check All');
-	    $_uncheck_all = __('Uncheck All');
+	    $_check_all = gettext('Check All');
+	    $_uncheck_all = gettext('Uncheck All');
 
             // action buttons group
             $_button_grp = '<table cellspacing="0" cellpadding="5" style="background-color: #fff; width: 100%;"><tr>';

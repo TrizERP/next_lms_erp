@@ -1,7 +1,7 @@
 <?php
 
 error_reporting(0);
-
+session_start();
 require '../../../sysconfig.inc.php';
 require SENAYAN_BASE_DIR.'admin/default/session.inc.php';
 require SIMBIO_BASE_DIR.'simbio_GUI/table/simbio_table.inc.php';
@@ -47,32 +47,32 @@ if (isset($_POST['doImport']))
     // check for form validity
     if (!$_FILES['importFile']['name']) 
     {
-        utility::jsAlert(__('Please select the file to import!'));
+        utility::jsAlert(gettext('Please select the file to import!'));
         exit();
     }
     
     if ($fileext != "csv" ) 
     {
-        utility::jsAlert(__('Please select only .csv file!'));
+        utility::jsAlert(gettext('Please select only .csv file!'));
         exit();
     }
     elseif (empty($_POST['fieldSep']) OR empty($_POST['fieldEnc'])) 
     {
-        utility::jsAlert(__('Required fields (*)  must be filled correctly!'));
+        utility::jsAlert(gettext('Required fields (*)  must be filled correctly!'));
         exit();
     } 
     elseif($_POST['materialresourceid']=="Material Resource Type")
     {
-	utility::jsAlert(__('Please select the Material Resource Type!'));
+	utility::jsAlert(gettext('Please select the Material Resource Type!'));
         exit();
         
     }
     elseif($_POST['gmdID']==0)
     {
-	utility::jsAlert(__('Please select the Material Type!'));
+	utility::jsAlert(gettext('Please select the Material Type!'));
         exit();
     }else if($_POST['materialsubid']==0){
-	utility::jsAlert(__('Please select the Material Sub Type!'));
+	utility::jsAlert(gettext('Please select the Material Sub Type!'));
         exit();
     }
     else 
@@ -92,7 +92,7 @@ if (isset($_POST['doImport']))
         $upload_status = $upload->doUpload('importFile');
         if ($upload_status != 1) 
         { 
-            utility::jsAlert(__('Upload failed! File type not allowed or the size is more than').($sysconf['max_upload']/1024).' MB'); //mfc
+            utility::jsAlert(gettext('Upload failed! File type not allowed or the size is more than').($sysconf['max_upload']/1024).' MB'); //mfc
             exit();
         }
         $uploaded_file=REPO_BASE_DIR.$upload->new_filename; 
@@ -1000,12 +1000,12 @@ echo $bradecum;
 	<td class="tab_menu_top">
                             <ul class="tabs"> 
 				<li>
-<a href="<?php echo MODULES_WEB_ROOT_DIR; ?>bibliography/import.php" class="headerText2"><?php echo __('Import Data'); ?></a> </li><!--<li> <a href="<?php //echo  MODULES_WEB_ROOT_DIR; ?>bibliography/item_import.php" class="headerText2"><?php// echo __('Import Item'); ?></a> </li>--></ul>
+<a href="<?php echo MODULES_WEB_ROOT_DIR; ?>bibliography/import.php" class="headerText2"><?php echo gettext('Import Data'); ?></a> </li><!--<li> <a href="<?php //echo  MODULES_WEB_ROOT_DIR; ?>bibliography/item_import.php" class="headerText2"><?php// echo __('Import Item'); ?></a> </li>--></ul>
 		</td></tr></table>
 </fieldset>
 <fieldset class="menuBox">
 <div class="menuBoxInner importIcon">
-    <?php echo __('IMPORT TOOL'); ?>
+    <?php echo gettext('IMPORT TOOL'); ?>
     <p class="only_border">&nbsp;</p>
  <!--comment by iresh on 11/1/2011   <?php //echo __('Import for bibliographics data from CSV file. For guide on CVS fields order and format please refer to documentation or visit <a href="http://senayan.diknas.go.id" target="_blank">Official Website</a>'); ?>-->
 <!-- folowing line added by iresh on 11/1/2011-->
@@ -1018,7 +1018,7 @@ echo $bradecum;
 
 // create new instance
 $form = new simbio_form_table_AJAX('mainForm', $_SERVER['PHP_SELF'], 'post');
-$form->submit_button_attr = 'name="doImport" value="'.__('Import Now').'" class="button"';
+$form->submit_button_attr = 'name="doImport" value="'.gettext('Import Now').'" class="button"';
 
 // form table attributes
 $form->table_attr = 'align="center" id="dataList" cellpadding="5" cellspacing="0"';
@@ -1030,7 +1030,7 @@ $form->table_content_attr = 'class="alterCell2"';
 $str_input = simbio_form_element::textField('file', 'importFile');
 $str_input .= ' Maximum '.$sysconf['max_upload'].' KB';
 $str_input .= '</br>';
-$form->addAnything(__('File To Import'), $str_input);
+$form->addAnything(gettext('File To Import'), $str_input);
 
 /*$gmd_q = $dbs->query('SELECT gmd_id, gmd_name FROM mst_gmd');
 	//$gmd_options='';
@@ -1059,7 +1059,7 @@ $ajax = "ajaxFillSelect('".SENAYAN_WEB_ROOT_DIR."admin/AJAX_material_sub_type_ha
        {
             $mst_options[] = array($rec_d['gmd_id'],$rec_d['gmd_name']);
        }
-	$mst_options[] = array('0', __('Material Type'));
+	$mst_options[] = array('0', gettext('Material Type'));
 
 
  $ajax_exp = "ajaxFillSelect('".SENAYAN_WEB_ROOT_DIR."admin/AJAX_material_sub_type_handler.php', 'mst_material_sub_type', 'material_sub_id:material_sub_name:gmd_id', 'materialsubid', $('gmdID').getValue())";
@@ -1068,7 +1068,7 @@ $ajax = "ajaxFillSelect('".SENAYAN_WEB_ROOT_DIR."admin/AJAX_material_sub_type_ha
        if ($rec_d['material_sub_name']) {
             $mst_material_sub_type_options[] = array($rec_d['material_sub_id'],$rec_d['material_sub_name']);
         }
-	$mst_material_sub_type_options[] = array('0', __('Material Sub Type'));
+	$mst_material_sub_type_options[] = array('0', gettext('Material Sub Type'));
         // string element
        
 //$str_input='';       
@@ -1079,15 +1079,15 @@ $str_input .= '&nbsp;';
 $str_input .= simbio_form_element::selectList('materialsubid', $mst_material_sub_type_options, $rec_d['material_sub_id'],  'onchange="'.$ajax_exp1.'"');
 $str_input .= '<tr><td id="txtHint" class="alterCell2" colspan="3"></td></tr>';
 $str_input .= '<br><tr><td id="materialnewid1" class="alterCell2" colspan="3"></td></tr>';
-$form->addAnything(__('Material Type '), $str_input);
+$form->addAnything(gettext('Material Type '), $str_input);
 // field separator
-$form->addTextField('text', 'fieldSep', __('Field Separator').'*', ''.htmlentities(',').'', 'style="width: 10%;" maxlength="3"');
+$form->addTextField('text', 'fieldSep', gettext('Field Separator').'*', ''.htmlentities(',').'', 'style="width: 10%;" maxlength="3"');
 //  field enclosed
-$form->addTextField('text', 'fieldEnc', __('Field Enclosed With').'*', ''.htmlentities('"').'', 'style="width: 10%;"');
+$form->addTextField('text', 'fieldEnc', gettext('Field Enclosed With').'*', ''.htmlentities('"').'', 'style="width: 10%;"');
 // number of records to import
-$form->addTextField('text', 'recordNum', __('Number of Records To Export (0 for all records)'), '0', 'style="width: 10%;"');
+$form->addTextField('text', 'recordNum', gettext('Number of Records To Export (0 for all records)'), '0', 'style="width: 10%;"');
 // records offset
-$form->addTextField('text', 'recordOffset', __('Start From Record'), '1', 'style="width: 10%;"');
+$form->addTextField('text', 'recordOffset', gettext('Start From Record'), '1', 'style="width: 10%;"');
 // output the form
 echo $form->printOut();
 ?>

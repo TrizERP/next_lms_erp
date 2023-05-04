@@ -37,7 +37,7 @@ $can_read = utility::havePrivilege('serial_control', 'r');
 $can_write = utility::havePrivilege('serial_control', 'w');
 
 if (!$can_read) {
-    die('<div class="errorBox">'.__('You are not authorized to view this section').'</div>');
+    die('<div class="errorBox">'.gettext('You are not authorized to view this section').'</div>');
 }
 
 // page title
@@ -58,7 +58,7 @@ if (isset($_POST['saveData'])) {
     $period = trim($dbs->escape_string(strip_tags($_POST['period'])));
     // check form validity
     if (!$period OR !$dateStart) {
-        utility::jsAlert(__('Error inserting subscription data, Subscription Date must be filled!'));
+        utility::jsAlert(gettext('Error inserting subscription data, Subscription Date must be filled!'));
     } else {
         $data['biblio_id'] = $biblioID;
         $data['date_start'] = $dateStart;
@@ -78,9 +78,9 @@ if (isset($_POST['saveData'])) {
             // update the data
             $update = $sql_op->update('serial', $data, 'serial_id='.$updateRecordID);
             if ($update) {
-                utility::jsAlert(__('Subscription Data Successfully Updated'));
+                utility::jsAlert(gettext('Subscription Data Successfully Updated'));
                 utility::writeLogs($dbs, 'staff', $_SESSION['uid'], 'serial_control', $_SESSION['realname'].' update subcription('.$updateRecordID.') '.$period);
-            } else { utility::jsAlert(__('Subscription Data FAILED to Updated. Please Contact System Administrator')."\nDEBUG : ".$sql_op->error); }
+            } else { utility::jsAlert(gettext('Subscription Data FAILED to Updated. Please Contact System Administrator')."\nDEBUG : ".$sql_op->error); }
             echo '<script type="text/javascript">self.location.href = \''.MODULES_WEB_ROOT_DIR.'serial_control/subscription.php?biblioID='.$biblioID.'\';</script>';
             exit();
         } else {
@@ -94,9 +94,9 @@ if (isset($_POST['saveData'])) {
                 $serial = new serial($dbs, $serial_id);
                 $serial->generateKardexes($exemplar, true);
                 // alert
-                utility::jsAlert(__('New Subscription Data Successfully Saved'));
+                utility::jsAlert(gettext('New Subscription Data Successfully Saved'));
                 utility::writeLogs($dbs, 'staff', $_SESSION['uid'], 'serial_control', $_SESSION['realname'].' add new subcription('.$sql_op->insert_id.') '.$period);
-            } else { utility::jsAlert(__('Subscription Data FAILED to Save. Please Contact System Administrator')."\n".$sql_op->error); }
+            } else { utility::jsAlert(gettext('Subscription Data FAILED to Save. Please Contact System Administrator')."\n".$sql_op->error); }
             echo '<script type="text/javascript">self.location.href = \''.MODULES_WEB_ROOT_DIR.'serial_control/subscription.php?biblioID='.$biblioID.'\';</script>';
             exit();
         }
@@ -132,9 +132,9 @@ if (isset($_POST['saveData'])) {
 
     // error alerting
     if ($error_num == 0) {
-        utility::jsAlert(__('Subscription data successfully deleted'));
+        utility::jsAlert(gettext('Subscription data successfully deleted'));
     } else {
-        utility::jsAlert(__('Subscription data FAILED to deleted!'));
+        utility::jsAlert(gettext('Subscription data FAILED to deleted!'));
     }
 }
 /* RECORD OPERATION END */
@@ -151,7 +151,7 @@ if ($can_write AND ( isset($_POST['detail']) OR (isset($_GET['detail']) AND $_GE
 
     // create new instance
     $form = new simbio_form_table('mainForm', $_SERVER['PHP_SELF'].'?'.$_SERVER['QUERY_STRING'], 'post');
-    $form->submit_button_attr = 'name="saveData" value="'.__('Save').'" class="button"';
+    $form->submit_button_attr = 'name="saveData" value="'.gettext('Save').'" class="button"';
 
     // form table attributes
     $form->table_attr = 'align="center" id="dataList" style="width: 100%;" cellpadding="5" cellspacing="0"';
@@ -166,20 +166,20 @@ if ($can_write AND ( isset($_POST['detail']) OR (isset($_GET['detail']) AND $_GE
         // form record title
         $form->record_title = $rec_d['period'];
         // submit button attribute
-        $form->submit_button_attr = 'name="saveData" value="'.__('Update').'" class="button"';
+        $form->submit_button_attr = 'name="saveData" value="'.gettext('Update').'" class="button"';
     }
 
     /* Form Element(s) */
     // serial date start
-    $form->addDateField('dateStart', __('Subscription Start').'*', $rec_d['date_start']);
+    $form->addDateField('dateStart', gettext('Subscription Start').'*', $rec_d['date_start']);
     if (!$form->edit_mode) {
         // serial exemplar
-        $form->addTextField('text', 'exemplar', __('Total Exemplar Expected').'*', '1');
+        $form->addTextField('text', 'exemplar', gettext('Total Exemplar Expected').'*', '1');
     }
     // serial periode name
-    $form->addTextField('text', 'period', __('Period Name').'*', $rec_d['period'], 'style="width: 100%;"');
+    $form->addTextField('text', 'period', gettext('Period Name').'*', $rec_d['period'], 'style="width: 100%;"');
     // serial notes
-    $form->addTextField('textarea', 'notes', __('Subscription Notes'), $rec_d['notes'], 'style="width: 100%;" rows="3"');
+    $form->addTextField('textarea', 'notes', gettext('Subscription Notes'), $rec_d['notes'], 'style="width: 100%;" rows="3"');
     // serial gmd
         // get gmd data related to this record from database
         $gmd_q = $dbs->query('SELECT gmd_id, gmd_name FROM mst_gmd');
@@ -187,13 +187,13 @@ if ($can_write AND ( isset($_POST['detail']) OR (isset($_GET['detail']) AND $_GE
         while ($gmd_d = $gmd_q->fetch_row()) {
             $gmd_options[] = array($gmd_d[0], $gmd_d[1]);
         }
-    $form->addSelectList('gmdID', __('Resource Material Type'), $gmd_options, $rec_d['gmd_id']);
+    $form->addSelectList('gmdID', gettext('Resource Material Type'), $gmd_options, $rec_d['gmd_id']);
     // serial biblio ID
     $form->addHidden('biblioID', $biblioID);
 
     // edit mode messagge
     if ($form->edit_mode) {
-        echo '<div class="infoBox">'.__('You are going to edit Subscription data').' : <b>'.$rec_d['period'].'</b><div><i>'.$rec_d['notes'].'</i></div></div>'; //mfc
+        echo '<div class="infoBox">'.gettext('You are going to edit Subscription data').' : <b>'.$rec_d['period'].'</b><div><i>'.$rec_d['notes'].'</i></div></div>'; //mfc
     }
     // print out the form object
     echo $form->printOut();
@@ -203,7 +203,7 @@ if ($can_write AND ( isset($_POST['detail']) OR (isset($_GET['detail']) AND $_GE
     {
         $_output = '';
         $_output .= '<div style="font-weight: bold; font-size: 110%;">'.$array_data[1].'</div>';
-        $_output .= '<div style="font-weight: bold; font-size: 90%;"><a href="'.MODULES_WEB_ROOT_DIR.'serial_control/kardex.php?serialID='.$array_data[0].'" title="'.__('View/Edit Kardex Detail').'">'.__('View/Edit Kardex Detail').'</a></div>';
+        $_output .= '<div style="font-weight: bold; font-size: 90%;"><a href="'.MODULES_WEB_ROOT_DIR.'serial_control/kardex.php?serialID='.$array_data[0].'" title="'.gettext('View/Edit Kardex Detail').'">'.gettext('View/Edit Kardex Detail').'</a></div>';
         return $_output;
     }
 
@@ -213,9 +213,9 @@ if ($can_write AND ( isset($_POST['detail']) OR (isset($_GET['detail']) AND $_GE
     // create datagrid
     $datagrid = new simbio_datagrid();
     $datagrid->setSQLColumn('s.serial_id',
-        's.period AS \''.__('Period Name').'\'',
-        's.date_start AS \''.__('Subscription Start').'\'',
-        's.notes AS \''.__('Subscription Notes').'\'');
+        's.period AS \''.gettext('Period Name').'\'',
+        's.date_start AS \''.gettext('Subscription Start').'\'',
+        's.notes AS \''.gettext('Subscription Notes').'\'');
     if ($can_read AND $can_write) {
         $datagrid->modifyColumnContent(1, 'callback{serialTitle}');
     } else {
@@ -244,7 +244,7 @@ if ($can_write AND ( isset($_POST['detail']) OR (isset($_GET['detail']) AND $_GE
     // put the result into variables
     $datagrid_result = $datagrid->createDataGrid($dbs, $table_spec, 20, ($can_read AND $can_write));
     if (isset($_GET['keywords']) AND $_GET['keywords']) {
-        $msg = str_replace('{result->num_rows}', $datagrid->num_rows, __('Found <strong>{result->num_rows}</strong> from your keywords')); //mfc
+        $msg = str_replace('{result->num_rows}', $datagrid->num_rows, gettext('Found <strong>{result->num_rows}</strong> from your keywords')); //mfc
         echo '<div class="infoBox">'.$msg.' : "'.$_GET['keywords'].'"</div>';
     }
 
@@ -257,5 +257,5 @@ $content = ob_get_clean();
 // js include
 $js = '<script type="text/javascript" src="'.JS_WEB_ROOT_DIR.'calendar.js"></script>';
 // include the page template
-require SENAYAN_BASE_DIR.'/admin/'.$sysconf['admin_template']['dir'].'/notemplate_page_tpl.php';
+require SENAYAN_BASE_DIR.'/admin/admin_template/notemplate_page_tpl.php';
 ?>

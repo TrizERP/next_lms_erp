@@ -31,7 +31,7 @@ $can_read = utility::havePrivilege('circulation', 'r');
 $can_write = utility::havePrivilege('circulation', 'w');
 
 if (!$can_read) {
-    die('<div class="errorBox">'.__('You don\'t have enough privileges to access this area!').'</div>');
+    die('<div class="errorBox">'.gettext('You don\'t have enough privileges to access this area!').'</div>');
 }
 
 require SIMBIO_BASE_DIR.'simbio_GUI/table/simbio_table.inc.php';
@@ -50,11 +50,11 @@ if (!$reportView) {
 ?>
     <!-- filter -->
     <fieldset style="margin-bottom: 3px;">
-    <legend style="font-weight: bold"><?php echo strtoupper(__('Reservation')); ?> - <?php echo __('Report Filter'); ?></legend>
+    <legend style="font-weight: bold"><?php echo strtoupper(gettext('Reservation')); ?> - <?php echo gettext('Report Filter'); ?></legend>
     <form method="get" action="<?php echo $_SERVER['PHP_SELF']; ?>" target="reportView">
     <div id="filterForm">
         <div class="divRow">
-            <div class="divRowLabel"><?php echo __('Member ID').'/'.__('Member Name'); ?></div>
+            <div class="divRowLabel"><?php echo gettext('Member ID').'/'.gettext('Member Name'); ?></div>
             <div class="divRowContent">
             <?php    
             //comment by iresh on 25-1-2011 echo simbio_form_element::textField('text', 'member', '', 'style="width: 50%"');
@@ -63,7 +63,7 @@ if (!$reportView) {
             </div>
         </div>
         <div class="divRow">
-            <div class="divRowLabel"><?php echo __('Title/ISBN'); ?></div>
+            <div class="divRowLabel"><?php echo gettext('Title/ISBN'); ?></div>
             <div class="divRowContent">
             <?php 
             //comment by iresh on 25-1-2011 echo simbio_form_element::textField('text', 'title', '', 'style="width: 50%"');
@@ -72,7 +72,7 @@ if (!$reportView) {
             </div>
         </div>
         <div class="divRow">
-            <div class="divRowLabel"><?php echo __('Item Code'); ?></div>
+            <div class="divRowLabel"><?php echo gettext('Item Code'); ?></div>
             <div class="divRowContent">
             <?php 
               //comment by iresh on 25-1-2011echo simbio_form_element::textField('text', 'itemCode', '', 'style="width: 50%"');
@@ -81,7 +81,7 @@ if (!$reportView) {
             </div>
         </div>
         <div class="divRow">
-            <div class="divRowLabel"><?php echo __('Reserve Date From'); ?></div>
+            <div class="divRowLabel"><?php echo gettext('Reserve Date From'); ?></div>
             <div class="divRowContent">
             <?php
             echo simbio_form_element::dateField('startDate', '2000-01-01');
@@ -89,7 +89,7 @@ if (!$reportView) {
             </div>
         </div>
         <div class="divRow">
-            <div class="divRowLabel"><?php echo __('Reserve Date Until'); ?></div>
+            <div class="divRowLabel"><?php echo gettext('Reserve Date Until'); ?></div>
             <div class="divRowContent">
             <?php
             echo simbio_form_element::dateField('untilDate', date('Y-m-d'));
@@ -98,8 +98,8 @@ if (!$reportView) {
         </div>
     </div>
     <div style="padding-top: 10px; clear: both;">
-    <input type="submit" name="applyFilter" value="<?php echo __('Apply Filter'); ?>" />
-    <input type="button" name="moreFilter" value="<?php echo __('Show More Filter Options'); ?>" onclick="showHideTableRows('filterForm', 1, this, '<?php echo __('Show More Filter Options'); ?>', '<?php echo __('Hide Filter Options'); ?>')" />
+    <input type="submit" name="applyFilter" value="<?php echo gettext('Apply Filter'); ?>" />
+    <input type="button" name="moreFilter" value="<?php echo gettext('Show More Filter Options'); ?>" onclick="showHideTableRows('filterForm', 1, this, '<?php echo gettext('Show More Filter Options'); ?>', '<?php echo gettext('Hide Filter Options'); ?>')" />
     <input type="hidden" name="reportView" value="true" />
     </div>
     </form>
@@ -118,10 +118,10 @@ if (!$reportView) {
 
     // create datagrid
     $reportgrid = new report_datagrid();
-    $reportgrid->setSQLColumn('r.item_code AS \''.__('Item Code').'\'',
-        'b.title AS \''.__('Title').'\'',
-        'm.member_name AS \''.__('Member Name').'\'',
-        'r.reserve_date AS \''.__('Reserve Date').'\'');
+    $reportgrid->setSQLColumn('r.item_code AS \''.gettext('Item Code').'\'',
+        'b.title AS \''.gettext('Title').'\'',
+        'm.member_name AS \''.gettext('Member Name').'\'',
+        'r.reserve_date AS \''.gettext('Reserve Date').'\'');
     $reportgrid->setSQLorder('r.reserve_date DESC');
 
     // is there any search
@@ -166,6 +166,6 @@ if (!$reportView) {
 
     $content = ob_get_clean();
     // include the page template
-    require SENAYAN_BASE_DIR.'/admin/'.$sysconf['admin_template']['dir'].'/printed_page_tpl.php';
+    require SENAYAN_BASE_DIR.'/admin/admin_template/printed_page_tpl.php';
 }
 ?>

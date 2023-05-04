@@ -44,7 +44,7 @@ ob_start();
 <script type="text/javascript">
 function confirmProcess(intReserveID, strTitle)
 {
-    var confirmBox = confirm('<?php echo __('Are you sure to remove reservation for'); ?>' + "\n" + strTitle); //mfc
+    var confirmBox = confirm('<?php echo gettext('Are you sure to remove reservation for'); ?>' + "\n" + strTitle); //mfc
     if (confirmBox) {
         // fill the hidden form value
         document.reserveHiddenForm.reserveID.value = intReserveID;
@@ -58,7 +58,7 @@ function confirmProcess(intReserveID, strTitle)
 <!--item loan form-->
 <div style="padding: 5px; background-color: #CCCCCC;">
     <form name="reserveForm" id="search" action="circulation_action.php" method="post" style="display: inline;">
-        <?php echo __('Search Collection'); ?> :<br />
+        <?php echo gettext('Search Collection'); ?> :<br />
         <?php
         // AJAX expression
         $ajax_exp = "ajaxFillSelect('item_AJAX_lookup_handler.php', 'item', 'i.item_code:title', 'reserveItemID', $('bib_search_str').getValue())";
@@ -69,7 +69,7 @@ function confirmProcess(intReserveID, strTitle)
        
         echo simbio_form_element::selectList('reserveItemID', $biblio_options, '', 'class="marginTop" style="width: 70%;"');
       
-        echo simbio_form_element::textField('submit', 'addReserve', __('Add Reserve'));
+        echo simbio_form_element::textField('submit', 'addReserve', gettext('Add Reserve'));
         ?>
     </form>
 </div>
@@ -89,7 +89,7 @@ if (isset($_SESSION['memberID'])) {
     $reserve_list->table_header_attr = 'class="dataListHeader" style="font-weight: bold;"';
     $reserve_list->highlight_row = true;
     // table header
-    $headers = array(__('Remove'), __('Title'), __('Item Code'), __('Reserve Date'));
+    $headers = array(gettext('Remove'), gettext('Title'), gettext('Item Code'), gettext('Reserve Date'));
     $reserve_list->setHeader($headers);
     // row number init
     $row = 1;
@@ -103,11 +103,11 @@ if (isset($_SESSION['memberID'])) {
         $avail_q = $dbs->query("SELECT COUNT(loan_id) FROM loan WHERE item_code='".$reserve_list_d['item_code']."' AND is_lent=1 AND is_return=0");
         $avail_d = $avail_q->fetch_row();
         if ($avail_d[0] < 1) {
-            $reserve_list_d['title'] .= ' - <strong>'.strtoupper(__('Available')).'</strong>';
+            $reserve_list_d['title'] .= ' - <strong>'.strtoupper(gettext('Available')).'</strong>';
         }
         // check if reservation are already expired
         if ( (strtotime(date('Y-m-d'))-strtotime($reserve_list_d['reserve_date']))/(3600*24) > $sysconf['reserve_expire_periode'] ) {
-            $reserve_list_d['title'] .= ' - <strong style="color: red;">'.__('ALREADY EXPIRED').'</strong>';
+            $reserve_list_d['title'] .= ' - <strong style="color: red;">'.gettext('ALREADY EXPIRED').'</strong>';
         }
         // row colums array
         $fields = array(
@@ -135,5 +135,5 @@ if (isset($_SESSION['memberID'])) {
 // get the buffered content
 $content = ob_get_clean();
 // include the page template
-require SENAYAN_BASE_DIR.'/admin/'.$sysconf['admin_template']['dir'].'/notemplate_page_tpl.php';
+require SENAYAN_BASE_DIR.'/admin/admin_template/notemplate_page_tpl.php';
 ?>

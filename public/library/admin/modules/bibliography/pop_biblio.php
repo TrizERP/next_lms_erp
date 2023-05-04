@@ -38,5 +38,5 @@ $content .= '</script>';
 // page title
 $page_title = 'Bibliographic Data';
 // include the page template
-require SENAYAN_BASE_DIR.'/admin/'.$sysconf['admin_template']['dir'].'/notemplate_page_tpl.php';
+require SENAYAN_BASE_DIR.'/admin/admin_template/notemplate_page_tpl.php';
 ?>

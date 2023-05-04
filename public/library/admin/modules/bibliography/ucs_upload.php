@@ -25,7 +25,7 @@ require '../../../sysconfig.inc.php';
 
 // check if UCS is enabled or not
 if (!$sysconf['ucs']['enable']) {
-	die(__('UCS is not enabled! Change global system configuration to enable UCS'));
+	die(gettext('UCS is not enabled! Change global system configuration to enable UCS'));
 }
 
 require SENAYAN_BASE_DIR.'admin/default/session.inc.php';

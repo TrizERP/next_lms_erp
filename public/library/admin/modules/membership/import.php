@@ -16,7 +16,7 @@ $can_read = utility::havePrivilege('membership', 'r');
 $can_write = utility::havePrivilege('membership', 'w');
 
 if ($can_read) {
-    die('<div class="errorBox">'.__('You don\'t have enough privileges to access this area!').'</div>');
+    die('<div class="errorBox">'.gettext('You don\'t have enough privileges to access this area!').'</div>');
 }
 if ( !function_exists('sys_get_temp_dir') )
 {
@@ -38,10 +38,10 @@ $max_chars = 4096;
 if (isset($_POST['doImport'])) {
     // check for form validity
     if (!$_FILES['importFile']['name']) {
-        utility::jsAlert(__('Please select the file to import!'));
+        utility::jsAlert(gettext('Please select the file to import!'));
         exit();
     } else if (empty($_POST['fieldSep']) OR empty($_POST['fieldEnc'])) {
-        utility::jsAlert(__('Required fields (*)  must be filled correctly!'));
+        utility::jsAlert(gettext('Required fields (*)  must be filled correctly!'));
         exit();
     } else {
         // set PHP time limit
@@ -60,7 +60,7 @@ if (isset($_POST['doImport'])) {
         $upload->setUploadDir(REPO_BASE_DIR); 
         $upload_status = $upload->doUpload('importFile');
         if ($upload_status != UPLOAD_SUCCESS) {
-            utility::jsAlert(__('Upload failed! File type not allowed or the size is more than').' '.($sysconf['max_upload']/1024).' MB'); //mfc
+            utility::jsAlert(gettext('Upload failed! File type not allowed or the size is more than').' '.($sysconf['max_upload']/1024).' MB'); //mfc
             exit();
         }
         // uploaded file path
@@ -140,7 +140,7 @@ if (isset($_POST['doImport'])) {
         fclose($file);
         utility::writeLogs($dbs, 'staff', $_SESSION['uid'], 'membership', 'Importing '.$inserted_row.' members data from file : '.$_FILES['importFile']['name']);
         echo '<script type="text/javascript">'."\n";
-        echo 'parent.$(\'importInfo\').update(\'<strong>'.$inserted_row.'</strong> '.__('records inserted successfully to members database, from record').' <strong>'.$_POST['recordOffset'].'</strong>\');'."\n"; //mfc
+        echo 'parent.$(\'importInfo\').update(\'<strong>'.$inserted_row.'</strong> '.gettext('records inserted successfully to members database, from record').' <strong>'.$_POST['recordOffset'].'</strong>\');'."\n"; //mfc
         echo 'parent.$(\'importInfo\').setStyle( {display: \'block\'} );'."\n";
         echo '</script>';
         exit();
@@ -182,15 +182,15 @@ echo $bradecum;
 	<td class="tab_menu_top">
                             <ul class="tabs"> 
 				<li>
-<a href="<?php echo MODULES_WEB_ROOT_DIR; ?>membership/member_card_generator.php" class="headerText2"><?php echo __('Member Card Printing'); ?></a> </li><li>
-<a href="<?php echo  MODULES_WEB_ROOT_DIR; ?>membership/import.php" class="headerText2"><?php echo __('Import Member Data'); ?></a> </li><li> <a href="<?php echo  MODULES_WEB_ROOT_DIR; ?>membership/export.php" class="headerText2"><?php echo __('Export Member Data'); ?></a> </li></ul>
+<a href="<?php echo MODULES_WEB_ROOT_DIR; ?>membership/member_card_generator.php" class="headerText2"><?php echo gettext('Member Card Printing'); ?></a> </li><li>
+<a href="<?php echo  MODULES_WEB_ROOT_DIR; ?>membership/import.php" class="headerText2"><?php echo gettext('Import Member Data'); ?></a> </li><li> <a href="<?php echo  MODULES_WEB_ROOT_DIR; ?>membership/export.php" class="headerText2"><?php echo gettext('Export Member Data'); ?></a> </li></ul>
 	</td>
 </tr>
 </table>
 </fieldset>
 <fieldset class="menuBox">
 <div class="menuBoxInner importIcon">
-    <?php echo strtoupper(__('Import Data')).'<p class="only_border">&nbsp;</p>'.__('Import for members data from CSV file'); ?>
+    <?php echo strtoupper(gettext('Import Data')).'<p class="only_border">&nbsp;</p>'.gettext('Import for members data from CSV file'); ?>
     <a href="javascript:void(0)" onclick="openHTMLpop('<?php echo MODULES_WEB_ROOT_DIR.'membership/member.xls';?>', 500, 500, '<?php echo MODULES_WEB_ROOT_DIR.'membership/member.xls';?>')">Download Formate</a>   
 </div>
 </fieldset>
@@ -199,7 +199,7 @@ echo $bradecum;
 
 // create new instance
 $form = new simbio_form_table_AJAX('mainForm', $_SERVER['PHP_SELF'].'', 'post');
-$form->submit_button_attr = 'name="doImport" value="'.__('Import Now').'" class="button"';
+$form->submit_button_attr = 'name="doImport" value="'.gettext('Import Now').'" class="button"';
 
 // form table attributes
 $form->table_attr = 'align="center" id="dataList" cellpadding="5" cellspacing="0"';
@@ -210,15 +210,15 @@ $form->table_content_attr = 'class="alterCell2"';
 // csv files
 $str_input = simbio_form_element::textField('file', 'importFile');
 $str_input .= ' Maximum '.$sysconf['max_upload'].' KB';
-$form->addAnything(__('File To Import').'*', $str_input);
+$form->addAnything(gettext('File To Import').'*', $str_input);
 // field separator
-$form->addTextField('text', 'fieldSep', __('Field Separator').'*', ''.htmlentities(',').'', 'style="width: 10%;"');
+$form->addTextField('text', 'fieldSep', gettext('Field Separator').'*', ''.htmlentities(',').'', 'style="width: 10%;"');
 //  field enclosed
-$form->addTextField('text', 'fieldEnc', __('Field Enclosed With').'*', ''.htmlentities('"').'', 'style="width: 10%;"');
+$form->addTextField('text', 'fieldEnc', gettext('Field Enclosed With').'*', ''.htmlentities('"').'', 'style="width: 10%;"');
 // number of records to import
-$form->addTextField('text', 'recordNum', __('Number of Records To Export (0 for all records)'), '0', 'style="width: 10%;"');
+$form->addTextField('text', 'recordNum', gettext('Number of Records To Export (0 for all records)'), '0', 'style="width: 10%;"');
 // records offset
-$form->addTextField('text', 'recordOffset', __('Start From Record'), '1', 'style="width: 10%;"');
+$form->addTextField('text', 'recordOffset', gettext('Start From Record'), '1', 'style="width: 10%;"');
 // output the form
 echo $form->printOut();
 ?>

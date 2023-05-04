@@ -31,25 +31,25 @@ $can_read = utility::havePrivilege('reporting', 'r');
 $can_write = utility::havePrivilege('reporting', 'w');
 
 if (!$can_read) {
-    die('<div class="errorBox">'.__('You don\'t have enough privileges to access this area!').'</div>');
+    die('<div class="errorBox">'.gettext('You don\'t have enough privileges to access this area!').'</div>');
 }
 
 require SIMBIO_BASE_DIR.'simbio_GUI/form_maker/simbio_form_element.inc.php';
 require SIMBIO_BASE_DIR.'simbio_UTILS/simbio_date.inc.php';
 
 // months array
-$months['01'] = __('Jan');
-$months['02'] = __('Feb');
-$months['03'] = __('Mar');
-$months['04'] = __('Apr');
-$months['05'] = __('May');
-$months['06'] = __('Jun');
-$months['07'] = __('Jul');
-$months['08'] = __('Aug');
-$months['09'] = __('Sep');
-$months['10'] = __('Oct');
-$months['11'] = __('Nov');
-$months['12'] = __('Dec');
+$months['01'] = gettext('Jan');
+$months['02'] = gettext('Feb');
+$months['03'] = gettext('Mar');
+$months['04'] = gettext('Apr');
+$months['05'] = gettext('May');
+$months['06'] = gettext('Jun');
+$months['07'] = gettext('Jul');
+$months['08'] = gettext('Aug');
+$months['09'] = gettext('Sep');
+$months['10'] = gettext('Oct');
+$months['11'] = gettext('Nov');
+$months['12'] = gettext('Dec');
 
 $page_title = 'Visitor Report by Day';
 $reportView = false;
@@ -90,11 +90,11 @@ echo $bradecum;
 </table>
     <!-- filter -->
     <fieldset style="margin-bottom: 3px;">
-    <legend style="font-weight: bold"><?php echo strtoupper(__('Visitor Report')); ?> - <?php echo __('Report Filter'); ?></legend>
+    <legend style="font-weight: bold"><?php echo strtoupper(gettext('Visitor Report')); ?> - <?php echo gettext('Report Filter'); ?></legend>
     <form method="get" action="<?php echo $_SERVER['PHP_SELF']; ?>" target="reportView">
     <div id="filterForm">
         <div class="divRow">
-            <div class="divRowLabel"><?php echo __('Year'); ?></div>
+            <div class="divRowLabel"><?php echo gettext('Year'); ?></div>
             <div class="divRowContent">
             <?php
             $current_year = date('Y');
@@ -107,7 +107,7 @@ echo $bradecum;
             </div>
         </div>
         <div class="divRow">
-            <div class="divRowLabel"><?php echo __('Month'); ?></div>
+            <div class="divRowLabel"><?php echo gettext('Month'); ?></div>
             <div class="divRowContent">
             <?php
             $current_month = date('m');
@@ -121,7 +121,7 @@ echo $bradecum;
         </div>
     </div>
     <div style="padding-top: 10px; clear: both;">
-    <input type="submit" name="applyFilter" value="<?php echo __('Apply Filter'); ?>" />
+    <input type="submit" name="applyFilter" value="<?php echo gettext('Apply Filter'); ?>" />
     <input type="hidden" name="reportView" value="true" />
     </div>
     </form>
@@ -159,6 +159,6 @@ echo $bradecum;
 
     $content = ob_get_clean();
     // include the page template
-    require SENAYAN_BASE_DIR.'/admin/'.$sysconf['admin_template']['dir'].'/printed_page_tpl.php';
+    require SENAYAN_BASE_DIR.'/admin/admin_template/printed_page_tpl.php';
 }
 ?>

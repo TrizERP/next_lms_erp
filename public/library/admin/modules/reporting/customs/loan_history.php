@@ -9,7 +9,7 @@ $can_write = utility::havePrivilege('circulation', 'w') || utility::havePrivileg
 
 if (!$can_read) 
 {
-    die('<div class="errorBox">'.__('You don\'t have enough privileges to access this area!').'</div>');
+    die('<div class="errorBox">'.gettext('You don\'t have enough privileges to access this area!').'</div>');
 }
 
 require SIMBIO_BASE_DIR.'simbio_GUI/table/simbio_table.inc.php';
@@ -60,7 +60,7 @@ echo $bradecum;
 </table>
     <!-- filter -->
     <fieldset  style="margin-bottom: 3px;">
-    <legend style="font-weight: bold"><?php echo strtoupper(__('Loan History')); ?> - <?php echo __('Report Filter'); ?></legend>
+    <legend style="font-weight: bold"><?php echo strtoupper(gettext('Loan History')); ?> - <?php echo gettext('Report Filter'); ?></legend>
     <form method="get" action="<?php echo $_SERVER['PHP_SELF']; ?>" target="reportView">
     <div id="filterForm">
         <table width='70%'>
@@ -69,7 +69,7 @@ echo $bradecum;
                 <td width='25%'>
                     
                     <div class="divRow">
-                            <div class="divRowLabel"><?php echo __('Member ID').''.__(':'); ?>
+                            <div class="divRowLabel"><?php echo gettext('Member ID').''.gettext(':'); ?>
                            
                             <?php            
                             echo simbio_form_element::textField('text', 'id_name', '', 'style="width:  153px;"');
@@ -91,7 +91,7 @@ echo $bradecum;
                         WHERE sg.sub_institute_id='".$_SESSION['SUB_INSTITUTE_ID']."' ";
                         $std_q = $dbs->query($str);
 						$std_options = array();
-						$std_options[] = array('ALL', __('ALL'));
+						$std_options[] = array('ALL', gettext('ALL'));
 						while ($std_d = $std_q->fetch_row()) {
 							$std_options[] = array($std_d[0], $std_d[1]);
 						}
@@ -105,7 +105,7 @@ echo $bradecum;
 						 $str_section = "select id,name from ".$inte_schema.".division where sub_institute_id='".$_SESSION['SUB_INSTITUTE_ID']."'";
                         $section_q = $dbs->query($str_section);
 						$section_options = array();
-						$section_options[] = array('ALL', __('ALL'));
+						$section_options[] = array('ALL', gettext('ALL'));
 						while ($section_d = $section_q->fetch_row()) {
 							$section_options[] = array($section_d[0], $section_d[1]);
 						}
@@ -123,7 +123,7 @@ echo $bradecum;
         </table>
          </div>
     <div style="padding-top: 10px; clear: both;">
-    <input type="submit" name="applyFilter" value="<?php echo __('Generate Report'); ?>" />
+    <input type="submit" name="applyFilter" value="<?php echo gettext('Generate Report'); ?>" />
     <input type="hidden" name="reportView" value="true" />
     </div>
     </form>
@@ -152,15 +152,15 @@ else
 
     $reportgrid = new report_datagrid();
     $reportgrid->setSQLColumn(
-        'm.enrollment_no AS \''.__('Gr.No.').'\'',
-        'concat_ws(" ",m.first_name,m.middle_name,m.last_name) AS \''.__('Member Name').'\'',
-		'concat_ws ("-",CS.name,SS.name) AS \''.__('Std').'\'',
-		'l.item_code AS \''.__('Item Code').'\'',
-		'b.title AS \''.__('Book Title').'\'',
-        'DATE_FORMAT(l.loan_date,"%d-%m-%Y") AS \''.__('Loan Date').'\'',//DATE_FORMAT(l.loan_date,"%d-%m-%Y")
-        'DATE_FORMAT(l.due_date,"%d-%m-%Y") AS \''.__('Due Date').'\'',                 
+        'm.enrollment_no AS \''.gettext('Gr.No.').'\'',
+        'concat_ws(" ",m.first_name,m.middle_name,m.last_name) AS \''.gettext('Member Name').'\'',
+		'concat_ws ("-",CS.name,SS.name) AS \''.gettext('Std').'\'',
+		'l.item_code AS \''.gettext('Item Code').'\'',
+		'b.title AS \''.gettext('Book Title').'\'',
+        'DATE_FORMAT(l.loan_date,"%d-%m-%Y") AS \''.gettext('Loan Date').'\'',//DATE_FORMAT(l.loan_date,"%d-%m-%Y")
+        'DATE_FORMAT(l.due_date,"%d-%m-%Y") AS \''.gettext('Due Date').'\'',                 
         //'l.return_date is not null AS \''.__('Loan Status').'\'',
-        'DATE_FORMAT(l.return_date,"%d-%m-%Y") AS \''.__('Return Date').'\''
+        'DATE_FORMAT(l.return_date,"%d-%m-%Y") AS \''.gettext('Return Date').'\''
             );//DATE_FORMAT(l.due_date,"%d-%m-%Y")
     $reportgrid->setSQLorder('l.loan_date DESC');
 
@@ -235,7 +235,7 @@ else
 
     $content = ob_get_clean();
     // include the page template
-    require SENAYAN_BASE_DIR.'/admin/'.$sysconf['admin_template']['dir'].'/printed_page_tpl.php';
+    require SENAYAN_BASE_DIR.'/admin/admin_template/printed_page_tpl.php';
 }
 
   

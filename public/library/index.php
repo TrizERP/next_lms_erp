@@ -1,7 +1,9 @@
 <?php
 
 session_start();
-error_reporting(0);
+error_reporting(E_ALL);
+ini_set('display_errors',1);
+
 ?>
 <?
 if(!isset($_SESSION['DUSER_NAME']))
@@ -74,9 +76,6 @@ require 'sysconfig.inc.php';
 //require LIB_DIR.'contents/member.inc.php';
 
 
-
-
-
 if(isset($_SESSION["HOD"]))
 {           
     $hod=explode(",",$_SESSION["HOD"]);
@@ -109,7 +108,21 @@ if ($sysconf['template']['base'] == 'html')
     
 }
 //print_r($_SESSION);
-$page_title = $sysconf['library_name'].' | '.$sysconf['library_subname'].' :: OPAC';
+$page_title = isset($sysconf['library_name']) ? $sysconf['library_name'] : '';
+$parts = explode(":", $page_title);
+$page_title = $parts[3];
+$page_title = rtrim($page_title,'";');
+// echo $page_title;exit;
+// Unserialize the value into an array
+// $page_title = $sysconf['library_name'] . ' :: Library Automation System';
+        // print_r($sysconf);exit;
+
+$library_subname = isset($sysconf['library_subname']) ? $sysconf['library_subname'] : '';
+$parts = explode(":", $library_subname);
+$library_subname = $parts[3];
+$library_subname = rtrim($library_subname,'";');
+
+$page_title = $page_title.' | '.$library_subname.' :: OPAC';
 $total_pages = 1;
 $header_info = '';
 $metadata = '';
@@ -344,18 +357,37 @@ else
 // main content grab
 $main_content = ob_get_clean();
 
+
+$user_template = isset($sysconf['template']) ? $sysconf['template'] : '';
+
+// Unserialize the value into an array
+$user_template = unserialize($user_template);
+
+// Access the theme and css keys in the admin_template array
+$template_theme = isset($user_template['theme']) ? $user_template['theme'] : '';
+$template_css = isset($user_template['css']) ? $user_template['css'] : '';
+
+$admin_template = isset($sysconf['admin_template']) ? $sysconf['admin_template'] : '';
+
+// Unserialize the value into an array
+$admin_template = unserialize($admin_template);
+
+// Access the theme and css keys in the admin_template array
+$theme = isset($admin_template['theme']) ? $admin_template['theme'] : '';
+$css = isset($admin_template['css']) ? $admin_template['css'] : '';
+
 // template output
 if ($sysconf['template']['base'] == 'html') 
 {       
 
 // create the template object
-    $template = new simbio_template_parser($sysconf['template']['dir'].'/'.$sysconf['template']['theme'].'/index_template.html');
+    $template = new simbio_template_parser('template/'.$template_theme.'/index_template.html');
     // assign content to markers
     $template->assign('<!--PAGE_TITLE-->', $page_title);
-    $template->assign('<!--CSS-->', $sysconf['template']['css']);
+    $template->assign('<!--CSS-->', $template_css);
     $template->assign('<!--INFO-->', $info);
-    $template->assign('<!--LIBRARY_NAME-->', $sysconf['library_name']);
-    $template->assign('<!--LIBRARY_SUBNAME-->', $sysconf['library_subname']);
+    $template->assign('<!--LIBRARY_NAME-->', $page_title);
+    $template->assign('<!--LIBRARY_SUBNAME-->', $library_subname);
     $template->assign('<!--GMD_LIST-->', $gmd_list);
     $template->assign('<!--COLLTYPE_LIST-->', $colltype_list);
     $template->assign('<!--LOCATION_LIST-->', $location_list);
@@ -372,13 +404,11 @@ else if ($sysconf['template']['base'] == 'php')
  {
     
     $_SESSION['material_id']=$_REQUEST['material_sub_type_select'];
-  
-    
     
            //$_SESSION['start'] = time();
         //$_SESSION['expire'] = $_SESSION['start']; //+ (2 * 60);
        // echo $sysconf['template']['dir'].'/'.$sysconf['template']['theme'].'/index_template.inc.php';
-      require $sysconf['template']['dir'].'/'.$sysconf['template']['theme'].'/index_template.inc.php';
+      require 'template/'.$template_theme.'/index_template.inc.php';
         
 }
 ///////////////////////////    added by iresh on 16-2-2011 ////////////////////////////////////////////
@@ -540,7 +570,7 @@ if($_SESSION['DUSER_ID']!='')
 				{
 
 					echo '<script type="text/javascript">';
-			      		echo 'alert(\''.__('You Cannot Make More Than One Request For Same Book').'\');';
+			      		echo 'alert(\''.gettext('You Cannot Make More Than One Request For Same Book').'\');';
 					echo 'location.href = \'index.php?material_sub_type_select=SELECT&q=&Search=Keyword+Search&search1=Search&p=book_request\';';
                                         echo '</script>';
 					die();
@@ -562,7 +592,7 @@ if($_SESSION['DUSER_ID']!='')
 		if($item!='')
 		{
 			echo '<script type="text/javascript">';
-		      	echo 'alert(\''.__('Your Book Request Sucessfully Submited').'\');';
+		      	echo 'alert(\''.gettext('Your Book Request Sucessfully Submited').'\');';
 			echo 'location.href = \'index.php?material_sub_type_select=SELECT&q=&Search=Keyword+Search&search1=Search&p=book_request\';';
 
                         //echo 'location.href = \'index.php\';';
@@ -638,7 +668,7 @@ if(isset($_REQUEST['sub']) || $_REQUEST['sub']=='Add To Cart')
 
 
 				echo '<script type="text/javascript">';
-			      	echo 'alert(\''.__('Your Cannot Make Book Request Because You Currently Having Same Book On Loan ').'\');';
+			      	echo 'alert(\''.gettext('Your Cannot Make Book Request Because You Currently Having Same Book On Loan ').'\');';
 				echo 'location.href = \'index.php?material_sub_type_select=SELECT&q=&Search=Keyword+Search&search1=Search\';';
                                 echo '</script>';
 				echo die();
@@ -694,7 +724,7 @@ if(isset($_REQUEST['sub']) || $_REQUEST['sub']=='Add To Cart')
 						{
 
 							echo '<script type="text/javascript">';
-					      		echo 'alert(\''.__('You Cannot Make More Than One Request For Same Book').'\');';
+					      		echo 'alert(\''.gettext('You Cannot Make More Than One Request For Same Book').'\');';
 							echo 'location.href = \'index.php?material_sub_type_select=SELECT&q=&Search=Keyword+Search&search1=Search\';';
                                                         //echo 'location.href = \'index.php\';';
 							echo '</script>';
@@ -713,7 +743,7 @@ if(isset($_REQUEST['sub']) || $_REQUEST['sub']=='Add To Cart')
 				if($item!='')
                                 {
                                         echo '<script type="text/javascript">';
-                                        echo 'alert(\''.__('Your Book Request Sucessfully Submited').'\');';			
+                                        echo 'alert(\''.gettext('Your Book Request Sucessfully Submited').'\');';			
                                         echo 'location.href = \'index.php?material_sub_type_select=SELECT&q=&Search=Keyword+Search&search1=Search\';';
                                         echo '</script>';
                                 }
@@ -766,7 +796,7 @@ if(isset($_REQUEST['sub']) || $_REQUEST['sub']=='Add To Cart')
 				{
 
 					echo '<script type="text/javascript">';
-			      		echo 'alert(\''.__('You Cannot Make More Than One Request For Same Book').'\');';
+			      		echo 'alert(\''.gettextgettext('You Cannot Make More Than One Request For Same Book').'\');';
 					//echo 'location.href = \'index.php?title=&author=&subject=&isbn=&gmd=0&colltype=0&location=0&search=Search\';';
                                         echo 'location.href = \'index.php?material_sub_type_select=SELECT&q=&Search=Keyword+Search&search1=Search\';';
 					echo '</script>';
@@ -788,7 +818,7 @@ if(isset($_REQUEST['sub']) || $_REQUEST['sub']=='Add To Cart')
                 if($item!='')
 		{
 			echo '<script type="text/javascript">';
-		      	echo 'alert(\''.__('Your Book Request Sucessfully Submited').'\');';			
+		      	echo 'alert(\''.gettext('Your Book Request Sucessfully Submited').'\');';			
                         echo 'location.href = \'index.php?material_sub_type_select=SELECT&q=&Search=Keyword+Search&search1=Search\';';
 			echo '</script>';
 		}

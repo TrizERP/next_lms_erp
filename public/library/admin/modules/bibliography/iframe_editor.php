@@ -58,7 +58,7 @@ if (isset($_GET['removesess'])) {
     $idx = $_GET['removesess'];
     unset($_SESSION['biblioAuthor'][$idx]);
     echo '<script type="text/javascript">';
-    echo 'alert(\''.__('Editor succesfully removed!').'\');';
+    echo 'alert(\''.gettext('Editor succesfully removed!').'\');';
     echo 'location.href = \'iframe_editor.php\';';
     echo '</script>';
 }
@@ -69,7 +69,7 @@ if (isset($_POST['remove'])) {
     $sql_op = new simbio_dbop($dbs);
     $sql_op->delete('biblio_editor', 'editor_id='.$id.' AND biblio_id='.$bid);
     echo '<script type="text/javascript">';
-    echo 'alert(\''.__('Editor removed!').'\');';
+    echo 'alert(\''.gettext('Editor removed!').'\');';
     echo 'location.href = \'iframe_editor.php?biblioID='.$bid.'\';';
     echo '</script>';
 }
@@ -137,5 +137,5 @@ if ($biblioID) {
 /* main content end */
 $content = ob_get_clean();
 // include the page template
-require SENAYAN_BASE_DIR.'/admin/'.$sysconf['admin_template']['dir'].'/notemplate_page_tpl.php';
+require SENAYAN_BASE_DIR.'/admin/admin_template/notemplate_page_tpl.php';
 ?>

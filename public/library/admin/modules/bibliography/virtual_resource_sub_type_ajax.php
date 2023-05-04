@@ -29,6 +29,6 @@ while($row = $sql_sub_material->fetch_row())
 	$sql_sub_material_resource[]=array($row[0],$row[1]);
 }  
 print_r($sql_sub_material_resource);
-$form->addSelectList('materialsubtype', __('Material Sub Type Code').'*',$sql_sub_material_resource, $rec_d['gmd_id'], 'style="width: 140px;" maxlength="30"');
+$form->addSelectList('materialsubtype', gettext('Material Sub Type Code').'*',$sql_sub_material_resource, $rec_d['gmd_id'], 'style="width: 140px;" maxlength="30"');
 
 ?>

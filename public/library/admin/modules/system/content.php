@@ -38,7 +38,7 @@ $can_read = utility::havePrivilege('system', 'r');
 $can_write = utility::havePrivilege('system', 'w');
 
 if (!$can_read) {
-    die('<div class="errorBox">'.__('You don\'t have enough privileges to view this section').'</div>');
+    die('<div class="errorBox">'.gettext('You don\'t have enough privileges to view this section').'</div>');
 }
 
 /* RECORD OPERATION */
@@ -47,7 +47,7 @@ if (isset($_POST['saveData'])) {
     $contentPath = trim(strip_tags($_POST['contentPath']));
     // check form validity
     if (empty($contentTitle) OR empty($contentPath)) {
-        utility::jsAlert(__('Title or Path can\'t be empty!'));
+        utility::jsAlert(gettext('Title or Path can\'t be empty!'));
         exit();
     } else {
         $data['content_title'] = $dbs->escape_string(strip_tags(trim($contentTitle)));
@@ -69,9 +69,9 @@ if (isset($_POST['saveData'])) {
             if ($update) {
                 // write log
                 utility::writeLogs($dbs, 'staff', $_SESSION['uid'], 'system', $_SESSION['content_title'].' update content data ('.$data['content_title'].') with contentname ('.$data['contentname'].')');
-                utility::jsAlert(__('Content data updated'));
+                utility::jsAlert(gettext('Content data updated'));
                 echo '<script type="text/javascript">parent.setContent(\'mainContent\', parent.getPreviousAJAXurl(), \'post\');</script>';
-            } else { utility::jsAlert(__('Content data FAILED to update!')."\nDEBUG : ".$sql_op->error); }
+            } else { utility::jsAlert(gettext('Content data FAILED to update!')."\nDEBUG : ".$sql_op->error); }
             exit();
         } else {
             /* INSERT RECORD MODE */
@@ -79,9 +79,9 @@ if (isset($_POST['saveData'])) {
             if ($sql_op->insert('content', $data)) {
                 // write log
                 utility::writeLogs($dbs, 'staff', $_SESSION['uid'], 'system', $_SESSION['realname'].' add new content ('.$data['content_title'].') with contentname ('.$data['contentname'].')');
-                utility::jsAlert(__('Content data saved'));
+                utility::jsAlert(gettext('Content data saved'));
                 echo '<script type="text/javascript">parent.setContent(\'mainContent\', \''.$_SERVER['PHP_SELF'].'\', \'post\');</script>';
-            } else { utility::jsAlert(__('Content data FAILED to save!')."\n".$sql_op->error); }
+            } else { utility::jsAlert(gettext('Content data FAILED to save!')."\n".$sql_op->error); }
             exit();
         }
     }
@@ -114,10 +114,10 @@ if (isset($_POST['saveData'])) {
 
     // error alerting
     if ($error_num == 0) {
-        utility::jsAlert(__('All Data Successfully Deleted'));
+        utility::jsAlert(gettext('All Data Successfully Deleted'));
         echo '<script type="text/javascript">parent.setContent(\'mainContent\', \''.$_SERVER['PHP_SELF'].'?'.$_POST['lastQueryStr'].'\', \'post\');</script>';
     } else {
-        utility::jsAlert(__('Some or All Data NOT deleted successfully!\nPlease contact system administrator'));
+        utility::jsAlert(gettext('Some or All Data NOT deleted successfully!\nPlease contact system administrator'));
         echo '<script type="text/javascript">parent.setContent(\'mainContent\', \''.$_SERVER['PHP_SELF'].'?'.$_POST['lastQueryStr'].'\', \'post\');</script>';
     }
     exit();
@@ -160,22 +160,22 @@ echo $bradecum;
 	<td class="tab_menu_top">
                             <ul class="tabs"> 
 				<li>
-<a href="<?php echo MODULES_WEB_ROOT_DIR; ?>system/content.php?action=detail" class="headerText2"><?php echo __('Add New Content'); ?></a>
+<a href="<?php echo MODULES_WEB_ROOT_DIR; ?>system/content.php?action=detail" class="headerText2"><?php echo gettext('Add New Content'); ?></a>
 </li>
 <li> 
-<a href="<?php echo MODULES_WEB_ROOT_DIR; ?>system/content.php" class="headerText2"><?php echo __('Content List'); ?></a> </li>
+<a href="<?php echo MODULES_WEB_ROOT_DIR; ?>system/content.php" class="headerText2"><?php echo gettext('Content List'); ?></a> </li>
 </ul>
 	</td>
 </tr>
 </table>
 <fieldset class="menuBox">
 <div class="menuBoxInner systemIcon">
-    <!--<?php echo strtoupper(__('Content')); ?> - <a href="<?php echo MODULES_WEB_ROOT_DIR; ?>system/content.php?action=detail" class="headerText2"><?php echo __('Add New Content'); ?></a>
-    &nbsp; <a href="<?php echo MODULES_WEB_ROOT_DIR; ?>system/content.php" class="headerText2"><?php echo __('Content List'); ?></a>-->
+    <!--<?php echo strtoupper(gettext('Content')); ?> - <a href="<?php echo MODULES_WEB_ROOT_DIR; ?>system/content.php?action=detail" class="headerText2"><?php echo gettext('Add New Content'); ?></a>
+    &nbsp; <a href="<?php echo MODULES_WEB_ROOT_DIR; ?>system/content.php" class="headerText2"><?php echo gettext('Content List'); ?></a>-->
     <p class="only_border">&nbsp;</p>
-    <form name="search" action="<?php echo MODULES_WEB_ROOT_DIR; ?>system/content.php" id="search" method="get" style="display: inline;"><?php echo __('Search'); ?> :
+    <form name="search" action="<?php echo MODULES_WEB_ROOT_DIR; ?>system/content.php" id="search" method="get" style="display: inline;"><?php echo gettext('Search'); ?> :
     <input type="text" name="keywords" size="30" />
-    <input type="submit" id="doSearch" value="<?php echo __('Search'); ?>" class="button" />
+    <input type="submit" id="doSearch" value="<?php echo gettext('Search'); ?>" class="button" />
 </form>
 </div>
 </fieldset>
@@ -183,7 +183,7 @@ echo $bradecum;
 /* main content */
 if (isset($_POST['detail']) OR (isset($_GET['action']) AND $_GET['action'] == 'detail')) {
     if (!($can_read AND $can_write)) {
-        die('<div class="errorBox">'.__('You don\'t have enough privileges to view this section').'</div>');
+        die('<div class="errorBox">'.gettext('You don\'t have enough privileges to view this section').'</div>');
     }
     /* RECORD FORM */
     // try query
@@ -193,7 +193,7 @@ if (isset($_POST['detail']) OR (isset($_GET['action']) AND $_GET['action'] == 'd
 
     // create new instance
     $form = new simbio_form_table_AJAX('mainForm', $_SERVER['PHP_SELF'].'?'.$_SERVER['QUERY_STRING'], 'post');
-    $form->submit_button_attr = 'name="saveData" value="'.__('Save').'" class="button"';
+    $form->submit_button_attr = 'name="saveData" value="'.gettext('Save').'" class="button"';
 
     // form table attributes
     $form->table_attr = 'align="center" id="dataList" cellpadding="5" cellspacing="0"';
@@ -209,22 +209,22 @@ if (isset($_POST['detail']) OR (isset($_GET['action']) AND $_GET['action'] == 'd
         // form record title
         $form->record_title = $rec_d['content_title'];
         // submit button attribute
-        $form->submit_button_attr = 'name="saveData" value="'.__('Update').'" class="button"';
+        $form->submit_button_attr = 'name="saveData" value="'.gettext('Update').'" class="button"';
     }
 
     /* Form Element(s) */
     // content title
-    //comment by iresh on 25-1-2011 $form->addTextField('text', 'contentTitle', __('Content Title').'*', $rec_d['content_title'], 'style="width: 100%;"');
-    /*added by iresh on 25-1-2011*/$form->addTextField('text', 'contentTitle', __('Content Title').'*', $rec_d['content_title'], 'style="width: 140px;"');
+    //comment by iresh on 25-1-2011 $form->addTextField('text', 'contentTitle', gettext('Content Title').'*', $rec_d['content_title'], 'style="width: 100%;"');
+    /*added by iresh on 25-1-2011*/$form->addTextField('text', 'contentTitle', gettext('Content Title').'*', $rec_d['content_title'], 'style="width: 140px;"');
     // content path
-    //comment by iresh on 25-1-2011$form->addTextField('text', 'contentPath', __('Path (Must be unique)').'*', $rec_d['content_path'], 'style="width: 50%;"');
-    /*added by iresh on 25-1-2011*/ $form->addTextField('text', 'contentPath', __('Path (Must be unique)').'*', $rec_d['content_path'], 'style="width: 140px;"');
+    //comment by iresh on 25-1-2011$form->addTextField('text', 'contentPath', gettext('Path (Must be unique)').'*', $rec_d['content_path'], 'style="width: 50%;"');
+    /*added by iresh on 25-1-2011*/ $form->addTextField('text', 'contentPath', gettext('Path (Must be unique)').'*', $rec_d['content_path'], 'style="width: 140px;"');
     // content description
-    $form->addTextField('textarea', 'contentDesc', __('Content Description'), htmlentities($rec_d['content_desc'], ENT_QUOTES), 'style="width: 100%; height: 500px;"');
+    $form->addTextField('textarea', 'contentDesc', gettext('Content Description'), htmlentities($rec_d['content_desc'], ENT_QUOTES), 'style="width: 100%; height: 500px;"');
 
     // edit mode messagge
     if ($form->edit_mode) {
-        echo '<div class="infoBox">'.__('You are going to update Content data'),' : <b>'.$rec_d['content_title'].'</b> <br />'.__('Last Updated').$rec_d['last_update'].'</div>'; //mfc
+        echo '<div class="infoBox">'.gettext('You are going to update Content data'),' : <b>'.$rec_d['content_title'].'</b> <br />'.gettext('Last Updated').$rec_d['last_update'].'</div>'; //mfc
     }
     // print out the form object
     // init TinyMCE instance
@@ -249,13 +249,13 @@ if (isset($_POST['detail']) OR (isset($_GET['action']) AND $_GET['action'] == 'd
     $datagrid = new simbio_datagrid();
     if ($can_read AND $can_write) {
         $datagrid->setSQLColumn('c.content_id',
-            'c.content_title AS \''.__('Content Title').'\'',
-            'c.content_path AS \''.__('Path (Must be unique)').'\'',
-            'DATE_FORMAT(c.last_update,"%d-%m-%Y") AS \''.__('Last Updated').'\'');
+            'c.content_title AS \''.gettext('Content Title').'\'',
+            'c.content_path AS \''.gettext('Path (Must be unique)').'\'',
+            'DATE_FORMAT(c.last_update,"%d-%m-%Y") AS \''.gettext('Last Updated').'\'');
     } else {
-        $datagrid->setSQLColumn('c.content_title AS \''.__('Content Title').'\'',
-            'c.content_path AS \''.__('Path (Must be unique)').'\'',
-            'DATE_FORMAT(c.last_update,"%d-%m-%Y") AS \''.__('Last Updated').'\'');
+        $datagrid->setSQLColumn('c.content_title AS \''.gettext('Content Title').'\'',
+            'c.content_path AS \''.gettext('Path (Must be unique)').'\'',
+            'DATE_FORMAT(c.last_update,"%d-%m-%Y") AS \''.gettext('Last Updated').'\'');
     }
     $datagrid->setSQLorder('c.last_update DESC');
 
@@ -276,7 +276,7 @@ if (isset($_POST['detail']) OR (isset($_GET['action']) AND $_GET['action'] == 'd
     // put the result into variables
     $datagrid_result = $datagrid->createDataGrid($dbs, $table_spec, 20, ($can_read AND $can_write));
     if (isset($_GET['keywords']) AND $_GET['keywords']) {
-        $msg = str_replace('{result->num_rows}', $datagrid->num_rows, __('Found <strong>{result->num_rows}</strong> from your keywords')); //mfc
+        $msg = str_replace('{result->num_rows}', $datagrid->num_rows, gettext('Found <strong>{result->num_rows}</strong> from your keywords')); //mfc
         echo '<div class="infoBox">'.$msg.' : "'.$_GET['keywords'].'"</div>';
     }
 

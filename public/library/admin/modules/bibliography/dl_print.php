@@ -14,7 +14,7 @@ $can_read = utility::havePrivilege('bibliography', 'r');
 
 if (!$can_read)
 {
-    die('<div class="errorBox">'.__('You are not authorized to view this section').'</div>');
+    die('<div class="errorBox">'.gettext('You are not authorized to view this section').'</div>');
 }
 
 $max_print = 50;
@@ -75,12 +75,12 @@ if (isset($_POST['itemID']) AND !empty($_POST['itemID']) AND isset($_POST['itemA
     if (isset($limit_reach)) 
         
      {
-        $msg = str_replace('{max_print}', $max_print, __('Selected items NOT ADDED to print queue. Only {max_print} can be printed at once')); //mfc
+        $msg = str_replace('{max_print}', $max_print, gettext('Selected items NOT ADDED to print queue. Only {max_print} can be printed at once')); //mfc
         utility::jsAlert($msg);
     } else {
         // update print queue count object
         echo '<script type="text/javascript">parent.$(\'queueCount\').update(\''.$print_count.'\');</script>';
-        utility::jsAlert(__('Selected items added to print queue'));
+        utility::jsAlert(gettext('Selected items added to print queue'));
     }
     exit();
 }
@@ -88,7 +88,7 @@ if (isset($_POST['itemID']) AND !empty($_POST['itemID']) AND isset($_POST['itemA
 // clean print queue
 if (isset($_GET['action']) AND $_GET['action'] == 'clear') 
 {
-    utility::jsAlert(__('Print queue cleared!'));
+    utility::jsAlert(gettext('Print queue cleared!'));
     echo '<script type="text/javascript">parent.$(\'queueCount\').update(\'0\');</script>';
     unset($_SESSION['labels']);
     exit();
@@ -102,7 +102,7 @@ if (isset($_GET['action']) AND $_GET['action'] == 'print')
     // check if label session array is available
     if (!isset($_SESSION['labels']['item']) && !isset($_SESSION['labels']['biblio'])) 
     {
-        utility::jsAlert(__('There is no data to print!'));
+        utility::jsAlert(gettext('There is no data to print!'));
         die();
     }
 
@@ -225,7 +225,7 @@ if (isset($_GET['action']) AND $_GET['action'] == 'print')
     if ($file_write) {
         echo '<script type="text/javascript">parent.$(\'queueCount\').update(\'0\');</script>';
         // open result in new window
-        echo '<script type="text/javascript">top.openHTMLpop(\''.SENAYAN_WEB_ROOT_DIR.FILES_DIR.'/'.$print_file_name.'\', 800, 500, \''.__('Labels Printing').'\')</script>';
+        echo '<script type="text/javascript">top.openHTMLpop(\''.SENAYAN_WEB_ROOT_DIR.FILES_DIR.'/'.$print_file_name.'\', 800, 500, \''.gettext('Labels Printing').'\')</script>';
     } else { utility::jsAlert('ERROR! Label failed to generate, possibly because '.SENAYAN_BASE_DIR.FILES_DIR.' directory is not writable'); }
     exit();
     
@@ -267,29 +267,29 @@ echo $bradecum;
 	<td class="tab_menu_top">
                             <ul class="tabs"> 
 				<li>
-<!--<a href="<?php echo MODULES_WEB_ROOT_DIR; ?>bibliography/dl_print.php" class="headerText2"><?php // echo __('Label Print'); ?></a> </li><li>-->
-<a href="<?php echo  MODULES_WEB_ROOT_DIR; ?>bibliography/item_barcode_generator.php" class="headerText2"><?php echo __('Item Barcode Printing'); ?></a> </li>
+<!--<a href="<?php echo MODULES_WEB_ROOT_DIR; ?>bibliography/dl_print.php" class="headerText2"><?php // echo gettext('Label Print'); ?></a> </li><li>-->
+<a href="<?php echo  MODULES_WEB_ROOT_DIR; ?>bibliography/item_barcode_generator.php" class="headerText2"><?php echo gettext('Item Barcode Printing'); ?></a> </li>
 			</ul>
 	</td>
 </tr>
 </table>
 <fieldset class="menuBox">
 <div class="menuBoxInner printIcon">
-    <?php echo __('Labels Printing'); ?> - <a target="blindSubmit" href="<?php echo MODULES_WEB_ROOT_DIR; ?>bibliography/dl_print.php?action=print" class="notAJAX headerText3"><?php echo __('Print Labels for Selected Data'); ?></a>
-    &nbsp; <a target="blindSubmit" href="<?php echo MODULES_WEB_ROOT_DIR; ?>bibliography/dl_print.php?action=clear" class="notAJAX headerText3" style="color: #FF0000;"><?php echo __('Clear Print Queue'); ?></a>
+    <?php echo gettext('Labels Printing'); ?> - <a target="blindSubmit" href="<?php echo MODULES_WEB_ROOT_DIR; ?>bibliography/dl_print.php?action=print" class="notAJAX headerText3"><?php echo gettext('Print Labels for Selected Data'); ?></a>
+    &nbsp; <a target="blindSubmit" href="<?php echo MODULES_WEB_ROOT_DIR; ?>bibliography/dl_print.php?action=clear" class="notAJAX headerText3" style="color: #FF0000;"><?php echo gettext('Clear Print Queue'); ?></a>
    <p class="only_border">&nbsp;</p>
-    <form name="search" action="<?php echo MODULES_WEB_ROOT_DIR; ?>bibliography/dl_print.php" id="search" method="get" style="display: inline;"><?php echo __('Search'); ?> :
+    <form name="search" action="<?php echo MODULES_WEB_ROOT_DIR; ?>bibliography/dl_print.php" id="search" method="get" style="display: inline;"><?php echo gettext('Search'); ?> :
       <!--commnet by iresh on 25-1-2011  <input type="text" name="keywords" id="keywords" size="30" />-->
    <!-- added by iresh on 25-1-2011 --> <input type="text" name="keywords" id="keywords" width=140px/>
-    <input type="submit" id="doSearch" value="<?php echo __('Search'); ?>" class="button" />
+    <input type="submit" id="doSearch" value="<?php echo gettext('Search'); ?>" class="button" />
     </form>
     <div style="margin-top: 3px;">
         <?php
-        echo __('Maximum').' <font style="color: #FF0000">'.$max_print.'</font> '.__('records can be printed at once. Currently there is').' '; //mfc
+        echo gettext('Maximum').' <font style="color: #FF0000">'.$max_print.'</font> '.gettext('records can be printed at once. Currently there is').' '; //mfc
         if (isset($_SESSION['labels'])) {
             echo '<font id="queueCount" style="color: #FF0000">'.count($_SESSION['labels']).'</font>';
         } else { echo '<font id="queueCount" style="color: #FF0000">0</font>'; }
-        echo ' '.__('in queue waiting to be printed.'); //mfc
+        echo ' '.gettext('in queue waiting to be printed.'); //mfc
         ?>
     </div>
 </div>
@@ -304,8 +304,8 @@ $table_spec = 'biblio LEFT JOIN item ON biblio.biblio_id=item.biblio_id';
 // create datagrid
 $datagrid = new simbio_datagrid();
 if ($can_read) {
-    $datagrid->setSQLColumn('IF(item.item_id IS NOT NULL, item.item_id, CONCAT(\'b\', biblio.biblio_id))', 'biblio.title AS `'.__('Title').'`',
-        'IF(item.call_number<>\'\', item.call_number, biblio.call_number) AS `'.__('Call Number').'`');
+    $datagrid->setSQLColumn('IF(item.item_id IS NOT NULL, item.item_id, CONCAT(\'b\', biblio.biblio_id))', 'biblio.title AS `'.gettext('Title').'`',
+        'IF(item.call_number<>\'\', item.call_number, biblio.call_number) AS `'.gettext('Call Number').'`');
 }
 $datagrid->setSQLorder('item.last_update DESC');
 // is there any search
@@ -332,9 +332,9 @@ $datagrid->table_attr = 'align="center" id="dataList" cellpadding="5" cellspacin
 $datagrid->table_header_attr = 'class="dataListHeader" style="font-weight: bold;"';
 // edit and checkbox property
 $datagrid->edit_property = false;
-$datagrid->chbox_property = array('itemID', __('Add'));
-$datagrid->chbox_action_button = __('Add To Print Queue');
-$datagrid->chbox_confirm_msg = __('Add to print queue?');
+$datagrid->chbox_property = array('itemID', gettext('Add'));
+$datagrid->chbox_action_button = gettext('Add To Print Queue');
+$datagrid->chbox_confirm_msg = gettext('Add to print queue?');
 // set delete proccess URL
 $datagrid->chbox_form_URL = $_SERVER['PHP_SELF'];
 $datagrid->column_width = array(0 => '75%', 1 => '20%');
@@ -343,8 +343,8 @@ $datagrid_result = $datagrid->createDataGrid($dbs, $table_spec, 20, $can_read);
 
 if (isset($_GET['keywords']) AND $_GET['keywords']) 
 {
-    $msg = str_replace('{result->num_rows}', $datagrid->num_rows, __('Found <strong>{result->num_rows}</strong> from your keywords')); //mfc
-    echo '<div class="infoBox">'.$msg.' : "'.$_GET['keywords'].'"<div>'.__('Query took').' <b>'.$datagrid->query_time.'</b> '.__('second(s) to complete').'</div></div>'; //mfc
+    $msg = str_replace('{result->num_rows}', $datagrid->num_rows, gettext('Found <strong>{result->num_rows}</strong> from your keywords')); //mfc
+    echo '<div class="infoBox">'.$msg.' : "'.$_GET['keywords'].'"<div>'.gettext('Query took').' <b>'.$datagrid->query_time.'</b> '.gettext('second(s) to complete').'</div></div>'; //mfc
 }
 echo $datagrid_result;
 /* main content end */

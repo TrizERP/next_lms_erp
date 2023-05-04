@@ -108,9 +108,9 @@ class simbio_paging
         }
 
         // Previous page link
-				$_first = __('First Page');
+				$_first = gettext('First Page');
 
-				$_prev = __('Previous');
+				$_prev = gettext('Previous');
 
         if ($_page > 1) {
             $_buffer .= ' &nbsp;';
@@ -131,7 +131,7 @@ class simbio_paging
         }
 
         // Next page link
-				$_next = __('Next');
+				$_next = gettext('Next');
 
         if (($_pager_offset != $_num_page_total-4) AND ($_page != $_num_page_total)) {
             $_buffer .= ' &nbsp;';
@@ -139,7 +139,7 @@ class simbio_paging
         }
 
         // Last page link
-				$_last = __('Last Page');
+				$_last = gettext('Last Page');
 
         if ($_page < $_num_page_total) {
             $_buffer .= ' &nbsp;';

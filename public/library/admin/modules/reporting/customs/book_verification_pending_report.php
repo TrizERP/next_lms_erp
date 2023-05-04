@@ -33,7 +33,7 @@ $can_read = utility::havePrivilege('reporting', 'r');
 $can_write = utility::havePrivilege('reporting', 'w');
 
 if (!$can_read) {
-    die('<div class="errorBox">'.__('You don\'t have enough privileges to access this area!').'</div>');
+    die('<div class="errorBox">'.gettext('You don\'t have enough privileges to access this area!').'</div>');
 }
 
 require SIMBIO_BASE_DIR.'simbio_GUI/table/simbio_table.inc.php';
@@ -82,11 +82,11 @@ echo $bradecum;
 </table>
     <!-- filter -->
     <fieldset style="margin-bottom: 3px;">
-    <legend style="font-weight: bold"><?php echo strtoupper(__('Books Varified List')); ?> - <?php echo __('Report Filter'); ?></legend>
+    <legend style="font-weight: bold"><?php echo strtoupper(gettext('Books Varified List')); ?> - <?php echo gettext('Report Filter'); ?></legend>
     <form method="get" action="<?php echo $_SERVER['PHP_SELF']; ?>" target="reportView">
     <div id="filterForm">
         <div class="divRow">
-            <div class="divRowLabel"><?php echo __('Item Code'); ?></div>
+            <div class="divRowLabel"><?php echo gettext('Item Code'); ?></div>
             <div class="divRowContent">
             <?php  
            //comment by iresh on 25-1-2011  echo simbio_form_element::textField('text', 'itemCode', '', 'style="width: 50%"'); 
@@ -97,7 +97,7 @@ echo $bradecum;
        
     </div>
     <div style="padding-top: 10px; clear: both;">
-    <input type="submit" name="applyFilter" value="<?php echo __('Search'); ?>" />
+    <input type="submit" name="applyFilter" value="<?php echo gettext('Search'); ?>" />
     <!-- <input type="reset" name="applyReset" value="<?php echo __('Reset'); ?>" />	 -->
 <!--added Ended by Parth 23/8/2011 -->
     <input type="hidden" name="reportView" value="true" />

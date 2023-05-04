@@ -15,15 +15,17 @@ ini_set('display_errors',1);
 
 require '../sysconfig.inc.php';
 
-echo "<pre>";
-print_r($ss);
-echo "</pre>";
+// echo "<pre>";
+// print_r($ss);
+// echo "</pre>";
 // echo "<pre>";
 // print_r($sysconf);
 // echo "</pre>";
+// echo isset($sysconf['page_footer']) ? $sysconf['library_name'] : '';
 // exit;
 
-if($_REQUEST['NEW_ERP'] ==  1)
+// echo $theme;exit;
+if(isset($_REQUEST['NEW_ERP']) && $_REQUEST['NEW_ERP'] ==  1)
 {
     $user_id = $_REQUEST['DUSER_ID'];
     $_SESSION['DUSER_ID'] = $user_id;
@@ -55,7 +57,7 @@ if (isset($_REQUEST['Confirm']) && $_REQUEST['Confirm'] == "Confirm") {
 // echo "hello";
     if (!isset($_REQUEST['temp_id1'])) {
         echo '<script type="text/javascript">';
-        echo 'alert(\'' . __('Please Select Any Item !') . '\');';
+        echo 'alert(\'' . gettext('Please Select Any Item !') . '\');';
         echo 'location.href = \'index.php?mod=circulation\';';
         echo '</script>';
         exit();
@@ -63,7 +65,7 @@ if (isset($_REQUEST['Confirm']) && $_REQUEST['Confirm'] == "Confirm") {
 
     if ($_POST['status'] > 0) {
         echo '<script type="text/javascript">';
-        echo 'alert(\'' . __('Please Do check Item Status For Purticuler Item!') . '\');';
+        echo 'alert(\'' . gettext('Please Do check Item Status For Purticuler Item!') . '\');';
         echo 'location.href = \'index.php?mod=circulation\';';
         echo '</script>';
         exit();
@@ -180,7 +182,7 @@ if (isset($_REQUEST['Confirm']) && $_REQUEST['Confirm'] == "Confirm") {
                 if ($req_date > $time_of_other_request2['request_date']) {
 
                     echo '<script type="text/javascript">';
-                    echo 'alert(\'' . __('Other member have this Request Before this Member Request Time!') . '\');';
+                    echo 'alert(\'' . gettext('Other member have this Request Before this Member Request Time!') . '\');';
                     echo 'location.href = \'index.php?mod=circulation\';';
                     echo '</script>';
                     exit();
@@ -190,7 +192,7 @@ if (isset($_REQUEST['Confirm']) && $_REQUEST['Confirm'] == "Confirm") {
                     if ($time_of_other_request2['req_time'] < $time) {
 
                         echo '<script type="text/javascript">';
-                        echo 'alert(\'' . __('Other member have this Request Before this Member Request Time!') . '\');';
+                        echo 'alert(\'' . gettext('Other member have this Request Before this Member Request Time!') . '\');';
                         echo 'location.href = \'index.php?mod=circulation\';';
                         echo '</script>';
                         exit();
@@ -227,7 +229,7 @@ if (isset($_REQUEST['Confirm']) && $_REQUEST['Confirm'] == "Confirm") {
             $issue_days_limit1 = intval($issue_days_limit1);
             $data2['due_date'] = date('Y-m-d', strtotime('+' . $issue_days_limit1 . ' days'));
             if ($_POST['avl_copy'] <= 0 || $_POST['avl_copy'] == '') {
-                utility::jsAlert(__('Requested Book is Not available'));
+                utility::jsAlert(gettext('Requested Book is Not available'));
             } else {
 
                 ///LOAN LIMIT CALUCATION
@@ -239,7 +241,7 @@ if (isset($_REQUEST['Confirm']) && $_REQUEST['Confirm'] == "Confirm") {
                 if (intval($tot_issued_book) >= $book_issue_limit) {
                     utility::jsAlert('You Have already ' . $tot_issued_book . ' Books and  you have Permission to Issue ' . $book_issue_limit . ' Books !');
                     echo '<script type="text/javascript">';
-                    echo 'alert(\'' . __('Loan Limit has been Finished Please Increase It!') . '\');';
+                    echo 'alert(\'' . gettext('Loan Limit has been Finished Please Increase It!') . '\');';
                     echo 'location.href = \'./index.php?mod=circulation\';';
                     echo '</script>';
                     exit();
@@ -263,11 +265,11 @@ if (isset($_REQUEST['Confirm']) && $_REQUEST['Confirm'] == "Confirm") {
 
                 }
                 if ($error_num == 0) {
-                    utility::jsAlert(__('All Data Successfully Confirmed'));
+                    utility::jsAlert(gettext('All Data Successfully Confirmed'));
                     echo '<script language="Javascript">parent.setContent(\'mainContent\', \'' . $_SERVER['PHP_SELF'] . '?' . $_POST['lastQueryStr'] . '\', \'post\');</script>';
 
                 } else {
-                    utility::jsAlert(__('Some or All Data NOT deleted successfully!\nPlease contact system administrator'));
+                    utility::jsAlert(gettext('Some or All Data NOT deleted successfully!\nPlease contact system administrator'));
                     echo '<script language="Javascript">parent.setContent(\'mainContent\', \'' . $_SERVER['PHP_SELF'] . '?' . $_POST['lastQueryStr'] . '\', \'post\');</script>';
 
                 }
@@ -319,10 +321,8 @@ if (!defined('UCS_VERSION')) {
         $_SESSION['holiday_date'][$_holiday_date_d[0]] = $_holiday_date_d[0];
     }
 }
-
 // save md5sum of  current application path
 $_SESSION['checksum'] = defined('UCS_BASE_DIR') ? md5($_SERVER['SERVER_ADDR'] . UCS_BASE_DIR . 'admin') : md5($_SERVER['SERVER_ADDR'] . SENAYAN_BASE_DIR . 'admin');
-
 // update the last login time
 $dbs->query("UPDATE user SET last_login='" . date("Y-m-d H:i:s") . "',
                 last_login_ip='" . $_SERVER['REMOTE_ADDR'] . "'
@@ -338,13 +338,26 @@ if ($sysconf['https_enable']) {
 // create the template object
 $template = new simbio_template_parser('admin_template/default/index_template.html');
 // page title
-$page_title = $sysconf['library_name'] . ' :: Library Automation System';
+$page_title = isset($sysconf['library_name']) ? $sysconf['library_name'] : '';
+$parts = explode(":", $page_title);
+$page_title = $parts[3];
+$page_title = rtrim($page_title,'";');
+// echo $page_title;exit;
+// Unserialize the value into an array
+// $page_title = $sysconf['library_name'] . ' :: Library Automation System';
+        // print_r($sysconf);exit;
 
+$library_subname = isset($sysconf['library_subname']) ? $sysconf['library_subname'] : '';
+$parts = explode(":", $library_subname);
+$library_subname = $parts[3];
+$library_subname = rtrim($library_subname,'";');
+// Unserialize the value into an array
 
 // main menu
 $module = new module();
 $module->setModulesDir(MODULES_BASE_DIR);
 $main_menu = $module->generateModuleMenu($dbs);
+// print_r($main_menu);exit;
 
 $current_module = '';
 
@@ -363,6 +376,7 @@ $can_read3 = utility::havePrivilege('membership', 'r');
 // $sub_menu = $module->generateSubMenu(($current_module AND $can_read)?$current_module:'');
 //added by Parth start 24/8/2011
 $sub_menu1 = $module->generateSubMenu_admin_home(('bibliography' AND $can_read1) ? 'bibliography' : '');
+
 // $sub_menu1 = '<div class="admin_mid_bg">' . $sub_menu1 . '</div>';
 $sub_menu1 =  $sub_menu1 ;
 $sub_menu2 = $module->generateSubMenu_admin_home(('circulation' AND $can_read2) ? 'circulation' : '');
@@ -378,7 +392,9 @@ ob_start();
 // info
 //$info = __('Welcome To The Library Automation System, you are currently logged in as').' <strong>'.$_SESSION['realname'].'</strong>'; //mfc
 //$info = __('You are currently logged in as').' <strong>'.$_SESSION['realname'].'</strong>'; //mfc
-$info1 = __('You are currently logged in as') . ' <strong>' . $_SESSION['realname'] . '</strong>'; //mfc;
+$info1 = gettext('You are currently logged in as') . ' <strong>' . $_SESSION['realname'] . '</strong>'; //mfc;
+//$info = __('You are currently logged in as').' <strong>'.$_SESSION['realname'].'</strong>'; //mfc
+$info = gettext('You are currently logged in as') . ' <strong>' . $_SESSION['realname'] . '</strong>'; 
 // set some javascript vars
 echo '<script type="text/javascript">';
 
@@ -400,7 +416,7 @@ $log_Teaching_Staff_post = array();
 $log_non_Teaching_Staff_post = array();
 $log_parents_post = array();
 
-if ($_POST['category_user'] == 'category_user' && $_POST['saveData'] == 'Update') {
+if (isset($_POST['category_user']) && $_POST['category_user'] == 'category_user' && $_POST['saveData'] == 'Update') {
 
     $admin_post['material_resource_id'] = 14;
     $admin_post['material_sub_id'] = $_POST['sub_type'];
@@ -587,61 +603,6 @@ if ($_POST['category_user'] == 'category_user' && $_POST['saveData'] == 'Update'
         $error_num++;
     }
 
-    /* $error_num = 0;
-            $sql_op = new simbio_dbop($dbs);
-            if (!$sql_op->insert('category_mast',$student_post))
-            {
-                    $error_num++;
-            }
-
-            $error_num = 0;
-            $sql_op = new simbio_dbop($dbs);
-            if (!$sql_op->insert('category_mast',$teaching_post))
-            {
-                    $error_num++;
-            }
-
-            $error_num = 0;
-            $sql_op = new simbio_dbop($dbs);
-            if (!$sql_op->insert('category_mast',$non_teaching_post))
-            {
-                    $error_num++;
-            }
-
-            $error_num = 0;
-            $sql_op = new simbio_dbop($dbs);
-            if (!$sql_op->insert('category_mast',$parent_post))
-            {
-                    $error_num++;
-            }
-    */
-
-    /*if (!$sql_op->update('temp_request',$data,'temp_id='.$itemID))
-            {
-                    $error_num++;
-    */
-
-    /* echo $insert;die;
-
-            echo "<pre>";
-            print_r($admin_post);
-            echo "<pre>";
-
-            echo "<pre>";
-            print_r($student_post);
-            echo "<pre>";
-
-            echo "<pre>";
-            print_r($teaching_post);
-            echo "<pre>";
-
-            echo "<pre>";
-            print_r($non_teaching_post);
-            echo "<pre>";
-
-            echo "<pre>";
-            print_r($parent_post);
-    */
 }
 
 if ($current_module && $can_read) {
@@ -706,6 +667,7 @@ if ($current_module && $can_read) {
         $bradecum .= 'Home';
 $bradecum .= '</a>';*/
 //added and ended by Parth 19/8/2011
+// echo "hello";
     include 'default/home.php';
     $sysconf['page'] = '1';
     $sysconf['page_footer'] .= "\n"
@@ -724,7 +686,7 @@ $sub_menu_new .= '<div class="holiday_top_bg"><p class="title">Holiday List</p><
 $sub_menu_new .= '<div class="holiday_mid_bg"><marquee direction="up" onmouseover="this.stop()" onmouseout="this.start()" scrollamount="2" height=120px><table border=0 width=160px><tr bgcolor=#CCCCCC><td>Day</td><td>Date</td><td>Description</td></tr>';
 $set_holidays = $dbs->query('select * from holiday ORDER BY holiday_id DESC LIMIT 0,2');
 while ($data = $set_holidays->fetch_assoc()) {
-    $sub_menu_new .= "<tr valign=top><td>$data[holiday_dayname]</td><td>" . date('d-m-Y', strtotime($data[holiday_date])) . "</td><td>$data[description]</td></tr>";
+    $sub_menu_new .= "<tr valign=top><td>".$data['holiday_dayname']."</td><td>" . date('d-m-Y', strtotime($data["holiday_date"])) . "</td><td>".$data["description"]."</td></tr>";
 }
 
 $sub_menu_new .= '<tr align=right><td colspan=3><table><tr><td><a class="subMenuItem" href=' . MODULES_WEB_ROOT_DIR . 'system/holiday.php>See</a></td></tr></table></td></tr></table></marquee></div><div class="holiday_bot_bg"></div>';
@@ -738,6 +700,8 @@ while ($data1 = $set_holidays1->fetch_assoc()) {
 }
 
 $sub_menu_new .= '<tr align=right><td colspan=3><table><tr><td><a class="subMenuItem" href=' . MODULES_WEB_ROOT_DIR . 'system/sys_log.php>See</a></td></tr></table></td></tr></table></marquee></div><div class="recent_bot_bg"></div>';
+// echo "hello"
+// print_r($sysconf);
 
 //added and ended by Parth 24/8/2011
 
@@ -749,7 +713,33 @@ $template->assign('<!--PAGE_TITLE-->', $page_title);
 //added started by Parth 24/8/2011
 $template->assign('<!--LOGIN-->', $info1);
 //added ended by Parth 24/8/2011
-$template->assign('<!--CSS-->', $sysconf['admin_template']['css']);
+// Fetch the admin_template value from $sysconf
+
+
+$user_template = isset($sysconf['template']) ? $sysconf['template'] : '';
+
+// Unserialize the value into an array
+$user_template = unserialize($user_template);
+
+// Access the theme and css keys in the admin_template array
+$template_theme = isset($user_template['theme']) ? $user_template['theme'] : '';
+$template_css = isset($user_template['css']) ? $user_template['css'] : '';
+
+$admin_template = isset($sysconf['admin_template']) ? $sysconf['admin_template'] : '';
+
+// Unserialize the value into an array
+$admin_template = unserialize($admin_template);
+
+// Access the theme and css keys in the admin_template array
+$theme = isset($admin_template['theme']) ? $admin_template['theme'] : '';
+$css = isset($admin_template['css']) ? $admin_template['css'] : '';
+
+// Print the values for testing purposes
+
+// s:11:"TRiZ:TRiZ";
+// s:25:"TRiZ:Library Management System";
+// Calender
+$template->assign('<!--CSS-->', $css);
 $template->assign('<!--MAIN_MENU-->', $main_menu);
 //added and commented started by Parth 24/8/2011
 if ($current_module) {
@@ -760,8 +750,8 @@ if ($current_module) {
 //$template->assign('<!--BAEDCUM_MENU-->', $bradecum);
 //added and commented ended by Parth 24/8/2011
 $template->assign('<!--INFO-->', $info);
-$template->assign('<!--LIBRARY_NAME-->', $sysconf['library_name']);
-$template->assign('<!--LIBRARY_SUBNAME-->', $sysconf['library_subname']);
+$template->assign('<!--LIBRARY_NAME-->', $page_title);
+$template->assign('<!--LIBRARY_SUBNAME-->', $library_subname);
 $template->assign('<!--MAIN_CONTENT-->', $main_content);
 $template->assign('<!--FOOTER-->', $sysconf['page_footer']);
 // print out the template

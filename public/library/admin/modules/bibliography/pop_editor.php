@@ -85,11 +85,11 @@ if (isset($_POST['save']) AND (isset($_POST['editorID']) OR trim($_POST['search_
 
         if ($sql_op->insert('biblio_editor', $data)) {
             echo '<script type="text/javascript">';
-            echo 'alert(\''.__('Editor succesfully updated!').'\');';
+            echo 'alert(\''.gettext('Editor succesfully updated!').'\');';
             echo 'parent.setIframeContent(\'authorIframe\', \''.MODULES_WEB_ROOT_DIR.'bibliography/iframe_editor.php?biblioID='.$data['biblio_id'].'\');';
             echo '</script>';
         } else {
-            utility::jsAlert(__('Editor FAILED to Add. Please Contact System Administrator')."\n".$sql_op->error);
+            utility::jsAlert(gettext('Editor FAILED to Add. Please Contact System Administrator')."\n".$sql_op->error);
         }
     } else {
         if (isset($_POST['editorID']) AND !empty($_POST['editorID'])) {
@@ -114,7 +114,7 @@ if (isset($_POST['save']) AND (isset($_POST['editorID']) OR trim($_POST['search_
         }
 
         echo '<script type="text/javascript">';
-        echo 'alert(\''.__('Editor added!').'\');';
+        echo 'alert(\''.gettext('Editor added!').'\');';
         echo 'parent.setIframeContent(\'authorIframe\', \''.MODULES_WEB_ROOT_DIR.'bibliography/iframe_editor.php\');';
         echo '</script>';
     }
@@ -125,12 +125,12 @@ if (isset($_POST['save']) AND (isset($_POST['editorID']) OR trim($_POST['search_
 <div style="padding: 5px; background: #CCCCCC;">
 <form name="mainForm" action="pop_editor.php?biblioID=<?php echo $biblioID; ?>" method="post">
 <div>
-    <strong><?php echo __('Add Editor'); ?> </strong>
+    <strong><?php echo gettext('Add Editor'); ?> </strong>
     <hr />
     <form name="searchAuthor" method="post" style="display: inline;">
     <?php
     $ajax_exp = "ajaxFillSelect('../../AJAX_lookup_handler.php', 'mst_editor', 'editor_id:editor_name', 'editorID', $('search_str').getValue())";
-    echo __('Author Name'); ?> : <input type="text" name="search_str" id="search_str" style="width: 30%;" onkeyup="<?php echo $ajax_exp; ?>" onchange="<?php echo $ajax_exp; ?>" />
+    echo gettext('Author Name'); ?> : <input type="text" name="search_str" id="search_str" style="width: 30%;" onkeyup="<?php echo $ajax_exp; ?>" onchange="<?php echo $ajax_exp; ?>" />
     <select name="type" style="width: 20%;"><?php
     foreach ($sysconf['authority_type'] as $type_id => $type) {
         echo '<option value="'.$type_id.'">'.$type.'</option>';
@@ -143,9 +143,9 @@ if (isset($_POST['save']) AND (isset($_POST['editorID']) OR trim($_POST['search_
     ?></select>
 </div>
 <div style="margin-top: 5px;">
-<select name="editorID" id="editorID" size="5" style="width: 100%;"><option value="0"><?php echo __('Type to search for existing editor or to add a new one'); ?></option></select>
+<select name="editorID" id="editorID" size="5" style="width: 100%;"><option value="0"><?php echo gettext('Type to search for existing editor or to add a new one'); ?></option></select>
 <?php if ($biblioID) { echo '<input type="hidden" name="biblioID" value="'.$biblioID.'" />'; } ?>
-<input type="submit" name="save" value="<?php echo __('Insert To Bibliography'); ?>" style="margin-top: 5px;" />
+<input type="submit" name="save" value="<?php echo gettext('Insert To Bibliography'); ?>" style="margin-top: 5px;" />
 </div>
 </form>
 </div>
@@ -154,5 +154,5 @@ if (isset($_POST['save']) AND (isset($_POST['editorID']) OR trim($_POST['search_
 /* main content end */
 $content = ob_get_clean();
 // include the page template
-require SENAYAN_BASE_DIR.'/admin/'.$sysconf['admin_template']['dir'].'/notemplate_page_tpl.php';
+require SENAYAN_BASE_DIR.'/admin/admin_template/notemplate_page_tpl.php';
 ?>

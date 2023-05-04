@@ -18,7 +18,7 @@ $can_read = utility::havePrivilege('master_file', 'r');
 $can_write = utility::havePrivilege('master_file', 'w');
 
 if (!$can_read) {
-    die('<div class="errorBox">'.__('You don\'t have enough privileges to access this area!').'</div>');
+    die('<div class="errorBox">'.gettext('You don\'t have enough privileges to access this area!').'</div>');
 }
 
 /* RECORD OPERATION */
@@ -28,14 +28,14 @@ if (isset($_POST['saveData']) AND $can_read AND $can_write)
     // check form validity
     if (number_format($supplierName)) 
     {
-        utility::jsAlert(__('Supplier Name Can\'t be Numeric!'));
+        utility::jsAlert(gettext('Supplier Name Can\'t be Numeric!'));
         exit();
     }
     
     
     if (empty($supplierName)) 
     {
-        utility::jsAlert(__('Supplier Name can\'t be empty'));
+        utility::jsAlert(gettext('Supplier Name can\'t be empty'));
         exit();
     } else {
         $data['supplier_name'] = $dbs->escape_string($supplierName);
@@ -63,19 +63,19 @@ if (isset($_POST['saveData']) AND $can_read AND $can_write)
             // update the data
             $update = $sql_op->update('mst_supplier', $data, 'supplier_id='.$updateRecordID);
             if ($update) {
-                utility::jsAlert(__('Supplier Data Successfully Updated'));
+                utility::jsAlert(gettext('Supplier Data Successfully Updated'));
                 echo '<script type="text/javascript">parent.setContent(\'mainContent\', parent.getPreviousAJAXurl(), \'post\');</script>';
-            } else { utility::jsAlert(__('Supplier Data FAILED to Updated. Please Contact System Administrator')."\nDEBUG : ".$error); }
+            } else { utility::jsAlert(gettext('Supplier Data FAILED to Updated. Please Contact System Administrator')."\nDEBUG : ".$error); }
             exit();
         } else {
             /* INSERT RECORD MODE */
             // insert the data
             $insert = $sql_op->insert('mst_supplier', $data);
             if ($insert) {
-                utility::jsAlert(__('New Supplier Data Successfully Saved'));
+                utility::jsAlert(gettext('New Supplier Data Successfully Saved'));
                 echo '<script type="text/javascript">parent.setContent(\'mainContent\', \''.$_SERVER['PHP_SELF'].'\', \'post\');</script>';
             } else {
-                utility::jsAlert(__('Supplier Data FAILED to Save.')." DEBUG : ".$sql_op->error);
+                utility::jsAlert(gettext('Supplier Data FAILED to Save.')." DEBUG : ".$sql_op->error);
             }
             exit();
         }
@@ -95,7 +95,7 @@ else if (isset($_POST['itemID']) AND !empty($_POST['itemID']) AND isset($_POST['
         // make an array
         $_POST['itemID'] = array((integer)$_POST['itemID']);
     }
-    // loop array
+    // loop arraygettext
     foreach ($_POST['itemID'] as $itemID) {
         $itemID = (integer)$itemID;
 	$checkflag = 0;
@@ -112,7 +112,7 @@ else if (isset($_POST['itemID']) AND !empty($_POST['itemID']) AND isset($_POST['
 			$publisher_name_set = $rownew['supplier_name'];	
 		}
                 $error_num++;
-		 utility::jsAlert(__('You can not delete the supplier Type: '.$publisher_name_set.'; because it is associate with the book.'));
+		 utility::jsAlert(gettext('You can not delete the supplier Type: '.$publisher_name_set.'; because it is associate with the book.'));
 	}
 	else
 	{
@@ -123,10 +123,10 @@ else if (isset($_POST['itemID']) AND !empty($_POST['itemID']) AND isset($_POST['
     }
     // error alerting
     if ($error_num == 0) {
-        utility::jsAlert(__('All Data Successfully Deleted'));
+        utility::jsAlert(gettext('All Data Successfully Deleted'));
         echo '<script type="text/javascript">parent.setContent(\'mainContent\', \''.$_SERVER['PHP_SELF'].'?'.$_POST['lastQueryStr'].'\', \'post\');</script>';
     } else {
-        utility::jsAlert(__('Some or All Data NOT deleted successfully! Please contact system administrator'));
+        utility::jsAlert(gettext('Some or All Data NOT deleted successfully! Please contact system administrator'));
         echo '<script type="text/javascript">parent.setContent(\'mainContent\', \''.$_SERVER['PHP_SELF'].'?'.$_POST['lastQueryStr'].'\', \'post\');</script>';
     }
     exit();
@@ -169,9 +169,9 @@ echo $bradecum;
 	<td class="tab_menu_top">
                             <ul class="tabs"> 
 				<li>
-<a href="<?php echo MODULES_WEB_ROOT_DIR; ?>master_file/supplier.php?action=detail" class="headerText2"><?php echo __('Add New Supplier'); ?></a></li>
+<a href="<?php echo MODULES_WEB_ROOT_DIR; ?>master_file/supplier.php?action=detail" class="headerText2"><?php echo gettext('Add New Supplier'); ?></a></li>
 <li> 
-<a href="<?php echo MODULES_WEB_ROOT_DIR; ?>master_file/supplier.php" class="headerText2"><?php echo __('Supplier List'); ?></a> </li>
+<a href="<?php echo MODULES_WEB_ROOT_DIR; ?>master_file/supplier.php" class="headerText2"><?php echo gettext('Supplier List'); ?></a> </li>
 </ul>
 	</td>
 </tr>
@@ -187,10 +187,10 @@ if (isset($_POST['detail']) OR (!isset($_GET['action']) AND $_GET['action'] != '
  <!--   <?php echo strtoupper(__('Supplier')); ?> - <a href="<?php echo MODULES_WEB_ROOT_DIR; ?>master_file/supplier.php?action=detail" class="headerText2"><?php echo __('Add New Supplier'); ?></a>
     &nbsp; <a href="<?php echo MODULES_WEB_ROOT_DIR; ?>master_file/supplier.php" class="headerText2"><?php echo __('Supplier List'); ?></a>-->
     <p class="only_border">&nbsp;</p>
-    <form name="search" action="<?php echo MODULES_WEB_ROOT_DIR; ?>master_file/supplier.php" id="search" method="get" style="display: inline;"><?php echo __('Search'); ?> :
+    <form name="search" action="<?php echo MODULES_WEB_ROOT_DIR; ?>master_file/supplier.php" id="search" method="get" style="display: inline;"><?php echo gettext('Search'); ?> :
     <!--commnet by iresh on 25-1-2011  <input type="text" name="keywords" id="keywords" size="30" />-->
    <!-- added by iresh on 25-1-2011 --> <input type="text" name="keywords" id="keywords" width=140px/>
-    <input type="submit" id="doSearch" value="<?php echo __('Search'); ?>" class="button" />
+    <input type="submit" id="doSearch" value="<?php echo gettext('Search'); ?>" class="button" />
     </form>
 </div>
 </fieldset>
@@ -204,7 +204,7 @@ if (isset($_POST['detail']) OR (!isset($_GET['action']) AND $_GET['action'] != '
 /* main content */
 if (isset($_POST['detail']) OR (isset($_GET['action']) AND $_GET['action'] == 'detail')) {
     if (!($can_read AND $can_write)) {
-        die('<div class="errorBox">'.__('You don\'t have enough privileges to access this area!').'</div>');
+        die('<div class="errorBox">'.gettext('You don\'t have enough privileges to access this area!').'</div>');
     }
     /* RECORD FORM */
     $itemID = (integer)isset($_POST['itemID'])?$_POST['itemID']:0;
@@ -213,7 +213,7 @@ if (isset($_POST['detail']) OR (isset($_GET['action']) AND $_GET['action'] == 'd
 
     // create new instance
     $form = new simbio_form_table_AJAX('mainForm', $_SERVER['PHP_SELF'].'?itemID='.$itemID, 'post');
-    $form->submit_button_attr = 'name="saveData" value="'.__('Save').'" class="button"';
+    $form->submit_button_attr = 'name="saveData" value="'.gettext('Save').'" class="button"';
 
     // form table attributes
     $form->table_attr = 'align="center" id="dataList" cellpadding="5" cellspacing="0"';
@@ -228,25 +228,25 @@ if (isset($_POST['detail']) OR (isset($_GET['action']) AND $_GET['action'] == 'd
         // form record title
         $form->record_title = $rec_d['supplier_name'];
         // submit button attribute
-        $form->submit_button_attr = 'name="saveData" value="'.__('Update').'" class="button"';
+        $form->submit_button_attr = 'name="saveData" value="'.gettext('Update').'" class="button"';
     }
 
      /* Form Element(s) */
     // supplier name
    
-    $form->addTextField('text', 'supplierName', __('Supplier Name').'*', $rec_d['supplier_name'], 'style="width: 140px;" onkeyup="return checkspecialcharacterdynamic(this.name);"onblur="return charactercheck(this.name);"');
-    $form->addTextField('textarea', 'supplierPlace', __('Address'), $rec_d['address'], 'style="width: 140px;" rows="2" onkeyup="return checkspecialcharacterdynamic(this.name);"');
-    $form->addTextField('text', 'supplierContact', __('Contact'), $rec_d['contact'], 'style="width: 140px;" onchange="return numericcheck(this.name);"');      
-    $form->addTextField('text', 'supplierPhone', __('Phone Number'), $rec_d['phone'], 'style="width: 140px;" onchange="return numericcheck(this.name);"');    
-    $form->addTextField('text', 'supplierFax', __('Fax Number'), $rec_d['fax'], 'style="width: 140px;" onchange="return numericcheck(this.name);"');        
-    $form->addTextField('text', 'supplierAccount', __('Account Number'), $rec_d['account'], 'style="width: 140px;" onkeyup="return checkspecialcharacterdynamic(this.name);"');
-    $form->addTextField('text', 'supplierPostalCode', __('Postal Code'), $rec_d['postal_code'], 'style="width: 140px;"  onblur="return numericcheck(this.name);"onkeyup="return checkspecialcharacterdynamic(this.name);"    ' );
-    $form->addTextField('text', 'supplierEmail', __('Email'), $rec_d['e_mail'], 'style="width: 140px;" onchange="return emailcheck(this.name);"');						
+    $form->addTextField('text', 'supplierName', gettext('Supplier Name').'*', $rec_d['supplier_name'], 'style="width: 140px;" onkeyup="return checkspecialcharacterdynamic(this.name);"onblur="return charactercheck(this.name);"');
+    $form->addTextField('textarea', 'supplierPlace', gettext('Address'), $rec_d['address'], 'style="width: 140px;" rows="2" onkeyup="return checkspecialcharacterdynamic(this.name);"');
+    $form->addTextField('text', 'supplierContact', gettext('Contact'), $rec_d['contact'], 'style="width: 140px;" onchange="return numericcheck(this.name);"');      
+    $form->addTextField('text', 'supplierPhone', gettext('Phone Number'), $rec_d['phone'], 'style="width: 140px;" onchange="return numericcheck(this.name);"');    
+    $form->addTextField('text', 'supplierFax', gettext('Fax Number'), $rec_d['fax'], 'style="width: 140px;" onchange="return numericcheck(this.name);"');        
+    $form->addTextField('text', 'supplierAccount', gettext('Account Number'), $rec_d['account'], 'style="width: 140px;" onkeyup="return checkspecialcharacterdynamic(this.name);"');
+    $form->addTextField('text', 'supplierPostalCode', gettext('Postal Code'), $rec_d['postal_code'], 'style="width: 140px;"  onblur="return numericcheck(this.name);"onkeyup="return checkspecialcharacterdynamic(this.name);"    ' );
+    $form->addTextField('text', 'supplierEmail', gettext('Email'), $rec_d['e_mail'], 'style="width: 140px;" onchange="return emailcheck(this.name);"');						
 
 // edit mode messagge
     if ($form->edit_mode) 
     {
-        echo '<div class="infoBox">'.__('You are going to edit data').' : <b>'.$rec_d['supplier_name'].'</b> <br />'.__('Last Update').$rec_d['last_update'].'</div>'; //mfc
+        echo '<div class="infoBox">'.gettext('You are going to edit data').' : <b>'.$rec_d['supplier_name'].'</b> <br />'.gettext('Last Update').$rec_d['last_update'].'</div>'; //mfc
     }
     // print out the form object
     echo $form->printOut();
@@ -262,20 +262,20 @@ else
     if ($can_read AND $can_write) 
     {
        $datagrid->setSQLColumn('sp.supplier_id',
-            'sp.supplier_name AS \''.__('Supplier Name').'\'',
-            'sp.contact AS \''.__('Contact').'\'',
-            'sp.phone AS \''.__('Phone Number').'\'',
-            'sp.fax AS \''.__('Fax Number').'\'',
-            'DATE_FORMAT(sp.last_update,"%d-%m-%Y") AS \''.__('Last Update').'\'');
+            'sp.supplier_name AS \''.gettext('Supplier Name').'\'',
+            'sp.contact AS \''.gettext('Contact').'\'',
+            'sp.phone AS \''.gettext('Phone Number').'\'',
+            'sp.fax AS \''.gettext('Fax Number').'\'',
+            'DATE_FORMAT(sp.last_update,"%d-%m-%Y") AS \''.gettext('Last Update').'\'');
                       
     } 
     else 
     {
-        $datagrid->setSQLColumn('sp.supplier_name AS \''.__('Supplier Name').'\'',
-            'sp.contact AS \''.__('Contact').'\'',
-            'sp.phone AS \''.__('Phone Number').'\'',
-            'sp.fax AS \''.__('Fax Number').'\'',
-            'DATE_FORMAT(sp.last_update,"%d-%m-%Y") AS \''.__('Last Update').'\'');
+        $datagrid->setSQLColumn('sp.supplier_name AS \''.gettext('Supplier Name').'\'',
+            'sp.contact AS \''.gettext('Contact').'\'',
+            'sp.phone AS \''.gettext('Phone Number').'\'',
+            'sp.fax AS \''.gettext('Fax Number').'\'',
+            'DATE_FORMAT(sp.last_update,"%d-%m-%Y") AS \''.gettext('Last Update').'\'');
     }
 
     $datagrid->setSQLorder('supplier_name ASC');
@@ -299,7 +299,7 @@ else
     
     if (isset($_GET['keywords']) AND $_GET['keywords']) 
     {
-        $msg = str_replace('{result->num_rows}', $datagrid->num_rows, __('Found <strong>{result->num_rows}</strong> from your keywords')); //mfc
+        $msg = str_replace('{result->num_rows}', $datagrid->num_rows, gettext('Found <strong>{result->num_rows}</strong> from your keywords')); //mfc
         echo '<div class="infoBox">'.$msg.' : "'.$_GET['keywords'].'"</div>';
     }
 

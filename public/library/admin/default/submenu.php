@@ -18,19 +18,18 @@
  *
  */
 
-$menu[] = array('Header', __('Quick Menu'));
-$menu[] = array(__('Change User Profiles'), MODULES_WEB_ROOT_DIR.'system/app_user.php?changecurrent=true&action=detail', __('Change Current User Profiles and Password'));
+$menu[] = array('Header', gettext('Quick Menu'));
+$menu[] = array(gettext('Change User Profiles'), MODULES_WEB_ROOT_DIR.'system/app_user.php?changecurrent=true&action=detail', gettext('Change Current User Profiles and Password'));
 if (utility::havePrivilege('bibliography', 'r') AND utility::havePrivilege('bibliography', 'w')) {
-    $menu[] = array(__('Add New Book'), MODULES_WEB_ROOT_DIR.'bibliography/index.php?action=detail', __('Add New Book Data/Catalog'));
-    $menu[] = array(__('Add Virtual Resources'), MODULES_WEB_ROOT_DIR.'bibliography/virtual_resources.php?action=detail', __('Add Virtual Resources'));
+    $menu[] = array(gettext('Add New Book'), MODULES_WEB_ROOT_DIR.'bibliography/index.php?action=detail', gettext('Add New Book Data/Catalog'));
+    $menu[] = array(gettext('Add Virtual Resources'), MODULES_WEB_ROOT_DIR.'bibliography/virtual_resources.php?action=detail', gettext('Add Virtual Resources'));
 }
 if (utility::havePrivilege('circulation', 'r') AND utility::havePrivilege('circulation', 'w')) {
-    $menu[] = array(__('Start Transaction'), MODULES_WEB_ROOT_DIR.'circulation/index.php?action=start', __('Start Circulation Transaction Proccess'));
+    $menu[] = array(gettext('Start Transaction'), MODULES_WEB_ROOT_DIR.'circulation/index.php?action=start', gettext('Start Circulation Transaction Proccess'));
 }
 if (utility::havePrivilege('circulation', 'r') AND utility::havePrivilege('circulation', 'w')) {
-    $menu[] = array(__('Quick Return'), MODULES_WEB_ROOT_DIR.'circulation/quick_return.php', __('Quick Return Collection'));
+    $menu[] = array(gettext('Quick Return'), MODULES_WEB_ROOT_DIR.'circulation/quick_return.php', gettext('Quick Return Collection'));
 }
 if (utility::havePrivilege('membership', 'r') AND utility::havePrivilege('membership', 'w')) {
-    $menu[] = array(__('Add New Member'), MODULES_WEB_ROOT_DIR.'membership/index.php?action=new', __('Add New Library Member Data'));
-}
+    $menu[] = array(gettext('Add New Member'), MODULES_WEB_ROOT_DIR.'membership/index.php?action=new', gettext('Add New Library Member Data'));
 ?>

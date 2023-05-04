@@ -215,7 +215,7 @@ class simbio_table
         if (count($this->table_row) < 1) {
 //added and Commented by Start Parth 23/8/2011
 	    //$_buffer .= '<tr><td align="center" style="color: red; background-color: #CCCCCC;">'.__('No Data').'</td></tr>';	
-            $_buffer .= '<tr><td align="center" style="color: red; background-color: #CCCCCC;">'.__('Not Available').'</td></tr>';
+            $_buffer .= '<tr><td align="center" style="color: red; background-color: #CCCCCC;">'.gettext('Not Available').'</td></tr>';
 //added and Commented by End Parth 23/8/2011
         } else {
             // set header style if exist
@@ -278,7 +278,7 @@ class simbio_table
         {
 //added and Commented by Start Parth 23/8/2011
 	    //$_buffer .= '<tr><td align="center" style="color: red; background-color: #CCCCCC;">'.__('No Data').'</td></tr>';	
-            $_buffer .= '<tr><td align="center" style="color: red; background-color: #CCCCCC;">'.__('Not Available').'</td></tr>';
+            $_buffer .= '<tr><td align="center" style="color: red; background-color: #CCCCCC;">'.gettext('Not Available').'</td></tr>';
 //added and Commented by End Parth 23/8/2011
         }
         else

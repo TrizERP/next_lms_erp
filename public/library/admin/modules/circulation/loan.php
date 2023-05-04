@@ -78,9 +78,9 @@ if (isset($_SESSION['memberID1']))
     <!--item loan form-->
     <div style="padding: 5px; background: #CCCCCC;">
         <form name="itemLoan" id="loanForm" action="circulation_action.php" method="post" style="display: inline;">
-            <?php echo __('Insert Item Code/Barcode'); ?> :
+            <?php echo gettext('Insert Item Code/Barcode'); ?> :
             <input type="text" id="tempLoanID" name="tempLoanID" onkeyup="return checkspecialcharacterdynamic(this.name);" autofocus/>
-            <input type="submit" name="loan" value="<?php echo __('Issue'); ?>" class="button" />
+            <input type="submit" name="loan" value="<?php echo gettext('Issue'); ?>" class="button" />
         </form>
     </div>
     <script type="text/javascript">jQuery('tempLoanID').focus();</script>
@@ -96,7 +96,7 @@ if (isset($_SESSION['memberID1']))
         $temp_loan_list->table_header_attr = 'class="dataListHeader" style="font-weight: bold;"';
         $temp_loan_list->highlight_row = true;
         // table header
-        $headers = array(__('Remove'),  __('Item Code'), __('Title'), __('Loan Date'), __('Due Date'));
+        $headers = array(gettext('Remove'),  gettext('Item Code'), gettext('Title'), gettext('Loan Date'), gettext('Due Date'));
         $temp_loan_list->setHeader($headers);
         // row number init
         $row = 1;
@@ -111,8 +111,8 @@ if (isset($_SESSION['memberID1']))
             // check if manually changes loan and due date allowed
             if ($sysconf['allow_loan_date_change']) 
             {
-                $loan_date = '<a href="#" title="'.__('Click To Change Loan Date').'" onclick="changeDateForm(\''.$_loan_ID.'\', \'loan\', \'loanDate'.$row.'\')" id="loanDate'.$row.'">'.$temp_loan_list_d['loan_date'].'</a>';
-                $due_date = '<a href="#" title="'.__('Click To Change Due Date').'" onclick="changeDateForm(\''.$_loan_ID.'\', \'due\', \'dueDate'.$row.'\')" id="dueDate'.$row.'">'.$temp_loan_list_d['due_date'].'</a>';
+                $loan_date = '<a href="#" title="'.gettext('Click To Change Loan Date').'" onclick="changeDateForm(\''.$_loan_ID.'\', \'loan\', \'loanDate'.$row.'\')" id="loanDate'.$row.'">'.$temp_loan_list_d['loan_date'].'</a>';
+                $due_date = '<a href="#" title="'.gettext('Click To Change Due Date').'" onclick="changeDateForm(\''.$_loan_ID.'\', \'due\', \'dueDate'.$row.'\')" id="dueDate'.$row.'">'.$temp_loan_list_d['due_date'].'</a>';
             } 
            else
            {
@@ -142,5 +142,5 @@ if (isset($_SESSION['memberID1']))
 }
 
 $content = ob_get_clean();
-require SENAYAN_BASE_DIR.'/admin/'.$sysconf['admin_template']['dir'].'/notemplate_page_tpl.php';
+require SENAYAN_BASE_DIR.'/admin/admin_template/notemplate_page_tpl.php';
 ?>

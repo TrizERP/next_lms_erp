@@ -32,7 +32,7 @@ $can_read = utility::havePrivilege('system', 'r');
 $can_write = utility::havePrivilege('system', 'w');
 
 if (!($can_read AND $can_write)) {
-    die('<div class="errorBox">'.__('You don\'t have enough privileges to view this section').'</div>');
+    die('<div class="errorBox">'.gettext('You don\'t have enough privileges to view this section').'</div>');
 }
 /* search form */
 ?>
@@ -70,7 +70,7 @@ echo $bradecum;
 	<td class="tab_menu_top">
                             <ul class="tabs"> 
 <li>
- <a href="<?php echo MODULES_WEB_ROOT_DIR; ?>/system/backup_proc.php" postdata="start=true" loadcontainer="backupStat" class="headerText2"><?php echo __('Start New Backup'); ?></a>
+ <a href="<?php echo MODULES_WEB_ROOT_DIR; ?>/system/backup_proc.php" postdata="start=true" loadcontainer="backupStat" class="headerText2"><?php echo gettext('Start New Backup'); ?></a>
 </li>
 </ul>
 	</td>
@@ -78,11 +78,11 @@ echo $bradecum;
 </table>
 <fieldset class="menuBox">
 <div class="menuBoxInner backupIcon">
-  <!--  <?php echo strtoupper(__('Database Backup')); ?> - <a href="<?php echo MODULES_WEB_ROOT_DIR; ?>/system/backup_proc.php" postdata="start=true" loadcontainer="backupStat" class="headerText2"><?php echo __('Start New Backup'); ?></a>-->
+  <!--  <?php echo strtoupper(gettext('Database Backup')); ?> - <a href="<?php echo MODULES_WEB_ROOT_DIR; ?>/system/backup_proc.php" postdata="start=true" loadcontainer="backupStat" class="headerText2"><?php echo gettext('Start New Backup'); ?></a>-->
      <p class="only_border">&nbsp;</p>
-    <form name="search" action="<?php echo MODULES_WEB_ROOT_DIR; ?>system/backup_proc.php" id="search" method="get" style="display: inline;"><?php echo __('Search'); ?> :
+    <form name="search" action="<?php echo MODULES_WEB_ROOT_DIR; ?>system/backup_proc.php" id="search" method="get" style="display: inline;"><?php echo gettext('Search'); ?> :
     <input type="text" name="keywords" size="30" />
-    <input type="submit" id="doSearch" value="<?php echo __('Search'); ?>" class="button" />
+    <input type="submit" id="doSearch" value="<?php echo gettext('Search'); ?>" class="button" />
     </form>
 </div>
 </fieldset>

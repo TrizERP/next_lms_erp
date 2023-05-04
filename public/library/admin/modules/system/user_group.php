@@ -29,7 +29,7 @@ require SENAYAN_BASE_DIR.'admin/default/session_check.inc.php';
 
 // only administrator have privileges to modify user groups
 if ($_SESSION['uid'] != 1) {
-    die('<div class="errorBox">'.__('You don\'t have enough privileges to view this section').'</div>');
+    die('<div class="errorBox">'.gettext('You don\'t have enough privileges to view this section').'</div>');
 }
 
 require SIMBIO_BASE_DIR.'simbio_GUI/form_maker/simbio_form_table_AJAX.inc.php';
@@ -43,7 +43,7 @@ if (isset($_POST['saveData'])) {
     $groupName = trim(strip_tags($_POST['groupName']));
     // check form validity
     if (empty($groupName)) {
-        utility::jsAlert(__('Group name can\'t be empty')); //mfc
+        utility::jsAlert(gettext('Group name can\'t be empty')); //mfc
     } else {
         $data['group_name'] = $dbs->escape_string($groupName);
         $data['input_date'] = date('Y-m-d');
@@ -78,9 +78,9 @@ if (isset($_POST['saveData'])) {
                 }
                 // write log
                 utility::writeLogs($dbs, 'staff', $_SESSION['uid'], 'system', $_SESSION['realname'].' update group data ('.$groupName.')');
-                utility::jsAlert(__('Group Data Successfully Updated'));
+                utility::jsAlert(gettext('Group Data Successfully Updated'));
                 echo '<script type="text/javascript">parent.setContent(\'mainContent\', parent.getPreviousAJAXurl(), \'post\');</script>';
-            } else { utility::jsAlert(__('Group Data FAILED to Updated. Please Contact System Administrator')."\nDEBUG : ".$sql_op->error); }
+            } else { utility::jsAlert(gettext('Group Data FAILED to Updated. Please Contact System Administrator')."\nDEBUG : ".$sql_op->error); }
             exit();
         } else {
             /* INSERT RECORD MODE */
@@ -106,9 +106,9 @@ if (isset($_POST['saveData'])) {
 
                 // write log
                 utility::writeLogs($dbs, 'staff', $_SESSION['uid'], 'system', $_SESSION['realname'].' add new group ('.$groupName.')');
-                utility::jsAlert(__('New Group Data Successfully Saved'));
+                utility::jsAlert(gettext('New Group Data Successfully Saved'));
                 echo '<script type="text/javascript">parent.setContent(\'mainContent\', \''.$_SERVER['PHP_SELF'].'\', \'post\');</script>';
-            } else { utility::jsAlert(__('Group Data FAILED to Save. Please Contact System Administrator')."\n".$sql_op->error); }
+            } else { utility::jsAlert(gettext('Group Data FAILED to Save. Please Contact System Administrator')."\n".$sql_op->error); }
             exit();
         }
     }
@@ -141,10 +141,10 @@ if (isset($_POST['saveData'])) {
 
     // error alerting
     if ($error_num == 0) {
-        utility::jsAlert(__('All Data Successfully Deleted'));
+        utility::jsAlert(gettext('All Data Successfully Deleted'));
         echo '<script type="text/javascript">parent.setContent(\'mainContent\', \''.$_SERVER['PHP_SELF'].'?'.$_POST['lastQueryStr'].'\', \'post\');</script>';
     } else {
-        utility::jsAlert(__('Some or All Data NOT deleted successfully!\nPlease contact system administrator'));
+        utility::jsAlert(gettext('Some or All Data NOT deleted successfully!\nPlease contact system administrator'));
         echo '<script type="text/javascript">parent.setContent(\'mainContent\', \''.$_SERVER['PHP_SELF'].'?'.$_POST['lastQueryStr'].'\', \'post\');</script>';
     }
     exit();
@@ -187,22 +187,22 @@ echo $bradecum;
 	<td class="tab_menu_top">
                             <ul class="tabs"> 
 				<li>
-<a href="<?php echo MODULES_WEB_ROOT_DIR; ?>system/user_group.php?action=detail" class="headerText2"><?php echo __('Add New Group'); ?></a>
+<a href="<?php echo MODULES_WEB_ROOT_DIR; ?>system/user_group.php?action=detail" class="headerText2"><?php echo gettext('Add New Group'); ?></a>
 </li>
 <li> 
-<a href="<?php echo MODULES_WEB_ROOT_DIR; ?>system/user_group.php" class="headerText2"><?php echo __('Group List'); ?></a></li>
+<a href="<?php echo MODULES_WEB_ROOT_DIR; ?>system/user_group.php" class="headerText2"><?php echo gettext('Group List'); ?></a></li>
 </ul>
 	</td>
 </tr>
 </table>
 <fieldset class="menuBox">
 <div class="menuBoxInner userGroupIcon">
-    <!--<?php echo strtoupper(__('User Group')); ?> - <a href="<?php echo MODULES_WEB_ROOT_DIR; ?>system/user_group.php?action=detail" class="headerText2"><?php echo __('Add New Group'); ?></a>
-    &nbsp; <a href="<?php echo MODULES_WEB_ROOT_DIR; ?>system/user_group.php" class="headerText2"><?php echo __('Group List'); ?></a>-->
+    <!--<?php echo strtoupper(gettext('User Group')); ?> - <a href="<?php echo MODULES_WEB_ROOT_DIR; ?>system/user_group.php?action=detail" class="headerText2"><?php echo gettext('Add New Group'); ?></a>
+    &nbsp; <a href="<?php echo MODULES_WEB_ROOT_DIR; ?>system/user_group.php" class="headerText2"><?php echo gettext('Group List'); ?></a>-->
     <p class="only_border">&nbsp;</p>
-    <form name="search" action="<?php echo MODULES_WEB_ROOT_DIR; ?>system/user_group.php" id="search" method="get" style="display: inline;"><?php echo __('Search'); ?> :
+    <form name="search" action="<?php echo MODULES_WEB_ROOT_DIR; ?>system/user_group.php" id="search" method="get" style="display: inline;"><?php echo gettext('Search'); ?> :
     <input type="text" name="keywords" size="30" />
-    <input type="submit" id="doSearch" value="<?php echo __('Search'); ?>" class="button" />
+    <input type="submit" id="doSearch" value="<?php echo gettext('Search'); ?>" class="button" />
     </form>
 </div>
 </fieldset>
@@ -217,7 +217,7 @@ if (isset($_POST['detail']) OR (isset($_GET['action']) AND $_GET['action'] == 'd
 
     // create new instance
     $form = new simbio_form_table_AJAX('mainForm', $_SERVER['PHP_SELF'].'?'.$_SERVER['QUERY_STRING'], 'post');
-    $form->submit_button_attr = 'name="saveData" value="'.__('Save').'" class="button"';
+    $form->submit_button_attr = 'name="saveData" value="'.gettext('Save').'" class="button"';
 
     // form table attributes
     $form->table_attr = 'align="center" id="dataList" cellpadding="5" cellspacing="0"';
@@ -232,13 +232,13 @@ if (isset($_POST['detail']) OR (isset($_GET['action']) AND $_GET['action'] == 'd
         // form record title
         $form->record_title = $rec_d['group_name'];
         // submit button attribute
-        $form->submit_button_attr = 'name="saveData" value="'.__('Update').'" class="button"';
+        $form->submit_button_attr = 'name="saveData" value="'.gettext('Update').'" class="button"';
     }
 
     /* Form Element(s) */
     // group
-   //comment by iresh on 25-1-2011 $form->addTextField('text', 'groupName', __('Group Name').'*', $rec_d['group_name'], 'style="width: 60%;"');
-  /*added by iresh on 25-1-2011*/  $form->addTextField('text', 'groupName', __('Group Name').'*', $rec_d['group_name'], 'style="width: 140px;"');
+   //comment by iresh on 25-1-2011 $form->addTextField('text', 'groupName', gettext('Group Name').'*', $rec_d['group_name'], 'style="width: 60%;"');
+  /*added by iresh on 25-1-2011*/  $form->addTextField('text', 'groupName', gettext('Group Name').'*', $rec_d['group_name'], 'style="width: 140px;"');
     // privileges
         // get group access data
         $priv_data = array();
@@ -249,12 +249,12 @@ if (isset($_POST['detail']) OR (isset($_GET['action']) AND $_GET['action'] == 'd
         }
     $priv_table = '';
     include 'module_priv_form.inc.php';
-    $form->addAnything(__('Privileges'), $priv_table);
+    $form->addAnything(gettext('Privileges'), $priv_table);
 
     // edit mode messagge
     if ($form->edit_mode) {
         // print out the object
-        echo '<div class="infoBox">'.__('You are going to edit Group data').' : <b>'.$rec_d['group_name'].'</b>  <br />'.__('Last Update').$rec_d['last_update'].'</div>'; //mfc
+        echo '<div class="infoBox">'.gettext('You are going to edit Group data').' : <b>'.$rec_d['group_name'].'</b>  <br />'.gettext('Last Update').$rec_d['last_update'].'</div>'; //mfc
     }
     echo $form->printOut();
 } else {
@@ -265,8 +265,8 @@ if (isset($_POST['detail']) OR (isset($_GET['action']) AND $_GET['action'] == 'd
     // create datagrid
     $datagrid = new simbio_datagrid();
     $datagrid->setSQLColumn('ug.group_id',
-        'ug.group_name AS \''.__('Group Name').'\'',
-        'DATE_FORMAT(ug.last_update,"%d-%m-%Y") AS \''.__('Last Update').'\'');
+        'ug.group_name AS \''.gettext('Group Name').'\'',
+        'DATE_FORMAT(ug.last_update,"%d-%m-%Y") AS \''.gettext('Last Update').'\'');
     $datagrid->setSQLorder('group_name ASC');
 
     // is there any search
@@ -286,7 +286,7 @@ if (isset($_POST['detail']) OR (isset($_GET['action']) AND $_GET['action'] == 'd
     // put the result into variables
     $datagrid_result = $datagrid->createDataGrid($dbs, $table_spec, 20, true);
     if (isset($_GET['keywords']) AND $_GET['keywords']) {
-        $msg = str_replace('{result->num_rows}', $datagrid->num_rows, __('Found <strong>{result->num_rows}</strong> from your keywords')); //mfc
+        $msg = str_replace('{result->num_rows}', $datagrid->num_rows, gettext('Found <strong>{result->num_rows}</strong> from your keywords')); //mfc
         echo '<div class="infoBox">'.$msg.' : "'.$_GET['keywords'].'"</div>';
     }
 

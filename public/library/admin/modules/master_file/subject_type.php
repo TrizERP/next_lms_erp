@@ -16,7 +16,7 @@ $can_read = utility::havePrivilege('master_file', 'r');
 $can_write = utility::havePrivilege('master_file', 'w');
 error_reporting(0);
 if (!$can_read) {
-    die('<div class="errorBox">'.__('You don\'t have enough privileges to access this area!').'</div>');
+    die('<div class="errorBox">'.gettext('You don\'t have enough privileges to access this area!').'</div>');
 }
 
 /* RECORD OPERATION */
@@ -32,17 +32,17 @@ if (isset($_POST['saveData']) AND $can_read AND $can_write)
     // check form validity
     if (empty($topic) || $topic=="N/A") 
     {
-        utility::jsAlert(__('Subject Type can\'t be empty'));
+        utility::jsAlert(gettext('Subject Type can\'t be empty'));
         exit();
     } 
     if (empty($level) || $level=="N/A") 
     {
        
-        utility::jsAlert(__('Subject Level can\'t be empty'));
+        utility::jsAlert(gettext('Subject Level can\'t be empty'));
         exit();
     } 
  if (empty($subject)) {
-        utility::jsAlert(__('Subject can\'t be empty'));
+        utility::jsAlert(gettext('Subject can\'t be empty'));
         exit();
     } 
 	
@@ -65,9 +65,9 @@ else {
             // update the data
             $update = $sql_op->update('mst_subject_type', $data, 'subject_type_id='.$updateRecordID);
             if ($update) {
-                utility::jsAlert(__('Subject Data Successfully Updated'));
+                utility::jsAlert(gettext('Subject Data Successfully Updated'));
                 echo '<script type="text/javascript">parent.setContent(\'mainContent\', parent.getPreviousAJAXurl(), \'post\');</script>';
-            } else { utility::jsAlert(__('Subject Data FAILED to Updated. Please Contact System Administrator')."\nDEBUG : ".$sql_op->error); }
+            } else { utility::jsAlert(gettext('Subject Data FAILED to Updated. Please Contact System Administrator')."\nDEBUG : ".$sql_op->error); }
             exit();
         } else {
 		print_r($data);
@@ -76,9 +76,9 @@ else {
             // insert the data
             $insert = $sql_op->insert('mst_subject_type', $data);
             if ($insert) {
-                utility::jsAlert(__('New Subject Data Successfully Saved'));
+                utility::jsAlert(gettext('New Subject Data Successfully Saved'));
 		echo '<script type="text/javascript">parent.setContent(\'mainContent\', \''.$_SERVER['PHP_SELF'].'\', \'post\');</script>';
-            } else { utility::jsAlert(__('Subject Data FAILED to Save. Please Contact System Administrator')."\nDEBUG : ".$sql_op->error); }
+            } else { utility::jsAlert(gettext('Subject Data FAILED to Save. Please Contact System Administrator')."\nDEBUG : ".$sql_op->error); }
             exit();
        }
     }
@@ -120,12 +120,12 @@ else if (isset($_POST['itemID']) AND !empty($_POST['itemID']) AND isset($_POST['
     // error alerting
     if ($error_num == 0)
     {
-        utility::jsAlert(__('All Data Successfully Deleted'));
+        utility::jsAlert(gettext('All Data Successfully Deleted'));
         echo '<script type="text/javascript">parent.setContent(\'mainContent\', \''.$_SERVER['PHP_SELF'].'?'.$_POST['lastQueryStr'].'\', \'post\');</script>';
     }
     else 
     {
-        utility::jsAlert(__('Some or All Data NOT deleted successfully!\nPlease contact system administrator'));
+        utility::jsAlert(gettext('Some or All Data NOT deleted successfully!\nPlease contact system administrator'));
         echo '<script type="text/javascript">parent.setContent(\'mainContent\', \''.$_SERVER['PHP_SELF'].'?'.$_POST['lastQueryStr'].'\', \'post\');</script>';
     }
     exit();
@@ -168,13 +168,13 @@ echo $bradecum;
 	<td class="tab_menu_top">
                             <ul class="tabs"> 
 				<li>
-<a href="<?php echo MODULES_WEB_ROOT_DIR; ?>master_file/subject_type.php?action=detail" class="headerText2"><?php echo __('Add New Subject'); ?></a></li>
+<a href="<?php echo MODULES_WEB_ROOT_DIR; ?>master_file/subject_type.php?action=detail" class="headerText2"><?php echo gettext('Add New Subject'); ?></a></li>
 <li> 
-<a href="<?php echo MODULES_WEB_ROOT_DIR; ?>master_file/subject_type.php" class="headerText2"><?php echo __('Subject List'); ?></a> </li>
+<a href="<?php echo MODULES_WEB_ROOT_DIR; ?>master_file/subject_type.php" class="headerText2"><?php echo gettext('Subject List'); ?></a> </li>
 <li>
-<a href="<?php echo MODULES_WEB_ROOT_DIR; ?>master_file/topic.php?action=detail" class="headerText2"><?php echo __('Add New Subject Type'); ?></a></li>
+<a href="<?php echo MODULES_WEB_ROOT_DIR; ?>master_file/topic.php?action=detail" class="headerText2"><?php echo gettext('Add New Subject Type'); ?></a></li>
 <li> 
-<a href="<?php echo MODULES_WEB_ROOT_DIR; ?>master_file/topic.php" class="headerText2"><?php echo __('Subject Type List'); ?></a> </li>
+<a href="<?php echo MODULES_WEB_ROOT_DIR; ?>master_file/topic.php" class="headerText2"><?php echo gettext('Subject Type List'); ?></a> </li>
 </ul>
 	</td>
 </tr>
@@ -190,9 +190,9 @@ if (isset($_POST['detail']) OR (!isset($_GET['action']) AND $_GET['action'] != '
     <!--<?php echo strtoupper(__('Subject Type')); ?> - <a href="<?php echo MODULES_WEB_ROOT_DIR; ?>master_file/subject_type.php?action=detail" class="headerText2"><?php echo __('Add New Subject'); ?></a>
     &nbsp; <a href="<?php echo MODULES_WEB_ROOT_DIR; ?>master_file/subject_type.php" class="headerText2"><?php echo __('Subject List'); ?></a> &nbsp; <a href="<?php echo MODULES_WEB_ROOT_DIR; ?>master_file/topic.php?action=detail" class="headerText2"><?php echo __('Add New Subject Type'); ?></a>&nbsp; <a href="<?php echo MODULES_WEB_ROOT_DIR; ?>master_file/topic.php" class="headerText2"><?php echo __('Subject Type List'); ?></a>-->
     <p class="only_border">&nbsp;</p>
-    <form name="search" action="<?php echo MODULES_WEB_ROOT_DIR; ?>master_file/subject_type.php" id="search" method="get" style="display: inline;"><?php echo __('Search'); ?> :
+    <form name="search" action="<?php echo MODULES_WEB_ROOT_DIR; ?>master_file/subject_type.php" id="search" method="get" style="display: inline;"><?php echo gettext('Search'); ?> :
     <input type="text" name="keywords" size="30" />
-    <input type="submit" id="doSearch" value="<?php echo __('Search'); ?>" class="button" />
+    <input type="submit" id="doSearch" value="<?php echo gettext('Search'); ?>" class="button" />
     </form>
 </div>
 </fieldset>
@@ -207,7 +207,7 @@ if (isset($_POST['detail']) OR (!isset($_GET['action']) AND $_GET['action'] != '
 /* main content */
 if (isset($_POST['detail']) OR (isset($_GET['action']) AND $_GET['action'] == 'detail')) {
     if (!($can_read AND $can_write)) {
-        die('<div class="errorBox">'.__('You don\'t have enough privileges to access this area!').'</div>');
+        die('<div class="errorBox">'.gettext('You don\'t have enough privileges to access this area!').'</div>');
     }
     /* RECORD FORM */
     $itemID = (integer)isset($_POST['itemID'])?$_POST['itemID']:0;
@@ -221,7 +221,7 @@ if (isset($_POST['detail']) OR (isset($_GET['action']) AND $_GET['action'] == 'd
 
     // create new instance
     $form = new simbio_form_table_AJAX('mainForm', $_SERVER['PHP_SELF'].'?'.$_SERVER['QUERY_STRING'], 'post');
-    $form->submit_button_attr = 'name="saveData" value="'.__('Save').'" class="button"';
+    $form->submit_button_attr = 'name="saveData" value="'.gettext('Save').'" class="button"';
 
     // form table attributes
     $form->table_attr = 'align="center" id="dataList" cellpadding="5" cellspacing="0"';
@@ -236,7 +236,7 @@ if (isset($_POST['detail']) OR (isset($_GET['action']) AND $_GET['action'] == 'd
         // form record title
         $form->record_title = $rec_d['subject_type_name'];
         // submit button attribute
-        $form->submit_button_attr = 'name="saveData" value="'.__('Update').'" class="button"';
+        $form->submit_button_attr = 'name="saveData" value="'.gettext('Update').'" class="button"';
     }
 
     /* Form Element(s) */
@@ -246,23 +246,23 @@ if (isset($_POST['detail']) OR (isset($_GET['action']) AND $_GET['action'] == 'd
    {
 	$subj_type_options[] = array($row[0],$row[1]);	
    }
-    $form->addSelectList('subjectType', __('Subject Type'), $subj_type_options, $rec_d['topic_id']);
+    $form->addSelectList('subjectType', gettext('Subject Type'), $subj_type_options, $rec_d['topic_id']);
     
     $sub_level=array('N/A');
     $sub_level[]=array('1','Primary');	
     $sub_level[]=array('2','Additional');	
     
     
-    $form->addSelectList('sub_level', __('Level'), $sub_level,$rec_d['sub_level']);
+    $form->addSelectList('sub_level', gettext('Level'), $sub_level,$rec_d['sub_level']);
 
     
      //comment by iresh on 25-1-2011$form->addTextField('text', 'topic', __('Subject').'*', $rec_d['topic'], 'style="width: 60%;"');
-  /*added by iresh on 25-1-2011 */$form->addTextField('text', 'subject', __('Subject Name').'*', $rec_d['subject_type_name'], 'style="width: 140;" onblur="return charactercheck(this.name);"');
+  /*added by iresh on 25-1-2011 */$form->addTextField('text', 'subject', gettext('Subject Name').'*', $rec_d['subject_type_name'], 'style="width: 140;" onblur="return charactercheck(this.name);"');
     // subject type
    
      // edit mode messagge
     if ($form->edit_mode) {
-        echo '<div class="infoBox">'.__('You are going to edit data').' : <b>'.$rec_d['topic'].'</b>  <br />'.__('Last Update').$rec_d['last_update'].'</div>'; //mfc
+        echo '<div class="infoBox">'.gettext('You are going to edit data').' : <b>'.$rec_d['topic'].'</b>  <br />'.gettext('Last Update').$rec_d['last_update'].'</div>'; //mfc
     }
     // print out the form object
     echo $form->printOut();
@@ -277,14 +277,14 @@ if (isset($_POST['detail']) OR (isset($_GET['action']) AND $_GET['action'] == 'd
     if ($can_read AND $can_write) {
         $subj_type_fld = 2;
        $datagrid->setSQLColumn('st.subject_type_id',
-	    'st.subject_type_name AS \''.__('Subject').'\'',
-            't.topic AS \''.__('Subject Type').'\'',
-	    'DATE_FORMAT(st.last_update,"%d-%m-%Y") AS \''.__('Last Update').'\'');
+	    'st.subject_type_name AS \''.gettext('Subject').'\'',
+            't.topic AS \''.gettext('Subject Type').'\'',
+	    'DATE_FORMAT(st.last_update,"%d-%m-%Y") AS \''.gettext('Last Update').'\'');
     } else {
         $datagrid->setSQLColumn('st.subject_type_id',
-            'st.subject_type_name AS \''.__('Subject').'\'',
-            't.topic AS \''.__('Subject Type').'\'',
-            'DATE_FORMAT(st.last_update,"%d-%m-%Y") AS \''.__('Last Update').'\'');
+            'st.subject_type_name AS \''.gettext('Subject').'\'',
+            't.topic AS \''.gettext('Subject Type').'\'',
+            'DATE_FORMAT(st.last_update,"%d-%m-%Y") AS \''.gettext('Last Update').'\'');
     }
    // $datagrid->setSQLorder('subject_type_name ASC');
 
@@ -317,7 +317,7 @@ if (isset($_POST['detail']) OR (isset($_GET['action']) AND $_GET['action'] == 'd
     $datagrid_result = $datagrid->createDataGrid($dbs, $table_spec, 20, ($can_read AND $can_write));
     
     if (isset($_GET['keywords']) AND $_GET['keywords']) {
-        $msg = str_replace('{result->num_rows}', $datagrid->num_rows, __('Found <strong>{result->num_rows}</strong> from your keywords')); //mfc
+        $msg = str_replace('{result->num_rows}', $datagrid->num_rows, gettext('Found <strong>{result->num_rows}</strong> from your keywords')); //mfc
         echo '<div class="infoBox">'.$msg.' : "'.$_GET['keywords'].'"</div>';
     }
 

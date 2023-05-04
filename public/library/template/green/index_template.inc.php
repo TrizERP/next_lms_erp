@@ -10,7 +10,7 @@
 <link rel="icon" href="webicon.ico" type="image/x-icon" />
 <link rel="shortcut icon" href="webicon.ico" type="image/x-icon" />
 <link href="template/core.style.css" rel="stylesheet" type="text/css" />
-<link href="<?php echo $sysconf['template']['css']; ?>" rel="stylesheet" type="text/css" />
+<link href="<?php echo $template_css; ?>" rel="stylesheet" type="text/css" />
 <script type="text/javascript" src="js/prototype.js"></script>
 <script type="text/javascript" src="js/form.js"></script>
 <script type="text/javascript" src="js/gui.js"></script>
@@ -23,12 +23,12 @@
 <tr>
 <td id="mainMenu" colspan="2">
 <ul id="menuList">
-        <li><a class="menu" href="index.php"><?php echo __('Home'); ?></a></li>
-      <!--comment is made by iresh on 11/1/2011  <li><a class="menu" href="index.php?p=libinfo"><?php echo __('Library Information'); ?></a></li>-->
-        <li><a class="menu" href="index.php?p=help"><?php echo __('Help on Search'); ?></a></li>
-        <!--comment is made by iresh on 11/1/2011 <li><a class="menu" href="index.php?p=member"><?php echo __('Member Area'); ?></a></li>-->
-        <li><a class="menu" href="index.php?p=member"><?php echo __('Member Login'); ?></a></li>
-        <li><a class="menu" href="index.php?p=login"><?php echo __('Librarian LOGIN'); ?></a></li>
+        <li><a class="menu" href="index.php"><?php echo gettext('Home'); ?></a></li>
+      <!--comment is made by iresh on 11/1/2011  <li><a class="menu" href="index.php?p=libinfo"><?php echo gettext('Library Information'); ?></a></li>-->
+        <li><a class="menu" href="index.php?p=help"><?php echo gettext('Help on Search'); ?></a></li>
+        <!--comment is made by iresh on 11/1/2011 <li><a class="menu" href="index.php?p=member"><?php echo gettext('Member Area'); ?></a></li>-->
+        <li><a class="menu" href="index.php?p=member"><?php echo gettext('Member Login'); ?></a></li>
+        <li><a class="menu" href="index.php?p=login"><?php echo gettext('Librarian LOGIN'); ?></a></li>
 </ul>
 </td>
 </tr>
@@ -37,8 +37,8 @@
 <!-- header -->
 <tr>
         <td id="mainHeader" colspan="2"><div id="headerImage">&nbsp;</div>
-            <div id="libraryName"><?php echo $sysconf['library_name']; ?>
-                <div id="librarySubName"><?php echo $sysconf['library_subname']; ?></div>
+            <div id="libraryName"><?php echo $page_title; ?>
+                <div id="librarySubName"><?php echo $library_subname; ?></div>
             </div>
         </td>
 </tr>
@@ -49,7 +49,7 @@
 <!-- sidepan -->
 <td id="sidepan" valign="top">
     <!-- language selection -->
-       <!-- comment by iresh on 11/1/2011 <div class="heading"><?php echo __('Select Language'); ?></div>
+       <!-- comment by iresh on 11/1/2011 <div class="heading"><?php echo gettext('Select Language'); ?></div>
         <form name="langSelect" action="index.php" method="get">
         <select name="select_lang" style="width: 99%;" onchange="document.langSelect.submit();">
         <?php echo $language_select; ?>
@@ -58,38 +58,38 @@
     <!-- language selection end -->
 
     <!-- simple search -->
-        <div class="heading"><?php echo __('Simple Search'); ?></div>
+        <div class="heading"><?php echo gettext('Simple Search'); ?></div>
         <form name="simpleSearch" action="index.php" method="get">
         <input type="text" name="keywords" style="width: 99%;" /><br />
-        <input type="submit" name="search" value="<?php echo __('Search'); ?>" class="button marginTop" />
+        <input type="submit" name="search" value="<?php echo gettext('Search'); ?>" class="button marginTop" />
         </form>
     <!-- simple search end -->
 
     <!-- advanced search -->
-        <div class="heading"><?php echo __('Advanced Search'); ?></div>
+        <div class="heading"><?php echo gettext('Advanced Search'); ?></div>
         <form name="advSearchForm" id="advSearchForm" action="index.php" method="get">
-        <?php echo __('Title'); ?> :
+        <?php echo gettext('Title'); ?> :
         <input type="text" name="title" class="ajaxInputField" /><br />
-        <?php echo __('Author(s)'); ?> :
+        <?php echo gettext('Author(s)'); ?> :
         <?php echo $advsearch_author; ?><br />
-        <?php echo __('Subject(s)'); ?> :
+        <?php echo gettext('Subject(s)'); ?> :
         <?php echo $advsearch_topic; ?><br />
-        <?php echo __('ISBN/ISSN'); ?> :
+        <?php echo gettext('ISBN/ISSN'); ?> :
         <input type="text" name="isbn" class="ajaxInputField" /><br />
-        <?php echo __('GMD'); ?> :
+        <?php echo gettext('GMD'); ?> :
         <select name="gmd" class="ajaxInputField" />
         <?php echo $gmd_list; ?>
         </select>
-        <?php echo __('Collection Type'); ?> :
+        <?php echo gettext('Collection Type'); ?> :
         <select name="colltype" class="ajaxInputField" />
         <?php echo $colltype_list; ?>
         </select>
-        <?php echo __('Location'); ?> :
+        <?php echo gettext('Location'); ?> :
         <select name="location" class="ajaxInputField" />
         <?php echo $location_list; ?>
         </select>
         <br />
-        <input type="submit" name="search" value="<?php echo __('Search'); ?>" class="button marginTop" />
+        <input type="submit" name="search" value="<?php echo gettext('Search'); ?>" class="button marginTop" />
         <!-- <input type="button" value="More Options" onclick="" class="button marginTop" /> -->
         </form>
     <!-- advanced search end -->

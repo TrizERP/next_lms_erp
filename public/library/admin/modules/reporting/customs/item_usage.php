@@ -12,7 +12,7 @@ $can_read = utility::havePrivilege('reporting', 'r');
 $can_write = utility::havePrivilege('reporting', 'w');
 
 if (!$can_read) {
-    die('<div class="errorBox">'.__('You don\'t have enough privileges to access this area!').'</div>');
+    die('<div class="errorBox">'.gettext('You don\'t have enough privileges to access this area!').'</div>');
 }
 
 require SIMBIO_BASE_DIR.'simbio_GUI/table/simbio_table.inc.php';
@@ -61,14 +61,14 @@ echo $bradecum;
 </table>
     <!-- filter -->
     <fieldset style="margin-bottom: 3px;">
-    <legend style="font-weight: bold"><?php echo strtoupper(__('Items Usage Statistics')); ?> - <?php echo __('Report Filter'); ?></legend>
+    <legend style="font-weight: bold"><?php echo strtoupper(gettext('Items Usage Statistics')); ?> - <?php echo gettext('Report Filter'); ?></legend>
     <form method="get" action="<?php echo $_SERVER['PHP_SELF']; ?>" target="reportView">
     <div id="filterForm">
         <table width='45%'>
             <tr>
                 <td>
                         <div class="divRow">
-                        <div class="divRowLabel"><?php echo __('Title/ISBN'); ?></div>
+                        <div class="divRowLabel"><?php echo gettext('Title/ISBN'); ?></div>
                         <div class="divRowContent">
                         <?php echo simbio_form_element::textField('text', 'title', '', 'style="width: 70%"'); ?>
                         </div>
@@ -76,7 +76,7 @@ echo $bradecum;
                 </td>
                 <td>
                     <div class="divRow">
-                    <div class="divRowLabel"><?php echo __('Item Code'); ?></div>
+                    <div class="divRowLabel"><?php echo gettext('Item Code'); ?></div>
                     <div class="divRowContent">
                     <?php echo simbio_form_element::textField('text', 'itemCode', '', 'style="width: 70%"'); ?>
                     </div>
@@ -86,7 +86,7 @@ echo $bradecum;
             <tr>
                 <td>
                      <div class="divRow" style="float:left;" >
-                        <div class="divRowLabel"><?php echo __('From'); ?></div>
+                        <div class="divRowLabel"><?php echo gettext('From'); ?></div>
                             <div class="divRowContent">
                             <?php                              
                             $temp_date=explode('-', date('d-m-Y'));
@@ -111,7 +111,7 @@ echo $bradecum;
                 </td>
                 <td>
                     <div class="divRow" style="float:left;">            
-                    <div class="divRowLabel"><?php  echo __('To'); ?></div>
+                    <div class="divRowLabel"><?php  echo gettext('To'); ?></div>
                      <div class="divRowContent">
                         <?php
                             echo simbio_form_element::dateField('untilDate', date('d-m-Y'));
@@ -144,7 +144,7 @@ echo $bradecum;
         </div> 
     </div>
     <div style="padding-top: 10px; clear: both;">
-    <input type="submit" name="applyFilter" value="<?php echo __('Search'); ?>" />
+    <input type="submit" name="applyFilter" value="<?php echo gettext('Search'); ?>" />
     <input type="hidden" name="reportView" value="true" />
     </div>
     </form>
@@ -161,20 +161,20 @@ echo $bradecum;
 
     // create datagrid
     $reportgrid = new report_datagrid();
-    $reportgrid->setSQLColumn('i.item_code AS \''.__('Item Code').'\'',
-        'b.title AS \''.__('Title').'\'',
-        '\'01\' AS \''.__('Jan').'\'',
-        '\'02\' AS \''.__('Feb').'\'',
-        '\'03\' AS \''.__('Mar').'\'',
-        '\'04\' AS \''.__('Apr').'\'',
-        '\'05\' AS \''.__('May').'\'',
-        '\'06\' AS \''.__('Jun').'\'',
-        '\'07\' AS \''.__('Jul').'\'',
-        '\'08\' AS \''.__('Aug').'\'',
-        '\'09\' AS \''.__('Sep').'\'',
-        '\'10\' AS \''.__('Oct').'\'',
-        '\'11\' AS \''.__('Nov').'\'',
-        '\'12\' AS \''.__('Dec').'\''
+    $reportgrid->setSQLColumn('i.item_code AS \''.gettext('Item Code').'\'',
+        'b.title AS \''.gettext('Title').'\'',
+        '\'01\' AS \''.gettext('Jan').'\'',
+        '\'02\' AS \''.gettext('Feb').'\'',
+        '\'03\' AS \''.gettext('Mar').'\'',
+        '\'04\' AS \''.gettext('Apr').'\'',
+        '\'05\' AS \''.gettext('May').'\'',
+        '\'06\' AS \''.gettext('Jun').'\'',
+        '\'07\' AS \''.gettext('Jul').'\'',
+        '\'08\' AS \''.gettext('Aug').'\'',
+        '\'09\' AS \''.gettext('Sep').'\'',
+        '\'10\' AS \''.gettext('Oct').'\'',
+        '\'11\' AS \''.gettext('Nov').'\'',
+        '\'12\' AS \''.gettext('Dec').'\''
         );
     $reportgrid->setSQLorder('b.title ASC');
 
@@ -276,7 +276,7 @@ $a="SELECT COUNT(*) FROM loan AS l WHERE l.item_code='$array_data[0]' AND l.loan
     $reportgrid->modifyColumnContent(13, 'callback{showUsage}');
 
     // no sort column
-    $reportgrid->disableSort(__('Jan'), __('Feb'), __('Mar'), __('Apr'), __('May'), __('Jun'), __('Jul'), __('Aug'), __('Sep'), __('Oct'), __('Nov'), __('Dec'));
+    $reportgrid->disableSort(gettext('Jan'), gettext('Feb'), gettext('Mar'), gettext('Apr'), gettext('May'), gettext('Jun'), gettext('Jul'), gettext('Aug'), gettext('Sep'), gettext('Oct'), gettext('Nov'), gettext('Dec'));
 
     // put the result into variables
     echo $reportgrid->createDataGrid($dbs, $table_spec, 10);
@@ -287,6 +287,6 @@ $a="SELECT COUNT(*) FROM loan AS l WHERE l.item_code='$array_data[0]' AND l.loan
 
     $content = ob_get_clean();
     // include the page template
-    require SENAYAN_BASE_DIR.'/admin/'.$sysconf['admin_template']['dir'].'/printed_page_tpl.php';
+    require SENAYAN_BASE_DIR.'/admin/admin_template/printed_page_tpl.php';
 }
 ?>
