@@ -14,7 +14,7 @@ return new class extends Migration {
     {
         Schema::create('fees_cancel_type', function (Blueprint $table) {
             $table->comment('');
-            $table->integer('id', true);
+            $table->bigIncrements('id');
             $table->string('title', 50)->nullable();
             $table->timestamp('created_on')->nullable()->useCurrent();
         });

@@ -14,7 +14,7 @@ return new class extends Migration {
     {
         Schema::create('result_master_confrigration', function (Blueprint $table) {
             $table->comment('');
-            $table->increments('id');
+            $table->bigIncrements('id');
             $table->integer('syear')->default(0);
             $table->integer('term_id')->default(0);
             $table->integer('sub_institute_id')->default(0);

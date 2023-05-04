@@ -14,7 +14,7 @@ return new class extends Migration {
     {
         Schema::create('implementation_master', function (Blueprint $table) {
             $table->comment('');
-            $table->integer('id', true);
+            $table->bigIncrements('id');
             $table->integer('sub_institute_id')->nullable();
             $table->string('total_male', 50)->nullable();
             $table->string('total_female', 50)->nullable();

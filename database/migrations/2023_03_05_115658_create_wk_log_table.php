@@ -14,7 +14,7 @@ return new class extends Migration {
     {
         Schema::create('wk_log', function (Blueprint $table) {
             $table->comment('');
-            $table->integer('id', true);
+            $table->bigIncrements('id');
             $table->integer('main_id')->nullable()->unique('main_id');
             $table->timestamp('created_at')->nullable()->useCurrent();
         });

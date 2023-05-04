@@ -14,7 +14,7 @@ return new class extends Migration {
     {
         Schema::create('lms_assignment', function (Blueprint $table) {
             $table->comment('');
-            $table->integer('id', true);
+            $table->bigIncrements('id');
             $table->integer('sub_institute_id')->nullable();
             $table->integer('student_id')->nullable();
             $table->string('title', 50)->nullable();

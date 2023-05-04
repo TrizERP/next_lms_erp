@@ -42,7 +42,7 @@ $school_logo = session()->get('school_logo');
                 @endif
 
                 <?php
-
+/*
                 if(session()->get('is_admin') != 1)
                 {
                     $sub_institute_id = session()->get('sub_institute_id');
@@ -148,6 +148,7 @@ $school_logo = session()->get('school_logo');
                     } 
 
                 }
+                */
             ?>
 
 

@@ -76,7 +76,7 @@ class MenuMiddleware
                     ->whereIn('u.sub_institute_id', explode(',', $sub_institute_id))
                     ->where('u.id', $user_id)->get()->toArray();
             } else {
-
+//DB::enableQueryLog();
                 $rightsQuery = DB::table('tbluser as u')
                     ->leftJoin('tblindividual_rights as i', function ($join) {
                         $join->whereRaw("u.id = i.user_id AND u.sub_institute_id = i.sub_institute_id");
@@ -91,6 +91,7 @@ class MenuMiddleware
                             $q->where('u.id', $user_id);
                         }
                     })->get()->toArray();
+//dd(DB::getQueryLog($rightsQuery));
 
             }
 

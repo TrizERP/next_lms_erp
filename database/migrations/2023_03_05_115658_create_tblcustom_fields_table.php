@@ -14,7 +14,7 @@ return new class extends Migration {
     {
         Schema::create('tblcustom_fields', function (Blueprint $table) {
             $table->comment('');
-            $table->integer('id', true);
+            $table->bigIncrements('id');
             $table->string('table_name', 50)->nullable();
             $table->string('field_name', 50)->nullable();
             $table->string('field_label', 50)->nullable();

@@ -14,7 +14,7 @@ return new class extends Migration {
     {
         Schema::create('lms_question_mapping', function (Blueprint $table) {
             $table->comment('');
-            $table->integer('id', true);
+            $table->bigIncrements('id');
             $table->integer('questionmaster_id')->default(0);
             $table->integer('mapping_type_id')->default(0);
             $table->integer('mapping_value_id')->default(0);

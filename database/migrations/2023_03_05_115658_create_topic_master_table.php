@@ -14,7 +14,7 @@ return new class extends Migration {
     {
         Schema::create('topic_master', function (Blueprint $table) {
             $table->comment('');
-            $table->integer('id', true);
+            $table->bigIncrements('id');
             $table->bigInteger('sub_institute_id')->nullable()->index('FK_topic_master_school_setup');
             $table->bigInteger('chapter_id')->nullable()->index('FK_topic_master_chapter_master');
             $table->integer('main_topic_id')->nullable();

@@ -14,7 +14,7 @@ return new class extends Migration {
     {
         Schema::create('wk_module', function (Blueprint $table) {
             $table->comment('');
-            $table->integer('id', true);
+            $table->bigIncrements('id');
             $table->string('modulename', 250)->nullable();
             $table->string('fieldname', 250)->nullable();
             $table->string('displayname', 250)->nullable();

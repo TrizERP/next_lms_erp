@@ -14,7 +14,7 @@ return new class extends Migration {
     {
         Schema::create('lms_lesson_plan', function (Blueprint $table) {
             $table->comment('This table contain all set of lesson plan');
-            $table->bigInteger('id', true);
+            $table->bigIncrements('id');
             $table->bigInteger('sub_institute_id')->nullable();
             $table->bigInteger('syear')->nullable();
             $table->bigInteger('standard_id')->nullable();

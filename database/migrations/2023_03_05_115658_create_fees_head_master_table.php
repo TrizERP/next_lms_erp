@@ -14,7 +14,7 @@ return new class extends Migration {
     {
         Schema::create('fees_head_master', function (Blueprint $table) {
             $table->comment('');
-            $table->integer('id', true);
+            $table->bigIncrements('id');
             $table->string('code', 50)->nullable();
             $table->string('head_title', 50)->nullable();
             $table->string('description', 50)->nullable();

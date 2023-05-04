@@ -14,7 +14,7 @@ return new class extends Migration {
     {
         Schema::create('religion', function (Blueprint $table) {
             $table->comment('');
-            $table->integer('id', true);
+            $table->bigIncrements('id');
             $table->string('religion_name', 50)->nullable();
         });
     }

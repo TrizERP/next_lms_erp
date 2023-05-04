@@ -14,7 +14,7 @@ return new class extends Migration {
     {
         Schema::create('inventory_item_direct_purchase', function (Blueprint $table) {
             $table->comment('');
-            $table->integer('id', true);
+            $table->bigIncrements('id');
             $table->integer('sub_institute_id')->nullable();
             $table->string('syear', 100)->nullable();
             $table->integer('vendor_id')->nullable();

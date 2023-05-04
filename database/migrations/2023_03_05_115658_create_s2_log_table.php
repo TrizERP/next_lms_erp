@@ -14,7 +14,7 @@ return new class extends Migration {
     {
         Schema::create('s2_log', function (Blueprint $table) {
             $table->comment('');
-            $table->integer('ID', true);
+            $table->bigIncrements('ID');
             $table->integer('LOT_NO');
             $table->string('MESSAGE_ID', 50);
             $table->date('MESSAGE_CREATION');

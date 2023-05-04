@@ -14,7 +14,7 @@ return new class extends Migration {
     {
         Schema::create('access_log_route', function (Blueprint $table) {
             $table->comment('');
-            $table->integer('id', true);
+            $table->bigIncrements('id');
             $table->string('url', 100);
             $table->string('module', 255);
             $table->string('action', 100)->nullable();

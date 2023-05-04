@@ -14,7 +14,7 @@ return new class extends Migration {
     {
         Schema::create('tblstudent_parent_feedback', function (Blueprint $table) {
             $table->comment('');
-            $table->integer('id', true);
+            $table->bigIncrements('id');
             $table->integer('student_id')->nullable();
             $table->string('person_name', 50)->nullable();
             $table->string('purpose', 150)->nullable();

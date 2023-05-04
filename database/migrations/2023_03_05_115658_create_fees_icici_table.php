@@ -15,13 +15,13 @@ return new class extends Migration {
         Schema::create('fees_icici', function (Blueprint $table) {
             $table->comment('');
             $table->bigIncrements('id');
-            $table->string('syear', 150);
+            $table->integer('syear');
             $table->string('merchant_id', 150);
             $table->string('pg_reference_no', 150);
-            $table->string('sub_merchant_id', 150);
+            $table->integer('sub_merchant_id');
             $table->string('enc_key', 150);
             $table->string('medium', 150);
-            $table->bigInteger('sub_institute_id');
+            $table->integer('sub_institute_id');
             $table->timestamp('created_at')->nullable()->useCurrent();
             $table->dateTime('updated_at')->nullable();
         });

@@ -14,7 +14,7 @@ return new class extends Migration {
     {
         Schema::create('result_exam_type_master', function (Blueprint $table) {
             $table->comment('');
-            $table->increments('Id');
+            $table->bigIncrements('Id');
             $table->string('Code', 255);
             $table->string('ExamType', 255);
             $table->string('ShortName', 255)->nullable();

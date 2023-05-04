@@ -14,7 +14,7 @@ return new class extends Migration {
     {
         Schema::create('question_master', function (Blueprint $table) {
             $table->comment('');
-            $table->integer('id', true);
+            $table->bigIncrements('id');
             $table->integer('question_type_id')->nullable();
             $table->integer('grade_id')->nullable();
             $table->integer('standard_id')->nullable();

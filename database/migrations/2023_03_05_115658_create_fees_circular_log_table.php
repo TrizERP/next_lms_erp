@@ -14,10 +14,10 @@ return new class extends Migration {
     {
         Schema::create('fees_circular_log', function (Blueprint $table) {
             $table->comment('');
-            $table->integer('ID', true);
+            $table->bigIncrements('ID');
             $table->integer('STUDENT_ID')->nullable();
             $table->string('MONTH', 50)->nullable();
-            $table->string('RECEIPT_BOOK_ID', 50)->nullable();
+            $table->integer('RECEIPT_BOOK_ID')->nullable();
             $table->integer('SUB_INSTITUTE_ID')->nullable();
             $table->integer('SYEAR')->nullable();
             $table->integer('AMOUNT')->nullable();

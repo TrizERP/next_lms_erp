@@ -14,7 +14,7 @@ return new class extends Migration {
     {
         Schema::create('tblstudent_bank_detail', function (Blueprint $table) {
             $table->comment('');
-            $table->integer('id', true);
+            $table->bigIncrements('id');
             $table->integer('student_id')->nullable()->unique('student_id');
             $table->integer('sub_institute_id')->nullable();
             $table->string('ac_holder_name', 255)->nullable();

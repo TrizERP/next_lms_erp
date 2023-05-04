@@ -14,7 +14,7 @@ return new class extends Migration {
     {
         Schema::create('student_document_type', function (Blueprint $table) {
             $table->comment('');
-            $table->integer('id', true);
+            $table->bigIncrements('id');
             $table->string('document_type', 250)->default('0');
             $table->string('status', 50)->default('0');
             $table->timestamp('created_at')->useCurrent();

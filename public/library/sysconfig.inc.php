@@ -1,6 +1,9 @@
 <?php
-error_reporting(0);
-session_start();
+// error_reporting(0);
+error_reporting(E_ALL);
+
+ini_set('display_errors',1);
+// session_start();
 // be sure that this file not accessed directly
 
 if (!function_exists('encrypt_url')) {
@@ -31,8 +34,18 @@ if (!function_exists('encrypt_url')) {
 }
 
 list($a,$b) = explode("?",$_SERVER['REQUEST_URI']);
-list($it, $NEW_ERP, $DUSER_ID, $USER_GROUP_ID, $DUSER_PWD, $db_host, $db_user, $db_password, $db_library, $solution_db, $school_name, $SUB_INSTITUTE_ID, $school_logo, $dyear) = explode('&',encrypt_url('decrypt',$b));
+// echo $a;exit;
+$parts = explode('&', $b);
+if (count($parts) == 14) {
+    list($it, $NEW_ERP, $DUSER_ID, $USER_GROUP_ID, $DUSER_PWD, $db_host, $db_user, $db_password, $db_library, $solution_db, $school_name, $SUB_INSTITUTE_ID, $school_logo, $dyear) = $parts;
+} else {
 
+list($NEW_ERP, $DUSER_ID, $USER_GROUP_ID, $DUSER_PWD, $db_host, $db_user, $db_password, $db_library, $solution_db, $school_name, $SUB_INSTITUTE_ID, $school_logo, $dyear) = explode('&',$b);
+$it ="";
+    // handle the case where the array does not have the expected number of elements
+}
+// print_r(explode('&',$b));
+// explode('&',encrypt_url('decrypt',$b)
 if (basename($_SERVER['PHP_SELF']) == basename(__FILE__)) {
     die();
 }
@@ -228,8 +241,10 @@ if ($connection) {
     $INVENTORY_PRODUCT_TYPE_CONST = 'INVENTORY';
     $LIBRARY_PRODUCT_TYPE_CONST = 'LIBRARY';
     //For Central Admin Users
-    if ($_SESSION[USER_GROUP_ID] == 1) {
-        if ($_REQUEST[is_library_prod_glob] != "" && $_REQUEST[is_library_prod_glob] == "YES") {
+
+    if ($_SESSION['USER_GROUP_ID'] == 1) {
+
+        if (isset($_REQUEST['is_library_prod_glob']) && $_REQUEST['is_library_prod_glob'] != "" && $_REQUEST['is_library_prod_glob'] == "YES") {
             $sql = "SELECT DISTINCT tcd.COLLEGE_ID,tcd.DATABASE_NAME,tcd.TITLE
                     FROM
                     $inte_schema.tbladmin ta
@@ -238,7 +253,7 @@ if ($connection) {
                    ";
             $user_data = mysqli_query($sql);
 
-              if($_REQUEST[hid_frm_clg_wise_dbs_val]==""){
+              if($_REQUEST['hid_frm_clg_wise_dbs_val']==""){
                   echo "<style>
                         .cls_clg_wise_dbs_div{
                             text-align:center;
@@ -250,8 +265,8 @@ if ($connection) {
                   echo "<span>Institute : </span>";
                   echo "<select name='sel_db_names'>";
                   while ($data = mysqli_fetch_assoc($user_data)) {
-                      $COLLEGE_DATABASE_NAME = $data[DATABASE_NAME];
-                      $COLLEGE_TITLE = $data[TITLE];
+                      $COLLEGE_DATABASE_NAME = $data['DATABASE_NAME'];
+                      $COLLEGE_TITLE = $data['TITLE'];
 
                       echo "<option value='$COLLEGE_DATABASE_NAME'>$COLLEGE_TITLE</option>";
                   }
@@ -263,20 +278,20 @@ if ($connection) {
                   echo "</form>";
                   die;
              }
-             else if($_REQUEST[hid_frm_clg_wise_dbs_val]!="" && $_REQUEST[sel_db_names]!=""){
+             else if($_REQUEST['hid_frm_clg_wise_dbs_val']!="" && $_REQUEST['sel_db_names']!=""){
                 //$library_database=$_REQUEST[sel_db_names];
-                $_SESSION[REQ_COLLEGE_DB_VAL]=$_REQUEST[sel_db_names];
+                $_SESSION['REQ_COLLEGE_DB_VAL']=$_REQUEST['sel_db_names'];
              }
            }
 
-            if($_SESSION[REQ_COLLEGE_DB_VAL] != ""){
-                $library_database=$_SESSION[REQ_COLLEGE_DB_VAL];
+            if(isset($_SESSION['REQ_COLLEGE_DB_VAL']) && $_SESSION['REQ_COLLEGE_DB_VAL'] != ""){
+                $library_database=$_SESSION['REQ_COLLEGE_DB_VAL'];
             }
         }
 
-      if($_SESSION[USER_GROUP_ID] != 1){
-          $COLLEGE_DATABASE_NAME=$_SESSION[library_database];
-          $COLLEGE_TITLE=$_REQUEST[school_name];
+      if($_SESSION['USER_GROUP_ID'] != 1){
+          $COLLEGE_DATABASE_NAME=$_SESSION['library_database'];
+          $COLLEGE_TITLE=$_REQUEST['school_name'];
 
           if($COLLEGE_DATABASE_NAME != ""){
             $library_database=$COLLEGE_DATABASE_NAME;
@@ -296,7 +311,7 @@ define('DB_PASSWORD', $passwd);
 $id1 = $_SERVER['REMOTE_ADDR'];
 $id1 = $id1.".php";
 
-define('REPO_BASE_DIR', SENAYAN_BASE_DIR.repository.DIRECTORY_SEPARATOR);
+define('REPO_BASE_DIR', SENAYAN_BASE_DIR.'repository'.DIRECTORY_SEPARATOR);
 // we prefer to use mysqli extensions if its available
 
 // echo '<pre> host '; print_r($host);
@@ -339,6 +354,12 @@ $dbs->query('SET NAMES \'utf8\'');
 $sysconf['template']['dir'] = 'template';
 $sysconf['template']['theme'] = 'default';
 $sysconf['template']['css'] = $sysconf['template']['dir'].'/'.$sysconf['template']['theme'].'/style.css';
+
+if (!file_exists($sysconf['template']['dir'].'/'.$sysconf['template']['theme'].'/tinfo.inc.php')) {
+    $sysconf['template']['base'] = 'php'; /* html OR php */
+} else {
+    require $sysconf['template']['dir'].'/'.$sysconf['template']['theme'].'/tinfo.inc.php';
+}
 #require $sysconf['template']['dir'].'/'.$sysconf['template']['theme'].'/tinfo.inc.php';
 
 /* ADMIN SECTION GUI Template config */
@@ -484,7 +505,9 @@ $sysconf['date_format'] = 'Y-m-d'; /* Produce 2009-12-31 */
 // $sysconf['date_format'] = 'd-M-Y'; /* Produce 31-Dec-2009 */
 
 // load global settings from database. Uncomment below lines if you dont want to load it
+// print_r($dbs);exit;
 utility::loadSettings($dbs);
+// echo $_SERVER['PHP_SELF'];
 
 // check for user language selection if we are not in admin areas
 if (stripos($_SERVER['PHP_SELF'], '/admin') === false) {
@@ -512,47 +535,47 @@ $virtual_name='';
 while($row = $virtual->fetch_assoc()){
     $virtual_name.=$row['material_resource_id'].',';
 }
+// print_r($virtual_name);
+
 $virtual_name=explode(",",$virtual_name);
 $virtual_final=$virtual_name[0];
 $physical_final=$virtual_name[1];
+// echo "hello";
 //$student_final=$virtual_name[2];
 //$teacher_final=$virtual_name[3];
 //$parent_final=$virtual_name[4];
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// print_r(LANGUAGES_BASE_DIR); die();
+
 require LANGUAGES_BASE_DIR.'localisation.php';
 
+// require LIB_DIR.'detail.inc.php';
 /* AUTHORITY TYPE */
-$sysconf['authority_type']['p'] = __('Personal Name');
-$sysconf['authority_type']['o'] = __('Organizational Body');
-$sysconf['authority_type']['c'] = __('Conference');
-
+$sysconf['authority_type']['p'] = gettext('Personal Name');
+$sysconf['authority_type']['o'] = gettext('Organizational Body');
+$sysconf['authority_type']['c'] = gettext('Conference');
 /* SUBJECT/AUTHORITY TYPE */
-$sysconf['subject_type']['t'] = __('Topic');
-$sysconf['subject_type']['g'] = __('Geographic');
-$sysconf['subject_type']['n'] = __('Name');
-$sysconf['subject_type']['tm'] = __('Temporal');
-$sysconf['subject_type']['gr'] = __('Genre');
-$sysconf['subject_type']['oc'] = __('Occupation');
+$sysconf['subject_type']['t'] = gettext('Topic');
+$sysconf['subject_type']['g'] = gettext('Geographic');
+$sysconf['subject_type']['n'] = gettext('Name');
+$sysconf['subject_type']['tm'] = gettext('Temporal');
+$sysconf['subject_type']['gr'] = gettext('Genre');
+$sysconf['subject_type']['oc'] = gettext('Occupation');
 
 /* AUTHORITY LEVEL */
-$sysconf['authority_level'][1] = __('Primary Author');
-$sysconf['authority_level'][2] = __('Additional Author');
-$sysconf['authority_level'][3] = __('Editor');
-$sysconf['authority_level'][4] = __('Translator');
-$sysconf['authority_level'][5] = __('Director');
-$sysconf['authority_level'][6] = __('Producer');
-$sysconf['authority_level'][7] = __('Composer');
-$sysconf['authority_level'][8] = __('Illustrator');
-$sysconf['authority_level'][9] = __('Creator');
-$sysconf['authority_level'][10] = __('Contributor');
-
+$sysconf['authority_level'][1] = gettext('Primary Author');
+$sysconf['authority_level'][2] = gettext('Additional Author');
+$sysconf['authority_level'][3] = gettext('Editor');
+$sysconf['authority_level'][4] = gettext('Translator');
+$sysconf['authority_level'][5] = gettext('Director');
+$sysconf['authority_level'][6] = gettext('Producer');
+$sysconf['authority_level'][7] = gettext('Composer');
+$sysconf['authority_level'][8] = gettext('Illustrator');
+$sysconf['authority_level'][9] = gettext('Creator');
+$sysconf['authority_level'][10] = gettext('Contributor');
+// print_r($sysconf);exit;
+// 
 // template info config
-if (!file_exists($sysconf['template']['dir'].'/'.$sysconf['template']['theme'].'/tinfo.inc.php')) {
-    $sysconf['template']['base'] = 'php'; /* html OR php */
-} else {
-    require $sysconf['template']['dir'].'/'.$sysconf['template']['theme'].'/tinfo.inc.php';
-}
+
 
 #require $sysconf['template']['dir'].'/'.$sysconf['template']['theme'].'/tinfo.inc.php';
 // redirect to mobile template on mobile mode
@@ -566,7 +589,7 @@ if (defined('LIGHTWEIGHT_MODE') OR isset($_COOKIE['LIGHTWEIGHT_MODE'])) {
 $sysconf['allow_pdf_download'] = true;
 
 $prod_schema=$inte_schema;
-
+// echo $prod_schema;
 # Image watermarking
 $sysconf['watermark']['enable'] = true;
 $sysconf['watermark']['type'] = 'image'; # text or image, but image is not yet implemented

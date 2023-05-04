@@ -14,7 +14,7 @@ return new class extends Migration {
     {
         Schema::create('counselling_question_master', function (Blueprint $table) {
             $table->comment('');
-            $table->integer('id', true);
+            $table->bigIncrements('id');
             $table->integer('counselling_course_id')->default(0);
             $table->integer('question_type_id')->nullable();
             $table->string('question_title', 250)->nullable();

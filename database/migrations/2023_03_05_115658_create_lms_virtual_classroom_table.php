@@ -14,7 +14,7 @@ return new class extends Migration {
     {
         Schema::create('lms_virtual_classroom', function (Blueprint $table) {
             $table->comment('');
-            $table->integer('id', true);
+            $table->bigIncrements('id');
             $table->integer('grade_id');
             $table->integer('standard_id');
             $table->integer('subject_id');

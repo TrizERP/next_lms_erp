@@ -14,7 +14,7 @@ return new class extends Migration {
     {
         Schema::create('cast', function (Blueprint $table) {
             $table->comment('');
-            $table->integer('id', true);
+            $table->bigIncrements('id');
             $table->string('title', 50)->nullable();
             $table->integer('sort_order')->nullable();
             $table->integer('sub_institute_id')->nullable();

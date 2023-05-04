@@ -14,7 +14,7 @@ return new class extends Migration {
     {
         Schema::create('lms_doubt_conversation', function (Blueprint $table) {
             $table->comment('');
-            $table->integer('id', true);
+            $table->bigIncrements('id');
             $table->integer('doubt_id');
             $table->longText('message');
             $table->integer('user_id');

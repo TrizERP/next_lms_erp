@@ -14,7 +14,7 @@ return new class extends Migration {
     {
         Schema::create('tblcity', function (Blueprint $table) {
             $table->comment('');
-            $table->integer('id', true);
+            $table->bigIncrements('id');
             $table->string('city_name', 50)->nullable()->unique('city_name');
             $table->integer('state_id')->nullable();
             $table->string('state_name', 50)->nullable();

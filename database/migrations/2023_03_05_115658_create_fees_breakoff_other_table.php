@@ -14,7 +14,7 @@ return new class extends Migration {
     {
         Schema::create('fees_breakoff_other', function (Blueprint $table) {
             $table->comment('');
-            $table->integer('id', true);
+            $table->bigIncrements('id');
             $table->integer('student_id')->default(0);
             $table->integer('syear')->default(0)->index('syear');
             $table->integer('fee_type_id')->index('fee_type_id');

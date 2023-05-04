@@ -14,7 +14,7 @@ return new class extends Migration {
     {
         Schema::create('tblstudent_family_history', function (Blueprint $table) {
             $table->comment('');
-            $table->integer('id', true);
+            $table->bigIncrements('id');
             $table->integer('student_id')->nullable();
             $table->string('name', 50)->nullable();
             $table->string('institute_name', 50)->nullable();

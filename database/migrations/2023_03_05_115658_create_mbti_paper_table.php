@@ -14,7 +14,7 @@ return new class extends Migration {
     {
         Schema::create('mbti_paper', function (Blueprint $table) {
             $table->comment('');
-            $table->integer('id', true);
+            $table->bigIncrements('id');
             $table->longText('html')->nullable();
             $table->integer('sub_institute_id')->nullable();
             $table->timestamp('created_on')->useCurrent();

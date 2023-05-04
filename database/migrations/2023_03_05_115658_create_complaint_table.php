@@ -14,13 +14,13 @@ return new class extends Migration {
     {
         Schema::create('complaint', function (Blueprint $table) {
             $table->comment('');
-            $table->integer('ID', true);
+            $table->bigIncrements('ID');
             $table->integer('SUB_INSTITUTE_ID')->index('SUB_INSTITUTE_ID');
             $table->dateTime('DATE')->nullable();
             $table->string('TITLE', 150)->nullable();
             $table->mediumText('DESCRIPTION')->nullable();
             $table->string('ATTACHEMENT', 150)->nullable();
-            $table->text('FILE_SIZE')->nullable();
+            $table->string('FILE_SIZE')->nullable();
             $table->text('FILE_TYPE')->nullable();
             $table->string('COMPLAINT_BY', 150)->nullable();
             $table->mediumText('COMPLAINT_SOLUTION')->nullable();

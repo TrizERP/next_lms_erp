@@ -14,7 +14,7 @@ return new class extends Migration {
     {
         Schema::create('tblstudent_tc_details', function (Blueprint $table) {
             $table->comment('');
-            $table->integer('id', true);
+            $table->bigIncrements('id');
             $table->integer('sub_institute_id')->nullable();
             $table->string('syear', 50)->nullable();
             $table->integer('student_id')->nullable();

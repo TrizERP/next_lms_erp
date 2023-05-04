@@ -14,7 +14,7 @@ return new class extends Migration {
     {
         Schema::create('timetable', function (Blueprint $table) {
             $table->comment('');
-            $table->increments('id');
+            $table->bigIncrements('id');
             $table->integer('sub_institute_id');
             $table->integer('syear');
             $table->unsignedInteger('academic_section_id')->index('timetable_academic_section_id_foreign');

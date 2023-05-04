@@ -14,12 +14,12 @@ return new class extends Migration {
     {
         Schema::create('fees_cancel', function (Blueprint $table) {
             $table->comment('');
-            $table->integer('id', true);
-            $table->string('reciept_id', 100)->index('reciept_id');
-            $table->decimal('syear', 4, 0)->index('syear');
+            $table->bigIncrements('id');
+            $table->bigInteger('reciept_id')->index('reciept_id');
+            $table->integer('syear')->index('syear');
             $table->integer('sub_institute_id')->index('sub_institute_id');
-            $table->integer('student_id')->index('student_id');
-            $table->integer('standard_id')->index('standard_id');
+            $table->bigInteger('student_id')->index('student_id');
+            $table->bigInteger('standard_id')->index('standard_id');
             $table->integer('term_id')->index('term_id');
             $table->decimal('amountpaid', 10, 0);
             $table->dateTime('received_date')->nullable();

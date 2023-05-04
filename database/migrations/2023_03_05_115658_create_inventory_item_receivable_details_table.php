@@ -14,7 +14,7 @@ return new class extends Migration {
     {
         Schema::create('inventory_item_receivable_details', function (Blueprint $table) {
             $table->comment('');
-            $table->integer('ID', true);
+            $table->bigIncrements('ID');
             $table->string('SYEAR', 10)->nullable();
             $table->string('SUB_INSTITUTE_ID', 10)->nullable();
             $table->string('PURCHASE_ORDER_NO', 100)->nullable();

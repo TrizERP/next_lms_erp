@@ -128,6 +128,7 @@
                             <th rowspan=3 class="align-middle">Student Name</th>
                             <th rowspan=3 class="align-middle">Std/Div</th>
                             <th rowspan=3 class="align-middle">Quota</th>
+                            <th rowspan=3 class="align-middle">Status</th>
                             <th rowspan=3 class="align-middle">Total Breakoff</th>
                             <th rowspan=3 class="align-middle">Total Discount</th>
                             @php
@@ -204,15 +205,7 @@
                     @endphp
                                            
                     @if(isset($data['fees_data']))
-                        @foreach($fees_data as $key => $fees_value)                  
-                        <tr>
-                            <td>{{$j}}</td>
-                            <td>{{$fees_value['enrollment']}}</td>
-                            <td>{{$fees_value['name']}}</td>
-                            <td>{{$fees_value['stddiv']}}</td>
-                            <td>{{$fees_value['stu_quota']}}</td>
-                            <td>{{$fees_value['-']['bk']}}</td>
-
+                        @foreach($fees_data as $key => $fees_value) 
                             @php
                             $total_paid += $fees_value['-']['paid'];
                             $total_breakoff += $fees_value['-']['bk'];
@@ -223,7 +216,18 @@
                             }else{
                                 $discount = 0;
                             }
-                            @endphp                       
+                            $status = $fees_value['-']['paid'] - $discount;
+                            @endphp                    
+                        <tr>
+                            <td>{{$j}}</td>
+                            <td>{{$fees_value['enrollment']}}</td>
+                            <td>{{$fees_value['name']}}</td>
+                            <td>{{$fees_value['stddiv']}}</td>
+                            <td>{{$fees_value['stu_quota']}}</td>
+                            <td>@if($status != 0) In-Active @else Active @endif</td>
+                            <td>{{$fees_value['-']['bk']}}</td>
+
+                                            
                             <td>{{$discount}}</td>
 
                             @if(isset($data['bk_title_months_array']))
@@ -322,6 +326,7 @@
                         
                         <tr class="font-weight-bold">
                             <td>{{$j++}}</td>
+                            <td></td>
                             <td></td>
                             <td></td>
                             <td></td>

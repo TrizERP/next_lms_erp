@@ -14,7 +14,7 @@ return new class extends Migration {
     {
         Schema::create('transport_vehicle', function (Blueprint $table) {
             $table->comment('');
-            $table->bigInteger('id', true);
+            $table->bigIncrements('id');
             $table->string('title', 50);
             $table->string('vehicle_number', 50);
             $table->string('vehicle_type', 50);

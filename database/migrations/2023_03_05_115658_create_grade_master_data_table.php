@@ -14,7 +14,7 @@ return new class extends Migration {
     {
         Schema::create('grade_master_data', function (Blueprint $table) {
             $table->comment('');
-            $table->increments('id');
+            $table->bigIncrements('id');
             $table->integer('syear')->default(0);
             $table->integer('grade_id')->default(0);
             $table->string('title', 255);

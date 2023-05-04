@@ -15,10 +15,10 @@ return new class extends Migration {
         Schema::create('fees_aggre_pay', function (Blueprint $table) {
             $table->comment('');
             $table->bigIncrements('id');
-            $table->string('syear', 150);
+            $table->integer('syear');
             $table->string('api_key', 150);
             $table->string('salt_key', 150);
-            $table->bigInteger('sub_institute_id');
+            $table->integer('sub_institute_id');
             $table->timestamp('created_at')->nullable()->useCurrent();
             $table->dateTime('updated_at')->nullable();
         });

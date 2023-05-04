@@ -14,7 +14,7 @@ return new class extends Migration {
     {
         Schema::create('result_exam_master', function (Blueprint $table) {
             $table->comment('');
-            $table->increments('Id');
+            $table->bigIncrements('Id');
             $table->string('Code', 255);
             $table->unsignedInteger('ExamType')->index('exam_master_examtype_foreign');
             $table->string('ExamTitle', 255);

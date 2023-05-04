@@ -14,7 +14,7 @@ return new class extends Migration {
     {
         Schema::create('petty_cash', function (Blueprint $table) {
             $table->comment('');
-            $table->integer('id', true);
+            $table->bigIncrements('id');
             $table->integer('title_id')->nullable()->default(0);
             $table->string('description', 255)->nullable();
             $table->integer('amount')->nullable()->default(0);

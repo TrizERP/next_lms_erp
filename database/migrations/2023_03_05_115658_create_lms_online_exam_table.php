@@ -14,7 +14,7 @@ return new class extends Migration {
     {
         Schema::create('lms_online_exam', function (Blueprint $table) {
             $table->comment('');
-            $table->integer('id', true);
+            $table->bigIncrements('id');
             $table->integer('student_id')->nullable();
             $table->integer('question_paper_id')->nullable();
             $table->integer('total_right')->nullable();

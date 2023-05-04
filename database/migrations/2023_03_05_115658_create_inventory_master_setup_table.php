@@ -14,7 +14,7 @@ return new class extends Migration {
     {
         Schema::create('inventory_master_setup', function (Blueprint $table) {
             $table->comment('');
-            $table->increments('ID');
+            $table->bigIncrements('ID');
             $table->string('SYEAR', 255);
             $table->integer('SUB_INSTITUTE_ID')->nullable();
             $table->string('GST_REGISTRATION_NO', 255);

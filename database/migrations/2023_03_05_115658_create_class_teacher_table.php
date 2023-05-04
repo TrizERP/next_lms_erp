@@ -14,9 +14,9 @@ return new class extends Migration {
     {
         Schema::create('class_teacher', function (Blueprint $table) {
             $table->comment('');
-            $table->integer('id', true);
-            $table->decimal('syear', 4, 0);
-            $table->decimal('sub_institute_id', 10, 0);
+            $table->bigIncrements('id');
+            $table->integer('syear');
+            $table->integer('sub_institute_id');
             $table->integer('grade_id');
             $table->integer('standard_id');
             $table->integer('division_id');

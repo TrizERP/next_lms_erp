@@ -14,7 +14,7 @@ return new class extends Migration {
     {
         Schema::create('email_sent_parents', function (Blueprint $table) {
             $table->comment('');
-            $table->integer('ID', true);
+            $table->bigIncrements('ID');
             $table->integer('SYEAR')->nullable();
             $table->mediumText('EMAIL')->nullable();
             $table->mediumText('SUBJECT')->nullable();

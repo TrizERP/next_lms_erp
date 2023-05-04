@@ -14,7 +14,7 @@ return new class extends Migration {
     {
         Schema::create('general_data', function (Blueprint $table) {
             $table->comment('');
-            $table->integer('id', true);
+            $table->bigIncrements('id');
             $table->text('fieldname')->nullable();
             $table->text('fieldvalue')->nullable();
             $table->integer('sub_institute_id')->nullable();

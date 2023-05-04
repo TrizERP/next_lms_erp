@@ -14,7 +14,7 @@ return new class extends Migration {
     {
         Schema::create('task', function (Blueprint $table) {
             $table->comment('');
-            $table->integer('ID', true);
+            $table->bigIncrements('ID');
             $table->string('TASK_TITLE', 150)->nullable();
             $table->mediumText('TASK_DESCRIPTION')->nullable();
             $table->string('TASK_ATTACHMENT', 150)->nullable();

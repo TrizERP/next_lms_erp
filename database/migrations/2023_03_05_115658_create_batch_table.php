@@ -14,7 +14,7 @@ return new class extends Migration {
     {
         Schema::create('batch', function (Blueprint $table) {
             $table->comment('');
-            $table->increments('id');
+            $table->bigIncrements('id');
             $table->string('title', 255);
             $table->unsignedInteger('standard_id')->index('batch_standard_id_foreign');
             $table->unsignedInteger('division_id')->index('batch_division_id_foreign');

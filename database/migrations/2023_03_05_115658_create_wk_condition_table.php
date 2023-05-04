@@ -14,7 +14,7 @@ return new class extends Migration {
     {
         Schema::create('wk_condition', function (Blueprint $table) {
             $table->comment('');
-            $table->integer('id', true);
+            $table->bigIncrements('id');
             $table->integer('main_id')->nullable();
             $table->integer('module_id')->nullable();
             $table->string('condition', 250)->nullable();

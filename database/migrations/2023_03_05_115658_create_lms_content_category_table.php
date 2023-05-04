@@ -14,7 +14,7 @@ return new class extends Migration {
     {
         Schema::create('lms_content_category', function (Blueprint $table) {
             $table->comment('');
-            $table->integer('id', true);
+            $table->bigIncrements('id');
             $table->string('category_name', 250);
             $table->integer('sub_institute_id')->nullable();
             $table->integer('status');

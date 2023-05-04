@@ -14,7 +14,7 @@ return new class extends Migration {
     {
         Schema::create('hostel_master', function (Blueprint $table) {
             $table->comment('');
-            $table->increments('id');
+            $table->bigIncrements('id');
             $table->integer('sub_institute_id')->nullable();
             $table->unsignedInteger('hostel_type_id')->index('hostel_master_hostel_type_id_foreign');
             $table->string('code', 255);

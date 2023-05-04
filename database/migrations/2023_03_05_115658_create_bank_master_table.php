@@ -14,8 +14,8 @@ return new class extends Migration {
     {
         Schema::create('bank_master', function (Blueprint $table) {
             $table->comment('');
-            $table->integer('id', true);
-            $table->longText('bank_name')->nullable();
+            $table->bigIncrements('id');
+            $table->string('bank_name')->nullable();
         });
     }
 

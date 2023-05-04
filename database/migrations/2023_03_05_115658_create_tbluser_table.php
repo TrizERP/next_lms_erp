@@ -14,7 +14,7 @@ return new class extends Migration {
     {
         Schema::create('tbluser', function (Blueprint $table) {
             $table->comment('');
-            $table->increments('id');
+            $table->bigIncrements('id');
             $table->string('user_name', 100);
             $table->string('password', 100);
             $table->string('name_suffix', 50)->nullable();

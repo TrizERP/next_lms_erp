@@ -14,7 +14,7 @@ return new class extends Migration {
     {
         Schema::create('application_forms', function (Blueprint $table) {
             $table->comment('');
-            $table->integer('id', true);
+            $table->bigIncrements('id');
             $table->string('title', 125)->nullable();
             $table->string('type', 50)->nullable();
             $table->timestamp('created_on')->nullable()->useCurrent();

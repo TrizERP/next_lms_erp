@@ -14,7 +14,7 @@ return new class extends Migration {
     {
         Schema::create('visitor_type', function (Blueprint $table) {
             $table->comment('');
-            $table->integer('id', true);
+            $table->bigIncrements('id');
             $table->string('title', 250)->nullable();
             $table->integer('status')->nullable();
             $table->integer('sub_institute_id')->nullable();

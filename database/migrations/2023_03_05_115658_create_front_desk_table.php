@@ -14,7 +14,7 @@ return new class extends Migration {
     {
         Schema::create('front_desk', function (Blueprint $table) {
             $table->comment('');
-            $table->integer('ID', true);
+            $table->bigIncrements('ID');
             $table->integer('SUB_INSTITUTE_ID')->nullable()->index('SUB_INSTITUTE_ID');
             $table->string('VISITOR_TYPE', 50)->nullable();
             $table->date('DATE')->nullable();

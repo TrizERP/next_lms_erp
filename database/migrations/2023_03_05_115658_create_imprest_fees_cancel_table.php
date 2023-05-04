@@ -14,7 +14,7 @@ return new class extends Migration {
     {
         Schema::create('imprest_fees_cancel', function (Blueprint $table) {
             $table->comment('');
-            $table->integer('id', true);
+            $table->bigIncrements('id');
             $table->string('reciept_id', 100)->index('reciept_id');
             $table->string('fees_paid_other_id', 100)->nullable();
             $table->decimal('syear', 4, 0)->index('syear');

@@ -1,4 +1,9 @@
-<?php
+<?
+
+// error_reporting(E_ALL);
+
+// ini_set('display_errors',1);
+// $h= "hello languge";
 /**
  * SENAYAN application bootstrap files
  *
@@ -39,11 +44,13 @@
  */
 
 // set php-gettext library
+define('LANGUAGES_BASE_DIR', LIB_DIR.'lang'.DIRECTORY_SEPARATOR);
 
 // OLD
 // require LANGUAGES_BASE_DIR.'php-gettext'.DIRECTORY_SEPARATOR.'gettext.inc';
 //  NEW
-require LANGUAGES_BASE_DIR.'php-gettext'.DIRECTORY_SEPARATOR.'gettext.inc';
+
+require_once LANGUAGES_BASE_DIR.'php-gettext'.DIRECTORY_SEPARATOR.'gettext.inc';
 
 // gettext setup
 $locale = $sysconf['default_lang'];
@@ -59,11 +66,9 @@ _bind_textdomain_codeset($domain, $encoding);
 // set .mo filename to use
 _textdomain($domain);
 
+
 // Array with available translations
-// $available_languages[] = array('CODE', __('ENGLISH NAME'), 'NATIVE NAME');
-//$available_languages[] = array('ar_AR', __('Arabic'), 'Arabic');
-//$available_languages[] = array('de_DE', __('German'), 'Deutsch');
 $available_languages[] = array('en_US', __('English'), 'English');
-//$available_languages[] = array('es_ES', __('Espanol'), 'Espanol');
-//$available_languages[] = array('id_ID', __('Indonesian'), 'Indonesia');
+
+// Rest of your code goes here
 ?>

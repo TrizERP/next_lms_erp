@@ -14,7 +14,7 @@ return new class extends Migration {
     {
         Schema::create('physical_file_location', function (Blueprint $table) {
             $table->comment('');
-            $table->increments('id');
+            $table->bigIncrements('id');
             $table->integer('sub_institute_id')->nullable();
             $table->string('title', 255);
             $table->string('description', 255);

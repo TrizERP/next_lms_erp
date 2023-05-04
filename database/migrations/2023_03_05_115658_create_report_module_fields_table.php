@@ -14,7 +14,7 @@ return new class extends Migration {
     {
         Schema::create('report_module_fields', function (Blueprint $table) {
             $table->comment('');
-            $table->increments('id');
+            $table->bigIncrements('id');
             $table->integer('sub_institute_id')->nullable();
             $table->string('menu_id', 255);
             $table->mediumText('database_fields');

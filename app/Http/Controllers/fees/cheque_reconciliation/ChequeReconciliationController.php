@@ -6,7 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use function App\Helpers\is_mobile;
 use App\Models\fees\fees_collect\fees_collect;
-use App\Models\fees\fees_cancel\fees_cancel;
+use App\Models\fees\fees_cancel\feesCancelModel;
 use DB;
 
 class ChequeReconciliationController extends Controller
@@ -30,8 +30,6 @@ class ChequeReconciliationController extends Controller
         $syear = session()->get('syear');
         $type = $request->input('type');
 
-        
-         $query = fees_collect::select('id','student_id','standard_id','payment_mode','syear','sub_institute_id')->whereRaw('payment_mode = "cheque" AND sub_institute_id = "'.$sub_institute_id.'" AND syear = "'.$syear.'" AND is_deleted = "Y" ')->whereBetween("cheque_date",[$from_date,$to_date])->get()->toArray();
             $query = DB::table('fees_collect as fc')
                 ->join('tblstudent as s',function($join){
                 $join->whereRaw('s.id = fc.student_id');
@@ -63,8 +61,20 @@ class ChequeReconciliationController extends Controller
         $remark = array_values(array_filter($request->remark) ) ?? [];
         $mode = array_values(array_filter($request->mode)) ?? [];
         $condate = array_values(array_filter($request->confirm_date)) ?? [];
-        // echo "<pre>";print_r($mode);  
+        $cheque = $request->cheque ?? [];
+//         echo "<pre>";print_r($mode);  
+//         echo "<pre>";print_r(array_values($request->cheque)); 
 
+// if (in_array('clear', $mode)) {
+//     $index = array_search('clear', $mode);
+//     // do something with $index
+// } 
+// foreach($mode as $key => $value){
+//     echo  $request->cheque[$key]."<br>";
+// }
+//         echo "<pre>";print_r($index); 
+
+//  exit;
                 // Create an array of data to update for each ID
         $get_index =array_filter($request->mode);
 
@@ -83,7 +93,7 @@ class ChequeReconciliationController extends Controller
 
             // if($element=="clear"){
             if(in_array("clear",$mode) && !empty($cheque) ){
-            // echo "Clear";
+            // return "Clear";exit;
                 $idsToUpdate = $request->cheque;
 
                 // Create an array of data to update for each ID
@@ -93,9 +103,12 @@ class ChequeReconciliationController extends Controller
                     $dataToUpdate[] = [
                         'id' => $id,
                         'is_deleted' => 'Y',
-                        'remark'=>$remark[$id],
+                        'remark'=>$remark[$index] ?? null,
                         ];
+                // echo "<pre>";print_r($remark[$index]);
+
                 }
+                // exit;
                 foreach ($dataToUpdate as $key=>$data) {
                 //     $datas=$data['id'];
                 // echo "<pre>";print_r($datas); 59969
@@ -104,22 +117,27 @@ class ChequeReconciliationController extends Controller
                         ->where('id', $data['id'])
                         ->update([
                             "is_deleted"=>$data['is_deleted'],
-                            "remarks"=>$data['remark']
+                            "remarks"=>$data['remark'],
+
                         ]);
                 }
-                if($query == true){
-                    $mes = array("success","Updated Successfully");
+                if($query == 1){
+                    $ind = "success";
+
+                    $mes = "Updated Successfully";
                 }else{
-                    $mes= array("failed","Failed To Updated");
+                    $ind = "failed";
+
+                    $mes= "Failed To Updated";
                 }
             }
             // if($element=="return"){
 
             if(in_array("return",$mode) && !empty($cheque) ){
-
+                // return "return";exit;
                  $idsToUpdate = $request->cheque;
 
-                // Create an array of data to update for each ID
+                // Create an array of data to update for each ID 59969
                 $dataToUpdate = [];
 
                 foreach ($idsToUpdate as $key => $id) {
@@ -133,7 +151,7 @@ class ChequeReconciliationController extends Controller
                         "term_id"=>$term_id[$key] ?? null,
                         "amountpaid"=>$amountpaid[$key] ?? null,
                         "received_date"=>$recivied_date[$key] ?? null,
-                        "cancel_date"=>$condate[$key] ?? null,
+                        "cancel_date"=>$condate[$key] ?? date("Y-m-d H:i:s"),
                         "cancel_type"=>$cancel_type[$key] ?? null,
                         "cancel_remark"=>$remark[$key] ?? null,
                         "cancel_by"=>$cancel_by[$key] ?? null,
@@ -142,39 +160,40 @@ class ChequeReconciliationController extends Controller
                 // echo "<pre>";print_r($dataToUpdate);exit;
                   foreach ($dataToUpdate as $key=>$data) {
                 //     $datas=$data['id'];
-                // echo "<pre>";print_r($datas);
-
-                    $query = DB::table('fees_cancel')
-                        ->where('id', $data['id'])
-                        ->insert([
-                        "reciept_id"=>$data['reciept_id'] ?? null,
+                // echo "<pre>";print_r($data);exit;
+                    $query =feesCancelModel::create([
+                        "reciept_id"=>$data['reciept_id'],
                         "syear" => $data['syear'],
                         "sub_institute_id"=>$data['sub_institute_id'],
-                        "student_id"=>$data['student_id'] ?? null,
-                        "standard_id"=>$data['standard_id'] ?? null,
-                        "term_id"=>$data['term_id'] ?? null,
-                        "amountpaid"=>$data['amountpaid'] ?? null,
-                        "received_date"=>$data['received_date'] ?? null,
-                        "cancel_date"=>$data['condate'] ?? null,
-                        "cancel_type"=>$data['cancel_type'] ?? null,
-                        "cancel_remark"=>$data['remark'] ?? null,
-                        "cancelled_by"=>$data['cancel_by'] ?? null,
+                        "student_id"=>$data['student_id'] ,
+                        "standard_id"=>$data['standard_id'] ,
+                        "term_id"=>$data['term_id'] ,
+                        "amountpaid"=>$data['amountpaid'] ,
+                        "received_date"=>$data['received_date'] ,
+                        "cancel_date"=>$data['cancel_date'] ,
+                        "cancel_type"=>$data['cancel_type'] ,
+                        "cancel_remark"=>$data['cancel_remark'] ,
+                        "cancelled_by"=>$data['cancel_by'],
                         ]);
                 }
-                if($query == true){
-                    $mes= array("success","Added Successfully");
+                if($dataToUpdate ){
+                    $ind = "success";
+                    $mes = "Added Successfully";
 
                 }else{
-                    $mes= array("failed","Failed to Add");
+                    $ind = "failed";
+                    $mes= "Failed to Add";
                 }
             }
             if(empty($mode) || empty($cheque)){
-                $mes= array("failed","Please select mode");
+                    $ind = "failed";
+                $mes= "Please Select Payment Option or Checkbox";
             }
-            // return $mes;exit 62623;
+            // $mes = 0;
+            // return $mes;exit;62623
             $res = "";
         $type = $request->input('type');
-        return back()->with($mes);
+        return back()->with($ind,$mes);
     }
 
     public function show_details(Request $request){
@@ -228,7 +247,7 @@ class ChequeReconciliationController extends Controller
             })->selectRaw("fc.*,fct.cheque_bank_name,fct.bank_branch,fct.cheque_no,fct.cheque_date,s.enrollment_no,CONCAT_WS(' ',s.first_name,s.middle_name,s.last_name) AS student_name,s.mobile,s.roll_no,st.medium,st.name as standard_name,d.id,d.name as divison_name,t.title as term_name,se.term_id as sterm_id")
             ->where(['fc.sub_institute_id'=>$sub_institute_id,'fc.syear'=>$syear])
             ->whereBetween("fc.cancel_date",[$from_date,$to_date])
-            ->groupBy('fc.student_id')->get()->toArray();
+            ->get()->toArray();
         }
         $res['from_date'] = $from_date;
         $res['to_date'] = $to_date;

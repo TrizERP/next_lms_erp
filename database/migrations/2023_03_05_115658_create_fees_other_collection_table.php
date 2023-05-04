@@ -14,13 +14,13 @@ return new class extends Migration {
     {
         Schema::create('fees_other_collection', function (Blueprint $table) {
             $table->comment('');
-            $table->integer('id', true);
-            $table->string('receipt_id', 50)->nullable();
-            $table->decimal('syear', 4, 0)->nullable();
-            $table->string('sub_institute_id', 11)->nullable();
-            $table->string('student_id', 100)->nullable();
+            $table->bigIncrements('id');
+            $table->bigInteger('receipt_id')->nullable();
+            $table->integer('syear')->nullable();
+            $table->integer('sub_institute_id')->nullable();
+            $table->bigInteger('student_id')->nullable();
             $table->date('deduction_date')->nullable();
-            $table->integer('deduction_head_id')->nullable();
+            $table->bigInteger('deduction_head_id')->nullable();
             $table->string('deduction_remarks', 150)->nullable();
             $table->decimal('deduction_amount', 10, 0)->nullable();
             $table->string('payment_mode', 50)->nullable();

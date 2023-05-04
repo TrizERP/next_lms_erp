@@ -14,7 +14,7 @@ return new class extends Migration {
     {
         Schema::create('lms_mapping_type', function (Blueprint $table) {
             $table->comment('');
-            $table->integer('id', true);
+            $table->bigIncrements('id');
             $table->longText('name');
             $table->integer('parent_id');
             $table->integer('globally')->nullable();

@@ -14,7 +14,7 @@ return new class extends Migration {
     {
         Schema::create('tblstate', function (Blueprint $table) {
             $table->comment('');
-            $table->integer('id', true);
+            $table->bigIncrements('id');
             $table->string('state_name', 50)->nullable()->unique('state_name');
         });
     }

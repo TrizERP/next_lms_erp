@@ -14,7 +14,7 @@ return new class extends Migration {
     {
         Schema::create('school_setup', function (Blueprint $table) {
             $table->comment('');
-            $table->integer('Id', true);
+            $table->bigIncrements('Id');
             $table->string('SchoolName', 255);
             $table->string('ShortCode', 255);
             $table->string('ContactPerson', 255);

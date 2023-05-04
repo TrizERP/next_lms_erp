@@ -14,7 +14,7 @@ return new class extends Migration {
     {
         Schema::create('knowledge_base', function (Blueprint $table) {
             $table->comment('');
-            $table->integer('id', true);
+            $table->bigIncrements('id');
             $table->string('name', 255);
             $table->string('image', 255);
             $table->string('status', 255);

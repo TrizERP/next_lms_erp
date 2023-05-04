@@ -14,7 +14,7 @@ return new class extends Migration {
     {
         Schema::create('fees_title', function (Blueprint $table) {
             $table->comment('');
-            $table->integer('id', true);
+            $table->bigIncrements('id');
             $table->integer('fees_title_id')->default(0)->index('FK_fees_title_fees_title_master');
             $table->string('fees_title', 400)->default('0');
             $table->string('display_name', 400)->default('0');

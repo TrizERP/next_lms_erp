@@ -14,7 +14,7 @@ return new class extends Migration {
     {
         Schema::create('fees_config_master', function (Blueprint $table) {
             $table->comment('');
-            $table->integer('id', true);
+            $table->bigIncrements('id');
             $table->decimal('late_fees_amount', 10, 0)->nullable();
             $table->integer('send_sms')->nullable();
             $table->integer('send_email')->nullable();

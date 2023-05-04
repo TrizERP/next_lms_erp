@@ -20,10 +20,10 @@ return new class extends Migration {
             $table->integer('division_id')->default(0);
             $table->string('title', 250);
             $table->text('file_name');
-            $table->text('file_size');
+            $table->integer('file_size');
             $table->text('file_type');
             $table->date('date_');
-            $table->bigInteger('sub_institute_id');
+            $table->integer('sub_institute_id');
             $table->timestamp('created_at')->nullable()->useCurrent();
             $table->dateTime('updated_at')->nullable();
         });

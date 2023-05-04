@@ -97,7 +97,7 @@ Route::group(['prefix' => 'fees', 'middleware' => ['session', 'menu', 'logRoute'
     Route::resource('cheque_reconciliation', ChequeReconciliationController::class);
 
     // Route::get('online_fees\show_online_type', 'fees\online_fees\online_fees_collect_controller@showTypes')->name('online_show_type');
-    Route::get('show_reports', [ChequeReconciliationController::class, 'show_details'])->name('show_details');
+    Route::get('show_details', [ChequeReconciliationController::class, 'show_details'])->name('show_details');
     Route::get('search_details', [ChequeReconciliationController::class, 'search_details'])->name('search_details');
 
     Route::get('hdfcpayment', function ($id = null) {

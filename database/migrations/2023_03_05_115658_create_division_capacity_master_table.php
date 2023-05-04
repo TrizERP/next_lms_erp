@@ -14,7 +14,7 @@ return new class extends Migration {
     {
         Schema::create('division_capacity_master', function (Blueprint $table) {
             $table->comment('');
-            $table->integer('id', true);
+            $table->bigIncrements('id');
             $table->string('syear', 50)->nullable();
             $table->integer('sub_institute_id')->nullable();
             $table->integer('grade_id')->nullable();

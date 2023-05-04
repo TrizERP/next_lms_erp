@@ -14,7 +14,7 @@ return new class extends Migration {
     {
         Schema::create('inventory_tax_master', function (Blueprint $table) {
             $table->comment('');
-            $table->integer('id', true);
+            $table->bigIncrements('id');
             $table->string('syear', 10)->nullable();
             $table->string('sub_institute_id', 10)->nullable();
             $table->string('title', 255)->nullable();

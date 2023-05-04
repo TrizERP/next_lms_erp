@@ -14,10 +14,10 @@ return new class extends Migration {
     {
         Schema::create('enrollment_prefix_master', function (Blueprint $table) {
             $table->comment('');
-            $table->integer('id', true);
+            $table->bigIncrements('id');
             $table->integer('sub_institute_id')->nullable();
-            $table->string('standard_from', 50)->nullable();
-            $table->string('standard_to', 50)->nullable();
+            $table->integer('standard_from')->nullable();
+            $table->integer('standard_to')->nullable();
             $table->string('standards', 100)->nullable();
             $table->string('prefix', 50)->nullable();
             $table->timestamp('created_on')->nullable();

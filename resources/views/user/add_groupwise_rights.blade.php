@@ -91,7 +91,8 @@
             // console.log(path);
 
         $.ajax({url: path,data:'profile_id='+x, success: function(result){
-            console.log(result[0]);
+            // console.log(result);
+            // console.log(result[0]);
             // console.log(result[1]);
             // console.log(result[2]);
             // console.log(result[3]);

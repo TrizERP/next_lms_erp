@@ -1,5 +1,5 @@
 <?php
-session_start();
+// session_start();
 // be sure that this file not accessed directly
 if (basename($_SERVER['PHP_SELF']) == basename(__FILE__)) {
     die();
@@ -30,7 +30,7 @@ if ($unauthorized)
 $unauthorized = $_SESSION['checksum'] != md5($_SERVER['SERVER_ADDR'].SENAYAN_BASE_DIR.'admin');
 if ($unauthorized) {
     $msg = '<div style="padding: 5px; border: 1px dotted #FF0000; color: #FF0000;">';
-    $msg .= __('You are not authorized to view this section');
+    $msg .= 'You are not authorized to view this section';
     $msg .= '</div>'."\n";
     // unset cookie admin flag
     setcookie('admin_logged_in', true, time() - 86400, SENAYAN_WEB_ROOT_DIR);
@@ -39,7 +39,9 @@ if ($unauthorized) {
 
 
 //mysql_close();
-include '../../../connection.php';
+// include '../../connection.php';
+
+require_once '../sysconfig.inc.php';
 
 //$res=$dbs->query($sql);
 $table = "";
