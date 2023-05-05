@@ -513,8 +513,8 @@ class contentController extends Controller
         if($data['content_data']['cross_curriculum_grade_topic'] != "")
         {
             $cc_arr = explode("####",$data['content_data']['cross_curriculum_grade_topic']);
-            $cc_arr_chapter_id = $cc_arr[0];
-            $cc_arr_topic_id = $cc_arr[1];
+            $cc_arr_chapter_id = $cc_arr[0] ?? [];
+            $cc_arr_topic_id = $cc_arr[1] ?? [];
 
             //If both chapter and topic are mapped
             if($cc_arr_chapter_id != "" && $cc_arr_topic_id != "" ) {
@@ -533,7 +533,7 @@ class contentController extends Controller
 
             }           
             $cctopicData = json_decode(json_encode($cctopicData),true);
-            $data['cctopicData'] = $cctopicData[0];            
+            $data['cctopicData'] = $cctopicData[0] ?? [];            
         }
         //END Get Cross curriculum Topic 
 

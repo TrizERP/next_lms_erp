@@ -34,9 +34,9 @@ class admissionReportController extends Controller
             $extra = '';
             if ($sub_institute_id == 201 || $sub_institute_id == 202 || $sub_institute_id == 203 || $sub_institute_id == 204) // for re-print fees_circular (hillshigh school)
             {
-                $extra = ",ai.id,ai.admission_fees,ai.fees_amount,ai.fees_remark,ai.fees_circular_html as fees_circular ";
+                $extra = ",ai.id,ai.fees_circular_form_no as Form_No,ai.admission_fees,ai.fees_amount,ai.fees_remark,ai.fees_circular_html as fees_circular";
             }
-
+            
             $getQuery = DB::table('admission_enquiry as ai')
                 ->join('tbluser as ts', function ($join) {
                     $join->whereRaw('ts.id = ai.created_by AND ts.sub_institute_id = ai.sub_institute_id');
@@ -90,7 +90,7 @@ class admissionReportController extends Controller
         $res['message'] = "Success";
         $res['users'] = $users;
         $res['ser_user'] = $user;
-
+        // echo "<pre>";print_r($res);exit;
         return is_mobile($type, "admission.report.show_enquiry_report", $res, 'view');
     }
 

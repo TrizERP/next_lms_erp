@@ -206,7 +206,7 @@ use DB;
                                                                     $topic_arr = explode("/",$v);
                                                                 @endphp
                                                                 <li>
-                                                                    <a href="{{ route('topic_master.index',['id'=>$topic_arr[1]]) }}">{{$topic_arr[0]}}</a>
+                                                                    <a href="{{ route('topic_master.index',['id'=>$topic_arr[0]]) }}">{{$topic_arr[0]}}</a>
                                                                 </li>
                                                             @endforeach
                                                         </ul>
