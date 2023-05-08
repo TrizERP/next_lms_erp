@@ -62,7 +62,7 @@ class fees_collect_controller extends Controller
     public function show_student()
     {
         $responce_arr = [];
-
+        $last_year = (session()->get('syear') - 1);
         $month_arr = FeeMonthId();
         $currunt_month = date('m');
         $currunt_year = date('Y');
@@ -114,6 +114,8 @@ class fees_collect_controller extends Controller
         }
         if (isset($_REQUEST['grade']) && $_REQUEST['grade'] != '') {
             $grade_val = $_REQUEST['grade'];
+            $responce_arr['grade'] = $_REQUEST['grade'];
+
         }
         if (isset($_REQUEST['standard']) && $_REQUEST['standard'] != '') {
             $responce_arr['standard'] = $_REQUEST['standard'];
@@ -138,10 +140,10 @@ class fees_collect_controller extends Controller
                 $join->whereRaw('d.id = se.section_id');
             })->leftJoin('student_quota as sq', function ($join) {
                 $join->whereRaw('sq.id = se.student_quota AND sq.sub_institute_id = se.sub_institute_id');
-            })->join('fees_breackoff as fb', function ($join) use ($breackoff_join) {
+            })->join('fees_breackoff as fb', function ($join) use ($breackoff_join,$last_year) {
                 $join->whereRaw("(fb.syear = '".session()->get('syear')."' AND
                  fb.admission_year = s.admission_year AND fb.quota = se.student_quota AND fb.grade_id = se.grade_id AND
-                 fb.standard_id = se.standard_id AND fb.sub_institute_id = '".session()->get('sub_institute_id')."' $breackoff_join)");
+                 (fb.standard_id = se.standard_id  OR se.standard_id = '".($_REQUEST['standard']-1)."' ) AND fb.sub_institute_id = '".session()->get('sub_institute_id')."' $breackoff_join)");
             })->selectRaw("s.*,se.syear,se.student_id,se.grade_id,
                 se.standard_id,se.section_id,se.student_quota,sq.title AS stu_quota,se.start_date,
                 se.end_date,se.enrollment_code,se.drop_code,se.drop_remarks,
@@ -168,7 +170,7 @@ class fees_collect_controller extends Controller
                     $q->where('se.grade_id', $request['grade']);
                 }
                 if (isset($request['standard']) && $request['standard'] != '') {
-                    $q->where('se.standard_id', $request['standard']);
+                    $q->whereRaw('se.standard_id = "'.$request['standard'].'" ');
                 }
                 if (isset($request['division']) && $request['division'] != '') {
                     $q->where('se.section_id', $request['division']);
