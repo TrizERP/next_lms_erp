@@ -513,8 +513,8 @@ class contentController extends Controller
         if($data['content_data']['cross_curriculum_grade_topic'] != "")
         {
             $cc_arr = explode("####",$data['content_data']['cross_curriculum_grade_topic']);
-            $cc_arr_chapter_id = $cc_arr[0];
-            $cc_arr_topic_id = $cc_arr[1];
+            $cc_arr_chapter_id = $cc_arr[0] ?? [];
+            $cc_arr_topic_id = $cc_arr[1] ?? [];
 
             //If both chapter and topic are mapped
             if($cc_arr_chapter_id != "" && $cc_arr_topic_id != "" ) {
@@ -533,7 +533,7 @@ class contentController extends Controller
 
             }           
             $cctopicData = json_decode(json_encode($cctopicData),true);
-            $data['cctopicData'] = $cctopicData[0];            
+            $data['cctopicData'] = $cctopicData[0] ?? [];            
         }
         //END Get Cross curriculum Topic 
 
@@ -546,7 +546,7 @@ class contentController extends Controller
     public function update(Request $request,$id)
     {
         //ValidateInsertData('subject','update');        
-
+        // echo "<pre>";print_r($request);exit;
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $syear = $request->session()->get('syear');
         $user_id = $request->session()->get('user_id');
@@ -611,6 +611,7 @@ class contentController extends Controller
             'content_category'             => $request->get('content_category'),
             'created_by'                   => $user_id,
             'sub_institute_id'             => $sub_institute_id,
+            'url'                          => $request->get('link'),
             'restrict_date'                => $request->get('restrict_date'),
             'pre_grade_topic'              => $pre_topic,
             'post_grade_topic'             => $post_topic,

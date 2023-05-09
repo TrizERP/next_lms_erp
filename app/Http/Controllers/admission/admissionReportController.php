@@ -31,10 +31,10 @@ class admissionReportController extends Controller
 
         if (isset($report)) {
 
-            $extra = '';
+             $extra = '';
             if ($sub_institute_id == 201 || $sub_institute_id == 202 || $sub_institute_id == 203 || $sub_institute_id == 204) // for re-print fees_circular (hillshigh school)
             {
-                $extra = ",ai.id,ai.admission_fees,ai.fees_amount,ai.fees_remark,ai.fees_circular_html as fees_circular ";
+                $extra = ",ai.id,ai.fees_circular_form_no as Form_No,ai.admission_fees,ai.fees_amount,ai.fees_remark,ai.fees_circular_html as fees_circular";
             }
 
             $getQuery = DB::table('admission_enquiry as ai')

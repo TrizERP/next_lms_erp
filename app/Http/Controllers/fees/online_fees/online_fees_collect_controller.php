@@ -309,7 +309,7 @@ class online_fees_collect_controller extends Controller
     {
         // echo '<pre>'; print_r($_REQUEST); exit;
         $student_id = $_REQUEST["student_id"];
-        $medium_data = DB::select("SELECT a.*,e.grade_id,CONCAT_WS('_',t.first_name,t.middle_name,t.last_name) AS student_name, t.mobile FROM tblstudent_enrollment e
+        $medium_data = DB::select("SELECT a.*,e.grade_id,CONCAT_WS('_',t.first_name,t.middle_name,t.last_name) AS student_name, t.mobile, t.enrollment_no, t.email FROM tblstudent_enrollment e
         inner join academic_section a on e.grade_id = a.id
         INNER JOIN tblstudent t ON t.id=e.student_id
         INNER JOIN fees_online_maping fom ON fom.syear=e.syear AND fom.sub_institute_id=e.sub_institute_id
@@ -323,9 +323,9 @@ class online_fees_collect_controller extends Controller
             ->get();
         $amount = 0;
         if ($payment_acsept_type == "fix") {
-            $amount = number_format($_REQUEST["total"], 2, '.', '');
+            $amount = number_format($_REQUEST["total"], 0, '.', '');
         } else {
-            $amount = number_format($_REQUEST["pay_amount"], 2, '.', '');
+            $amount = number_format($_REQUEST["pay_amount"], 0, '.', '');
         }
         $where_arr = array(
             "sub_institute_id" => session()->get("sub_institute_id"),
@@ -338,15 +338,16 @@ class online_fees_collect_controller extends Controller
         $orderId = $student_id . (mt_rand(100000, 10000000000));
         $MerId = $get_map_bank_detail[0]->merchant_id;
         $EncKey = $get_map_bank_detail[0]->enc_key;
-        $SubMerId = rand(10, 99);
+        $SubMerId = (isset($get_map_bank_detail[0]->sub_merchant_id) ? $get_map_bank_detail[0]->sub_merchant_id : rand(10, 99));
         $PgRefNo = $orderId;
         $PayMode = 9;
-        $return_url = $this->site_name() . "fees/icici/online_fees_iciciResponseHandler";
+        //$return_url = $this->site_name() . "fees/icici/online_fees_iciciResponseHandler";
+        $return_url = $this->site_name() . "fees/online_fees_iciciresponsehandler";
         $action_url = "https://eazypay.icicibank.com/EazyPG?merchantid=$MerId";
         $simple_action_url = "https://eazypay.icicibank.com/EazyPG?merchantid=$MerId";
         //$amount = 1200.00;
         //$M_FIELDS = $PgRefNo . '|' . $SubMerId . '|' . $amount ;
-        $M_FIELDS = $PgRefNo . '|' . $SubMerId . '|' . $amount . '|' . $medium_data[0]->student_name . '|' . $medium_data[0]->mobile;
+        $M_FIELDS = $PgRefNo . '|' . $SubMerId . '|' . $amount . '|' . $medium_data[0]->student_name . '|your@email.com|' . $medium_data[0]->mobile . '|' . $medium_data[0]->enrollment_no;
         $mandatoryfields = $M_FIELDS;
         $simple_optionalfields = $student_id;
         $simple_returnurl = $return_url;
@@ -397,7 +398,6 @@ class online_fees_collect_controller extends Controller
         );
         return \App\Helpers\is_mobile($type, "fees/online_fees_collect/icici_RequestHandler", $data, "view");
     }
-
     public function icici_response_handler(Request $request)
     {
         $get_map_bank_detail = DB::table("fees_icici")
@@ -427,7 +427,7 @@ class online_fees_collect_controller extends Controller
             ->where($where_arr)
             ->update($update_arr);
         if ($payment_status == "PS") {
-            $data = $this->pay_fees($request, $get_all_data[0]->student_id, $get_all_data[0]->syear, $get_all_data[0]->sub_institute_id, $response["Transaction_Amount"], $response["ReferenceNo"]);
+            $data = $this->pay_fees($request, $get_all_data[0]->student_id, $get_all_data[0]->syear, $get_all_data[0]->sub_institute_id, $response["Transaction_Amount"],$response["ReferenceNo"]);
             $type = $request->input('type');
             return \App\Helpers\is_mobile($type, "fees/online_fees_collect/receipt_view", $data, "view");
         } else {

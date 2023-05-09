@@ -651,7 +651,7 @@ class apiController extends Controller
         $curr_version = $request->input("curr_version");
         $new_version = $request->input("new_version");
 
-        if ($mobile_no != "" && $sub_institute_id != "" && $gcm_regid != "") {// && $imei_no != ""
+        if ($mobile_no != "" && $sub_institute_id != "" && $gcm_regid != "" && $imei_no != "") {
 
             $check_record_count = DB::table('gcm_users')
                 ->where('sub_institute_id', $sub_institute_id)
@@ -660,9 +660,9 @@ class apiController extends Controller
             if (count($check_record_count) > 0) {
                 DB::table("gcm_users")
                     ->where([
-                        "sub_institute_id" => $sub_institute_id, "curr_version" => $curr_version,"new_version" => $new_version
+                        "sub_institute_id" => $sub_institute_id, "curr_version" => $curr_version,"new_version" => $new_version, "imei_no" => $imei_no
                     ])
-                    ->update(["gcm_regid" => $gcm_regid]);//, "imei_no" => $imei_no
+                    ->update(["gcm_regid" => $gcm_regid]);
 
                 $res['status'] = 1;
                 $res['message'] = "Record Updated Successfully";

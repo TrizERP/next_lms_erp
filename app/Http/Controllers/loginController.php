@@ -216,18 +216,28 @@ class loginController extends Controller
                         if (count($schools) > 0) {
                             $client_sub_institute_id = $schools[0]['Id'];
                         }
+// echo "<pre>";print_r($client_sub_institute_id);exit;
+                        if($client_sub_institute_id == 231){
 
                         $getTermId = academic_yearModel::where(['sub_institute_id' => $client_sub_institute_id])
+                            // ->whereRaw('"'.date('Y-m-d').'" '.'between start_date and end_date')
+                            ->get()->toArray();
+                        }else{
+                            $getTermId = academic_yearModel::where(['sub_institute_id' => $client_sub_institute_id])
                             ->whereRaw('"'.date('Y-m-d').'" '.'between start_date and end_date')
                             ->get()->toArray();
-
+                        }
                         $given_hrms_rights = '';
                         $getAcademicTerms = $getAcademicYear = array();
 
                         $getInstitutes = DB::table('school_setup')->where('client_id',
                             $user['client_id'])->get()->toArray();
-
+                        if($client_sub_institute_id == 231){
+// echo "<pre>";print_r($getTermId);exit;
+                            $request->session()->put('sub_institute_id',$user['sub_institute_id']);
+}else{
                         $request->session()->put('sub_institute_id', '');
+                    }
                         $request->session()->put('syear', $getTermId[0]['syear']);
                         $request->session()->put('term_id', $getTermId[0]['term_id']);
                         $request->session()->put('academicTerms', $getAcademicTerms);
@@ -248,6 +258,9 @@ class loginController extends Controller
                             $inTour['sub_institute_id'] = $user['sub_institute_id'];
                             tourModel::insert($inTour);
                         }*/
+                    //     if($client_sub_institute_id == 231){
+                    //     echo "<pre>";print_r($request->session());exit;
+                    // }
 
 
                     }//END FOR MULTI-INSTITUTE

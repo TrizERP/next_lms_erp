@@ -222,6 +222,9 @@
                                                             <th style="width: 20%;padding-left: 15px;">Fine</th>
                                                         </tr>
                                                         <?php
+                                                        $total = array();
+                                                         // echo "<pre>";print_r($data['final_fee_new']);
+                                                        
                                                         foreach ($data['final_fee_new'] as $id => $val) {  ?>
                                                         <tr>
                                                             <td style="width: 10%"><input type="checkbox" name=""
@@ -267,11 +270,13 @@
                                                             echo "<td style='width: 25%'><input id='totalDis' type='text' name='totalDis' value=0 class='form-control directdiscount' $total_disable></td>";
                                                             echo "<td style='width: 25%'><input id='totalFin' type='text' name='totalFin' value=0 class='form-control directfine' $total_disable></td>";
                                                         }
+                                                        $total[] =$val['amount'] ?? 0;
                                                         ?>
                                                         <!--<td style="width: 25%"><input type="text" class="form-control"></td>-->
                                                         </tr>
-                                                        <?php } ?>
-
+                                                        <?php }
+                                                         $total_amt= array_sum($total) ?>
+                                                          
                                                     </table>
                                                 </td>
                                             </tr>
@@ -291,20 +296,22 @@
                                             @php
                                                 $cheque_return_charges0 = $data['cheque_return_charges'][0];
                                                 $cheque_return_charges = $data['fees_config_data']['late_fees_amount'];
+                                                $sub_institute_id=[257,1];
                                             @endphp
                                             <tr>
                                                 <td></td>
                                                 <td>Fine(Include Cheque return charges)</td>
                                                 <td></td>
                                                 <td>
-                                                    @if(session()->get('sub_institute_id')==257)
+                                                @if(in_array(session()->get('sub_institute_id'),$sub_institute_id) && date('d') >= 5 && $total_amt!=0)
+
                                                         <input type="text" name="fees_data[fine]"
                                                                id="cheque_return_charges" class="form-control"
-                                                               value="@if(isset($cheque_return_charges) && $cheque_return_charges>0){{ $cheque_return_charges}};@else {{$data['cheque_return_charges'][0]}} @endif"
+                                                               value="100"
                                                                readonly="readonly">
                                                         <input type="hidden" name="hidden_cheque_return_charges"
                                                                id="hidden_cheque_return_charges" class="form-control"
-                                                               value="@if(isset($cheque_return_charges) && $cheque_return_charges>0){{ $cheque_return_charges}};@else {{$data['cheque_return_charges'][0]}} @endif">
+                                                               value="100">
                                                     @else
                                                         <input type="text" name="fees_data[fine]"
                                                                id="cheque_return_charges" class="form-control"

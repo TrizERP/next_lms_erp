@@ -229,6 +229,9 @@ use DB;
                             echo "<pre>"; print_r($content); exit;
                         @endphp --}}
                     <div class="chapter-content-list-cola mb-4 collapse" id="chapter-content-tar-list-{{ $chdata->id }}-{{ $subColapse }}" data-parent="#cource-chap-list" style="">
+                        @php 
+                        $no = 1;
+                        @endphp
                         @foreach( $content as $single_content )
                             {{-- @php
                                 echo "<pre>"; print_r($single_content); exit;
@@ -237,20 +240,26 @@ use DB;
                         <div class="row chapter-content-box my-2 py-2 mx-0">
                             <div class="col-md-1 chapter-img-box">
                                 @php
-                                    if ( $single_content['url'] != '' ) {
+                                    if (isset($single_content['url']) && $single_content['url'] != '' ) {
                                         $content_file_url = $single_content['url'];
                                     } else {
                                         $content_file_url = url('storage'.$single_content['file_folder'].'/'.$single_content['filename']);
                                     }
                                     $icons = ['pdf'=> 'mdi mdi-file-pdf-box', 'mp4' => 'mdi mdi-video','link' => 'mdi mdi-file-link', 'html' => 'mdi mdi-language-html5', 'mov' => 'mdi mdi-movie', 'docx' => 'mdi mdi-file-document' ];
+                                       $ext = pathinfo($content_file_url, PATHINFO_EXTENSION);
+                                    if(empty($ext)){
+                                        $ext = "pptx";
+                                    }
                                 @endphp
                                 <a href="{{ $content_file_url }}" class="view-box d-flex justify-content-center w-100 h-100" target="_blank">
                                     <i class="{{ isset($icons[$single_content['file_type']]) ? $icons[$single_content['file_type']] : '' }}"></i>
                                 </a>
                             </div>
                             <div class="col-md-9 chapter-details">
+                                <!--   <a href="{{ $content_file_url }}" class="chapter-title"
+                                   target="_blank">{{ $single_content['title'] }}</a> -->
                                 <a href="{{ $content_file_url }}" class="chapter-title"
-                                   target="_blank">{{ $single_content['title'] }}</a>
+                                   target="_blank">{{ $con_key.' '.$no++.'.'.$ext}}</a>
                                 <div class="chapter-des">{{ $single_content['description'] }}</div>
                             </div>
                             <div class="col-md-2 time text-secondary d-flex justify-content-end"
