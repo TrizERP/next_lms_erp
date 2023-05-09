@@ -23,7 +23,7 @@
 
                                 <div class="col-md-6">
                                     <label for="email">Module:</label>
-                                    <select name="tablename" id="table">
+                                    <select name="tablename" id="table" required>
                                         <option value=""> Select Module Name</option>
                                         @foreach($result as $value)
                                         <option
@@ -61,7 +61,7 @@
                             <div class="form-group">
                                 <div class="col-md-8 col-md-offset-4">
                                     <button type="submit" class="btn btn-primary">
-                                        Parse CSV
+                                        Next
                                     </button>
                                 </div>
                             </div>

@@ -39,20 +39,29 @@
                                         </tr>
                                         <?php
                                         $remainFees = 0;
-                                        $feesDetails = [];
+                                        $feesDetails= [];
+                                        $bk=$paid=$remain =array();
                                         foreach ($data['total_fees'] as $id => $arr) {
                                         $feesDetails[$arr['month']] = $arr['remain'];
+                                        if( $arr['remain'] != 0 && $arr['bk']>$arr['paid']){
                                         ?>
                                         <tr>
                                             <td><?php echo $arr['month']; ?></td>
-                                            <td><?php echo $arr['bk']; ?></td>
-                                            <td><?php echo $arr['paid']; ?></td>
-                                            <td><?php echo $arr['remain']; ?></td>
+                                            <td><?php $bk[] = $arr['bk']; echo $arr['bk']; ?></td>
+                                            <td><?php $paid[] = $arr['paid']; echo $arr['paid']; ?></td>
+                                            <td><?php $remain[] = $arr['remain'];echo $arr['remain']; ?></td>
                                         </tr>
                                         <?php
+                                    }
                                         $remainFees += $arr['remain'];
                                         } ?>
-
+                                        <tr>
+                                            <td>Total</td>
+                                            <td><?php  echo array_sum($bk) ?></td>
+                                            <td><?php  echo array_sum($paid) ?></td>
+                                            <td><?php  echo array_sum($remain) ?></td>
+                                        </tr>
+                                   
                                     </table>
                                 </div>
                                 <div class="row">
@@ -254,6 +263,7 @@
                                                             $negative_disable = 'disabled';
                                                             $individual_enable = "disabled";
                                                         }
+                                                        if($data['previous_fees']=0 || $data['previous_fees']=null){
 
                                                         if ($id != 'Total') {   
                                                          
@@ -270,6 +280,8 @@
                                                             echo "<td style='width: 25%'><input id='totalFin' type='text' name='totalFin' value=0 class='form-control directfine' $total_disable></td>";
 
                                                         }
+                                                    }
+
                                                         $total[] =$val['amount'] ?? 0;
                                                         ?>
                                                         <!--<td style="width: 25%"><input type="text" class="form-control"></td>-->

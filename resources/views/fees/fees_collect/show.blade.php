@@ -13,7 +13,7 @@
          @php
             $grade_id = $standard_id = $division_id = '';
 
-            if(isset($data['grade'])){
+            if(isset($data['grade']) && isset($data['standard']) && isset($data['division'])){
                 $grade_id = $data['grade'];
                 $standard_id = $data['standard'];
                 $division_id = $data['division'];

@@ -216,6 +216,7 @@ class loginController extends Controller
                         if (count($schools) > 0) {
                             $client_sub_institute_id = $schools[0]['Id'];
                         }
+echo "<pre>";print_r($client_sub_institute_id);exit;
 
                         $getTermId = academic_yearModel::where(['sub_institute_id' => $client_sub_institute_id])
                             ->whereRaw('"'.date('Y-m-d').'" '.'between start_date and end_date')
@@ -226,7 +227,9 @@ class loginController extends Controller
 
                         $getInstitutes = DB::table('school_setup')->where('client_id',
                             $user['client_id'])->get()->toArray();
-
+                        if($client_sub_institute_id == 63){
+echo "<pre>";print_r($getTermId);exit;
+}
                         $request->session()->put('sub_institute_id', '');
                         $request->session()->put('syear', $getTermId[0]['syear']);
                         $request->session()->put('term_id', $getTermId[0]['term_id']);

@@ -1,7 +1,7 @@
 <?php
 // ini_set('display_errors', 1);
 // ini_set('display_startup_errors', 1);
-// error_reporting(E_ALL);
+ error_reporting(0);
 include('db.php');
 require_once('PHPExcel.php');
 session_start();
@@ -94,15 +94,17 @@ if (isset($_REQUEST['submit'])) {
             $vf++;
         }
 
-        $fieldQuery = rtrim($fieldQuery, ',');
+        //$fieldQuery = rtrim($fieldQuery, ',');
+        $fieldQuery = $fieldQuery.'SUB_INSTITUTE_ID';
         $fieldQuery .= ' ) VALUES ';
 
         foreach ($dataArr as $key => $value) {
             $valueQuery .= ' (';
             foreach ($valueFields1 as $kvf => $valueFields) {
-                if ($valueFields['field'] == "SYEAR" || $valueFields['field'] == "syear") {
+                /*if ($valueFields['field'] == "SYEAR" || $valueFields['field'] == "syear") {
                     $valueQuery .= "'2023',";
-                } else if ($valueFields['field'] == "SCHOOL_ID" || $valueFields['field'] == "school_id") {
+                } else */
+                if ($valueFields['field'] == "SCHOOL_ID" || $valueFields['field'] == "school_id") {
                     $valueQuery .= "'" . $_SESSION['SUB_INSTITUTE_ID'] . "',";
                 } else if ($valueFields['field'] == "SUB_INSTITUTE_ID" || $valueFields['field'] == "sub_institute_id" || $valueFields['field'] == "sub_inst_id") {
                     $valueQuery .= "'" . $_SESSION['SUB_INSTITUTE_ID'] . "',";
@@ -139,7 +141,8 @@ if (isset($_REQUEST['submit'])) {
                     }
                 }
             }
-            $valueQuery = rtrim($valueQuery, ',');
+            //$valueQuery = rtrim($valueQuery, ',');
+            $valueQuery = $valueQuery.$_SESSION['SUB_INSTITUTE_ID'];
             $valueQuery .= ' ),';
         }
 
