@@ -42,7 +42,8 @@ use App\Http\Controllers\UserFormbuilderController;
 use App\Models\general_dataModel;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
-
+use App\Http\Controllers\Import\ImportController;
+use App\Http\Controllers\Payroll\PayrollController;
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -86,6 +87,21 @@ if (isset($_REQUEST['sub_institute_id']) && $_REQUEST['sub_institute_id'] != '')
     })->name('home');
     // echo 'aaaa';die;
 }
+
+//PAYROLL SYSTEM
+Route::group([ 'middleware' => ['session', 'menu', 'logRoute']], function () {
+    Route::get('/payroll-type', [PayrollController::class, 'payrollType']);
+    Route::get('/payroll-type/create', [PayrollController::class, 'payrollCreate'])->name('payroll_type.create');
+    Route::post('/payroll-type/store', [PayrollController::class, 'payrollStore'])->name('payroll_type.store');
+    Route::get('/payroll-type/create/{id}', [PayrollController::class, 'payrollCreate']);
+    Route::post('/payroll-type/destroy', [PayrollController::class, 'payrollDestroy'])->name('payroll_type.destroy');
+});
+
+
+Route::get('/import-data',[ImportController::class,'getImport']);
+Route::post('/import_parse', [ImportController::class,'parseImport'])->name('import_parse');
+Route::post('/import_parse_fields', [ImportController::class,'matchFields'])->name('update.match_fields');
+Route::post('/import_process', [ImportController::class,'processImport'])->name('import_process');
 
 Route::any('/knowledge-base', [dashboardController::class, 'knowledge_base'])->name('knowledge_base')->middleware('session', 'menu');
 
@@ -176,7 +192,7 @@ Route::group(['prefix' => 'school_setup', 'middleware' => ['session', 'menu', 'l
     Route::post('ajax_getTimetable', [timetableController::class, 'getTimetable'])->name('ajax_getTimetable');
 
     Route::post('insert_data', [subject1Controller::class, 'insert_data'])->name('insert_data');
-    
+
     // Route::post('/school_setup/subject_master/insert_data','school_setup\subject1Controller@insert_data');
 
     Route::resource('classwisetimetable', classwisetimetableController::class);
