@@ -35,7 +35,8 @@
             <div class="col-md-6">
                 <div class="row">
                     <div class="col-md-9">
-                        <h2 class="text-center pb-3 pt-1"><input type="checkbox" value="1" name="is_checked" id="is_checked">
+                        <h2 class="text-center pb-3 pt-1"><input type="checkbox" value="1" name="is_checked"
+                                                                 id="is_checked">
                             Step :1 Match Fields</h2>
                     </div>
                     <div class="col-md-3 d-none" id="skip_field">
@@ -52,7 +53,8 @@
                         <ul class="list-group shadow-lg connectedSortable" id="sortable1" style="width: 300px">
                             @if(!empty($table_fields) && $table_fields->count())
                                 @foreach($table_fields as $key=>$value)
-                                    <li class="list-group-item" style="width: 290px" item-id="{{$value->field}}">{{ $value->field }}</li>
+                                    <li class="list-group-item" style="width: 290px"
+                                        item-id="{{$value->field}}">{{ $value->display_field }}</li>
                                 @endforeach
                             @endif
                         </ul>
@@ -62,7 +64,8 @@
                         <ul class="list-group  connectedSortable" id="sortable2" style="width: 300px">
                             @if(!empty($completeItem) && $completeItem->count())
                                 @foreach($completeItem as $key=>$value)
-                                    <li class="list-group-item " style="width: 290px" item-id="{{ $value->id }}">{{ $value->title }}</li>
+                                    <li class="list-group-item " style="width: 290px"
+                                        item-id="{{ $value->id }}">{{ $value->title }}</li>
                                 @endforeach
                             @endif
                         </ul>
@@ -85,23 +88,24 @@
                             <table class="table">
                                 <div class="col-md-3">
 
-                                        @foreach ($csv_data as $key=> $row)
+                                    @foreach ($csv_data as $key=> $row)
                                         <tr>
                                             @if (isset($csv_header_fields))
-                                                    <th>{{ $csv_header_fields[$key] }}</th>
+                                                <th>{{ $csv_header_fields[$key] }}</th>
                                             @endif
                                             <td>{{ $row }}</td>
-                                                    <td>
-                                                        <select name="fields[{{ $key }}]">
-                                                            @foreach ($table_fields as $db_field)
-                                                                <option
-                                                                    value="{{ $db_field->field}}">{{ $db_field->display_field }}</option>
-                                                            @endforeach
-                                                        </select>
-                                                    </td>
+                                            <td>
+                                                <select name="fields[{{ $key }}]">
+                                                    <option value="0">---select---</option>
+                                                    @foreach ($table_fields as $db_field)
+                                                        <option
+                                                            value="{{ $db_field->field}}">{{ $db_field->display_field }} {{$db_field->is_required ? '*' :''}}</option>
+                                                    @endforeach
+                                                </select>
+                                            </td>
 
                                         </tr>
-                                        @endforeach
+                                    @endforeach
                                 </div>
                             </table>
 

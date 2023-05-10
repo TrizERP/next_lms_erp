@@ -26,7 +26,7 @@
                             <p>{{$totalFailedRecordCount}}</p>
                             <p>{{$totalInsertRecordCount}}</p>
                             <p>{{$totalOverwiteRecordCount}}</p>
-                            <p>{{($totalInsertRecordCount + $totalOverwiteRecordCount) - $totalFailedRecordCount}}</p>
+                            <p>{{($totalRecordCount) - $totalFailedRecordCount}}</p>
                         </div>
                     </div>
 
