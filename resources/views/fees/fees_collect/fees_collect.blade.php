@@ -308,7 +308,7 @@
                                             @php
                                                 $cheque_return_charges0 = $data['cheque_return_charges'][0];
                                                 $cheque_return_charges = $data['fees_config_data']['late_fees_amount'];
-                                                $sub_institute_id=[257,1];
+                                                $sub_institute_id=[257];
                                             @endphp
                                             <tr>
                                                 <td></td>

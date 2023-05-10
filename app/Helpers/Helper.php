@@ -1476,7 +1476,32 @@ if (! function_exists('OtherBreackOfMonthHead')) {
         return $final_bk;
     }
 }
+if (! function_exists('OtherBreackOfMonthHeadlast')) {
 
+    function OtherBreackOfMonthHeadlast($student_id_arr, $month_arr)
+    {
+        $student_id = $student_id_arr[0];
+
+        $sub_institute_id = session()->get('sub_institute_id');
+        $syear = (session()->get('syear')-1);
+
+        $fees_breckoff = DB::table('fees_breakoff_other')
+            ->selectRaw('*,sum(amount) as tot_amount')
+            ->where('sub_institute_id', $sub_institute_id)
+            ->where('syear', $syear)
+            ->where('student_id', $student_id)
+            ->whereIn('month_id', $month_arr)
+            ->groupByRaw('fee_type_id,month_id')->get()->toArray();
+
+        $final_bk = [];
+
+        foreach ($fees_breckoff as $id => $arr) {
+            $final_bk[$arr->month_id][$arr->fee_type_id] = $arr->tot_amount;
+        }
+
+        return $final_bk;
+    }
+}
 if (! function_exists('getCountDays')) {
 
     function getCountDays($from_date, $to_date)

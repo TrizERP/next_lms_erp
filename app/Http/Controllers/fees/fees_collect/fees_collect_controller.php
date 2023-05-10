@@ -30,7 +30,10 @@ use function App\Helpers\OtherBreackOfflast;
 use function App\Helpers\OtherBreackOffHead;
 use function App\Helpers\OtherBreackOffHeadlast;
 use function App\Helpers\OtherBreackOfMonth;
+use function App\Helpers\OtherBreackOfMonthlast;
 use function App\Helpers\OtherBreackOfMonthHead;
+use function App\Helpers\OtherBreackOfMonthHeadlast;
+
 
 class fees_collect_controller extends Controller
 {
@@ -255,6 +258,8 @@ class fees_collect_controller extends Controller
      */
     public function pay_fees(Request $request)
     {
+       // echo "<pre>";print_r($_REQUEST['fees_data']);
+
         $fees_data = [];
         foreach ($_REQUEST['fees_data'] as $id => $arr) {
             if ($arr != 0) {
@@ -285,8 +290,11 @@ class fees_collect_controller extends Controller
         $other_bk_off_month_head_wise = OtherBreackOfMonthHead($stu_arr, $search_ids);
         $year_arr = FeeMonthId();
         $head_wise_fees = FeeBreakoffHeadWise($stu_arr);
+       // echo "<pre>";print_r($head_wise_fees);
 
         //getting heads of reg fees and all reg breackoff
+
+     
         $reg_fee_heads = [];
         $reg_fee_bk = [];
 
@@ -300,7 +308,7 @@ class fees_collect_controller extends Controller
                 }
             }
         }
-
+        // exit;
         //getting heads of other fee
         $other_fee_heads = [];
         foreach ($_REQUEST['fees_data'] as $id => $vals) {
@@ -316,6 +324,7 @@ class fees_collect_controller extends Controller
                 $reg_months_pay[] = $month_id;
             }
         }
+       // echo "For current";echo "<pre>";print_r($reg_months_pay);
 
         $oth_months_pay = [];
         foreach ($other_bk_off_month_wise as $month_id => $arr) {
@@ -342,7 +351,77 @@ class fees_collect_controller extends Controller
                 }
             }
         }
+// last year fees start
+    if(isset($_REQUEST['fees_data']['previous_fees']) && $_REQUEST['fees_data']['previous_fees'] != 0){
+        $other_bk_off2 = OtherBreackOfflast($stu_arr, $search_ids);
+        $other_bk_off_month_wise2 = OtherBreackOfMonthlast($stu_arr);
+        $other_bk_off_month_head_wise2 = OtherBreackOfMonthHeadlast($stu_arr, $search_ids);
+        $year_arr2 = FeeMonthIdlast();
+        $head_wise_fees2 = FeeBreakoffHeadWiselast($stu_arr);
+       // echo "<pre>";print_r($head_wise_fees2);
+        $reg_fee_heads2 = [];
+        $reg_fee_bk2 = [];
 
+        foreach ($head_wise_fees2 as $student_id => $detail_arr) {
+            $reg_fee_bk2 = $detail_arr['breakoff'];
+            foreach ($detail_arr['breakoff'] as $id => $arr) {
+                foreach ($arr as $head_name => $vals) {
+                    if (! in_array($head_name, $reg_fee_heads2)) {
+                        $reg_fee_heads2[] = $head_name;
+                    }
+                }
+            }
+        }
+        //getting heads of other fee i think not compulsory
+        // $other_fee_heads2 = [];
+        // foreach ($_REQUEST['fees_data'] as $id => $vals) {
+        //     if (! in_array($id, $reg_fee_heads2)) {
+        //         $other_fee_heads2[] = $id;
+        //     }
+        // }
+
+        //getting reg fee month_id that we need to pay
+        $syear = session()->get('syear');
+        $last_y_month_id = $currunt_month.($syear-1);
+        $reg_months_pay2 = [];
+        foreach ($year_arr2 as $id => $arr) {
+            if ($id == $last_y_month_id) {
+                $reg_months_pay2[] = $id;
+                // break;
+            } else {
+                $reg_months_pay2[] = $id;
+            }
+        }
+
+        $reg_insert_arr2 = [];
+
+    foreach ($reg_fee_bk2 as $month => $bk_off) {
+        if (in_array($month, $reg_months_pay2)){
+              foreach ($bk_off as $title => $arr) {
+
+                $insert_amount = 0;
+                if(isset($_REQUEST['fees_data'][$title])){
+
+                if ($_REQUEST['fees_data'][$title] < $arr['amount'] ) {
+                    $_REQUEST['fees_data'][$title] = $_REQUEST['fees_data'][$title] - $arr['amount'];
+                    $insert_amount = $arr['amount'];
+                } else {
+                    $insert_amount = $_REQUEST['fees_data'][$title];
+                    $_REQUEST['fees_data'][$title] = 0;
+                }
+            }
+            if($insert_amount !=0){
+            $reg_insert_arr[$month][$title] = $insert_amount;
+        }
+            }
+       }
+    }
+       // echo "For Previous";echo "<pre>";print_r($reg_insert_arr);exit;
+   
+    }
+       // echo "For current";echo "<pre>";print_r($reg_insert_arr);exit;
+
+// last year fees end
         $receipt_number = $this->gunrate_receipt_number();
 
         // getting all heads with id
@@ -354,7 +433,6 @@ class fees_collect_controller extends Controller
         foreach ($ret_heds_with_id as $id => $arr) {
             $heds_with_id[$arr->fees_title] = $arr->id;
         }
-
         $new_insert_arr = [];
         foreach ($reg_insert_arr as $month_id => $arr) {
             foreach ($arr as $id => $val) {
@@ -406,6 +484,7 @@ class fees_collect_controller extends Controller
         $new_insert_other_arr = $this->add_discount($new_insert_other_arr, 'fees_paid_other');
         $new_insert_arr = $this->add_fine($new_insert_arr);
         $new_insert_other_arr = $this->add_fine($new_insert_other_arr);
+// echo "<pre>";print_r($new_insert_arr);exit;
 
         $regular_insert_arr = [];
         foreach ($new_insert_arr as $month_id => $arr) {
@@ -545,12 +624,14 @@ class fees_collect_controller extends Controller
                 "receipt_id_html" => $receipt_id_html,
             ];
         }
-
+        // exit;
+        // echo "<pre>";print_r($res);exit;
         return $res;
     }
 
     public function store(Request $request)
     {
+
         $res = $this->pay_fees($request);
         $res['standard_id'] = $request->standard_id;
         $type = $request->input('type');
@@ -1563,6 +1644,7 @@ class fees_collect_controller extends Controller
                 $search_ids[] = $id;
             }
         }
+
         foreach ($month_arr2 as $id => $arr) {
             if ($id == $last_y_month_id) {
                 $search_ids[] = $id;
@@ -1634,7 +1716,7 @@ class fees_collect_controller extends Controller
         $sql2 = preg_replace('/\n+/', '', $sql2);
         $paid_result2 = DB::select($sql2);
 
-
+        echo "<pre>";print_r($paid_result2);exit;
         $fees_paid_arr = [];
         foreach ($paid_result as $id => $arr) {
             $fees_paid_arr[$arr->term_id] = $arr->amount;
