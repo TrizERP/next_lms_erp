@@ -141,9 +141,9 @@ class ImportController extends Controller
                     $student_enroll_data['start_date'] = $prepareData['start_date'] ?? null;
                     $student_enroll_data['adhar'] = $prepareData['adhar'] ?? null;
 
-                    unset($prepareData['student_id'], $prepareData['grade_id'], $prepareData['standard_id'], $prepareData['section_id'], $prepareData['student_quota'], $prepareData['syear'], $prepareData['start_date'], $prepareData['term_id'], $prepareData['adhar']);
+                    unset($prepareData['student_id'], $prepareData['grade_id'], $prepareData['standard_id'], $prepareData['section_id'], $prepareData['student_quota'], $prepareData['house_id'], $prepareData['syear'], $prepareData['start_date'], $prepareData['term_id'], $prepareData['adhar']);
 
-                    unset($condition['student_id'], $condition['grade_id'], $condition['standard_id'], $condition['section_id'], $condition['student_quota'], $condition['syear'], $condition['start_date'], $condition['term_id'], $condition['adhar']);
+                    unset($condition['student_id'], $condition['grade_id'], $condition['standard_id'], $condition['section_id'], $condition['student_quota'], $condition['house_id'], $condition['syear'], $condition['start_date'], $condition['term_id'], $condition['adhar']);
 
                     $student_id = DB::table($request->table_name)->where($condition)->first();
                     if ($student_id) {
@@ -236,7 +236,7 @@ class ImportController extends Controller
                     $student_enroll_data['start_date'] = $prepareData['start_date'] ?? null;
                     $student_enroll_data['adhar'] = $prepareData['adhar'] ?? null;
 
-                    unset($prepareData['student_id'], $prepareData['grade_id'], $prepareData['standard_id'], $prepareData['section_id'], $prepareData['student_quota'], $prepareData['syear'], $prepareData['start_date'], $prepareData['term_id'], $prepareData['adhar']);
+                    unset($prepareData['student_id'], $prepareData['grade_id'], $prepareData['standard_id'], $prepareData['section_id'], $prepareData['student_quota'], $prepareData['house_id'], $prepareData['syear'], $prepareData['start_date'], $prepareData['term_id'], $prepareData['adhar']);
                     $student_enroll_data['sub_institute_id'] = $prepareData['sub_institute_id'] = session()->get('sub_institute_id');
                     $student_id = DB::table($request->table_name)->insertGetId($prepareData);
                     if ($student_id) $student_enroll_data['student_id'] = $student_id;

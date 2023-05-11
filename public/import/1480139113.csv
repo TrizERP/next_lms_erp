@@ -1,0 +1,10 @@
+GR No,Standard,Month Year,syear,Receipt No,Payment Mode,Bank Branch,Paid date,Cheque No,Bank Name,Cheque Date,Remarks,Total Amount,Fine,Discount,Tuition Fee,Admission Fee,Activity Fee,Term Fee,Deposite,CoCurriculam Fee,Computer Fee,Smart Class Fee,Security Charges,Photograph Fee,Misc Fee,OtherFee 1,OtherFee 2,OtherFee 3,OtherFee 4,OtherFee 5,OtherFee 6,OtherFee 7,OtherFee 8,OtherFee 9,OtherFee 10,OtherFee 11,OtherFee 12
+PP234,3,92021,2021,45,Cheque,N/A,2023-04-10,123456,Allahabad Bank ,2023-04-10,-,15000,0,0,10000,0,0,0,0,0,5000,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+8347,3,42021,2021,46,Cheque,N/A,2023-04-10,123456,Allahabad Bank ,2023-04-10,-,1600,0,0,0,0,200,200,0,0,200,0,0,0,0,500,0,0,0,0,0,0,0,0,500,0,0
+PP135,4,102021,2021,47,Cheque,N/A,2023-04-10,123456,Allahabad Bank ,2023-04-10,-,1600,0,0,0,0,200,200,0,0,200,0,0,0,0,500,0,0,0,0,0,0,0,0,500,0,0
+8745,4,42021,2021,48,Cheque,N/A,2023-04-10,123456,Federal Bank Limited,2023-04-10,-,1250,0,0,0,0,250,200,0,0,150,0,0,0,0,300,0,0,0,0,0,0,0,0,350,0,0
+8746,5,102021,2021,49,Cheque,N/A,2023-04-10,123456,Federal Bank Limited,2023-04-10,-,1250,0,0,0,0,250,200,0,0,150,0,0,0,0,300,0,0,0,0,0,0,0,0,350,0,0
+8744,5,102021,2021,53,Cash,N/A,2023-04-10,,,2023-04-10,-,15000,0,0,10000,0,0,0,0,0,5000,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+PP134,NR,112021,2021,55,Cash,N/A,2023-04-10,,,2023-04-10,-,15000,0,0,10000,0,0,0,0,0,5000,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+SS135,12 Com.,122021,2021,57,Cash,N/A,2023-04-10,,,2023-04-10,-,15000,0,0,10000,0,0,0,0,0,5000,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+100234,10,12022,2021,59,Cash,N/A,2023-04-10,,,2023-04-10,-,15000,0,0,10000,0,0,0,0,0,5000,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
