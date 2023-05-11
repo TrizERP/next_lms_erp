@@ -1060,12 +1060,20 @@ class online_fees_collect_controller extends Controller
     {
         // $plaintext = "1|1|1";
         $cipher = "AES-128-ECB";
+        // $cipher = "aes-128-cbc";
+        // print_r(openssl_get_cipher_methods() );
         // $key = "1211141980601518";
+        // echo strlen($cipher);exit;
         if (in_array($cipher, openssl_get_cipher_methods())) {
-            $ivlen = openssl_cipher_iv_length($cipher);
-            $iv = openssl_random_pseudo_bytes($ivlen);
-            $ciphertext = openssl_encrypt($str, $cipher, $key, $options = 0, $iv);
-            return $ciphertext; //."n";
+            if(openssl_cipher_iv_length($cipher)>0){
+                $ivlen = openssl_cipher_iv_length($cipher);
+                // echo $ivlen;exit;
+                $iv = openssl_random_pseudo_bytes($ivlen);
+                $ciphertext = openssl_encrypt($str, $cipher, $key, $options = 0, $iv);
+            }else{
+                $ciphertext = openssl_encrypt($str, $cipher, $key, $options = 0);
+            }
+           return $ciphertext; //."n";
             exit;
         }
         return 1;
