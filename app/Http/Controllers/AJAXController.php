@@ -602,7 +602,9 @@ class AJAXController extends Controller
                     <td style='width: 20%'>$val</td>
             ";
             if ($id != 'Total') {
-                $response .= "<td style='width: 20%'><input type='number' min=0 max=$val  value='" . $val . "' name='fees_data[" . $final_bk_name[$id] . "]' class='form-control allField1'></td>";
+                // $response .= "<td style='width: 20%'><input type='number' min=0 max=$val  value='" . $val . "' name='fees_data[" . $final_bk_name[$id] . "]' class='form-control allField1'></td>";
+                $response .= "<td style='width: 20%'><input type='number' min='0' max='$val' value='$val' name='fees_data[" . $final_bk_name[$id] . "]' class='form-control allField1' id=" . $final_bk_name[$id] ."></td>";
+
                 $response .= "<input type='hidden' value='" . $val . "' name='hid_fees_data[" . $final_bk_name[$id] . "]' class='hid_allField1'>";
                 $response .= "<td style='width: 20%'><input type='number' value='0' name='discount_data[" . $final_bk_name[$id] . "]' class='form-control allDisField' style='min-width:150px;'></td>"; // min=0 max=$val
                 $response .= "<td style='width: 20%'><input type='number'  min=0 value=0 name='fine_data[" . $final_bk_name[$id] . "]' class='form-control allFinField' style='min-width:150px;'></td>";

@@ -232,7 +232,9 @@
                                                         </tr>
                                                         <?php
                                                         $total = [];
-                                                        foreach ($data['final_fee_new'] as $id => $val) {  ?>
+                                                        foreach ($data['final_fee_new'] as $id => $val) {
+                                                      // if ($id != 'Total') {     print_r($data['final_fee_name'][$id]); }  ?>
+
                                                         <tr>
                                                             <td style="width: 10%"><input type="checkbox" name=""
                                                                                           id="" <?= (isset($val['mandatory']) && $val['mandatory']) ? 'checked' : '' ?>>
@@ -267,8 +269,8 @@
 
                                                         if ($id != 'Total') {   
                                                          
-                                                            echo "<td style='width: 20%'><input  $individual_enable $negative_disable type='number'  min=0 max=".($val['amount'] ?? 0)." value='" . ($val['amount'] ?? 0) ."' name='fees_data[" . $data['final_fee_name'][$id] . "]' class='form-control allField1'>
-                                                            <input type='hidden' value=" .($val['amount'] ?? 0) . " name='hid_fees_data[" . $data['final_fee_name'][$id] . "]' class='hid_allField1' $individual_enable>
+                                                            echo "<td style='width: 20%'><input  $individual_enable $negative_disable type='number'  min=0 max=".($val['amount'] ?? 0)." value='" . ($val['amount'] ?? 0) ."' name='fees_data[" . $data['final_fee_name'][$id] . "]' class='form-control allField1 fees_data[" . $data['final_fee_name'][$id] . "]'>
+                                                            <input type='hidden' value=" .($val['amount'] ?? 0) . " name='hid_fees_data[" . $data['final_fee_name'][$id] . "]' class='hid_allField1' $individual_enable id=". $data['final_fee_name'][$id] . ">
                                                             </td>";
                                                             echo "<td style='width: 20%'><input type='number' value=0 name='discount_data[" . $data['final_fee_name'][$id] . "]' $individual_enable class='form-control allDisField' style='min-width:150px;'></td>"; // min=0 max=$val
                                                             echo "<td style='width: 20%'><input type='number' $individual_enable min=0 value=0 name='fine_data[" . $data['final_fee_name'][$id] . "]' class='form-control allFinField' style='min-width:150px;'></td>";
@@ -501,6 +503,7 @@
 
 
             $(document).ready(function () {
+
                 console.log("hello");
                 monthCheck();
             });
@@ -664,7 +667,9 @@
                         } else {
                             $('.allField1').attr('readonly', false);
                             $('#totalVal').attr('readonly', true);
-                        }
+                            $('#previous_fees').attr('readonly', true);
+
+                            }
 
                         tot = $("#totalVal").val();
 

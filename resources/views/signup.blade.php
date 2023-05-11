@@ -13,303 +13,185 @@ $loginpage_favicon = session()->get('loginpage_favicon');
 $loginpage_backgrond = session()->get('loginpage_backgrond');
 
 ?>
-
+<!-- old -->
+<!-- new  -->
 <head>
-<meta charset="utf-8">
-<meta http-equiv="X-UA-Compatible" content="IE=edge">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="description" content="">
-<meta name="author" content="">
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 @if(!empty($loginpage_favicon))
   <link rel="icon" type="image/png" sizes="16x16" href={{$loginpage_favicon}} >
     @else
   <link rel="icon" type="image/png" sizes="16x16" href="../admin_dep/images/icon.png">
 @endif
 <title>TRIZ-ERP || LOGIN</title>
-<link href="{{ asset("/admin_dep/css/colors/default.css") }}" id="theme" rel="stylesheet">
-<link href="{{ asset("/admin_dep/css/fontawesome.css") }}" rel="stylesheet">
-<link href="{{ asset("/admin_dep/css/bootstrap.css") }}" rel="stylesheet">
-<link href="{{ asset("/admin_dep/css/bootstrap-select.css") }}" rel="stylesheet">
-<link href="{{ asset("/admin_dep/css/docs.css") }}" rel="stylesheet">
-<link href="{{ asset("/admin_dep/css/css3.css") }}" rel="stylesheet">
-<link href="{{ asset("/admin_dep/css/materialdesignicons.min.css") }}" rel="stylesheet">
-<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-<link href="{{ asset("/admin_dep/css/elements.css") }}" rel="stylesheet">
-<link href="{{ asset("/admin_dep/css/style.css") }}" rel="stylesheet">
-<link href="{{ asset("/admin_dep/css/bootstrap-datepicker.min.css") }}" rel="stylesheet">
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
-</head>
-<style type="text/css">
-        .parent{
-            height: 70px;
-        }
-        .parent>.row{
-            display: flex;
-            align-items: center;
-            height: 100%;
-        }
-        .col img{
-            height:100px;
-            width: 100%;
-            cursor: pointer;
-            transition: transform 1s;
-            object-fit: cover;
-        }
-        .col label{
-            overflow: hidden;
-            position: relative;
-        }
-        .imgbgchk:checked + label>.tick_container{
-            opacity: 1;
-        }
-/*         aNIMATION */
-        .imgbgchk:checked + label>img{
-            transform: scale(1.25);
-            opacity: 0.3;
-        }
-        .tick_container {
-            transition: .5s ease;
-            opacity: 0;
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            -ms-transform: translate(-50%, -50%);
-            cursor: pointer;
-            text-align: center;
-        }
-        .tick {
-            background-color: #4CAF50;
-            color: white;
-            font-size: 16px;
-            padding: 6px 12px;
-            height: 40px;
-            width: 40px;
-            border-radius: 100%;
-        }
 
-        div.click-to-top span {
-            display: block;
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            background: #333;
-            color: #fff;
-            width: 100px;
-            margin-bottom: -10%;
-            margin-left: 25%;
-        }
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" type="text/css" href="{{ asset('/css/style2.css')}}">
+    <title>Sign up | TRIZ INNOVATION PVT LTD</title>
 
-        /* div.click-to-top:hover span {
-           display: block;
-         }*/
-</style>
-<body>
-<!-- Preloader -->
-<section id="wrapper" class="new-login-register container-fluid">
-    <div class="row">
 
-        <div class="col-md-6">
-            @if(!empty($loginpage_backgrond))
-          <div class="lg-info-panel h-100 d-flex align-items-center p-3" style="background:url({{$loginpage_backgrond}}) center;">
-      @else
-        <div class="lg-info-panel h-100 d-flex align-items-center p-3" style="background:url(https://p0.pikist.com/photos/545/980/students-women-female-woman-happy-girl-young-college-education.jpg) center;">
-      @endif
-          <div class="inner-panel">
-            <div class="lg-content">
-                @if(!empty($loginpage_logo))
-                    {!!$loginpage_logo!!}
-                @else
-                    <center>
-                        <img src="http://dev.triz.co.in/admin_dep/images/triz.png" width="250px">
-                    </center>
-                @endif
+  </head>
 
-                @if(!empty($loginpage_title))
-                    {!!$loginpage_title!!}
-                @else
-                    <h2 class="text-light">OWN INSTITUTE MAXIMIZE LEARNING</h2>
-                @endif
 
-                @if(!empty($loginpage_description))
-                    {!!$loginpage_description!!}
-                @else
-                    <p class="text-light">Integrated solution for institutes need-DIGITAL!!!</p>
-                @endif
-
+<!-- new body -->
+<body class="login-page">
+    <section class="container-fluid login-section p-0">
+        <div class="row m-0">
+            <div class="col-lg-6 col-xl-5 p-0">
+                <div class="image-column-content">
+                    @if(!empty($loginpage_backgrond))
+                    <div class="logo">
+                        <a href="#"><img src="{{$loginpage_backgrond}}"></a>
+                    </div>
+                    @else
+                    <div class="logo">
+                        <a href="#"><img src="{{ asset('/Images/logo.png')}} "></a>
+                    </div>
+                    @endif
+                    <!-- <div class="logo">
+                        <a href="#"><img src="{{ asset('/Images/logo.png')}} "></a>
+                    </div> -->
+                    <div class="img-content">
+                        <img src="{{ asset('/Images/login-page-image.svg')}} ">
+                        <div class="img-heading">
+                            @if(!empty($loginpage_title))
+                                {!!$loginpage_title!!}
+                            @else
+                                <h2 class="text-light">Triz Institute of Maximize Learning</h2>
+                            @endif
+                            @if(!empty($loginpage_description))
+                                {!!$loginpage_description!!}
+                            @else
+                                <p class="text-light">Integrated Solution for Digital Needs!!!</p>
+                            @endif
+                        </div>
+                    </div>
+                </div>  
             </div>
-          </div>
-        </div>
-          </div>
-                <div class="col-md-6">
-                    <div class="new-login-box row align-items-center justify-content-center py-4">
-                        <div class="col-md-8">
-                            <div class="white-box123">
+            <div class="col-lg-6 col-xl-7 d-flex align-items-center">
+                <div class="form-content">
+                    <div class="heading">
+                        <h1>Hello! Welcome Back.</h1>
+                    </div>
+                    <div class="purple-heading">
+                        <h2>Sign up</h2>
+                    </div>
 
-                                <form class="form-horizontal new-lg-form" id="signupform" method="POST">
-                                    @csrf
-              <h3 class="box-title m-b-0">New Sign Up</h3>
-              <hr style="border-top: 8px solid rgba(92 74 199);">
-
-              @if(!empty($data['message']))
-              <div class="alert alert-danger" role="alert">
-                  {{ $data['message'] }}
-              </div>
-              @endif
-              @php
-              $admin_img = "http://".$_SERVER['HTTP_HOST']."/admin_dep/images/admin.png";
-              $teacher_img = "http://".$_SERVER['HTTP_HOST']."/admin_dep/images/teacher.png";
-              $student_img = "http://".$_SERVER['HTTP_HOST']."/admin_dep/images/student.png";
-
-              @endphp
-
-              <div class="form-group  m-t-10">
-                <div class="col-xs-12">
-                  <label>User Type<span style="color: red;font-size: large;">*</span></label>
-                  <div class="parent">
-                    <div class="row">
-                      <div class='col-md-4 text-center click-to-top'>
-                        <input type="radio" name="user_type" id="admin" value="Admin" class="imgbgchk" onclick="show_hide_block(this.value);" required><!--class="d-none imgbgchk"-->
-                          <label for="admin">
-                            <img src="{{$admin_img}}" alt="Admin">
-                            <span>Admin</span>
-                            <div class="tick_container">
-                              <div class="tick"><i class="fa fa-check"></i></div>
-                            </div>
-                          </label>
-                      </div>
-                      <div class='col-md-4 text-center click-to-top'>
-                         <input type="radio" name="user_type" id="lmsteacher" value="LMS Teacher" class="imgbgchk" onclick="show_hide_block(this.value);" required>
-                          <label for="lmsteacher">
-                            <img src="{{$teacher_img}}" alt="LMS Teacher">
-                              <span>LMS Teacher</span>
-                              <div class="tick_container">
-                                  <div class="tick"><i class="fa fa-check"></i></div>
-                              </div>
-                          </label>
-                      </div>
-                        <div class='col-md-4 text-center click-to-top'>
-                            <input type="radio" name="user_type" id="student" class="imgbgchk" value="Student"
-                                   onclick="show_hide_block(this.value);" required>
-                            <label for="student">
-                                <img src="{{$student_img}}" alt="Student">
-                                <span>Student</span>
-                                <div class="tick_container">
-                                    <div class="tick"><i class="fa fa-check"></i></div>
+                    <form class="">
+                         @csrf
+                        <div class="form-group">
+                            <label>Select User Type <span class="red">*</span></label>
+                            <div class="selct-user-box d-flex align-items-center">
+                                <div class="sign-up-radio-design">
+                                      <input class="form-radio-input" type="radio" name="exampleRadios" id="exampleRadios1" value="option1">
+                                      <label class="form-radio-label" for="exampleRadios1">
+                                        <img src="{{ asset('/Images/admin-icon.png')}} ">
+                                        <span class="d-block text-center">Admin</span>
+                                      </label>
                                 </div>
-                            </label>
-                        </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-                                    <div class="form-group m-t-10 mt-5">
-                                        <div class="col-xs-12">
-                                            <label>First Name<span style="color: red;font-size: large;">*</span></label>
-                                            <input class="form-control" name="first_name" type="text" required
-                                                   placeholder="Enter first name">
-                                        </div>
-                                    </div>
-                                    <div class="form-group  m-t-10">
-                                        <div class="col-xs-12">
-                                            <label>Last Name<span style="color: red;font-size: large;">*</span></label>
-                                            <input class="form-control" name="last_name" type="text" required
-                                                   placeholder="Enter last name">
-                </div>
-              </div>
-              <div class="form-group  m-t-10">
-                <div class="col-xs-12">
-                  <label>Gender<span style="color: red;font-size: large;">*</span></label>
-                  <div class="radio-list">
-                      <label class="radio-inline p-0">
-                          <div class="radio radio-success">
-                              <input type="radio" name="gender" id="male" value="M" required>
-                              <label for="male">Male</label>
-                          </div>
-                      </label>
-                      <label class="radio-inline">
-                          <div class="radio radio-success">
-                              <input type="radio" name="gender" id="female" value="F" required>
-                              <label for="female">Female</label>
-                          </div>
-                      </label>
-                      <label class="radio-inline">
-                          <div class="radio radio-success">
-                              <input type="radio" name="gender" id="other" value="O" required>
-                              <label for="other">Other</label>
-                          </div>
-                      </label>
-                  </div>
-                </div>
-              </div>
-              <div class="form-group  m-t-10">
-                <div class="col-xs-12">
-                  <label>Birth Date<span style="color: red;font-size: large;">*</span></label>
-                   <input type="text" id='birthdate' required name="birthdate" class="form-control mydatepicker" autocomplete="off" placeholder="Enter Birthdate">
-                </div>
-              </div>
-              <div class="form-group  m-t-10">
-                <div class="col-xs-12">
-                  <label>Email Address<span style="color: red;font-size: large;">*</span></label>
-                  <input class="form-control" name="email" type="text" required placeholder="Enter email address">
-                </div>
-              </div>
-              <div class="form-group  m-t-10">
-                <div class="col-xs-12">
-                  <label>Mobile No.<span style="color: red;font-size: large;">*</span></label>
-                  <input class="form-control" name="mobile" type="text" required placeholder="Enter mobile no." minlength="10" maxlength="10"><!--onchange="return validate_mobile(this);"-->
-                </div>
-              </div>
-              <div class="form-group  m-t-10" id="institute_name_div">
-                <div class="col-xs-12">
-                  <label>Institute Name<span style="color: red;font-size: large;">*</span></label>
-                    <input class="form-control" name="institute_name" id="institute_name" type="text"
-                           placeholder="Enter institute name">
-                </div>
-              </div>
-                                    <div class="form-group  m-t-10" id="standard_div">
-                                        <div class="col-xs-12">
-                                            <label>Standard<span style="color: red;font-size: large;">*</span></label>
-                                            <select class="form-control" name="standard" id="standard">
-                                                <option value="">Select Standard</option>
-                                            </select>
-                                        </div>
-                                    </div>
-
-                                    <div class="form-group text-center m-t-20">
-                                        <div class="col-xs-12">
-                                            <input class="form-control" name="type" value="web" type="hidden">
-                                            <button class="btn btn-primary btn-lg btn-block" type="submit">Signup
-                                            </button>
-                                        </div>
-                                    </div>
-                                </form>
-
+                                <div class="sign-up-radio-design">
+                                      <input class="form-radio-input" type="radio" name="exampleRadios" id="exampleRadios2" value="option2">
+                                      <label class="form-radio-label" for="exampleRadios2">
+                                        <img src="{{ asset('/Images/lms-teacher-icon.png')}}">
+                                        <span class="d-block text-center">LMS Teacher</span>
+                                      </label>
+                                </div>
+                                <div class="sign-up-radio-design">
+                                      <input class="form-radio-input" type="radio" name="exampleRadios" id="exampleRadios3" value="option3">
+                                      <label class="form-radio-label" for="exampleRadios3">
+                                        <img src="{{ asset('/Images/student-icon.png')}}">
+                                        <span class="d-block text-center">Student</span>
+                                      </label>
+                                </div>
                             </div>
                         </div>
-                    </div>
+                        
+                        <div class="form-row align-items-center">
+                            <div class="col">
+                                <div class="form-group">
+                                    <label for="text">First Name <span class="red">*</span></label>
+                                    <input type="text" class="form-control" placeholder="First Name">
+                                </div>
+                            </div>
+                            <div class="col">
+                                <div class="form-group">
+                                    <label for="text">Last Name <span class="red">*</span></label>
+                                    <input type="text" class="form-control" placeholder="Last Name">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="email">Email Address <span class="red">*</span></label>
+                            <input type="email" class="form-control" placeholder="Email Address">
+                        </div>
+                        <div class="form-group">
+                            <label for="mobile-number">Mobile Number <span class="red">*</span></label>
+                            <div class="mobile-number-field">
+                                <select class="form-control">
+                                    <option selected="">+91</option>
+                                    <option>Default select</option>
+                                    <option>Default select</option>
+                                    <option>Default select</option>
+                                </select>
+                                <input type="tel" class="form-control" placeholder="Mobile Number">
+                            </div>
+                        </div>
+                        <div class="form-group otp-feild">
+                            <label class="d-flex align-items-center justify-content-between">
+                                <div>Enter OTP <span class="red">*</span></div>
+                                <div class="otp-time">0:30 Sec</div>
+                            </label>
+                            <div class="otp-number d-flex align-items-center justify-content-between">
+                                <input type="number" class="form-control text-center" placeholder="0">
+                                <input type="number" class="form-control text-center" placeholder="0">
+                                <input type="number" class="form-control text-center" placeholder="0">
+                                <input type="number" class="form-control text-center" placeholder="0">
+                                <input type="number" class="form-control text-center" placeholder="0">
+                                <input type="number" class="form-control text-center" placeholder="0">
+                            </div>
+                            <div class="otp-bottom d-flex align-items-center justify-content-between">
+                                <span>We have sent you OTP to your email address</span>
+                                <a href="#">Resend OTP</a>
+                            </div>
+                        </div>
+                        
+                        <button type="submit" class="purple-btn w-100 ">Sign up</button>
+                        
+                        <div class="form-bottom-text mb-2">Already have an account? <a href="#">Log in</a></div>
+
+
+                        <div class="sign-up-success">
+                            <div class="success-text d-flex align-items-center">
+                                <img src="{{ asset('/Images/green-check-icon.svg')}} ">
+                                <span>Congratulations, You have signed up successfully.</span>
+                            </div>
+                            <div class="preference-details">
+                                <p>Choose your preference</p>
+                                <div class="preference-btn">
+                                    <button class="purple-btn p-19">Pre Loaded Data</button>
+                                    <button class="purple-btn p-19">Use Your Institute Data</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        
+                    </form>
                 </div>
+            </div>
         </div>
+    </section>
 
 
-</section>
-<!-- jQuery -->
-<script src="{{ asset("plugins/bower_components/jquery/dist/jquery.min.js") }}"></script>
-<!-- Bootstrap Core JavaScript -->
-<script src="{{ asset("admin_dep/bootstrap/dist/js/bootstrap.min.js") }}"></script>
-<!-- Menu Plugin JavaScript -->
-<script src="{{ asset("plugins/bower_components/sidebar-nav/dist/sidebar-nav.min.js") }}"></script>
-
-<!--slimscroll JavaScript -->
-<script src="{{ asset("admin_dep/js/jquery.slimscroll.js") }}"></script>
-<!--Wave Effects -->
-<script src="{{ asset("admin_dep/js/waves.js") }}"></script>
-<!-- Custom Theme JavaScript -->
-<script src="{{ asset("admin_dep/js/custom.min.js") }}"></script>
-<!--Style Switcher -->
-<script src="{{ asset("plugins/bower_components/styleswitcher/jQuery.style.switcher.js") }}"></script>
-<script src="{{ asset("plugins/bower_components/bootstrap-datepicker/bootstrap-datepicker.min.js") }}"></script>
+    <!-- Option 1: jQuery and Bootstrap Bundle (includes Popper) -->
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"></script>
 <script>
   $(document).ready(function(){
 
