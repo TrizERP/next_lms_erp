@@ -43,6 +43,7 @@ use App\Models\general_dataModel;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Import\ImportController;
+use App\Http\Controllers\leave\LeaveController;
 use App\Http\Controllers\Payroll\PayrollController;
 /*
 |--------------------------------------------------------------------------
@@ -105,7 +106,7 @@ Route::post('/import_process', [ImportController::class,'processImport'])->name(
 
 Route::any('/knowledge-base', [dashboardController::class, 'knowledge_base'])->name('knowledge_base')->middleware('session', 'menu');
 
-Route::any('/knowledge-base-detail/{id}/{title}', [dashboardController::Class, 'knowledge_base_detail'])->name('knowledge_base_detail')->middleware('session', 'menu');
+Route::any('/knowledge-base-detail/{id}/{title}', [dashboardController::class, 'knowledge_base_detail'])->name('knowledge_base_detail')->middleware('session', 'menu');
 
 Route::get('dashboard', [dashboardController::class, 'index'])->name('dashboard')->middleware('session', 'menu', 'logRoute');
 // From Build
@@ -118,7 +119,7 @@ Route::get('getformbuilder/{name?}', [UserFormbuilderController::class, 'getform
 Route::get('apiGetformbuilder/{name?}', [UserFormbuilderController::class, 'Apigetformbuilder'])->name('getformbuild');
 
 # submit form
-Route::post('submit_form_data', [UserFormbuilderController::Class, 'submitFrom'])->name('submit_form_data');
+Route::post('submit_form_data', [UserFormbuilderController::class, 'submitFrom'])->name('submit_form_data');
 
 # view form
 Route::get('view_form/{id}/{chapter_id?}', [UserFormbuilderController::class, 'viewForm'])->name('view_form');
@@ -271,12 +272,12 @@ Route::post('NewLMS_signup', [NewLMS_ApiController::class, 'NewLMS_signup'])->na
 Route::get('Resend_otp', [NewLMS_ApiController::class, 'Resend_otp'])->name("Resend_otp");
 
 Route::post('NewLMS_temp_signup_student', [NewLMS_StudentApiController::class, 'NewLMS_temp_signup_student'])->name("NewLMS_temp_signup_student");
-Route::post('NewLMS_signup_student', [NewLMS_StudentApiController::Class, 'NewLMS_signup_student'])->name("NewLMS_signup_student");
+Route::post('NewLMS_signup_student', [NewLMS_StudentApiController::class, 'NewLMS_signup_student'])->name("NewLMS_signup_student");
 
 
 Route::get('get_trizStandard', [signupController::class, 'get_trizStandard'])->name("get_trizStandard");
 
-Route::post('searching_menu', [AJAXController::Class, 'searchMenu'])->name("searching_menu");
+Route::post('searching_menu', [AJAXController::class, 'searchMenu'])->name("searching_menu");
 Route::post('get_search_url', [AJAXController::class, 'get_search_url'])->name("get_search_url");
 
 
@@ -301,4 +302,8 @@ Route::post('generate_create_result_excel', 'result\MarkUploadController@create'
 Route::get('upload_create_result', 'result\MarkUploadController@store')->name('upload_create_result');
 
 Route::get('fetch_payment_status', 'fees\online_fees\online_fees_collect_controller@razorpay_fetch_payment_status');
+
+Route::group(['middleware' => ['session', 'menu', 'logRoute']], function () {
+    Route::resource('leave', LeaveController::class);
+});
 
