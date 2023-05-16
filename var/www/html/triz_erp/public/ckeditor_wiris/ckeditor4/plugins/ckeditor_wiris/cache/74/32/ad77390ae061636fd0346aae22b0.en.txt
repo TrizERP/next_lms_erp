@@ -1,0 +1,1 @@
+{"result":{"text":"cos squared x plus cos squared y minus 2 space cos x space cos y space cos left parenthesis x plus y right parenthesis"},"status":"ok"}

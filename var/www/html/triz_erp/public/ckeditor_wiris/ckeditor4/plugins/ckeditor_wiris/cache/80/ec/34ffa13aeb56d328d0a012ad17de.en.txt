@@ -1,0 +1,1 @@
+{"result":{"text":"left parenthesis a space sin x minus b squared cos x right parenthesis squared"},"status":"ok"}

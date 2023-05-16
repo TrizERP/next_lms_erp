@@ -1,0 +1,1 @@
+{"result":{"text":"fraction numerator square root of 3 space plus space square root of 34 over denominator 2 end fraction"},"status":"ok"}

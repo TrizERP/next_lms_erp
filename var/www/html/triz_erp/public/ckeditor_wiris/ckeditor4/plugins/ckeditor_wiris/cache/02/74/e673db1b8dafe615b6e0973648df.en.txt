@@ -1,0 +1,1 @@
+{"result":{"text":"x space equals space fraction numerator negative b space plus-or-minus square root of b squared end root minus 4 a c over denominator 2 a end fraction"},"status":"ok"}
