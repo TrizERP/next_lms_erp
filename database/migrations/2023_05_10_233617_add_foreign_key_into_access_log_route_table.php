@@ -13,57 +13,56 @@ return new class extends Migration {
     public function up()
     {
         Schema::table('access_log_route', function (Blueprint $table) {
-            $table->bigInteger('user_id')->change();
-            $table->foreign('user_id')->references('id')->on('tbl_user')
-                ->onDelete('cascade')
-                ->onUpdate('cascade');
+            $table->foreign('user_id')->references('id')->on('tbluser')
+                ->onDelete('set null')
+                ->onUpdate('set null');
         });
 
         Schema::table('access_log', function (Blueprint $table) {
-            $table->foreign('USER_ID')->references('id')->on('tbl_user')
-                ->onDelete('cascade')
-                ->onUpdate('cascade');
+            $table->foreign('USER_ID')->references('id')->on('tbluser')
+                ->onDelete('set null')
+                ->onUpdate('set null');
         });
 
         Schema::create('activity_log', function (Blueprint $table) {
             $table->foreign('subject_id')->references('id')->on('subject')
-                ->onDelete('cascade')
-                ->onUpdate('cascade');
+                ->onDelete('set null')
+                ->onUpdate('set null');
         });
 
         Schema::create('admission_form', function (Blueprint $table) {
             $table->foreign('enquiry_id')->references('id')->on('admission_enquiry')
-                ->onDelete('cascade')
-                ->onUpdate('cascade');
+                ->onDelete('set null')
+                ->onUpdate('set null');
         });
 
         Schema::create('admission_registration', function (Blueprint $table) {
             $table->foreign('enquiry_id')->references('id')->on('admission_enquiry')
-                ->onDelete('cascade')
-                ->onUpdate('cascade');
+                ->onDelete('set null')
+                ->onUpdate('set null');
         });
 
         Schema::create('answer_master', function (Blueprint $table) {
             $table->foreign('question_id')->references('id')->on('lms_question_master')
-                ->onDelete('cascade')
-                ->onUpdate('cascade');
+                ->onDelete('set null')
+                ->onUpdate('set null');
         });
 
         Schema::create('app_notification', function (Blueprint $table) {
             $table->foreign('STUDENT_ID')->references('id')->on('tblstudent')
-                ->onDelete('cascade')
-                ->onUpdate('cascade');
+                ->onDelete('set null')
+                ->onUpdate('set null');
         });
         Schema::create('app_notification_teacher', function (Blueprint $table) {
-            $table->foreign('USER_ID')->references('id')->on('tbl_user')
-                ->onDelete('cascade')
-                ->onUpdate('cascade');
+            $table->foreign('USER_ID')->references('id')->on('tbluser')
+                ->onDelete('set null')
+                ->onUpdate('set null');
 
         });
         Schema::create('attendance_student', function (Blueprint $table) {
             $table->foreign('student_id')->references('id')->on('tblstudent')
-                ->onDelete('cascade')
-                ->onUpdate('cascade');
+                ->onDelete('set null')
+                ->onUpdate('set null');
         });
     }
 

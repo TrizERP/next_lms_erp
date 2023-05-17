@@ -14,124 +14,124 @@ return new class extends Migration {
     {
         Schema::create('batch', function (Blueprint $table) {
             $table->foreign('standard_id')->references('id')->on('standard')
-                ->onDelete('cascade')
-                ->onUpdate('cascade');
+                ->onDelete('set null')
+                ->onUpdate('set null');
             $table->foreign('division_id')->references('id')->on('division')
-                ->onDelete('cascade')
-                ->onUpdate('cascade');
+                ->onDelete('set null')
+                ->onUpdate('set null');
         });
         Schema::create('book_list', function (Blueprint $table) {
             $table->foreign('standard_id')->references('id')->on('standard')
-                ->onDelete('cascade')
-                ->onUpdate('cascade');
+                ->onDelete('set null')
+                ->onUpdate('set null');
             $table->foreign('subject_id')->references('id')->on('subject')
-                ->onDelete('cascade')
-                ->onUpdate('cascade');
+                ->onDelete('set null')
+                ->onUpdate('set null');
             $table->foreign('chapter_id')->references('id')->on('chapter_master')
-                ->onDelete('cascade')
-                ->onUpdate('cascade');
+                ->onDelete('set null')
+                ->onUpdate('set null');
             $table->foreign('topic_id')->references('id')->on('topic_master')
-                ->onDelete('cascade')
-                ->onUpdate('cascade');
+                ->onDelete('set null')
+                ->onUpdate('set null');
         });
         Schema::create('certificate_history', function (Blueprint $table) {
             $table->foreign('student_id')->references('id')->on('tblstudent')
-                ->onDelete('cascade')
-                ->onUpdate('cascade');
+                ->onDelete('set null')
+                ->onUpdate('set null');
         });
         Schema::create('chapter_master', function (Blueprint $table) {
             $table->foreign('grade_id')->references('id')->on('grade_master')
-                ->onDelete('cascade')
-                ->onUpdate('cascade');
+                ->onDelete('set null')
+                ->onUpdate('set null');
             $table->foreign('standard_id')->references('id')->on('standard')
-                ->onDelete('cascade')
-                ->onUpdate('cascade');
+                ->onDelete('set null')
+                ->onUpdate('set null');
             $table->foreign('subject_id')->references('id')->on('subject')
-                ->onDelete('cascade')
-                ->onUpdate('cascade');
+                ->onDelete('set null')
+                ->onUpdate('set null');
         });
         Schema::create('circular', function (Blueprint $table) {
 
             $table->foreign('division_id')->references('id')->on('division')
-                ->onDelete('cascade')
-                ->onUpdate('cascade');
+                ->onDelete('set null')
+                ->onUpdate('set null');
             $table->foreign('standard_id')->references('id')->on('standard')
-                ->onDelete('cascade')
-                ->onUpdate('cascade');
+                ->onDelete('set null')
+                ->onUpdate('set null');
 
         });
         Schema::create('class_teacher', function (Blueprint $table) {
             $table->foreign('division_id')->references('id')->on('division')
-                ->onDelete('cascade')
-                ->onUpdate('cascade');
+                ->onDelete('set null')
+                ->onUpdate('set null');
             $table->foreign('grade_id')->references('id')->on('grade_master')
-                ->onDelete('cascade')
-                ->onUpdate('cascade');
+                ->onDelete('set null')
+                ->onUpdate('set null');
             $table->foreign('standard_id')->references('id')->on('standard')
-                ->onDelete('cascade')
-                ->onUpdate('cascade');
+                ->onDelete('set null')
+                ->onUpdate('set null');
         });
         Schema::create('college_timetable', function (Blueprint $table) {
 
             $table->foreign('division_id')->references('id')->on('division')
-                ->onDelete('cascade')
-                ->onUpdate('cascade');
+                ->onDelete('set null')
+                ->onUpdate('set null');
             $table->foreign('academic_section_id')->references('id')->on('academic_section')
-                ->onDelete('cascade')
-                ->onUpdate('cascade');
+                ->onDelete('set null')
+                ->onUpdate('set null');
             $table->foreign('standard_id')->references('id')->on('standard')
-                ->onDelete('cascade')
-                ->onUpdate('cascade');
+                ->onDelete('set null')
+                ->onUpdate('set null');
             $table->foreign('batch_id')->references('id')->on('batch')
-                ->onDelete('cascade')
-                ->onUpdate('cascade');
+                ->onDelete('set null')
+                ->onUpdate('set null');
             $table->foreign('period_id')->references('id')->on('period')
-                ->onDelete('cascade')
-                ->onUpdate('cascade');
+                ->onDelete('set null')
+                ->onUpdate('set null');
             $table->foreign('subject_id')->references('id')->on('subject')
-                ->onDelete('cascade')
-                ->onUpdate('cascade');
+                ->onDelete('set null')
+                ->onUpdate('set null');
         });
         Schema::create('consent_master', function (Blueprint $table) {
             $table->foreign('student_id')->references('id')->on('tblstudent')
-                ->onDelete('cascade')
-                ->onUpdate('cascade');
+                ->onDelete('set null')
+                ->onUpdate('set null');
             $table->foreign('standard_id')->references('id')->on('standard')
-                ->onDelete('cascade')
-                ->onUpdate('cascade');
+                ->onDelete('set null')
+                ->onUpdate('set null');
             $table->foreign('division_id')->references('id')->on('division')
-                ->onDelete('cascade')
-                ->onUpdate('cascade');
+                ->onDelete('set null')
+                ->onUpdate('set null');
             $table->foreign('topic_id')->references('id')->on('topic_master')
-                ->onDelete('cascade')
-                ->onUpdate('cascade');
+                ->onDelete('set null')
+                ->onUpdate('set null');
         });
         Schema::create('counselling_answer_master', function (Blueprint $table) {
 
             $table->foreign('question_id')->references('id')->on('lms_question_master')
-                ->onDelete('cascade')
-                ->onUpdate('cascade');
+                ->onDelete('set null')
+                ->onUpdate('set null');
         });
         Schema::create('counselling_online_exam_answer', function (Blueprint $table) {
 
-            $table->foreign('user_id')->references('id')->on('tbl_user')
-                ->onDelete('cascade')
-                ->onUpdate('cascade');
+            $table->foreign('user_id')->references('id')->on('tbluser')
+                ->onDelete('set null')
+                ->onUpdate('set null');
             $table->foreign('online_exam_id')->references('id')->on('counselling_online_exam')
-                ->onDelete('cascade')
-                ->onUpdate('cascade');
+                ->onDelete('set null')
+                ->onUpdate('set null');
             $table->foreign('question_id')->references('id')->on('lms_question_master')
-                ->onDelete('cascade')
-                ->onUpdate('cascade');
+                ->onDelete('set null')
+                ->onUpdate('set null');
             $table->foreign('answer_id')->references('id')->on('answer_master')
-                ->onDelete('cascade')
-                ->onUpdate('cascade');
+                ->onDelete('set null')
+                ->onUpdate('set null');
         });
         Schema::create('counselling_online_exam', function (Blueprint $table) {
 
-            $table->foreign('user_id')->references('id')->on('tbl_user')
-                ->onDelete('cascade')
-                ->onUpdate('cascade');
+            $table->foreign('user_id')->references('id')->on('tbluser')
+                ->onDelete('set null')
+                ->onUpdate('set null');
         });
     }
 

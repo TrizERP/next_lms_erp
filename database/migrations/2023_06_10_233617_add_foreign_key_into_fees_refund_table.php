@@ -14,82 +14,82 @@ return new class extends Migration {
     {
         Schema::create('fees_refund', function (Blueprint $table) {
             $table->foreign('student_id')->references('id')->on('tblstudent')
-                ->onDelete('cascade')
-                ->onUpdate('cascade');
+                ->onDelete('set null')
+                ->onUpdate('set null');
         });
         Schema::create('fees_title', function (Blueprint $table) {
             $table->foreign('fees_title_id')->references('id')->on('fees_title_master')
-                ->onDelete('cascade')
-                ->onUpdate('cascade');
+                ->onDelete('set null')
+                ->onUpdate('set null');
         });
         Schema::create('follow_up', function (Blueprint $table) {
             $table->foreign('enquiry_id')->references('id')->on('admission_enquiry')
-                ->onDelete('cascade')
-                ->onUpdate('cascade');
+                ->onDelete('set null')
+                ->onUpdate('set null');
         });
         Schema::create('homework', function (Blueprint $table) {
             $table->foreign('standard_id')->references('id')->on('standard')
-                ->onDelete('cascade')
-                ->onUpdate('cascade');
+                ->onDelete('set null')
+                ->onUpdate('set null');
             $table->foreign('student_id')->references('id')->on('tblstudent')
-                ->onDelete('cascade')
-                ->onUpdate('cascade');
+                ->onDelete('set null')
+                ->onUpdate('set null');
             $table->foreign('subject_id')->references('id')->on('subject')
-                ->onDelete('cascade')
-                ->onUpdate('cascade');
+                ->onDelete('set null')
+                ->onUpdate('set null');
             $table->foreign('division_id')->references('id')->on('division')
-                ->onDelete('cascade')
-                ->onUpdate('cascade');
+                ->onDelete('set null')
+                ->onUpdate('set null');
         });
         Schema::create('hostel_building_master', function (Blueprint $table) {
             $table->foreign('hostel_type_id')->references('id')->on('hostel_type_id')
-                ->onDelete('cascade')
-                ->onUpdate('cascade');
+                ->onDelete('set null')
+                ->onUpdate('set null');
             $table->foreign('hostel_id')->references('id')->on('hostel_master')
-                ->onDelete('cascade')
-                ->onUpdate('cascade');
+                ->onDelete('set null')
+                ->onUpdate('set null');
         });
         Schema::create('hostel_floor_master', function (Blueprint $table) {
             $table->foreign('building_id')->references('id')->on('hostel_building_master')
-                ->onDelete('cascade')
-                ->onUpdate('cascade');
+                ->onDelete('set null')
+                ->onUpdate('set null');
         });
         Schema::create('hostel_room_allocation', function (Blueprint $table) {
             $table->foreign('user_id')->references('id')->on('tbl_user')
-                ->onDelete('cascade')
-                ->onUpdate('cascade');
+                ->onDelete('set null')
+                ->onUpdate('set null');
             $table->foreign('admission_category_id')->references('id')->on('admission_category_master')
-                ->onDelete('cascade')
-                ->onUpdate('cascade');
+                ->onDelete('set null')
+                ->onUpdate('set null');
             $table->foreign('hostel_id')->references('id')->on('hostel_master')
-                ->onDelete('cascade')
-                ->onUpdate('cascade');
+                ->onDelete('set null')
+                ->onUpdate('set null');
             $table->foreign('room_id')->references('id')->on('hostel_room_master')
-                ->onDelete('cascade')
-                ->onUpdate('cascade');
+                ->onDelete('set null')
+                ->onUpdate('set null');
         });
         Schema::create('implementation_master', function (Blueprint $table) {
             $table->foreign('standard_id')->references('id')->on('standard')
-                ->onDelete('cascade')
-                ->onUpdate('cascade');
+                ->onDelete('set null')
+                ->onUpdate('set null');
         });
         Schema::create('imprest_fees_cancel', function (Blueprint $table) {
 
             $table->foreign('standard_id')->references('id')->on('standard')
-                ->onDelete('cascade')
-                ->onUpdate('cascade');
+                ->onDelete('set null')
+                ->onUpdate('set null');
             $table->foreign('student_id')->references('id')->on('tblstudent')
-                ->onDelete('cascade')
-                ->onUpdate('cascade');
+                ->onDelete('set null')
+                ->onUpdate('set null');
         });
         Schema::create('inventory_item_master', function (Blueprint $table) {
 
             $table->foreign('category_id')->references('id')->on('inventory_item_category_master')
-                ->onDelete('cascade')
-                ->onUpdate('cascade');
+                ->onDelete('set null')
+                ->onUpdate('set null');
             $table->foreign('sub_category_id')->references('id')->on('inventory_item_sub_category_master')
-                ->onDelete('cascade')
-                ->onUpdate('cascade');
+                ->onDelete('set null')
+                ->onUpdate('set null');
         });
     }
 
