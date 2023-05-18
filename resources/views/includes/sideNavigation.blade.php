@@ -25,8 +25,8 @@ $school_logo = session()->get('school_logo');
                     @foreach ($menuMaster as $key => $value)
                         @php
                             $icon_name = $value['icon'];
-                            $icon_nrml = 'https://' . $_SERVER['HTTP_HOST'] . "/admin_dep/images/menu-$icon_name.png";
-                            $icon_hvr = 'https://' . $_SERVER['HTTP_HOST'] . "/admin_dep/images/menu-$icon_name-white.png";
+                            $icon_nrml = 'http://' . $_SERVER['HTTP_HOST'] . "/admin_dep/images/menu-$icon_name.png";
+                            $icon_hvr = 'http://' . $_SERVER['HTTP_HOST'] . "/admin_dep/images/menu-$icon_name-white.png";
                         @endphp
                         <a class="nav-link" id="menu-{{ $i }}-tab" data-toggle="pill"
                             href="#menu-{{ $i }}" role="tab" aria-controls="menu-{{ $i }}"
@@ -42,9 +42,7 @@ $school_logo = session()->get('school_logo');
                 @endif
 
                 <?php
-/*
-                if(session()->get('is_admin') != 1)
-                {
+                if(session()->get('is_admin') != 1){
                     $sub_institute_id = session()->get('sub_institute_id');
                     $DUSER_ID = session()->get('DUSER_ID');
                     $DUSER_PWD = session()->get('DUSER_PWD');
@@ -65,7 +63,7 @@ $school_logo = session()->get('school_logo');
                     $hrms_rights = $client_data[0]->rights;
                     $library_db = $client_data[0]->db_library;
                     $library_rights = $client_data[0]->library_rights;
-                    $library_host = '202.47.117.220';//192.168.0.2
+                    $library_host = '202.47.117.220';
                     $library_user = 'dev_db';
                     $library_password = 'dev@sql'; //urlencode('dev@sql');
                     $solution_db = $client_data[0]->db_solution;
@@ -106,13 +104,15 @@ $school_logo = session()->get('school_logo');
                         $USER_GROUP_ID = 3;
                     }
 
-                    $hrms_link = "?NEW_ERP=1&DUSER_ID=$DUSER_ID&USER_GROUP_ID=$USER_GROUP_ID&DUSER_NAME=$DUSER_ID&hrms_db_host=$db_host&hrms_db_user=$db_user&hrms_db_password=$db_password&hrms_db_hrms=$hrms_db_hrms&client_name=$client_name";
+                    // $hrms_link = "?NEW_ERP=1&DUSER_ID=$DUSER_ID&USER_GROUP_ID=$USER_GROUP_ID&DUSER_NAME=$DUSER_ID&hrms_db_host=$db_host&hrms_db_user=$db_user&hrms_db_password=$db_password&hrms_db_hrms=$hrms_db_hrms&client_name=$client_name";
 
-                    //$hrms_link = "?NEW_ERP=1&DUSER_ID=".base64_encode($DUSER_ID)."&USER_GROUP_ID=".base64_encode($USER_GROUP_ID)."&DUSER_NAME=".base64_encode($DUSER_ID)."&hrms_db_host=".base64_encode($db_host)."&hrms_db_user=".base64_encode($db_user)."&hrms_db_password=".base64_encode($db_password)."&hrms_db_hrms=".base64_encode($hrms_db_hrms)."&client_name=".base64_encode($client_name);
+                    $hrms_link = "?NEW_ERP=1&DUSER_ID=".base64_encode($DUSER_ID)."&USER_GROUP_ID=".base64_encode($USER_GROUP_ID)."&DUSER_NAME=".base64_encode($DUSER_ID)."&hrms_db_host=".base64_encode($db_host)."&hrms_db_user=".base64_encode($db_user)."&hrms_db_password=".base64_encode($db_password)."&hrms_db_hrms=".base64_encode($hrms_db_hrms)."&client_name=".base64_encode($client_name);
 
-                    //$library_link = "?NEW_ERP=1&DUSER_ID=".base64_encode($DUSER_ID)."&USER_GROUP_ID=".base64_encode($USER_GROUP_ID)."&DUSER_PWD=".base64_encode($DUSER_PWD)."&db_host=".base64_encode($library_host)."&db_user=".base64_encode($library_user)."&db_password=".base64_encode($library_password)."&db_library=".base64_encode($library_db)."&solution_db=".base64_encode('triz_erp_21')."&school_name=".base64_encode($school_name)."&SUB_INSTITUTE_ID=".base64_encode($sub_institute_id)."&school_logo=".base64_encode($school_logo)."&dyear=".base64_encode($syear);
+                    //$library_link = "?NEW_ERP=1&DUSER_ID=".base64_encode($DUSER_ID)."&USER_GROUP_ID=".base64_encode($USER_GROUP_ID)."&DUSER_PWD=".base64_encode($DUSER_PWD)."&db_host=".base64_encode($library_host)."&db_user=".base64_encode($library_user)."&db_password=".base64_encode($library_password)."&db_library=".base64_encode($library_db)."&solution_db=".base64_encode('development_erp')."&school_name=".base64_encode($school_name)."&SUB_INSTITUTE_ID=".base64_encode($sub_institute_id)."&school_logo=".base64_encode($school_logo)."&dyear=".base64_encode($syear);
 
                     $library_link = "?NEW_ERP=1&DUSER_ID=$DUSER_ID&USER_GROUP_ID=$USER_GROUP_ID&DUSER_PWD=$DUSER_PWD&db_host=$library_host&db_user=$library_user&db_password=$library_password&db_library=$library_db&solution_db=development_erp&school_name=$school_name&SUB_INSTITUTE_ID=$sub_institute_id&school_logo=$school_logo&dyear=$syear";
+                    
+                    //$library_link = "?".App\Helpers\encrypt_url('encrypt',"it&1&$DUSER_ID&$USER_GROUP_ID&$DUSER_PWD&$library_host&$library_user&$library_password&$library_db&development_erp&$school_name&$sub_institute_id&$school_logo&$syear");
 
                     $lms_link=  "lmslogin.php?SUB_INSTITUTE_ID=".$sub_institute_id."&U=".base64_encode($DUSER_ID)."&P=".base64_encode($DUSER_PWD)."";
 
@@ -123,7 +123,7 @@ $school_logo = session()->get('school_logo');
                 ?>
 
                 <a class="nav-link" target="_blank"
-                    href="http://triz.129.172.110/new_hrms/Products/hrms/login.php{{ $hrms_link }}">
+                    href="http://150.129.172.110/new_hrms/Products/hrms/login.php{{ $hrms_link }}">
                     <span class="menu-main-icon">
                         <i class="mdi mdi-view-compact-outline"></i>
                     </span>
@@ -148,7 +148,6 @@ $school_logo = session()->get('school_logo');
                     } 
 
                 }
-                */
             ?>
 
 

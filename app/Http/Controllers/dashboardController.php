@@ -2405,4 +2405,100 @@ class dashboardController extends Controller
 
         return round($bytes, $precision).' '.$units[$pow];
     }
+
+    public function setup_details(Request $request){
+        $type = "";
+        // return session();exit;
+        $sub_institute_id = session()->get('sub_institute_id');
+        $user_id = $request->session()->get('user_id');
+        $rightsQuery = DB::table('tbluser as u')
+            ->leftJoin('tblindividual_rights as i', function ($join) {
+                $join->whereRaw('u.id = i.user_id AND u.sub_institute_id = i.sub_institute_id ');
+            })->leftJoin('tblgroupwise_rights as g', function ($join) {
+                $join->whereRaw('u.user_profile_id = g.profile_id AND u.sub_institute_id = g.sub_institute_id');
+            })->join('tblmenumaster as m', function ($join) use($sub_institute_id) {
+                $join->whereRaw("(i.menu_id = m.id OR g.menu_id = m.id) AND FIND_IN_SET(".$sub_institute_id.", m.sub_institute_id)");
+            })
+            ->selectRaw('GROUP_CONCAT(distinct m.id) AS MID')
+            ->where('u.sub_institute_id', $sub_institute_id)->where('u.id', $user_id)->get()->toArray();
+
+        $rightsQuery = array_map(function ($value) {
+            return (array) $value;
+        }, $rightsQuery);
+
+        $rightsMenusIds = 0;
+
+        if (isset($rightsQuery['0']['MID'])) {
+            $rightsMenusIds = $rightsQuery['0']['MID'];
+        }
+        $rightsMenusIds = rtrim($rightsMenusIds, ',');//RAJESH
+        
+            $data = tblmenumasterModel::
+            whereRaw("find_in_set('$sub_institute_id',sub_institute_id) and status = 1  ")
+                ->orderBy('sort_order')->groupBy('menu_title')->get()->toArray();
+
+            $master = tblmenumasterModel::
+                whereRaw("find_in_set('$sub_institute_id',sub_institute_id) and status = 1 and menu_type='MASTER' ")
+                ->orderBy('sort_order')->get()->toArray();
+            $i = 0;
+
+            foreach ($master as $key => $value) {
+                // print_r($value);
+                $mastermenu[$value['menu_title']][$i] = $master[$key];
+                $i++;
+            }
+            $entry = tblmenumasterModel::where('parent_menu_id', '!=', 0)
+                ->whereRaw("find_in_set('$sub_institute_id',sub_institute_id) AND status = 1 and menu_type='ENTRY' ")
+                ->orderBy('sort_order')->get()->toArray();
+
+            $i = 0;
+            foreach ($entry as $key => $value) {
+                $finalSubMenu[$value['menu_title']][$i] = $entry[$key];
+                $i++;
+            }
+
+            $report = tblmenumasterModel::where('parent_menu_id', '!=', 0)
+                ->whereRaw("find_in_set('$sub_institute_id',sub_institute_id) and status = 1 and menu_type='REPORT' ")
+                ->orderBy('sort_order')->get()->toArray();
+
+            $i = 0;
+            foreach ($report as $key => $value) {
+                $finalSubChildMenu[$value['menu_title']][$i] = $report[$key];
+                $i++;
+            }
+
+
+        $res['status_code'] = 1;
+        $res['message'] = "Success";
+        $res['head']=$data;
+        $res['groupwisemenuMaster'] = $mastermenu;
+        $res['groupwisesubmenuMaster'] = $finalSubMenu ?? [];
+        $res['groupwiseSubsubmenuMaster'] = $finalSubChildMenu ?? [];
+        $rr=[];
+// foreach($res['groupwisemenuMaster'] as $key=>$value){
+        // echo "<pre>";print_r($mastermenu);exit;
+        return is_mobile($type, "setup_institute_details", $res,'view');
+        // return is_mobile($type, "implementation", $res);
+    }
+
+    public function ajaxMenuSession_setup(Request $request)
+    {
+        $type = $request->input("type");
+        $menu_id = $request->input("menu_id");
+
+        if ($menu_id != '') {
+            $request->session()->put('right_menu_id', $menu_id);
+
+            $res['status_code'] = 1;
+            $res['message'] = "Success";
+
+        } else {
+            $res['status_code'] = 0;
+            $res['message'] = "Parameter Missing";
+        }
+
+        return is_mobile($type, "setup_institute_details", $res,'view');
+    }
+
 }
+ 

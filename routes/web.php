@@ -34,6 +34,7 @@ use App\Http\Controllers\school_setup\todaysproxyReportController;
 use App\Http\Controllers\school_setup\topicController;
 use App\Http\Controllers\school_setup\workflowController;
 use App\Http\Controllers\signupController;
+use App\Http\Controllers\institute_detail;
 use App\Http\Controllers\lms\questionWiseReportController;
 use App\Http\Controllers\template_result\TemplateResult;
 use App\Http\Controllers\tourController;
@@ -94,7 +95,37 @@ Route::group([ 'middleware' => ['session', 'menu', 'logRoute']], function () {
     Route::get('/payroll-type/create', [PayrollController::class, 'payrollCreate'])->name('payroll_type.create');
     Route::post('/payroll-type/store', [PayrollController::class, 'payrollStore'])->name('payroll_type.store');
     Route::get('/payroll-type/create/{id}', [PayrollController::class, 'payrollCreate']);
-    Route::post('/payroll-type/destroy', [PayrollController::class, 'payrollDestroy'])->name('payroll_type.destroy');
+    Route::delete('/payroll-type/destroy/{id}', [PayrollController::class, 'payrollDestroy'])->name('payroll_type.destroy');
+
+    Route::get('/employee-salary-structure', [PayrollController::class, 'employeeSalaryStructure']);
+    Route::post('/employee-salary-structure', [PayrollController::class, 'employeeSalaryStructure'])->name('payroll.show_employee_salary_structure');
+    Route::get('/roll-over', [PayrollController::class, 'rollOver']);
+    Route::post('/employee-salary-structure/store', [PayrollController::class, 'employeeSalaryStructureStore'])->name('employee_salary_structure.store');
+    Route::post('/rollover-employee-salary-structure/store', [PayrollController::class, 'rolloverEmployeeSalaryStructure'])->name('rollover_employee_salary_structure.store');
+
+    Route::get('/salary-structure-report', [PayrollController::class, 'salaryStructureReport']);
+    Route::post('/salary-structure-report', [PayrollController::class, 'showSalaryStructureReport']);
+
+    Route::get('/form16',[PayrollController::class, 'form16']);
+    Route::post('/form16', [PayrollController::class, 'form16Report']);
+
+    /*Route::get('/payroll-deduction', [PayrollController::class, 'payrollDeduction']);
+    Route::post('/payroll-deduction', [PayrollController::class, 'payrollDeductionReport']);
+    Route::get('/payroll-deduction/{id}', [PayrollController::class, 'payrollDeduction']);*/
+
+    Route::get('/monthly-payroll-report', [PayrollController::class, 'monthlyPayrollReport']);
+    Route::post('/show-monthly-payroll-report', [PayrollController::class, 'monthlyPayrollReport'])->name('payroll.show_monthly_payroll_report');
+    Route::post('/monthly-payroll-report', [PayrollController::class, 'monthlyPayrollReport'])->name('payroll.store_monthly_payroll_report');
+    Route::get('/monthly-payroll-report/pdf/{id}', [PayrollController::class, 'monthlyPayrollPdf']);
+
+    Route::get('/payroll-report', [PayrollController::class, 'payrollReport']);
+    Route::post('/payroll-report', [PayrollController::class, 'payrollReport'])->name('payroll.show_payroll_report');
+
+    Route::get('/employee-payroll-history', [PayrollController::class, 'employeePayrollHistory']);
+    Route::post('/employee-payroll-history', [PayrollController::class, 'employeePayrollHistory'])->name('payroll.show_employee_payroll_history');
+
+    Route::get('/payroll-bank-wise-report', [PayrollController::class, 'payrollBankWiseReport']);
+    Route::post('/payroll-bank-wise-report', [PayrollController::class, 'payrollBankWiseReport'])->name('payroll.show_payroll_bankwise_report');
 });
 
 
@@ -108,6 +139,10 @@ Route::any('/knowledge-base', [dashboardController::class, 'knowledge_base'])->n
 Route::any('/knowledge-base-detail/{id}/{title}', [dashboardController::Class, 'knowledge_base_detail'])->name('knowledge_base_detail')->middleware('session', 'menu');
 
 Route::get('dashboard', [dashboardController::class, 'index'])->name('dashboard')->middleware('session', 'menu', 'logRoute');
+Route::get('setup-institute-details', [dashboardController::class, 'setup_details'])->name('setup-institute-details');
+
+Route::resource('add-institute-details', institute_detail::class);
+
 // From Build
 Route::get('formbuilder/list', [UserFormbuilderController::class, 'index'])->name('formbuild.list')->middleware('session', 'menu', 'logRoute');
 Route::get('formbuilder/create', [UserFormbuilderController::class, 'formbuilder'])->name('formbuild.create')->middleware('session', 'menu', 'logRoute');
@@ -269,6 +304,9 @@ Route::post('reset-password', [ForgotPasswordController::class, 'submitResetPass
 Route::post('NewLMS_temp_signup', [NewLMS_ApiController::class, 'NewLMS_temp_signup'])->name("NewLMS_temp_signup");
 Route::post('NewLMS_signup', [NewLMS_ApiController::class, 'NewLMS_signup'])->name("NewLMS_signup");
 Route::get('Resend_otp', [NewLMS_ApiController::class, 'Resend_otp'])->name("Resend_otp");
+Route::post('preload-institute', [NewLMS_ApiController::Class, 'Preload_institute'])->name("preload-institute");
+Route::post('add-institute', [NewLMS_ApiController::Class, 'add_institute'])->name("add-institute");
+
 
 Route::post('NewLMS_temp_signup_student', [NewLMS_StudentApiController::class, 'NewLMS_temp_signup_student'])->name("NewLMS_temp_signup_student");
 Route::post('NewLMS_signup_student', [NewLMS_StudentApiController::Class, 'NewLMS_signup_student'])->name("NewLMS_signup_student");

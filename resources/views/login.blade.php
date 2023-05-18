@@ -13,65 +13,54 @@ $loginpage_favicon = session()->get('loginpage_favicon');
 $loginpage_backgrond = session()->get('loginpage_backgrond');
 
 ?>
-
-<head>
-<meta charset="utf-8">
-<meta http-equiv="X-UA-Compatible" content="IE=edge">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="description" content="">
-<meta name="author" content="">
+<html lang="en">
+  <head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 @if(!empty($loginpage_favicon))
   <link rel="icon" type="image/png" sizes="16x16" href={{$loginpage_favicon}} >
     @else
   <link rel="icon" type="image/png" sizes="16x16" href="../admin_dep/images/icon.png">
 @endif
-<title>TRIZ-ERP || LOGIN</title>
-<!-- Bootstrap Core CSS -->
-<!-- <link href="{{ asset("admin_dep/bootstrap/dist/css/bootstrap.min.css") }}" rel="stylesheet"> -->
-<!-- animation CSS -->
-<!-- <link href="{{ asset("admin_dep/css/animate.css") }}" rel="stylesheet"> -->
-<!-- Custom CSS -->
-<!-- <link href="{{ asset("admin_dep/css/style.css") }}" rel="stylesheet"> -->
-<!-- <link href="{{ asset("admin_dep/css/triz-style.css") }}" rel="stylesheet"> -->
-<!-- color CSS -->
-<!-- <link href="{{ asset("admin_dep/css/colors/default.css") }}" id="theme"  rel="stylesheet"> -->
-<link href="{{ asset("/admin_dep/css/colors/default.css") }}" id="theme" rel="stylesheet">
-<link href="{{ asset("/admin_dep/css/fontawesome.css") }}" rel="stylesheet">
-<link href="{{ asset("/admin_dep/css/bootstrap.css") }}" rel="stylesheet">
-<link href="{{ asset("/admin_dep/css/bootstrap-select.css") }}" rel="stylesheet">
-<link href="{{ asset("/admin_dep/css/docs.css") }}" rel="stylesheet">
-<link href="{{ asset("/admin_dep/css/css3.css") }}" rel="stylesheet">
-<link href="{{ asset("/admin_dep/css/materialdesignicons.min.css") }}" rel="stylesheet">
-<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-<link href="{{ asset("/admin_dep/css/elements.css") }}" rel="stylesheet">
-<link href="{{ asset("/admin_dep/css/style.css") }}" rel="stylesheet">
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
-</head>
-<body>
-<!-- Preloader -->
-<!--div class="preloader">
-  <div class="cssload-speeding-wheel"></div>
-</div-->
-<section id="wrapper" class="new-login-register container-fluid">
-  <div class="row">
 
-    <div class="col-md-6">
-      @if(!empty($loginpage_backgrond))
-          <div class="lg-info-panel h-100 d-flex align-items-center p-3" style="background:url({{$loginpage_backgrond}}) center;">
-      @else
-        <div class="lg-info-panel h-100 d-flex align-items-center p-3" style="background:url(https://p0.pikist.com/photos/545/980/students-women-female-woman-happy-girl-young-college-education.jpg) center;">
-            @endif
-          <div class="inner-panel">
-            <!--<a href="javascript:void(0)" class="p-20 di"><img src="{{ asset("admin_dep/images/icon.png") }}"></a>-->
-            <div class="lg-content">
-                @if(!empty($loginpage_logo))
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" type="text/css" href="{{asset('css/style2.css')}}">
+    <title>Login | TRIZ</title>
+
+
+  </head>
+  <body class="login-page">
+    <section class="container-fluid login-section p-0">
+      <div class="row m-0 log-row">
+        <div class="col-lg-6 col-xl-5 p-0 l-logo-wrap">
+          <div class="image-column-content">
+            <div class="logo">
+               @if(!empty($loginpage_logo))
                     {!!$loginpage_logo!!}
                 @else
                     <center>
-                        <img src="https://erp.triz.co.in/admin_dep/images/triz.png" width="250px">
+                        <a href="#"><img src="{{ asset('/Images/logo.png')}}"></a>
                     </center>
                 @endif
+             
+            </div>
+            <div class="img-content">
+              @if(!empty($loginpage_backgrond))
+              <img src="{{$loginpage_backgrond}}">
+            <!-- <div class="lg-info-panel h-100 d-flex align-items-center p-3" style="background:url({{$loginpage_backgrond}}) center;"> -->
+              @else
+                <img src="{{ asset('/Images/login-page-image.svg')}}">
+          <!-- <div class="lg-info-panel h-100 d-flex align-items-center p-3" style="background:url(https://p0.pikist.com/photos/545/980/students-women-female-woman-happy-girl-young-college-education.jpg) center;"> -->
+            @endif
 
+              <div class="img-heading hide-imgheading">
                 @if(!empty($loginpage_title))
                     {!!$loginpage_title!!}
                 @else
@@ -81,148 +70,85 @@ $loginpage_backgrond = session()->get('loginpage_backgrond');
                 @if(!empty($loginpage_description))
                     {!!$loginpage_description!!}
                 @else
-                    <p class="text-light">Integrated Solution for digital needs</p>
+                    <p class="text-light">Integrated Solution for Digital Needs</p>
             @endif
-            <!-- <a href="#" class="btn btn-rounded btn-danger p-l-20 p-r-20"> Buy now</a> -->
+           
+              </div>
             </div>
-          </div>
+          </div>  
         </div>
-          </div>
-            <div class="col-md-6">
-                <div class="new-login-box row align-items-center justify-content-center py-4">
-                    <div class="col-md-8">
-                        <div class="white-box123">
-                            <form class="form-horizontal new-lg-form" id="loginform" method="POST" action="/login">
-                                @csrf
-              <h3 class="box-title m-b-0">Sign In to User</h3>
-
-              @if(!empty($successMsg))
+        <div class="col-lg-6 col-xl-7 d-flex align-items-center">
+          <div class="form-content">
+            <div class="heading">
+              <h1>Hello! Welcome Back.</h1>
+            </div>
+            <div class="purple-heading">
+              <h2>Log in to user</h2>
+            </div>
+             @if(!empty($successMsg))
                 <div class="alert alert-success"> {{ $successMsg }}</div>
               @endif
-
               @if(!empty($data))
               <div class="alert alert-danger" role="alert">
                   {{ $data['message'] }}
               </div>
               @endif
-              <div class="form-group  m-t-10">
-                <div class="col-xs-12">
-                  <label>Email Address</label>
-                  <input class="form-control" name="email" type="text" required="" placeholder="Username">
-                </div>
-              </div>
+            <form class="form-horizontal new-lg-form" id="loginform" method="POST" action="/login">
+              @csrf
               <div class="form-group">
-                <div class="col-xs-12">
-                  <label>Password</label>
-                  <input class="form-control" name="password" type="password" required="" placeholder="Password">
-                </div>
-              </div>
-                <div class="form-group">
-                    <div class="row">
-                        <div class="col-6">
-                            <label>Captcha</label>
-                            <input class="form-control" autocomplete="off" name="captchaText" type="text" required=""
+                <label for="email">Email Address</label>
+                <input class="form-control" name="email" type="text" required="" placeholder="Username">
+            </div>
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input class="form-control" name="password" type="password" required="" placeholder="Password">
+            </div>
+            <div class="form-group">
+                <label for="text">Captcha</label>
+                <div class=" lastflex-group">
+                <input class="form-control" autocomplete="off" name="captchaText" type="text" required=""
                                    placeholder="Enter Captcha">
-                        </div>
-
-                        <div class="col-6">
-                            {!! captcha_img() !!}
+                <div class="captcha-text d-flex align-items-center">
+                  <div>{!! captcha_img() !!}
                             <input type="hidden" name='hid_captcha' id="hid_captcha">
-                        </div>
-                    </div>
-                </div>
-                <div class="form-group">
-                    <div class="col-md-12 d-flex align-items-center justify-content-between">
-                        <div class="custom-control custom-checkbox my-1 mr-sm-2">
-                            <input id="checkbox-signup" class="custom-control-input" type="checkbox">
-                            <label class="custom-control-label mb-0 pt-1" for="checkbox-signup"> Remember me </label>
-                        </div>
-                  <a href="{{ route('forget.password.get') }}">Forgot Password</a>
-                  <!-- <a href="javascript:void(0)" id="to-recover" class="text-dark pull-right"><i class="fa fa-lock m-r-5"></i> Forgot Password?</a>  -->
-                </div>
-              </div>
-              <div class="form-group text-center m-t-20">
-                <div class="col-xs-12">
-                  <button class="btn btn-primary btn-lg btn-block" type="submit">Log In</button>
-                </div>
-              </div>
-
-              <div class="form-group m-b-0">
-                <div class="col-sm-12 text-center h4">
-                  <p>Not a member? <a href="{{ route('signup') }}" class="text-primary m-l-5"><b>Signup now</b></a></p>
-                </div>
-              </div>
-              <!-- <div class="row">
-                <div class="col-xs-12 col-sm-12 col-md-12 m-t-10 text-center">
-                  <div class="social"><a href="javascript:void(0)" class="btn  btn-facebook" data-toggle="tooltip"  title="Login with Facebook"> <i aria-hidden="true" class="fab fa-facebook-f"></i> </a> <a href="javascript:void(0)" class="btn btn-googleplus" data-toggle="tooltip"  title="Login with Google"> <i aria-hidden="true" class="fab fa-google-plus-g"></i> </a> </div>
-                </div>
-              </div> -->
-              <!-- <div class="form-group m-b-0">
-                <div class="col-sm-12 text-center">
-                  <p>Don't have an account? <a href="register.html" class="text-primary m-l-5"><b>Sign Up</b></a></p>
-                </div>
-              </div> -->
-            </form>
-         <!--    <form class="form-horizontal" id="recoverform" action="#">
-              <div class="form-group ">
-                <div class="col-xs-12">
-                  <a href="javascript:void(0);" class="btn btn-primary mb-3" id="backToLogin"><i class="mdi mdi-chevron-left"></i> Back to Login</a>
-                  <h3>Recover Password</h3>
-                  <p class="text-muted">Enter your Email and instructions will be sent to you! </p>
-                </div>
-              </div>
-              <div class="form-group ">
-                <div class="col-xs-12">
-                  <input class="form-control" type="text" required="" placeholder="Email">
-                </div>
-              </div>
-              <div class="form-group text-center m-t-20">
-                <div class="col-xs-12">
-                  <button class="btn btn-primary btn-lg btn-block" type="submit">Reset</button>
-                </div>
-              </div>
-            </form> -->
-                        </div>
-                    </div>
+                  </div>
+                  <!-- <a href="#"><img src="{{ asset('/Images/refresh-icon.svg')}}"></a> -->
                 </div>
             </div>
-    </div>
+            </div>
+            <button type="submit" class="purple-btn w-100 mb-30">Sign in</button>
+            <div class="form-row align-items-center formrowcolumn">
+                <div class="col">
+                    <div class="form-check">
+                      <!-- <input class="form-check-input" type="checkbox" id="gridCheck"> -->
+                      <input id="gridCheck" class="form-check-input" type="checkbox">
+                      <label class="form-check-label" for="gridCheck">
+                        Check me out
+                      </label>
+                  </div>
+                </div>
+                <div class="col text-right">
+                    <a class="underline-link" href="{{ route('forget.password.get') }}">Forgot Password</a>
+                </div>
+            </div>
+            <div class="form-bottom-text">Don’t have an account? <a href="{{ route('signup') }}">Sign up</a></div>
+            
+            </form>
+          </div>
+        </div>
+      </div>
+    </section>
 
-
-</section>
-<!-- jQuery -->
-<script src="{{ asset("plugins/bower_components/jquery/dist/jquery.min.js") }}"></script>
-<!-- Bootstrap Core JavaScript -->
-<script src="{{ asset("admin_dep/bootstrap/dist/js/bootstrap.min.js") }}"></script>
-<!-- Menu Plugin JavaScript -->
-<script src="{{ asset("plugins/bower_components/sidebar-nav/dist/sidebar-nav.min.js") }}"></script>
-
-<!--slimscroll JavaScript -->
-<script src="{{ asset("admin_dep/js/jquery.slimscroll.js") }}"></script>
-<!--Wave Effects -->
-<script src="{{ asset("admin_dep/js/waves.js") }}"></script>
-<!-- Custom Theme JavaScript -->
-<script src="{{ asset("admin_dep/js/custom.min.js") }}"></script>
-<!--Style Switcher -->
-<script src="{{ asset("plugins/bower_components/styleswitcher/jQuery.style.switcher.js") }}"></script>
-<script>
+    <!-- Option 1: jQuery and Bootstrap Bundle (includes Popper) -->
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"></script>
+  </body>
+  <script>
   $(document).ready(function(){
     $.ajax({url: "../captcha/getcaptcha.php", success: function(result){
       $("#hid_captcha").val(result);
     }});
-    // $("#recoverform").hide();
-    // $("#to-recover").click(function(){
-    //   $("#recoverform").show(500);
-    //   $("#loginform").hide(500);
-    // });
-    // $("#backToLogin").click(function(){
-    //   $("#recoverform").hide(500);
-    //   $("#loginform").show(500);
-    // });
 
   });
 </script>
-
-</body>
-
 </html>

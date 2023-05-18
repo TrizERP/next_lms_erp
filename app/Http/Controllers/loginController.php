@@ -216,7 +216,7 @@ class loginController extends Controller
                         if (count($schools) > 0) {
                             $client_sub_institute_id = $schools[0]['Id'];
                         }
-echo "<pre>";print_r($client_sub_institute_id);exit;
+// echo "<pre>";print_r($client_sub_institute_id);exit;
 
                         $getTermId = academic_yearModel::where(['sub_institute_id' => $client_sub_institute_id])
                             ->whereRaw('"'.date('Y-m-d').'" '.'between start_date and end_date')
@@ -228,7 +228,7 @@ echo "<pre>";print_r($client_sub_institute_id);exit;
                         $getInstitutes = DB::table('school_setup')->where('client_id',
                             $user['client_id'])->get()->toArray();
                         if($client_sub_institute_id == 63){
-echo "<pre>";print_r($getTermId);exit;
+// echo "<pre>";print_r($getTermId);exit;
 }
                         $request->session()->put('sub_institute_id', '');
                         $request->session()->put('syear', $getTermId[0]['syear']);
@@ -359,8 +359,13 @@ echo "<pre>";print_r($getTermId);exit;
                     $res['data'] = $user;
                     $res['academicTerms'] = $getAcademicTerms;
                     $res['academicYears'] = $getAcademicYear;
-
+                    $check_data = DB::table('fees_title')->where('sub_institute_id',$user['sub_institute_id'])->get();
+                    // return $check_data;exit;
+                    if(count($check_data) > 0){
                     return is_mobile($type, "dashboard", $res);
+                    }else{
+                        return is_mobile($type, "setup-institute-details", $res,'redirect');
+                    }
                 }
             }
 //        }
@@ -396,8 +401,6 @@ echo "<pre>";print_r($getTermId);exit;
             $res['status_code'] = 1;
             $res['message'] = "Success";
             $res['data'] = $data;
-
-
         } else {
             $res['status_code'] = 0;
             $res['message'] = "Parameter Missing";
