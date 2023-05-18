@@ -94,7 +94,39 @@ Route::group([ 'middleware' => ['session', 'menu', 'logRoute']], function () {
     Route::get('/payroll-type/create', [PayrollController::class, 'payrollCreate'])->name('payroll_type.create');
     Route::post('/payroll-type/store', [PayrollController::class, 'payrollStore'])->name('payroll_type.store');
     Route::get('/payroll-type/create/{id}', [PayrollController::class, 'payrollCreate']);
-    Route::post('/payroll-type/destroy', [PayrollController::class, 'payrollDestroy'])->name('payroll_type.destroy');
+    Route::delete('/payroll-type/destroy/{id}', [PayrollController::class, 'payrollDestroy'])->name('payroll_type.destroy');
+
+    Route::get('/employee-salary-structure', [PayrollController::class, 'employeeSalaryStructure']);
+    Route::post('/employee-salary-structure', [PayrollController::class, 'employeeSalaryStructure'])->name('payroll.show_employee_salary_structure');
+    Route::get('/roll-over', [PayrollController::class, 'rollOver']);
+    Route::post('/employee-salary-structure/store', [PayrollController::class, 'employeeSalaryStructureStore'])->name('employee_salary_structure.store');
+    Route::post('/rollover-employee-salary-structure/store', [PayrollController::class, 'rolloverEmployeeSalaryStructure'])->name('rollover_employee_salary_structure.store');
+
+    Route::get('/salary-structure-report', [PayrollController::class, 'salaryStructureReport']);
+    Route::post('/salary-structure-report', [PayrollController::class, 'showSalaryStructureReport']);
+
+    Route::get('/form16',[PayrollController::class, 'form16']);
+    Route::post('/form16', [PayrollController::class, 'form16Report']);
+
+    /*Route::get('/payroll-deduction', [PayrollController::class, 'payrollDeduction']);
+    Route::post('/payroll-deduction', [PayrollController::class, 'payrollDeductionReport']);
+    Route::get('/payroll-deduction/{id}', [PayrollController::class, 'payrollDeduction']);*/
+
+    Route::get('/monthly-payroll-report', [PayrollController::class, 'monthlyPayrollReport']);
+    Route::post('/show-monthly-payroll-report', [PayrollController::class, 'monthlyPayrollReport'])->name('payroll.show_monthly_payroll_report');
+    Route::post('/monthly-payroll-report', [PayrollController::class, 'monthlyPayrollReport'])->name('payroll.store_monthly_payroll_report');
+    Route::get('/monthly-payroll-report/pdf/{id}', [PayrollController::class, 'monthlyPayrollPdf']);
+
+    Route::get('/payroll-report', [PayrollController::class, 'payrollReport']);
+    Route::post('/payroll-report', [PayrollController::class, 'payrollReport'])->name('payroll.show_payroll_report');
+
+    Route::get('/employee-payroll-history', [PayrollController::class, 'employeePayrollHistory']);
+    Route::post('/employee-payroll-history', [PayrollController::class, 'employeePayrollHistory'])->name('payroll.show_employee_payroll_history');
+
+    Route::get('/payroll-bank-wise-report', [PayrollController::class, 'payrollBankWiseReport']);
+    Route::post('/payroll-bank-wise-report', [PayrollController::class, 'payrollBankWiseReport'])->name('payroll.show_payroll_bankwise_report');
+
+
 });
 
 

@@ -7,6 +7,7 @@
     "require": {
         "php": "^8.0",
         "ext-curl": "*",
+        "barryvdh/laravel-dompdf": "^2.0",
         "beyondcode/laravel-dump-server": "^1.9",
         "fideloper/proxy": "^4.4",
         "generationtux/jwt-artisan": "^1.3",
