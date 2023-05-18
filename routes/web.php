@@ -126,6 +126,7 @@ Route::group([ 'middleware' => ['session', 'menu', 'logRoute']], function () {
 
     Route::get('/payroll-bank-wise-report', [PayrollController::class, 'payrollBankWiseReport']);
     Route::post('/payroll-bank-wise-report', [PayrollController::class, 'payrollBankWiseReport'])->name('payroll.show_payroll_bankwise_report');
+
 });
 
 
@@ -306,7 +307,6 @@ Route::post('NewLMS_signup', [NewLMS_ApiController::class, 'NewLMS_signup'])->na
 Route::get('Resend_otp', [NewLMS_ApiController::class, 'Resend_otp'])->name("Resend_otp");
 Route::post('preload-institute', [NewLMS_ApiController::Class, 'Preload_institute'])->name("preload-institute");
 Route::post('add-institute', [NewLMS_ApiController::Class, 'add_institute'])->name("add-institute");
-
 
 Route::post('NewLMS_temp_signup_student', [NewLMS_StudentApiController::class, 'NewLMS_temp_signup_student'])->name("NewLMS_temp_signup_student");
 Route::post('NewLMS_signup_student', [NewLMS_StudentApiController::Class, 'NewLMS_signup_student'])->name("NewLMS_signup_student");

@@ -64,7 +64,7 @@
             @if (!empty($data['head']))
             @foreach ($data['head'] as $key => $value)
             <div class="collapse accordion-button " id="collapseExample-{{$value['menu_title']}}">
-                <div class="card card-body need-card mt-2" style="padding:0px !important;border-radius:10px">
+                <div class="card card-body need-card mt-2" style="padding:0px !important;">
                     <a data-bs-toggle="collapse" href="#collapseExample-Master-{{$value['menu_title']}}"
                         aria-expanded="false" aria-controls="collapseExample">
                         <div class="main" style=" display:flex;">
@@ -78,7 +78,7 @@
 
                 <!-- master -->
                 @if(!empty($data['groupwisemenuMaster'][$value['menu_title']]))
-                <div class="collapse" id="collapseExample-Master-{{$value['menu_title']}}"   style="border :1px solid #ddd !important;">
+                <div class="collapse" id="collapseExample-Master-{{$value['menu_title']}}"  style="border :1px solid #ddd !important;">
                     @php $i =1 ; @endphp
                     @foreach($data['groupwisemenuMaster'][$value['menu_title']] as $masterKey => $master)
 
@@ -101,7 +101,7 @@
                 @endif
 
 
-                <div class="card card-body need-card mt-2" style="padding:0px !important;border-radius:10px">
+                <div class="card card-body need-card mt-2" style="padding:0px !important;">
                     <a data-bs-toggle="collapse" href="#collapseExample-Entry-{{$value['menu_title']}}"
                         aria-expanded="false" aria-controls="collapseExample">
                         <div class="main" style=" display:flex;">
@@ -136,7 +136,7 @@
                 </div>
                 @endif
 
-                <div class="card card-body need-card mt-2" style="padding:0px !important;border-radius:10px">
+                <div class="card card-body need-card mt-2" style="padding:0px !important;">
                     <a data-bs-toggle="collapse" href="#collapseExample-Report-{{$value['menu_title']}}"
                         aria-expanded="false" aria-controls="collapseExample">
                         <div class="main" style=" display:flex;">
