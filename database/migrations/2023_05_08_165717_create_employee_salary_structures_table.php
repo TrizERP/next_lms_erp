@@ -16,7 +16,7 @@ return new class extends Migration
         Schema::create('employee_salary_structures', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('employee_id');
-            $table->json('employee_salary_data');
+            $table->longText('employee_salary_data');
             $table->timestamps();
         });
     }

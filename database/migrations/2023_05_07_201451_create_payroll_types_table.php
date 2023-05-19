@@ -18,7 +18,7 @@ return new class extends Migration
             $table->integer('payroll_type')->default(1);
             $table->string('payroll_name');
             $table->integer('amount_type')->default(1);
-            $table->boolean('status')->default(0);
+            $table->boolean('status')->default(1);
             $table->timestamps();
         });
     }

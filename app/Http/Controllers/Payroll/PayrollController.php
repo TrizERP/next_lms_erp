@@ -39,10 +39,9 @@ class PayrollController extends Controller
 
     public function payrollStore(Request $request)
     {
-
         $request->validate([
             'type' => 'required',
-            'payroll_name' => 'required',
+            'payroll_name' => 'required|regex:/^[a-zA-Z]+$/u|unique:payroll_types,payroll_name,'.$request->id,
             'amount_type' => 'required',
             'status' => 'required',
         ]);
@@ -56,7 +55,7 @@ class PayrollController extends Controller
         $payrollType->payroll_name = $request->payroll_name;
         $payrollType->amount_type = $request->amount_type;
         $payrollType->status = $request->status;
-        $payrollType->payroll_percentage = $request->payroll_percentage;
+        $payrollType->payroll_percentage = $request->amount_type == 2 ? $request->payroll_percentage : null;
         $payrollType->save();
 
         return redirect('payroll-type');

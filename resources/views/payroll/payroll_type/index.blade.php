@@ -28,6 +28,7 @@
                                 <th>Type</th>
                                 <th>Payroll Name</th>
                                 <th>Amount Type</th>
+                                <th>Percentage (%)</th>
                                 <th>Status</th>
                                 <th>Action</th>
                             </tr>
@@ -39,10 +40,11 @@
                             @foreach($data['data'] as $key => $data)
                                 <tr>
                                     <td>{{$j}}</td>
-                                    <td>{{$data->payroll_type == 1 ? 'ALLOWANCE' : 'DEDUCTION'}}</td>
+                                    <td>{{$data->payroll_type == 1 ? 'Allowance' : 'Deduction'}}</td>
                                     <td>{{$data->payroll_name}}</td>
-                                    <td>{{$data->amount_type == 1 ? 'FLAT' :'PERCENTAGE'}}</td>
-                                    <td>{{$data->status == 1 ? 'ENABLE':'DISABLE'}}</td>
+                                    <td>{{$data->amount_type == 1 ? 'Flat' :'Percentage'}}</td>
+                                    <td>{{$data->payroll_percentage ?? '-'}}</td>
+                                    <td>{{$data->status == 1 ? 'Enable':'Disable'}}</td>
                                     <td>
                                         <div class="d-inline">
                                             <a href="{{ url('payroll-type/create/'.$data->id)}}" class="btn btn-info btn-outline"><i class="ti-pencil-alt"></i></a>

@@ -23,7 +23,7 @@
     <div class="container-fluid">
         <div class="row bg-title">
             <div class="col-lg-3 col-md-4 col-sm-4 col-xs-12">
-                <h4 class="page-title">Add User</h4>
+                <h4 class="page-title">Payroll Type</h4>
             </div>
         </div>
         <div class="card">
@@ -41,10 +41,10 @@
                     <div class="col-md-4 form-group">
                         <label>Payroll Type: </label>
                         @if($payrollType['payroll_type'] == 1)
-                        <input type="radio" name="type" value="1" checked> Allowence
+                        <input type="radio" name="type" value="1" checked> Allowance
                             <input type="radio" name="type" value="2"> Deduction
                         @elseif($payrollType['payroll_type'] == 2)
-                            <input type="radio" name="type" value="1" > Allowence
+                            <input type="radio" name="type" value="1" > Allowance
                         <input type="radio" name="type" value="2" checked> Deduction
                         @endif
                         @error('type')
@@ -53,16 +53,21 @@
                     </div>
 
                     <div class="col-md-4 form-group">
-                        <label>Payroll Name </label>
+                        <label>Payroll Type Name </label>
                         <input type="text" id='payroll_name' required name="payroll_name" class="form-control" value="{{$payrollType['payroll_name']}}">
                         @error('payroll_name')
                         <span style="color: red">{{$message}}</span>
                         @enderror
                     </div>
-
-                    <div class="col-md-4 form-group">
-                        <label>Payroll Percentage </label>
-                        <input type="text" id='payroll_percentage' required name="payroll_percentage" class="form-control" value="{{$payrollType['payroll_percentage']}}">
+                    <?php
+                    $class = 'd-none';
+                    if(isset($payrollType['amount_type']) && $payrollType['amount_type'] == 2) {
+                        $class = '';
+                    }
+                    ?>
+                    <div class="col-md-4 form-group {{$class}}" id="payroll_per">
+                        <label>Percentage </label>
+                        <input type="text" id='payroll_percentage' name="payroll_percentage" class="form-control" value="{{$payrollType['payroll_percentage']}}">
                         @error('payroll_percentage')
                         <span style="color: red">{{$message}}</span>
                         @enderror
@@ -121,6 +126,16 @@
 </script>
 <script src="../../../plugins/bower_components/dropify/dist/js/drsopify.min.js"></script>
 <script>
+    var select = document.getElementById('amount_type');
+    select.addEventListener('change', function () {
+        var type = document.getElementById('amount_type').value;
+        if(type == 2) {
+            $('#payroll_per').removeClass('d-none');
+        } else {
+            $('#payroll_per').addClass('d-none');
+        }
+        //window.location.href = window.location.origin +'/payroll-deduction?type=' + type;
+    }, false);
     $(document).ready(function() {
         $("#total_lecture_div").css("display","none");
 
