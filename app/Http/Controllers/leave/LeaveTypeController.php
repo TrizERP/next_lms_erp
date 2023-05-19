@@ -8,7 +8,7 @@ use Exception;
 use Illuminate\Http\Request;
 use Yajra\DataTables\Facades\DataTables;
 
-class LeaveController extends Controller
+class LeaveTypeController extends Controller
 {
     /**
      * Display a listing of the resource.

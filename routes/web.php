@@ -43,7 +43,9 @@ use App\Models\general_dataModel;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Import\ImportController;
+use App\Http\Controllers\leave\HolidayController;
 use App\Http\Controllers\leave\LeaveController;
+use App\Http\Controllers\leave\LeaveTypeController;
 use App\Http\Controllers\Payroll\PayrollController;
 /*
 |--------------------------------------------------------------------------
@@ -304,6 +306,7 @@ Route::get('upload_create_result', 'result\MarkUploadController@store')->name('u
 Route::get('fetch_payment_status', 'fees\online_fees\online_fees_collect_controller@razorpay_fetch_payment_status');
 
 Route::group(['middleware' => ['session', 'menu', 'logRoute']], function () {
-    Route::resource('leave', LeaveController::class);
+    Route::resource('leave', LeaveTypeController::class);
+    Route::resource('holiday', HolidayController::class);
 });
 
