@@ -42,7 +42,7 @@
     <!-- <link href="{{ asset("/admin_dep/css/style_lms.css") }}" rel="stylesheet"> -->
 	<!-- Morris CSS -->
 
-    <!-- <link href="{{ asset("/plugins/bower_components/toast-master/css/jquery.toast.css") }}" rel="stylesheet"> -->
+    <link href="{{ asset("/plugins/bower_components/toast-master/css/jquery.toast.css") }}" rel="stylesheet"> 
 
  <!--    <link href="{{ asset("/plugins/bower_components/bootstrap-datepicker/bootstrap-datepicker.min.css") }}"
         rel="stylesheet" type="text/css" /> -->
