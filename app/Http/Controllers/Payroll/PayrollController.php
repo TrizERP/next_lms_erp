@@ -271,10 +271,10 @@ class PayrollController extends Controller
 
                 $preparPayrollType = [];
                 foreach ($payrollTypes as $payrollType) {
-//                    return $payrollType;
-                    if($payrollType->payroll_type == 1) {
+//                    return $employeeSalaryDetails;
+                    if(isset($employeeSalaryDetails[$payrollType->id]) && $payrollType->payroll_type == 1) {
                         $preparPayrollType[]['allowance'] = [$employeeSalaryDetails[$payrollType->id],$payrollType->amount_type,$payrollType->id,$payrollType->payroll_name];
-                    } else {
+                    } else if (isset($employeeSalaryDetails[$payrollType->id])) {
                         //return $payrollType->amount_type;
                         $preparPayrollType[]['deduction'] = [$employeeSalaryDetails[$payrollType->id],$payrollType->amount_type,$payrollType->id,$payrollType->payroll_name];
                         //return $preparPayrollType;

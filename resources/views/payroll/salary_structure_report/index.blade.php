@@ -1,5 +1,6 @@
 @include('includes.headcss')
-
+@include('includes.header')
+@include('includes.sideNavigation')
 <div id="page-wrapper">
     <div class="container-fluid">
         <div class="row bg-title">
