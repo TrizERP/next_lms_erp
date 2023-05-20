@@ -308,5 +308,7 @@ Route::get('fetch_payment_status', 'fees\online_fees\online_fees_collect_control
 Route::group(['middleware' => ['session', 'menu', 'logRoute']], function () {
     Route::resource('leave', LeaveTypeController::class);
     Route::resource('holiday', HolidayController::class);
+    Route::get('holiday.weekdays', [HolidayController::class,'getWeekdays'])->name('holiday.weekdays');
+    Route::post('holiday.weekdays', [HolidayController::class,'storeWeekdays'])->name('holiday.weekdays');
 });
 

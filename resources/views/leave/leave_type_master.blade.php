@@ -15,12 +15,12 @@
             <div class="col-md-2">
                 <ul id="" class="nav nav-tabs justify-content-between" role="tablist">
                     <li class="nav-item" role="presentation" data-toggle="tooltip" data-placement="top"
-                        title="Fees Setup">
+                        title="Assign Leave">
                         <a class="nav-link active" data-toggle="tab" href="#right-tab-1" role="tab"
                             aria-controls="right-tab-1" aria-selected="false">Assign Leave</a>
                     </li>
                     <li class="nav-item" role="presentation" data-toggle="tooltip" data-placement="top"
-                        title="API Setting">
+                        title="Leave Type">
                         <a class="nav-link" data-toggle="tab" href="#right-tab-2" role="tab"
                             aria-controls="right-tab-2" aria-selected="true">Leave Type</a>
                     </li>
