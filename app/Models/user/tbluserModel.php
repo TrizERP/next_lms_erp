@@ -9,6 +9,7 @@ class tbluserModel extends Model
     public $timestamps = false;
 
     protected $table = "tbluser";
+    protected $appends = ['full_name'];
 
     protected $fillable = [
         'id',
@@ -43,4 +44,9 @@ class tbluserModel extends Model
         'total_lecture',
         'subject_ids'
     ];
+
+    public function getFullNameAttribute()
+    {
+        return $this->first_name . ' ' . $this->last_name;
+    }
 }

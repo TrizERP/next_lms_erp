@@ -17,18 +17,22 @@ class LeaveTypeController extends Controller
      */
     public function index(Request $request)
     {
-        if ($request->ajax()) {
-            $data = HrmsLeaveType::latest()->get();
-            return DataTables::of($data)
-                ->addIndexColumn()
-                ->addColumn('action', function ($row) {
-                    $actionBtn = '<a href="javascript:void(0)" class="edit btn btn-success btn-edit btn-sm" data-id="' . $row->id . '">Edit</a> <a href="javascript:void(0)" class="delete btn btn-danger btn-delete btn-sm"data-id="' . $row->id . '">Delete</a>';
-                    return $actionBtn;
-                })
-                ->rawColumns(['action'])
-                ->make(true);
+        try {
+            if ($request->ajax()) {
+                $data = HrmsLeaveType::latest()->get();
+                return DataTables::of($data)
+                    ->addIndexColumn()
+                    ->addColumn('action', function ($row) {
+                        $actionBtn = '<a href="javascript:void(0)" class="edit btn btn-success btn-edit btn-sm" data-id="' . $row->id . '">Edit</a> <a href="javascript:void(0)" class="delete btn btn-danger btn-delete btn-sm"data-id="' . $row->id . '">Delete</a>';
+                        return $actionBtn;
+                    })
+                    ->rawColumns(['action'])
+                    ->make(true);
+            }
+            return view('leave.leave_type_master');
+        } catch (Exception $e) {
+            return response()->json($e->getMessage(), 500);
         }
-        return view('leave.leave_type_master');
     }
 
     /**

@@ -43,6 +43,7 @@ use App\Models\general_dataModel;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Import\ImportController;
+use App\Http\Controllers\leave\ApplyLeaveController;
 use App\Http\Controllers\leave\HolidayController;
 use App\Http\Controllers\leave\LeaveController;
 use App\Http\Controllers\leave\LeaveTypeController;
@@ -306,8 +307,12 @@ Route::get('upload_create_result', 'result\MarkUploadController@store')->name('u
 Route::get('fetch_payment_status', 'fees\online_fees\online_fees_collect_controller@razorpay_fetch_payment_status');
 
 Route::group(['middleware' => ['session', 'menu', 'logRoute']], function () {
-    Route::resource('leave', LeaveTypeController::class);
+    Route::resource('leave-type', LeaveTypeController::class);
     Route::resource('holiday', HolidayController::class);
+    Route::resource('leave-apply', ApplyLeaveController::class);
+    Route::get('my-leave', [ApplyLeaveController::class,'myLeave'])->name('my-leave');
+    Route::get('import-leave', [ApplyLeaveController::class,'importLeave'])->name('import-leave');
+    Route::post('import-leave', [ApplyLeaveController::class,'importOldLeave'])->name('import-leave');
     Route::get('holiday.weekdays', [HolidayController::class,'getWeekdays'])->name('holiday.weekdays');
     Route::post('holiday.weekdays', [HolidayController::class,'storeWeekdays'])->name('holiday.weekdays');
 });

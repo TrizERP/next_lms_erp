@@ -326,6 +326,7 @@
 
         $(document).on("submit", "#frmHoliday", function(e) {
             e.preventDefault();
+            $('.error').remove()
             var formData = $("#frmHoliday").serialize();
             /**Ajax code**/
             $.ajax({
@@ -341,7 +342,7 @@
                         var errors = JSON.parse(xhr.responseText);
                         $.each(errors.errors, function(i, error) {
                             $('#' + i).after(
-                                '<span class="text-strong text-danger">' +
+                                '<span class="text-strong text-danger error">' +
                                 error + '</span>')
                         })
                     }
@@ -351,6 +352,7 @@
 
         $(document).on("submit", "#frmWeekDays", function(e) {
             e.preventDefault();
+            $('.error').remove()
             var formData = $("#frmWeekDays").serialize();
             /**Ajax code**/
             $.ajax({
@@ -365,7 +367,7 @@
                         var errors = JSON.parse(xhr.responseText);
                         $.each(errors.errors, function(i, error) {
                             $('#' + i).after(
-                                '<span class="text-strong text-danger">' +
+                                '<span class="text-strong text-danger error">' +
                                 error + '</span>')
                         })
                     }

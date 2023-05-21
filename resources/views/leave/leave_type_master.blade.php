@@ -140,7 +140,7 @@
         var table = $('#tblLeaveType').DataTable({
             processing: true,
             serverSide: true,
-            ajax: "{{ route('leave.index') }}",
+            ajax: "{{ route('leave-type.index') }}",
             columns: [{
                     data: 'DT_RowIndex',
                     name: 'DT_RowIndex'
@@ -168,7 +168,7 @@
             /**Ajax code**/
             $.ajax({
                 type: "post",
-                url: "{{ route('leave.store') }}",
+                url: "{{ route('leave-type.store') }}",
                 data: formData,
                 success: function(data) {
                     $('#addTypeMdl').modal('toggle');
@@ -189,8 +189,9 @@
 
         $(document).on("click", ".btn-edit", function(e) {
             e.preventDefault();
+            $('.error').remove()
             var id = $(this).data('id');
-            var url = "{{ route('leave.edit', ':id') }}";
+            var url = "{{ route('leave-type.edit', ':id') }}";
             url = url.replace(':id', id);
             /**Ajax code**/
             $.ajax({
@@ -209,7 +210,7 @@
                         var errors = JSON.parse(xhr.responseText);
                         $.each(errors.errors, function(i, error) {
                             $('#' + i).after(
-                                '<span class="text-strong text-danger">' +
+                                '<span class="text-strong text-danger error">' +
                                 error + '</span>')
                         })
                     }
@@ -219,7 +220,7 @@
         $(document).on("click", ".btn-delete", function(e) {
             e.preventDefault();
             var id = $(this).data('id');
-            var url = "{{ route('leave.destroy', ':id') }}";
+            var url = "{{ route('leave-type.destroy', ':id') }}";
             url = url.replace(':id', id);
             /**Ajax code**/
             if (confirm('Are you sure to delete leave type')) {
