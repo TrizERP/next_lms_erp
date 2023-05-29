@@ -89,4 +89,4 @@
         }, false);
 
     </script>
-@include('includes.footer')
+@include('includes.footer')z

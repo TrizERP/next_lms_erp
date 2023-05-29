@@ -45,6 +45,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Import\ImportController;
 use App\Http\Controllers\Payroll\PayrollController;
+use App\Http\Controllers\HRMS\HrmsController;
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -126,6 +127,25 @@ Route::group([ 'middleware' => ['session', 'menu', 'logRoute']], function () {
 
     Route::get('/payroll-bank-wise-report', [PayrollController::class, 'payrollBankWiseReport']);
     Route::post('/payroll-bank-wise-report', [PayrollController::class, 'payrollBankWiseReport'])->name('payroll.show_payroll_bankwise_report');
+
+    Route::get('hrms-job-title',[HrmsController::Class,'hrmsJobTitle']);
+    Route::get('/hrms-job-title/create', [HrmsController::class, 'hrmsCreate'])->name('hrms_job_title.create');
+    Route::get('/hrms-job-title/create/{id}', [HrmsController::class, 'hrmsCreate']);
+    Route::post('/hrms-job-title/store', [HrmsController::class, 'hrmsStore'])->name('hrms_job_title.store');
+    Route::delete('/hrms-job-title/destroy/{id}', [HrmsController::class, 'hrmsDestroy'])->name('hrms_job_title.destroy');
+
+    Route::get('hrms-inout-time',[HrmsController::Class,'hrmsInOutTime']);
+    Route::post('hrms-in-time/store',[HrmsController::Class,'hrmsInTimeStore'])->name('hrms_in_time.store');
+    Route::post('hrms-out-time/store',[HrmsController::Class,'hrmsOutTimeStore'])->name('hrms_out_time.store');
+
+    Route::get('hrms-attendance',[HrmsController::Class,'hrmsAttendance']);
+    Route::post('hrms-attendance-in-time/store',[HrmsController::Class,'hrmsAttendanceInTimeStore'])->name('hrms_attendance_in_time.store');
+    Route::post('hrms-attendance-out-time/store',[HrmsController::Class,'hrmsAttendanceOutTimeStore'])->name('hrms_attendance_out_time.store');
+
+    Route::get('hrms-attendance-report',[HrmsController::Class,'hrmsAttendanceReport']);
+    Route::get('early-going-hrms-attendance-report',[HrmsController::Class,'earlyGoingHrmsAttendanceReport']);
+    Route::post('/hrms-attendance-report', [HrmsController::class, 'hrmsAttendanceReport'])->name('hrms.show_hrms_attendance_report');
+    Route::post('/early-going-hrms-attendance-report', [HrmsController::class, 'earlyGoingHrmsAttendanceReport'])->name('hrms.show_early_going_hrms_attendance_report');
 
 });
 

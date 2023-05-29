@@ -223,6 +223,7 @@ class PayrollController extends Controller
         //return $request->all();
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $payrollTypes = PayrollType::where('status', 1)->get();
+//        return $payrollTypes;
         $employeeDetails = EmployeeSalaryStructure::where('sub_institute_id', $sub_institute_id)->get();
         $header = [];
         $months = Helpers::getMonths();
@@ -346,6 +347,7 @@ class PayrollController extends Controller
 
     public function monthlyPayrollPdf(Request $request,$id)
     {
+//        return $request->all();
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $employeeSalaryData = EmployeeMonthlySalaryData::with('getUser')->where([['employee_id', $id],[ 'sub_institute_id', $sub_institute_id]])->first();
         $employeeSalaryStructure = EmployeeSalaryStructure::where([['employee_id', $id],[ 'sub_institute_id', $sub_institute_id]])->first();
@@ -367,7 +369,7 @@ class PayrollController extends Controller
             $allowancekey = -1;
             $deductionkey = 0;
             $salaryData = [];
-            //return $employeeSalaryDetails;
+//            return $employeeSalaryDetails;
             foreach ($payrollTypes as $payrollType) {
                 if($payrollType->payroll_type == 1) {
                     $allowancekey = $allowancekey + 1;
@@ -383,6 +385,7 @@ class PayrollController extends Controller
             }
              ksort($salaryData);
             $salaryData = array_chunk($salaryData,2);
+//            return $salaryData;
             $employeeData['salary_data'] = $salaryData;
             $employeeData['ruppee_in_word']= $this->displaywords($employeeData['net_salary']);
 
