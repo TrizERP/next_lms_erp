@@ -4,55 +4,54 @@
 
 <div id="page-wrapper">
     <div class="container-fluid">
-            <div class="row bg-title">
-                <div class="col-lg-3 col-md-4 col-sm-4 col-xs-12">
-                    <h4 class="page-title">Question wise report</h4>
-                </div>
+        <div class="row bg-title">
+            <div class="col-lg-3 col-md-4 col-sm-4 col-xs-12">
+                <h4 class="page-title">Question wise report</h4>
             </div>
+        </div>
         @php
         $grade_id = $standard_id = $division_id = $order_by = $subject_id = '';
 
-            if(isset($data['grade_id'])){
-                $grade_id = $data['grade_id'];
-                $standard_id = $data['standard_id'];
-                $division_id = $data['division_id'];
-            }
-            if(isset($data['subject_id'])){
-                $subject_id = $data['subject_id'];
-            }
+        if(isset($data['grade_id'])){
+        $grade_id = $data['grade_id'];
+        $standard_id = $data['standard_id'];
+        $division_id = $data['division_id'];
+        }
+        if(isset($data['subject_id'])){
+        $subject_id = $data['subject_id'];
+        }
         @endphp
         <div class="card">
             <div class="card-body">
                 @if ($sessionData = Session::get('data'))
-                    @if($sessionData['status_code'] == 1)
-                        <div class="alert alert-success alert-block">
-                            @else
-                                <div class="alert alert-danger alert-block">
-                                    @endif
-                                    <button type="button" class="close" data-dismiss="alert">×</button>
-                                    <strong>{{ $sessionData['message'] }}</strong>
-                                </div>
-                            @endif
-                            <form action="{{ route('show_question_wise_report') }}" enctype="multipart/form-data"
-                                  method="post">
-                                @csrf
-                                <div class="row">
-                                    {{ App\Helpers\SearchChain('4','single','grade,std,div',$grade_id,$standard_id,$division_id) }}
+                @if($sessionData['status_code'] == 1)
+                <div class="alert alert-success alert-block">
+                    @else
+                    <div class="alert alert-danger alert-block">
+                        @endif
+                        <button type="button" class="close" data-dismiss="alert">×</button>
+                        <strong>{{ $sessionData['message'] }}</strong>
+                    </div>
+                    @endif
+                    <form action="{{ route('show_question_wise_report') }}" enctype="multipart/form-data" method="post">
+                        @csrf
+                        <div class="row">
+                            {{ App\Helpers\SearchChain('4','single','grade,std,div',$grade_id,$standard_id,$division_id) }}
 
-                                    <div class="col-md-4 form-group" style="margin-left:unset;margin-right:unset;">
-                                        <label for="subject">Select Subject:</label>
-                                        <select name="subject" id="subject" class="form-control mb-0" required>
-                                            <option value="">Select Subject</option>
-                                        </select>
-                                    </div>
+                            <div class="col-md-4 form-group" style="margin-left:unset;margin-right:unset;">
+                                <label for="subject">Select Subject:</label>
+                                <select name="subject" id="subject" class="form-control mb-0" required>
+                                    <option value="">Select Subject</option>
+                                </select>
+                            </div>
 
-                                    <div class="col-md-4 form-group" style="margin-left:unset;margin-right:unset;">
-                                        <label for="exam">Select Exam:</label>
-                                        <select name="exam" id="exam" class="form-control mb-0" required>
-                                            <option value="">Select Exam</option>
-                                        </select>
-                                    </div>
-                                    {{-- <div class="col-md-4 form-group">
+                            <div class="col-md-4 form-group" style="margin-left:unset;margin-right:unset;">
+                                <label for="exam">Select Exam:</label>
+                                <select name="exam" id="exam" class="form-control mb-0" required>
+                                    <option value="">Select Exam</option>
+                                </select>
+                            </div>
+                            {{-- <div class="col-md-4 form-group">
                                        <label>Order By</label>
                                        <select id='order_by' name="order_by" class="form-control">
                                            <option>Select Order By Field</option>
@@ -62,78 +61,76 @@
                                            <option @if($order_by == 'roll_no') selected="selected" @endif value="roll_no">Roll No</option>
                                        </select>
                                    </div> --}}
-                                    <div class="col-md-12 col-sm-offset-4 text-center form-group">
-                                        <input type="submit" name="submit" value="Search" class="btn btn-success">
-                                        <button type="button" class="btn btn-info" data-toggle="modal"
-                                                data-target="#exampleModal"><i class="mdi mdi-tune"></i></button>
-                                    </div>
-                                </div>
-                                <!-- Modal -->
-                                <div class="modal fade bd-example-modal-lg" id="exampleModal" tabindex="-1"
-                                     role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
-                                    <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
-                                        <div class="modal-content">
-                                            <div class="modal-header">
-                                                <h5 class="modal-title" id="exampleModalLabel">Choose Field</h5>
-                                                <button type="button" class="close" data-dismiss="modal"
-                                                        aria-label="Close">
-                                                    <span aria-hidden="true">x</span>
-                            </button>
-                          </div>
-                          <div class="modal-body">
-                                <div class="slimscrollright">
-                                    <div class="rpanel-title"><span><i class="ti-close right-side-toggle"></i></span> </div>
-                                    <div class="row">
-                                        <div class="col-md-12 form-group mb-2">
-                                            <div class="checkbox checkbox-info">
-                                                <input id="checkall" onclick="checkedAll();" name="checkall" type="checkbox">
-                                                <label for="checkall"> Check All </label>
-                                                <input type="hidden" name="page" value="bulk">
-                                            </div>
-                                        </div>
-
-                                    @if(isset($data['data']))
-                                            @php
-                                        //$checkedArray = array('enrollment_no','first_name','middle_name','last_name','mobile');
-                                        $checkedArray = array();
-                                        @endphp
-                                        @foreach($data['data'] as $key => $value)
-                                        <div class="col-md-4 form-group mt-1">
-                                            <div class="custom-control custom-checkbox">
-                                                @php
-                                                $checked = '';
-                                                if(in_array($key,$checkedArray)){
-                                                    $checked = 'checked="checked"';
-                                                }
-                                                if(isset($data['headers'])){
-                                                    if(count($data['headers']) > 0){
-                                                        $headersChecked = array_keys($data['headers']);
-                                                    }
-                                                    $checked = '';
-                                                    if(in_array($key,$headersChecked)){
-                                                        $checked = 'checked="checked"';
-                                                    }
-                                                }
-                                                @endphp
-                                                <input id="{{$key}}" {{$checked}} value="{{$key}}" class="custom-control-input" name="dynamicFields[]" type="checkbox">
-                                                <label for="{{$key}}" class="custom-control-label"> {{$value}} </label>
-                                            </div>
-                                        </div>
-                                        @endforeach
-                                    @endif
-                                    </div>
-                                </div>
-                          </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </form>
+                            <div class="col-md-12 col-sm-offset-4 text-center form-group">
+                                <input type="submit" name="submit" value="Search" class="btn btn-success">
+                                <button type="button" class="btn btn-info" data-toggle="modal" data-target="#exampleModal"><i class="mdi mdi-tune"></i></button>
+                            </div>
                         </div>
+                        <!-- Modal -->
+                        <div class="modal fade bd-example-modal-lg" id="exampleModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+                            <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+                                <div class="modal-content">
+                                    <div class="modal-header">
+                                        <h5 class="modal-title" id="exampleModalLabel">Choose Field</h5>
+                                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                            <span aria-hidden="true">x</span>
+                                        </button>
+                                    </div>
+                                    <div class="modal-body">
+                                        <div class="slimscrollright">
+                                            <div class="rpanel-title"><span><i class="ti-close right-side-toggle"></i></span> </div>
+                                            <div class="row">
+                                                <div class="col-md-12 form-group mb-2">
+                                                    <div class="checkbox checkbox-info">
+                                                        <input id="checkall" onclick="checkedAll();" name="checkall" type="checkbox">
+                                                        <label for="checkall"> Check All </label>
+                                                        <input type="hidden" name="page" value="bulk">
+                                                    </div>
+                                                </div>
+
+                                                @if(isset($data['data']))
+                                                @php
+                                                //$checkedArray = array('enrollment_no','first_name','middle_name','last_name','mobile');
+                                                $checkedArray = array();
+                                                @endphp
+                                                @foreach($data['data'] as $key => $value)
+                                                <div class="col-md-4 form-group mt-1">
+                                                    <div class="custom-control custom-checkbox">
+                                                        @php
+                                                        $checked = '';
+                                                        if(in_array($key,$checkedArray)){
+                                                        $checked = 'checked="checked"';
+                                                        }
+                                                        if(isset($data['headers'])){
+                                                        if(count($data['headers']) > 0){
+                                                        $headersChecked = array_keys($data['headers']);
+                                                        }
+                                                        $checked = '';
+                                                        if(in_array($key,$headersChecked)){
+                                                        $checked = 'checked="checked"';
+                                                        }
+                                                        }
+                                                        @endphp
+                                                        <input id="{{$key}}" {{$checked}} value="{{$key}}" class="custom-control-input" name="dynamicFields[]" type="checkbox">
+                                                        <label for="{{$key}}" class="custom-control-label"> {{$value}} </label>
+                                                    </div>
+                                                </div>
+                                                @endforeach
+                                                @endif
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
             </div>
 
             {{-- get question wise repost data --}}
-        @if(isset($data['results']))
-        @php $examResults = $data['results']; /* echo "<pre>"; print_r($data['results']); exit; */ @endphp
+            @if(isset($data['results']))
+            @php $examResults = $data['results']; /* echo "
+            <pre>"; print_r($data['results']); exit; */ @endphp
         @foreach ( $examResults as $examResultKey => $examResult )
             <div class="card">
                 <div class="row">
@@ -212,8 +209,7 @@
                                 $totalRightAns = 0;
                             @endphp --}}
                             @foreach ($studentValue1 as $keyNew => $student)
-
-
+                            
                                 @php
                                     // echo "<pre>"; print_r($studentValue1); exit;
                                         $row = 1;

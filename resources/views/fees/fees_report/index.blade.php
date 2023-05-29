@@ -71,7 +71,7 @@
                         <label>Receipt No</label>
                         <input type="text" id="receipt_no" value="{{$receipt_no}}" name="receipt_no" class="form-control">
                     </div>-->
-                    {{ App\Helpers\SearchChain('4','single','grade,std,div',$grade_id,$standard_id,$division_id) }}
+                    {{ App\Helpers\SearchChain('4','multiple','grade,std,div',$grade_id,$standard_id,$division_id) }}
                     <div class="col-md-4 form-group">
                         <label>From Date</label>
                         <input type="text" id="from_date" name="from_date" value="{{$from_date}}" class="form-control mydatepicker" autocomplete="off">

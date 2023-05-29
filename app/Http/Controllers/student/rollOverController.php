@@ -14,6 +14,7 @@ use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\NotFoundExceptionInterface;
 use function App\Helpers\is_mobile;
 use function App\Helpers\SearchStudent;
+use Illuminate\Support\Str;
 
 class rollOverController extends Controller
 {
@@ -48,6 +49,8 @@ class rollOverController extends Controller
             "timetable"                => "Timetable",
             "transport_map_student"    => "Transport Map Student",
             "tblstudent_enrollment"    => "Student Enrollment",
+            "advance_fees"             => "Advance Fees",
+
         ];
 
         $table_array_check = [];
@@ -76,6 +79,10 @@ class rollOverController extends Controller
             ->where('sub_institute_id', $sub_institute_id)->get()->toArray();
 
         $fees_breackoff = DB::table('fees_breackoff')->selectRaw('COUNT(*) AS total_data')
+            ->where('syear', $to_next_syear)
+            ->where('sub_institute_id', $sub_institute_id)->get()->toArray();
+
+        $advance_fees = DB::table('fees_collect')->selectRaw('COUNT(*) AS total_data')
             ->where('syear', $to_next_syear)
             ->where('sub_institute_id', $sub_institute_id)->get()->toArray();
 
@@ -112,6 +119,7 @@ class rollOverController extends Controller
         $table_array_check['timetable'] = $timetable[0]->total_data;
         $table_array_check['transport_map_student'] = $transport_map_student[0]->total_data;
         $table_array_check['tblstudent_enrollment'] = $current_year_students[0]->old_year_students.'/'.$next_year_students[0]->new_year_students.'/'.$remaining_rollover_students;
+        $table_array_check['advance_fees'] = $advance_fees[0]->total_data;
 
         $to_academic_sections = academic_sectionModel::where(['sub_institute_id' => $sub_institute_id])->get()->toArray();
 
@@ -135,6 +143,7 @@ class rollOverController extends Controller
      */
     public function create(Request $request)
     {
+        // print_r($request);
         $sub_institute_id = session()->get('sub_institute_id');
         $to_next_syear = (session()->get('syear') + 1);
         $from_sub_institute_id = session()->get('sub_institute_id');
@@ -194,6 +203,7 @@ class rollOverController extends Controller
                                 SELECT '".$to_next_syear."',sub_institute_id,grade_id,standard_id,division_id,teacher_id,Now()
                                 FROM class_teacher 
                                 WHERE syear = '".$from_current_syear."' AND sub_institute_id = '".$sub_institute_id."' ");
+                            
                         }
                         break;
                     case 'division_capacity_master':
@@ -207,6 +217,7 @@ class rollOverController extends Controller
                                   '".$created_by."','".$created_ip."'
                                   FROM division_capacity_master 
                                   WHERE syear = '".$from_current_syear."' AND sub_institute_id = '".$sub_institute_id."' ");
+                           
                         }
                         break;
                     case 'fees_map_years':
@@ -219,6 +230,7 @@ class rollOverController extends Controller
                                 SELECT from_month,to_month,'".$to_next_syear."',sub_institute_id,Now()
                                 FROM fees_map_years 
                                 WHERE syear = '".$from_current_syear."' AND sub_institute_id = '".$sub_institute_id."' ");
+                           
                         }
                         break;
                     case 'fees_title':
@@ -233,6 +245,7 @@ class rollOverController extends Controller
                                 sub_institute_id,other_fee_id,Now(),id
                                 FROM fees_title 
                                 WHERE syear = '".$from_current_syear."' AND sub_institute_id = '".$sub_institute_id."' ");
+                            
                         }
                         break;
                     case 'fees_breackoff':
@@ -254,6 +267,7 @@ class rollOverController extends Controller
                                 WHERE fb.syear = '".$from_current_syear."' AND fb.sub_institute_id = '".$sub_institute_id."' ");
                         }
                         break;
+
                     case 'student_optional_subject':
                         $check_student_optional_subject = DB::table('student_optional_subject')
                             ->where('sub_institute_id', $sub_institute_id)
@@ -264,6 +278,7 @@ class rollOverController extends Controller
                                 SELECT '".$to_next_syear."',sub_institute_id,subject_id,student_id
                                 FROM student_optional_subject 
                                 WHERE syear = '".$from_current_syear."' AND sub_institute_id = '".$sub_institute_id."' ");
+                         
                         }
                         break;
                     case 'timetable':
@@ -280,6 +295,7 @@ class rollOverController extends Controller
                                 LEFT JOIN batch b ON b.rollover_id = t.batch_id AND b.sub_institute_id = t.sub_institute_id 
                                 AND b.syear = '".$to_next_syear."'
                                 WHERE t.syear = '".$from_current_syear."' AND t.sub_institute_id = '".$sub_institute_id."' ");
+                        
                         }
                         break;
                     case 'transport_map_student':
@@ -294,6 +310,7 @@ class rollOverController extends Controller
                                 to_stop,sub_institute_id,Now()
                                     FROM transport_map_student 
                              WHERE syear = '".$from_current_syear."' AND sub_institute_id = '".$sub_institute_id."' ");
+                          
                         }
                         break;
                     default:
@@ -303,6 +320,7 @@ class rollOverController extends Controller
             //END ROLLOVER OTHER TABLES DATA
 
             //START ROLLOVER ALL STUDENT DATA
+    
             if ($request->has('tblstudent_enrollment')) {
                 $tblstudent_enrollment = $request->get('tblstudent_enrollment');
 
@@ -338,13 +356,149 @@ class rollOverController extends Controller
                                     INNER JOIN standard st ON st.id = se.standard_id AND st.sub_institute_id = se.sub_institute_id
                                     WHERE se.student_id = '".$student_id."' AND se.syear = '".$from_current_syear."' 
                                     AND se.sub_institute_id = '".$sub_institute_id."' ");
+
+                     
                         // END UPDATE in tblstudent 
                     }
                     // END Check student is already exist in next year 
                 }
+
+
             }
             //END ROLLOVER ALL STUDENT DATA 
+            if($request->has('tables')=='fees_breackoff' && $request->has('tables')=='advance_fees'){
+          
+                //   $check_advance_fees = DB::table('fees_collect')
+                //             ->where('sub_institute_id', $sub_institute_id)
+                //             ->where('syear', $to_next_syear)->get()->toArray();
+                // if (count($check_advance_fees) == 0) {
+                    $title = DB::table('fees_title')->where(['display_name'=>'Advance Fee','syear'=>$from_current_syear,'sub_institute_id'=>$sub_institute_id])->get()->toArray();
+                $advance_fees = "SELECT fb.*,fb.student_id, se.standard_id, SUM(fb.actual_amountpaid) AS sum_amount
+                 FROM fees_paid_other fb
+                 LEFT JOIN tblstudent_enrollment se ON fb.student_id = se.student_id
+                 WHERE fb.".$title[0]->other_fee_id." !=0 AND fb.is_deleted ='N' AND fb.syear = '".$from_current_syear."'
+                 AND fb.sub_institute_id = '".$sub_institute_id."'
+                 AND se.syear = '".$to_next_syear."'
+                 AND se.sub_institute_id = '".$sub_institute_id."'
+                 GROUP BY fb.student_id, se.standard_id";
+                $advance_fees_arr = DB::select($advance_fees);
 
+                               // echo "<br> advance_fees  "; echo "<pre>";print_r($advance_fees_arr);exit;
+                    $divided_advance_fees = [];
+                    $paid_off = [];
+
+            // Retrieve fees titles with amounts
+            $query = "SELECT ft.id, ft.fees_title, fb.amount,ft.syear,fb.month_id,fb.standard_id,fb.grade_id,fb.section_id,se.student_id,se.standard_id
+                      FROM fees_title ft
+                      INNER JOIN tblstudent_enrollment se on se.syear = '".$to_next_syear."' AND se.sub_institute_id = '".$sub_institute_id."'
+                      INNER JOIN fees_breackoff fb ON se.standard_id = fb.standard_id  AND  fb.syear = '".$to_next_syear."' AND fb.sub_institute_id = '".$sub_institute_id."' 
+                      WHERE ft.syear = '".$to_next_syear."'
+                      AND ft.sub_institute_id = '".$sub_institute_id."' group by fb.month_id order by fb.id";
+            $fees_titles = DB::select($query);
+
+   // echo "<pre>";print_r($month);exit;
+            $sum_amt=0;
+
+            foreach ($advance_fees_arr as $k => $fee) {
+                $studentId = $fee->student_id;
+                $monthId = $fee->month_id;
+                $totalAmount = $fee->sum_amount;
+                $remainingAmount = $totalAmount;
+                $allocatedAmount = 0;
+                $i = 4;
+                foreach ($fees_titles as $key=>$title) {
+                    $feesTitle = $title->fees_title;
+                    $amount = $title->amount;
+                  
+                    // Calculate the amount to allocate for this fees title
+                    $allocated = min($amount, $remainingAmount);
+                    $remainingAmount -= $allocated;
+                    $allocatedAmount += $allocated;
+             // $totalAllocatedAmount += $allocated;
+
+                    if(isset($allocated) && $allocated !=0 ){
+                        // $amounts +=$allocated;
+
+                    $divided_advance_fees= [
+                        'student_id'=>$studentId,
+                        'standard_id'=>$title->standard_id,
+                        'term_id' =>$title->month_id,
+                        'syear' => $to_next_syear,
+                        'sub_institute_id' => $fee->sub_institute_id,
+                        'receipt_no' => $fee->reciept_id,
+                        'fees_html'=>$fee->paid_fees_html,
+                        'created_by'=>$fee->created_by,
+                        'payment_mode'=>$fee->payment_mode,
+                        'bank_name'=>$fee->bank_name,
+                        'cheque_bank_name'=>$fee->bank_name,
+                        'remark'=>$fee->remarks,
+                        'fees_discount'=>$fee->fees_discount,
+                        'fine'=>$fee->fine,
+                        'bank_branch'=>$fee->bank_branch,
+                        'receiptdate'=>$fee->receiptdate,
+                        'cheque_no'=>$fee->cheque_dd_no,
+                        'cheque_date'=>$fee->cheque_dd_date,
+                        'amount'=> $allocated,
+                        'receiptdate'=>$fee->receiptdate,
+                        'is_deleted'=>'N',
+                        'created_date'=>now(),
+                         $feesTitle => $allocated,
+                        // 'fees_title' => $feesTitle,
+                    ];
+                    // $insert_fees = DB::table('fees_collect')->insert($divided_advance_fees);
+
+                    //  $paid_off = [
+                    //     // 'standard_id'=>$fee->std_id,
+                    //     'syear' => $to_next_syear,
+                    //     'student_id' => $fee->student_id,
+                    //     'month_id' => $title->month_id,
+                    //     'sub_institute_id' => $fee->sub_institute_id,
+                    //     'is_deleted'=>'Y',
+                    //      'actual_amountpaid'=> $allocated,
+                    //     // 'fees_title' => $feesTitle,
+                    // ];
+                    // $insert_paidoff_fees = DB::table('fees_paid_other')->insert($paid_off);
+            // $i++;
+                // }
+            }
+                    // Break the loop if all the amount is allocated
+                    if ($remainingAmount <= 0) {
+                        break;
+                    }
+
+                }
+            }
+
+            $config_get = DB::table('fees_config_master')->where(['sub_institute_id'=>$sub_institute_id])->first();
+            $config_check = DB::table('fees_config_master')->where(['sub_institute_id'=>$sub_institute_id,'syear'=>$to_next_syear])->get();
+            if(count($config_check) > 0){
+            $config_insert = DB::table('fees_config_master')->insert([
+            "late_fees_amount"=>$config_get->late_fees_amount,
+            "send_sms"=>$config_get->send_sms,
+            "send_email"=>$config_get->send_email,
+            "fees_receipt_template"=>$config_get->fees_receipt_template,
+            "fees_bank_challan_template"=>$config_get->fees_bank_challan_template,
+            "fees_receipt_note"=>$config_get->fees_receipt_note,
+            "institute_name"=>$config_get->institute_name,
+            "pan_no"=>$config_get->pan_no,
+            "account_to_be_credited"=>$config_get->account_to_be_credited,
+            "cms_client_code"=>$config_get->cms_client_code,
+            "auto_head_counting"=>$config_get->auto_head_counting,
+            "nach_account_type"=>$config_get->nach_account_type,
+            "nach_registration_charge"=>$config_get->nach_registration_charge,
+            "nach_transaction_charge"=>$config_get->nach_transaction_charge,
+            "nach_failed_charge"=>$config_get->nach_failed_charge,
+            "bank_logo"=>$config_get->bank_logo,
+            "syear"=>$to_next_syear,
+            "sub_institute_id"=>$sub_institute_id,
+            ]);
+        }
+echo "<br> divided_advance_fees  "; echo "<pre>";print_r($divided_advance_fees);
+
+                        // }
+            
+        }
+            exit;
             if ($i > 1) {
                 $res['status'] = "0";
                 $res['message'] = $i." students is already exist in next year.";
@@ -352,7 +506,6 @@ class rollOverController extends Controller
                 $res['status'] = "1";
                 $res['message'] = "Student Data Rollover Successfully.";
             }
-
             return is_mobile($type, "rollover.index", $res, "redirect");
         }
         //END FOR ROLLOVER ALL DATA INCLUDING ALL STUDENTS   
@@ -395,6 +548,7 @@ class rollOverController extends Controller
                                 INNER JOIN standard st ON st.id = se.standard_id AND st.sub_institute_id = se.sub_institute_id
                                 WHERE se.student_id = '".$student_id."' AND se.syear = '".$from_current_syear."' 
                                 AND se.sub_institute_id = '".$sub_institute_id."' ");
+                  
                     // END UPDATE in tblstudent 
                 }
                 // END Check student is already exist in next year 
@@ -406,7 +560,6 @@ class rollOverController extends Controller
                 $res['status'] = "1";
                 $res['message'] = "Student Data Rollover Successfully.";
             }
-
             return is_mobile($type, "rollover.index", $res, "redirect");
         }
         //END FOR ROLLOVER ONLY ALL STUDENT DATA         
@@ -758,14 +911,16 @@ class rollOverController extends Controller
         if (count($from_institute_details) > 0) {
             $from_institute_name = $from_institute_details[0]['SchoolName'];
         }
+        $type='';
         $to_academic_sections = academic_sectionModel::where(['sub_institute_id' => $sub_institute_id])->get()->toArray();
 
         $res['status'] = 1;
         $res['message'] = "Success";
         $res['to_academic_sections'] = $to_academic_sections;
         $res['from_institute_name'] = $from_institute_name;
+        return is_mobile($type, "student.show_rollover_selected_students", $res, "view");
 
-        return view('student/show_rollover_selected_students', $res);
+        // return view('student/show_rollover_selected_students', $res);
     }
 
 }

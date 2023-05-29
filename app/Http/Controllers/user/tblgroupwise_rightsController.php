@@ -29,7 +29,7 @@ class tblgroupwise_rightsController extends Controller {
     public function create(Request $request) {
 
         $sub_institute_id = $request->session()->get('sub_institute_id');
-        $user_profiles = tbluserprofilemasterModel::where(['sub_institute_id' => $sub_institute_id])->orderBy('sort_order')->get()->toArray();
+        $user_profiles = tbluserprofilemasterModel::where(['sub_institute_id' => $sub_institute_id, 'status' => '1'])->orderBy('sort_order')->get()->toArray();
 
         // $data = tblmenumasterModel::where(['LEVEL' => 1,'status' => 1])->whereRaw("find_in_set('$sub_institute_id',sub_institute_id)")->orderBy('sort_order')->get()->toArray();
 
@@ -116,11 +116,11 @@ class tblgroupwise_rightsController extends Controller {
         
         $sub_institute_id = $request->session()->get('sub_institute_id');
 
-        $data = tblmenumasterModel::join('tblgroupwise_rights','tblmenumaster.id','=','tblgroupwise_rights.menu_id')->where(['LEVEL' => 1,'status' => 1,'tblgroupwise_rights.profile_id' => $profile_id,'tblgroupwise_rights.sub_institute_id'=>$sub_institute_id])->orderBy('tblmenumaster.sort_order','ASC')->get()->toArray();
+        $data = tblmenumasterModel::join('tblprofilewise_menu','tblmenumaster.id','=','tblprofilewise_menu.menu_id')->where(['LEVEL' => 1,'status' => 1,'tblprofilewise_menu.user_profile_id' => $profile_id,'tblprofilewise_menu.sub_institute_id'=>$sub_institute_id])->groupBy('tblmenumaster.id')->orderBy('tblmenumaster.sort_order','ASC')->get()->toArray();
 
-        $subMenuData = tblmenumasterModel::join('tblgroupwise_rights','tblmenumaster.id','=','tblgroupwise_rights.menu_id')->where(['LEVEL' => 2,'status' => 1,'tblgroupwise_rights.profile_id' => $profile_id,'tblgroupwise_rights.sub_institute_id'=>$sub_institute_id])->orderBy('tblmenumaster.sort_order','ASC')->get()->toArray();
+        $subMenuData = tblmenumasterModel::join('tblprofilewise_menu','tblmenumaster.id','=','tblprofilewise_menu.menu_id')->where(['LEVEL' => 2,'status' => 1,'tblprofilewise_menu.user_profile_id' => $profile_id,'tblprofilewise_menu.sub_institute_id'=>$sub_institute_id])->orderBy('tblmenumaster.sort_order','ASC')->get()->toArray();
 
-        $SubsubMenuData = tblmenumasterModel::join('tblgroupwise_rights','tblmenumaster.id','=','tblgroupwise_rights.menu_id')->where(['LEVEL' => 3,'status' => 1,'tblgroupwise_rights.profile_id' => $profile_id,'tblgroupwise_rights.sub_institute_id'=>$sub_institute_id])->orderBy('tblmenumaster.sort_order','ASC')->get()->toArray();
+        $SubsubMenuData = tblmenumasterModel::join('tblprofilewise_menu','tblmenumaster.id','=','tblprofilewise_menu.menu_id')->where(['LEVEL' => 3,'status' => 1,'tblprofilewise_menu.user_profile_id' => $profile_id,'tblprofilewise_menu.sub_institute_id'=>$sub_institute_id])->orderBy('tblmenumaster.sort_order','ASC')->get()->toArray();
 
         $i = 0;
         foreach ($subMenuData as $key => $value) {

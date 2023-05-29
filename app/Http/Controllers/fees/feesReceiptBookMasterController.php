@@ -88,7 +88,7 @@ class feesReceiptBookMasterController extends Controller
 //        $feeHeadList = fees_title::where(['syear' => $syear,'sub_institute_id' => $sub_institute_id,'other_fee_id' => '0'])->get()->toArray();
         return fees_title::where([
             'syear' => $syear, 'sub_institute_id' => $sub_institute_id,
-        ])->get()->toArray();
+        ])->orderBy('display_name', 'ASC')->get()->toArray();
     }
 
     public function store(Request $request)

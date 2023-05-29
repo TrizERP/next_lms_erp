@@ -13,41 +13,38 @@ $school_logo = session()->get('school_logo');
 
                         <img class="icon-nrml" src="{{ asset('/admin_dep/images/menu-dashboard.png') }}" alt="">
 
-                        <img class="icon-hvr" src="{{ asset('/admin_dep/images/menu-dashboard-white.png') }}"
-                            alt="">
+                        <img class="icon-hvr" src="{{ asset('/admin_dep/images/menu-dashboard-white.png') }}" alt="">
                     </span>
                     Dashboard
                 </a>
                 @if (!empty($menuMaster))
-                    @php
-                        $i = 1;
-                    @endphp
-                    @foreach ($menuMaster as $key => $value)
-                        @php
-                            $icon_name = $value['icon'];
-                            $icon_nrml = 'http://' . $_SERVER['HTTP_HOST'] . "/admin_dep/images/menu-$icon_name.png";
-                            $icon_hvr = 'http://' . $_SERVER['HTTP_HOST'] . "/admin_dep/images/menu-$icon_name-white.png";
-                        @endphp
-                        <a class="nav-link" id="menu-{{ $i }}-tab" data-toggle="pill"
-                            href="#menu-{{ $i }}" role="tab" aria-controls="menu-{{ $i }}"
-                            aria-selected="false">
-                            <span class="menu-main-icon">
-                                <img class="icon-nrml" src="{{ $icon_nrml }}" alt="">
-                                <img class="icon-hvr" src="{{ $icon_hvr }}" alt="">
-                            </span>
-                            {{ $value['name'] }}
-                        </a>
-                        @php $i++; @endphp
-                    @endforeach
+                @php
+                $i = 1;
+                @endphp
+                @foreach ($menuMaster as $key => $value)
+                @php
+                $icon_name = $value['icon'];
+                $icon_nrml = 'http://' . $_SERVER['HTTP_HOST'] . "/admin_dep/images/menu-$icon_name.png";
+                $icon_hvr = 'http://' . $_SERVER['HTTP_HOST'] . "/admin_dep/images/menu-$icon_name-white.png";
+                @endphp
+                <a class="nav-link" id="menu-{{ $i }}-tab" data-toggle="pill" href="#menu-{{ $i }}" role="tab" aria-controls="menu-{{ $i }}" aria-selected="false">
+                    <span class="menu-main-icon">
+                        <img class="icon-nrml" src="{{ $icon_nrml }}" alt="">
+                        <img class="icon-hvr" src="{{ $icon_hvr }}" alt="">
+                    </span>
+                    {{ $value['name'] }}
+                </a>
+                @php $i++; @endphp
+                @endforeach
                 @endif
 
                 <?php
-                if(session()->get('is_admin') != 1){
+                if (session()->get('is_admin') != 1) {
                     $sub_institute_id = session()->get('sub_institute_id');
                     $DUSER_ID = session()->get('DUSER_ID');
                     $DUSER_PWD = session()->get('DUSER_PWD');
                     $syear = session()->get('syear');
-            
+
                     $client_data = DB::select("select *,if(db_hrms is null,0,1) as rights,
                         if(db_library is null,0,1) as library_rights,s.logo
                     from school_setup s
@@ -74,81 +71,70 @@ $school_logo = session()->get('school_logo');
                         from school_setup s 
                         inner join tblclient c on c.id = s.client_id 
                         where s.Id = $sub_institute_id AND s.is_lms = 'Y'");
-                   
-                    if(count($lms_data) > 0)
-                    {
+
+                    if (count($lms_data) > 0) {
                         $lms_db_host = $lms_data[0]->db_host;
                         $lms_db_user = $lms_data[0]->db_user;
                         $lms_db_password = $lms_data[0]->db_password;
                         $lms_db = $lms_data[0]->db_lms;
                         $lms_rights = $lms_data[0]->lms_rights;
-                    }else{
+                    } else {
                         $lms_db_host = '';
                         $lms_db_user = '';
                         $lms_db_password = '';
                         $lms_db = '';
                         $lms_rights = '';
                     }
-            
+
                     $USER_GROUP_ID = "";
-                    if(session()->get('user_profile_name') == 'Admin')
-                    {
+                    if (session()->get('user_profile_name') == 'Admin') {
                         $USER_GROUP_ID = 1;
-                    }
-                    else if(session()->get('user_profile_name') == 'Teacher')
-                    {
+                    } else if (session()->get('user_profile_name') == 'Teacher') {
                         $USER_GROUP_ID = 2;
-                    }
-                    else if(session()->get('user_profile_name') == 'Student')
-                    {
+                    } else if (session()->get('user_profile_name') == 'Student') {
                         $USER_GROUP_ID = 3;
                     }
 
                     // $hrms_link = "?NEW_ERP=1&DUSER_ID=$DUSER_ID&USER_GROUP_ID=$USER_GROUP_ID&DUSER_NAME=$DUSER_ID&hrms_db_host=$db_host&hrms_db_user=$db_user&hrms_db_password=$db_password&hrms_db_hrms=$hrms_db_hrms&client_name=$client_name";
 
-                    $hrms_link = "?NEW_ERP=1&DUSER_ID=".base64_encode($DUSER_ID)."&USER_GROUP_ID=".base64_encode($USER_GROUP_ID)."&DUSER_NAME=".base64_encode($DUSER_ID)."&hrms_db_host=".base64_encode($db_host)."&hrms_db_user=".base64_encode($db_user)."&hrms_db_password=".base64_encode($db_password)."&hrms_db_hrms=".base64_encode($hrms_db_hrms)."&client_name=".base64_encode($client_name);
+                    $hrms_link = "?NEW_ERP=1&DUSER_ID=" . base64_encode($DUSER_ID) . "&USER_GROUP_ID=" . base64_encode($USER_GROUP_ID) . "&DUSER_NAME=" . base64_encode($DUSER_ID) . "&hrms_db_host=" . base64_encode($db_host) . "&hrms_db_user=" . base64_encode($db_user) . "&hrms_db_password=" . base64_encode($db_password) . "&hrms_db_hrms=" . base64_encode($hrms_db_hrms) . "&client_name=" . base64_encode($client_name);
 
                     //$library_link = "?NEW_ERP=1&DUSER_ID=".base64_encode($DUSER_ID)."&USER_GROUP_ID=".base64_encode($USER_GROUP_ID)."&DUSER_PWD=".base64_encode($DUSER_PWD)."&db_host=".base64_encode($library_host)."&db_user=".base64_encode($library_user)."&db_password=".base64_encode($library_password)."&db_library=".base64_encode($library_db)."&solution_db=".base64_encode('development_erp')."&school_name=".base64_encode($school_name)."&SUB_INSTITUTE_ID=".base64_encode($sub_institute_id)."&school_logo=".base64_encode($school_logo)."&dyear=".base64_encode($syear);
 
                     $library_link = "?NEW_ERP=1&DUSER_ID=$DUSER_ID&USER_GROUP_ID=$USER_GROUP_ID&DUSER_PWD=$DUSER_PWD&db_host=$library_host&db_user=$library_user&db_password=$library_password&db_library=$library_db&solution_db=development_erp&school_name=$school_name&SUB_INSTITUTE_ID=$sub_institute_id&school_logo=$school_logo&dyear=$syear";
-                    
+
                     //$library_link = "?".App\Helpers\encrypt_url('encrypt',"it&1&$DUSER_ID&$USER_GROUP_ID&$DUSER_PWD&$library_host&$library_user&$library_password&$library_db&development_erp&$school_name&$sub_institute_id&$school_logo&$syear");
 
-                    $lms_link=  "lmslogin.php?SUB_INSTITUTE_ID=".$sub_institute_id."&U=".base64_encode($DUSER_ID)."&P=".base64_encode($DUSER_PWD)."";
+                    $lms_link =  "lmslogin.php?SUB_INSTITUTE_ID=" . $sub_institute_id . "&U=" . base64_encode($DUSER_ID) . "&P=" . base64_encode($DUSER_PWD) . "";
 
-                    $dailylms_link = "dailylmslogin.php?SUB_INSTITUTE_ID=".$sub_institute_id."&U=".base64_encode($DUSER_ID)."&P=".base64_encode($DUSER_PWD)."";
+                    $dailylms_link = "dailylmslogin.php?SUB_INSTITUTE_ID=" . $sub_institute_id . "&U=" . base64_encode($DUSER_ID) . "&P=" . base64_encode($DUSER_PWD) . "";
 
-                    if($hrms_rights == 1 && Session::get('user_profile_name') != 'Student')
-                    {
+                    if ($hrms_rights == 1 && Session::get('user_profile_name') != 'Student') {
                 ?>
 
-                <a class="nav-link" target="_blank"
-                    href="http://150.129.172.110/new_hrms/Products/hrms/login.php{{ $hrms_link }}">
-                    <span class="menu-main-icon">
-                        <i class="mdi mdi-view-compact-outline"></i>
-                    </span>
-                    HRMS
-                </a>
+                        <a class="nav-link" target="_blank" href="http://150.129.172.110/new_hrms/Products/hrms/login.php{{ $hrms_link }}">
+                            <span class="menu-main-icon">
+                                <i class="mdi mdi-view-compact-outline"></i>
+                            </span>
+                            HRMS
+                        </a>
 
-                <?php } ?>
+                    <?php } ?>
 
-                <?php 
-                    if($library_rights == 1 && Session::get('user_profile_name') != 'Student')
-                    {
-                ?>
-                <a class="nav-link" target="_blank"
-                    href="http://dev.triz.co.in/library/admin/index.php{{ $library_link }}">
-                    <span class="menu-main-icon">
-                        <i class="mdi mdi-library-shelves"></i>
-                    </span>
-                    Library
-                </a>
+                    <?php
+                    if ($library_rights == 1 && Session::get('user_profile_name') != 'Student') {
+                    ?>
+                        <a class="nav-link" target="_blank" href="http://dev.triz.co.in/library/admin/index.php{{ $library_link }}">
+                            <span class="menu-main-icon">
+                                <i class="mdi mdi-library-shelves"></i>
+                            </span>
+                            Library
+                        </a>
 
-                <?php 
-                    } 
-
+                <?php
+                    }
                 }
-            ?>
+                ?>
 
 
             </div>
@@ -159,133 +145,145 @@ $school_logo = session()->get('school_logo');
                 echo "<pre>"; print_r($submenuMaster); exit;
             @endphp --}}
             @if (!empty($menuMaster))
-                @php
-                    
-                    $i = 1;
-                    
-                @endphp
-            @endif
-            @if (!empty($submenuMaster[$value['id']]))
-                @foreach ($menuMaster as $key => $value)
-                    <div class="tab-pane" id="menu-{{ $i }}" role="tabpanel"
-                        aria-labelledby="menu-{{ $i }}-tab">
-                        <div class="submenu-header d-flex align-items-center justify-content-between">
-                            <h5 class="m-0">{{ $value['name'] }}</h5>
-                            <a href="javascript:();" class="submenu-sidebar" data-toggle="tooltip1" data-placement="top"
-                                title="Hide/Show">
-                                <img src="{{ asset('/admin_dep/images/bar.png') }}" alt=""></a>
-                        </div>
-                        <div class="subnav-wrapper">
-                            @foreach ($submenuMaster[$value['id']] as $subkey => $submenuValue)
-                                @if ($submenuValue['link'] == 'javascript:void(0);' || $submenuValue['link'] == '')
-                                    <div class="sub-drop-panel">
-                                        <div class="sub-drop-header d-flex align-items-center justify-content-between">
-                                            <div class="panel-click flex-fill">
-                                                <i class="{{ $submenuValue['icon'] }}" data-icon="v"></i>
-                                                <span class="title"
-                                                    onclick="load_rightside_menu({{ $submenuValue['id'] }},{{ $i }});">{{ $submenuValue['name'] }}</span>
-                                            </div>
+            @php
 
-                                            {{-- @if (!empty($submenuValue['quick_menu']) && !empty($quickmenuMaster[$submenuValue['id']]))
+            $i = 1;
+
+            @endphp
+            @foreach ($menuMaster as $key => $value)
+            @if (!empty($submenuMaster[$value['id']]))
+
+            <div class="tab-pane" id="menu-{{ $i }}" role="tabpanel" aria-labelledby="menu-{{ $i }}-tab">
+                <div class="submenu-header d-flex align-items-center justify-content-between">
+                    <h5 class="m-0">{{ $value['name'] }}</h5>
+                    <a href="javascript:();" class="submenu-sidebar" data-toggle="tooltip1" data-placement="top" title="Hide/Show">
+                        <img src="{{ asset('/admin_dep/images/bar.png') }}" alt=""></a>
+                </div>
+                <div class="subnav-wrapper">
+                    @foreach ($submenuMaster[$value['id']] as $subkey => $submenuValue)
+                    @if ($submenuValue['link'] == 'javascript:void(0);' || $submenuValue['link'] == '')
+                    <div class="sub-drop-panel">
+                        <div class="sub-drop-header d-flex align-items-center justify-content-between">
+                            <div class="panel-click flex-fill">
+                                <i class="{{ $submenuValue['icon'] }}" data-icon="v"></i>
+                                <span class="title" onclick="load_rightside_menu({{ $submenuValue['id'] }},{{ $i }});">{{ $submenuValue['name'] }}</span>
+                            </div>
+
+                            {{-- @if (!empty($submenuValue['quick_menu']) && !empty($quickmenuMaster[$submenuValue['id']]))
                                 <div class="dot-sub-dropdown">
                                     <span class="dot-icon">
                                         <img src="{{ asset('/admin_dep/images/three-dots.png') }}" alt="">
-                                    </span>
-                                    <div class="abs-submenu">
-                                        <div class="abs-submenu-header d-flex align-items-center justify-content-between">
-                                            <h5 class="m-0">Quick Links</h5>
-                                        </div>
-                                        <div class="abs-submenu-body">
-                                            <ul class="list-unstyled sub-drop-nav">
-                                                @foreach ($quickmenuMaster[$submenuValue['id']] as $quickkey => $quickValue)
-                                                    <li><a href="{{ route($quickValue['link']) }}">{{$quickValue['name']}}</a></li>
-                                                @endforeach
-                                            </ul>
-                                        </div>
-                                    </div>
-                                </div> 
-                                @endif --}}
-                                            <span class="drop-icn">
-                                                <em class="fas fa-angle-down"></em>
-                                            </span>
+                            </span>
+                            <div class="abs-submenu">
+                                <div class="abs-submenu-header d-flex align-items-center justify-content-between">
+                                    <h5 class="m-0">Quick Links</h5>
+                                </div>
+                                <div class="abs-submenu-body">
+                                    <ul class="list-unstyled sub-drop-nav">
+                                        @foreach ($quickmenuMaster[$submenuValue['id']] as $quickkey => $quickValue)
+                                        <li><a href="{{ route($quickValue['link']) }}">{{$quickValue['name']}}</a></li>
+                                        @endforeach
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                        @endif --}}
+                        <span class="drop-icn">
+                            <em class="fas fa-angle-down"></em>
+                        </span>
 
-                                        </div>
-                                        <div class="sub-drop-body">
-                                            <ul class="list-unstyled sub-drop-nav">
-                                                @if (!empty($subChildmenuMaster[$submenuValue['id']]))
-                                                    @foreach ($subChildmenuMaster[$submenuValue['id']] as $subChildmenuKey => $subChildmenuValue)
-                                                        @if ($subChildmenuValue['link'] == 'javascript:void(0);' || $subChildmenuValue['link'] == '')
-                                                            <li> <a href="javascript:void(0);"
-                                                                    onclick="sessionMenu({{ $subChildmenuValue['id'] }});"><i
-                                                                        class="{{ $subChildmenuValue['icon'] }}"
-                                                                        data-icon="v"></i><span class="hide-menu"
-                                                                        id="{{ $subChildmenuValue['name'] }}">{{ $subChildmenuValue['name'] }}</span></a>
-                                                            </li>
-                                                        @else
-                                                            <li><a href="{{ route($subChildmenuValue['link']) }}"
-                                                                    onclick="sessionMenu({{ $subChildmenuValue['id'] }});redirect_pages_soni('{{ route($subChildmenuValue['link']) }}','{{ $submenuValue['id'] }}','{{ $i }}');"><i
-                                                                        class="{{ $subChildmenuValue['icon'] }}"
-                                                                        data-icon="v"></i><span class="hide-menu"
-                                                                        id="{{ $subChildmenuValue['name'] }}">{{ $subChildmenuValue['name'] }}</span></a>
-                                                            </li>
-                                                        @endif
-                                                    @endforeach
-                                                    @if ($submenuValue['name'] == 'Admission')
-                                                        {{-- <li>
+                    </div>
+                    <div class="sub-drop-body">
+                        <ul class="list-unstyled sub-drop-nav">
+
+                            @if (!empty($subChildmenuMaster[$submenuValue['id']]))
+                            @foreach ($subChildmenuMaster[$submenuValue['id']] as $subChildmenuKey => $subChildmenuValue)
+                            @if ($subChildmenuValue['link'] == 'javascript:void(0);' || $subChildmenuValue['link'] == '')
+                            <li>
+                                <a href="javascript:void(0);" onclick="sessionMenu({{ $subChildmenuValue['id'] }});">
+                                    <i class="{{ $subChildmenuValue['icon'] }}" data-icon="v"></i>
+                                    <span class="hide-menu" id="{{ $subChildmenuValue['name'] }}">
+                                        {{ $subChildmenuValue['name'] }}
+                                    </span>
+                                </a>
+                            </li>
+                            @else
+                            @if (Route::has($subChildmenuValue['link']))
+                            <li>
+                                <a href="{{ route($subChildmenuValue['link']) }}" onclick="sessionMenu({{ $subChildmenuValue['id'] }});redirect_pages_soni('{{ route($subChildmenuValue['link']) }}','{{ $submenuValue['id'] }}','{{ $i }}');">
+                                    <i class="{{ $subChildmenuValue['icon'] }}" data-icon="v"></i>
+                                    <span class="hide-menu" id="{{ $subChildmenuValue['name'] }}">
+                                        {{ $subChildmenuValue['name'] }}
+                                    </span>
+                                </a>
+                            </li>
+                            @else
+                            <!-- Handle case when route is not defined -->
+                            <li>
+                                <a href="#">
+                                    <i class="{{ $subChildmenuValue['icon'] }}" data-icon="v"></i>
+                                    <span class="hide-menu" id="{{ $subChildmenuValue['name'] }}">
+                                        {{ $subChildmenuValue['name'] }}
+                                    </span>
+                                </a>
+                            </li>
+                            @endif
+                            @endif
+                            @endforeach
+
+                            @if ($submenuValue['name'] == 'Admission')
+                            {{-- <li>
                                                 <a target="_blank" href="{{route('onlineEnquiryFirst', ['id' => Session::get('sub_institute_id'), 'title' => Session::get('school_name')])}}"><i class="mdi mdi-monitor fa-fw" data-icon="v"></i> Online Admission Form </a>
-                                            </li> --}}
-                                                    @endif
-                                                @endif
-                                            </ul>
-                                        </div>
-                                    </div>
-                                @else
-                                    <div class="sub-drop-panel">
-                                        <div class="sub-drop-header d-flex align-items-center justify-content-between">
-                                            <li
-                                                class="sub-drop-header d-flex align-items-center justify-content-between w-100">
-                                                <!--a href="{{ route($submenuValue['link']) }}" onclick="load_rightside_menu({{ $submenuValue['id'] }},{{ $i }});sessionMenu({{ $submenuValue['id'] }});" class="text-dark"-->
-                                                <a href="{{ route($submenuValue['link']) }}"
-                                                    onclick="sessionMenu({{ $submenuValue['id'] }});redirect_pages_soni('{{ route($submenuValue['link']) }}','{{ $submenuValue['id'] }}','{{ $i }}');"
-                                                    class="panel-click flex-fill">
-                                                    <i class="{{ $submenuValue['icon'] }} mr-1"
-                                                        data-icon="v"></i><span
-                                                        class="title">{{ $submenuValue['name'] }}</span>
-                                                </a>
-                                                {{-- @if (!empty($submenuValue['quick_menu']) && !empty($quickmenuMaster[$submenuValue['id']]))
+                            </li> --}}
+                            @endif
+                            @endif
+                        </ul>
+                    </div>
+                </div>
+                @else
+                <div class="sub-drop-panel">
+                    <div class="sub-drop-header d-flex align-items-center justify-content-between">
+                        <li class="sub-drop-header d-flex align-items-center justify-content-between w-100">
+
+                            <a href="{{ route($submenuValue['link']) }}" onclick="sessionMenu({{ $submenuValue['id'] }});redirect_pages_soni('{{ route($submenuValue['link']) }}','{{ $submenuValue['id'] }}','{{ $i }}');" class="panel-click flex-fill">
+                                <i class="{{ $submenuValue['icon'] }} mr-1" data-icon="v"></i><span class="title">{{ $submenuValue['name'] }}</span>
+                            </a>
+                            {{-- @if (!empty($submenuValue['quick_menu']) && !empty($quickmenuMaster[$submenuValue['id']]))
                                  <div class="dot-sub-dropdown">
                                     <span class="dot-icon">
                                         <img src="{{ asset('/admin_dep/images/three-dots.png') }}" alt="">
-                                    </span>
-                                    <div class="abs-submenu">
-                                        <div class="abs-submenu-header d-flex align-items-center justify-content-between">
-                                            <h5 class="m-0">Quick Links</h5>
-                                        </div>
-                                        <div class="abs-submenu-body">
-                                            <ul class="list-unstyled sub-drop-nav">
-                                                @foreach ($quickmenuMaster[$submenuValue['id']] as $quickkey => $quickValue)
-                                                    <li><a href="{{ route($quickValue['link']) }}">{{$quickValue['name']}}</a></li>
-                                                @endforeach
-                                            </ul>
-                                        </div>
-                                    </div>
-                                </div> 
-                                @endif --}}
-                                            </li>
-                                        </div>
-                                    </div>
-                                @endif
-                            @endforeach
-                        </div>
+                            </span>
+                            <div class="abs-submenu">
+                                <div class="abs-submenu-header d-flex align-items-center justify-content-between">
+                                    <h5 class="m-0">Quick Links</h5>
+                                </div>
+                                <div class="abs-submenu-body">
+                                    <ul class="list-unstyled sub-drop-nav">
+                                        @foreach ($quickmenuMaster[$submenuValue['id']] as $quickkey => $quickValue)
+                                        <li><a href="{{ route($quickValue['link']) }}">{{$quickValue['name']}}</a></li>
+                                        @endforeach
+                                    </ul>
+                                </div>
+                            </div>
                     </div>
-                    @php $i++; @endphp
-                @endforeach
+                    @endif --}}
+                    </li>
+                </div>
+            </div>
             @endif
-
+            @endforeach
         </div>
-    </aside>
+</div>
+@php $i++; @endphp
+@endif
+
+@endforeach
+@endif
+
+</div>
+</aside>
 
 
-    <!-- ============================================================== -->
-    <!-- End Left Sidebar -->
-    <!-- ============================================================== -->
+<!-- ============================================================== -->
+<!-- End Left Sidebar -->
+<!-- ============================================================== -->

@@ -136,19 +136,11 @@
                                     @endphp
                                     @if(isset($data['fees_data']))
                                         @foreach($fees_data as $key => $value)
-                                            <?php
-                                            //echo "<pre>";
-                                            //print_r($value);
-                                            //dd($value);
-                                            ?>
+                                           
                                             <tr>
-                                                @if($value['fees_type'] == "REGULAR")
-                                                    <td><input id="{{$value['id']}}" value="{{$value['receipt_no']}}"
+                                                <td><input id="{{$value['id']}}" value="{{$value['receipt_no']}}"
                                                                name="receipt_no[]" type="checkbox"></td>
-                                                @else
-                                                    <td>-</td>
-                                                @endif
-
+                                             
                                                 <td>{{$value['enrollment_no']}}</td>
                                                 <td>{{$value['student_name']}}</td>
                                                 <td>{{$value['standard_name']}}</td>
@@ -163,7 +155,11 @@
                                                     <input type="hidden" name="student_id[{{$value['receipt_no']}}]"
                                                            value="{{$value['student_id']}}">
                                                 </td>
-                                                <td>{{$value['total_amount']}}</td>
+                                                <td><input type="hidden" name="totAmt[{{$value['receipt_no']}}]"
+                                                           value="{{$value['total_amount']}}">
+                                                    <input type="hidden" name="month_id"
+                                                           value="{{$value['month_id']}}">{{$value['total_amount']}}</td>
+                                                           
                                                 <td>{{$value['receiptdate']}}</td>
                                                 <td>{{$value['created_on']}}</td>
                                                 <td>{{$value['payment_mode']}}</td>

@@ -20,7 +20,7 @@ return new class extends Migration
             $table->integer('total_day');
             $table->string('month');
             $table->integer('year');
-            $table->json('employee_salary_data');
+            $table->longText('employee_salary_data');
             $table->integer('total_deduction')->nullable();
             $table->integer('total_payment')->nullable();
             $table->integer('received_by')->nullable();

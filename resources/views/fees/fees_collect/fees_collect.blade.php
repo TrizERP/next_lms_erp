@@ -138,25 +138,16 @@
                                 <form action="{{ route('fees_collect.store') }}" enctype="multipart/form-data"
                                       method="post">
                                     @csrf
-                                    <input type="hidden" name="grade_id"
-                                           value="<?php echo $data['stu_data']['grade_id']; ?>">
-                                    <input type="hidden" name="standard_id"
-                                           value="<?php echo $data['stu_data']['std_id']; ?>">
-                                    <input type="hidden" name="div_id"
-                                           value="<?php echo $data['stu_data']['div_id']; ?>">
-                                    <input type="hidden" name="student_id"
-                                           value="<?php echo $data['stu_data']['student_id']; ?>">
-                                    <input type="hidden" name="std_div"
-                                           value="<?php echo $data['stu_data']['stddiv']; ?>">
-                                    <input type="hidden" name="full_name"
-                                           value="<?php echo $data['stu_data']['name']; ?>">
-                                    <input type="hidden" name="mobile"
-                                           value="<?php echo $data['stu_data']['mobile']; ?>">
-                                    <input type="hidden" name="uniqueid"
-                                           value="<?php echo $data['stu_data']['uniqueid']; ?>">
-                                    <input type="hidden" name="enrollment"
-                                           value="<?php echo $data['stu_data']['enrollment']; ?>">
-
+                                    <input type="hidden" name="grade_id" value="<?php echo $data['stu_data']['grade_id']; ?>">
+                                    <input type="hidden" name="standard_id" value="<?php echo $data['stu_data']['std_id']; ?>">
+                                    <input type="hidden" name="div_id" value="<?php echo $data['stu_data']['div_id']; ?>">
+                                    <input type="hidden" name="student_id" value="<?php echo $data['stu_data']['student_id']; ?>">
+                                    <input type="hidden" name="std_div" value="<?php echo $data['stu_data']['stddiv']; ?>">
+                                    <input type="hidden" name="full_name" value="<?php echo $data['stu_data']['name']; ?>">
+                                    <input type="hidden" name="mobile" value="<?php echo $data['stu_data']['mobile']; ?>">
+                                    <input type="hidden" name="uniqueid" value="<?php echo $data['stu_data']['uniqueid']; ?>">
+                                    <input type="hidden" name="enrollment" value="<?php echo $data['stu_data']['enrollment']; ?>">
+                                    <input type="hidden" name="medium" value="<?php echo $data['stu_data']['medium']; ?>">
 
                                     <div class="table-responsive col-md-12" style="border-top: 2px solid black;">
                                         <table class="table table-stripped">

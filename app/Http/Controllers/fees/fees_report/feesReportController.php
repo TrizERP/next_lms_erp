@@ -116,19 +116,34 @@ class feesReportController extends Controller
 
         $extra_fo = "  AND fo.syear = '" . $syear . "' AND te.syear = '" . $syear . "' AND t.sub_institute_id = '" . $sub_institute_id . "' AND fo.sub_institute_id = '" . $sub_institute_id . "' AND fo.is_deleted = 'N' ";
 
-        if ($grade != '') {
+        /*if ($grade != '') {
             $extra_fp .= " AND te.grade_id = '" . $grade . "'";
             $extra_fo .= " AND te.grade_id = '" . $grade . "'";
+        }*/
+        if (!empty($grade)) {
+            $gradeString = implode("','", $grade); // Convert the array to a comma-separated string
+            $extra_fp .= " AND te.grade_id IN ('" . $gradeString . "')"; // Use IN operator for multiple values
+            $extra_fo .= " AND te.grade_id IN ('" . $gradeString . "')"; // Use IN operator for multiple values
         }
 
-        if ($standard != '') {
+        /*if ($standard != '') {
             $extra_fp .= " AND te.standard_id = '" . $standard . "'";
             $extra_fo .= " AND te.standard_id = '" . $standard . "'";
+        }*/
+        if (!empty($standard)) {
+            $standardString = implode("','", $standard); // Convert the array to a comma-separated string
+            $extra_fp .= " AND te.standard_id IN ('" . $standardString . "')"; // Use IN operator for multiple values
+            $extra_fo .= " AND te.standard_id IN ('" . $standardString . "')"; // Use IN operator for multiple values
         }
 
-        if ($division != '') {
+        /*if ($division != '') {
             $extra_fp .= " AND te.section_id = '" . $division . "'";
             $extra_fo .= " AND te.section_id = '" . $division . "'";
+        }*/
+        if (!empty($division)) {
+            $divisionString = implode("','", $division); // Convert the array to a comma-separated string
+            $extra_fp .= " AND te.section_id IN ('" . $divisionString . "')"; // Use IN operator for multiple values
+            $extra_fo .= " AND te.section_id IN ('" . $divisionString . "')"; // Use IN operator for multiple values
         }
 
         if ($enrollment_no != '') {

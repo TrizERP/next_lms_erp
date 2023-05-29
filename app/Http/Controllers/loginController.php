@@ -18,6 +18,14 @@ class loginController extends Controller
 
     public function index(Request $request)
     {
+       if(!empty(session('login_data')) ){
+            $login_data = session('login_data');
+            $email=$login_data['email'];
+            $password = $login_data['password'];
+            $captchaText = env('CAPTCHA');
+            $type=$login_data['type'];
+       }else{
+
         $validator = Validator::make($request->all(), [
             'email'    => 'required',
             'password' => 'required',
@@ -42,7 +50,7 @@ class loginController extends Controller
         $password = $request->input("password");
         $captchaText = $request->input("captchaText");
 //        $hid_captcha = $request->input("hid_captcha");
-
+    }
         if ($captchaText != env('CAPTCHA')) {
             $validator = Validator::make($request->all(), [
                 'captchaText' => 'required|captcha',
@@ -90,15 +98,16 @@ class loginController extends Controller
         //           ->get();
 
         $a = loginModel::select(DB::raw('id,user_name,password,name_suffix,first_name,middle_name,last_name,email,mobile,gender,
-		birthdate,address,city,state,pincode,user_profile_id,join_year,image,plain_password,sub_institute_id,client_id,is_admin,status,last_login'))
+		birthdate,address,city,state,pincode,user_profile_id,join_year,image,plain_password,sub_institute_id,client_id,is_admin,status,created_on as last_login,expire_date'))
             ->where(['email' => $email, 'password' => $password, 'status' => "1"]);
 
         $data = tblstudentModel::select(DB::raw('id,username as user_name,password,"" as name_suffix,first_name,middle_name,last_name,email,
             mobile, gender,dob as birthdate,address,city,state,pincode,user_profile_id,admission_year as join_year,image,"student" as plain_password,
-            sub_institute_id,"" as client_id,"" as is_admin,status,created_on as last_login'))
+            sub_institute_id,"" as client_id,"" as is_admin,status,created_on as last_login,expire_date'))
             ->where(['email' => $email, 'password' => md5($password), 'status' => "1"])
             ->union($a)
             ->get();
+
 
         // $result = DB::select("SELECT id,user_name,email,password,user_profile_id
         // 					FROM tbluser
@@ -312,6 +321,7 @@ class loginController extends Controller
                             ->groupBy('syear')->get()->toArray();
 
                         $request->session()->put('sub_institute_id', $user['sub_institute_id']);
+                        $request->session()->put('expire_date', $schoolData[0]['expire_date']);
                         $request->session()->put('syear', $getTermId[0]['syear']);
                         $request->session()->put('term_id', $getTermId[0]['term_id']);
                         $request->session()->put('academicTerms', $getAcademicTerms);
@@ -359,10 +369,11 @@ class loginController extends Controller
                     $res['data'] = $user;
                     $res['academicTerms'] = $getAcademicTerms;
                     $res['academicYears'] = $getAcademicYear;
-                    $check_data = DB::table('fees_title')->where('sub_institute_id',$user['sub_institute_id'])->get();
-                    // return $check_data;exit;
-                    if(count($check_data) > 0){
-                    return is_mobile($type, "dashboard", $res);
+                    
+                    // return $schoolData[0]['expire_date'];exit;
+                    // if($userprofiledetails[0]['name']=='Admin' && strtotime($user['last_login']) <= strtotime('-30 days')){
+                    if($schoolData[0]['expire_date'] == null){
+                        return is_mobile($type, "dashboard", $res);
                     }else{
                         return is_mobile($type, "setup-institute-details", $res,'redirect');
                     }

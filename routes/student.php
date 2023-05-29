@@ -82,7 +82,7 @@ Route::group(['prefix' => 'student', 'middleware' => ['session', 'menu', 'logRou
     Route::resource('rollover', rollOverController::class);
     Route::resource('house_automation', houseAutomationController::class);
 
-    Route::post('selected_student_view', [rollOverController::class, 'selected_student_view'])->name("selected_student_view");
+    Route::get('selected_student_view', [rollOverController::class, 'selected_student_view'])->name("selected_student_view");
 
     Route::post('ajax_toAcademicSections', [studentTransferController::class, 'ajax_toAcademicSections'])->name('ajax_toAcademicSections');
     Route::post('ajax_toStandards', [studentTransferController::class, 'ajax_toStandards'])->name('ajax_toStandards');
