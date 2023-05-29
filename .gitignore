@@ -2,7 +2,6 @@
 node_modules/
 npm-debug.log
 yarn-error.log
-<<<<<<< HEAD
 
 # Laravel 4 specific
 bootstrap/compiled.php
@@ -22,12 +21,9 @@ Homestead.yaml
 Homestead.json
 /.vagrant
 .phpunit.result.cache
-=======
 /.idea
 /.vscode
->>>>>>> main
 
-#TRIZ
 /public/ckeditor_wiris
 /public/hrms
 /public/html
@@ -50,8 +46,5 @@ Homestead.json
 /public/tooltip
 /public/triz-lms
 /public/unlink_content
-<<<<<<< HEAD
+/public/import
 vendor
-=======
-vendor
->>>>>>> main

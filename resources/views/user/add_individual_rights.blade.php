@@ -86,41 +86,19 @@
 
             $('#user_id').find('option').remove().end().append('<option value="">Select User</option>').val('');
 
-        $.ajax({url: path,data:'profile_id='+x, success: function(result){
+        $.ajax({url: path,data:'profile_id='+x, success: function(response){
+            var result = response[3];
+            var main_data = response[0];
+            var subdata= response[1];
+            var lastdata = response[2];
 
+            
             for(var i=0;i < result.length;i++){
                 $("#user_id").append($("<option></option>").val(result[i]['id']).html(result[i]['user_name']));
             }
-    }});
-    }
 
-    function clearCheckBoxs(){
-        $('input[type="checkbox"]').each(function() {
-            this.checked = false;
-        });
-    }
 
-    function getIndividualRightsData(x){
-        var profile_id = document.getElementById("profile_id").value;
-        $('input[type="checkbox"]').each(function() {
-            this.checked = false;
-        });
-         // $("#main-data").empty(); 
-        
-        var path = "{{ route('ajax_individualrights') }}";
-        
-        $.ajax({url: path,data:'profile_id='+profile_id+'&user_id='+x, success: function(result){
-        
-            // console.log(result[1]);
-            // console.log(result[2]);
-            // console.log(result[3]);
-
-            var main_data = result[0];
-            var subdata = result[1];
-            var lastdata = result[2];
-            var rights = result[3];
-
-            if(main_data !=0 && subdata != 0 && lastdata != 0 ){
+             if(main_data !=0 && subdata != 0 && lastdata != 0 ){
 
             if(typeof(main_data) != "undefined" && main_data !== null) {
                  $.each(main_data, function (i, item) {
@@ -249,7 +227,34 @@
         });
     }
 
-            if ("add" in rights)
+            
+        }else{
+        $('table #main-data').append(`<tr><td colspan=5  style="text-align:center">No Rights Given</td></tr>`);
+    }
+    }});
+    }
+
+    function clearCheckBoxs(){
+        $('input[type="checkbox"]').each(function() {
+            this.checked = false;
+        });
+    }
+
+    function getIndividualRightsData(x){
+        var profile_id = document.getElementById("profile_id").value;
+        $('input[type="checkbox"]').each(function() {
+            this.checked = false;
+        });
+         // $("#main-data").empty(); 
+        
+        var path = "{{ route('ajax_individualrights') }}";
+        
+        $.ajax({url: path,data:'profile_id='+profile_id+'&user_id='+x, success: function(rights){
+        
+            // console.log(result[1]);
+            // console.log(result[2]);
+            // console.log(result[3]);
+if ("add" in rights)
             {
                 for (i = 0; i < rights.add.length; i++) {
                     var menuAdd = rights.add[i];
@@ -298,9 +303,8 @@
                     }
                 }
             }
-        }else{
-        $('table #main-data').append(`<tr><td colspan=5  style="text-align:center">No Rights Given</td></tr>`);
-    }
+
+           
     }});
     }
 </script>

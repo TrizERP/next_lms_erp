@@ -30,7 +30,7 @@
                     $division_id = $data['division_id'];
                 }
             @endphp   
-            <form action="{{ route('missing_document_report.create') }}" enctype="multipart/form-data">                
+            <form action="{{ route('inactive_student_report.create') }}" enctype="multipart/form-data">                
                 @csrf  
                 <div class="row">                    
                     {{ App\Helpers\SearchChain('4','single','grade,std,div',$grade_id,$standard_id,$division_id) }}

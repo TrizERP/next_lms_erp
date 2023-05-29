@@ -356,7 +356,7 @@ class fees_collect_controller extends Controller
         $other_bk_off2 = OtherBreackOfflast($stu_arr, $search_ids);
         $other_bk_off_month_wise2 = OtherBreackOfMonthlast($stu_arr);
         $other_bk_off_month_head_wise2 = OtherBreackOfMonthHeadlast($stu_arr, $search_ids);
-        $year_arr2 = FeeMonthIdlast();
+        $year_arr2 = FeeMonthIdlast() ?? [];
         $head_wise_fees2 = FeeBreakoffHeadWiselast($stu_arr);
        // echo "<pre>";print_r($head_wise_fees2);
         $reg_fee_heads2 = [];
@@ -513,7 +513,7 @@ class fees_collect_controller extends Controller
                 $syears[$key] = session()->get('syear');
                 // echo $standard_ids;echo "is in current year<br>";
             }
-            if(array_key_exists($key,$year_arr2)){
+            if(isset($year_arr2) && array_key_exists($key,$year_arr2)){
                 // $standard_ids
                 $standard_ids[$key] = ($_REQUEST['standard_id']-1);
                 $syears[$key] = (session()->get('syear')-1);
@@ -588,7 +588,7 @@ class fees_collect_controller extends Controller
                 $insert_arr = [
                     'student_id'       => $stu_arr[0],
                     'month_id'         => $month_id,
-                    'syear'            => $syears[$month_id],
+                    'syear'            => isset($syear) ? $syears[$month_id] : session()->get('syear'),
                     'sub_institute_id' => session()->get('sub_institute_id'),
                     'payment_mode'     => $_REQUEST['PAYMENT_MODE'],
                     'created_date'     => date('Y-m-d h:i:s'),
@@ -1211,7 +1211,7 @@ class fees_collect_controller extends Controller
             if ($payMethod == '') {
                 $payment_mode = $payMethod;
             } else {
-                $payment_mode = $payMethod.strtoupper($_REQUEST['bank_name']).' - '.$_REQUEST['cheque_no'];
+                $payment_mode = $payMethod.' '.strtoupper($_REQUEST['bank_name']).' - '.$_REQUEST['cheque_no'];
             }
 
             if (isset($_REQUEST['remarks']) && $_REQUEST['remarks'] != '' && $_REQUEST['remarks'] != '-') {
@@ -1229,6 +1229,7 @@ class fees_collect_controller extends Controller
 
             $tData = json_decode(json_encode($tData), true);
 
+            $medium = $_REQUEST['medium'] ?? '-';
             $uniqueid = $_REQUEST['uniqueid'] ?? '-';
             $enrollment = $_REQUEST['enrollment'] ?? '-';
 
@@ -1251,7 +1252,7 @@ class fees_collect_controller extends Controller
                 $html_content = str_replace(htmlspecialchars("<<receipt_line_4>>"), $receipt_book_arr->receipt_line_4,
                     $html_content);
             }
-
+            $html_content = str_replace(htmlspecialchars("<<student_board_value>>"), $medium, $html_content);
             $html_content = str_replace(htmlspecialchars("<<admission_number_value>>"), $uniqueid, $html_content);
             $html_content = str_replace(htmlspecialchars("<<receipt_year_value>>"), $edu_year, $html_content);
 
@@ -1979,6 +1980,7 @@ class fees_collect_controller extends Controller
             "stddiv"                        => $reg_bk_off[0]->standard_name."/".$reg_bk_off[0]->division_name,
             "admission"                     => $reg_bk_off[0]->admission_year,
             "email"                         => $reg_bk_off[0]->email,
+            "medium"                        => $reg_bk_off[0]->medium,
             "pending"                       => $pending_fees,
             "mobile"                        => $reg_bk_off[0]->mobile,
             "uniqueid"                      => $reg_bk_off[0]->uniqueid,

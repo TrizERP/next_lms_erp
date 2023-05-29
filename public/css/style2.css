@@ -8,9 +8,9 @@ html{
 	font-size: 18px;
 	line-height: 22px;
 }
-img{
+/*img{
 	width: 100%;
-}
+}*/
 .mb-30{
 	margin-bottom: 30px;
 }
@@ -90,6 +90,7 @@ a.underline-link{
 .purple-btn.p-19{
 	padding: 19px 10px;
 }
+
 .form-group{
 	margin-bottom: 30px;
 }
@@ -342,6 +343,10 @@ select::-ms-expand { display: none; }
 .success-text img{
 	width: 30px;
 	height: 30px;
+}
+.danger-text{
+	color: rgb(163, 16, 16);
+	column-gap: 10px;
 }
 .preference-details{
 	margin-top: 40px;

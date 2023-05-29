@@ -39,23 +39,25 @@
                         @csrf
                         <div class="row">
                             {{ App\Helpers\SearchChain('3','single','grade,std,div',$grade_id,$standard_id,$division_id) }}
+
                             <div class="col-md-3 form-group">
                                 <label for="subject">Select Subject</label>
                                 <select name="subject" id="subject" class="cust-select form-control mb-0">
                                     @if(empty($data['subject_data']))
                                         <option value="">Select Subject</option>
                                     @endif
+
                                     @if(!empty($data['subject_data']))
                                         @foreach($data['subject_data'] as $k1 => $v1)
                                             <option
-                                                value="{{$v1['subject_id']}}" @if(isset($data->subject_id)){{$data->subject_id == $v1['subject_id'] ? 'selected' : '' }} @endif>{{$v1['display_name']}} </option>
+                                                value="{{$v1['subject_id']}}" @if(isset($data['subject_id'])){{$data['subject_id'] == $v1['subject_id'] ? 'selected=selected' : '' }} @endif>{{$v1['display_name']}} </option>
                                         @endforeach
                                     @endif
                                 </select>
                             </div>
                             <div class="col-md-3 form-group">
                                 <label for="exam">Select Exam</label>
-                                <select class="cust-select form-control mb-0" name="exam_id[]" multiple="multiple"
+                                <select class="cust-select form-control mb-0" name="exam_id[]" 
                                         required="required">
                                     @if(!empty($data['exams_data']))
                                         @foreach($data['exams_data'] as $k => $v)
@@ -83,6 +85,10 @@
         {
             $marks_data = $data['marks_data'];
         }
+         if(isset($data['all_marks']))
+        {
+            $all_marks = $data['all_marks'];
+        }
         if(isset($data['grade_data']))
         {
             $grade_data = $data['grade_data'];
@@ -101,6 +107,7 @@
                                         <th>Sr No.</th>
                                         <th>Student Name</th>
                                         <th>Enrollment Code</th>
+                                        <th>All Marks</th>
                                         <!-- <th>Standard</th> -->
                                         <!-- <th>Division</th> -->
                                                 @php
@@ -129,10 +136,16 @@
                                                 <td>{{$j}}</td>
                                                 <td>{{$data['first_name']}} {{$data['middle_name']}} {{$data['last_name']}}</td>
                                                 <td>{{$data['enrollment_no']}}</td>
-                                                <!-- <td>{{$data['standard_name']}}</td> -->
-                                                <!-- <td>{{$data['division_name']}}</td> -->
+                                                <!-- al marks -->
+                                                @if(isset($all_marks[$data['id']]))
+                                                @foreach($all_marks[$data['id']] as $question_paper_id => $all_markss)
+                                                <td>{{$all_markss}}</td>
+                                                    @endforeach
+                                                @endif
+                                               
+                                                <!-- best of 5 -->
                                                 @php
-                                                $total_obtain_marks = $obtain_per = 0;
+                                                $total_obtain_marks = $obtain_per  = 0;
                                                 @endphp
                                                 @if(isset($marks_data[$data['id']]))
                                                 @foreach($marks_data[$data['id']] as $question_paper_id => $obtain_marks)

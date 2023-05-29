@@ -183,7 +183,7 @@ class feesCancelController extends Controller
         $other_extraSearchArray['fees_paid_other.sub_institute_id'] = $sub_institute_id;
 
         $other_fees_paid = $feesData = tblstudentModel::selectRaw("'OTHER' as fees_type,fees_paid_other.id,fees_paid_other.reciept_id as
-            receipt_no,fees_paid_other.paid_fees_html,fees_paid_other.receiptdate,fees_paid_other.payment_mode,
+            receipt_no,fees_paid_other.paid_fees_html,fees_paid_other.receiptdate,fees_paid_other.payment_mode,fees_paid_other.month_id as month_id,
             SUM(fees_paid_other.actual_amountpaid) as total_amount,CONCAT_WS(' ',tblstudent.first_name,tblstudent.middle_name,
             tblstudent.last_name) AS student_name,academic_section.title as grade,standard.name as standard_name,division.name as
             division_name,tblstudent.enrollment_no,date_format(fees_paid_other.created_date,'%Y-%m-%d %H:%i:%s') as created_on,
@@ -197,7 +197,7 @@ class feesCancelController extends Controller
             ->whereRaw($other_extraSearchArrayRaw)
             ->groupby('fees_paid_other.syear', 'fees_paid_other.reciept_id', 'fees_paid_other.student_id');
 
-        $feesData = tblstudentModel::selectRaw("'REGULAR' as fees_type,fees_collect.id,fees_collect.receipt_no,fees_collect.fees_html,fees_collect.receiptdate,fees_collect.payment_mode ,
+        $feesData = tblstudentModel::selectRaw("'REGULAR' as fees_type,fees_collect.id,fees_collect.receipt_no,fees_collect.fees_html,fees_collect.receiptdate,fees_collect.payment_mode ,fees_collect.term_id as month_id,
             SUM(fees_collect.amount) as total_amount,CONCAT_WS(' ',tblstudent.first_name,tblstudent.middle_name,tblstudent.last_name) AS student_name,academic_section.title as grade,standard.name as standard_name,division.name as division_name,tblstudent.enrollment_no,date_format(fees_collect.created_date,'%Y-%m-%d %H:%i:%s') as created_on,tblstudent.id as student_id")
             ->join('tblstudent_enrollment', 'tblstudent.id', '=', 'tblstudent_enrollment.student_id')
             ->join('academic_section', 'academic_section.id', '=', 'tblstudent_enrollment.grade_id')
@@ -259,6 +259,8 @@ class feesCancelController extends Controller
         $receipt_nos = $request->input('receipt_no');
         $cancel_type = $request->input('cancel_type');
         $student_id = $request->input('student_id');
+        $total_amount = $request->input('totAmt');
+        $month_id = $request->input('month_id');
         $cancel_remark = $request->input('cancel_remark');
         $syear = $request->session()->get('syear');
         $sub_institute_id = $request->session()->get('sub_institute_id');
@@ -270,22 +272,65 @@ class feesCancelController extends Controller
 
             return is_mobile($type, "fees_cancel.index", $res);
         }
-
         foreach ($receipt_nos as $key => $value) {
-            $extraSearchArray['tblstudent_enrollment.syear'] = $syear;
-            $extraSearchArray['fees_collect.syear'] = $syear;
-            $extraSearchArray['fees_collect.is_deleted'] = 'N';
-            $extraSearchArray['fees_collect.sub_institute_id'] = $sub_institute_id;
-            $extraSearchArray['fees_collect.receipt_no'] = $value;
-            $extraSearchArray['fees_collect.student_id'] = $student_id[$value];
+            // print_r($month_id);
 
+        // echo $total_amount[$value];
+          
+            $extraSearchArray1['tblstudent_enrollment.syear'] = $syear;
+            $extraSearchArray1['fees_paid_other.syear'] = $syear;
+            $extraSearchArray1['fees_paid_other.is_deleted'] = 'N';
+            $extraSearchArray1['fees_paid_other.sub_institute_id'] = $sub_institute_id;
+            $extraSearchArray1['fees_paid_other.reciept_id'] = $value;
+            $extraSearchArray1['fees_paid_other.student_id'] = $student_id[$value];
+            $extraSearchArray1['fees_paid_other.actual_amountpaid'] = $total_amount[$value] ?? '';
+
+            $feesDetails1 = DB::table('fees_paid_other')->selectRaw("fees_paid_other.*,SUM(fees_paid_other.actual_amountpaid) as total_amount,
+            tblstudent_enrollment.standard_id")
+            ->join('tblstudent_enrollment', 'fees_paid_other.student_id', '=', 'tblstudent_enrollment.student_id')
+            ->where($extraSearchArray1)->get()->toArray();
+
+        // echo "<pre>";print_r($feesDetails1[0]);exit;
+            if(isset($feesDetails1) && $feesDetails1[0]->student_id!=null && !empty($feesDetails1)){
+            $feesDetails = $feesDetails1[0];
+
+                $feesCancelLog['reciept_id'] = $value;
+                $feesCancelLog['syear'] = $syear;
+                $feesCancelLog['sub_institute_id'] = $sub_institute_id;
+                $feesCancelLog['student_id'] = $feesDetails->student_id;
+                $feesCancelLog['standard_id'] = $feesDetails->standard_id;
+                $feesCancelLog['term_id'] = $feesDetails->month_id;
+                $feesCancelLog['amountpaid'] = $feesDetails->total_amount;
+                $feesCancelLog['received_date'] = $feesDetails->created_date;
+                $feesCancelLog['cancel_date'] = date('Y-m-d H:i:s');
+                $feesCancelLog['cancel_type'] = $cancel_type[$value];
+                $feesCancelLog['cancel_remark'] = $cancel_remark[$value];
+                $feesCancelLog['cancelled_by'] = $user_id;
+                $feesCancelLog['ip_address'] = $_SERVER['REMOTE_ADDR'];
+                // print_r($feesCancelLog);exit;
+
+                 DB::table('fees_cancel')->insert($feesCancelLog);
+
+            DB::table('fees_paid_other')
+                ->where(['reciept_id' => $value, 'syear' => $syear, 'sub_institute_id' => $sub_institute_id])
+                ->update(['is_deleted' => 'Y']);
+            }else{
+                $extraSearchArray['tblstudent_enrollment.syear'] = $syear;
+                $extraSearchArray['fees_collect.syear'] = $syear;
+                $extraSearchArray['fees_collect.is_deleted'] = 'N';
+                $extraSearchArray['fees_collect.sub_institute_id'] = $sub_institute_id;
+                $extraSearchArray['fees_collect.receipt_no'] = $value;
+                $extraSearchArray['fees_collect.student_id'] = $student_id[$value];
+    
+                
             $feesDetails = DB::table('fees_collect')->selectRaw("fees_collect.*,SUM(fees_collect.amount) as total_amount,
-                tblstudent_enrollment.standard_id")
-                ->join('tblstudent_enrollment', 'fees_collect.student_id', '=', 'tblstudent_enrollment.student_id')
-                ->where($extraSearchArray)->get()->toArray();
+            tblstudent_enrollment.standard_id")
+            ->join('tblstudent_enrollment', 'fees_collect.student_id', '=', 'tblstudent_enrollment.student_id')
+            ->where($extraSearchArray)->get()->toArray();
 
             $feesDetails = $feesDetails[0];
             $feesCancelLog = [];
+
             $feesCancelLog['reciept_id'] = $value;
             $feesCancelLog['syear'] = $syear;
             $feesCancelLog['sub_institute_id'] = $sub_institute_id;
@@ -299,13 +344,20 @@ class feesCancelController extends Controller
             $feesCancelLog['cancel_remark'] = $cancel_remark[$value];
             $feesCancelLog['cancelled_by'] = $user_id;
             $feesCancelLog['ip_address'] = $_SERVER['REMOTE_ADDR'];
+        // print_r($cancel_remark[$value]);
+        // print_r($feesCancelLog);exit;
 
-            DB::table('fees_cancel')->insert($feesCancelLog);
+             DB::table('fees_cancel')->insert($feesCancelLog);
 
             DB::table('fees_collect')
                 ->where(['receipt_no' => $value, 'syear' => $syear, 'sub_institute_id' => $sub_institute_id])
                 ->update(['is_deleted' => 'Y', 'is_waved' => $cancel_type[$value]]);
+            }
+           
         }
+        // print_r($feesCancelLog);
+
+        // exit;
 
         $res['status_code'] = 1;
         $res['message'] = "Fees Deleted Successfully";

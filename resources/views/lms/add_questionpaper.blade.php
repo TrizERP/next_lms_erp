@@ -7,6 +7,10 @@
 br{
     display:  block !important;
 }
+.image-text>img{
+    width:350px !important;
+    height: 200px !important;
+}
 </style>
 @include('includes.header')
 @include('includes.sideNavigation')
@@ -335,7 +339,13 @@ br{
                                 @foreach($data['questionData'] as $key=> $data2)
                                 <tr>
                                     <td><input type="checkbox" onclick="add_question();" name="questions[]" title="{{$data2['points']}}'" value="{{$data2['id']}}" @if(isset($data['questionpaper_data']['question_ids'])) @if(in_array($data2['id'],$ids)) checked @endif @endif></td>
-                                    <td>{{$data2['question_title']}}</td>
+                                    <td class="image-text">
+                                        @if (Str::contains($data2['question_title'], '<img '))
+                                            {!! $data2['question_title'] !!} {{-- Display the image --}}
+                                        @else
+                                            {{ $data2['question_title'] }} {{-- Display the text --}}
+                                        @endif
+                                    </td>
                                     <td>{{$data2['chapter_name']}}</td>
                                     <td>{{$data2['sort_order']}}</td>
                                     <td>@if(isset($data2['topic_name'])){{$data2['topic_name']}}@endif</td>
@@ -603,9 +613,31 @@ function get_questionList()
                         }
                     }
                 } 
+                $("#questiontable_tbody").append('<tr class="child"><td><input type="checkbox" '+sel+' onclick="add_question();" name="questions[]" title="'+result[i]['points']+'" value="'+result[i]['id']+'"></td><td></td><td>'+result[i]['chapter_name']+'</td><td>'+result[i]['sort_order']+'</td><td>'+result[i]['topic_name']+'</td><td>'+result[i]['question_type']+'</td><td>'+result[i]['correct_answer']+'</td><td>'+result[i]['points']+'</td><td>'+result[i]['LMS_MAPPING_DATA']+'<td></td></tr>');
+MathJax.Hub.Queue(["Typeset",MathJax.Hub,"questiontable_tbody"]);
 
-                $("#questiontable_tbody").append('<tr class="child"><td><input type="checkbox" '+sel+' onclick="add_question();" name="questions[]" title="'+result[i]['points']+'" value="'+result[i]['id']+'"></td><td>'+result[i]['question_title']+'</td><td>'+result[i]['chapter_name']+'</td><td>'+result[i]['sort_order']+'</td><td>'+result[i]['topic_name']+'</td><td>'+result[i]['question_type']+'</td><td>'+result[i]['correct_answer']+'</td><td>'+result[i]['points']+'</td><td>'+result[i]['LMS_MAPPING_DATA']+'<td></td></tr>');            
-                  MathJax.Hub.Queue(["Typeset",MathJax.Hub,"questiontable_tbody"]);                
+// Update the question title cell after appending the row
+var questionTitleCell = $("#questiontable_tbody tr.child:last td:first");
+setQuestionTitle(result[i]['question_title'], questionTitleCell);
+
+function setQuestionTitle(questionTitle, cell) {
+    // Check if the question title is an image
+    if (questionTitle.indexOf('<img') === 0) {
+        // Extract the image source URL
+        var src = $(questionTitle).attr('src');
+        // Create an image element with the source URL
+        var img = $('<img>').attr('src', src);
+        // Append the image element to the cell
+        cell.append(img);
+    } else {
+        // Otherwise, set the text content of the cell
+        cell.text(questionTitle);
+    }
+}
+
+
+                // $("#questiontable_tbody").append('<tr class="child"><td><input type="checkbox" '+sel+' onclick="add_question();" name="questions[]" title="'+result[i]['points']+'" value="'+result[i]['id']+'"></td><td>'+result[i]['question_title']+'</td><td>'+result[i]['chapter_name']+'</td><td>'+result[i]['sort_order']+'</td><td>'+result[i]['topic_name']+'</td><td>'+result[i]['question_type']+'</td><td>'+result[i]['correct_answer']+'</td><td>'+result[i]['points']+'</td><td>'+result[i]['LMS_MAPPING_DATA']+'<td></td></tr>');            
+                //   MathJax.Hub.Queue(["Typeset",MathJax.Hub,"questiontable_tbody"]);                
             }
 
             if(result.length == 0)

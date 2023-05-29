@@ -15,6 +15,7 @@ use Illuminate\Support\Facades\DB;
 use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\NotFoundExceptionInterface;
 use function App\Helpers\is_mobile;
+use Illuminate\Support\Facades\Schema;
 
 class dashboardController extends Controller
 {
@@ -2437,6 +2438,33 @@ class dashboardController extends Controller
             whereRaw("find_in_set('$sub_institute_id',sub_institute_id) and status = 1  ")
                 ->orderBy('sort_order')->groupBy('menu_title')->get()->toArray();
 
+  $databaseTables = tblmenumasterModel::select('database_table')
+        ->whereRaw("find_in_set('$sub_institute_id', sub_institute_id) and status = 1")
+        ->pluck('database_table')
+        ->toArray();
+
+       // Check if the specified sub_institute exists in the tables
+    $subInstituteExists = [];
+
+    foreach ($databaseTables as $tableName) {
+        if (Schema::hasTable($tableName)) {
+            // Check if the table has the sub_institute_id column
+            if (Schema::hasColumn($tableName, 'sub_institute_id')) {
+                $exists = DB::table($tableName)
+                    ->where('sub_institute_id', $sub_institute_id)
+                    ->exists();
+            } else {
+                // If the sub_institute_id column doesn't exist, consider it as not found
+                $exists = false;
+            }
+        } else {
+            $exists = false;
+        }
+
+        $subInstituteExists[$tableName] = $exists;
+    }
+
+    // return $subInstituteExists;exit;
             $master = tblmenumasterModel::
                 whereRaw("find_in_set('$sub_institute_id',sub_institute_id) and status = 1 and menu_type='MASTER' ")
                 ->orderBy('sort_order')->get()->toArray();
@@ -2466,15 +2494,16 @@ class dashboardController extends Controller
                 $finalSubChildMenu[$value['menu_title']][$i] = $report[$key];
                 $i++;
             }
-
+            $database_table = tblmenumasterModel::select('database_table')->whereRaw("find_in_set('$sub_institute_id',sub_institute_id) and status = 1 ")->get();
 
         $res['status_code'] = 1;
         $res['message'] = "Success";
         $res['head']=$data;
+        $res['table_name']=$subInstituteExists;
         $res['groupwisemenuMaster'] = $mastermenu;
         $res['groupwisesubmenuMaster'] = $finalSubMenu ?? [];
         $res['groupwiseSubsubmenuMaster'] = $finalSubChildMenu ?? [];
-        $rr=[];
+        // $rr=[];
 // foreach($res['groupwisemenuMaster'] as $key=>$value){
         // echo "<pre>";print_r($mastermenu);exit;
         return is_mobile($type, "setup_institute_details", $res,'view');

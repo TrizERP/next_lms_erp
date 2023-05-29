@@ -83,6 +83,8 @@ class onlineExamController extends Controller
         $result = $this->get_calculate_marks($request);
 
         //START Insert into lms_online_exam table
+        $check = lmsOnlineExamModel::where(['student_id'=>$user_id,'start_time',$request->get('hid_session_quiz')])->get();
+        if(!empty($check)){
         $online_exam = [
             'student_id'        => $user_id,
             'question_paper_id' => $request->get('questionpaper_id'),
@@ -96,7 +98,10 @@ class onlineExamController extends Controller
         lmsOnlineExamModel::insert($online_exam);
         $online_exam_id = DB::getPDO()->lastInsertId();
         //END Insert into lms_online_exam table
-
+    }else{
+        $res['status']=0;
+        $res['message'] ="Restart Exam";
+    }
         //START Insert into lms_online_exam_answer table
         $answer_single = $request->get('answer_single');
         $answer_multiple = $request->get('answer_multiple');
@@ -176,9 +181,9 @@ class onlineExamController extends Controller
         // }
         //END Insert into lms_online_exam_answer table
 
-        //return is_mobile($type,'lms/online_exam_result',$res,"view");
-        return redirect()->route('online_exam.show',
-            ['questionpaper_id' => $request->get('questionpaper_id'), 'online_exam_id' => $online_exam_id]);
+        return is_mobile($type,'lms/online_exam_result',$res,"view");
+        // return redirect()->route('online_exam.show',
+            // ['questionpaper_id' => $request->get('questionpaper_id'), 'online_exam_id' => $online_exam_id]);
     }
 
 

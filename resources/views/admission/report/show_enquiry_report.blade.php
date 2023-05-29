@@ -56,9 +56,9 @@
                 </div>
             </div>
         </div>
+        @if(isset($data['data']))
         
         <div class="card">            
-            @if(isset($data['data']))
             <div class="row">                
                 <div class="col-lg-12 col-sm-12 col-xs-12">
                     <div class="table-responsive">
@@ -107,7 +107,7 @@
                                 
                                 @if(isset($value['admission_fees']))
                                     <tr>                               
-                                        <th>Total</th>
+                                        <td>Total</td>
                                             <td></td>
                                             <td></td>
                                             <td></td>
@@ -131,6 +131,10 @@
                                             <td></td>
                                             <td></td>
                                             <td></td>
+                                            @php $sub_institute_id = session()->get('sub_institute_id'); @endphp
+                                            @if ($sub_institute_id == 201 || $sub_institute_id == 202 || $sub_institute_id == 203 || $sub_institute_id == 204) 
+                                            <td></td>
+                                            @endif
                                             <th>{{$grand_total_admission_fees}}</th>
                                             <th>{{$grand_total_fees_amount}}</th>
                                             <td></td>
@@ -142,8 +146,8 @@
                     </div>
                 </div>
             </div>
-            @endif
         </div>
+            @endif
     </div>
 </div>
 
@@ -207,17 +211,13 @@
             $('#ChapterModal').modal('show');
            
         }
-</script>
-<script>
-$(document).ready(function(){  
+
+        jQuery(document).ready(function(){  
   $('[data-toggle="popover"]').popover({title: "",html: true});
   $('[data-toggle="popover"]').on('click', function (e) {
     $('[data-toggle="popover"]').not(this).popover('hide');
     });
-});
-</script>    
-<script>
-    $(document).ready(function() {
+
      var table = $('#example').DataTable( {
          select: true,          
          lengthMenu: [ 

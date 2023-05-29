@@ -85,7 +85,7 @@ class other_fee_map_controller extends Controller
             }
         }
         $responce_arr['fees_title'] = $fees_title;
-
+// echo "<pre>";$responce_arr['fees_title'];exit;
         return is_mobile($type, "fees/other_fee_map/add", $responce_arr, "view");
     }
 

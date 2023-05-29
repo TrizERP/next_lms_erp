@@ -10,6 +10,7 @@ use App\Models\user\tbluserModel;
 use App\Models\user\tbluserprofilemasterModel;
 use function App\Helpers\is_mobile;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class tblindividual_rightsController extends Controller {
     public function index(Request $request) {
@@ -30,7 +31,7 @@ class tblindividual_rightsController extends Controller {
 
     public function create(Request $request) {
         $sub_institute_id = $request->session()->get('sub_institute_id');
-        $user_profiles = tbluserprofilemasterModel::where(['sub_institute_id' => $sub_institute_id])->orderBy('sort_order')->get()->toArray();
+        $user_profiles = tbluserprofilemasterModel::where(['sub_institute_id' => $sub_institute_id, 'status' => '1'])->orderBy('sort_order')->get()->toArray();
 
         // $data = tblmenumasterModel::where(['LEVEL' => "1",'status' => "1"])->whereRaw("find_in_set('$sub_institute_id',sub_institute_id)")->orderBy('sort_order')->get()->toArray();
 
@@ -123,7 +124,42 @@ class tblindividual_rightsController extends Controller {
         $sub_institute_id = $request->session()->get("sub_institute_id");
         $usersData = tbluserModel::where(['sub_institute_id' => $sub_institute_id, 'status' => '1', 'user_profile_id' => $profile_id])->get(['user_name', 'id'])->toArray();
 
-        return $usersData;
+          $data = tblmenumasterModel::join('tblprofilewise_menu','tblmenumaster.id','=','tblprofilewise_menu.menu_id')->where(['LEVEL' => 1,'status' => 1,'tblprofilewise_menu.sub_institute_id'=>$sub_institute_id,'tblprofilewise_menu.user_profile_id'=>$profile_id])->orderBy('tblmenumaster.sort_order','ASC')->get()->toArray();
+
+        $subMenuData = tblmenumasterModel::join('tblprofilewise_menu','tblmenumaster.id','=','tblprofilewise_menu.menu_id')->where(['LEVEL' => 2,'status' => 1,'tblprofilewise_menu.sub_institute_id'=>$sub_institute_id,'tblprofilewise_menu.user_profile_id'=>$profile_id])->orderBy('tblmenumaster.sort_order','ASC')->get()->toArray();
+
+        $SubsubMenuData = tblmenumasterModel::join('tblprofilewise_menu','tblmenumaster.id','=','tblprofilewise_menu.menu_id')->where(['LEVEL' => 3,'status' => 1,'tblprofilewise_menu.sub_institute_id'=>$sub_institute_id,'tblprofilewise_menu.user_profile_id'=>$profile_id])->orderBy('tblmenumaster.sort_order','ASC')->get()->toArray();
+        
+        $i = 0;
+        foreach ($subMenuData as $key => $value) {
+            $finalSubMenu[$value['parent_menu_id']][$i] = $subMenuData[$key];
+            $i++;
+        }
+
+        $i = 0;
+        foreach ($SubsubMenuData as $key => $value) {
+            $finalSubSubMenu[$value['parent_menu_id']][$i] = $SubsubMenuData[$key];
+            $i++;
+        }
+
+        view()->share('individualmenuMaster', $data);
+
+        if (isset($finalSubMenu)) {
+            view()->share('individualsubmenuMaster', $finalSubMenu);
+        }
+
+        if (isset($finalSubSubMenu)) {
+            view()->share('individualSubsubmenuMaster', $finalSubSubMenu);
+        }
+
+$response = array(
+            $data,
+            $finalSubMenu,
+            $finalSubSubMenu,
+            $usersData,
+            // $rights
+        );
+        return $response;
     }
 
     public function displayIndividualRights(Request $request) {
@@ -133,12 +169,16 @@ class tblindividual_rightsController extends Controller {
         $user_id = $request->input("user_id");
         // if($data == true){
 
+    //     $profileWiseMenuData = DB::table('tblprofilewise_menu')->select('menu_id')
+    // ->where(['user_profile_id' => $profile_id, 'sub_institute_id' => $sub_institute_id])
+    // ->pluck('menu_id');
+
+        $data = tblmenumasterModel::join('tblprofilewise_menu','tblmenumaster.id','=','tblprofilewise_menu.menu_id')->where(['LEVEL' => 1,'status' => 1,'tblprofilewise_menu.sub_institute_id'=>$sub_institute_id,'tblprofilewise_menu.user_profile_id'=>$profile_id])->orderBy('tblmenumaster.sort_order','ASC')->get()->toArray();
+
+        $subMenuData = tblmenumasterModel::join('tblprofilewise_menu','tblmenumaster.id','=','tblprofilewise_menu.menu_id')->where(['LEVEL' => 2,'status' => 1,'tblprofilewise_menu.sub_institute_id'=>$sub_institute_id,'tblprofilewise_menu.user_profile_id'=>$profile_id])->orderBy('tblmenumaster.sort_order','ASC')->get()->toArray();
+
+        $SubsubMenuData = tblmenumasterModel::join('tblprofilewise_menu','tblmenumaster.id','=','tblprofilewise_menu.menu_id')->where(['LEVEL' => 3,'status' => 1,'tblprofilewise_menu.sub_institute_id'=>$sub_institute_id,'tblprofilewise_menu.user_profile_id'=>$profile_id])->orderBy('tblmenumaster.sort_order','ASC')->get()->toArray();
         
-        $data = tblmenumasterModel::join('tblgroupwise_rights','tblmenumaster.id','=','tblgroupwise_rights.menu_id')->where(['LEVEL' => 1,'status' => 1,'tblgroupwise_rights.profile_id' => $profile_id,'tblgroupwise_rights.sub_institute_id'=>$sub_institute_id])->orderBy('tblmenumaster.sort_order','ASC')->get()->toArray();
-
-        $subMenuData = tblmenumasterModel::join('tblgroupwise_rights','tblmenumaster.id','=','tblgroupwise_rights.menu_id')->where(['LEVEL' => 2,'status' => 1,'tblgroupwise_rights.profile_id' => $profile_id,'tblgroupwise_rights.sub_institute_id'=>$sub_institute_id])->orderBy('tblmenumaster.sort_order','ASC')->get()->toArray();
-
-        $SubsubMenuData = tblmenumasterModel::join('tblgroupwise_rights','tblmenumaster.id','=','tblgroupwise_rights.menu_id')->where(['LEVEL' => 3,'status' => 1,'tblgroupwise_rights.profile_id' => $profile_id,'tblgroupwise_rights.sub_institute_id'=>$sub_institute_id])->orderBy('tblmenumaster.sort_order','ASC')->get()->toArray();
         $i = 0;
         foreach ($subMenuData as $key => $value) {
             $finalSubMenu[$value['parent_menu_id']][$i] = $subMenuData[$key];
@@ -163,22 +203,22 @@ class tblindividual_rightsController extends Controller {
 
         $grouprightsData = tblgroupwise_rightsModel::join('tblmenumaster','tblgroupwise_rights.menu_id','=','tblmenumaster.id')->where(['tblgroupwise_rights.profile_id' => $profile_id])->get()->toArray();
         $rights = array();
-        if (count($grouprightsData) > 0) {
-            foreach ($grouprightsData as $key => $value) {
-                if ($value['can_view'] == 1) {
-                    $rights['view'][] = $value['menu_id'] . "_" . $value['can_view'];
-                }
-                if ($value['can_add'] == 1) {
-                    $rights['add'][] = $value['menu_id'] . "_" . $value['can_add'];
-                }
-                if ($value['can_edit'] == 1) {
-                    $rights['edit'][] = $value['menu_id'] . "_" . $value['can_edit'];
-                }
-                if ($value['can_delete'] == 1) {
-                    $rights['delete'][] = $value['menu_id'] . "_" . $value['can_delete'];
-                }
-            }
-        }
+        // if (count($grouprightsData) > 0) {
+        //     foreach ($grouprightsData as $key => $value) {
+        //         if ($value['can_view'] == 1) {
+        //             $rights['view'][] = $value['menu_id'] . "_" . $value['can_view'];
+        //         }
+        //         if ($value['can_add'] == 1) {
+        //             $rights['add'][] = $value['menu_id'] . "_" . $value['can_add'];
+        //         }
+        //         if ($value['can_edit'] == 1) {
+        //             $rights['edit'][] = $value['menu_id'] . "_" . $value['can_edit'];
+        //         }
+        //         if ($value['can_delete'] == 1) {
+        //             $rights['delete'][] = $value['menu_id'] . "_" . $value['can_delete'];
+        //         }
+        //     }
+        // }
         $rightsData = tblindividual_rightsModel::where(['profile_id' => $profile_id, 'user_id' => $user_id])->get()->toArray();
         if (count($rightsData) > 0) {
             foreach ($rightsData as $key => $value) {
@@ -196,12 +236,7 @@ class tblindividual_rightsController extends Controller {
                 }
             }
         }
-            $response = array(
-            $data,
-            $finalSubMenu,
-            $finalSubSubMenu,
-            $rights
-        );
+            
     
     // }else{
     //     $response= array(
@@ -214,6 +249,6 @@ class tblindividual_rightsController extends Controller {
     //             $rights['edit'] =0,
     //             $rights['delete'] =0));
     // }       
-        return $response;
+        return $rights;
     }
 }

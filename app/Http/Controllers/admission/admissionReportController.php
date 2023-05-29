@@ -54,7 +54,6 @@ class admissionReportController extends Controller
                 ->whereRaw("(DATE_FORMAT(ai.created_on, '%Y-%m-%d') BETWEEN '" . $from_date . "' AND '" . $to_date . "')
                     AND ai.sub_institute_id = '" . $sub_institute_id . "' AND ai.syear = '" . $syear . "'");
 
-
             if ($standard != '') {
                 $getQuery->where('admission_standard', $standard);
             }

@@ -846,7 +846,7 @@ if (! function_exists('FeeBreackoff')) {
                     $join->whereRaw("fb.syear = '" . $syear . "' AND fb.admission_year = s.admission_year AND fb.quota = se.student_quota
                  AND fb.grade_id = se.grade_id AND fb.standard_id = se.standard_id AND fb.sub_institute_id = '" . $sub_institute_id . "'");
                 }
-            })->selectRaw("s.*,se.syear,se.student_id,se.grade_id,se.standard_id,se.section_id,se.student_quota,
+            })->selectRaw("s.*,se.syear,se.student_id,se.grade_id,se.standard_id,se.section_id,se.student_quota,g.medium,
                 sq.title AS stu_quota,se.start_date,se.end_date,se.enrollment_code,se.drop_code,se.drop_remarks,se.drop_remarks,
                 se.term_id,se.remarks,se.admission_fees, se.house_id,se.lc_number,sum(fb.amount) bkoff,st.name standard_name,
                 d.name as division_name,fb.month_id,RIGHT(fb.month_id, 4) as sort_year,
