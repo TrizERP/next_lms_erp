@@ -16,6 +16,7 @@
     .content-main {
         padding-bottom: 0px !important;
     }
+   
 </style>
 @include('includes.header')
 @include('includes.sideNavigation')
@@ -34,12 +35,17 @@
                 </ol>
             </nav>
         </div>
+      @php
+        if(isset($data['preload_lms'])){
+            $preload_lms="preload_lms=preload_lms";
+        }
+      @endphp
         @if ($data['lessonplan_data']->id)
         <div class="col-md-3 mb-4 text-md-right">
-            <a href="{{ route('lms_lessonplan.create', ['id' => $data['lessonplan_data']->id]) }}" class="btn btn-info add-new"><i class="fa fa-plus"></i>Edit Form</a>
+            <a href="{{ route('lms_lessonplan.create', ['id' => $data['lessonplan_data']->id,$preload_lms ?? '']) }}" class="btn btn-info add-new"><i class="fa fa-plus"></i>Edit Form</a>
         </div>
         @else
-        <div class="col-md-3 mb-4 text-md-right">
+        <div class="col-md-3 mb-4 text-md-right" style="@php echo $readonly ?? '' @endphp">
             <a href="{{ route('lms_lessonplan.create', ['standard_id' => $data['lessonplan_data']->standard_id, 'subject_id' => $data['lessonplan_data']->subject_id, 'chapter_id' => $data['lessonplan_data']->chapter_id]) }}" class="btn btn-info add-new"><i class="fa fa-plus"></i>Add Lesson Plan</a>
         </div>
         @endif

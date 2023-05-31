@@ -21,7 +21,11 @@ class lmsmappingController extends Controller
      */
     public function index(Request $request)
     {
-        $data = $this->getData($request);
+        if($request->has('preload_lms')){
+            $data = $this->getDataPre($request);
+        }else{
+            $data = $this->getData($request);
+        }
         $type = $request->input('type');
         $res['status_code'] = 1;
         $res['message'] = "SUCCESS";
@@ -47,7 +51,61 @@ class lmsmappingController extends Controller
 
             $extra .= " AND chapter_id = '".$chapter_id."'";
 
-            $res['chapter_topic_data'] = $chapter_data[0];
+            $res['chapter_topic_data'] = $chapter_data[0] ?? [];
+        }
+
+        if ($request->has("topic_id")) {
+            $topic_id = $request->get("topic_id");
+            $topic_data = topicModel::select('name as chapter_topic_name', 'id as chapter_topic_id',
+                DB::raw('"topic" as action'))
+                ->where(['topic_master.sub_institute_id' => $sub_institute_id, 'topic_master.id' => $topic_id])
+                ->get()->toArray();
+
+            $extra .= " AND topic_id = '".$topic_id."'";
+
+            $res['chapter_topic_data'] = $topic_data[0];
+        }
+
+        if (! $request->has("chapter_id") && ! $request->has("topic_id")) {
+            $extra .= " AND globally = '1'";
+        }
+
+
+        $data = Db::select('SELECT * FROM lms_mapping_type AS a WHERE a.parent_id=0 '.$extra.'
+            UNION 
+            SELECT * FROM lms_mapping_type AS b WHERE b.parent_id != 0 '.$extra);
+
+        $data = json_decode(json_encode($data), true);
+
+        foreach ($data as $key => $val) {
+            if ($val['parent_id'] == 0) {
+                $final_data[$val['id']] = $val;
+            } else {
+                $final_data[$val['parent_id']]['CHILD_ARR'][] = $val;
+            }
+        }
+
+        $res['final_data'] = $final_data;
+
+        return $res;
+    }
+    public function getDataPre($request)
+    {
+        $sub_institute_id = 1;
+        $final_data = $res['chapter_topic_data'] = $data = array();
+
+        $extra = "";
+
+        if ($request->has("chapter_id")) {
+            $chapter_id = $request->get("chapter_id");
+            $chapter_data = chapterModel::select('chapter_name as chapter_topic_name', 'id as chapter_topic_id',
+                DB::raw('"chapter" as action'))
+                ->where(['chapter_master.sub_institute_id' => $sub_institute_id, 'chapter_master.id' => $chapter_id])
+                ->get()->toArray();
+
+            $extra .= " AND chapter_id = '".$chapter_id."'";
+
+            $res['chapter_topic_data'] = $chapter_data[0] ?? [];
         }
 
         if ($request->has("topic_id")) {
@@ -94,7 +152,7 @@ class lmsmappingController extends Controller
     public function create(Request $request)
     {
         $type = $request->input('type');
-        $sub_institute_id = $request->session()->get('sub_institute_id');
+        $sub_institute_id = 1;
 
         $data = array();
         if ($request->has('chapter_id')) {
@@ -106,7 +164,7 @@ class lmsmappingController extends Controller
                     'chapter_master.id'               => $request->get('chapter_id'),
                 ])
                 ->get()->toArray();
-            $data['chapter_topic_data'] = $chapter_data[0];
+            $data['chapter_topic_data'] = $chapter_data[0]??[];
         }
 
         if ($request->has('topic_id')) {
@@ -119,7 +177,7 @@ class lmsmappingController extends Controller
                 ])
                 ->get()->toArray();
 
-            $data['chapter_topic_data'] = $topic_data[0];
+            $data['chapter_topic_data'] = $topic_data[0] ?? [];
         }
 
         return is_mobile($type, 'lms/add_lmsmapping', $data, "view");

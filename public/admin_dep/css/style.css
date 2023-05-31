@@ -88,7 +88,7 @@ ol.breadcrumb 							{ position: absolute;top: 84px;left: 175px;background: tran
 .content-main							{ padding-top: 70px;padding-left: 175px;width: 100%; }
 
 /*Help Guide*/
-.help-guide 							{ width: 300px;height: auto;position: fixed;bottom: 15px;right: 15px;border-radius: 5px;overflow: hidden;box-shadow: 0 -5px 5px rgba(0,0,0,0.2);z-index: 9999; }
+.help-guide 							{ width: 200px;height: auto;position: fixed;bottom: 15px;right: 80px;border-radius: 5px;overflow: hidden;box-shadow: 0 -5px 5px rgba(0,0,0,0.2);z-index: 9999; }
 .help-guide .help-head 					{ background: #303030;color: #fff;padding: 10px 15px;font-size: 14px;line-height: 26px;cursor: pointer;position: relative;transition: all 0.5s; }
 .help-guide.active .help-head			{ background: var(--primary); }
 .help-guide .help-head:before 			{ display: block;width: 10px;height: 10px;border-right: 3px solid #fff;border-bottom: 3px solid #fff;position: absolute;top: 50%;right: 15px;transform: translateY(-50%) rotate(45deg);transition: all 0.5s; }

@@ -19,6 +19,12 @@ use DB;
         {
             $show_block = 'YES';
         }
+
+        if(isset($data['preload_lms'])) {
+            $readonly="pointer-events: none";
+            $preload_lms = "preload_lms=preload_lms";
+        } 
+
     @endphp
 
     <div class="row align-items-center">
@@ -84,13 +90,13 @@ use DB;
                                 @endif
                                 @if( $data['show_content'] == 'chapterwise' )
                                     <a target="_blank"
-                                       href="{{ route('lms_teacherResource.index',['standard_id'=>$chdata->standard_id,'subject_id'=>$chdata->subject_id,'chapter_id'=>$chdata->id]) }}"
+                                       href="{{ route('lms_teacherResource.index',['standard_id'=>$chdata->standard_id,'subject_id'=>$chdata->subject_id,'chapter_id'=>$chdata->id,$preload_lms ?? '']) }}"
                                        class="btn btn-outline-dark mx-1 my-1">Teacher Resource</a>
                                     <a target="_blank"
-                                       href="{{ route('lms_lessonplan.index',['standard_id'=>$chdata->standard_id,'subject_id'=>$chdata->subject_id,'chapter_id'=>$chdata->id]) }}"
+                                       href="{{ route('lms_lessonplan.index',['standard_id'=>$chdata->standard_id,'subject_id'=>$chdata->subject_id,'chapter_id'=>$chdata->id,$preload_lms ?? '']) }}"
                                        class="btn btn-outline-dark mx-1 my-1">Lesson Planning</a>
                                     <a target="_blank"
-                                       href="{{ route('lmsmapping.index',['chapter_id'=>$chdata->id]) }}"
+                                       href="{{ route('lmsmapping.index',['chapter_id'=>$chdata->id,$preload_lms ?? '']) }}"
                                        class="btn btn-outline-dark mx-1 my-1">Chapter-wise Mapping</a>
                                 @endif
                             @endif
@@ -263,14 +269,15 @@ use DB;
 
                                 <div class="chapter-des">{{ $single_content['description'] }}</div>
                             </div>
+                           
                             <div class="col-md-2 time text-secondary d-flex justify-content-end"
-                                 style="font-size: 20px;">
-                                <a href="{{ route('lms_flashcard.index',['content_id' => $single_content['id']])}}"
+                                 style="font-size: 20px;" >
+                                <a href="{{ route('lms_flashcard.index',['content_id' => $single_content['id'],$preload_lms ?? '' ])}}"
                                    target="_blank"
                                    class="btn btn-outline-warning btn-sm mx-1" data-toggle="tooltip" title=""
                                    data-original-title="Add Flash Card"><i
                                         class="mdi mdi-cards-playing-outline"></i></a>
-                                <a href="{{ route('content_master.edit',['content_master' => $single_content['id'],'std_id'=>$single_content['standard_id']])}}"
+                                <a href="{{ route('content_master.edit',['content_master' => $single_content['id'],'std_id'=>$single_content['standard_id'],$preload_lms ?? ''])}}"
                                    class="btn btn-outline-success btn-sm mx-1"><i
                                         class="mdi mdi-pencil-outline"></i></a>
                                 <form action="{{ route('content_master.destroy', $single_content['id'] )}}"
@@ -278,7 +285,7 @@ use DB;
                                     @csrf
                                     @method('DELETE')
                                     <button onclick="return confirmDelete();" type="submit"
-                                            class="btn btn-outline-danger btn-sm mx-1">
+                                            class="btn btn-outline-danger btn-sm mx-1" style="{{$readonly ?? ''}}">
                                         <i class="mdi mdi-delete-outline"></i></button>
                                 </form>
                             </div>

@@ -83,8 +83,6 @@ class onlineExamController extends Controller
         $result = $this->get_calculate_marks($request);
 
         //START Insert into lms_online_exam table
-        $check = lmsOnlineExamModel::where(['student_id'=>$user_id,'start_time',$request->get('hid_session_quiz')])->get();
-        if(!empty($check)){
         $online_exam = [
             'student_id'        => $user_id,
             'question_paper_id' => $request->get('questionpaper_id'),
@@ -98,10 +96,7 @@ class onlineExamController extends Controller
         lmsOnlineExamModel::insert($online_exam);
         $online_exam_id = DB::getPDO()->lastInsertId();
         //END Insert into lms_online_exam table
-    }else{
-        $res['status']=0;
-        $res['message'] ="Restart Exam";
-    }
+
         //START Insert into lms_online_exam_answer table
         $answer_single = $request->get('answer_single');
         $answer_multiple = $request->get('answer_multiple');
@@ -181,9 +176,9 @@ class onlineExamController extends Controller
         // }
         //END Insert into lms_online_exam_answer table
 
-        return is_mobile($type,'lms/online_exam_result',$res,"view");
-        // return redirect()->route('online_exam.show',
-            // ['questionpaper_id' => $request->get('questionpaper_id'), 'online_exam_id' => $online_exam_id]);
+        //return is_mobile($type,'lms/online_exam_result',$res,"view");
+        return redirect()->route('online_exam.show',
+            [$request->get('questionpaper_id'),"online_exam_id"=> $online_exam_id]);
     }
 
 
@@ -357,6 +352,7 @@ class onlineExamController extends Controller
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $user_id = $request->session()->get('user_id');
         $online_exam_id = $request->get('online_exam_id');
+        $data['user_id'] = $online_exam_id;
 
         $data['questionpaper_data'] = questionpaperModel::find($questionpaper_id)->toArray();
 
@@ -392,11 +388,14 @@ class onlineExamController extends Controller
 
         $data['mapping_arr'] = $lmsmapping;
         $data['answer_arr'] = $answer;
+        
+        // $data['online_exam_data'] =DB::SELECT("SELECT * FROM lms_online_exam  where id ='$online_exam_id' and student_id=95634 AND question_paper_id = '$user_id'");
 
         $data['online_exam_data'] = lmsOnlineExamModel::where([
-            'id' => $online_exam_id, 'student_id' => $user_id,
+            'id'=>$online_exam_id,'student_id'=>$user_id
         ])->get()->toArray();
-        $data['online_exam_data'] = $data['online_exam_data'][0];
+        // print_r($data['online_exam_data']);exit;
+        $data['online_exam_data'] = $data['online_exam_data'][0] ?? $data['online_exam_data'];
 
         // $online_answer_data = lmsOnlineExamAnswerModel::where(['online_exam_id'=>$online_exam_id,'student_id'=>$user_id])->get()->toArray();
         // foreach($online_answer_data as $key => $val)
@@ -432,7 +431,7 @@ class onlineExamController extends Controller
         $type = $request->input('type');
         $data['status_code'] = 1;
         $data['message'] = "SUCCESS";
-
+        // echo "<pre>";print_r($data);exit;
         return is_mobile($type, 'lms/online_exam_result', $data, "view");
     }
 

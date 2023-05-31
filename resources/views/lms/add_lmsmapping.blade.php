@@ -68,8 +68,13 @@
                                     </div>                        
                                 </div>
                             </div>
+                            @php
+                            if(isset($_REQUEST['preload_lms'])){
+                                $readonly="pointer-events: none";
+                            }
+                            @endphp
                             <div class="form-group">
-                                <input type="submit" name="submit" value="Save" class="btn btn-success" >
+                                <input type="submit" name="submit" value="Save" class="btn btn-success" style="{{$readonly ?? ''}}">
                             </div>
                         </div>
                     </div>

@@ -4,54 +4,69 @@
 
 <div id="page-wrapper">
     <div class="container-fluid">
-        <div class="row bg-title">
-            <div class="col-lg-3 col-md-4 col-sm-4 col-xs-12">
-                <h4 class="page-title">Question wise report</h4>
+            <div class="row bg-title">
+                <div class="col-lg-3 col-md-4 col-sm-4 col-xs-12">
+                    <h4 class="page-title">Question wise report</h4>
+                </div>
             </div>
-        </div>
         @php
         $grade_id = $standard_id = $division_id = $order_by = $subject_id = '';
 
-        if(isset($data['grade_id'])){
-        $grade_id = $data['grade_id'];
-        $standard_id = $data['standard_id'];
-        $division_id = $data['division_id'];
-        }
-        if(isset($data['subject_id'])){
-        $subject_id = $data['subject_id'];
-        }
+            if(isset($data['grade_id'])){
+                $grade_id = $data['grade_id'];
+                $standard_id = $data['standard_id'];
+                $division_id = $data['division_id'];
+            }
+            if(isset($data['subject_id'])){
+                $subject_id = $data['subject_id'];
+            }
         @endphp
         <div class="card">
             <div class="card-body">
                 @if ($sessionData = Session::get('data'))
-                @if($sessionData['status_code'] == 1)
-                <div class="alert alert-success alert-block">
-                    @else
-                    <div class="alert alert-danger alert-block">
-                        @endif
-                        <button type="button" class="close" data-dismiss="alert">×</button>
-                        <strong>{{ $sessionData['message'] }}</strong>
-                    </div>
-                    @endif
-                    <form action="{{ route('show_question_wise_report') }}" enctype="multipart/form-data" method="post">
-                        @csrf
-                        <div class="row">
-                            {{ App\Helpers\SearchChain('4','single','grade,std,div',$grade_id,$standard_id,$division_id) }}
+                    @if($sessionData['status_code'] == 1)
+                        <div class="alert alert-success alert-block">
+                            @else
+                                <div class="alert alert-danger alert-block">
+                                    @endif
+                                    <button type="button" class="close" data-dismiss="alert">×</button>
+                                    <strong>{{ $sessionData['message'] }}</strong>
+                                </div>
+                            @endif
+                            <form action="{{ route('show_question_wise_report') }}" enctype="multipart/form-data"
+                                  method="post">
+                                @csrf
+                                <div class="row">
+                                    {{ App\Helpers\SearchChain('4','single','grade,std,div',$grade_id,$standard_id,$division_id) }}
 
-                            <div class="col-md-4 form-group" style="margin-left:unset;margin-right:unset;">
-                                <label for="subject">Select Subject:</label>
-                                <select name="subject" id="subject" class="form-control mb-0" required>
-                                    <option value="">Select Subject</option>
+                                    <div class="col-md-3 form-group">
+                                <label for="subject">Select Subject</label>
+                                <select name="subject" id="subject" class="cust-select form-control mb-0">
+                                    @if(empty($data['subject_data']))
+                                        <option value="">Select Subject</option>
+                                    @endif
+
+                                    @if(!empty($data['subject_data']))
+                                        @foreach($data['subject_data'] as $k1 => $v1)
+                                            <option
+                                                value="{{$v1['subject_id']}}" @if(isset($data['subject_id'])){{$data['subject_id'] == $v1['subject_id'] ? 'selected=selected' : '' }} @endif>{{$v1['display_name']}} </option>
+                                        @endforeach
+                                    @endif
                                 </select>
                             </div>
-
-                            <div class="col-md-4 form-group" style="margin-left:unset;margin-right:unset;">
-                                <label for="exam">Select Exam:</label>
-                                <select name="exam" id="exam" class="form-control mb-0" required>
-                                    <option value="">Select Exam</option>
+                            <div class="col-md-3 form-group">
+                                <label for="exam">Select Exam</label>
+                                <select class="cust-select form-control mb-0" name="exam" 
+                                        required="required">
+                                    @if(!empty($data['exams_data']))
+                                        @foreach($data['exams_data'] as $k => $v)
+                                            <option
+                                                value="{{$v->id}}" @if(isset($data->exam_id)){{$data->exam_id == $v->id ? 'selected=selected' : '' }} @endif>{{$v->paper_name}}</option>
+                                        @endforeach
+                                    @endif
                                 </select>
                             </div>
-                            {{-- <div class="col-md-4 form-group">
+                                    {{-- <div class="col-md-4 form-group">
                                        <label>Order By</label>
                                        <select id='order_by' name="order_by" class="form-control">
                                            <option>Select Order By Field</option>
@@ -61,76 +76,78 @@
                                            <option @if($order_by == 'roll_no') selected="selected" @endif value="roll_no">Roll No</option>
                                        </select>
                                    </div> --}}
-                            <div class="col-md-12 col-sm-offset-4 text-center form-group">
-                                <input type="submit" name="submit" value="Search" class="btn btn-success">
-                                <button type="button" class="btn btn-info" data-toggle="modal" data-target="#exampleModal"><i class="mdi mdi-tune"></i></button>
-                            </div>
-                        </div>
-                        <!-- Modal -->
-                        <div class="modal fade bd-example-modal-lg" id="exampleModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
-                            <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
-                                <div class="modal-content">
-                                    <div class="modal-header">
-                                        <h5 class="modal-title" id="exampleModalLabel">Choose Field</h5>
-                                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                                            <span aria-hidden="true">x</span>
-                                        </button>
+                                    <div class="col-md-12 col-sm-offset-4 text-center form-group">
+                                        <input type="submit" name="submit" value="Search" class="btn btn-success">
+                                        <button type="button" class="btn btn-info" data-toggle="modal"
+                                                data-target="#exampleModal"><i class="mdi mdi-tune"></i></button>
                                     </div>
-                                    <div class="modal-body">
-                                        <div class="slimscrollright">
-                                            <div class="rpanel-title"><span><i class="ti-close right-side-toggle"></i></span> </div>
-                                            <div class="row">
-                                                <div class="col-md-12 form-group mb-2">
-                                                    <div class="checkbox checkbox-info">
-                                                        <input id="checkall" onclick="checkedAll();" name="checkall" type="checkbox">
-                                                        <label for="checkall"> Check All </label>
-                                                        <input type="hidden" name="page" value="bulk">
-                                                    </div>
-                                                </div>
-
-                                                @if(isset($data['data']))
-                                                @php
-                                                //$checkedArray = array('enrollment_no','first_name','middle_name','last_name','mobile');
-                                                $checkedArray = array();
-                                                @endphp
-                                                @foreach($data['data'] as $key => $value)
-                                                <div class="col-md-4 form-group mt-1">
-                                                    <div class="custom-control custom-checkbox">
-                                                        @php
-                                                        $checked = '';
-                                                        if(in_array($key,$checkedArray)){
-                                                        $checked = 'checked="checked"';
-                                                        }
-                                                        if(isset($data['headers'])){
-                                                        if(count($data['headers']) > 0){
-                                                        $headersChecked = array_keys($data['headers']);
-                                                        }
-                                                        $checked = '';
-                                                        if(in_array($key,$headersChecked)){
-                                                        $checked = 'checked="checked"';
-                                                        }
-                                                        }
-                                                        @endphp
-                                                        <input id="{{$key}}" {{$checked}} value="{{$key}}" class="custom-control-input" name="dynamicFields[]" type="checkbox">
-                                                        <label for="{{$key}}" class="custom-control-label"> {{$value}} </label>
-                                                    </div>
-                                                </div>
-                                                @endforeach
-                                                @endif
+                                </div>
+                                <!-- Modal -->
+                                <div class="modal fade bd-example-modal-lg" id="exampleModal" tabindex="-1"
+                                     role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+                                    <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+                                        <div class="modal-content">
+                                            <div class="modal-header">
+                                                <h5 class="modal-title" id="exampleModalLabel">Choose Field</h5>
+                                                <button type="button" class="close" data-dismiss="modal"
+                                                        aria-label="Close">
+                                                    <span aria-hidden="true">x</span>
+                            </button>
+                          </div>
+                          <div class="modal-body">
+                                <div class="slimscrollright">
+                                    <div class="rpanel-title"><span><i class="ti-close right-side-toggle"></i></span> </div>
+                                    <div class="row">
+                                        <div class="col-md-12 form-group mb-2">
+                                            <div class="checkbox checkbox-info">
+                                                <input id="checkall" onclick="checkedAll();" name="checkall" type="checkbox">
+                                                <label for="checkall"> Check All </label>
+                                                <input type="hidden" name="page" value="bulk">
                                             </div>
+                                        </div>
+
+                                    @if(isset($data['data']))
+                                            @php
+                                        //$checkedArray = array('enrollment_no','first_name','middle_name','last_name','mobile');
+                                        $checkedArray = array();
+                                        @endphp
+                                        @foreach($data['data'] as $key => $value)
+                                        <div class="col-md-4 form-group mt-1">
+                                            <div class="custom-control custom-checkbox">
+                                                @php
+                                                $checked = '';
+                                                if(in_array($key,$checkedArray)){
+                                                    $checked = 'checked="checked"';
+                                                }
+                                                if(isset($data['headers'])){
+                                                    if(count($data['headers']) > 0){
+                                                        $headersChecked = array_keys($data['headers']);
+                                                    }
+                                                    $checked = '';
+                                                    if(in_array($key,$headersChecked)){
+                                                        $checked = 'checked="checked"';
+                                                    }
+                                                }
+                                                @endphp
+                                                <input id="{{$key}}" {{$checked}} value="{{$key}}" class="custom-control-input" name="dynamicFields[]" type="checkbox">
+                                                <label for="{{$key}}" class="custom-control-label"> {{$value}} </label>
+                                            </div>
+                                        </div>
+                                        @endforeach
+                                    @endif
+                                    </div>
+                                </div>
+                          </div>
                                         </div>
                                     </div>
                                 </div>
-                            </div>
+                            </form>
                         </div>
-                    </form>
-                </div>
             </div>
 
             {{-- get question wise repost data --}}
-            @if(isset($data['results']))
-            @php $examResults = $data['results']; /* echo "
-            <pre>"; print_r($data['results']); exit; */ @endphp
+        @if(isset($data['results']))
+        @php $examResults = $data['results']; /* echo "<pre>"; print_r($data['results']); exit; */ @endphp
         @foreach ( $examResults as $examResultKey => $examResult )
             <div class="card">
                 <div class="row">
@@ -209,7 +226,8 @@
                                 $totalRightAns = 0;
                             @endphp --}}
                             @foreach ($studentValue1 as $keyNew => $student)
-                            
+
+
                                 @php
                                     // echo "<pre>"; print_r($studentValue1); exit;
                                         $row = 1;
@@ -360,137 +378,83 @@ function checkedAll() {
         } );
     } );
 </script>
-
 <script>
-    $(document).ready(function () {
-        var standardID = $("#standard").val();
-        var divisionID = $("#division").val();
-
-        if (standardID) {
-            $.ajax({
-                type: "GET",
-                url: "/api/get-subject-list?standard_id=" + standardID + "&division_id="+ divisionID,
-                success: function (res) {
-                    if (res) {
-                        $("#subject").empty();
-                        $("#subject").append('<option value="">Select</option>');
-                        $.each(res, function (key, value) {
-                            $("#subject").append('<option value="' + key + '">' + value + '</option>');
-                        });
-
-                    } else {
-                        $("#subject").empty();
-                    }
+    $("#standard").change(function () {
+        var std_id = $("#standard").val();
+        var path = "{{ route('ajax_LMS_StandardwiseSubject') }}";
+        $('#subject').find('option').remove().end().append('<option value="">Select Subject</option>').val('');
+        $.ajax({
+            url: path, data: 'std_id=' + std_id, success: function (result) {
+                for (var i = 0; i < result.length; i++) {
+                    $("#subject").append($("<option></option>").val(result[i]['subject_id']).html(result[i]['display_name']));
                 }
-            });
-        } else {
-            $("#subject").empty();
-        }
-
-        setTimeout(() => {
-            var grade_id = $('#grade').val();
-            var standard_id = $("#standard").val();
-            var division_id = $("#division").val();
-            var subject_id = $('#subject').val();
-            var sub_institute_id =
-                {{ session()->get('sub_institute_id') }}
-            var syear = {{ session()->get('syear') }}
-                console.log('here time out');
-            if (subject_id) {
-                console.log('here');
-                $.ajax({
-                    type: "GET",
-                    dataType: 'json',
-                    url: "/api/get-exam-name-list?grade_id=" + grade_id + "&standard_id=" + standard_id + "&division_id=" + division_id + "&subject_id=" + subject_id + "&sub_institute_id=" + sub_institute_id + "&syear=" + syear,
-                    // data: {grade_id: grade_id, standard_id: standard_id, division_id: division_id, subject_id: subject_id, sub_institute_id: sub_institute_id, syear: syear },
-                    //--> send id of checked checkbox on other page
-                    success: function (data) {
-                        if (data) {
-                            $("#exam").empty();
-                            $("#exam").append('<option value="">Select</option>');
-                            $.each(data, function (key, value) {
-                                $("#exam").append('<option value="' + value.id + '">' + value.question_paper_name + '</option>');
-                            });
-                        } else {
-                            $("#exam").empty();
-                        }
-
-                    }
-                });
-            } else {
-                $("#exam").empty();
             }
-        }, 2000);
-    });
-</script>
-@if ( isset($data['subject_id']) )
-    <script>
-        setTimeout(() => {
-            $('#subject').val({{ $data['subject_id'] }});
-        }, 1000);
-        setTimeout(() => {
-            $('#exam').val({{ $data['question_paper_id'] }});
-        }, 3000);
-    </script>
-@endif
-<script>
-    $('#division').on('change', function () {
-        $("#exam").empty();
-        $("#exam").append('<option value="">Select</option>');
-        var standardID = $("#standard").val();
-        var divisionID = $("#division").val();
-        if (standardID) {
-            $.ajax({
-                type: "GET",
-                url: "/api/get-subject-list?standard_id=" + standardID + "&division_id="+ divisionID,
-                success: function (res) {
-                    if (res) {
-                        $("#subject").empty();
-                        $("#subject").append('<option value="">Select</option>');
-                        $.each(res, function (key, value) {
-                            $("#subject").append('<option value="' + key + '">' + value + '</option>');
-                        });
-
-                    } else {
-                        $("#subject").empty();
-                    }
-                }
-            });
-        } else {
-            $("#subject").empty();
-        }
-
-    });
-</script>
-    <script>
-        $(document).on('change', '#subject', function () {
-            var grade_id = $('#grade').val();
-            var standard_id = $('#standard').val();
-            var division_id = $('#division').val();
-            var subject_id = $('#subject').val();
-            var sub_institute_id =
-                {{ session()->get('sub_institute_id') }}
-            var syear = {{ session()->get('syear') }}
-
-                $.ajax({
-                    type: "GET",
-                    dataType: 'json',
-                    url: "/api/get-exam-name-list?grade_id=" + grade_id + "&standard_id=" + standard_id + "&division_id=" + division_id + "&subject_id=" + subject_id + "&sub_institute_id=" + sub_institute_id + "&syear=" + syear,
-                    // data: {grade_id: grade_id, standard_id: standard_id, division_id: division_id, subject_id: subject_id, sub_institute_id: sub_institute_id, syear: syear },
-                    //--> send id of checked checkbox on other page
-                    success: function (data) {
-                        if (data) {
-                            $("#exam").empty();
-                            $("#exam").append('<option value="">Select</option>');
-                            $.each(data, function (key, value) {
-                                $("#exam").append('<option value="' + value.id + '">' + value.question_paper_name + '</option>');
-                            });
-                        } else {
-                            $("#exam").empty();
-                    }
-
-                    }
-            });
         });
+    })
+
+    $("#subject").change(function(){
+        var std_id = $("#standard").val();
+        var sub_id = $("#subject").val();
+        var path = "{{ route('ajax_LMS_SubjectWiseExam') }}";
+        $.ajax({
+            url: path,
+            data: 'std_id=' + std_id + '&sub_id=' + sub_id,
+            success: function (result) {
+                var e = $('select[name="exam"]');
+                $(e).find('option').remove().end();
+                for (var i = 0; i < result.length; i++) {
+                    $(e).append($("<option></option>").val(result[i]['id']).html(result[i]['paper_name']));
+                }
+            }
+        });
+    })
+
+    $(document).ready(function () {
+        $('#grade').attr("required", true);
+        $('#standard').attr("required", true);
+        $('#subject').attr("required", true);
+    });
+    $(document).ready(function () {
+        var table = $('#example').DataTable({
+            select: true,
+            lengthMenu: [
+                [100, 500, 1000, -1],
+                ['100', '500', '1000', 'Show All']
+            ],
+            dom: 'Bfrtip',
+            buttons: [
+                {
+                    extend: 'pdfHtml5',
+                    title: 'Other Fees Report',
+                    orientation: 'landscape',
+                    pageSize: 'LEGAL',
+                    pageSize: 'A0',
+                    exportOptions: {
+                        columns: ':visible'
+                    },
+                },
+                {extend: 'csv', text: ' CSV', title: 'Other Fees Report'},
+                {extend: 'excel', text: ' EXCEL', title: 'Other Fees Report'},
+                {extend: 'print', text: ' PRINT', title: 'Other Fees Report'},
+                'pageLength'
+            ],
+        });
+
+        $('#example thead tr').clone(true).appendTo('#example thead');
+        $('#example thead tr:eq(1) th').each(function (i) {
+            var title = $(this).text();
+            $(this).html('<input type="text" placeholder="Search ' + title + '" />');
+
+            $('input', this).on('keyup change', function () {
+                if (table.column(i).search() !== this.value) {
+                    table
+                        .column(i)
+                        .search( this.value )
+                        .draw();
+                }
+            } );
+        } );
+    } );
 </script>
+
 @include('includes.footer')

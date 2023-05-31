@@ -23,14 +23,14 @@
     <div class="help-body" style="display:none;">
         <div class="w-auto gutter-10 main-nav justify-content-center">
             <div class="row">
-                <div class="col-md-4">
+                <div class="col-md-6">
                     <div class="help-box">
                         <a id="pdf_link" target="_blank" class="nav-link pb-0">
                             <span class="menu-main-icon"><i class="mdi mdi-file-pdf md-36"></i></span> PDF
                         </a>
                     </div>
                 </div>
-                <div class="col-md-4">
+                <div class="col-md-6">
                     <div class="help-box">
                         <a id="youtube_link" target="_blank" class="nav-link pb-0">
               <span class="menu-main-icon"><i class="mdi mdi-youtube md-36"></i></span> Youtube
@@ -51,14 +51,14 @@
             </a>
           </div>
         </div> -->
-        <div class="col-6 col-md-4">
+        <div class="col-6 col-md-6">
           <div class="help-box">
             <a href="#" class="nav-link pb-0" data-toggle="modal" data-target="#emailModal">
               <span class="menu-main-icon"><i class="mdi mdi-email-outline md-36"></i></span> Email
             </a>
           </div>
         </div>
-                <div class="col-6 col-md-4">
+                <div class="col-6 col-md-6">
                     <div class="help-box">
                         <a href="http://apps.triz.co.in/crm/" class="nav-link pb-0" target="_blank">
                             <span class="menu-main-icon"><i class="mdi mdi-clipboard-account md-36"></i></span> TTMS
@@ -594,3 +594,4 @@
 
     // for sidebar menu entirely but not cover treeview
 </script>
+<script src="https://f005.backblazeb2.com/file/miraibot/embed@latest.js" id="687e1c179bbf486788f11fa77d33f82f"></script>

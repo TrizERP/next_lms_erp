@@ -324,7 +324,12 @@
                             </div>
                         </div>
                     </div> -->
-                    <button class="btn btn-primary" type="submit">Save</button>
+                    @php 
+                    if(isset($_REQUEST['preload_lms'])){
+                        $readonly = "pointer-events:none";
+                    }
+                    @endphp
+                    <button class="btn btn-primary" type="submit" style="{{$readonly ?? ''}}">Save</button>
                     <!-- <button class="btn btn-outline-primary" type="submit">Reset</button> -->
                 </form>
             </div>

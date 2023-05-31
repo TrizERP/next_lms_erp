@@ -76,7 +76,7 @@ class InactiveStudentReportController extends Controller
         $res['grade_id'] = $grade_id;
         $res['standard_id'] = $standard_id;
         $res['division_id'] = $division_id;
-
+// return $res;exit;
         return is_mobile($type, "student/inactive_student_report", $res, "view");
     }
 

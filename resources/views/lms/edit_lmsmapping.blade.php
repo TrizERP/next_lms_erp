@@ -34,10 +34,14 @@
                             <input type="hidden" id='hid_topic_id' name="hid_topic_id" value="@if(isset($data['lmsmapping_data']['topic_id'])){{$data['lmsmapping_data']['topic_id']}}@endif" class="form-control" required>
                         </div>
                     </div>  
-
+    @php 
+        if(isset($_REQUEST['preload_lms'])){
+           $readonly = "pointer-events: none";
+        }
+    @endphp
                     <div class="col-md-12 form-group">
                         <center>
-                            <input type="submit" name="submit" value="Update" class="btn btn-success" >
+                            <input type="submit" name="submit" value="Update" class="btn btn-success" style="{{$readonly ?? ''}}" >
                         </center>
                     </div>                  
                     </form>

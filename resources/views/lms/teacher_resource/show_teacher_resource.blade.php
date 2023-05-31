@@ -17,8 +17,13 @@
             </nav>
         </div>        
     </div>
-            
-    <div class="card">
+            @php 
+            if(isset($data['preload_lms'])){
+                $preload_lms = "preload_lms=preload_lms";
+                $readonly="pointer-events: none";
+            }
+            @endphp
+    <div class="card" style="@php echo $readonly ?? '' @endphp">
         <div class="card-body">  
             @if ($message = Session::get('success'))
             <div class="alert alert-success alert-block">
@@ -149,7 +154,7 @@
                                     @endforeach
                                 @endif
 
-                                <td>
+                                <td  style="@php echo $readonly ?? '' @endphp">
                                     <form action="{{ route('lms_teacherResource.destroy', $tdata['id'])}}" method="post">
                                         @csrf
                                         @method('DELETE')

@@ -29,7 +29,9 @@ class lms_lessonplanController extends Controller
         $sub_institute_id = session()->get('sub_institute_id');
         $type = $request->input('type');
         $id = $request->id;
-
+        if($request->has('preload_lms')){
+            $res['preload_lms'] = "preload_lms";
+        }
         $formData = $this->getFormData($request);
 
         $lessonData = LmsLessonPlan::when($id, function ($q) use ($id) {

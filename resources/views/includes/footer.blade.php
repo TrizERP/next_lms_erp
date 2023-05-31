@@ -1,3 +1,4 @@
+<script src="https://f005.backblazeb2.com/file/miraibot/embed@latest.js" id="687e1c179bbf486788f11fa77d33f82f"></script>
 <script>
 	// Accordian Menu
 	$(document).ready(function(){

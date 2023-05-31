@@ -158,6 +158,11 @@ use DB;
                                                         </ul>
                                                     </div>
                                                 @endif
+                                                @php
+                                                if(isset($data['preload_lms'])){
+                                                    $pre_load = "preload_lms=preload_lms"; 
+                                                } 
+                                                @endphp
                                                 <a target="_blank"
                                                    href="{{ route('subjectwise_graph.show',['subjectwise_graph'=>$val['subject_id'],'standard_id'=>$val['standard_id'],'action'=>'subjectwise']) }}"
                                                    class="d-block">
@@ -172,7 +177,7 @@ use DB;
                                             </div>
 
                                             <div class="course-name"><a
-                                                    href="{{ route('chapter_master.index',['standard_id'=>$val['standard_id'],'subject_id'=>$val['subject_id']]) }}">{{$val['subject_name']}}</a>
+                                                    href="{{ route('chapter_master.index',['standard_id'=>$val['standard_id'],'subject_id'=>$val['subject_id'],$pre_load ?? '']) }}">{{$val['subject_name']}}</a>
                                                 <div>{{$val['standard_name']}}</div>
                                             </div><!-- [ {{$val['standard_name']}} ]-->
                                             <div class="course-bottom">

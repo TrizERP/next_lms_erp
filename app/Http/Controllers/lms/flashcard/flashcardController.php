@@ -21,7 +21,11 @@ class flashcardController extends Controller
      */
     public function index(Request $request)
     {
-        $data = $this->getData($request);
+        if($request->has('preload_lms')){
+        $data = $this->getDataPre($request);
+        }else{
+            $data = $this->getData($request);
+        }
         $type = $request->input('type');
         $res['status_code'] = 1;
         $res['message'] = "SUCCESS";
@@ -36,6 +40,8 @@ class flashcardController extends Controller
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $syear = $request->session()->get('syear');
         $data['flashcard_data'] = array();
+        $content_id = $request->content_id;
+        // echo $content_id;exit;
 
         $where_condition['lms_question_master.sub_institute_id'] = $sub_institute_id;
 
@@ -46,11 +52,38 @@ class flashcardController extends Controller
             ->join('chapter_master as c', 'c.id', 'lms_flashcard.chapter_id')
             ->where([
                 'lms_flashcard.sub_institute_id' => $sub_institute_id, 'lms_flashcard.syear' => $syear,
-                'lms_flashcard.content_id'       => $request->get('content_id'),
+                'lms_flashcard.content_id'       => $content_id,
             ])
             ->get();
 
-        $data['breadcrum_data'] = $this->getBreadcrum($sub_institute_id, $syear, $request->get('content_id'));
+        $data['breadcrum_data'] = $this->getBreadcrum($sub_institute_id, $syear, $content_id);
+
+        return $data;
+    }
+
+    public function getDataPre($request)
+    {
+        $sub_institute_id = 1;
+        $year = DB::table('academic_year')->where('sub_institute_id',$sub_institute_id)->get()->toArray();
+        $syear =$year[0]->syear;
+        $data['flashcard_data'] = array();
+        $content_id = $request->content_id;
+        // echo $content_id;exit;
+
+        $where_condition['lms_question_master.sub_institute_id'] = $sub_institute_id;
+
+        $data['flashcard_data'] = flashcardModel::select('lms_flashcard.*', 's.name as standard_name', 'c.chapter_name',
+            'sub.subject_name')
+            ->join('standard as s', 's.id', 'lms_flashcard.standard_id')
+            ->join('subject as sub', 'sub.id', 'lms_flashcard.subject_id')
+            ->join('chapter_master as c', 'c.id', 'lms_flashcard.chapter_id')
+            ->where([
+                'lms_flashcard.sub_institute_id' => $sub_institute_id, 'lms_flashcard.syear' => $syear,
+                'lms_flashcard.content_id'       => $content_id,
+            ])
+            ->get();
+
+        $data['breadcrum_data'] = $this->getBreadcrum($sub_institute_id, $syear, $content_id);
 
         return $data;
     }
@@ -70,8 +103,7 @@ class flashcardController extends Controller
                     ch.chapter_name,t.name AS topic_name,c.id as content_id")
             ->where('c.sub_institute_id', $sub_institute_id)
             ->where('c.id', $content_id)->get()->toArray();
-
-        return $breadcrum_data[0];
+        return $breadcrum_data[0] ?? [];
     }
 
     /**

@@ -52,7 +52,7 @@
                                     ],
                                 [
                                     'menu_title'=>'LMS Preloaded',
-                                    'link'=>"/lms/content_master?sub_institute_id=1&syear=2021",
+                                    'link'=>"/lms/course_master?preload_lms=preload_lms",
                                     ]
                              ];
                 @endphp
@@ -75,7 +75,7 @@
                 <div class="col-md-4">
                     <div class="card">
                         <a style="color:#black;font-size:1rem;" 
-                            href="#" class="btn btn-outline-dark">{{$value['menu_title']}}</a>
+                            href="{{$value['link']}}" target="_blank" class="btn btn-outline-dark">{{$value['menu_title']}}</a>
                         <!-- </thead> -->
                     </div>
                 </div>
