@@ -106,7 +106,7 @@ Route::group([ 'middleware' => ['session', 'menu', 'logRoute']], function () {
 
     Route::get('/employee-salary-structure', [PayrollController::class, 'employeeSalaryStructure'])->name('employee_salary_structure.index');
     Route::post('/employee-salary-structure', [PayrollController::class, 'employeeSalaryStructure'])->name('payroll.show_employee_salary_structure');
-    Route::get('/roll-over', [PayrollController::class, 'rollOver']);
+    Route::get('/roll-over', [PayrollController::class, 'rollOver'])->name('employee_salary_structure.rollover');
     Route::post('/employee-salary-structure/store', [PayrollController::class, 'employeeSalaryStructureStore'])->name('employee_salary_structure.store');
     Route::post('/rollover-employee-salary-structure/store', [PayrollController::class, 'rolloverEmployeeSalaryStructure'])->name('rollover_employee_salary_structure.store');
 	
@@ -115,7 +115,7 @@ Route::group([ 'middleware' => ['session', 'menu', 'logRoute']], function () {
     Route::get('/salary-structure-report', [PayrollController::class, 'salaryStructureReport'])->name('salary_structure_report.index');
     Route::post('/salary-structure-report', [PayrollController::class, 'showSalaryStructureReport']);
 
-    Route::get('/form16',[PayrollController::class, 'form16']);
+    Route::get('/form16',[PayrollController::class, 'form16'])->name('form16.index');
     Route::post('/form16', [PayrollController::class, 'form16Report']);
 
     /*Route::get('/payroll-deduction', [PayrollController::class, 'payrollDeduction']);
