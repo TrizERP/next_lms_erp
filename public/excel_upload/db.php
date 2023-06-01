@@ -1,9 +1,9 @@
 <?php
 set_time_limit(0);
-$host = '202.47.117.220';
+$host = '192.168.0.2';
 $username = 'dev_db';
 $password = 'dev@sql';
-$database = 'development_erp';
+$database = 'triz_erp_21';
 $syear = "2023";
 
 $cn = mysqli_connect($host, $username, $password) or die("Check DB Connection");

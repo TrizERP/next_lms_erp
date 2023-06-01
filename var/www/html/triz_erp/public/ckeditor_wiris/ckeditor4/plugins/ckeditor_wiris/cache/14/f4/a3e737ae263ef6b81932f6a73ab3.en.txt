@@ -1,0 +1,1 @@
+{"result":{"text":"square root of open parentheses A plus 1 right parenthesis squared close parentheses end root"},"status":"ok"}
