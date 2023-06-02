@@ -15,9 +15,9 @@ return new class extends Migration
     {
         Schema::create('library_books', function (Blueprint $table) {
             $table->id();
-            $table->integer('material_resource_id')->default(0);
             $table->string('title', 200)->nullable();
             $table->text('sub_title')->nullable();
+            $table->string('material_resource_type')->nullable();
             $table->text('tags')->nullable();
             $table->string('edition', 50)->nullable();
             $table->string('isbn_issn', 100)->nullable();
