@@ -21,12 +21,7 @@ class lms_teacherResourceController extends Controller
      */
     public function index(Request $request)
     {
-        if($request->has('preload_lms')){
-            $data = $this->getDataPre($request); 	
-            $res['preload_lms'] = "preload_lms";
-        }else{
         $data = $this->getData($request); 		
-        }
         $type = $request->input('type');
         $res['status_code'] = 1;
         $res['message'] = "SUCCESS";                  
@@ -35,9 +30,15 @@ class lms_teacherResourceController extends Controller
     }
 
     public function getData($request){
-        $sub_institute_id = $request->session()->get('sub_institute_id');
-        $syear = $request->session()->get('syear');
-
+        if($request->has('preload_lms')){
+            $sub_institute_id = 1;
+            $year = DB::table('academic_year')->where('sub_institute_id',$sub_institute_id)->get()->toArray();
+            $syear =$year[0]->syear;
+        }else{
+            $sub_institute_id = $request->session()->get('sub_institute_id');
+            $syear = $request->session()->get('syear');
+        }
+        
         $standard_id = $request->get("standard_id");
         $chapter_id = $request->get("chapter_id");
         $subject_id = $request->get("subject_id");
@@ -87,58 +88,6 @@ class lms_teacherResourceController extends Controller
         return $data;
     }
 
-    public function getDataPre($request){
-        $sub_institute_id = 1;
-        $year = DB::table('academic_year')->where('sub_institute_id',$sub_institute_id)->get()->toArray();
-        $syear =$year[0]->syear;
-        $standard_id = $request->get("standard_id");
-        $chapter_id = $request->get("chapter_id");
-        $subject_id = $request->get("subject_id");
-        $topic_id = '';
-        if($request->has('topic_id'))
-        {
-            $topic_id = $request->get("topic_id");
-        }
-
-        $data['TR_data'] = teacherResourceModel::select("lms_teacher_resource.*","c.chapter_name","t.name as topic_name")
-                    ->join('chapter_master as c','lms_teacher_resource.chapter_id','c.id')
-                    ->leftjoin('topic_master as t','lms_teacher_resource.topic_id','t.id')
-                    ->where(['lms_teacher_resource.sub_institute_id'=>$sub_institute_id,
-                        'lms_teacher_resource.chapter_id'=>$chapter_id,
-                        'lms_teacher_resource.standard_id'=>$standard_id])
-                        //'lms_teacher_resource.syear'=>$syear])
-                    ->get()->toArray(); 
-
-        $data['chapter_id'] = $chapter_id;
-        $data['standard_id'] = $standard_id;
-        $data['subject_id'] = $subject_id;
-        $data['topic_id'] = $topic_id;
-
-        //START Columns from field setting
-        $dataCustomFields = tblcustomfieldsModel::where(['status' => "1", 'table_name' => "lms_teacher_resource"])
-                            ->whereRaw('(sub_institute_id = ' . $sub_institute_id . ' OR common_to_all = 1)')
-                            ->get();
-
-        $data['custom_fields'] = $dataCustomFields; 
-        //END Columns from field setting
-
-        //START Columns from field setting for combo checkbox
-        $fieldsData = tblfields_dataModel::get()->toArray();
-        $i = 0;
-        $finalfieldsData = [];
-        foreach ($fieldsData as $key => $value) {
-            $finalfieldsData[$value['field_id']][$i]['display_text'] = $value['display_text'];
-            $finalfieldsData[$value['field_id']][$i]['display_value'] = $value['display_value'];
-            $i++;
-        }
-
-        if (count($finalfieldsData) > 0) {
-            $data['data_fields'] = $finalfieldsData;
-        }                        
-        //END Columns from field setting for combo checkbox         
-
-        return $data;
-    }
 
     /**
      * Store a newly created resource in storage.

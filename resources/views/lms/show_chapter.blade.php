@@ -20,7 +20,7 @@ use DB;
             $show_block = 'YES';
         }
 
-        if(isset($data['preload_lms'])) {
+        if(isset($_REQUEST['preload_lms'])) {
             $readonly="pointer-events: none";
             $preload_lms = "preload_lms=preload_lms";
         } 
@@ -272,7 +272,7 @@ use DB;
                            
                             <div class="col-md-2 time text-secondary d-flex justify-content-end"
                                  style="font-size: 20px;" >
-                                <a href="{{ route('lms_flashcard.index',['content_id' => $single_content['id'],$preload_lms ?? '' ])}}"
+                                <a href="{{ route('lms_flashcard.index',['content_id' => $single_content['id'],'std_id'=>$single_content['standard_id'],$preload_lms ?? '' ])}}"
                                    target="_blank"
                                    class="btn btn-outline-warning btn-sm mx-1" data-toggle="tooltip" title=""
                                    data-original-title="Add Flash Card"><i

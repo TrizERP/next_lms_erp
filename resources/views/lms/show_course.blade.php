@@ -159,7 +159,7 @@ use DB;
                                                     </div>
                                                 @endif
                                                 @php
-                                                if(isset($data['preload_lms'])){
+                                                if(isset($_REQUEST['preload_lms'])){
                                                     $pre_load = "preload_lms=preload_lms"; 
                                                 } 
                                                 @endphp
@@ -208,10 +208,14 @@ use DB;
                                                         <ul class="sub-menu">
                                                             @foreach($chapter_arr as $k => $v)
                                                                 @php
-                                                                    $topic_arr = explode("/",$v);
+                                                                $topic_arr = explode("/",$v);
+                                                                if(isset($topic_arr[1])){
+                                                                $topic_id = $topic_arr[1];
+                                                                }
+
                                                                 @endphp
                                                                 <li>
-                                                                    <a href="{{ route('topic_master.index',['id'=>$topic_arr[0]]) }}">{{$topic_arr[0]}}</a>
+                                                                    <a href="{{ route('topic_master.index',['id'=>$topic_id ?? '',$pre_load ?? '']) }}">{{$topic_arr[0]}}</a>
                                                                 </li>
                                                             @endforeach
                                                         </ul>

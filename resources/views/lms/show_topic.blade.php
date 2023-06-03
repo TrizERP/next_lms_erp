@@ -11,10 +11,10 @@
                 <ol class="breadcrumb bg-transparent p-0">
                     <li class="breadcrumb-item"><a href="{{route('course_master.index')}}">LMS</a></li>
                     <li class="breadcrumb-item"><a
-                            href="{{ route('chapter_master.index',['standard_id'=>$data['breadcrum_data']->standard_id,'subject_id'=>$data['breadcrum_data']->subject_id]) }}">{{$data['breadcrum_data']->subject_name}}</a>
+                            href="{{ route('chapter_master.index',['standard_id'=>$data['breadcrum_data']->standard_id ?? '','subject_id'=>$data['breadcrum_data']->subject_id ?? '']) }}">{{$data['breadcrum_data']->subject_name ?? ''}}</a>
                     </li>
                     <li class="breadcrumb-item active"
-                        aria-current="page">{{$data['breadcrum_data']->chapter_name}}</li>
+                        aria-current="page">{{$data['breadcrum_data']->chapter_name ?? ''}}</li>
                 </ol>
             </nav>
         </div>

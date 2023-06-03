@@ -121,7 +121,7 @@
                         @if ($master['link'] == 'javascript:void(0);' || $master['link'] == '')
                         @else
                         <div class="card card-body need-card border-0" style="padding:4px !important">
-                            <a href="{{route($master['link'])}}" target="_blank">
+                            <a href="@if(Route::has($master['link'])){{route($master['link'])}}@else # @endif" target="_blank">
                                 <div class="main" style="display:flex;">
                                     <div class="text">{{$master['name']}}
                                         @if(isset($data['table_name']) && isset($data['table_name'][$master['database_table']]) && $data['table_name'][$master['database_table']] == 1)

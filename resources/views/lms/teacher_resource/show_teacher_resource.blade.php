@@ -18,7 +18,7 @@
         </div>        
     </div>
             @php 
-            if(isset($data['preload_lms'])){
+            if(isset($_REQUEST['preload_lms'])){
                 $preload_lms = "preload_lms=preload_lms";
                 $readonly="pointer-events: none";
             }

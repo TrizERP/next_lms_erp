@@ -18,15 +18,7 @@ class chapterController extends Controller
 
     public function index(Request $request)
     {
-        // return $request;exit;
-        if($request->has('preload_lms')){
-            // echo "preload_lms";exit;
-            $data = $this->getDataPre($request);
-            // return $data;exit;
-            $res['preload_lms'] = "preload_lms";
-        }else{
-            $data = $this->getData($request);
-        }
+        $data = $this->getData($request);
         $type = $request->input('type');
         $res['status_code'] = 1;
         $res['message'] = "SUCCESS";
@@ -43,93 +35,16 @@ class chapterController extends Controller
 
     public function getData($request)
     {
-        $sub_institute_id = $request->session()->get('sub_institute_id');
-        $syear = $request->session()->get('syear');
-        $user_profile_name = $request->session()->get('user_profile_name');
-
-        $getIsLms = DB::table('school_setup')
-            ->where('Id', $sub_institute_id)
-            ->value('is_Lms');
-
-        $extra_where = array();
-        if ($user_profile_name == "Student") {
-            $extra_where['chapter_master.show_hide'] = "1";
-            $content_where['content_master.show_hide'] = '1';
+        if($request->has('preload_lms')){
+            $sub_institute_id = 1;
+            $year = DB::table('academic_year')->where('sub_institute_id',$sub_institute_id)->get()->toArray();
+            $syear =$year[0]->syear;
+            $user_profile_name = 1;
+        }else{
+            $sub_institute_id = $request->session()->get('sub_institute_id');
+            $syear = $request->session()->get('syear');
+            $user_profile_name = $request->session()->get('user_profile_name');
         }
-
-        $subject_id = $request->input('subject_id');
-        $standard_id = $request->input('standard_id');
-        $data['chapter_data'] = array();
-
-        // DB::enableQueryLog();
-        $data['chapter_data'] = chapterModel::select('chapter_master.*',
-            DB::raw('COUNT(content_master.id) as total_content,sum(if(content_category = "Triz", 1, 0)) AS total_triz_content,
-        sum(if(content_category = "OER", 1, 0)) AS total_OER_content'))
-            ->leftjoin('content_master', 'content_master.chapter_id', '=', 'chapter_master.id')
-            ->where(function ($query) use ($getIsLms, $sub_institute_id) {
-                if ($getIsLms == 'Y') {
-                    $query->where('chapter_master.sub_institute_id', '1')
-                        ->orWhere('chapter_master.sub_institute_id', $sub_institute_id);
-                } else {
-                    $query->Where('chapter_master.sub_institute_id', $sub_institute_id);
-                }
-            })
-            ->where('chapter_master.subject_id', $subject_id)
-            ->where('chapter_master.standard_id', $standard_id)
-            ->where($extra_where)
-            ->groupBy('chapter_master.id')
-            ->orderBy('chapter_master.sort_order')
-            ->get();
-
-        $data['basic_ids'] = sub_std_mapModel::select('standard.grade_id', 'sub_std_map.subject_id',
-            'sub_std_map.standard_id',
-            'sub_std_map.display_name as subject_name', 'sub_std_map.add_content')
-            ->join('standard', 'standard.id', '=', 'sub_std_map.standard_id')
-            ->where(function ($query) use ($getIsLms, $sub_institute_id) {
-                if ($getIsLms == 'Y') {
-                    $query->where('sub_std_map.sub_institute_id', '1')
-                        ->orWhere('sub_std_map.sub_institute_id', $sub_institute_id);
-                }
-            })
-            ->where('sub_std_map.subject_id', $subject_id)
-            ->where('sub_std_map.standard_id', $standard_id)
-            ->get()->toArray();
-
-        $content_data = contentModel::select('content_master.*')
-            ->where(function ($query) use ($getIsLms, $sub_institute_id) {
-                if ($getIsLms == 'Y') {
-                    $query->where('content_master.sub_institute_id', '1')
-                        ->orWhere('content_master.sub_institute_id', $sub_institute_id);
-                }
-            })
-            ->where('content_master.subject_id', $subject_id)
-            ->where('content_master.standard_id', $standard_id)
-            ->where(function ($query) {
-                $query->whereNull('content_master.topic_id')
-                    ->orWhere('content_master.topic_id', '0');
-            })
-            ->get()->toArray();
-
-        $content_data_array = [];
-        if (! empty($content_data)) {
-            foreach ($content_data as $content) {
-                $content_data_array[$content['chapter_id']][$content['content_category']][] = $content;
-            }
-        }
-
-        $data['content_data'] = $content_data_array;
-
-        $data['basic_ids'] = $data['basic_ids'][0];
-
-        return $data;
-    }
-    public function getDataPre($request)
-    {
-        $sub_institute_id = 1;
-        $year = DB::table('academic_year')->where('sub_institute_id',$sub_institute_id)->get()->toArray();
-        $syear =$year[0]->syear;
-        $user_profile_name = 1;
-
         $getIsLms = DB::table('school_setup')
             ->where('Id', $sub_institute_id)
             ->value('is_Lms');
