@@ -1,0 +1,1 @@
+{"result":{"text":"cube root of 2 space x 2 cubed end root"},"status":"ok"}

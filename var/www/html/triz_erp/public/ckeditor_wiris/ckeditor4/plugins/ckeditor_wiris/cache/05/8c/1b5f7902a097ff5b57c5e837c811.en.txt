@@ -1,0 +1,1 @@
+{"result":{"text":"sin squared theta plus cos to the power of 4 theta"},"status":"ok"}
