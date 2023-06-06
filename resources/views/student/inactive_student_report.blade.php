@@ -54,11 +54,14 @@
                 <table id="example" class="table table-striped">
                     <thead>
                         <tr>
-                            <th>Sr No</th>
+                            <!-- <th>Sr No</th>
                             <th>Enrollment No</th>
                             <th>Student Name</th>
                             <th>Standard</th>
-                            <th>Division</th>
+                            <th>Division</th> -->
+                        @foreach($result_report as $stud_key => $stud_data)
+                            <th>{{$stud_key}}</th>
+                        @endforeach
                         </tr>
                     </thead>
                     <tbody>
