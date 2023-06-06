@@ -364,6 +364,9 @@
                                                         <option value="DD">DD</option>
                                                         <option value="Online">Online</option>
                                                         <option value="NACH">NACH</option>
+                                                        <option value="UPI">UPI</option>
+                                                        <option value="Swipe1">Swipe1</option>
+                                                        <option value="Swipe2">Swipe2</option>                                                        
                                                     </select>
                                                 </td>
                                                 <td>Receipt Date</td>

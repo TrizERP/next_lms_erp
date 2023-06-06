@@ -68,8 +68,8 @@ br {
                             </div>
                             <div class="col-md-4 form-group">
                                 <label>Email</label>
-                                <span><br><b>{{ $data['email'] }}</b></span>
-                                <!-- <input type="text" id='email' value="@if(isset($data['email'])){{ $data['email'] }}@endif" required name="email" class="form-control"> -->
+                                <!--<span><br><b>{{ $data['email'] }}</b></span>-->
+                                <input type="text" id='email' value="@if(isset($data['email'])){{ $data['email'] }}@endif" required name="email" class="form-control">
                             </div>
                             <div class="col-md-4 form-group">
                                 <label>Mobile</label>

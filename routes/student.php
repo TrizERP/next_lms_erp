@@ -12,6 +12,7 @@ use App\Http\Controllers\front_desk\photo_video_gallary\photo_video_gallaryContr
 use App\Http\Controllers\front_desk\school_detail\schooldetailController;
 use App\Http\Controllers\hostel_management\tblhostelRoomAllocationController;
 use App\Http\Controllers\student\bulkStudentController;
+use App\Http\Controllers\student\studentStrengthReportController;
 use App\Http\Controllers\student\fees_graph\student_fees_graphController;
 use App\Http\Controllers\student\graph_attendance\student_graph_attendanceController;
 use App\Http\Controllers\student\houseAutomationController;
@@ -69,6 +70,7 @@ Route::group(['prefix' => 'student', 'middleware' => ['session', 'menu', 'logRou
     Route::resource('student_certificate', studentCertificateController::class);
     Route::resource('student_certificate_report', student_certificate_reportController::class);
     Route::resource('student_request', studentRequestController::class);
+    Route::resource('student_strength_report', studentStrengthReportController::class);
     Route::resource('student_request_report', studentRequestReportController::class);
     Route::resource('student_attendance', studentAttendanceController::class);
     Route::resource('student_graph_attendance', student_graph_attendanceController::class);
