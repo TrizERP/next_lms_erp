@@ -1229,6 +1229,8 @@ class fees_collect_controller extends Controller
 
             $tData = json_decode(json_encode($tData), true);
 
+            $father_name = $_REQUEST['father_name'] ?? '-';
+            $mother_name = $_REQUEST['mother_name'] ?? '-';
             $medium = $_REQUEST['medium'] ?? '-';
             $uniqueid = $_REQUEST['uniqueid'] ?? '-';
             $enrollment = $_REQUEST['enrollment'] ?? '-';
@@ -1263,7 +1265,8 @@ class fees_collect_controller extends Controller
             $html_content = str_replace(htmlspecialchars("<<student_name_value>>"), $_REQUEST['full_name'],
                 $html_content);
             $html_content = str_replace(htmlspecialchars("<<student_enrollment_value>>"), $enrollment, $html_content);
-
+            $html_content = str_replace(htmlspecialchars("<<student_father_name>>"), $father_name, $html_content);
+            $html_content = str_replace(htmlspecialchars("<<student_mother_name>>"), $mother_name, $html_content);
             $html_content = str_replace(htmlspecialchars("<<student_standard_value>>"), $_REQUEST['std_div'],
                 $html_content);
             $html_content = str_replace(htmlspecialchars("<<student_mobile_value>>"), $_REQUEST['mobile'],
@@ -1981,6 +1984,8 @@ class fees_collect_controller extends Controller
             "admission"                     => $reg_bk_off[0]->admission_year,
             "email"                         => $reg_bk_off[0]->email,
             "medium"                        => $reg_bk_off[0]->medium,
+            "father_name"                   => $reg_bk_off[0]->father_name,
+            "mother_name"                   => $reg_bk_off[0]->mother_name,
             "pending"                       => $pending_fees,
             "mobile"                        => $reg_bk_off[0]->mobile,
             "uniqueid"                      => $reg_bk_off[0]->uniqueid,

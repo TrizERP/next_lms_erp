@@ -59,9 +59,6 @@
                             <th>Student Name</th>
                             <th>Standard</th>
                             <th>Division</th>
-                               @foreach($data['docment_type_data'] as $key => $val)
-                                    <th>{{$val['document_type']}}</th>
-                               @endforeach
                         </tr>
                     </thead>
                     <tbody>
@@ -72,27 +69,6 @@
                                 <td> {{$stud_data->student_name}} </td>
                                 <td> {{$stud_data->standard_name}} </td>
                                 <td> {{$stud_data->division_name}} </td>
-                                @php
-                                if($stud_data->document_list != "")
-                                {
-                                    $document_list = explode(",",$stud_data->document_list);
-                                }else
-                                {
-                                    $document_list = array();
-                                }
-                                
-                                foreach($data['docment_type_data'] as $key => $val)
-                                {
-                                    if( in_array($val['id'],$document_list))
-                                    {
-                                        echo "<td style='color:green;font-size: 22px;'>&#10004;</td>";
-                                    }
-                                    else
-                                    {
-                                        echo "<td style='color:red;'>&#10060;</td>";
-                                    }
-                                }                                                            
-                                @endphp
                             </tr>
                         @endforeach
                     </tbody>

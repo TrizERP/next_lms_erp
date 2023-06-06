@@ -53,8 +53,7 @@ class InactiveStudentReportController extends Controller
                 $join->whereRaw('sd.student_id = se.student_id');
             })->selectRaw("s.enrollment_no, CONCAT_WS(' ',s.first_name,s.last_name) AS student_name,
                 st.name as standard_name,d.name as division_name,GROUP_CONCAT(sd.document_type_id) as document_list")
-            ->where('se.syear', $syear)
-            ->where('s.sub_institute_id', $sub_institute_id);
+            ->where(['se.syear'=>$syear,'s.sub_institute_id'=> $sub_institute_id])->whereRaw('se.end_date <= "'.date('y-m-d').'" ');
 
         if ($grade_id != '') {
             $result = $result->where('se.grade_id', $grade_id);

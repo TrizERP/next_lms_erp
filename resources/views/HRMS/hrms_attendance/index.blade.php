@@ -1,4 +1,7 @@
 @include('includes.headcss')
+@include('includes.header')
+@include('includes.sideNavigation')
+
 <link rel="stylesheet" href="../../../plugins/bower_components/dropify/dist/css/dropify.min.css">
 
 

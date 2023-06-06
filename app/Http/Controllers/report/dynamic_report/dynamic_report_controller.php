@@ -248,9 +248,9 @@ class dynamic_report_controller extends Controller
             $sub_module_showing_name = array_merge($sub_module_showing_name, $temp_showing_name);
             $sub_module_db_fields = array_merge($sub_module_db_fields, $temp_db_fields);
         }
-
         $all_fields_name = $sub_module_showing_name;
         $all_fields_index = $sub_module_db_fields;
+        // echo "<pre>";print_r($all_fields_index);exit;
 
         $enrollment_join = [
             'se.student_id'       => 's.id',
@@ -419,7 +419,44 @@ class dynamic_report_controller extends Controller
                                         $this->query->join('division as di', $div_join);
                                     }
                                 }
-                            } else {
+                            }else{
+                                if($main_module_name == "LMS"){
+
+//                                     SELECT st.name AS standard, chm.chapter_name AS chapter_name, sub.subject_name, COUNT(DISTINCT cm.content_category) AS total_main_content, GROUP_CONCAT(DISTINCT cm.content_category) AS content_type, COUNT(DISTINCT cm.title) AS total_sub_content,GROUP_CONCAT(DISTINCT cm.title) AS contents
+// FROM content_master cm
+// LEFT JOIN chapter_master chm ON chm.id = cm.chapter_id
+// LEFT JOIN subject sub ON chm.subject_id = sub.id
+// INNER JOIN standard st ON st.id = cm.standard_id
+// WHERE cm.sub_institute_id = 1
+// GROUP BY st.name, chm.chapter_name, sub.subject_name
+
+
+                    $this->query = DB::table('content_master as cm');
+                    $main_table_initial = "cm";
+
+                        foreach ($sub_module_name as $id => $arr) {
+                            if ($arr->sub_module == "LMS") {
+                                $sub_institute_id = session()->get('sub_institute_id');
+                                                    
+                                $std_join = [
+                                    'cm.standard_id'       => 'st.id',
+                                    'cm.sub_institute_id' => 'st.sub_institute_id',
+                                ];
+                                $subject_join = [
+                                    'sj.id'               => 'cm.subject_id',
+                                   'cm.sub_institute_id' => 'sj.sub_institute_id',
+                                ];
+                                $chapter_join = [
+                                    'chm.id'               => 'cm.chapter_id',
+                                ];
+                                $this->query->join('chapter_master as chm', $chapter_join);
+                                $this->query->join('subject as sj', $subject_join);
+                                $this->query->join('standard as st', $std_join);
+
+                            }
+                        }
+                    
+                }else {
                                 if ($main_module_name == "Circular") {
                                     $this->query = DB::table('circular as c');
                                     $main_table_initial = "c";
@@ -438,21 +475,41 @@ class dynamic_report_controller extends Controller
                                 }
                             }
                         }
+                        }
                     }
                 }
             }
         }
+// |COUNT(DISTINCT cm.content_category) as total_content|GROUP_CONCAT(DISTINCT cm.content_category) as content_type|COUNT(DISTINCT cm.title) as total_sub_content|GROUP_CONCAT(DISTINCT cm.title) as sub_contents
 
-
+// Standard,Chapter Name,Subject Name,Total Contents,Content Name,Total Sub Content,Sub Content Name
         $col = [];
         foreach ($all_detail["selected_fields"] as $id => $val) {
+
             if ($all_fields_name[$val] == " Full Name") {
                 $col[] = DB::raw("concat_ws(' ',s.first_name,s.middle_name,s.last_name) as full_name");
-            } else {
+            }
+            elseif($all_fields_name[$val]=="Chapter Name"){
+                $col[] = DB::raw("GROUP_CONCAT(DISTINCT chm.chapter_name) as chapter_name");
+            }
+            elseif($all_fields_name[$val]=="Content Name"){
+                $col[] = DB::raw("GROUP_CONCAT(DISTINCT cm.content_category) as content_type");
+            }
+            elseif($all_fields_name[$val]=="Sub Content Name"){
+                $col[] = DB::raw("GROUP_CONCAT(DISTINCT cm.title) as sub_contents");
+            }
+            elseif($all_fields_name[$val]=="Total Contents"){
+                $col[] = DB::raw("COUNT(DISTINCT cm.content_category) as total_content");
+            }
+            elseif( $all_fields_name[$val] == "Total Sub Content"){
+                $col[] = DB::raw("COUNT(DISTINCT cm.title) as total_sub_content");
+            }
+            else {
                 $col[] = $all_fields_index[$val];
             }
         }
-
+        // echo "<pre>";print_r($col);
+// exit;
         $result = "";
         $sub_institute_id = session()->get('sub_institute_id');
         foreach ($all_detail["condition"] as $must_any => $arr) {
@@ -526,28 +583,86 @@ class dynamic_report_controller extends Controller
                 }
             }
         }
+        // EP-1
         if (isset($all_detail["group_by"][0])) {
             $group_by_arr = explode(" as", $all_fields_index[$all_detail["group_by"][0]]);
+    		$pattern = '/\((.*?)\)/';
+            	preg_match($pattern, $group_by_arr[0], $matches);
+           	 $field = str_replace(["(DISTINCT "], "", $matches[0] ?? $matches);
+       	 if(isset($matches[0])){
+         	   $order = substr($field, 0,-1);
+        	}else{
+        	    $order = $group_by_arr[0];
+       	 }
+
             $this->query->groupBy($group_by_arr[0]);
             if (isset($all_detail["sort_order"][0])) {
-                $this->query->orderBy($group_by_arr[0], $all_detail["sort_order"][0]);
+                $this->query->orderBy($order, $all_detail["sort_order"][0]);
             }
         }
-        if (isset($all_detail["group_by"][1])) {
-            $group_by_arr = explode(" as", $all_fields_index[$all_detail["group_by"][1]]);
-            $this->query->groupBy($group_by_arr[0]);
-            if (isset($all_detail["sort_order"][1])) {
-                $this->query->orderBy($group_by_arr[0], $all_detail["sort_order"][1]);
-            }
+        // if (isset($all_detail["group_by"][1])) {
+        //     // echo $all_detail["group_by"][1];exit;
+
+        //    // $group_by_arr = explode(" as", $all_fields_index[$all_detail["group_by"][1]]);
+		// $group_by_arr = explode(" as", $all_fields_index[$all_detail["group_by"][1]]);
+        // 	$pattern = '/\((.*?)\)/';
+        // 	preg_match($pattern, $group_by_arr[0], $matches);
+        //     $field = str_replace(["(DISTINCT "], "", $matches[0] ?? $matches);
+        //    	 if(isset($matches[0])){
+        //      	   $order = substr($field, 0,-1);
+        //     }else{
+        //     	    $order = $group_by_arr[0];
+        //    	 }
+        //     $this->query->groupBy($group_by_arr[0]);
+        //     if (isset($all_detail["sort_order"][1])) {
+        //         $this->query->orderBy($order, $all_detail["sort_order"][1]);
+        //     }
+        // }
+// EP-2
+
+ if (isset($all_detail["group_by"]) && isset($all_detail["group_by"][1])) {
+    // $group_by_arr = explode(" as", $all_fields_index[$all_detail["group_by"][2]]);
+        $group_by_arr = explode(" as", $all_fields_index[$all_detail["group_by"][1]]);
+        $pattern = '/\((.*?)\)/';
+        preg_match($pattern, $group_by_arr[0], $matches);
+        $field = str_replace(["(DISTINCT "], "", $matches[0] ?? $matches);
+        if(isset($matches[0])){
+            $order = substr($field, 0,-1);
+        }else{
+            $order = $group_by_arr[0];
         }
-        if (isset($all_detail["group_by"][2])) {
-            $group_by_arr = explode(" as", $all_fields_index[$all_detail["group_by"][2]]);
-            $this->query->groupBy($group_by_arr[0]);
-            if (isset($all_detail["sort_order"][2])) {
-                $this->query->orderBy($group_by_arr[0], $all_detail["group_by"][2]);
-            }
+
+        $this->query->groupBy($order);
+        if (isset($all_detail["sort_order"]) && isset($all_detail["sort_order"][2])) {
+            $this->query->orderBy($order, $all_detail["sort_order"][2]);
         }
+    }        // EP-3
+        if (isset($all_detail["group_by"]) && isset($all_detail["group_by"][2])) {
+    // $group_by_arr = explode(" as", $all_fields_index[$all_detail["group_by"][2]]);
+        $group_by_arr = explode(" as", $all_fields_index[$all_detail["group_by"][2]]);
+        $pattern = '/\((.*?)\)/';
+        preg_match($pattern, $group_by_arr[0], $matches);
+        $field = str_replace(["(DISTINCT "], "", $matches[0] ?? $matches);
+        if(isset($matches[0])){
+            $order = substr($field, 0,-1);
+        }else{
+            $order = $group_by_arr[0];
+        }
+
+        $this->query->groupBy($order);
+        if (isset($all_detail["sort_order"]) && isset($all_detail["sort_order"][2])) {
+            $this->query->orderBy($order, $all_detail["sort_order"][2]);
+        }
+    }
+
+
+        // echo "<pre>";print_r($col);exit;
+        // $this->query->select($col);
+        // if(isset($counts) && $counts == "counts"){
+        //     $this->query->selectRaw(implode(', ', $col));
+        // }else{
         $this->query->select($col);
+        // }
         $result = $this->query->get();
         $tbl_detail = [];
         foreach ($all_detail["selected_fields"] as $id => $val) {

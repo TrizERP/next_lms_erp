@@ -148,6 +148,8 @@
                                     <input type="hidden" name="uniqueid" value="<?php echo $data['stu_data']['uniqueid']; ?>">
                                     <input type="hidden" name="enrollment" value="<?php echo $data['stu_data']['enrollment']; ?>">
                                     <input type="hidden" name="medium" value="<?php echo $data['stu_data']['medium']; ?>">
+                                    <input type="hidden" name="father_name" value="<?php echo $data['stu_data']['father_name']; ?>">
+                                    <input type="hidden" name="mother_name" value="<?php echo $data['stu_data']['mother_name']; ?>">
 
                                     <div class="table-responsive col-md-12" style="border-top: 2px solid black;">
                                         <table class="table table-stripped">

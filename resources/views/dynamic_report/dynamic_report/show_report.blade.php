@@ -21,18 +21,40 @@
                             <thead>
                                 <tr>
                                     @foreach($data['tbl_heading'] as $key => $val)
-                                    <th>{{$val}}</th>
+                                    <th>{!! $val !!}</th>
                                     @endforeach
                                 </tr>
                             </thead>
                             <tbody>
-                                @foreach($data['result'] as $id => $arr)
-                                <tr>
-                                    @foreach($arr as $ind => $val)
-                                    <td>{{$val}}</td>
-                                    @endforeach
-                                </tr>
+
+                                 @foreach($data['result'] as $id => $arr)
+                                	
+                                    <tr>
+                                        @foreach($arr as $ind => $val)
+                                            <td>
+                                                @if($ind == "chapter_name")
+                                                  @php 
+                                                    $explodedValues = explode(',', $val);
+                                                    @endphp
+                                                         @foreach($explodedValues as $explodedVal)
+                                                            {{$explodedVal}}<br>
+                                                        @endforeach
+                                                @elseif($ind == "sub_contents" || $ind == "content_type") {{-- Assuming the fourth column is at index 3 --}}
+                                                    @php $i=1; 
+                                                        $explodedValues = explode(',', $val);
+                                                    @endphp
+                                                        @foreach($explodedValues as $explodedVal)
+                                                            {{$i.")  ".$explodedVal}}<br>
+                                                            @php $i++; @endphp
+                                                    @endforeach
+                                                @else
+                                                    {{$val}}
+                                                @endif
+                                            </td>
+                                        @endforeach
+                                    </tr>
                                 @endforeach
+
 
                             </tbody>
                         </table>

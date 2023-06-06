@@ -568,12 +568,20 @@ class photo_video_gallaryController extends Controller
             {
                 $new_data = [];
                 foreach ($data as $key => $val) {
-                    $new_data[$val->album_title][] = $val;
+                    $new_data[$val->album_title]['album_title'] = $val->album_title;
+                    $new_data[$val->album_title]['album'][] = [
+                        "album_title" => $val->album_title,
+                        "title" => $val->title,
+                        "file_name" => $val->file_name,
+                        "date_" => $val->date_,
+                        "ai" => $val->ai,
+                        "type" => $val->type
+                    ];
                 }
-            
+
                 $res['status'] = 1;
                 $res['message'] = "Success";
-                $res['data'] = $new_data;
+                $res['data'] = array_values($new_data);
             }else{
                 $res['status'] = 0;
                 $res['message'] = "No Data Found";

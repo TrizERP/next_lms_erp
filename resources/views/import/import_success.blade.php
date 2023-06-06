@@ -15,40 +15,23 @@
                     <div class="panel-heading">CSV Import Report</div>
                     <div class="row">
                         <div class="col-md-3">
-                            @if(count($failedFields)>0)
-                                <p>Required fields:</p>
-                            @else
-                                <p>Total Record :</p>
-                                <p>Failed Record:</p>
-                                <p>Insert Record:</p>
-                                <p>OverWrite Record:</p>
-                                <p>Skip Record:</p>
-                                <p>Success Record:</p>
-                            @endif
+                            <p>Total Record :</p>
+                            <p>Failed Record:</p>
+                            <p>Insert Record:</p>
+                            <p>OverWrite Record:</p>
+                            <p>Success Record:</p>
                         </div>
                         <div class="col-md-3">
-                            @if(count($failedFields)>0)
-                                <p>
-                                    @foreach($failedFields as $fields)
-                                        {{$fields}} ,
-                                    @endforeach
-                                </p>
-                            @else
-                                <p>{{$totalRecordCount}}</p>
-                                <p>{{$totalFailedRecordCount}}</p>
-                                <p>{{$totalInsertRecordCount}}</p>
-                                <p>{{$totalOverwiteRecordCount}}</p>
-                                <p>{{$totalSkipRecordCount}}</p>
-                                <p>{{($totalRecordCount) - $totalFailedRecordCount}}</p>
-                            @endif
-
+                            <p>{{$totalRecordCount}}</p>
+                            <p>{{$totalFailedRecordCount}}</p>
+                            <p>{{$totalInsertRecordCount}}</p>
+                            <p>{{$totalOverwiteRecordCount}}</p>
+                            <p>{{($totalRecordCount) - $totalFailedRecordCount}}</p>
                         </div>
                     </div>
 
                     <div class="panel-body">
-                        @if(count($failedFields) == 0)
-                            Data imported successfully.
-                        @endif
+                        Data imported successfully.
                     </div>
                 </div>
             </div>
