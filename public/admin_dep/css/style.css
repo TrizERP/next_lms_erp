@@ -40,7 +40,7 @@ div:blank								{ display: none; }
 aside.right-sidebar.active 				{ min-width: 280px;max-width: 280px; }
 aside.right-sidebar.active .right-sub-sidebar{ background: var(--secondary); }
 .right-sidebar .nav-tabs .nav-link.active:after	{ content: "";display: block;width: 10px;height: 10px;background: var(--primary);position: absolute;left: 50%;transform: translateX(-50%) rotate(45deg);bottom: -5px; }
-.form-control 							{ margin-bottom: 15px;color: #303030;border: 2px solid #d4d4d4; }
+.form-control 							{ margin-bottom: 0px;color: #303030;border: 2px solid #d4d4d4; }
 .form-control:focus						{ border-color: var(--primary); }
 .form-control::placeholder 				{ color: rgba(0,0,0,0.3);font-weight: 500; }
 .form-group label 						{ font-weight: 500;margin-bottom: 5px; }
