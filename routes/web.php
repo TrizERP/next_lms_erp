@@ -34,6 +34,7 @@ use App\Http\Controllers\school_setup\todaysproxyReportController;
 use App\Http\Controllers\school_setup\topicController;
 use App\Http\Controllers\school_setup\workflowController;
 use App\Http\Controllers\signupController;
+use App\Http\Controllers\institute_detail;
 use App\Http\Controllers\lms\questionWiseReportController;
 use App\Http\Controllers\template_result\TemplateResult;
 use App\Http\Controllers\tourController;
@@ -43,7 +44,14 @@ use App\Models\general_dataModel;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Import\ImportController;
+use App\Http\Controllers\leave\ApplyLeaveController;
+use App\Http\Controllers\leave\HolidayController;
+use App\Http\Controllers\leave\LeaveController;
+use App\Http\Controllers\leave\LeaveTypeController;
 use App\Http\Controllers\Payroll\PayrollController;
+use App\Http\Controllers\HRMS\HrmsController;
+use App\Http\Controllers\library\BookController;
+
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -78,9 +86,15 @@ if (isset($_REQUEST['sub_institute_id']) && $_REQUEST['sub_institute_id'] != '')
 } else {
     Route::get('/', function (Request $request) {
         $user_id = $request->session()->get('user_id');
+        $expire_date = $request->session()->get('expire_date');
 
-        if (!empty($user_id)) {
-            return redirect()->route('dashboard');
+        if (!empty($user_id) ) {
+            if($expire_date == null){
+                return redirect()->route('dashboard');
+            }else{
+                return redirect()->route('setup-institute-details');
+            }
+           
         } else {
             return view('login');
         }
@@ -90,13 +104,66 @@ if (isset($_REQUEST['sub_institute_id']) && $_REQUEST['sub_institute_id'] != '')
 
 //PAYROLL SYSTEM
 Route::group([ 'middleware' => ['session', 'menu', 'logRoute']], function () {
-    Route::get('/payroll-type', [PayrollController::class, 'payrollType']);
+    Route::get('/payroll-type', [PayrollController::class, 'payrollType'])->name('payroll_type.index');
     Route::get('/payroll-type/create', [PayrollController::class, 'payrollCreate'])->name('payroll_type.create');
     Route::post('/payroll-type/store', [PayrollController::class, 'payrollStore'])->name('payroll_type.store');
     Route::get('/payroll-type/create/{id}', [PayrollController::class, 'payrollCreate']);
-    Route::post('/payroll-type/destroy', [PayrollController::class, 'payrollDestroy'])->name('payroll_type.destroy');
-});
+    Route::delete('/payroll-type/destroy/{id}', [PayrollController::class, 'payrollDestroy'])->name('payroll_type.destroy');
 
+    Route::get('/employee-salary-structure', [PayrollController::class, 'employeeSalaryStructure'])->name('employee_salary_structure.index');
+    Route::post('/employee-salary-structure', [PayrollController::class, 'employeeSalaryStructure'])->name('payroll.show_employee_salary_structure');
+    Route::get('/roll-over', [PayrollController::class, 'rollOver'])->name('employee_salary_structure.rollover');
+    Route::post('/employee-salary-structure/store', [PayrollController::class, 'employeeSalaryStructureStore'])->name('employee_salary_structure.store');
+    Route::post('/rollover-employee-salary-structure/store', [PayrollController::class, 'rolloverEmployeeSalaryStructure'])->name('rollover_employee_salary_structure.store');
+    
+    Route::get('setup-institute-details', [dashboardController::class, 'setup_details'])->name('setup-institute-details');
+
+    Route::get('/salary-structure-report', [PayrollController::class, 'salaryStructureReport'])->name('salary_structure_report.index');
+    Route::post('/salary-structure-report', [PayrollController::class, 'showSalaryStructureReport']);
+
+    Route::get('/form16',[PayrollController::class, 'form16'])->name('form16.index');
+    Route::post('/form16', [PayrollController::class, 'form16Report']);
+
+    /*Route::get('/payroll-deduction', [PayrollController::class, 'payrollDeduction']);
+    Route::post('/payroll-deduction', [PayrollController::class, 'payrollDeductionReport']);
+    Route::get('/payroll-deduction/{id}', [PayrollController::class, 'payrollDeduction']);*/
+
+    Route::get('/monthly-payroll-report', [PayrollController::class, 'monthlyPayrollReport'])->name('monthly_payroll_report.index');
+    Route::post('/monthly-payroll-report', [PayrollController::class, 'monthlyPayrollReport'])->name('payroll.store_monthly_payroll_report');
+
+    Route::post('/show-monthly-payroll-report', [PayrollController::class, 'monthlyPayrollReport'])->name('payroll.show_monthly_payroll_report');
+    Route::get('/monthly-payroll-report/pdf/{id}', [PayrollController::class, 'monthlyPayrollPdf']);
+
+    Route::get('/payroll-report', [PayrollController::class, 'payrollReport'])->name('payroll_report.index');
+    Route::post('/payroll-report', [PayrollController::class, 'payrollReport'])->name('payroll.show_payroll_report');
+
+    Route::get('/employee-payroll-history', [PayrollController::class, 'employeePayrollHistory'])->name('employee_payroll_history.index');
+    Route::post('/employee-payroll-history', [PayrollController::class, 'employeePayrollHistory'])->name('payroll.show_employee_payroll_history');
+
+    Route::get('/payroll-bank-wise-report', [PayrollController::class, 'payrollBankWiseReport'])->name('payroll_bankwise_report.index');
+    Route::post('/payroll-bank-wise-report', [PayrollController::class, 'payrollBankWiseReport'])->name('payroll.show_payroll_bankwise_report');
+
+    Route::get('hrms-job-title',[HrmsController::Class,'hrmsJobTitle']);
+    Route::get('/hrms-job-title/create', [HrmsController::class, 'hrmsCreate'])->name('hrms_job_title.create');
+    Route::get('/hrms-job-title/create/{id}', [HrmsController::class, 'hrmsCreate']);
+    Route::post('/hrms-job-title/store', [HrmsController::class, 'hrmsStore'])->name('hrms_job_title.store');
+    Route::delete('/hrms-job-title/destroy/{id}', [HrmsController::class, 'hrmsDestroy'])->name('hrms_job_title.destroy');
+
+    Route::get('hrms-inout-time',[HrmsController::Class,'hrmsInOutTime'])->name('hrms_inout_time.index');
+    Route::post('hrms-in-time/store',[HrmsController::Class,'hrmsInTimeStore'])->name('hrms_in_time.store');
+    Route::post('hrms-out-time/store',[HrmsController::Class,'hrmsOutTimeStore'])->name('hrms_out_time.store');
+
+    Route::get('hrms-attendance',[HrmsController::Class,'hrmsAttendance'])->name('hrms_attendance.index');
+    Route::post('hrms-attendance-in-time/store',[HrmsController::Class,'hrmsAttendanceInTimeStore'])->name('hrms_attendance_in_time.store');
+    Route::post('hrms-attendance-out-time/store',[HrmsController::Class,'hrmsAttendanceOutTimeStore'])->name('hrms_attendance_out_time.store');
+
+    Route::get('hrms-attendance-report',[HrmsController::Class,'hrmsAttendanceReport'])->name('hrms_attendance_report.index');
+    Route::post('/hrms-attendance-report', [HrmsController::class, 'hrmsAttendanceReport'])->name('hrms.show_hrms_attendance_report');
+
+    Route::get('early-going-hrms-attendance-report',[HrmsController::Class,'earlyGoingHrmsAttendanceReport'])->name('hrms_attendance_report.early_going_report');
+    Route::post('/early-going-hrms-attendance-report', [HrmsController::class, 'earlyGoingHrmsAttendanceReport'])->name('hrms.show_early_going_hrms_attendance_report');
+
+});
 
 Route::get('/import-data',[ImportController::class,'getImport']);
 Route::post('/import_parse', [ImportController::class,'parseImport'])->name('import_parse');
@@ -105,9 +172,12 @@ Route::post('/import_process', [ImportController::class,'processImport'])->name(
 
 Route::any('/knowledge-base', [dashboardController::class, 'knowledge_base'])->name('knowledge_base')->middleware('session', 'menu');
 
-Route::any('/knowledge-base-detail/{id}/{title}', [dashboardController::Class, 'knowledge_base_detail'])->name('knowledge_base_detail')->middleware('session', 'menu');
+Route::any('/knowledge-base-detail/{id}/{title}', [dashboardController::class, 'knowledge_base_detail'])->name('knowledge_base_detail')->middleware('session', 'menu');
 
 Route::get('dashboard', [dashboardController::class, 'index'])->name('dashboard')->middleware('session', 'menu', 'logRoute');
+
+Route::resource('add-institute-details', institute_detail::class);
+
 // From Build
 Route::get('formbuilder/list', [UserFormbuilderController::class, 'index'])->name('formbuild.list')->middleware('session', 'menu', 'logRoute');
 Route::get('formbuilder/create', [UserFormbuilderController::class, 'formbuilder'])->name('formbuild.create')->middleware('session', 'menu', 'logRoute');
@@ -118,7 +188,7 @@ Route::get('getformbuilder/{name?}', [UserFormbuilderController::class, 'getform
 Route::get('apiGetformbuilder/{name?}', [UserFormbuilderController::class, 'Apigetformbuilder'])->name('getformbuild');
 
 # submit form
-Route::post('submit_form_data', [UserFormbuilderController::Class, 'submitFrom'])->name('submit_form_data');
+Route::post('submit_form_data', [UserFormbuilderController::class, 'submitFrom'])->name('submit_form_data');
 
 # view form
 Route::get('view_form/{id}/{chapter_id?}', [UserFormbuilderController::class, 'viewForm'])->name('view_form');
@@ -269,14 +339,16 @@ Route::post('reset-password', [ForgotPasswordController::class, 'submitResetPass
 Route::post('NewLMS_temp_signup', [NewLMS_ApiController::class, 'NewLMS_temp_signup'])->name("NewLMS_temp_signup");
 Route::post('NewLMS_signup', [NewLMS_ApiController::class, 'NewLMS_signup'])->name("NewLMS_signup");
 Route::get('Resend_otp', [NewLMS_ApiController::class, 'Resend_otp'])->name("Resend_otp");
+Route::post('preload-institute', [NewLMS_ApiController::Class, 'Preload_institute'])->name("preload-institute");
+Route::post('add-institute', [NewLMS_ApiController::Class, 'add_institute'])->name("add-institute");
 
 Route::post('NewLMS_temp_signup_student', [NewLMS_StudentApiController::class, 'NewLMS_temp_signup_student'])->name("NewLMS_temp_signup_student");
-Route::post('NewLMS_signup_student', [NewLMS_StudentApiController::Class, 'NewLMS_signup_student'])->name("NewLMS_signup_student");
+Route::post('NewLMS_signup_student', [NewLMS_StudentApiController::class, 'NewLMS_signup_student'])->name("NewLMS_signup_student");
 
 
 Route::get('get_trizStandard', [signupController::class, 'get_trizStandard'])->name("get_trizStandard");
 
-Route::post('searching_menu', [AJAXController::Class, 'searchMenu'])->name("searching_menu");
+Route::post('searching_menu', [AJAXController::class, 'searchMenu'])->name("searching_menu");
 Route::post('get_search_url', [AJAXController::class, 'get_search_url'])->name("get_search_url");
 
 
@@ -301,4 +373,17 @@ Route::post('generate_create_result_excel', 'result\MarkUploadController@create'
 Route::get('upload_create_result', 'result\MarkUploadController@store')->name('upload_create_result');
 
 Route::get('fetch_payment_status', 'fees\online_fees\online_fees_collect_controller@razorpay_fetch_payment_status');
+
+Route::group(['middleware' => ['session', 'menu', 'logRoute']], function () {
+    Route::resource('leave-type', LeaveTypeController::class);
+    Route::resource('holiday', HolidayController::class);
+    Route::resource('leave-apply', ApplyLeaveController::class);
+    Route::get('my-leave', [ApplyLeaveController::class,'myLeave'])->name('my-leave');
+    Route::get('import-leave', [ApplyLeaveController::class,'importLeave'])->name('import-leave');
+    Route::post('import-leave', [ApplyLeaveController::class,'importOldLeave'])->name('import-leave');
+    Route::get('holiday.weekdays', [HolidayController::class,'getWeekdays'])->name('holiday.weekdays');
+    Route::post('holiday.weekdays', [HolidayController::class,'storeWeekdays'])->name('holiday.weekdays');
+
+    Route::resource('books', BookController::class);
+});
 

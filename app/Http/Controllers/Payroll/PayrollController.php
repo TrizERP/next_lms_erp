@@ -1,0 +1,538 @@
+<?php
+
+namespace App\Http\Controllers\Payroll;
+
+use App\Http\Controllers\Controller;
+use App\Models\EmployeeMonthlySalaryData;
+use App\Models\EmployeeSalaryStructure;
+use App\Models\PayrollType;
+use App\Models\user\tbluserModel;
+use App\Traits\Helpers;
+use Carbon\Carbon;
+use Illuminate\Http\Request;
+use function App\Helpers\is_mobile;
+use DB;
+use PDF;
+
+class PayrollController extends Controller
+{
+    public function payrollType(Request $request)
+    {
+        $data['data'] = PayrollType::all();
+        return view('payroll.payroll_type.index', ["data" => $data]);
+    }
+
+    public function payrollCreate(Request $request, $id = 0)
+    {
+        if ($id) {
+            $payrollType = PayrollType::find($id);
+            return view('payroll.payroll_type.create', compact('payrollType'));
+        }
+        $payrollType['payroll_type'] = 1;
+        $payrollType['payroll_name'] = '';
+        $payrollType['amount_type'] = 1;
+        $payrollType['status'] = '';
+        $payrollType['payroll_percentage'] = '';
+        $payrollType['id'] = 0;
+        return view('payroll.payroll_type.create', compact('payrollType'));
+    }
+
+    public function payrollStore(Request $request)
+    {
+        $request->validate([
+            'type' => 'required',
+            'payroll_name' => 'required|regex:/^[a-zA-Z]+$/u|unique:payroll_types,payroll_name,'.$request->id,
+            'amount_type' => 'required',
+            'status' => 'required',
+        ]);
+
+        if ($request->id > 0) {
+            $payrollType = PayrollType::find($request->id);
+        } else {
+            $payrollType = new PayrollType();
+        }
+        $payrollType->payroll_type = $request->type;
+        $payrollType->payroll_name = $request->payroll_name;
+        $payrollType->amount_type = $request->amount_type;
+        $payrollType->status = $request->status;
+        $payrollType->payroll_percentage = $request->amount_type == 2 ? $request->payroll_percentage : null;
+        $payrollType->save();
+
+        return redirect('payroll-type');
+    }
+
+    public function payrollDestroy(Request $request, $id)
+    {
+        if ($id > 0) {
+            PayrollType::where('id', $id)->delete();
+        }
+        return redirect('payroll-type');
+    }
+
+    public function employeeSalaryStructure(Request $request)
+    {
+        $sub_institute_id = $request->session()->get('sub_institute_id');
+        $employees = $employeeLists = tbluserModel::where('sub_institute_id', $sub_institute_id)->get();
+        if ($request->employee_id) {
+            $employees = $employees->where('id', $request->employee_id);
+        }
+        $payrollTypes = PayrollType::where('status', 1)->get();
+        $employeeSalaryStructures = EmployeeSalaryStructure::get();
+        $employeeSalaryStructures = $employeeSalaryStructures->map(function ($employee) {
+            return json_decode($employee->employee_salary_data, true);
+        });
+
+        //return json_decode($employeeSalaryStructures[0]['employee_salary_data'], true);
+        return view('payroll.employee_salary_structure.index', compact('employees', 'payrollTypes', 'employeeSalaryStructures', 'employeeLists'));
+    }
+
+    public function employeeSalaryStructureStore(Request $request)
+    {
+       // return $request->all();
+        $year = Carbon::now()->format('Y');
+        // return $year;
+        if ($request->emp) {
+
+            foreach ($request->emp as $employee) {
+                $totalAllowance = 0;
+                $employeeDetails = [];
+                foreach ($employee as $key => $data) {
+                    if ($key == 0) $employeeDetails['id'] = $data;
+                    if ($key > 0) {
+                        $employeeDetails['data'][$data[0]] = $data[1];
+                        if ($data[3] == 1) {
+                            $totalAllowance = $totalAllowance + $data[1];
+                        }
+                    }
+                }
+                foreach ($employee as $key => $data) {
+                    if ($key > 0 && $data[2] == 'PF') {
+                        $employeeDetails['data'][$data[0]] = $totalAllowance > 0 ? (($totalAllowance * 12)/100 > 1800) ? 1800 :  round((($totalAllowance * 12)/100)) : 0;
+                    }
+                    if ($key > 0 && $data[2] == 'Pro.Tax') {
+                        $employeeDetails['data'][$data[0]] = ($totalAllowance > 10000) ? 200 :0;
+                    }
+                }
+                //return $employeeDetails;
+                EmployeeSalaryStructure::updateOrCreate(['employee_id' => $employeeDetails['id'], 'year' => $year], [
+                    'employee_salary_data' => json_encode($employeeDetails['data']),
+                    'year' => $year,
+                    'sub_institute_id' => $request->session()->get('sub_institute_id')
+                ]);
+            }
+        }
+        return redirect('employee-salary-structure');
+    }
+
+    public function salaryStructureReport(Request $request)
+    {
+        $employeeDetails = EmployeeSalaryStructure::all();
+        return view('payroll.salary_structure_report.index', ['employees' => $employeeDetails]);
+    }
+
+    public function showSalaryStructureReport(Request $request)
+    {
+        $payrollTypes = PayrollType::where('status', 1)->get();
+        $header = [];
+        foreach ($payrollTypes as $payrollType) {
+            $header[$payrollType->id] = $payrollType->payroll_name;
+        }
+        if ($request->employee_id > 0) {
+            $employeeDetails = EmployeeSalaryStructure::with('getUser')->where('employee_id', $request->employee_id)->get();
+        } else {
+            $employeeDetails = EmployeeSalaryStructure::with('getUser')->get();
+        }
+        $employeeDetails = $employeeDetails->map(function ($employee) {
+            $data = [];
+            $data['employee_id'] = $employee->employee_id;
+            $data['employee_name'] = $employee->getUser->first_name . ' ' . $employee->getUser->middle_name . ' ' . $employee->getUser->last_name;
+            $data['data'] = json_decode($employee->employee_salary_data, true);
+            return $data;
+        });
+
+        $res['employee_data'] = $employeeDetails;
+        $res['headers'] = $header;
+        $employeeDetails = EmployeeSalaryStructure::with('getUser')->get();
+
+        return view('payroll.salary_structure_report.index', ['data' => $res, 'employees' => $employeeDetails]);
+    }
+
+    public function form16(Request $request)
+    {
+        $employeeDetails = EmployeeSalaryStructure::with('getUser')->get();
+        $payrollTypes = PayrollType::where('status', 1)->get();
+        $result['allowance'] = $payrollTypes->where('payroll_type', 1);
+        $result['deduction'] = $payrollTypes->where('payroll_type', 2);
+        return view('payroll.form16.index', ['employees' => $employeeDetails, 'payrollTypes' => $result]);
+    }
+
+    public function form16Report(Request $request)
+    {
+        return $request->all();
+    }
+
+    public function payrollDeduction(Request $request)
+    {
+        $payrollTypes = [];
+        if ($request->type) {
+            $payrollTypes = PayrollType::where([['status', 1], ['payroll_type', $request->type]])->get();
+        }
+        $result['payrollTypes'] = $payrollTypes;
+        return view('payroll.payroll_deduction.index', $result);
+    }
+
+
+    public function rollOver(Request $request)
+    {
+        $employees = tbluserModel::paginate(10);
+        $payrollTypes = PayrollType::where('status', 1)->get();
+        $employeeSalaryStructures = EmployeeSalaryStructure::where('year', (Carbon::now()->format('Y') + 1))->get();
+        $employeeSalaryStructures = $employeeSalaryStructures->map(function ($employee) {
+            $reult['employee_salary_data'] = json_decode($employee->employee_salary_data, true);
+            $reult['year'] = $employee->year;
+            return $reult;
+        });
+
+        //return json_decode($employeeSalaryStructures[0]['employee_salary_data'], true);
+        return view('payroll.employee_salary_structure.rollover', compact('employees', 'payrollTypes', 'employeeSalaryStructures'));
+    }
+
+    public function rolloverEmployeeSalaryStructure(Request $request)
+    {
+        // return $request->all();
+        $year = Carbon::now()->format('Y');
+        // return $year;
+        if ($request->emp) {
+            foreach ($request->emp as $employee) {
+                $employeeDetails = [];
+                foreach ($employee as $key => $data) {
+                    if ($key == 0) $employeeDetails['id'] = $data;
+                    if ($key > 0) $employeeDetails['data'][$data[0]] = $data[1];
+                }
+                EmployeeSalaryStructure::updateOrCreate(['employee_id' => $employeeDetails['id'], 'year' => $employee['year'] + 1], [
+                    'employee_salary_data' => json_encode($employeeDetails['data']),
+                    'year' => $employee['year'] + 1
+                ]);
+            }
+        }
+        return redirect('roll-over');
+    }
+
+    public function monthlyPayrollReport(Request $request)
+    {
+        //return $request->all();
+        $sub_institute_id = $request->session()->get('sub_institute_id');
+        $payrollTypes = PayrollType::where('status', 1)->get();
+//        return $payrollTypes;
+        $employeeDetails = EmployeeSalaryStructure::where('sub_institute_id', $sub_institute_id)->get();
+        $header = [];
+        $months = Helpers::getMonths();
+        $years = Helpers::getYears();
+        $header['total_day'] = 'Total Day';
+        $list = [];
+        $totalDay = '';
+        $hide_button = true;
+        $employeeSalaryDetails = 0;
+        $totaldeduction = $totalallowance = 0;
+        foreach ($payrollTypes as $payrollType) {
+            $header[$payrollType->id] = $payrollType->payroll_name;
+        }
+        $header['total_deduction'] = 'Total Deduction';
+        $header['total_payment'] = 'Total Payment';
+        $header['received_by'] = 'Received By';
+        if ($request->employee_id && $request->year && $request->month) {
+           // return $request->all();
+            $employeeName = tbluserModel::find($request->employee_id);
+            $employeeSalaryData = EmployeeMonthlySalaryData::where([['employee_id', $request->employee_id],['month', $request->month],['year',$request->year],[ 'sub_institute_id', $sub_institute_id]])->first();
+            $totalDay = $request->total_day;
+            $list['month'] = $request->month;
+            $list['year'] = $request->year;
+            if ($employeeName) $list['employeeName'] = $employeeName;
+            if ($employeeSalaryData) {
+                $employeeSalaryDetails = json_decode($employeeSalaryData->employee_salary_data, true);
+                $totaldeduction = $employeeSalaryData->total_deduction;
+                $totalallowance = $employeeSalaryData->total_payment + $employeeSalaryData->total_deduction;
+                $totalDay = $employeeSalaryData->total_day;
+                $list['month'] = $employeeSalaryData->month;
+                $list['year'] = $employeeSalaryData->year;
+            }
+            //return $list;
+        }
+
+        if ($request->employee_id && $request->month && $request->year && $request->total_day) {
+            $employeeSalaryData = EmployeeMonthlySalaryData::where([['employee_id', $request->employee_id],['month',$request->month],['year',$request->year],[ 'sub_institute_id', $sub_institute_id]])->first();
+            if ($employeeSalaryData) {
+                $employeeSalaryDetails = json_decode($employeeSalaryData->employee_salary_data, true);
+                $totalDay = $employeeSalaryData->total_day;
+            } else {
+                //return $request->all();
+                $employeeSalaryDetails = EmployeeSalaryStructure::where([['employee_id', $request->employee_id], ['sub_institute_id', $request->session()->get('sub_institute_id')]])->first();
+
+                $employeeSalaryDetails = json_decode($employeeSalaryDetails->employee_salary_data, true);
+
+                $preparPayrollType = [];
+                foreach ($payrollTypes as $payrollType) {
+//                    return $employeeSalaryDetails;
+                    if(isset($employeeSalaryDetails[$payrollType->id]) && $payrollType->payroll_type == 1) {
+                        $preparPayrollType[]['allowance'] = [$employeeSalaryDetails[$payrollType->id],$payrollType->amount_type,$payrollType->id,$payrollType->payroll_name];
+                    } else if (isset($employeeSalaryDetails[$payrollType->id])) {
+                        //return $payrollType->amount_type;
+                        $preparPayrollType[]['deduction'] = [$employeeSalaryDetails[$payrollType->id],$payrollType->amount_type,$payrollType->id,$payrollType->payroll_name];
+                        //return $preparPayrollType;
+                    }
+                }
+                $employeefinalDisplayData = [];
+                foreach ($preparPayrollType as $value){
+                    //return $preparPayrollType;
+                    if(isset($value['allowance'])) {
+                        $allowence =  $value['allowance'][0];
+                        if($value['allowance'][1] == 1) $allowence = round( ($allowence / 30) * $request->total_day);
+                        if($value['allowance'][1] == 2) $allowence = (round(($allowence / 30) * $request->total_day));
+                        $employeefinalDisplayData[$value['allowance'][2]] = $allowence;
+                        $totalallowance = $totalallowance + $allowence;
+                    }
+
+                    if(isset($value['deduction'])) {
+                        $deduction =  $value['deduction'][0];
+                        $deductionName=  (($value['deduction'][3] == 'Pro.Tax') ? 1 : 0);
+                        if($value['deduction'][1] == 1 && !$deductionName) $deduction = round(($deduction / 30) * $request->total_day);
+                        if($value['deduction'][1] == 2 && !$deductionName) $deduction = round(($deduction / 30) * $request->total_day);
+                        $employeefinalDisplayData[$value['deduction'][2]] = $deduction;
+                        $totaldeduction = $totaldeduction + $deduction;
+                    }
+                }
+                $employeeSalaryDetails = $employeefinalDisplayData;
+                $totalDay = $request->total_day;
+            }
+            // return $employeeSalaryDetails;
+        }
+
+        if ($request->emp && $request->save) {
+            $employeeSalaryData = EmployeeMonthlySalaryData::where([['employee_id', $request->emp['id']],['month',$request->month],['year',$request->year],[ 'sub_institute_id', $sub_institute_id]])->first();
+            if(!$employeeSalaryData) {
+               // return $request->emp['total_payment'];
+                EmployeeMonthlySalaryData::create([
+                    'month' => $request->month,
+                    'year' => $request->year,
+                    'employee_id' => $request->emp['id'],
+                    'sub_institute_id' => $sub_institute_id,
+                    'total_deduction' => $request->emp['total_deduction'],
+                    'total_payment' => $request->emp['total_payment'],
+                    'received_by' => $request->received_by,
+                    'total_day' => $request->total_day,
+                    'employee_salary_data' => json_encode($request->emp['salary']),
+                ]);
+            }
+            $hide_button = false;
+        }
+
+        return view('payroll.monthly_payroll_report.index', ['employees' => $employeeDetails,'hide_button'=>$hide_button, 'header' => $header, 'list' => $list, 'employeeSalaryDetails' => $employeeSalaryDetails, 'total_day' => $totalDay, 'hideButton' => $hide_button,'totaldeduction'=> $totaldeduction,'totalallowance' => $totalallowance,'months' => $months,'years' => $years]);
+    }
+
+    public function payrollBankWiseReport(Request $request) {
+        $months = Helpers::getMonths();
+        $years = Helpers::getYears();
+        $list = [];
+        $sub_institute_id = $request->session()->get('sub_institute_id');
+        $employeeSalaryData = [];
+        if($request->month && $request  ->year) {
+            $list['month'] = $request->month;
+            $list['year'] = $request->year;
+            $employeeSalaryData = EmployeeMonthlySalaryData::with('getUser')->where([['month',$request->month],['year', $request->year],['sub_institute_id', $sub_institute_id]])->get();
+        }
+        return view('payroll.payroll_bankwise_report.index', ['employees' => $employeeSalaryData,'list'=>$list,'months' => $months,'years' => $years]);
+
+
+    }
+
+    public function monthlyPayrollPdf(Request $request,$id)
+    {
+//        return $request->all();
+        $sub_institute_id = $request->session()->get('sub_institute_id');
+        $employeeSalaryData = EmployeeMonthlySalaryData::with('getUser')->where([['employee_id', $id],[ 'sub_institute_id', $sub_institute_id]])->first();
+        $employeeSalaryStructure = EmployeeSalaryStructure::where([['employee_id', $id],[ 'sub_institute_id', $sub_institute_id]])->first();
+        $payrollTypes = PayrollType::where('status', 1)->get();
+        if ($employeeSalaryData) {
+            $employeeData = [];
+            $employeeData['name'] = $employeeSalaryData->getUser['first_name'] . ' '. $employeeSalaryData->getUser['last_name'];
+            $employeeData['emp_code'] = $employeeSalaryData->employee_id;
+            $employeeData['bank_no'] = 123;
+            $employeeData['total_day'] = $employeeSalaryData->total_day;
+            $employeeData['pf_no'] = 123;
+            $employeeData['leave_without_pay'] = 1;
+            $employeeData['total_payment'] = $employeeSalaryData->total_payment + $employeeSalaryData->total_deduction;
+            $employeeData['deduction'] =  $employeeSalaryData->total_deduction;
+            $employeeData['net_salary'] =  $employeeSalaryData->total_payment;
+            $employeeSalaryDetails = json_decode($employeeSalaryData->employee_salary_data, true);
+            $employeeSalaryStructureDetails = json_decode($employeeSalaryStructure->employee_salary_data, true);
+            $actualpayment = 0;
+            $allowancekey = -1;
+            $deductionkey = 0;
+            $salaryData = [];
+//            return $employeeSalaryDetails;
+            foreach ($payrollTypes as $payrollType) {
+                if($payrollType->payroll_type == 1) {
+                    $allowancekey = $allowancekey + 1;
+                    $salaryData[$allowancekey] = [$payrollType->payroll_name,$employeeSalaryStructureDetails[$payrollType->id],$employeeSalaryDetails[$payrollType->id],'allowance'];
+                    $actualpayment = $actualpayment + $employeeSalaryStructureDetails[$payrollType->id];
+                    $allowancekey =$allowancekey + 1 ;
+                } else {
+                    //return $payrollType->amount_type;
+                    $deductionkey = $deductionkey + 1;
+                    $salaryData[$deductionkey] = [$payrollType->payroll_name,$employeeSalaryStructureDetails[$payrollType->id],$employeeSalaryDetails[$payrollType->id],'deduction'];
+                    $deductionkey = $deductionkey + 1;
+                }
+            }
+             ksort($salaryData);
+            $salaryData = array_chunk($salaryData,2);
+//            return $salaryData;
+            $employeeData['salary_data'] = $salaryData;
+            $employeeData['ruppee_in_word']= $this->displaywords($employeeData['net_salary']);
+
+
+            $employeeData['total_actual_payment'] = $actualpayment;
+              view()->share('employeeData',$employeeData);
+           $pdf = PDF::loadView('payroll.monthly_payroll_report.employeeSalaryPdf');
+           return $pdf->download('salary.pdf');
+        } else{
+            return redirect()->back();
+        }
+
+
+    }
+
+    public function displaywords($num){
+        $num    = ( string ) ( ( int ) $num );
+
+        if( ( int ) ( $num ) && ctype_digit( $num ) )
+        {
+            $words  = array( );
+
+            $num    = str_replace( array( ',' , ' ' ) , '' , trim( $num ) );
+
+            $list1  = array('','one','two','three','four','five','six','seven',
+                'eight','nine','ten','eleven','twelve','thirteen','fourteen',
+                'fifteen','sixteen','seventeen','eighteen','nineteen');
+
+            $list2  = array('','ten','twenty','thirty','forty','fifty','sixty',
+                'seventy','eighty','ninety','hundred');
+
+            $list3  = array('','thousand','million','billion','trillion',
+                'quadrillion','quintillion','sextillion','septillion',
+                'octillion','nonillion','decillion','undecillion',
+                'duodecillion','tredecillion','quattuordecillion',
+                'quindecillion','sexdecillion','septendecillion',
+                'octodecillion','novemdecillion','vigintillion');
+
+            $num_length = strlen( $num );
+            $levels = ( int ) ( ( $num_length + 2 ) / 3 );
+            $max_length = $levels * 3;
+            $num    = substr( '00'.$num , -$max_length );
+            $num_levels = str_split( $num , 3 );
+
+            foreach( $num_levels as $num_part )
+            {
+                $levels--;
+                $hundreds   = ( int ) ( $num_part / 100 );
+                $hundreds   = ( $hundreds ? ' ' . $list1[$hundreds] . ' Hundred' . ( $hundreds == 1 ? '' : 's' ) . ' ' : '' );
+                $tens       = ( int ) ( $num_part % 100 );
+                $singles    = '';
+
+                if( $tens < 20 ) { $tens = ( $tens ? ' ' . $list1[$tens] . ' ' : '' ); } else { $tens = ( int ) ( $tens / 10 ); $tens = ' ' . $list2[$tens] . ' '; $singles = ( int ) ( $num_part % 10 ); $singles = ' ' . $list1[$singles] . ' '; } $words[] = $hundreds . $tens . $singles . ( ( $levels && ( int ) ( $num_part ) ) ? ' ' . $list3[$levels] . ' ' : '' ); } $commas = count( $words ); if( $commas > 1 )
+        {
+            $commas = $commas - 1;
+        }
+
+            $words  = implode( ', ' , $words );
+
+            $words  = trim( str_replace( ' ,' , ',' , ucwords( $words ) )  , ', ' );
+            if( $commas )
+            {
+                $words  = str_replace( ',' , ' and' , $words );
+            }
+
+            return $words;
+        }
+        else if( ! ( ( int ) $num ) )
+        {
+            return 'Zero';
+        }
+        return '';
+
+    }
+
+
+
+    public function payrollReport(Request $request)
+    {
+        $sub_institute_id = $request->session()->get('sub_institute_id');
+        $months = Helpers::getMonths();
+        $years = Helpers::getYears();
+        $list = [];
+        $employeeDetails = [];
+
+        if ($request->year && $request->month) {
+            $employeeDetails = EmployeeMonthlySalaryData::with('getUser')->where([['month',$request->month],['year',$request->year],['sub_institute_id',$sub_institute_id]])->get();
+            $list['month'] = $request->month;
+            $list['year'] = $request->year;
+        }
+        return view('payroll.payroll_report.index', ['employees' => $employeeDetails, 'list' => $list,'months'=> $months,'years'=> $years]);
+
+    }
+
+    public function employeePayrollHistory(Request $request)
+    {
+        //return $request->all();
+        $sub_institute_id = $request->session()->get('sub_institute_id');
+        $employeeLists = tbluserModel::where('sub_institute_id', $sub_institute_id)->get();
+        $sub_institute_id = $request->session()->get('sub_institute_id');
+        $payrollTypes = PayrollType::where('status', 1)->get();
+        $currentYearemployeeDetails = [];
+        $nextYearemployeeDetails = [];
+        $years = Helpers::getPairYears();
+        $header = [];
+        $list = [];
+        $employeeDetails = [];
+        foreach ($payrollTypes as $payrollType) {
+            $header[$payrollType->id] = $payrollType->payroll_name;
+        }
+
+        if ($request->employee_id && $request->year) {
+            $year = explode('-',$request->year);
+           $startYear = $year[0];
+           $endYear = $year[1];
+            $currentYearemployeeDetails = EmployeeMonthlySalaryData::whereIn('month',['Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'])->where([['year',$startYear],['employee_id',$request->employee_id],['sub_institute_id',$sub_institute_id]])->get();
+            $currentYearemployeeDetails = $currentYearemployeeDetails->map(function($employee){
+                $data = [];
+                $data['employee_id'] = $employee->employee_id;
+                $data['employee_name'] = $employee->getUser->first_name . ' ' . $employee->getUser->middle_name . ' ' . $employee->getUser->last_name;
+                $data['data'] = json_decode($employee->employee_salary_data, true);
+                $data['total_day'] =$employee->total_day;
+                $data['month'] =$employee->month;
+                $data['year'] =$employee->year;
+                $data['total_deduction'] =$employee->total_deduction;
+                $data['total_payment'] =$employee->total_payment;
+                return $data;
+            });
+            $nextYearemployeeDetails = EmployeeMonthlySalaryData::whereIn('month',['Jan','Feb','Mar'])->where([['year',$endYear],['sub_institute_id',$sub_institute_id],['employee_id',$request->employee_id]])->get();
+            $nextYearemployeeDetails = $nextYearemployeeDetails->map(function($employee){
+                $data = [];
+                $data['employee_id'] = $employee->employee_id;
+                $data['employee_name'] = $employee->getUser->first_name . ' ' . $employee->getUser->middle_name . ' ' . $employee->getUser->last_name;
+                $data['data'] = json_decode($employee->employee_salary_data, true);
+                $data['total_day'] =$employee->total_day;
+                $data['month'] =$employee->month;
+                $data['year'] =$employee->year;
+                $data['total_deduction'] =$employee->total_deduction;
+                $data['total_payment'] =$employee->total_payment;
+                return $data;
+            });
+            $list['month'] = $request->month;
+            $list['year'] = $request->year;
+            $list['employee_id'] = $request->employee_id;
+            //return $list;
+        }
+
+        return view('payroll.employee_payroll_history.index', ['employeeLists' => $employeeLists,'currentYearemployeeDetails' => $currentYearemployeeDetails,'nextYearemployeeDetails'=>$nextYearemployeeDetails, 'header' => $header, 'list' => $list,'years' => $years]);
+    }
+}

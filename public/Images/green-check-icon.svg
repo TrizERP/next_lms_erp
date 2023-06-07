@@ -1,0 +1,20 @@
+<svg width="30" height="30" viewBox="0 0 30 30" fill="none" xmlns="http://www.w3.org/2000/svg">
+<g filter="url(#filter0_b_40_5598)">
+<circle cx="15" cy="15" r="15" fill="white" fill-opacity="0.6"/>
+<circle cx="15" cy="15" r="14" stroke="#11D600" stroke-width="2"/>
+</g>
+<g clip-path="url(#clip0_40_5598)">
+<path d="M12.4364 18.1355L8.93644 14.6355L7.76978 15.8021L12.4364 20.4688L22.4364 10.4688L21.2698 9.30212L12.4364 18.1355Z" fill="#11D600"/>
+</g>
+<defs>
+<filter id="filter0_b_40_5598" x="-24" y="-24" width="78" height="78" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+<feFlood flood-opacity="0" result="BackgroundImageFix"/>
+<feGaussianBlur in="BackgroundImageFix" stdDeviation="12"/>
+<feComposite in2="SourceAlpha" operator="in" result="effect1_backgroundBlur_40_5598"/>
+<feBlend mode="normal" in="SourceGraphic" in2="effect1_backgroundBlur_40_5598" result="shape"/>
+</filter>
+<clipPath id="clip0_40_5598">
+<rect width="20" height="20" fill="white" transform="translate(5.00391 4.99951)"/>
+</clipPath>
+</defs>
+</svg>

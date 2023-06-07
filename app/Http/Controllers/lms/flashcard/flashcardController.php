@@ -33,8 +33,14 @@ class flashcardController extends Controller
 
     public function getData($request)
     {
-        $sub_institute_id = $request->session()->get('sub_institute_id');
-        $syear = $request->session()->get('syear');
+        if($request->has('preload_lms')){
+            $sub_institute_id = 1;
+            $year = DB::table('academic_year')->where('sub_institute_id',$sub_institute_id)->get()->toArray();
+            $syear =$year[0]->syear;
+        }else{
+            $sub_institute_id = $request->session()->get('sub_institute_id');
+            $syear = $request->session()->get('syear');
+        }
         $data['flashcard_data'] = array();
 
         $where_condition['lms_question_master.sub_institute_id'] = $sub_institute_id;
@@ -49,29 +55,67 @@ class flashcardController extends Controller
                 'lms_flashcard.content_id'       => $request->get('content_id'),
             ])
             ->get();
-
-        $data['breadcrum_data'] = $this->getBreadcrum($sub_institute_id, $syear, $request->get('content_id'));
+//  $data['content_category'] = lmsContentCategoryModel::where('status', '2')->get()->toArray();
+$data['content_data'] = contentModel::find($request->content_id)->toArray();
+$data['breadcrum_data'] = $this->getBreadcrum($sub_institute_id,$data['content_data']['chapter_id'] ?? '',$data['content_data']['topic_id']);
+        // $data['breadcrum_data'] = $this->getBreadcrum($sub_institute_id, $syear, $request->get('content_id'));
 
         return $data;
     }
 
-    public function getBreadcrum($sub_institute_id, $syear, $content_id)
+    public function getBreadcrum($sub_institute_id, $chapter_id, $topic_id ='')
     {
-        $breadcrum_data = DB::table('content_master as c')
-            ->join('standard as st', function ($join) {
-                $join->whereRaw('st.id = c.standard_id');
-            })->join('sub_std_map as su', function ($join) {
-                $join->whereRaw('su.subject_id = c.subject_id AND su.standard_id = c.standard_id');
-            })->join('chapter_master as ch', function ($join) {
-                $join->whereRaw('ch.id = c.chapter_id');
-            })->join('topic_master as t', function ($join) {
-                $join->whereRaw('t.id = c.topic_id');
-            })->selectRaw("c.*,st.name AS standard_name,su.display_name AS subject_name,
-                    ch.chapter_name,t.name AS topic_name,c.id as content_id")
-            ->where('c.sub_institute_id', $sub_institute_id)
-            ->where('c.id', $content_id)->get()->toArray();
+        // $breadcrum_data = DB::table('content_master as c')
+        //     ->join('standard as st', function ($join) {
+        //         $join->whereRaw('st.id = c.standard_id');
+        //     })->join('sub_std_map as su', function ($join) {
+        //         $join->whereRaw('su.subject_id = c.subject_id AND su.standard_id = c.standard_id');
+        //     })->join('chapter_master as ch', function ($join) {
+        //         $join->whereRaw('ch.id = c.chapter_id');
+        //     })->join('topic_master as t', function ($join) {
+        //         $join->whereRaw('t.chapter_id = c.id');
+        //     })->selectRaw("c.*,st.name AS standard_name,su.display_name AS subject_name,
+        //             ch.chapter_name,t.name AS topic_name,c.id as content_id")
+        //     ->where('c.sub_institute_id', $sub_institute_id)
+        //     ->where('c.id', $content_id)->get()->toArray();
 
+        // return $breadcrum_data[0] ?? [];
+        
+        $where = '';
+        $topic = '';
+        $topic_id = '';
+
+        // return $chapter_id;exit;
+        // $breadcrum_data = array();
+        if ($topic_id != '') {
+            $topic = 't.id as topic_id,';
+        }
+
+        $breadcrum_data = DB::table('chapter_master as c')
+            ->join('sub_std_map as s', function ($join) {
+                $join->whereRaw('s.subject_id = c.subject_id AND s.standard_id = c.standard_id');
+            })->join('standard as st', function ($join) {
+                $join->whereRaw('st.id = c.standard_id');
+            })->join('topic_master as t', function ($join) {
+                $join->whereRaw('t.chapter_id = c.id');
+            })->selectRaw('c.subject_id,s.display_name AS subject_name,c.standard_id,st.name AS standard_name,
+                c.id AS chapter_id, c.chapter_name, '.$topic.' t.name as topic_name')
+            ->where('c.sub_institute_id', $sub_institute_id)
+            ->where('c.id', $chapter_id);
+
+        if ($topic_id != '') {
+            $breadcrum_data = $breadcrum_data->where('t.id', $topic_id);
+            $topic = 't.id as topic_id,';
+        }
+
+        $breadcrum_data = $breadcrum_data->get()->toArray();
+        // dd($breadcrum_data);
+        if(isset($breadcrum_data[0]) && $breadcrum_data != " "){
         return $breadcrum_data[0];
+        }
+        else{
+            return back();
+        }
     }
 
     /**
@@ -82,7 +126,11 @@ class flashcardController extends Controller
     public function create(Request $request)
     {
         $type = $request->input('type');
+        if($request->has('preload_lms')){
+            $sub_institute_id = 1;
+        }else{
         $sub_institute_id = $request->session()->get('sub_institute_id');
+        }
         $syear = $request->session()->get('syear');
 
         $content_data = contentModel::where('id', $request->get('content_id'))->get()->toArray();
@@ -94,8 +142,10 @@ class flashcardController extends Controller
         $data['chapter_id'] = $content_data[0]['chapter_id'];
         $data['topic_id'] = $content_data[0]['topic_id'];
 
-        $data['breadcrum_data'] = $this->getBreadcrum($sub_institute_id, $syear, $request->get('content_id'));
-
+        $data['content_data'] = contentModel::find($request->content_id)->toArray();
+        $data['breadcrum_data'] = $this->getBreadcrum($sub_institute_id,$data['content_data']['chapter_id'],$data['content_data']['topic_id']);
+        // $dara['breadcrum_data'] = $content_data[0]['topic_id'];
+        // echo $data['chapter_id'];exit; 
         return is_mobile($type, 'lms/flashcard/add_flashcard', $data, "view");
     }
 

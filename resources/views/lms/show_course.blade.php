@@ -158,6 +158,11 @@ use DB;
                                                         </ul>
                                                     </div>
                                                 @endif
+                                                @php
+                                                if(isset($_REQUEST['preload_lms'])){
+                                                    $pre_load = "preload_lms=preload_lms"; 
+                                                } 
+                                                @endphp
                                                 <a target="_blank"
                                                    href="{{ route('subjectwise_graph.show',['subjectwise_graph'=>$val['subject_id'],'standard_id'=>$val['standard_id'],'action'=>'subjectwise']) }}"
                                                    class="d-block">
@@ -172,7 +177,7 @@ use DB;
                                             </div>
 
                                             <div class="course-name"><a
-                                                    href="{{ route('chapter_master.index',['standard_id'=>$val['standard_id'],'subject_id'=>$val['subject_id']]) }}">{{$val['subject_name']}}</a>
+                                                    href="{{ route('chapter_master.index',['standard_id'=>$val['standard_id'],'subject_id'=>$val['subject_id'],$pre_load ?? '']) }}">{{$val['subject_name']}}</a>
                                                 <div>{{$val['standard_name']}}</div>
                                             </div><!-- [ {{$val['standard_name']}} ]-->
                                             <div class="course-bottom">
@@ -203,10 +208,14 @@ use DB;
                                                         <ul class="sub-menu">
                                                             @foreach($chapter_arr as $k => $v)
                                                                 @php
-                                                                    $topic_arr = explode("/",$v);
+                                                                $topic_arr = explode("/",$v);
+                                                                if(isset($topic_arr[1])){
+                                                                $topic_id = $topic_arr[1];
+                                                                }
+
                                                                 @endphp
                                                                 <li>
-                                                                    <a href="{{ route('topic_master.index',['id'=>$topic_arr[1]]) }}">{{$topic_arr[0]}}</a>
+                                                                    <a href="{{ route('topic_master.index',['id'=>$topic_id ?? '',$pre_load ?? '']) }}">{{$topic_arr[0]}}</a>
                                                                 </li>
                                                             @endforeach
                                                         </ul>

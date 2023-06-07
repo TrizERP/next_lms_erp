@@ -35,10 +35,16 @@ class chapterController extends Controller
 
     public function getData($request)
     {
-        $sub_institute_id = $request->session()->get('sub_institute_id');
-        $syear = $request->session()->get('syear');
-        $user_profile_name = $request->session()->get('user_profile_name');
-
+        if($request->has('preload_lms')){
+            $sub_institute_id = 1;
+            $year = DB::table('academic_year')->where('sub_institute_id',$sub_institute_id)->get()->toArray();
+            $syear =$year[0]->syear;
+            $user_profile_name = 1;
+        }else{
+            $sub_institute_id = $request->session()->get('sub_institute_id');
+            $syear = $request->session()->get('syear');
+            $user_profile_name = $request->session()->get('user_profile_name');
+        }
         $getIsLms = DB::table('school_setup')
             ->where('Id', $sub_institute_id)
             ->value('is_Lms');

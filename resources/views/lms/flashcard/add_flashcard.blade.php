@@ -16,9 +16,9 @@
                 <nav aria-label="breadcrumb">
                     <ol class="breadcrumb bg-transparent p-0 mb-0">
                         <li class="breadcrumb-item"><a href="{{route('course_master.index')}}">LMS</a></li>                                 
-                        <li class="breadcrumb-item"><a href="{{ route('chapter_master.index',['standard_id'=>$data['breadcrum_data']->standard_id,'subject_id'=>$data['breadcrum_data']->subject_id]) }}">{{$data['breadcrum_data']->subject_name}}</a></li>
-                        <li class="breadcrumb-item"><a href="{{ route('topic_master.index',['id'=>$data['breadcrum_data']->chapter_id]) }}">{{$data['breadcrum_data']->chapter_name}}</a></li>
-                        <li class="breadcrumb-item"><a href="{{ route('topic_master.index',['id'=>$data['breadcrum_data']->chapter_id]) }}">{{$data['breadcrum_data']->topic_name}}</a></li>
+                        <li class="breadcrumb-item"><a href="{{ route('chapter_master.index',['standard_id'=>$data['breadcrum_data']->standard_id ?? '' ,'subject_id'=>$data['breadcrum_data']->subject_id ?? '' ]) }}">{{$data['breadcrum_data']->subject_name ?? '' }}</a></li>
+                        <li class="breadcrumb-item"><a href="{{ route('topic_master.index',['id'=>$data['breadcrum_data']->chapter_id ?? '' ]) }}">{{$data['breadcrum_data']->chapter_name ?? '' }}</a></li>
+                        <li class="breadcrumb-item"><a href="{{ route('topic_master.index',['id'=>$data['breadcrum_data']->chapter_id ?? '' ]) }}">{{$data['breadcrum_data']->topic_name ?? '' }}</a></li>
                         <li class="breadcrumb-item active" aria-current="page">Add Flash Card</li>
                     </ol>
                 </nav>
@@ -38,11 +38,11 @@
                             @endif
                         @csrf    
                     
-                    <input type="hidden" name="standard_id" id="standard_id" value="{{$data['breadcrum_data']->standard_id}}">
-                    <input type="hidden" name="subject_id" id="subject_id" value="{{$data['breadcrum_data']->subject_id}}">
-                    <input type="hidden" name="chapter_id" id="chapter_id" value="{{$data['breadcrum_data']->chapter_id}}">
-                    <input type="hidden" name="topic_id" id="topic_id" value="{{$data['breadcrum_data']->topic_id}}">
-                    <input type="hidden" name="content_id" id="content_id" value="{{$data['breadcrum_data']->content_id}}">
+                    <input type="hidden" name="standard_id" id="standard_id" value="{{$data['breadcrum_data']->standard_id ?? '' }}">
+                    <input type="hidden" name="subject_id" id="subject_id" value="{{$data['breadcrum_data']->subject_id ?? '' }}">
+                    <input type="hidden" name="chapter_id" id="chapter_id" value="{{$data['breadcrum_data']->chapter_id ?? '' }}">
+                    <input type="hidden" name="topic_id" id="topic_id" value="{{$data['breadcrum_data']->topic_id ?? '' }}">
+                    <input type="hidden" name="content_id" id="content_id" value="{{$data['breadcrum_data']->content_id ?? '' }}">
 
                     <div class="row">
                         <div class="col-md-8">                           
@@ -88,8 +88,12 @@
                         </div>
 
                     </div>                   
-                    
-                    <button class="btn btn-primary" type="submit">Submit</button>
+                    @php 
+                    if(isset($_REQUEST['preload_lms'])){
+                        $readonly = "pointer-events:none";
+                    }
+                    @endphp
+                    <button class="btn btn-primary" type="submit" style="{{$readonly ?? ''}}">Submit</button>
                 </form>
             </div>
         </div>

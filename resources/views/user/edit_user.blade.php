@@ -14,7 +14,7 @@ br {
             <div class="col-lg-3 col-md-4 col-sm-4 col-xs-12">
                 <h4 class="page-title">Edit User</h4>
             </div>
-        </div>        
+        </div>
         <div class="card">
             <!-- @TODO: Create a saperate tmplate for messages and include in all tempate -->
             @if ($message = Session::get('success'))
@@ -23,20 +23,22 @@ br {
                 <strong>{{ $message }}</strong>
             </div>
             @endif
-            <div class="row">                
-                <div class="col-lg-12 col-sm-12 col-xs-12"> 
+            <div class="row">
+                <div class="col-lg-12 col-sm-12 col-xs-12">
                     @php
-                    
+                    $employees = $data['employees'];
+                    $job_titles = $data['job_titles'];
                     $user_profiles = $data['user_profiles'];
                     $subject_data = $data['subject_data'];
                     $subject_data_selected_arr = $data['subject_data_selected_arr'];
                     $custom_fields = $data['custom_fields'];
                     $data_fields = $data['data_fields'];
                     $data = $data['data'];
-                    
-                    @endphp                           
+
+
+                    @endphp
                     <form action="{{ route('add_user.update', $data['id']) }}" enctype="multipart/form-data" method="post">
-                    {{ method_field("PUT") }}                        
+                    {{ method_field("PUT") }}
                     @csrf
                         <div class="row">
                             <div class="col-md-4 form-group">
@@ -47,7 +49,7 @@ br {
                                     <option value="Mrs." @if(isset($data))@if("Mrs." == $data['name_suffix']) selected @endif  @endif> Mrs. </option>
                                     <option value="Miss." @if(isset($data))@if("Miss." == $data['name_suffix']) selected @endif  @endif> Miss. </option>
                                 </select>
-                            </div>                            
+                            </div>
                             <div class="col-md-4 form-group">
                                 <label>First Name </label>
                                 <input type="text" id='first_name' value="@if(isset($data['first_name'])){{ $data['first_name'] }}@endif" required name="first_name" class="form-control">
@@ -66,8 +68,8 @@ br {
                             </div>
                             <div class="col-md-4 form-group">
                                 <label>Email</label>
-                                <span><br><b>{{ $data['email'] }}</b></span>                                
-                                <!-- <input type="text" id='email' value="@if(isset($data['email'])){{ $data['email'] }}@endif" required name="email" class="form-control"> -->
+                                <!--<span><br><b>{{ $data['email'] }}</b></span>-->
+                                <input type="text" id='email' value="@if(isset($data['email'])){{ $data['email'] }}@endif" required name="email" class="form-control">
                             </div>
                             <div class="col-md-4 form-group">
                                 <label>Mobile</label>
@@ -77,12 +79,12 @@ br {
                                 <label>Subject</label>
                                 <select name="subject_ids[]" id="subject_ids[]" class="form-control" multiple style="height:200px;">
                                     <option value="0"> Select Subject </option>
-                                    @if(!empty($subject_data))  
-                                    @foreach($subject_data as $key => $val)                                   
-                                        <option value="{{ $val['id'] }}" 
+                                    @if(!empty($subject_data))
+                                    @foreach($subject_data as $key => $val)
+                                        <option value="{{ $val['id'] }}"
 
                                         @php if( in_array($val['id'],$subject_data_selected_arr) ){ echo "selected"; }@endphp
-                                    
+
                                         > {{ $val['subject_name'] }} </option>
                                     @endforeach
                                     @endif
@@ -124,11 +126,11 @@ br {
                             <div class="col-md-4 form-group">
                                 <label>User Profile</label>
                                 <select name="user_profile_id" required id="user_profile_id" class="form-control">
-                                    <option value="0"> Select Parent Profile </option>                                    
-                                    
-                                    @if(!empty($user_profiles))  
+                                    <option value="0"> Select Parent Profile </option>
+
+                                    @if(!empty($user_profiles))
                                     @foreach($user_profiles as $key => $value)
-                                   
+
                                         <option value="{{ $value['id'] }}" @if(isset($data)) @if($value['id'] == $data['user_profile_id']) selected @endif  @endif  > {{ $value['name'] }} </option>
                                     @endforeach
                                     @endif
@@ -149,7 +151,7 @@ br {
                             <div class="col-md-4 form-group">
                                 <label>Birthdate</label>
                                 <div class="input-daterange input-group" id="date-range">
-                                <input type="text" required class="form-control mydatepicker" placeholder="dd/mm/yyyy" value="@if(isset($data['birthdate'])){{$data['birthdate']}}@endif" name="birthdate" autocomplete="off"><span class="input-group-addon"><i class="icon-calender"></i></span> 
+                                <input type="text" required class="form-control mydatepicker" placeholder="dd/mm/yyyy" value="@if(isset($data['birthdate'])){{$data['birthdate']}}@endif" name="birthdate" autocomplete="off"><span class="input-group-addon"><i class="icon-calender"></i></span>
                              </div>
                             </div>
                             <div class="col-md-4 form-group ml-0 mr-0">
@@ -159,9 +161,9 @@ br {
                                 <option value="0" @if(isset($data['status'])) @if($data['status'] == 0) selected @endif @endif> Yes </option>
                                 </select>
                             </div>
-                            <div class="col-sm-4 ol-md-4 col-xs-12">                         
+                            <div class="col-sm-4 ol-md-4 col-xs-12">
                                 <label for="input-file-now">User Image</label>
-                                <input type="file" accept="image/*" name="user_image" @if(isset($data))data-default-file="/storage/user/{{ $data['image'] }}" @else required @endif id="input-file-now" class="dropify" /> 
+                                <input type="file" accept="image/*" name="user_image" @if(isset($data))data-default-file="/storage/user/{{ $data['image'] }}" @else required @endif id="input-file-now" class="dropify" />
                             </div>
                             @if(isset($custom_fields))
                             @foreach($custom_fields as $key => $value)
@@ -189,7 +191,7 @@ br {
                                 @elseif($value['field_type'] == 'dropdown')
                                         <select name="{{ $value['field_name'] }}" class="form-control" required id="{{ $value['field_name'] }}">
                                             <option value=""> SELECT {{ strtoupper($value['field_label']) }} </option>
-                                            
+
                                         @if(isset($data_fields[$value['id']]))
                                             @foreach($data_fields[$value['id']] as $keyData => $valueData)
                                             @php
@@ -216,16 +218,271 @@ br {
                             </div>
                             @endforeach
                             @endif
+
+                            <div class="col-md-4 form-group">
+                                <label>Job Title</label>
+                                <select id='jobtitle_id' name="jobtitle_id" class="form-control">
+                                    <option value="0">Select Title</option>
+                                    @foreach($job_titles as $title)
+                                        @if(isset($data['jobtitle_id']) && $data['jobtitle_id'] == $title->id)
+                                            <option selected value="{{$title->id}}">{{$title->title}}</option>
+                                        @else
+                                            <option value="{{$title->id}}">{{$title->title}}</option>
+                                        @endif
+                                    @endforeach
+                                </select>
+                            </div>
+
+                            <div class="col-md-4 form-group">
+                                <label>Department Id</label>
+                                <input type="text" id='department_id' name="department_id" value="{{$data['department_id']}}" class="form-control">
+                            </div>
+
+                            <div class="col-md-4 form-group">
+                                <label>Joining Date</label>
+                                <input type="date" id='joined_date' name="joined_date" value="{{ $data['joined_date'] ? date('Y-m-d',strtotime($data['joined_date'])) : '' }}" class="form-control">
+                            </div>
+                            <div class="col-md-4 form-group">
+                                <label>Probation Period From</label>
+                                <input type="date" id='probation_period_from' name="probation_period_from"   value="{{ $data['probation_period_from'] ? date('Y-m-d',strtotime($data['probation_period_from'])) : '' }}" class="form-control">
+                            </div>
+
+                            <div class="col-md-4 form-group">
+                                <label>Probation Period To</label>
+                                <input type="date" id='probation_period_to'  value="{{ $data['probation_period_to'] ? date('Y-m-d',strtotime($data['probation_period_to'])) : '' }}" name="probation_period_to" class="form-control">
+                            </div>
+
+                            <div class="col-md-4 form-group">
+                                <label>Terminated Date</label>
+                                <input type="date" id='terminated_date' value="{{ $data['terminated_date'] ? date('Y-m-d',strtotime($data['terminated_date'])) : '' }}" name="terminated_date" class="form-control">
+                            </div>
+                            <div class="col-md-4 form-group">
+                                <label>Termination Reason</label>
+                                <input type="text" id='termination_reason' value="{{$data['termination_reason']}}" name="termination_reason" class="form-control">
+                            </div>
+
+                            <div class="col-md-4 form-group">
+                                <label>Notice From Date</label>
+                                <input type="date" id='notice_fromdate' value="{{ $data['notice_fromdate'] ? date('Y-m-d',strtotime($data['notice_fromdate'])) : '' }}" name="notice_fromdate" class="form-control">
+                            </div>
+                            <div class="col-md-4 form-group">
+                                <label>Notice To Date</label>
+                                <input type="date" id='notice_todate'  value="{{ $data['notice_todate'] ? date('Y-m-d',strtotime($data['notice_todate'])) : '' }}" name="notice_todate" class="form-control">
+                            </div>
+
+                            <div class="col-md-4 form-group">
+                                <label>Notice Reason</label>
+                                <input type="text" id='noticereason' value="{{$data['noticereason']}}" name="noticereason" class="form-control">
+                            </div>
+                            <div class="col-md-4 form-group">
+                                <label>Opening Leave</label>
+                                <input type="text" id='openingleave' value="{{$data['openingleave']}}" name="openingleave" class="form-control">
+                            </div>
+
+                            <div class="col-md-4 form-group">
+                                <label>Relieving Date</label>
+                                <input type="date" id='relieving_date' value="{{ $data['relieving_date'] ? date('Y-m-d',strtotime($data['relieving_date'])) : '' }}" name="relieving_date" class="form-control">
+                            </div>
+
+                            <div class="col-md-4 form-group">
+                                <label>Relieving Reason</label>
+                                <input type="text" id='relieving_reason' value="{{$data['relieving_reason']}}" name="relieving_reason" class="form-control">
+                            </div>
+                            <div class="col-md-4 form-group">
+                                <label>CL Opening Leave</label>
+                                <input type="text" id='CL_opening_leave' value="{{$data['CL_opening_leave']}}" name="CL_opening_leave" class="form-control">
+                            </div>
+
+                            <div class="col-md-12 form-group">
+                                <h4>Report To</h4>
+                            </div>
+
+                            <div class="col-md-4 form-group">
+                                <label>Supervisor / Subordinate</label>
+                                <select id='supervisor_opt' name="supervisor_opt" class="form-control">
+
+                                    @if(isset($data['supervisor_opt']) && $data['supervisor_opt'] == "Supervisor")
+                                        <option value="Supervisor">Supervisor</option>
+                                        <option value="Subordinate" selected>Subordinate</option>
+                                    @else
+                                        <option value="Supervisor">Supervisor</option>
+                                        <option value="Subordinate" selected>Subordinate</option>
+                                    @endif
+                                </select>
+                            </div>
+
+                            <div class="col-md-4 form-group">
+                                <label>Employee Name</label>
+                                <select id='employee_id' name="employee_id" class="form-control">
+                                    <option value="0">Select Employee</option>
+                                    @foreach($employees as $title)
+                                        @if(isset($data['employee_id']) && $data['employee_id'] == $title->id)
+                                            <option selected value="{{$title->id}}">{{$title->first_name .' ' . $title->last_name}}</option>
+                                        @else
+                                            <option value="{{$title->id}}">{{$title->first_name .' ' . $title->last_name}}</option>
+                                        @endif
+                                    @endforeach
+                                </select>
+                            </div>
+
+                            <div class="col-md-4 form-group">
+                                <label>Reporting Method</label>
+                                <select id='reporting_method' name="reporting_method" class="form-control">
+                                    @if(isset($data['reporting_method']) && $data['reporting_method'] == "Direct")
+                                    <option value="Direct" selected>Direct</option>
+                                    <option value="Indirect">In Direct</option>
+                                    @else
+                                        <option value="Direct" >Direct</option>
+                                        <option value="Indirect" selected>In Direct</option>
+                                    @endif
+                                </select>
+                            </div>
+
+                            <div class="col-md-12 form-group">
+                                <h4>Direct Deposit</h4>
+                            </div>
+
+                            <div class="col-md-4 form-group">
+                                <label>Bank Name</label>
+                                <input type="text" id='bank_name' value="{{$data['bank_name']}}" name="bank_name" class="form-control">
+                            </div>
+
+                            <div class="col-md-4 form-group">
+                                <label>Branch Name</label>
+                                <input type="text" id='branch_name' value="{{$data['branch_name']}}" name="branch_name" class="form-control">
+                            </div>
+
+                            <div class="col-md-4 form-group">
+                                <label>Account</label>
+                                <input type="text" id='account_no' value="{{$data['account_no']}}" name="account_no" class="form-control">
+                            </div>
+                            <div class="col-md-4 form-group">
+                                <label>IFSC</label>
+                                <input type="text" id='ifsc_code' value="{{$data['ifsc_code']}}" name="ifsc_code" class="form-control">
+                            </div>
+
+                            <div class="col-md-4 form-group">
+                                <label>Amount</label>
+                                <input type="text" id='amount' value="{{$data['amount']}}" name="amount" class="form-control">
+                            </div>
+                            <div class="col-md-4 form-group">
+                                <label>Transfer Type</label>
+                                <select id='transfer_type' name="transfer_type" class="form-control">
+                                    @if(isset($data['transfer_type']) && $data['transfer_type'] == "Direct")
+                                        <option value="Direct" selected>Direct</option>
+                                        <option value="Indirect">In Direct</option>
+                                    @else
+                                        <option value="Direct" >Direct</option>
+                                        <option value="Indirect" selected>In Direct</option>
+                                    @endif
+                                </select>
+                            </div>
+
+                            <div class="col-md-12 form-group">
+                                <h4>Off Days</h4>
+                            </div>
+                            <div class="col-md-1 form-group">
+                                <label>Mon</label>
+                                <input type="checkbox" id='monday' name="monday"  value="1" {{$data['monday'] ? 'checked' :''}} class="">
+                            </div>
+                            <div class="col-md-1 form-group">
+                                <label>Tue</label>
+                                <input type="checkbox" id='tuesday' name="tuesday" value="1" {{$data['tuesday'] ? 'checked' :''}} class="">
+                            </div>
+                            <div class="col-md-1 form-group">
+                                <label>Wed</label>
+                                <input type="checkbox" id='wednesday' name="wednesday" value="1" {{$data['wednesday'] ? 'checked' :''}} class="">
+                            </div>
+                            <div class="col-md-1 form-group">
+                                <label>Thu</label>
+                                <input type="checkbox" id='thursday' name="thursday" value="1" {{$data['thursday'] ? 'checked' :''}} class="">
+                            </div>
+                            <div class="col-md-1 form-group">
+                                <label>Fri</label>
+                                <input type="checkbox" id='friday' name="friday" value="1" {{$data['friday'] ? 'checked' :''}} class="">
+                            </div>
+                            <div class="col-md-1 form-group">
+                                <label>Sat</label>
+                                <input type="checkbox" id='saturday' name="saturday" value="1" {{$data['saturday'] ? 'checked' :''}} class="">
+                            </div>
+                            <div class="col-md-1 form-group">
+                                <label>Sun</label>
+                                <input type="checkbox" id='sunday' name="sunday" value="1"  {{$data['sunday'] ? 'checked' :''}} class="">
+                            </div>
+
+                            <div class="col-md-6 form-group">
+                                <label>Monday In Date</label>
+                                <input type="time" id='monday_in_date' value="{{ $data['monday_in_date'] ? date('H:i',strtotime($data['monday_in_date'])) : '' }}" name="monday_in_date" class="form-control">
+                            </div>
+                            <div class="col-md-6 form-group">
+                                <label>Monday Out Date</label>
+                                <input type="time" id='monday_out_date'  value="{{ $data['monday_out_date'] ? date('H:i',strtotime($data['monday_out_date'])) : '' }}" name="monday_out_date" class="form-control">
+                            </div>
+
+                            <div class="col-md-6 form-group">
+                                <label>Tuesday In Date</label>
+                                <input type="time" id='tuesday_in_date'  value="{{ $data['tuesday_in_date'] ? date('H:i',strtotime($data['tuesday_in_date'])) : '' }}" name="tuesday_in_date" class="form-control">
+                            </div>
+                            <div class="col-md-6 form-group">
+                                <label>Tuesday Out Date</label>
+                                <input type="time" id='tuesday_out_date'  value="{{ $data['tuesday_out_date'] ? date('H:i',strtotime($data['tuesday_out_date'])) : '' }}" name="tuesday_out_date" class="form-control">
+                            </div>
+
+                            <div class="col-md-6 form-group">
+                                <label>Wednesday In Date</label>
+                                <input type="time" id='wednesday_in_date'  value="{{ $data['wednesday_in_date'] ? date('H:i',strtotime($data['wednesday_in_date'])) : '' }}" name="wednesday_in_date" class="form-control">
+                            </div>
+                            <div class="col-md-6 form-group">
+                                <label>Wednesday Out Date</label>
+                                <input type="time" id='wednesday_out_date'  value="{{ $data['wednesday_out_date'] ? date('H:i',strtotime($data['wednesday_out_date'])) : '' }}" name="wednesday_out_date" class="form-control">
+                            </div>
+
+                            <div class="col-md-6 form-group">
+                                <label>Thursday In Date</label>
+                                <input type="time" id='thursday_in_date'  value="{{ $data['thursday_in_date'] ? date('H:i',strtotime($data['thursday_in_date'])) : '' }}" name="thursday_in_date" class="form-control">
+                            </div>
+                            <div class="col-md-6 form-group">
+                                <label>Thursday Out Date</label>
+                                <input type="time" id='thursday_out_date'  value="{{ $data['thursday_out_date'] ? date('H:i',strtotime($data['thursday_out_date'])) : '' }}" name="thursday_out_date" class="form-control">
+                            </div>
+
+                            <div class="col-md-6 form-group">
+                                <label>Friday In Date</label>
+                                <input type="time" id='friday_in_date' value="{{ $data['friday_in_date'] ? date('H:i',strtotime($data['friday_in_date'])) : '' }}" name="friday_in_date" class="form-control">
+                            </div>
+                            <div class="col-md-6 form-group">
+                                <label>Friday Out Date</label>
+                                <input type="time" id='friday_out_date' value="{{ $data['friday_out_date'] ? date('H:i',strtotime($data['friday_out_date'])) : '' }}" name="friday_out_date" class="form-control">
+                            </div>
+
+                            <div class="col-md-6 form-group">
+                                <label>Saturday In Date</label>
+                                <input type="time" id='saturday_in_date'  value="{{ $data['saturday_in_date'] ? date('H:i',strtotime($data['saturday_in_date'])) : '' }}" name="saturday_in_date" class="form-control">
+                            </div>
+                            <div class="col-md-6 form-group">
+                                <label>Saturday Out Date</label>
+                                <input type="time" id='saturday_out_date'   value="{{ $data['saturday_out_date'] ? date('H:i',strtotime($data['saturday_out_date'])) : '' }}" name="saturday_out_date" class="form-control">
+                            </div>
+
+                            <div class="col-md-6 form-group">
+                                <label>Sunday In Date</label>
+                                <input type="time" id='sunday_in_date'  value="{{ $data['sunday_in_date'] ? date('H:i',strtotime($data['sunday_in_date'])) : '' }}" name="sunday_in_date" class="form-control">
+                            </div>
+                            <div class="col-md-6 form-group">
+                                <label>Sunday Out Date</label>
+                                <input type="time" id='sunday_out_date'  value="{{ $data['sunday_out_date'] ? date('H:i',strtotime($data['sunday_out_date'])) : '' }}" name="sunday_out_date" class="form-control">
+                            </div>
+
                             <div class="col-md-12 form-group mt-2">
-                                <center>                                    
+                                <center>
                                     <input type="submit" name="submit" value="Update" class="btn btn-success" >
                                 </center>
                             </div>
                         </div>
                     </form>
                 </div>
-            </div>    
-        </div>        
+            </div>
+        </div>
     </div>
 </div>
 
@@ -241,7 +498,7 @@ br {
 <script src="../../../plugins/bower_components/dropify/dist/js/dropify.min.js"></script>
     <script>
     $(document).ready(function() {
-        var val1 = $.trim($("#user_profile_id").find("option:selected").text());            
+        var val1 = $.trim($("#user_profile_id").find("option:selected").text());
 
         if(val1 == 'Teacher' || val1 == 'TEACHER')
         {
@@ -288,7 +545,7 @@ br {
     </script>
     <script>
         $("#user_profile_id").on( "change", function( event ) {
-            var val1 = $.trim($("#user_profile_id").find("option:selected").text());            
+            var val1 = $.trim($("#user_profile_id").find("option:selected").text());
 
             if(val1 == 'Teacher' || val1 == 'TEACHER')
             {

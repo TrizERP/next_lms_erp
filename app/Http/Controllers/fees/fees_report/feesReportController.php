@@ -116,19 +116,34 @@ class feesReportController extends Controller
 
         $extra_fo = "  AND fo.syear = '" . $syear . "' AND te.syear = '" . $syear . "' AND t.sub_institute_id = '" . $sub_institute_id . "' AND fo.sub_institute_id = '" . $sub_institute_id . "' AND fo.is_deleted = 'N' ";
 
-        if ($grade != '') {
+        /*if ($grade != '') {
             $extra_fp .= " AND te.grade_id = '" . $grade . "'";
             $extra_fo .= " AND te.grade_id = '" . $grade . "'";
+        }*/
+        if (!empty($grade)) {
+            $gradeString = implode("','", $grade); // Convert the array to a comma-separated string
+            $extra_fp .= " AND te.grade_id IN ('" . $gradeString . "')"; // Use IN operator for multiple values
+            $extra_fo .= " AND te.grade_id IN ('" . $gradeString . "')"; // Use IN operator for multiple values
         }
 
-        if ($standard != '') {
+        /*if ($standard != '') {
             $extra_fp .= " AND te.standard_id = '" . $standard . "'";
             $extra_fo .= " AND te.standard_id = '" . $standard . "'";
+        }*/
+        if (!empty($standard)) {
+            $standardString = implode("','", $standard); // Convert the array to a comma-separated string
+            $extra_fp .= " AND te.standard_id IN ('" . $standardString . "')"; // Use IN operator for multiple values
+            $extra_fo .= " AND te.standard_id IN ('" . $standardString . "')"; // Use IN operator for multiple values
         }
 
-        if ($division != '') {
+        /*if ($division != '') {
             $extra_fp .= " AND te.section_id = '" . $division . "'";
             $extra_fo .= " AND te.section_id = '" . $division . "'";
+        }*/
+        if (!empty($division)) {
+            $divisionString = implode("','", $division); // Convert the array to a comma-separated string
+            $extra_fp .= " AND te.section_id IN ('" . $divisionString . "')"; // Use IN operator for multiple values
+            $extra_fo .= " AND te.section_id IN ('" . $divisionString . "')"; // Use IN operator for multiple values
         }
 
         if ($enrollment_no != '') {
@@ -188,7 +203,7 @@ class feesReportController extends Controller
             GROUP BY fp.student_id, fp.receipt_no, fp.syear, fp.receiptdate, fp.payment_mode, fp.cheque_no
             ORDER BY fp.receiptdate ASC, fp.receipt_no ASC) AS M
             LEFT JOIN (
-            SELECT fo.student_id, SUM(IFNULL(fo.actual_amountpaid,0)) AS actual_amountpaid
+            SELECT fo.student_id, SUM(IFNULL(fo.actual_amountpaid,0)) AS actual_amountpaid,fo.reciept_id
             FROM tblstudent t
             INNER JOIN tblstudent_enrollment te ON t.id = te.student_id
             INNER JOIN academic_section ac ON ac.id = te.grade_id
@@ -197,12 +212,13 @@ class feesReportController extends Controller
             INNER JOIN fees_paid_other fo ON fo.student_id = te.student_id
             WHERE 1=1 $extra_fo
             GROUP BY fo.student_id, fo.reciept_id, fo.syear, fo.receiptdate, fo.payment_mode, fo.cheque_dd_no
-            ORDER BY fo.receiptdate ASC, fo.reciept_id ASC) AS N ON M.student_id = N.student_id
+            ORDER BY fo.receiptdate ASC, fo.reciept_id ASC) AS N ON M.student_id = N.student_id AND M.receipt_no = N.reciept_id 
             HAVING (M.receiptdate IS NOT NULL)
             ORDER BY M.receiptdate,CAST(M.receipt_no AS SIGNED)";
-            //            -- WHERE t.first_name = $name OR t.middle_name = $name OR t.last_name = $name SET LINE 180
+            //      --add receipt_no in 02/06/23       -- WHERE t.first_name = $name OR t.middle_name = $name OR t.last_name = $name SET LINE 180
 //echo $sql;
 //die();
+
         $result = DB::select(DB::raw($sql));
         $feesData = json_decode(json_encode($result), true);
 
@@ -219,7 +235,7 @@ class feesReportController extends Controller
         $res['from_date'] = $from_date;
         $res['to_date'] = $to_date;
         $res['months'] = FeeMonthId();
-
+        // echo "<pre>";print_r($feesData);exit;
         return is_mobile($type, "fees/fees_report/index", $res, "view");
     }
 }

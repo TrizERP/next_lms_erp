@@ -10,13 +10,21 @@ use PHPMailer\PHPMailer;
 use function App\Helpers\FeeBreackoff;
 use function App\Helpers\FeeBreakoffHeadWise;
 use function App\Helpers\FeeMonthId;
+use function App\Helpers\FeeBreackofflast;
+use function App\Helpers\FeeBreakoffHeadWiselast;
+use function App\Helpers\FeeMonthIdlast;
 use function App\Helpers\htmlToPDF;
 use function App\Helpers\htmlToPDFLandscape;
 use function App\Helpers\htmlToPDFLandscapeCertificate;
 use function App\Helpers\htmlToPDFPortrait;
 use function App\Helpers\OtherBreackOff;
+use function App\Helpers\OtherBreackOfflast;
+
 use function App\Helpers\OtherBreackOffHead;
+// use function App\Helpers\OtherBreackOffHeadlast;
 use function App\Helpers\OtherBreackOfMonth;
+use function App\Helpers\OtherBreackOfMonthlast;
+
 use App\Models\school_setup\standardModel;
 use App\Models\school_setup\divisionModel;
 use App\Models\school_setup\academic_sectionModel;
@@ -470,17 +478,40 @@ class AJAXController extends Controller
             exit;
         }
 
+
         $stu_arr = array(
             "0" => $student_id,
         );
+
+        $year_arr2 = FeeMonthIdlast();
+
+        $currunt_month = date('m');
+        $last_y_month_id = $currunt_month.(session()->get('syear')-1);
+        $search_ids2 = [];
+        foreach ($year_arr2 as $id => $arr) {
+            if ($id == $last_y_month_id) {
+                $search_ids2[] = $id;
+                // break;
+            } else {
+                $search_ids2[] = $id;
+            }
+        }
+        $other_bk_off_month_wise2 = OtherBreackOfMonthlast($stu_arr);
+
         $search_ids = $months;
         $reg_bk_off = FeeBreackoff($stu_arr);
         $other_bk_off = OtherBreackOff($stu_arr, $search_ids);
         $other_bk_off_month_wise = OtherBreackOfMonth($stu_arr);
         $year_arr = FeeMonthId();
 
+        $reg_bk_off2 = FeeBreackofflast($stu_arr);
+        $other_bk_off2 = OtherBreackOfflast($stu_arr, $search_ids2);
+        
+
         $head_wise_fees = FeeBreakoffHeadWise($stu_arr);
-        $till_now_breckoff = array();
+        $head_wise_fees2 = FeeBreakoffHeadWiselast($stu_arr);
+
+        $till_now_breckoff = $till_now_breckoff2 = array();
         foreach ($search_ids as $id => $val) {
             foreach ($head_wise_fees as $temp_id => $arr) {
                 foreach ($head_wise_fees[$temp_id]['breakoff'] as $month_id => $fees_detail) {
@@ -490,8 +521,19 @@ class AJAXController extends Controller
                 }
             }
         }
+         foreach ($search_ids2 as $id => $val) {
+             foreach ($head_wise_fees2 as $temp_id => $arr) {
+                foreach ($head_wise_fees2[$temp_id]['breakoff'] as $month_id => $fees_detail) {
+                    if ($month_id == $val) {
+                        $till_now_breckoff2[$month_id] = $fees_detail;
+                    }
+                }
+            }
+        }
 
         $reg_bk_month_wise = array();
+        $reg_bk_month_wise2 = array();
+
         $final_bk_name = array();
         $total = 0;
 
@@ -505,8 +547,25 @@ class AJAXController extends Controller
             }
         }
 
+        foreach ($till_now_breckoff2 as $month_id => $fees_detail) {
+            foreach ($fees_detail as $head_name => $arr) {
+                if (! isset($reg_bk_month_wise2[$arr['title']])) {
+                    $reg_bk_month_wise2[$arr['title']] = 0;
+                }
+                $reg_bk_month_wise2[$arr['title']] += $arr['amount'];
+                $final_bk_name[$arr['title']] = $head_name;
+            }
+        }
+
         $full_bk = array_merge($reg_bk_month_wise, $other_bk_off);
 
+        $full_bk2 = array_merge($reg_bk_month_wise2, $other_bk_off2);
+        $previous = array_sum($full_bk2);
+        // return $previous;exit;
+        if($previous>0){
+        $full_bk['Previous Fees'] = $previous;
+        }
+      
         foreach ($full_bk as $id => $val) {
             $total = $total + $val;
         }
@@ -518,6 +577,10 @@ class AJAXController extends Controller
                 if ($title == $arr->display_name) {
                     $final_bk_name[$title] = $arr->other_fee_id;
                 }
+
+            }
+            if($previous>0){
+                $final_bk_name["Previous Fees"] = "previous_fees";
             }
         }
 
@@ -539,7 +602,9 @@ class AJAXController extends Controller
                     <td style='width: 20%'>$val</td>
             ";
             if ($id != 'Total') {
-                $response .= "<td style='width: 20%'><input type='number' min=0 max=$val  value='" . $val . "' name='fees_data[" . $final_bk_name[$id] . "]' class='form-control allField1'></td>";
+                // $response .= "<td style='width: 20%'><input type='number' min=0 max=$val  value='" . $val . "' name='fees_data[" . $final_bk_name[$id] . "]' class='form-control allField1'></td>";
+                $response .= "<td style='width: 20%'><input type='number' min='0' max='$val' value='$val' name='fees_data[" . $final_bk_name[$id] . "]' class='form-control allField1' id=" . $final_bk_name[$id] ."></td>";
+
                 $response .= "<input type='hidden' value='" . $val . "' name='hid_fees_data[" . $final_bk_name[$id] . "]' class='hid_allField1'>";
                 $response .= "<td style='width: 20%'><input type='number' value='0' name='discount_data[" . $final_bk_name[$id] . "]' class='form-control allDisField' style='min-width:150px;'></td>"; // min=0 max=$val
                 $response .= "<td style='width: 20%'><input type='number'  min=0 value=0 name='fine_data[" . $final_bk_name[$id] . "]' class='form-control allFinField' style='min-width:150px;'></td>";
@@ -872,7 +937,7 @@ class AJAXController extends Controller
                     $child_li .= '<li class="d-flex align-items-center"><i class="fa fa-angle-right" style="margin-right: 8px;">
                     </i><a href="' . route($cval['link']) . '" onclick="sessionMenu(' . $cval['tblmenu_master_id'] . ');" >' . $cval['name'] . '</a></li>';
                     if ($cval['name'] == 'Field Settings') {
-                        $export_import_link = "window.open('https://erp.triz.co.in/excel_upload/export_xlsx.php?sub_institute_iderp=".$sub_institute_id."','scrollbars=yes,resizable=no,status=no,location=no,toolbar=no,menubar=no','width=600,height=300,left=100,top=100')";
+                        $export_import_link = "window.open('".env('APP_URL')."/excel_upload/export_xlsx.php?sub_institute_iderp=".$sub_institute_id."','scrollbars=yes,resizable=no,status=no,location=no,toolbar=no,menubar=no','width=600,height=300,left=100,top=100')";
                         $child_li .= '<li><i class="fa fa-angle-right" style="margin-right: 8px;">
                     </i><a href="javascript:void(0);" onclick="'.$export_import_link.'" class="waves-effect">Excel Import/Export</a></li>';
                         $child_li .= '<li><i class="fa fa-angle-right" style="margin-right: 8px;">

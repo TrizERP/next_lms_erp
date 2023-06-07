@@ -256,6 +256,7 @@ class feesOverallHeadwisePendingReportController extends Controller
         $res['last_name'] = $last_name;
         $res['mobile_no'] = $mobile_no;
         $res['uniqueid'] = $uniqueid;
+                    // echo "<pre>";print_r($final_array);exit;
 
         return is_mobile($type, "fees/fees_report/show_fees_overall_headwise_pending_report", $res , "view");
     }

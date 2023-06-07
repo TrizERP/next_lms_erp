@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\user;
 
 use App\Http\Controllers\Controller;
+use App\Models\HrmsJobTitle;
 use App\Models\school_setup\subjectModel;
 use App\Models\settings\tblcustomfieldsModel;
 use App\Models\settings\tblfields_dataModel;
@@ -48,6 +49,8 @@ class tbluserController extends Controller
             ->get();
 
         $subject_data = subjectModel::where(['sub_institute_id' => $sub_institute_id])->get();
+        $employees = tbluserModel::where('sub_institute_id',$sub_institute_id)->get();
+        $job_titles = HrmsJobTitle::where('sub_institute_id',$sub_institute_id)->get();
 
         $fieldsData = tblfields_dataModel::get()->toArray();
         $i = 0;
@@ -63,13 +66,15 @@ class tbluserController extends Controller
         }
         view()->share('custom_fields', $dataCustomFields);
         view()->share('user_profiles', $data);
-        view()->share('subject_data', $subject_data);
+        view()->share('job_titles', $job_titles);
+        view()->share('employees', $employees);
 
         return view('user/add_user');
     }
 
     public function store(Request $request)
     {
+        //return $request->all();
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $type = $request->input('type');
 
@@ -110,7 +115,6 @@ class tbluserController extends Controller
                 $finalArray[$key] = $value;
             }
         }
-
         tbluserModel::insert($finalArray);
         $id = DB::getPdo()->lastInsertId();
 
@@ -221,7 +225,8 @@ class tbluserController extends Controller
         if (count($finalfieldsData) > 0) {
             $res['data_fields'] = $finalfieldsData;
         }
-
+        $res['employees'] = tbluserModel::where('sub_institute_id',$sub_institute_id)->get();
+        $res['job_titles'] = HrmsJobTitle::where('sub_institute_id',$sub_institute_id)->get();
         $res['custom_fields'] = $dataCustomFields;
         $res['subject_data'] = $subject_data;
         $res['subject_data_selected_arr'] = $subject_data_selected_arr;
@@ -233,6 +238,21 @@ class tbluserController extends Controller
 
     public function update(Request $request, $id)
     {
+        if(!$request->monday) {
+            $request->request->add(['monday'=> 0]);
+        }  if (!$request->tuesday) {
+            $request->request->add(['tuesday' => 0]);
+        }  if (!$request->wednesday) {
+            $request->request->add(['wednesday' => 0]);
+        }  if (!$request->thursday) {
+            $request->request->add(['thursday' => 0]);
+        }  if (!$request->friday) {
+            $request->request->add(['friday' => 0]);
+        }  if (!$request->saturday) {
+            $request->request->add(['saturday' => 0]);
+        }  if (!$request->sunday) {
+            $request->request->add(['sunday' => 0]);
+        }
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $type = $request->input('type');
 

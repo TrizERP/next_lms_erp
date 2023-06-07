@@ -68,9 +68,10 @@ class ImportController extends Controller
 
             if ($request->tablename == 'tblstudent') {
                 $table_fields = DB::table('import_table_fields')->select('display_field', 'field', 'is_required')->whereIn('table_name', [$request->tablename, 'tblstudent_enrollment'])->where('display_status', 1)->get();
-            } else if ($request->tablename == 'fees_collect') {
+            }else if ($request->tablename == 'fees_collect') {
                 $table_fields = DB::table('import_table_fields')->select('display_field', 'field', 'is_required')->whereIn('table_name', [$request->tablename, 'fees_receipt'])->where('display_status', 1)->get();
-            } else {
+            }
+            else {
                 $table_fields = DB::table('import_table_fields')->select('display_field', 'field', 'is_required')->where([['display_status', 1], ['table_name', $request->tablename]])->get();
             }
             $table_name = $request->tablename;
@@ -96,16 +97,15 @@ class ImportController extends Controller
         foreach ($csv_data as $key => $row) {
             $finalData = $prepareData = [];
             foreach ($request->fields as $key => $field) {
-                if ($request->fields[$key] != 0) $prepareData[$request->fields[$key]] = $row[$key];
+               if($request->fields[$key] != 0) $prepareData[$request->fields[$key]] = $row[$key];
                 $finalData[] = $prepareData;
             }
-            if (is_array($match_fields) && count($match_fields) > 0 && $row['is_customize_checked'] == 1 && ($row['is_skip'] == 1 || $row['is_skip'] == 2)) {
+            if (is_array($match_fields) && count($match_fields) > 0 && $is_customize_checked = 1 && $row['is_skip'] = 2) {
                 $condition = [];
                 foreach ($match_fields as $field) {
                     if (!isset($prepareData[$field])) continue;
                     $condition[$field] = $prepareData[$field];
                 }
-                $condition['sub_institute_id'] = session()->get('sub_institute_id');
 
                 if ($request->table_name == 'tblstudent') {
                     if (!isset($prepareData['first_name']) || !isset($prepareData['last_name'])) {
@@ -141,17 +141,17 @@ class ImportController extends Controller
                     $student_enroll_data['start_date'] = $prepareData['start_date'] ?? null;
                     $student_enroll_data['adhar'] = $prepareData['adhar'] ?? null;
 
-                    unset($prepareData['student_id'], $prepareData['grade_id'], $prepareData['standard_id'], $prepareData['section_id'], $prepareData['student_quota'], $prepareData['syear'], $prepareData['start_date'], $prepareData['term_id'], $prepareData['adhar']);
+                    unset($prepareData['student_id'], $prepareData['grade_id'], $prepareData['standard_id'], $prepareData['section_id'], $prepareData['student_quota'], $prepareData['house_id'], $prepareData['syear'], $prepareData['start_date'], $prepareData['term_id'], $prepareData['adhar']);
 
-                    unset($condition['student_id'], $condition['grade_id'], $condition['standard_id'], $condition['section_id'], $condition['student_quota'], $condition['syear'], $condition['start_date'], $condition['term_id'], $condition['adhar']);
+                    unset($condition['student_id'], $condition['grade_id'], $condition['standard_id'], $condition['section_id'], $condition['student_quota'], $condition['house_id'], $condition['syear'], $condition['start_date'], $condition['term_id'], $condition['adhar']);
 
                     $student_id = DB::table($request->table_name)->where($condition)->first();
-                    if ($student_id && $row['is_skip'] == 2) {
+                    if (isset($student_id)) {
                         DB::table($request->table_name)->where($condition)->update($prepareData);
                         $student_enroll_data['student_id'] = $student_id->id;
                         DB::table('tblstudent_enrollment')->where('student_id', $student_id->id)->update($student_enroll_data);
                         $totalOverwiteRecordCount = $totalOverwiteRecordCount + 1;
-                    } else if (!$student_id) {
+                    } else {
                         $student_enroll_data['sub_institute_id'] = $prepareData['sub_institute_id'] = session()->get('sub_institute_id');
                         $student_id = DB::table($request->table_name)->insertGetId($prepareData);
                         if ($student_id) $student_enroll_data['student_id'] = $student_id;
@@ -164,48 +164,36 @@ class ImportController extends Controller
                         $user_profile_id = DB::table('tbluserprofilemaster')->select('id')->where([['name', $prepareData['user_profile_id']], ['sub_institute_id', session()->get('sub_institute_id')]])->first();
                         if ($user_profile_id) $prepareData['user_profile_id'] = $user_profile_id->id;
                     }
-                    $tbluser = DB::table($request->table_name)->where($condition)->first();
-                    if ($tbluser && $row['is_skip'] == 2) {
-                        DB::table($request->table_name)->where($condition)->update($prepareData);
-                        $totalOverwiteRecordCount = $totalOverwiteRecordCount + 1;
-                    } else if (!$tbluser) {
-                        $prepareData['sub_institute_id'] = session()->get('sub_institute_id');
-                        DB::table($request->table_name)->insert($prepareData);
-                        $totalInsertRecordCount = $totalInsertRecordCount + 1;
-                    }
-
+                    DB::table($request->table_name)->where($condition)->update($prepareData);
+                    $totalOverwiteRecordCount = $totalOverwiteRecordCount + 1;
                 } else if ($request->table_name == 'fees_collect') {
                     if (!isset($prepareData['enrollment_no'])) {
                         $totalFailedRecordCount = $totalFailedRecordCount + 1;
                         continue;
                     }
-                    $student_id = DB::table('tblstudent')->where([['enrollment_no', $prepareData['enrollment_no']], ['sub_institute_id', session()->get('sub_institute_id')]])->first();
-                    if ($student_id) {
-                        $standard_id = DB::table('tblstudent_enrollment')->select('standard_id')->where([['student_id', $student_id->id], ['sub_institute_id', session()->get('sub_institute_id')]])->first();
-                        if ($standard_id) {
-                            $prepareData['standard_id'] = $standard_id->standard_id;
-                            $prepareData['student_id'] = $student_id->id;
-                        }
-                        unset($prepareData['enrollment_no']);
-                        $fees_receipt_data = [];
-                        $fees_receipt_data['STANDARD'] = $prepareData['standard_id'] ?? null;
-                        $fees_receipt_data['SYEAR'] = $prepareData['syear'] ?? null;
+                    $student_id = DB::table('tblstudent')->where([['enrollment_no',$prepareData['enrollment_no']],['sub_institute_id',session()->get('sub_institute_id')]])->first();
+                    if($student_id) $standard_id = DB::table('tblstudent_enrollment')->select('standard_id')->where([['student_id', $student_id->id], ['sub_institute_id', session()->get('sub_institute_id')]])->first();
+                    if ($standard_id){
+                        $prepareData['standard_id'] = $standard_id->standard_id;
+                        $prepareData['student_id'] = $student_id->id;
+                    }
+                    unset($prepareData['enrollment_no']);
+                    $fees_receipt_data = [];
+                    $fees_receipt_data['STANDARD'] = $prepareData['standard_id'] ?? null;
+                    $fees_receipt_data['SYEAR'] = $prepareData['syear'] ?? null;
 
 
-                        $fees_collect = DB::table($request->table_name)->where($condition)->first();
-                        if ($fees_collect && $row['is_skip'] == 2) {
-                            DB::table($request->table_name)->where($condition)->update($prepareData);
-                            DB::table('fees_receipt')->where('FEES_ID', $fees_collect->id)->update($fees_receipt_data);
-                            $totalOverwiteRecordCount = $totalOverwiteRecordCount + 1;
-                        } else if (!$fees_collect) {
-                            $fees_receipt_data['SUB_INSTITUTE_ID'] = $prepareData['sub_institute_id'] = session()->get('sub_institute_id');
-                            $fees_id = DB::table($request->table_name)->insertGetId($prepareData);
-                            $fees_receipt_data['FEES_ID'] = $fees_id;
-                            DB::table('fees_receipt')->insert($fees_receipt_data);
-                            $totalInsertRecordCount = $totalInsertRecordCount + 1;
-                        }
-                    } else {
-                        $totalFailedRecordCount = $totalFailedRecordCount + 1;
+                    $fees_collect = DB::table($request->table_name)->where($condition)->first();
+                    if($fees_collect) {
+                        DB::table($request->table_name)->where($condition)->update($prepareData);
+                        DB::table('fees_receipt')->where('FEES_ID', $fees_collect->id)->update($fees_receipt_data);
+                        $totalOverwiteRecordCount = $totalOverwiteRecordCount + 1;
+                    } else{
+                        $fees_receipt_data['SUB_INSTITUTE_ID'] = $prepareData['sub_institute_id'] = session()->get('sub_institute_id');
+                        $fees_id = DB::table($request->table_name)->insertGetId($prepareData);
+                        $fees_receipt_data['FEES_ID'] = $fees_id;
+                        DB::table('fees_receipt')->insert($fees_receipt_data);
+                        $totalInsertRecordCount = $totalInsertRecordCount + 1;
                     }
                 }
             } else {
@@ -248,7 +236,7 @@ class ImportController extends Controller
                     $student_enroll_data['start_date'] = $prepareData['start_date'] ?? null;
                     $student_enroll_data['adhar'] = $prepareData['adhar'] ?? null;
 
-                    unset($prepareData['student_id'], $prepareData['grade_id'], $prepareData['standard_id'], $prepareData['section_id'], $prepareData['student_quota'], $prepareData['syear'], $prepareData['start_date'], $prepareData['term_id'], $prepareData['adhar']);
+                    unset($prepareData['student_id'], $prepareData['grade_id'], $prepareData['standard_id'], $prepareData['section_id'], $prepareData['student_quota'], $prepareData['house_id'], $prepareData['syear'], $prepareData['start_date'], $prepareData['term_id'], $prepareData['adhar']);
                     $student_enroll_data['sub_institute_id'] = $prepareData['sub_institute_id'] = session()->get('sub_institute_id');
                     $student_id = DB::table($request->table_name)->insertGetId($prepareData);
                     if ($student_id) $student_enroll_data['student_id'] = $student_id;
@@ -261,25 +249,21 @@ class ImportController extends Controller
                     }
                     $prepareData['sub_institute_id'] = session()->get('sub_institute_id');
                     $prepareData['created_by'] = session()->get('user_id');
-                    $student_id = DB::table('tblstudent')->where([['enrollment_no', $prepareData['enrollment_no']], ['sub_institute_id', session()->get('sub_institute_id')]])->first();
-                    if ($student_id) {
-                        $standard_id = DB::table('tblstudent_enrollment')->select('standard_id')->where([['student_id', $student_id->id], ['sub_institute_id', session()->get('sub_institute_id')]])->first();
-                        if ($standard_id) {
-                            $prepareData['standard_id'] = $standard_id->standard_id;
-                            $prepareData['student_id'] = $student_id->id;
-                        }
-                        unset($prepareData['enrollment_no']);
-                        $fees_receipt_data = [];
-                        $fees_receipt_data['STANDARD'] = $prepareData['standard_id'] ?? null;
-                        $fees_receipt_data['SYEAR'] = $prepareData['syear'] ?? null;
-                        $fees_receipt_data['SUB_INSTITUTE_ID'] = $prepareData['sub_institute_id'] = session()->get('sub_institute_id');
-                        $fees_id = DB::table($request->table_name)->insertGetId($prepareData);
-                        $fees_receipt_data['FEES_ID'] = $fees_id;
-                        DB::table('fees_receipt')->insert($fees_receipt_data);
-                        $totalInsertRecordCount = $totalInsertRecordCount + 1;
-                    } else{
-                        $totalFailedRecordCount = $totalFailedRecordCount + 1;
+                    $student_id = DB::table('tblstudent')->where([['enrollment_no',$prepareData['enrollment_no']],['sub_institute_id',session()->get('sub_institute_id')]])->first();
+                   if($student_id) $standard_id = DB::table('tblstudent_enrollment')->select('standard_id')->where([['student_id', $student_id->id], ['sub_institute_id', session()->get('sub_institute_id')]])->first();
+                    if ($standard_id){
+                        $prepareData['standard_id'] = $standard_id->standard_id;
+                        $prepareData['student_id'] = $student_id->id;
                     }
+                    unset($prepareData['enrollment_no']);
+                    $fees_receipt_data = [];
+                    $fees_receipt_data['STANDARD'] = $prepareData['standard_id'] ?? null;
+                    $fees_receipt_data['SYEAR'] = $prepareData['syear'] ?? null;
+                    $fees_receipt_data['SUB_INSTITUTE_ID'] = $prepareData['sub_institute_id'] = session()->get('sub_institute_id');
+                    $fees_id = DB::table($request->table_name)->insertGetId($prepareData);
+                    $fees_receipt_data['FEES_ID'] = $fees_id;
+                    DB::table('fees_receipt')->insert($fees_receipt_data);
+                    $totalInsertRecordCount = $totalInsertRecordCount + 1;
                 }
             }
         }

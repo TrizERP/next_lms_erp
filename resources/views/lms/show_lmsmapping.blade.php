@@ -19,15 +19,21 @@
                     </ol>
                 </nav>
             </div>
+            @php
+                if(isset($_REQUEST['preload_lms'])){
+                    $preload_lms = "preload_lms=preload_lms";
+                    $readonly="pointer-events: none";
+                }
+            @endphp
             <div class="col-md-3 mb-4 text-md-right">
                 @if(isset($data['chapter_topic_data']['chapter_topic_id']) && $data['chapter_topic_data']['action'] == 'chapter')
-                    <a href="{{ route('lmsmapping.create',['chapter_id'=>$data['chapter_topic_data']['chapter_topic_id']]) }}"
+                    <a href="{{ route('lmsmapping.create',['chapter_id'=>$data['chapter_topic_data']['chapter_topic_id'],$preload_lms ?? '']) }}"
                        class="btn btn-info add-new"><i class="fa fa-plus"></i> Add LMS Mapping</a>
                 @elseif(isset($data['chapter_topic_data']['chapter_topic_id']) && $data['chapter_topic_data']['action'] == 'topic')
-                    <a href="{{ route('lmsmapping.create',['topic_id'=>$data['chapter_topic_data']['chapter_topic_id']]) }}"
+                    <a href="{{ route('lmsmapping.create',['topic_id'=>$data['chapter_topic_data']['chapter_topic_id'],$preload_lms ?? '']) }}"
                        class="btn btn-info add-new"><i class="fa fa-plus"></i> Add LMS Mapping</a>
                 @else
-                    <a href="{{ route('lmsmapping.create') }}" class="btn btn-info add-new"><i class="fa fa-plus"></i>
+                    <a href="{{ route('lmsmapping.create',[$preload_lms ?? '']) }}" class="btn btn-info add-new"><i class="fa fa-plus"></i>
                         Add LMS Mapping</a>
                 @endif
             </div>
@@ -64,7 +70,7 @@
                                         <td>@php echo $i++;@endphp</td>
                                         <td><h4>{{$lmsdata['name']}}</h4></td>
                                         <td>
-                                            <a href="{{ route('lmsmapping.edit',$lmsdata['id'])}}"
+                                            <a href="{{ route('lmsmapping.edit',[$lmsdata['id'],$preload_lms ?? '' ])}}"
                                                class="btn btn-outline-success btn-sm"><i class="ti-pencil-alt"></i></a>
 
                                             @if( !isset($lmsdata['CHILD_ARR']) )
@@ -73,7 +79,7 @@
                                                     @csrf
                                                     @method('DELETE')
                                                     <button onclick="return confirmDelete();" type="submit"
-                                                            class="border-0 bg-transparent"><i class="ti-trash"></i>
+                                                            class="border-0 bg-transparent" style="{{$readonly ?? ''}}"><i class="ti-trash"></i>
                                                     </button>
                                                 </form>
                                             @endif
@@ -85,7 +91,7 @@
                                                 <td></td>
                                                 <td>{{$child_data['name']}}</td>
                                                 <td>
-                                                    <a href="{{ route('lmsmapping.edit',$child_data['id'])}}"
+                                                    <a href="{{ route('lmsmapping.edit',[$child_data['id'],$preload_lms ?? ''])}}"
                                                        class="btn btn-outline-success btn-sm"><i
                                                             class="ti-pencil-alt"></i></a>
 
@@ -94,7 +100,7 @@
                                                         @csrf
                                                         @method('DELETE')
                                                         <button onclick="return confirmDelete();" type="submit"
-                                                                class="border-0 bg-transparent"><i class="ti-trash"></i>
+                                                                class="border-0 bg-transparent" style="{{$readonly ?? ''}}"><i class="ti-trash"></i>
                                                         </button>
                                                     </form>
                                                 </td>

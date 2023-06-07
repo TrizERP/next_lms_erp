@@ -27,6 +27,8 @@ class NewLMS_ApiController extends Controller
 
     public function NewLMS_temp_signup(Request $request)
     {
+        // return $request;exit;
+        // return back()->with("data","signup");exit;
         $user_type = $request->input("user_type");
         $first_name = $request->input("first_name");
         $last_name = $request->input("last_name");
@@ -40,8 +42,6 @@ class NewLMS_ApiController extends Controller
             'user_type'      => 'required|in:LMS Teacher,Student,Admin',
             'first_name'     => 'required|regex:/^([a-zA-Z]+)(\s[a-zA-Z]+)*$/',
             'last_name'      => 'required|regex:/^([a-zA-Z]+)(\s[a-zA-Z]+)*$/',
-            'gender'         => 'required|in:M,F',
-            'birthdate'      => 'required|date_format:Y-m-d',
             'email'          => 'required|email',
             'mobile'         => 'required|numeric|digits:10',
             'institute_name' => 'required',
@@ -54,7 +54,7 @@ class NewLMS_ApiController extends Controller
             $check_user_exist = $this->check_user_exist($mobile, $email);
 
             if ($check_user_exist != 0) {
-                if ($user_type != "" && $first_name != "" && $last_name != "" && $gender != "" && $birthdate != ""
+                if ($user_type != "" && $first_name != "" && $last_name != "" 
                     && $email != "" && $mobile != "" && $institute_name != "") {
 
                     $otp = rand(100000, 999999);
@@ -135,7 +135,7 @@ class NewLMS_ApiController extends Controller
                         'ip_address'     => $_SERVER['REMOTE_ADDR'],
                     ];
 
-                    return is_mobile($type, 'signup_otp', $res, "view");
+                    return is_mobile($type, 'signup', $res, "view");
                 } else {
 
                     return is_mobile($type, 'signup', $response, "view");
@@ -149,7 +149,16 @@ class NewLMS_ApiController extends Controller
 
     public function NewLMS_signup(Request $request)
     {
-        $response = ['status' => '0', 'message' => 'Entered OTP is wrong one.'];
+         $user_type = $request->input("user_type");
+        $first_name = $request->input("first_name");
+        $last_name = $request->input("last_name");
+        $gender = $request->input("gender");
+        $birthdate = $request->input("birthdate");
+        $email = $request->input("email");
+        $mobile = $request->input("mobile");
+        $institute_name = $request->input("institute_name_confirm");
+         $type = $request->input('type');
+        // return $request;
         $validator = Validator::make($request->all(), [
             'mobile' => 'required|numeric',
             'otp'    => 'required|numeric',
@@ -162,6 +171,204 @@ class NewLMS_ApiController extends Controller
             $data = temp_signupModel::select('*')
                 ->where(["mobile" => $_REQUEST['mobile'], "otp" => $_REQUEST['otp']])
                 ->get();
+
+                // return $data;exit;
+            if (count($data) != 0) {
+                $response = ['status' => '1', 'message' => 'Entered OTP is wrong one.'];
+
+            if ($request->has('type')) {
+            if ($request->input("type") == "web") {
+               
+                if ($response['status'] == 1) {
+                    $response = [
+                        'user_type'      => $user_type,
+                        'first_name'     => $first_name,
+                        'last_name'      => $last_name,
+                        'gender'         => $gender,
+                        'birthdate'      => $birthdate,
+                        'email'          => $email,
+                        'institute_name' => $institute_name,
+                        'syear'          => date('Y'),
+                        'mobile' =>$_REQUEST['mobile'],
+                        'confirm'=>"confirm",
+                    ];
+                    $response['status'] = 1;
+                    $response['message'] = "Successfully Added";
+                    return is_mobile($type, 'signup', $response, "view");
+                } else {
+                    return is_mobile($type, 'signup', $response, "view");
+                }
+
+            } else {
+                $response['status'] = '0';
+                $response['message'] = 'Entered OTP is wrong one.';
+                $response['otp'] = $_REQUEST['otp'];
+                $response['mobile'] = $_REQUEST['mobile'];
+                return is_mobile('', 'signup', $response, "view");
+            }
+        }
+        }
+    }
+    if($type=='web'){
+          $response['status'] = '0';
+        $response['failed'] = 'Entered OTP is wrong one.';
+        
+                return is_mobile('', 'signup', $response, "view");
+    }else{
+          $response['status'] = '0';
+        $response['message'] = 'Entered OTP is wrong one.';
+        
+        return json_encode($response);
+
+    }
+
+    }
+// pre load institute data
+    public function Preload_institute(Request $request){
+         if ($request->has('preload_btn')) {
+        // Preload button was clicked
+               return $this->preload_data($request);
+            // Perform the necessary actions for the preload scenario
+        } elseif ($request->has('institute_btn')) {
+            // Institute button was clicked
+            return $this->show_add_institute($request);
+            // Perform the necessary actions for the institute scenario
+        }
+    }
+
+    public function preload_data(Request $request){
+
+        $type=$request->type;
+        $first_name = $request->first_name;
+        $last_name = $request->last_name;
+        $user_name = $first_name."_".$last_name;
+        $password = "admin";
+        $email = $request->email;
+        $mobile = $request->mobile;
+        $gender = $request->gender;
+        if($gender=="M"){
+            $name_suffix = "Mr.";
+        }elseif($gender == "F"){
+            $name_suffix = "Mrs.";
+        }
+        $birthdate = $request->birthdate;
+        $user_profile_id = "1";
+        $join_year = date('Y');
+        $sub_institute_id = "1";
+        $client_id = "11";
+        $status = "1";
+
+        $data = [
+            "user_name"=>$user_name,
+            "password"=>$password,
+            "name_suffix"=>$name_suffix ?? '',
+            "first_name"=>$first_name,
+            "last_name"=>$last_name,
+            "email"=>$email,
+            "mobile"=>$mobile,
+            "gender"=>$gender,
+            "birthdate"=>$birthdate,
+            "user_profile_id"=>$user_profile_id,
+            "join_year"=>$join_year,
+            "sub_institute_id" => $sub_institute_id,
+            "client_id"=>$client_id,
+            "status"=>$status,
+            "created_on"=>date('d-m-y'),
+        ];
+
+         if ($request->has('type')) {
+            if ($request->input("type") == "web") {
+                         Mail::send('email.signupmail', [
+                            'user_name' => $user_name, 'email' => $email,
+                            'password'  => $password,
+                        ], function ($message) use ($email) {
+                            $message->to($email);
+                            $message->subject('Welcome To Triz Family!');
+                        });
+
+                        $type = $request->input("type");
+                        $res['status_code'] = 1;
+                        $res['message'] = "Please check your email for Username & Password";
+
+                }
+            }
+
+        $insert = DB::table('tbluser')->insert($data);
+            // $insert =1;
+        $login_data=array(
+        'email' => $email,
+        'password'=>$password,
+        'type'=>$type,
+        );
+        // return $login_data;exit;
+        if($insert==1){
+            return redirect()->route('login')->with('login_data', $login_data);
+
+        }else{
+            return is_mobile($type, 'signup', $res, "view");
+        }
+        // return $data;
+    }
+
+    public function show_add_institute(Request $request){
+      $type=$request->type ?? '';
+        $response =[ 
+            "status"=>1,
+            "message"=>"Welcome ".$request->first_name." ".$request->last_name." ",
+            "institute"=>$request->institute_name_confirm,
+            "mobile"=>$request->mobile,
+            "type"=>$request->type,
+
+
+        ]?? [];
+        // return $request;exit;
+        if($request!=null){
+        return is_mobile($type, 'add-institute-details', $response, "view");
+        }else{
+        return is_mobile($type, 'signup', $response, "view");
+        }
+    }
+    public function add_institute(Request $request){
+        $type = " ";
+        if($request->hasFile('file_input')){
+        // echo "file"; exit;
+        
+        $file = $request->file('file_input');
+        // $path = $file->store('public');
+
+        $fileName = $file->getClientOriginalName();
+
+        // Example: Get the file extension
+        $fileExtension = $file->getClientOriginalExtension();
+    }else{
+        $fileName ='';
+       
+        }
+            $new_index = ['PRE_PRI', 'PRI', 'SEC', 'HSEC'];
+            $selectedRadios = $request->input('exampleRadios');
+            $mobile = $request->input('mobile');
+            $indexes = [];
+            $values = [];
+
+            $allRadios = ['PRE-PRIMARY', 'PRIMARY', 'SECONDARY', 'HIGH-SECONDARY'];
+
+            foreach ($selectedRadios as $selectedRadio) {
+                $index = array_search($selectedRadio, $allRadios);
+                if ($index !== false) {
+                   $indexes[$new_index[$index]] = $selectedRadio;
+                }
+            }
+
+          $section = $indexes;
+               $board = $request->input('exampleRadiosboard');
+            // $board=$request->input('exampleRadiosboard');
+             
+
+        // echo "<pre>"; print_r($adata);exit;
+            $data = temp_signupModel::select('*')
+                ->where(["mobile" => $mobile])
+                ->get();
+                // echo $data;exit;
 
             if (count($data) != 0) {
                 $send_data = [];
@@ -179,7 +386,7 @@ class NewLMS_ApiController extends Controller
                 // END STEP 3 -> INSERT INTO tbluserprofilemaster table 
 
                 // START STEP 4 -> INSERT INTO tbluser table
-                $new_user_id = $this->INSERT_USER($data, $sub_institute_id);
+                $new_user_id = $this->INSERT_USER($data, $sub_institute_id,$fileName);
                 // END STEP 4 -> INSERT INTO tbluser table  
 
                 // START STEP 5 -> INSERT INTO academic_year table
@@ -187,31 +394,31 @@ class NewLMS_ApiController extends Controller
                 // END STEP 5 -> INSERT INTO academic_year table  
 
                 // START STEP 6 -> INSERT INTO academic_section table
-                $this->INSERT_ACADEMIC_SECTION($sub_institute_id);
+                $this->INSERT_ACADEMIC_SECTION($sub_institute_id,$section,$board);
                 // END STEP 6 -> INSERT INTO academic_section table 
 
                 // START STEP 7 -> INSERT INTO standard table
-                $this->INSERT_STANDARD($sub_institute_id);
+                $this->INSERT_STANDARD($sub_institute_id,$section,$board);
                 // END STEP 7 -> INSERT INTO standard table 
 
                 // START STEP 8 -> INSERT INTO division table
-                $this->INSERT_DIVISION($sub_institute_id);
+                $this->INSERT_DIVISION($sub_institute_id,$board);
                 // END STEP 8 -> INSERT INTO division table 
 
                 // START STEP 9 -> INSERT INTO subject table
-                $this->INSERT_SUBJECT($sub_institute_id);
+                $this->INSERT_SUBJECT($sub_institute_id,$board);
                 // END STEP 9 -> INSERT INTO subject table 
 
                 // START STEP 10 -> INSERT INTO subject table
-                $this->INSERT_STUDENTQUOTA($sub_institute_id);
+                $this->INSERT_STUDENTQUOTA($sub_institute_id,$board);
                 // END STEP 10 -> INSERT INTO subject table 
 
                 // START STEP 11 -> INSERT INTO tblmenumaster & rightside_menumaster           
-                $this->INSERT_MENUMASTER($sub_institute_id);
+                $this->INSERT_MENUMASTER($sub_institute_id,$board);
                 // END STEP 11 -> INSERT INTO tblmenumaster & rightside_menumaster            
 
                 // START STEP 12 -> INSERT INTO tblgroupwiseright
-                $this->INSERT_RIGHTS($data, $sub_institute_id);
+                $this->INSERT_RIGHTS($data, $sub_institute_id,$board);
                 // END STEP 12 -> INSERT INTO tblgroupwiseright          
 
 
@@ -229,50 +436,41 @@ class NewLMS_ApiController extends Controller
                     if ($request->input("type") == "web") {
                         $user_name = ucfirst($user_data[0]->first_name." ".$user_data[0]->last_name);
                         $request->request->add(['email' => $user_data[0]->email]); //add request
-                        $request->request->add(['password' => $user_data[0]->password]); //add request
-                        $request->request->add(['captchaText' => '123']); //add request
-                        $request->request->add(['hid_captcha' => '123']); //add request
+                        $request->request->add(['password' => "admin"]); //add request
+                        $request->request->add(['captchaText' =>  env('CAPTCHA')]); //add request
+                        $request->request->add(['hid_captcha' =>  env('CAPTCHA')]); //add request
 
                         Mail::send('email.signupmail', [
                             'user_name' => $user_name, 'email' => $user_data[0]->email,
-                            'password'  => $user_data[0]->password,
+                            'password'  => "admin",
                         ], function ($message) use ($user_data) {
                             $message->to($user_data[0]->email);
                             $message->subject('Welcome To Triz Family!');
                         });
 
                         $type = $request->input("type");
-                        $login_data['status_code'] = 1;
-                        $login_data['message'] = "Please check your email for Username & Password";
+                        $login_data=array(
+                            'email' => $user_data[0]->email,
+                            'password'=>"admin",
+                            'type'=>$type,
 
-                        return $data = is_mobile($type, "login", $login_data, "view");
+                            );
+
+                        return redirect()->route('login')->with('login_data', $login_data);
                     }
-
-                } else {
-                    $user_name = ucfirst($user_data[0]->first_name." ".$user_data[0]->last_name);
-                    Mail::send('email.signupmail', [
-                        'user_name' => $user_name, 'email' => $user_data[0]->email,
-                        'password'  => $user_data[0]->password,
-                    ],
-                        function ($message) use ($user_data) {
-                            $message->to($user_data[0]->email);
-                            $message->subject('Welcome To Triz Family!');
-                        });
-
-                    return json_encode($response);
                 }
+                        // return $data = is_mobile($type, "signup", $login_data, "view");
 
-            } else {
-                $response['status'] = '0';
-                $response['message'] = 'Entered OTP is wrong one.';
-                $response['otp'] = $_REQUEST['otp'];
-                $response['mobile'] = $_REQUEST['mobile'];
-
-                return is_mobile('', 'signup_otp', $response, "view");
+            }else{
+                $response =[ 
+                    "status"=>0,
+                    "message"=>"Something Wrong !!",
+                ];
+                return is_mobile($type, 'add-institute-details', $response, "view");
             }
-        }
 
-        return json_encode($response);
+                        // return $data = is_mobile($type, "login", $login_data, "view");
+
     }
 
     public function check_user_exist($mobile_no, $email = '')
@@ -351,7 +549,7 @@ class NewLMS_ApiController extends Controller
         }
     }
 
-    public function INSERT_USER($data, $sub_institute_id)
+    public function INSERT_USER($data, $sub_institute_id,$filename)
     {
         $userprofile_data = tbluserprofilemasterModel::select('*')->where([
             'sub_institute_id' => $sub_institute_id, 'name' => $data->user_type,
@@ -360,10 +558,12 @@ class NewLMS_ApiController extends Controller
         $userprofile_data = $userprofile_data[0];
 
         $user_name = strtolower($data->first_name.'.'.$data->last_name);
+        $surfix = strtolower($data->name_suffix);
+
         $data = [
             'user_name'        => $user_name,
-            'password'         => 'staff',
-            'name_suffix'      => '',
+            'password'         => 'admin',
+            'name_suffix'      => $surfix ?? '',
             'first_name'       => $data->first_name,
             'middle_name'      => '',
             'last_name'        => $data->last_name,
@@ -377,8 +577,8 @@ class NewLMS_ApiController extends Controller
             'pincode'          => '',
             'user_profile_id'  => $userprofile_data['id'],
             'join_year'        => date('Y'),
-            'image'            => '',
-            'plain_password'   => 'staff',
+            'image'            => $filename ?? '',
+            'plain_password'   => 'admin',
             'sub_institute_id' => $sub_institute_id,
             'status'           => '1',
         ];
@@ -413,69 +613,203 @@ class NewLMS_ApiController extends Controller
         academic_yearModel::insert($data);
     }
 
-    public function INSERT_ACADEMIC_SECTION($sub_institute_id)
+    public function INSERT_ACADEMIC_SECTION($sub_institute_id,$board,$section)
     {
         $academic_section_array = ['PRI' => 'PRIMARY', 'SEC' => 'SECONDARY', 'HSEC' => 'HIGH-SECONDARY'];
+
         $j = 1;
-        foreach ($academic_section_array as $key => $val) {
+         foreach($board as $index => $bod){
+        foreach ($section as $key => $val) {
             $data = [
                 'sub_institute_id' => $sub_institute_id,
-                'title'            => $val,
+                'title'            => $bod.'-'.$val,
                 'short_name'       => $key,
                 'sort_order'       => $j++,
                 'shift'            => '1',
-                'medium'           => 'CBSE',
+                'medium'           => $val,
                 'created_at'       => now(),
                 'updated_at'       => now(),
             ];
-
             academic_sectionModel::insert($data);
+                 // echo "<pre>";print_r($data);
         }
     }
+       // exit;
 
-    public function INSERT_STANDARD($sub_institute_id)
+        // foreach ($academic_section_array as $key => $val) {
+        //     $data = [
+        //         'sub_institute_id' => $sub_institute_id,
+        //         'title'            => $val,
+        //         'short_name'       => $key,
+        //         'sort_order'       => $j++,
+        //         'shift'            => '1',
+        //         'medium'           => 'CBSE',
+        //         'created_at'       => now(),
+        //         'updated_at'       => now(),
+        //     ];
+
+        //     academic_sectionModel::insert($data);
+        // }
+    }
+
+    public function INSERT_STANDARD($sub_institute_id,$section,$board)
     {
-        for ($i = 1; $i <= 12; $i++) {
-            $name = 'CBSE-'.$i;
-            $short_name = 'C-'.$i;
+        $grades =[];
+        $j =[];
+        foreach($board as $key=>$medium){
+        
+        if($medium=='GSEB'){
+        $name = 'GSEB-';
+        $title="GSEB";
+        $short_name = 'G-';
+        }
+         if($medium=='CBSE'){
+        $name = 'CBSE-';
+        $title="CBSE";
+        $short_name = 'C-';
+        }
+        if($medium=='BSEB'){
+         $name = 'BSEB-';
+         $title="BSEB";
+        $short_name = 'B-';
 
-            if ($i >= 1 && $i <= 5) {
-                $grade_title = 'PRIMARY';
-            } else {
-                if ($i >= 6 && $i <= 10) {
-                    $grade_title = 'SECONDARY';
-                } else {
-                    if ($i >= 11 && $i <= 12) {
-                        $grade_title = 'HIGH-SECONDARY';
-                    }
-                }
-            }
+        }
+        if($medium=='BSEAP'){
+         $name = 'BSEAP-';
+         $title="BSEAP";
+        $short_name = 'BP-';
 
-            $adata = academic_sectionModel::select('*')->where([
-                'title' => $grade_title, 'sub_institute_id' => $sub_institute_id,
+        }
+
+    if (isset($section['PRE_PRI'])) {
+
+        $grade_title = 'PRE-PRIMARY';
+
+          $adatas = academic_sectionModel::select('*')->where([
+                'title' => $grade_title.'-'.$title, 'sub_institute_id' => $sub_institute_id,
             ])->get()->toArray();
-            $adata = $adata[0];
-
-            $data = [
-                'grade_id'         => $adata['id'],
-                'name'             => $name,
-                'short_name'       => $short_name,
-                'sort_order'       => $i,
+            $adata = $adatas[$key]??$adatas[0];
+            // echo "<pre>";print_r($adatas[0]);exit;
+        $data = [
+                'grade_id'         => isset($adata['id']) ? $adata['id'] : null,
+                'name'             => $name."NUR",
+                'short_name'       => $name."NUR",
+                'sort_order'       =>1,
                 'medium'           => 'ENGLISH',
                 'sub_institute_id' => $sub_institute_id,
                 'course_duration'  => '1 Year',
                 'created_at'       => now(),
                 'updated_at'       => now(),
-            ];
-
+                ];
             standardModel::insert($data);
-        }
+
+        $data2 = [
+                'grade_id'         => isset($adata['id']) ? $adata['id'] : null,
+                'name'             =>  $name."JR",
+                'short_name'       => $name."JR",
+                'sort_order'       =>2,
+                'medium'           => 'ENGLISH',
+                'sub_institute_id' => $sub_institute_id,
+                'course_duration'  => '1 Year',
+                'created_at'       => now(),
+                'updated_at'       => now(),
+                ];
+            standardModel::insert($data2);
+
+        $data3 = [
+                'grade_id'         => isset($adata['id']) ? $adata['id'] : null,
+                'name'             => $name."SR",
+                'short_name'       => $name."SR",
+                'sort_order'       =>3,
+                'medium'           => 'ENGLISH',
+                'sub_institute_id' => $sub_institute_id,
+                'course_duration'  => '1 Year',
+                'created_at'       => now(),
+                'updated_at'       => now(),
+                ];
+            standardModel::insert($data3);
+    } 
+
+  if (isset($section['PRI'])) {
+    for ($i = 1; $i <= 5; $i++) {
+
+        $grade_title = 'PRIMARY';
+          $adatas = academic_sectionModel::select('*')->where([
+                'title' => $grade_title.'-'.$title, 'sub_institute_id' => $sub_institute_id,
+            ])->get()->toArray();
+            $adata = $adatas[$key] ?? $adatas[0];
+
+        $data = [
+                'grade_id'         => isset($adata['id']) ? $adata['id'] : null,
+                'name'             => $name.$i,
+                'short_name'       => $short_name.$i,
+                'sort_order'       =>$i,
+                'medium'           => 'ENGLISH',
+                'sub_institute_id' => $sub_institute_id,
+                'course_duration'  => '1 Year',
+                'created_at'       => now(),
+                'updated_at'       => now(),
+    ];
+            standardModel::insert($data);
+
+    }
+    } 
+    if (isset($section['SEC'])) {
+
+        for ($i = 6; $i <= 10; $i++) {
+
+             $grade_title ='SECONDARY';
+              $adatas = academic_sectionModel::select('*')->where([
+                'title' => $grade_title.'-'.$title,'sub_institute_id' => $sub_institute_id,
+            ])->get()->toArray();
+            $adata = $adatas[$key] ?? $adatas[0];
+       
+        $data = [
+                'grade_id'         => isset($adata['id']) ? $adata['id'] : null,
+                'name'             => $name.$i,
+                'short_name'       => $short_name.$i,
+                'sort_order'       =>$i,
+                'medium'           => 'ENGLISH',
+                'sub_institute_id' => $sub_institute_id,
+                'course_duration'  => '1 Year',
+                'created_at'       => now(),
+                'updated_at'       => now(),
+    ];
+            standardModel::insert($data);
+    }
+    } 
+    if (isset($section['HSEC'])) {
+
+        for ($i = 11; $i <= 12; $i++) {
+             $grade_title = 'HIGH-SECONDARY';
+              $adatas = academic_sectionModel::select('*')->where([
+                'title' => $grade_title.'-'.$title,'sub_institute_id' => $sub_institute_id,
+            ])->get()->toArray();
+            $adata = $adatas[$key] ?? $adatas[0];
+  
+        $data = [
+                'grade_id'         => $adata['id'],
+                'name'             => $name.$i,
+                'short_name'       => $short_name.$i,
+                'sort_order'       =>$i,
+                'medium'           => 'ENGLISH',
+                'sub_institute_id' => $sub_institute_id,
+                'course_duration'  => '1 Year',
+                'created_at'       => now(),
+                'updated_at'       => now(),
+    ];
+            standardModel::insert($data);
+
+    }
     }
 
-    public function INSERT_DIVISION($sub_institute_id)
+    }
+}
+
+    public function INSERT_DIVISION($sub_institute_id,$board)
     {
         $div_array = range('A', 'D');
-
+           
         foreach ($div_array as $key => $val) {
             $data = [
                 'name'             => $val,
@@ -486,13 +820,15 @@ class NewLMS_ApiController extends Controller
 
             divisionModel::insert($data);
         }
-    }
+        }
 
-    public function INSERT_SUBJECT($sub_institute_id)
+    public function INSERT_SUBJECT($sub_institute_id,$board)
     {
         $sub_array = ['Eng' => 'English', 'Math' => 'Math', 'Hindi' => 'Hindi', 'Sci' => 'Science'];
 
         $j = 1;
+            foreach($board as $medium){
+
         foreach ($sub_array as $key => $val) {
             $subject_code = "000".$j++;
             $data = [
@@ -509,8 +845,9 @@ class NewLMS_ApiController extends Controller
             subjectModel::insert($data);
         }
     }
+    }
 
-    public function INSERT_STUDENTQUOTA($sub_institute_id)
+    public function INSERT_STUDENTQUOTA($sub_institute_id,$board)
     {
         $data = [
             'title'            => 'General',
@@ -522,14 +859,14 @@ class NewLMS_ApiController extends Controller
         studentQuotaModel::insert($data);
     }
 
-    public function INSERT_MENUMASTER($sub_institute_id)
+    public function INSERT_MENUMASTER($sub_institute_id,$board)
     {
         // TODO: This query will be change
         DB::select("UPDATE tblmenumaster SET sub_institute_id = CONCAT_WS(',',sub_institute_id,'".$sub_institute_id."')");
         DB::select("UPDATE rightside_menumaster SET sub_institute_id = CONCAT_WS(',',sub_institute_id,'".$sub_institute_id."')");
     }
 
-    public function INSERT_RIGHTS($data, $sub_institute_id)
+    public function INSERT_RIGHTS($data, $sub_institute_id,$board)
     {
         $user_type = $data->user_type;
         $profileval['name'] = str_replace(' ', '', $user_type);
@@ -635,12 +972,11 @@ class NewLMS_ApiController extends Controller
         $sub_institute_id = 1; // Triz Innovation
         $text = "Dear Parent, Your OTP is ".$otp.".";
         $res = sendSMS($mobile_no, $text, $sub_institute_id);
-
         if ($res["error"] == 1) {
-
-            return $res['message'].' - Please add api details first.';
+            $res['message']=' - Please add api details first.';
+        }else{
+            $res['message']='OTP Resend Successfully .';
         }
-
-        return 'Enter receive OTP';
+        return is_mobile('', 'signup', $res, "view");
     }
 }

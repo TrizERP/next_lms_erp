@@ -8,6 +8,7 @@ use App\Models\settings\tblcustomfieldsModel;
 use App\Models\settings\tblfields_dataModel;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use DB;
 use Illuminate\Http\Response;
 use function App\Helpers\is_mobile;
 
@@ -29,9 +30,15 @@ class lms_teacherResourceController extends Controller
     }
 
     public function getData($request){
-        $sub_institute_id = $request->session()->get('sub_institute_id');
-        $syear = $request->session()->get('syear');
-
+        if($request->has('preload_lms')){
+            $sub_institute_id = 1;
+            $year = DB::table('academic_year')->where('sub_institute_id',$sub_institute_id)->get()->toArray();
+            $syear =$year[0]->syear;
+        }else{
+            $sub_institute_id = $request->session()->get('sub_institute_id');
+            $syear = $request->session()->get('syear');
+        }
+        
         $standard_id = $request->get("standard_id");
         $chapter_id = $request->get("chapter_id");
         $subject_id = $request->get("subject_id");
@@ -80,6 +87,7 @@ class lms_teacherResourceController extends Controller
 
         return $data;
     }
+
 
     /**
      * Store a newly created resource in storage.

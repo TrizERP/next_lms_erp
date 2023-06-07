@@ -90,6 +90,7 @@ class parentCommunicationController extends Controller
         CONCAT_WS(' ',u.first_name,u.middle_name,u.last_name) as reply_by_teacher,reply_on")
             ->where("s.sub_institute_id", "=", $sub_institute_id)
             ->where("se.syear", "=", $syear)
+            ->where("pc.syear", "=", $syear)
             ->where(function ($q) {
                 if (isset($_REQUEST['from_date'])) {
                     $q->where("pc.date_", ">=", $_REQUEST['from_date']);
@@ -391,6 +392,7 @@ class parentCommunicationController extends Controller
                 ->where("ct.sub_institute_id", "=", $sub_institute_id)
                 ->where("ct.syear", "=", $syear)
                 ->where("se.syear", "=", $syear)
+                ->where("pc.syear", "=", $syear)
                 ->where("ct.teacher_id", "=", $teacher_id)
                 ->orderBy('student_name')
                 ->get()->toarray();

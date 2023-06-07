@@ -33,7 +33,11 @@ class lmsmappingController extends Controller
 
     public function getData($request)
     {
-        $sub_institute_id = $request->session()->get('sub_institute_id');
+        if($request->has('preload_lms')){
+            $sub_institute_id = 1;
+        }else{
+            $sub_institute_id = $request->session()->get('sub_institute_id');
+        }
         $final_data = $res['chapter_topic_data'] = $data = array();
 
         $extra = "";
@@ -47,7 +51,7 @@ class lmsmappingController extends Controller
 
             $extra .= " AND chapter_id = '".$chapter_id."'";
 
-            $res['chapter_topic_data'] = $chapter_data[0];
+            $res['chapter_topic_data'] = $chapter_data[0] ?? [];
         }
 
         if ($request->has("topic_id")) {
@@ -94,7 +98,7 @@ class lmsmappingController extends Controller
     public function create(Request $request)
     {
         $type = $request->input('type');
-        $sub_institute_id = $request->session()->get('sub_institute_id');
+        $sub_institute_id = 1;
 
         $data = array();
         if ($request->has('chapter_id')) {
@@ -106,7 +110,7 @@ class lmsmappingController extends Controller
                     'chapter_master.id'               => $request->get('chapter_id'),
                 ])
                 ->get()->toArray();
-            $data['chapter_topic_data'] = $chapter_data[0];
+            $data['chapter_topic_data'] = $chapter_data[0]??[];
         }
 
         if ($request->has('topic_id')) {
@@ -119,7 +123,7 @@ class lmsmappingController extends Controller
                 ])
                 ->get()->toArray();
 
-            $data['chapter_topic_data'] = $topic_data[0];
+            $data['chapter_topic_data'] = $topic_data[0] ?? [];
         }
 
         return is_mobile($type, 'lms/add_lmsmapping', $data, "view");

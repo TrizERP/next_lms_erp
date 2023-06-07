@@ -36,7 +36,7 @@ class admissionReportController extends Controller
             {
                 $extra = ",ai.id,ai.fees_circular_form_no as Form_No,ai.admission_fees,ai.fees_amount,ai.fees_remark,ai.fees_circular_html as fees_circular";
             }
-
+            
             $getQuery = DB::table('admission_enquiry as ai')
                 ->join('tbluser as ts', function ($join) {
                     $join->whereRaw('ts.id = ai.created_by AND ts.sub_institute_id = ai.sub_institute_id');
@@ -53,7 +53,6 @@ class admissionReportController extends Controller
                     ai.counciler_name, ai.father_name,CONCAT_WS(' ',ts.first_name,ts.last_name) AS created_by, cs.caste_name $extra")
                 ->whereRaw("(DATE_FORMAT(ai.created_on, '%Y-%m-%d') BETWEEN '" . $from_date . "' AND '" . $to_date . "')
                     AND ai.sub_institute_id = '" . $sub_institute_id . "' AND ai.syear = '" . $syear . "'");
-
 
             if ($standard != '') {
                 $getQuery->where('admission_standard', $standard);
@@ -90,7 +89,7 @@ class admissionReportController extends Controller
         $res['message'] = "Success";
         $res['users'] = $users;
         $res['ser_user'] = $user;
-
+        // echo "<pre>";print_r($res);exit;
         return is_mobile($type, "admission.report.show_enquiry_report", $res, 'view');
     }
 

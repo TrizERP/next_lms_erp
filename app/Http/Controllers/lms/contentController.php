@@ -26,8 +26,11 @@ class contentController extends Controller
     }
 
     public function getData($request){
+        if($request->has('preload_lms')){
+            $sub_institute_id = 1;
+        }else{
         $sub_institute_id = $request->session()->get('sub_institute_id');
-
+        }
         $data['content_data'] = contentModel::select('content_master.*','standard.name as standard_name','academic_section.title as grade_name',
         'subject_name','chapter_name','tm.name as topic_name','stm.name as sub_topic_name')
         ->join('standard', 'standard.id', '=', 'content_master.standard_id')
@@ -408,7 +411,11 @@ class contentController extends Controller
     public function edit(Request $request,$id){
         $type = $request->input('type');
 
-		$sub_institute_id = $request->session()->get('sub_institute_id'); 		
+        if($request->has('preload_lms')){
+            $sub_institute_id = 1;
+        }else{
+        $sub_institute_id = $request->session()->get('sub_institute_id');
+        } 		
 						
         $data['content_data'] = contentModel::find($id)->toArray();
 

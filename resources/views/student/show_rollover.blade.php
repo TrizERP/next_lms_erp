@@ -73,10 +73,13 @@
                             if($data['table_array_check'][$table_key] != 0)
                             {
                                 $disabled = 'disabled="disabled" ';
+                                $checked = 'checked=checked';
+
                             }
                             if($tblstudent_enrollment_data[2] == 0)
                             {
                                 $radio_disabled = 'disabled="disabled" ';
+                                
                             }
 
                             if($table_key == 'academic_year' || $table_key == 'fees_map_years' || $table_key == 'fees_title')

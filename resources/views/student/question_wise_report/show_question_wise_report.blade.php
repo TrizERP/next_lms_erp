@@ -39,19 +39,33 @@
                                 <div class="row">
                                     {{ App\Helpers\SearchChain('4','single','grade,std,div',$grade_id,$standard_id,$division_id) }}
 
-                                    <div class="col-md-4 form-group" style="margin-left:unset;margin-right:unset;">
-                                        <label for="subject">Select Subject:</label>
-                                        <select name="subject" id="subject" class="form-control mb-0" required>
-                                            <option value="">Select Subject</option>
-                                        </select>
-                                    </div>
+                                    <div class="col-md-3 form-group">
+                                <label for="subject">Select Subject</label>
+                                <select name="subject" id="subject" class="cust-select form-control mb-0">
+                                    @if(empty($data['subject_data']))
+                                        <option value="">Select Subject</option>
+                                    @endif
 
-                                    <div class="col-md-4 form-group" style="margin-left:unset;margin-right:unset;">
-                                        <label for="exam">Select Exam:</label>
-                                        <select name="exam" id="exam" class="form-control mb-0" required>
-                                            <option value="">Select Exam</option>
-                                        </select>
-                                    </div>
+                                    @if(!empty($data['subject_data']))
+                                        @foreach($data['subject_data'] as $k1 => $v1)
+                                            <option
+                                                value="{{$v1['subject_id']}}" @if(isset($data['subject_id'])){{$data['subject_id'] == $v1['subject_id'] ? 'selected=selected' : '' }} @endif>{{$v1['display_name']}} </option>
+                                        @endforeach
+                                    @endif
+                                </select>
+                            </div>
+                            <div class="col-md-3 form-group">
+                                <label for="exam">Select Exam</label>
+                                <select class="cust-select form-control mb-0" name="exam" 
+                                        required="required">
+                                    @if(!empty($data['exams_data']))
+                                        @foreach($data['exams_data'] as $k => $v)
+                                            <option
+                                                value="{{$v->id}}" @if(isset($data->exam_id)){{$data->exam_id == $v->id ? 'selected=selected' : '' }} @endif>{{$v->paper_name}}</option>
+                                        @endforeach
+                                    @endif
+                                </select>
+                            </div>
                                     {{-- <div class="col-md-4 form-group">
                                        <label>Order By</label>
                                        <select id='order_by' name="order_by" class="form-control">
@@ -364,137 +378,83 @@ function checkedAll() {
         } );
     } );
 </script>
-
 <script>
-    $(document).ready(function () {
-        var standardID = $("#standard").val();
-        var divisionID = $("#division").val();
-
-        if (standardID) {
-            $.ajax({
-                type: "GET",
-                url: "/api/get-subject-list?standard_id=" + standardID + "&division_id="+ divisionID,
-                success: function (res) {
-                    if (res) {
-                        $("#subject").empty();
-                        $("#subject").append('<option value="">Select</option>');
-                        $.each(res, function (key, value) {
-                            $("#subject").append('<option value="' + key + '">' + value + '</option>');
-                        });
-
-                    } else {
-                        $("#subject").empty();
-                    }
+    $("#standard").change(function () {
+        var std_id = $("#standard").val();
+        var path = "{{ route('ajax_LMS_StandardwiseSubject') }}";
+        $('#subject').find('option').remove().end().append('<option value="">Select Subject</option>').val('');
+        $.ajax({
+            url: path, data: 'std_id=' + std_id, success: function (result) {
+                for (var i = 0; i < result.length; i++) {
+                    $("#subject").append($("<option></option>").val(result[i]['subject_id']).html(result[i]['display_name']));
                 }
-            });
-        } else {
-            $("#subject").empty();
-        }
-
-        setTimeout(() => {
-            var grade_id = $('#grade').val();
-            var standard_id = $("#standard").val();
-            var division_id = $("#division").val();
-            var subject_id = $('#subject').val();
-            var sub_institute_id =
-                {{ session()->get('sub_institute_id') }}
-            var syear = {{ session()->get('syear') }}
-                console.log('here time out');
-            if (subject_id) {
-                console.log('here');
-                $.ajax({
-                    type: "GET",
-                    dataType: 'json',
-                    url: "/api/get-exam-name-list?grade_id=" + grade_id + "&standard_id=" + standard_id + "&division_id=" + division_id + "&subject_id=" + subject_id + "&sub_institute_id=" + sub_institute_id + "&syear=" + syear,
-                    // data: {grade_id: grade_id, standard_id: standard_id, division_id: division_id, subject_id: subject_id, sub_institute_id: sub_institute_id, syear: syear },
-                    //--> send id of checked checkbox on other page
-                    success: function (data) {
-                        if (data) {
-                            $("#exam").empty();
-                            $("#exam").append('<option value="">Select</option>');
-                            $.each(data, function (key, value) {
-                                $("#exam").append('<option value="' + value.id + '">' + value.question_paper_name + '</option>');
-                            });
-                        } else {
-                            $("#exam").empty();
-                        }
-
-                    }
-                });
-            } else {
-                $("#exam").empty();
             }
-        }, 2000);
-    });
-</script>
-@if ( isset($data['subject_id']) )
-    <script>
-        setTimeout(() => {
-            $('#subject').val({{ $data['subject_id'] }});
-        }, 1000);
-        setTimeout(() => {
-            $('#exam').val({{ $data['question_paper_id'] }});
-        }, 3000);
-    </script>
-@endif
-<script>
-    $('#division').on('change', function () {
-        $("#exam").empty();
-        $("#exam").append('<option value="">Select</option>');
-        var standardID = $("#standard").val();
-        var divisionID = $("#division").val();
-        if (standardID) {
-            $.ajax({
-                type: "GET",
-                url: "/api/get-subject-list?standard_id=" + standardID + "&division_id="+ divisionID,
-                success: function (res) {
-                    if (res) {
-                        $("#subject").empty();
-                        $("#subject").append('<option value="">Select</option>');
-                        $.each(res, function (key, value) {
-                            $("#subject").append('<option value="' + key + '">' + value + '</option>');
-                        });
-
-                    } else {
-                        $("#subject").empty();
-                    }
-                }
-            });
-        } else {
-            $("#subject").empty();
-        }
-
-    });
-</script>
-    <script>
-        $(document).on('change', '#subject', function () {
-            var grade_id = $('#grade').val();
-            var standard_id = $('#standard').val();
-            var division_id = $('#division').val();
-            var subject_id = $('#subject').val();
-            var sub_institute_id =
-                {{ session()->get('sub_institute_id') }}
-            var syear = {{ session()->get('syear') }}
-
-                $.ajax({
-                    type: "GET",
-                    dataType: 'json',
-                    url: "/api/get-exam-name-list?grade_id=" + grade_id + "&standard_id=" + standard_id + "&division_id=" + division_id + "&subject_id=" + subject_id + "&sub_institute_id=" + sub_institute_id + "&syear=" + syear,
-                    // data: {grade_id: grade_id, standard_id: standard_id, division_id: division_id, subject_id: subject_id, sub_institute_id: sub_institute_id, syear: syear },
-                    //--> send id of checked checkbox on other page
-                    success: function (data) {
-                        if (data) {
-                            $("#exam").empty();
-                            $("#exam").append('<option value="">Select</option>');
-                            $.each(data, function (key, value) {
-                                $("#exam").append('<option value="' + value.id + '">' + value.question_paper_name + '</option>');
-                            });
-                        } else {
-                            $("#exam").empty();
-                    }
-
-                    }
-            });
         });
+    })
+
+    $("#subject").change(function(){
+        var std_id = $("#standard").val();
+        var sub_id = $("#subject").val();
+        var path = "{{ route('ajax_LMS_SubjectWiseExam') }}";
+        $.ajax({
+            url: path,
+            data: 'std_id=' + std_id + '&sub_id=' + sub_id,
+            success: function (result) {
+                var e = $('select[name="exam"]');
+                $(e).find('option').remove().end();
+                for (var i = 0; i < result.length; i++) {
+                    $(e).append($("<option></option>").val(result[i]['id']).html(result[i]['paper_name']));
+                }
+            }
+        });
+    })
+
+    $(document).ready(function () {
+        $('#grade').attr("required", true);
+        $('#standard').attr("required", true);
+        $('#subject').attr("required", true);
+    });
+    $(document).ready(function () {
+        var table = $('#example').DataTable({
+            select: true,
+            lengthMenu: [
+                [100, 500, 1000, -1],
+                ['100', '500', '1000', 'Show All']
+            ],
+            dom: 'Bfrtip',
+            buttons: [
+                {
+                    extend: 'pdfHtml5',
+                    title: 'Other Fees Report',
+                    orientation: 'landscape',
+                    pageSize: 'LEGAL',
+                    pageSize: 'A0',
+                    exportOptions: {
+                        columns: ':visible'
+                    },
+                },
+                {extend: 'csv', text: ' CSV', title: 'Other Fees Report'},
+                {extend: 'excel', text: ' EXCEL', title: 'Other Fees Report'},
+                {extend: 'print', text: ' PRINT', title: 'Other Fees Report'},
+                'pageLength'
+            ],
+        });
+
+        $('#example thead tr').clone(true).appendTo('#example thead');
+        $('#example thead tr:eq(1) th').each(function (i) {
+            var title = $(this).text();
+            $(this).html('<input type="text" placeholder="Search ' + title + '" />');
+
+            $('input', this).on('keyup change', function () {
+                if (table.column(i).search() !== this.value) {
+                    table
+                        .column(i)
+                        .search( this.value )
+                        .draw();
+                }
+            } );
+        } );
+    } );
 </script>
+
 @include('includes.footer')

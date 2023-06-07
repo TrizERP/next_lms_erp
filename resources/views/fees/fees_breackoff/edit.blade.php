@@ -97,11 +97,11 @@
                                             </td>
                                             <?php foreach ($data['data']['title_arr'] as $id => $val) { ?>
                                                 <td>
-                                                    <input type="text" class="form-control" name="<?php echo 'NewValues[' . $quota_id . '][' . $id . ']'; ?>">
+                                                    <input style="width: 60pt;" type="text" class="form-control" name="<?php echo 'NewValues[' . $quota_id . '][' . $id . ']'; ?>">
                                                 </td>
                                             <?php } ?>
                                             <td class="total">
-                                                <input type="text" class="form-control" name="total">
+                                                <input style="width: 60pt;" readonly="readonly" type="text" class="form-control" name="total">
                                             </td>
                                         <?php } ?>
                                     </tr>
@@ -141,11 +141,11 @@
                                             </td>
                                             <?php foreach ($data['data']['title_arr'] as $id => $val) { ?>
                                                 <td>
-                                                    <input type="text" class="form-control" name="<?php echo 'OldValues[' . $quota_id . '][' . $id . ']'; ?>">
+                                                    <input style="width: 60pt;" type="text" class="form-control" name="<?php echo 'OldValues[' . $quota_id . '][' . $id . ']'; ?>">
                                                 </td>
                                             <?php } ?>
                                             <td class="total">
-                                                <input type="text" class="form-control" name="total">
+                                                <input style="width: 60pt;" readonly="readonly" type="text" class="form-control" name="total">
                                             </td>
                                         <?php } ?>
                                     </tr>

@@ -19,7 +19,10 @@ class courseController extends Controller
      */
     public function index(Request $request)
     {
+     
         $data = $this->getData($request);
+        // return $data;exit;
+       
         $type = $request->input('type');
         $res['status_code'] = 1;
         $res['message'] = "SUCCESS";
@@ -31,11 +34,19 @@ class courseController extends Controller
 
     public function getData($request)
     {
+        if(isset($_REQUEST['preload_lms'])){
+            $sub_institute_id =1;
+            $year = DB::table('academic_year')->where('sub_institute_id',$sub_institute_id)->get()->toArray();
+            $syear =$year[0]->syear;
+            $user_profile_name = "Admin";
+            $user_id = 1;
+        }else{
+            $sub_institute_id = $request->session()->get('sub_institute_id');
+            $syear = $request->session()->get('syear');
+            $user_profile_name = session()->get('user_profile_name');
+            $user_id = session()->get('user_id');
+        }
 
-        $sub_institute_id = $request->session()->get('sub_institute_id');
-        $syear = $request->session()->get('syear');
-        $user_profile_name = session()->get('user_profile_name');
-        $user_id = session()->get('user_id');
         $mycourse_arr = [];
 
         $extra = "";

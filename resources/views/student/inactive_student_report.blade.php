@@ -30,13 +30,75 @@
                     $division_id = $data['division_id'];
                 }
             @endphp   
-            <form action="{{ route('missing_document_report.create') }}" enctype="multipart/form-data">                
+            <form action="{{ route('inactive_student_report.create') }}" enctype="multipart/form-data">                
                 @csrf  
                 <div class="row">                    
                     {{ App\Helpers\SearchChain('4','single','grade,std,div',$grade_id,$standard_id,$division_id) }}
                     <div class="col-md-4 form-group mt-3">
                         <input type="submit" name="submit" value="Search" class="btn btn-success" >                     
-                    </div>
+                     <button type="button" class="btn btn-info" data-toggle="modal"
+                                                data-target="#exampleModal"><i class="mdi mdi-tune"></i></button>
+                                    </div>
+                                </div>
+                                <!-- Modal -->
+                                <div class="modal fade bd-example-modal-lg" id="exampleModal" tabindex="-1"
+                                     role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+                                    <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+                                        <div class="modal-content">
+                                            <div class="modal-header">
+                                                <h5 class="modal-title" id="exampleModalLabel">Choose Field</h5>
+                                                <button type="button" class="close" data-dismiss="modal"
+                                                        aria-label="Close">
+                                                    <span aria-hidden="true">x</span>
+                            </button>
+                          </div>
+                          <div class="modal-body">
+                                <div class="slimscrollright">
+                                    <div class="rpanel-title"><span><i class="ti-close right-side-toggle"></i></span> </div>
+                                    <div class="row">
+                                        <div class="col-md-12 form-group mb-2">
+                                            <div class="checkbox checkbox-info">
+                                                <input id="checkall" onclick="checkedAll();" name="checkall" type="checkbox">
+                                                <label for="checkall"> Check All </label>
+                                                <input type="hidden" name="page" value="bulk">
+                                            </div>
+                                        </div>
+
+                                    @if(isset($data['data']))
+                                            @php
+                                        //$checkedArray = array('enrollment_no','first_name','middle_name','last_name','mobile');
+                                        $checkedArray = array();
+                                        @endphp
+                                        @foreach($data['data'] as $key => $value)
+                                        <div class="col-md-4 form-group mt-1">
+                                            <div class="custom-control custom-checkbox">
+                                                @php
+                                                $checked = '';
+                                                if(in_array($key,$checkedArray)){
+                                                    $checked = 'checked="checked"';
+                                                }
+                                                if(isset($data['headers'])){
+                                                    if(count($data['headers']) > 0){
+                                                        $headersChecked = array_keys($data['headers']);
+                                                    }
+                                                    $checked = '';
+                                                    if(in_array($key,$headersChecked)){
+                                                        $checked = 'checked="checked"';
+                                                    }
+                                                }
+                                                @endphp
+                                                <input id="{{$key}}" {{$checked}} value="{{$key}}" class="custom-control-input" name="dynamicFields[]" type="checkbox">
+                                                <label for="{{$key}}" class="custom-control-label"> {{$value}} </label>
+                                            </div>
+                                        </div>
+                                        @endforeach
+                                    @endif
+                                    </div>
+                                </div>
+                          </div>
+                                        </div>
+                                    </div>
+                                </div>
                 </div>              
             </form>
         </div>
@@ -55,44 +117,22 @@
                     <thead>
                         <tr>
                             <th>Sr No</th>
-                            <th>Enrollment No</th>
+                            <!-- <th>Enrollment No</th>
                             <th>Student Name</th>
                             <th>Standard</th>
-                            <th>Division</th>
-                               @foreach($data['docment_type_data'] as $key => $val)
-                                    <th>{{$val['document_type']}}</th>
-                               @endforeach
+                            <th>Division</th> -->
+                            @foreach($result_report[0] as $heads=>$value)
+                                <th>{{$heads}}</th>
+                            @endforeach
                         </tr>
                     </thead>
                     <tbody>
                         @foreach($result_report as $stud_key => $stud_data)
                             <tr>
                                 <td>{{$j++}}</td>
-                                <td> {{$stud_data->enrollment_no}} </td>
-                                <td> {{$stud_data->student_name}} </td>
-                                <td> {{$stud_data->standard_name}} </td>
-                                <td> {{$stud_data->division_name}} </td>
-                                @php
-                                if($stud_data->document_list != "")
-                                {
-                                    $document_list = explode(",",$stud_data->document_list);
-                                }else
-                                {
-                                    $document_list = array();
-                                }
-                                
-                                foreach($data['docment_type_data'] as $key => $val)
-                                {
-                                    if( in_array($val['id'],$document_list))
-                                    {
-                                        echo "<td style='color:green;font-size: 22px;'>&#10004;</td>";
-                                    }
-                                    else
-                                    {
-                                        echo "<td style='color:red;'>&#10060;</td>";
-                                    }
-                                }                                                            
-                                @endphp
+                                @foreach($stud_data as $value)
+                                <td>{{$value}}</td>
+                                @endforeach
                             </tr>
                         @endforeach
                     </tbody>

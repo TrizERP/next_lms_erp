@@ -23,16 +23,21 @@ class topicController extends Controller
         $res['content_data'] = $data['content_data'];
         $res['chapter_id'] = $request->input('id');
         $res['breadcrum_data'] = $data['breadcrum_data'];
-
+        // echo "<pre>";print_r($data);exit;
         return is_mobile($type, 'lms/show_topic', $res, "view");
     }
 
     public function getData($request)
     {
-        $sub_institute_id = $request->session()->get('sub_institute_id');
-        $syear = $request->session()->get('syear');
-        $ch_id = $request->input('id');
-
+        if($request->has('preload_lms')){
+            $sub_institute_id = 1;
+            $syear = $request->session()->get('syear');
+            $ch_id = $request->input('id');
+        }else{
+            $sub_institute_id = $request->session()->get('sub_institute_id');
+            $syear = $request->session()->get('syear');
+            $ch_id = $request->input('id');
+        }
         $getIsLms = DB::table('school_setup')
             ->where('Id', $sub_institute_id)
             ->value('is_Lms');
