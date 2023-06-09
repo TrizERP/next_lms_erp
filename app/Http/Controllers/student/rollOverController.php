@@ -372,7 +372,10 @@ class rollOverController extends Controller
                 //             ->where('sub_institute_id', $sub_institute_id)
                 //             ->where('syear', $to_next_syear)->get()->toArray();
                 // if (count($check_advance_fees) == 0) {
-                    $title = DB::table('fees_title')->where(['display_name'=>'Advance Fee','syear'=>$from_current_syear,'sub_institute_id'=>$sub_institute_id])->get()->toArray();
+                $title = DB::table('fees_title')->where(['display_name'=>'Advance Fee','syear'=>$from_current_syear,'sub_institute_id'=>$sub_institute_id])->get()->toArray();
+                
+                if(isset($title) && count($title)>0 && !empty($title)){
+
                 $advance_fees = "SELECT fb.*,fb.student_id, se.standard_id, SUM(fb.actual_amountpaid) AS sum_amount
                  FROM fees_paid_other fb
                  LEFT JOIN tblstudent_enrollment se ON fb.student_id = se.student_id
@@ -414,7 +417,7 @@ class rollOverController extends Controller
                     $allocated = min($amount, $remainingAmount);
                     $remainingAmount -= $allocated;
                     $allocatedAmount += $allocated;
-             // $totalAllocatedAmount += $allocated;
+                    // $totalAllocatedAmount += $allocated;
 
                     if(isset($allocated) && $allocated !=0 ){
                         // $amounts +=$allocated;
@@ -445,7 +448,7 @@ class rollOverController extends Controller
                          $feesTitle => $allocated,
                         // 'fees_title' => $feesTitle,
                     ];
-                    // $insert_fees = DB::table('fees_collect')->insert($divided_advance_fees);
+                    $insert_fees = DB::table('fees_collect')->insert($divided_advance_fees);
 
                     //  $paid_off = [
                     //     // 'standard_id'=>$fee->std_id,
@@ -493,12 +496,12 @@ class rollOverController extends Controller
             "sub_institute_id"=>$sub_institute_id,
             ]);
         }
-echo "<br> divided_advance_fees  "; echo "<pre>";print_r($divided_advance_fees);
+// echo "<br> divided_advance_fees  "; echo "<pre>";print_r($divided_advance_fees);
 
-                        // }
+                        }
             
         }
-            exit;
+            // exit;
             if ($i > 1) {
                 $res['status'] = "0";
                 $res['message'] = $i." students is already exist in next year.";
@@ -506,6 +509,7 @@ echo "<br> divided_advance_fees  "; echo "<pre>";print_r($divided_advance_fees);
                 $res['status'] = "1";
                 $res['message'] = "Student Data Rollover Successfully.";
             }
+
             return is_mobile($type, "rollover.index", $res, "redirect");
         }
         //END FOR ROLLOVER ALL DATA INCLUDING ALL STUDENTS   

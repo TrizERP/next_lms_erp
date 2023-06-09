@@ -104,7 +104,7 @@
         </div>
       
 
-        @if(isset($data['result_report']))
+        @if(isset($data['result_report']) && count($data['result_report'])>0)
         @php
         $j = 1;
             if(isset($data['result_report'])){
@@ -142,62 +142,57 @@
         @endif
     </div>
 </div>
-
-<script>
-    function checkAll(ele,name) {
-         var checkboxes = document.getElementsByClassName(name);
-         if (ele.checked) {
-             for (var i = 0; i < checkboxes.length; i++) {
-                 if (checkboxes[i].type == 'checkbox') {
-                     checkboxes[i].checked = true;
-                 }
-             }
-         } else {
-             for (var i = 0; i < checkboxes.length; i++) {
-                 console.log(i)
-                 if (checkboxes[i].type == 'checkbox') {
-                     checkboxes[i].checked = false;
-                 }
-             }
-         }
-    }
-</script>
-
 @include('includes.footerJs')
 <script>
-    $(document).ready(function() {
-    var table = $('#example').DataTable( {
-         select: true,          
-         lengthMenu: [ 
-                        [100, 500, 1000, -1], 
-                        ['100', '500', '1000', 'Show All'] 
-        ],
-        dom: 'Bfrtip', 
-        buttons: [ 
-            { 
-                extend: 'pdfHtml5',
-                title: 'Inactive Student Report',
-                orientation: 'landscape',
-                pageSize: 'LEGAL',                
-                pageSize: 'A0',
-                exportOptions: {                   
-                     columns: ':visible'                             
-                },
-            }, 
-            { extend: 'csv', text: ' CSV', title: 'Inactive Student Report' }, 
-            { extend: 'excel', text: ' EXCEL', title: 'Inactive Student Report' }, 
-            { extend: 'print', text: ' PRINT', title: 'Inactive Student Report' }, 
-            'pageLength' 
-        ], 
-        }); 
-        $('#example thead tr').clone(true).appendTo( '#example thead' );
-        $('#example thead tr:eq(1) th').each( function (i) {
-            var title = $(this).text();
-            $(this).html( '<input type="text" placeholder="Search '+title+'" />' );
+    var checked = false;
+function checkedAll() {
+    if (checked == false) {
+        checked = true
+    } else {
+        checked = false
+    }
+    for (var i = 0; i < document.getElementsByName('dynamicFields[]').length; i++) {
+        document.getElementsByName('dynamicFields[]')[i].checked = checked;
+    }
+}
+</script>
+    <script>
+        $(document).ready(function () {
+            var table = $('#example').DataTable({
+                ordering: false,
+                select: true,
+                lengthMenu: [
+                    [100, 500, 1000, -1],
+                    ['100', '500', '1000', 'Show All']
+                ],
+                dom: 'Bfrtip',
+                buttons: [
+                    {
+                        extend: 'pdfHtml5',
+                        title: 'Student Report',
+                        orientation: 'landscape',
+                        pageSize: 'LEGAL',
+                        pageSize: 'A0',
+                        exportOptions: {
+                            columns: ':visible'
+                        },
+                    },
+                    {extend: 'csv', text: ' CSV', title: 'Student Report'},
+                    {extend: 'excel', text: ' EXCEL', title: 'Student Report'},
+                    {extend: 'print', text: ' PRINT', title: 'Student Report'},
+                    'pageLength'
+                ],
+            });
+            //table.buttons().container().appendTo('#example_wrapper .col-md-6:eq(0)');
 
-            $( 'input', this ).on( 'keyup change', function () {
-                if ( table.column(i).search() !== this.value ) {
-                    table
+            $('#example thead tr').clone(true).appendTo('#example thead');
+            $('#example thead tr:eq(1) th').each(function (i) {
+                var title = $(this).text();
+                $(this).html('<input type="text" placeholder="Search ' + title + '" />');
+
+                $('input', this).on('keyup change', function () {
+                    if (table.column(i).search() !== this.value) {
+                        table
                         .column(i)
                         .search( this.value )
                         .draw();
@@ -207,4 +202,3 @@
     } );
 </script>
 @include('includes.footer')
-

@@ -138,8 +138,8 @@ Route::group(['prefix' => 'student', 'middleware' => ['session', 'menu', 'logRou
     Route::post('student_certificate/show_student', ['as' => 'student_certificate.show_student', 'uses' => 'student\studentCertificateController@showStudent']);
 
     Route::post('student_certificate/show_student_certificate', [studentCertificateController::class, 'showStudentCertificate'])->name('show_student_certificate');
-    Route::post('ajax_getBatch', [tblstudentController::class, 'ajax_getBatch'])->name('ajax_getBatch');
-    Route::post('ajax_getOptionalSubject', [tblstudentController::class, 'ajax_getOptionalSubject'])->name('ajax_getOptionalSubject');
+    Route::get('ajax_getBatch', [tblstudentController::class, 'ajax_getBatch'])->name('ajax_getBatch');
+    Route::get('ajax_getOptionalSubject', [tblstudentController::class, 'ajax_getOptionalSubject'])->name('ajax_getOptionalSubject');
 
     Route::get('ajax_getHomeworkSubjects', [studentHomeworkController::class, 'ajax_getHomeworkSubjects'])->name('ajax_getHomeworkSubjects');
 
@@ -206,9 +206,9 @@ Route::post('/teacherParentcommunicationListAPI', [parentCommunicationController
 Route::post('/teacherParentcommunicationSaveAPI', [parentCommunicationController::class, 'teacherParentcommunicationSaveAPI']);
 Route::post('/studentParentcommunicationListAPI', [parentCommunicationController::class, 'studentParentcommunicationListAPI']);
 
-Route::post('ajax_checkEmailExist', [tblstudentController::Class, 'ajax_checkEmailExist'])->name('ajax_checkEmailExist');
-Route::post('ajax_checkDivisionCapacity', [tblstudentController::class, 'ajax_checkDivisionCapacity'])->name('ajax_checkDivisionCapacity');
-Route::post('ajax_StatewiseCity', [tblstudentController::class, 'ajax_StatewiseCity'])->name('ajax_StatewiseCity');
+Route::get('ajax_checkEmailExist', [tblstudentController::Class, 'ajax_checkEmailExist'])->name('ajax_checkEmailExist');
+Route::get('ajax_checkDivisionCapacity', [tblstudentController::class, 'ajax_checkDivisionCapacity'])->name('ajax_checkDivisionCapacity');
+Route::get('ajax_StatewiseCity', [tblstudentController::class, 'ajax_StatewiseCity'])->name('ajax_StatewiseCity');
 // Route::post('front_desk/leave_application/add_leave_application', function(){
 //     echo "asds";
 // });
