@@ -28,12 +28,11 @@
             @endif
 
             @php
-            $grade_id = $standard_id = $division_id = '';
             
-                if(isset($data['grade_id'])){
-                    $grade_id = $data['grade_id'];
-                    $standard_id = $data['standard_id'];
-                    $division_id = $data['division_id'];
+                if(isset($data['one_date']) && $data['one_date']=="add"){
+                    $defaultAdd = "Checked";
+                }else{
+                    $defaultStart = "Checked";
                 }
             @endphp   
             <form action="{{ route('student_strength_report.create') }}" enctype="multipart/form-data">                
@@ -44,12 +43,12 @@
 					  <label class="label" for="">Select Any One </label>
                       <div class=" form-group d-flex">
                     <div class="form-check mt-3">
-					  <input class="form-check-input" type="radio" name="one_date" value="add" id="flexRadioDefault1">
-					  <label class="form-check-label label" for="flexRadioDefault1" @if(isset($data['one_date']) && $data['one_date'] =="add" ) checked @endif> Admission Date</label>
+					  <input class="form-check-input" type="radio" name="one_date" value="add" id="flexRadioDefault1"  @if(isset($defaultAdd) ) {{ $defaultAdd }} @endif>
+					  <label class="form-check-label label" for="flexRadioDefault1"> Admission Date</label>
 					</div>
 
 					  <div class="form-check mt-3 ml-2">
-					  <input class="form-check-input" type="radio" name="one_date" value="start" id="flexRadioDefault2" @if(isset($data['one_date']) && $data['one_date'] =="start" ) checked @else checked @endif>
+					  <input class="form-check-input" type="radio" name="one_date" value="start" id="flexRadioDefault2" @if(isset($defaultStart)) {{ $defaultStart }} @endif>
 					  <label class="form-check-label label" for="flexRadioDefault2">
 					    Entry Date
 					  </label>
@@ -149,98 +148,98 @@
         <div class="card">            
             <div class="table-responsive">
                 <table id="example" class="table table-striped text-center">
-        @if(count($data['result'])>0)
-
+                    @if(count($data['result'])>0)
                     <thead>
-    <tr>
-        <th rowspan="2">Date</th>
-        <th rowspan="2">Standard</th>
-        <th rowspan="2">Total</th>
-         <!-- general -->
-        @if(isset($data['general']))
-            <th colspan="{{ count($data['general'])+1 }}"  class="text-center">General</th>
-        @endif
+                    <tr>
+                        <th rowspan="2">SR No</th>
+                        <th rowspan="2">Date</th>
+                        <th rowspan="2">Standard</th>
+                        <th rowspan="2">Total</th>
+                         <!-- general -->
+                        @if(isset($data['general']))
+                            <th colspan="{{ count($data['general'])+1 }}"  class="text-center">General</th>
+                        @endif
 
-        <!-- religion -->
-        @if(isset($data['religion']))
-            <th colspan="{{ count($data['religion'])+1 }}"  class="text-center">Religion</th>
-        @endif
+                        <!-- religion -->
+                        @if(isset($data['religion']))
+                            <th colspan="{{ count($data['religion'])+1 }}"  class="text-center">Religion</th>
+                        @endif
 
-        <!-- strength -->
-        @if(isset($data['strength']))
-            <th colspan="{{ count($data['strength'])+1 }}" class="text-center">Strength</th>
-        @endif
-        <!-- cast -->
-        @if(isset($data['cast']))
-            <th colspan="{{ count($data['cast'])+1 }}" class="text-center">Strength</th>
-        @endif
-        <!-- quota -->
-        @if(isset($data['quota']))
-            <th colspan="{{ count($data['quota'])+1 }}" class="text-center">Quota</th>
-        @endif
-    </tr>
+                        <!-- strength -->
+                        @if(isset($data['strength']))
+                            <th colspan="{{ count($data['strength'])+1 }}" class="text-center">Strength</th>
+                        @endif
+                        <!-- cast -->
+                        @if(isset($data['cast']))
+                            <th colspan="{{ count($data['cast'])+1 }}" class="text-center">Cast</th>
+                        @endif
+                        <!-- quota -->
+                        @if(isset($data['quota']))
+                            <th colspan="{{ count($data['quota'])+1 }}" class="text-center">Quota</th>
+                        @endif
+                    </tr>
     
-    <tr>
-        <!-- general -->
-        @if(isset($data['general']))
+                     <!-- general -->
+                        @if(isset($data['general']))
+                            @if(in_array("new_add",$data['general']) ) <th> New Addmission </th> @endif
+                            @if(in_array("take_lc",$data['general']) ) <th> Take LC</th> @endif
+                            <th>Total</th>
+                        @endif
 
-                @if(in_array("new_add",$data['general']) ) <th> New Addmission </th> @endif
-                @if(in_array("take_lc",$data['general']) ) <th> Take LC</th> @endif
-                <th>Total</th>
-            @endif
                     <!-- religion -->
-            @if(isset($data['religion']))
-              @foreach($data['religion'] as $key => $religionId)
-                    @if($religionId == $rel[$key]->id)
-                        <th>{{ $rel[$key]->religion_name }}</th>
-                    @endif
-                @endforeach
-                <th>Total</th>
-            @endif
-            <!-- strength -->
-            
-            @if(isset($data['strength']))
-                @foreach($data['strength'] as $strength)
-                    <th>{{ $strength }}</th>
-                @endforeach
-                <th>Total</th>
-            @endif
-            <!-- cast -->
-            @if(isset($data['cast']))
-              @foreach($data['cast'] as $key => $castId)
-                    @if($castId == $cas[$key]->id)
-                        <th>{{ $cas[$key]->caste_name }}</th>
-                    @endif
-                @endforeach
-                <th>Total</th>
-            @endif
-            <!-- quota -->
+                        @if(isset($data['religion']))
+                          @foreach($data['religion'] as $key => $religionId)
+                                @if($religionId == $rel[$key]->id)
+                                    <th>{{ $rel[$key]->religion_name }}</th>
+                                @endif
+                            @endforeach
+                            <th>Total</th>
+                        @endif
 
-            @if(isset($data['quota']))
-            @foreach($data['quota'] as $key => $quotaId)
-                @if($quotaId == $quot[$key]->id)
-                    <th>{{ $quot[$key]->title }}</th>
-                @endif
-            @endforeach
-            <th>Total</th>
-            @endif
-            
+                    <!-- strength -->
+                        @if(isset($data['strength']))
+                            @foreach($data['strength'] as $strength)
+                                <th>{{ $strength }}</th>
+                            @endforeach
+                            <th>Total</th>
+                        @endif
 
-        </tr>
-                    </thead>
-                   <tbody>
-    @php
-        $generalTotal = 0;
-      if(isset($data['religion'])){  $religionTotals =  array_fill(0, count($data['religion']), 0); }
-if(isset($data['strength'])){  $strengthTotals = array_fill(0, count($data['strength']), 0); }
-      if  (isset($data['cast'])){ $castTotals = array_fill(0, count($data['cast']), 0); }
-if(isset($data['quota'])){ $quotaTotals = array_fill(0, count($data['quota']), 0); }
-         $totalStudents = 0;
-         $mainTotal=0;
-    @endphp
+                    <!-- cast -->
+                        @if(isset($data['cast']))
+                          @foreach($data['cast'] as $key => $castId)
+                                @if($castId == $cas[$key]->id)
+                                    <th>{{ $cas[$key]->caste_name }}</th>
+                                @endif
+                            @endforeach
+                            <th>Total</th>
+                        @endif
+
+                    <!-- quota -->
+                        @if(isset($data['quota']))
+                            @foreach($data['quota'] as $key => $quotaId)
+                                @if($quotaId == $quot[$key]->id)
+                                    <th>{{ $quot[$key]->title }}</th>
+                                @endif
+                            @endforeach
+                            <th>Total</th>
+                        @endif
+                </tr>
+            </thead>
+            <tbody>
+            @php
+                $generalTotal = 0;
+                if(isset($data['religion'])){  $religionTotals =  array_fill(0, count($data['religion']), 0); }
+                if(isset($data['strength'])){  $strengthTotals = array_fill(0, count($data['strength']), 0); }
+                if (isset($data['cast'])){ $castTotals = array_fill(0, count($data['cast']), 0); }
+                if(isset($data['quota'])){ $quotaTotals = array_fill(0, count($data['quota']), 0); }
+                $totalStudents = 0;
+                $mainTotal=0;
+                $j =1;
+            @endphp
 
     @foreach($data['result'] as $key => $value)
         <tr>
+            <td>{{$j++}}</td>
             <td>{{$data['date']}}</td>
             <td>{{$value->standard_name}}@if(in_array("division", $data['standard'])) - {{$value->division_name}} @endif</td>
             <td>{{$value->total_students}}</td>
@@ -268,17 +267,17 @@ if(isset($data['quota'])){ $quotaTotals = array_fill(0, count($data['quota']), 0
             @endif
 
             <!-- strength -->
-          @if(isset($data['strength']))
-    @foreach ($data['strength'] as $gender)
-        @php
-            $genderTotal = $value->$gender ?? 0;
-            $genderIndex = ($gender == 'M') ? 0 : 1;
-            $strengthTotals[$genderIndex] += $genderTotal;
-        @endphp
-        <td>{{$genderTotal}}</td>
-    @endforeach
-    <td>{{$value->total_students}}</td>
-@endif
+             @if(isset($data['strength']))
+            @foreach ($data['strength'] as $gender)
+                @php
+                    $genderTotal = $value->$gender ?? 0;
+                    $genderIndex = ($gender == 'M') ? 0 : 1;
+                    $strengthTotals[$genderIndex] += $genderTotal;
+                @endphp
+                <td>{{$genderTotal}}</td>
+            @endforeach
+                <td>{{$value->total_students}}</td>
+            @endif
 
 
             <!-- cast -->
@@ -294,14 +293,14 @@ if(isset($data['quota'])){ $quotaTotals = array_fill(0, count($data['quota']), 0
 
             <!-- quota -->
           @if(isset($data['quota']))
-    @foreach($data['quota'] as $kee=> $quotaId)
-        @php
-            $quotaTotals[$kee] += $value->{'quota_'.$quotaId};
-        @endphp
-        <td>{{ $value->{'quota_'.$quotaId} }}</td>
-    @endforeach
-    <td>{{$value->total_students}}</td>
-@endif
+            @foreach($data['quota'] as $kee=> $quotaId)
+                @php
+                    $quotaTotals[$kee] += $value->{'quota_'.$quotaId};
+                @endphp
+                <td>{{ $value->{'quota_'.$quotaId} }}</td>
+            @endforeach
+            <td>{{$value->total_students}}</td>
+            @endif
 
 
             @php
@@ -312,7 +311,7 @@ if(isset($data['quota'])){ $quotaTotals = array_fill(0, count($data['quota']), 0
 
     <!-- Last row with totals -->
     <tr>
-        <td colspan="2">Total</td>
+        <td colspan="3">Total</td>
         <td>{{$mainTotal}}</td>
         <!-- general totals -->
         @if(isset($data['general']))
