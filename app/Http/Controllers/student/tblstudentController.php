@@ -513,7 +513,7 @@ class tblstudentController extends Controller
 
         if ($std_id != "" && $div_id != "") {
             $batchData = batchModel::where([
-                'sub_institute_id' => $sub_institute_id, 'standard_id' => $std_id, 'division_id' => $div_id,
+                'sub_institute_id' => $sub_institute_id, 'standard_id' => $std_id, 'division_id' => $div_id, 'syear' => $syear,
             ])
                 ->get()->toArray();
         }
@@ -1154,8 +1154,9 @@ END as color_code
 		$div_id = $request->input("div_id");
 		$std_id = $request->input("std_id");
 		$sub_institute_id = $request->session()->get("sub_institute_id");
+        $syear = $request->session()->get("syear");
 
-		$batchData = batchModel::where(['sub_institute_id' => $sub_institute_id, 'standard_id' => $std_id, 'division_id' => $div_id])
+		$batchData = batchModel::where(['sub_institute_id' => $sub_institute_id, 'standard_id' => $std_id, 'division_id' => $div_id, 'syear' => $syear])
 			->get()->toArray();
 
 		return $batchData;
