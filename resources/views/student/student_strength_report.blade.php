@@ -12,7 +12,7 @@
     <div class="container-fluid">
         <div class="row">
             <div class="col-lg-3 col-md-4 col-sm-4 col-xs-12">
-                <h4 class="page-title">Student Strength Report</h4>
+                <h4 class="page-title">Student Strength Report1</h4>
             </div>
         </div>        
         <div class="card">
