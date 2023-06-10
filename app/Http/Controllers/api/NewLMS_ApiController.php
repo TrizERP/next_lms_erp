@@ -20,6 +20,7 @@ use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Validator;
 use function App\Helpers\is_mobile;
 use function App\Helpers\sendSMS;
+use Illuminate\Support\Facades\Storage;
 
 
 class NewLMS_ApiController extends Controller
@@ -226,13 +227,9 @@ class NewLMS_ApiController extends Controller
 // pre load institute data
     public function Preload_institute(Request $request){
          if ($request->has('preload_btn')) {
-        // Preload button was clicked
                return $this->preload_data($request);
-            // Perform the necessary actions for the preload scenario
         } elseif ($request->has('institute_btn')) {
-            // Institute button was clicked
             return $this->show_add_institute($request);
-            // Perform the necessary actions for the institute scenario
         }
     }
 
@@ -330,7 +327,7 @@ class NewLMS_ApiController extends Controller
     }
     public function add_institute(Request $request){
         $type = " ";
-        if($request->hasFile('file_input')){
+    if($request->hasFile('file_input')){
         // echo "file"; exit;
         
         $file = $request->file('file_input');
@@ -340,10 +337,16 @@ class NewLMS_ApiController extends Controller
 
         // Example: Get the file extension
         $fileExtension = $file->getClientOriginalExtension();
+
+        //add logo in public folder /admin_dep/images/
+        $destinationPath = public_path().'/admin_dep/images/' ;
+        $file->storeAs('public/user/',$fileName);
+        $file->move($destinationPath,$fileName);
+
     }else{
         $fileName ='';
-       
-        }
+    }
+        // exit;
             $new_index = ['PRE_PRI', 'PRI', 'SEC', 'HSEC'];
             $selectedRadios = $request->input('exampleRadios');
             $mobile = $request->input('mobile');
@@ -378,7 +381,7 @@ class NewLMS_ApiController extends Controller
                 // END STEP 1 -> INSERT INTO tblclient table
 
                 // START STEP 2 -> INSERT INTO school_setup table
-                $sub_institute_id = $this->INSERT_SCHOOLSETUP($data, $client_id);
+                $sub_institute_id = $this->INSERT_SCHOOLSETUP($data, $client_id,$fileName);
                 // END STEP 2 -> INSERT INTO school_setup table
 
                 // START STEP 3 -> INSERT INTO tbluserprofilemaster table
@@ -509,7 +512,7 @@ class NewLMS_ApiController extends Controller
         return DB::getPdo()->lastInsertId();
     }
 
-    public function INSERT_SCHOOLSETUP($data, $client_id)
+    public function INSERT_SCHOOLSETUP($data, $client_id,$filename)
     {
         $contact_person = $data->first_name.' '.$data->last_name;
         $data = [
@@ -521,6 +524,7 @@ class NewLMS_ApiController extends Controller
             'created_at'    => now(),
             'updated_at'    => now(),
             'client_id'     => $client_id,
+            'logo'          => $filename,
             'is_lms'        => 'N',
             'syear'         => date('Y'),
             'expire_date'   => date('Y-m-d', strtotime(date('Y-m-d').' + 1 months')),
