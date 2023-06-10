@@ -386,4 +386,3 @@ Route::group(['middleware' => ['session', 'menu', 'logRoute']], function () {
 
     Route::resource('books', BookController::class);
 });
-
