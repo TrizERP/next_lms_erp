@@ -768,7 +768,7 @@ h5.modal-title{
 }
 .modal-radio-design label:before{
 	content: '';
-	background-image: url(../images/purple-check-icon.svg);
+	background-image: url(../Images/purple-check-icon.svg);
 	background-position: center;
 	background-size: contain;
 	position: absolute;

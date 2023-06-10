@@ -135,7 +135,7 @@
                     <div class="modal-dialog modal-dialog-centered">
                         <div class="modal-content">
                             <div class="modal-header justify-content-center border-0 pb-0">
-                                <h5 class="modal-title" id="select-board">Choose Section</h5>
+                                <h5 class="modal-title" id="select-board">Choose Board</h5>
                             </div>
 
                             <div class="modal-body board-list">
