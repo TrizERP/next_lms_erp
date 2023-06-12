@@ -1,1 +1,0 @@
-{"result":{"text":"s u m space ϖ"},"status":"ok"}
