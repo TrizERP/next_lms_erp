@@ -60,7 +60,6 @@
 					<div class="col-md-4 form-group mt-3">
 					  <label  class="label"for="">Standard</label>
 						<select class="form-select form-control" multiple aria-label="multiple select" name="standard_wise[]" required>
-						  <option value="">Select One Option</option>
 						  <option value="standard" @if(isset($data['standard']) && in_array("standard",$data['standard']) ) selected @endif>Standard Wise</option>
 						  <option value="division" @if(isset($data['standard']) && in_array("division",$data['standard']) ) selected @endif>Division Wise</option>
 						</select>
@@ -74,7 +73,6 @@
                     <div class="col-md-4 form-group mt-3">
                       <label class="label" for="">General</label>
                         <select class="form-select form-control" multiple aria-label="multiple select" name="general[]">
-                          <option value="">Select One Option</option>
                           <option value="new_add" @if(isset($data['general']) && in_array("new_add",$data['general']) ) selected @endif>New Admission</option>
                           <option value="take_lc" @if(isset($data['general']) && in_array("take_lc",$data['general']) ) selected @endif>Take LC</option>
                         </select>
@@ -83,7 +81,6 @@
                     <div class="col-md-4 form-group mt-3">
                       <label class="label" for="">Strength</label>
                         <select class="form-select form-control" multiple aria-label="multiple select" name="strength[]">
-                          <option value="">Select One Option</option>
                           <option value="M" @if(isset($data['strength']) && in_array("M",$data['strength']) ) selected @endif>Boy</option>
                           <option value="F" @if(isset($data['strength']) && in_array("F",$data['strength']) ) selected @endif>Girl</option>
                         </select>
@@ -92,7 +89,6 @@
                     <div class="col-md-4 form-group mt-3">
                       <label class="label" for="">Religion</label>
                         <select class="form-select form-control" multiple aria-label="multiple select" name="religion[]">
-                          <option value="">Select One Option</option>
                           {{$religions = DB::table('religion')->get(); }}
                           @foreach($religions as $key => $religion)
                           <option value="{{$religion->id}}" @if(isset($data['religion']) && in_array($religion->id,$data['religion']) ) selected @endif>{{$religion->religion_name}}</option>
@@ -103,7 +99,6 @@
                     <div class="col-md-4 form-group mt-3">
                       <label class="label" for="">Cast</label>
                         <select class="form-select form-control" multiple aria-label="multiple select" name="cast[]">
-                          <option value="">Select One Option</option>
                           {{$casts = DB::table('caste')->get(); }}
                           @foreach($casts as $key => $cast)
                           <option value="{{$cast->id}}" @if(isset($data['cast']) && in_array($cast->id,$data['cast']) ) selected @endif>{{$cast->caste_name}}</option>
@@ -115,7 +110,6 @@
                     <div class="col-md-4 form-group mt-3">
                       <label class="label" for="">Quota</label>
                         <select class="form-select form-control" multiple aria-label="multiple select" name="quota[]">
-                          <option value="">Select One Option</option>
                           {{$quotas = DB::table('student_quota')->where('sub_institute_id',session()->get('sub_institute_id'))->get(); }}
                           @foreach($quotas as $key => $quota)
                           <option value="{{$quota->id}}" @if(isset($data['quota']) && in_array($quota->id,$data['quota']) ) selected @endif>{{$quota->title}}</option>

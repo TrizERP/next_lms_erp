@@ -155,8 +155,8 @@ $res['result'] = $query->get();
         ->where('standard.name', '!=', 'Nursery')
         ->orWhere('standard.name', '1');
        // Add group by date, standard, and division
-$query->groupBy('standard.name', 'division.name');
-$query->orderByRaw('standard.id,division.id');
+        $query->groupBy('standard.name', 'division.name');
+        $query->orderByRaw('standard.id,division.id');
         // Filter by start_date or admission_date
         if ($request['one_date'] === 'start') {
             $query->whereDate('tblstudent_enrollment.start_date', date('y-m-d', strtotime($request['get_date'])));

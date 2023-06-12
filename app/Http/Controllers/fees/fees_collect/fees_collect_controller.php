@@ -57,7 +57,7 @@ class fees_collect_controller extends Controller
 
         $school_data['data'] = [];
         $type = $request->input('type');
-
+   
         return is_mobile($type, "fees/fees_collect/show", $school_data, "view");
     }
 
@@ -258,7 +258,7 @@ class fees_collect_controller extends Controller
      */
     public function pay_fees(Request $request)
     {
-       // echo "<pre>";print_r($_REQUEST['fees_data']);
+    //    return $_REQUEST['months'];exit;
 
         $fees_data = [];
         foreach ($_REQUEST['fees_data'] as $id => $arr) {
@@ -673,6 +673,7 @@ class fees_collect_controller extends Controller
     {
 
         $res = $this->pay_fees($request);
+        // return $res;exit;
         $res['standard_id'] = $request->standard_id;
         $type = $request->input('type');
 
@@ -788,7 +789,7 @@ class fees_collect_controller extends Controller
         $discount_field = "";
         $total_field = "";
 
-        $fine_data = $_REQUEST['fine_data'];
+        $fine_data = $_REQUEST['fine_data'] ?? [];
         foreach ($fine_data as $id => $val) {
             if ($val == 0) {
                 unset($fine_data[$id]);

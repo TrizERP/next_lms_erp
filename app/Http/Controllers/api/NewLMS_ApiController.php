@@ -20,6 +20,7 @@ use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Validator;
 use function App\Helpers\is_mobile;
 use function App\Helpers\sendSMS;
+use Illuminate\Support\Facades\Storage;
 
 
 class NewLMS_ApiController extends Controller
@@ -226,13 +227,9 @@ class NewLMS_ApiController extends Controller
 // pre load institute data
     public function Preload_institute(Request $request){
          if ($request->has('preload_btn')) {
-        // Preload button was clicked
                return $this->preload_data($request);
-            // Perform the necessary actions for the preload scenario
         } elseif ($request->has('institute_btn')) {
-            // Institute button was clicked
             return $this->show_add_institute($request);
-            // Perform the necessary actions for the institute scenario
         }
     }
 
@@ -330,20 +327,37 @@ class NewLMS_ApiController extends Controller
     }
     public function add_institute(Request $request){
         $type = " ";
-        if($request->hasFile('file_input')){
-        // echo "file"; exit;
+        if ($request->has('cropped_image')) {
+            $croppedImage = $request->input('cropped_image');
         
-        $file = $request->file('file_input');
-        // $path = $file->store('public');
+            // Generate a unique file name
+            $fileName = time() . '.webp';
+        
+            // Decode the base64 image data
+            $imageData = file_get_contents($croppedImage);
+        
+            // Specify the image storage path
+            $imagePath = public_path('admin_dep/images/' . $fileName);
+        
+            // Store the image file
+            file_put_contents($imagePath, $imageData);
+        
+            Storage::disk('public')->put('user/' . $fileName, $imageData);
 
-        $fileName = $file->getClientOriginalName();
-
-        // Example: Get the file extension
-        $fileExtension = $file->getClientOriginalExtension();
-    }else{
-        $fileName ='';
-       
+            // Retrieve the stored image URL
+            // $imageUrl = Storage::disk('public')->url('admin_dep/images/' . $fileName);
+        
+            // Retrieve the stored image URL
+            // $imageUrl = asset('admin_dep/images/' . $fileName);
+        
+            // Display the image
+            // echo "<img src='".$imageUrl."' >";
+        } else {
+            $fileName = ' ';
         }
+        
+        //  echo "<img src='".$imageUrl ."' >";
+        // exit;
             $new_index = ['PRE_PRI', 'PRI', 'SEC', 'HSEC'];
             $selectedRadios = $request->input('exampleRadios');
             $mobile = $request->input('mobile');
@@ -378,7 +392,7 @@ class NewLMS_ApiController extends Controller
                 // END STEP 1 -> INSERT INTO tblclient table
 
                 // START STEP 2 -> INSERT INTO school_setup table
-                $sub_institute_id = $this->INSERT_SCHOOLSETUP($data, $client_id);
+                $sub_institute_id = $this->INSERT_SCHOOLSETUP($data, $client_id,$fileName);
                 // END STEP 2 -> INSERT INTO school_setup table
 
                 // START STEP 3 -> INSERT INTO tbluserprofilemaster table
@@ -509,7 +523,7 @@ class NewLMS_ApiController extends Controller
         return DB::getPdo()->lastInsertId();
     }
 
-    public function INSERT_SCHOOLSETUP($data, $client_id)
+    public function INSERT_SCHOOLSETUP($data, $client_id,$filename)
     {
         $contact_person = $data->first_name.' '.$data->last_name;
         $data = [
@@ -521,6 +535,7 @@ class NewLMS_ApiController extends Controller
             'created_at'    => now(),
             'updated_at'    => now(),
             'client_id'     => $client_id,
+            'logo'          => $filename,
             'is_lms'        => 'N',
             'syear'         => date('Y'),
             'expire_date'   => date('Y-m-d', strtotime(date('Y-m-d').' + 1 months')),

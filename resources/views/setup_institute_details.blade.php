@@ -21,21 +21,15 @@
 </head>
 
 <body>
-    <!-- Header -->
-    <div class="header-log">
-        <div class="headr-logo">
-            <a href="#">
-                <img src="{{asset('Images/logo.png')}}">
-            </a>
-        </div>
-    </div>
+@include('includes.headcss')
+@include('includes.header')
     <!-- Setup Your Details -->
     <!-- Add jQuery library -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 
     <!-- Setup Your Details -->
-    <section class="setup-table" style="width:auto !important;margin-left: 0px !important">
-        <div class="container" style="margin-left:20px !important;margin-right:20px !important">
+    <section class="content-main" style="width:100% !important;padding:100px 140px 0px 140px !important">
+        <div class="container-fluid">
             <div class="page-title">
                 <h1 class="text-center  mt-4">Menu plan</h1>
             </div>
@@ -59,8 +53,8 @@
                 @foreach ($data['head'] as $key => $value)
                 @if ($value['menu_title'] != '')
                 <div class="col-md-4">
-                    <div class="card">
-                        <a style="color:#black;font-size:1rem;" data-bs-toggle="collapse"
+                    <div class="card" style="margin:2px !important;padding:0px !important  ">
+                        <a style="color:#black;font-size:1rem;width:100% !important" data-bs-toggle="collapse"
                             href="#collapseExample-{{str_replace(' ', '_', $value['menu_title'])}}"
                             aria-expanded="false" aria-controls="collapseExample"
                             class="btn btn-outline-dark collapse-btn">{{$value['menu_title']}}</a>
@@ -73,8 +67,8 @@
 
                 @foreach ($extra_menu as $key => $value)
                 <div class="col-md-4">
-                    <div class="card">
-                        <a style="color:#black;font-size:1rem;" 
+                    <div class="card" style="margin:2px !important;padding:0px !important">
+                        <a style="color:#black;font-size:1rem;;width:100% !important" 
                             href="{{$value['link']}}" target="_blank" class="btn btn-outline-dark">{{$value['menu_title']}}</a>
                         <!-- </thead> -->
                     </div>
@@ -97,10 +91,10 @@
             @foreach ($data['head'] as $key => $value)
 
             <div class="m-4 collapse-main panel-collapse collapse" role="tabpanel" aria-labelledby="headingOne"
-                id="collapseExample-{{str_replace(' ', '_', $value['menu_title'])}}">
+                id="collapseExample-{{str_replace(' ', '_', $value['menu_title'])}}"  >
                 <div class="collapse-hide">
-                    <h4 class="text-center">{{$value['menu_title']}}</h4>
-                    <div class="card card-body need-card mt-2" style="padding:0px !important;">
+                    <h4 class="text-center fw-bolder" style="color:#5C4AC7;">{{$value['menu_title']}}</h4>
+                    <div class="card card-body need-card mt-2" style="padding:0px !important;" style="border :1px solid #ddd !important;">
                         <a data-bs-toggle="collapse"
                             href="#collapseExample-Master-{{str_replace(' ', '_', $value['menu_title'])}}"
                             aria-expanded="false" aria-controls="collapseExample-Master">
@@ -114,13 +108,12 @@
                     </div>
                     <!-- master -->
                     @if(!empty($data['groupwisemenuMaster'][$value['menu_title']]))
-                    <div class="collapse" id="collapseExample-Master-{{str_replace(' ', '_', $value['menu_title'])}}"
-                        style="border :1px solid #ddd !important;">
+                    <div class="collapse" id="collapseExample-Master-{{str_replace(' ', '_', $value['menu_title'])}}">
                         @php $i =1 ; @endphp
                         @foreach($data['groupwisemenuMaster'][$value['menu_title']] as $masterKey => $master)
                         @if ($master['link'] == 'javascript:void(0);' || $master['link'] == '')
                         @else
-                        <div class="card card-body need-card border-0" style="padding:4px !important">
+                        <div class="card card-body need-card border-0" style="padding:4px !important;margin:0px !important;border-radius:0px !important;box-shadow:0 0 0 rgb(0 0 0 / 0%) !important;">
                             <a href="@if(Route::has($master['link'])){{route($master['link'])}}@else # @endif" target="_blank">
                                 <div class="main" style="display:flex;">
                                     <div class="text">{{$master['name']}}
@@ -139,9 +132,8 @@
                         @endforeach
                     </div>
                     @else
-                    <div class="collapse" id="collapseExample-Master-{{str_replace(' ', '_', $value['menu_title'])}}"
-                        style="border :1px solid #ddd !important;">
-                        <div class="card card-body need-card border-0 " style="padding:4px !important">
+                    <div class="collapse" id="collapseExample-Master-{{str_replace(' ', '_', $value['menu_title'])}}" >
+                        <div class="card card-body need-card border-0 "  style="padding:4px !important;margin:0px !important;border-radius:0px !important;box-shadow:0 0 0 rgb(0 0 0 / 0%) !important;">
                         <div class="text text-danger">
                         <img src="{{asset('/Images/close-square-icon.svg')}}"> There is no required for Master Setup
                         </div>
@@ -164,15 +156,14 @@
 
                     <!-- entry -->
                     @if(!empty($data['groupwisesubmenuMaster'][$value['menu_title']]))
-                    <div class="collapse" id="collapseExample-Entry-{{str_replace(' ', '_', $value['menu_title'])}}"
-                        style="border:1px solid #ddd !important;">
+                    <div class="collapse" id="collapseExample-Entry-{{str_replace(' ', '_', $value['menu_title'])}}">
                         @php $i =1 ; @endphp
                         @foreach($data['groupwisesubmenuMaster'][$value['menu_title']] as $enrtyKey => $entry)
 
                         @if ($entry['link'] == 'javascript:void(0);' || $entry['link'] == '')
 
                         @else
-                        <div class="card card-body need-card border-0" style="padding:4px !important">
+                        <div class="card card-body need-card border-0"  style="padding:4px !important;margin:0px !important;border-radius:0px !important;box-shadow:0 0 0 rgb(0 0 0 / 0%) !important;" >
                             <a href="{{route($entry['link'])}}" target="_blank">
                                 <div class="main" style=" display:flex;">
                                     <div class="text">{{$entry['name']; }}
@@ -190,9 +181,8 @@
                         @endforeach
                     </div>
                     @else
-                    <div class="collapse" id="collapseExample-Entry-{{str_replace(' ', '_', $value['menu_title'])}}"
-                        style="border :1px solid #ddd !important;">
-                        <div class="card card-body need-card border-0" style="padding:4px !important">
+                    <div class="collapse" id="collapseExample-Entry-{{str_replace(' ', '_', $value['menu_title'])}}">
+                        <div class="card card-body need-card border-0"  style="padding:4px !important;margin:0px !important;border-radius:0px !important;box-shadow:0 0 0 rgb(0 0 0 / 0%) !important;">
                         <div class="text text-danger">
                         <img src="{{asset('/Images/close-square-icon.svg')}}"> There is no required for Entry
                         </div>
@@ -216,14 +206,13 @@
 
                     <!-- report -->
                     @if(!empty($data['groupwiseSubsubmenuMaster'][$value['menu_title']]))
-                    <div class="collapse" id="collapseExample-Report-{{str_replace(' ', '_', $value['menu_title'])}}"
-                        style="border:1px solid #ddd !important;">
+                    <div class="collapse" id="collapseExample-Report-{{str_replace(' ', '_', $value['menu_title'])}}">
                         @php $i =1 ; @endphp
                         @foreach($data['groupwiseSubsubmenuMaster'][$value['menu_title']] as $reportKey => $report)
                         @if ($report['link'] == 'javascript:void(0);' || $report['link'] == '')
 
                         @else
-                        <div class="card card-body need-card border-0" style="padding:4px !important">
+                        <div class="card card-body need-card border-0"  style="padding:4px !important;margin:0px !important;border-radius:0px !important;box-shadow:0 0 0 rgb(0 0 0 / 0%) !important;">
                             <a href="{{route($report['link'])}}" target="_blank">
                                 <div class="main" style=" display:flex;">
                                     <div class="text">{{$report['name']; }}
@@ -241,9 +230,8 @@
                         @endforeach
                     </div>
                     @else
-                    <div class="collapse" id="collapseExample-Report-{{str_replace(' ', '_', $value['menu_title'])}}"
-                        style="border :1px solid #ddd !important;">
-                        <div class="card card-body need-card border-0" style="padding:4px !important">
+                    <div class="collapse" id="collapseExample-Report-{{str_replace(' ', '_', $value['menu_title'])}}">
+                        <div class="card card-body need-card border-0"  style="padding:4px !important;margin:0px !important;border-radius:0px !important;box-shadow:0 0 0 rgb(0 0 0 / 0%) !important;">
                         <div class="text text-danger">
                         <img src="{{asset('/Images/close-square-icon.svg')}}"> There is no required for Report 
                         </div>
@@ -285,10 +273,7 @@
     width: 20px;
 }
 
-.collapse-btn:focus {
-    background: black;
-    color: white;
-}
+
 
 .number {
     background: #5C4AC7;
