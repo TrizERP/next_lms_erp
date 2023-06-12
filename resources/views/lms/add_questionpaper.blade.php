@@ -327,13 +327,13 @@ br{
                                     </tr>
                                 </thead>
                                 <tbody>   
-            
-            @php 
-                $j = 0; 
-            if(isset($data['questionpaper_data'])){
-                $ids = explode(',',$data['questionpaper_data']['question_ids']);
-            }
-            @endphp
+                                    
+                                    @php 
+                                        $j = 0; 
+                                    if(isset($data['questionpaper_data'])){
+                                        $ids = explode(',',$data['questionpaper_data']['question_ids']);
+                                    }
+                                    @endphp
 
 
                                 @foreach($data['questionData'] as $key=> $data2)

@@ -764,6 +764,7 @@ public function search_question($all_data){
         //     AS a
         //     ".$outer_extra."
         //     ";
+        // DB::EnableQueryLog();
         $questionData = DB::table(function ($query) use ($std_id, $sub_id, $sub_institute_id, $extra, $outer_extra) {
         $query->select('qm.id', 'question_title', 'points', 't.question_type', DB::raw("ifnull(GROUP_CONCAT(DISTINCT(am.answer)),'-') AS correct_answer"), 'c.chapter_name', 'c.sort_order', 'tm.name as topic_name', DB::raw("GROUP_CONCAT(lqm.mapping_type_id) as mapping_type"), DB::raw("GROUP_CONCAT(lqm.mapping_value_id) as mapping_value"))
             ->from('lms_question_master as qm')
@@ -786,6 +787,7 @@ public function search_question($all_data){
     ->select('*')
     ->orderByRaw($outer_extra)
     ->get();
+    // dd(DB::getQueryLog($questionData));
         // $questionData = DB::select($sql);
         $questionData = json_decode(json_encode($questionData), true);
         // return $sql;exit;
@@ -882,8 +884,8 @@ public function search_question($all_data){
         if(isset($all_data['question_ids'])){
         $res['questionpaper_data']['question_ids'] = $all_data['question_ids'];
         }
-
-        // echo "<pre>";print_r($all_data['question_ids']);exit;
+        // <img alt="" src="https://erp.triz.co.in/lms_editor_upload/2736ch-3 1.jpg" style="width: 500px; height: 111px;" />
+        // echo "<pre>";print_r($res['questionData']);exit;
         return is_mobile($type, "lms/add_questionpaper", $res, "view");
 
         // return view('lms.add_questionpaper')->with("questionData",$questionData);

@@ -181,9 +181,9 @@
                                                             @php
                                                                 echo $disabled;
                                                             @endphp>
+                                                            <!-- removed name attribute -->
                                                         @if( isset($feesDetails[$val]) && $feesDetails[$val] == 0 )
-                                                            <input type="hidden" name="months[<?php echo $id; ?>]"
-                                                                   value="<?= $id ?>">
+                                                            <input type="hidden" value="<?= $id ?>">
                                                         @endif
                                                         <label for="<?php echo $id; ?>"><?php echo $val; ?></label>
                                                     </div>
