@@ -327,25 +327,36 @@ class NewLMS_ApiController extends Controller
     }
     public function add_institute(Request $request){
         $type = " ";
-    if($request->hasFile('file_input')){
-        // echo "file"; exit;
+        if ($request->has('cropped_image')) {
+            $croppedImage = $request->input('cropped_image');
         
-        $file = $request->file('file_input');
-        // $path = $file->store('public');
+            // Generate a unique file name
+            $fileName = time() . '.webp';
+        
+            // Decode the base64 image data
+            $imageData = file_get_contents($croppedImage);
+        
+            // Specify the image storage path
+            $imagePath = public_path('admin_dep/images/' . $fileName);
+        
+            // Store the image file
+            file_put_contents($imagePath, $imageData);
+        
+            Storage::disk('public')->put('user/' . $fileName, $imageData);
 
-        $fileName = $file->getClientOriginalName();
-
-        // Example: Get the file extension
-        $fileExtension = $file->getClientOriginalExtension();
-
-        //add logo in public folder /admin_dep/images/
-        $destinationPath = public_path().'/admin_dep/images/' ;
-        $file->storeAs('public/user/',$fileName);
-        $file->move($destinationPath,$fileName);
-
-    }else{
-        $fileName ='';
-    }
+            // Retrieve the stored image URL
+            // $imageUrl = Storage::disk('public')->url('admin_dep/images/' . $fileName);
+        
+            // Retrieve the stored image URL
+            // $imageUrl = asset('admin_dep/images/' . $fileName);
+        
+            // Display the image
+            // echo "<img src='".$imageUrl."' >";
+        } else {
+            $fileName = ' ';
+        }
+        
+        //  echo "<img src='".$imageUrl ."' >";
         // exit;
             $new_index = ['PRE_PRI', 'PRI', 'SEC', 'HSEC'];
             $selectedRadios = $request->input('exampleRadios');
