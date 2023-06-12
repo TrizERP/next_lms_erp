@@ -39,6 +39,8 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.3.200/pdf.js"></script>
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
 <script>
+$(document).ready(function() {
+
 document.onmousedown = function (e) {                     
         //Check the Mouse Button which is clicked.
         if (e.which == 3) {
@@ -55,7 +57,7 @@ document.onkeydown = function (e) {
             //If the Button is middle or right then disable.
             return false;
         // }
-    // return false;
+    // return false;    
 }
 window.onload = function() {
     
@@ -100,5 +102,7 @@ window.onload = function() {
             });
       }
   }
+});
+
 </script>
 @include('includes.footer')

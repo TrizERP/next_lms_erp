@@ -83,6 +83,14 @@ class Handler extends ExceptionHandler
      */
     public function render($request, Exception|Throwable $exception)
     {
+        $errorLog = storage_path('logs/laravel.log');
+        // $errorFound = $errorLog;
+        // $errorFound =strpos(file_get_contents($errLog),'Error(code: 0)');
+        // return $errorFound;exit;    
+        // if ($errorFound) {
+            // return redirect('/dashboard');
+        // }
+
         if ($this->isHttpException($exception)) {
             if ($exception->getStatusCode() == 404) {
                 return response()->view('errors.'.'404', [], 404);
