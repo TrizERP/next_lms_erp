@@ -1231,6 +1231,7 @@ class fees_collect_controller extends Controller
 
             $father_name = $_REQUEST['father_name'] ?? '-';
             $mother_name = $_REQUEST['mother_name'] ?? '-';
+            $roll_no = $_REQUEST['roll_no'] ?? '-';
             $medium = $_REQUEST['medium'] ?? '-';
             $uniqueid = $_REQUEST['uniqueid'] ?? '-';
             $enrollment = $_REQUEST['enrollment'] ?? '-';
@@ -1265,6 +1266,7 @@ class fees_collect_controller extends Controller
             $html_content = str_replace(htmlspecialchars("<<student_name_value>>"), $_REQUEST['full_name'],
                 $html_content);
             $html_content = str_replace(htmlspecialchars("<<student_enrollment_value>>"), $enrollment, $html_content);
+            $html_content = str_replace(htmlspecialchars("<<student_roll_value>>"), $roll_no, $html_content);
             $html_content = str_replace(htmlspecialchars("<<student_father_name>>"), $father_name, $html_content);
             $html_content = str_replace(htmlspecialchars("<<student_mother_name>>"), $mother_name, $html_content);
             $html_content = str_replace(htmlspecialchars("<<student_standard_value>>"), $_REQUEST['std_div'],
@@ -1979,6 +1981,7 @@ class fees_collect_controller extends Controller
         $stu_detail = [
             "student_id"                    => $reg_bk_off[0]->student_id,
             "enrollment"                    => $reg_bk_off[0]->enrollment_no,
+            "roll_no"                       => $reg_bk_off[0]->roll_no,
             "name"                          => $reg_bk_off[0]->first_name." ".$reg_bk_off[0]->middle_name." ".$reg_bk_off[0]->last_name,
             "stddiv"                        => $reg_bk_off[0]->standard_name."/".$reg_bk_off[0]->division_name,
             "admission"                     => $reg_bk_off[0]->admission_year,
