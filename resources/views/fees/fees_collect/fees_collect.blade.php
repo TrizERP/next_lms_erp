@@ -256,8 +256,8 @@
 
 												<tr>
 													<td style="width: 10%">
-														<input type="checkbox" name="" id="" <?=( isset($val[ 'mandatory']) && $val[ 'mandatory']) ?
-														 'checked' : '' ?>>
+														<input type="checkbox" name="" id="" <?=( isset($val[ 'mandatory']) && $val[
+														 'mandatory']) ? 'checked' : '' ?>>
 													</td>
 													<td style="width: 20%">
 														<?= $id ?>
@@ -339,19 +339,23 @@
 										<td>Fine(Include Cheque return charges)</td>
 										<td></td>
 										<td>
+											@if(in_array(session()->get('sub_institute_id'),$sub_institute_id) && date('d') >= 5 && $total_amt!=0)
 
-											<input type="input" name="fees_data[fine]" id="cheque_return_charges" class="form-control cheque_return_charges1" value=" @if(in_array(session()->get('sub_institute_id'),$sub_institute_id) && date('d') >= 5 && $total_amt!=0) 100 @else @php if(isset($cheque_return_charges0)) echo $cheque_return_charges0; @endphp @endif"
-											 @if(in_array(session()->get('sub_institute_id'),$sub_institute_id) && date('d') >= 5 && $total_amt!=0) @else readonly="readonly" @endif>
-
-											<input type="hidden" name="hidden_cheque_return_charges" id="hidden_cheque_return_charges" class="form-control cheque_return_charges1"
-											 value=" @if(in_array(session()->get('sub_institute_id'),$sub_institute_id) && date('d') >= 5 && $total_amt!=0)100@else @php if(isset($cheque_return_charges0)) echo $cheque_return_charges0; @endphp @endif">
+											<input type="text" name="fees_data[fine]" id="cheque_return_charges1" class="form-control cheque_return_charges1" value="100" >
+											<!-- <input type="hidden" name="hidden_cheque_return_charges"
+                                                               id="hidden_cheque_return_charges" class="form-control"
+                                                               value="@if(isset($cheque_return_charges) && $cheque_return_charges>0){{ $cheque_return_charges}};@else {{$data['cheque_return_charges'][0]}} @endif"> -->
+											<input type="hidden" name="hidden_cheque_return_charges" id="hidden_cheque_return_charges" class="form-control cheque_return_charges1" value="100"> @else
+											<input type="text" name="fees_data[fine]" id="cheque_return_charges" class="form-control" value="@php if(isset($cheque_return_charges0)) echo $cheque_return_charges0; @endphp"
+											 readonly="readonly">
+											<input type="hidden" name="hidden_cheque_return_charges" id="hidden_cheque_return_charges" class="form-control" value="@if(isset($cheque_return_charges0)){{$cheque_return_charges0}}@endif"> @endif
 										</td>
 									</tr>
 
 									<?php
                                             // START 30-12-2021 Added for include cheque return charges in grand total
 
-                                            if (!in_array(session()->get('sub_institute_id'),$sub_institute_id) && isset($cheque_return_charges) && $cheque_return_charges != '') {
+                                            if (isset($cheque_return_charges) && $cheque_return_charges != '') {
                                                 $grand_total_with_cheque_charges = $data['final_fee']['Total'] + $cheque_return_charges;
                                             } else {
                                                 $grand_total_with_cheque_charges = $data['final_fee']['Total'];
@@ -616,49 +620,32 @@
 
 			// END 30-12-2021 Added for total fine in grandtotal
 
-			// function calculateTotal() {
-			//     tot = parseFloat($("#totalVal").val());
-			//     fin = parseFloat($("#totalFin").val());
-			//     dis = parseFloat($("#totalDis").val());
-			//     cheque_return_charges = $("#cheque_return_charges").val();
-			//     if (dis > tot && dis != 0) {
-			//         alert("Discount Can Not Be More Then Total Amount.");
-			//         $("#discount").val(0);
-			//         $("#totalDis").val(0)
-			//     } else {
-			//         if (isNaN(dis)) {
-			//         } else {
-			//             tot = (tot - dis) + fin;
-			//         }
-			//         tot = tot + parseFloat(cheque_return_charges);
-			//         $("#grandTotal").val(tot);
-			//     }
-			// }
 			function calculateTotal() {
-				let tot = parseFloat($("#totalVal").val());
-				let fin = parseFloat($("#totalFin").val());
-				let dis = parseFloat($("#totalDis").val());
-				let cheque_return_charges = parseFloat($("#cheque_return_charges").val());
+				tot = parseFloat($("#totalVal").val());
+				fin = parseFloat($("#totalFin").val());
+				dis = parseFloat($("#totalDis").val());
+				if({{session()->get('sub_institute_id')}} == 257){
+					cheque_return_charges = $("#cheque_return_charges1").val();
+				}else{
+					cheque_return_charges = $("#hidden_cheque_return_charges").val();
+				}
 
-				if (dis > tot && dis !== 0) {
-					alert("Discount cannot be more than the total amount.");
+				if (dis > tot && dis != 0) {
+					alert("Discount Can Not Be More Then Total Amount.");
 					$("#discount").val(0);
-					$("#totalDis").val(0);
+					$("#totalDis").val(0)
 				} else {
-					if (!isNaN(dis)) {
+					if (isNaN(dis)) {} else {
 						tot = (tot - dis) + fin;
 					}
-					tot += cheque_return_charges;
+					tot = tot + parseFloat(cheque_return_charges);
 					$("#grandTotal").val(tot);
 				}
 			}
-
 			$(document).on('change', '.cheque_return_charges1', function() {
 
 				calculateTotal();
 			});
-
-
 
 			function sh_bankDetail(selectedVal) {
 				if (selectedVal == 'Cash') {
