@@ -9,6 +9,9 @@ use Illuminate\Http\Response as ResponseAlias;
 use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\NotFoundExceptionInterface;
 use Throwable;
+use Illuminate\Support\Facades\File;
+use Storage;
+use function App\Helpers\is_mobile;
 
 class Handler extends ExceptionHandler
 {
@@ -83,18 +86,32 @@ class Handler extends ExceptionHandler
      */
     public function render($request, Exception|Throwable $exception)
     {
-        $errorLog = storage_path('logs/laravel.log');
-        // $errorFound = $errorLog;
-        // $errorFound =strpos(file_get_contents($errLog),'Error(code: 0)');
-        // return $errorFound;exit;    
-        // if ($errorFound) {
-            // return redirect('/dashboard');
+        // 13-06-23
+        // $errorLog =  storage_path('logs\laravel-'.date('Y-m-d').'.log');
+        // $errorFound = File::get($errorLog);
+        // if (!empty($errorFound)) {
+        //     // Extract the error message from the log file
+        // $errorMessage = trim($errorFound);
+        // preg_match('/.*\.php:\d+/', $errorMessage, $matches);
+        // $fileNameLine = isset($matches[0]) ? $matches[0] : '';
+
+        // $res['status_code'] = 0;
+        // $res['message'] = "Error Occurred: " . $fileNameLine;
+
+        // return redirect('/dashboard')->with(['data' => $res]);
         // }
+        
+        // another code
 
         if ($this->isHttpException($exception)) {
             if ($exception->getStatusCode() == 404) {
                 return response()->view('errors.'.'404', [], 404);
             }
+        }else {
+            // Redirect to dashboard with error message, filename, and line number
+            $res['status_code']=0;
+            $res['message']="Error Occured :".$exception->getMessage()." on line number ".$exception->getLine(); //$exception->getFile(),
+            return redirect('/dashboard')->with(['data' => $res]);
         }
 
         return parent::render($request, $exception);
