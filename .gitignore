@@ -29,6 +29,7 @@ Homestead.json
 /public/hrms
 /public/html
 /public/icard
+/public/import
 /public/knowledgebase
 /public/learning
 /public/library
@@ -47,7 +48,6 @@ Homestead.json
 /public/tooltip
 /public/triz-lms
 /public/unlink_content
-/public/import
 vendor
 storage
 public
