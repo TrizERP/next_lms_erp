@@ -148,6 +148,7 @@
                                     <input type="hidden" name="uniqueid" value="<?php echo $data['stu_data']['uniqueid']; ?>">
                                     <input type="hidden" name="enrollment" value="<?php echo $data['stu_data']['enrollment']; ?>">
                                     <input type="hidden" name="medium" value="<?php echo $data['stu_data']['medium']; ?>">
+                                    <input type="hidden" name="roll_no" value="<?php echo $data['stu_data']['roll_no']; ?>">
                                     <input type="hidden" name="father_name" value="<?php echo $data['stu_data']['father_name']; ?>">
                                     <input type="hidden" name="mother_name" value="<?php echo $data['stu_data']['mother_name']; ?>">
 
@@ -314,14 +315,14 @@
 
                                                         <input type="text" name="fees_data[fine]"
                                                                id="cheque_return_charges" class="form-control"
-                                                               value="100"
-                                                               readonly="readonly">
+                                                               value="@if(isset($cheque_return_charges)){{$cheque_return_charges}}@endif">
+                                                               <!--Editable Textbox by rajesh => readonly="readonly"-->
                                                         <!-- <input type="hidden" name="hidden_cheque_return_charges"
                                                                id="hidden_cheque_return_charges" class="form-control"
                                                                value="@if(isset($cheque_return_charges) && $cheque_return_charges>0){{ $cheque_return_charges}};@else {{$data['cheque_return_charges'][0]}} @endif"> -->
                                                         <input type="hidden" name="hidden_cheque_return_charges"
                                                                id="hidden_cheque_return_charges" class="form-control"
-                                                               value="100">
+                                                               value="@if(isset($cheque_return_charges)){{$cheque_return_charges}}@endif">
                                                     @else
                                                         <input type="text" name="fees_data[fine]"
                                                                id="cheque_return_charges" class="form-control"
