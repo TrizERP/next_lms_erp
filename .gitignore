@@ -25,6 +25,7 @@ Homestead.json
 /.vscode
 
 /public/ckeditor_wiris
+/public/excel_upload
 /public/hrms
 /public/html
 /public/icard
