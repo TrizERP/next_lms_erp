@@ -225,20 +225,23 @@ class loginController extends Controller
                         if (count($schools) > 0) {
                             $client_sub_institute_id = $schools[0]['Id'];
                         }
-// echo "<pre>";print_r($client_sub_institute_id);exit;
 
                         $getTermId = academic_yearModel::where(['sub_institute_id' => $client_sub_institute_id])
                             ->whereRaw('"'.date('Y-m-d').'" '.'between start_date and end_date')
                             ->get()->toArray();
-
+                        // when academic end date
+                        if(empty($getTermId)){
+                            $res['status_code'] = 0;
+                            $res['message'] = "Academic Term Date Expired";
+                            return is_mobile($type, "login", $res, "view");
+                        }
+                        echo "not set";exit;
                         $given_hrms_rights = '';
                         $getAcademicTerms = $getAcademicYear = array();
 
                         $getInstitutes = DB::table('school_setup')->where('client_id',
                             $user['client_id'])->get()->toArray();
-                        if($client_sub_institute_id == 63){
-// echo "<pre>";print_r($getTermId);exit;
-}
+
                         $request->session()->put('sub_institute_id', '');
                         $request->session()->put('syear', $getTermId[0]['syear']);
                         $request->session()->put('term_id', $getTermId[0]['term_id']);
@@ -279,7 +282,12 @@ class loginController extends Controller
                         $getTermId = academic_yearModel::where(['sub_institute_id' => $user['sub_institute_id']])
                             ->whereRaw('"'.date('Y-m-d').'" '.'between start_date and end_date')
                             ->get()->toArray();
-
+                            // when academic end date
+                        if(empty($getTermId)){
+                            $res['status_code'] = 0;
+                            $res['message'] = "Academic Term Date Expired";
+                            return is_mobile($type, "login", $res, "view");
+                        }
                         //START set class teacher standard , grade , division
                         DB::table('tbluserprofilemaster')->where('NAME', 'Teacher')
                             ->where('sub_institute_id', $user['sub_institute_id'])->get()->toArray();
