@@ -51,38 +51,6 @@ class admissionFormController extends Controller
     }
 
     /**
-     * Show the form for creating a new resource.
-     *
-     * @return void
-     */
-    public function create()
-    {
-        //
-    }
-
-    /**
-     * Store a newly created resource in storage.
-     *
-     * @param  Request  $request
-     * @return void
-     */
-    public function store(Request $request)
-    {
-        //
-    }
-
-    /**
-     * Display the specified resource.
-     *
-     * @param  int  $id
-     * @return void
-     */
-    public function show($id)
-    {
-        //
-    }
-
-    /**
      * Show the form for editing the specified resource.
      *
      * @param  int  $id
@@ -156,7 +124,6 @@ class admissionFormController extends Controller
             $finalfieldsData[$value['field_id']][$i]['display_value'] = $value['display_value'];
             $i++;
         }
-        // dd($editData);
         $res['status_code'] = "1";
         $res['message'] = "Successfully";
         $res['editData'] = $editData['0'];

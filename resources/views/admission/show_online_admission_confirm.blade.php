@@ -39,7 +39,7 @@
                     </div>
                 </form>
             </div>
-        @if(isset($data['student_data']))
+        @if(isset($data['student_data']) && count($data['student_data'])>0)
             @php
                 if(isset($data['student_data'])){
                     $student_data = $data['student_data'];
