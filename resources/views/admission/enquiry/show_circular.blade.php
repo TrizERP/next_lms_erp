@@ -10,7 +10,7 @@ use DB;
             </div>
         </div>    
         <div id="printPage" class="card">
-            <?php
+            @php
                 $file_name = "fees_circular/templates/challan_admission.html";
                 $fin = fopen($file_name, 'r') or die("Selected Certificate Template is not in proper format .");
                 $string = fread($fin, filesize($file_name));
@@ -62,15 +62,15 @@ use DB;
                     $str = str_replace(htmlspecialchars("<<branch>>"), $data['feesCircularMaster']['branch'], $str);
                     $str = str_replace(htmlspecialchars("<<current_date>>"), date('d-m-Y'), $str);
                 }
-            ?>
+            @endphp
             <div class="card">
-                <?php 
+            @php
                     echo $str;
                     $new_str = str_replace("'", "", $str);
                     $update_sql = "UPDATE admission_enquiry SET fees_circular_html = '".$new_str."' WHERE id = '".$data['last_inserted_id']."' ";
                     $sql_data = DB::select($update_sql);
-                ?>
-            </div>
+            @endphp
+                        </div>
         </div>
         <div class="pagebreak"></div>
         <div class="col-md-12 form-group">
