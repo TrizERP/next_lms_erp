@@ -62,7 +62,6 @@ class admissionFollowUpController extends Controller
         $syear = $request->session()->get("syear");
         $data = $request->except(['_method', '_token', 'submit']);
 
-        // $data['syear'] = $syear;
         $data['created_on'] = date('Y-m-d H:i:s');
         $data['created_ip'] = Request::getClientIp();
         $data['sub_institute_id'] = $sub_institute_id;
@@ -75,48 +74,4 @@ class admissionFollowUpController extends Controller
         return is_mobile($type, "admission_enquiry.index", $res);
     }
 
-    /**
-     * Display the specified resource.
-     *
-     * @param  int  $id
-     * @return void
-     */
-    public function show($id)
-    {
-        //
-    }
-
-    /**
-     * Show the form for editing the specified resource.
-     *
-     * @param  int  $id
-     * @return void
-     */
-    public function edit($id)
-    {
-        //
-    }
-
-    /**
-     * Update the specified resource in storage.
-     *
-     * @param  Request  $request
-     * @param  int  $id
-     * @return void
-     */
-    public function update(Request $request, $id)
-    {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     *
-     * @param  int  $id
-     * @return void
-     */
-    public function destroy($id)
-    {
-        //
-    }
 }
