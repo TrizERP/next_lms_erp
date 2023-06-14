@@ -417,11 +417,17 @@ class admissionRegistrationController extends Controller
 
         if ($sub_institute_id == 47)//Generate Enrollment No for MMISERP
         {
-            $get_prefix = "SELECT * FROM enrollment_prefix_master
-					   WHERE sub_institute_id = '" . $sub_institute_id . "'
-					   AND FIND_IN_SET ('" . $admission_standard_id . "',standards) ";
+            // $get_prefix = "SELECT * FROM enrollment_prefix_master
+			// 		   WHERE sub_institute_id = '" . $sub_institute_id . "'
+			// 		   AND FIND_IN_SET ('" . $admission_standard_id . "',standards) ";
 
-            $get_prefix_result = DB::select($get_prefix);
+            // $get_prefix_result = DB::select($get_prefix);
+            
+            $get_prefix_result = DB::table('enrollment_prefix_master')
+                ->select('enrollment_prefix_master.*')
+                ->whereRaw("sub_institute_id = '" . $sub_institute_id . "' AND FIND_IN_SET ('" . $admission_standard_id . "',standards) ")
+                ->get()->toArray();
+
             $prefix = $get_prefix_result[0]->prefix;
 
             if ($prefix != '') {
