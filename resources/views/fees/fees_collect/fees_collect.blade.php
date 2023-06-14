@@ -35,42 +35,43 @@
 									<th>Paid</th>
 									<th>Remaining</th>
 								</tr>
-								<?php
+								@php
                                         $remainFees = 0;
                                         $feesDetails= [];
                                         $bk=$paid=$remain =array();
                                         foreach ($data['total_fees'] as $id => $arr) {
-                                        $feesDetails[$arr['month']] = $arr['remain'];
-                                        if( $arr['remain'] != 0 && $arr['bk']>$arr['paid']){
-                                        ?>
+										$feesDetails[$arr['month']] = $arr['remain'];
+										if(isset($arr['bk'])){
+                                @endphp
 								<tr>
 									<td>
-										<?php echo $arr['month']; ?>
+										{{ $arr['month'] }}
 									</td>
 									<td>
-										<?php $bk[] = $arr['bk']; echo $arr['bk']; ?>
+										@php $bk[] = $arr['bk']; echo $arr['bk'];  @endphp
 									</td>
 									<td>
-										<?php $paid[] = $arr['paid']; echo $arr['paid']; ?>
+										@php $paid[] = $arr['paid']; echo $arr['paid']; @endphp
 									</td>
 									<td>
-										<?php $remain[] = $arr['remain'];echo $arr['remain']; ?>
+										@php $remain[] = $arr['remain'];echo $arr['remain'];  @endphp
 									</td>
 								</tr>
-								<?php
+								@php
                                     }
                                         $remainFees += $arr['remain'];
-                                        } ?>
+                                        } 
+								@endphp
 								<tr>
 									<td>Total</td>
 									<td>
-										<?php  echo array_sum($bk) ?>
+										{{ array_sum($bk) }}
 									</td>
 									<td>
-										<?php  echo array_sum($paid) ?>
+										{{array_sum($paid) }}
 									</td>
 									<td>
-										<?php  echo array_sum($remain) ?>
+										{{array_sum($remain) }}
 									</td>
 								</tr>
 
@@ -78,7 +79,7 @@
 						</div>
 						<div class="row">
 							<div class="col-md-12 text-center mt-4">
-								<button type="button" class="btn btn-info" data-toggle="modal" id="add_data" onclick="javascript:add_data(<?php echo $data['stu_data']['enrollment']?>,<?php echo $data['stu_data']['student_id']?>);">
+								<button type="button" class="btn btn-info" data-toggle="modal" id="add_data" onclick="javascript:add_data({{ $data['stu_data']['enrollment']}},{{$data['stu_data']['student_id']}});">
 									Paid History
 								</button>
 							</div>
@@ -96,31 +97,31 @@
 										<tr>
 											<td>Unique Id/Adm.No.</td>
 											<td>
-												<?php echo $data['stu_data']['uniqueid']; ?>
+												{{ $data['stu_data']['uniqueid']; }}
 											</td>
 										</tr>
 										<tr>
 											<td>Student Name</td>
 											<td>
-												<?php echo $data['stu_data']['name']; ?>
+												{{ $data['stu_data']['name']; }}
 											</td>
 										</tr>
 										<tr>
 											<td>Admission Year</td>
 											<td>
-												<?php echo $data['stu_data']['admission']; ?>
+												{{ $data['stu_data']['admission']; }}
 											</td>
 										</tr>
 										<tr>
 											<td>Parent Email</td>
 											<td>
-												<?php echo $data['stu_data']['email']; ?>
+												{{ $data['stu_data']['email']; }}
 											</td>
 										</tr>
 										<tr>
 											<td>Student Quota</td>
 											<td>
-												<?php echo $data['stu_data']['student_quota']; ?>
+												{{ $data['stu_data']['student_quota']; }}
 											</td>
 										</tr>
 									</table>
@@ -132,32 +133,32 @@
 										<tr>
 											<td>GR. No</td>
 											<td>
-												<?php echo $data['stu_data']['enrollment']; ?>
+												{{ $data['stu_data']['enrollment']; }}
 											</td>
 										</tr>
 										<tr>
 											<td>Std/Div</td>
 											<td>
-												<?php echo $data['stu_data']['stddiv']; ?>
+												{{ $data['stu_data']['stddiv']; }}
 											</td>
 										</tr>
 										<tr>
 											<td>Contact No</td>
 											<td>
-												<?php echo $data['stu_data']['mobile']; ?>
+												{{ $data['stu_data']['mobile']; }}
 											</td>
 										</tr>
 										<tr style="color: red;">
 											<td>Pending Fees</td>
 											<td>
-												<?php echo $data['stu_data']['pending']; ?>
+												{{ $data['stu_data']['pending']; }}
 											</td>
 										</tr>
 										@if (Session::get('sub_institute_id') == '181')
 										<tr>
 											<td>Previous Year Imprest Balance</td>
 											<td>
-												<?php echo $data['stu_data']['previous_year_imprest_balance']; ?>
+												{{ $data['stu_data']['previous_year_imprest_balance']; }}
 											</td>
 										</tr>
 										@endif
@@ -168,23 +169,23 @@
 
 						<form action="{{ route('fees_collect.store') }}" enctype="multipart/form-data" method="post">
 							@csrf
-							<input type="hidden" name="grade_id" value="<?php echo $data['stu_data']['grade_id']; ?>">
-							<input type="hidden" name="standard_id" value="<?php echo $data['stu_data']['std_id']; ?>">
-							<input type="hidden" name="div_id" value="<?php echo $data['stu_data']['div_id']; ?>">
-							<input type="hidden" name="student_id" value="<?php echo $data['stu_data']['student_id']; ?>">
-							<input type="hidden" name="std_div" value="<?php echo $data['stu_data']['stddiv']; ?>">
-							<input type="hidden" name="full_name" value="<?php echo $data['stu_data']['name']; ?>">
-							<input type="hidden" name="mobile" value="<?php echo $data['stu_data']['mobile']; ?>">
-							<input type="hidden" name="uniqueid" value="<?php echo $data['stu_data']['uniqueid']; ?>">
-							<input type="hidden" name="enrollment" value="<?php echo $data['stu_data']['enrollment']; ?>">
-							<input type="hidden" name="medium" value="<?php echo $data['stu_data']['medium']; ?>">
-							<input type="hidden" name="father_name" value="<?php echo $data['stu_data']['father_name']; ?>">
-							<input type="hidden" name="mother_name" value="<?php echo $data['stu_data']['mother_name']; ?>">
+							<input type="hidden" name="grade_id" value="{{ $data['stu_data']['grade_id']; }}">
+							<input type="hidden" name="standard_id" value="{{ $data['stu_data']['std_id']; }}">
+							<input type="hidden" name="div_id" value="{{ $data['stu_data']['div_id']; }}">
+							<input type="hidden" name="student_id" value="{{ $data['stu_data']['student_id']; }}">
+							<input type="hidden" name="std_div" value="{{ $data['stu_data']['stddiv']; }}">
+							<input type="hidden" name="full_name" value="{{ $data['stu_data']['name']; }}">
+							<input type="hidden" name="mobile" value="{{ $data['stu_data']['mobile']; }}">
+							<input type="hidden" name="uniqueid" value="{{ $data['stu_data']['uniqueid']; }}">
+							<input type="hidden" name="enrollment" value="{{ $data['stu_data']['enrollment']; }}">
+							<input type="hidden" name="medium" value="{{ $data['stu_data']['medium']; }}">
+							<input type="hidden" name="father_name" value="{{ $data['stu_data']['father_name']; }}">
+							<input type="hidden" name="mother_name" value="{{ $data['stu_data']['mother_name']; }}">
 
 							<div class="table-responsive col-md-12" style="border-top: 2px solid black;">
 								<table class="table table-stripped">
 									<tr>
-										<?php
+										@php
                                                 $i = 1;
                                                 foreach ($data['month_arr'] as $id => $val) {
                                                 if ($i == 1) {
@@ -202,27 +203,26 @@
                                                 if (isset($feesDetails[$val]) && $feesDetails[$val] == 0) {
                                                     $disabled = 'disabled="disabled"';
                                                 }
-                                                ?>
+                                        @endphp
 										<td>
 											<div class="checkbox checkbox-info">
-												<input id="<?php echo $id; ?>" name="months[<?php echo $id; ?>]"
-												 value="<?php echo $id; ?>" <?php echo $slected;
-												 ?> class="months" type="checkbox" @php echo $disabled; @endphp>
+												<input id= "{{$id}}" name="months[{{$id}}]"
+												 value="{{$id}}" {{$slected}} class="months" type="checkbox" {{ $disabled}}>
 												<!-- removed name attribute -->
 												@if( isset($feesDetails[$val]) && $feesDetails[$val] == 0 )
-												<input type="hidden" value="<?= $id ?>"> @endif
-												<label for="<?php echo $id; ?>">
-													<?php echo $val; ?>
+												<input type="hidden" value="{{$id}}"> @endif
+												<label for="{{ $id}}">
+													{{ $val}}
 												</label>
 											</div>
 										</td>
-										<?php
+										@php
                                                 if ($i == 6) {
                                                     echo "</tr>";
                                                 }
                                                 $i++;
-                                                } ?>
-
+                                                }
+										@endphp
 									</tr>
 								</table>
 							</div>
@@ -249,11 +249,11 @@
 													<th style="width: 20%;padding-left: 15px;">Discount</th>
 													<th style="width: 20%;padding-left: 15px;">Fine</th>
 												</tr>
-												<?php
+												@php
                                                         $total = [];
                                                         foreach ($data['final_fee_new'] as $id => $val) {
-                                                      // if ($id != 'Total') {     print_r($data['final_fee_name'][$id]); }  ?>
-
+                                                      // if ($id != 'Total') {     print_r($data['final_fee_name'][$id]); }  
+												@endphp
 												<tr>
 													<td style="width: 10%">
 														<input type="checkbox" name="" id="" <?=( isset($val[ 'mandatory']) && $val[
@@ -265,8 +265,7 @@
 													<td style="width: 20%">
 														<?= ($val['amount'] ?? 0) ?>
 													</td>
-													<?php
-
+													@php
                                                         $auto_head_counting = $data['fees_config_data']['auto_head_counting'];
 
                                                         if ($auto_head_counting == 1) {
@@ -309,11 +308,12 @@
                                                     }
 
                                                         $total[] =$val['amount'] ?? 0;
-                                                        ?>
+                                                      @endphp
 													<!--<td style="width: 25%"><input type="text" class="form-control"></td>-->
 												</tr>
-												<?php }
-                                                       $total_amt= array_sum($total) ?>
+												@php }
+                                                       $total_amt= array_sum($total) 
+												@endphp
 
 											</table>
 										</td>
@@ -352,7 +352,7 @@
 										</td>
 									</tr>
 
-									<?php
+									@php
                                             // START 30-12-2021 Added for include cheque return charges in grand total
 
                                             if (isset($cheque_return_charges) && $cheque_return_charges != '') {
@@ -362,13 +362,13 @@
                                             }
                                             // END 30-12-2021 Added for include cheque return charges in grand total
 
-                                            ?>
+                                    @endphp
 									<tr style="border-bottom: 2px solid black;">
 										<td></td>
 										<td>Grand Total</td>
 										<td></td>
 										<td>
-											<input type="text" id="grandTotal" readonly="" value="<?php echo $grand_total_with_cheque_charges; ?>"
+											<input type="text" id="grandTotal" readonly="" value="{{ $grand_total_with_cheque_charges;}}"
 											 class="form-control">
 										</td>
 									</tr>
@@ -389,13 +389,13 @@
 										</td>
 										<td>Receipt Date</td>
 										<td>
-											<input type="text" name="receiptdate" id="receiptdate" class="form-control mydatepicker" autocomplete="off" value="<?php echo date('Y-m-d'); ?>">
+											<input type="text" name="receiptdate" id="receiptdate" class="form-control mydatepicker" autocomplete="off" value="{{date('Y-m-d'); }}">
 										</td>
 									</tr>
 									<tr class="bnakDetail">
 										<td>Cheque/DD Date</td>
 										<td>
-											<input type="text" name="cheque_date" id="cheque_date" class="form-control mydatepicker" autocomplete="off" value="<?php echo date('Y-m-d'); ?>">
+											<input type="text" name="cheque_date" id="cheque_date" class="form-control mydatepicker" autocomplete="off" value="{{date('Y-m-d'); }}">
 										</td>
 										<td>Cheque/DD No/Transaction No</td>
 										<td>
@@ -674,14 +674,14 @@
 					url: "{{route('get-fees-list')}}",
 					data: {
 						checkedMonths: checkedMonths,
-						student_id: <?php echo $data['stu_data']['student_id']; ?>
+						student_id: {{$data['stu_data']['student_id']; }}
 					},
 					//--> send id of checked checkbox on other page
 					success: function(data) {
 						$("#fees_head").empty();
 						$("#fees_head").html(data);
 
-						var auto_head_counting = <?php echo(($auto_head_counting == '1') ? ($auto_head_counting) : ('0')); ?> ;
+						var auto_head_counting = {{ (($auto_head_counting == '1') ? ($auto_head_counting) : ('0')); }} ;
 						if (auto_head_counting == 1) {
 							$('.allField1').attr('readonly', true);
 							$('#totalVal').attr('readonly', false);
