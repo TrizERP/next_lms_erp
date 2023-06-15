@@ -513,7 +513,7 @@ class tblstudentController extends Controller
 
         if ($std_id != "" && $div_id != "") {
             $batchData = batchModel::where([
-                'sub_institute_id' => $sub_institute_id, 'standard_id' => $std_id, 'division_id' => $div_id, 'syear' => $syear,
+                'sub_institute_id' => $sub_institute_id, 'standard_id' => $std_id, 'division_id' => $div_id, 'syear' => $syear
             ])
                 ->get()->toArray();
         }

@@ -142,8 +142,12 @@
                                     <tr>
                                         <?php
                                         $no = 0;
+                                        $i = 1;
                                         foreach ($data['month_arr'] as $id => $val) {
                                             $no++;
+                                            if ($i == 1) {
+                                                echo "<tr>";
+                                            }
                                             $slected = "";
                                             if (in_array($id, $data['search_ids'])) {
                                                 $slected = "checked";
@@ -156,11 +160,17 @@
                                             ?>
                                             <td>
                                                 <div class="checkbox checkbox-info">
-                                                    <input id="<?php echo $id; ?>" name="months[<?php echo $id; ?>]" value="<?php echo $id; ?>" <?php echo $slected; ?> class="months" type="checkbox" @php echo $disabled; echo 'data-no='.$no; @endphp>
+                                                    <input id="<?php echo $id; ?>" name="months[<?php echo $id; ?>]" value="<?php echo $id; ?>" <?php echo $slected; ?> class="months" type="checkbox" 
+                                                    @php echo $disabled; echo 'data-no='.$no; @endphp>
                                                     <label for="<?php echo $id; ?>"><?php echo $val; ?></label>
                                                 </div>
                                             </td>
-                                        <?php } ?>
+                                        <?php 
+                                        if ($i == 6) {
+                                            echo "</tr>";
+                                        }
+                                        $i++;
+                                        } ?>
 
                                     </tr>
                                 </table>

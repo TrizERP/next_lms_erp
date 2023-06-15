@@ -146,7 +146,7 @@ class feesMonthlyReportController extends Controller
                 $join->whereRaw('fo.sub_institute_id = f.sub_institute_id and fo.student_id = f.student_id and fo.month_id = f.term_id');
             })->selectRaw("" . $columns . " DATE_FORMAT(f.created_date,'%Y-%m-%d') AS fees_date")
             ->where('f.sub_institute_id', session()->get('sub_institute_id'))
-            ->whereRaw("DATE_FORMAT(f.created_date,'%Y-%m-%d') between " . $from_date . " AND " . $to_date . "'");
+            ->whereRaw("DATE_FORMAT(f.created_date,'%Y-%m-%d') between '" . $from_date . "' AND '" . $to_date . "'");
         if ($grade != "") {
             $data = $data->where('s.grade_id', $grade);
         }

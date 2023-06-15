@@ -42,7 +42,7 @@ class tbluserController extends Controller
     public function create(Request $request)
     {
         $sub_institute_id = $request->session()->get('sub_institute_id');
-        $data = tbluserprofilemasterModel::where(['sub_institute_id' => $sub_institute_id])->get()->toArray();
+        $data = tbluserprofilemasterModel::where(['sub_institute_id' => $sub_institute_id, 'status' => '1'])->get()->toArray();
         $dataCustomFields = tblcustomfieldsModel::where([
             'sub_institute_id' => $sub_institute_id, 'status' => "1", 'table_name' => "tbluser",
         ])
@@ -65,6 +65,7 @@ class tbluserController extends Controller
             view()->share('data_fields', $finalfieldsData);
         }
         view()->share('custom_fields', $dataCustomFields);
+        view()->share('subject_data', $subject_data);
         view()->share('user_profiles', $data);
         view()->share('job_titles', $job_titles);
         view()->share('employees', $employees);

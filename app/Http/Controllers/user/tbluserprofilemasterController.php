@@ -22,7 +22,7 @@ class tbluserprofilemasterController extends Controller
     public function index(Request $request)
     {
         $sub_institute_id = $request->session()->get('sub_institute_id');
-        $user_data = tbluserprofilemasterModel::where(['sub_institute_id' => $sub_institute_id])->get();
+        $user_data = tbluserprofilemasterModel::where(['sub_institute_id' => $sub_institute_id, 'status' => '1'])->get();
         $res['status_code'] = 1;
         $res['message'] = "Success";
         $res['data'] = $user_data;

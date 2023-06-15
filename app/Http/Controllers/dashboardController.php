@@ -260,7 +260,7 @@ class dashboardController extends Controller
                         $join->whereRaw("dt.id = se.section_id");
                     })
                     ->selectRaw("l.*, CONCAT_WS(' ',s.first_name,s.middle_name,s.last_name) AS student_name,st.name AS standard_name,
-			dt.name AS division_name")
+            dt.name AS division_name")
                     ->where("l.sub_institute_id", "=", $sub_institute_id)
                     ->where("l.apply_date", "=", $date)
                     ->limit(10)
@@ -1090,7 +1090,7 @@ class dashboardController extends Controller
                     $join->whereRaw("s.section_id = dt.id");
                 })
                 ->selectRaw("st.name as standard,dt.name,s.attendance_code, SUM(CASE WHEN s.attendance_code = 'A' THEN 1 ELSE 0 END) AS absent,
-			        SUM(CASE WHEN s.attendance_code = 'P' THEN 1 ELSE 0 END) AS present")
+                    SUM(CASE WHEN s.attendance_code = 'P' THEN 1 ELSE 0 END) AS present")
                 ->where("s.sub_institute_id", "=", $sub_institute_id)
                 ->where("s.attendance_date", "=", $date)
                 ->groupBy("s.standard_id")
@@ -1115,7 +1115,7 @@ class dashboardController extends Controller
                     $join->whereRaw("r.enquiry_no = f.enquiry_no and r.sub_institute_id = s.sub_institute_id");
                 })
                 ->selectRaw("COUNT(e.id) AS total_enquiry, COUNT(f.id) AS total_form ,COUNT(r.id) as total_registration,
-					s.name AS standard_name")
+                    s.name AS standard_name")
                 ->where("s.sub_institute_id", "=", $sub_institute_id)
                 ->groupBy("s.id")->having('total_enquiry', '<>', 0)
                 ->get()->toArray();
@@ -2464,6 +2464,7 @@ class dashboardController extends Controller
         $subInstituteExists[$tableName] = $exists;
     }
 
+
     // return $subInstituteExists;exit;
             $master = tblmenumasterModel::
                 whereRaw("find_in_set('$sub_institute_id',sub_institute_id) and status = 1 and menu_type='MASTER' ")
@@ -2503,7 +2504,7 @@ class dashboardController extends Controller
         $res['groupwisemenuMaster'] = $mastermenu;
         $res['groupwisesubmenuMaster'] = $finalSubMenu ?? [];
         $res['groupwiseSubsubmenuMaster'] = $finalSubChildMenu ?? [];
-        // $rr=[];
+        $rr=[];
 // foreach($res['groupwisemenuMaster'] as $key=>$value){
         // echo "<pre>";print_r($mastermenu);exit;
         return is_mobile($type, "setup_institute_details", $res,'view');

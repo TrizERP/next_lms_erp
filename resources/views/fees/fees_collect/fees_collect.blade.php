@@ -62,18 +62,7 @@
                                         $remainFees += $arr['remain'];
                                         } 
                                 @endphp
-                                <tr>
-                                    <td>Total</td>
-                                    <td>
-                                        {{ array_sum($bk) }}
-                                    </td>
-                                    <td>
-                                        {{array_sum($paid) }}
-                                    </td>
-                                    <td>
-                                        {{array_sum($remain) }}
-                                    </td>
-                                </tr>
+                                
 
                             </table>
                         </div>

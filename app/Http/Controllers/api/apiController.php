@@ -430,16 +430,16 @@ class apiController extends Controller
         $data = [];
 
         $data["android"]["type"] = "android";
-        $data["android"]["appVersion"] = "1.0.4";
-        $data["android"]["isUpdate"] = 1;
+        $data["android"]["appVersion"] = "1.0.20";
+        $data["android"]["isUpdate"] = 0;
         $data["android"]["isComplusory"] = 0;
         $data["android"]["is_maintenance"] = 0;
         $data["android"]["maintenance_message"] = "Application is under maintenance. Please try after some time.";
         $data["android"]["message"] = "New version 1.0.4 Available";
 
         $data["ios"]["type"] = "ios";
-        $data["ios"]["appVersion"] = "1.0.4";
-        $data["ios"]["isUpdate"] = 1;
+        $data["ios"]["appVersion"] = "1.0.20";
+        $data["ios"]["isUpdate"] = 0;
         $data["ios"]["isComplusory"] = 0;
         $data["ios"]["is_maintenance"] = 0;
         $data["ios"]["maintenance_message"] = "Application is under maintenance. Please try after some time.";
@@ -655,13 +655,12 @@ class apiController extends Controller
 
             $check_record_count = DB::table('gcm_users')
                 ->where('sub_institute_id', $sub_institute_id)
-                ->where('imei_no', $imei_no)->get()->toArray();
+                ->where('gcm_regid', $gcm_regid)->get()->toArray();
 
             if (count($check_record_count) > 0) {
                 DB::table("gcm_users")
                     ->where([
-                        "sub_institute_id" => $sub_institute_id, "imei_no" => $imei_no, "curr_version" => $curr_version,
-                        "new_version"      => $new_version,
+                        "sub_institute_id" => $sub_institute_id, "curr_version" => $curr_version,"new_version" => $new_version, "imei_no" => $imei_no
                     ])
                     ->update(["gcm_regid" => $gcm_regid]);
 

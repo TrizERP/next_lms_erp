@@ -74,7 +74,7 @@ $loginpage_backgrond = session()->get('loginpage_backgrond');
                                     @if(!empty($loginpage_title))
                                     {!!$loginpage_title!!}
                                     @else
-                                    <h2 class="text-light">Triz Institute of Maximize Learning</h2>
+                                   <h2 class="text-light">Own Institute of Maximize Learning</h2>
                                     @endif
 
                                     @if(!empty($loginpage_description))

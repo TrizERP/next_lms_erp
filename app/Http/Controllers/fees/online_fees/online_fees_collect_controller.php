@@ -309,23 +309,37 @@ class online_fees_collect_controller extends Controller
     {
         // echo '<pre>'; print_r($_REQUEST); exit;
         $student_id = $_REQUEST["student_id"];
-        $medium_data = DB::select("SELECT a.*,e.grade_id,CONCAT_WS('_',t.first_name,t.middle_name,t.last_name) AS student_name, t.mobile FROM tblstudent_enrollment e
-        inner join academic_section a on e.grade_id = a.id
-        INNER JOIN tblstudent t ON t.id=e.student_id
-        INNER JOIN fees_online_maping fom ON fom.syear=e.syear AND fom.sub_institute_id=e.sub_institute_id
-        WHERE e.student_id = '" . $student_id . "' ORDER BY e.syear DESC LIMIT 1");
+
+        $medium_data = DB::select("SELECT a.*,e.grade_id,s.name AS standard, d.name AS division,CONCAT_WS('_',t.first_name,t.middle_name,t.last_name) AS student_name, t.mobile, t.enrollment_no, t.email,ifnull(b.title,0) AS batch FROM tblstudent_enrollment e
+            inner join academic_section a on e.grade_id = a.id
+            inner join standard s on e.standard_id = s.id
+            inner join division d on e.section_id = d.id
+            INNER JOIN tblstudent t ON t.id=e.student_id
+            LEFT JOIN batch b ON b.id=t.studentbatch
+            INNER JOIN fees_online_maping fom ON fom.syear=e.syear AND fom.sub_institute_id=e.sub_institute_id
+            WHERE e.student_id = '" . $student_id . "' ORDER BY e.syear DESC LIMIT 1");
+
         $get_map_bank_data = DB::table("fees_online_maping")
             ->where(["sub_institute_id" => session()->get("sub_institute_id")])
             ->get();
-        $payment_acsept_type = $get_map_bank_data[0]->fees_type;
+
+        $payment_acsept_type = null;
+        if (!empty($get_map_bank_data[0])) {
+            $payment_acsept_type = $get_map_bank_data[0]->fees_type;
+        }
+
         $get_map_bank_detail = DB::table("fees_icici")
-            ->where(["sub_institute_id" => session()->get("sub_institute_id"), 'medium' => $medium_data[0]->medium])
+            ->where(["sub_institute_id" => session()->get("sub_institute_id")])
+            ->when(!empty($medium_data[0]), function ($query) use ($medium_data) {
+                return $query->where('medium', $medium_data[0]->medium);
+            })
             ->get();
+
         $amount = 0;
         if ($payment_acsept_type == "fix") {
-            $amount = number_format($_REQUEST["total"], 2, '.', '');
+            $amount = number_format($_REQUEST["total"], 0, '.', '');
         } else {
-            $amount = number_format($_REQUEST["pay_amount"], 2, '.', '');
+            $amount = number_format($_REQUEST["pay_amount"], 0, '.', '');
         }
         $where_arr = array(
             "sub_institute_id" => session()->get("sub_institute_id"),
@@ -338,17 +352,42 @@ class online_fees_collect_controller extends Controller
         $orderId = $student_id . (mt_rand(100000, 10000000000));
         $MerId = $get_map_bank_detail[0]->merchant_id;
         $EncKey = $get_map_bank_detail[0]->enc_key;
-        $SubMerId = rand(10, 99);
+        $SubMerId = (isset($get_map_bank_detail[0]->sub_merchant_id) ? $get_map_bank_detail[0]->sub_merchant_id : rand(10, 99));
         $PgRefNo = $orderId;
         $PayMode = 9;
-        $return_url = $this->site_name() . "fees/icici/online_fees_iciciResponseHandler";
-        $action_url = "https://eazypay.icicibank.com/EazyPG?merchantid=$MerId";
-        $simple_action_url = "https://eazypay.icicibank.com/EazyPG?merchantid=$MerId";
-        //$amount = 1200.00;
-        //$M_FIELDS = $PgRefNo . '|' . $SubMerId . '|' . $amount ;
-        $M_FIELDS = $PgRefNo . '|' . $SubMerId . '|' . $amount . '|' . $medium_data[0]->student_name . '|' . $medium_data[0]->mobile;
+        //$return_url = $this->site_name() . "fees/icici/online_fees_iciciResponseHandler";
+        $return_url = $this->site_name() . "fees/online_fees_iciciresponsehandler";
+        
+        if (!empty($medium_data[0])) {
+            if($medium_data[0]->sub_institute_id == 2440){
+                $action_url = "https://eazypayuat.icicibank.com/EazyPG?merchantid=$MerId";//https://eazypayuat.icicibank.com
+                $simple_action_url = "https://eazypayuat.icicibank.com/EazyPG?merchantid=$MerId";//https://eazypayuat.icicibank.com
+            }else{
+                $action_url = "https://eazypay.icicibank.com/EazyPG?merchantid=$MerId";//https://eazypayuat.icicibank.com
+                $simple_action_url = "https://eazypay.icicibank.com/EazyPG?merchantid=$MerId";//https://eazypayuat.icicibank.com
+            }
+
+            if($medium_data[0]->sub_institute_id == 61){
+                $M_FIELDS = $PgRefNo . '|' . $SubMerId . '|' . $amount. '|' . $medium_data[0]->student_name . '|'.$student_id.'@email.com|' . $medium_data[0]->mobile . '|' . $medium_data[0]->enrollment_no;
+                $simple_optionalfields = $student_id;
+            }else{
+
+                $M_FIELDS = $PgRefNo . '|' . $SubMerId . '|' . $amount ;
+                
+                if($medium_data[0]->sub_institute_id == 257){
+                    $simple_optionalfields = $medium_data[0]->student_name .'|'. $medium_data[0]->mobile .'|'. $student_id.'@gmail.com|' . $medium_data[0]->enrollment_no .'|'. $medium_data[0]->standard .'|'. $medium_data[0]->division .'|'. $medium_data[0]->batch. '|'. $student_id;
+                }else{
+                    $simple_optionalfields = $medium_data[0]->student_name .'|'. $medium_data[0]->mobile .'|'. $student_id.'@gmail.com|' . $medium_data[0]->enrollment_no .'|'. $medium_data[0]->standard .'|'. $medium_data[0]->division .'|'. $student_id;
+                }
+            }
+        }else{
+            $school_data = array();
+            $school_data["website"] = $this->site_name();
+            $type = "web";
+            return \App\Helpers\is_mobile($type, "fees/online_fees_collect/search_student", $school_data, "view");
+        }
+        
         $mandatoryfields = $M_FIELDS;
-        $simple_optionalfields = $student_id;
         $simple_returnurl = $return_url;
         $simple_ReferenceNo = $orderId;
         $simple_submerchantid = $SubMerId;
@@ -362,8 +401,7 @@ class online_fees_collect_controller extends Controller
             "&transaction amount=" . $simple_transactionamount .
             "&paymode=" . $simple_paymode;
         $mandatoryfields = $this->icici_aes128Encrypt($M_FIELDS, $EncKey);
-        // $optionalfields = $student_id;
-        $optionalfields = $this->icici_aes128Encrypt($student_id, $EncKey);
+        $optionalfields = $this->icici_aes128Encrypt($simple_optionalfields, $EncKey);//$student_id
         $returnurl = $this->icici_aes128Encrypt($return_url, $EncKey);
         $ReferenceNo = $this->icici_aes128Encrypt($orderId, $EncKey);
         $submerchantid = $this->icici_aes128Encrypt($SubMerId, $EncKey);
@@ -397,7 +435,6 @@ class online_fees_collect_controller extends Controller
         );
         return \App\Helpers\is_mobile($type, "fees/online_fees_collect/icici_RequestHandler", $data, "view");
     }
-
     public function icici_response_handler(Request $request)
     {
         $get_map_bank_detail = DB::table("fees_icici")
@@ -422,12 +459,22 @@ class online_fees_collect_controller extends Controller
             "syear" => $get_all_data[0]->syear,
             "icici_order_id" => $response["ReferenceNo"]
         );
+
+//START RAJESH 27-05-2023 = prevent second time success
+        if($get_all_data[0]->icici_payment_status == 'PS'){
+            $school_data = array();
+            $school_data["website"] = $this->site_name();
+            $type = "web";
+            return \App\Helpers\is_mobile($type, "fees/online_fees_collect/search_student", $school_data, "view");
+        }
+//END RAJESH 27-05-2023
+
         // echo '<pre>'; print_r($where_arr); exit;
         DB::table("fees_payment")
             ->where($where_arr)
             ->update($update_arr);
         if ($payment_status == "PS") {
-            $data = $this->pay_fees($request, $get_all_data[0]->student_id, $get_all_data[0]->syear, $get_all_data[0]->sub_institute_id, $response["Transaction_Amount"], $response["ReferenceNo"]);
+            $data = $this->pay_fees($request, $get_all_data[0]->student_id, $get_all_data[0]->syear, $get_all_data[0]->sub_institute_id, $response["Transaction_Amount"],$response["ReferenceNo"]);
             $type = $request->input('type');
             return \App\Helpers\is_mobile($type, "fees/online_fees_collect/receipt_view", $data, "view");
         } else {
@@ -1060,12 +1107,20 @@ class online_fees_collect_controller extends Controller
     {
         // $plaintext = "1|1|1";
         $cipher = "AES-128-ECB";
+        // $cipher = "aes-128-cbc";
+        // print_r(openssl_get_cipher_methods() );
         // $key = "1211141980601518";
+        // echo strlen($cipher);exit;
         if (in_array($cipher, openssl_get_cipher_methods())) {
-            $ivlen = openssl_cipher_iv_length($cipher);
-            $iv = openssl_random_pseudo_bytes($ivlen);
-            $ciphertext = openssl_encrypt($str, $cipher, $key, $options = 0, $iv);
-            return $ciphertext; //."n";
+            if(openssl_cipher_iv_length($cipher)>0){
+                $ivlen = openssl_cipher_iv_length($cipher);
+                // echo $ivlen;exit;
+                $iv = openssl_random_pseudo_bytes($ivlen);
+                $ciphertext = openssl_encrypt($str, $cipher, $key, $options = 0, $iv);
+            }else{
+                $ciphertext = openssl_encrypt($str, $cipher, $key, $options = 0);
+            }
+           return $ciphertext; //."n";
             exit;
         }
         return 1;

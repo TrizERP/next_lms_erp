@@ -21,7 +21,6 @@
 @include('includes.header')
 @include('includes.sideNavigation')
 <!-- Content main Section -->
-
 <div class="content-main flex-fill">
     <div class="row justify-content-between">
         <div class="col-md-6">
@@ -37,41 +36,43 @@
             </nav>
         </div>
     </div>
-
-@php
+    @php
 if(isset($_REQUEST['preload_lms'])){
     $readonly="pointer-events: none";
 }
 @endphp
-
     <div class="container-fluid mb-5">
         <div class="card border-0">
             <div class="card-body">
                 @if ($message = Session::get('success'))
-                <div class="alert alert-success alert-block">
-                    <button type="button" class="close" data-dismiss="alert">×</button>
-                    <strong>{{ $message }}</strong>
-                </div>
+                    <div class="alert alert-success alert-block">
+                        <button type="button" class="close" data-dismiss="alert">×</button>
+                        <strong>{{ $message }}</strong>
+                    </div>
                 @endif
                 <form id="addLessonPlan" class="addDayWiseFrm" method="post" enctype='multipart/form-data'>
                     {{ method_field('POST') }}
                     @csrf
-                    <input type="hidden" name="day_count" id="day_count" value="{{ $data['lessonplan_data']->lesson_days_count ?? 0 }}">
+                    <input type="hidden" name="day_count" id="day_count"
+                        value="{{ $data['lessonplan_data']->lesson_days_count ?? 0 }}">
                     <input type="hidden" name="id" id="id" value="{{ $data['lessonplan_data']->id }}">
-                    <input type="hidden" name="standard_id" id="standard_id" value="{{ $data['lessonplan_data']->standard_id }}">
-                    <input type="hidden" name="subject_id" id="subject_id" value="{{ $data['lessonplan_data']->subject_id }}">
-                    <input type="hidden" name="chapter_id" id="chapter_id" value="{{ $data['lessonplan_data']->chapter_id }}">
+                    <input type="hidden" name="standard_id" id="standard_id"
+                        value="{{ $data['lessonplan_data']->standard_id }}">
+                    <input type="hidden" name="subject_id" id="subject_id"
+                        value="{{ $data['lessonplan_data']->subject_id }}">
+                    <input type="hidden" name="chapter_id" id="chapter_id"
+                        value="{{ $data['lessonplan_data']->chapter_id }}">
                     <div class="row align-items-center">
                         <div class="col-md-3 form-group">
                             <label>Standard</label>
                             <select name="standard" id="standard" class="form-control" required readonly>
                                 <option value="">Select Standard</option>
                                 @if (isset($data['standards']))
-                                @foreach ($data['standards'] as $key => $value)
-                                <option value="{{ $value->value }}" {{ $data['lessonplan_data']->standard_id == $value->value ? 'selected' : '' }}>
-                                    {{ $value->label }}
-                                </option>
-                                @endforeach
+                                    @foreach ($data['standards'] as $key => $value)
+                                        <option value="{{ $value->value }}"
+                                            {{ $data['lessonplan_data']->standard_id == $value->value ? 'selected' : '' }}>
+                                            {{ $value->label }}</option>
+                                    @endforeach
                                 @endif
                             </select>
                         </div>
@@ -80,11 +81,11 @@ if(isset($_REQUEST['preload_lms'])){
                             <select name="subject" id="subject" class="form-control" required readonly>
                                 <option value="">Select Subject</option>
                                 @if (isset($data['subjects']))
-                                @foreach ($data['subjects'] as $key => $value)
-                                <option value="{{ $value->value }}" {{ $data['lessonplan_data']->subject_id == $value->value ? 'selected' : '' }}>
-                                    {{ $value->label }}
-                                </option>
-                                @endforeach
+                                    @foreach ($data['subjects'] as $key => $value)
+                                        <option value="{{ $value->value }}"
+                                            {{ $data['lessonplan_data']->subject_id == $value->value ? 'selected' : '' }}>
+                                            {{ $value->label }}</option>
+                                    @endforeach
                                 @endif
                             </select>
                         </div>
@@ -93,11 +94,11 @@ if(isset($_REQUEST['preload_lms'])){
                             <select name="chapter" id="chapter" class="form-control" readonly>
                                 <option value="">Select Chapter</option>
                                 @if (isset($data['chapters']))
-                                @foreach ($data['chapters'] as $key => $value)
-                                <option value="{{ $value->value }}" {{ $data['lessonplan_data']->chapter_id == $value->value ? 'selected' : '' }}>
-                                    {{ $value->label }}
-                                </option>
-                                @endforeach
+                                    @foreach ($data['chapters'] as $key => $value)
+                                        <option value="{{ $value->value }}"
+                                            {{ $data['lessonplan_data']->chapter_id == $value->value ? 'selected' : '' }}>
+                                            {{ $value->label }}</option>
+                                    @endforeach
                                 @endif
                             </select>
                         </div>
@@ -106,49 +107,62 @@ if(isset($_REQUEST['preload_lms'])){
                             <select name="topic" id="topic" class="form-control">
                                 <option value="">Select Topic</option>
                                 @if (isset($data['topics']))
-                                @foreach ($data['topics'] as $key => $value)
-                                <option value="{{ $value->value }}" {{ $data['lessonplan_data']->topic_id == $value->value ? 'selected' : '' }}>
-                                    {{ $value->label }}
-                                </option>
-                                @endforeach
+                                    @foreach ($data['topics'] as $key => $value)
+                                        <option value="{{ $value->value }}"
+                                            {{ $data['lessonplan_data']->topic_id == $value->value ? 'selected' : '' }}>
+                                            {{ $value->label }}</option>
+                                    @endforeach
                                 @endif
                             </select>
                         </div>
                         <div class="col-md-3 form-group">
                             <label>No. of Periods</label>
-                            <input type="number" name="numberofperiod" id="numberofperiod" class="form-control" value="{{ $data['lessonplan_data']->numberofperiod }}" placeholder="Enter No of periods">
+                            <input type="number" name="numberofperiod" id="numberofperiod" class="form-control"
+                                value="{{ $data['lessonplan_data']->numberofperiod }}"
+                                placeholder="Enter No of periods">
                         </div>
                         <div class="col-md-3 form-group">
                             <label>Teaching time</label>
-                            <input type="number" name="teachingtime" id="teachingtime" class="form-control" value="{{ $data['lessonplan_data']->teachingtime }}" placeholder="Enter Teaching time (in minutes)">
+                            <input type="number" name="teachingtime" id="teachingtime" class="form-control"
+                                value="{{ $data['lessonplan_data']->teachingtime }}"
+                                placeholder="Enter Teaching time (in minutes)">
                         </div>
                         <div class="col-md-3 form-group">
                             <label>Assessment time</label>
-                            <input type="number" name="assessmenttime" id="assessmenttime" class="form-control" value="{{ $data['lessonplan_data']->assessmenttime }}" placeholder="Enter Assessment time (in minutes)">
+                            <input type="number" name="assessmenttime" id="assessmenttime" class="form-control"
+                                value="{{ $data['lessonplan_data']->assessmenttime }}"
+                                placeholder="Enter Assessment time (in minutes)">
                         </div>
                         <div class="col-md-3 form-group">
                             <label>Learning time</label>
-                            <input type="number" name="learningtime" id="learningtime" class="form-control" value="{{ $data['lessonplan_data']->learningtime }}" placeholder="Enter Learning time (in minutes)">
+                            <input type="number" name="learningtime" id="learningtime" class="form-control"
+                                value="{{ $data['lessonplan_data']->learningtime }}"
+                                placeholder="Enter Learning time (in minutes)">
                         </div>
                         <div class="col-md-6 form-group">
                             <label>Assessment Qualifying</label>
-                            <textarea class="form-control tinymce" placeholder="Enter Assessment Qualifying" name="assessmentqualifying" id="assessmentqualifying" cols="60" rows="2">{{ $data['lessonplan_data']->assessmentqualifying }}</textarea>
+                            <textarea class="form-control tinymce" placeholder="Enter Assessment Qualifying" name="assessmentqualifying"
+                                id="assessmentqualifying" cols="60" rows="2">{{ $data['lessonplan_data']->assessmentqualifying }}</textarea>
                         </div>
                         <div class="col-md-6 form-group">
                             <label>Focus point <span class="text-danger">*</span></label>
-                            <textarea class="form-control tinymce" placeholder="Enter Focus point" name="focauspoint" id="focauspoint" cols="60" rows="2">{{ $data['lessonplan_data']->focauspoint }}</textarea>
+                            <textarea class="form-control tinymce" placeholder="Enter Focus point" name="focauspoint" id="focauspoint"
+                                cols="60" rows="2">{{ $data['lessonplan_data']->focauspoint }}</textarea>
                         </div>
                         <div class="col-md-6 form-group">
                             <label>Pedagogical process <span class="text-danger">*</span></label>
-                            <textarea class="form-control tinymce" placeholder="Enter Pedagogical process" name="pedagogicalprocess" id="pedagogicalprocess" cols="60" rows="2">{{ $data['lessonplan_data']->pedagogicalprocess }}</textarea>
+                            <textarea class="form-control tinymce" placeholder="Enter Pedagogical process" name="pedagogicalprocess"
+                                id="pedagogicalprocess" cols="60" rows="2">{{ $data['lessonplan_data']->pedagogicalprocess }}</textarea>
                         </div>
                         <div class="col-md-6 form-group">
                             <label>Resource <span class="text-danger">*</span></label>
-                            <textarea class="form-control tinymce" placeholder="Enter Resource" name="resource" id="resource" cols="60" rows="2">{{ $data['lessonplan_data']->resource }}</textarea>
+                            <textarea class="form-control tinymce" placeholder="Enter Resource" name="resource" id="resource" cols="60"
+                                rows="2">{{ $data['lessonplan_data']->resource }}</textarea>
                         </div>
                         <div class="col-md-12 form-group">
                             <label>Classroom presentation <span class="text-danger">*</span></label>
-                            <textarea class="form-control tinymce" placeholder="Enter Classroom presentation" name="classroompresentation" id="classroompresentation" cols="60" rows="2">{{ $data['lessonplan_data']->classroompresentation }}</textarea>
+                            <textarea class="form-control tinymce" placeholder="Enter Classroom presentation" name="classroompresentation"
+                                id="classroompresentation" cols="60" rows="2">{{ $data['lessonplan_data']->classroompresentation }}</textarea>
                         </div>
                         <div class="col-md-12 form-group">
                             <button type="button" class="btn btn-success add_activity" id="classroomactivity">Add
@@ -156,27 +170,33 @@ if(isset($_REQUEST['preload_lms'])){
                         </div>
                         <div class="col-md-6 form-group">
                             <label>Clasroom diversity <span class="text-danger">*</span></label>
-                            <textarea class="form-control tinymce" placeholder="Enter Clasroom diversity" name="classroomdiversity" id="classroomdiversity" cols="60" rows="2">{{ $data['lessonplan_data']->classroomdiversity }}</textarea>
+                            <textarea class="form-control tinymce" placeholder="Enter Clasroom diversity" name="classroomdiversity"
+                                id="classroomdiversity" cols="60" rows="2">{{ $data['lessonplan_data']->classroomdiversity }}</textarea>
                         </div>
                         <div class="col-md-6 form-group">
                             <label>Prerequisite lesson</label>
-                            <textarea class="form-control tinymce" placeholder="Enter Prerequisite lesson" name="prerequisite" id="prerequisite" cols="60" rows="2">{{ $data['lessonplan_data']->prerequisite }}</textarea>
+                            <textarea class="form-control tinymce" placeholder="Enter Prerequisite lesson" name="prerequisite" id="prerequisite"
+                                cols="60" rows="2">{{ $data['lessonplan_data']->prerequisite }}</textarea>
                         </div>
                         <div class="col-md-6 form-group">
                             <label>Leraning objective</label>
-                            <textarea class="form-control tinymce" placeholder="Enter Leraning objective" name="learningobjective" id="learningobjective" cols="60" rows="2">{{ $data['lessonplan_data']->learningobjective }}</textarea>
+                            <textarea class="form-control tinymce" placeholder="Enter Leraning objective" name="learningobjective"
+                                id="learningobjective" cols="60" rows="2">{{ $data['lessonplan_data']->learningobjective }}</textarea>
                         </div>
                         <div class="col-md-6 form-group">
                             <label>Learning outcome: Knowledge</label>
-                            <textarea class="form-control tinymce" placeholder="Enter Learning outcome" name="learningknowledge" id="learningknowledge" cols="60" rows="2">{{ $data['lessonplan_data']->learningknowledge }}</textarea>
+                            <textarea class="form-control tinymce" placeholder="Enter Learning outcome" name="learningknowledge"
+                                id="learningknowledge" cols="60" rows="2">{{ $data['lessonplan_data']->learningknowledge }}</textarea>
                         </div>
                         <div class="col-md-6 form-group">
                             <label>Learning outcome: Skills</label>
-                            <textarea class="form-control tinymce" placeholder="Enter Learning outcome" name="learningskill" id="learningskill" cols="60" rows="2">{{ $data['lessonplan_data']->learningskill }}</textarea>
+                            <textarea class="form-control tinymce" placeholder="Enter Learning outcome" name="learningskill" id="learningskill"
+                                cols="60" rows="2">{{ $data['lessonplan_data']->learningskill }}</textarea>
                         </div>
                         <div class="col-md-12 form-group">
                             <label>Self-study & Homework</label>
-                            <textarea class="form-control tinymce" placeholder="Enter Self-study & Homework" name="selfstudyhomework" id="selfstudyhomework" cols="60" rows="2">{{ $data['lessonplan_data']->selfstudyhomework }}</textarea>
+                            <textarea class="form-control tinymce" placeholder="Enter Self-study & Homework" name="selfstudyhomework"
+                                id="selfstudyhomework" cols="60" rows="2">{{ $data['lessonplan_data']->selfstudyhomework }}</textarea>
                         </div>
                         <div class="col-md-12 form-group">
                             <button type="button" class="btn btn-success add_activity" id="selfstudyactivity">Add
@@ -184,7 +204,8 @@ if(isset($_REQUEST['preload_lms'])){
                         </div>
                         <div class="col-md-12 form-group">
                             <label>Assessment</label>
-                            <textarea class="form-control tinymce" placeholder="Enter Assessment" name="assessment" id="assessment" cols="60" rows="2">{{ $data['lessonplan_data']->assessment }}</textarea>
+                            <textarea class="form-control tinymce" placeholder="Enter Assessment" name="assessment" id="assessment"
+                                cols="60" rows="2">{{ $data['lessonplan_data']->assessment }}</textarea>
                         </div>
                         <div class="col-md-12 form-group">
                             <button type="button" class="btn btn-success add_activity" id="assessmentactivity">Add
@@ -199,8 +220,11 @@ if(isset($_REQUEST['preload_lms'])){
                             <div class="modal-dialog modal-lg" role="document">
                                 <div class="modal-content">
                                     <div class="modal-header">
-                                        <h5 class="modal-title">Day <button type="button" class="btn btn-primary add-day-mdl"><i class="fa fa-plus"></i></button></h5>
-                                        <button type="button" class="btn-close-day close" data-dismiss="modal" aria-label="Close">
+                                        <h5 class="modal-title">Day <button type="button"
+                                                class="btn btn-primary add-day-mdl"><i
+                                                    class="fa fa-plus"></i></button></h5>
+                                        <button type="button" class="btn-close-day close" data-dismiss="modal"
+                                            aria-label="Close">
                                             <span aria-hidden="true">&times;</span>
                                         </button>
                                     </div>
@@ -209,9 +233,11 @@ if(isset($_REQUEST['preload_lms'])){
                                         </div>
                                     </div>
                                     <div class="modal-footer">
-                                        <button type="button" class="btn btn-primary btn-close-day" data-dismiss="modal">Save
+                                        <button type="button" class="btn btn-primary btn-close-day"
+                                            data-dismiss="modal">Save
                                             changes</button>
-                                        <button type="button" class="btn btn-secondary btn-close-day" data-dismiss="modal">Close</button>
+                                        <button type="button" class="btn btn-secondary btn-close-day"
+                                            data-dismiss="modal">Close</button>
                                     </div>
                                 </div>
                             </div>
@@ -222,7 +248,8 @@ if(isset($_REQUEST['preload_lms'])){
                                 <div class="modal-content">
                                     <div class="modal-header">
                                         <h5 class="modal-title">Modal title</h5>
-                                        <button type="button" class="btn-close close" data-dismiss="modal" aria-label="Close">
+                                        <button type="button" class="btn-close close" data-dismiss="modal"
+                                            aria-label="Close">
                                             <span aria-hidden="true">&times;</span>
                                         </button>
                                     </div>
@@ -244,8 +271,10 @@ if(isset($_REQUEST['preload_lms'])){
                                             !!</div>
                                     </div>
                                     <div class="modal-footer">
-                                        <button type="button" class="btn btn-primary btn-close" data-dismiss="modal">Save changes</button>
-                                        <button type="button" class="btn btn-secondary btn-close" data-dismiss="modal">Close</button>
+                                        <button type="button" class="btn btn-primary btn-close"
+                                            data-dismiss="modal">Save changes</button>
+                                        <button type="button" class="btn btn-secondary btn-close"
+                                            data-dismiss="modal">Close</button>
                                     </div>
                                 </div>
                             </div>
@@ -254,47 +283,58 @@ if(isset($_REQUEST['preload_lms'])){
                     <div class="row align-items-center">
                         <div class="col-md-6 form-group">
                             <label>Hard word</label>
-                            <textarea class="form-control tinymce" placeholder="Enter Hard word" name="hardword" id="hardword" cols="60" rows="2">{{ $data['lessonplan_data']->hardword }}</textarea>
+                            <textarea class="form-control tinymce" placeholder="Enter Hard word" name="hardword" id="hardword" cols="60"
+                                rows="2">{{ $data['lessonplan_data']->hardword }}</textarea>
                         </div>
                         <div class="col-md-6 form-group">
                             <label>Tag & metatag</label>
-                            <textarea class="form-control tinymce" placeholder="Enter Tag & metatag" name="tagmetatag" id="tagmetatag" cols="60" rows="2">{{ $data['lessonplan_data']->tagmetatag }}</textarea>
+                            <textarea class="form-control tinymce" placeholder="Enter Tag & metatag" name="tagmetatag" id="tagmetatag"
+                                cols="60" rows="2">{{ $data['lessonplan_data']->tagmetatag }}</textarea>
                         </div>
                         <div class="col-md-6 form-group">
                             <label>Value integration</label>
-                            <textarea class="form-control tinymce" placeholder="Enter Value integration" name="valueintegration" id="valueintegration" cols="60" rows="2">{{ $data['lessonplan_data']->valueintegration }}</textarea>
+                            <textarea class="form-control tinymce" placeholder="Enter Value integration" name="valueintegration"
+                                id="valueintegration" cols="60" rows="2">{{ $data['lessonplan_data']->valueintegration }}</textarea>
                         </div>
                         <div class="col-md-6 form-group">
                             <label>Global connection</label>
-                            <textarea class="form-control tinymce" placeholder="Enter Global connection" name="globalconnection" id="globalconnection" cols="60" rows="2">{{ $data['lessonplan_data']->globalconnection }}</textarea>
+                            <textarea class="form-control tinymce" placeholder="Enter Global connection" name="globalconnection"
+                                id="globalconnection" cols="60" rows="2">{{ $data['lessonplan_data']->globalconnection }}</textarea>
                         </div>
                         <div class="col-md-6 form-group">
                             <label>SEL</label>
-                            <textarea class="form-control tinymce" placeholder="Enter SEL" name="sel" id="sel" cols="60" rows="2">{{ $data['lessonplan_data']->sel }}</textarea>
+                            <textarea class="form-control tinymce" placeholder="Enter SEL" name="sel" id="sel" cols="60"
+                                rows="2">{{ $data['lessonplan_data']->sel }}</textarea>
                         </div>
                         <div class="col-md-6 form-group">
                             <label>STEM</label>
-                            <textarea class="form-control tinymce" placeholder="Enter STEM" name="stem" id="stem" cols="60" rows="2">{{ $data['lessonplan_data']->stem }}</textarea>
+                            <textarea class="form-control tinymce" placeholder="Enter STEM" name="stem" id="stem" cols="60"
+                                rows="2">{{ $data['lessonplan_data']->stem }}</textarea>
                         </div>
                         <div class="col-md-6 form-group">
                             <label>Vocational training</label>
-                            <textarea class="form-control tinymce" placeholder="Enter Vocational training" name="vocationaltraining" id="vocationaltraining" cols="60" rows="2">{{ $data['lessonplan_data']->vocationaltraining }}</textarea>
+                            <textarea class="form-control tinymce" placeholder="Enter Vocational training" name="vocationaltraining"
+                                id="vocationaltraining" cols="60" rows="2">{{ $data['lessonplan_data']->vocationaltraining }}</textarea>
                         </div>
                         <div class="col-md-6 form-group">
                             <label>Simulation</label>
-                            <textarea class="form-control tinymce" placeholder="Enter Simulation" name="simulation" id="simulation" cols="60" rows="2">{{ $data['lessonplan_data']->simulation }}</textarea>
+                            <textarea class="form-control tinymce" placeholder="Enter Simulation" name="simulation" id="simulation"
+                                cols="60" rows="2">{{ $data['lessonplan_data']->simulation }}</textarea>
                         </div>
                         <div class="col-md-6 form-group">
                             <label>Games</label>
-                            <textarea class="form-control tinymce" placeholder="Enter Games" name="games" id="games" cols="60" rows="2">{{ $data['lessonplan_data']->games }}</textarea>
+                            <textarea class="form-control tinymce" placeholder="Enter Games" name="games" id="games" cols="60"
+                                rows="2">{{ $data['lessonplan_data']->games }}</textarea>
                         </div>
                         <div class="col-md-6 form-group">
                             <label>Activities</label>
-                            <textarea class="form-control tinymce" placeholder="Enter Activities" name="activities" id="activities" cols="60" rows="2">{{ $data['lessonplan_data']->activities }}</textarea>
+                            <textarea class="form-control tinymce" placeholder="Enter Activities" name="activities" id="activities"
+                                cols="60" rows="2">{{ $data['lessonplan_data']->activities }}</textarea>
                         </div>
                         <div class="col-md-6 form-group">
                             <label>Real life application</label>
-                            <textarea class="form-control tinymce" placeholder="Enter Real life application" name="reallifeapplication" id="reallifeapplication" cols="60" rows="2">{{ $data['lessonplan_data']->reallifeapplication }}</textarea>
+                            <textarea class="form-control tinymce" placeholder="Enter Real life application" name="reallifeapplication"
+                                id="reallifeapplication" cols="60" rows="2">{{ $data['lessonplan_data']->reallifeapplication }}</textarea>
                         </div>
                     </div>
                     <div class="col-md-12 form-group">
@@ -309,7 +349,8 @@ if(isset($_REQUEST['preload_lms'])){
 </div>
 @include('includes.lmsfooterJs')
 <script src="//cdnjs.cloudflare.com/ajax/libs/moment.js/2.9.0/moment-with-locales.js"></script>
-<script src="//cdn.rawgit.com/Eonasdan/bootstrap-datetimepicker/e8bddc60e73c1ec2475f827be36e1957af72e2ea/src/js/bootstrap-datetimepicker.js">
+<script
+    src="//cdn.rawgit.com/Eonasdan/bootstrap-datetimepicker/e8bddc60e73c1ec2475f827be36e1957af72e2ea/src/js/bootstrap-datetimepicker.js">
 </script>
 <script src="{!! url('js/quill.js') !!}"></script>
 <script src="{!! url('js/tinymce.min.js') !!}"></script>
