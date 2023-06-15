@@ -235,7 +235,6 @@ class loginController extends Controller
                             $res['message'] = "Academic Term Date Expired";
                             return is_mobile($type, "login", $res, "view");
                         }
-                        echo "not set";exit;
                         $given_hrms_rights = '';
                         $getAcademicTerms = $getAcademicYear = array();
 
@@ -293,7 +292,7 @@ class loginController extends Controller
                             ->where('sub_institute_id', $user['sub_institute_id'])->get()->toArray();
                         $user_group_id = DB::table('tbluserprofilemaster')->where('NAME', 'Teacher')
                             ->where('sub_institute_id', $user['sub_institute_id'])->get()->toArray();
-                        $user_group_id = $user_group_id[0]->id;
+                        $user_group_id = $user_group_id[0]->id ?? '';
                         if ($user_group_id == session()->get('user_profile_id')) {
 
                             $class_teacher = DB::table('class_teacher')->where('teacher_id', $user['id'])
