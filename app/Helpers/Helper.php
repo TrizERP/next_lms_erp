@@ -184,7 +184,7 @@ if (!function_exists('SearchChain')) {
             if (count($classTeacherGrdArr) > 0) {
                 $query->whereIn('id', $classTeacherGrdArr);
             } else {
-                $query->where('id', null);
+                $query->oRwhere('id', null);
             }
         }
         //  END Check for class teacher assigned standards      //
@@ -196,7 +196,7 @@ if (!function_exists('SearchChain')) {
                 $query->whereIn('id', $subjectTeacherGrdArr);
             } else {
 
-                $query->where('id', null);
+                $query->oRwhere('id', null);
             }
         }
         //END Check for subject teacher assigned
@@ -233,7 +233,7 @@ if (!function_exists('SearchChain')) {
                     if (count($classTeacherStdArr) > 0) {
                         $query->whereIn('id', $classTeacherStdArr);
                     } else {
-                        $query->where('id', null);
+                        $query->oRwhere('id', null);
                     }
                 }
                 //END Check for class teacher assigned standards
@@ -244,7 +244,7 @@ if (!function_exists('SearchChain')) {
                     if (count($subjectTeacherStdArr) > 0) {
                         $query->orwhereIn('id', $subjectTeacherStdArr);
                     } else {
-                        $query->orwhere('id', null);
+                        $query->oRwhere('id', null);
                     }
                 }
                 //END Check for subject teacher assigned
@@ -264,7 +264,7 @@ if (!function_exists('SearchChain')) {
                     if (count($classTeacherStdArr) > 0) {
                         $query->whereIn('id', $classTeacherStdArr);
                     } else {
-                        $query->where('id', null);
+                        $query->oRwhere('id', null);
                     }
                 }
                 //END Check for class teacher assigned standards
@@ -277,7 +277,7 @@ if (!function_exists('SearchChain')) {
                         $query->whereIn('id', $subjectTeacherStdArr);
                     } else {
                         // $query->orwhere('id',null);
-                        $query->where('id', null);
+                        $query->oRwhere('id', null);
                     }
                 }
                 //END Check for subject teacher assigned
@@ -305,7 +305,7 @@ if (!function_exists('SearchChain')) {
             }
         }
 
-        $div_option = "<option value=''>Select</option>";
+            $div_option = "<option value=''>Select</option>";
         if ($std_val != "") {
             if (is_array($std_val)) {
                 $query = DB::table('std_div_map');
