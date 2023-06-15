@@ -21,15 +21,15 @@
                 <div class="card-body">
                     <div class="row justify-content-center py-3">
                         <div class="col-md-3 text-center my-2">
-                            <div class="answer-box right">{{$data['online_exam_data']['obtain_marks']}}/{{$data['questionpaper_data']['total_marks']}}</div>
+                            <div class="answer-box right">{{$data['online_exam_data']['obtain_marks'] ?? 0}}/{{$data['questionpaper_data']['total_marks']}}</div>
                             <div class="h4 mb-0">Total Marks</div>
                         </div>
                         <div class="col-md-3 text-center my-2">
-                            <div class="answer-box wrong">{{$data['online_exam_data']['total_right']}}/{{$data['questionpaper_data']['total_ques']}}</div>
+                            <div class="answer-box wrong">{{$data['online_exam_data']['total_right'] ?? 0 }}/{{$data['questionpaper_data']['total_ques']}}</div>
                             <div class="h4 mb-0">Right Answer</div>
                         </div>
                         <div class="col-md-3 text-center my-2">
-                            <div class="answer-box uttemp">{{$data['online_exam_data']['total_wrong']}}/{{$data['questionpaper_data']['total_ques']}}</div>
+                            <div class="answer-box uttemp">{{$data['online_exam_data']['total_wrong'] ?? 0 }}/{{$data['questionpaper_data']['total_ques']}}</div>
                             <div class="h4 mb-0">Wrong Answer</div>
                         </div>
                     </div>

@@ -148,7 +148,7 @@ class NewLMS_ApiController extends Controller
         }
     }
 
-    public function NewLMS_signup(Request $request)
+        public function NewLMS_signup(Request $request)
     {
          $user_type = $request->input("user_type");
         $first_name = $request->input("first_name");
@@ -885,7 +885,7 @@ class NewLMS_ApiController extends Controller
     {
         $user_type = $data->user_type;
         $profileval['name'] = str_replace(' ', '', $user_type);
-        $arr_name = strtolower($profileval['name'])."_rights";
+        $arr_name = strtolower(str_replace(' ', '', $profileval['name']))."_rights";
 
         $userprofile_data = tbluserprofilemasterModel::select('*')->where([
             'sub_institute_id' => $sub_institute_id, 'name' => $data->user_type,
@@ -987,11 +987,13 @@ class NewLMS_ApiController extends Controller
         $sub_institute_id = 1; // Triz Innovation
         $text = "Dear Parent, Your OTP is ".$otp.".";
         $res = sendSMS($mobile_no, $text, $sub_institute_id);
+
         if ($res["error"] == 1) {
             $res['message']=' - Please add api details first.';
         }else{
             $res['message']='OTP Resend Successfully .';
         }
         return is_mobile('', 'signup', $res, "view");
+
     }
 }

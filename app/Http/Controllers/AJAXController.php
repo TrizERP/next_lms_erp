@@ -195,7 +195,12 @@ class AJAXController extends Controller
 
             //START Check for class teacher assigned standards
             $classTeacherStdArr = session()->get('classTeacherStdArr');
-            if ($classTeacherStdArr != "" && ! in_array($module_name, $module_array)) {
+            if(is_array($classTeacherStdArr)){
+                $checkstd =count($classTeacherStdArr)>0;
+            }else{
+                $checkstd = '1=1';
+            }
+            if ($checkstd && $classTeacherStdArr != "" && ! in_array($module_name, $module_array)) {
                 $query->whereIn('id', $classTeacherStdArr);
             }
             //END Check for class teacher assigned standards
@@ -206,12 +211,11 @@ class AJAXController extends Controller
                 $query->whereIn('id', $subjectTeacherStdArr);
             }
             //END Check for subject teacher assigned
-
             $standard = $query->pluck("name", "id");
-
         }
 
         return response()->json($standard);
+        // return $classTeacherStdArr;
     }
 
     public function getDivisionList(Request $request)
@@ -235,7 +239,7 @@ class AJAXController extends Controller
 
             //START Check for class teacher assigned standards
             $classTeacherDivArr = session()->get('classTeacherDivArr');
-            if ($classTeacherDivArr != "" && ! in_array($module_name, $module_array)) {
+            if (count($classTeacherDivArr) > 0 && $classTeacherDivArr != "" && ! in_array($module_name, $module_array)) {
                 $query->whereIn('division.id', $classTeacherDivArr);
             }
             //END Check for class teacher assigned standards
@@ -256,8 +260,12 @@ class AJAXController extends Controller
             $query->where("std_div_map.standard_id", $request->standard_id);
             //START Check for class teacher assigned standards
             $classTeacherDivArr = session()->get('classTeacherDivArr');
-
-            if ($classTeacherDivArr != "" && ! in_array($module_name, $module_array)) {
+            if(is_array($classTeacherDivArr)){
+                $checkdiv =count($classTeacherDivArr)>0;
+            }else{
+                $checkdiv = '1=1';
+            }
+            if ($checkdiv && $classTeacherDivArr != "" && ! in_array($module_name, $module_array)) {
                 $query->whereIn('division.id', $classTeacherDivArr);
             }
             //END Check for class teacher assigned standards
@@ -873,7 +881,7 @@ class AJAXController extends Controller
                     $child_li .= '<li class="d-flex align-items-center"><i class="fa fa-angle-right" style="margin-right: 8px;">
                     </i><a href="' . route($cval['link']) . '" onclick="sessionMenu(' . $cval['tblmenu_master_id'] . ');" >' . $cval['name'] . '</a></li>';
                     if ($cval['name'] == 'Field Settings') {
-                        $export_import_link = "window.open('".env('APP_URL')."/excel_upload/export_xlsx.php?sub_institute_iderp=".$sub_institute_id."','scrollbars=yes,resizable=no,status=no,location=no,toolbar=no,menubar=no','width=600,height=300,left=100,top=100')";
+                        $export_import_link = "window.open('https://erp.triz.co.in/excel_upload/export_xlsx.php?sub_institute_iderp=".$sub_institute_id."','scrollbars=yes,resizable=no,status=no,location=no,toolbar=no,menubar=no','width=600,height=300,left=100,top=100')";
                         $child_li .= '<li><i class="fa fa-angle-right" style="margin-right: 8px;">
                     </i><a href="javascript:void(0);" onclick="'.$export_import_link.'" class="waves-effect">Excel Import/Export</a></li>';
                         $child_li .= '<li><i class="fa fa-angle-right" style="margin-right: 8px;">

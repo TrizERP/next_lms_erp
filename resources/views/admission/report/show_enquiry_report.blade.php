@@ -56,6 +56,7 @@
                 </div>
             </div>
         </div>
+        
         @if(isset($data['data']))
         
         <div class="card">            
@@ -107,7 +108,7 @@
                                 
                                 @if(isset($value['admission_fees']))
                                     <tr>                               
-                                        <td>Total</td>
+                                        <th>Total</th>
                                             <td></td>
                                             <td></td>
                                             <td></td>
@@ -148,6 +149,7 @@
             </div>
         </div>
             @endif
+
     </div>
 </div>
 
@@ -211,13 +213,17 @@
             $('#ChapterModal').modal('show');
            
         }
-
-        jQuery(document).ready(function(){  
+</script>
+<script>
+$(document).ready(function(){  
   $('[data-toggle="popover"]').popover({title: "",html: true});
   $('[data-toggle="popover"]').on('click', function (e) {
     $('[data-toggle="popover"]').not(this).popover('hide');
     });
-
+});
+</script>    
+<script>
+    $(document).ready(function() {
      var table = $('#example').DataTable( {
          select: true,          
          lengthMenu: [ 

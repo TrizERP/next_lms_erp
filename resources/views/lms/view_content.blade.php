@@ -40,7 +40,6 @@
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
 <script>
 $(document).ready(function() {
-
 document.onmousedown = function (e) {                     
         //Check the Mouse Button which is clicked.
         if (e.which == 3) {
@@ -60,7 +59,6 @@ document.onkeydown = function (e) {
     // return false;    
 }
 window.onload = function() {
-    
     document.addEventListener("contextmenu", function(e){
         e.preventDefault();
         if(event.keyCode == 123) {
@@ -78,7 +76,7 @@ window.onload = function() {
 
     $(document).contextmenu(function() { return false;});
 
-    var url = $("#hid_url").val();   
+    var url = $("#hid_url").val(); 
     var thePdf = null;
     var scale = 2;
 
@@ -103,6 +101,5 @@ window.onload = function() {
       }
   }
 });
-
 </script>
 @include('includes.footer')

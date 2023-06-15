@@ -39,25 +39,23 @@
                         @csrf
                         <div class="row">
                             {{ App\Helpers\SearchChain('3','single','grade,std,div',$grade_id,$standard_id,$division_id) }}
-
                             <div class="col-md-3 form-group">
                                 <label for="subject">Select Subject</label>
                                 <select name="subject" id="subject" class="cust-select form-control mb-0">
                                     @if(empty($data['subject_data']))
                                         <option value="">Select Subject</option>
                                     @endif
-
                                     @if(!empty($data['subject_data']))
                                         @foreach($data['subject_data'] as $k1 => $v1)
                                             <option
-                                                value="{{$v1['subject_id']}}" @if(isset($data['subject_id'])){{$data['subject_id'] == $v1['subject_id'] ? 'selected=selected' : '' }} @endif>{{$v1['display_name']}} </option>
+                                                value="{{$v1['subject_id']}}" @if(isset($data['subject_id'])){{$data['subject_id'] == $v1['subject_id'] ? 'selected' : '' }} @endif>{{$v1['display_name']}} </option>
                                         @endforeach
                                     @endif
                                 </select>
                             </div>
                             <div class="col-md-3 form-group">
                                 <label for="exam">Select Exam</label>
-                                <select class="cust-select form-control mb-0" name="exam_id[]" 
+                                <select class="cust-select form-control mb-0" name="exam_id[]" multiple="multiple"
                                         required="required">
                                     @if(!empty($data['exams_data']))
                                         @foreach($data['exams_data'] as $k => $v)

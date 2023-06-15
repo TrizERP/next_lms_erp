@@ -10,15 +10,7 @@
                 <h4 class="page-title">Fees Collect</h4>
             </div>
         </div>
-         @php
-            $grade_id = $standard_id = $division_id = '';
 
-            if(isset($data['grade']) && isset($data['standard']) && isset($data['division'])){
-                $grade_id = $data['grade'];
-                $standard_id = $data['standard'];
-                $division_id = $data['division'];
-            }
-        @endphp
         <div class="card">
             @if ($sessionData = Session::get('data'))
             <div class="@if($sessionData['status_code']==1) alert alert-success alert-block @else alert alert-danger alert-block @endif ">
@@ -34,14 +26,13 @@
                     <div class="col-md-12">
                         <div class="form-group">
                             <div class="row">
-                              {{ App\Helpers\SearchChain('4','single','grade,std,div',$grade_id,$standard_id,$division_id) }}
-                                
+                              {{ App\Helpers\SearchChain('4','single','grade,std,div') }}
                             </div>
                         </div>
                     </div>
                     
                     <div class="col-md-4 form-group">
-                        <label>Name</label>                        
+                        <label>Name</label>
                         <input type="text" id="stu_name" placeholder="Name" name="stu_name" class="form-control">
                     </div>
                     <div class="col-md-4 form-group">
@@ -102,7 +93,7 @@
                                 <td><?php echo $arr->stu_quota; ?></td>                                 
                                 <td><?php echo $arr->mobile; ?></td>
                                 <td><?php echo $arr->uniqueid ?></td>                                        
-                                <td><?php echo $arr->bkoff ?></td>
+                                <td><?php echo $arr->bkoff; ?></td>
                                 <td>
                                     <a href="{{ route('fees_collect.edit',$arr->student_id)}}"><button style="float:left;" type="button" class="btn btn-info btn-outline ">Collect Fees</button></a>
                                 </td>

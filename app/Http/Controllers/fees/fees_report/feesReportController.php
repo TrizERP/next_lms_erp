@@ -215,10 +215,9 @@ class feesReportController extends Controller
             ORDER BY fo.receiptdate ASC, fo.reciept_id ASC) AS N ON M.student_id = N.student_id AND M.receipt_no = N.reciept_id 
             HAVING (M.receiptdate IS NOT NULL)
             ORDER BY M.receiptdate,CAST(M.receipt_no AS SIGNED)";
-            //      --add receipt_no in 02/06/23       -- WHERE t.first_name = $name OR t.middle_name = $name OR t.last_name = $name SET LINE 180
+            //           --add receipt_no in 02/06/23   -- WHERE t.first_name = $name OR t.middle_name = $name OR t.last_name = $name SET LINE 180
 //echo $sql;
 //die();
-
         $result = DB::select(DB::raw($sql));
         $feesData = json_decode(json_encode($result), true);
 
@@ -235,7 +234,7 @@ class feesReportController extends Controller
         $res['from_date'] = $from_date;
         $res['to_date'] = $to_date;
         $res['months'] = FeeMonthId();
-        // echo "<pre>";print_r($feesData);exit;
+
         return is_mobile($type, "fees/fees_report/index", $res, "view");
     }
 }

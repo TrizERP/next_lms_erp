@@ -45,6 +45,10 @@ class chapterController extends Controller
             $syear = $request->session()->get('syear');
             $user_profile_name = $request->session()->get('user_profile_name');
         }
+// <<<<<<< HEAD
+
+// =======
+// >>>>>>> 5711c69549bbcd152bf4c8020191d51575f0ee7c
         $getIsLms = DB::table('school_setup')
             ->where('Id', $sub_institute_id)
             ->value('is_Lms');
