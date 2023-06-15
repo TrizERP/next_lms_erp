@@ -442,7 +442,7 @@ class leaveApplicationController extends Controller
         $syear = $request->input("syear");
 
         if ($teacher_id != "" && $sub_institute_id != "" && $syear != "") {
-            $result = DB::table("leave_applications as la")
+            $data = DB::table("leave_applications as la")
                 ->join('tblstudent_enrollment as se', function ($join) {
                     $join->whereRaw("se.student_id = la.student_id AND la.sub_institute_id = se.sub_institute_id AND se.syear = la.syear");
                 })
