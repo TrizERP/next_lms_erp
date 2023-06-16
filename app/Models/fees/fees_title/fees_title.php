@@ -12,6 +12,7 @@ class fees_title extends Model {
         'fees_title_id',
         'fees_title',
         'display_name',
+        'sort_order',        
         'cumulative_name',
         'append_name',
         'mandatory',
