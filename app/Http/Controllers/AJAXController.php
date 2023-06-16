@@ -183,7 +183,13 @@ class AJAXController extends Controller
 
             //START Check for class teacher assigned standards
             $classTeacherStdArr = session()->get('classTeacherStdArr');
-            if ($classTeacherStdArr != "" && ! in_array($module_name, $module_array)) {
+
+            if(is_array($classTeacherStdArr)){
+                $checkstd =count($classTeacherStdArr)>0;
+            }else{
+                $checkstd = '1=1';
+            }
+            if ($checkstd && $classTeacherStdArr != "" && ! in_array($module_name, $module_array)) {
                 $query->whereIn('id', $classTeacherStdArr);
             }
             //END Check for class teacher assigned standards
@@ -247,7 +253,12 @@ class AJAXController extends Controller
 
             //START Check for class teacher assigned standards
             $classTeacherDivArr = session()->get('classTeacherDivArr');
-            if (count($classTeacherDivArr) > 0 && $classTeacherDivArr != "" && ! in_array($module_name, $module_array)) {
+            if(is_array($classTeacherDivArr)){
+                $checkdiv =count($classTeacherDivArr)>0;
+            }else{
+                $checkdiv = '1=1';
+            }
+            if ($checkdiv && $classTeacherDivArr != "" && ! in_array($module_name, $module_array)) {
                 $query->whereIn('division.id', $classTeacherDivArr);
             }
             //END Check for class teacher assigned standards
