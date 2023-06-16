@@ -771,6 +771,43 @@ if (! function_exists('FeeMonthId')) {
         return $months_arr;
     }
 }
+// last year
+if (! function_exists('FeeMonthIdlast')) {
+
+    function FeeMonthIdlast()
+    {
+        $data = map_year::where([
+            'sub_institute_id' => session()->get('sub_institute_id'),
+            'syear'            => (session()->get('syear') - 1),
+        ])->get()->toArray();
+        if (count($data) == 0) {
+            return array();
+            exit;
+        }
+
+        $start_month = $data[0]['from_month'];
+        $end_month = $data[0]['to_month'];
+
+        $months = [
+            1  => 'Jan', 2 => 'Feb', 3 => 'Mar', 4 => 'Apr', 5 => 'May', 6 => 'Jun', 7 => 'Jul', 8 => 'Aug', 9 => 'Sep',
+            10 => 'Oct', 11 => 'Nov', 12 => 'Dec',
+        ];
+        $months_arr = [];
+        $syear = (session()->get('syear')-1);
+
+        for ($i = 1; $i <= 12; $i++) {
+            $months_arr[$start_month.$syear] = $months[$start_month].'/'.$syear;
+            if ($start_month == 12) {
+                $start_month = 0;
+                ++$syear;
+            }
+            ++$start_month;
+        }
+
+        return $months_arr;
+    }
+}
+// last year end
 if (! function_exists('FeeBreackoff')) {
 
     function FeeBreackoff($student_ids, $standard = null)
@@ -824,7 +861,61 @@ if (! function_exists('FeeBreackoff')) {
         return $data;
     }
 }
+// last year start
+if (! function_exists('FeeBreackofflast')) {
 
+    function FeeBreackofflast($student_ids, $standard = null)
+    {
+        $sub_institute_id = session()->get('sub_institute_id');
+        $syear = (session()->get('syear') - 1);
+        if ($sub_institute_id != '' && $syear != '') {
+            $sub_institute_id = $sub_institute_id;
+            $syear = $syear;
+        } else {
+            $sub_institute_id = request()->get('sub_institute_id');
+            $syear = request()->get('syear');
+        }
+        //DB::enableQueryLog();
+        $data = DB::table('tblstudent as s')
+            ->join('tblstudent_enrollment as se', function ($join) {
+                $join->whereRaw('se.student_id = s.id');
+            })->join('academic_section as g', function ($join) {
+                $join->whereRaw('g.id = se.grade_id');
+            })->join('standard as st', function ($join) use ($standard) {
+                if ($standard) {
+                    $join->whereRaw("st.id = '" . $standard . "'");
+                } else {
+                    $join->whereRaw('st.id = se.standard_id');
+                }
+            })->leftJoin('division as d', function ($join) {
+                $join->whereRaw(' d.id = se.section_id');
+            })->leftJoin('student_quota as sq', function ($join) {
+                $join->whereRaw('sq.id = se.student_quota AND sq.sub_institute_id = se.sub_institute_id');
+            })->join('fees_breackoff as fb', function ($join) use ($syear, $sub_institute_id, $standard) {
+                if ($standard) {
+                    $join->whereRaw("fb.syear = '" . $syear . "' AND fb.admission_year = s.admission_year AND fb.quota = se.student_quota
+                 AND fb.grade_id = se.grade_id AND fb.standard_id = " . $standard . " AND fb.sub_institute_id = '" . $sub_institute_id . "'");
+                } else {
+                    $join->whereRaw("fb.syear = '" . $syear . "' AND fb.admission_year = s.admission_year AND fb.quota = se.student_quota
+                 AND fb.grade_id = se.grade_id AND fb.standard_id = se.standard_id AND fb.sub_institute_id = '" . $sub_institute_id . "'");
+                }
+            })->selectRaw("s.*,se.syear,se.student_id,se.grade_id,se.standard_id,se.section_id,se.student_quota,
+                sq.title AS stu_quota,se.start_date,se.end_date,se.enrollment_code,se.drop_code,se.drop_remarks,se.drop_remarks,
+                se.term_id,se.remarks,se.admission_fees, se.house_id,se.lc_number,sum(fb.amount) bkoff,st.name standard_name,
+                d.name as division_name,fb.month_id,RIGHT(fb.month_id, 4) as sort_year,
+                CAST(SUBSTRING(fb.month_id,1,CHAR_LENGTH(fb.month_id)-4) as int) as sort_month")
+            ->where('s.sub_institute_id', $sub_institute_id)
+            ->where('se.syear', $syear)
+            ->whereIn('s.id', $student_ids)
+            ->groupByRaw('s.id,fb.month_id')
+            ->orderByRaw('sort_year,sort_month')->get()->toArray();
+            //$query = DB::getQueryLog();
+            //dd($query);exit();
+        return $data;
+    }
+}
+
+// last year end
 if (! function_exists('FeeBreakoffHeadWise')) {
 
     function FeeBreakoffHeadWise($student_ids, $from_date = null, $to_date = null)
@@ -921,7 +1012,104 @@ if (! function_exists('FeeBreakoffHeadWise')) {
         return $student_data;
     }
 }
+// last year
+if (! function_exists('FeeBreakoffHeadWiselast')) {
 
+    function FeeBreakoffHeadWiselast($student_ids, $from_date = null, $to_date = null)
+    {
+        $sub_institute_id = session()->get('sub_institute_id');
+        $syear = (session()->get('syear') -1);
+
+        $stud_arr = implode(',', $student_ids);
+        $extra_where = " AND s.id in (".$stud_arr.")";
+
+        $result = DB::table('tblstudent as s')
+            ->join('tblstudent_enrollment as se', function ($join) {
+                $join->whereRaw('se.student_id = s.id');
+            })->join('academic_section as g', function ($join) {
+                $join->whereRaw('g.id = se.grade_id');
+            })->join('standard as st', function ($join) {
+                $join->whereRaw('st.id = se.standard_id');
+            })->leftJoin('division as d', function ($join) {
+                $join->whereRaw(' d.id = se.section_id');
+            })->join('fees_breackoff as fb', function ($join) use ($syear, $sub_institute_id) {
+                $join->whereRaw("fb.syear = '".$syear."' AND fb.admission_year = s.admission_year AND fb.quota = se.student_quota
+                 AND fb.grade_id = se.grade_id AND fb.standard_id = se.standard_id AND fb.sub_institute_id = '".$sub_institute_id."'");
+            })->join('fees_title as ft', function ($join) {
+                $join->whereRaw('fb.fee_type_id = ft.id');
+            })->leftJoin('admission_registration as ar', function ($join) {
+                $join->whereRaw('ar.enrollment_no = s.enrollment_no AND ar.sub_institute_id = s.sub_institute_id');
+            })->leftJoin('admission_enquiry as ae', function ($join) {
+                $join->whereRaw('ae.id = ar.enquiry_id AND ar.sub_institute_id = ae.sub_institute_id');
+            })->selectRaw("s.*,se.syear,se.student_id,se.grade_id,se.standard_id,se.section_id,se.student_quota,
+                se.start_date,se.end_date,se.enrollment_code,se.drop_code,se.drop_remarks,se.drop_remarks,se.term_id,
+                se.remarks,se.admission_fees,se.house_id,se.lc_number,fb.amount,st.name standard_name,d.name as division_name,
+                fb.month_id,ft.display_name,ft.fees_title, ft.mandatory,'' as breakoff,s.father_name,s.mother_name,
+                RIGHT(fb.month_id, 4) as sort_year,CAST(SUBSTRING(fb.month_id,1,CHAR_LENGTH(fb.month_id)-4) as int) as sort_month,
+                ae.fees_circular_form_no")
+            ->where('s.sub_institute_id', $sub_institute_id)
+            ->where('se.syear', $syear)
+            ->whereIn('s.id', $student_ids)
+            ->groupByRaw('s.id,fb.month_id,fb.fee_type_id')
+            ->orderByRaw('sort_year,sort_month,ft.display_name ASC')->get()->toArray();
+        $data = array();
+        $student_data = array();
+        foreach ($result as $key => $value) {
+            $fees_title = $value->fees_title;
+            $month_id = $value->month_id;
+            $sub_institute_id = session()->get('sub_institute_id');
+
+            $request = $_REQUEST;
+
+            $paid_fees = $paid_fees = DB::table('fees_collect')
+                ->selectRaw("sum(ifnull($fees_title,0)) total_paid,receiptdate")
+                ->where([
+                    'term_id'          => $month_id,
+                    'sub_institute_id' => $sub_institute_id,
+                    'is_deleted'       => 'N',
+                    'student_id'       => $value->id,
+                ])->when(isset($request['from_date'], $request['to_date']), function ($q) use ($request) {
+                    $q->where('fees_collect.receiptdate', '<=', $request['to_date']);
+                })->get()->toArray();
+
+            $data[$value->id][$value->month_id][$value->fees_title]['amount'] = $value->amount - $paid_fees[0]->total_paid;
+
+            // Start Added by 18/05/2021 for getting paid amount in Overall Fees Head Wise report
+            if (isset($paid_fees[0]->total_paid) && $paid_fees[0]->total_paid != '') {
+                $data[$value->id][$value->month_id][$value->fees_title]['paid_amount'] = $paid_fees[0]->total_paid;
+            } else {
+                $data[$value->id][$value->month_id][$value->fees_title]['paid_amount'] = 0;
+            }
+            // End Added by 18/05/2021 for getting paid amount in Overall Fees Head Wise report
+
+
+            $data[$value->id][$value->month_id][$value->fees_title]['title'] = $value->display_name;
+            $data[$value->id][$value->month_id][$value->fees_title]['mandatory'] = $value->mandatory;
+        }
+
+        foreach ($result as $key => $value) {
+
+            $student_data[$value->id]['id'] = $value->id;
+            $student_data[$value->id]['enrollment_no'] = $value->enrollment_no;
+            $student_data[$value->id]['surname'] = $value->last_name;
+            $student_data[$value->id]['student_name'] = $value->first_name." ".$value->middle_name;
+            $student_data[$value->id]['gender'] = $value->gender;
+            $student_data[$value->id]['mobile'] = $value->mobile;
+            $student_data[$value->id]['dob'] = $value->dob;
+            $student_data[$value->id]['admission_year'] = $value->admission_year;
+            $student_data[$value->id]['address'] = $value->address;
+            $student_data[$value->id]['standard_name'] = $value->standard_name;
+            $student_data[$value->id]['division_name'] = $value->division_name;
+            $student_data[$value->id]['father_name'] = $value->father_name;
+            $student_data[$value->id]['mother_name'] = $value->mother_name;
+            $student_data[$value->id]['fees_circular_form_no'] = $value->fees_circular_form_no;
+            $student_data[$value->id]['breakoff'] = $data[$value->id];
+        }
+
+        return $student_data;
+    }
+}
+// last byear end
 if (! function_exists('getStringOfAmount')) {
 
     function getStringOfAmount($number)
@@ -1024,6 +1212,7 @@ if (! function_exists('OtherBreackOff')) {
     function OtherBreackOff($student_id_arr, $month_arr, $other_bf_amount = '', $from_date = null, $to_date = null)
     {
 
+        $syear = session()->get('syear');
         $student_id = $student_id_arr[0];
         $moth_ids = implode(',', $month_arr);
 
@@ -1098,11 +1287,105 @@ if (! function_exists('OtherBreackOff')) {
         if ($other_bf_amount == 'Yes') {
             return $other_fees_final_bk;
         }
-
+// echo "<pre>";
+// print_r($fees_title);
+// exit();
         return $bk_off_with_name;
         // start 27-07-2021 Added by divya for getting other_fees break off amount for fees overallhead wise report
     }
 }
+// last year start
+// last year end
+if (! function_exists('OtherBreackOfflast')) {
+
+    function OtherBreackOfflast($student_id_arr, $month_arr, $other_bf_amount = '', $from_date = null, $to_date = null)
+    {
+
+        $syear = (session()->get('syear')-1);
+        $student_id = $student_id_arr[0];
+        $moth_ids = implode(',', $month_arr);
+
+        $sub_institute_id = session()->get('sub_institute_id');
+        // $syear = session()->get('syear');
+
+        $fees_breckoff = DB::table('fees_breakoff_other')
+            ->selectRaw('*, sum(amount) as tot_amount')
+            ->where('sub_institute_id', $sub_institute_id)
+            ->where('syear', $syear)
+            ->where('student_id', $student_id)
+            ->whereIn('month_id', $month_arr)
+            ->groupByRaw('fee_type_id,month_id')->get()->toArray();
+// echo "<pre>";
+// print_r($fees_breckoff);
+// exit();
+        //START for fees over all headwise report
+        $extra_condition = '';
+
+        if (isset($_REQUEST['from_date']) && isset($_REQUEST['to_date'])) {
+            $extra_condition .= " AND receiptdate <= '" . $_REQUEST['to_date'] . "' "; //AND receiptdate >= '".$_REQUEST['from_date']."'
+        }
+        //END for fees over all headwise report
+
+        $final_bk = $other_fees_final_bk = array();
+        foreach ($fees_breckoff as $id => $arr) {
+            $fees_title = $arr->fee_type_id;
+            $month_id = $arr->month_id;
+
+            $request = $_REQUEST;
+
+            $paid_fees = DB::table('fees_paid_other as fpo')
+                ->selectRaw("sum(ifnull(fpo.$fees_title,0)) total_paid")
+                ->where('month_id', $month_id)
+                ->where('syear', $syear)
+                ->where('sub_institute_id', $sub_institute_id)
+                ->where('student_id', $student_id)
+                ->where('is_deleted', 'N')
+                ->when(isset($request['from_date'], $request['to_date']), function ($q) use ($request) {
+                    $q->where('receiptdate', '<=', $request['to_date']);
+                })->get()->toArray();
+// echo "<pre>";
+// print_r($paid_fees);
+// exit();
+            if (isset($final_bk[$arr->fee_type_id])) {
+                $final_bk[$arr->fee_type_id] = $final_bk[$arr->fee_type_id] + ($arr->tot_amount - $paid_fees[0]->total_paid);
+            } else {
+                $final_bk[$arr->fee_type_id] = ($arr->tot_amount - $paid_fees[0]->total_paid);
+            }
+
+            // start 27-07-2021 Added by divya for getting other_fees break off amount for fees overallhead wise report
+            $other_fees_final_bk[$student_id][$arr->fee_type_id][$month_id]['bf_amount'] = $arr->tot_amount;
+            $other_fees_final_bk[$student_id][$arr->fee_type_id][$month_id]['paid_amount'] = $paid_fees[0]->total_paid;
+            // end 27-07-2021 Added by divya for getting other_fees break off amount for fees overallhead wise report
+        }
+
+        $fees_title = fees_title::select('id', 'display_name', 'fees_title', 'mandatory', 'syear', 'other_fee_id')
+            ->where([
+                'sub_institute_id' => session()->get('sub_institute_id'),
+                'syear'            => $syear,
+                'fees_title_id'    => 1,
+            ])->orderBy('display_name','ASC')->get()->toArray();
+
+        $bk_off_with_name = array();
+        foreach ($fees_title as $id => $arr) {
+            foreach ($final_bk as $bk_id => $amount) {
+                if ($arr['fees_title'] == $bk_id) {
+                    $bk_off_with_name[$arr['display_name']] = $amount;
+                }
+            }
+        }
+
+        // start 27-07-2021 Added by divya for getting other_fees break off amount for fees overallhead wise report
+        if ($other_bf_amount == 'Yes') {
+            return $other_fees_final_bk;
+        }
+// echo "<pre>";
+// print_r($fees_title);
+// exit();
+        return $bk_off_with_name;
+        // start 27-07-2021 Added by divya for getting other_fees break off amount for fees overallhead wise report
+    }
+}
+
 
 if (! function_exists('OtherBreackOffHead')) {
 
@@ -1118,6 +1401,7 @@ if (! function_exists('OtherBreackOffHead')) {
             ->where('fees_title_id', 1)->get()->toArray();
     }
 }
+
 if (! function_exists('OtherBreackOfMonth')) {
 
     function OtherBreackOfMonth($student_id_arr)
@@ -1142,7 +1426,30 @@ if (! function_exists('OtherBreackOfMonth')) {
         return $responce_arr;
     }
 }
+if (! function_exists('OtherBreackOfMonthlast')) {
 
+    function OtherBreackOfMonthlast($student_id_arr)
+    {
+
+        $student_id = $student_id_arr[0];
+        $sub_institute_id = session()->get('sub_institute_id');
+        $syear = (session()->get('syear')-1);
+
+        $fees_title = DB::table('fees_breakoff_other')
+            ->selectRaw('sum(amount) as tot_amount,month_id')
+            ->where('sub_institute_id', $sub_institute_id)
+            ->where('syear', $syear)
+            ->where('student_id', $student_id)
+            ->groupBy('month_id')->get()->toArray();
+
+        $responce_arr = array();
+        foreach ($fees_title as $id => $arr) {
+            $responce_arr[$arr->month_id] = $arr->tot_amount;
+        }
+
+        return $responce_arr;
+    }
+}
 if (! function_exists('OtherBreackOfMonthHead')) {
 
     function OtherBreackOfMonthHead($student_id_arr, $month_arr)
@@ -1169,7 +1476,32 @@ if (! function_exists('OtherBreackOfMonthHead')) {
         return $final_bk;
     }
 }
+if (! function_exists('OtherBreackOfMonthHeadlast')) {
 
+    function OtherBreackOfMonthHeadlast($student_id_arr, $month_arr)
+    {
+        $student_id = $student_id_arr[0];
+
+        $sub_institute_id = session()->get('sub_institute_id');
+        $syear = (session()->get('syear')-1);
+
+        $fees_breckoff = DB::table('fees_breakoff_other')
+            ->selectRaw('*,sum(amount) as tot_amount')
+            ->where('sub_institute_id', $sub_institute_id)
+            ->where('syear', $syear)
+            ->where('student_id', $student_id)
+            ->whereIn('month_id', $month_arr)
+            ->groupByRaw('fee_type_id,month_id')->get()->toArray();
+
+        $final_bk = [];
+
+        foreach ($fees_breckoff as $id => $arr) {
+            $final_bk[$arr->month_id][$arr->fee_type_id] = $arr->tot_amount;
+        }
+
+        return $final_bk;
+    }
+}
 if (! function_exists('getCountDays')) {
 
     function getCountDays($from_date, $to_date)
@@ -1720,4 +2052,3 @@ if (! function_exists('getBestOf')) {
         return $newArr;
     }
 }
-    
