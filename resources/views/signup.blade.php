@@ -73,7 +73,7 @@ $loginpage_backgrond = session()->get('loginpage_backgrond');
                             @if(!empty($loginpage_title))
                             {!!$loginpage_title!!}
                             @else
-                            <h2 class="text-light">Triz Institute of Maximize Learning</h2>
+                            <h2 class="text-light">Own Institute of Maximize Learning</h2>
                             @endif
                             @if(!empty($loginpage_description))
                             {!!$loginpage_description!!}
@@ -99,6 +99,7 @@ $loginpage_backgrond = session()->get('loginpage_backgrond');
                                     </div>
                                     @endif
 
+                                    
                                     @if(!empty($data['failed']))
                                     <div class="danger-text d-flex align-items-center">
                                         <img src="{{ asset('/Images/green-check-icon.svg')}} ">

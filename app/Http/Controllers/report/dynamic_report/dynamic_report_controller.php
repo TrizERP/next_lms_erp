@@ -586,6 +586,16 @@ class dynamic_report_controller extends Controller
         // EP-1
         if (isset($all_detail["group_by"][0])) {
             $group_by_arr = explode(" as", $all_fields_index[$all_detail["group_by"][0]]);
+// <<<<<<< HEAD
+            $pattern = '/\((.*?)\)/';
+                preg_match($pattern, $group_by_arr[0], $matches);
+             $field = str_replace(["(DISTINCT "], "", $matches[0] ?? $matches);
+         if(isset($matches[0])){
+               $order = substr($field, 0,-1);
+            }else{
+                $order = $group_by_arr[0];
+         }
+// =======
     		$pattern = '/\((.*?)\)/';
             	preg_match($pattern, $group_by_arr[0], $matches);
            	 $field = str_replace(["(DISTINCT "], "", $matches[0] ?? $matches);
@@ -594,6 +604,7 @@ class dynamic_report_controller extends Controller
         	}else{
         	    $order = $group_by_arr[0];
        	 }
+// >>>>>>> 5711c69549bbcd152bf4c8020191d51575f0ee7c
 
             $this->query->groupBy($group_by_arr[0]);
             if (isset($all_detail["sort_order"][0])) {
@@ -604,6 +615,17 @@ class dynamic_report_controller extends Controller
         //     // echo $all_detail["group_by"][1];exit;
 
         //    // $group_by_arr = explode(" as", $all_fields_index[$all_detail["group_by"][1]]);
+// <<<<<<< HEAD
+        // $group_by_arr = explode(" as", $all_fields_index[$all_detail["group_by"][1]]);
+        //  $pattern = '/\((.*?)\)/';
+        //  preg_match($pattern, $group_by_arr[0], $matches);
+        //     $field = str_replace(["(DISTINCT "], "", $matches[0] ?? $matches);
+        //       if(isset($matches[0])){
+        //             $order = substr($field, 0,-1);
+        //     }else{
+        //          $order = $group_by_arr[0];
+        //       }
+// =======
 		// $group_by_arr = explode(" as", $all_fields_index[$all_detail["group_by"][1]]);
         // 	$pattern = '/\((.*?)\)/';
         // 	preg_match($pattern, $group_by_arr[0], $matches);
@@ -613,6 +635,7 @@ class dynamic_report_controller extends Controller
         //     }else{
         //     	    $order = $group_by_arr[0];
         //    	 }
+// >>>>>>> 5711c69549bbcd152bf4c8020191d51575f0ee7c
         //     $this->query->groupBy($group_by_arr[0]);
         //     if (isset($all_detail["sort_order"][1])) {
         //         $this->query->orderBy($order, $all_detail["sort_order"][1]);

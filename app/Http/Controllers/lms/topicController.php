@@ -23,7 +23,7 @@ class topicController extends Controller
         $res['content_data'] = $data['content_data'];
         $res['chapter_id'] = $request->input('id');
         $res['breadcrum_data'] = $data['breadcrum_data'];
-        // echo "<pre>";print_r($data);exit;
+
         return is_mobile($type, 'lms/show_topic', $res, "view");
     }
 
@@ -38,6 +38,7 @@ class topicController extends Controller
             $syear = $request->session()->get('syear');
             $ch_id = $request->input('id');
         }
+
         $getIsLms = DB::table('school_setup')
             ->where('Id', $sub_institute_id)
             ->value('is_Lms');
@@ -292,7 +293,7 @@ class topicController extends Controller
             return is_mobile($type, "lms/view_content_video", $data, "view");
         }
         else
-        {
+        {//dd($data);
             return is_mobile($type, "lms/view_content", $data, "view");
         }
         

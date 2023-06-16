@@ -69,7 +69,7 @@ class loginController extends Controller
         // $silver = DB::table("tbluser")->select("tbluser.id","tbluser.user_name","tbluser.email","tbluser.password","tbluser.user_profile_id")->where(['tbluser.email' => $email, 'tbluser.password' => $password]);
 
         // $gold = DB::table("tblstudent")->select("tblstudent.id","tblstudent.username","tblstudent.email","tblstudent.password","tblstudent.user_profile_id")
-        // 	->where(['tblstudent.email' => $email, 'tblstudent.password' => $password])
+        //  ->where(['tblstudent.email' => $email, 'tblstudent.password' => $password])
         //     ->union($silver)
         //     ->get();
 
@@ -98,7 +98,7 @@ class loginController extends Controller
         //           ->get();
 
         $a = loginModel::select(DB::raw('id,user_name,password,name_suffix,first_name,middle_name,last_name,email,mobile,gender,
-		birthdate,address,city,state,pincode,user_profile_id,join_year,image,plain_password,sub_institute_id,client_id,is_admin,status,created_on as last_login,expire_date'))
+        birthdate,address,city,state,pincode,user_profile_id,join_year,image,plain_password,sub_institute_id,client_id,is_admin,status,created_on as last_login,expire_date'))
             ->where(['email' => $email, 'password' => $password, 'status' => "1"]);
 
         $data = tblstudentModel::select(DB::raw('id,username as user_name,password,"" as name_suffix,first_name,middle_name,last_name,email,
@@ -110,13 +110,13 @@ class loginController extends Controller
 
 
         // $result = DB::select("SELECT id,user_name,email,password,user_profile_id
-        // 					FROM tbluser
-        // 					WHERE email='".$email."' AND password = '".$password."'
-        // 					UNION
-        // 					SELECT id,username as user_name,email,password,user_profile_id
-        // 					FROM tblstudent
-        // 					WHERE email = '".$email."' AND password = md5('".$password."')
-        // 					");
+        //                  FROM tbluser
+        //                  WHERE email='".$email."' AND password = '".$password."'
+        //                  UNION
+        //                  SELECT id,username as user_name,email,password,user_profile_id
+        //                  FROM tblstudent
+        //                  WHERE email = '".$email."' AND password = md5('".$password."')
+        //                  ");
 
         // $clasa = json_decode(json_encode($result),FALSE);
 

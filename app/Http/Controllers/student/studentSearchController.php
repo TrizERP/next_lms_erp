@@ -107,6 +107,7 @@ class studentSearchController extends Controller
      */
     public function searchStudent(Request $request)
     {
+        // return $request;exit;
         $grade_id = $request->input("grade");
         $standard_id = $request->input("standard");
         $division_id = $request->input("division");
@@ -175,9 +176,7 @@ class studentSearchController extends Controller
         if (isset($classTeacherStdArr)) {
             if (count($classTeacherStdArr) > 0) {
                 $extraRaw = "standard.id IN (".implode(",", $classTeacherStdArr).")";
-            } else {
-                $extraRaw = "standard.id IN (' ')";
-            }
+            } 
         }
 
         $classTeacherDivArr = session()->get('classTeacherDivArr');
@@ -187,7 +186,8 @@ class studentSearchController extends Controller
             }
         }
 
-        //END Check for class teacher assigned standards		
+        //END Check for class teacher assigned standards
+        // DB::enableQueryLog();		
         $student_data = tblstudentModel::select('tblstudent.*', 'tblstudent_enrollment.*', 'standard.name as standard',
             'division.name as division',
             'academic_section.title as grade', DB::raw($inactive_colour))
@@ -198,7 +198,7 @@ class studentSearchController extends Controller
             ->where($extraSearchArray)
             ->whereRaw($extraRaw)
             ->get();
-
+            // dd(DB::getQueryLog($student_data));
         $res['status_code'] = 1;
         $res['message'] = "Student List";
         $res['data'] = $student_data;

@@ -1,1 +1,0 @@
-{"result":{"text":"square root of r and beta end root"},"status":"ok"}

@@ -86,7 +86,6 @@ class adminapiController extends Controller
                         if ($res["error"] == $errorMessage) {
                             $otp = "123456";
                         }
-
                     }
                 }
 //DB::enableQueryLog();
@@ -135,10 +134,8 @@ class adminapiController extends Controller
                 ->where('u.mobile', $_REQUEST['mobile'])->get()->toArray();
 
             $data = json_decode(json_encode($data), true);
-            $data = $data[0];
-            if(isset($data['id']) && $data['id'] != '') {
-
-                    //$data = $data[0];
+            if(!empty($data)) {
+                    $data = $data[0];
                     $payload = array();
 
                 $time = time() + (60 * 60 * 24 * 30);

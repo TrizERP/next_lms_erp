@@ -215,7 +215,8 @@ Route::controller(online_fees_collect_controller::class)->group(function () {
 
     Route::post('fees/icici/online_fees_collect', 'icici')->name("icici_fees_collect");
     Route::post('fees/icici/online_fees_iciciRequestHandler', 'icici_request_handler')->name("icici_request_handler");
-    Route::post('fees/icici/online_fees_iciciResponseHandler', 'icici_response_handler')->name("icici_response_handler");
+    //Route::post('fees/icici/online_fees_iciciResponseHandler', 'icici_response_handler')->name("icici_response_handler");
+    Route::post('fees/online_fees_iciciresponsehandler', 'icici_response_handler')->name("icici_response_handler");
 
     Route::post('fees/razorpay/online_fees_collect', 'razorpay')->name("razorpay_fees_collect");
     Route::post('fees/razorpay/online_fees_razorpayRequestHandler', 'razorpay_request_handler')->name("razorpay_request_handler");

@@ -237,8 +237,8 @@ class parentCommunicationController extends Controller
                                     'image'   => $schoolLogo,
                                 ];
 
-                                $pushStatus = send_FCM_Notification($val, $message);
-                                sendNotification($app_notification_content);
+                                //$pushStatus = send_FCM_Notification($val, $message);
+                                //sendNotification($app_notification_content);
                             }
                         }
                     }

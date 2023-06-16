@@ -47,8 +47,9 @@
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    @if(count($data['data']) > 0)
-                                    @php $i = 1;@endphp
+
+                                    @if(isset($data['data']) && count($data['data']) > 0)
+                                    @php $i = 1; @endphp
                                     @foreach($data['data'] as $key => $lbdata)
                                     <tr>    
                                         <td>@php echo $i++;@endphp</td>
@@ -66,8 +67,9 @@
                                             @endif
                                         </td>     
                                         <td>
+                                            @if(isset($lbdata->id))
                                             <div class="d-flex align-items-center justify-content-end">
-                                                <a class="btn btn-outline-success" href="{{ route('lb_master.edit',['id'=>$lbdata->id])}}">
+                                                <a class="btn btn-outline-success" href="{{ route('lb_master.edit',$lbdata->id)}}">
                                                     <i class="ti-pencil-alt"></i>
                                                 </a>                                                                                                            
                                                 <form class="d-inline" action="{{ route('lb_master.destroy', $lbdata->id)}}" method="post">
@@ -75,7 +77,8 @@
                                                     @method('DELETE')
                                                     <button onclick="return confirmDelete();" type="submit" class="btn btn-outline-danger"><i class="ti-trash"></i></button>
                                                 </form>               
-                                            </div>                                              
+                                            </div>    
+                                            @endif                                          
                                         </td>                               
                                     </tr>
                                     @endforeach

@@ -28,7 +28,7 @@
                             <tbody>
 
                                  @foreach($data['result'] as $id => $arr)
-                                	
+                                    
                                     <tr>
                                         @foreach($arr as $ind => $val)
                                             <td>

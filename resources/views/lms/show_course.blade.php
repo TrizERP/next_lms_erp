@@ -207,7 +207,7 @@ use DB;
 
                                                         <ul class="sub-menu">
                                                             @foreach($chapter_arr as $k => $v)
-                                                                @php
+                                                            @php
                                                                 $topic_arr = explode("/",$v);
                                                                 if(isset($topic_arr[1])){
                                                                 $topic_id = $topic_arr[1];

@@ -47,16 +47,16 @@ class register_parents_report_controller extends Controller
         $sub_institute_id = $request->session()->get('sub_institute_id');
 
         $data = DB::table('gcm_users as gu')
-            ->join('tblstudent as s', function ($join) {
-                $join->whereRaw('s.mobile=gu.mobile_no');
-            })->join('tblstudent_enrollment as se', function ($join) {
-                $join->whereRaw('se.student_id=s.id');
-            })->join('standard as ss', function ($join) {
+            ->join('tblstudent as s', function ($join) use ($sub_institute_id) {
+                $join->whereRaw('s.mobile=gu.mobile_no AND s.sub_institute_id= '.$sub_institute_id.'');
+            })->join('tblstudent_enrollment as se', function ($join) use ($sub_institute_id) {
+                $join->whereRaw('se.student_id=s.id AND se.sub_institute_id = '.$sub_institute_id.'');
+            })->join('standard as ss', function ($join) use ($sub_institute_id)  {
                 $join->whereRaw('ss.id = se.standard_id');
-            })->join('academic_section as aa', function ($join) {
-                $join->whereRaw('aa.id=ss.grade_id');
-            })->join('division as dd', function ($join) {
-                $join->whereRaw('dd.id=se.section_id');
+            })->join('academic_section as aa', function ($join) use ($sub_institute_id) {
+                $join->whereRaw('aa.id=ss.grade_id AND aa.sub_institute_id='.$sub_institute_id.'');
+            })->join('division as dd', function ($join) use ($sub_institute_id) {
+                $join->whereRaw('dd.id=se.section_id AND dd.sub_institute_id='.$sub_institute_id.'');
             })->selectRaw("s.id AS student_id,CONCAT_WS(' ',s.first_name,s.middle_name,s.last_name) AS stu_name, 
         ss.name AS std_name,dd.name AS div_name,aa.title as aca_sec,gu.imei_no,gu.curr_version,gu.new_version,
         gu.mobile_no, DATE_FORMAT(gu.created_on,'%d-%m-%Y %r') AS CREATED_ON,s.enrollment_no")
@@ -73,7 +73,7 @@ class register_parents_report_controller extends Controller
                 if ($to_date != '') {
                     $q->where('gu.created_on', '<=', $to_date);
                 }
-            })->get()->toArray();
+            })->groupBy('gu.imei_no','s.id')->get()->toArray();
 
         $data = array_map(function ($value) {
             return (array) $value;

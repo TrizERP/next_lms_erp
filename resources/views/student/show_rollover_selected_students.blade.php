@@ -71,7 +71,7 @@ use DB;
                             </div>
                         @endif
 
-                        <form action="{{ route('rollover.create') }}">
+                        <form action="{{ route('rollover.create') }}" method="post">
                             @csrf
                             <div class="row" id="form_for_selected_students">
                                 <div class="col-md-6">

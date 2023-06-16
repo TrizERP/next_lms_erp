@@ -215,6 +215,8 @@ class lms_apiController extends Controller
         return json_encode($res);
     }
 
+    /*
+    Open When New Mobile app launch, because API response update in it.
     public function studentContentAPI(Request $request)
     {
         try {
@@ -266,9 +268,6 @@ class lms_apiController extends Controller
 
                     $topicData = json_decode(json_encode($topicData), true);
 
-                    $finaldata[$chapter_id] = $val;
-                    $finaldata[$chapter_id]['topicData'] = $topicData;
-
                     if (count($topicData) > 0) {
                         foreach ($topicData as $tkey => $tval) {
                             $contentData = DB::table('content_master')
@@ -283,9 +282,12 @@ class lms_apiController extends Controller
                                 ->get()->toArray();
 
                             $contentData = json_decode(json_encode($contentData), true);
-                            $finaldata[$chapter_id]['topicData'][$tkey]['contentData'] = $contentData;
+                            $tval['contentData'] = $contentData;
+                            $topicData[$tkey] = $tval;
                         }
                     }
+                    $val['topicData'] = $topicData;
+                    $finaldata[] = $val;
                 }
             }
 
@@ -299,6 +301,81 @@ class lms_apiController extends Controller
 
         //return  \App\Helpers\is_mobile($type, "implementation", $res);
         return json_encode($res);
+    }
+    OPEN WHEN New Mobile App launch in Google
+    */
+    public function studentContentAPI(Request $request) {
+       try {
+            if (!$this->jwtToken()->validate()) {
+                $response = array('status' => '2', 'message' => 'Token Auth Failed', 'data' => array());
+                return response()->json($response, 401);
+            }
+        } catch (\Exception $e) {
+            $response = array('status' => '2', 'message' => $e->getMessage(), 'data' => array());
+            return response()->json($response, 401);
+        }
+                
+        $student_id = $request->input("student_id");
+        $type = $request->input("type");
+        $sub_institute_id = $request->input("sub_institute_id");
+        $syear = $request->input("syear");        
+        $subject_id = $request->input("subject_id");        
+
+        if($student_id != "" && $sub_institute_id != "" && $syear != "" && $subject_id != "")
+        {         
+            $chapterdata = DB::select("SELECT c.id AS chapter_id,c.syear,c.standard_id,c.subject_id,c.chapter_name,c.chapter_desc,c.availability,c.show_hide,c.sort_order
+                            FROM tblstudent s
+                            INNER JOIN tblstudent_enrollment se ON s.id = se.student_id
+                            INNER JOIN chapter_master c ON c.sub_institute_id = se.sub_institute_id AND c.standard_id = se.standard_id           
+                            WHERE s.sub_institute_id = '".$sub_institute_id."' AND s.id = '".$student_id."' AND se.syear = '".$syear."' 
+                            AND c.subject_id = '".$subject_id."'  AND c.show_hide = '1'
+                            ORDER BY c.sort_order
+                             ");// AND c.syear = se.syear
+
+            $chapterdata = json_decode(json_encode($chapterdata),true);
+            $finaldata = array();
+            if(count($chapterdata) > 0)
+            {          
+                foreach($chapterdata as $key => $val)
+                {                
+                    $chapter_id = $val['chapter_id'];
+                    $topicData = DB::select("SELECT * FROM topic_master 
+                                WHERE sub_institute_id = '".$sub_institute_id."' AND chapter_id = '".$chapter_id."' 
+                                AND topic_show_hide = '1'
+                                ORDER BY topic_sort_order
+                                ");//AND syear = '".$syear."' 
+                    $topicData = json_decode(json_encode($topicData),true);  
+
+                    $finaldata[$chapter_id] = $val;
+                    $finaldata[$chapter_id]['topicData'] = $topicData;
+
+                    if(count($topicData) > 0)
+                    {
+                        foreach($topicData as $tkey => $tval)
+                        {
+                            $contentData = DB::select("SELECT *, 
+                                        if(filename = '','',
+                                            if(file_type = 'link',filename,concat('https://".$_SERVER['SERVER_NAME']."/storage',file_folder,'/',filename))) as full_path 
+                                        FROM content_master 
+                                        WHERE sub_institute_id = '".$sub_institute_id."' AND chapter_id = '".$chapter_id."'  
+                                        AND topic_id = '".$tval['id']."' AND subject_id = '".$subject_id."' AND show_hide = '1'                                 
+                                        ");//AND syear = '".$syear."'
+                            $contentData = json_decode(json_encode($contentData),true);
+                            $finaldata[$chapter_id]['topicData'][$tkey]['contentData'] = $contentData;  
+                        }
+                    }
+                }
+            }                     
+                    
+            $res['status'] = 1;
+            $res['message'] = "Success";
+            $res['data'] = $finaldata;   
+        }else{
+            $res['status'] = 0;
+            $res['message'] = "Parameter Missing";
+        }
+        //return  \App\Helpers\is_mobile($type, "implementation", $res);
+        return json_encode($res);       
     }
 
     public function studentQuestionPaperListAPI(Request $request)
@@ -545,8 +622,8 @@ class lms_apiController extends Controller
                     })->selectRaw("sum(points) as total_points,l.user_id,CONCAT_WS(' ' ,s.first_name,
                         s.middle_name,s.last_name) as student_name")
                     ->where('l.sub_institute_id', $sub_institute_id)
-                    ->where('l.standard_id', $standard_id)
-                    ->where('l.syear', $syear)
+                    ->where('se.standard_id', $standard_id)
+                    ->where('se.syear', $syear)
                     ->groupBy('user_id')->orderBy('total_points', 'DESC')
                     ->limit(5)
                     ->get()->toArray();
