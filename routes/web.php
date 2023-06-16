@@ -48,6 +48,9 @@ use App\Http\Controllers\leave\HolidayController;
 use App\Http\Controllers\leave\LeaveController;
 use App\Http\Controllers\leave\LeaveTypeController;
 use App\Http\Controllers\Payroll\PayrollController;
+use App\Http\Controllers\HRMS\HrmsController;
+use App\Http\Controllers\library\BookController;
+
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -315,5 +318,7 @@ Route::group(['middleware' => ['session', 'menu', 'logRoute']], function () {
     Route::post('import-leave', [ApplyLeaveController::class,'importOldLeave'])->name('import-leave');
     Route::get('holiday.weekdays', [HolidayController::class,'getWeekdays'])->name('holiday.weekdays');
     Route::post('holiday.weekdays', [HolidayController::class,'storeWeekdays'])->name('holiday.weekdays');
+
+    Route::resource('books', BookController::class);
 });
 

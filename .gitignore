@@ -2,30 +2,8 @@
 node_modules/
 npm-debug.log
 yarn-error.log
-<<<<<<< HEAD
-
-# Laravel 4 specific
-bootstrap/compiled.php
-app/storage/
-
-# Laravel 5 & Lumen specific
-public/storage
-public/hot
-
-# Laravel 5 & Lumen specific with changed public path
-public_html/storage
-public_html/hot
-
-storage/*.key
-.env
-Homestead.yaml
-Homestead.json
-/.vagrant
-.phpunit.result.cache
-=======
 /.idea
 /.vscode
->>>>>>> main
 
 #TRIZ
 /public/ckeditor_wiris
@@ -49,9 +27,7 @@ Homestead.json
 /public/student_certificate
 /public/tooltip
 /public/triz-lms
-/public/unlink_content
-<<<<<<< HEAD
-vendor
-=======
-vendor
->>>>>>> main
+/public/unlink_content 
+/public/import
+/public/uploads 
+vendor 
