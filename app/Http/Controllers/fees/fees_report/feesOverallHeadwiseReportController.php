@@ -105,7 +105,8 @@ class feesOverallHeadwiseReportController extends Controller
         $extraSearchArray['tblstudent.sub_institute_id'] = $sub_institute_id;
         $extraSearchArray['tblstudent_enrollment.sub_institute_id'] = $sub_institute_id;
         $extraSearchArray['student_quota.sub_institute_id'] = $sub_institute_id;
-
+        
+        // DB::enableQueryLog();
         $studentData = tblstudentModel::selectRaw("tblstudent.id,CONCAT_WS(' ',tblstudent.first_name,tblstudent.middle_name,tblstudent.last_name) AS student_name,academic_section.title as grade,standard.name as standard_name,division.name as division_name,tblstudent.enrollment_no,tblstudent.mobile,tblstudent.uniqueid,student_quota.title as stu_quota,tblstudent_enrollment.end_date,if(tblstudent_enrollment.end_date != '','In-Active','Active') as student_status")
             ->join('tblstudent_enrollment', 'tblstudent.id', '=', 'tblstudent_enrollment.student_id')
             ->join('academic_section', 'academic_section.id', '=', 'tblstudent_enrollment.grade_id')
@@ -118,56 +119,88 @@ class feesOverallHeadwiseReportController extends Controller
             ->orderBy('tblstudent.first_name', 'ASC')
             ->get()
             ->toArray();
-
-
-        $bk_array = DB::select("SELECT ft.*,f.fees_title,f.display_name,GROUP_CONCAT(DISTINCT ft.month_id) AS months,
-            SUM(ft.amount) AS tot_amt
-            FROM fees_breackoff ft
-            INNER JOIN fees_title f ON f.id = ft.fee_type_id AND f.sub_institute_id = ft.sub_institute_id AND f.syear = ft.syear
-            WHERE ft.syear = '" . $syear . "' AND ft.sub_institute_id = '" . $sub_institute_id . "'
-            $bk_extra_fees
-            GROUP BY ft.fee_type_id
-            UNION
-            SELECT fbo.id,fbo.syear,'' AS admission_year,fbo.fee_type_id,'' AS quota,se.grade_id,se.standard_id,se.section_id,
-            fbo.month_id,fbo.amount,fbo.sub_institute_id,'' created_at,'' updated_at,
-            f.fees_title,f.display_name, GROUP_CONCAT(DISTINCT fbo.month_id) AS months,
-            SUM(fbo.amount) AS tot_amt
-            FROM fees_breakoff_other fbo
-            INNER JOIN fees_title f ON f.other_fee_id = fbo.fee_type_id AND f.sub_institute_id = fbo.sub_institute_id AND f.syear = fbo.syear
-            INNER JOIN tblstudent s ON s.id = fbo.student_id AND s.sub_institute_id = fbo.sub_institute_id
-            INNER JOIN tblstudent_enrollment se ON se.student_id = s.id AND s.sub_institute_id = se.sub_institute_id AND se.syear = '" . $syear . "'
-            WHERE fbo.syear = '" . $syear . "' AND fbo.sub_institute_id = '" . $sub_institute_id . "' $bk_extra_other_fees
-            GROUP BY fbo.fee_type_id");
-
-        $bk_array = array_map(function ($value) {
-            return (array)$value;
-        }, $bk_array);
-
-        // $months = array(1 => 'Jan', 2 => 'Feb', 3 => 'Mar', 4 => 'Apr', 5 => 'May', 6 => 'Jun', 7 => 'Jul', 8 => 'Aug', 9 => 'Sep', 10 => 'Oct', 11 => 'Nov', 12 => 'Dec');
-
+            // dd(DB::getQueryLog($studentData));
+// DB::enableQueryLog();
+            $bk_array = DB::table('fees_breackoff as ft')
+            ->select('ft.*', 'f.fees_title', 'f.display_name')
+            ->selectRaw('GROUP_CONCAT(DISTINCT ft.month_id  ORDER BY ft.month_id) AS months , SUM(ft.amount) AS tot_amt')
+            ->join('fees_title as f', function ($join) {
+                $join->on('f.id', '=', 'ft.fee_type_id')
+                    ->whereColumn('f.sub_institute_id', '=', 'ft.sub_institute_id')
+                    ->whereColumn('f.syear', '=', 'ft.syear');
+            })
+            ->where('ft.syear', $syear)
+            ->where('ft.sub_institute_id', $sub_institute_id)
+            ->groupBy('ft.fee_type_id')
+            ->union(function ($query) use ($syear, $sub_institute_id, $bk_extra_other_fees) {
+                $query->select('fbo.id', 'fbo.syear', DB::raw("'' AS admission_year"), 'fbo.fee_type_id', DB::raw("'' AS quota"),
+                    'se.grade_id', 'se.standard_id', 'se.section_id', 'fbo.month_id', 'fbo.amount', 'fbo.sub_institute_id',
+                    DB::raw("'' AS created_at"), DB::raw("'' AS updated_at"), 'f.fees_title', 'f.display_name')
+                    ->selectRaw('GROUP_CONCAT(DISTINCT fbo.month_id) AS months, SUM(fbo.amount) AS tot_amt')
+                    ->from('fees_breakoff_other as fbo')
+                    ->join('fees_title as f', function ($join) {
+                        $join->on('f.other_fee_id', '=', 'fbo.fee_type_id')
+                            ->whereColumn('f.sub_institute_id', '=', 'fbo.sub_institute_id')
+                            ->whereColumn('f.syear', '=', 'fbo.syear');
+                    })
+                    ->join('tblstudent as s', function ($join) {
+                        $join->on('s.id', '=', 'fbo.student_id')
+                            ->whereColumn('s.sub_institute_id', '=', 'fbo.sub_institute_id');
+                    })
+                    ->join('tblstudent_enrollment as se', function ($join) use ($syear) {
+                        $join->on('se.student_id', '=', 's.id')
+                            ->whereColumn('s.sub_institute_id', '=', 'se.sub_institute_id')
+                            ->where('se.syear', $syear);
+                    })
+                    ->where('fbo.syear', $syear)
+                    ->whereRaw('fbo.sub_institute_id='.$sub_institute_id.$bk_extra_other_fees)
+                    ->groupBy('fbo.fee_type_id','fbo.month_id','fbo.student_id');
+            })
+            ->get()
+            ->toArray();
+            // dd($bk_array);
+            // dd(DB::getQueryLog($bk_array));
         $i = 0;
-        foreach ($bk_array as $k => $v) {
-            $explod_months = explode(',', $v['months']);
+        $bk_title_months_array = [];
+        $sorted_bk_title_months_array = [];
 
-            foreach ($explod_months as $k1 => $v1) {
+        foreach ($bk_array as $v) {
+            // ksort($bk_array);                    
+
+            $explod_months = explode(',', $v->months);
+            
+            foreach ($explod_months as $v1) {
                 if (in_array($v1, $month)) {
-                    $bk_title_months_array[$v['display_name'] . '/' . $v['fees_title']][$v1] = $months[$v1];
+                    $bk_title_months_array[$v->display_name . '/' . $v->fees_title][$v1] = $months[$v1];
                     $i++;
                 }
             }
+            // ksort($bk_title_months_array);
         }
+        // Sort the array based on year and month in descending order
+            foreach ($bk_title_months_array as &$value) {
+                uksort( $value , function($a, $b) use($months){
+                    $a = strtotime(substr($months[$a],-4) );
+                    $b = strtotime(substr($months[$b],-4) );
+                    return $a - $b;
+                });
+            }
+
         // dd($bk_title_months_array);
         $count_of_array = $i;
-
+        
         $fees_fine_discount_data = DB::table('fees_collect')
-            ->selectRaw("SUM(fine) AS total_fine, SUM(fees_discount) AS total_disc, student_id")
+            ->selectRaw('SUM(fine) AS total_fine, SUM(fees_discount) AS total_disc, student_id')
             ->where('sub_institute_id', $sub_institute_id)
             ->where('syear', $syear);
         if (isset($to_date)) {
             $fees_fine_discount_data = $fees_fine_discount_data->where('receiptdate', '<=', $to_date);
-            // AND receiptdate >= '".$from_date."'
         }
-        $fees_fine_discount_data = $fees_fine_discount_data->groupBy('student_id')->get()->toArray();
+        $fees_fine_discount_data = $fees_fine_discount_data->groupBy('student_id')
+            ->get()
+            ->toArray();
+        
+        $fees_fine_discount_data = array_combine(array_column($fees_fine_discount_data, 'student_id'), $fees_fine_discount_data);        
 
         $fees_fine_discount_data = array_map(function ($value) {
             return (array)$value;
@@ -294,62 +327,6 @@ class feesOverallHeadwiseReportController extends Controller
         $res['to_date'] = $to_date;
 
         return is_mobile($type, "fees/fees_report/show_fees_overall_headwise_report", $res, "view");
-    }
-
-    /**
-     * Store a newly created resource in storage.
-     *
-     * @param Request $request
-     * @return void
-     */
-    public function store(Request $request)
-    {
-        //
-    }
-
-    /**
-     * Display the specified resource.
-     *
-     * @param int $id
-     * @return void
-     */
-    public function show($id)
-    {
-        //
-    }
-
-    /**
-     * Show the form for editing the specified resource.
-     *
-     * @param int $id
-     * @return void
-     */
-    public function edit($id)
-    {
-        //
-    }
-
-    /**
-     * Update the specified resource in storage.
-     *
-     * @param Request $request
-     * @param int $id
-     * @return void
-     */
-    public function update(Request $request, $id)
-    {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     *
-     * @param int $id
-     * @return void
-     */
-    public function destroy($id)
-    {
-        //
-    }
-
+    }  
+    
 }
