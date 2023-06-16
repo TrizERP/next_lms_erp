@@ -45,6 +45,10 @@
                                 <input type="text" id='dispaly_name' value="{{ $data['display_name'] }}" required name="display_name" class="form-control">
                             </div>
                             <div class="col-md-3 form-group">
+                              <label>Sort Order</label>
+                              <input type="number" id='sort_order' name="sort_order" class="form-control">
+                          </div>
+                            <div class="col-md-3 form-group">
                                 <label>Cumulative Name</label>
                                 <input type="text" id='cumulative_name' value="{{ $data['cumulative_name'] }}" name="cumulative_name" class="form-control">
                             </div>
