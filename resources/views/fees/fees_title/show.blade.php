@@ -24,6 +24,7 @@
                                 <tr>
                                     <th>Sr No</th>
                                     <th>Display Name</th>
+                                    <th>Sort Order</th>
                                     <th>Cumulative Name</th>
                                     <th>Append Name</th>
                                     <th>Mandatory</th>
@@ -41,6 +42,7 @@
                                 <tr>
                                     <td>{{$j}}</td>
                                     <td>{{$data['display_name']}}</td>
+                                    <td>{{$data['sort_order']}}</td>                                    
                                     <td>{{$data['cumulative_name']}}</td>
                                     <td>{{$data['append_name']}}</td>
                                     <td>{{$data['mandatory']}}</td>

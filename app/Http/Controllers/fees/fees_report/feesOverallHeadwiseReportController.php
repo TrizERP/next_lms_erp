@@ -154,8 +154,9 @@ class feesOverallHeadwiseReportController extends Controller
                     })
                     ->where('fbo.syear', $syear)
                     ->whereRaw('fbo.sub_institute_id='.$sub_institute_id.$bk_extra_other_fees)
-                    ->groupBy('fbo.fee_type_id','fbo.month_id','fbo.student_id');
+                    ->groupBy('fbo.fee_type_id','fbo.month_id','fbo.student_id')->orderBy('f.sort_order');
             })
+            ->orderBy('fees_title')
             ->get()
             ->toArray();
             // dd($bk_array);

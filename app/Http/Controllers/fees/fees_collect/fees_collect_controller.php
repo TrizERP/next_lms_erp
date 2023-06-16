@@ -861,16 +861,16 @@ class fees_collect_controller extends Controller
         //     ->groupByRaw("receipt_line_1,receipt_line_2,receipt_line_3,receipt_line_4,receipt_prefix,receipt_logo,last_receipt_number")
         //     ->get()->toArray();
         $result = DB::table('fees_receipt_book_master')
+        ->selectRaw("fees_receipt_book_master.*,GROUP_CONCAT(fees_receipt_book_master.fees_head_id ORDER BY fees_title.sort_order) heads")
         ->join('fees_title', 'fees_title.id', '=', 'fees_receipt_book_master.fees_head_id')
         ->where('fees_receipt_book_master.grade_id', $_REQUEST['grade_id'])
         ->where('fees_receipt_book_master.standard_id', $_REQUEST['standard_id'])
         ->where('fees_receipt_book_master.syear', session()->get('syear'))
         ->where('fees_receipt_book_master.sub_institute_id', session()->get('sub_institute_id'))
         ->groupBy('fees_receipt_book_master.receipt_line_1', 'fees_receipt_book_master.receipt_line_2', 'fees_receipt_book_master.receipt_line_3', 'fees_receipt_book_master.receipt_line_4', 'fees_receipt_book_master.receipt_prefix', 'fees_receipt_book_master.receipt_logo', 'fees_receipt_book_master.last_receipt_number')
-        ->orderBy('fees_title.display_name')
+        ->orderBy('fees_title.sort_order')
         ->get()
         ->toArray();
-
 
         $id_arr = [];
         foreach ($result as $id => $arr) {
@@ -952,7 +952,7 @@ class fees_collect_controller extends Controller
         $ret_heds_with_id = DB::table('fees_title')
             ->where('SUB_INSTITUTE_ID', session()->get('sub_institute_id'))
             ->where('syear', session()->get('syear'))
-            ->orderBy('display_name', 'ASC')
+            ->orderBy('sort_order', 'ASC')
             ->get()->toArray();
 
         $other_fees_heads = [];
@@ -1103,7 +1103,7 @@ class fees_collect_controller extends Controller
             ->selectRaw('id,display_name,cumulative_name,append_name')
             ->where('sub_institute_id', session()->get('sub_institute_id'))
             ->whereNotNull('cumulative_name')
-            ->orderBy('display_name', 'ASC')->get()->toArray();
+            ->orderBy('sort_order', 'ASC')->get()->toArray();
 
         $get_cumulative_result = array_map(function ($value) {
             return (array) $value;

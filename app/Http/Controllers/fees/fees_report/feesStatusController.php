@@ -33,8 +33,11 @@ class feesStatusController extends Controller
         $sub_institute_id = $request->session()->get('sub_institute_id');
 
         $months = FeeMonthId();
-        $feesHead = fees_title::where(['sub_institute_id' => $sub_institute_id, 'other_fee_id' => 0])->pluck('display_name', 'fees_title')->toArray();
-
+        $feesHead = fees_title::where(['sub_institute_id' => $sub_institute_id, 'other_fee_id' => 0])
+        ->orderBy('sort_order') 
+        ->pluck('display_name', 'fees_title')
+        ->toArray();
+        asort($feesHead);
 
         $res['status_code'] = "1";
         $res['message'] = "Success";
@@ -42,72 +45,6 @@ class feesStatusController extends Controller
         $res['fees_heads'] = $feesHead;
 
         return is_mobile($type, "fees/fees_report/status_report", $res, "view");
-    }
-
-    /**
-     * Show the form for creating a new resource.
-     *
-     * @return void
-     */
-    public function create()
-    {
-        //
-    }
-
-    /**
-     * Store a newly created resource in storage.
-     *
-     * @param Request $request
-     * @return void
-     */
-    public function store(Request $request)
-    {
-        //
-    }
-
-    /**
-     * Display the specified resource.
-     *
-     * @param int $id
-     * @return void
-     */
-    public function show($id)
-    {
-        //
-    }
-
-    /**
-     * Show the form for editing the specified resource.
-     *
-     * @param int $id
-     * @return void
-     */
-    public function edit($id)
-    {
-        //
-    }
-
-    /**
-     * Update the specified resource in storage.
-     *
-     * @param Request $request
-     * @param int $id
-     * @return void
-     */
-    public function update(Request $request, $id)
-    {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     *
-     * @param int $id
-     * @return void
-     */
-    public function destroy($id)
-    {
-        //
     }
 
     public function feesStatusReport(Request $request)
@@ -123,7 +60,12 @@ class feesStatusController extends Controller
 
         $months = FeeMonthId();
 
-        $feesHead = fees_title::where(['sub_institute_id' => $sub_institute_id, 'other_fee_id' => 0])->pluck('display_name', 'fees_title')->toArray();
+        $feesHead = fees_title::where(['sub_institute_id' => $sub_institute_id, 'other_fee_id' => 0])
+        ->orderBy('sort_order') 
+        ->pluck('display_name', 'fees_title')
+        ->toArray();
+        asort($feesHead);
+        
         $studentData = SearchStudent($grade, $standard, $division);
 
         if (count($studentData) == 0) {
