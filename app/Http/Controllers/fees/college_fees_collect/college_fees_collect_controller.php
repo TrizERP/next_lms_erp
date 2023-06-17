@@ -115,7 +115,7 @@ class college_fees_collect_controller extends Controller
 
         $ret_heds_with_id = DB::table('fees_title')->selectRaw('id,fees_title')
             ->where('SUB_INSTITUTE_ID', session()->get('sub_institute_id'))
-            ->where('syear', session()->get('syear'))->get()->toArray();
+            ->where('syear', session()->get('syear'))->orderBy('sort_order')->get()->toArray();
 
         $heds_with_id = [];
 
@@ -189,7 +189,7 @@ class college_fees_collect_controller extends Controller
 
         $ret_heds_with_id = DB::table('fees_title')->selectRaw('id,fees_title')
             ->where('SUB_INSTITUTE_ID', session()->get('sub_institute_id'))
-            ->where('syear', session()->get('syear'))->get()->toArray();
+            ->where('syear', session()->get('syear'))->orderBy('sort_order')->get()->toArray();
 
         $heds_with_id = [];
         foreach ($ret_heds_with_id as $id => $arr) {
@@ -343,7 +343,7 @@ class college_fees_collect_controller extends Controller
 
         $ret_heds_with_id = DB::table('fees_title')
             ->where('SUB_INSTITUTE_ID', session()->get('sub_institute_id'))
-            ->where('syear', session()->get('syear'))->get()->toArray();
+            ->where('syear', session()->get('syear'))->orderBy('sort_order')->get()->toArray();
 
         $other_fees_heads = [];
         $reg_fees_heads = [];
@@ -817,7 +817,7 @@ class college_fees_collect_controller extends Controller
             ->where('sub_institute_id', $sub_institute_id)
             ->whereRaw("id in (select fees_head_id from fees_receipt_book_master where sub_institute_id = $sub_institute_id 
                 and grade_id = '".$stu_result[0]->grade_id."' and standard_id = '".$stu_result[0]->standard_id."')")
-            ->get()->toArray();
+            ->orderBy('sort_order')->get()->toArray();
 
         $all_heads = [];
         foreach ($head_result as $id => $arr) {

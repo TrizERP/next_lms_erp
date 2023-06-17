@@ -24,7 +24,7 @@ class feesReceiptBookMasterController extends Controller
             ->selectRaw("group_concat(distinct academic_section.short_name) as grade")
             ->selectRaw("group_concat(distinct standard.name) as standard")
             ->selectRaw("CASE WHEN fees_receipt_book_master.status = 1 THEN 'Active' ELSE 'Inactive' END as status")
-            ->selectRaw("group_concat(distinct fees_title.display_name) as fees_head")
+            ->selectRaw("group_concat(distinct fees_title.display_name ORDER BY fees_title.sort_order) as fees_head")
             ->join('academic_section', 'fees_receipt_book_master.grade_id', '=', 'academic_section.id')
             ->join('standard', 'fees_receipt_book_master.standard_id', '=', 'standard.id')
             ->join('fees_title', 'fees_receipt_book_master.fees_head_id', '=', 'fees_title.id')
@@ -88,7 +88,7 @@ class feesReceiptBookMasterController extends Controller
 //        $feeHeadList = fees_title::where(['syear' => $syear,'sub_institute_id' => $sub_institute_id,'other_fee_id' => '0'])->get()->toArray();
         return fees_title::where([
             'syear' => $syear, 'sub_institute_id' => $sub_institute_id,
-        ])->orderBy('display_name', 'ASC')->get()->toArray();
+        ])->orderBy('sort_order')->get()->toArray();
     }
 
     public function store(Request $request)

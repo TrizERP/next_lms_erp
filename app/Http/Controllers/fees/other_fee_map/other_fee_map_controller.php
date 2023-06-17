@@ -59,7 +59,7 @@ class other_fee_map_controller extends Controller
                 'sub_institute_id' => session()->get('sub_institute_id'),
                 'syear' => session()->get('syear'),
                 'fees_title_id' => 1
-            ])->get()->toArray();
+            ])->orderBy('sort_order')->get()->toArray();
 
         $responce_arr['grade'] = $_REQUEST['grade'];
         $responce_arr['standard'] = $_REQUEST['standard'];
