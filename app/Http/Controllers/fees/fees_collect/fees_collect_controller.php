@@ -460,7 +460,7 @@ class fees_collect_controller extends Controller
         $ret_heds_with_id = DB::table('fees_title')->selectRaw('id,fees_title')
             ->where('SUB_INSTITUTE_ID', session()->get('sub_institute_id'))
             ->where('syear', session()->get('syear'))
-            ->orderBy('display_name', 'ASC')->get()->toArray();
+            ->orderBy('sort_order')->get()->toArray();
         $heds_with_id = [];
         foreach ($ret_heds_with_id as $id => $arr) {
             $heds_with_id[$arr->fees_title] = $arr->id;
@@ -952,7 +952,7 @@ class fees_collect_controller extends Controller
         $ret_heds_with_id = DB::table('fees_title')
             ->where('SUB_INSTITUTE_ID', session()->get('sub_institute_id'))
             ->where('syear', session()->get('syear'))
-            ->orderBy('sort_order', 'ASC')
+            ->orderBy('sort_order')
             ->get()->toArray();
 
         $other_fees_heads = [];
@@ -1103,7 +1103,7 @@ class fees_collect_controller extends Controller
             ->selectRaw('id,display_name,cumulative_name,append_name')
             ->where('sub_institute_id', session()->get('sub_institute_id'))
             ->whereNotNull('cumulative_name')
-            ->orderBy('sort_order', 'ASC')->get()->toArray();
+            ->orderBy('sort_order')->get()->toArray();
 
         $get_cumulative_result = array_map(function ($value) {
             return (array) $value;
@@ -1986,7 +1986,7 @@ class fees_collect_controller extends Controller
             ->where('fb.syear', $prviouse_syear)
             ->where('ft.display_name', 'LIKE', '%Imprest%')
             ->where('fb.student_id', $reg_bk_off[0]->student_id)
-            ->orderBy('ft.display_name', 'ASC')->get()->toArray();
+            ->orderBy('ft.sort_order')->get()->toArray();
 
         $get_imprest_balance = json_decode(json_encode($get_imprest_sql), true);
 

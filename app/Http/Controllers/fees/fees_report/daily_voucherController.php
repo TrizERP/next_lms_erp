@@ -33,7 +33,7 @@ class daily_voucherController extends Controller
 
         $fees_head = DB::table('fees_title')
             ->where('sub_institute_id', $sub_institute_id)
-            ->whereNotIn('fees_title', ['tution_fee', 'term_fee'])->get()->toArray();
+            ->whereNotIn('fees_title', ['tution_fee', 'term_fee'])->orderBy('sort_order')->get()->toArray();
 
         $fees_head = json_decode(json_encode($fees_head), true);
 

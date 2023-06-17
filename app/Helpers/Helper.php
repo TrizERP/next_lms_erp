@@ -954,7 +954,7 @@ if (! function_exists('FeeBreakoffHeadWise')) {
             ->where('se.syear', $syear)
             ->whereIn('s.id', $student_ids)
             ->groupByRaw('s.id,fb.month_id,fb.fee_type_id')
-            ->orderByRaw('sort_year,sort_month,ft.display_name ASC')->get()->toArray();
+            ->orderByRaw('sort_year,sort_month,ft.sort_order ASC')->get()->toArray();
         $data = array();
         $student_data = array();
         foreach ($result as $key => $value) {
@@ -1051,7 +1051,7 @@ if (! function_exists('FeeBreakoffHeadWiselast')) {
             ->where('se.syear', $syear)
             ->whereIn('s.id', $student_ids)
             ->groupByRaw('s.id,fb.month_id,fb.fee_type_id')
-            ->orderByRaw('sort_year,sort_month,ft.display_name ASC')->get()->toArray();
+            ->orderByRaw('sort_year,sort_month,ft.sort_order ASC')->get()->toArray();
         $data = array();
         $student_data = array();
         foreach ($result as $key => $value) {
@@ -1272,7 +1272,7 @@ if (! function_exists('OtherBreackOff')) {
                 'sub_institute_id' => session()->get('sub_institute_id'),
                 'syear'            => session()->get('syear'),
                 'fees_title_id'    => 1,
-            ])->orderBy('display_name','ASC')->get()->toArray();
+            ])->orderBy('sort_order','ASC')->get()->toArray();
 
         $bk_off_with_name = array();
         foreach ($fees_title as $id => $arr) {
@@ -1363,7 +1363,7 @@ if (! function_exists('OtherBreackOfflast')) {
                 'sub_institute_id' => session()->get('sub_institute_id'),
                 'syear'            => $syear,
                 'fees_title_id'    => 1,
-            ])->orderBy('display_name','ASC')->get()->toArray();
+            ])->orderBy('sort_order','ASC')->get()->toArray();
 
         $bk_off_with_name = array();
         foreach ($fees_title as $id => $arr) {
@@ -1398,7 +1398,7 @@ if (! function_exists('OtherBreackOffHead')) {
         return DB::table('fees_title')
             ->where('sub_institute_id', $sub_institute_id)
             ->where('syear', $syear)
-            ->where('fees_title_id', 1)->get()->toArray();
+            ->where('fees_title_id', 1)->orderBy('sort_order')->get()->toArray();
     }
 }
 

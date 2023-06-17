@@ -44,7 +44,7 @@ class online_fees_split_controller extends Controller
             ->join('fees_title as ft', 'ft.id', '=', 'fos.fees_title_id')
             ->where([
                 'fos.sub_institute_id' => session()->get('sub_institute_id'),
-            ])->get();
+            ])->orderBy('fees_title.sort_order')->get();
         $responce_arr = array();
         $data = json_encode($data);
         $responce_arr = json_decode($data, true);
@@ -95,7 +95,7 @@ class online_fees_split_controller extends Controller
             ->where([
                 'sub_institute_id' => session()->get('sub_institute_id'),
                 'syear' => session()->get('syear')
-            ])->pluck("display_name", "id");
+            ])->orderBy('sort_order')->pluck("display_name", "id");
 
         // foreach ($data as $id=>$arr) {
         //     if($arr["fees_title_id"] == 1){

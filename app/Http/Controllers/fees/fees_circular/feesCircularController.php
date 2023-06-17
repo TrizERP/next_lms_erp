@@ -354,7 +354,7 @@ public function getBk(Request $request, $id)
             ->where('fb.syear', $prviouse_syear)
             ->where('ft.display_name', 'LIKE', '%Imprest%')
             ->where('fb.student_id', $reg_bk_off[0]->student_id)
-            ->orderBy('ft.display_name', 'ASC')->get()->toArray();
+            ->orderBy('ft.sort_order', 'ASC')->get()->toArray();
 
         $get_imprest_balance = json_decode(json_encode($get_imprest_sql), true);
 
