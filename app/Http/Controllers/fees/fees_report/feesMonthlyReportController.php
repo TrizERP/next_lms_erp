@@ -107,7 +107,7 @@ class feesMonthlyReportController extends Controller
         $to_date = $request->input('to_date');
 
         $fees_title_result = DB::table('fees_title')
-            ->where('sub_institute_id', session()->get('sub_institute_id'))->get()->toArray();
+            ->where('sub_institute_id', session()->get('sub_institute_id'))->orderBy('sort_order')->get()->toArray();
         $fees_title_result = json_decode(json_encode($fees_title_result), true);
 
         $columns = "";

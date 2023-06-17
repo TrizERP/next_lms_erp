@@ -39,7 +39,7 @@ class cheque_cash_controller extends Controller
         ];
 
         $fees_title = DB::table('fees_title')
-            ->where($where)
+            ->where($where)->orderBy('sort_order')
             ->pluck('display_name', 'fees_title');
 
 
@@ -68,7 +68,7 @@ class cheque_cash_controller extends Controller
         ];
 
         $fees_title = DB::table('fees_title')
-            ->where($where)
+            ->where($where)->orderBy('sort_order')
             ->pluck('display_name', 'fees_title');
 
         $title_arr = [];
