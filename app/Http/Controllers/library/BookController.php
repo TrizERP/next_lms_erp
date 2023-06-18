@@ -5,9 +5,11 @@ namespace App\Http\Controllers\library;
 use App\Http\Controllers\Controller;
 use App\Models\LibraryBook;
 use App\Models\LibraryItem;
+use App\Models\student\tblstudentModel;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use League\CommonMark\Extension\CommonMark\Renderer\Inline\ImageRenderer;
 use Yajra\DataTables\DataTables;
 use Picqer\Barcode\BarcodeGeneratorPNG;
 
@@ -32,7 +34,7 @@ class BookController extends Controller
                 })
                 ->addIndexColumn()
                 ->addColumn('action', function ($row) {
-                    $actionBtn = '<a href="javascript:void(0)" class="delete btn btn-danger btn-delete" title="Delete Book" data-id="' . $row->id . '"><i class="fa fa-trash"></i></a><a href="javascript:void(0)" class="delete btn btn-warning btn-edit ml-1" title="Edit Book" data-id="' . $row->id . '"><i class="fa fa-pencil"></i></a><a href="javascript:void(0)" class="delete btn btn-primary print-barcode ml-1" title="Print Barcode" data-id="' . $row->id . '"><i class="fa fa-barcode"></i></a>';
+                    $actionBtn = '<a href="javascript:void(0)" class="delete m-2 btn btn-danger btn-delete" title="Delete Book" data-id="' . $row->id . '"><i class="fa fa-trash"></i></a><a href="javascript:void(0)" class="m-2 btn btn-warning btn-edit ml-1" title="Edit Book" data-id="' . $row->id . '"><i class="fa fa-pencil"></i></a><a href="javascript:void(0)" class="m-2 btn btn-primary print-barcode ml-1" title="Print Barcode" data-id="' . $row->id . '"><i class="fa fa-barcode"></i></a><a href="javascript:void(0)" class="m-2 btn btn-info circulation ml-1" title="Issue/Return Book" data-id="' . $row->id . '"><i class="fa fa-retweet"></i></a>';
                     return $actionBtn;
                 })
                 ->rawColumns(['checkbox', 'image', 'action'])
@@ -44,11 +46,19 @@ class BookController extends Controller
     public function generateBarcode(Request $request, $id)
     {
         $book = LibraryBook::find($id);
-        $barcodeGenerator = new BarcodeGeneratorPNG();
-        $barcode = $barcodeGenerator->getBarcode($book->isbn_issn, $barcodeGenerator::TYPE_CODE_128);
+        // Barcode content
+        $renderer = new ImageRenderer(
+            new RendererStyle(200),
+            new ImagickImageBackEnd()
+        );
+        $writer = new Writer($renderer);
 
-        // Return the barcode view
-        return view('book.barcode', compact('barcode'));
+        return base64_encode($writer->writeString($book->title));
+    }
+
+    public function circulation()
+    {
+        return view('library.circulation');
     }
 
     /**
@@ -155,9 +165,14 @@ class BookController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function show($id)
+    public function show($enroll)
     {
-        //
+        try {
+            $details = tblstudentModel::where('enrollment_no', $enroll)->first();
+            
+        } catch (Exception $e) {
+            return response()->json($e->getMessage(),500);
+        }
     }
 
     /**

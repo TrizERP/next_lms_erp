@@ -264,6 +264,38 @@
             <!-- Tabs content -->
         </div>
     </div>
+    <div class="modal fade" id="mdlCirculation" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel"
+        aria-hidden="true">
+        <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="exampleModalLabel">Modal title</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <form class="form-group" id="frmCirculation" method="post">
+                        @csrf
+                        <div class="row">
+                            <div class="col-md-6">
+                                <label for="">Student Enroll No</label>
+                                <input type="text" name="enroll_no" id="enroll_no" placeholder="Enter Enroll No."
+                                    class="form-control">
+                            </div>
+                            <div class="col-md-6">
+                                <button type="submit" class="btn btn-primary mt-4">Fetch Details</button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary">Save changes</button>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
 @include('includes.footerJs')
@@ -355,6 +387,39 @@
             }
         });
 
+        $(document).on("submit", "#frmCirculation", function(e) {
+            e.preventDefault();
+            $('.error').remove()
+            var url = "{{ route('books.show', ':id') }}";
+            url = url.replace(':id', $('#enroll_no').val());
+            var formData = new FormData($("#frmCirculation")[0]);
+            /**Ajax code**/
+            $.ajax({
+                type: "get",
+                url: url,
+                cache: false,
+                contentType: false,
+                processData: false,
+                success: function(data) {
+                    if (data.status) {
+                        alert(data.message);
+                        location.reload();
+                    }
+                    $('#tblLeaveType').DataTable().ajax.reload();
+                },
+                error: function(xhr) {
+                    if (xhr.status == 422) {
+                        var errors = JSON.parse(xhr.responseText);
+                        $.each(errors.errors, function(i, error) {
+                            $('#' + i).after(
+                                '<span class="text-strong text-danger error text-capitalize">' +
+                                error + '</span>')
+                        })
+                    }
+                }
+            });
+        });
+
         $(document).on("submit", "#frmBookAdd", function(e) {
             e.preventDefault();
             $('.error').remove()
@@ -395,6 +460,10 @@
                 }
             });
             deleteHoliday(ids)
+        });
+        $(document).on("click", ".circulation", function(e) {
+            e.preventDefault();
+            $('#mdlCirculation').modal('toggle');
         });
         $(document).on("click", ".btn-delete", function(e) {
             e.preventDefault();

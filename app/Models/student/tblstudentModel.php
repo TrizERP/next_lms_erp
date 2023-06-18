@@ -2,6 +2,7 @@
 
 namespace App\Models\student;
 
+use App\Models\LibraryBookCirculation;
 use Illuminate\Database\Eloquent\Model;
 
 class tblstudentModel extends Model
@@ -105,4 +106,12 @@ class tblstudentModel extends Model
         'father_dob',
         'expire_date'
     ];
+
+    public function getFullNameAttribute() {
+        return $this->first_name.' '.$this->last_name;
+    }
+
+    public function issuedBook(){
+        return $this->hasOne(LibraryBookCirculation::class)->where('student_id', $this->id);
+    }
 }
