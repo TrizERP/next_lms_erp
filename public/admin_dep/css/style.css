@@ -40,7 +40,7 @@ div:blank								{ display: none; }
 aside.right-sidebar.active 				{ min-width: 280px;max-width: 280px; }
 aside.right-sidebar.active .right-sub-sidebar{ background: var(--secondary); }
 .right-sidebar .nav-tabs .nav-link.active:after	{ content: "";display: block;width: 10px;height: 10px;background: var(--primary);position: absolute;left: 50%;transform: translateX(-50%) rotate(45deg);bottom: -5px; }
-.form-control 							{ margin-bottom: 15px;color: #303030;border: 2px solid #d4d4d4; }
+.form-control 							{ margin-bottom: 0px;color: #303030;border: 2px solid #d4d4d4; }
 .form-control:focus						{ border-color: var(--primary); }
 .form-control::placeholder 				{ color: rgba(0,0,0,0.3);font-weight: 500; }
 .form-group label 						{ font-weight: 500;margin-bottom: 5px; }
@@ -88,7 +88,7 @@ ol.breadcrumb 							{ position: absolute;top: 84px;left: 175px;background: tran
 .content-main							{ padding-top: 70px;padding-left: 175px;width: 100%; }
 
 /*Help Guide*/
-.help-guide 							{ width: 300px;height: auto;position: fixed;bottom: 15px;right: 15px;border-radius: 5px;overflow: hidden;box-shadow: 0 -5px 5px rgba(0,0,0,0.2);z-index: 9999; }
+.help-guide 							{ width: 200px;height: auto;position: fixed;bottom: 15px;right: 80px;border-radius: 5px;overflow: hidden;box-shadow: 0 -5px 5px rgba(0,0,0,0.2);z-index: 9999; }
 .help-guide .help-head 					{ background: #303030;color: #fff;padding: 10px 15px;font-size: 14px;line-height: 26px;cursor: pointer;position: relative;transition: all 0.5s; }
 .help-guide.active .help-head			{ background: var(--primary); }
 .help-guide .help-head:before 			{ display: block;width: 10px;height: 10px;border-right: 3px solid #fff;border-bottom: 3px solid #fff;position: absolute;top: 50%;right: 15px;transform: translateY(-50%) rotate(45deg);transition: all 0.5s; }
