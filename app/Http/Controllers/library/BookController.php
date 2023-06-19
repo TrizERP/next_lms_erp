@@ -4,11 +4,13 @@ namespace App\Http\Controllers\library;
 
 use App\Http\Controllers\Controller;
 use App\Models\LibraryBook;
+use App\Models\LibraryBookCirculation;
 use App\Models\LibraryItem;
 use App\Models\student\tblstudentModel;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\View;
 use League\CommonMark\Extension\CommonMark\Renderer\Inline\ImageRenderer;
 use Yajra\DataTables\DataTables;
 use Picqer\Barcode\BarcodeGeneratorPNG;
@@ -168,10 +170,11 @@ class BookController extends Controller
     public function show($enroll)
     {
         try {
-            $details = tblstudentModel::where('enrollment_no', $enroll)->first();
-            
+            $details = tblstudentModel::where('enrollment_no', $enroll)->with('issuedBook')->first();
+            $view = View::make('library.user_detail', compact('details'))->render();
+            return response()->json(['data' => $view], 200);
         } catch (Exception $e) {
-            return response()->json($e->getMessage(),500);
+            return response()->json($e->getMessage(), 500);
         }
     }
 
@@ -204,8 +207,50 @@ class BookController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function destroy($id)
+    public function destroy($id, Request $request)
     {
-        //
+        $ids = $request->id;
+        $del = LibraryBook::whereIn('id', $ids)->delete();
+        return response()->json(['message'=>'Book Deleted Successfully !'],200);
+    }
+    /**
+     * Remove the specified resource from storage.
+     *
+     * @param  int  $id
+     * @return \Illuminate\Http\Response
+     */
+    public function returnBook($id, Request $request)
+    {
+        $enroll = $request->enroll_no;
+        $del = LibraryBook::where('id', $id)->delete();
+        $details = tblstudentModel::where('enrollment_no', $enroll)->with('issuedBook')->first();
+        $view = View::make('library.user_detail', compact('details'))->render();
+        return response()->json(['data' => $view], 200);
+    }
+    /**
+     * Remove the specified resource from storage.
+     *
+     * @param  int  $id
+     * @return \Illuminate\Http\Response
+     */
+    public function issueBook(Request $request)
+    {
+        $request->validate([
+            'student_id' => 'required|exists:tblstudent,id',
+            'bookId' => 'required|exists:library_books,id',
+            'issue_date' => 'required|date',
+            'return_date' => 'required|date|after:issue_date',
+        ]);
+        $ids = $request->id;
+        $issueBook = LibraryBookCirculation::updateOrCreate([
+            'student_id'=> $request->student_id,
+            'book_id'=> $request->bookId,
+        ],[
+            'issue_date'=> $request->issue_date,
+            'return_date'=> $request->return_date
+        ]);
+        $details = tblstudentModel::where('enrollment_no', $request->enroll_no)->with('issuedBook')->first();
+        $view = View::make('library.user_detail', compact('details'))->render();
+        return response()->json(['data' => $view], 200);
     }
 }

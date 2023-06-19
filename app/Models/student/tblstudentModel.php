@@ -107,11 +107,13 @@ class tblstudentModel extends Model
         'expire_date'
     ];
 
-    public function getFullNameAttribute() {
-        return $this->first_name.' '.$this->last_name;
+    public function getFullNameAttribute()
+    {
+        return $this->first_name . ' ' . $this->last_name;
     }
 
-    public function issuedBook(){
-        return $this->hasOne(LibraryBookCirculation::class)->where('student_id', $this->id);
+    public function issuedBook()
+    {
+        return $this->hasMany(LibraryBookCirculation::class, 'student_id', 'id');
     }
 }

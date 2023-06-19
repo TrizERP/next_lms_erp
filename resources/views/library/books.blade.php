@@ -269,30 +269,32 @@
         <div class="modal-dialog modal-lg" role="document">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title" id="exampleModalLabel">Modal title</h5>
+                    <h5 class="modal-title" id="modalTitle"></h5>
                     <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                         <span aria-hidden="true">&times;</span>
                     </button>
                 </div>
-                <div class="modal-body">
-                    <form class="form-group" id="frmCirculation" method="post">
+                <form class="form-group" id="frmCirculation" method="post">
+                    <div class="modal-body">
                         @csrf
                         <div class="row">
                             <div class="col-md-6">
                                 <label for="">Student Enroll No</label>
+                                <input type="hidden" name="bookId" id="bookId" value="">
                                 <input type="text" name="enroll_no" id="enroll_no" placeholder="Enter Enroll No."
                                     class="form-control">
                             </div>
                             <div class="col-md-6">
-                                <button type="submit" class="btn btn-primary mt-4">Fetch Details</button>
+                                <button type="button" class="btn btn-primary mt-4 fetch-stud">Fetch Details</button>
                             </div>
                         </div>
-                    </form>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-                    <button type="button" class="btn btn-primary">Save changes</button>
-                </div>
+                        <div class="row divUserDetail"></div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                        <button type="submit" class="btn btn-primary">Issue Book</button>
+                    </div>
+                </form>
             </div>
         </div>
     </div>
@@ -390,22 +392,19 @@
         $(document).on("submit", "#frmCirculation", function(e) {
             e.preventDefault();
             $('.error').remove()
-            var url = "{{ route('books.show', ':id') }}";
-            url = url.replace(':id', $('#enroll_no').val());
+            var url = "{{ route('books.issue') }}";
             var formData = new FormData($("#frmCirculation")[0]);
             /**Ajax code**/
             $.ajax({
-                type: "get",
+                type: "post",
                 url: url,
+                dataType: 'json',
+                data: formData,
                 cache: false,
                 contentType: false,
                 processData: false,
                 success: function(data) {
-                    if (data.status) {
-                        alert(data.message);
-                        location.reload();
-                    }
-                    $('#tblLeaveType').DataTable().ajax.reload();
+                    $('.divUserDetail').html(data.data);
                 },
                 error: function(xhr) {
                     if (xhr.status == 422) {
@@ -452,6 +451,58 @@
             });
         });
 
+        $(document).on("click", ".return-book", function(e) {
+            $('.error').remove()
+            var url = "{{ route('books.return', ':id') }}";
+            url = url.replace(':id', $(this).data('id'));
+            var enroll_no = $('#enroll_no').val()
+            /**Ajax code**/
+            $.ajax({
+                type: "get",
+                url: url,
+                dataType: 'json',
+                data: {
+                    enroll_no: enroll_no
+                },
+                success: function(data) {
+                    $('.divUserDetail').html(data.data);
+                },
+                error: function(xhr) {
+                    if (xhr.status == 422) {
+                        var errors = JSON.parse(xhr.responseText);
+                        $.each(errors.errors, function(i, error) {
+                            $('#' + i).after(
+                                '<span class="text-strong text-danger error text-capitalize">' +
+                                error + '</span>')
+                        })
+                    }
+                }
+            });
+        });
+        $(document).on("click", ".fetch-stud", function(e) {
+            $('.error').remove()
+            var url = "{{ route('books.show', ':id') }}";
+            url = url.replace(':id', $('#enroll_no').val());
+            /**Ajax code**/
+            $.ajax({
+                type: "get",
+                url: url,
+                dataType: 'json',
+                success: function(data) {
+                    $('.divUserDetail').html(data.data);
+                },
+                error: function(xhr) {
+                    if (xhr.status == 422) {
+                        var errors = JSON.parse(xhr.responseText);
+                        $.each(errors.errors, function(i, error) {
+                            $('#' + i).after(
+                                '<span class="text-strong text-danger error text-capitalize">' +
+                                error + '</span>')
+                        })
+                    }
+                }
+            });
+        });
         $(document).on("click", ".delete-all", function(e) {
             var ids = []
             $(".checkSingle").each(function() {
@@ -459,10 +510,14 @@
                     ids.push($(this).attr('id'));
                 }
             });
-            deleteHoliday(ids)
+            deleteBook(ids)
         });
         $(document).on("click", ".circulation", function(e) {
             e.preventDefault();
+            var id = $(this).data('id');
+            var name = $(this).data('name');
+            $('#modalTitle').text(name);
+            $('#bookId').val(id);
             $('#mdlCirculation').modal('toggle');
         });
         $(document).on("click", ".btn-delete", function(e) {
@@ -470,6 +525,7 @@
             var ids = [];
             var id = $(this).data('id');
             ids.push(id);
+            deleteBook(ids)
         });
         $(document).on("click", ".print-barcode", function(e) {
             e.preventDefault();
@@ -504,9 +560,9 @@
             });
         }
 
-        function deleteHoliday(ids) {
+        function deleteBook(ids) {
             if (confirm('Are you sure to delete holiday')) {
-                var url = "{{ route('holiday.destroy', ':id') }}";
+                var url = "{{ route('books.destroy', ':id') }}";
                 url = url.replace(':id', ids);
                 $.ajax({
                     type: "delete",

@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 class LibraryBookCirculation extends Model
 {
     use HasFactory, SoftDeletes;
+    protected $guarded = ['id'];
 
     public function student(){
         return $this->belongsTo(tblstudentModel::class);

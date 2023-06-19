@@ -374,6 +374,8 @@ Route::group(['middleware' => ['session', 'menu', 'logRoute']], function () {
 
     Route::resource('books', BookController::class);
     Route::get('books/{id}/barcode', [BookController::class,'generateBarcode'])->name('books.barcode');
+    Route::get('books/{id}/reutrn', [BookController::class,'returnBook'])->name('books.return');
+    Route::post('books/issue', [BookController::class,'issueBook'])->name('books.issue');
     Route::get('books.circulation', [BookController::class,'circulation'])->name('books.circulation');
 });
 

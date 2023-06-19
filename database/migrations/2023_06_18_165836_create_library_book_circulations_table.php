@@ -19,6 +19,8 @@ return new class extends Migration
             $table->foreign('book_id')->references('id')->on('library_books')->onDelete('cascade')->onUpdate('cascade');
             $table->unsignedBigInteger('student_id');
             $table->foreign('student_id')->references('id')->on('tblstudent')->onDelete('cascade')->onUpdate('cascade');
+            $table->dateTime('issued_date')->default(now());
+            $table->dateTime('return_date')->default(now());
             $table->softDeletes();
             $table->timestamps();
         });
