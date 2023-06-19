@@ -52,8 +52,7 @@ class map_student_controller extends Controller
             ->selectRaw('*,s.id as shift_id')
             ->where("a.sub_institute_id", "=", session()->get('sub_institute_id'))
             ->where("a.id", "=", $_REQUEST['grade'])
-            ->whereRaw("shift_title like concat('%',shift,'%')")
-            ->get()->toArray();
+            ->get()->toArray();//->whereRaw("shift_title like concat('%',shift,'%')")
 
         $default_shift_id = $result[0]->shift_id;
         //END set default shift_from and shift_to
