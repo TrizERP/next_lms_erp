@@ -95,9 +95,9 @@ $school_logo = session()->get('school_logo');
                         $USER_GROUP_ID = 3;
                     }
 
-                    // $hrms_link = "?NEW_ERP=1&DUSER_ID=$DUSER_ID&USER_GROUP_ID=$USER_GROUP_ID&DUSER_NAME=$DUSER_ID&hrms_db_host=$db_host&hrms_db_user=$db_user&hrms_db_password=$db_password&hrms_db_hrms=$hrms_db_hrms&client_name=$client_name";
+                    $hrms_link = "?NEW_ERP=1&DUSER_ID=$DUSER_ID&USER_GROUP_ID=$USER_GROUP_ID&DUSER_NAME=$DUSER_ID&hrms_db_host=$db_host&hrms_db_user=$db_user&hrms_db_password=$db_password&hrms_db_hrms=$hrms_db_hrms&client_name=$client_name";
 
-                    $hrms_link = "?NEW_ERP=1&DUSER_ID=" . base64_encode($DUSER_ID) . "&USER_GROUP_ID=" . base64_encode($USER_GROUP_ID) . "&DUSER_NAME=" . base64_encode($DUSER_ID) . "&hrms_db_host=" . base64_encode($db_host) . "&hrms_db_user=" . base64_encode($db_user) . "&hrms_db_password=" . base64_encode($db_password) . "&hrms_db_hrms=" . base64_encode($hrms_db_hrms) . "&client_name=" . base64_encode($client_name);
+                    //$hrms_link = "?NEW_ERP=1&DUSER_ID=" . base64_encode($DUSER_ID) . "&USER_GROUP_ID=" . base64_encode($USER_GROUP_ID) . "&DUSER_NAME=" . base64_encode($DUSER_ID) . "&hrms_db_host=" . base64_encode($db_host) . "&hrms_db_user=" . base64_encode($db_user) . "&hrms_db_password=" . base64_encode($db_password) . "&hrms_db_hrms=" . base64_encode($hrms_db_hrms) . "&client_name=" . base64_encode($client_name);
 
                     //$library_link = "?NEW_ERP=1&DUSER_ID=".base64_encode($DUSER_ID)."&USER_GROUP_ID=".base64_encode($USER_GROUP_ID)."&DUSER_PWD=".base64_encode($DUSER_PWD)."&db_host=".base64_encode($library_host)."&db_user=".base64_encode($library_user)."&db_password=".base64_encode($library_password)."&db_library=".base64_encode($library_db)."&solution_db=".base64_encode('development_erp')."&school_name=".base64_encode($school_name)."&SUB_INSTITUTE_ID=".base64_encode($sub_institute_id)."&school_logo=".base64_encode($school_logo)."&dyear=".base64_encode($syear);
 
