@@ -42,7 +42,7 @@ class fees_title_controller extends Controller
     public function getData()
     {
         $data = fees_title::
-        select('id', 'display_name', 'cumulative_name', 'append_name', 'mandatory', 'syear', 'other_fee_id')
+        select('id', 'display_name', 'sort_order','cumulative_name', 'append_name', 'mandatory', 'syear', 'other_fee_id')
             ->where([
                 'sub_institute_id' => session()->get('sub_institute_id'),
                 'syear' => session()->get('syear')
@@ -139,6 +139,7 @@ class fees_title_controller extends Controller
                 'fees_title_id' => $request->get('fees_title_id'),
                 'fees_title' => $id,
                 'display_name' => $request->get('display_name'),
+                'sort_order'  => $request->get('sort_order'),
                 'cumulative_name' => $request->get('cumulative_name'),
                 'append_name' => $request->get('append_name'),
                 'mandatory' => $mandatory_val,
@@ -162,6 +163,7 @@ class fees_title_controller extends Controller
                 'fees_title_id' => $request->get('fees_title_id'),
                 'fees_title' => $fees_title,
                 'display_name' => $request->get('display_name'),
+                'sort_order'  => $request->get('sort_order'),                
                 'cumulative_name' => $request->get('cumulative_name'),
                 'append_name' => $request->get('append_name'),
                 'mandatory' => $mandatory_val,
@@ -229,6 +231,7 @@ class fees_title_controller extends Controller
                 'fees_title_id' => $request->get('fees_title_id'),
                 'fees_title' => $id,
                 'display_name' => $request->get('display_name'),
+                'sort_order'  => $request->get('sort_order'),                
                 'cumulative_name' => $request->get('cumulative_name'),
                 'append_name' => $request->get('append_name'),
                 'mandatory' => $mandatory_val,
@@ -252,6 +255,7 @@ class fees_title_controller extends Controller
                 'fees_title_id' => $request->get('fees_title_id'),
                 'fees_title' => $fees_title,
                 'display_name' => $request->get('display_name'),
+                'sort_order'  => $request->get('sort_order'),                
                 'cumulative_name' => $request->get('cumulative_name'),
                 'append_name' => $request->get('append_name'),
                 'mandatory' => $mandatory_val,

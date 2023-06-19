@@ -40,7 +40,11 @@
                               <label>Append Name</label>
                               <input type="text" id='append_name' name="append_name" class="form-control">
                           </div>
-                          <div class="col-md-2 form-group ml-0 mr-0">
+                          <div class="col-md-3 form-group">
+                              <label>Sort Order</label>
+                              <input type="number" id='sort_order' name="sort_order" class="form-control">
+                          </div>
+                          <div class="col-md-3 form-group ml-0 mr-0">
                               <label>Mandetory </label>
                               <div class="checkbox checkbox-info">
                                   <input id="mandatory" name="mandatory" value="1" type="checkbox">

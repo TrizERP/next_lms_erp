@@ -52,6 +52,7 @@ class fees_breackoff_controller extends Controller
                 st.name sta_name,d.name div_name,fb.month_id,fb.amount')
             ->where('fb.sub_institute_id', session()->get('sub_institute_id'))
             ->where('fb.syear', session()->get('syear'))
+            ->orderByRaw('ft.sort_order')
             ->get()->toArray();
 
         $months = [

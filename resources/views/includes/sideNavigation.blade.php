@@ -24,8 +24,8 @@ $school_logo = session()->get('school_logo');
                 @foreach ($menuMaster as $key => $value)
                 @php
                 $icon_name = $value['icon'];
-                $icon_nrml = 'http://' . $_SERVER['HTTP_HOST'] . "/admin_dep/images/menu-$icon_name.png";
-                $icon_hvr = 'http://' . $_SERVER['HTTP_HOST'] . "/admin_dep/images/menu-$icon_name-white.png";
+                $icon_nrml = env('APP_URL') . "/admin_dep/images/menu-$icon_name.png";
+                $icon_hvr = env('APP_URL') . "/admin_dep/images/menu-$icon_name-white.png";
                 @endphp
                 <a class="nav-link" id="menu-{{ $i }}-tab" data-toggle="pill" href="#menu-{{ $i }}" role="tab" aria-controls="menu-{{ $i }}" aria-selected="false">
                     <span class="menu-main-icon">
@@ -60,9 +60,9 @@ $school_logo = session()->get('school_logo');
                     $hrms_rights = $client_data[0]->rights;
                     $library_db = $client_data[0]->db_library;
                     $library_rights = $client_data[0]->library_rights;
-                    $library_host = '202.47.117.220';
-                    $library_user = 'dev_db';
-                    $library_password = 'dev@sql'; //urlencode('dev@sql');
+                    $library_host = $db_host;
+                    $library_user = $db_user;
+                    $library_password = $db_password;
                     $solution_db = $client_data[0]->db_solution;
                     $school_name = $client_data[0]->SchoolName;
                     $school_logo = $client_data[0]->logo;
@@ -124,7 +124,7 @@ $school_logo = session()->get('school_logo');
                     <?php
                     if ($library_rights == 1 && Session::get('user_profile_name') != 'Student') {
                     ?>
-                        <a class="nav-link" target="_blank" href="http://dev.triz.co.in/library/admin/index.php{{ $library_link }}">
+                        <a class="nav-link" target="_blank" href="".env('APP_URL')."/library/admin/index.php{{ $library_link }}">
                             <span class="menu-main-icon">
                                 <i class="mdi mdi-library-shelves"></i>
                             </span>
