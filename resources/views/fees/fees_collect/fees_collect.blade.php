@@ -101,7 +101,7 @@
 											</td>
 										</tr>
 										<tr>
-											<td>Student Name</td>
+											<td>{{ App\Helpers\get_string('StudentName','request')}}</td>
 											<td>
 												{{ $data['stu_data']['name']; }}
 											</td>
@@ -246,7 +246,7 @@
 													<th style="width: 10%;padding-left: 15px;">Amount</th>
 													<th style="width: 20%;padding-left: 15px;">Collection Amount
 													</th>
-													<th style="width: 20%;padding-left: 15px;">Discount</th>
+													<th style="width: 20%;padding-left: 15px;">{{ App\Helpers\get_string('Discount','request') }}</th>
 													<th style="width: 20%;padding-left: 15px;">Fine</th>
 												</tr>
 												@php
@@ -464,7 +464,7 @@
 											<tr>
 												<th>Sr No.</th>
 												<th>GR No.</th>
-												<th>Student Name</th>
+												<th>{{App\Helpers\get_string('StudentName','request')}}</th>
 												<th>Std-Div</th>
 												<th>Uniqueid</th>
 												<th>Month</th>

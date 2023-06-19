@@ -5,6 +5,7 @@ namespace App\Helpers;
 
 use App\Models\easy_com\manage_sms_api\manage_sms_api;
 use App\Models\fees\fees_title\fees_title;
+use App\Models\normClature;
 use App\Models\fees\map_year\map_year;
 use App\Models\student\appNotificationModel;
 use App\Models\student\tblstudentModel;
@@ -2050,5 +2051,40 @@ if (! function_exists('getBestOf')) {
             }
         }
         return $newArr;
+    }
+}
+
+if (! function_exists('get_string')) {
+
+    function get_string($arg, $type = '')
+    {
+        $sub_institute_id = session()->get('sub_institute_id');
+        $strings = [
+           'Discount'=>"Discount",
+           'StudentName'=>"Student Name",
+           'StudentQuota'=>"Student Quota"
+        ];
+
+        if ($type === 'menu_id') {
+            $menu_id = $arg;
+            $normClature = normClature::where('sub_institute_id', $sub_institute_id)
+                ->where('menu_id', $menu_id)
+                ->first();
+        } else {
+            $requestValue = $arg;
+            $normClature = normClature::where('sub_institute_id', $sub_institute_id)
+                ->where('string', $requestValue)
+                ->first();
+        }
+
+        if ($normClature) {
+            if (!empty($normClature->value)) {
+                return $normClature->value;
+            } else {
+                return $strings[$arg] ?? '';
+            }
+        } else {
+            return $strings[$arg] ?? '';
+        }
     }
 }
