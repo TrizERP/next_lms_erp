@@ -137,8 +137,15 @@
                                                 <!-- al marks -->
                                                 @if(isset($all_marks[$data['id']]))
                                                 @foreach($all_marks[$data['id']] as $question_paper_id => $all_markss)
-                                                <td>{{$all_markss}}</td>
+                                                @php $m=explode(',',$all_markss); @endphp
+                                                <td>
+                                                    <div class="next-line">
+                                                    @foreach($m as $am)
+                                                    <div class="line">{{$am}}</div>
                                                     @endforeach
+                                                    </div>
+                                                </td>
+                                                @endforeach
                                                 @endif
                                                
                                                 <!-- best of 5 -->
