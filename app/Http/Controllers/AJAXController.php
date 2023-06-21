@@ -28,7 +28,7 @@ use function App\Helpers\OtherBreackOfMonthlast;
 use App\Models\school_setup\standardModel;
 use App\Models\school_setup\divisionModel;
 use App\Models\school_setup\academic_sectionModel;
-
+use function App\Helpers\get_string;
 //use function App\Helpers\FeeBreakoffHeadWise;
 
 class AJAXController extends Controller
@@ -610,13 +610,12 @@ class AJAXController extends Controller
                         <th  align="center" style="width: 30%;align-content: center;">Particular</th>
                         <th style="width: 10%;padding-left: 15px;">Amount</th>
                         <th style="width: 20%;padding-left: 15px;">Collection Amount</th>
-                        <th style="width: 20%;padding-left: 15px;">Discount</th>
+                        <th style="width: 20%;padding-left: 15px;">'.get_string('Discount','requests').'</th>
                         <th style="width: 20%;padding-left: 15px;">Fine</th>
                     </tr>';
         foreach ($full_bk as $id => $val) {
             $response .= "
                  <tr>
-
                     <td style='width: 20%'>$id</td>
                     <td style='width: 20%'>$val</td>
             ";
@@ -1607,7 +1606,7 @@ class AJAXController extends Controller
                             </div>';
         } elseif ($paper_size == "A4") {
             $extra_html = ' <div>
-                                <page size="A4" layout="landscape">
+                                <page size="A4">
                                    ##HTML_SEC##
                                 </page>
                             </div>';
@@ -1629,9 +1628,11 @@ class AJAXController extends Controller
 
     public function htmlToPDF_making($paper_size, $html_file_path, $pdf_file_path)
     {
-        if ($paper_size == "A5" || $paper_size == "A4") {
+        if ($paper_size == "A5" ) {
             htmlToPDFLandscapeCertificate($html_file_path, $pdf_file_path);
-        } elseif ($paper_size == "A5DB") {
+        } elseif( $paper_size == "A4"){
+            htmlToPDFPortrait($html_file_path, $pdf_file_path);
+        }elseif ($paper_size == "A5DB") {
             htmlToPDFLandscape($html_file_path, $pdf_file_path);
         } elseif ($paper_size == "A4DB") {
             htmlToPDFPortrait($html_file_path, $pdf_file_path);

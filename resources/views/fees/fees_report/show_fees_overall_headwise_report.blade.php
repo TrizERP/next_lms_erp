@@ -177,22 +177,22 @@
                         </tr>
                         <tr>
                             @if(isset($data['bk_title_months_array']))
+							<!-- for Recieved fees -->
                                 @foreach($data['bk_title_months_array'] as $main_head => $child_head)
-                                    @if(count($child_head) > 0)
+                                    @if(is_array($child_head))
                                         @foreach($child_head as $child_key => $child_val)
                                             <th>{{$child_val}}</th>   
                                         @endforeach
                                     @endif
                                 @endforeach
-                                
-                                @foreach($data['bk_title_months_array'] as $main_head => $child_head)
-                                    @if(count($child_head) > 0)
+								<!-- for panding fees -->
+								@foreach($data['bk_title_months_array'] as $main_head => $child_head)
+                                    @if(is_array($child_head))
                                         @foreach($child_head as $child_key => $child_val)
                                             <th>{{$child_val}}</th>   
                                         @endforeach
                                     @endif
                                 @endforeach
-                                
                             @endif
                         </tr>
 
@@ -200,15 +200,16 @@
                     <tbody>
                     @php
                     $j=1;
-                    $total_breakoff = $total_paid = $total_unpaid = $total_discount = 0;
+                    $total_breakoff = $total_paid = $total_unpaid = $total_discount =  $discount = $status = 0;
                     $total_array = array();
                     @endphp
                                            
                     @if(isset($data['fees_data']))
                         @foreach($fees_data as $key => $fees_value) 
                             @php
-                            $total_paid += $fees_value['-']['paid'];
-                            $total_breakoff += $fees_value['-']['bk'];
+							if(isset($fees_value['-'])){
+                            $total_paid += $fees_value['-']['paid'] ?? 0;
+                            $total_breakoff += $fees_value['-']['bk'] ?? 0;
                             if(isset($fees_value['discount']))
                             {    
                                 $total_discount += $fees_value['discount'];
@@ -217,6 +218,7 @@
                                 $discount = 0;
                             }
                             $status = $fees_value['-']['paid'] - $discount;
+							}
                             @endphp                    
                         <tr>
                             <td>{{$j}}</td>
@@ -225,7 +227,7 @@
                             <td>{{$fees_value['stddiv']}}</td>
                             <td>{{$fees_value['stu_quota']}}</td>
                             <td>@if($status != 0) In-Active @else Active @endif</td>
-                            <td>{{$fees_value['-']['bk']}}</td>
+                            <td>{{$fees_value['-']['bk'] ?? 0}}</td>
 
                                             
                             <td>{{$discount}}</td>
@@ -271,7 +273,7 @@
 
                            
 
-                            <td>{{$fees_value['-']['paid'] - $discount}}</td>
+                           <td>{{ isset($fees_value['-']['paid']) ? ($fees_value['-']['paid'] - $discount) : 0 }}</td>
 
                             @if(isset($data['bk_title_months_array']))
                                 @foreach($data['bk_title_months_array'] as $main_head => $child_head)
@@ -313,9 +315,9 @@
                             @endif
 
                            
-                            <td>{{$fees_value['-']['remain']}}</td>  
+                            <td>{{$fees_value['-']['remain'] ?? 0}}</td>  
                             @php
-                            $total_unpaid += $fees_value['-']['remain'];
+                            $total_unpaid += $fees_value['-']['remain'] ?? 0;
                             @endphp                            
                         </tr>
                     @php
