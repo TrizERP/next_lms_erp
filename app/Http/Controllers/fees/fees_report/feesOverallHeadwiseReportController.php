@@ -100,14 +100,14 @@ class feesOverallHeadwiseReportController extends Controller
             $extraSearchArrayRaw .= "  AND tblstudent.last_name like '%" . $last_name . "%' ";
         }
         // $extraSearchArrayRaw .= "  AND tblstudent.enrollment_no IN ('N033','N061','N112')";//,'N047',,,'N079','N112') ";
-        // $extraSearchArrayRaw .= "  AND tblstudent_enrollment.end_date IS NULL ";
+        //$extraSearchArrayRaw .= "  AND tblstudent_enrollment.end_date IS NULL ";
         $extraSearchArray['tblstudent_enrollment.syear'] = $syear;
         $extraSearchArray['tblstudent.sub_institute_id'] = $sub_institute_id;
         $extraSearchArray['tblstudent_enrollment.sub_institute_id'] = $sub_institute_id;
         $extraSearchArray['student_quota.sub_institute_id'] = $sub_institute_id;
         
         // DB::enableQueryLog();
-        $studentData = tblstudentModel::selectRaw("tblstudent.id,CONCAT_WS(' ',tblstudent.first_name,tblstudent.middle_name,tblstudent.last_name) AS student_name,academic_section.title as grade,standard.name as standard_name,division.name as division_name,tblstudent.enrollment_no,tblstudent.mobile,tblstudent.uniqueid,student_quota.title as stu_quota,tblstudent_enrollment.end_date,if(tblstudent_enrollment.end_date != '','In-Active','Active') as student_status")
+        $studentData = tblstudentModel::selectRaw("tblstudent.id,CONCAT_WS(' ',tblstudent.first_name,tblstudent.middle_name,tblstudent.last_name) AS student_name,academic_section.title as grade,standard.name as standard_name,division.name as division_name,tblstudent.enrollment_no,tblstudent.mobile,tblstudent.uniqueid,student_quota.title as stu_quota,tblstudent_enrollment.end_date,IF(tblstudent_enrollment.end_date IS NULL,'Active','In-Active') as student_status")
             ->join('tblstudent_enrollment', 'tblstudent.id', '=', 'tblstudent_enrollment.student_id')
             ->join('academic_section', 'academic_section.id', '=', 'tblstudent_enrollment.grade_id')
             ->join('standard', 'standard.id', '=', 'tblstudent_enrollment.standard_id')
@@ -150,7 +150,8 @@ class feesOverallHeadwiseReportController extends Controller
                 ->join('tblstudent_enrollment as se', function ($join) use ($syear) {
                     $join->on('se.student_id', '=', 's.id')
                         ->whereColumn('s.sub_institute_id', '=', 'se.sub_institute_id')
-                        ->where('se.syear', $syear);
+                        ->where('se.syear', $syear)
+                        ->whereNull('se.end_date');
                 })
                 ->where('fbo.syear', $syear)
                 ->whereRaw('fbo.sub_institute_id='.$sub_institute_id.$bk_extra_other_fees)
@@ -178,14 +179,7 @@ class feesOverallHeadwiseReportController extends Controller
             }
             // ksort($bk_title_months_array);
         }
-        // Sort the array based on year and month in descending order
-            foreach ($bk_title_months_array as &$value) {
-                uksort( $value , function($a, $b) use($months){
-                    $a = strtotime(substr($months[$a],-4) );
-                    $b = strtotime(substr($months[$b],-4) );
-                    return $a - $b;
-                });
-            }
+      
 
         // dd($bk_title_months_array);
         $count_of_array = $i;
@@ -308,11 +302,18 @@ class feesOverallHeadwiseReportController extends Controller
                 }
             }
         }
-
+  // Sort the array based on year and month in descending order
+  foreach ($bk_title_months_array as &$value) {
+    uksort( $value , function($a, $b) use($months){
+        $a = strtotime(substr($months[$a],-4) );
+        $b = strtotime(substr($months[$b],-4) );
+        return $a - $b;
+    });
+}
         $res['status_code'] = 1;
         $res['message'] = "Success";
         $res['fees_data'] = $final_array;
-        $res['bk_title_months_array'] = $bk_title_months_array ?? [];
+        $res['bk_title_months_array'] = $bk_title_months_array;
         $res['count_of_array'] = $count_of_array;
         $res['grade_id'] = $grade;
         $res['standard_id'] = $standard;
@@ -326,7 +327,6 @@ class feesOverallHeadwiseReportController extends Controller
         $res['month'] = $month;
         $res['from_date'] = $from_date;
         $res['to_date'] = $to_date;
-
         return is_mobile($type, "fees/fees_report/show_fees_overall_headwise_report", $res, "view");
     }  
     

@@ -215,6 +215,7 @@ $school_logo = session()->get('school_logo');
                                     <span class="hide-menu" id="{{ $subChildmenuValue['name'] }}">
                                         {{ $subChildmenuValue['name'] }}
                                     </span>
+                                    <input type="hidden" value="{{App\Helpers\get_string($subChildmenuValue['id'],'menu_id')}}">
                                 </a>
                             </li>
                             @else
