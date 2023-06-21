@@ -1629,9 +1629,11 @@ class AJAXController extends Controller
 
     public function htmlToPDF_making($paper_size, $html_file_path, $pdf_file_path)
     {
-        if ($paper_size == "A5" || $paper_size == "A4") {
+        if ($paper_size == "A5" ) {
             htmlToPDFLandscapeCertificate($html_file_path, $pdf_file_path);
-        } elseif ($paper_size == "A5DB") {
+        } elseif($paper_size == "A4"){
+            htmlToPDFPortrait($html_file_path, $pdf_file_path);
+        }elseif ($paper_size == "A5DB") {
             htmlToPDFLandscape($html_file_path, $pdf_file_path);
         } elseif ($paper_size == "A4DB") {
             htmlToPDFPortrait($html_file_path, $pdf_file_path);
