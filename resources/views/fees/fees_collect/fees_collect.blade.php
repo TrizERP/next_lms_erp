@@ -178,6 +178,7 @@
 							<input type="hidden" name="mobile" value="{{ $data['stu_data']['mobile']; }}">
 							<input type="hidden" name="uniqueid" value="{{ $data['stu_data']['uniqueid']; }}">
 							<input type="hidden" name="enrollment" value="{{ $data['stu_data']['enrollment']; }}">
+							<input type="hidden" name="roll_no" value="{{ $data['stu_data']['roll_no']; }}">
 							<input type="hidden" name="medium" value="{{ $data['stu_data']['medium']; }}">
 							<input type="hidden" name="father_name" value="{{ $data['stu_data']['father_name']; }}">
 							<input type="hidden" name="mother_name" value="{{ $data['stu_data']['mother_name']; }}">

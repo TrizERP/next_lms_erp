@@ -1622,7 +1622,6 @@ class AJAXController extends Controller
                                 ##HTML_SEC##
                            </div>';
         }
-
         return $extra_html;
     }
 

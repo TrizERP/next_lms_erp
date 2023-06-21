@@ -1256,6 +1256,7 @@ class fees_collect_controller extends Controller
             $medium = $_REQUEST['medium'] ?? '-';
             $uniqueid = $_REQUEST['uniqueid'] ?? '-';
             $enrollment = $_REQUEST['enrollment'] ?? '-';
+            $roll_no = $_REQUEST['roll_no'] ?? '-';
 
             $html_content = $tData[0]['html_content'];
 
@@ -1287,6 +1288,7 @@ class fees_collect_controller extends Controller
             $html_content = str_replace(htmlspecialchars("<<student_name_value>>"), $_REQUEST['full_name'],
                 $html_content);
             $html_content = str_replace(htmlspecialchars("<<student_enrollment_value>>"), $enrollment, $html_content);
+            $html_content = str_replace(htmlspecialchars("<<student_roll_value>>"), $roll_no, $html_content);
             $html_content = str_replace(htmlspecialchars("<<student_father_name>>"), $father_name, $html_content);
             $html_content = str_replace(htmlspecialchars("<<student_mother_name>>"), $mother_name, $html_content);
             $html_content = str_replace(htmlspecialchars("<<student_standard_value>>"), $_REQUEST['std_div'],
