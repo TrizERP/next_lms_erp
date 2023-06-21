@@ -226,7 +226,8 @@
                             <td>{{$fees_value['name']}}</td>
                             <td>{{$fees_value['stddiv']}}</td>
                             <td>{{$fees_value['stu_quota']}}</td>
-                            <td>@if($status != 0) In-Active @else Active @endif</td>
+                            <!--<td>@if($status != 0) In-Active @else Active @endif</td>-->
+                            <td>{{$fees_value['student_status']}}</td>
                             <td>{{$fees_value['-']['bk'] ?? 0}}</td>
 
                                             
