@@ -2003,6 +2003,7 @@ class fees_collect_controller extends Controller
         $stu_detail = [
             "student_id"                    => $reg_bk_off[0]->student_id,
             "enrollment"                    => $reg_bk_off[0]->enrollment_no,
+            "roll_no"                       => $reg_bk_off[0]->roll_no,
             "name"                          => $reg_bk_off[0]->first_name." ".$reg_bk_off[0]->middle_name." ".$reg_bk_off[0]->last_name,
             "stddiv"                        => $reg_bk_off[0]->standard_name."/".$reg_bk_off[0]->division_name,
             "admission"                     => $reg_bk_off[0]->admission_year,
