@@ -285,7 +285,7 @@ class fees_breackoff_controller extends Controller
             ];
 
             $fees_title = DB::table('fees_title')
-                ->where($where_arr)->get();
+                ->where($where_arr)->orderBy('sort_order')->get();
             $title_arr = [];
             foreach ($fees_title as $id => $arr) {
                 $title_arr[$arr->id] = $arr->display_name;

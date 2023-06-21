@@ -5,6 +5,7 @@ namespace App\Helpers;
 
 use App\Models\easy_com\manage_sms_api\manage_sms_api;
 use App\Models\fees\fees_title\fees_title;
+use App\Models\normClature;
 use App\Models\fees\map_year\map_year;
 use App\Models\student\appNotificationModel;
 use App\Models\student\tblstudentModel;
@@ -954,7 +955,7 @@ if (! function_exists('FeeBreakoffHeadWise')) {
             ->where('se.syear', $syear)
             ->whereIn('s.id', $student_ids)
             ->groupByRaw('s.id,fb.month_id,fb.fee_type_id')
-            ->orderByRaw('sort_year,sort_month,ft.display_name ASC')->get()->toArray();
+            ->orderByRaw('sort_year,sort_month,ft.sort_order ASC')->get()->toArray();
         $data = array();
         $student_data = array();
         foreach ($result as $key => $value) {
@@ -1051,7 +1052,7 @@ if (! function_exists('FeeBreakoffHeadWiselast')) {
             ->where('se.syear', $syear)
             ->whereIn('s.id', $student_ids)
             ->groupByRaw('s.id,fb.month_id,fb.fee_type_id')
-            ->orderByRaw('sort_year,sort_month,ft.display_name ASC')->get()->toArray();
+            ->orderByRaw('sort_year,sort_month,ft.sort_order ASC')->get()->toArray();
         $data = array();
         $student_data = array();
         foreach ($result as $key => $value) {
@@ -1272,7 +1273,7 @@ if (! function_exists('OtherBreackOff')) {
                 'sub_institute_id' => session()->get('sub_institute_id'),
                 'syear'            => session()->get('syear'),
                 'fees_title_id'    => 1,
-            ])->orderBy('display_name','ASC')->get()->toArray();
+            ])->orderBy('sort_order','ASC')->get()->toArray();
 
         $bk_off_with_name = array();
         foreach ($fees_title as $id => $arr) {
@@ -1363,7 +1364,7 @@ if (! function_exists('OtherBreackOfflast')) {
                 'sub_institute_id' => session()->get('sub_institute_id'),
                 'syear'            => $syear,
                 'fees_title_id'    => 1,
-            ])->orderBy('display_name','ASC')->get()->toArray();
+            ])->orderBy('sort_order','ASC')->get()->toArray();
 
         $bk_off_with_name = array();
         foreach ($fees_title as $id => $arr) {
@@ -1398,7 +1399,7 @@ if (! function_exists('OtherBreackOffHead')) {
         return DB::table('fees_title')
             ->where('sub_institute_id', $sub_institute_id)
             ->where('syear', $syear)
-            ->where('fees_title_id', 1)->get()->toArray();
+            ->where('fees_title_id', 1)->orderBy('sort_order')->get()->toArray();
     }
 }
 
@@ -2050,5 +2051,40 @@ if (! function_exists('getBestOf')) {
             }
         }
         return $newArr;
+    }
+}
+
+if (! function_exists('get_string')) {
+
+    function get_string($arg, $type = '')
+    {
+        $sub_institute_id = session()->get('sub_institute_id');
+        $strings = [
+           'Discount'=>"Discount",
+           'StudentName'=>"Student Name",
+           'StudentQuota'=>"Student Quota"
+        ];
+
+        if ($type === 'menu_id') {
+            $menu_id = $arg;
+            $normClature = normClature::where('sub_institute_id', $sub_institute_id)
+                ->where('menu_id', $menu_id)
+                ->first();
+        } else {
+            $requestValue = $arg;
+            $normClature = normClature::where('sub_institute_id', $sub_institute_id)
+                ->where('string', $requestValue)
+                ->first();
+        }
+
+        if ($normClature) {
+            if (!empty($normClature->value)) {
+                return $normClature->value;
+            } else {
+                return $strings[$arg] ?? '';
+            }
+        } else {
+            return $strings[$arg] ?? '';
+        }
     }
 }

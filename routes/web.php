@@ -35,6 +35,7 @@ use App\Http\Controllers\school_setup\topicController;
 use App\Http\Controllers\school_setup\workflowController;
 use App\Http\Controllers\signupController;
 use App\Http\Controllers\institute_detail;
+use App\Http\Controllers\normClatureController;
 use App\Http\Controllers\lms\questionWiseReportController;
 use App\Http\Controllers\template_result\TemplateResult;
 use App\Http\Controllers\tourController;
@@ -175,7 +176,8 @@ Route::any('/knowledge-base', [dashboardController::class, 'knowledge_base'])->n
 Route::any('/knowledge-base-detail/{id}/{title}', [dashboardController::class, 'knowledge_base_detail'])->name('knowledge_base_detail')->middleware('session', 'menu');
 
 Route::get('dashboard', [dashboardController::class, 'index'])->name('dashboard')->middleware('session', 'menu', 'logRoute');
-
+// add by uma 
+Route::resource('norm-clature', normClatureController::class);
 Route::resource('add-institute-details', institute_detail::class);
 
 // From Build

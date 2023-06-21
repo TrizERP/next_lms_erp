@@ -167,7 +167,7 @@
                                            
                     @if(isset($data['fees_data']))
                         @foreach($fees_data as $key => $fees_value)      
-                        @if($fees_value['-']['remain']!=0)            
+                        @if(isset($fees_value['-']['remain']) && $fees_value['-']['remain']!=0)            
                         <tr>
                             <td>{{$j}}</td>                            
                             <td>{{$fees_value['enrollment']}}</td>
@@ -252,7 +252,7 @@
                                     @endphp                                 
                                     @if(count($child_head) > 0)
                                         @foreach($child_head as $month_id => $child_val)                                            
-                                            <td>{{$total_array['UNPAID'][$main_fees_title[1]][$month_id]}}</td>
+                                            <td>@if(isset($total_array['UNPAID'])){{$total_array['UNPAID'][$main_fees_title[1]][$month_id]}}@else 0 @endif</td>
                                         @endforeach
                                     @endif 
                                 @endforeach

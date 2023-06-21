@@ -7,10 +7,36 @@
     <div class="container-fluid">
         <div class="row bg-title">            
             <div class="col-lg-3 col-md-4 col-sm-4 col-xs-12">                
-                <h4 class="page-title">Update Fees Structure</h4>            
-            </div>                    
+                <h4 class="page-title">Update Fees Structure</h4>      
+            </div>     
         </div>
         <div class="card">
+        <div class="col-md-12 form-group">
+                    <table class="table table-bordered mb-0">
+                        <thead>
+                            <tr>
+                                <th>Grade</th>
+                                <th>Standard</th>
+                                <th class="text-left">Month</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>    
+                                <td>
+                                <span class="badge badge-success mb-1">
+                                    {{$data['grade']}}</span>
+                                </td>
+                                <td>
+                                <span class="badge badge-info mb-1">
+                                    {{$data['standard']}}</span>
+                                </td>
+                                <td> <span class="badge badge-dark mb-1">
+                                    {{$data['month']}} </span>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>      
             <span class="d-inline-block mb-2" tabindex="0" data-toggle="tooltip" title="Pink color indicates records for which fees is already taken , so you are not allowed to edit that fees structure">
             <button class="btn btn-danger" style="pointer-events: none;" type="button" disabled="">Note</button>
             </span>

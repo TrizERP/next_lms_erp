@@ -18,13 +18,14 @@ class loginController extends Controller
 
     public function index(Request $request)
     {
-        if(!empty(session('login_data')) ){
+       if(!empty(session('login_data')) ){
             $login_data = session('login_data');
             $email=$login_data['email'];
             $password = $login_data['password'];
-            $captchaText =  env('CAPTCHA');
+            $captchaText = env('CAPTCHA');
             $type=$login_data['type'];
        }else{
+
         $validator = Validator::make($request->all(), [
             'email'    => 'required',
             'password' => 'required',
@@ -234,7 +235,6 @@ class loginController extends Controller
                             $res['message'] = "Academic Term Date Expired";
                             return is_mobile($type, "login", $res, "view");
                         }
-                        echo "not set";exit;
                         $given_hrms_rights = '';
                         $getAcademicTerms = $getAcademicYear = array();
 
@@ -248,7 +248,6 @@ class loginController extends Controller
                         $request->session()->put('academicYears', $getAcademicYear);
                         $request->session()->put('getInstitutes', $getInstitutes);
                         $request->session()->put('erpTour', '');
-                        
 
                         /*$checkUserTour = tourModel::where(['user_id' => $user['id'], 'sub_institute_id' => $user['sub_institute_id']])->get()->toArray();
 
@@ -289,11 +288,10 @@ class loginController extends Controller
                             return is_mobile($type, "login", $res, "view");
                         }
                         //START set class teacher standard , grade , division
-                        // DB::table('tbluserprofilemaster')->where('NAME', 'Teacher')
-                        //     ->where('sub_institute_id', $user['sub_institute_id'])->get()->toArray();
+                        DB::table('tbluserprofilemaster')->where('NAME', 'Teacher')
+                            ->where('sub_institute_id', $user['sub_institute_id'])->get()->toArray();
                         $user_group_id = DB::table('tbluserprofilemaster')->where('NAME', 'Teacher')
                             ->where('sub_institute_id', $user['sub_institute_id'])->get()->toArray();
-                        // return $user_group_id;exit;
                         $user_group_id = $user_group_id[0]->id ?? '';
                         if ($user_group_id == session()->get('user_profile_id')) {
 
@@ -330,12 +328,12 @@ class loginController extends Controller
                             ->groupBy('syear')->get()->toArray();
 
                         $request->session()->put('sub_institute_id', $user['sub_institute_id']);
+                        $request->session()->put('expire_date', $schoolData[0]['expire_date']);
                         $request->session()->put('syear', $getTermId[0]['syear']);
                         $request->session()->put('term_id', $getTermId[0]['term_id']);
                         $request->session()->put('academicTerms', $getAcademicTerms);
                         $request->session()->put('academicYears', $getAcademicYear);
                         $request->session()->put('getInstitutes', '');
-                        $request->session()->put('expire_date', $schoolData[0]['expire_date']);
 
                         $checkUserTour = tourModel::where([
                             'user_id'          => $user['id'],

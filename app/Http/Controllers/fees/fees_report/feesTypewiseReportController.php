@@ -102,7 +102,7 @@ class feesTypewiseReportController extends Controller
         $fees_heads = DB::table('fees_title as FT')
             ->where('FT.sub_institute_id', $sub_institute_id)
             ->where('FT.other_fee_id', '=', 0)
-            ->where('FT.syear', $syear)->get()->toArray();
+            ->where('FT.syear', $syear)->orderBy('FT.sort_order')->get()->toArray();
 
         $fees_heads = array_map(function ($value) {
             return (array)$value;

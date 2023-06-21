@@ -227,7 +227,7 @@ class update_fees_breackoff_controller extends Controller
                 'syear' => session()->get('syear')
             );
             $fees_title = DB::table('fees_title')
-                ->where($where_arr)->get();
+                ->where($where_arr)->orderBy('sort_order')->get();
             $title_arr = [];
             foreach ($fees_title as $id => $arr) {
                 $title_arr[$arr->id] = $arr->display_name;
@@ -285,7 +285,22 @@ class update_fees_breackoff_controller extends Controller
                     $paid_arr['old'][$p_arr->student_quota] = 'Y';
                 }
             }
+            $next_syear = ($syear+1);
+            $month_name = [
+               "4".$syear => 'Apr', "5".$syear => 'May', "6".$syear => 'Jun', "7".$syear => 'Jul', "8".$syear => 'Aug',
+                "9".$syear => 'Sep', "10".$syear => 'Oct', "11".$syear => 'Nov', "12".$syear => 'Dec', "1".$next_syear => 'Jan', "2".$next_syear => 'Feb', "3".$next_syear => 'Mar',
+            ];
+
+            $grade_name = DB::table('academic_section')
+            ->where('id', $_REQUEST['grade'])->get();
+
+            $std_name = DB::table('standard')
+            ->where('id', $_REQUEST['standard'])->get();
+
             $school_data['data']['paid_arr'] = $paid_arr;
+            $school_data['grade']= $grade_name[0]->title;
+            $school_data['standard']=$std_name[0]->name;
+            $school_data['month']=$month_name[$_REQUEST['month_id']];
             //END If fees collected breakoff cant be edited
 
             return is_mobile($type, "fees/update_fees_breackoff/edit", $school_data, "view");
