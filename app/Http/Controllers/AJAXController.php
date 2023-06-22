@@ -1605,8 +1605,10 @@ class AJAXController extends Controller
                                 </page>
                             </div>';
         } elseif ($paper_size == "A4") {
-            $extra_html = ' <div>
+            $extra_html = ' <div style="padding:0px 20px !important">
+                            <page size="A4">
                                    ##HTML_SEC##
+                            </page>
                             </div>';
         } elseif ($paper_size == "A4DB") {
             $extra_html = ' <div>
