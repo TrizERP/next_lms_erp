@@ -4,9 +4,16 @@ namespace App\Http\Controllers\library;
 
 use App\Http\Controllers\Controller;
 use App\Models\LibraryBook;
+use App\Models\LibraryBookCirculation;
 use App\Models\LibraryItem;
+use App\Models\student\tblstudentModel;
 use Exception;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\View;
+use League\CommonMark\Extension\CommonMark\Renderer\Inline\ImageRenderer;
+use Yajra\DataTables\DataTables;
+use Picqer\Barcode\BarcodeGeneratorPNG;
 
 class BookController extends Controller
 {
@@ -15,9 +22,45 @@ class BookController extends Controller
      *
      * @return \Illuminate\Http\Response
      */
-    public function index()
+    public function index(Request $request)
     {
+        if ($request->ajax()) {
+            $data = LibraryBook::latest()
+                ->get();
+            return DataTables::of($data)
+                ->addColumn('checkbox', function ($row) {
+                    return '<input type="checkbox" id="' . $row->id . '" name="someCheckbox" class="checkSingle" />';
+                })
+                ->addColumn('image', function ($row) {
+                    return '<img src="' . Storage::disk('books')->url($row->image) . '" height="100" width="100" alt="">';
+                })
+                ->addIndexColumn()
+                ->addColumn('action', function ($row) {
+                    $actionBtn = '<a href="javascript:void(0)" class="delete m-2 btn btn-danger btn-delete" title="Delete Book" data-id="' . $row->id . '"><i class="fa fa-trash"></i></a><a href="javascript:void(0)" class="m-2 btn btn-warning btn-edit ml-1" title="Edit Book" data-id="' . $row->id . '"><i class="fa fa-pencil"></i></a><a href="javascript:void(0)" class="m-2 btn btn-primary print-barcode ml-1" title="Print Barcode" data-id="' . $row->id . '"><i class="fa fa-barcode"></i></a><a href="javascript:void(0)" class="m-2 btn btn-info circulation ml-1" title="Issue/Return Book" data-id="' . $row->id . '"><i class="fa fa-retweet"></i></a>';
+                    return $actionBtn;
+                })
+                ->rawColumns(['checkbox', 'image', 'action'])
+                ->make(true);
+        }
         return view('library.books');
+    }
+
+    public function generateBarcode(Request $request, $id)
+    {
+        $book = LibraryBook::find($id);
+        // Barcode content
+        $renderer = new ImageRenderer(
+            new RendererStyle(200),
+            new ImagickImageBackEnd()
+        );
+        $writer = new Writer($renderer);
+
+        return base64_encode($writer->writeString($book->title));
+    }
+
+    public function circulation()
+    {
+        return view('library.circulation');
     }
 
     /**
@@ -85,6 +128,18 @@ class BookController extends Controller
             $createBook->price_currency = $request->price_currency;
             $createBook->notes = $request->notes;
             $createBook->review = $request->review;
+            if ($request->image) {
+                $img = $request->image;
+                $filename = $img->getClientOriginalName();
+                $filepath = Storage::disk('books')->put($filename, file_get_contents($img->getRealPath()));
+                $createBook->image = $filepath ? $filename : '';
+            }
+            if ($request->file_att) {
+                $file_att = $request->file_att;
+                $filename = $file_att->getClientOriginalName();
+                $filepath = Storage::disk('books')->put($filename, file_get_contents($img->getRealPath()));
+                $createBook->file_att = $filepath ? $filename : '';
+            }
             if ($createBook->save()) {
                 $itemCount = LibraryItem::where('book_id', $createBook->id)->get()->count();
                 if ($request->no_of_items < $itemCount) {
@@ -112,9 +167,15 @@ class BookController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function show($id)
+    public function show($enroll)
     {
-        //
+        try {
+            $details = tblstudentModel::where('enrollment_no', $enroll)->with('issuedBook')->first();
+            $view = View::make('library.user_detail', compact('details'))->render();
+            return response()->json(['data' => $view], 200);
+        } catch (Exception $e) {
+            return response()->json($e->getMessage(), 500);
+        }
     }
 
     /**
@@ -146,8 +207,50 @@ class BookController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function destroy($id)
+    public function destroy($id, Request $request)
     {
-        //
+        $ids = $request->id;
+        $del = LibraryBook::whereIn('id', $ids)->delete();
+        return response()->json(['message'=>'Book Deleted Successfully !'],200);
+    }
+    /**
+     * Remove the specified resource from storage.
+     *
+     * @param  int  $id
+     * @return \Illuminate\Http\Response
+     */
+    public function returnBook($id, Request $request)
+    {
+        $enroll = $request->enroll_no;
+        $del = LibraryBook::where('id', $id)->delete();
+        $details = tblstudentModel::where('enrollment_no', $enroll)->with('issuedBook')->first();
+        $view = View::make('library.user_detail', compact('details'))->render();
+        return response()->json(['data' => $view], 200);
+    }
+    /**
+     * Remove the specified resource from storage.
+     *
+     * @param  int  $id
+     * @return \Illuminate\Http\Response
+     */
+    public function issueBook(Request $request)
+    {
+        $request->validate([
+            'student_id' => 'required|exists:tblstudent,id',
+            'bookId' => 'required|exists:library_books,id',
+            'issue_date' => 'required|date',
+            'return_date' => 'required|date|after:issue_date',
+        ]);
+        $ids = $request->id;
+        $issueBook = LibraryBookCirculation::updateOrCreate([
+            'student_id'=> $request->student_id,
+            'book_id'=> $request->bookId,
+        ],[
+            'issue_date'=> $request->issue_date,
+            'return_date'=> $request->return_date
+        ]);
+        $details = tblstudentModel::where('enrollment_no', $request->enroll_no)->with('issuedBook')->first();
+        $view = View::make('library.user_detail', compact('details'))->render();
+        return response()->json(['data' => $view], 200);
     }
 }
