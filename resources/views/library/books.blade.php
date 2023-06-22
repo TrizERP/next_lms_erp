@@ -16,10 +16,10 @@
                 <ul id="" class="nav nav-tabs justify-content-between" role="tablist">
                     <li class="nav-item" role="presentation" data-toggle="tooltip" data-placement="top"
                         title="Book List">
-                        <a class="nav-link" data-toggle="tab" href="#right-tab-2" role="tab"
+                        <a class="nav-link active" data-toggle="tab" href="#right-tab-2" role="tab"
                             aria-controls="right-tab-2" aria-selected="true">Book List</a>
                     </li>
-                    <li class="nav-item active" role="presentation" data-toggle="tooltip" data-placement="top"
+                    <li class="nav-item" role="presentation" data-toggle="tooltip" data-placement="top"
                         title="Create Book">
                         <a class="nav-link" data-toggle="tab" href="#right-tab-1" role="tab"
                             aria-controls="right-tab-1" aria-selected="false">Create Book</a>
@@ -28,7 +28,7 @@
             </div>
             <div class="col-md-12 mt-2">
                 <div class="tab-content">
-                    <div class="tab-pane show" id="right-tab-2" role="tabpanel">
+                    <div class="tab-pane show active" id="right-tab-2" role="tabpanel">
                         <div class="row">
                             <div class="col-lg-12 col-sm-3 col-xs-3 row">
                                 <div class="col-md-3 pull-right">
@@ -40,20 +40,28 @@
                                         <option value="2021">2021-2022</option>
                                     </select>
                                 </div>
+                                <div class="col-md-2">
+                                    <a class="btn btn-danger delete-all"><i class="fa fa-trash"></i>
+                                        Delete </a>
+                                    <a class="btn btn-info print-barcode"><i class="fa fa-barcode"></i>
+                                        Print Barcode</a>
+                                </div>
                             </div>
                             <div class="col-lg-12 col-sm-12 col-xs-12">
                                 <div class="table-responsive">
-                                    <table id="tblHoliday" class="table table-striped table-bordered"
-                                        style="width:100%">
+                                    <table id="tblBooks" class="table table-striped table-bordered" style="width:100%">
                                         <thead>
                                             <tr>
                                                 <th data-toggle="tooltip" title="Select All"><input type="checkbox"
                                                         name="" id="checkedAll"></th>
                                                 <th data-toggle="tooltip" title="No">No</th>
-                                                <th data-toggle="tooltip" title="Name of Holiday">Name of Holiday</th>
-                                                <th data-toggle="tooltip" title="Date">Date</th>
-                                                <th data-toggle="tooltip" title="Type">Type</th>
-                                                <th data-toggle="tooltip" title="Department">Department</th>
+                                                <th data-toggle="tooltip" title="Image">Image</th>
+                                                <th data-toggle="tooltip" title="Title">Title</th>
+                                                <th data-toggle="tooltip" title="Subject">Subject</th>
+                                                <th data-toggle="tooltip" title="Sub Title">Sub Title</th>
+                                                <th data-toggle="tooltip" title="Publisher Name">Publisher Name</th>
+                                                <th data-toggle="tooltip" title="Publish Year">Publish Year</th>
+                                                <th data-toggle="tooltip" title="Auther Name">Auther Name</th>
                                                 <th data-toggle="tooltip" title="Action">Action</th>
                                             </tr>
                                         </thead>
@@ -64,7 +72,7 @@
                             </div>
                         </div>
                     </div>
-                    <div class="tab-pane show active" id="right-tab-1" role="tabpanel">
+                    <div class="tab-pane show" id="right-tab-1" role="tabpanel">
                         <form action="" id="frmBookAdd" method="post">
                             <div class="modal-body">
                                 <div class="row">
@@ -78,8 +86,8 @@
                                     <div class="col-md-4">
                                         <div class="form-group">
                                             <label for="">Sub Title</label>
-                                            <input type="text" name="sub_title" id="sub_title" class="form-control"
-                                                placeholder="Enter Sub Title">
+                                            <input type="text" name="sub_title" id="sub_title"
+                                                class="form-control" placeholder="Enter Sub Title">
                                         </div>
                                     </div>
                                     <div class="col-md-4">
@@ -256,6 +264,40 @@
             <!-- Tabs content -->
         </div>
     </div>
+    <div class="modal fade" id="mdlCirculation" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel"
+        aria-hidden="true">
+        <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalTitle"></h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <form class="form-group" id="frmCirculation" method="post">
+                    <div class="modal-body">
+                        @csrf
+                        <div class="row">
+                            <div class="col-md-6">
+                                <label for="">Student Enroll No</label>
+                                <input type="hidden" name="bookId" id="bookId" value="">
+                                <input type="text" name="enroll_no" id="enroll_no" placeholder="Enter Enroll No."
+                                    class="form-control">
+                            </div>
+                            <div class="col-md-6">
+                                <button type="button" class="btn btn-primary mt-4 fetch-stud">Fetch Details</button>
+                            </div>
+                        </div>
+                        <div class="row divUserDetail"></div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                        <button type="submit" class="btn btn-primary">Issue Book</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
 </div>
 
 @include('includes.footerJs')
@@ -269,10 +311,10 @@
 
 <script>
     $(document).ready(function() {
-        var table = $('#tblHoliday').DataTable({
+        var table = $('#tblBooks').DataTable({
             processing: true,
             serverSide: true,
-            ajax: "{{ route('holiday.index') }}",
+            ajax: "{{ route('books.index') }}",
             columns: [{
                     data: 'checkbox',
                     name: 'checkbox',
@@ -281,22 +323,33 @@
                 }, {
                     data: 'DT_RowIndex',
                     name: 'DT_RowIndex'
+                }, {
+                    data: 'image',
+                    name: 'image'
                 },
                 {
-                    data: 'holiday_name',
-                    name: 'holiday_name'
+                    data: 'title',
+                    name: 'title'
                 },
                 {
-                    data: 'from_date',
-                    name: 'from_date'
+                    data: 'subject',
+                    name: 'subject'
                 },
                 {
-                    data: 'day_type',
-                    name: 'day_type'
+                    data: 'sub_title',
+                    name: 'sub_title'
                 },
                 {
-                    data: 'department_name',
-                    name: 'department_name'
+                    data: 'publisher_name',
+                    name: 'publisher_name'
+                },
+                {
+                    data: 'publish_year',
+                    name: 'publish_year'
+                },
+                {
+                    data: 'author_name',
+                    name: 'author_name'
                 },
                 {
                     data: 'action',
@@ -336,15 +389,48 @@
             }
         });
 
+        $(document).on("submit", "#frmCirculation", function(e) {
+            e.preventDefault();
+            $('.error').remove()
+            var url = "{{ route('books.issue') }}";
+            var formData = new FormData($("#frmCirculation")[0]);
+            /**Ajax code**/
+            $.ajax({
+                type: "post",
+                url: url,
+                dataType: 'json',
+                data: formData,
+                cache: false,
+                contentType: false,
+                processData: false,
+                success: function(data) {
+                    $('.divUserDetail').html(data.data);
+                },
+                error: function(xhr) {
+                    if (xhr.status == 422) {
+                        var errors = JSON.parse(xhr.responseText);
+                        $.each(errors.errors, function(i, error) {
+                            $('#' + i).after(
+                                '<span class="text-strong text-danger error text-capitalize">' +
+                                error + '</span>')
+                        })
+                    }
+                }
+            });
+        });
+
         $(document).on("submit", "#frmBookAdd", function(e) {
             e.preventDefault();
             $('.error').remove()
-            var formData = $("#frmBookAdd").serialize();
+            var formData = new FormData($("#frmBookAdd")[0]);
             /**Ajax code**/
             $.ajax({
                 type: "post",
                 url: "{{ route('books.store') }}",
                 data: formData,
+                cache: false,
+                contentType: false,
+                processData: false,
                 success: function(data) {
                     if (data.status) {
                         alert(data.message);
@@ -365,6 +451,58 @@
             });
         });
 
+        $(document).on("click", ".return-book", function(e) {
+            $('.error').remove()
+            var url = "{{ route('books.return', ':id') }}";
+            url = url.replace(':id', $(this).data('id'));
+            var enroll_no = $('#enroll_no').val()
+            /**Ajax code**/
+            $.ajax({
+                type: "get",
+                url: url,
+                dataType: 'json',
+                data: {
+                    enroll_no: enroll_no
+                },
+                success: function(data) {
+                    $('.divUserDetail').html(data.data);
+                },
+                error: function(xhr) {
+                    if (xhr.status == 422) {
+                        var errors = JSON.parse(xhr.responseText);
+                        $.each(errors.errors, function(i, error) {
+                            $('#' + i).after(
+                                '<span class="text-strong text-danger error text-capitalize">' +
+                                error + '</span>')
+                        })
+                    }
+                }
+            });
+        });
+        $(document).on("click", ".fetch-stud", function(e) {
+            $('.error').remove()
+            var url = "{{ route('books.show', ':id') }}";
+            url = url.replace(':id', $('#enroll_no').val());
+            /**Ajax code**/
+            $.ajax({
+                type: "get",
+                url: url,
+                dataType: 'json',
+                success: function(data) {
+                    $('.divUserDetail').html(data.data);
+                },
+                error: function(xhr) {
+                    if (xhr.status == 422) {
+                        var errors = JSON.parse(xhr.responseText);
+                        $.each(errors.errors, function(i, error) {
+                            $('#' + i).after(
+                                '<span class="text-strong text-danger error text-capitalize">' +
+                                error + '</span>')
+                        })
+                    }
+                }
+            });
+        });
         $(document).on("click", ".delete-all", function(e) {
             var ids = []
             $(".checkSingle").each(function() {
@@ -372,18 +510,59 @@
                     ids.push($(this).attr('id'));
                 }
             });
-            deleteHoliday(ids)
+            deleteBook(ids)
+        });
+        $(document).on("click", ".circulation", function(e) {
+            e.preventDefault();
+            var id = $(this).data('id');
+            var name = $(this).data('name');
+            $('#modalTitle').text(name);
+            $('#bookId').val(id);
+            $('#mdlCirculation').modal('toggle');
         });
         $(document).on("click", ".btn-delete", function(e) {
             e.preventDefault();
             var ids = [];
             var id = $(this).data('id');
             ids.push(id);
+            deleteBook(ids)
+        });
+        $(document).on("click", ".print-barcode", function(e) {
+            e.preventDefault();
+            var ids = [];
+            var id = $(this).data('id');
+            ids.push(id);
+            printBarcode(ids)
         });
 
-        function deleteHoliday(ids) {
+        function printBarcode(ids) {
+            var url = "{{ route('books.barcode', ':id') }}";
+            url = url.replace(':id', ids);
+            $.ajax({
+                type: "get",
+                url: url,
+                data: {
+                    id: ids
+                },
+                success: function(data) {
+                    $('#tblBooks').DataTable().ajax.reload();
+                },
+                error: function(xhr) {
+                    if (xhr.status == 422) {
+                        var errors = JSON.parse(xhr.responseText);
+                        $.each(errors.errors, function(i, error) {
+                            $('#' + i).after(
+                                '<span class="text-strong text-danger">' +
+                                error + '</span>')
+                        })
+                    }
+                }
+            });
+        }
+
+        function deleteBook(ids) {
             if (confirm('Are you sure to delete holiday')) {
-                var url = "{{ route('holiday.destroy', ':id') }}";
+                var url = "{{ route('books.destroy', ':id') }}";
                 url = url.replace(':id', ids);
                 $.ajax({
                     type: "delete",
@@ -392,7 +571,7 @@
                         id: ids
                     },
                     success: function(data) {
-                        $('#tblHoliday').DataTable().ajax.reload();
+                        $('#tblBooks').DataTable().ajax.reload();
                     },
                     error: function(xhr) {
                         if (xhr.status == 422) {
@@ -410,7 +589,7 @@
     });
 
     function getyearwise_holiday(year) {
-        $('#tblHoliday').DataTable().ajax.url("?year=" + year).load();;
+        $('#tblBooks').DataTable().ajax.url("?year=" + year).load();;
     }
 </script>
 @include('includes.footer')
