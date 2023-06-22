@@ -287,7 +287,7 @@ class update_fees_breackoff_controller extends Controller
             }
             $next_syear = ($syear+1);
             $month_name = [
-               "4".$syear => 'Apr', "5".$syear => 'May', "6".$syear => 'Jun', "7".$syear => 'Jul', "8".$syear => 'Aug',
+                "1".$syear => 'Jan', "2".$syear => 'Feb', "3".$syear => 'Mar',"4".$syear => 'Apr', "5".$syear => 'May', "6".$syear => 'Jun', "7".$syear => 'Jul', "8".$syear => 'Aug',
                 "9".$syear => 'Sep', "10".$syear => 'Oct', "11".$syear => 'Nov', "12".$syear => 'Dec', "1".$next_syear => 'Jan', "2".$next_syear => 'Feb', "3".$next_syear => 'Mar',
             ];
 
