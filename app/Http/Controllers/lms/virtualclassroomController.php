@@ -13,6 +13,7 @@ use App\Models\school_setup\sub_std_mapModel;
 use GenTux\Jwt\GetsJwtToken;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use function App\Helpers\is_mobile;
 use function App\Helpers\sendNotification;
 
@@ -177,7 +178,7 @@ class virtualclassroomController extends Controller
 
     public function update(Request $request, $id)
     {
-        //ValidateInsertData('subject','update');        
+        //ValidateInsertData('subject','update');
 
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $syear = $request->session()->get('syear');
@@ -197,7 +198,7 @@ class virtualclassroomController extends Controller
             $newfilename = 'lms_'.date('Y-m-d_h-i-s').'.'.$ext;
             //$img->move(public_path().'/lms_content_file/',$newfilename);
             $img->storeAs('public/lms_content_file/', $newfilename);
-
+            $path = Storage::disk('digitalocean')->putFileAs('public/lms_content_file/', $img, $newfilename, 'public');
             $image_data = array(
                 'file_folder' => '/lms_content_file',
                 'filename'    => $newfilename,

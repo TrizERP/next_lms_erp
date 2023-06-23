@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Storage;
 use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\NotFoundExceptionInterface;
 use function App\Helpers\is_mobile;
@@ -82,7 +83,8 @@ class exam_scheduleController extends Controller
             $name = $request->get('attechment').date('YmdHis');
             $ext = File::extension($originalname);
             $file_name = "attechment_".$name.'.'.$ext;
-            $path = $file->storeAs('public/exam_schedule/', $file_name);
+            //$path = $file->storeAs('public/exam_schedule/', $file_name);
+            $path = Storage::disk('digitalocean')->putFileAs('public/exam_schedule/', $file, $file_name, 'public');
         }
 
         if (isset($_REQUEST['standard'])) {
@@ -183,7 +185,7 @@ class exam_scheduleController extends Controller
         if ($student_id != "" && $sub_institute_id != "" && $syear != "") {
             $data = DB::table('exam_schedule as e')
                 ->join('tblstudent_enrollment as s', function ($join) {
-                    $join->whereRaw('(s.standard_id = e.standard_id AND s.section_id = e.division_id 
+                    $join->whereRaw('(s.standard_id = e.standard_id AND s.section_id = e.division_id
                         AND s.sub_institute_id = e.sub_institute_id AND s.syear = e.syear)');
                 })->selectRaw("title,date_, if(file_name = '','',concat('https://".$_SERVER['SERVER_NAME']."/storage/exam_schedule/',
                     file_name)) as file_name")

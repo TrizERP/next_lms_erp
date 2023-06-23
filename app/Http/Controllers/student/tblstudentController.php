@@ -39,6 +39,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\NotFoundExceptionInterface;
@@ -168,12 +169,14 @@ class tblstudentController extends Controller
                 $name = $id;
                 $ext = File::extension($originalname);
                 $file_name = $name.'.'.$ext;
-				$path = $file->storeAs('public/student/', $file_name);
+//				$path = $file->storeAs('public/student/', $file_name);
+                $path = Storage::disk('digitalocean')->putFileAs('public/student/', $file, $file_name, 'public');
 			}
             $name = $request->input('user_name').date('YmdHis');
             $ext = File::extension($originalname);
             $file_name = $name.'.'.$ext;
-            $path = $file->storeAs('public/student/', $file_name);
+            //$path = $file->storeAs('public/student/', $file_name);
+            $path = Storage::disk('digitalocean')->putFileAs('public/student/', $file, $file_name, 'public');
         }
 
         $request->request->add(['image' => $file_name]); //add request
@@ -195,7 +198,8 @@ class tblstudentController extends Controller
                 $name = $value['field_name']."_".$request->input('user_name').date('YmdHis');
                 $ext = File::extension($originalname);
                 $file_name = $name.'.'.$ext;
-				$path = $file->storeAs('public/student/', $file_name);
+				//$path = $file->storeAs('public/student/', $file_name);
+                $path = Storage::disk('digitalocean')->putFileAs('public/student/', $file, $file_name, 'public');
 				$request->files->remove($value['field_name']);
 				$request->request->add([$value['field_name'] => $file_name]); //add request
 			}
@@ -822,7 +826,8 @@ class tblstudentController extends Controller
                 $name = $id;
                 $ext = File::extension($originalname);
                 $file_name = $name.'.'.$ext;
-				$path = $file->storeAs('public/student/', $file_name);
+//				$path = $file->storeAs('public/student/', $file_name);
+                $path = Storage::disk('digitalocean')->putFileAs('public/student/', $file, $file_name, 'public');
 			}
         }
         if ($file_name != '') {
@@ -847,8 +852,8 @@ class tblstudentController extends Controller
                 $name = $value['field_name']."_".$request->input('user_name').date('YmdHis');
                 $ext = File::extension($originalname);
                 $file_name = $name.'.'.$ext;
-				$path = $file->storeAs('public/student/', $file_name);
-
+				//$path = $file->storeAs('public/student/', $file_name);
+                $path = Storage::disk('digitalocean')->putFileAs('public/student/', $file, $file_name, 'public');
 				$request->files->remove($value['field_name']);
 				// $request->request->set($value['field_name'], $file_name); //add request
 				$request->request->add([$value['field_name'] => $file_name]); //add request

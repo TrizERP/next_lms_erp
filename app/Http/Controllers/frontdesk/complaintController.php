@@ -13,6 +13,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Storage;
 use function App\Helpers\is_mobile;
 
 class complaintController extends Controller
@@ -119,7 +120,8 @@ class complaintController extends Controller
             $name = "complaint_".date('YmdHis');
             $ext = File::extension($originalname);
             $file_name = $name.'.'.$ext;
-            $path = $file->storeAs('public/frontdesk/', $file_name);
+            //$path = $file->storeAs('public/frontdesk/', $file_name);
+            $path = Storage::disk('digitalocean')->putFileAs('public/frontdesk/', $file, $file_name, 'public');
         }
 
         if ($file_name != '') {
@@ -227,7 +229,8 @@ class complaintController extends Controller
             $name = "complaint_".date('YmdHis');
             $ext = File::extension($originalname);
             $file_name = $name.'.'.$ext;
-            $path = $file->storeAs('public/frontdesk/', $file_name);
+            //$path = $file->storeAs('public/frontdesk/', $file_name);
+            $path = Storage::disk('digitalocean')->putFileAs('public/frontdesk/', $file, $file_name, 'public');
         }
 
         if ($file_name != '') {

@@ -11,6 +11,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Storage;
 use function App\Helpers\is_mobile;
 
 class tblfeesConfigController extends Controller
@@ -68,7 +69,8 @@ class tblfeesConfigController extends Controller
             $name = $request->get('fees_bank_logo').date('YmdHis');
             $ext = \File::extension($originalname);
             $file_name = "bank_logo_".$name.'.'.$ext;
-            $path = $file->storeAs('public/fees/', $file_name);
+            //$path = $file->storeAs('public/fees/', $file_name);
+            $path = Storage::disk('digitalocean')->putFileAs('public/fees/', $file, $file_name, 'public');
         }
 
         $request->request->add(['bank_logo' => $file_name]); //add request
@@ -175,7 +177,8 @@ class tblfeesConfigController extends Controller
             $name = $request->get('fees_bank_logo').date('YmdHis');
             $ext = File::extension($originalname);
             $file_name = "bank_logo_".$name.'.'.$ext;
-            $path = $file->storeAs('public/fees/', $file_name);
+            //$path = $file->storeAs('public/fees/', $file_name);
+            $path = Storage::disk('digitalocean')->putFileAs('public/fees/', $file, $file_name, 'public');
         }
         if ($file_name != "") {
             $request->request->add(['bank_logo' => $file_name]); //add request

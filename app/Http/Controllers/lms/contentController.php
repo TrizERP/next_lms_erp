@@ -11,18 +11,19 @@ use App\Models\lms\topicModel;
 use App\Models\school_setup\sub_std_mapModel;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use function App\Helpers\is_mobile;
 
 class contentController extends Controller
 {
-    public function index(Request $request){         
-        $data = $this->getData($request); 		
+    public function index(Request $request){
+        $data = $this->getData($request);
         $type = $request->input('type');
         $res['status_code'] = 1;
         $res['message'] = "SUCCESS";
-        $res['data'] = $data['content_data'];        
-        $res['content_category'] = $data['content_category'];        
-        return is_mobile($type,'lms/show_content',$res,"view");  
+        $res['data'] = $data['content_data'];
+        $res['content_category'] = $data['content_category'];
+        return is_mobile($type,'lms/show_content',$res,"view");
     }
 
     public function getData($request){
@@ -35,11 +36,11 @@ class contentController extends Controller
         'subject_name','chapter_name','tm.name as topic_name','stm.name as sub_topic_name')
         ->join('standard', 'standard.id', '=', 'content_master.standard_id')
         ->join('academic_section', 'academic_section.id', '=', 'content_master.grade_id')
-        ->join('subject', 'subject.id', '=', 'content_master.subject_id')       
+        ->join('subject', 'subject.id', '=', 'content_master.subject_id')
         ->join('chapter_master as cm','cm.id','=','content_master.chapter_id')
         ->leftjoin('topic_master as tm','tm.id','=','content_master.topic_id')
         ->leftjoin('topic_master as stm','stm.id','=','content_master.sub_topic_id')
-        ->where('content_master.sub_institute_id',$sub_institute_id)                      
+        ->where('content_master.sub_institute_id',$sub_institute_id)
         ->get();
 
         return $data;
@@ -111,14 +112,14 @@ class contentController extends Controller
             $request->get('topic_id'));
 
         //START Get Standard
-        $chapter_data = chapterModel::select('*')        
-        ->where(['chapter_master.sub_institute_id'=>$sub_institute_id,'chapter_master.id'=>$request->get('chapter_id')])         
-        ->get()->toArray(); 
-        
+        $chapter_data = chapterModel::select('*')
+        ->where(['chapter_master.sub_institute_id'=>$sub_institute_id,'chapter_master.id'=>$request->get('chapter_id')])
+        ->get()->toArray();
+
         $data['standard_id'] = $chapter_data[0]['standard_id'];
         //END Get Standard
 
-        //$data['YouTubeSuggestionList'] = $this->getYouTubeSuggestion($data['breadcrum_data']->standard_name,$data['breadcrum_data']->subject_name,$data['breadcrum_data']->chapter_name);        
+        //$data['YouTubeSuggestionList'] = $this->getYouTubeSuggestion($data['breadcrum_data']->standard_name,$data['breadcrum_data']->subject_name,$data['breadcrum_data']->chapter_name);
 
         return is_mobile($type,'lms/add_content',$data,"view");
     }
@@ -150,21 +151,21 @@ class contentController extends Controller
         $data['breadcrum_data'] = $this->getBreadcrum($sub_institute_id, $request->get('chapter_id'));
 
         //START Get Standard
-        $chapter_data = chapterModel::select('*')        
-        ->where(['chapter_master.sub_institute_id'=>$sub_institute_id,'chapter_master.id'=>$request->get('chapter_id')])         
-        ->get()->toArray(); 
-        
+        $chapter_data = chapterModel::select('*')
+        ->where(['chapter_master.sub_institute_id'=>$sub_institute_id,'chapter_master.id'=>$request->get('chapter_id')])
+        ->get()->toArray();
+
         $data['standard_id'] = $chapter_data[0]['standard_id'];
         //END Get Standard
 
-        //$data['YouTubeSuggestionList'] = $this->getYouTubeSuggestion($data['breadcrum_data']->standard_name,$data['breadcrum_data']->subject_name,$data['breadcrum_data']->chapter_name);        
-        
+        //$data['YouTubeSuggestionList'] = $this->getYouTubeSuggestion($data['breadcrum_data']->standard_name,$data['breadcrum_data']->subject_name,$data['breadcrum_data']->chapter_name);
+
         return is_mobile($type,'lms/add_chapter_content',$data,"view");
     }
 
     public function ajax_getYouTubeSuggestion(Request $request)
     {
-        $api_key = env('GOOGLE_API_KEY');  
+        $api_key = env('GOOGLE_API_KEY');
         $formatted_keyword = $request->input('keyword');
         $type = $request->input('type');
 
@@ -172,16 +173,16 @@ class contentController extends Controller
 
         $video = file_get_contents($link);
 
-        $video = json_decode($video, true); 
+        $video = json_decode($video, true);
 
         $video_arr = array();
 
         // if($video['error']['code'] != 403)
         // {
             foreach($video['items'] as $key => $val)
-            {       
+            {
                 if(isset($val['id']['videoId']))
-                {    
+                {
                     $title = $val['snippet']['title'];
                     $description = $val['snippet']['description'];
                     $vid = $val['id']['videoId'];
@@ -194,51 +195,52 @@ class contentController extends Controller
                     $video_arr[$key]['video_link'] = "https://www.youtube.com/watch?v=$vid";
                 }
             }
-        //} 
-       
+        //}
+
         return $video_arr;
-    }      
-    
-    public function store(Request $request){               
-        $sub_institute_id = $request->session()->get('sub_institute_id'); 		
-        $syear = $request->session()->get('syear'); 		
-        $user_id = $request->session()->get('user_id');       
-        $show_hide = $request->get('show_hide');             
+    }
+
+    public function store(Request $request){
+        $sub_institute_id = $request->session()->get('sub_institute_id');
+        $syear = $request->session()->get('syear');
+        $user_id = $request->session()->get('user_id');
+        $show_hide = $request->get('show_hide');
         $show_hide_val = isset($show_hide) ? $show_hide : '';
 
-        //Basic means 1 and advance means 0 
-        $basic_advanced = $request->get('toggle_basic_advanced');             
+        //Basic means 1 and advance means 0
+        $basic_advanced = $request->get('toggle_basic_advanced');
         $basic_advanced_val = isset($basic_advanced) ? '1' : '0';
-        
+
         $file_folder = $ext = $size = $newfilename = "";
         if($request->hasFile('filename'))
-        {           
+        {
             $img = $request->file('filename');
             $filename = $img->getClientOriginalName();
             $ext = $img->getClientOriginalExtension();
             $size = $img->getSize();
-            $newfilename = 'lms_'.date('Y-m-d_h-i-s').'.'.$ext;             
+            $newfilename = 'lms_'.date('Y-m-d_h-i-s').'.'.$ext;
             $file_folder = '/lms_content_file';
             //$img->move(public_path().'/lms_content_file/',$newfilename);
-            $img->storeAs('public/lms_content_file/',$newfilename);
+            //$img->storeAs('public/lms_content_file/',$newfilename);
+            $path = Storage::disk('digitalocean')->putFileAs('public/lms_content_file/', $img, $newfilename, 'public');
         }
 
         if($request->get('contentType') == "link")
         {
             $newfilename = $request->get('link');
             $ext = "link";
-        }       
-           
-        $chapter_data = chapterModel::select('*')        
-        ->where(['chapter_master.sub_institute_id'=>$sub_institute_id,'chapter_master.id'=>$request->get('hid_chapter_id')])         
-        ->get()->toArray(); 
-        $chapter_data = $chapter_data[0]; 
+        }
+
+        $chapter_data = chapterModel::select('*')
+        ->where(['chapter_master.sub_institute_id'=>$sub_institute_id,'chapter_master.id'=>$request->get('hid_chapter_id')])
+        ->get()->toArray();
+        $chapter_data = $chapter_data[0];
 
         $pre_topic = $post_topic = $cross_curriculum_topic = "";
         if($request->get('prechapter') != "")
         {
             $pre_topic = $request->get('prechapter').'####'.$request->get('pretopic');
-        } 
+        }
         if($request->get('postchapter') != "")
         {
             $post_topic = $request->get('postchapter').'####'.$request->get('posttopic');
@@ -273,7 +275,7 @@ class contentController extends Controller
             'basic_advance'                => $basic_advanced_val,
             'syear'                        => $syear,
         ];
-        //'sub_topic_id' => $request->get('subtopic'),                            
+        //'sub_topic_id' => $request->get('subtopic'),
         contentModel::insert($content);
         $last_id = DB::getPDO()->lastInsertId();
 
@@ -304,47 +306,48 @@ class contentController extends Controller
         }
     }
 
-    public function storeChapter(Request $request){      
-        // echo "<pre>"; print_r($request->all()); exit;         
-        $sub_institute_id = $request->session()->get('sub_institute_id'); 		
-        $syear = $request->session()->get('syear'); 		
+    public function storeChapter(Request $request){
+        // echo "<pre>"; print_r($request->all()); exit;
+        $sub_institute_id = $request->session()->get('sub_institute_id');
+        $syear = $request->session()->get('syear');
         $user_id = $request->session()->get('user_id');
         $show_hide = $request->get('show_hide');
         $show_hide_val = $show_hide ?? '';
 
-        //Basic means 1 and advance means 0 
+        //Basic means 1 and advance means 0
         $basic_advanced = $request->get('toggle_basic_advanced');
         $basic_advanced_val = ! isset($basic_advanced) ? '0' : '1';
-        
+
         $file_folder = $ext = $size = $newfilename = "";
         if($request->hasFile('filename'))
-        {           
+        {
             $img = $request->file('filename');
             $filename = $img->getClientOriginalName();
             $ext = $img->getClientOriginalExtension();
             $size = $img->getSize();
-            $newfilename = 'lms_'.date('Y-m-d_h-i-s').'.'.$ext;             
+            $newfilename = 'lms_'.date('Y-m-d_h-i-s').'.'.$ext;
             $file_folder = '/lms_content_file';
             //$img->move(public_path().'/lms_content_file/',$newfilename);
-            $img->storeAs('public/lms_content_file/',$newfilename);
+            //$img->storeAs('public/lms_content_file/',$newfilename);
+            $path = Storage::disk('digitalocean')->putFileAs('public/lms_content_file/', $img, $newfilename, 'public');
         }
 
         if($request->get('contentType') == "link")
         {
             $newfilename = $request->get('link');
             $ext = "link";
-        }       
-           
-        $chapter_data = chapterModel::select('*')        
-        ->where(['chapter_master.sub_institute_id'=>$sub_institute_id,'chapter_master.id'=>$request->get('hid_chapter_id')])         
-        ->get()->toArray(); 
-        $chapter_data = $chapter_data[0]; 
+        }
+
+        $chapter_data = chapterModel::select('*')
+        ->where(['chapter_master.sub_institute_id'=>$sub_institute_id,'chapter_master.id'=>$request->get('hid_chapter_id')])
+        ->get()->toArray();
+        $chapter_data = $chapter_data[0];
 
         $pre_topic = $post_topic = $cross_curriculum_topic = "";
         if($request->get('prechapter') != "")
         {
             $pre_topic = $request->get('prechapter').'####'.$request->get('pretopic');
-        } 
+        }
         if($request->get('postchapter') != "")
         {
             $post_topic = $request->get('postchapter').'####'.$request->get('posttopic');
@@ -381,7 +384,7 @@ class contentController extends Controller
         ];
 
         // dd($content);
-        //'sub_topic_id' => $request->get('subtopic'),  
+        //'sub_topic_id' => $request->get('subtopic'),
         DB::enableQueryLog();
         contentModel::insert($content);
         $last_id = DB::getPDO()->lastInsertId();
@@ -407,7 +410,7 @@ class contentController extends Controller
         //return is_mobile($type, "content_master.index", $res, "redirect");
         return redirect()->route('chapter_master.index', ['standard_id' => $request->get('hid_standard_id'), 'subject_id' => $request->get('hid_subject_id')]);
     }
-		
+
     public function edit(Request $request,$id){
         $type = $request->input('type');
 
@@ -415,8 +418,8 @@ class contentController extends Controller
             $sub_institute_id = 1;
         }else{
         $sub_institute_id = $request->session()->get('sub_institute_id');
-        } 		
-						
+        }
+
         $data['content_data'] = contentModel::find($id)->toArray();
 
         $content_mapping_type = contentmappingtypeModel::where(['content_id' => $id])->get()->toArray();
@@ -452,9 +455,9 @@ class contentController extends Controller
         $data['lms_mapping_type'] = $lms_mapping_type;
         $data['content_mapping_type'] = $final_content_mapping_type;
 
-        //START Get Content Category        
+        //START Get Content Category
         $data['content_category'] = lmsContentCategoryModel::where('status', '2')->get()->toArray();
-        //END Get Content Category 
+        //END Get Content Category
 
         //START Get Pre Topic
         $data['pretopicData'] = [];
@@ -482,9 +485,9 @@ class contentController extends Controller
             }
 
             $pretopicData = json_decode(json_encode($pretopicData), true);
-            $data['pretopicData'] = $pretopicData[0];            
+            $data['pretopicData'] = $pretopicData[0];
         }
-        //END Get Pre Topic  
+        //END Get Pre Topic
 
         //START Get Post Topic
         $data['posttopicData'] = [];
@@ -508,11 +511,11 @@ class contentController extends Controller
                     ->selectRaw('c.id AS chapter_id,c.standard_id,c.subject_id')
                     ->where('c.id', $post_arr_chapter_id)->get()->toArray();
 
-            }           
+            }
             $posttopicData = json_decode(json_encode($posttopicData),true);
-            $data['posttopicData'] = $posttopicData[0];            
+            $data['posttopicData'] = $posttopicData[0];
         }
-        //END Get Post Topic 
+        //END Get Post Topic
 
 
         //START Get Cross curriculum Topic
@@ -538,28 +541,28 @@ class contentController extends Controller
                     ->selectRaw('c.id AS chapter_id,c.standard_id,c.subject_id')
                     ->where('c.id', $cc_arr_chapter_id)->get()->toArray();
 
-            }           
+            }
             $cctopicData = json_decode(json_encode($cctopicData),true);
-            $data['cctopicData'] = $cctopicData[0] ?? [];            
+            $data['cctopicData'] = $cctopicData[0] ?? [];
         }
-        //END Get Cross curriculum Topic 
+        //END Get Cross curriculum Topic
 
 
         $data['breadcrum_data'] = $this->getBreadcrum($sub_institute_id,$data['content_data']['chapter_id'],$data['content_data']['topic_id']);
 
         return is_mobile($type, "lms/edit_content", $data, "view");
     }
-	
+
     public function update(Request $request,$id)
     {
-        //ValidateInsertData('subject','update');        
+        //ValidateInsertData('subject','update');
 
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $syear = $request->session()->get('syear');
         $user_id = $request->session()->get('user_id');
         $show_hide = $request->get('show_hide');
         $show_hide_val = $show_hide ?? '';
-        $filePath = "public/lms_content_file/"; 
+        $filePath = "public/lms_content_file/";
 
         $image_data = [];
         if ($request->hasFile('filename')) {
@@ -575,7 +578,8 @@ class contentController extends Controller
             $size = $img->getSize();
             $newfilename = 'lms_'.date('Y-m-d_h-i-s').'.'.$ext;
             //$img->move(public_path().'/lms_content_file/',$newfilename);
-            $img->storeAs('public/lms_content_file/', $newfilename);
+            //$img->storeAs('public/lms_content_file/', $newfilename);
+            $path = Storage::disk('digitalocean')->putFileAs('public/lms_content_file/', $img, $newfilename, 'public');
 
             $image_data = [
                 'file_folder' => '/lms_content_file',
@@ -583,14 +587,14 @@ class contentController extends Controller
                 'file_type'   => $ext,
                 'file_size'   => $size,
             ];
-        } 
+        }
 
         if($request->get('contentType') == "link") {
             $image_data = [
                 'filename'  => $request->get('link'),
                 'file_type' => "link",
             ];
-        }   
+        }
 
         $pre_topic = $post_topic = $cross_curriculum_topic = "";
         if ($request->get('prechapter') != "") {
@@ -624,17 +628,17 @@ class contentController extends Controller
             'cross_curriculum_grade_topic' => $cross_curriculum_topic,
             'syear'                        => $syear,
         ];
-        
-        $data = array_merge($data,$image_data);    
+
+        $data = array_merge($data,$image_data);
 
 		contentModel::where(["id" => $id])->update($data);
-        
+
         //START Delete and insert into content_mapping_Data
         contentmappingtypeModel::where(["content_id" => $id])->delete();
 
         $mapping_type = $request->get('mapping_type');
         $mapping_value = $request->get('mapping_value');
-       
+
         foreach($mapping_type as $key => $val) {
             if ($val != "" && $mapping_value[$key] != "") {
                 $contentmappingtype = [
@@ -659,7 +663,7 @@ class contentController extends Controller
 
     public function destroy(Request $request,$id){
         $type = $request->input('type');
-        
+
         $contentdata = contentModel::where(["id" => $id])->get()->toArray();
         $chapter_id = $contentdata[0]['chapter_id'];
 
@@ -669,7 +673,7 @@ class contentController extends Controller
 
         return redirect()->route('topic_master.index', ['id' => $chapter_id]);
     }
-	
+
     public function ajax_LMS_MappingValue(Request $request)
     {
         $mapping_type = $request->input("mapping_type");
@@ -725,33 +729,33 @@ class contentController extends Controller
             foreach ($topic_data as $key => $val) {
                 $data['topic_data'][$val['chapter_id']][] = $val;
             }
-            
+
             $subtopic_data = topicModel::select('*')
-            ->where(['sub_institute_id'=>$sub_institute_id])      
-            ->where('main_topic_id','!=','0')      
+            ->where(['sub_institute_id'=>$sub_institute_id])
+            ->where('main_topic_id','!=','0')
             ->get()->toArray();
-                    
+
             foreach($subtopic_data as $subkey => $subval)
             {
-                $data['subtopic_data'][$subval['main_topic_id']][] = $subval; 
+                $data['subtopic_data'][$subval['main_topic_id']][] = $subval;
             }
-            
+
         }
-      
+
         $subject_data = sub_std_mapModel::where(['sub_institute_id' => $sub_institute_id,'standard_id' => $standard])
-        ->orderBy('display_name')->get()->toArray();		
-        
-        $data['subject_arr'] = $subject_data;        
+        ->orderBy('display_name')->get()->toArray();
+
+        $data['subject_arr'] = $subject_data;
         $data['status_code'] = 1;
-        $data['message'] = "SUCCESS";           
-        $data['grade'] = $grade;           
-        $data['standard'] = $standard;           
-        $data['subject'] = $subject;           
-        
+        $data['message'] = "SUCCESS";
+        $data['grade'] = $grade;
+        $data['standard'] = $standard;
+        $data['subject'] = $subject;
+
 
 		return is_mobile($type, "lms/show_chapter", $data, "view");
     }
-    
+
     public function ajax_SubjectwiseChapter(Request $request)
     {
         $sub_id = $request->input("sub_id");
@@ -778,6 +782,6 @@ class contentController extends Controller
             'main_topic_id'    => $main_topic_id,
         ])->get()->toArray();
     }
-        
-	
+
+
 }

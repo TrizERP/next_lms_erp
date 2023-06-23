@@ -7,6 +7,7 @@ use App\Models\transportation\add_driver\add_driver;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Storage;
 use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\NotFoundExceptionInterface;
 use function App\Helpers\is_mobile;
@@ -71,7 +72,8 @@ class add_driver_controller extends Controller
             $name = date('YmdHis');
             $ext = File::extension($originalname);
             $file_name = $name.'.'.$ext;
-            $path = $file->storeAs('public/driver/', $file_name);
+//            $path = $file->storeAs('public/driver/', $file_name);
+            $path = Storage::disk('digitalocean')->putFileAs('public/driver/', $file, $file_name, 'public');
         }
 
         $add_driver = new add_driver([
@@ -148,7 +150,8 @@ class add_driver_controller extends Controller
             $name = date('YmdHis');
             $ext = File::extension($originalname);
             $file_name = $name.'.'.$ext;
-            $path = $file->storeAs('public/driver/', $file_name);
+//            $path = $file->storeAs('public/driver/', $file_name);
+            $path = Storage::disk('digitalocean')->putFileAs('public/driver/', $file, $file_name, 'public');
         }
 
         if ($file_name != "") {
