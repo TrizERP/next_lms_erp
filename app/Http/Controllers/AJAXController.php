@@ -581,10 +581,11 @@ class AJAXController extends Controller
         $full_bk2 = array_merge($reg_bk_month_wise2, $other_bk_off2);
         $previous = array_sum($full_bk2);
         // return $previous;exit;
-        $full_bk['Previous Fees'] ='';
         
         if($previous>0){
         $full_bk['Previous Fees'] = $previous;
+        $final_bk_name["Previous Fees"] = "previous_fees";
+
         }
       
         foreach ($full_bk as $id => $val) {
@@ -600,9 +601,7 @@ class AJAXController extends Controller
                 }
 
             }
-            if($previous>0){
-                $final_bk_name["Previous Fees"] = "previous_fees";
-            }
+          
         }
 
         $full_bk["Total"] = $total;
