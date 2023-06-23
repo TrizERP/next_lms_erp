@@ -182,8 +182,8 @@ class feesOverallHeadwiseReportController extends Controller
       
 
         // dd($bk_title_months_array);
-        $count_of_array = $i;
-        
+        $count_of_array = count($bk_title_months_array);
+        // return count($bk_title_months_array);exit;
         $fees_fine_discount_data = DB::table('fees_collect')
             ->selectRaw('SUM(fine) AS total_fine, SUM(fees_discount) AS total_disc, student_id')
             ->where('sub_institute_id', $sub_institute_id)
@@ -279,12 +279,15 @@ class feesOverallHeadwiseReportController extends Controller
 
                  $total_fees_array = array();
                 foreach ($bk_data as $stu_id => $total_fees) {
+                    // print_r($total_fees);
                     $total_fees_array[]=$total_fees;
                     foreach ($total_fees_array[0] as $key => $month_data) {
-                       if (isset($month_data['month_id']) && $month_data['month_id'] == '-') {
-                            $final_array[$value['id']][$month_data['month_id']]['paid'] = $total_paid_new;
-                            $final_array[$value['id']][$month_data['month_id']]['remain'] = $total_unpaid_new;
-                            $final_array[$value['id']][$month_data['month_id']]['bk'] = ($total_paid_new + $total_unpaid_new);
+                    // print_r($month_data);
+                        
+                       if (isset($month_data['month_id'])) {
+                            $final_array[$value['id']]['-']['paid'] = $total_paid_new;
+                            $final_array[$value['id']]['-']['remain'] = $total_unpaid_new;
+                            $final_array[$value['id']]['-']['bk'] = ($total_paid_new + $total_unpaid_new);
                         }
 
                         if (isset($final_array[$value['id']]['-']['paid']) && isset($final_array[$value['id']]['-']['remain'])) {
@@ -294,6 +297,7 @@ class feesOverallHeadwiseReportController extends Controller
                         }
                     }
                 }
+                // exit;
                 if (isset($final_array[$value['id']])) {
                     if (isset($fees_fine_discount_data[$value['id']])) {
                         $final_array[$value['id']]['fine'] = $fees_fine_discount_data[$value['id']]['total_fine'];

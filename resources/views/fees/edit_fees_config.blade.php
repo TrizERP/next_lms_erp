@@ -28,6 +28,7 @@
 	                            <label>Late Fees Amount </label>
 	                            <input type="number" id='late_fees_amount' value="@if(isset($data['late_fees_amount'])){{ $data['late_fees_amount'] }}@endif" required name="late_fees_amount" class="form-control">
 	                        </div>
+<!--							
 	                        <div class="col-md-4 form-group">
 	                            <label>Fees Paid Send SMS</label>
 	                            <select name="send_sms" id="send_sms" class="form-control" required>
@@ -44,6 +45,7 @@
 	                                <option value="0" @if(isset($data))@if("0" == $data['send_email']) selected @endif  @endif> No. </option>
 	                            </select>
 	                        </div>
+-->							
 	                        <div class="col-md-4 form-group">
 	                            <label>Fees Receipt Template</label>
 	                            <select name="fees_receipt_template" id="fees_receipt_template" class="form-control" required>

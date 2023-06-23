@@ -134,7 +134,7 @@
                             @php
                             if(isset($data['bk_title_months_array']))
                             {
-                                $count_colspan = $data['count_of_array'];
+                                $count_colspan = $data['count_of_array'];   
                                 $count_colspan = $count_colspan + 1;
                                 $colspan = 'colspan="'.$count_colspan.'" ';
                             @endphp 
@@ -146,6 +146,7 @@
                         </tr>
                         <tr>
                             @if(isset($data['bk_title_months_array']))
+
                                 @foreach($data['bk_title_months_array'] as $main_head => $child_head)
                                     @if(count($child_head) > 0)                                    
                                         @php
@@ -153,7 +154,7 @@
                                             $count_colspan_inner = count($child_head);
                                             $colspan_inner = 'colspan="'.$count_colspan_inner.'" ';
                                         @endphp
-                                        <th @php echo $colspan_inner; @endphp class="text-center">{{$main_fees_title[0]}}</th>
+                                        <th @php echo $colspan_inner; @endphp class="text-center">@if($main_fees_title[0]=='') {{$main_fees_title[1]}} @else {{$main_fees_title[0]}} @endif</th>
                                     @else
                                         <th rowspan=2>{{$main_fees_title[0]}}</th>    
                                     @endif
@@ -207,6 +208,7 @@
                     @if(isset($data['fees_data']))
                         @foreach($fees_data as $key => $fees_value) 
                             @php
+                            
 							if(isset($fees_value['-'])){
                             $total_paid += $fees_value['-']['paid'] ?? 0;
                             $total_breakoff += $fees_value['-']['bk'] ?? 0;
