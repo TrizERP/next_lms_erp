@@ -581,8 +581,11 @@ class AJAXController extends Controller
         $full_bk2 = array_merge($reg_bk_month_wise2, $other_bk_off2);
         $previous = array_sum($full_bk2);
         // return $previous;exit;
+        
         if($previous>0){
         $full_bk['Previous Fees'] = $previous;
+        $final_bk_name["Previous Fees"] = "previous_fees";
+
         }
       
         foreach ($full_bk as $id => $val) {
@@ -598,9 +601,7 @@ class AJAXController extends Controller
                 }
 
             }
-            if($previous>0){
-                $final_bk_name["Previous Fees"] = "previous_fees";
-            }
+          
         }
 
         $full_bk["Total"] = $total;
@@ -1605,7 +1606,7 @@ class AJAXController extends Controller
                                 </page>
                             </div>';
         } elseif ($paper_size == "A4") {
-            $extra_html = ' <div style="padding:0px 20px !important">
+            $extra_html = ' <div style="padding:20px !important">
                                 <page size="A4">
                                    ##HTML_SEC##
                                 </page>
