@@ -20,6 +20,7 @@
         "opcodesio/log-viewer": "^2.4",
         "phpmailer/phpmailer": "^6.7",
         "phpoffice/phpexcel": "^1.8",
+        "picqer/php-barcode-generator": "^2.2",
         "razorpay/razorpay": "^2.8",
         "yajra/laravel-datatables-oracle": "^10.4"
     },
