@@ -22,6 +22,7 @@ class VerifyCsrfToken extends Middleware
         'circular/*',
         'api/*',
         'fees/*',
-        'https://erp.triz.co.in/*'
+        'https://erp.triz.co.in/*',
+        'http://dev.triz.co.in/*'
     ];
 }
