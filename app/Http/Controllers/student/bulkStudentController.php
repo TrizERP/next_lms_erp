@@ -21,6 +21,7 @@ use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Storage;
 use function App\Helpers\is_mobile;
 
 class bulkStudentController extends Controller
@@ -372,13 +373,13 @@ class bulkStudentController extends Controller
     }
 
     public function bulkUpdate(Request $request) {
-        
+
         $type = $request->input('type');
         $syear = $request->session()->get('syear');
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $values = $request->post('values');
         $file = $request->file('values');
-        //dd($file);        
+        //dd($file);
 
         foreach ($values as $key => $value) {
 
@@ -400,16 +401,16 @@ class bulkStudentController extends Controller
                 $studentEnrollment['house_id'] = $value['house'];
             }
 
-            if (count($studentEnrollment) > 0) {               
-                
+            if (count($studentEnrollment) > 0) {
+
                 $studentEnrollment['updated_on'] = date('Y-m-d H:i:s');
                 tblstudentEnrollmentModel::where(['student_id' => $key, 'syear' => $syear])->update($studentEnrollment);
             }
 
             $this->updateData($value);
 
-        }    
-        
+        }
+
 
         if (isset($file)) {
             foreach ($file as $student_id => $req) {
@@ -421,24 +422,25 @@ class bulkStudentController extends Controller
                 $files = array();
                 $studentEnrollmentData = array();
                 $studentEnrollmentData['id'] = $student_id;
-                
+
                 //For compulsory image field
                 foreach($req as $key1 => $val1)
                 {
                     $files = $request->file('values')[$student_id];
                     if( !in_array($key1,$dataCustomFields[0]) )
                     {
-                        if (isset($files[$key1])) {                     
+                        if (isset($files[$key1])) {
                             $file = $files[$key1];
                             $originalname = $file->getClientOriginalName();
                             $ext = \File::extension($originalname);
-                            $file_name = $student_id . '.' . $ext;                      
-                            $path = $file->storeAs('public/student/', $file_name);
+                            $file_name = $student_id . '.' . $ext;
+                            //$path = $file->storeAs('public/student/', $file_name);
+                            $path = Storage::disk('digitalocean')->putFileAs('public/student/', $file, $file_name, 'public');
                             $studentEnrollmentData[$key1] = $file_name;
                         }
-                    }                   
+                    }
                 }
-                
+
                 //for custom image fields
                 foreach ($dataCustomFields as $key => $value) {
                     $files = $request->file('values')[$student_id];
@@ -449,7 +451,8 @@ class bulkStudentController extends Controller
                         $name = $value['field_name'] . "_" . $student_id . "_" . date('YmdHis') . '_' . $originalname;
 
                         $file_name = $name;
-                        $path = $file->storeAs('public/student/', $file_name);
+                        //$path = $file->storeAs('public/student/', $file_name);
+                        $path = Storage::disk('digitalocean')->putFileAs('public/student/', $file, $file_name, 'public');
                         $studentEnrollmentData[$value['field_name']] = $file_name;
                     }
 

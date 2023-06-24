@@ -12,6 +12,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Storage;
 use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\NotFoundExceptionInterface;
 use function App\Helpers\is_mobile;
@@ -126,7 +127,8 @@ class result_book_master_controller extends Controller
             $name = date('YmdHis');
             $ext = File::extension($originalname);
             $left_logo = $name.'.'.$ext;
-            $path = $file->storeAs('public/result/left_logo/', $left_logo);
+            //$path = $file->storeAs('public/result/left_logo/', $left_logo);
+            $path = Storage::disk('digitalocean')->putFileAs('public/result/left_logo/', $file, $left_logo, 'public');
         }
         if ($request->hasFile('right_logo')) {
             $file = $request->file('right_logo');
@@ -134,7 +136,8 @@ class result_book_master_controller extends Controller
             $name = date('YmdHis');
             $ext = File::extension($originalname);
             $right_logo = $name.'.'.$ext;
-            $path = $file->storeAs('public/result/right_logo/', $right_logo);
+            //$path = $file->storeAs('public/result/right_logo/', $right_logo);
+            $path = Storage::disk('digitalocean')->putFileAs('public/result/right_logo/', $file, $right_logo, 'public');
         }
 
         $trust_master_data = new result_trust_master([
@@ -224,7 +227,8 @@ class result_book_master_controller extends Controller
                 $name = date('YmdHis');
                 $ext = File::extension($originalname);
                 $left_logo = $name.'.'.$ext;
-                $path = $file->storeAs('public/result/left_logo/', $left_logo);
+                //$path = $file->storeAs('public/result/left_logo/', $left_logo);
+                $path = Storage::disk('digitalocean')->putFileAs('public/result/left_logo/', $file, $left_logo, 'public');
             }
         }
         if ($request->hasFile('right_logo')) {
@@ -234,7 +238,8 @@ class result_book_master_controller extends Controller
                 $name = date('YmdHis');
                 $ext = File::extension($originalname);
                 $right_logo = $name.'.'.$ext;
-                $path = $file->storeAs('public/result/right_logo/', $right_logo);
+                //$path = $file->storeAs('public/result/right_logo/', $right_logo);
+                $path = Storage::disk('digitalocean')->putFileAs('public/result/right_logo/', $file, $right_logo, 'public');
             }
         }
         $all_data = $this->getData();

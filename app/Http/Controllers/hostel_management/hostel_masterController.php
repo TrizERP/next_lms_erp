@@ -11,6 +11,7 @@ use App\Models\settings\tblfields_dataModel;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Storage;
 use function App\Helpers\is_mobile;
 use function App\Helpers\ValidateInsertData;
 
@@ -108,7 +109,8 @@ class hostel_masterController extends Controller
             $name = date('YmdHis');
             $ext = File::extension($originalname);
             $file_name = $name.'.'.$ext;
-            $path = $file->storeAs('public/hostel_master/', $file_name);
+            //$path = $file->storeAs('public/hostel_master/', $file_name);
+            $path = Storage::disk('digitalocean')->putFileAs('public/hostel_master/', $file, $file_name, 'public');
         }
         $request->request->add(['image' => $file_name]);
 
@@ -129,7 +131,8 @@ class hostel_masterController extends Controller
                 $name = $value['field_name']."_".$request->input('user_name').date('YmdHis');
                 $ext = File::extension($originalname);
                 $file_name = $name.'.'.$ext;
-                $path = $file->storeAs('public/hostel_master/', $file_name);
+                //$path = $file->storeAs('public/hostel_master/', $file_name);
+                $path = Storage::disk('digitalocean')->putFileAs('public/hostel_master/', $file, $file_name, 'public');
                 $request->files->remove($value['field_name']);
                 $request->request->add([$value['field_name'] => $file_name]); //add request
             }

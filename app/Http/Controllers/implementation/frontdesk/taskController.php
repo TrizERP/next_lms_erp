@@ -12,6 +12,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Storage;
 use function App\Helpers\is_mobile;
 
 class taskController extends Controller
@@ -121,7 +122,8 @@ class taskController extends Controller
             $name = "task_".date('YmdHis');
             $ext = File::extension($originalname);
             $file_name = $name.'.'.$ext;
-            $path = $file->storeAs('public/frontdesk/', $file_name);
+            //$path = $file->storeAs('public/frontdesk/', $file_name);
+            $path = Storage::disk('digitalocean')->putFileAs('public/frontdesk/', $file, $file_name, 'public');
         }
 
         if ($file_name != '') {
@@ -166,7 +168,7 @@ class taskController extends Controller
             ->join('tbluser as u2', function ($join) use ($sub_institute_id) {
                 $join->whereRaw("t.TASK_ALLOCATED_TO = u2.id AND u2.sub_institute_id = '".$sub_institute_id."'");
             })
-            ->selectRaw("t.*, CONCAT_WS(' ',u.first_name,u.middle_name,u.last_name) AS ALLOCATOR, 
+            ->selectRaw("t.*, CONCAT_WS(' ',u.first_name,u.middle_name,u.last_name) AS ALLOCATOR,
             CONCAT_WS(' ',u2.first_name,u2.middle_name,u2.last_name) AS ALLOCATED_TO")
             ->where("t.ID", "=", $id)
             ->get()->toArray();
@@ -228,7 +230,8 @@ class taskController extends Controller
             $name = "task_".date('YmdHis');
             $ext = File::extension($originalname);
             $file_name = $name.'.'.$ext;
-            $path = $file->storeAs('public/frontdesk/', $file_name);
+            //$path = $file->storeAs('public/frontdesk/', $file_name);
+            $path = Storage::disk('digitalocean')->putFileAs('public/frontdesk/', $file, $file_name, 'public');
         }
 
         if ($file_name != '') {

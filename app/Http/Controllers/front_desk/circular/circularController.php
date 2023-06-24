@@ -14,6 +14,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\NotFoundExceptionInterface;
@@ -250,7 +251,8 @@ class circularController extends Controller
                 $name = 'circular_'.$key.'_'.date('YmdHis');
                 $ext = File::extension($originalname);
                 $file_name = $name.'.'.$ext;
-                $path = $file_data->storeAs('public/circular/', $file_name);
+                //$path = $file_data->storeAs('public/circular/', $file_name);
+                $path = Storage::disk('digitalocean')->putFileAs('public/circular/', $file_data, $file_name, 'public');
 
                 if (isset($_REQUEST['standard'])) {
                     foreach ($_REQUEST['standard'] as $id => $std) {

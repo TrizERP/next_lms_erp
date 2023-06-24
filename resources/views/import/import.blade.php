@@ -23,11 +23,11 @@
 
                                 <div class="col-md-6">
                                     <label for="email">Module:</label>
-                                    <select name="tablename" id="table">
+                                    <select name="tablename" id="table" required>
                                         <option value=""> Select Module Name</option>
                                         @foreach($result as $value)
-                                        @if($value->is_customized_table == 1)<option
-                                            value="{{$value->table_name}}">{{ $value->display_table_name }}</option>@endif
+                                            @if($value->is_customized_table == 1)<option
+                                                value="{{$value->table_name}}">{{ $value->display_table_name }}</option>@endif
                                         @endforeach
                                     </select>
                                 </div>

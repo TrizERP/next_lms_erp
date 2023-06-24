@@ -8,6 +8,7 @@ use App\Models\fees\other_fees_collect\other_fees_collect;
 use App\Models\fees\other_fees_cancel\other_fees_cancel;
 use App\Models\student\tblstudentModel;
 use App\Models\fees\bank_master\bankmasterModel;
+use Illuminate\Support\Facades\Storage;
 use function App\Helpers\is_mobile;
 use function App\Helpers\SearchStudent;
 use Illuminate\Http\Request;
@@ -29,11 +30,11 @@ class s4excel_importController extends Controller {
 	 *
 	 * @return \Illuminate\Http\Response
 	 */
-	public function index(Request $request) 
+	public function index(Request $request)
 	{
-		$type = $request->input('type');		
-		$res = array();		
-		
+		$type = $request->input('type');
+		$res = array();
+
 		return is_mobile($type, "fees/NACH/show_s4_excel_import", $res, "view");
 	}
 
@@ -42,8 +43,8 @@ class s4excel_importController extends Controller {
 	 *
 	 * @return \Illuminate\Http\Response
 	 */
-	public function store(Request $request) 
-	{        
+	public function store(Request $request)
+	{
 		$type = $request->input('type');
 		$sub_institute_id = $request->session()->get('sub_institute_id');
 		$syear = $request->session()->get('syear');
@@ -57,7 +58,7 @@ class s4excel_importController extends Controller {
 		define('REGISTRATIONAMT', $NACH_master['nach_registration_charge']);
 
 		$DEPOSITED_BANK_ACCOUNT_ID_CONST = '1';
-		$PAYMENT_MODE_CONST = 'NACH';	
+		$PAYMENT_MODE_CONST = 'NACH';
 
 		$searchArr = array("'", '"');
 		$replaceArr = array("\'", '\"');
@@ -69,7 +70,7 @@ class s4excel_importController extends Controller {
 		$falilureStatusArr = array(
 		    'RETURN', 'failure', 'failed','Returned'
 		);
-	
+
 		if($request->hasFile('s4file'))
         {
             $file = $request->file('s4file');
@@ -77,7 +78,8 @@ class s4excel_importController extends Controller {
             $name = "NACH_S4_Import_".date('Y_m_d_H_i_s');
             $ext = \File::extension($originalname);
             $file_name = $name . "." . $ext;
-            $path = $file->storeAs('public/NachExcel/Uploads/',$file_name);        
+            //$path = $file->storeAs('public/NachExcel/Uploads/',$file_name);
+            $path = Storage::disk('digitalocean')->putFileAs('public/NachExcel/Uploads/', $file, $file_name, 'public');
 
             $inputFileName = 'storage/NachExcel/Uploads/'.$file_name;
             try {
@@ -109,12 +111,12 @@ class s4excel_importController extends Controller {
 	        }
 
 	        $dataArr = array_values($dataArr);
-	        
-	        if (!empty($dataArr)) 
+
+	        if (!empty($dataArr))
 	        {
 	            $failed_str = $failed_bnk_str = $style_str = $not_found_str = $fees_paid_str = "";
 
-	            
+
 	            $titleArr = $dataArr[0];
 
 	            $not_found_str.="<div class=cls_not_found_whole_str>";
@@ -207,32 +209,32 @@ class s4excel_importController extends Controller {
 	            $fees_paid_chk_flg = 0;
 
 	            $totalRecords = count($dataArr) - 1;
-	            
+
 	            $successCnt = $failureCnt = $notFoundCnt = $paidCnt = $maxCnt = 0;
-	            
+
 	            // echo '<pre>';
 	            // print_r($dataArr);
-	            
-	            foreach ($dataArr as $value) 
-	            {	    	           
-                	if ($m == 1) 
+
+	            foreach ($dataArr as $value)
+	            {
+                	if ($m == 1)
                 	{
                     	$maxCnt = count($titleArr);//count($value);
                 	}
-                	if ($m >= 2) 
+                	if ($m >= 2)
                 	{
 	                    $AC_HOLDER_NAME = isset($value[5]) ? str_replace($searchArr, $replaceArr, $value[5]) : '';
-	                    
+
 	                    $DATE = isset($value[6]) ? $value[6] : '';
 	                    $YEAR = substr(trim($DATE),0,4);
 	                    $MONTH = substr(substr(trim($DATE),4),0,2);
 	                    $DAY = substr(trim($DATE),-2);
 	                    $FEES_DATE_VALUES_DB = $YEAR."-".$MONTH."-".$DAY." 12:00:00";
 	                    $FEES_CHEQUE_DD_DATE_VALUES_DB = $YEAR."-".$MONTH."-".$DAY;
-	                    $MONTH_ID = ltrim($MONTH, '0').$YEAR;	                   
+	                    $MONTH_ID = ltrim($MONTH, '0').$YEAR;
 
 	                    $STUDENT_FEES_AMOUNT = isset($value[10]) ? $value[10] : '';
-	                    
+
 	                    $IFSC_CODE = isset($value[15]) ? $value[15] : '';
 	                    $AC_NUMBER = isset($value[16]) ? $value[16] : '';
 	                    $SPONSOR_IFSC_CODE = isset($value[17]) ? str_replace($searchArr, $replaceArr, $value[17]) : '';
@@ -246,40 +248,40 @@ class s4excel_importController extends Controller {
 
 	                    $STUDENT_GR_NO = $TRANSACTION_REF_ARR[0];
 	                    $STUDENT_NAME = trim(str_replace($TRANSACTION_REF_ARR[0], '', $TRANSACTION_REF));
-	
+
 	                    $REMARKS = $TRANSACTION_REMARKS;
 	                    if ($REMARKS == '') {
 	                        $REMARKS = '-';
 	                    }
 
-	                    $STUDENT_DETAILS = $this->get_students_general_details_with_multiple_parameters($STUDENT_NAME, $STUDENT_GR_NO, $sub_institute_id, $syear);	                   	                                      	
+	                    $STUDENT_DETAILS = $this->get_students_general_details_with_multiple_parameters($STUDENT_NAME, $STUDENT_GR_NO, $sub_institute_id, $syear);
 						$STUDENT_ID =  "";
 
-                    	if (in_array($TRANSACTION_STATUS, $successStatusArr)) 
+                    	if (in_array($TRANSACTION_STATUS, $successStatusArr))
                     	{
-                       		
-	                        if (empty($STUDENT_DETAILS)) 
+
+	                        if (empty($STUDENT_DETAILS))
 	                        {
 	                            // Get Not Found Students
 	                            $not_found_str.="<tr>";
-	                            for ($i = 0; $i < $maxCnt; $i++) 
+	                            for ($i = 0; $i < $maxCnt; $i++)
 	                            {
 	                                $not_found_str.="<td>" . (isset($value[$i]) ? $value[$i] : '') . "</td>";
 	                            }
 	                            $not_found_str.="</tr>";
 	                            $not_found_chk_flg = 1;
 	                            $notFoundCnt++;
-	                        } 
+	                        }
 	                        else
 	                        {
 	                        	$STUDENT_ID = $STUDENT_DETAILS['STUDENT_ID'];
 	                            // Get Already Paid Fees Students
 	                            $fees_paid_chk = $this->is_fees_paid_chk($STUDENT_ID,$MONTH_ID,$syear);
-	                            if (!empty($fees_paid_chk)) 
+	                            if (!empty($fees_paid_chk))
 	                            {
 	                                $fees_paid_str.="<tr>";
 	                                echo $maxCnt;
-	                                for ($i = 0; $i < $maxCnt; $i++) 
+	                                for ($i = 0; $i < $maxCnt; $i++)
 	                                {
 	                                    $fees_paid_str.="<td>" . (isset($value[$i]) ? $value[$i] : '') . "</td>";
 	                                }
@@ -288,10 +290,10 @@ class s4excel_importController extends Controller {
 	                                $fees_paid_chk_flg = 1;
 	                                $STUDENT_ID = "";
 	                                $paidCnt++;
-	                            }	                            
+	                            }
 	                        }
 
-	                        if ($STUDENT_ID != "") 
+	                        if ($STUDENT_ID != "")
 	                        {
 	                            //dd($STUDENT_DETAILS);
 	                            $pay_month = array($MONTH_ID => $MONTH_ID);
@@ -306,11 +308,11 @@ class s4excel_importController extends Controller {
 					            $fees_bk_data = $controller->getOnlinebk($request, $sub_institute_id, $syear, $STUDENT_ID);
 
 					            $fees_month = $ajx_controller->getOnlineFeesMonth($arr);
-					            
+
 					            $total_fees = $fees_month["Total"];
 					            unset($fees_month["Total"]);
 					            $final_fees_arr = array();
-					            foreach ($fees_month as $id => $val) 
+					            foreach ($fees_month as $id => $val)
 					            {
 					                $final_fees_arr[$fees_bk_data["final_fee_name"][$id]] = $val;
 					            }
@@ -330,21 +332,21 @@ class s4excel_importController extends Controller {
 	                            $stuSqlRet = $stuSqlRet[0];
 	                            //dd($stuSqlRet);
 	                            $registrationAmt = 0;
-	                            if ($stuSqlRet['is_registered'] == 'N') 
+	                            if ($stuSqlRet['is_registered'] == 'N')
 	                            {
 	                                $registrationAmt = REGISTRATIONAMT;
 	                            }
 
-	                            $failedAmt = $failedCnt * FAILEDCHARGE;	                            
+	                            $failedAmt = $failedCnt * FAILEDCHARGE;
 	                            $FINE = $failedAmt + TRANSACTIONCHARGE + $registrationAmt;
-	                            if ($FINE == "") 
+	                            if ($FINE == "")
 	                            {
 	                                $FINE = 0;
 	                            }
 					            $final_fees_arr["fine"] = $FINE;
 
 					            $k=1;
-					            foreach ($final_fees_arr as $id => $val) 
+					            foreach ($final_fees_arr as $id => $val)
 					            {
 					                $discount_data_arr[$id] = 0;
 					                if($k == 1)
@@ -358,8 +360,8 @@ class s4excel_importController extends Controller {
 					                $k++;
 					            }
 
-					            
-					            
+
+
 	                            $send_arr = array(
 					                "grade_id" => $STUDENT_DETAILS['GRADE_ID'],
 					                "standard_id" => $STUDENT_DETAILS['STANDARD_ID'],
@@ -371,9 +373,9 @@ class s4excel_importController extends Controller {
 					                "mobile" => $STUDENT_DETAILS['MOBILE_NUMBER'],
 					                "uniqueid" => $STUDENT_DETAILS['UNIQUEID'],
 					                "months" => $pay_month,
-					                "fees_data" => $final_fees_arr,	
-					                "discount_data" =>  $discount_data_arr, 
-                					"fine_data" => $fine_data_arr,				                
+					                "fees_data" => $final_fees_arr,
+					                "discount_data" =>  $discount_data_arr,
+                					"fine_data" => $fine_data_arr,
 					                "total" => $total_fees,
 					                "totalDis" => 0,
 					                "totalFin" => 0,
@@ -396,7 +398,7 @@ class s4excel_importController extends Controller {
 									$upSql = "UPDATE tblstudent_bank_detail SET is_registered = 'Y' WHERE student_id = '".$STUDENT_ID."'";
                                     DB::select($upSql);
 								}
-								else 
+								else
 								{
 									$failureCnt++;
 									$failed_str.="<tr>";
@@ -409,12 +411,12 @@ class s4excel_importController extends Controller {
 								}
 								//dd($send_arr);
 
-	                            //END Fees paid code	                                               
+	                            //END Fees paid code
                         }
-                    } 
-                    else if (in_array($TRANSACTION_STATUS, $falilureStatusArr)) 
-                    {                       
-                        if ($STUDENT_ID != "") 
+                    }
+                    else if (in_array($TRANSACTION_STATUS, $falilureStatusArr))
+                    {
+                        if ($STUDENT_ID != "")
 						{
                             $failInsSql = "INSERT INTO tblstudent_fees_failure
 							(student_id,month_id, syear, sub_institute_id,amount, remarks, created_by)
@@ -429,11 +431,11 @@ class s4excel_importController extends Controller {
                             }
                             $failed_bnk_str.="</tr>";
 
-                            if ($TRANSACTION_STATUS == 'account mismatch') 
+                            if ($TRANSACTION_STATUS == 'account mismatch')
 							{
                                 $upSql = "UPDATE tblstudent_bank_detail  SET is_registered = 'N' WHERE student_id = '".$STUDENT_ID."'";
                                 DB::select($upSql);
-                            } else 
+                            } else
 							{
                                 $upSql = "UPDATE tblstudent_bank_detail SET is_registered = 'Y' WHERE student_id = '".$STUDENT_ID."'";
                                 DB::select($upSql);
@@ -441,8 +443,8 @@ class s4excel_importController extends Controller {
 //                            $mess = "<center><font color=red>Fees has been paid successfully.</font></center>";
                         }
                     }
-                  
-                  
+
+
                 }
                 $m++;
             	}
@@ -475,7 +477,7 @@ class s4excel_importController extends Controller {
 							. '</font>';
 
 					if (!empty($mess)) {
-						//$mess.="<div style=clear:both;>&nbsp;</div>";						
+						//$mess.="<div style=clear:both;>&nbsp;</div>";
 					}
 
 					if ($not_found_chk_flg == 1) {
@@ -493,9 +495,9 @@ class s4excel_importController extends Controller {
 					if ($failed_bnk_chk_flg == 1) {
 						$mess.= $failed_bnk_str;
 					}
-					
+
 					$res['status_code'] = 1;
-					$res['message'] = $mess;					
+					$res['message'] = $mess;
         	}
     	}
 		else
@@ -503,13 +505,13 @@ class s4excel_importController extends Controller {
 			$res['status_code'] = 0;
 			$res['message'] = "Please select file to import fees";
 		}
-		
+
 		return is_mobile($type, "fees/NACH/show_s4_excel_import", $res, "view");
 	}
-	
+
 	public function get_students_general_details_with_multiple_parameters($STUDENT_FULL_NAME,$STUDENT_GR_NO,$sub_institute_id,$syear)
-	{           
-        $studet_sql = 
+	{
+        $studet_sql =
         	"SELECT CONCAT_WS(' ',s.first_name,s.middle_name,s.last_name) AS FULL_NAME ,s.enrollment_no as ENROLLMENT_NO,s.id AS STUDENT_ID
 			,s.admission_year,a.title AS ACADEMIC_YEAR,st.name AS BRANCH,sq.title AS STUDENT_QUOTA,se.standard_id as STANDARD_ID,
 			d.name AS SECTION_NAME,se.section_id as SECTION_ID,se.student_quota AS STUDENT_QUOTA1,se.start_date AS STUDENT_ENROLLMENT_DATE,
@@ -523,7 +525,7 @@ class s4excel_importController extends Controller {
 			LEFT JOIN student_quota sq ON sq.id = se.student_quota AND sq.sub_institute_id = se.sub_institute_id
 			WHERE s.sub_institute_id = '".$sub_institute_id."' AND se.syear = '".$syear."' AND s.enrollment_no = '".$STUDENT_GR_NO."'
 			AND if (se.END_DATE IS NOT NULL,se.END_DATE >= CURDATE(),se.END_DATE IS NULL)
-			AND ( CONCAT_WS(' ',s.first_name,s.middle_name,s.last_name) LIKE CONCAT('%','".$STUDENT_FULL_NAME."','%')) 
+			AND ( CONCAT_WS(' ',s.first_name,s.middle_name,s.last_name) LIKE CONCAT('%','".$STUDENT_FULL_NAME."','%'))
 			";
 		$stud_data = DB::select($studet_sql);
 		$stud_data = json_decode(json_encode($stud_data),true);
@@ -539,23 +541,23 @@ class s4excel_importController extends Controller {
 	}
 
 	public function is_fees_paid_chk($STUDENT_ID, $MARKING_PERIOD_ID, $SYEAR)
-	{   
+	{
 	    $sql = "SELECT * FROM fees_collect
 	            WHERE student_id='".$STUDENT_ID."'
 	            AND term_id='".$MARKING_PERIOD_ID."'
 	            AND syear ='".$SYEAR."' AND is_deleted = 'N'
 	           ";
-	   $fees_paid_details = DB::select($sql);   
+	   $fees_paid_details = DB::select($sql);
 	   $fees_paid_details = json_decode(json_encode($fees_paid_details),true);
 	   if(count($fees_paid_details) > 0)
 	   {
-	   		$return_arr = $fees_paid_details[0]; 
+	   		$return_arr = $fees_paid_details[0];
 	   }
 	   else
 	   {
-	   		$return_arr = ""; 
+	   		$return_arr = "";
 	   }
-	   	   
+
 	   return $return_arr;
 	}
 

@@ -42,7 +42,7 @@
                                         <td>{{$data->id}}</td>
                                         <td>{{$data->first_name .' '. $data->middle_name .' '.$data->last_name}}</td>
                                         <td>{{$data->gender}}</td><input type="hidden" name="emp[{{$key}}][]" value="{{$data->id}}">
-                                        <input type="hidden" name="emp[{{$key}}][year] ?? ''" value="{{$employeeSalaryStructures[$key]['year'] ?? ''}}">
+                                        <input type="hidden" name="emp[{{$key}}][year]" value="{{$employeeSalaryStructures[$key]['year']}}">
                                         @foreach ($payrollTypes as $payrollType)
                                             <input type="hidden" name="emp[{{$key}}][{{$payrollType->id}}][]"
                                                    value="{{$payrollType->id}}">

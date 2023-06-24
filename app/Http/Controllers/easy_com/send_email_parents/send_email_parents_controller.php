@@ -9,6 +9,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Storage;
 use PHPMailer\PHPMailer;
 use function App\Helpers\is_mobile;
 
@@ -112,11 +113,13 @@ class send_email_parents_controller extends Controller
             $name = $request->get('fileToUpload').date('YmdHis');
             $ext = File::extension($originalname);
             $file_name = "email_".$name.'.'.$ext;
-            $path = $file->storeAs('public/email', $file_name);
+            //$path = $file->storeAs('public/email', $file_name);
+            $path = Storage::disk('digitalocean')->putFileAs('public/email/', $file, $file_name, 'public');
         }
 
         if ($path != "") {
-            $filePath = storage_path()."/app/".$path;
+            //$filePath = storage_path()."/app/".$path;
+            $filePath = env('DO_PATH').$path;
             $path = $filePath;
         }
 

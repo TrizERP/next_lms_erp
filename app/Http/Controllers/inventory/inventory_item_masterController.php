@@ -10,6 +10,7 @@ use App\Models\inventory\inventory_item_typeModel;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Storage;
 use function App\Helpers\is_mobile;
 
 class inventory_item_masterController extends Controller
@@ -71,7 +72,8 @@ class inventory_item_masterController extends Controller
             $name = date('YmdHis');
             $ext = File::extension($originalname);
             $file_name = $name.'.'.$ext;
-            $path = $file->storeAs('public/inventory_item/', $file_name);
+            //$path = $file->storeAs('public/inventory_item/', $file_name);
+            $path = Storage::disk('digitalocean')->putFileAs('public/inventory_item/', $file, $file_name, 'public');
         }
 
         $item = new inventory_item_masterModel([
@@ -139,7 +141,8 @@ class inventory_item_masterController extends Controller
             $name = date('YmdHis');
             $ext = \File::extension($originalname);
             $file_name = $name.'.'.$ext;
-            $path = $file->storeAs('public/inventory_item/', $file_name);
+            //$path = $file->storeAs('public/inventory_item/', $file_name);
+            $path = Storage::disk('digitalocean')->putFileAs('public/inventory_item/', $file, $file_name, 'public');
         }
 
         if ($file_name != "") {

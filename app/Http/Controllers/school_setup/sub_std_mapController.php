@@ -10,6 +10,7 @@ use App\Models\school_setup\sub_std_mapModel;
 use App\Models\school_setup\subjectModel;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use function App\Helpers\is_mobile;
 use function App\Helpers\ValidateInsertData;
 
@@ -77,7 +78,8 @@ class sub_std_mapController extends Controller
             $newfilename = 'SubStdMap_'.date('Y-m-d_h-i-s').'.'.$ext;
             $file_folder = '/SubStdMapping';
             //$img->move(public_path().'/lms_content_file/',$newfilename);
-            $img->storeAs('public/SubStdMapping/', $newfilename);
+            //$img->storeAs('public/SubStdMapping/', $newfilename);
+            $path = Storage::disk('digitalocean')->putFileAs('public/SubStdMapping/', $img, $newfilename, 'public');
         }
         foreach ($standard_id as $key => $stdval) {
             sub_std_mapModel::updateOrCreate(
@@ -108,10 +110,10 @@ class sub_std_mapController extends Controller
             //     'allow_grades' => $request->get('allow_grades') != "" ? $request->get('allow_grades') : "" ,
             //     'elective_subject' => $request->get('elective_subject') != "" ? $request->get('elective_subject') : "" ,
             //     'sub_institute_id' => $sub_institute_id,
-            //     'status' => "1",            
-            // );  
+            //     'status' => "1",
+            // );
         }
-        //sub_std_mapModel::insert($insert_data);         
+        //sub_std_mapModel::insert($insert_data);
         $res = [
             "status_code" => 1,
             "message"     => "Subject-Standard Mapping Added Successfully",
@@ -156,7 +158,8 @@ class sub_std_mapController extends Controller
             $newfilename = 'SubStdMap_'.date('Y-m-d_h-i-s').'.'.$ext;
             $file_folder = '/SubStdMapping';
             //$img->move(public_path().'/lms_content_file/',$newfilename);
-            $img->storeAs('public/SubStdMapping/', $newfilename);
+            //$img->storeAs('public/SubStdMapping/', $newfilename);
+            $path = Storage::disk('digitalocean')->putFileAs('public/SubStdMapping/', $img, $newfilename, 'public');
 
             $data = [
                 'standard_id'      => $finalStdId,

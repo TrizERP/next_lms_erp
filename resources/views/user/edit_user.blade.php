@@ -26,20 +26,20 @@ br {
             <div class="row">
                 <div class="col-lg-12 col-sm-12 col-xs-12">
                     @php
-                    $employees = $data['employees'];
-                    $job_titles = $data['job_titles'];
-                    $user_profiles = $data['user_profiles'];
-                    $subject_data = $data['subject_data'];
-                    $subject_data_selected_arr = $data['subject_data_selected_arr'];
-                    $custom_fields = $data['custom_fields'];
-                    $data_fields = $data['data_fields'];
-                    $data = $data['data'];
+                        $employees = $data['employees'];
+                        $job_titles = $data['job_titles'];
+                        $user_profiles = $data['user_profiles'];
+                        $subject_data = $data['subject_data'];
+                        $subject_data_selected_arr = $data['subject_data_selected_arr'];
+                        $custom_fields = $data['custom_fields'];
+                        $data_fields = $data['data_fields'];
+                        $data = $data['data'];
 
 
                     @endphp
                     <form action="{{ route('add_user.update', $data['id']) }}" enctype="multipart/form-data" method="post">
-                    {{ method_field("PUT") }}
-                    @csrf
+                        {{ method_field("PUT") }}
+                        @csrf
                         <div class="row">
                             <div class="col-md-4 form-group">
                                 <label>Name Suffix</label>

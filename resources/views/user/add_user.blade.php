@@ -315,7 +315,7 @@
                         <select id='employee_id' name="employee_id" class="form-control">
                             <option value="">Select Employee</option>
                             @foreach($employees as $title)
-                                    <option value="{{$title->id}}">{{$title->first_name .' ' . $title->last_name}}</option>
+                                <option value="{{$title->id}}">{{$title->first_name .' ' . $title->last_name}}</option>
                             @endforeach
                         </select>
                     </div>

@@ -10,6 +10,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Storage;
 use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\NotFoundExceptionInterface;
 use function App\Helpers\is_mobile;
@@ -153,7 +154,8 @@ class upload_result_controller extends Controller
                 $name = "upload_result-".date('YmdHis').'-'.$random_no;
                 $ext = File::extension($originalname);
                 $file_name = $name.'.'.$ext;
-                $path = $file->storeAs('public/upload_result/', $file_name);
+                //$path = $file->storeAs('public/upload_result/', $file_name);
+                $path = Storage::disk('digitalocean')->putFileAs('public/upload_result/', $file, $file_name, 'public');
             }
 
             if (count($check_data) == 0) {

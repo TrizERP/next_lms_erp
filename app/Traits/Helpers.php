@@ -25,9 +25,9 @@ trait Helpers
 
     public static function getYears() {
         return [
-          2021,
-          2022,
-          2023
+            2021,
+            2022,
+            2023
         ];
     }
 

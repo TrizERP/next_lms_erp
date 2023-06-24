@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Storage;
 use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\NotFoundExceptionInterface;
 use function App\Helpers\is_mobile;
@@ -123,7 +124,8 @@ class book_listController extends Controller
             $name = $request->get('attechment').date('YmdHis');
             $ext = File::extension($originalname);
             $file_name = "attechment_".$name.'.'.$ext;
-            $path = $file->storeAs('public/book_list/', $file_name);
+            //$path = $file->storeAs('public/book_list/', $file_name);
+            $path = Storage::disk('digitalocean')->putFileAs('public/book_list/', $file, $file_name, 'public');
         }
         $values = [
             'syear'            => session()->get('syear'),
