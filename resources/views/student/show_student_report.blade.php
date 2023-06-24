@@ -7,9 +7,9 @@
     <div class="container-fluid">
             <div class="row bg-title">
                 <div class="col-lg-3 col-md-4 col-sm-4 col-xs-12">
-                    <h4 class="page-title">Student Report</h4>
+                <h4 class="page-title">Student Report <span id="menuId" style="display:none"></span><a href="{{route('norm-clature.create')}}"><i class="mdi mdi-lead-pencil"></i></a></h4>
                 </div>
-            </div>
+            </div>			
         @php
         $grade_id = $standard_id = $division_id = $order_by = '';
 
@@ -229,4 +229,18 @@ function checkedAll() {
         } );
     } );
 </script>
+
+<script>
+    var menuId = localStorage.getItem('current_id');
+    var spans = document.querySelectorAll('span.menuId');
+    for (var i = 0; i < spans.length; i++) {
+        spans[i].textContent = menuId;
+    }
+    var url = '{{ route("norm-clature.create") }}?menu_id=' + menuId;
+    var links = document.querySelectorAll('a[href="{{ route("norm-clature.create") }}"]');
+    for (var j = 0; j < links.length; j++) {
+        links[j].href = url;
+    }
+</script>
+
 @include('includes.footer')

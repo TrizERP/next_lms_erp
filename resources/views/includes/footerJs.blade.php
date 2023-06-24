@@ -334,6 +334,8 @@
       //   // alert(x);
       //   // Retrieve
       // }
+        // Append the selectedMenuId value to the <h2> element
+
       var xhttp = new XMLHttpRequest();
       xhttp.onreadystatechange = function () {
           if (this.readyState == 4 && this.status == 200) {
@@ -356,9 +358,12 @@
       // });
   }
 
-  function redirect_pages_soni(x, menu_id, main_menu_id) {
+  function redirect_pages_soni(x, menu_id, main_menu_id,current_id) {
+      
       localStorage.setItem('menu_id', menu_id);
       localStorage.setItem('main_menu_id', main_menu_id);
+      localStorage.setItem('current_id', current_id);      
+      
       window.location.replace(x);
   }
 
