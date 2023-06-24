@@ -2059,32 +2059,32 @@ if (! function_exists('get_string')) {
     function get_string($arg, $type = '')
     {
         $sub_institute_id = session()->get('sub_institute_id');
-        $strings = [
-           'Discount'=>"Discount",
-           'StudentName'=>"Student Name",
-           'StudentQuota'=>"Student Quota"
-        ];
-
+        $strings = DB::table('app_language')->whereRaw('sub_institute_id = 0 and string = "'.$arg.'"')->value('value');
+        $strings_id = DB::table('app_language')->whereRaw('sub_institute_id = 0 and string = "'.$arg.'"')->groupBy('menu_id')->value('menu_id');        
+        // return $arg;exit;
+        
+        // dd($strings);
         if ($type === 'menu_id') {
             $menu_id = $arg;
-            $normClature = normClature::where('sub_institute_id', $sub_institute_id)
+            $normClature = normClature::whereRaw('sub_institute_id='.$sub_institute_id.' and status=1')
                 ->where('menu_id', $menu_id)
                 ->first();
         } else {
             $requestValue = $arg;
-            $normClature = normClature::where('sub_institute_id', $sub_institute_id)
+            $normClature = normClature::whereRaw('sub_institute_id='.$sub_institute_id.' and status=1')
                 ->where('string', $requestValue)
                 ->first();
         }
-
+    
+  
         if ($normClature) {
             if (!empty($normClature->value)) {
                 return $normClature->value;
             } else {
-                return $strings[$arg] ?? '';
+                return $strings ?? '';
             }
         } else {
-            return $strings[$arg] ?? '';
+            return $strings ?? '';
         }
     }
 }

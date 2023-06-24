@@ -73,7 +73,7 @@
                                     @foreach($data['table_data'] as $key=>$value)
                                     <tr>
                                     <td>{{$value->string}}</td>
-                                    <td>{{$value->menu_id}}</td>
+									<td>{{ DB::table('app_language')->whereRaw('sub_institute_id = 0 and string = "'.$value->string.'"')->value('value') }}</td>
                                     <td><input type="text" class="form-control" name="value[{{$value->id}}]" value="@if($value->value!='' || $value->value != null){{$value->value}}@endif"></td>                     
 									<td>@php $name = DB::table('tbluser')->select('user_name')->where('id',$value->created_by)->first();  @endphp @if(isset($name)){{$name->user_name}}@endif</td> 
                                     <td>{{$value->updated_at}}</td>                                                         
