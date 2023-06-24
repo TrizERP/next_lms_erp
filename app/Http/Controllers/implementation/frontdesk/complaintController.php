@@ -13,7 +13,6 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
-use Illuminate\Support\Facades\Storage;
 use function App\Helpers\is_mobile;
 
 class complaintController extends Controller
@@ -113,8 +112,7 @@ class complaintController extends Controller
             $name = "complaint_".date('YmdHis');
             $ext = \File::extension($originalname);
             $file_name = $name.'.'.$ext;
-            //$path = $file->storeAs('public/frontdesk/', $file_name);
-            $path = Storage::disk('digitalocean')->putFileAs('public/frontdesk/', $file, $file_name, 'public');
+            $path = $file->storeAs('public/frontdesk/', $file_name);
         }
 
         if ($file_name != '') {
@@ -159,7 +157,7 @@ class complaintController extends Controller
             ->leftJoin('tbluser as u2', function ($join) use ($sub_institute_id) {
                 $join->whereRaw("c.COMPLAINT_SOLUTION_BY = u2.id AND u2.sub_institute_id = '".$sub_institute_id."'");
             })
-            ->selectRaw("c.*, CONCAT_WS(' ',u.first_name,u.middle_name,u.last_name) AS COMPLAINT_BY,
+            ->selectRaw("c.*, CONCAT_WS(' ',u.first_name,u.middle_name,u.last_name) AS COMPLAINT_BY, 
 			    CONCAT_WS(' ',u2.first_name,u2.middle_name,u2.last_name) AS COMPLAINT_SOLUTION_BY")
             ->where("c.SYEAR", "=", $syear)
             ->where("c.SUB_INSTITUTE_ID"."=", $sub_institute_id)
@@ -220,8 +218,7 @@ class complaintController extends Controller
             $name = "complaint_".date('YmdHis');
             $ext = File::extension($originalname);
             $file_name = $name.'.'.$ext;
-            //$path = $file->storeAs('public/frontdesk/', $file_name);
-            $path = Storage::disk('digitalocean')->putFileAs('public/frontdesk/', $file, $file_name, 'public');
+            $path = $file->storeAs('public/frontdesk/', $file_name);
         }
 
         if ($file_name != '') {

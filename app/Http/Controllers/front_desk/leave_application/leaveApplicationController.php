@@ -9,7 +9,6 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\NotFoundExceptionInterface;
@@ -313,8 +312,7 @@ class leaveApplicationController extends Controller
                 $name = $request->get('attechment').date('YmdHis');
                 $ext = File::extension($originalname);
                 $file_name = "attechment_".$name.'.'.$ext;
-               // $path = $file->storeAs('public/leave_application/', $file_name);
-                $path = Storage::disk('digitalocean')->putFileAs('public/leave_application/', $file, $file_name, 'public');
+                $path = $file->storeAs('public/leave_application/', $file_name);
             }
 
             $data = [

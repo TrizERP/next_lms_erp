@@ -11,7 +11,6 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
-use Illuminate\Support\Facades\Storage;
 use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\NotFoundExceptionInterface;
 use function App\Helpers\is_mobile;
@@ -58,7 +57,7 @@ class result_master_controller extends Controller
                 DB::raw('DATE_FORMAT(result_master_confrigration.vaction_start_date,"%d-%m-%Y") as vaction_start_date'),
                 DB::raw('DATE_FORMAT(result_master_confrigration.vaction_end_date,"%d-%m-%Y") as vaction_end_date'),
                 'result_master_confrigration.teacher_sign', 'result_master_confrigration.principal_sign',
-                'result_master_confrigration.director_signatiure', DB::raw('if(result_master_confrigration.result_remark
+                'result_master_confrigration.director_signatiure', DB::raw('if(result_master_confrigration.result_remark 
                             = "grade_master","Grade Master","Student Wise") as result_remark'),
                 DB::raw('if(result_master_confrigration.optional_subject_display = "y","Yes","No") as optional_subject_display'),
                 DB::raw('if(result_master_confrigration.remove_fail_per = "y","Yes","No") as remove_fail_per'))
@@ -100,8 +99,7 @@ class result_master_controller extends Controller
             $name = date('YmdHis');
             $ext = File::extension($originalname);
             $teacher_sign = $name.'.'.$ext;
-            //$path = $file->storeAs('public/result/teacher_sign/', $teacher_sign);
-            $path = Storage::disk('digitalocean')->putFileAs('public/result/teacher_sign/', $file, $teacher_sign, 'public');
+            $path = $file->storeAs('public/result/teacher_sign/', $teacher_sign);
         }
         if ($request->hasFile('principal_sign')) {
             $file = $request->file('principal_sign');
@@ -109,8 +107,7 @@ class result_master_controller extends Controller
             $name = date('YmdHis');
             $ext = File::extension($originalname);
             $principal_sign = $name.'.'.$ext;
-            //$path = $file->storeAs('public/result/principle_sign/', $principal_sign);
-            $path = Storage::disk('digitalocean')->putFileAs('public/result/principle_sign/', $file, $principal_sign, 'public');
+            $path = $file->storeAs('public/result/principle_sign/', $principal_sign);
         }
         if ($request->hasFile('director_signatiure')) {
             $file = $request->file('director_signatiure');
@@ -118,8 +115,7 @@ class result_master_controller extends Controller
             $name = date('YmdHis');
             $ext = File::extension($originalname);
             $director_signatiure = $name.'.'.$ext;
-            //$path = $file->storeAs('public/result/director_sign', $director_signatiure);
-            $path = Storage::disk('digitalocean')->putFileAs('public/result/director_sign/', $file, $director_signatiure, 'public');
+            $path = $file->storeAs('public/result/director_sign', $director_signatiure);
         }
 
         $eroor = false;
@@ -252,8 +248,7 @@ class result_master_controller extends Controller
                 $name = date('YmdHis');
                 $ext = File::extension($originalname);
                 $teacher_sign = $name.'.'.$ext;
-                //$path = $file->storeAs('public/result/teacher_sign/', $teacher_sign);
-                $path = Storage::disk('digitalocean')->putFileAs('public/result/teacher_sign/', $file, $teacher_sign, 'public');
+                $path = $file->storeAs('public/result/teacher_sign/', $teacher_sign);
             }
         }
         if ($request->hasFile('principal_sign')) {
@@ -263,8 +258,7 @@ class result_master_controller extends Controller
                 $name = date('YmdHis');
                 $ext = File::extension($originalname);
                 $principal_sign = $name.'.'.$ext;
-                //$path = $file->storeAs('public/result/principle_sign/', $principal_sign);
-                $path = Storage::disk('digitalocean')->putFileAs('public/result/principle_sign/', $file, $principal_sign, 'public');
+                $path = $file->storeAs('public/result/principle_sign/', $principal_sign);
             }
         }
         if ($request->hasFile('director_signatiure')) {
@@ -274,8 +268,7 @@ class result_master_controller extends Controller
                 $name = date('YmdHis');
                 $ext = File::extension($originalname);
                 $director_signatiure = $name.'.'.$ext;
-                //$path = $file->storeAs('public/result/director_sign', $director_signatiure);
-                $path = Storage::disk('digitalocean')->putFileAs('public/result/director_sign/', $file, $director_signatiure, 'public');
+                $path = $file->storeAs('public/result/director_sign', $director_signatiure);
             }
         }
 

@@ -5,7 +5,6 @@ namespace App\Http\Controllers\inventory;
 use App\Http\Controllers\Controller;
 use App\Models\inventory\inventory_master_setupModel;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
 use function App\Helpers\is_mobile;
 
 class inventory_master_setupController extends Controller
@@ -53,8 +52,7 @@ class inventory_master_setupController extends Controller
             $ext = $img->getClientOriginalExtension();
             $size = $img->getSize();
             $newfilename = 'inventorymaster_'.date('Y-m-d_h-i-s').'.'.$ext;
-            //$img->storeAs('public/inventory_master/', $newfilename);
-            $path = Storage::disk('digitalocean')->putFileAs('public/inventory_master/', $img, $newfilename, 'public');
+            $img->storeAs('public/inventory_master/', $newfilename);
         }
 
         $inventory = new inventory_master_setupModel([
@@ -110,8 +108,7 @@ class inventory_master_setupController extends Controller
             $ext = $img->getClientOriginalExtension();
             $size = $img->getSize();
             $newfilename = 'inventorymaster_'.date('Y-m-d_h-i-s').'.'.$ext;
-            //$img->storeAs('public/inventory_master/', $newfilename);
-            $path = Storage::disk('digitalocean')->putFileAs('public/inventory_master/', $img, $newfilename, 'public');
+            $img->storeAs('public/inventory_master/', $newfilename);
             $inventory['LOGO'] = $newfilename;
         }
 

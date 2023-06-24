@@ -6,7 +6,6 @@ use App\Http\Controllers\Controller;
 use App\Models\school_setup\SchoolModel;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\File;
-use Illuminate\Support\Facades\Storage;
 use function App\Helpers\is_mobile;
 use function App\Helpers\ValidateInsertData;
 
@@ -51,8 +50,7 @@ class schoolController extends Controller
             $name = date('YmdHis');
             $ext = File::extension($originalname);
             $file_name = $name.'.'.$ext;
-            //$path = $file->storeAs('public/school/', $file_name);
-            $path = Storage::disk('digitalocean')->putFileAs('public/school/', $file, $file_name, 'public');
+            $path = $file->storeAs('public/school/', $file_name);
         }
 
         $school = new SchoolModel([
@@ -114,8 +112,7 @@ class schoolController extends Controller
             $name = date('YmdHis');
             $ext = File::extension($originalname);
             $file_name = $name.'.'.$ext;
-            //$path = $file->storeAs('public/school/', $file_name);
-            $path = Storage::disk('digitalocean')->putFileAs('public/school/', $file, $file_name, 'public');
+            $path = $file->storeAs('public/school/', $file_name);
         }
         if ($file_name != "") {
             $data['Logo'] = $file_name;

@@ -9,7 +9,6 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
-use Illuminate\Support\Facades\Storage;
 use function App\Helpers\is_mobile;
 
 class studentHomeworkSubmissionController extends Controller
@@ -154,8 +153,7 @@ class studentHomeworkSubmissionController extends Controller
                 $name = "homework-submission-".$request->get('user_name').date('YmdHis').'-'.$student_id;
                 $ext = File::extension($originalname);
                 $file_name = $name.'.'.$ext;
-//                $path = $file->storeAs('public/student/', $file_name);
-                $path = Storage::disk('digitalocean')->putFileAs('public/student/', $file, $file_name, 'public');
+                $path = $file->storeAs('public/student/', $file_name);
             }
 
             $homeworksubmissionArray = [];

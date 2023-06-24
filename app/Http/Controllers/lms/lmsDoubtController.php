@@ -8,7 +8,6 @@ use GenTux\Jwt\GetsJwtToken;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
 use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\NotFoundExceptionInterface;
 use function App\Helpers\aut_token;
@@ -50,9 +49,9 @@ class lmsDoubtController extends Controller
         if (strtoupper(session()->get('user_profile_name')) == "STUDENT") {
             $student_id = session()->get('user_id');
 
-            $res = DB::select("SELECT * FROM sub_std_map s WHERE s.standard_id =
+            $res = DB::select("SELECT * FROM sub_std_map s WHERE s.standard_id = 
             (
-                SELECT standard_id FROM tblstudent_enrollment WHERE student_id = '".$student_id."' AND
+                SELECT standard_id FROM tblstudent_enrollment WHERE student_id = '".$student_id."' AND 
                 sub_institute_id = '".$sub_institute_id."' AND syear = '".$syear."'
             )
             and sub_institute_id = '".$sub_institute_id."'");
@@ -86,8 +85,7 @@ class lmsDoubtController extends Controller
             $size = $img->getSize();
             $newfilename = 'lms_'.date('Y-m-d_h-i-s').'.'.$ext;
             //$img->move(public_path().'/lms_content_file/',$newfilename);
-            //$img->storeAs('public/lms_doubts/', $newfilename);
-            Storage::disk('digitalocean')->putFileAs('public/lms_doubts/', $img, $newfilename, 'public');
+            $img->storeAs('public/lms_doubts/', $newfilename);
         }
 
         $content = array(

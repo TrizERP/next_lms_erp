@@ -9,7 +9,6 @@ use App\Models\inward_outward\place_masterModel;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
-use Illuminate\Support\Facades\Storage;
 use function App\Helpers\is_mobile;
 
 class inwardController extends Controller
@@ -73,8 +72,7 @@ class inwardController extends Controller
             $name = date('YmdHis');
             $ext = File::extension($originalname);
             $file_name = $name.'.'.$ext;
-            //$path = $file->storeAs('public/inward/', $file_name);
-            $path = Storage::disk('digitalocean')->putFileAs('public/inward/', $file, $file_name, 'public');
+            $path = $file->storeAs('public/inward/', $file_name);
         }
 
         $inward = new inwardModel([
@@ -145,8 +143,7 @@ class inwardController extends Controller
             $name = date('YmdHis');
             $ext = File::extension($originalname);
             $file_name = $name.'.'.$ext;
-            //$path = $file->storeAs('public/inward/', $file_name);
-            $path = Storage::disk('digitalocean')->putFileAs('public/inward/', $file, $file_name, 'public');
+            $path = $file->storeAs('public/inward/', $file_name);
         }
 
         if ($file_name != "") {

@@ -10,7 +10,6 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use DB;
 use Illuminate\Http\Response;
-use Illuminate\Support\Facades\Storage;
 use function App\Helpers\is_mobile;
 
 class lms_teacherResourceController extends Controller
@@ -22,12 +21,12 @@ class lms_teacherResourceController extends Controller
      */
     public function index(Request $request)
     {
-        $data = $this->getData($request);
+        $data = $this->getData($request); 		
         $type = $request->input('type');
         $res['status_code'] = 1;
-        $res['message'] = "SUCCESS";
-        $res['data'] = $data;
-        return is_mobile($type,'lms/teacher_resource/show_teacher_resource',$res,"view");
+        $res['message'] = "SUCCESS";                  
+        $res['data'] = $data;        
+        return is_mobile($type,'lms/teacher_resource/show_teacher_resource',$res,"view");  
     }
 
     public function getData($request){
@@ -39,7 +38,7 @@ class lms_teacherResourceController extends Controller
             $sub_institute_id = $request->session()->get('sub_institute_id');
             $syear = $request->session()->get('syear');
         }
-
+        
         $standard_id = $request->get("standard_id");
         $chapter_id = $request->get("chapter_id");
         $subject_id = $request->get("subject_id");
@@ -56,7 +55,7 @@ class lms_teacherResourceController extends Controller
                         'lms_teacher_resource.chapter_id'=>$chapter_id,
                         'lms_teacher_resource.standard_id'=>$standard_id])
                         //'lms_teacher_resource.syear'=>$syear])
-                    ->get()->toArray();
+                    ->get()->toArray(); 
 
         $data['chapter_id'] = $chapter_id;
         $data['standard_id'] = $standard_id;
@@ -68,7 +67,7 @@ class lms_teacherResourceController extends Controller
                             ->whereRaw('(sub_institute_id = ' . $sub_institute_id . ' OR common_to_all = 1)')
                             ->get();
 
-        $data['custom_fields'] = $dataCustomFields;
+        $data['custom_fields'] = $dataCustomFields; 
         //END Columns from field setting
 
         //START Columns from field setting for combo checkbox
@@ -83,8 +82,8 @@ class lms_teacherResourceController extends Controller
 
         if (count($finalfieldsData) > 0) {
             $data['data_fields'] = $finalfieldsData;
-        }
-        //END Columns from field setting for combo checkbox
+        }                        
+        //END Columns from field setting for combo checkbox         
 
         return $data;
     }
@@ -97,26 +96,25 @@ class lms_teacherResourceController extends Controller
      * @return RedirectResponse
      */
     public function store(Request $request)
-    {
+    {            
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $syear = $request->session()->get('syear');
         $user_id = $request->session()->get('user_id');
-
+      
         $file_folder = $ext = $size = $newfilename = "";
         if($request->hasFile('teacher_file'))
-        {
+        {           
             $img = $request->file('teacher_file');
             $filename = $img->getClientOriginalName();
             $ext = $img->getClientOriginalExtension();
             $size = $img->getSize();
             $file_folder = '/lms_teacher_resource';
-            $newfilename = 'lms_'.date('Y-m-d_h-i-s').'.'.$ext;
+            $newfilename = 'lms_'.date('Y-m-d_h-i-s').'.'.$ext;                        
             //$img->move(public_path().'/lms_content_file/',$newfilename);
-            //$img->storeAs('public'.$file_folder.'/',$newfilename);
-            $path = Storage::disk('digitalocean')->putFileAs('public'.$file_folder.'/', $img, $newfilename, 'public');
-        }
+            $img->storeAs('public'.$file_folder.'/',$newfilename);
+        }         
 
-        $TR_data = array(
+        $TR_data = array(            
             // 'standard_id' =>  $request->get('hid_standard_id'),
             // 'subject_id' =>  $request->get('hid_subject_id'),
             // 'chapter_id' => $request->get('hid_chapter_id'),

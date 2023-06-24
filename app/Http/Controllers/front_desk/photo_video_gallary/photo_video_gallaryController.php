@@ -9,7 +9,6 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\NotFoundExceptionInterface;
@@ -109,7 +108,7 @@ class photo_video_gallaryController extends Controller
 
                 $result_data = DB::table("photo_video_gallary as pvg")
                     ->selectRaw("pvg.id,pvg.syear,pvg.standard_id,pvg.title,pvg.`type`,pvg.ai,
-                    if(pvg.file_name IS NULL OR pvg.file_name = '','-',if(pvg.`type` = 'Video', pvg.file_name,
+                    if(pvg.file_name IS NULL OR pvg.file_name = '','-',if(pvg.`type` = 'Video', pvg.file_name, 
                     CONCAT('$server/storage/photo_video_gallary/',pvg.file_name))) file_name,
                     pvg.date_,pvg.sub_institute_id,pvg.created_at,pvg.updated_at")
                     ->where("pvg.standard_id", "=", $standard_id)
@@ -168,7 +167,7 @@ class photo_video_gallaryController extends Controller
 
             $result_data = DB::table("photo_video_gallary as pvg")
                 ->selectRaw("pvg.id,pvg.syear,pvg.standard_id,pvg.album_title,pvg.title,pvg.`type`,pvg.ai,
-                    if(pvg.file_name IS NULL OR pvg.file_name = '','-',if(pvg.`type` = 'Video', pvg.file_name,
+                    if(pvg.file_name IS NULL OR pvg.file_name = '','-',if(pvg.`type` = 'Video', pvg.file_name, 
                     CONCAT('$server/storage/photo_video_gallary/',pvg.file_name))) file_name,
                     pvg.date_,pvg.sub_institute_id,pvg.created_at,pvg.updated_at")
                 ->where("pvg.standard_id", "=", $standard_id)
@@ -233,8 +232,7 @@ class photo_video_gallaryController extends Controller
                     $name = 'attachment_'.$key.'_'.date('YmdHis');
                     $ext = File::extension($originalname);
                     $file_name = $name.'.'.$ext;
-                    //$path = $file_data->storeAs('public/photo_video_gallary/', $file_name);
-                    $path = Storage::disk('digitalocean')->putFileAs('public/photo_video_gallary/', $file_data, $file_name, 'public');
+                    $path = $file_data->storeAs('public/photo_video_gallary/', $file_name);
 
                     if (isset($_REQUEST['standard'])) {
                         foreach ($_REQUEST['standard'] as $id => $std) {
@@ -334,7 +332,7 @@ class photo_video_gallaryController extends Controller
 
                                     }
                                 }
-                                //END Send Notification Code
+                                //END Send Notification Code 
                             }
                         }
                     }
@@ -438,7 +436,7 @@ class photo_video_gallaryController extends Controller
 
                             }
                         }
-                        //END Send Notification Code
+                        //END Send Notification Code 
                     }
                 }
             }
@@ -570,7 +568,7 @@ class photo_video_gallaryController extends Controller
                 foreach($data as $key => $val)
                 {
                     $new_data[$val->album_title][] = $val;
-                }
+                }      
                 if(!empty($new_data)){
                     $res['status'] = 1;
                     $res['message'] = "Success";
