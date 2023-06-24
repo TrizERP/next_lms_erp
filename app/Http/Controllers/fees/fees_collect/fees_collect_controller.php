@@ -161,14 +161,14 @@ class fees_collect_controller extends Controller
                 bkoff, st.name standard_name, d.name as division_name")
             ->where('s.sub_institute_id', session()->get('sub_institute_id'))
             ->where('se.syear', session()->get('syear'))
-            ->whereNotNull('s.admission_date')            
+            ->whereNotNull('s.admio']) && $request['grno'] != '') {
+                    $q->where('s.enrollssion_date')            
             ->whereNull('se.end_date')
             ->where(function ($q) use ($request) {
                 if (isset($request['mobile']) && $request['mobile'] != '') {
                     $q->where('s.mobile', $request['mobile']);
                 }
-                if (isset($request['grno']) && $request['grno'] != '') {
-                    $q->where('s.enrollment_no', $request['grno']);
+                if (isset($request['grnment_no', $request['grno']);
                 }
                 if (isset($request['uniqueid']) && $request['uniqueid'] != '') {
                     $q->where('s.uniqueid', $request['uniqueid']);

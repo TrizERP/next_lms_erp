@@ -456,30 +456,52 @@ class dynamic_report_controller extends Controller
                             }
                         }
                     
-                }else {
-                                if ($main_module_name == "Circular") {
-                                    $this->query = DB::table('circular as c');
-                                    $main_table_initial = "c";
-                                    // $main_table_initial_capital = true;
-
-                                    foreach ($sub_module_name as $id => $arr) {
-                                        if ($arr->sub_module == "Standard") {
-
-                                            $standard_join = [
-                                                'c.standard_id' => 'st.id',
-                                            ];
-
-                                            $this->query->join('standard as st', $standard_join);
-                                        }
-                                    }
-                                }
+                }
+                else{
+                    if ($main_module_name == "Student") {
+                        $this->query = DB::table('tblstudent_bank_detail as bk');
+                        $main_table_initial = "bk";
+                        foreach ($sub_module_name as $id => $arr) {
+                            if ($arr->sub_module == "Bank") {
+                                $tblstudent_join = [
+                                    'bk.student_id'       => 's.id',
+                                    'bk.sub_institute_id' => 's.sub_institute_id',
+                                ];
+                                
+                                $this->query->join('tblstudent as s', $tblstudent_join);
+                                $this->query->join('tblstudent_enrollment as se', $enrollment_join);
+                                $this->query->join('academic_section as acs', $grade_join);
+                                $this->query->join('standard as st', $std_join);
+                                $this->query->join('division as di', $div_join);
                             }
                         }
+                    }
+                
+                else {
+                        if ($main_module_name == "Circular") {
+                            $this->query = DB::table('circular as c');
+                            $main_table_initial = "c";
+                            // $main_table_initial_capital = true;
+
+                            foreach ($sub_module_name as $id => $arr) {
+                                if ($arr->sub_module == "Standard") {
+
+                                    $standard_join = [
+                                        'c.standard_id' => 'st.id',
+                                    ];
+
+                                    $this->query->join('standard as st', $standard_join);
+                                }
+                            }
                         }
                     }
                 }
             }
+                }
+            }
         }
+    }
+}
 // |COUNT(DISTINCT cm.content_category) as total_content|GROUP_CONCAT(DISTINCT cm.content_category) as content_type|COUNT(DISTINCT cm.title) as total_sub_content|GROUP_CONCAT(DISTINCT cm.title) as sub_contents
 
 // Standard,Chapter Name,Subject Name,Total Contents,Content Name,Total Sub Content,Sub Content Name
@@ -586,16 +608,7 @@ class dynamic_report_controller extends Controller
         // EP-1
         if (isset($all_detail["group_by"][0])) {
             $group_by_arr = explode(" as", $all_fields_index[$all_detail["group_by"][0]]);
-// <<<<<<< HEAD
-            $pattern = '/\((.*?)\)/';
-                preg_match($pattern, $group_by_arr[0], $matches);
-             $field = str_replace(["(DISTINCT "], "", $matches[0] ?? $matches);
-         if(isset($matches[0])){
-               $order = substr($field, 0,-1);
-            }else{
-                $order = $group_by_arr[0];
-         }
-// =======
+
     		$pattern = '/\((.*?)\)/';
             	preg_match($pattern, $group_by_arr[0], $matches);
            	 $field = str_replace(["(DISTINCT "], "", $matches[0] ?? $matches);
@@ -604,7 +617,6 @@ class dynamic_report_controller extends Controller
         	}else{
         	    $order = $group_by_arr[0];
        	 }
-// >>>>>>> 5711c69549bbcd152bf4c8020191d51575f0ee7c
 
             $this->query->groupBy($group_by_arr[0]);
             if (isset($all_detail["sort_order"][0])) {
@@ -709,7 +721,6 @@ class dynamic_report_controller extends Controller
         $result_data["tbl_heading"] = $tbl_heading;
         $result_data["tbl_detail"] = $tbl_detail;
         $result_data["result"] = $result;
-
         $type = "";
 
         return is_mobile($type, 'dynamic_report/dynamic_report/show_report', $result_data, 'view');
