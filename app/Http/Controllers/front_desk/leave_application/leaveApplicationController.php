@@ -406,7 +406,8 @@ class leaveApplicationController extends Controller
         if ($student_id != "" && $sub_institute_id != "" && $syear != "") {
 
             $data = DB::table("leave_applications as l")
-                ->selectRaw('l.title,l.message,l.files,l.apply_date,l.from_date,l.to_date,l.status,l.reply,l.reply_on')
+                ->selectRaw("l.title,l.message,if(l.files = '','',concat('https://".$_SERVER['SERVER_NAME']."/storage/leave_application/',
+                    l.files)) as files,l.apply_date,l.from_date,l.to_date,l.status,l.reply,l.reply_on")
                 ->where("l.syear", "=", $syear)
                 ->where("l.sub_institute_id", "=", $sub_institute_id)
                 ->where("l.student_id", "=", $student_id)
