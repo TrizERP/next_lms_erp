@@ -87,6 +87,10 @@
         {
             $all_marks = $data['all_marks'];
         }
+        if(isset($data['all_marks_col']))
+        {
+            $numColumns  = $data['all_marks_col'];
+        }
         if(isset($data['grade_data']))
         {
             $grade_data = $data['grade_data'];
@@ -105,7 +109,12 @@
                                         <th>Sr No.</th>
                                         <th>Student Name</th>
                                         <th>Enrollment Code</th>
-                                        <th>All Marks</th>
+                                        <!-- <th>All Marks</th> -->
+                                        @if(isset($numColumns))
+                                        @for ($i=1;$i<=$numColumns;$i++)
+                                        <th>Test-{{$i}}</th>
+                                        @endfor
+                                        @endif
                                         <!-- <th>Standard</th> -->
                                         <!-- <th>Division</th> -->
                                                 @php
@@ -135,19 +144,18 @@
                                                 <td>{{$data['first_name']}} {{$data['middle_name']}} {{$data['last_name']}}</td>
                                                 <td>{{$data['enrollment_no']}}</td>
                                                 <!-- al marks -->
-                                                @if(isset($all_marks[$data['id']]))
-                                                @foreach($all_marks[$data['id']] as $question_paper_id => $all_markss)
-                                                @php $m=explode(',',$all_markss); @endphp
-                                                <td>
-                                                    <div class="next-line">
-                                                    @foreach($m as $am)
-                                                    <div class="line">{{$am}}</div>
+                                                @if (isset($all_marks[$data['id']]))
+                                                @foreach ($all_marks[$data['id']] as $question_paper_id => $all_markss)
+                                                    @php
+                                                        $m = explode(',', $all_markss);
+                                                        $m = array_pad($m, $numColumns, 0);
+                                                    @endphp
+                                                    @foreach ($m as $am)
+                                                        <td>{{ $am }}</td>
                                                     @endforeach
-                                                    </div>
-                                                </td>
                                                 @endforeach
                                                 @endif
-                                               
+
                                                 <!-- best of 5 -->
                                                 @php
                                                 $total_obtain_marks = $obtain_per  = 0;
