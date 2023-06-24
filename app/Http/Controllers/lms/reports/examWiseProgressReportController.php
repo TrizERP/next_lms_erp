@@ -86,11 +86,6 @@ class examWiseProgressReportController extends Controller
         foreach ($data as $k => $v) {
             $marks_array[$v['id']][$v['question_paper_id']] = $v['obtain_marks'];
         }
-        // foreach ($data as $k => $v) {
-        //     $all_marks[$v['id']][$v['question_paper_id']] = $v['all_marks'];
-        // }
-        $maxCount = 0;
-
         $maxCount = 0;
 
         foreach ($data as $k => $v) {
@@ -102,12 +97,6 @@ class examWiseProgressReportController extends Controller
             }
         }
         
-        
-// <<<<<<< HEAD
-        // echo "<pre>";print_r($all_marks);exit;
-// =======
-        // echo "<pre>";print_r($subject);exit;
-// >>>>>>> 5711c69549bbcd152bf4c8020191d51575f0ee7c
         $grade_data = DB::table('result_std_grd_maping as rgm')
             ->join('grade_master_data as gm', function ($join) {
                 $join->whereRaw('gm.grade_id = rgm.grade_scale AND gm.sub_institute_id = rgm.sub_institute_id');
