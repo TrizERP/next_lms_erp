@@ -110,9 +110,11 @@
                                         <th>Student Name</th>
                                         <th>Enrollment Code</th>
                                         <!-- <th>All Marks</th> -->
+                                        @if(isset($numColumns))
                                         @for ($i=1;$i<=$numColumns;$i++)
                                         <th>Test-{{$i}}</th>
                                         @endfor
+                                        @endif
                                         <!-- <th>Standard</th> -->
                                         <!-- <th>Division</th> -->
                                                 @php
