@@ -9,7 +9,6 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\NotFoundExceptionInterface;
@@ -313,8 +312,7 @@ class leaveApplicationController extends Controller
                 $name = $request->get('attechment').date('YmdHis');
                 $ext = File::extension($originalname);
                 $file_name = "attechment_".$name.'.'.$ext;
-               // $path = $file->storeAs('public/leave_application/', $file_name);
-                $path = Storage::disk('digitalocean')->putFileAs('public/leave_application/', $file, $file_name, 'public');
+                $path = $file->storeAs('public/leave_application/', $file_name);
             }
 
             $data = [
@@ -408,7 +406,8 @@ class leaveApplicationController extends Controller
         if ($student_id != "" && $sub_institute_id != "" && $syear != "") {
 
             $data = DB::table("leave_applications as l")
-                ->selectRaw('l.title,l.message,l.files,l.apply_date,l.from_date,l.to_date,l.status,l.reply,l.reply_on')
+                ->selectRaw("l.title,l.message,if(l.files = '','',concat('https://".$_SERVER['SERVER_NAME']."/storage/leave_application/',
+                    l.files)) as files,l.apply_date,l.from_date,l.to_date,l.status,l.reply,l.reply_on")
                 ->where("l.syear", "=", $syear)
                 ->where("l.sub_institute_id", "=", $sub_institute_id)
                 ->where("l.student_id", "=", $student_id)

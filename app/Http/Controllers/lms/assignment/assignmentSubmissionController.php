@@ -9,7 +9,6 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
-use Illuminate\Support\Facades\Storage;
 use function App\Helpers\is_mobile;
 
 class assignmentSubmissionController extends Controller
@@ -81,8 +80,8 @@ class assignmentSubmissionController extends Controller
             $name = 'assignment_'.$assignment_id.'-'.date('YmdHis').'-'.$student_id;
             $ext = File::extension($originalname);
             $file_name = $name.'.'.$ext;
-            //$path = $file->storeAs('public/lms_assignment_submission', $file_name);
-            $path = Storage::disk('digitalocean')->putFileAs('public/lms_assignment_submission/', $file, $file_name, 'public');
+            $path = $file->storeAs('public/lms_assignment_submission', $file_name);
+
             $submissionArray = [];
 
             $submissionArray['submission_image'] = $file_name;
@@ -140,14 +139,14 @@ class assignmentSubmissionController extends Controller
             sum((case when e.ans_status = 'right' then '1' end)) as right_answer
             FROM lms_question_mapping l
             INNER JOIN lms_mapping_type lt ON lt.id = l.mapping_value_id
-            LEFT JOIN lms_offline_exam_answer e on e.question_id = l.questionmaster_id and e.question_paper_id = '".$questionpaper_id."' AND
+            LEFT JOIN lms_offline_exam_answer e on e.question_id = l.questionmaster_id and e.question_paper_id = '".$questionpaper_id."' AND 
             e.student_id = '".$student_id."' and e.offline_exam_id = '".$offline_exam_id."'
             WHERE questionmaster_id IN (
                     SELECT question_id
                     FROM lms_offline_exam_answer
-                    WHERE question_paper_id = '".$questionpaper_id."' AND student_id = '".$student_id."'
+                    WHERE question_paper_id = '".$questionpaper_id."' AND student_id = '".$student_id."' 
                     AND offline_exam_id = '".$offline_exam_id."'
-                )
+                ) 
             GROUP BY mapping_value_id
             ORDER BY mapping_type_id,mapping_value_id) as a
         ");

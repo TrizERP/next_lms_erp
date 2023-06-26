@@ -10,7 +10,6 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\NotFoundExceptionInterface;
@@ -178,8 +177,7 @@ class studentHomeworkController extends Controller
             $name = "homework-".$request->get('user_name').date('YmdHis');
             $ext = File::extension($originalname);
             $file_name = $name.'.'.$ext;
-//            $path = $file->storeAs('public/student/', $file_name);
-            $path = Storage::disk('digitalocean')->putFileAs('public/student/', $file, $file_name, 'public');
+            $path = $file->storeAs('public/student/', $file_name);
         }
 
         foreach ($student_details as $id => $arr) {
@@ -444,9 +442,9 @@ class studentHomeworkController extends Controller
                     $join->whereRaw('ss.id = h.subject_id AND ss.sub_institute_id = h.sub_institute_id');
                 })->leftJoin('tbluser as tu', function ($join) {
                     $join->whereRaw('tu.id = h.created_by');
-                })->selectRaw("h.id,h.title,h.description,DATE_FORMAT(h.date,'%d-%m-%Y') AS date,
+                })->selectRaw("h.id,h.title,h.description,DATE_FORMAT(h.date,'%d-%m-%Y') AS date, 
                     if(h.image = '','',concat('https://".$_SERVER['SERVER_NAME']."/storage/student/',h.image)) as file_name,
-                    s.name AS standard_name,d.name AS division_name,ss.subject_name,
+                    s.name AS standard_name,d.name AS division_name,ss.subject_name, 
                     CONCAT_WS(' ',ts.first_name,ts.middle_name,ts.last_name) AS student_name,ts.enrollment_no,ts.mobile,
                     h.type,if(tu.image != NULL,concat('https://".$_SERVER['SERVER_NAME']."/storage/student/',tu.image),
                     'https://".$_SERVER['SERVER_NAME']."/storage/student/noimages.png') as user_image")
@@ -567,7 +565,7 @@ class studentHomeworkController extends Controller
         // 					INNER JOIN class_teacher ct ON ct.standard_id = s.standard_id AND ct.sub_institute_id = s.sub_institute_id
         // 					WHERE s.sub_institute_id = '".$sub_institute_id."' AND s.standard_id = '".$standard_id."' AND ct.syear = '".$syear."' AND ct.teacher_id = '".$teacher_id."'
         // 					GROUP BY s.subject_id
-        // 					ORDER BY s.display_name";
+        // 					ORDER BY s.display_name";					
         // $class_teacher_subjects_data = DB::select($class_teacher_sql);
         // $class_teacher_subjects_data = json_decode(json_encode($class_teacher_subjects_data),true);
 

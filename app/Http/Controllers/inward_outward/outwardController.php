@@ -9,7 +9,6 @@ use App\Models\inward_outward\place_masterModel;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
-use Illuminate\Support\Facades\Storage;
 use function App\Helpers\is_mobile;
 
 class outwardController extends Controller
@@ -72,8 +71,7 @@ class outwardController extends Controller
             $name = date('YmdHis');
             $ext = File::extension($originalname);
             $file_name = $name.'.'.$ext;
-//            $path = $file->storeAs('public/outward/', $file_name);
-            $path = Storage::disk('digitalocean')->putFileAs('public/outward/', $file, $file_name, 'public');
+            $path = $file->storeAs('public/outward/', $file_name);
         }
 
         $outward = new outwardModel([
@@ -144,8 +142,7 @@ class outwardController extends Controller
             $name = date('YmdHis');
             $ext = File::extension($originalname);
             $file_name = $name.'.'.$ext;
-            //$path = $file->storeAs('public/outward/', $file_name);
-            $path = Storage::disk('digitalocean')->putFileAs('public/outward/', $file, $file_name, 'public');
+            $path = $file->storeAs('public/outward/', $file_name);
         }
         if ($file_name != "") {
             $data['attachment'] = $file_name;

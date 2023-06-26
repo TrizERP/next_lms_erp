@@ -9,7 +9,6 @@ use App\Models\visitor_management\visitor_typeModel;
 use GenTux\Jwt\GetsJwtToken;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use function App\Helpers\is_mobile;
 
@@ -157,8 +156,7 @@ class visitor_masterController extends Controller
             $size = $img->getSize();
             $newfilename = 'visitor_'.date('Y-m-d_h-i-s').'.'.$ext;
             $file_folder = '/visitor_photo';
-            //$img->storeAs('public/visitor_photo/', $newfilename);
-            $path = Storage::disk('digitalocean')->putFileAs('public/visitor_photo/', $img, $newfilename, 'public');
+            $img->storeAs('public/visitor_photo/', $newfilename);
         }
 
         $visitor = [
@@ -188,7 +186,7 @@ class visitor_masterController extends Controller
             "message"     => "Visitor details Added Successfully",
         ];
 
-        //For Sending Welcome sms
+        //For Sending Welcome sms		
         $this->get_sms_setting($visitor_id, 'Welcome');
 
         return is_mobile($type, "add_visitor_master.index", $res, "redirect");
@@ -240,8 +238,7 @@ class visitor_masterController extends Controller
             $size = $img->getSize();
             $newfilename = 'visitor_'.date('Y-m-d_h-i-s').'.'.$ext;
             $file_folder = '/visitor_photo';
-            //$img->storeAs('public/visitor_photo/', $newfilename);
-            $path = Storage::disk('digitalocean')->putFileAs('public/visitor_photo/', $img, $newfilename, 'public');
+            $img->storeAs('public/visitor_photo/', $newfilename);
             $visitor['photo'] = $newfilename;
         }
         visitor_masterModel::where(["id" => $id])->update($visitor);

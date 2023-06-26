@@ -13,14 +13,21 @@ class normClatureController extends Controller
     //
     public function index(Request $request){
         $type=$request->type;
+        
         $res['menu_title'] = normClature::whereRaw('sub_institute_id = 0 and status = 0')->groupBy('menu')->get();
         return is_mobile($type,'norm_cluter/show',$res,'view');
     }
 
     public function create(Request $request){
         $type=$request->type;
-        $menu_id = $request->menu_title;
+        if($request->has('menu_id')){
+            $menu_id = $request->menu_id;     
+        }else{
+            $menu_id = $request->menu_title;
+        }
+       
         $sub_institute_id = session()->get('sub_institute_id');
+        
         $check = normClature::whereRaw('menu_id='.$menu_id.' and sub_institute_id ='.$sub_institute_id)->get();
         // return $check;exit;
         if(count($check)>0){
@@ -38,7 +45,6 @@ class normClatureController extends Controller
         $sub_institute_id = session()->get('sub_institute_id');
         $user_id=session()->get('user_id');
         $menu_id = $request->menu_id;
-        // echo $request->menu_id;exit;
         $type=$request->type;
         $res['get_data'] = normClature::whereRaw('menu_id='.$menu_id.' and sub_institute_id =0')->get(); 
         foreach($res['get_data'] as $key => $value){
@@ -76,12 +82,17 @@ class normClatureController extends Controller
         $menu_id = $request->menu_id;
         $res['get_data'] = normClature::whereRaw('menu_id='.$menu_id.' and sub_institute_id ='.$sub_institute_id)->get();         
         foreach($res['get_data'] as $key => $value){
+            if($request->value[$value->id]!==null){
+                $status=1;
+            }else{
+                $status=0;
+            }
             $data =[ 
                 "menu_id"=> $value->menu_id,
                 "menu"=> $value->menu,
                 "string"=>$value->string,
-                "value"=>$request->value[$value->id] ?? $value->value,
-                "status"=>isset($request->value[$value->id]) ? 1 : 0,
+                "value"=>$request->value[$value->id],
+                "status"=>$status,
                 "updated_at"=>now(),
             ];
             // print_r($data);

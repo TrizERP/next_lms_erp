@@ -7,7 +7,6 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
-use Illuminate\Support\Facades\Storage;
 use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\NotFoundExceptionInterface;
 use function App\Helpers\is_mobile;
@@ -105,8 +104,7 @@ class syllabusController extends Controller
             $name = $request->get('attachment').date('YmdHis');
             $ext = File::extension($originalname);
             $file_name = "attachment_".$name.'.'.$ext;
-            //$path = $file->storeAs('public/syllabus/', $file_name);
-            $path = Storage::disk('digitalocean')->putFileAs('public/syllabus/', $file, $file_name, 'public');
+            $path = $file->storeAs('public/syllabus/', $file_name);
         }
         $values = [
             'syear'            => session()->get('syear'),

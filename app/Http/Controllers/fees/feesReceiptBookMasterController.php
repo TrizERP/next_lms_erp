@@ -10,7 +10,6 @@ use App\Models\school_setup\standardModel;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
-use Illuminate\Support\Facades\Storage;
 use function App\Helpers\is_mobile;
 
 class feesReceiptBookMasterController extends Controller
@@ -139,8 +138,7 @@ class feesReceiptBookMasterController extends Controller
                 $name = $request->get('fees_receipt_logo').date('YmdHis');
                 $ext = File::extension($originalname);
                 $file_name = "receipt_logo_".$name.'.'.$ext;
-                //$path = $file->storeAs('public/fees/', $file_name);
-                $path = Storage::disk('digitalocean')->putFileAs('public/fees/', $file, $file_name, 'public');
+                $path = $file->storeAs('public/fees/', $file_name);
             }
             $bank_logo_name = "";
             if ($request->hasFile('fees_bank_logo')) {
@@ -149,8 +147,7 @@ class feesReceiptBookMasterController extends Controller
                 $name = $request->get('fees_bank_logo').date('YmdHis');
                 $ext = File::extension($originalname);
                 $bank_logo_name = "bank_logo_".$name.'.'.$ext;
-                //$path = $file->storeAs('public/fees/', $bank_logo_name);
-                $path = Storage::disk('digitalocean')->putFileAs('public/fees/', $file, $bank_logo_name, 'public');
+                $path = $file->storeAs('public/fees/', $bank_logo_name);
             }
 
             if ($file_name != '') {

@@ -8,7 +8,6 @@ use App\Models\fees\other_fees_collect\other_fees_collect;
 use App\Models\fees\other_fees_cancel\other_fees_cancel;
 use App\Models\student\tblstudentModel;
 use App\Models\fees\bank_master\bankmasterModel;
-use Illuminate\Support\Facades\Storage;
 use function App\Helpers\is_mobile;
 use function App\Helpers\SearchStudent;
 use Illuminate\Http\Request;
@@ -26,12 +25,12 @@ class s2excel_importController extends Controller {
 	 *
 	 * @return \Illuminate\Http\Response
 	 */
-	public function index(Request $request)
+	public function index(Request $request) 
 	{
-		$type = $request->input('type');
+		$type = $request->input('type');		
 		$res['status'] = 1;
 		$res['message'] = "Success";
-
+		
 		return is_mobile($type, "fees/NACH/show_s2_excel_import", $res, "view");
 	}
 
@@ -40,8 +39,8 @@ class s2excel_importController extends Controller {
 	 *
 	 * @return \Illuminate\Http\Response
 	 */
-	public function store(Request $request)
-	{
+	public function store(Request $request) 
+	{        
 		$type = $request->input('type');
 		$sub_institute_id = $request->session()->get('sub_institute_id');
 		$syear = $request->session()->get('syear');
@@ -53,8 +52,7 @@ class s2excel_importController extends Controller {
             $name = "NACH_S2_Import_".date('YmdHis');
             $ext = \File::extension($originalname);
             $file_name = $name . "." . $ext;
-            //$path = $file->storeAs('public/NachExcel/Uploads/',$file_name);
-            $path = Storage::disk('digitalocean')->putFileAs('public/NachExcel/Uploads/', $file, $file_name, 'public');
+            $path = $file->storeAs('public/NachExcel/Uploads/',$file_name);        
 
             $inputFileName = 'storage/NachExcel/Uploads/'.$file_name;
             try {
@@ -70,38 +68,38 @@ class s2excel_importController extends Controller {
             $highestColumn = $sheet->getHighestColumn();
 
             $count = 0;
-            for ($row = 0; $row <= $highestRow; $row++)
+            for ($row = 0; $row <= $highestRow; $row++) 
             {
                 $count = $count + 1;
                 if ($count > 2) {
                     $rowData = $sheet->rangeToArray('A' . $row . ':' . $highestColumn . $row, NULL, TRUE, FALSE);
-                    $rowData = $rowData[0];
+                    $rowData = $rowData[0];                    
                     $rowData[2] = date('Y-m-d', PHPExcel_Shared_Date::ExcelToPHP($rowData[2]));
                     $rowData[13] = date('Y-m-d', PHPExcel_Shared_Date::ExcelToPHP($rowData[13]));
                     $rowData[35] = date('Y-m-d', PHPExcel_Shared_Date::ExcelToPHP($rowData[35]));
                     $this->insert_data($rowData,$sub_institute_id);
                 }
             }
-    	}
+    	}	
 		$res['status_code'] = 1;
 		$res['message'] = "S2 File Imported Successfully";
-
+		
 		return is_mobile($type, "fees/NACH/show_s2_excel_import", $res, "view");
 	}
 
 	public function insert_data($arr,$sub_institute_id)
-	{
-        $insert_qry = "INSERT INTO `S2_LOG`
-                (`LOT_NO`, `MESSAGE_ID`, `MESSAGE_CREATION`, `INITIATING_PARTY_ID`, `INSTRUCTING_AGENT_MEMBER_ID`, `INSTRUCTED_AGENT_MEMBER_ID`,
-                `INSTRUCTED_AGENT_NAME`, `MANDATE_REQUEST_ID`, `MANDATE_CATEGORY`, `MANDATE_CATEGORY_NAME`, `TXN_TYPE`, `RECURRING`, `FREQUENCY`,
-                `FIRST_COLLECTION_DATE`, `FINAL_COLLECTION_DATE`, `COLLECTION_AMOUNT`, `MAXIMUM_AMOUNT`, `NAME_OF_UTILITY`, `UTILITY_CODE`,
+	{		
+        $insert_qry = "INSERT INTO `S2_LOG` 
+                (`LOT_NO`, `MESSAGE_ID`, `MESSAGE_CREATION`, `INITIATING_PARTY_ID`, `INSTRUCTING_AGENT_MEMBER_ID`, `INSTRUCTED_AGENT_MEMBER_ID`, 
+                `INSTRUCTED_AGENT_NAME`, `MANDATE_REQUEST_ID`, `MANDATE_CATEGORY`, `MANDATE_CATEGORY_NAME`, `TXN_TYPE`, `RECURRING`, `FREQUENCY`, 
+                `FIRST_COLLECTION_DATE`, `FINAL_COLLECTION_DATE`, `COLLECTION_AMOUNT`, `MAXIMUM_AMOUNT`, `NAME_OF_UTILITY`, `UTILITY_CODE`, 
                 `SPONSOR_BANK_CODE`, `NAME_OF_ACCOUNT_HOLDER`, `CONSUMER_REFERENCE_NO`, `SCHEME_PLAN_REFERENCE_NO`, `DEBTOR_TELEPHONE_NO`, `DEBTOR_MOBILE_NO`,
-                `DEBTOR_EMAIL_ADD`, `DEBTOR_OTHER_DETAILS`, `DESTINATION_BANK_ACCOUNT_NUMBER`, `DESTINATION_BANK_ACCOUNT_TYPE`, `DESTINATION_BANK_IFSC`,
-                `DESTINATION_BANK_NAME`, `UMRN_NO`, `STATUS_`, `RTN_CODE`, `REASON`, `CLOSURE_DATE`,`TRUST_ID`)
-                VALUES
-                ( ";
-
-        foreach ($arr as $id => $val)
+                `DEBTOR_EMAIL_ADD`, `DEBTOR_OTHER_DETAILS`, `DESTINATION_BANK_ACCOUNT_NUMBER`, `DESTINATION_BANK_ACCOUNT_TYPE`, `DESTINATION_BANK_IFSC`, 
+                `DESTINATION_BANK_NAME`, `UMRN_NO`, `STATUS_`, `RTN_CODE`, `REASON`, `CLOSURE_DATE`,`TRUST_ID`) 
+                VALUES 
+                ( ";           
+            
+        foreach ($arr as $id => $val) 
         {
             if ($id == '37')
                 continue;
@@ -116,14 +114,14 @@ class s2excel_importController extends Controller {
             }
         }
         $insert_qry = rtrim($insert_qry, 'NULL,');
-        $insert_qry .= ')';
+        $insert_qry .= ')';  
 
         DB::select($insert_qry);
 
         $update_qry = "UPDATE tblstudent_bank_detail s SET s.UMRN = '".$UMRN_NO."' ,s.is_registered='Y' where student_id = (
 				SELECT id FROM tblstudent WHERE enrollment_no = '".$student_enrollment."' AND sub_institute_id = '".$sub_institute_id."'
-        	)";
-        DB::select($update_qry);
+        	)";   
+        DB::select($update_qry);               
 	}
 
 	/**

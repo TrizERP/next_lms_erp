@@ -7,6 +7,7 @@
 </style>
 <div id="page-wrapper" style="color:#000;">
 	<div class="container-fluid">
+	
 		<div class="row bg-title">
 			<div class="col-lg-3 col-md-4 col-sm-4 col-xs-12">
 				<h4 class="page-title">Fees Collect</h4>
@@ -101,7 +102,8 @@
 											</td>
 										</tr>
 										<tr>
-											<td>{{ App\Helpers\get_string('StudentName','request')}}</td>
+										<tr>
+											<td>{{ App\Helpers\get_string('studentname','request')}}<span id="menuId" style="display:none"></span><a href="{{route('norm-clature.create')}}"><i class="mdi mdi-lead-pencil"></i></a></td>
 											<td>
 												{{ $data['stu_data']['name']; }}
 											</td>
@@ -119,7 +121,7 @@
 											</td>
 										</tr>
 										<tr>
-											<td>Student Quota</td>
+											<td>Student Quota<span id="menuId" style="display:none"></span><a href="{{route('norm-clature.create')}}"><i class="mdi mdi-lead-pencil"></i></a></td>
 											<td>
 												{{ $data['stu_data']['student_quota']; }}
 											</td>
@@ -247,7 +249,7 @@
 													<th style="width: 10%;padding-left: 15px;">Amount</th>
 													<th style="width: 20%;padding-left: 15px;">Collection Amount
 													</th>
-													<th style="width: 20%;padding-left: 15px;">{{ App\Helpers\get_string('Discount','request') }}</th>
+													<th style="width: 20%;padding-left: 15px;">{{ App\Helpers\get_string('Discount','request') }}<span id="menuId" style="display:none"></span><a href="{{route('norm-clature.create')}}"><i class="mdi mdi-lead-pencil"></i></a></th>
 													<th style="width: 20%;padding-left: 15px;">Fine</th>
 												</tr>
 												@php
@@ -465,7 +467,7 @@
 											<tr>
 												<th>Sr No.</th>
 												<th>GR No.</th>
-												<th>{{App\Helpers\get_string('StudentName','request')}}</th>
+												<th>{{App\Helpers\get_string('StudentName','request')}}<span id="menuId" style="display:none"></span><a href="{{route('norm-clature.create')}}"><i class="mdi mdi-lead-pencil"></i></a></th>
 												<th>Std-Div</th>
 												<th>Uniqueid</th>
 												<th>Month</th>
@@ -809,3 +811,16 @@
 				$("#table_data").empty();
 			});
 		</script>
+
+<script>
+    var menuId = localStorage.getItem('current_id');
+    var spans = document.querySelectorAll('span.menuId');
+    for (var i = 0; i < spans.length; i++) {
+        spans[i].textContent = menuId;
+    }
+    var url = '{{ route("norm-clature.create") }}?menu_id=' + menuId;
+    var links = document.querySelectorAll('a[href="{{ route("norm-clature.create") }}"]');
+    for (var j = 0; j < links.length; j++) {
+        links[j].href = url;
+    }
+</script>

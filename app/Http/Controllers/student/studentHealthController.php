@@ -12,7 +12,6 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
-use Illuminate\Support\Facades\Storage;
 use function App\Helpers\is_mobile;
 
 
@@ -88,8 +87,7 @@ class studentHealthController extends Controller
             $name = "health_document_".date('YmdHis');
             $ext = File::extension($originalname);
             $file_name = $name.'.'.$ext;
-//            $path = $file->storeAs('public/frontdesk/', $file_name);
-            $path = Storage::disk('digitalocean')->putFileAs('public/frontdesk/', $file, $file_name, 'public');
+            $path = $file->storeAs('public/frontdesk/', $file_name);
         }
         if ($file_name != '') {
             $finalArray['file'] = $file_name;
@@ -180,8 +178,7 @@ class studentHealthController extends Controller
             $name = "health_document_".date('YmdHis');
             $ext = File::extension($originalname);
             $file_name = $name.'.'.$ext;
-//            $path = $file->storeAs('public/frontdesk/', $file_name);
-            $path = Storage::disk('digitalocean')->putFileAs('public/frontdesk/', $file, $file_name, 'public');
+            $path = $file->storeAs('public/frontdesk/', $file_name);
         }
         if ($file_name != '') {
             $finalArray['file'] = $file_name;
@@ -235,7 +232,7 @@ class studentHealthController extends Controller
         if ($student_id != "" && $sub_institute_id != "" && $syear != "") {
             $data = DB::select("SELECT doctor_name,doctor_contact,DATE_FORMAT(date,'%d-%m-%Y') AS date, if(file = '','',concat('https://".$_SERVER['SERVER_NAME']."/storage/frontdesk/',file)) as file
             FROM student_health
-            WHERE syear = '".$syear."' AND sub_institute_id = '".$sub_institute_id."'
+            WHERE syear = '".$syear."' AND sub_institute_id = '".$sub_institute_id."' 
             AND student_id = '".$student_id."'
             ORDER BY date");
 
@@ -248,7 +245,7 @@ class studentHealthController extends Controller
             $res['message'] = "Parameter Missing";
         }
 
-        //return is_mobile($type, "implementation", $res);
+        //return is_mobile($type, "implementation", $res);  
         return json_encode($res);
     }
 }

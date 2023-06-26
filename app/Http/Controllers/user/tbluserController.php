@@ -13,7 +13,6 @@ use GenTux\Jwt\GetsJwtToken;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
-use Illuminate\Support\Facades\Storage;
 use function App\Helpers\is_mobile;
 
 class tbluserController extends Controller
@@ -87,8 +86,7 @@ class tbluserController extends Controller
             $name = $request->get('user_name').date('YmdHis');
             $ext = File::extension($originalname);
             $file_name = $name.'.'.$ext;
-            //$path = $file->storeAs('public/user/', $file_name);
-            $path = Storage::disk('digitalocean')->putFileAs('public/user/', $file, $file_name, 'public');
+            $path = $file->storeAs('public/user/', $file_name);
         }
 
         $request->request->add(['image' => $file_name]); //add request
@@ -244,18 +242,18 @@ class tbluserController extends Controller
         if(!$request->monday) {
             $request->request->add(['monday'=> 0]);
         }  if (!$request->tuesday) {
-        $request->request->add(['tuesday' => 0]);
-    }  if (!$request->wednesday) {
-        $request->request->add(['wednesday' => 0]);
-    }  if (!$request->thursday) {
-        $request->request->add(['thursday' => 0]);
-    }  if (!$request->friday) {
-        $request->request->add(['friday' => 0]);
-    }  if (!$request->saturday) {
-        $request->request->add(['saturday' => 0]);
-    }  if (!$request->sunday) {
-        $request->request->add(['sunday' => 0]);
-    }
+            $request->request->add(['tuesday' => 0]);
+        }  if (!$request->wednesday) {
+            $request->request->add(['wednesday' => 0]);
+        }  if (!$request->thursday) {
+            $request->request->add(['thursday' => 0]);
+        }  if (!$request->friday) {
+            $request->request->add(['friday' => 0]);
+        }  if (!$request->saturday) {
+            $request->request->add(['saturday' => 0]);
+        }  if (!$request->sunday) {
+            $request->request->add(['sunday' => 0]);
+        }
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $type = $request->input('type');
 
@@ -266,8 +264,7 @@ class tbluserController extends Controller
             $name = $request->get('user_name').date('YmdHis');
             $ext = File::extension($originalname);
             $file_name = $name.'.'.$ext;
-            //$path = $file->storeAs('public/user/', $file_name);
-            $path = Storage::disk('digitalocean')->putFileAs('public/user/', $file, $file_name, 'public');
+            $path = $file->storeAs('public/user/', $file_name);
         }
         if ($file_name != "") {
             $request->request->add(['image' => $file_name]); //add request
