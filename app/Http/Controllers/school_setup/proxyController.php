@@ -143,7 +143,6 @@ class proxyController extends Controller
 
         $days_arr = $this->getcountdays($from_date, $to_date);
         $days = array_keys($days_arr);
-
         $timetable_data = timetableModel::select(
             'timetable.*',
             DB::raw('group_concat(DISTINCT s.name) as standard_name'),
@@ -178,15 +177,15 @@ class proxyController extends Controller
                 'timetable.syear'            => $syear,
             ])
             ->whereIn('week_day', $days)
-            ->whereNotIn('timetable.id', function ($query) use ($sub_institute_id, $proxy_teacher_id) {
+            ->whereNotIn('timetable.id', function ($query) use ($sub_institute_id, $proxy_teacher_id, $from_date, $to_date) {
                 $query->select(DB::raw('ifnull(group_concat(timetable_id),0)'))
                     ->from('proxy_master')
-                    ->whereRaw("sub_institute_id = $sub_institute_id  and teacher_id = $proxy_teacher_id");
+                    ->whereRaw("sub_institute_id = $sub_institute_id  and teacher_id = $proxy_teacher_id")
+                    ->whereBetween('proxy_date', [$from_date, $to_date]);
             })
             ->groupby('p.id')
             ->orderBy('week_day', 'asc')
             ->get()->toArray();
-
         $proxydata = array();
         foreach ($timetable_data as $tkey => $tval) {
             $dates = $days_arr[$tval['week_day']];
