@@ -127,6 +127,7 @@ class proxyController extends Controller
         )
             ->join('tbluserprofilemaster', 'tbluserprofilemaster.id', "=", 'tbluser.user_profile_id')
             ->where(['tbluser.sub_institute_id' => $sub_institute_id, 'tbluserprofilemaster.name' => 'Teacher'])
+            ->orderBy('tbluser.first_name')
             ->get();
         $data['teacher_data'] = $user_data;
 
@@ -247,6 +248,7 @@ class proxyController extends Controller
         )
             ->join('tbluserprofilemaster', 'tbluserprofilemaster.id', "=", 'tbluser.user_profile_id')
             ->where(['tbluser.sub_institute_id' => $sub_institute_id, 'tbluserprofilemaster.name' => 'Teacher'])
+            ->orderBy('tbluser.first_name')
             ->get();
 
         $data['teacher_data'] = $user_data;
@@ -394,6 +396,7 @@ class proxyController extends Controller
             ->where('timetable.teacher_id', '<>', $timetable_data[0]['teacher_id'])
             ->where('timetable.period_id', '<>', $timetable_data[0]['period_id'])
             ->groupBy('timetable.teacher_id')
+            ->orderBy('tbluser.first_name')
             ->get();
 
         // $user_data = tbluserModel::select('tbluser.*',
