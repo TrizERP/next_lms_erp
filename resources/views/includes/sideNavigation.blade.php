@@ -210,7 +210,7 @@ $school_logo = session()->get('school_logo');
                             @else
                             @if (Route::has($subChildmenuValue['link']))
                             <li>
-                                <a href="{{ route($subChildmenuValue['link']) }}" onclick="sessionMenu({{ $subChildmenuValue['id'] }});redirect_pages_soni('{{ route($subChildmenuValue['link']) }}','{{ $submenuValue['id'] }}','{{ $i }}');">
+                                <a href="{{ route($subChildmenuValue['link']) }}" onclick="sessionMenu({{ $subChildmenuValue['id'] }});redirect_pages_soni('{{ route($subChildmenuValue['link']) }}','{{ $submenuValue['id'] }}','{{ $i }}','{{ $subChildmenuValue['id'] }}');">
                                     <i class="{{ $subChildmenuValue['icon'] }}" data-icon="v"></i>
                                     <span class="hide-menu" id="{{ $subChildmenuValue['name'] }}">
                                         {{ $subChildmenuValue['name'] }}
