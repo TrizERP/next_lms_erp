@@ -569,6 +569,12 @@ class dashboardController extends Controller
                 }
                 $totalFeesCF = 0;
                 foreach ($chartFees as $k => $v) {
+                    if (!isset($chartFAs[$v->grade_id])) {
+                        $chartFAs[$v->grade_id] = 0;
+                    }
+                    if (!isset($chartFS[$v->standard_id])) {
+                        $chartFS[$v->standard_id] = 0;
+                    }
                     $chartFAs[$v->grade_id] += $v->amount;
                     $chartFS[$v->standard_id] += $v->amount;
                     $totalFeesCF += $v->amount;
