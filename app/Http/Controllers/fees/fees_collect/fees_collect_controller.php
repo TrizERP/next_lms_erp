@@ -68,6 +68,7 @@ class fees_collect_controller extends Controller
     public function show_student()
     {
         $responce_arr = [];
+        $type = $_REQUEST['type'] ?? "";        
         $last_year = (session()->get('syear') - 1);
         $month_arr = FeeMonthId();
         $currunt_month = date('m');
@@ -239,7 +240,7 @@ class fees_collect_controller extends Controller
                 }, 'temp_table')
                 ->groupBy('student_id');
         })->get();
-        
+      
         foreach ($result as $id => $arr) {
             $bk_stu_id = $arr->id;
             foreach ($paid_result as $r_id => $r_arr) {
@@ -249,11 +250,59 @@ class fees_collect_controller extends Controller
                 }
             }
         }
-
+        // fees validation admission year,student quota,division,fees_breakoff
+        if(empty($result)){
+        $check = DB::table('tblstudent as s')
+        ->join('tblstudent_enrollment as se', function ($join) {
+            $join->whereRaw('se.student_id = s.id');
+        })
+        ->where('s.sub_institute_id', session()->get('sub_institute_id'))
+        ->where('se.syear', session()->get('syear'))
+        ->whereNotNull('s.admission_date')            
+        ->whereNull('se.end_date')
+        ->where(function ($q) use ($request) {
+            if (isset($request['mobile']) && $request['mobile'] != '') {
+                $q->where('s.mobile', $request['mobile']);
+            }
+            if (isset($request['grno']) && $request['grno'] != '') {
+                $q->where('s.enrollment_no', $request['grno']);
+            }
+            if (isset($request['uniqueid']) && $request['uniqueid'] != '') {
+                $q->where('s.uniqueid', $request['uniqueid']);
+            }
+            if (isset($request['grade']) && $request['grade'] != '') {
+                $q->where('se.grade_id', $request['grade']);
+            }
+            if (isset($request['standard']) && $request['standard'] != '') {
+                $q->where('se.standard_id', $request['standard']);
+            }
+            if (isset($request['division']) && $request['division'] != '') {
+                $q->where('se.section_id', $request['division']);
+            }
+            if (isset($request['stu_name']) && $request['stu_name'] != '') {
+                $q->where(function ($query) use ($request) {
+                    $query->where('s.first_name', 'like', '%'.$request['stu_name'].'%')
+                        ->orWhere('s.middle_name', 'like', '%'.$request['stu_name'].'%')
+                        ->orWhere('s.last_name', 'like', '%'.$request['stu_name'].'%');
+                });
+            }
+        })->groupBy('s.id')->get()->toArray();
+        // return $check;exit;
+            if($check[0]->section_id==null || $check[0]->section_id==0){
+                $responce_arr['status_code']=0;
+                $responce_arr['message']="Devision Not Found";
+            }elseif($check[0]->student_quota==null || $check[0]->student_quota==0){
+                $responce_arr['status_code']=0;
+                $responce_arr['message']="Student Quota Not Found";
+            }elseif($check[0]->admission_year==null ||$check[0]->admission_year==0){
+                $responce_arr['status_code']=0;
+                $responce_arr['message']="Admission Year Not Found";
+            }else{$responce_arr['status_code']=0;
+            $responce_arr['message']="Fees Breakoff Not Found";}
+        }
         // return $result;exit;
         $responce_arr['stu_data'] = $result;
 
-        $type = $_REQUEST['type'] ?? "";
 
         return is_mobile($type, "fees/fees_collect/show", $responce_arr, "view");
     }

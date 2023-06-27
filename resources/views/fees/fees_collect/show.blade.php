@@ -12,13 +12,25 @@
         </div>
 
         <div class="card">
-            @if ($sessionData = Session::get('data'))
-            <div class="@if($sessionData['status_code']==1) alert alert-success alert-block @else alert alert-danger alert-block @endif ">
-                <button type="button" class="close" data-dismiss="alert">×</button>
-                <strong>{{ $sessionData['message'] }}</strong>
-            </div>
-            @endif
-            
+        @if(!empty($data['message']))
+                    @if($data['status_code'] == 1)
+                        <div class="alert alert-success alert-block">
+                            @else
+                                <div class="alert alert-danger alert-block">
+                                    @endif
+                                    <button type="button" class="close" data-dismiss="alert">×</button>
+                                    <strong>{{ $data['message'] }}</strong>
+                                </div>
+                            @endif
+            @php
+        $grade_id = $standard_id = $division_id = '';
+
+            if(isset($data['grade_id'])){
+                $grade_id = $data['grade_id'];
+                $standard_id = $data['standard_id'];
+                $division_id = $data['division_id'];
+            }
+        @endphp
             <form action="{{ route('fees_collect.show_student') }}" enctype="multipart/form-data" method="post">
                 {{ method_field("POST") }}
                 @csrf
@@ -26,26 +38,26 @@
                     <div class="col-md-12">
                         <div class="form-group">
                             <div class="row">
-                              {{ App\Helpers\SearchChain('4','single','grade,std,div') }}
+                              {{ App\Helpers\SearchChain('4','single','grade,std,div',$grade_id,$standard_id,$division_id) }}
                             </div>
                         </div>
                     </div>
                     
                     <div class="col-md-4 form-group">
                         <label>Name</label>
-                        <input type="text" id="stu_name" placeholder="Name" name="stu_name" class="form-control">
+                        <input type="text" id="stu_name" placeholder="Name" name="stu_name" class="form-control" @if(isset($data['stu_name'])) value="{{$data['stu_name']}}" @endif>
                     </div>
                     <div class="col-md-4 form-group">
                         <label>UniqueID/Adm.No</label>
-                        <input type="text" id="uniqueid" placeholder="UniqueID/Adm.No" name="uniqueid" class="form-control">
+                        <input type="text" id="uniqueid" placeholder="UniqueID/Adm.No" name="uniqueid" class="form-control" @if(isset($data['uniqueid'])) value="{{$data['uniqueid']}}" @endif>
                     </div>
                     <div class="col-md-4 form-group">
                         <label>Mobile</label>
-                        <input type="text" id="mobile" placeholder="Mobile" name="mobile" class="form-control">
+                        <input type="text" id="mobile" placeholder="Mobile" name="mobile" class="form-control" @if(isset($data['mobile'])) value="{{$data['mobile']}}" @endif>
                     </div>                        
                     <div class="col-md-4 form-group">
                         <label>Gr No</label>
-                        <input type="text" id="grno" placeholder="Gr No." name="grno" class="form-control">
+                        <input type="text" id="grno" placeholder="Gr No." name="grno" class="form-control" @if(isset($data['grno'])) value="{{$data['grno']}}" @endif>
                         @if(app('request')->input('implementation') == 1)
                         <input type="hidden" name="implementation" value="1">
                         @endif
