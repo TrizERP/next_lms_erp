@@ -4,6 +4,23 @@
 	tr.spaceUnder>th {
 		padding-bottom: 1em !important;
 	}
+	#overlay-new {
+		position: fixed;
+		top: 0;
+		left: 0;
+		width: 100%;
+		height: 100%;
+		background-color: rgba(0, 0, 0, 0.5); /* Adjust the opacity as needed */
+		z-index: 9999;
+	}
+
+	#overlay-new center {
+	position: absolute;
+	top: 30%;
+	left: 50%;
+	transform: translate(-50%, -50%);
+	}
+
 </style>
 <div id="page-wrapper" style="color:#000;">
 	<div class="container-fluid">
@@ -169,7 +186,7 @@
 							</div>
 						</div>
 
-						<form action="{{ route('fees_collect.store') }}" enctype="multipart/form-data" method="post">
+						<form action="{{ route('fees_collect.store') }}" enctype="multipart/form-data" method="post" id="myform">
 							@csrf
 							<input type="hidden" name="grade_id" value="{{ $data['stu_data']['grade_id']; }}">
 							<input type="hidden" name="standard_id" value="{{ $data['stu_data']['std_id']; }}">
@@ -432,7 +449,8 @@
                                             </div>-->
 								</div>
 								<div class="col-md-6 form-group">
-									<input type="submit" name="submit" onclick="return checkForm();" value="Save" class="btn btn-success">
+								<div id="overlay-new" style="display:none;"><center><p style="margin-top: 273px;color:red;font-weight: 700;">Please do not refresh the page, while the process is going on.</p><img src="https://erp.triz.co.in/admin_dep/images/loader.gif"></center></div>
+    								<center> <input type="submit" name="submit" onclick="return checkForm();" value="Save" class="btn btn-success"  id="Load_gif"></center>
 								</div>
 							</div>
 						</form>
@@ -523,41 +541,42 @@
 			});
 
 			function checkForm() {
-				if ($('#payment_mode').val() == '') {
-					alert("Please Select Payment Mode.");
-					return false;
+			if ($('#payment_mode').val() == '') {
+				alert("Please select Payment Mode.");
+				return false;
+			}
+			if ($('#receiptdate').val() == '') {
+				alert("Please select Receipt Date.");
+				return false;
+			}
+			if ($('#payment_mode').val() != 'Cash') {
+				if ($('#cheque_date').val() == '') {
+				alert("Please select Cheque Date.");
+				return false;
 				}
-				if ($('#receiptdate').val() == '') {
-					alert("Please Select Receipt Date.");
-					return false;
+				if ($('#cheque_no').val() == '') {
+				alert("Please select Cheque Number.");
+				return false;
 				}
-				if ($('#payment_mode').val() != 'Cash') {
-					if ($('#cheque_date').val() == '') {
-						alert("Please Select Cheque Date.");
-						return false;
-					}
-					if ($('#cheque_no').val() == '') {
-						alert("Please Select Cheque Number.");
-						return false;
-					}
-					if ($('#bank_name').val() == '') {
-						alert("Please Select Bank Name.");
-						return false;
-					}
-					if ($('#bank_branch').val() == '') {
-						alert("Please Select Bank Branch.");
-						return false;
-					}
-					//                var n = $("#cheque_no").length;
-					// var n = $("#cheque_no").val().length;
-					// if (n != 6) {
-					//   alert("Cheque/DD Number Must Be 6 Digit.");
-					// return false;
-					//}
-					//                alert(n);
+				if ($('#bank_name').val() == '') {
+				alert("Please select Bank Name.");
+				return false;
+				}
+				if ($('#bank_branch').val() == '') {
+				alert("Please select Bank Branch.");
+				return false;
+				}
+			}
 
-				}
-				return true;
+			// Show the loading overlay
+			$('#overlay-new').show();
+
+			// Submit the form
+			// Replace 'formId' with the actual ID of your form
+			$('#formId').submit();
+
+			// Prevent the default form submission
+			return true;
 			}
 
 			$('#fees_head').on('change', '.allField1', function() {
