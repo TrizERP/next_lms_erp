@@ -458,25 +458,23 @@ class dynamic_report_controller extends Controller
                     
                 }
                 else{
-                    if ($main_module_name == "Student") {
-                        $this->query = DB::table('tblstudent_bank_detail as bk');
-                        $main_table_initial = "bk";
+                    if ($main_module_name == "Bank Detail") {
+                        $this->query = DB::table('tblstudent as s');
+                        $main_table_initial = "s";
                         foreach ($sub_module_name as $id => $arr) {
-                            if ($arr->sub_module == "Bank") {
+                            if ($arr->sub_module == "Student") {
                                 $tblstudent_join = [
                                     'bk.student_id'       => 's.id',
                                     'bk.sub_institute_id' => 's.sub_institute_id',
                                 ];
-                                
-                                $this->query->join('tblstudent as s', $tblstudent_join);
                                 $this->query->join('tblstudent_enrollment as se', $enrollment_join);
                                 $this->query->join('academic_section as acs', $grade_join);
                                 $this->query->join('standard as st', $std_join);
                                 $this->query->join('division as di', $div_join);
+                                $this->query->leftjoin('tblstudent_bank_detail as bk', $tblstudent_join);
                             }
                         }
                     }
-                
                 else {
                         if ($main_module_name == "Circular") {
                             $this->query = DB::table('circular as c');
