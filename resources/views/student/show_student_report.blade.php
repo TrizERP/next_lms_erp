@@ -131,13 +131,14 @@
             if(isset($data['student_data'])){
                 $student_data = $data['student_data'];
             }
-
+    $j =1;
         @endphp
                 <div class="card">
                     <div class="table-responsive mt-20 tz-report-table">
                         <table id="example" class="table table-striped">
                             <thead>
                             <tr>
+                            <th>Sr no</th>
                                 @foreach($data['headers'] as $hkey => $header)
                                 <th> {{$header}} </th>
                             @endforeach
@@ -146,6 +147,7 @@
                             <tbody>
                             @foreach($student_data as $key => $value)
                                 <tr>
+                                <td>{{$j++}}</td>
                                     @foreach($data['headers'] as $hkey => $header)
 
                                         @if($hkey == 'image')

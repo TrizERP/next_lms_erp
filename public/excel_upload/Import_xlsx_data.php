@@ -11,7 +11,7 @@ session_start();
 //die();
 
 // if($_REQUEST['modfunc'] == "SAVE"){
-// 	$random_num = rand(1, 50000);
+//  $random_num = rand(1, 50000);
 //     $file_name = $random_num . "-" . str_replace(" ", _, $_FILES["file"]["name"]);
 //     $target_path = 'assets/import_xlsx/' . $file_name;
 //     $tmpFilePath = $_FILES['file']['tmp_name'];
@@ -116,25 +116,46 @@ if (isset($_REQUEST['submit'])) {
                     $valueQuery .= "now(),";
                 } else if ($valueFields['field'] == "CREATED_IP_ADDRESS" || $valueFields['field'] == "created_ip_address") {
                     $valueQuery .= "'" . $_SERVER['REMOTE_ADDR'] . "',";
-                } else if ($valueFields['field'] == "admission_date" || $valueFields['field'] == "ADMISSION_DATE" || $valueFields['field'] == "dob" || $valueFields['field'] == "DOB" || $valueFields['field'] == "start_date" || $valueFields['field'] == "followup_date" || $valueFields['field'] == "date_of_birth" || $valueFields['field'] == "birthdate") {
-                    $valueQuery .= "'" . date('Y-m-d', PHPExcel_Shared_Date::ExcelToPHP($value[$valueFields['field']])) . "',";
+                } else if ($valueFields['field'] == "admission_date" || $valueFields['field'] == "ADMISSION_DATE" || $valueFields['field'] == "dob" || $valueFields['field'] == "DOB" || $valueFields['field'] == "start_date" || $valueFields['field'] == "followup_date" || $valueFields['field'] == "date_of_birth" || $valueFields['field'] == "birthdate" ||$valueFields['field'] == "from_date"||$valueFields['field'] == "to_date" || $valueFields['field'] == "day" || $valueFields['field'] == "punchin_time"|| $valueFields['field'] == "punchout_time" ) {
+    
+                    $excelDateTime = $value[$valueFields['field']];
+
+                    if ($valueFields['field'] == "punchin_time" || $valueFields['field'] == "punchout_time") {
+                        $timestamp = PHPExcel_Style_NumberFormat::toFormattedString($excelDateTime, 'YYYY-MM-DD HH:MM:SS'); // Convert Excel timestamp to formatted date and time string
+                        $date = DateTime::createFromFormat('Y-m-d H:i:s', $timestamp); // Create a DateTime object using the formatted string
+                        $valueQuery .= "'" . $date->format('Y-m-d H:i:s'). "',"; // Output the formatted date and time
+                    } else {
+                        $valueQuery .= "'" . date('Y-m-d', PHPExcel_Shared_Date::ExcelToPHP($value[$valueFields['field']])) . "',";
+                    }
+                    // echo $valueQuery."<br>";
                 } else {
                     if (in_array($valueFields['field'], $relationFields)) {
-                        $relationQuery = "SELECT " . strtoupper($relationTable[$valueFields['field']]['INSERT_FIELD']) . " FROM " . $relationTable[$valueFields['field']]['TABLE_NAME'] . "  WHERE  " . $relationTable[$valueFields['field']]['TABLE_FIELD'] . " = '" . mysqli_real_escape_string($cn, $value[$valueFields['field']]) . "' AND sub_institute_id = '" . $_SESSION['SUB_INSTITUTE_ID'] . "'";
+                        // $relationQuery = "SELECT " . strtoupper($relationTable[$valueFields['field']]['INSERT_FIELD']) . " FROM " . $relationTable[$valueFields['field']]['TABLE_NAME'] . "  WHERE  " . $relationTable[$valueFields['field']]['TABLE_FIELD'] . " = '" . mysqli_real_escape_string($cn, $value[$valueFields['field']]) . "' AND sub_institute_id = '" . $_SESSION['SUB_INSTITUTE_ID'] . "'";
+                        $relationQuery = "SELECT " . strtoupper($relationTable[$valueFields['field']]['INSERT_FIELD']) . " FROM " . $relationTable[$valueFields['field']]['TABLE_NAME'] . " WHERE " . $relationTable[$valueFields['field']]['TABLE_FIELD'] . " = '" . mysqli_real_escape_string($cn, $value[$valueFields['field']]) . "'";
 
+                        if (isset($relationTable[$valueFields['field']]['SUB_INSTITUTE_COLUMN'])) {
+                            $relationQuery .= " AND " . $relationTable[$valueFields['field']]['SUB_INSTITUTE_COLUMN'] . " = '" . $_SESSION['SUB_INSTITUTE_ID'] . "'";
+                        }
+                        // print_r($relationQuery);die();
+                        
                         $checkSubInstitute = mysqli_query($cn, "SELECT DISTINCT TABLE_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE COLUMN_NAME IN ('sub_institute_id','SUB_INSTITUTE_ID') AND TABLE_SCHEMA='triz_erp_21' AND TABLE_NAME = '" . $relationTable[$valueFields['field']]['TABLE_NAME'] . "'");
                         if (mysqli_num_rows($checkSubInstitute) > 0) {
                             $relationQuery .= "   AND (SUB_INSTITUTE_ID = '" . $_SESSION['SUB_INSTITUTE_ID'] . "' OR SUB_INSTITUTE_ID IS NULL OR SUB_INSTITUTE_ID = 0) ";
                         }
-                        $getRelationValue = mysqli_fetch_assoc(mysqli_query($cn, $relationQuery));
                         // print_r($getRelationValue);die();
+                        
+                        $getRelationValue = mysqli_fetch_assoc(mysqli_query($cn, $relationQuery));
                         $keyId = strtoupper($relationTable[$valueFields['field']]['INSERT_FIELD']);
+                        
                         if (isset($getRelationValue) && count($getRelationValue) > 0) {
+                        // echo "<pre>";print_r($value[$valueFields['field']]);
+                            
                             $finalValue = $getRelationValue[$keyId];
                             $valueQuery .= "'" . $finalValue . "',";
                         } else {
+                        // print_r($value[$valueFields['field']]);die();
                             echo "<h5 style='color:red'>Problem Occurred while upload for <b style='color:black'>" . $valueFields['field'] . "</b> when value is <b style='color:black'>" . $value[$valueFields['field']] . "</b> please check and reupload the file.</h5>";
-                            die;
+                            // die;
                         }
                     } else {
                         $valueQuery .= "'" . mysqli_real_escape_string($cn, $value[$valueFields['field']]) . "',";
@@ -145,7 +166,7 @@ if (isset($_REQUEST['submit'])) {
             $valueQuery = $valueQuery.$_SESSION['SUB_INSTITUTE_ID'];
             $valueQuery .= ' ),';
         }
-
+// die();
         $valueQuery = rtrim($valueQuery, ',');
         //echo $insertQuery.$fieldQuery.$valueQuery;
         mysqli_query($cn, $insertQuery . $fieldQuery . $valueQuery) or die(mysqli_error($cn));

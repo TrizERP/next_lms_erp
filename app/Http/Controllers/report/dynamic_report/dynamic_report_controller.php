@@ -458,42 +458,24 @@ class dynamic_report_controller extends Controller
                     
                 }
                 else{
-                    if ($main_module_name == "Student") {
-                        $this->query = DB::table('tblstudent_bank_detail as bk');
-                        $main_table_initial = "bk";
+                    if ($main_module_name == "Bank Detail") {
+                        $this->query = DB::table('tblstudent as s');
+                        $main_table_initial = "s";
                         foreach ($sub_module_name as $id => $arr) {
-                            if ($arr->sub_module == "Bank") {
+                            if ($arr->sub_module == "Student") {
                                 $tblstudent_join = [
                                     'bk.student_id'       => 's.id',
                                     'bk.sub_institute_id' => 's.sub_institute_id',
                                 ];
-                                
-                                $this->query->join('tblstudent as s', $tblstudent_join);
                                 $this->query->join('tblstudent_enrollment as se', $enrollment_join);
                                 $this->query->join('academic_section as acs', $grade_join);
                                 $this->query->join('standard as st', $std_join);
                                 $this->query->join('division as di', $div_join);
+                                $this->query->leftjoin('tblstudent_bank_detail as bk', $tblstudent_join);
                             }
                         }
                     }
-                    else{
-                        if ($main_module_name == "Transport") {
-                            $this->query = DB::table('transport_vehicle as tv');
-                            $main_table_initial = "tv";
-                            foreach ($sub_module_name as $id => $arr) {
-                                if ($arr->sub_module == "Vehicle") {
-                                    $tbltransport_join = [
-                                        'tv.driver'       => 'tdd.id',
-                                        'tv.sub_institute_id' => 'tdd.sub_institute_id',
-                                    ];
-                                    
-                                    $this->query->join('transport_driver_detail as tdd', function($join){
-                                        $join->whereRaw('tv.driver = tdd.id or tv.conductor = tdd.id and tv.sub_institute_id');
-                                    });
-                                }
-                            }
-                        }
-                    else {
+                else {
                         if ($main_module_name == "Circular") {
                             $this->query = DB::table('circular as c');
                             $main_table_initial = "c";
@@ -513,7 +495,6 @@ class dynamic_report_controller extends Controller
                     }
                 }
             }
-        }
                 }
             }
         }
@@ -525,11 +506,8 @@ class dynamic_report_controller extends Controller
         $col = [];
         foreach ($all_detail["selected_fields"] as $id => $val) {
 
-            if ($main_module_name !="Transport" && $all_fields_name[$val] == " Full Name") {
+            if ($all_fields_name[$val] == " Full Name") {
                 $col[] = DB::raw("concat_ws(' ',s.first_name,s.middle_name,s.last_name) as full_name");
-            }elseif($main_module_name =="Transport" && $all_fields_name[$val] == " Full Name")
-            {
-                $col[] = DB::raw("concat_ws(' ',tdd.first_name,tdd.last_name) as full_name");
             }
             elseif($all_fields_name[$val]=="Chapter Name"){
                 $col[] = DB::raw("GROUP_CONCAT(DISTINCT chm.chapter_name) as chapter_name");
@@ -716,12 +694,9 @@ class dynamic_report_controller extends Controller
         // if(isset($counts) && $counts == "counts"){
         //     $this->query->selectRaw(implode(', ', $col));
         // }else{
-
         $this->query->select($col);
         // }
-       //DB::enableQueryLog();
         $result = $this->query->get();
-       // dd(DB::getQueryLog($result));
         $tbl_detail = [];
         foreach ($all_detail["selected_fields"] as $id => $val) {
 

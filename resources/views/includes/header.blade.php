@@ -170,6 +170,8 @@ $academicTerms = session()->get('academicTerms');
                             <a class="dropdown-item" href="{{route('implementation')}}"><i
                                     class="mdi mdi-checkerboard"></i> Implementation</a>
                             @if(Session::get('user_profile_name') == 'Admin')
+                                <a class="dropdown-item" href="{{route('norm-clature.index')}}"><i
+                                        class="mdi mdi-wallet-travel"></i> Language Setting</a>
                                 <a class="dropdown-item" href="{{route('add_groupwise_rights.index')}}"><i
                                         class="mdi mdi-lumx"></i> Groupwise Rights</a>
                                 <a class="dropdown-item" href="{{route('add_individual_rights.index')}}"><i
