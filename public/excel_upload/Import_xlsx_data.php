@@ -117,7 +117,17 @@ if (isset($_REQUEST['submit'])) {
                 } else if ($valueFields['field'] == "CREATED_IP_ADDRESS" || $valueFields['field'] == "created_ip_address") {
                     $valueQuery .= "'" . $_SERVER['REMOTE_ADDR'] . "',";
                 } else if ($valueFields['field'] == "admission_date" || $valueFields['field'] == "ADMISSION_DATE" || $valueFields['field'] == "dob" || $valueFields['field'] == "DOB" || $valueFields['field'] == "start_date" || $valueFields['field'] == "followup_date" || $valueFields['field'] == "date_of_birth" || $valueFields['field'] == "birthdate" ||$valueFields['field'] == "from_date"||$valueFields['field'] == "to_date" || $valueFields['field'] == "day" || $valueFields['field'] == "punchin_time"|| $valueFields['field'] == "punchout_time" ) {
-                    $valueQuery .= "'" . date('Y-m-d', PHPExcel_Shared_Date::ExcelToPHP($value[$valueFields['field']])) . "',";
+    
+                    $excelDateTime = $value[$valueFields['field']];
+
+                    if ($valueFields['field'] == "punchin_time" || $valueFields['field'] == "punchout_time") {
+                        $timestamp = PHPExcel_Style_NumberFormat::toFormattedString($excelDateTime, 'YYYY-MM-DD HH:MM:SS'); // Convert Excel timestamp to formatted date and time string
+                        $date = DateTime::createFromFormat('Y-m-d H:i:s', $timestamp); // Create a DateTime object using the formatted string
+                        $valueQuery .= "'" . $date->format('Y-m-d H:i:s'). "',"; // Output the formatted date and time
+                    } else {
+                        $valueQuery .= "'" . date('Y-m-d', PHPExcel_Shared_Date::ExcelToPHP($value[$valueFields['field']])) . "',";
+                    }
+                    // echo $valueQuery."<br>";
                 } else {
                     if (in_array($valueFields['field'], $relationFields)) {
                         // $relationQuery = "SELECT " . strtoupper($relationTable[$valueFields['field']]['INSERT_FIELD']) . " FROM " . $relationTable[$valueFields['field']]['TABLE_NAME'] . "  WHERE  " . $relationTable[$valueFields['field']]['TABLE_FIELD'] . " = '" . mysqli_real_escape_string($cn, $value[$valueFields['field']]) . "' AND sub_institute_id = '" . $_SESSION['SUB_INSTITUTE_ID'] . "'";
@@ -156,7 +166,7 @@ if (isset($_REQUEST['submit'])) {
             $valueQuery = $valueQuery.$_SESSION['SUB_INSTITUTE_ID'];
             $valueQuery .= ' ),';
         }
-
+// die();
         $valueQuery = rtrim($valueQuery, ',');
         //echo $insertQuery.$fieldQuery.$valueQuery;
         mysqli_query($cn, $insertQuery . $fieldQuery . $valueQuery) or die(mysqli_error($cn));
