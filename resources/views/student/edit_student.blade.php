@@ -164,8 +164,8 @@ br {
                                         </div>                                       
                                         <div class="col-md-4 form-group">
                                             <label>Email</label>
-                                            <span><br><b>{{ $student_data->email }}</b></span>
-                                            <!-- <input type="email" value="{{ $student_data->email }}" id='email' required name="email" class="form-control"> -->
+                                            <!--<span><br><b>{{ $student_data->email }}</b></span>-->
+                                            <input type="email" value="{{ $student_data->email }}" id='email' required name="email" class="form-control">
                                         </div>
                                         <div class="col-md-4 form-group">
                                             <label>Admission Year</label>

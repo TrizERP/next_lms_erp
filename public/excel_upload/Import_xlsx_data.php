@@ -11,7 +11,7 @@ session_start();
 //die();
 
 // if($_REQUEST['modfunc'] == "SAVE"){
-// 	$random_num = rand(1, 50000);
+//  $random_num = rand(1, 50000);
 //     $file_name = $random_num . "-" . str_replace(" ", _, $_FILES["file"]["name"]);
 //     $target_path = 'assets/import_xlsx/' . $file_name;
 //     $tmpFilePath = $_FILES['file']['tmp_name'];
