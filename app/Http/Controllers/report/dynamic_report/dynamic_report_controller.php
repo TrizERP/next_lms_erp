@@ -552,11 +552,15 @@ class dynamic_report_controller extends Controller
         $col = [];
         foreach ($all_detail["selected_fields"] as $id => $val) {
             
-            if ($main_module_name !="Transport" && $sub_module_name == "Route" && $all_fields_name[$val] == " Full Name") {
+            if ($main_module_name !="Transport" && $all_fields_name[$val] == " Full Name") {
                 $col[] = DB::raw("concat_ws(' ',s.first_name,s.middle_name,s.last_name) as full_name");
-            }elseif($main_module_name =="Transport" && $sub_module_name == "Route" && $all_fields_name[$val] == " Full Name")
+            }elseif($main_module_name =="Transport" && $all_fields_name[$val] == " Full Name")
             {
-                $col[] = DB::raw("concat_ws(' ',tdd.first_name,tdd.last_name) as full_name");
+                if($sub_module_name[0] == "vehicle" ){
+                    $col[] = DB::raw("concat_ws(' ',tdd.first_name,tdd.last_name) as full_name");
+                }else{
+                    $col[] = DB::raw("concat_ws(' ',s.first_name,s.middle_name,s.last_name) as full_name");
+                }
             }
             elseif($all_fields_name[$val]=="Chapter Name"){
                 $col[] = DB::raw("GROUP_CONCAT(DISTINCT chm.chapter_name) as chapter_name");
