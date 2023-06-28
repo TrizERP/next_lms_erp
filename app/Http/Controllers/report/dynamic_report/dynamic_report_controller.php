@@ -552,7 +552,7 @@ class dynamic_report_controller extends Controller
         $col = [];
         foreach ($all_detail["selected_fields"] as $id => $val) {
             
-            if ($main_module_name !="Transport" && $all_fields_name[$val] == " Full Name") {
+            if ($main_module_name !="Transport" && $sub_module_name == "Route" && $all_fields_name[$val] == " Full Name") {
                 $col[] = DB::raw("concat_ws(' ',s.first_name,s.middle_name,s.last_name) as full_name");
             }elseif($main_module_name =="Transport" && $sub_module_name == "Route" && $all_fields_name[$val] == " Full Name")
             {
