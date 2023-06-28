@@ -33,6 +33,7 @@ use function App\Helpers\OtherBreackOfMonth;
 use function App\Helpers\OtherBreackOfMonthlast;
 use function App\Helpers\OtherBreackOfMonthHead;
 use function App\Helpers\OtherBreackOfMonthHeadlast;
+use function App\Helpers\get_string;
 
 class fees_collect_controller extends Controller
 {
@@ -1125,7 +1126,7 @@ class fees_collect_controller extends Controller
                 if ($order_id[1] == $sort_order) {
                     $fees_arr[$sort_order_id]['Fine'] = $total_fine;
 
-                    $fees_arr[$sort_order_id]['Discount'] = $total_discount;
+                    $fees_arr[$sort_order_id][get_string('discount','requests')] = $total_discount;
                 }
             }
         }

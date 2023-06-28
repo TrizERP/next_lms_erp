@@ -138,7 +138,7 @@
 											</td>
 										</tr>
 										<tr>
-											<td>Student Quota<span id="menuId" style="display:none"></span><a href="{{route('norm-clature.create')}}"><i class="mdi mdi-lead-pencil"></i></a></td>
+											<td>{{ App\Helpers\get_string('studentquota','request')}}<span id="menuId" style="display:none"></span><a href="{{route('norm-clature.create')}}"><i class="mdi mdi-lead-pencil"></i></a></td>
 											<td>
 												{{ $data['stu_data']['student_quota']; }}
 											</td>
@@ -156,7 +156,7 @@
 											</td>
 										</tr>
 										<tr>
-											<td>Std/Div</td>
+											<td>{{ App\Helpers\get_string('std/div','request')}}<span id="menuId" style="display:none"></span><a href="{{route('norm-clature.create')}}"><i class="mdi mdi-lead-pencil"></i></a></td>
 											<td>
 												{{ $data['stu_data']['stddiv']; }}
 											</td>

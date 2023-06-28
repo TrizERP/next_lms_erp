@@ -87,9 +87,9 @@
                             <th>Sr No.</th>
                             <th>Name</th>
                             <th>GR.No.</th>
-                            <th>Standard</th>
-                            <th>Division</th>                            
-                            <th>Student Quota</th>
+                            <th>{{ App\Helpers\get_string('standard','request')}}<span id="menuId" style="display:none"></span><a href="{{route('norm-clature.create')}}"><i class="mdi mdi-lead-pencil"></i></a></th>
+                            <th>{{ App\Helpers\get_string('division','request')}}<span id="menuId" style="display:none"></span><a href="{{route('norm-clature.create')}}"><i class="mdi mdi-lead-pencil"></i></a></th>                            
+                            <th>{{ App\Helpers\get_string('studentquota','request')}}<span id="menuId" style="display:none"></span><a href="{{route('norm-clature.create')}}"><i class="mdi mdi-lead-pencil"></i></a></th>
                             <th>Mobile</th>
                             <th>UniqueID/Adm.No</th>
                             <th>Remaining Fees</th>
@@ -212,6 +212,20 @@ $(document).ready(function () {
 });
 
 </script>
+
+<script>
+    var menuId = localStorage.getItem('current_id');
+    var spans = document.querySelectorAll('span.menuId');
+    for (var i = 0; i < spans.length; i++) {
+        spans[i].textContent = menuId;
+    }
+    var url = '{{ route("norm-clature.create") }}?menu_id=' + menuId;
+    var links = document.querySelectorAll('a[href="{{ route("norm-clature.create") }}"]');
+    for (var j = 0; j < links.length; j++) {
+        links[j].href = url;
+    }
+</script>
+
 @if(app('request')->input('implementation') == 1)
 <script type="text/javascript">
     document.body.className = document.body.className.replace("fix-header", "fix-header show-sidebar hide-sidebar");
