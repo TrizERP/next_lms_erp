@@ -166,8 +166,8 @@ class tblgroupwise_rightsController extends Controller {
 
         $response = array(
             $data,
-            $finalSubMenu ,
-            $finalSubSubMenu ,
+            $finalSubMenu ?? [],
+            $finalSubSubMenu ?? [],
             $rights
         );
         return $response;

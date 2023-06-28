@@ -47,6 +47,11 @@
                                                             {{$i.")  ".$explodedVal}}<br>
                                                             @php $i++; @endphp
                                                     @endforeach
+                                                @elseif($ind == "icard_icon")
+                                                @php
+                                                    $path = 'storage/app/public/driver/' . $val;
+                                                @endphp
+                                                <img src="{{ asset($path) }}" height="30%" width="30%">                                        
                                                 @else
                                                     {{$val}}
                                                 @endif

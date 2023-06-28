@@ -34,6 +34,7 @@
                                 <th>STD/DIV</th>
                                 <th>Mobile</th>
                                 <th>Date</th>
+                                <th>Title</th>
                                 <th>Message</th>
                                 <th>Reply</th>
                                 <th>Reply By</th>
@@ -52,6 +53,7 @@
                                 <td>@php echo $col_arr['stddiv']; @endphp</td>
                                 <td>@php echo $col_arr['mobile']; @endphp</td>
                                 <td>@php echo $col_arr['date_']; @endphp</td>
+                                <td>@php echo $col_arr['title']; @endphp</td>
                                 <td style="white-space: break-spaces;">@php echo $col_arr['message']; @endphp</td>
                                 @php if(!empty($col_arr['reply'])){ @endphp
                                 <td>@php echo $col_arr['reply']; @endphp</td>    

@@ -409,10 +409,10 @@ if (!function_exists('SearchChain')) {
 
         //  //  batch val  //  //
         $batch_option = "<option value=''>Select</option>";
-
+        $searchsection = 'Search Section';
         $grade = '<div class="col-md-' . $col . '">
                     <div class="form-group">
-                        <label>Select Section:</label>
+                        <label>'.get_string('searchsection','request').': </label>
                         <select name="' . $grade_name . '" id="grade" class="form-control" ' . $multiple . '>
                             ' . $option . '
                         </select>
@@ -423,18 +423,17 @@ if (!function_exists('SearchChain')) {
 
         $std = '<div class="col-md-' . $col . '">
                     <div class="form-group">
-                        <label>Select Standard:</label>
+                        <label>'.get_string('searchstandard','request').': </label>
                         <select name="' . $std_name . '" id="standard" class="form-control" ' . $multiple . '>
                             ' . $std_option . '
                         </select>
-
                     </div>
                 </div>';
         //<h4 class="box-title after-none mb-0">Select Standard:</h4>
 
         $div = ' <div class="col-md-' . $col . '">
                     <div class="form-group">
-                        <label>Select Division:</label>
+                        <label>'.get_string('searchdivision','request').': </label>
                         <select name="' . $div_name . '" id="division" class="form-control" ' . $multiple . '>
                             ' . $div_option . '
                         </select>
