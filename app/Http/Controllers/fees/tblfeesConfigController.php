@@ -61,6 +61,9 @@ class tblfeesConfigController extends Controller
         $auto_head_value = $auto_head_value ?? '';
         $request->request->add(['auto_head_counting' => $auto_head_value]);
 
+        $show_month = $request->get('show_month');
+        $show_month = $show_month ?? 0;
+        $request->request->add(['show_month' => $show_month]);
         $file_name = "";
         if ($request->hasFile('fees_bank_logo')) {
             $file = $request->file('fees_bank_logo');
@@ -167,6 +170,10 @@ class tblfeesConfigController extends Controller
         $auto_head_value = $request->get('auto_head_counting');
         $auto_head_value = $auto_head_value ?? '';
         $request->request->add(['auto_head_counting' => $auto_head_value]);
+
+        $show_month = $request->get('show_month');
+        $show_month = $show_month ?? 0;
+        $request->request->add(['show_month' => $show_month]);
 
         $file_name = "";
         if ($request->hasFile('fees_bank_logo')) {
