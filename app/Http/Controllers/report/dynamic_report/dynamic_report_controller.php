@@ -475,7 +475,52 @@ class dynamic_report_controller extends Controller
                             }
                         }
                     }
-                else {
+                    else{
+                        if ($main_module_name == "Transport") {
+                            foreach ($sub_module_name as $id => $arr) {
+                                if ($arr->sub_module == "Vehicle") {
+                                    $this->query = DB::table('transport_vehicle as tv');
+                                    $main_table_initial = "tv";
+                                    $tbltransport_join = [
+                                        'tv.driver'       => 'tdd.id',
+                                        'tv.sub_institute_id' => 'tdd.sub_institute_id',
+                                    ];
+                                    
+                                    $this->query->join('transport_driver_detail as tdd', function($join){
+                                        $join->whereRaw('tv.driver = tdd.id or tv.conductor = tdd.id and tv.sub_institute_id');
+                                    });
+                                }
+                                if ($arr->sub_module == "Route") {
+                                    $this->query = DB::table('transport_map_student as tms');
+                                    $main_table_initial = "tms";
+                                    $tblstudent_join = [
+                                        'tms.student_id'       => 's.id',
+                                        'tms.sub_institute_id' => 's.sub_institute_id',
+                                    ];
+                                    $tblshift_join = [
+                                        'tss.id' => 'tms.from_shift_id',
+                                        'tss.id' => 'tms.to_shift_id',
+                                    ];
+                                    $tblstop_join = [
+                                        'ts.id' => 'tms.from_stop',
+                                        'ts.id' => 'tms.to_stop',
+                                    ];
+                                    $tblvehicle_join = [
+                                        'tv.id' => 'tms.from_bus_id',
+                                        'tv.id' => 'tms.to_bus_id',
+                                    ];
+                                    $this->query->join('tblstudent as s', $tblstudent_join);
+                                    $this->query->join('tblstudent_enrollment as se', $enrollment_join);
+                                    $this->query->join('academic_section as acs', $grade_join);
+                                    $this->query->join('standard as st', $std_join);
+                                    $this->query->join('division as di', $div_join);
+                                    $this->query->leftjoin('transport_stop as ts', $tblstop_join);
+                                    $this->query->leftjoin('transport_vehicle as tv', $tblvehicle_join);
+                                    $this->query->leftjoin('transport_school_shift as tss', $tblshift_join);
+                                }
+                            }
+                        }
+                    else {
                         if ($main_module_name == "Circular") {
                             $this->query = DB::table('circular as c');
                             $main_table_initial = "c";
@@ -495,6 +540,7 @@ class dynamic_report_controller extends Controller
                     }
                 }
             }
+        }
                 }
             }
         }
@@ -505,9 +551,12 @@ class dynamic_report_controller extends Controller
 // Standard,Chapter Name,Subject Name,Total Contents,Content Name,Total Sub Content,Sub Content Name
         $col = [];
         foreach ($all_detail["selected_fields"] as $id => $val) {
-
-            if ($all_fields_name[$val] == " Full Name") {
+            
+            if ($main_module_name !="Transport" && $sub_module_name == "Route" && $all_fields_name[$val] == " Full Name") {
                 $col[] = DB::raw("concat_ws(' ',s.first_name,s.middle_name,s.last_name) as full_name");
+            }elseif($main_module_name =="Transport" && $sub_module_name == "Route" && $all_fields_name[$val] == " Full Name")
+            {
+                $col[] = DB::raw("concat_ws(' ',tdd.first_name,tdd.last_name) as full_name");
             }
             elseif($all_fields_name[$val]=="Chapter Name"){
                 $col[] = DB::raw("GROUP_CONCAT(DISTINCT chm.chapter_name) as chapter_name");

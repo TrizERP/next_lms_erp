@@ -111,7 +111,7 @@ class Handler extends ExceptionHandler
             // Redirect to dashboard with error message, filename, and line number
             $res['status_code']=0;
             $res['message']="Error Occured :".$exception->getMessage()." on line number ".$exception->getLine(); //$exception->getFile(),
-            //return redirect('/dashboard')->with(['data' => $res]);
+            return redirect('/dashboard')->with(['data' => $res]);
         }
 
         return parent::render($request, $exception);
