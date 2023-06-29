@@ -289,17 +289,19 @@ class fees_collect_controller extends Controller
             }
         })->groupBy('s.id')->get()->toArray();
         // return $check;exit;
-            if($check[0]->section_id==null || $check[0]->section_id==0){
-                $responce_arr['status_code']=0;
-                $responce_arr['message']="Devision Not Found";
-            }elseif($check[0]->student_quota==null || $check[0]->student_quota==0){
-                $responce_arr['status_code']=0;
-                $responce_arr['message']="Student Quota Not Found";
-            }elseif($check[0]->admission_year==null ||$check[0]->admission_year==0){
-                $responce_arr['status_code']=0;
-                $responce_arr['message']="Admission Year Not Found";
-            }else{$responce_arr['status_code']=0;
-            $responce_arr['message']="Fees Breakoff Not Found";}
+            if (isset($check[0]) && ($check[0]->section_id == null || $check[0]->section_id == 0)) {
+                $responce_arr['status_code'] = 0;
+                $responce_arr['message'] = "Devision Not Found";
+            } elseif (isset($check[0]) && ($check[0]->student_quota == null || $check[0]->student_quota == 0)) {
+                $responce_arr['status_code'] = 0;
+                $responce_arr['message'] = "Student Quota Not Found";
+            } elseif (isset($check[0]) && ($check[0]->admission_year == null || $check[0]->admission_year == 0)) {
+                $responce_arr['status_code'] = 0;
+                $responce_arr['message'] = "Admission Year Not Found";
+            } else {
+                $responce_arr['status_code'] = 0;
+                $responce_arr['message'] = "Some student fees breakoff not found";
+            }
         }
         // return $result;exit;
         $responce_arr['stu_data'] = $result;
