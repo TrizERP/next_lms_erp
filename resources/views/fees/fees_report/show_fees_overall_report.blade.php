@@ -123,7 +123,6 @@
                     {
                         $var = "amount_paid_".$month_id;
                         $$var = 0;
-                        $var_t = $var_r = 0;
                         $var1 = "amount_unpaid_".$month_id;
                         $$var1 = 0;
                     }
@@ -131,7 +130,7 @@
                     @endphp
                                            
                     @if(isset($data['fees_data']))
-                        @foreach($fees_data as $key => $fees_value)              
+                        @foreach($fees_data as $key => $fees_value)                  
                         <tr>
                             <td>{{$j}}</td>
                             <td>{{$fees_value['enrollment']}}</td>
@@ -139,14 +138,14 @@
                             <td>{{$fees_value['stddiv']}}</td>
                             <td>{{$fees_value['mobile']}}</td>
                             <td>{{$fees_value['uniqueid']}}</td>
-                            <td style="background-color:#7befef;">{{$fees_value['-']['bk'] ?? ''}}</td>
+                            <td style="background-color:#7befef;">{{$fees_value['-']['bk'] ?? 0 }}</td>
                             @foreach($data['month_arr'] as $month_id => $month_val)
                                 @php
                                 if(isset($fees_value[$month_id]['paid']))
                                 {
                                     echo "<td>".$fees_value[$month_id]['paid']."</td>";
                                     $var = "amount_paid_".$month_id;
-                                    $var_t += $fees_value[$month_id]['paid'];                                    
+                                    $$var += $fees_value[$month_id]['paid'];                                    
                                 }
                                 else
                                 {
@@ -174,14 +173,14 @@
                             @endphp
                             <td>{{$fine}}</td>                          
                             <td>{{$discount}}</td>                          
-                            <td style="background-color:#7befef;">{{ ($var_t + $fine + $discount ) ?? 0}}</td>                          
+                            <td style="background-color:#7befef;">{{$fees_value['-']['paid'] ?? 0 }}</td>                          
                             @foreach($data['month_arr'] as $month_id => $month_val)
                                 @php
                                 if(isset($fees_value[$month_id]['remain']))
                                 {
                                     echo "<td>".$fees_value[$month_id]['remain']."</td>";
                                     $var1 = "amount_unpaid_".$month_id;
-                                    $var_r += $fees_value[$month_id]['remain'];                                    
+                                    $$var1 += $fees_value[$month_id]['remain'];                                    
                                 }
                                 else
                                 {
@@ -189,9 +188,9 @@
                                 }                                                                                                   
                                 @endphp                                                        
                             @endforeach
-                            <td style="background-color:#7befef;">{{$var_r ?? ''}}</td>  
+                            <td style="background-color:#7befef;">{{$fees_value['-']['remain'] ?? 0}}</td>  
                             @php
-                            $total_unpaid += $fees_value['-']['remain'] ?? 0     ;
+                            $total_unpaid += $fees_value['-']['remain'] ?? 0;
                             @endphp                            
                         </tr>
                     @php
