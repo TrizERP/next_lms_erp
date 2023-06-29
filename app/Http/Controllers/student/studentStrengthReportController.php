@@ -44,13 +44,20 @@ class studentStrengthReportController extends Controller
         ->where('standard.name', '!=', 'Nursery')
         ->orWhere('standard.name', '1');
        // Add group by date, standard, and division
-        $query->groupBy('standard.name', 'division.name');
+       if(!in_array('division',$request['standard_wise']) ){
+            $query->groupBy('standard.name');
+       }else{
+            $query->groupBy('standard.name', 'division.name');
+       }
+       
         $query->orderByRaw('standard.id,division.id');
         // Filter by start_date or admission_date
         if ($request['one_date'] === 'start') {
-            $query->whereDate('tblstudent_enrollment.start_date', date('y-m-d', strtotime($request['get_date'])));
+            $query->whereBetween('tblstudent_enrollment.start_date', [date('Y-m-d', strtotime($request['from_date'])), date('Y-m-d', strtotime($request['to_date']))]);
+
         } elseif ($request['one_date'] === 'add') {
-            $query->whereDate('tblstudent.admission_date', date('y-m-d', strtotime($request['get_date'])));
+            $query->whereBetween('tblstudent.admission_date', [date('Y-m-d', strtotime($request['from_date'])), date('Y-m-d', strtotime($request['to_date']))]);
+
         }
     
         // Filter by religion
@@ -101,15 +108,17 @@ class studentStrengthReportController extends Controller
         if (isset($request['general'])) {
             foreach ($request['general'] as $generalOption) {
                 if ($generalOption === 'new_add') {
-                    $query->orWhereRaw('tblstudent.admission_date = "' . date('y-m-d', strtotime($request['get_date'])) . '"');
+                    $query->WhereBetween('tblstudent.admission_date', [date('Y-m-d', strtotime($request['from_date'])), date('Y-m-d', strtotime($request['to_date']))]);
+
                     $query->addSelect(
-                        DB::raw("SUM(CASE WHEN tblstudent.admission_date = '" . date('y-m-d', strtotime($request['get_date'])) . "' THEN 1 ELSE 0 END) as new_add")
+                        DB::raw("SUM(CASE WHEN tblstudent.admission_date BETWEEN '" . date('y-m-d', strtotime($request['from_date'])) . "' AND '" . date('y-m-d', strtotime($request['to_date'])) . "' THEN 1 ELSE 0 END) as new_add")
                     );
                 }
                 if ($generalOption === 'take_lc') {
-                    $query->orWhereRaw('tblstudent_enrollment.end_date = "' . date('y-m-d') . '"');
+                    $query->WhereBetween('tblstudent_enrollment.end_date', [date('Y-m-d', strtotime($request['from_date'])), date('Y-m-d', strtotime($request['to_date']))]);
+                    
                     $query->addSelect(
-                        DB::raw("SUM(CASE WHEN tblstudent_enrollment.end_date = '" . date('y-m-d') . "' THEN 1 ELSE 0 END) as take_lc ")
+                        DB::raw("SUM(CASE WHEN tblstudent_enrollment.end_date BETWEEN '" . date('y-m-d', strtotime($request['from_date'])) . "' AND '" . date('y-m-d', strtotime($request['to_date'])) . "' THEN 1 ELSE 0 END) as take_lc")
                     );
                 }
             }
@@ -117,12 +126,13 @@ class studentStrengthReportController extends Controller
         // Retrieve the results
         $res['result'] = $query->get();
 
-        // return $res['result'];
+        // return $request->one_date;exit;
         $res['status_code'] = 1;
         $res['message'] = "Success";
         $res['one_date'] = $request->one_date;
         $res['standard'] = $request->standard_wise;
-        $res['date'] = $request->get_date;
+        $res['from_date'] = $request->from_date;
+        $res['to_date'] = $request->to_date;        
         $res['general'] = $request->general;
         $res['strength'] = $request->strength;
         $res['religion'] = $request->religion;
