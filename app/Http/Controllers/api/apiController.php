@@ -234,6 +234,7 @@ class apiController extends Controller
                     $query->select(DB::raw('tblstudent_enrollment.syear'))
                         ->from('tblstudent_enrollment')
                         ->whereRaw('tblstudent_enrollment.student_id = tblstudent.id')
+                        ->whereRaw('tblstudent_enrollment.end_date is NULL')
                         ->orderBy('tblstudent_enrollment.syear', 'DESC')
                         ->take(1);
                 })
