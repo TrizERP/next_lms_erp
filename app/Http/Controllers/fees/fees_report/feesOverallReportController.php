@@ -177,11 +177,12 @@ class feesOverallReportController extends Controller
         $controller = new fees_collect_controller;
 
         $month_arr = FeeMonthId();
+
         $final_array = array();
+
 
         foreach ($feesData as $key => $value) {
             $bk_data = $controller->getBk($request, $value['id']);
-            
             if (count($bk_data) > 0) {
                 $final_array[$value['id']]['enrollment'] = $bk_data['stu_data']['enrollment'];
                 $final_array[$value['id']]['name'] = $bk_data['stu_data']['name'];
@@ -192,32 +193,39 @@ class feesOverallReportController extends Controller
                 $final_array[$value['id']]['mobile'] = $bk_data['stu_data']['mobile'];
                 $final_array[$value['id']]['uniqueid'] = $bk_data['stu_data']['uniqueid'];
                 $total_fees_array = array();
-                $total_bk = 0;
-            $final_array[$value['id']]['-']['bk'] = 0;
-                
                 foreach ($bk_data as $stu_id => $total_fees) {
                     $total_fees_array[] = $total_fees;
-                    
                     foreach ($total_fees_array[0] as $key => $month_data) {
                         if (isset($month_data['month_id'])) {
                             $final_array[$value['id']][$month_data['month_id']]['paid'] = $month_data['paid'];
                             $final_array[$value['id']][$month_data['month_id']]['remain'] = $month_data['remain'];
                             $final_array[$value['id']][$month_data['month_id']]['bk'] = $month_data['bk'];
-                            $total_bk = $total_bk+$month_data['bk'];
                         }
                     }
-                    
                 }
-                
-                if (isset($fees_fine_discount_data[$value['id']])) {
-                    $final_array[$value['id']]['fine'] = $fees_fine_discount_data[$value['id']]['total_fine'];
-                    $final_array[$value['id']]['discount'] = $fees_fine_discount_data[$value['id']]['total_disc'];
-                }
-                
             }
-            $final_array[$value['id']]['-']['bk'] = $total_bk;
-   
-    }
+            if (isset($fees_fine_discount_data[$value['id']])) {
+                $final_array[$value['id']]['fine'] = $fees_fine_discount_data[$value['id']]['total_fine'];
+                $final_array[$value['id']]['discount'] = $fees_fine_discount_data[$value['id']]['total_disc'];
+            } 
+
+        if (isset($final_array[$value['id']])) {
+            $student_data = $final_array[$value['id']];
+            $total_paid_student =  $total_remain_student =  $total_bk_student = 0;
+
+            foreach ($student_data as $key => $data) {
+                if ($key !== 'total_bk' && is_array($data) && isset($data['bk']) ||  isset($data['paid']) ||  isset($data['remain']) ) {
+                    $total_paid_student += $data['paid'];
+                    $total_remain_student += $data['remain'];
+                    $total_bk_student += $data['bk'];            
+                    $final_array[$value['id']]['-']['paid'] = $total_paid_student;
+                    $final_array[$value['id']]['-']['remain'] = $total_remain_student; 
+                    $final_array[$value['id']]['-']['bk'] = $total_bk_student; 
+                }
+            }
+        } 
+        }
+
         $res['status_code'] = 1;
         $res['message'] = "Success";
         $res['fees_data'] = $final_array;
