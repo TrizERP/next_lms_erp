@@ -122,8 +122,12 @@ if (isset($_REQUEST['submit'])) {
 
                     if ($valueFields['field'] == "punchin_time" || $valueFields['field'] == "punchout_time") {
                         $timestamp = PHPExcel_Style_NumberFormat::toFormattedString($excelDateTime, 'YYYY-MM-DD HH:MM:SS'); // Convert Excel timestamp to formatted date and time string
-                        $date = DateTime::createFromFormat('Y-m-d H:i:s', $timestamp); // Create a DateTime object using the formatted string
-                        $valueQuery .= "'" . $date->format('Y-m-d H:i:s'). "',"; // Output the formatted date and time
+                        $date = DateTime::createFromFormat('Y-m-d H:i:s', $timestamp);
+                        if($date !== false){ // Create a DateTime object using the formatted string
+                            $valueQuery .= "'" . $date->format('Y-m-d H:i:s'). "',"; // Output the formatted date and time
+                        }else{
+                            $valueQuery .= "'".$value[$valueFields['field']] . "',";
+                        }
                     } else {
                         $valueQuery .= "'" . date('Y-m-d', PHPExcel_Shared_Date::ExcelToPHP($value[$valueFields['field']])) . "',";
                     }

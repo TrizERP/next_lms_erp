@@ -25,6 +25,7 @@ use function App\Helpers\FeeBreakoffHeadWiselast;
 use function App\Helpers\FeeMonthId;
 use function App\Helpers\FeeMonthIdlast;
 use function App\Helpers\is_mobile;
+use function App\Helpers\get_string;
 use function App\Helpers\OtherBreackOff;
 use function App\Helpers\OtherBreackOfflast;
 use function App\Helpers\OtherBreackOffHead;
@@ -33,7 +34,7 @@ use function App\Helpers\OtherBreackOfMonth;
 use function App\Helpers\OtherBreackOfMonthlast;
 use function App\Helpers\OtherBreackOfMonthHead;
 use function App\Helpers\OtherBreackOfMonthHeadlast;
-use function App\Helpers\get_string;
+use function Illuminate\Session\expired;
 
 class fees_collect_controller extends Controller
 {
@@ -320,8 +321,7 @@ class fees_collect_controller extends Controller
      */
     public function pay_fees(Request $request)
     {
-    //    return $_REQUEST['months'];exit;
-
+ 
         $fees_data = [];
         foreach ($_REQUEST['fees_data'] as $id => $arr) {
             if ($arr != 0) {
@@ -434,13 +434,7 @@ class fees_collect_controller extends Controller
                 }
             }
         }
-        //getting heads of other fee not compulsory
-        // $other_fee_heads2 = [];
-        // foreach ($_REQUEST['fees_data'] as $id => $vals) {
-        //     if (! in_array($id, $reg_fee_heads2)) {
-        //         $other_fee_heads2[] = $id;
-        //     }
-        // }
+       
 
         //getting reg fee month_id that we need to pay
         $syear = session()->get('syear');
@@ -478,32 +472,7 @@ class fees_collect_controller extends Controller
         }
         $reg_insert_arr2 = [];
 
-    // foreach ($reg_fee_bk2 as $month => $bk_off) {
-    //     if (in_array($month, $reg_months_pay2)){
-    //           foreach ($bk_off as $title => $arr) {
-
-    //             $insert_amount = 0;
-    //             if(isset($_REQUEST['fees_data'][$title])){
-
-    //             if ($_REQUEST['fees_data'][$title] < $arr['amount'] ) {
-    //                 $_REQUEST['fees_data'][$title] = $_REQUEST['fees_data'][$title] - $arr['amount'];
-    //                 $insert_amount = $arr['amount'];
-    //             } else {
-    //                 $insert_amount = $_REQUEST['fees_data'][$title];
-    //                 $_REQUEST['fees_data'][$title] = 0;
-    //             }
-
-    //         }
-    //         if($insert_amount !=0){
-    //         $reg_insert_arr[$month][$title] = $insert_amount;
-    //     }
-    //         }
-    //    }
-    // }
-       // echo "For Previous";echo "<pre>";print_r($reg_insert_arr);exit;
-   
     }
-       // echo "For current";echo "<pre>";print_r($reg_fee_bk2);exit;
 
 // last year fees end
         $receipt_number = $this->gunrate_receipt_number();
@@ -981,35 +950,75 @@ class fees_collect_controller extends Controller
         ];
 
         $month_name = '';
+        $month_name2 = '';        
+        $all_months='';
         foreach ($_REQUEST['months'] as $id => $arr) {
             $y = $arr / 10000;
             $month = (int) $y;
             $year = substr($arr, -4);
             $month_name .= $months[$month]."/".$year.',';
+            $all_months .= $month.$year.',';
         }
+        $fees_paid_name = [];
         $month_name = substr($month_name, 0, -1);
-
+      $config_master = DB::table('fees_config_master')->whereRaw('sub_institute_id='.session()->get('sub_institute_id').' and syear='.session()->get('syear').' and show_month !=0')->get()->toArray();
+    //   return $config_master;exit;
+      if(!empty($config_master)){
+            $fees_paid_name = DB::table('fees_collect as fc')
+            ->join('fees_receipt as fr', function ($join) {
+            $join->whereRaw('find_in_set(fc.id,fr.FEES_ID)');
+        })->selectRaw('fc.term_id,fc.tution_fee,fc.admission_fee,fc.activity_fee,fc.term_fee,fc.deposit,fc.co_curriculam_fees,fc.computer_fees,fc.smart_class,fc.security_charges,fc.photograph,fc.cal_misc,fc.title_1,fc.title_2,fc.title_3,fc.title_4,fc.title_5,fc.title_6,fc.title_7,fc.title_8,fc.title_9,fc.title_10,fc.title_11,fc.title_12')
+        ->where('fr.id', $receipt_id)
+                ->get()->map(function ($row) {
+                    // Filter out the columns that are equal to 0
+                    return collect($row)->filter(function ($value, $key) {
+                        return $value != 0;
+                    })->toArray();
+                })->toArray();
+      }
+            foreach ($fees_paid_name as $id => $arr) {
+                $y = $arr['term_id'] / 10000;
+                $month = (int) $y;
+                $year = substr( $arr['term_id'], -4);
+                $month_name2 = $months[$month].',';
+                // Replace the term_id value with month_name2
+                $fees_paid_name[$id]['term_id'] = substr($month_name2, 0, -1);
+            }
+      
         $fees_paid = DB::table('fees_collect as fc')
             ->join('fees_receipt as fr', function ($join) {
                 $join->whereRaw('find_in_set(fc.id,fr.FEES_ID)');
             })->selectRaw('fc.*')
             ->where('fr.id', $receipt_id)->get()->toArray();
+            // ->where('fr.id', 285)->get()->toArray();            
 
         $other_fees_paid = DB::table('fees_paid_other as fc')
             ->join('fees_receipt as fr', function ($join) {
                 $join->whereRaw('find_in_set(fc.id,fr.OTHER_FEES_ID)');
             })->selectRaw('fc.*')
             ->where('fr.id', $receipt_id)->get()->toArray();
+            // ->where('fr.id', 285)->get()->toArray();            
 
         $ret_heds_with_id = DB::table('fees_title')
             ->where('SUB_INSTITUTE_ID', session()->get('sub_institute_id'))
             ->where('syear', session()->get('syear'))
             ->orderBy('sort_order')
             ->get()->toArray();
-
         $other_fees_heads = [];
         $reg_fees_heads = [];
 
+        foreach ($fees_paid_name as $index => $data) {
+            foreach ($data as $key => $value) {
+                foreach ($ret_heds_with_id as $ret_head) {
+                    if ($ret_head->fees_title === $key) {
+                        $fees_paid_name[$index][$ret_head->display_name] = $value;
+                        unset($fees_paid_name[$index][$key]);
+                        break;
+                    }
+                }
+            }
+        }
+        
         foreach ($ret_heds_with_id as $id => $arr) {
             if ($arr->fees_title_id == '1') {
                 $other_fees_heads[] = $arr;
@@ -1017,7 +1026,6 @@ class fees_collect_controller extends Controller
                 $reg_fees_heads[] = $arr;
             }
         }
-
         $fees_arr = [];
         $insert_html_ids = [];
         foreach ($receipt_arr as $sort_order => $arr) {
@@ -1098,6 +1106,7 @@ class fees_collect_controller extends Controller
                 $fees_arr[$arr['rid']."_".$sort_order][$diplay_name] = $total;
             }
         }
+      
         //adding discount in array
         foreach ($insert_html_ids as $sort_order => $arr) {
             $total_discount = 0;
@@ -1128,7 +1137,7 @@ class fees_collect_controller extends Controller
                 if ($order_id[1] == $sort_order) {
                     $fees_arr[$sort_order_id]['Fine'] = $total_fine;
 
-                    $fees_arr[$sort_order_id][get_string('discount','requests')] = $total_discount;
+                    $fees_arr[$sort_order_id][get_string('discount','request')] = $total_discount;
                 }
             }
         }
@@ -1138,18 +1147,30 @@ class fees_collect_controller extends Controller
         foreach ($fees_arr as $id => $arr) {
             foreach ($arr as $head_id => $amount) {
                 if ($amount != 0) {
-                    $new_fees_arr[$id][$head_id] = $amount;
+                    $months = [];
+                    foreach ($fees_paid_name as $paid_arr) {
+                        if (isset($paid_arr[$head_id])) {
+                            $months[] = $paid_arr['term_id'];
+                        }
+                    }
+                    $new_head_id = $head_id;
+                    if (!empty($months)) {
+                        $new_head_id .= ' (' . implode(',', $months) . ')';
+                    }
+                    $new_fees_arr[$id][$new_head_id] = $amount;
                 }
             }
         }
+              
+        // echo "<pre>";print_r($new_fees_arr);
+        // exit;
         foreach ($new_fees_arr as $id => $arr) {
             if (count($arr) == 0) {
                 unset($new_fees_arr[$id]);
             }
         }
         $fees_arr = $new_fees_arr;
-
-
+        
         // 31/03/2021 - START FOR making cumulative fees recepit array
         $get_cumulative_result = DB::table('fees_title')
             ->selectRaw('id,display_name,cumulative_name,append_name')
@@ -1179,8 +1200,9 @@ class fees_collect_controller extends Controller
 
         $sub_institute_id = session()->get('sub_institute_id');
         $final_html = "";
-
+    
         foreach ($fees_arr as $id => $arr) {
+            
             $id_arr = explode('_', $id);
             $RECEIPT_NO = $id_arr[0];
             $sort_order = $id_arr[1];
@@ -1242,7 +1264,7 @@ class fees_collect_controller extends Controller
             }
 
             // 31/03/2021 END for Cumulative Fees Receipt
-
+   
             foreach ($arr as $pkey => $pval) {
                 //  31/03/2021 - Start For Cumulative name
                 if (isset($appendnew[$pkey])) {
@@ -1265,8 +1287,6 @@ class fees_collect_controller extends Controller
                 $fees_head_content .= '  <td colspan="3" align="left">' . $pkey . '</td>'; //&nbsp;(' . $TERM_SHORT_NAME . ')
                 $fees_head_content .= '  <td align="right">' . $minus_sign . $pval . '</td>'; //&nbsp;(' . $TERM_SHORT_NAME . ')
                 $fees_head_content .= '</tr>';
-
-
             }
             $fees_head_content .= '<tr>
                   <td align="left" colspan="3"><b>Total</b></td>

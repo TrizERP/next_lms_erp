@@ -101,6 +101,14 @@ class tblstudentController extends Controller
         }, $maxEnrollment);
 
         $new_enrollment_no = $maxEnrollment['0']['new_enrollment_no'];
+        $admission_year = DB::table(DB::raw("(SELECT ".$syear." AS year
+            UNION ALL SELECT ".$syear - 1 ."
+            UNION ALL SELECT ".$syear - 2 ."
+            UNION ALL SELECT ".$syear - 3 ."
+            UNION ALL SELECT ".$syear - 4 ."
+            ) AS subquery"))
+            ->select('year')
+            ->get();
 
         $res['status_code'] = 1;
         $res['message'] = "Success";
@@ -108,7 +116,8 @@ class tblstudentController extends Controller
         $res['custom_fields'] = $dataCustomFields;
 		if (count($finalfieldsData) > 0) {
 			$res['data_fields'] = $finalfieldsData;
-		}
+        }
+        $res['admission_year'] = $admission_year;
 		$res['student_quota'] = $studentQuota;
 		$res['bloodgroup_data'] = $bloodgroupData;
 		$res['religion_data'] = $religionData;
@@ -771,9 +780,18 @@ class tblstudentController extends Controller
 		}
 		if (count($studentTcdetails) > 0) {
 			$res['studentTcdetails'] = $studentTcdetails[0];
-		}
+        }
+        $admission_year = DB::table(DB::raw("(SELECT ".$syear." AS year
+        UNION ALL SELECT ".$syear - 1 ."
+        UNION ALL SELECT ".$syear - 2 ."
+        UNION ALL SELECT ".$syear - 3 ."
+        UNION ALL SELECT ".$syear - 4 ."
+        ) AS subquery"))
+        ->select('year')
+        ->get();
 
-		$res['student_quota'] = $studentQuota;
+        $res['admission_year'] = $admission_year;        
+        $res['student_quota'] = $studentQuota;
 		$res['breakoff_MonthArr'] = $breakoff_MonthArr;
 		$res['studentPM_Arr'] = $studentPM_Arr;
 		$res['ac_type_arr'] = $ac_type_arr;

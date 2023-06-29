@@ -107,12 +107,13 @@ class Handler extends ExceptionHandler
             if ($exception->getStatusCode() == 404) {
                 return response()->view('errors.'.'404', [], 404);
             }
-        }else {
-            // Redirect to dashboard with error message, filename, and line number
-            $res['status_code']=0;
-            $res['message']="Error Occured :".$exception->getMessage()." on line number ".$exception->getLine(); //$exception->getFile(),
-            return redirect('/dashboard')->with(['data' => $res]);
         }
+        // else {
+        //     // Redirect to dashboard with error message, filename, and line number
+        //     $res['status_code']=0;
+        //     $res['message']="Error Occured :".$exception->getMessage()." on line number ".$exception->getLine(); //$exception->getFile(),
+        //     return redirect('/dashboard')->with(['data' => $res]);
+        // }
 
         return parent::render($request, $exception);
     }

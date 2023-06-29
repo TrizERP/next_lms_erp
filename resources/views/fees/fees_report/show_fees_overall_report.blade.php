@@ -138,7 +138,7 @@
                             <td>{{$fees_value['stddiv']}}</td>
                             <td>{{$fees_value['mobile']}}</td>
                             <td>{{$fees_value['uniqueid']}}</td>
-                            <td style="background-color:#7befef;">{{$fees_value['-']['bk']}}</td>
+                            <td style="background-color:#7befef;">{{$fees_value['-']['bk'] ?? 0 }}</td>
                             @foreach($data['month_arr'] as $month_id => $month_val)
                                 @php
                                 if(isset($fees_value[$month_id]['paid']))
@@ -154,8 +154,8 @@
                                 @endphp
                             @endforeach 
                             @php
-                            $total_paid += $fees_value['-']['paid'];
-                            $total_breakoff += $fees_value['-']['bk'];
+                            $total_paid += $fees_value['-']['paid'] ?? 0;
+                            $total_breakoff += $fees_value['-']['bk'] ?? 0;
                             if(isset($fees_value['fine']))
                             {
                                 $total_fine += $fees_value['fine'];
@@ -173,7 +173,7 @@
                             @endphp
                             <td>{{$fine}}</td>                          
                             <td>{{$discount}}</td>                          
-                            <td style="background-color:#7befef;">{{$fees_value['-']['paid']}}</td>                          
+                            <td style="background-color:#7befef;">{{$fees_value['-']['paid'] ?? 0 }}</td>                          
                             @foreach($data['month_arr'] as $month_id => $month_val)
                                 @php
                                 if(isset($fees_value[$month_id]['remain']))
@@ -188,9 +188,9 @@
                                 }                                                                                                   
                                 @endphp                                                        
                             @endforeach
-                            <td style="background-color:#7befef;">{{$fees_value['-']['remain']}}</td>  
+                            <td style="background-color:#7befef;">{{$fees_value['-']['remain'] ?? 0}}</td>  
                             @php
-                            $total_unpaid += $fees_value['-']['remain'];
+                            $total_unpaid += $fees_value['-']['remain'] ?? 0;
                             @endphp                            
                         </tr>
                     @php

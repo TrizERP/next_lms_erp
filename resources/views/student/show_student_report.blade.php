@@ -47,10 +47,10 @@
                                                     @endif value="student_name">Student Name
                                             </option>
                                             <option @if($order_by == 'standard_id') selected="selected"
-                                                    @endif value="standard_id">Standard
+                                                    @endif value="standard_id">{{ App\Helpers\get_string('standard','request')}}
                                             </option>
                                             <option @if($order_by == 'enrollment_no') selected="selected"
-                                                    @endif value="enrollment_no">GR No
+                                                    @endif value="enrollment_no">{{ App\Helpers\get_string('grno','request')}}
                                             </option>
                                             <option @if($order_by == 'roll_no') selected="selected"
                                                     @endif value="roll_no">Roll No

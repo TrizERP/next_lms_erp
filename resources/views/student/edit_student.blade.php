@@ -132,7 +132,7 @@ br {
                                             <input type="text" id='username' required name="username" value="{{ $student_data->username }}"  class="form-control">
                                         </div>
                                         <div class="col-md-4 form-group">
-                                            <label>Gr No.</label>
+                                            <label>{{ App\Helpers\get_string('grno','request')}}</label>
                                             <input type="text" id='enrollment_no' required value="{{ $student_data->enrollment_no }}" name="enrollment_no" class="form-control">
                                         </div>
                                         <div class="col-md-4 form-group">
@@ -170,15 +170,12 @@ br {
                                         <div class="col-md-4 form-group">
                                             <label>Admission Year</label>
                                             <select id='admission_year' name="admission_year" class="form-control" >
-                                                <option value="">SELECT</option>
-                                               <option @if($student_data->admission_year == 2016) selected="selected" @endif value="2016">2016</option>
-                                                 <option @if($student_data->admission_year == 2017) selected="selected" @endif value="2017">2017</option>
-                                                  <option @if($student_data->admission_year == 2018) selected="selected" @endif value="2018">2018</option>
-                                                <option @if($student_data->admission_year == 2019) selected="selected" @endif value="2019">2019</option>
-                                                <option @if($student_data->admission_year == 2020) selected="selected" @endif value="2020">2020</option>
-                                                <option @if($student_data->admission_year == 2021) selected="selected" @endif value="2021">2021</option>
-                                                <option @if($student_data->admission_year == 2022) selected="selected" @endif value="2022">2022</option>
-                                                <option @if($student_data->admission_year == 2023) selected="selected" @endif value="2023">2023</option>
+                                                <option value="">--Select--</option>  
+                                                @if(isset($data['admission_year']))
+                                                    @foreach($data['admission_year'] as $key => $value)
+                                                        <option @if($student_data->admission_year == $value->year) selected="selected" @endif value="{{ $value->year }}">{{ $value->year }}</option>
+                                                    @endforeach
+                                                @endif   
                                             </select>                                           
                                         </div>
                                         <div class="col-md-4 form-group" >
@@ -245,7 +242,7 @@ br {
                                         <div class="col-md-4 form-group">
                                             <label>Student Quota</label>
                                             <select id='student_quota' required name="student_quota" class="form-control" >
-                                                <option value="">SELECT STUDENT QUOTA</option>
+                                                <option value="">--Select--</option>
                                                 @if(isset($data['student_quota']))
 
                                                     @foreach($data['student_quota'] as $key => $value)
@@ -264,9 +261,9 @@ br {
                                         </div>    
 
                                         <div class="col-md-4 form-group">
-                                            <label>House</label>
+                                            <label>{{ App\Helpers\get_string('house','request')}}</label>
                                             <select id='house' name="house" class="form-control">
-                                                <option value="">Select House</option>  
+                                                <option value="">--Select--</option>  
                                                 @if(isset($data['house_data']))
                                                     @foreach($data['house_data'] as $key => $value)
                                                         <option @if($student_data->house_id == $value['id'] ) selected="selected" @endif value="{{ $value['id'] }}">{{ $value['house_name'] }}</option>
@@ -316,7 +313,7 @@ br {
                                         <div class="col-md-4 form-group">
                                             <label>Student Batch</label>
                                             <select id='studentbatch' name="studentbatch" class="form-control">
-                                                <option value="">Select</option>
+                                                <option value="">--Select--</option>
                                                 @if(isset($data['batch_data']))
                                                     @foreach($data['batch_data'] as $key => $value)
                                                         <option @if($student_data->studentbatch == $value['id'] ) selected="selected" @endif value="{{ $value['id'] }}">{{ $value['title'] }}</option>
@@ -328,7 +325,7 @@ br {
                                         <div class="col-md-4 form-group">
                                             <label>Student Religion</label>
                                             <select id='religion' name="religion" class="form-control">
-                                                <option value="">Select</option>  
+                                                <option value="">--Select--</option>  
                                                 @if(isset($data['religion_data']))
                                                     @foreach($data['religion_data'] as $key => $value)
                                                         <option @if($student_data->religion == $value['id'] ) selected="selected" @endif value="{{ $value['id'] }}">{{ $value['religion_name'] }}</option>
@@ -340,7 +337,7 @@ br {
                                         <div class="col-md-4 form-group">
                                             <label>Student Caste Category</label>
                                             <select id='cast' name="cast" class="form-control">
-                                                <option value="">Select</option>  
+                                                <option value="">--Select--</option>  
                                                 @if(isset($data['caste_data']))
                                                     @foreach($data['caste_data'] as $key => $value)
                                                         <option @if($student_data->cast == $value['id'] ) selected="selected" @endif value="{{ $value['id'] }}">{{ $value['caste_name'] }}</option>
@@ -367,7 +364,7 @@ br {
                                         <div class="col-md-4 form-group">
                                             <label>Student Blood Group</label>
                                             <select id='bloodgroup' name="bloodgroup" class="form-control">
-                                                <option value="">Select</option>  
+                                                <option value="">--Select--</option>  
                                                 @if(isset($data['bloodgroup_data']))
                                                     @foreach($data['bloodgroup_data'] as $key => $value)
                                                         <option @if($student_data->bloodgroup == $value['id'] ) selected="selected" @endif value="{{ $value['id'] }}">{{ $value['bloodgroup'] }}</option>
@@ -382,13 +379,13 @@ br {
                                         </div>
                                         
                                         <div class="col-md-4 form-group">
-                                            <label>Annual Income</label>
+                                            <label>{{ App\Helpers\get_string('annualincome','request')}}</label>
                                             <input type="number" id='anuualincome' value="{{ $student_data->anuualincome }}" name="anuualincome" class="form-control">
                                         </div>
                                         {{--  For Euro School --}}
                                         @if (Session::get('sub_institute_id') != '195')
                                          <div class="col-md-4 form-group">
-                                            <label>Unique ID</label>
+                                            <label>{{ App\Helpers\get_string('uniquid','request')}}</label>
                                             <input type="text" id='uniqueid' value="{{ $student_data->uniqueid }}" name="uniqueid" class="form-control">
                                         </div> 
                                         @endif  

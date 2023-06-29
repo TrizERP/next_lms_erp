@@ -74,7 +74,7 @@
                             </div>
                             <div class="col-md-4 form-group">
                                 <label>Bank Logo </label>
-                                <input type="file" accept="image/*" @if(isset($data))data-default-file="/storage/fees/{{ $data['bank_logo'] }}" @endif name="bank_logo" id="input-file-now" class="dropify" />
+                                <input type="file" accept="image/*" @if(isset($data))data-default-file="/storage/fees/{{ $data['bank_logo'] ?? '' }}" @endif name="bank_logo" id="input-file-now" class="dropify" />
                             </div>
                             <div class="col-md-4 form-group" hidden="hidden">
                                 <label>Receipt Id </label>
@@ -110,7 +110,7 @@
                             </div>
                             <div class="col-md-4 form-group">
                                 <label for="input-file-now">Receipt Logo</label>
-                                <input type="file" accept="image/*" @if(isset($data))data-default-file="/storage/fees/{{ $data['receipt_logo'] }}" @endif name="fees_receipt_logo" id="input-file-now" class="dropify" />
+                                <input type="file" accept="image/*" @if(isset($data))data-default-file="/storage/fees/{{ $data['receipt_logo'] ?? '' }}" @endif name="fees_receipt_logo" id="input-file-now" class="dropify" />
                             </div>
                             <div class="col-md-4 form-group" hidden="hidden">
                                 <label for="input-file-now">Receipt Logo</label>
