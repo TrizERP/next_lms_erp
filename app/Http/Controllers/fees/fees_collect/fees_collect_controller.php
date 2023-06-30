@@ -290,6 +290,7 @@ class fees_collect_controller extends Controller
             }
         })->groupBy('s.id')->get()->toArray();
         // return $check;exit;
+        if(!empty($check)){
             if($check[0]->section_id==null || $check[0]->section_id==0){
                 $responce_arr['status_code']=0;
                 $responce_arr['message']="Devision Not Found";
@@ -301,7 +302,11 @@ class fees_collect_controller extends Controller
                 $responce_arr['message']="Admission Year Not Found";
             }else{$responce_arr['status_code']=0;
             $responce_arr['message']="Fees Breakoff Not Found";}
+        }else{
+            $responce_arr['status_code']=0;
+            $responce_arr['message']="Student Details Not Found";
         }
+    }
         // return $result;exit;
         $responce_arr['stu_data'] = $result;
 
