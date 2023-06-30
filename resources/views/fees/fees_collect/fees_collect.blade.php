@@ -678,12 +678,22 @@
 			}
 
 			$('.months').click(function() {
-				monthCheck();
+				var currentCheckedIndex = $('.months').index(this); 
+
+				$('.months').each(function(index) {
+					if (index <= currentCheckedIndex) {
+					$(this).prop('checked', true);
+					} else {
+					$(this).prop('checked', false);
+					}
+				});
+
+  			monthCheck();
 			});
 
 			function monthCheck() {
 				var checkedMonths = new Array();
-				var j = 0;
+					var j = 0;
 				for (var i = 0; i < document.getElementsByClassName('months').length; i++) {
 					if (document.getElementsByClassName('months')[i].checked) {
 						checkedMonths[j] = document.getElementsByClassName('months')[i].value;
