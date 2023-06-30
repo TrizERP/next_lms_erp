@@ -102,7 +102,7 @@
                                 <input type="text" id='username' required name="username" class="form-control">
                             </div>
                             <div class="col-md-4 form-group text-left">
-                                <label>GR NO.<span style="color: red;">*</span></label>
+                                <label>{{ App\Helpers\get_string('grno','request')}}<span style="color: red;">*</span></label>
                                 <input type="text" id='enrollment_no' required name="enrollment_no" class="form-control" value="@if(isset($data['new_enrollment_no'])){{$data['new_enrollment_no']}}@endif">
                             </div>
                             <div class="col-md-4 form-group text-left">
@@ -149,22 +149,21 @@
                             <div class="col-md-4 form-group text-left">
                                 <label>Admission Year</label>
                                 <select id='admission_year' name="admission_year" class="form-control">
-                                    <option>2019</option>
-                                    <option>2020</option>
-                                    <option>2021</option>
-                                     <option>2022</option>
-                                     <option>2023</option>
+                                @if(isset($data['admission_year']))
+                                    @foreach($data['admission_year'] as $key => $value)
+                                        @php
+                                            $year = is_array($value) ? $value['year'] : $value->year;
+                                        @endphp
+                                        <option value="{{ $year }}">{{ $year }}</option>
+                                    @endforeach
+                                @endif
                                 </select>
                             </div>
                             <div class="col-md-4 form-group text-left" >
-                                <!-- <label>Admission Date</label>
-                                    <div class="input-daterange input-group" >
-                                        <input type="date" required class="form-control" placeholder="yyyy-mm-dd" name="admission_date" autocomplete="off">
-                                        <span class="input-group-addon"><i class="icon-calender"></i></span>
-                                    </div> --->
-                                        <label>Admission Date<span style="color: red;">*</span></label>
+                                <label>Admission Date<span style="color: red;">*</span></label>
                                 <div class="input-daterange input-group" id="date-range">
-                                <input type="text" required class="form-control mydatepicker" placeholder="dd/mm/yyyy" name="admission_date" autocomplete="off"><span class="input-group-addon"><i class="icon-calender"></i></span> 
+                                <input type="text" required class="form-control mydatepicker" placeholder="dd/mm/yyyy" name="admission_date" autocomplete="off" value="{{date('Y-m-d'); }}">
+                                <span class="input-group-addon"><i class="icon-calender"></i></span> 
                             </div>
                             </div>
                             <div class="col-md-4 form-group text-left">
@@ -174,7 +173,7 @@
                             <div class="col-md-4 form-group text-left">                   
                                 <label>State</label>
                                 <select class="form-control" name="state" id="state" onchange="getStatewiseCity(this.value);">
-                                    <option value="">Select State</option>
+                                    <option value="Gujarat">Gujarat</option>
                                 @if(!empty($data['state_data']))  
                                 @foreach($data['state_data'] as $key => $value)
                                     <option value="{{ $value['state_name'] }}" @if(isset($data->state)) {{ $data->state == $value['state_name'] ? 'selected' : '' }} @endif> {{ $value['state_name'] }} </option>
@@ -186,7 +185,7 @@
                                 <label>City</label>
                                 <select class="form-control" name="city" id="city">
                                    @if(empty($data['city_data']))
-                                    <option value="">Select City</option>
+                                    <option value="Ahmedabad">Ahmedabad</option>
                                     @endif
                                 @if(!empty($data['city_data']))  
                                 @foreach($data['city_data'] as $k1 => $v1)
@@ -222,7 +221,7 @@
                             <div class="col-md-4 form-group text-left">
                                 <label>Student Quota<span style="color: red;">*</span></label>
                                 <select id='student_quota' required name="student_quota" class="form-control">
-                                    <option value="">SELECT STUDENT QUOTA</option>
+                                    <option value="">--Select--</option>
                                     @if(isset($data['student_quota']))
                                         @foreach($data['student_quota'] as $key => $value)
                                             <option value="{{ $value['id'] }}">{{ $value['title'] }}</option>
@@ -232,9 +231,9 @@
                             </div> 
 
                             <div class="col-md-4 form-group">
-                                <label>House:</label>
+                                <label>{{ App\Helpers\get_string('house','request')}}</label>
                                 <select id='house' name="house" class="form-control">
-                                    <option value="">Select House</option>  
+                                    <option value="">--Select--</option>  
                                     @if(isset($data['house_data']))
                                         @foreach($data['house_data'] as $key => $value)
                                             <option value="{{ $value['id'] }}">{{ $value['house_name'] }}</option>
@@ -274,21 +273,21 @@
                             <div class="col-md-4 form-group text-left">
                                 <label>Optional Subject</label>
                                 <select id='optional_subject' name="optional_subject[]" multiple class="form-control">
-                                    <option value="">Select</option>                                                    
+                                    <option value="">--Select--</option>                                                    
                                 </select>
                             </div>
                             
                             <div class="col-md-4 form-group text-left">
                                 <label>Student Batch</label>
                                 <select id='studentbatch' name="studentbatch" class="form-control">
-                                    <option value="">Select</option>                                                    
+                                    <option value="">--Select--</option>                                                    
                                 </select>
                             </div>
                             
                             <div class="col-md-4 form-group text-left">
                                 <label>Student Religion</label>
                                 <select id='religion' name="religion" class="form-control">
-                                    <option value="">Select</option>  
+                                    <option value="">--Select--</option>  
                                     @if(isset($data['religion_data']))
                                         @foreach($data['religion_data'] as $key => $value)
                                             <option value="{{ $value['id'] }}">{{ $value['religion_name'] }}</option>
@@ -300,7 +299,7 @@
                             <div class="col-md-4 form-group text-left">
                                 <label>Student Caste</label>
                                 <select id='cast' name="cast" class="form-control">
-                                    <option value="">Select</option>  
+                                    <option value="">--Select--</option>  
                                     @if(isset($data['caste_data']))
                                         @foreach($data['caste_data'] as $key => $value)
                                             <option value="{{ $value['id'] }}">{{ $value['caste_name'] }}</option>
@@ -322,7 +321,7 @@
                             <div class="col-md-4 form-group text-left">
                                 <label>Student Blood Group</label>
                                 <select id='bloodgroup' name="bloodgroup" class="form-control">
-                                    <option value="">Select</option>
+                                    <option value="">--Select--</option>
                                     @if(isset($data['bloodgroup_data']))
                                         @foreach($data['bloodgroup_data'] as $key => $value)
                                             <option value="{{ $value['id'] }}">{{ $value['bloodgroup'] }}</option>
@@ -337,7 +336,7 @@
                             </div>
                             
                             <div class="col-md-4 form-group text-left">
-                                <label>Annual Income</label>
+                                <label>{{ App\Helpers\get_string('annualincome','request')}}</label>
                                 <input type="number" id='anuualincome' name="anuualincome" class="form-control">
                             </div>
                             
@@ -345,7 +344,7 @@
                         @if (Session::get('sub_institute_id') != '195')
                         
                             <div class="col-md-4 form-group text-left">
-                                <label>Unique ID</label>
+                                <label>{{ App\Helpers\get_string('uniquid','request')}}</label>
                                 <input type="text" id='uniqueid' name="uniqueid" class="form-control">
                             </div>
                          @endif

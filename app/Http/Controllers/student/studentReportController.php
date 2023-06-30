@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
 use function App\Helpers\is_mobile;
+use function App\Helpers\get_string;
 
 class studentReportController extends Controller
 {
@@ -66,7 +67,7 @@ class studentReportController extends Controller
 
 
         $sub_institute_id = $request->session()->get('sub_institute_id');
-        $tblcustom_fields['enrollment_no'] = 'Gr No';
+        $tblcustom_fields['enrollment_no'] = get_string('grno','request');
         // $tblcustom_fields['student_name'] = 'Student Name';
         $tblcustom_fields['first_name'] = 'First Name';
         $tblcustom_fields['middle_name'] = 'Middle Name';
@@ -91,10 +92,10 @@ class studentReportController extends Controller
         $tblcustom_fields['subcast'] = 'Subcaste';
         $tblcustom_fields['bloodgroup'] = 'Blood Group';
         $tblcustom_fields['adharnumber'] = 'Adhar Number';
-        $tblcustom_fields['anuualincome'] = 'Annual Income';
+        $tblcustom_fields['anuualincome'] = get_string('anuualincome','request');
         $tblcustom_fields['roll_no'] = 'Roll No';
         $tblcustom_fields['image'] = 'Image';
-        $tblcustom_fields['house'] = 'House';
+        $tblcustom_fields['house'] = get_string('house','request');
         $tblcustom_fields['van'] = 'Van';
 
         $tblcustoms = DB::table("tblcustom_fields")
@@ -222,7 +223,7 @@ class studentReportController extends Controller
             'tblstudent.id as id',
         ];
         $header = [
-            'standard'     => 'Standard', 'division' => 'Division', 'grade' => 'Academic Section',
+            'standard'     => get_string('standard','request'), 'division' => get_string('division','request'), 'grade' => get_string('academicsection','request'),
             'student_name' => 'Student Name',
         ];
         $searchArr = ['_'];
@@ -234,7 +235,7 @@ class studentReportController extends Controller
                 'tblstudent.id as id',
             ];
             $header = [
-                'standard'     => 'Standard', 'division' => 'Division', 'grade' => 'Academic Section',
+                'standard'     => get_string('standard','request'), 'division' => get_string('division','request'), 'grade' => get_string('academicsection','request'),
                 'student_name' => 'Student Name',
             ];
             // $res['status_code'] = 0;
@@ -242,7 +243,7 @@ class studentReportController extends Controller
             // return is_mobile($type, "student_report.index", $res);
         } else {
             $searchArr1 = ['enrollment_no', 'first_name', 'last_name'];
-            $replaceArr1 = ['Gr No', 'First Name', 'Surname'];
+            $replaceArr1 = [get_string('grno','request'), 'First Name', 'Surname'];
             foreach ($request->input('dynamicFields') as $key => $value) {
                 if ($value != "bloodgroup" && $value != "van") {
                     $array[] = $value;

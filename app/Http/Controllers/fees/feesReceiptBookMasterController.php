@@ -173,7 +173,7 @@ class feesReceiptBookMasterController extends Controller
             $res['status_code'] = "1";
             $res['message'] = "Fees Receipt Book Added successfully";
 
-            return is_mobile($type, "fees_collect.index", $res);
+            return is_mobile($type, "fees_receipt_book_master.index", $res);
         } else {
             $res['status_code'] = "0";
             $res['message'] = "Some fees head has already mapped with another receipt book for same academic year.";

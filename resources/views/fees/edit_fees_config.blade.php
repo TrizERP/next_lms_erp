@@ -97,6 +97,17 @@
                                 @endphp	                            
 	                            <input {{$checked}} type="checkbox" id='auto_head_counting' value="1" name="auto_head_counting">
 	                        </div>
+							<div class="col-md-4 form-group">
+	                            <label>Month Beside Fees Heading </label>
+	                            @php
+                                    $checked = '';
+                                    if(isset ($data['show_month']) && $data['show_month'] == 1 )
+                                    {                                                                                
+                                       	$checked = 'checked';                                     
+                                    }
+                                @endphp	                            
+	                            <input {{$checked}} type="checkbox" id='show_month' value="1" name="show_month">
+	                        </div>
 	                        <div class="col-md-4 form-group">
 	                            <label>NACH Account Type</label>
 	                            <select name="nach_account_type" id="nach_account_type" class="form-control" required>
