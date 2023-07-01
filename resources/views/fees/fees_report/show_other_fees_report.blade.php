@@ -66,10 +66,10 @@
                             <th>Sr No.</th>
                             <th>Receipt No</th>
                             <th>Receipt Date</th>
-                            <th>GR No.</th>
-                            <th>Student Name</th>
-                            <th>Standard</th>
-                            <th>Division</th>
+                            <th>{{ App\Helpers\get_string('grno','request')}}</th>
+                            <th>{{ App\Helpers\get_string('studentname','request')}}</th>
+                            <th>{{ App\Helpers\get_string('standard','request')}}</th>
+                            <th>{{ App\Helpers\get_string('division','request')}}</th>
                             <th>Mobile No.</th>
                             <!-- <th>Uniquie Id</th> -->
                             @if(isset($data['other_fee_title']))
@@ -99,7 +99,7 @@
                         <tr>
                             <td>{{$j}}</td>
                             <td>{{$fees_value['reciept_id']}}</td>
-                            <td>{{date('d-m-Y',strtotime($fees_value['receiptdate']))}}</td>
+                            <td>{{date('d-m-Y', strtotime($fees_value['receiptdate']))}}</td>
                             <td>{{$fees_value['enrollment_no']}}</td>
                             <td>{{$fees_value['student_name']}}</td>
                             <td>{{$fees_value['standard_name']}}</td>
