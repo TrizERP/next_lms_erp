@@ -147,24 +147,7 @@
         lengthMenu: [ 
             [100, 500, 1000, -1], 
             ['100', '500', '1000', 'Show All'] 
-    ],
-    dom: 'Bfrtip', 
-    buttons: [ 
-        { 
-            extend: 'pdfHtml5',
-            title: 'Circular Report',
-            orientation: 'landscape',
-            pageSize: 'LEGAL',                
-            pageSize: 'A0',
-            exportOptions: {                   
-                    columns: ':visible'                             
-            },
-        }, 
-        { extend: 'csv', text: ' CSV', title: 'Circular Report' }, 
-        { extend: 'excel', text: ' EXCEL', title: 'Circular Report' }, 
-        { extend: 'print', text: ' PRINT', title: 'Circular Report' }, 
-        'pageLength' 
-    ], 
+        ]
     }); 
     $('#example thead tr').clone(true).appendTo( '#example thead' );
     $('#example thead tr:eq(1) th').each( function (i) {
