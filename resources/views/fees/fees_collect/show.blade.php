@@ -44,11 +44,11 @@
                     </div>
                     
                     <div class="col-md-4 form-group">
-                        <label>Name</label>
+                        <label>{{App\Helpers\get_string('studentname','request')}}<span id="menuId" style="display:none"></span><a href="{{route('norm-clature.create')}}"><i class="mdi mdi-lead-pencil"></i></a></label>
                         <input type="text" id="stu_name" placeholder="Name" name="stu_name" class="form-control" @if(isset($data['stu_name'])) value="{{$data['stu_name']}}" @endif>
                     </div>
                     <div class="col-md-4 form-group">
-                        <label>UniqueID/Adm.No</label>
+                        <label>{{App\Helpers\get_string('uniqueid','request')}}<span id="menuId" style="display:none"></span><a href="{{route('norm-clature.create')}}"><i class="mdi mdi-lead-pencil"></i></a></label>
                         <input type="text" id="uniqueid" placeholder="UniqueID/Adm.No" name="uniqueid" class="form-control" @if(isset($data['uniqueid'])) value="{{$data['uniqueid']}}" @endif>
                     </div>
                     <div class="col-md-4 form-group">
@@ -56,7 +56,7 @@
                         <input type="text" id="mobile" placeholder="Mobile" name="mobile" class="form-control" @if(isset($data['mobile'])) value="{{$data['mobile']}}" @endif>
                     </div>                        
                     <div class="col-md-4 form-group">
-                        <label>Gr No</label>
+                        <label>{{App\Helpers\get_string('grno','request')}}<span id="menuId" style="display:none"></span><a href="{{route('norm-clature.create')}}"><i class="mdi mdi-lead-pencil"></i></a></label>
                         <input type="text" id="grno" placeholder="Gr No." name="grno" class="form-control" @if(isset($data['grno'])) value="{{$data['grno']}}" @endif>
                         @if(app('request')->input('implementation') == 1)
                         <input type="hidden" name="implementation" value="1">
@@ -73,7 +73,7 @@
             
         </div>
 
-        <?php if (isset($data['stu_data'])) {?>
+       @if(isset($data['stu_data']))
             <div class="card">
                 <span class="d-inline-block mb-2" tabindex="0" data-toggle="tooltip" title="Only those students will be displayed here whose Fees Structure is added.">
                   <button class="btn btn-danger" style="pointer-events: none;" type="button" disabled>Note</button>
@@ -85,38 +85,38 @@
                     <table class="table table-box table-bordered">
                         <tr>
                             <th>Sr No.</th>
-                            <th>Name</th>
-                            <th>GR.No.</th>
-                            <th>{{ App\Helpers\get_string('standard','request')}}<span id="menuId" style="display:none"></span><a href="{{route('norm-clature.create')}}"><i class="mdi mdi-lead-pencil"></i></a></th>
-                            <th>{{ App\Helpers\get_string('division','request')}}<span id="menuId" style="display:none"></span><a href="{{route('norm-clature.create')}}"><i class="mdi mdi-lead-pencil"></i></a></th>                            
-                            <th>{{ App\Helpers\get_string('studentquota','request')}}<span id="menuId" style="display:none"></span><a href="{{route('norm-clature.create')}}"><i class="mdi mdi-lead-pencil"></i></a></th>
+                            <th>{{App\Helpers\get_string('studentname','request')}}</th>
+                            <th>{{App\Helpers\get_string('grno','request')}}</th>
+                            <th>{{ App\Helpers\get_string('standard','request')}}</th>
+                            <th>{{ App\Helpers\get_string('division','request')}}</a></th>                            
+                            <th>{{ App\Helpers\get_string('studentquota','request')}}</th>
                             <th>Mobile</th>
-                            <th>UniqueID/Adm.No</th>
+                            <th>{{App\Helpers\get_string('uniqueid','request')}}</th>
                             <th>Remaining Fees</th>
                             <th>Action</th>
                         </tr>
-                        <?php foreach ($data['stu_data'] as $id => $arr) {?>
+                        @foreach ($data['stu_data'] as $id => $arr) 
                             <tr>
-                                <td><?php echo $id + 1; ?></td>
-                                <td><?php echo $arr->first_name . ' ' . $arr->middle_name . ' ' . $arr->last_name; ?></td>
-                                <td><?php echo $arr->enrollment_no; ?></td>            
-                                <td><?php echo $arr->standard_name; ?></td>
-                                <td><?php echo $arr->division_name; ?></td>                                 
-                                <td><?php echo $arr->stu_quota; ?></td>                                 
-                                <td><?php echo $arr->mobile; ?></td>
-                                <td><?php echo $arr->uniqueid ?></td>                                        
-                                <td><?php echo $arr->bkoff; ?></td>
+                                <td>{{$id + 1 }}</td>
+                                <td>{{$arr->first_name . ' ' . $arr->middle_name . ' ' . $arr->last_name }}</td>
+                                <td>{{$arr->enrollment_no }}</td>            
+                                <td>{{$arr->standard_name }}</td>
+                                <td>{{$arr->division_name }}</td>                                 
+                                <td>{{$arr->stu_quota }}</td>                                 
+                                <td>{{$arr->mobile }}</td>
+                                <td>{{$arr->uniqueid }}</td>                                        
+                                <td>{{$arr->bkoff }}</td>
                                 <td>
                                     <a href="{{ route('fees_collect.edit',$arr->student_id)}}"><button style="float:left;" type="button" class="btn btn-info btn-outline ">Collect Fees</button></a>
                                 </td>
 
                             </tr>
-                        <?php }?>
+                      @endforeach
                     </table>
                 </div>
                 </form>
             </div>
-        <?php }?>
+        @endif
     </div>
 </div>
 

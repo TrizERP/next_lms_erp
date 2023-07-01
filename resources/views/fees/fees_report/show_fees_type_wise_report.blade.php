@@ -80,7 +80,7 @@
                         <input type="text" id="mobile_no" value="{{$mobile_no}}" name="mobile_no" class="form-control">
                     </div>                    
                     <div class="col-md-4 form-group">
-                        <label>Unique ID</label>
+                        <label>{{App\Helpers\get_string('uniqueid','request')}}</label>
                         <input type="text" id="uniqueid" value="{{$uniqueid}}" name="uniqueid" class="form-control">
                     </div>
                     <div class="col-md-4 form-group">
@@ -124,14 +124,14 @@
                     <thead>
                         <tr>
                             <th>Sr No.</th>
-                            <th>GR No.</th>
-                            <th>Student Name</th>
-                            <th>Standard</th>
-                            <th>Division</th>
+                            <th>{{App\Helpers\get_string('grno','request')}}</th>
+                            <th>{{App\Helpers\get_string('studentname','request')}}</th>
+                            <th>{{App\Helpers\get_string('standard','request')}}</th>
+                            <th>{{App\Helpers\get_string('division','request')}}</th>
                             <th>Mobile No.</th>
                             <th>Receipt No.</th>
                             <th>Email</th>
-                            <th>Student Quota</th>
+                            <th>{{App\Helpers\get_string('studentquota','request')}}</th>
                             <th>Admission Year</th>
                             @if(isset($data['fees_heads']))
                                 @foreach($data['fees_heads'] as $key => $val)
@@ -139,14 +139,14 @@
                                 @endforeach
                             @endif 
                             <th>Total Fine</th>
-                            <th>Total Discount</th>
+                            <th>Total {{App\Helpers\get_string('discount','request')}}</th>
                             <th>Total</th>                                                           
                         </tr>
                     </thead>
                     <tbody>
                     @php
                     $j=1;
-                    $final_grand_total = $total_fine = $total_disc = 0;
+                    $final_grand_total = $total_fine = $total_disc = $total_amt=0;
                     if(isset($data['fees_heads']))
                     {
                         foreach($data['fees_heads'] as $key => $val)
@@ -158,7 +158,9 @@
                                            
                     @if(isset($data['fees_data']))
                         @foreach($fees_data as $key => $fees_value) 
-                        @php $total_paid = 0; @endphp                 
+                        @php 
+                        $total_paid = 0; 
+                        @endphp                 
                         <tr>
                             <td>{{$j}}</td>
                             <td>{{$fees_value['enrollment_no']}}</td>
@@ -193,7 +195,7 @@
                             @endphp
                             <td>{{$fees_value['total_fine']}}</td>                          
                             <td>{{$fees_value['tot_disc']}}</td>                          
-                            <td>{{$total_paid}}</td>                         
+                            <td>{{$fees_value['total_amt']}}</td>                         
                         </tr>
                     @php
                     $j++;
