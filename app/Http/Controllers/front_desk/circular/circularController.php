@@ -65,7 +65,7 @@ class circularController extends Controller
             ->selectRaw('c.*,s.name std_name,t.type as circular_type,d.name div_name')
             ->where("c.syear", "=", session()->get('syear'))
             ->where("c.sub_institute_id", "=", session()->get('sub_institute_id'))
-            ->orderBy('c.id', 'DESC')->limit(100)
+            ->orderBy('c.id', 'DESC')
             ->get()->toArray();
 
         $result['circular_type'] = DB::table('circular_type')->get()->toArray();
