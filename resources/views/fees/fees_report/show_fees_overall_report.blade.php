@@ -62,7 +62,7 @@
                         <input type="text" id="last_name" value="{{$last_name}}" name="last_name" class="form-control">
                     </div>
                     <div class="col-md-4 form-group">
-                        <label>Enrollment No</label>
+                        <label>{{ App\Helpers\get_string('grno','request')}}</label>
                         <input type="text" id="enrollment_no" name="enrollment_no" value="{{$enrollment_no}}" class="form-control">
                     </div>
                     <div class="col-md-4 form-group">
@@ -70,7 +70,7 @@
                         <input type="text" id="mobile_no" value="{{$mobile_no}}" name="mobile_no" class="form-control">
                     </div>                    
                     <div class="col-md-4 form-group">
-                        <label>Unique ID</label>
+                        <label>{{ App\Helpers\get_string('uniqueid','request')}}</label>
                         <input type="text" id="uniqueid" value="{{$uniqueid}}" name="uniqueid" class="form-control">
                     </div>
                     {{ App\Helpers\SearchChain('4','single','grade,std,div',$grade_id,$standard_id,$division_id) }}
@@ -95,11 +95,11 @@
                     <thead>
                         <tr>
                             <th>Sr No.</th>
-                            <th>GR No.</th>
-                            <th>Student Name</th>
-                            <th>Std/Div</th>
+                            <th>{{ App\Helpers\get_string('grno','request')}}</th>
+                            <th>{{ App\Helpers\get_string('studentname','request')}}</th>
+                            <th>{{ App\Helpers\get_string('std/div','request')}}</th>
                             <th>Mobile No.</th>
-                            <th>Uniquie Id</th>
+                            <th>{{ App\Helpers\get_string('uniqueid','request')}}</th>
                             <th style="background-color:#7befef;">Total Breakoff</th>
                             @if(isset($data['month_arr']))
                                  @foreach($data['month_arr'] as $month_id => $month_val)

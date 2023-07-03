@@ -14,6 +14,10 @@
 </style>
 <div id="page-wrapper">
     <div class="container-fluid">
+    <div class="row bg-title">
+                <div class="col-lg-3 col-md-4 col-sm-4 col-xs-12">
+                    <h4 class="page-title">Fees Refund Report</h4> </div>
+            </div>
         <div class="row bg-title">
             <div class="col-md-3 d-flex">
                 <input type="checkbox" id="toggle_cancel_refund" name="toggle_cancel_refund" checked
@@ -101,10 +105,10 @@
                                     <thead>
                                     <tr>
                                         <th>Sr.No</th>
-                                        <th>Student Name</th>
-                                        <th>Enrollment No.</th>
-                                        <th>Standard</th>
-                                        <th>Division</th>
+                                        <th>{{ App\Helpers\get_string('studentname','request')}}</th>
+                                        <th>{{ App\Helpers\get_string('grno','request')}}</th>
+                                        <th>{{ App\Helpers\get_string('standard','request')}}</th>
+                                        <th>{{ App\Helpers\get_string('division','request')}}</th>
                                     </tr>
                                     </thead>
                                     <tbody>

@@ -117,10 +117,10 @@
 		                                <tr>
                                             <th><input type="checkbox" id="fees_check_all"/></th>
 		                                    <th>Sr No.</th>
-		                                    <th>Enrollment No.</th>
-		                                    <th>Student Name</th>
-		                                    <th>Standard</th>
-		                                    <th>Division</th>
+		                                    <th>{{ App\Helpers\get_string('grno','request')}}</th>
+		                                    <th>{{ App\Helpers\get_string('studentname','request')}}</th>
+		                                    <th>{{ App\Helpers\get_string('standard','request')}}</th>
+		                                    <th>{{ App\Helpers\get_string('division','request')}}</th>
                                             @foreach($data['fees_head'] as $dk => $dv)
                                                 <th>{{$data['fees_heads'][$dv]}}</th>
                                             @endforeach

@@ -67,8 +67,8 @@
                                 <tr>
                                     <th>Sr.No.</th>
                                     <th>Student ID</th>
-                                    <th>Student Name</th>
-                                    <th>Enrollment No.</th>
+                                    <th>{{ App\Helpers\get_string('studentname','request')}}</th>
+                                    <th>{{ App\Helpers\get_string('grno','request')}}</th>
                                     <th>Mobile</th>
                                     <th>Payment Method</th>
                                     <th>Date</th>

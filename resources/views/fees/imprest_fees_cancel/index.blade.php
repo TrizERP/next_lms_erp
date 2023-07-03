@@ -50,7 +50,7 @@
                         @csrf
                         <div class="row">
                             <div class="col-md-4 form-group">
-                                <label>Enrollment No</label>
+                                <label>{{ App\Helpers\get_string('grno','request')}}</label>
                                 <input type="text" id="enrollment_no" name="enrollment_no" value="{{$enrollment_no}}" class="form-control">
                             </div>
                             <div class="col-md-4 form-group">
@@ -97,10 +97,10 @@
                                     <thead>
                                         <tr>
                                             <th><input id="checkall" onchange="checkAll(this);" type="checkbox"></th>
-                                            <th>Enrollment No.</th>
-                                            <th>Student Name</th>
-                                            <th>Standard</th>
-                                            <th>Division</th>
+                                            <th>{{ App\Helpers\get_string('grno','request')}}</th>
+                                            <th>{{ App\Helpers\get_string('studentname','request')}}</th>
+                                            <th>{{ App\Helpers\get_string('standard','request')}}</th>
+                                            <th>{{ App\Helpers\get_string('division','request')}}</th>
                                             <th>Receipt No</th>
                                             <th>Total Amount</th>
                                             <th>Paid Amount</th>

@@ -14,6 +14,10 @@
 </style>
 <div id="page-wrapper">
     <div class="container-fluid">
+    <div class="row bg-title">
+                <div class="col-lg-3 col-md-4 col-sm-4 col-xs-12">
+                    <h4 class="page-title">Fees Cancel</h4> </div>
+            </div>
         <div class="row bg-title">
             <div class="col-md-3 d-flex">
                 <input type="checkbox" id="toggle_cancel_refund" name="toggle_cancel_refund" checked
@@ -71,7 +75,7 @@
 
                                 {{ App\Helpers\SearchChain('4','single','grade,std,div',$grade_id,$standard_id,$division_id) }}
                                 <div class="col-md-4 form-group">
-                                    <label>Enrollment No</label>
+                                    <label>{{ App\Helpers\get_string('grno','request')}}</label>
                                     <input type="text" id="enrollment_no" name="enrollment_no"
                                            value="{{$enrollment_no}}" class="form-control">
                                 </div>
@@ -117,10 +121,10 @@
                                     <thead>
                                     <tr>
                                         <th><input id="checkall" onchange="checkAll(this);" type="checkbox"></th>
-                                        <th>Enrollment No.</th>
-                                        <th>Student Name</th>
-                                        <th>Standard</th>
-                                        <th>Division</th>
+                                        <th>{{ App\Helpers\get_string('grno','request')}}</th>
+                                        <th>{{ App\Helpers\get_string('studentname','request')}}</th>
+                                        <th>{{ App\Helpers\get_string('standard','request')}}</th>
+                                        <th>{{ App\Helpers\get_string('division','request')}}</th>
                                         <th>Receipt No</th>
                                         <th>Amount</th>
                                         <th>Receipt Date</th>

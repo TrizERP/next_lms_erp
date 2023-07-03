@@ -29,7 +29,7 @@
                     @csrf
                         <div class="row">                            
                             <div class="col-md-4 form-group">
-                                <label>Standard</label>
+                                <label>{{ App\Helpers\get_string('standard','request')}}</label>
                                 <select name="standard_id[]" id="standard_id" class="form-control" required multiple>
                                     @foreach($standard_list as $key => $value)
                                         <option value="{{$value['id']}}">{{$value['name']}}</option>
