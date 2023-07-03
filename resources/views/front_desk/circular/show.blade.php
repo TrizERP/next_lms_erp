@@ -93,7 +93,7 @@
                                     <form action="{{ route('circular.destroy', $data->id)}}" method="post">
                                         @csrf
                                         @method('DELETE')
-                                        <button type="submit" onclick="return confirmDelete();" class="btn btn-info btn-outline-danger"><i class="ti-trash"></i></button>
+                                        <button type="submit" onclick="return confirmDelete();" class="btn btn-info btn-outline-danger"><i class="mdi mdi-close"></i></button>
                                     </form>
                                 </td>
                             </tr>
@@ -111,77 +111,64 @@
 </div>
 
 @include('includes.footerJs')
+<link href="https://cdn.datatables.net/1.13.4/css/jquery.dataTables.min.css" rel = "stylesheet">
 <link href = "https://code.jquery.com/ui/1.10.4/themes/ui-lightness/jquery-ui.css" rel = "stylesheet">
 <script src = "https://code.jquery.com/jquery-1.10.2.js"></script>
 <script src = "https://code.jquery.com/ui/1.10.4/jquery-ui.js"></script>
+<script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
+
 <script>
     $(document).ready(function () {
-        
+
         $("#title").autocomplete({          
           source: function( request, response ) 
           {        
             $.ajax({
-                    url: "{{route('search_by_circular_title')}}",
-                    type: 'POST',
-                    data: {
-                        'value': request.term
-                    },
-                    success: function(data){
-                       response( $.map( data, function( item ) {
-                          return {
-                              label: item.title,
-                              value: item.title
-                          }
-                      }));
-                    }
-                });
+                url: "{{route('search_by_circular_title')}}",
+                type: 'POST',
+                data: {
+                    'value': request.term
+                },
+                success: function(data){
+                    response( $.map( data, function( item ) {
+                        return {
+                            label: item.title,
+                            value: item.title
+                        }
+                    }));
+                }
+            });
           }
         });
+    });
 
-        var table = $('#example').DataTable( {
-         select: true,          
-         lengthMenu: [ 
-                        [100, 500, 1000, -1], 
-                        ['100', '500', '1000', 'Show All'] 
-        ],
-        dom: 'Bfrtip', 
-        buttons: [ 
-            { 
-                extend: 'pdfHtml5',
-                title: 'Circular Report',
-                orientation: 'landscape',
-                pageSize: 'LEGAL',                
-                pageSize: 'A0',
-                exportOptions: {                   
-                     columns: ':visible'                             
-                },
-            }, 
-            { extend: 'csv', text: ' CSV', title: 'Circular Report' }, 
-            { extend: 'excel', text: ' EXCEL', title: 'Circular Report' }, 
-            { extend: 'print', text: ' PRINT', title: 'Circular Report' }, 
-            'pageLength' 
-        ], 
-        }); 
-        $('#example thead tr').clone(true).appendTo( '#example thead' );
-        $('#example thead tr:eq(1) th').each( function (i) {
-            var title = $(this).text();
-            $(this).html( '<input type="text" placeholder="Search '+title+'" />' );
+    var table = $('#example').DataTable({
+        select: true,
+        lengthMenu: [ 
+            [100, 500, 1000, -1], 
+            ['100', '500', '1000', 'Show All'] 
+        ]
+    }); 
+    $('#example thead tr').clone(true).appendTo( '#example thead' );
+    $('#example thead tr:eq(1) th').each( function (i) {
+        var title = $(this).text();
+        $(this).html( '<input type="text" placeholder="Search '+title+'" />' );
 
-            $( 'input', this ).on( 'keyup change', function () {
-                if ( table.column(i).search() !== this.value ) {
-                    table
-                        .column(i)
-                        .search( this.value )
-                        .draw();
-                }
-            } );
-        } );
+        $( 'input', this ).on( 'keyup change', function () {
+            if ( table.column(i).search() !== this.value ) {
+                table
+                    .column(i)
+                    .search( this.value )
+                    .draw();
+            }
+        });
+    });
 
-        $('#grade').attr('required',true);
-        $('#standard').attr('required',true);
-        $('#division').attr('required',true);
+    $('#grade').attr('required',true);
+    $('#standard').attr('required',true);
+    $('#division').attr('required',true);
 
-    } );
+    
 
 
    

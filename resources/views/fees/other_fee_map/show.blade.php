@@ -24,12 +24,29 @@
                         <div class="row">
                             {{ App\Helpers\SearchChain('4','single','grade,std,div') }}
                         </div>
+                        
                         {{-- <style>
                             .custom-select select {
                                 display: inline !important;
                             }
                         </style> --}}
                         <div class="row">
+                        <div class="col-md-4 form-group">
+                        <label>{{App\Helpers\get_string('studentname','request')}}</label>
+                        <input type="text" id="stu_name" placeholder="Name" name="stu_name" class="form-control">
+                    </div>
+                    <div class="col-md-4 form-group">
+                        <label>{{App\Helpers\get_string('uniqueid','request')}}</label>
+                        <input type="text" id="uniqueid" placeholder="UniqueID/Adm.No" name="uniqueid" class="form-control" >
+                    </div>
+                    <div class="col-md-4 form-group">
+                        <label>Mobile</label>
+                        <input type="text" id="mobile" placeholder="Mobile" name="mobile" class="form-control">
+                    </div>                        
+                    <div class="col-md-4 form-group">
+                        <label>{{App\Helpers\get_string('grno','request')}}</label>
+                        <input type="text" id="grno" placeholder="Gr No." name="grno" class="form-control">
+                    </div>
                             <div class="col-md-4 form-group">
                                 <label>Month</label>
     							{{-- <div class="custom-select"> --}}
@@ -47,7 +64,7 @@
                             </div>
                             <div class="col-md-12 form-group">
                                 <center>
-                                    <input type="submit" name="submit" value="Search" class="btn btn-success" onclick="return validateData();">
+                                    <input type="submit" name="submit" value="Search" class="btn btn-success">
                                 </center>
                             </div>
                         </div>    

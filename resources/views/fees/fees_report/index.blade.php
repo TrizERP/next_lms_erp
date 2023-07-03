@@ -56,11 +56,11 @@
                     {{ method_field("POST") }}
                     @csrf
                     <div class="col-md-4 form-group">
-                        <label>GR No</label>
+                        <label>{{App\Helpers\get_string('grno','request')}}</label>
                         <input type="text" id="enrollment_no" name="enrollment_no" value="{{$enrollment_no}}" class="form-control" placeholder="Gr No">
                     </div>
                     <div class="col-md-4 form-group">
-                        <label>Name</label>
+                        <label>{{App\Helpers\get_string('studentname','request')}}</label>
                         <input type="text" id="name" name="name" class="form-control" placeholder="Name" value="{{$name}}" >
                     </div>
                     <div class="col-md-4 form-group">
@@ -100,10 +100,10 @@
                     <thead>
                         <tr>
                             <th>Sr No.</th>
-                            <th>GR No.</th>
-                            <th>Student Name</th>
-                            <th>Std-Div</th>
-                            <th>Uniqueid</th>
+                            <th>{{App\Helpers\get_string('grno','request')}}</th>
+                            <th>{{App\Helpers\get_string('studentname','request')}}</th>
+                            <th>{{App\Helpers\get_string('std/div','request')}}</th>
+                            <th>{{App\Helpers\get_string('uniqueid','request')}}</th>
                             <th>Month</th>
                             <th>Receipt No</th>
                             <th>Payment Mode</th>
