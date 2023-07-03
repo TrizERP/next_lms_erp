@@ -91,11 +91,11 @@
                         <div class="table-responsive col-md-6">
                             <table class="table table-stripped">
                                 <tr>
-                                    <td>Unique Id</td>
+                                    <td>{{ App\Helpers\get_string('uniqueid','request')}}</td>
                                     <td><?php echo $data['stu_data']['student_id']; ?></td>
                                 </tr>
                                 <tr>
-                                    <td>Student Name</td>
+                                    <td>{{ App\Helpers\get_string('studentname','request')}}</td>
                                     <td><?php echo $data['stu_data']['name']; ?></td>
                                 </tr>
                                 <tr>
@@ -111,11 +111,11 @@
                         <div class="table-responsive col-md-6">
                             <table class="table table-stripped">
                                 <tr>
-                                    <td>GR No</td>
+                                    <td>{{ App\Helpers\get_string('grno','request')}}</td>
                                     <td><?php echo $data['stu_data']['enrollment']; ?></td>
                                 </tr>
                                 <tr>
-                                    <td>Std-Div</td>
+                                    <td>{{ App\Helpers\get_string('std/div','request')}}</td>
                                     <td><?php echo $data['stu_data']['stddiv']; ?></td>
                                 </tr>
                                 <tr>
@@ -137,8 +137,8 @@
                             <input type="hidden" name="std_div" value="<?php echo $data['stu_data']['stddiv']; ?>">
                             <input type="hidden" name="full_name" value="<?php echo $data['stu_data']['name']; ?>">
 
-                            <div class="table-responsive col-md-12" style="border-top: 2px solid black;">
-                                <table class="table table-stripped">
+                            <div class="col-md-12" style="border-top: 2px solid black;">
+                                <div style="display:flex; flex-wrap:wrap; justify-content: space-between;">
                                     <tr>
                                         <?php
                                         $no = $pay_amount = 0;
@@ -150,7 +150,7 @@
                                             }
                                             $slected = "";
                                             if (in_array($id, $data['search_ids'])) {
-                                                $slected = "checked";
+                                                $slected = "";
                                             }
                                             $disabled = '';
                                             if ( isset($feesDetails[$val]) && $feesDetails[$val] == 0 ) {
@@ -173,7 +173,7 @@
                                         } ?>
 
                                     </tr>
-                                </table>
+                                </div>
                             </div>
                             <div class="table-responsive col-md-12">
                                 <table class="table table-stripped" border="0" width="100%">

@@ -113,7 +113,7 @@
 								<div class="table-responsive">
 									<table class="table table-stripped">
 										<tr>
-											<td>Unique Id/Adm.No.</td>
+											<td>{{ App\Helpers\get_string('uniqueid','request')}}<span id="menuId" style="display:none"></span><a href="{{route('norm-clature.create')}}"><i class="mdi mdi-lead-pencil"></i></a></td>
 											<td>
 												{{ $data['stu_data']['uniqueid']; }}
 											</td>
@@ -150,7 +150,7 @@
 								<div class="table-responsive">
 									<table class="table table-stripped">
 										<tr>
-											<td>GR. No</td>
+											<td>{{ App\Helpers\get_string('grno','request')}}<span id="menuId" style="display:none"></span><a href="{{route('norm-clature.create')}}"><i class="mdi mdi-lead-pencil"></i></a></td>
 											<td>
 												{{ $data['stu_data']['enrollment']; }}
 											</td>
@@ -484,10 +484,10 @@
 										<thead>
 											<tr>
 												<th>Sr No.</th>
-												<th>GR No.</th>
-												<th>{{App\Helpers\get_string('StudentName','request')}}<span id="menuId" style="display:none"></span><a href="{{route('norm-clature.create')}}"><i class="mdi mdi-lead-pencil"></i></a></th>
-												<th>Std-Div</th>
-												<th>Uniqueid</th>
+												<th>{{App\Helpers\get_string('grno','request')}}</th>
+												<th>{{App\Helpers\get_string('studentname','request')}}</th>
+												<th>{{App\Helpers\get_string('std/div','request')}}</th>
+												<th>{{App\Helpers\get_string('uniqueid','request')}}</th>
 												<th>Month</th>
 												<th>Receipt No</th>
 												<th>Payment Mode</th>
@@ -678,12 +678,22 @@
 			}
 
 			$('.months').click(function() {
-				monthCheck();
+				var currentCheckedIndex = $('.months').index(this); 
+
+				$('.months').each(function(index) {
+					if (index <= currentCheckedIndex) {
+					$(this).prop('checked', true);
+					} else {
+					$(this).prop('checked', false);
+					}
+				});
+
+  			monthCheck();
 			});
 
 			function monthCheck() {
 				var checkedMonths = new Array();
-				var j = 0;
+					var j = 0;
 				for (var i = 0; i < document.getElementsByClassName('months').length; i++) {
 					if (document.getElementsByClassName('months')[i].checked) {
 						checkedMonths[j] = document.getElementsByClassName('months')[i].value;

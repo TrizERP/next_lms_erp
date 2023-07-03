@@ -627,8 +627,8 @@ if (! function_exists('TermDD')) {
 }
 if (! function_exists('SearchStudent')) {
 
-    function SearchStudent($grade, $standard = "", $div = "", $sub_institute_id = "", $syear = "", $roll_no = "")
-    {
+    function SearchStudent($grade, $standard = "", $div = "", $sub_institute_id = "", $syear = "", $roll_no = "",$stu_name="",$uniqueid="",$mobile="",$grno="")
+    { 
         if ($sub_institute_id == '') {
             $sub_institute_id = session()->get('sub_institute_id');
         }
@@ -683,6 +683,22 @@ if (! function_exists('SearchStudent')) {
         );
 
         $query = tblstudentModel::from('tblstudent as ts');
+        if ($mobile != '') {
+            $query->where('ts.mobile', $mobile);
+        }
+        if ($grno != '') {
+            $query->where('ts.enrollment_no', $grno);
+        }
+        if ($uniqueid != '') {
+            $query->where('ts.uniqueid', $uniqueid);
+        }
+        if ($stu_name != '') {
+            $query->where(function ($query) use ($stu_name) {
+                $query->where('ts.first_name', 'like', '%' . $stu_name . '%')
+                    ->orWhere('ts.middle_name', 'like', '%' . $stu_name . '%')
+                    ->orWhere('ts.last_name', 'like', '%' . $stu_name . '%');
+            });
+        }
         $columns = explode(',', $select_fields);
         $columns[] = "s.name as standard_name";
         $columns[] = "s.medium as medium";
@@ -728,7 +744,7 @@ if (! function_exists('SearchStudent')) {
         if ($roll_no != '') {
             $extraRaw .= " AND ts.roll_no = '".$roll_no."' ";
         }
-
+       
         $query->whereraw($extraRaw);
 
         $query->orderBy('ts.roll_no');
