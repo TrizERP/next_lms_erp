@@ -113,7 +113,7 @@
 								<div class="table-responsive">
 									<table class="table table-stripped">
 										<tr>
-											<td>{{ App\Helpers\get_string('uniqueid','request')}}<span id="menuId" style="display:none"></span><a href="{{route('norm-clature.create')}}"><i class="mdi mdi-lead-pencil"></i></a></td>
+											<td>Unique Id/Adm.No.</td>
 											<td>
 												{{ $data['stu_data']['uniqueid']; }}
 											</td>
@@ -150,7 +150,7 @@
 								<div class="table-responsive">
 									<table class="table table-stripped">
 										<tr>
-											<td>{{ App\Helpers\get_string('grno','request')}}<span id="menuId" style="display:none"></span><a href="{{route('norm-clature.create')}}"><i class="mdi mdi-lead-pencil"></i></a></td>
+											<td>GR. No</td>
 											<td>
 												{{ $data['stu_data']['enrollment']; }}
 											</td>
@@ -359,9 +359,9 @@
 										<td>Fine(Include Cheque return charges)</td>
 										<td></td>
 										<td>
-											@if(in_array(session()->get('sub_institute_id'),$sub_institute_id) && date('d') >= 5 && $total_amt!=0)
+											@if(in_array(session()->get('sub_institute_id'),$sub_institute_id) )
 
-											<input type="text" name="fees_data[fine]" id="cheque_return_charges1" class="form-control cheque_return_charges1" value="100" >
+											<input type="text" name="fees_data[fine]" id="cheque_return_charges1" class="form-control cheque_return_charges1" value="@if(date('d') >= 5 && $total_amt!=0) 100 @else {{$cheque_return_charges0}} @endif" >
 											<!-- <input type="hidden" name="hidden_cheque_return_charges"
                                                                id="hidden_cheque_return_charges" class="form-control"
                                                                value="@if(isset($cheque_return_charges) && $cheque_return_charges>0){{ $cheque_return_charges}};@else {{$data['cheque_return_charges'][0]}} @endif"> -->
@@ -484,10 +484,10 @@
 										<thead>
 											<tr>
 												<th>Sr No.</th>
-												<th>{{App\Helpers\get_string('grno','request')}}</th>
-												<th>{{App\Helpers\get_string('studentname','request')}}</th>
-												<th>{{App\Helpers\get_string('std/div','request')}}</th>
-												<th>{{App\Helpers\get_string('uniqueid','request')}}</th>
+												<th>GR No.</th>
+												<th>{{App\Helpers\get_string('StudentName','request')}}<span id="menuId" style="display:none"></span><a href="{{route('norm-clature.create')}}"><i class="mdi mdi-lead-pencil"></i></a></th>
+												<th>Std-Div</th>
+												<th>Uniqueid</th>
 												<th>Month</th>
 												<th>Receipt No</th>
 												<th>Payment Mode</th>
@@ -678,22 +678,12 @@
 			}
 
 			$('.months').click(function() {
-				var currentCheckedIndex = $('.months').index(this); 
-
-				$('.months').each(function(index) {
-					if (index <= currentCheckedIndex) {
-					$(this).prop('checked', true);
-					} else {
-					$(this).prop('checked', false);
-					}
-				});
-
-  			monthCheck();
+				monthCheck();
 			});
 
 			function monthCheck() {
 				var checkedMonths = new Array();
-					var j = 0;
+				var j = 0;
 				for (var i = 0; i < document.getElementsByClassName('months').length; i++) {
 					if (document.getElementsByClassName('months')[i].checked) {
 						checkedMonths[j] = document.getElementsByClassName('months')[i].value;
