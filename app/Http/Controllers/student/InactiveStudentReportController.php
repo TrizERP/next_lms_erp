@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
 use function App\Helpers\is_mobile;
+use function App\Helpers\get_string;
 
 class InactiveStudentReportController extends Controller
 {
@@ -150,7 +151,7 @@ class InactiveStudentReportController extends Controller
 
         if ($request->input('dynamicFields') == '') {
             $array = [
-                'standard.name as standard', 'division.name as division', 'academic_section.title as grade',
+                'standard.name as "'.get_string('standard' , 'request').'"', 'division.name as "'.get_string('division' , 'request').'"', 'academic_section.title as grade',
                 'tblstudent.id as id',
             ];
             $header = [
@@ -180,7 +181,7 @@ class InactiveStudentReportController extends Controller
             $array[] = 'blood_group.bloodgroup as bloodgroup';
             $array[] = 'transport_vehicle.title as van';
         }
-        $array[] = 'concat_ws(" ",tblstudent.first_name,tblstudent.middle_name,tblstudent.last_name) AS student_name';
+        $array[] = 'concat_ws(" ",tblstudent.first_name,tblstudent.middle_name,tblstudent.last_name) AS "'.get_string('studentname' , 'request').'"';
 
         $result = DB::table('tblstudent')
             ->select(DB::raw(implode(',', $array)))

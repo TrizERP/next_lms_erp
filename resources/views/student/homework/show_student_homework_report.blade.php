@@ -76,7 +76,7 @@
                                 <thead>
                                 <tr>
                                     <th>Sr.No.</th>
-                                    <th>Student Name</th>
+                                    <th>{{App\Helpers\get_string('studentname','request')}}</th>
                                     <th>Title</th>
                                     <th>Description</th>
                                     <th>Image</th>

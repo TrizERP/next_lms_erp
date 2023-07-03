@@ -22,7 +22,7 @@
                     <div class="col-md-4 form-group ml-0 mr-0">
                         <label>Standard</label>
                         <select class="form-control" name="standard_id" id="standard_id" required>
-                            <option value="">Select Standard</option>
+                            <option value="">Select {{App\Helpers\get_string('standard','request')}}</option>
                             @if(isset($data['standard_data']))
                                 @foreach($data['standard_data'] as $key =>$val)
                                     @php

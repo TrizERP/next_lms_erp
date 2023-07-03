@@ -82,8 +82,8 @@
                                     <!-- first heading -->
                                     <tr>
                                         <th><b>Sr No</b></th>
-                                        <th><b>Enrollment No</b></th>
-                                        <th><b>Student Name</b></th>
+                                        <th><b>{{App\Helpers\get_string('grno','request')}}</b></th>
+                                        <th><b>{{App\Helpers\get_string('studentname','request')}}</b></th>
                                     <!-- <th>{{ session()->get('sub_institute_id') }}</th> -->
                                         @foreach($data['month'] as $key => $i)
                                             <th><b><?php echo $month_name[$i];?></b></th>
@@ -93,8 +93,8 @@
                                     </tr>
                                     <tr>
                                         <th><b>Sr No</b></th>
-                                        <th><b>Enrollment No</b></th>
-                                        <th><b>Student Name</b></th>
+                                        <th><b>{{App\Helpers\get_string('grno','request')}}</b></th>
+                                        <th><b>{{App\Helpers\get_string('studentname','request')}}</b></th>
                                         @foreach($data['month'] as $key => $i)
                                             <th style="text-align:center"><b>
                                                     <?php $working_day += $data['working_day'][$i]; ?>

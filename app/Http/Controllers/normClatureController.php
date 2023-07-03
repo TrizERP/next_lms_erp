@@ -100,7 +100,7 @@ class normClatureController extends Controller
         }
         $sub_institute_id = session()->get('sub_institute_id');
         $res['table_data'] = normClature::whereRaw('menu_id='.$menu_id.' and sub_institute_id ='.$sub_institute_id)->get();         
-        $res['menu_title'] = normClature::whereRaw('sub_institute_id ='.$sub_institute_id)->groupBy('menu')->get();  
+        $res['menu_title'] = normClature::whereRaw('sub_institute_id =0')->groupBy('menu')->get();  
         $res['menu_id'] =$menu_id;     
         $res['status_code']=1;
         $res['message']="Update";      
