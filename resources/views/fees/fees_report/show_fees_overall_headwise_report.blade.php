@@ -103,6 +103,22 @@
                         <label>To Date</label>
                         <input type="text" id="to_date" name="to_date" value="{{$to_date}}" class="form-control mydatepicker" autocomplete="off" required="required">
                     </div>
+
+                    @if(isset($data['fees_heads']))
+                        <div class="col-md-4 form-group ml-0 mr-0">
+                            <label>Fees Heads:</label>
+                            <select name="fees_head[]" class="form-control" required="required" multiple="multiple">
+                                @foreach($data['fees_heads'] as $key => $value)
+                                    <option value="{{$key}}" @if(isset($data['fees_head']))
+                                    @if(in_array($key,$data['fees_head']))
+                                        SELECTED
+                                    @endif
+                                    @endif>{{$value}}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                    @endif
+
                     <div class="col-md-12 form-group">
                         <center>
                             <input type="submit" name="submit" value="Search" class="btn btn-success">

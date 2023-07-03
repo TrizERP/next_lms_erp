@@ -5,6 +5,7 @@ namespace App\Http\Controllers\fees\fees_report;
 use App\Http\Controllers\Controller;
 use App\Http\Controllers\fees\fees_collect\fees_collect_controller;
 use App\Models\student\tblstudentModel;
+use App\Models\fees\fees_title\fees_title;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Contracts\View\Factory;
 use Illuminate\Contracts\View\View;
@@ -28,10 +29,17 @@ class feesOverallHeadwiseReportController extends Controller
     {
         $type = $request->input('type');
         $months = FeeMonthId();
+        $sub_institute_id = $request->session()->get('sub_institute_id');
+
+        $feesHead = fees_title::where(['sub_institute_id' => $sub_institute_id, 'other_fee_id' => 0])
+        ->orderBy('sort_order', 'asc') 
+        ->pluck('display_name', 'fees_title')
+        ->toArray();
 
         $res['status_code'] = "1";
         $res['message'] = "Success";
         $res['months'] = $months;
+        $res['fees_heads'] = $feesHead;
 
         return is_mobile($type, "fees/fees_report/show_fees_overall_headwise_report", $res, "view");
     }
@@ -56,13 +64,20 @@ class feesOverallHeadwiseReportController extends Controller
         $month = $request->input('month');
         $from_date = $request->input('from_date');
         $to_date = $request->input('to_date');
+        $fees_head = $request->input('fees_head');
         $syear = $request->session()->get('syear');
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $months = FeeMonthId();
 
+
         $extraSearchArray = array();
         $extraSearchArrayRaw = " 1=1 ";
         $bk_extra_fees = $bk_extra_other_fees = '';
+
+        $feesHead = fees_title::where(['sub_institute_id' => $sub_institute_id, 'other_fee_id' => 0])
+        ->orderBy('sort_order', 'asc') 
+        ->pluck('display_name', 'fees_title')
+        ->toArray();
 
         if ($grade != '') {
             $extraSearchArray['tblstudent_enrollment.grade_id'] = $grade;
@@ -124,11 +139,15 @@ class feesOverallHeadwiseReportController extends Controller
         $bk_array = DB::table('fees_breackoff as ft')
         ->select('ft.*', 'f.fees_title', 'f.sort_order','f.display_name')
         ->selectRaw('GROUP_CONCAT(DISTINCT ft.month_id  ORDER BY ft.month_id) AS months , SUM(ft.amount) AS tot_amt')
-        ->join('fees_title as f', function ($join) {
+        ->join('fees_title as f', function ($join) use ($fees_head) {
             $join->on('f.id', '=', 'ft.fee_type_id')
                 ->whereColumn('f.sub_institute_id', '=', 'ft.sub_institute_id')
-                ->whereColumn('f.syear', '=', 'ft.syear');
+                ->whereColumn('f.syear', '=', 'ft.syear')
+                ->when($fees_head, function ($join) use ($fees_head) {
+                    $join->whereRaw('f.fees_title In ("'.implode(',', $fees_head).'")');
+                });
         })
+        
         ->where('ft.syear', $syear)
         ->where('ft.sub_institute_id', $sub_institute_id)
         ->groupBy('ft.fee_type_id')
@@ -306,14 +325,15 @@ class feesOverallHeadwiseReportController extends Controller
                 }
             }
         }
-  // Sort the array based on year and month in descending order
-  foreach ($bk_title_months_array as &$value) {
-    uksort( $value , function($a, $b) use($months){
-        $a = strtotime(substr($months[$a],-4) );
-        $b = strtotime(substr($months[$b],-4) );
-        return $a - $b;
-    });
-}
+        // Sort the array based on year and month in descending order
+        foreach ($bk_title_months_array as &$value) {
+            uksort( $value , function($a, $b) use($months){
+                $a = strtotime(substr($months[$a],-4) );
+                $b = strtotime(substr($months[$b],-4) );
+                return $a - $b;
+            });
+        }
+
         $res['status_code'] = 1;
         $res['message'] = "Success";
         $res['fees_data'] = $final_array;
@@ -331,6 +351,8 @@ class feesOverallHeadwiseReportController extends Controller
         $res['month'] = $month;
         $res['from_date'] = $from_date;
         $res['to_date'] = $to_date;
+        $res['fees_heads'] = $feesHead;
+        $res['fees_head'] = $fees_head;
         return is_mobile($type, "fees/fees_report/show_fees_overall_headwise_report", $res, "view");
     }  
     
