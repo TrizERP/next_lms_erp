@@ -602,7 +602,11 @@ class fees_collect_controller extends Controller
         foreach ($new_insert_other_arr as $month_id => $arr) {
             foreach ($arr as $r_id => $vals) {
 
+<<<<<<< HEAD
                 if (isset($vals['fine']) && isset($vals['amount'])){
+=======
+                if (isset($vals['fine'])) {
+>>>>>>> 04bb4d078f3e910036ba9d8bbcd48206cc2d5daf
                     $amount = $vals['amount'];
                     $fine = $vals['fine'];
                     $totalAmount = $amount + $fine;
