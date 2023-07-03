@@ -210,19 +210,19 @@
                                     @endforeach
                                 @endif
 
-                                <div class="row mt-5">
-                                    <div class="col-lg-12 col-sm-12 col-xs-12">
-                                        <div class="table-responsive">
-                                            <table class="table table-box table-bordered">
-                                                <thead>
-                                                <tr>
-                                                    <th><input id="checkall" name="checkall" onchange="checkAll(this);"
-                                                               type="checkbox"></th>
-                                                    <th>Sr.No.</th>
-                                                    <th>Student Name</th>
-                                                    <th>Enrollment No.</th>
-                                                    <th>Standard</th>
-                                        <th>Division</th>
+                    <div class="row mt-5">
+                        <div class="col-lg-12 col-sm-12 col-xs-12">
+                            <div class="table-responsive">
+                                <table class="table table-box table-bordered">
+                                    <thead>
+                                    <tr>
+                                        <th><input id="checkall" name="checkall" onchange="checkAll(this);"
+                                                    type="checkbox"></th>
+                                        <th>Sr.No.</th>
+                                        <th>{{App\Helpers\get_string('studentname','request')}}</th>
+                                        <th>{{App\Helpers\get_string('grno','request')}}</th>
+                                        <th>{{App\Helpers\get_string('standard','request')}}</th>
+                                        <th>{{App\Helpers\get_string('division','request')}}</th>
                                         <th>Mobile</th>
                                     </tr>
                                 </thead>

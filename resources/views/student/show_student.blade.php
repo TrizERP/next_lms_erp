@@ -48,11 +48,11 @@
                         <input type="text" name="mobile" value="@if(isset($data['mobile'])) {{$data['mobile']}} @endif" class="form-control">
                     </div>
                     <div class="col-md-4 form-group">
-                        <label class="box-title after-none mb-0">Gr No.</label>
+                        <label class="box-title after-none mb-0">{{App\Helpers\get_string('grno','request')}}</label>
                         <input type="text" name="gr_no" value="@if(isset($data['gr_no'])) {{$data['gr_no']}} @endif" class="form-control">
                     </div>
                     <div class="col-md-4 form-group">
-                        <label class="box-title after-none mb-0">UniqueID/Adm.No</label>
+                        <label class="box-title after-none mb-0">{{App\Helpers\get_string('uniqueid','request')}}</label>
                         <input type="text" name="unique_id" value="@if(isset($data['unique_id'])) {{$data['unique_id']}} @endif"
                                class="form-control">
                     </div>
@@ -95,12 +95,12 @@
                             <thead>
                                 <tr>
                                     <th>Id</th>
-                                    <th>Student Name</th>
-                                    <th>Gr No.</th>
-                                    <th>UniqueID/Adm.No</th>
+                                    <th>{{App\Helpers\get_string('studentname','request')}}</th>
+                                    <th>{{App\Helpers\get_string('grno','request')}}</th>
+                                    <th>{{App\Helpers\get_string('uniqueid','request')}}</th>
                                     <th>Academic Section</th>
-                                    <th>Standard</th>
-                                    <th>Division</th>
+                                    <th>{{App\Helpers\get_string('standard','request')}}</th>
+                                    <th>{{App\Helpers\get_string('division','request')}}</th>
                                     <th>Gender</th>
                                     <th>Mobile</th>
                                     <th>Action</th>

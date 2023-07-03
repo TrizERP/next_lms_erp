@@ -121,7 +121,7 @@ use DB;
                                         </select>
                                     </div>
                                     <div class="col-md-12">
-                                        <label>To Standard:</label>
+                                        <label>To {{App\Helpers\get_string('standard','request')}}:</label>
                                         <select name="to_standard" id="to_standard" class="form-control"
                                                 onchange="getToDivision(this.value);">
                                             <option value="">Select</option>
@@ -136,7 +136,7 @@ use DB;
                                         </select>
                                     </div>
                                     <div class="col-md-12">
-                                        <label>To Division:</label>
+                                        <label>To {{App\Helpers\get_string('division','request')}}:</label>
                                         <select name="to_division" id="to_division" class="form-control">
                                             <option value="">Select</option>
                                             @if(isset($data['to_divisions']))
@@ -184,9 +184,9 @@ use DB;
                                                     <th><input id="checkall" name="checkall" onchange="checkAll(this);"
                                                                type="checkbox"></th>
                                                     <th>Sr.No.</th>
-                                                    <th>Student Name</th>
-                                                    <th>Enrollment No.</th>
-                                                    <th>Standard</th>
+                                                    <th>{{App\Helpers\get_string('studentname','request')}}</th>
+                                                    <th>{{App\Helpers\get_string('grno','request')}}</th>
+                                                    <th>{{App\Helpers\get_string('standard','request')}}</th>
                                         <th>Division</th>
                                         <th>Mobile</th>
                                     </tr>

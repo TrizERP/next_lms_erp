@@ -68,7 +68,7 @@
                                        style="border-collapse: collapse;">
                                     <thead>
                                     <tr>
-                                        <th rowspan="2">Standard</th>
+                                        <th rowspan="2">{{App\Helpers\get_string('standard','request')}}</th>
                                         <th colspan="3">Total Student</th>
                                         <th colspan="3">Present</th>
                                         <th colspan="3">Absent</th>
