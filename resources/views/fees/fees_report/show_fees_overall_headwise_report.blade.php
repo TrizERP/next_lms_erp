@@ -68,7 +68,7 @@
                         <input type="text" id="last_name" value="{{$last_name}}" name="last_name" class="form-control">
                     </div>
                     <div class="col-md-4 form-group">
-                        <label>Enrollment No</label>
+                        <label>{{ App\Helpers\get_string('uniqueid','request')}}</label>
                         <input type="text" id="enrollment_no" name="enrollment_no" value="{{$enrollment_no}}" class="form-control">
                     </div>
                     <div class="col-md-4 form-group">
@@ -76,7 +76,7 @@
                         <input type="text" id="mobile_no" value="{{$mobile_no}}" name="mobile_no" class="form-control">
                     </div>                    
                     <div class="col-md-4 form-group">
-                        <label>Unique ID</label>
+                        <label>{{ App\Helpers\get_string('grno','request')}}</label>
                         <input type="text" id="uniqueid" value="{{$uniqueid}}" name="uniqueid" class="form-control">
                     </div>
                     {{ App\Helpers\SearchChain('4','single','grade,std,div',$grade_id,$standard_id,$division_id) }}
@@ -124,10 +124,10 @@
                     <thead>
                         <tr>
                             <th rowspan=3 class="align-middle">Sr No.</th>
-                            <th rowspan=3 class="align-middle">GR No.</th>
-                            <th rowspan=3 class="align-middle">Student Name</th>
-                            <th rowspan=3 class="align-middle">Std/Div</th>
-                            <th rowspan=3 class="align-middle">Quota</th>
+                            <th rowspan=3 class="align-middle">{{ App\Helpers\get_string('grno','request')}}</th>
+                            <th rowspan=3 class="align-middle">{{ App\Helpers\get_string('studentname','request')}}</th>
+                            <th rowspan=3 class="align-middle">{{ App\Helpers\get_string('std/div','request')}}</th>
+                            <th rowspan=3 class="align-middle">{{ App\Helpers\get_string('studentquota','request')}}</th>
                             <th rowspan=3 class="align-middle">Status</th>
                             <th rowspan=3 class="align-middle">Total Breakoff</th>
                             <th rowspan=3 class="align-middle">Total Discount</th>
@@ -346,7 +346,7 @@
                                     @endphp                                   
                                     @if(count($child_head) > 0)
                                         @foreach($child_head as $month_id => $child_val)                                           
-                                            <td>{{$total_array['PAID'][$main_fees_title[1]][$month_id]}}</td>                                            
+                                            <td>{{$total_array['PAID'][$main_fees_title[1]][$month_id] ?? 0}}</td>                                            
                                         @endforeach
                                     @endif 
                                 @endforeach
@@ -361,7 +361,7 @@
                                     @endphp                                 
                                     @if(count($child_head) > 0)
                                         @foreach($child_head as $month_id => $child_val)                                            
-                                            <td>{{$total_array['UNPAID'][$main_fees_title[1]][$month_id]}}</td>                                            
+                                            <td>{{$total_array['UNPAID'][$main_fees_title[1]][$month_id] ?? 0}}</td>                                            
                                         @endforeach
                                     @endif 
                                 @endforeach

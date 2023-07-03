@@ -46,8 +46,8 @@
                             <thead>
                             <tr>
                                 <th rowspan="2">Sr.No.</th>
-                                <th rowspan="2">Standard</th>
-                                <th rowspan="2">Quota</th>
+                                <th rowspan="2">{{ App\Helpers\get_string('standard','request')}}</th>
+                                <th rowspan="2">{{ App\Helpers\get_string('studentquota','request')}}</th>
                                 <th colspan="13" style="text-align:center;">New Student</th>
                                 <th colspan="13" style="text-align:center;">Old Student</th>
                             </tr>

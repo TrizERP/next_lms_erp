@@ -36,7 +36,7 @@
 	                            </select>
 	                        </div>
 	                        <div class="col-md-4 form-group">
-	                            <label>Standard </label>
+	                            <label>{{ App\Helpers\get_string('standard','request')}} </label>
 	                            <input type="text" id='late_date' value="@if(isset($data['late_date'])){{ $data['late_date'] }}@endif" required name="late_date" class="form-control">
 	                        </div>                        
 	                        <div class="col-md-4 form-group">

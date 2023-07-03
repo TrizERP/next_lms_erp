@@ -44,7 +44,7 @@
                                         <select id='order_by' name="order_by" class="form-control">
                                             <option>Select Order By Field</option>
                                             <option @if($order_by == 'student_name') selected="selected"
-                                                    @endif value="student_name">Student Name
+                                                    @endif value="student_name">{{ App\Helpers\get_string('studentname','request')}}
                                             </option>
                                             <option @if($order_by == 'standard_id') selected="selected"
                                                     @endif value="standard_id">{{ App\Helpers\get_string('standard','request')}}

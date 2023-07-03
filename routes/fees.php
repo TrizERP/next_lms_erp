@@ -169,8 +169,8 @@ Route::group(['prefix' => 'fees', 'middleware' => ['session', 'menu', 'logRoute'
     });
 
 
-    Route::get('fees_refund_report_index', 'fees\fees_report\feesRefundReportController@feesRefundReportIndex')->name("fees_refund_report_index");
-    Route::post('fees_refund_report', 'fees\fees_report\feesRefundReportController@feesRefundReport')->name("fees_refund_report");
+    Route::get('fees_refund_report_index', [feesRefundController::class,'index'])->name("fees_refund_report_index");
+    Route::post('fees_refund_report', [feesRefundController::class,'feesRefundReport'])->name("fees_refund_report");
 
     Route::resource('fees_monthly_report', feesMonthlyReportController::class);
     Route::post('getfeesMonthlyReport', [feesMonthlyReportController::class, 'getfeesMonthlyReport'])->name('getfeesMonthlyReport');

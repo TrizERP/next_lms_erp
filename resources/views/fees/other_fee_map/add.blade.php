@@ -34,8 +34,8 @@
                                     <tr>
                                         <th><input type="checkbox" name="all" id="ckbCheckAll" class="ckbox">  </th>
                                         <th>Sr. No.</th>
-                                        <th>Student Name</th>
-                                        <th>Std/Div</th>
+                                        <th>{{ App\Helpers\get_string('studentname','request')}}</th>
+                                        <th>{{ App\Helpers\get_string('std/div','request')}}</th>
                                         <th>Mobile</th>
                                         @php
                                         $arr_title = $data['fees_title'];

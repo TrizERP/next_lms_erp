@@ -29,7 +29,8 @@ class school_setupModel extends Model
         'cheque_return_charges',
         'syear',
         'expire_date',
-        'given_space_mb'
+        'given_space_mb',
+        'institute_type'
     ];
     public $timestamps = false;
 }

@@ -31,7 +31,7 @@
                             <thead>
                                 <tr>
                                     <th>Id</th>
-                                    <th>Standard</th>
+                                    <th>{{ App\Helpers\get_string('standard','request')}}</th>
                                     <th>Late Fees Date</th>
                                     <th>Created By</th>
                                     <th>Created On</th>
