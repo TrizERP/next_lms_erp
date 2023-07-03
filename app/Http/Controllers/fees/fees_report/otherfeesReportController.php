@@ -80,7 +80,7 @@ class otherfeesReportController extends Controller
             ->join('academic_section', 'academic_section.id', '=', 'tblstudent_enrollment.grade_id')
             ->join('standard', 'standard.id', '=', 'tblstudent_enrollment.standard_id')
             ->join('division', 'division.id', '=', 'tblstudent_enrollment.section_id')
-            ->leftjoin('fees_paid_other as fp', 'fp.student_id', '=', 'tblstudent_enrollment.student_id')
+            ->join('fees_paid_other as fp', 'fp.student_id', '=', 'tblstudent_enrollment.student_id')
             ->where($extraSearchArray)
             ->whereRaw($extraSearchArrayRaw)
             ->groupby('tblstudent_enrollment.student_id')
