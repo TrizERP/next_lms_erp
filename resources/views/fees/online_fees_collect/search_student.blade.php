@@ -47,12 +47,12 @@
     </style>
 
 </head>
-<div class="wrapper">
-    <div class="inner">
+<div class="wrapper container">
+    <div class="inner" style="justify-content: center;">
         <!-- <div class="image-holder"> -->
         <!-- <img src="images/registration-form-6.jpg" alt=""> -->
         <!-- </div> -->
-        <form method="POST" id="changeAction" action="{{route('icici_fees_collect')}}" style="margin-left: 70px;">
+        <form method="POST" id="changeAction" action="{{route('icici_fees_collect')}}">
             {{csrf_field()}}
             <p style="color:red;text-align:center;" id="errorMessage"></p>
             <h3>Make An Online Payment</h3>

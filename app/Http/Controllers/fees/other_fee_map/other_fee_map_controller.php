@@ -41,10 +41,10 @@ class other_fee_map_controller extends Controller
     public function create(Request $request)
     {
         session(['month_id' => $_REQUEST['month_id']]);
-
         $type = $request->input('type');
-        $student_data = \App\Helpers\SearchStudent($_REQUEST['grade'], $_REQUEST['standard'], $_REQUEST['division']);
-
+     // controller.php
+$student_data = \App\Helpers\SearchStudent($_REQUEST['grade'],$_REQUEST['standard'],$_REQUEST['division'],'', '','', $_REQUEST['stu_name'],$_REQUEST['uniqueid'],$_REQUEST['mobile'],$_REQUEST['grno']);
+        // return $student_data;exit;
         $sub_institute_id = session()->get('sub_institute_id');
         $syear = session()->get('syear');
         $mp_id = session()->get('month_id');

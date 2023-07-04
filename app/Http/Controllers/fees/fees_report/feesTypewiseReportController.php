@@ -130,7 +130,7 @@ class feesTypewiseReportController extends Controller
             ->selectRaw("fc.id,fc.student_id,CONCAT_WS(' ',ts.first_name,ts.middle_name,ts.last_name) AS student_name,
                 ts.enrollment_no,ts.admission_year,ts.mobile,ts.email,date_format(ts.dob,'%d-%m-%Y') AS dob,a.title AS section,
                 s.name AS std_name,d.name AS div_name,sq.title AS stu_qouta, $fees_head_sum
-                SUM(fc.fine) AS total_fine,SUM(fc.fees_discount) AS tot_disc,fc.receipt_no")
+                SUM(fc.fine) AS total_fine,SUM(fc.fees_discount) AS tot_disc,fc.receipt_no,SUM(fc.amount) as total_amt")
             ->whereRaw($extraSearchArrayRaw)
             ->where('se.syear', $syear)
             ->where('fc.syear', $syear)
@@ -138,7 +138,7 @@ class feesTypewiseReportController extends Controller
             ->whereNull('se.end_date')
             ->where('fc.is_deleted', '=', 'N')
             ->groupBy('ts.id')->get()->toArray();
-
+            // 7050
         $fees_data = array_map(function ($value) {
             return (array)$value;
         }, $fees_data);
@@ -158,7 +158,7 @@ class feesTypewiseReportController extends Controller
         $res['admission_year'] = $admission_year;
         $res['from_date'] = $from_date;
         $res['to_date'] = $to_date;
-
+        // return $fees_data;exit;
         return is_mobile($type, "fees/fees_report/show_fees_type_wise_report", $res, "view");
     }
 
