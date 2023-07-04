@@ -107,7 +107,7 @@
                             </div>
                             <div class="col-md-4 form-group text-left">
                                 <label>Mother Name</label>
-                                <input type="text" id='mother_name' name="mother_name" class="form-control">
+                                <input type="text" id='mother_name' name="mother_name" class="form-control" require>
                             </div>
                             <div class="col-md-4 form-group text-left">
                                 <label>{{ App\Helpers\get_string('fathername','request')}}</label>
@@ -219,7 +219,7 @@
                             </div>  
                                
                             <div class="col-md-4 form-group text-left">
-                                <label>Student Quota<span style="color: red;">*</span></label>
+                                <label>{{App\Helpers\get_string('studentquota','request')}}<span style="color: red;">*</span></label>
                                 <select id='student_quota' required name="student_quota" class="form-control">
                                     <option value="">--Select--</option>
                                     @if(isset($data['student_quota']))

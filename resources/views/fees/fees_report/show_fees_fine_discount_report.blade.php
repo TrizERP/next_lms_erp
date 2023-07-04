@@ -66,11 +66,11 @@
                             <thead>
                                 <tr>
                                     <th>Sr.No.</th>
-                                    <th>Gr.No.</th>
-                                    <th>Student</th>
+                                    <th>{{ App\Helpers\get_string('grno','request')}}</th>
+                                    <th>{{ App\Helpers\get_string('studentname','request')}}</th>
                                     <th>Gender</th>
-                                    <th>Standard</th>
-                                    <th>Div</th>
+                                    <th>{{ App\Helpers\get_string('standard','request')}}</th>
+                                    <th>{{ App\Helpers\get_string('division','request')}}</th>
                                     <th>Remark</th>
                                     <th>Rec.No</th>
                                     <th>Paid Date</th>

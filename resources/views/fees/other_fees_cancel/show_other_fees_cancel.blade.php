@@ -90,7 +90,7 @@
                         <input type="text" id="last_name" value="{{$last_name}}" name="last_name" class="form-control">
                     </div>
                     <div class="col-md-4 form-group">
-                        <label>Enrollment No</label>
+                        <label>{{ App\Helpers\get_string('grno','request')}}</label>
                         <input type="text" id="enrollment_no" name="enrollment_no" value="{{$enrollment_no}}" class="form-control">
                     </div>
                     <div class="col-md-4 form-group">
@@ -98,7 +98,7 @@
                         <input type="text" id="mobile_no" value="{{$mobile_no}}" name="mobile_no" class="form-control">
                     </div>
                     <div class="col-md-4 form-group">
-                        <label>Unique ID</label>
+                        <label>{{ App\Helpers\get_string('uniqueid','request')}}</label>
                         <input type="text" id="uniqueid" value="{{$uniqueid}}" name="uniqueid" class="form-control">
                     </div>
                     <div class="col-sm-12 form-group">
@@ -129,12 +129,12 @@
                                         <th><input id="checkall" name="checkall" onchange="checkAll(this);"
                                                    type="checkbox"></th>
                                         <th>Sr.No.</th>
-                                        <th>Student Name</th>
-                                        <th>Enrollment No.</th>
-                                        <th>Standard</th>
-                                        <th>Division</th>
+                                        <th>{{ App\Helpers\get_string('studentname','request')}}</th>
+                                        <th>{{ App\Helpers\get_string('grno','request')}}</th>
+                                        <th>{{ App\Helpers\get_string('standard','request')}}</th>
+                                        <th>{{ App\Helpers\get_string('division','request')}}</th>
                                         <th>Mobile</th>
-                                        <th>Student Quota</th>
+                                        <th>{{ App\Helpers\get_string('studentquota','request')}}</th>
                                         <th>Other Fees Head</th>
                                         <th>Paid Amount</th>
                                         <th>Receipt No</th>

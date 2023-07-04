@@ -69,10 +69,10 @@
                     <thead>
                         <tr>
                             <th>SR NO</th>
-                            <th>Enrollment No</th>
-                            <th>Student Name</th>
-                            <th>Standard</th>
-                            <th>Division</th>
+                            <th>{{App\Helpers\get_string('grno','request')}}</th>
+                            <th>{{App\Helpers\get_string('studentname','request')}}</th>
+                            <th>{{App\Helpers\get_string('standard','request')}}</th>
+                            <th>{{App\Helpers\get_string('division','request')}}</th>
                             <th>Certificate No.</th>
                             <th>Certificate Type</th>
                         </tr>

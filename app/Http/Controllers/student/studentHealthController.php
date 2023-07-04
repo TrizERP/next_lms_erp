@@ -13,7 +13,7 @@ use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 use function App\Helpers\is_mobile;
-
+use function App\Helpers\get_string;
 
 class studentHealthController extends Controller
 {
@@ -33,7 +33,7 @@ class studentHealthController extends Controller
             ->join('tblstudent as s', function ($join) {
                 $join->whereRaw('si.student_id = s.id');
             })
-            ->selectRaw("si.*, CONCAT_WS(' ',s.first_name,s.middle_name,s.last_name) AS student_name")
+            ->selectRaw("si.*, CONCAT_WS(' ',s.first_name,s.middle_name,s.last_name) AS '".get_string('studentname','request')."'")
             ->where('si.sub_institute_id', $sub_institute_id)
             ->orderBy('si.id', 'DESC')->get()->toArray();
 

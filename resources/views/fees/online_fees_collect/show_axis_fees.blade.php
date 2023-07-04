@@ -92,11 +92,11 @@
                             <div class="table-responsive col-md-6">
                                 <table class="table table-stripped">
                                     <tr>
-                                        <td>Unique Id</td>
+                                        <td>{{ App\Helpers\get_string('uniqueid','request')}}</td>
                                         <td><?php echo $data['stu_data']['student_id']; ?></td>
                                     </tr>
                                     <tr>
-                                        <td>Student Name</td>
+                                        <td>{{ App\Helpers\get_string('studentname','request')}}</td>
                                         <td><?php echo $data['stu_data']['name']; ?></td>
                                     </tr>
                                     <tr>
@@ -116,11 +116,11 @@
                             <div class="table-responsive col-md-6">
                                 <table class="table table-stripped">
                                     <tr>
-                                        <td>GR No</td>
+                                        <td>{{ App\Helpers\get_string('grno','request')}}</td>
                                         <td><?php echo $data['stu_data']['enrollment']; ?></td>
                                     </tr>
                                     <tr>
-                                        <td>Std-Div</td>
+                                        <td>{{ App\Helpers\get_string('std/div','request')}}</td>
                                         <td><?php echo $data['stu_data']['stddiv']; ?></td>
                                     </tr>
                                     <!--                                    <tr>

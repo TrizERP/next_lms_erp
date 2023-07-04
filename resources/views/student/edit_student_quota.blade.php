@@ -31,7 +31,7 @@
                         
                         <div class="row">
                         <div class="col-md-6 form-group">
-                            <label>Quota </label>
+                            <label>{{App\Helpers\get_string('studentquota','request')}}</label>
                             <input type="text" id='title' value="@if(isset($data['title'])){{ $data['title'] }}@endif" required name='title' class="form-control" pattern="[a-zA-Z\s]+">
                         </div>
 

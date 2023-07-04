@@ -32,9 +32,9 @@
                                     <th>Syear</th>
                                     <th>Fee Head</th>
                                     <th>Admission</th>
-                                    <th>Quota</th>
+                                    <th>{{ App\Helpers\get_string('studentquota','request')}}</th>
                                     <th>Grade</th>
-                                    <th>Standard</th>
+                                    <th>{{ App\Helpers\get_string('standard','request')}}</th>
                                     {{-- <th>Division</th> --}}
                                     <th>Month</th>
                                     <th>Amount</th>

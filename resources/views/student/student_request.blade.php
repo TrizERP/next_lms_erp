@@ -65,8 +65,8 @@
                         <thead>
                             <tr>
                                 <th><input id="checkall" onchange="checkAll(this,'student_request');" type="checkbox"></th>
-                                <th>Enrollment No</th>
-                                <th>Student Name</th>
+                                <th>{{App\Helpers\get_string('grno','request')}}</th>
+                                <th>{{App\Helpers\get_string('studentname','request')}}</th>
                                 <th>Request Type</th>
                                 <th>Document</th>
                                 <th>Reason</th>

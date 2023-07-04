@@ -84,11 +84,11 @@
                                 <tr>
                                     <th>Sr.No.</th>
                                     <th>Receipt No.</th>
-                                    <th>Gr.No.</th>
-                                    <th>Student</th>
+                                    <th>{{ App\Helpers\get_string('grno','request')}}</th>
+                                    <th>{{ App\Helpers\get_string('studentname','request')}}</th>
                                     <th>Admission Year</th>
-                                    <th>Quota</th>
-                                    <th>Standard</th>
+                                    <th>{{ App\Helpers\get_string('studentquota','request')}}</th>
+                                    <th>{{ App\Helpers\get_string('standard','request')}}</th>
                                     <th>Total Fees Paid</th>
                                     <th>Cancellation Type</th>
                                     <th>Cancellation Remarks</th>

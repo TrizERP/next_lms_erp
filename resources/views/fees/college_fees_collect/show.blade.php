@@ -22,7 +22,7 @@
                             {{ App\Helpers\SearchChain('4','single','grade,std,div') }}
                         </div>
                         <div class="col-md-4 form-group">
-                            <label>Name</label>
+                            <label>{{ App\Helpers\get_string('studentname','request')}}</label>
                             <input type="text" id="stu_name" placeholder="Name" name="stu_name" class="form-control">
                         </div>
                         <div class="col-md-4 form-group">
@@ -30,7 +30,7 @@
                             <input type="text" id="mobile" placeholder="Mobile" name="mobile" class="form-control">
                         </div>
                         <div class="col-md-4 form-group">
-                            <label>Gr No</label>
+                            <label>{{ App\Helpers\get_string('grno','request')}}</label>
                             <input type="text" id="grno" placeholder="Gr No." name="grno" class="form-control">
                             @if(app('request')->input('implementation') == 1)
                             <input type="hidden" name="implementation" value="1">
@@ -57,16 +57,16 @@
                         <table class="table table-box table-bordered table-responsive">
                             <tr>
                                 <th>
-                                    Sr No.
+                                {{ App\Helpers\get_string('grno','request')}}
                                 </th>
                                 <th>
-                                    Name
+                                {{ App\Helpers\get_string('studentname','request')}}
                                 </th>
                                 <th>
-                                    Standard
+                                {{ App\Helpers\get_string('standard','request')}}
                                 </th>
                                 <th>
-                                    Division
+                                {{ App\Helpers\get_string('division','request')}}
                                 </th>
                                 <th>
                                     Mobile

@@ -122,7 +122,7 @@
                             <th>Standard</th>
                             <th>Division</th> -->
                             @foreach($result_report[0] as $heads=>$value)
-                                <th>{{$heads}}</th>
+                                <th class="text-left">{{$heads}}</th>
                             @endforeach
                         </tr>
                     </thead>
