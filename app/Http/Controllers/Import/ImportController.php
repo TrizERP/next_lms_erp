@@ -16,6 +16,7 @@ class ImportController extends Controller
     public function getImport()
     {
         $getTables = DB::table('import_table_fields')->groupBy('table_name')->orderBy('id')->get();
+//        return $getTables;
         return view('import.import', ['result' => $getTables]);
     }
 
@@ -35,13 +36,15 @@ class ImportController extends Controller
 
     public function parseImport(Request $request)
     {
+        $sub_institute_id = session()->get('sub_institute_id');
+        $syear = session()->get('syear');
 
         $fileUrl = $request->file('csv_file');
         $file = fopen($fileUrl, "r");
         $fileHeader = fgetcsv($file, 0, ',');
 
         $filePath = 'import';
-        $generateFileName = rand('1111111111', '9999999999') . "." . $fileUrl->getClientOriginalExtension();
+        $generateFileName = $sub_institute_id."_".$syear."_".rand('11111', '99999') . "." . $fileUrl->getClientOriginalExtension();
         $destinationFileUrl = $filePath . "/" . $generateFileName;
         $filePath = $filePath . "/";
         $fileUrl->move($filePath, $generateFileName);
@@ -82,6 +85,8 @@ class ImportController extends Controller
 
     public function processImport(Request $request)
     {
+        $sub_institute_id = session()->get('sub_institute_id');
+        $syear = session()->get('syear');
         $finalData = [];
         $totalFailedRecordCount = 0;
         $totalFailedRecordArray = [];
@@ -92,87 +97,67 @@ class ImportController extends Controller
         $totalInsertRecordCount = 0;
         $totalRecordCount = 0;
         $data = DB::table('csv_data')->find($request->csv_data_file_id);
-        $match_fields = $data->match_fields ? json_decode($data->match_fields, true) : [];
+        $match_fields = json_decode($data->match_fields, true);
         $csv_data = json_decode($data->csv_data, true);
         $tableFields = $request->fields;
         $import_fields = DB::table('import_table_fields')->where([['table_name', $request->table_name], ['display_status', 1], ['is_required', 1]])->pluck('field');
         $import_fields = $import_fields->toArray();
-        $failedFields = [];
+        $failedFields =[];
         if (is_array($import_fields)) {
             foreach ($import_fields as $re_field) {
                 if (!in_array($re_field, $tableFields)) {
                     $failedFields[] = $re_field;
                 }
             }
-            if (count($failedFields) > 0) return view('import.import_success', compact('totalRecordCount', 'totalFailedRecordCount', 'totalOverwiteRecordCount', 'totalInsertRecordCount', 'failedFields', 'totalSkipRecordCount', 'totalFailedRecordArray', 'totalOverwiteRecordArray', 'totalSkipRecordArray'));
+            if (count($failedFields) > 0)return view('import.import_success', compact('totalRecordCount', 'totalFailedRecordCount', 'totalOverwiteRecordCount', 'totalInsertRecordCount','failedFields','totalSkipRecordCount','totalFailedRecordArray','totalOverwiteRecordArray','totalSkipRecordArray'));
         }
         if (is_array($csv_data)) {
             $totalRecordCount = count($csv_data);
             foreach ($csv_data as $rowKey => $row) {
+
                 $finalData = $prepareData = [];
-                if (is_array($request->fields)) {
+                if(is_array($request->fields)) {
                     foreach ($request->fields as $key => $field) {
                         if ($request->fields[$key] != 0) $prepareData[$request->fields[$key]] = $request->custom_text[$key] ?? $row[$key];
                         $finalData[] = $prepareData;
                     }
                 }
                 $condition = [];
-
-                foreach ($match_fields as $field) {
-                    if (!isset($prepareData[$field])) continue;
-                    $condition[$field] = $prepareData[$field];
+                if ($data->is_skip == 1) {
+                    foreach ($match_fields as $field) {
+                        if (!isset($prepareData[$field])) continue;
+                        $condition[$field] = $prepareData[$field];
+                    }
+                }else if ($data->is_skip == 2) {
+                    foreach ($match_fields as $field) {
+                        if (!isset($prepareData[$field])) continue;
+                        $condition[$field] = $prepareData[$field];
+                    }
                 }
-                if (count($condition) > 0) $condition['sub_institute_id'] = session()->get('sub_institute_id');
+                $condition['sub_institute_id'] = session()->get('sub_institute_id');
+
                 if (isset($prepareData['user_profile_id'])) {
                     $user_profile_id = DB::table('tbluserprofilemaster')->select('id')->where([['name', $prepareData['user_profile_id']], ['sub_institute_id', session()->get('sub_institute_id')]])->first();
                     if ($user_profile_id) $prepareData['user_profile_id'] = $user_profile_id->id;
-                }
-                if ($request->table_name == 'hrms_attendances') {
-                    $prepareData['sub_institute_id'] = session()->get('sub_institute_id');
-                    $found = false;
-                    if (count($condition) > 1) {
-                        $hrmsAttendance = DB::table($request->table_name)->where($condition)->first();
-                        if ($data->is_skip == 1) {
-                            if ( $hrmsAttendance) {
-                                $found = true;
-                                $totalSkipRecordCount = $totalSkipRecordCount + 1;
-                                $totalSkipRecordArray[] = $rowKey + 1;
-                            }
-                        } else if ($data->is_skip == 2) {
-                            $found = true;
-                            $overwriteFound = DB::table($request->table_name)->where($condition)->first();
-                            if ($overwriteFound) {
-                                DB::table($request->table_name)->where($condition)->update($prepareData);
-                                $totalOverwiteRecordCount = $totalOverwiteRecordCount + 1;
-                                $totalOverwiteRecordArray[] = $rowKey + 1;
-                            }
-                        }
-                    }
-                    if (!$found) {
-                        DB::table($request->table_name)->insert($prepareData);
-                        $totalInsertRecordCount = $totalInsertRecordCount + 1;
-                    }
                 }
 
                 if ($request->table_name == 'tbluser') {
                     $prepareData['sub_institute_id'] = session()->get('sub_institute_id');
                     $found = false;
-                    if (count($condition) > 1) {
-                        $tbluser = DB::table($request->table_name)->where($condition)->first();
-                        if ($data->is_skip == 1) {
-                            if ($tbluser) {
-                                $found = true;
-                                $totalSkipRecordCount = $totalSkipRecordCount + 1;
-                                $totalSkipRecordArray[] = $rowKey + 1;
-                            }
-                        } else if ($data->is_skip == 2) {
+                    $tbluser = DB::table($request->table_name)->where($condition)->where('sub_institute_id', $sub_institute_id)->first();
+                    if ($data->is_skip == 1) {
+                        if ($tbluser) {
                             $found = true;
-                            $overwriteFound = DB::table($request->table_name)->where($condition)->first();
-                            if ($overwriteFound) {
-                                DB::table($request->table_name)->where($condition)->update($prepareData);
-                                $totalOverwiteRecordCount = $totalOverwiteRecordCount + 1;
-                                $totalOverwiteRecordArray[] = $rowKey + 1;
-                            }
+                            $totalSkipRecordCount = $totalSkipRecordCount + 1;
+                            $totalSkipRecordArray[] = $rowKey + 1;
+                        }
+                    } else if ($data->is_skip == 2) {
+                        $found = true;
+                        $overwriteFound = DB::table($request->table_name)->where($condition)->where('sub_institute_id', $sub_institute_id)->first();
+                        if ($overwriteFound) {
+                            DB::table($request->table_name)->where($condition)->where('sub_institute_id', $sub_institute_id)->update($prepareData);
+                            $totalOverwiteRecordCount = $totalOverwiteRecordCount + 1;
+                            $totalOverwiteRecordArray[] =  $rowKey + 1;
                         }
                     }
                     if (!$found) {
@@ -187,36 +172,34 @@ class ImportController extends Controller
                     $prepareData['created_by'] = session()->get('user_id');
                     $student_id = DB::table('tblstudent')->where([['enrollment_no', $prepareData['enrollment_no']], ['sub_institute_id', session()->get('sub_institute_id')]])->first();
                     if ($student_id) {
-                        $standard_id = DB::table('tblstudent_enrollment')->select('standard_id')->where([['student_id', $student_id->id], ['sub_institute_id', session()->get('sub_institute_id')]])->first();
+                        $standard_id = DB::table('tblstudent_enrollment')->select('standard_id')->where([['student_id', $student_id->id], ['sub_institute_id', session()->get('sub_institute_id')], ['syear', session()->get('syear')]])->first();
                         if ($standard_id) {
-                            $prepareData['standard_id'] = 1;
+                            $prepareData['standard_id'] = $standard_id;//1
                             $prepareData['student_id'] = $student_id->id;
                         }
                         unset($prepareData['enrollment_no']);
                         $fees_receipt_data = [];
                         $fees_receipt_data['STANDARD'] = $prepareData['standard_id'] ?? null;
-                        $fees_receipt_data['SYEAR'] = $prepareData['syear'] ?? null;
+                        $fees_receipt_data['SYEAR'] = $prepareData['syear'] = session()->get('syear');
                         $fees_receipt_data['SUB_INSTITUTE_ID'] = $prepareData['sub_institute_id'] = session()->get('sub_institute_id');
                         $found = false;
-                        //if (count($condition) > 1) {
-                            if ($data->is_skip == 1) {
-                                $is_found = DB::table($request->table_name)->where([['student_id', $student_id->id], ['sub_institute_id', session()->get('sub_institute_id')]])->first();
-                                if ($is_found) {
-                                    $found = true;
-                                    $totalSkipRecordCount = $totalSkipRecordCount + 1;
-                                    $totalSkipRecordArray[] = $rowKey + 1;
-                                }
-                            } else if ($data->is_skip == 2) {
+                        if ($data->is_skip == 1) {
+                            $is_found = DB::table($request->table_name)->where([['student_id', $student_id->id],['sub_institute_id',session()->get('sub_institute_id')]])->where('syear', $syear)->first();
+                            if ($is_found) {
                                 $found = true;
-                                $overwriteFound = DB::table($request->table_name)->where([['student_id', $student_id->id], ['sub_institute_id', session()->get('sub_institute_id')]])->first();
-                                if ($overwriteFound) {
-                                    DB::table($request->table_name)->where([['student_id', $student_id->id], ['sub_institute_id', session()->get('sub_institute_id')]])->update($prepareData);
-                                    DB::table('fees_receipt')->where([['FEES_ID', $overwriteFound->id], ['sub_institute_id', session()->get('sub_institute_id')]])->update($fees_receipt_data);
-                                    $totalOverwiteRecordCount = $totalOverwiteRecordCount + 1;
-                                    $totalOverwiteRecordArray[] = $rowKey + 1;
-                                }
+                                $totalSkipRecordCount = $totalSkipRecordCount + 1;
+                                $totalSkipRecordArray[] = $rowKey + 1;
                             }
-                        //}
+                        } else if ($data->is_skip == 2) {
+                            $found = true;
+                            $overwriteFound = DB::table($request->table_name)->where([['student_id', $student_id->id],['sub_institute_id',session()->get('sub_institute_id')]])->where('syear', $syear)->first();
+                            if ($overwriteFound) {
+                                DB::table($request->table_name)->where([['student_id', $student_id->id],['sub_institute_id',session()->get('sub_institute_id')]])->where('syear', $syear)->update($prepareData);
+                                DB::table('fees_receipt')->where([['FEES_ID', $overwriteFound->id],['sub_institute_id',session()->get('sub_institute_id')]])->update($fees_receipt_data);
+                                $totalOverwiteRecordCount = $totalOverwiteRecordCount + 1;
+                                $totalOverwiteRecordArray[] = $rowKey + 1;
+                            }
+                        }
                         if (!$found) {
                             $fees_id = DB::table($request->table_name)->insertGetId($prepareData);
                             $fees_receipt_data['FEES_ID'] = $fees_id;
@@ -251,30 +234,29 @@ class ImportController extends Controller
                         $house_id = DB::table('house_master')->select('id')->where([['house_name', $prepareData['house_id']], ['sub_institute_id', session()->get('sub_institute_id')]])->first();
                         if ($house_id) $student_enroll_data['house_id'] = $house_id->id;
                     }
-                    $student_enroll_data['syear'] = $prepareData['syear'] ?? null;
-                    $student_enroll_data['start_date'] = $prepareData['start_date'] ?? null;
-                    $student_enroll_data['adhar'] = $prepareData['adhar'] ?? null;
+                    $student_enroll_data['syear'] = $prepareData['syear'] = session()->get('syear');
+                    $student_enroll_data['start_date'] = $prepareData['start_date'] ?? date('Y-m-d');
+                    $student_enroll_data['adhar'] = $prepareData['adhar'] ?? 0;
 
-                    unset($prepareData['student_id'], $prepareData['grade_id'], $prepareData['standard_id'], $prepareData['section_id'], $prepareData['student_quota'], $prepareData['syear'], $prepareData['start_date'], $prepareData['term_id'], $prepareData['adhar']);
+                    unset($prepareData['student_id'], $prepareData['grade_id'], $prepareData['standard_id'], $prepareData['section_id'], $prepareData['student_quota'], $prepareData['house_id'], $prepareData['syear'], $prepareData['start_date'], $prepareData['term_id'], $prepareData['adhar']);
                     $student_enroll_data['sub_institute_id'] = $prepareData['sub_institute_id'] = session()->get('sub_institute_id');
 
                     $found = false;
-                    if (count($condition) > 1) {
-                        $student_id = DB::table($request->table_name)->where($condition)->first();
-
-                        if ($data->is_skip == 1) {
-                            if ($student_id) {
-                                $found = true;
-                                $totalSkipRecordCount = $totalSkipRecordCount + 1;
-                                $totalSkipRecordArray[] = $rowKey + 1;
-                            }
-                        } else if ($data->is_skip == 2) {
+                    $student_id = DB::table($request->table_name)->where($condition)->where('sub_institute_id', $sub_institute_id)->first();
+                    if ($data->is_skip == 1) {
+                        if ($student_id) {
                             $found = true;
-                            DB::table($request->table_name)->where($condition)->update($prepareData);
+                            $totalSkipRecordCount = $totalSkipRecordCount + 1;
+                            $totalSkipRecordArray[] = $rowKey + 1;
+                        }
+                    } else if ($data->is_skip == 2) {
+                        if ($student_id) {
+                            $found = true;
+                            DB::table($request->table_name)->where($condition)->where('sub_institute_id', $sub_institute_id)->update($prepareData);
                             $student_enroll_data['student_id'] = $student_id->id;
-                            DB::table('tblstudent_enrollment')->where('student_id', $student_id->id)->update($student_enroll_data);
+                            DB::table('tblstudent_enrollment')->where('student_id', $student_id->id)->where('sub_institute_id', $sub_institute_id)->where('syear', $syear)->update($student_enroll_data);
                             $totalOverwiteRecordCount = $totalOverwiteRecordCount + 1;
-                            $totalOverwiteRecordArray[] = $rowKey + 1;
+                            $totalOverwiteRecordArray[] =  $rowKey + 1;
                         }
                     }
                     if (!$found) {
@@ -479,7 +461,6 @@ class ImportController extends Controller
             }
         }*/
 
-        return view('import.import_success', compact('totalRecordCount', 'totalFailedRecordCount', 'totalOverwiteRecordCount', 'totalInsertRecordCount', 'failedFields', 'totalSkipRecordCount', 'totalFailedRecordArray', 'totalOverwiteRecordArray', 'totalSkipRecordArray'));
+        return view('import.import_success', compact('totalRecordCount', 'totalFailedRecordCount', 'totalOverwiteRecordCount', 'totalInsertRecordCount','failedFields','totalSkipRecordCount','totalFailedRecordArray','totalOverwiteRecordArray','totalSkipRecordArray'));
     }
 }
-
