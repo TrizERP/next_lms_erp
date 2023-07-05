@@ -62,6 +62,13 @@
                         <input type="hidden" name="implementation" value="1">
                         @endif
                     </div>
+                    <div class="col-md-4 form-group">
+                        <div class="d-inline">
+                            <input type="checkbox" name="including_inactive" value="Yes"
+                                   @if(isset($data['including_inactive'])) @if($data['including_inactive'] == 'Yes') checked @endif @endif>
+                            <span>Including In-active Students</span>
+                        </div>
+                    </div>
                     <div class="col-md-12 form-group">
                         <center>
                             <input type="submit" name="submit" value="Search Student" class="btn btn-success triz-btn" >

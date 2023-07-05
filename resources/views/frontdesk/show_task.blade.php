@@ -67,6 +67,7 @@
                                     <th>Allocated To</th>
                                     <th>Status</th>
                                     <th>Approved By</th>
+                                    <th>Attachment</th>
                                     <th>Action</th>
                                 </tr>
                             </thead>
@@ -85,6 +86,8 @@
                                     <td>{{$value->ALLOCATED_TO}}</td>
                                     <td>{{$value->STATUS}}</td>
                                     <td>@if($value->approved_by == "") - @else {{$value->approved_by}} @endif</td>
+                                    <td>
+                                        <a target="blank" href="/storage/frontdesk/{{$value->TASK_ATTACHMENT}}">{{$value->TASK_ATTACHMENT}}</a> </td>
                                     <td>
                                         <div class="d-inline">
                                             <a href="{{ route('task.edit',$value->ID)}}" class="btn btn-info btn-outline"><i class="ti-pencil-alt"></i></a>

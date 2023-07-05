@@ -135,7 +135,10 @@ class fees_collect_controller extends Controller
         if (isset($_REQUEST['stu_name']) && $_REQUEST['stu_name'] != '') {
             $responce_arr['stu_name'] = $_REQUEST['stu_name'];
         }
-
+        if (isset($_REQUEST['including_inactive']) && $_REQUEST['including_inactive'] != '') {
+            $responce_arr['including_inactive'] = $_REQUEST['including_inactive'];
+        }
+        //return $_REQUEST['including_inactive'];exit;
         $request = $_REQUEST;
         // DB::enableQueryLog();
         $result = DB::table('tblstudent as s')
@@ -165,7 +168,7 @@ class fees_collect_controller extends Controller
             ->where('s.sub_institute_id', session()->get('sub_institute_id'))
             ->where('se.syear', session()->get('syear'))
             ->whereNotNull('s.admission_date')
-            ->whereNull('se.end_date')
+            //->whereNull('se.end_date')
             ->where(function ($q) use ($request) {
                 if (isset($request['mobile']) && $request['mobile'] != '') {
                     $q->where('s.mobile', $request['mobile']);
@@ -191,6 +194,13 @@ class fees_collect_controller extends Controller
                             ->orWhere('s.middle_name', 'like', '%' . $request['stu_name'] . '%')
                             ->orWhere('s.last_name', 'like', '%' . $request['stu_name'] . '%');
                     });
+                }
+                if (isset($request['including_inactive']) && $request['including_inactive'] != '') {
+                    if ($request['including_inactive'] == 'Yes') {
+                        $q->whereNotNull('se.end_date');
+                    }
+                } else {
+                    $q->whereNull('se.end_date');
                 }
             })->groupBy('s.id')->havingNotNull('bkoff')->get()->toArray();
 // dd(DB::getQueryLog($result));
@@ -265,8 +275,8 @@ class fees_collect_controller extends Controller
                 })
                 ->where('s.sub_institute_id', session()->get('sub_institute_id'))
                 ->where('se.syear', session()->get('syear'))
-                ->whereNotNull('s.admission_date')
-                ->whereNull('se.end_date')
+                //->whereNotNull('s.admission_date')
+                //->whereNull('se.end_date')
                 ->where(function ($q) use ($request) {
                     if (isset($request['mobile']) && $request['mobile'] != '') {
                         $q->where('s.mobile', $request['mobile']);
@@ -293,8 +303,16 @@ class fees_collect_controller extends Controller
                                 ->orWhere('s.last_name', 'like', '%' . $request['stu_name'] . '%');
                         });
                     }
+                    if (isset($request['including_inactive']) && $request['including_inactive'] != '') {
+                        if ($request['including_inactive'] == 'Yes') {
+                            $q->whereNotNull('se.end_date');
+                        }
+                    } else {
+                        $q->whereNull('se.end_date');
+                    }
+                    
                 })->groupBy('s.id')->get()->toArray();
-        // return $check;exit;
+    //return $check;exit;
             if (!empty($check)) {
                 if ($check[0]->section_id == null || $check[0]->section_id == 0) {
                     $responce_arr['status_code'] = 0;
@@ -305,6 +323,9 @@ class fees_collect_controller extends Controller
                 } elseif ($check[0]->admission_year == null || $check[0]->admission_year == 0) {
                     $responce_arr['status_code'] = 0;
                     $responce_arr['message'] = "Admission Year Not Found";
+                }elseif ($check[0]->end_date != null) {
+                    $responce_arr['status_code'] = 0;
+                    $responce_arr['message'] = "Inactive User Not Found";
                 } else {
                     $responce_arr['status_code'] = 0;
                     $responce_arr['message'] = "Fees Breakoff Not Found";
