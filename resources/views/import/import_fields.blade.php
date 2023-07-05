@@ -75,7 +75,7 @@
             <div class="col-md-6">
                 <div class="panel panel-default">
                     <h2 class="text-center pb-3 pt-1">
-                        Step :2 Select Fields</h2>
+                        Step:2 Select Fields</h2>
 
                     <div class="panel-body">
                         <form class="form-horizontal" method="POST" action="{{ route('import_process') }}">

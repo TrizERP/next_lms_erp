@@ -15,23 +15,52 @@
                     <div class="panel-heading">CSV Import Report</div>
                     <div class="row">
                         <div class="col-md-3">
-                            <p>Total Record :</p>
-                            <p>Failed Record:</p>
-                            <p>Insert Record:</p>
-                            <p>OverWrite Record:</p>
-                            <p>Success Record:</p>
+                            @if(count($failedFields)>0)
+                                <p>Required fields:</p>
+                            @else
+                                <p>Total Record :</p>
+                                <p>Failed Record:</p>
+                                <p>Failed Record Row List :</p>
+                                <p>Insert Record:</p>
+                                <p>OverWrite Record:</p>
+                                <p>OverWrite Row List :</p>
+                                <p>Skip Record:</p>
+                                <p>Skip Record Row List:</p>
+                                <p>Success Record:</p>
+                            @endif
                         </div>
                         <div class="col-md-3">
-                            <p>{{$totalRecordCount}}</p>
-                            <p>{{$totalFailedRecordCount}}</p>
-                            <p>{{$totalInsertRecordCount}}</p>
-                            <p>{{$totalOverwiteRecordCount}}</p>
-                            <p>{{($totalRecordCount) - $totalFailedRecordCount}}</p>
+                            @if(count($failedFields)>0)
+                                <p>
+                                    @foreach($failedFields as $key => $fields)
+                                        {{$fields}} {{count($failedFields) == $key + 1 ? '' :','}}
+                                    @endforeach
+                                </p>
+                            @else
+                                <p>{{$totalRecordCount}}</p>
+                                <p>{{$totalFailedRecordCount}}  </p>
+                                <p>[@foreach($totalFailedRecordArray as $key => $row)
+                                        {{$row}} {{count($totalFailedRecordArray) == $key + 1 ? '' :','}}
+                                    @endforeach]</p>
+                                <p>{{$totalInsertRecordCount}}</p>
+                                <p>{{$totalOverwiteRecordCount}}</p>
+                                <p>[@foreach($totalOverwiteRecordArray as $key => $row)
+                                        {{$row}} {{count($totalOverwiteRecordArray) == $key + 1 ? '' :','}}
+                                    @endforeach]</p>
+                                <p>{{$totalSkipRecordCount}}</p>
+                                <p>[@foreach($totalSkipRecordArray as $key => $row)
+                                        {{$row}} {{count($totalSkipRecordArray) == $key + 1 ? '' :','}}
+                                    @endforeach]</p>
+                                <p>{{($totalRecordCount) - $totalFailedRecordCount}}</p>
+                            @endif
+
                         </div>
                     </div>
 
                     <div class="panel-body">
-                        Data imported successfully.
+                        @if(count($failedFields) == 0)
+                            Data imported successfully..
+                        @endif
                     </div>
                 </div>
             </div>
