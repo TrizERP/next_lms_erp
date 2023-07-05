@@ -85,10 +85,10 @@
                                         <thead>
                                             <tr>
                                                 <th><input id="checkall" onchange="checkAll(this);" type="checkbox"></th>
-                                                <th>Student Name</th>
-                                                <th>Enrollment Code</th>
-                                                <th>Standard</th>
-                                                <th>Division</th>
+                                                <th>{{App\Helpers\get_string('studentname','request')}}</th>
+                                                <th>{{App\Helpers\get_string('grno','request')}}</th>
+                                                <th>{{App\Helpers\get_string('standard','request')}}</th>
+                                                <th>{{App\Helpers\get_string('division','request')}}</th>
                                                 <th>Gender</th>
                                                 <th>Mobile</th>
                                             </tr>

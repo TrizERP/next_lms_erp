@@ -20,7 +20,7 @@
                         <thead>
                             <tr>
                                 <th>Grade</th>
-                                <th>Standard</th>
+                                <th>{{ App\Helpers\get_string('standard','request')}}</th>
                                 <th>Month</th>
                             </tr>
                         </thead>
@@ -79,7 +79,7 @@
                                 <table id="example" class="table table-bordered mb-4">
                                     <tr>
                                         <th>
-                                            Quota
+                                        {{ App\Helpers\get_string('studentquota','request')}}
                                         </th>
                                         <?php foreach ($data['data']['title_arr'] as $id => $val) { ?>
                                             <th>
@@ -123,7 +123,7 @@
                                 <table id="example" class="table table-bordered mb-4">
                                     <tr>
                                         <th>
-                                            Quota
+                                        {{ App\Helpers\get_string('quota','request')}}
                                         </th>
                                         <?php foreach ($data['data']['title_arr'] as $id => $val) { ?>
                                             <th>

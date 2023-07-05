@@ -128,8 +128,8 @@
                                     <tr id="head-table" style="border:none !important"></tr>
                                     <tr id="heads">
                                         <th>Sr No</th>
-                                        <th>Enrollment No</th>
-                                        <th>Student Name</th>
+                                        <th>{{App\Helpers\get_string('grno','request')}}</th>
+                                        <th>{{App\Helpers\get_string('studentname','request')}}</th>
                                         @for($i=1;$i<=$data['to_date'];$i++)
                                             <th>{{$i}}</th>
                                         @endfor

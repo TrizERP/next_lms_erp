@@ -30,7 +30,7 @@
                                             <table border="1">
                                                 <tr>
                                                     <th style="text-align: center;font-weight: inherit;">
-                                                        Quota
+                                                    {{ App\Helpers\get_string('studentquota','request')}}
                                                     </th>
                                                     <?php foreach ($data['data']['title_arr'] as $id => $val) { ?>
                                                         <th style="text-align: center;font-weight: inherit;">
@@ -87,7 +87,7 @@
                                             <table border="1">
                                                 <tr>
                                                     <th style="text-align: center;font-weight: inherit;">
-                                                        Quota
+                                                    {{ App\Helpers\get_string('studentquota','request')}}
                                                     </th>
                                                     <?php foreach ($data['data']['title_arr'] as $id => $val) { ?>
                                                         <th style="text-align: center;font-weight: inherit;">

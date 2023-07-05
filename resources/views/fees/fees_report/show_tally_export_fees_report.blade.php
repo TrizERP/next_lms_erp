@@ -64,7 +64,7 @@
                         <input type="text" id="last_name" value="{{$last_name}}" name="last_name" class="form-control">
                     </div>
                     <div class="col-md-4 form-group">
-                        <label>Enrollment No</label>
+                        <label>{{ App\Helpers\get_string('grno','request')}}</label>
                         <input type="text" id="enrollment_no" name="enrollment_no" value="{{$enrollment_no}}" class="form-control">
                     </div>
                     <div class="col-md-4 form-group">

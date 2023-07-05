@@ -55,10 +55,10 @@
                     <thead>
                         <tr>
                             <th>Sr No</th>
-                            <th>Enrollment No</th>
-                            <th>Student Name</th>
-                            <th>Standard</th>
-                            <th>Division</th>
+                            <th>{{App\Helpers\get_string('grno','request')}}</th>
+                            <th>{{App\Helpers\get_string('studentname','request')}}</th>
+                            <th>{{App\Helpers\get_string('standard','request')}}</th>
+                            <th>{{App\Helpers\get_string('division','request')}}</th>
                                @foreach($data['docment_type_data'] as $key => $val)
                                     <th>{{$val['document_type']}}</th>
                                @endforeach

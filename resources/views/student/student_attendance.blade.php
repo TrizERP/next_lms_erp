@@ -74,10 +74,10 @@
                     <thead>
                         <tr>
                             <th>Sr No</th>
-                            <th>Enrollment No</th>
+                            <th>{{App\Helpers\get_string('grno','request')}}</th>
                              <th>Roll No</th>
                              <th>Last Name</th>
-                            <th>Student Name</th>
+                            <th>{{App\Helpers\get_string('studentname','request')}}</th>
                             <th>Middle Name</th>
                             <th>Present <input id="checkall" name="attendance" onchange="checkAll(this,'Present');" type="radio"></th>
                             <th>Absent <input id="checkall" name="attendance" onchange="checkAll(this,'Absent');" type="radio"></th>

@@ -107,10 +107,10 @@
                             </div>
                             <div class="col-md-4 form-group text-left">
                                 <label>Mother Name</label>
-                                <input type="text" id='mother_name' name="mother_name" class="form-control">
+                                <input type="text" id='mother_name' name="mother_name" class="form-control" require>
                             </div>
                             <div class="col-md-4 form-group text-left">
-                                <label>Father Name</label>
+                                <label>{{ App\Helpers\get_string('fathername','request')}}</label>
                                 <input type="text" id='father_name' name="father_name" class="form-control">
                             </div>
                             <div class="col-md-4 form-group text-left">
@@ -118,7 +118,7 @@
                                 <input type="text" id='mobile' pattern="[1-9]{1}[0-9]{9}" required name="mobile" class="form-control">
                             </div>
                             <div class="col-md-4 form-group text-left">
-                                <label>Student Mobile</label>
+                                <label>{{ App\Helpers\get_string('studentmobile','request')}}</label>
                                 <input type="text" id='student_mobile' pattern="[1-9]{1}[0-9]{9}" name="student_mobile" class="form-control">
                             </div>
                             <div class="col-md-4 form-group text-left">
@@ -219,7 +219,7 @@
                             </div>  
                                
                             <div class="col-md-4 form-group text-left">
-                                <label>Student Quota<span style="color: red;">*</span></label>
+                                <label>{{App\Helpers\get_string('studentquota','request')}}<span style="color: red;">*</span></label>
                                 <select id='student_quota' required name="student_quota" class="form-control">
                                     <option value="">--Select--</option>
                                     @if(isset($data['student_quota']))

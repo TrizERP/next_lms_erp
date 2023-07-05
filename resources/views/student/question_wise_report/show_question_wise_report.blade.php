@@ -70,9 +70,9 @@
                                        <label>Order By</label>
                                        <select id='order_by' name="order_by" class="form-control">
                                            <option>Select Order By Field</option>
-                                           <option @if($order_by == 'student_name') selected="selected" @endif value="student_name">Student Name</option>
-                                           <option @if($order_by == 'standard_id') selected="selected" @endif value="standard_id">Standard</option>
-                                           <option @if($order_by == 'enrollment_no') selected="selected" @endif value="enrollment_no">Enrollment No</option>
+                                           <option @if($order_by == 'student_name') selected="selected" @endif value="student_name">{{App\Helpers\get_string('studentname','request')}}</option>
+                                           <option @if($order_by == 'standard_id') selected="selected" @endif value="standard_id">{{App\Helpers\get_string('standard','request')}}</option>
+                                           <option @if($order_by == 'enrollment_no') selected="selected" @endif value="enrollment_no">{{App\Helpers\get_string('grno','request')}}</option>
                                            <option @if($order_by == 'roll_no') selected="selected" @endif value="roll_no">Roll No</option>
                                        </select>
                                    </div> --}}
@@ -206,7 +206,7 @@
                         <thead>
                         <tr>
                             <th>Roll No</th>
-                            <th>Student Name</th>
+                            <th>{{App\Helpers\get_string('studentname','request')}}</th>
                             @for ($i = 1; $i <= $countQuestion; $i++)
                                             <th>Q{{ $i }}</th>
                                         @endfor

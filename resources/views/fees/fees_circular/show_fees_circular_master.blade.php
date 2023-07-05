@@ -27,7 +27,7 @@
                                 <tr>
                                     <th>Sr.No.</th>
                                     <th>Academic Section</th>
-                                    <th>Standard</th>
+                                    <th>{{ App\Helpers\get_string('standard','request')}}</th>
                                     <th>Bank Name</th>
                                     <th>Address 1</th>
                                     <th>Address 2</th>

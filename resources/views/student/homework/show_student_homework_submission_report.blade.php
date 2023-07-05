@@ -84,9 +84,9 @@
                                 <thead>
                                 <tr>
                                     <th>Sr.No.</th>
-                                    <th>Gr.No.</th>
-                                    <th>Student</th>
-                                    <th>Std-Div</th>
+                                    <th>{{App\Helpers\get_string('grno','request')}}</th>
+                                    <th>{{App\Helpers\get_string('studentname','request')}}</th>
+                                    <th>{{App\Helpers\get_string('std/div','request')}}</th>
                                     <th>SMS No.</th>
                                     <th>Homework Date</th>
                                     <th>Homework Title</th>

@@ -56,10 +56,10 @@
 				</div>
                     <!-- standard or division wise -->
 					<div class="col-md-4 form-group mt-3">
-					  <label  class="label"for="">Standard</label>
+					  <label  class="label"for="">{{ App\Helpers\get_string('standard','request')}}</label>
 						<select class="form-select form-control" multiple aria-label="multiple select" name="standard_wise[]" required>
-						  <option value="standard" @if(isset($data['standard']) && in_array("standard",$data['standard']) ) selected @endif>Standard Wise</option>
-						  <option value="division" @if(isset($data['standard']) && in_array("division",$data['standard']) ) selected @endif>Division Wise</option>
+						  <option value="standard" @if(isset($data['standard']) && in_array("standard",$data['standard']) ) selected @endif>{{ App\Helpers\get_string('standard','request')}} Wise</option>
+						  <option value="division" @if(isset($data['standard']) && in_array("division",$data['standard']) ) selected @endif>{{ App\Helpers\get_string('division','request')}} Wise</option>
 						</select>
 					</div>
                     <!-- From Date  -->
@@ -151,7 +151,7 @@
                     <thead>
                     <tr>
                         <th rowspan="2">Date</th>
-                        <th rowspan="2">Standard</th>
+                        <th rowspan="2">{{ App\Helpers\get_string('standard','request')}}</th>
                         <th rowspan="2">Total</th>
                         <!-- general -->
                         @if(isset($data['general']))

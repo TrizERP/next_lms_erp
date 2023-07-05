@@ -212,14 +212,7 @@ class feesOverallHeadwisePendingReportController extends Controller
         }
         // ksort($bk_title_months_array);
     }
-        foreach ($bk_title_months_array as &$value) {
-            uksort( $value , function($a, $b) use($months){
-                $a = strtotime(substr($months[$a],-4) );
-                $b = strtotime(substr($months[$b],-4) );
-                return $a - $b;
-            });
-        }
-
+       
         $count_of_array = $i;
 
         $fees_fine_discount_data = DB::select("SELECT SUM(fine) AS total_fine, SUM(fees_discount) AS total_disc, student_id FROM fees_collect WHERE sub_institute_id = '".$sub_institute_id."' AND syear = '".$syear."' group by student_id");
@@ -300,6 +293,14 @@ class feesOverallHeadwisePendingReportController extends Controller
                 }
             }
         }
+        foreach ($bk_title_months_array as &$value) {
+            uksort( $value , function($a, $b) use($months){
+                $a = strtotime(substr($months[$a],-4) );
+                $b = strtotime(substr($months[$b],-4) );
+                return $a - $b;
+            });
+        }
+
         // dd($final_array);
         $res['status_code'] = 1;
         $res['message'] = "Success";

@@ -40,7 +40,7 @@
                                     <th>Rec prefix</th>
                                     <th>Rec postfix</th>
                                     <th>Adm. section</th>
-                                    <th>Standard</th>
+                                    <th>{{ App\Helpers\get_string('standard','request')}}</th>
                                     <th>Fees title</th>
                                     <th>Sort order</th>
                                     <th>Status</th>

@@ -83,9 +83,9 @@
                                 <thead>
                                     <tr>
                                         <th><input id="checkall" onchange="checkAll(this);" type="checkbox"></th>
-                                        <th>Enrollment No.</th>
-                                        <th>Student Name</th>
-                                        <th>Standard</th>
+                                        <th>{{ App\Helpers\get_string('grno','request')}}</th>
+                                        <th>{{ App\Helpers\get_string('studentname','request')}}</th>
+                                        <th>{{ App\Helpers\get_string('standard','request')}}</th>
                                         @if (Session::get('sub_institute_id') == '201' || Session::get('sub_institute_id') == '202' || Session::get('sub_institute_id') == '203' || Session::get('sub_institute_id') == '204')
                                         <th>Fees Breakoff</th>
                                         <th>Fees Circular Amount</th>

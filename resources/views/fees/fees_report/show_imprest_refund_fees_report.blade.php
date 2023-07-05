@@ -68,10 +68,10 @@
                     <thead>
                         <tr>
                             <th>Sr No.</th>
-                            <th>GR No.</th>
-                            <th>Student Name</th>
-                            <th>Standard</th>
-                            <th>Division</th>
+                            <th>{{ App\Helpers\get_string('grno','request')}}</th>
+                            <th>{{ App\Helpers\get_string('studentname','request')}}</th>
+                            <th>{{ App\Helpers\get_string('standard','request')}}</th>
+                            <th>{{ App\Helpers\get_string('division','request')}}</th>
                             <th>Mobile No.</th>                                                                                                                   
                             <th>Receipt No.</th>
                             <th>Cancel Type</th>                               
