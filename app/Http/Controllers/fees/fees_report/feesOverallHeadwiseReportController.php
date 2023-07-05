@@ -5,6 +5,7 @@ namespace App\Http\Controllers\fees\fees_report;
 use App\Http\Controllers\Controller;
 use App\Http\Controllers\fees\fees_collect\fees_collect_controller;
 use App\Models\student\tblstudentModel;
+use App\Models\fees\fees_title\fees_title;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Contracts\View\Factory;
 use Illuminate\Contracts\View\View;
@@ -28,10 +29,17 @@ class feesOverallHeadwiseReportController extends Controller
     {
         $type = $request->input('type');
         $months = FeeMonthId();
+        $sub_institute_id = $request->session()->get('sub_institute_id');
+
+        $feesHead = fees_title::where(['sub_institute_id' => $sub_institute_id, 'other_fee_id' => 0])
+        ->orderBy('sort_order', 'asc') 
+        ->pluck('display_name', 'fees_title')
+        ->toArray();
 
         $res['status_code'] = "1";
         $res['message'] = "Success";
         $res['months'] = $months;
+        $res['fees_heads'] = $feesHead;
 
         return is_mobile($type, "fees/fees_report/show_fees_overall_headwise_report", $res, "view");
     }
@@ -56,6 +64,7 @@ class feesOverallHeadwiseReportController extends Controller
         $month = $request->input('month');
         $from_date = $request->input('from_date');
         $to_date = $request->input('to_date');
+        $fees_head = $request->input('fees_head');
         $syear = $request->session()->get('syear');
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $months = FeeMonthId();
@@ -63,6 +72,11 @@ class feesOverallHeadwiseReportController extends Controller
         $extraSearchArray = array();
         $extraSearchArrayRaw = " 1=1 ";
         $bk_extra_fees = $bk_extra_other_fees = '';
+
+        $feesHead = fees_title::where(['sub_institute_id' => $sub_institute_id, 'other_fee_id' => 0])
+        ->orderBy('sort_order', 'asc') 
+        ->pluck('display_name', 'fees_title')
+        ->toArray();
 
         if ($grade != '') {
             $extraSearchArray['tblstudent_enrollment.grade_id'] = $grade;
@@ -120,28 +134,35 @@ class feesOverallHeadwiseReportController extends Controller
             ->get()
             ->toArray();
             // dd(DB::getQueryLog($studentData));
-        // DB::enableQueryLog();
+       // DB::enableQueryLog();
         $bk_array = DB::table('fees_breackoff as ft')
         ->select('ft.*', 'f.fees_title', 'f.sort_order','f.display_name')
         ->selectRaw('GROUP_CONCAT(DISTINCT ft.month_id  ORDER BY ft.month_id) AS months , SUM(ft.amount) AS tot_amt')
-        ->join('fees_title as f', function ($join) {
+        ->join('fees_title as f', function ($join) use ($fees_head) {
             $join->on('f.id', '=', 'ft.fee_type_id')
                 ->whereColumn('f.sub_institute_id', '=', 'ft.sub_institute_id')
-                ->whereColumn('f.syear', '=', 'ft.syear');
+                ->whereColumn('f.syear', '=', 'ft.syear')
+                ->when($fees_head, function ($join) use ($fees_head) {
+                    $join->whereRaw('f.fees_title In ("'.implode('","', $fees_head).'")');
+                });
         })
+        
         ->where('ft.syear', $syear)
         ->where('ft.sub_institute_id', $sub_institute_id)
         ->groupBy('ft.fee_type_id')
-        ->union(function ($query) use ($syear, $sub_institute_id, $bk_extra_other_fees) {
+        ->union(function ($query) use ($syear, $sub_institute_id, $bk_extra_other_fees, $fees_head) {
             $query->select('fbo.id', 'fbo.syear', DB::raw("'' AS admission_year"), 'fbo.fee_type_id', DB::raw("'' AS quota"),
                 'se.grade_id', 'se.standard_id', 'se.section_id', 'fbo.month_id', 'fbo.amount', 'fbo.sub_institute_id',
                 DB::raw("'' AS created_at"), DB::raw("'' AS updated_at"), 'f.fees_title', 'f.display_name','f.sort_order')
                 ->selectRaw('GROUP_CONCAT(DISTINCT fbo.month_id) AS months, SUM(fbo.amount) AS tot_amt')
                 ->from('fees_breakoff_other as fbo')
-                ->join('fees_title as f', function ($join) {
+                ->join('fees_title as f', function ($join) use ($fees_head) {
                     $join->on('f.other_fee_id', '=', 'fbo.fee_type_id')
                         ->whereColumn('f.sub_institute_id', '=', 'fbo.sub_institute_id')
-                        ->whereColumn('f.syear', '=', 'fbo.syear');
+                        ->whereColumn('f.syear', '=', 'fbo.syear')
+                        ->when($fees_head, function ($join) use ($fees_head) {
+                            $join->whereRaw('f.fees_title In ("'.implode('","', $fees_head).'")');
+                        });
                 })
                 ->join('tblstudent as s', function ($join) {
                     $join->on('s.id', '=', 'fbo.student_id')
@@ -160,8 +181,8 @@ class feesOverallHeadwiseReportController extends Controller
         ->orderBy('sort_order')
         ->get()
         ->toArray();
-        // dd($bk_array);
-            // dd(DB::getQueryLog($bk_array));
+        //dd($bk_array);
+            //dd(DB::getQueryLog($bk_array));
         $i = 0;
         $bk_title_months_array = [];
         $sorted_bk_title_months_array = [];
@@ -170,7 +191,7 @@ class feesOverallHeadwiseReportController extends Controller
             // ksort($bk_array);                    
 
             $explod_months = explode(',', $v->months);
-            
+    
             foreach ($explod_months as $v1) {
                 if (in_array($v1, $month)) {
                     $bk_title_months_array[$v->display_name . '/' . $v->fees_title][$v1] = $months[$v1];
@@ -214,7 +235,7 @@ class feesOverallHeadwiseReportController extends Controller
                 "0" => $value['id']
             );
 
-            $head_wise_fees = FeeBreakoffHeadWise($stu_arr, $from_date, $to_date);
+            $head_wise_fees = FeeBreakoffHeadWise($stu_arr, $from_date, $to_date, $fees_head);
             $head_wise_Other_fees = OtherBreackOff($stu_arr, array_keys($months), 'Yes', $from_date, $to_date);
 
             if (count($bk_data) > 0) {
@@ -306,14 +327,15 @@ class feesOverallHeadwiseReportController extends Controller
                 }
             }
         }
-  // Sort the array based on year and month in descending order
-  foreach ($bk_title_months_array as &$value) {
-    uksort( $value , function($a, $b) use($months){
-        $a = strtotime(substr($months[$a],-4) );
-        $b = strtotime(substr($months[$b],-4) );
-        return $a - $b;
-    });
-}
+        // Sort the array based on year and month in descending order
+        foreach ($bk_title_months_array as &$value) {
+            uksort( $value , function($a, $b) use($months){
+                $a = strtotime(substr($months[$a],-4) );
+                $b = strtotime(substr($months[$b],-4) );
+                return $a - $b;
+            });
+        }
+
         $res['status_code'] = 1;
         $res['message'] = "Success";
         $res['fees_data'] = $final_array;
@@ -331,6 +353,9 @@ class feesOverallHeadwiseReportController extends Controller
         $res['month'] = $month;
         $res['from_date'] = $from_date;
         $res['to_date'] = $to_date;
+        $res['fees_heads'] = $feesHead;
+        $res['fees_head'] = $fees_head;
+
         return is_mobile($type, "fees/fees_report/show_fees_overall_headwise_report", $res, "view");
     }  
     
