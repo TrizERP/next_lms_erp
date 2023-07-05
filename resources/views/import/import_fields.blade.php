@@ -75,7 +75,7 @@
             <div class="col-md-6">
                 <div class="panel panel-default">
                     <h2 class="text-center pb-3 pt-1">
-                        Step :2 Select Fields</h2>
+                        Step:2 Select Fields</h2>
 
                     <div class="panel-body">
                         <form class="form-horizontal" method="POST" action="{{ route('import_process') }}">
@@ -102,6 +102,9 @@
                                                             value="{{ $db_field->field}}">{{ $db_field->display_field }} {{$db_field->is_required ? '*' :''}}</option>
                                                     @endforeach
                                                 </select>
+                                            </td>
+                                            <td>
+                                                <input type="text" name="custom_text[{{$key}}]">
                                             </td>
 
                                         </tr>
@@ -141,14 +144,14 @@
                     headers: {
                         'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
                     },
-                    data: {customize_is_checked: is_checked,csv_file_id: csv_file_id},
+                    data: {customize_is_checked: is_checked, csv_file_id: csv_file_id},
                     success: function (data) {
                         console.log('success');
                     }
                 });
                 $('#match_field').removeClass('d-none');
                 $('#skip_field').removeClass('d-none');
-            } else{
+            } else {
                 $('#match_field').addClass('d-none');
                 $('#skip_field').addClass('d-none');
             }
@@ -162,7 +165,7 @@
                 headers: {
                     'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
                 },
-                data: {skip_val: skipVal,csv_file_id: csv_file_id},
+                data: {skip_val: skipVal, csv_file_id: csv_file_id},
                 success: function (data) {
                     console.log('success');
                 }
