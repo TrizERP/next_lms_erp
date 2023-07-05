@@ -5,10 +5,6 @@
 include('db.php');
 require_once('PHPExcel.php');
 session_start();
-//echo "<pre>";
-//print_r($_REQUEST);
-//print_r($_SESSION);
-//die();
 
 // if($_REQUEST['modfunc'] == "SAVE"){
 //  $random_num = rand(1, 50000);
@@ -131,7 +127,6 @@ if (isset($_REQUEST['submit'])) {
                     } else {
                         $valueQuery .= "'" . date('Y-m-d', PHPExcel_Shared_Date::ExcelToPHP($value[$valueFields['field']])) . "',";
                     }
-                    // echo $valueQuery."<br>";
                 } else {
                     if (in_array($valueFields['field'], $relationFields)) {
                         // $relationQuery = "SELECT " . strtoupper($relationTable[$valueFields['field']]['INSERT_FIELD']) . " FROM " . $relationTable[$valueFields['field']]['TABLE_NAME'] . "  WHERE  " . $relationTable[$valueFields['field']]['TABLE_FIELD'] . " = '" . mysqli_real_escape_string($cn, $value[$valueFields['field']]) . "' AND sub_institute_id = '" . $_SESSION['SUB_INSTITUTE_ID'] . "'";
@@ -146,35 +141,37 @@ if (isset($_REQUEST['submit'])) {
                         if (mysqli_num_rows($checkSubInstitute) > 0) {
                             $relationQuery .= "   AND (SUB_INSTITUTE_ID = '" . $_SESSION['SUB_INSTITUTE_ID'] . "' OR SUB_INSTITUTE_ID IS NULL OR SUB_INSTITUTE_ID = 0) ";
                         }
-                        // print_r($getRelationValue);die();
                         
                         $getRelationValue = mysqli_fetch_assoc(mysqli_query($cn, $relationQuery));
                         $keyId = strtoupper($relationTable[$valueFields['field']]['INSERT_FIELD']);
-                        
-                        if (isset($getRelationValue) && count($getRelationValue) > 0) {
-                        // echo "<pre>";print_r($value[$valueFields['field']]);
-                            
+         
+                        if (isset($getRelationValue) && count($getRelationValue) > 0) {                            
                             $finalValue = $getRelationValue[$keyId];
                             $valueQuery .= "'" . $finalValue . "',";
                         } else {
-                        // print_r($value[$valueFields['field']]);die();
                             echo "<h5 style='color:red'>Problem Occurred while upload for <b style='color:black'>" . $valueFields['field'] . "</b> when value is <b style='color:black'>" . $value[$valueFields['field']] . "</b> please check and reupload the file.</h5>";
-                            // die;
                         }
                     } else {
-                        $valueQuery .= "'" . mysqli_real_escape_string($cn, $value[$valueFields['field']]) . "',";
+                        if(!isset($value[$valueFields['field']])){
+                        echo "<h5 style='color:red'> <b style='color:black'>" . $valueFields['field'] . "</b> While Uploading Field is required </h5>";
+                        exit;
+                        }else{
+                            $valueQuery .= "'" . mysqli_real_escape_string($cn, $value[$valueFields['field']]) . "',";
+                        }
                     }
                 }
+               
             }
-            //$valueQuery = rtrim($valueQuery, ',');
             $valueQuery = $valueQuery.$_SESSION['SUB_INSTITUTE_ID'];
             $valueQuery .= ' ),';
         }
-// die();
         $valueQuery = rtrim($valueQuery, ',');
-        //echo $insertQuery.$fieldQuery.$valueQuery;
-        mysqli_query($cn, $insertQuery . $fieldQuery . $valueQuery) or die(mysqli_error($cn));
+       $query = mysqli_query($cn, $insertQuery . $fieldQuery . $valueQuery) or die(mysqli_error($cn));
+       if($query==true){
         echo "<h4 style='color:green'>Data Imported Successfully.</h4>";
+       }else{
+        echo "<h4 style='color:red'>Data Import Failed.</h4>";           
+       }
     }
 }
 
