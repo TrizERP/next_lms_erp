@@ -641,6 +641,7 @@ class dashboardController extends Controller
                     },";
 
                     $childP = 1;
+                    if(isset($standardsArray[$v['id']])){                        
                     $value = $ca / count($standardsArray[$v['id']]);
                     foreach ($standardsArray[$v['id']] as $ke => $va) {
                         if (isset($chartFS[$va['id']])) {
@@ -659,6 +660,7 @@ class dashboardController extends Controller
                         $childP++;
 
                     }
+                }
                     $child++;
                     $childL++;
                     $j++;
@@ -681,6 +683,8 @@ class dashboardController extends Controller
                     },";
 
                     $childP = 1;
+                    if(isset($standardsArray[$v['id']])){                        
+
                     $value = $ca / count($standardsArray[$v['id']]);
                     foreach ($standardsArray[$v['id']] as $ke => $va) {
                         if (isset($chartS[$va['id']])) {
@@ -698,6 +702,7 @@ class dashboardController extends Controller
                         },";
                         $childP++;
 
+                    }
                     }
                     $child++;
                     $childL++;
@@ -721,6 +726,8 @@ class dashboardController extends Controller
                     },";
 
                     $childP = 1;
+                    if(isset($standardsArray[$v['id']])){                        
+
                     $value = $ca / count($standardsArray[$v['id']]);
                     foreach ($standardsArray[$v['id']] as $ke => $va) {
                         if (isset($chartS[$va['id']])) {
@@ -737,7 +744,7 @@ class dashboardController extends Controller
                             events: {click: function (event) {alertValue('Student');}}
                         },";
                         $childP++;
-
+}
                     }
                     $child++;
                     $childL++;
@@ -761,6 +768,8 @@ class dashboardController extends Controller
                     },";
 
                     $childP = 1;
+                    if(isset($standardsArray[$v['id']])){                        
+
                     $value = $ca / count($standardsArray[$v['id']]);
                     foreach ($standardsArray[$v['id']] as $ke => $va) {
                         if (isset($chartS[$va['id']])) {
@@ -777,7 +786,7 @@ class dashboardController extends Controller
                             events: {click: function (event) {alertValue('Attendance');}}
                         },";
                         $childP++;
-
+}
                     }
                     $child++;
                     $childL++;
@@ -801,6 +810,8 @@ class dashboardController extends Controller
                     },";
 
                     $childP = 1;
+                    if(isset($standardsArray[$v['id']])){                        
+
                     $value = $ca / count($standardsArray[$v['id']]);
                     foreach ($standardsArray[$v['id']] as $ke => $va) {
                         if (isset($chartS[$va['id']])) {
@@ -819,6 +830,7 @@ class dashboardController extends Controller
                         $childP++;
 
                     }
+                }
                     $child++;
                     $childL++;
                     $j++;
@@ -1926,6 +1938,8 @@ class dashboardController extends Controller
                 },";
 
                 $childP = 1;
+                    if(isset($standardsArray[$v['id']])){                        
+
                 $value = $ca / count($standardsArray[$v['id']]);
                 foreach ($standardsArray[$v['id']] as $ke => $va) {
                     if (isset($chartFS[$va['id']])) {
@@ -1944,6 +1958,7 @@ class dashboardController extends Controller
                     $childP++;
 
                 }
+            }
                 $child++;
                 $childL++;
                 $j++;
@@ -1966,6 +1981,8 @@ class dashboardController extends Controller
                 },";
 
                 $childP = 1;
+                    if(isset($standardsArray[$v['id']])){                        
+
                 $value = $ca / count($standardsArray[$v['id']]);
                 foreach ($standardsArray[$v['id']] as $ke => $va) {
                     if (isset($chartS[$va['id']])) {
@@ -1982,7 +1999,7 @@ class dashboardController extends Controller
                         events: {click: function (event) {alertValue('Admission');}}
                     },";
                     $childP++;
-
+}
                 }
                 $child++;
                 $childL++;
@@ -2006,6 +2023,8 @@ class dashboardController extends Controller
                 },";
 
                 $childP = 1;
+                    if(isset($standardsArray[$v['id']])){                        
+
                 $value = $ca / count($standardsArray[$v['id']]);
                 foreach ($standardsArray[$v['id']] as $ke => $va) {
                     if (isset($chartS[$va['id']])) {
@@ -2022,7 +2041,7 @@ class dashboardController extends Controller
                         events: {click: function (event) {alertValue('Student');}}
                     },";
                     $childP++;
-
+}
                 }
                 $child++;
                 $childL++;
@@ -2046,6 +2065,8 @@ class dashboardController extends Controller
                 },";
 
                 $childP = 1;
+                    if(isset($standardsArray[$v['id']])){                        
+
                 $value = $ca / count($standardsArray[$v['id']]);
                 foreach ($standardsArray[$v['id']] as $ke => $va) {
                     if (isset($chartS[$va['id']])) {
@@ -2064,6 +2085,7 @@ class dashboardController extends Controller
                     $childP++;
 
                 }
+            }
                 $child++;
                 $childL++;
                 $j++;
@@ -2086,6 +2108,8 @@ class dashboardController extends Controller
                 },";
 
                 $childP = 1;
+                    if(isset($standardsArray[$v['id']])){                        
+
                 $value = $ca / count($standardsArray[$v['id']]);
                 foreach ($standardsArray[$v['id']] as $ke => $va) {
                     if (isset($chartS[$va['id']])) {
@@ -2102,7 +2126,7 @@ class dashboardController extends Controller
                         events: {click: function (event) {alertValue('Homework');}}
                     },";
                     $childP++;
-
+}
                 }
                 $child++;
                 $childL++;
