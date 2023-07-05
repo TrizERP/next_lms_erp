@@ -428,7 +428,7 @@ class timetableController extends Controller
 
                         $old_teacher_data_arr = json_decode(json_encode($old_teacher_data), true);
 
-                        $html .= "<select class='form-control teacher_capacity_check' style='margin-top:10px;' name='".$teacher_select_name."' id='".$teacher_select_name."'>
+                        $html .= "<select class='form-control teacher_capacity_check' style='margin-top:10px;width:100px' name='".$teacher_select_name."' id='".$teacher_select_name."'>
                                 <option value=''>Teacher</option>";
                         foreach ($old_teacher_data_arr as $tkey => $tval) {
                             $teacher_selected = '';
@@ -443,7 +443,7 @@ class timetableController extends Controller
                         $html .= "</select>";
 
                         if (isset($old_timetable_data[$wval][$pval['id']]['BATCH_ID'][$k])) {
-                            $html .= "<select class='form-control' style='margin-top:10px;' name='batch[".$pval['id']."][".$wval."][$j]' id='batch[".$pval['id']."][".$wval."][$j]'>
+                            $html .= "<select class='form-control' style='margin-top:10px;width:100px' name='batch[".$pval['id']."][".$wval."][$j]' id='batch[".$pval['id']."][".$wval."][$j]'>
                             <option value=''>Batch</option>";
                             foreach ($batch_data as $bkey => $bval) {
                                 $batch_selected = '';
@@ -495,7 +495,7 @@ class timetableController extends Controller
                     }
                     $html .= "</select>";
 
-                    $html .= "<select class='form-control  teacher_capacity_check' style='margin-top:10px;' name='teacher[".$pval['id']."][".$wval."]' id='teacher[".$pval['id']."][".$wval."]'>
+                    $html .= "<select class='form-control  teacher_capacity_check' style='margin-top:10px;width:100px' name='teacher[".$pval['id']."][".$wval."]' id='teacher[".$pval['id']."][".$wval."]'>
                             <option value=''>Teacher</option>";
 
                     //START Check Allocated Teachers - 16/11/2021
@@ -642,7 +642,7 @@ class timetableController extends Controller
                 }
                 $html .= "</select>";
 
-                $html .= "<select class='form-control' style='margin-top:10px;' name='teacher[".$arr['1']."][".$arr['0']."][".$i."]' id='teacher[".$arr['1']."][".$arr['0']."][".$i."]'>
+                $html .= "<select class='form-control' style='margin-top:10px;width:100px' name='teacher[".$arr['1']."][".$arr['0']."][".$i."]' id='teacher[".$arr['1']."][".$arr['0']."][".$i."]'>
                         <option value=''>Teacher</option>";
                 foreach ($teacher_data as $tkey => $tval) {
                     $teacher_name = $tval['first_name']." ".$tval['middle_name']." ".$tval['last_name'];
@@ -680,7 +680,7 @@ class timetableController extends Controller
                 }
                 $html .= "</select>";
 
-                $html .= "<select class='form-control' style='margin-top:10px;' name='teacher[".$arr['1']."][".$arr['0']."]' id='teacher[".$arr['1']."][".$arr['0']."]'>
+                $html .= "<select class='form-control' style='margin-top:10px;width:100px' name='teacher[".$arr['1']."][".$arr['0']."]' id='teacher[".$arr['1']."][".$arr['0']."]'>
                     <option value=''>Teacher</option>";
                 foreach ($teacher_data as $tkey => $tval) {
                     $teacher_name = $tval['first_name']." ".$tval['middle_name']." ".$tval['last_name'];
@@ -739,7 +739,7 @@ class timetableController extends Controller
         }
         $html .= "</select>";
 
-        $html .= "<select class='form-control' style='margin-top:10px;' name='teacher[".$arr['1']."][".$arr['0']."]' id='teacher[".$arr['1']."][".$arr['0']."]'>
+        $html .= "<select class='form-control' style='margin-top:10px;width:100px' name='teacher[".$arr['1']."][".$arr['0']."]' id='teacher[".$arr['1']."][".$arr['0']."]'>
                     <option value=''>Teacher</option>";
         foreach ($teacher_data as $tkey => $tval) {
             $teacher_name = $tval['first_name']." ".$tval['middle_name']." ".$tval['last_name'];
@@ -747,14 +747,14 @@ class timetableController extends Controller
         }
         $html .= "</select>";
 
-        $html .= "<select class='form-control' style='margin-top:10px;' name='standard[".$arr['1']."][".$arr['0']."]' id='standard[".$arr['1']."][".$arr['0']."]'>
+        $html .= "<select class='form-control' style='margin-top:10px;width:100px' name='standard[".$arr['1']."][".$arr['0']."]' id='standard[".$arr['1']."][".$arr['0']."]'>
                     <option value=''>Standard</option>";
         foreach ($standard_data as $skey => $sval) {
             $html .= "<option value='".$sval['id']."'>".$sval['name']."</option>";
         }
         $html .= "</select>";
 
-        $html .= "<select class='form-control' style='margin-top:10px;' name='division[".$arr['1']."][".$arr['0']."]' id='division[".$arr['1']."][".$arr['0']."]'>
+        $html .= "<select class='form-control' style='margin-top:10px;width:100px' name='division[".$arr['1']."][".$arr['0']."]' id='division[".$arr['1']."][".$arr['0']."]'>
                 <option value=''>Division</option>";
         foreach ($division_data as $tkey => $tval) {
             $html .= "<option value='".$tval['id']."'>".$tval['name']."</option>";
@@ -846,7 +846,7 @@ class timetableController extends Controller
         }
         $html .= "</select>";
 
-        $html .= "<select class='form-control' style='margin-top:10px;' name='teacher[".$arr['1']."][".$arr['0']."]' id='teacher[".$arr['1']."][".$arr['0']."]'>
+        $html .= "<select class='form-control' style='margin-top:10px;width:100px' name='teacher[".$arr['1']."][".$arr['0']."]' id='teacher[".$arr['1']."][".$arr['0']."]'>
                     <option value=''>Teacher</option>";
         foreach ($teacher_data as $tkey => $tval) {
             $teacher_name = $tval['first_name']." ".$tval['middle_name']." ".$tval['last_name'];

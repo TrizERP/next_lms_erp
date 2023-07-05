@@ -11,8 +11,12 @@
         </div>    
         <div class="card">
             @if(!empty($data['message']))
+            @if($data['status_code']==1)
             <div class="alert alert-success alert-block">
-                <button type="button" class="close" data-dismiss="alert">Ã—</button>
+            @else
+            <div class="alert alert-danger alert-block">            
+            @endif
+                <button type="button" class="close" data-dismiss="alert">x</button>
                 <strong>{{ $data['message'] }}</strong>
             </div>
             @endif
@@ -47,11 +51,24 @@
                         <label>{{App\Helpers\get_string('grno','request')}}</label>
                         <input type="text" id="grno" placeholder="Gr No." name="grno" class="form-control">
                     </div>
+                    <div class="col-md-4 form-group">
+                                <label>Fees Heads</label>
+    							{{-- <div class="custom-select"> --}}
+                                <select name="fees_heads[]" class="form-control" required multiple>
+                                    <?php
+                                    foreach ($data['data']['heads'] as $id => $val) {
+                                        ?>
+                                        <option value="<?php echo $val->id ; ?>"><?php echo $val->display_name; ?></option>
+                                        <?php
+                                    }
+                                    ?>
+                                </select>
+    							{{-- </div> --}}
+                            </div>
                             <div class="col-md-4 form-group">
                                 <label>Month</label>
     							{{-- <div class="custom-select"> --}}
-                                <select name="month_id" class="form-control" required>
-                                    <option value="">--Select--</option>
+                                <select name="month_id[]" class="form-control" required multiple>
                                     <?php
                                     foreach ($data['data']['ddMonth'] as $id => $val) {
                                         ?>
