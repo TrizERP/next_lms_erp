@@ -551,12 +551,18 @@ class fees_collect_controller extends Controller
 
         foreach ($new_insert_arr as $month_id => $arr) {
             foreach ($arr as $r_id => $vals) {
-                if (isset($vals['fine'])) {
+                if (isset($vals['fine']) && $vals['fine'] !== null && $vals['fine'] != 0) {
                     $amount = $vals['amount'];
                     $fine = $vals['fine'];
+                    
+                    // Make sure $amount and $fine are both integers
+                    $amount = (int)$amount;
+                    $fine = (int)$fine;
+                    
                     $totalAmount = $amount + $fine;
                     $vals['amount'] = $totalAmount;
                 }
+
 
                 if (isset($_REQUEST['cheque_date']) && $_REQUEST['cheque_date'] != '') {
                     $cheque_date = $_REQUEST['cheque_date'];
@@ -601,10 +607,14 @@ class fees_collect_controller extends Controller
         $other_insert_arr = [];
         foreach ($new_insert_other_arr as $month_id => $arr) {
             foreach ($arr as $r_id => $vals) {
-
-                if (isset($vals['fine'])) {
+                if (isset($vals['fine']) && $vals['fine'] !== null && $vals['fine'] != 0) {
                     $amount = $vals['amount'];
                     $fine = $vals['fine'];
+                    
+                    // Make sure $amount and $fine are both integers
+                    $amount = (int)$amount;
+                    $fine = (int)$fine;
+                    
                     $totalAmount = $amount + $fine;
                     $vals['amount'] = $totalAmount;
                 }
