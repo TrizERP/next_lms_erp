@@ -140,7 +140,7 @@
                             <tr>
                             <th>Sr no</th>
                                 @foreach($data['headers'] as $hkey => $header)
-                                <th> {{$header}} </th>
+                                <th class="text-left"> {{$header}} </th>
                             @endforeach
                             </tr>
                             </thead>

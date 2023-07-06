@@ -11,9 +11,14 @@
             </div>
         </div>  
         <div class="card">
+        <div class="row mb-2">  
+        <div class="col-lg-12 col-sm-12 col-xs-12">
+        <span class="d-block p-2  alert-warning">Note: Please Select Checkbox while Adding Data</span>
+        </div>        
+        </div>        
             @if ($message = Session::get('success'))
             <div class="alert alert-success alert-block">
-                <button type="button" class="close" data-dismiss="alert">Ã—</button>
+                <button type="button" class="close" data-dismiss="alert">x</button>
                 <strong>{{ $message }}</strong>
             </div>
             @endif
@@ -38,33 +43,36 @@
                                         <th>{{ App\Helpers\get_string('std/div','request')}}</th>
                                         <th>Mobile</th>
                                         @php
-                                        $arr_title = $data['fees_title'];
+                                        $arr_title = $data['month_head'];
                                         foreach ($arr_title as $id=>$tit_arr){
-                                        echo '<th>'. $tit_arr['display_name']. '</th>';
+                                        echo '<th class="text-left">'. $tit_arr. '</th>';
                                         }
                                         @endphp
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    
-                                    @php
+                                @php
                                     $arr = $data['stu_data'];
-                                    foreach ($arr as $id=>$col_arr){
+                                    $month = $data['months_id'];
+                                    foreach ($arr as $id => $col_arr) {
                                     @endphp
                                     <tr>
-                                        <td><input type="checkbox" name="@php echo 'student_id['.$col_arr['student_id'].']'; @endphp" class="ckbox1">  </td>
-                                        <td>@php echo $id+1; @endphp</td>
+                                        <td><input type="checkbox" name="@php echo 'student_id['.$col_arr['student_id'].']'; @endphp" class="ckbox1"></td>
+                                        <td>@php echo $id + 1; @endphp</td>
                                         <td>@php echo $col_arr['name']; @endphp</td>
-                                        <td>@php echo $col_arr['std'].' / '.$col_arr['div']; @endphp</td>
+                                        <td>@php echo $col_arr['std'] . ' / ' . $col_arr['div']; @endphp</td>
                                         <td>@php echo $col_arr['mobile']; @endphp</td>
                                         @php
-                                        $arr_title = $data['fees_title'];
-                                        foreach ($arr_title as $id=>$tit_arr){
+                                            $arr_title = $data['fees_title'];
+                                            foreach ($month as $key=>$month_id){   
+
+                                            foreach ($arr_title['data'] as $ids=>$tit_arr){
                                         @endphp
-                                        <th><input type="text" value="@php echo $col_arr[$tit_arr['fees_title']]; @endphp" name="values[@php echo $col_arr['student_id']; @endphp][@php echo $tit_arr['fees_title']; @endphp]"></th>
-                                        @php
-                                        }
-                                        @endphp
+                                            <th><input type="text" value="@if(isset($col_arr[$month_id][$tit_arr['display_name']]['amount'])){{ $col_arr[$month_id][$tit_arr['display_name']]['amount']}}@endif" name="values[{{$col_arr['student_id']}}][{{$month_id}}][{{$tit_arr['fees_title']}}]"></th>
+                                            @php
+                                            }
+                                            }
+                                            @endphp
                                     </tr>
                                     @php
                                     }
@@ -94,16 +102,7 @@
                     @endphp
                 </div>
             </div>
-            @if (count($errors) > 0)
-            <div class="alert alert-danger">
-                <strong>Whoops!</strong> There were some problems with your input.<br><br>
-                <ul>
-                    @foreach ($errors->all() as $error)
-                    <li>{{ $error }}</li>
-                    @endforeach
-                </ul>
-            </div>
-            @endif
+         
         </div>
     </div>
 </div>

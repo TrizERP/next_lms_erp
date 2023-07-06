@@ -41,6 +41,7 @@
                     </div>
                     @endif
                     <form action="{{ route('show_bulk_student') }}" enctype="multipart/form-data" method="post">
+                    @csrf
                         <div class="row">
                             {{ App\Helpers\SearchChain('3','single','grade,std,div',$grade_id,$standard_id,$division_id) }}
                         </div>
@@ -125,6 +126,7 @@
         <div class="white-box card">
             <h5 class="box-title">Student Fieldwise Report </h3>
             <form method="POST" action="{{route('bulk_update')}}" class="" enctype="multipart/form-data">
+            @csrf
                 <div class="table-responsive">
                     <table class="table table-striped table-bordered display">
                         <thead>

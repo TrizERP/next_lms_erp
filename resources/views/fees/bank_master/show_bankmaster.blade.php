@@ -1,4 +1,4 @@
-@include('includes.headcss')
+     @include('includes.headcss')
 @include('includes.header')
 @include('includes.sideNavigation')
 

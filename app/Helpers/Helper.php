@@ -934,7 +934,7 @@ if (! function_exists('FeeBreackofflast')) {
 // last year end
 if (! function_exists('FeeBreakoffHeadWise')) {
 
-    function FeeBreakoffHeadWise($student_ids, $from_date = null, $to_date = null)
+    function FeeBreakoffHeadWise($student_ids, $from_date = null, $to_date = null, $fees_head = null)
     {
         $sub_institute_id = session()->get('sub_institute_id');
         $syear = session()->get('syear');
@@ -954,8 +954,11 @@ if (! function_exists('FeeBreakoffHeadWise')) {
             })->join('fees_breackoff as fb', function ($join) use ($syear, $sub_institute_id) {
                 $join->whereRaw("fb.syear = '".$syear."' AND fb.admission_year = s.admission_year AND fb.quota = se.student_quota
                  AND fb.grade_id = se.grade_id AND fb.standard_id = se.standard_id AND fb.sub_institute_id = '".$sub_institute_id."'");
-            })->join('fees_title as ft', function ($join) {
-                $join->whereRaw('fb.fee_type_id = ft.id');
+            })->join('fees_title as ft', function ($join) use ($fees_head) {
+                $join->whereRaw('fb.fee_type_id = ft.id')
+                ->when($fees_head, function ($join) use ($fees_head) {
+                    $join->whereRaw('ft.fees_title In ("'.implode('","', $fees_head).'")');
+                });
             })->leftJoin('admission_registration as ar', function ($join) {
                 $join->whereRaw('ar.enrollment_no = s.enrollment_no AND ar.sub_institute_id = s.sub_institute_id');
             })->leftJoin('admission_enquiry as ae', function ($join) {
