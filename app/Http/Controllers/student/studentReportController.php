@@ -80,6 +80,7 @@ class studentReportController extends Controller
         $tblcustom_fields['mother_mobile'] = 'Mother Mobile';
         $tblcustom_fields['email'] = 'Email';
         $tblcustom_fields['username'] = 'Username';
+        $tblcustom_fields['uniqueid'] = get_string('uniqueid','request');        
         $tblcustom_fields['admission_year'] = 'Admission Year';
         $tblcustom_fields['admission_date'] = 'Admission Date';
         $tblcustom_fields['address'] = 'Address';
