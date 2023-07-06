@@ -20,6 +20,7 @@ use Psr\Container\NotFoundExceptionInterface;
 use function App\Helpers\is_mobile;
 use function App\Helpers\send_FCM_Notification;
 use function App\Helpers\sendNotification;
+use Illuminate\Pagination\Paginator;
 
 class circularController extends Controller
 {
@@ -62,7 +63,7 @@ class circularController extends Controller
             ->join('division as d', function ($join) {
                 $join->whereRaw("d.id = c.division_id AND d.sub_institute_id = c.sub_institute_id");
             })
-            ->selectRaw('c.*,s.name std_name,t.type as circular_type,d.name div_name')
+            ->selectRaw('c.*,s.name as std_name,t.type as circular_type,d.name as div_name')
             ->where("c.syear", "=", session()->get('syear'))
             ->where("c.sub_institute_id", "=", session()->get('sub_institute_id'))
             ->orderBy('c.id', 'DESC')->limit(400)

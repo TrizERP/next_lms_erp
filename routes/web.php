@@ -392,3 +392,7 @@ Route::group(['middleware' => ['session', 'menu', 'logRoute']], function () {
     Route::post('books/issue', [BookController::class,'issueBook'])->name('books.issue');
     Route::get('books.circulation', [BookController::class,'circulation'])->name('books.circulation');
 });
+
+Route::get('privacyPolicy', [dashboardController::class, 'privacyPolicy'])->name('privacyPolicy');
+Route::get('termAndCondition', [dashboardController::class, 'termAndCondition'])->name('termAndCondition');
+Route::get('otherPolicy', [dashboardController::class, 'otherPolicy'])->name('otherPolicy');

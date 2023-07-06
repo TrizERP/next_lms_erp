@@ -2383,6 +2383,27 @@ class dashboardController extends Controller
         return is_mobile($type, 'sitemap', $res, 'view');
     }
 
+    public function privacyPolicy(Request $request)
+    {
+        $type = $request->input('type');
+
+        return is_mobile($type, 'privacypolicy', $request, 'view');
+    }
+
+    public function termAndCondition(Request $request)
+    {
+        $type = $request->input('type');
+
+        return is_mobile($type, 'term_&_condition', $request, 'view');
+    }
+
+    public function otherPolicy(Request $request)
+    {
+        $type = $request->input('type');
+
+        return is_mobile($type, 'other_policy', $request, 'view');
+    }
+    
     public function knowledge_base(Request $request)
     {
         $type = $request->input('type');
