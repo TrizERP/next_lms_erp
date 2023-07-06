@@ -413,11 +413,14 @@ class bulkStudentController extends Controller
 
         if (isset($file)) {
             foreach ($file as $student_id => $req) {
+                if(!isset($request->file('values')[$student_id]['image'])){
 
-                $dataCustomFields = tblcustomfieldsModel::select('field_name')->where(['status' => "1", 'table_name' => "tblstudent", 'field_type' => "file"])
+                    $dataCustomFields = tblcustomfieldsModel::select('field_name')->where(['status' => "1", 'table_name' => "tblstudent", 'field_type' => "file"])
                     ->whereRaw('(sub_institute_id = ' . $sub_institute_id . ' OR common_to_all = 1)')
                     ->get()
                     ->toArray();
+                }
+                    
                 $files = array();
                 $studentEnrollmentData = array();
                 $studentEnrollmentData['id'] = $student_id;
@@ -426,6 +429,8 @@ class bulkStudentController extends Controller
                 foreach($req as $key1 => $val1)
                 {
                     $files = $request->file('values')[$student_id];
+                if(!isset($request->file('values')[$student_id]['image'])){
+                    
                     if( !in_array($key1,$dataCustomFields[0]) )
                     {
                         if (isset($files[$key1])) {                     
@@ -436,24 +441,48 @@ class bulkStudentController extends Controller
                             $path = $file->storeAs('public/student/', $file_name);
                             $studentEnrollmentData[$key1] = $file_name;
                         }
-                    }                   
+                    }
+                    }    else{
+                         if (isset($files[$key1])) {                     
+                            $file = $files[$key1];
+                            $originalname = $file->getClientOriginalName();
+                            $ext = \File::extension($originalname);
+                            $file_name = $student_id . '.' . $ext;                      
+                            $path = $file->storeAs('public/student/', $file_name);
+                            $studentEnrollmentData[$key1] = $file_name;
+                        }
+                    }               
                 }
-                
-                //for custom image fields
+                if(!isset($request->file('values')[$student_id]['image'])){
+                    //for custom image fields
                 foreach ($dataCustomFields as $key => $value) {
-                    $files = $request->file('values')[$student_id];
-
-                    if (isset($files[$value['field_name']])) {
-                        $file = $files[$value['field_name']];
+                    foreach ($dataCustomFields as $key => $value) {
+                        $files = $request->file('values')[$student_id];
+    
+                        if (isset($files[$value['field_name']])) {
+                            $file = $files[$value['field_name']];
+                            $originalname = $file->getClientOriginalName();
+                            $name = $value['field_name'] . "_" . $student_id . "_" . date('YmdHis') . '_' . $originalname;
+    
+                            $file_name = $name;
+                            $path = $file->storeAs('public/student/', $file_name);
+                            $studentEnrollmentData[$value['field_name']] = $file_name;
+                        }
+    
+                    }
+                }
+                }else{
+                    $files = $request->file('values')[$student_id]['image'];
+                        $file = $request->file('values')[$student_id]['image'];
                         $originalname = $file->getClientOriginalName();
-                        $name = $value['field_name'] . "_" . $student_id . "_" . date('YmdHis') . '_' . $originalname;
+                        $name = $student_id . "_" . date('YmdHis') . '_' . $originalname;
 
                         $file_name = $name;
                         $path = $file->storeAs('public/student/', $file_name);
-                        $studentEnrollmentData[$value['field_name']] = $file_name;
-                    }
-
+                        $studentEnrollmentData['image'] = $file_name;
+            
                 }
+               
                 // dd($studentEnrollmentData);
                 $this->updateData($studentEnrollmentData);
             }
