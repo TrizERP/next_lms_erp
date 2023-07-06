@@ -111,11 +111,12 @@
 </div>
 
 @include('includes.footerJs')
-<link href="https://cdn.datatables.net/1.13.4/css/jquery.dataTables.min.css" rel = "stylesheet">
+
 <link href = "https://code.jquery.com/ui/1.10.4/themes/ui-lightness/jquery-ui.css" rel = "stylesheet">
 <script src = "https://code.jquery.com/jquery-1.10.2.js"></script>
 <script src = "https://code.jquery.com/ui/1.10.4/jquery-ui.js"></script>
-<script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.10.19/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.10.19/js/dataTables.bootstrap.min.js"></script>
 
 <script>
     $(document).ready(function () {
@@ -140,33 +141,35 @@
             });
           }
         });
-    });
+    } );
 
-    var table = $('#example').DataTable({
-        select: true,
-        lengthMenu: [ 
-            [100, 500, 1000, -1], 
-            ['100', '500', '1000', 'Show All'] 
-        ]
-    }); 
-    $('#example thead tr').clone(true).appendTo( '#example thead' );
-    $('#example thead tr:eq(1) th').each( function (i) {
-        var title = $(this).text();
-        $(this).html( '<input type="text" placeholder="Search '+title+'" />' );
+    var table = $('#example').DataTable( {
+         select: true,          
+         lengthMenu: [ 
+                        [100, 500, 1000, -1], 
+                        ['100', '500', '1000', 'Show All'] 
+        ],
+        }); 
 
-        $( 'input', this ).on( 'keyup change', function () {
-            if ( table.column(i).search() !== this.value ) {
-                table
-                    .column(i)
-                    .search( this.value )
-                    .draw();
-            }
-        });
-    });
+        $('#example thead tr').clone(true).appendTo( '#example thead' );
+        $('#example thead tr:eq(1) th').each( function (i) {
+            var title = $(this).text();
+            $(this).html( '<input type="text" placeholder="Search '+title+'" />' );
 
-    $('#grade').attr('required',true);
+            $( 'input', this ).on( 'keyup change', function () {
+                if ( table.column(i).search() !== this.value ) {
+                    table
+                        .column(i)
+                        .search( this.value )
+                        .draw();
+                }
+            } );
+        } );
+    
+
+   /*  $('#grade').attr('required',true);
     $('#standard').attr('required',true);
-    $('#division').attr('required',true);
+    $('#division').attr('required',true); */
 
     
 

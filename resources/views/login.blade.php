@@ -145,7 +145,11 @@ $loginpage_backgrond = session()->get('loginpage_backgrond');
                                     </div>
                                 </div>
                                 <div class="form-bottom-text">Don’t have an account? <a
-                                        href="{{ route('signup') }}">Sign up</a></div>
+                                        href="{{ route('signup') }}">Sign up</a>
+                                </div><br>
+                                <div class="footer text-center"><a href="{{route('privacyPolicy')}}" style="color:blue;"> Privacy Policy </a> |  <a href="{{ route('termAndCondition')}}" style="color:blue;"> Term & Condition </a> |  <a href="{{ route('otherPolicy') }}" style="color:blue;"> Other Policy </a>
+
+                                </div>
 
                             </form>
                         </div>

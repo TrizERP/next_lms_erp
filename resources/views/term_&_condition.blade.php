@@ -1,0 +1,1 @@
+<h1>This is Term & Condition page</h1>
