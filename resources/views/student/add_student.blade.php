@@ -106,7 +106,7 @@
                                 <input type="text" id='enrollment_no' required name="enrollment_no" class="form-control" value="@if(isset($data['new_enrollment_no'])){{$data['new_enrollment_no']}}@endif">
                             </div>
                             <div class="col-md-4 form-group text-left">
-                                <label>Mother Name</label>
+                                <label>Mother Name<span style="color: red;">*</span></label>
                                 <input type="text" id='mother_name' name="mother_name" class="form-control" require>
                             </div>
                             <div class="col-md-4 form-group text-left">
