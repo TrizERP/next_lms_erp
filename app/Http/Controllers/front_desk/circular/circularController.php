@@ -60,13 +60,13 @@ class circularController extends Controller
             ->join('circular_type as t', function ($join) {
                 $join->whereRaw("t.id = c.type");
             })
-            ->leftJoin('division as d', function ($join) {
+            ->join('division as d', function ($join) {
                 $join->whereRaw("d.id = c.division_id AND d.sub_institute_id = c.sub_institute_id");
             })
             ->selectRaw('c.*,s.name as std_name,t.type as circular_type,d.name as div_name')
             ->where("c.syear", "=", session()->get('syear'))
             ->where("c.sub_institute_id", "=", session()->get('sub_institute_id'))
-            ->orderBy('c.id', 'DESC')
+            ->orderBy('c.id', 'DESC')->limit(400)
             ->get()->toArray();
 
         $result['circular_type'] = DB::table('circular_type')->get()->toArray();
@@ -200,7 +200,7 @@ class circularController extends Controller
                 ->join('standard as s', function ($join) {
                     $join->whereRaw("s.id = c.standard_id AND s.sub_institute_id = c.sub_institute_id");
                 })
-                ->selectRaw("*,if(c.file_name = '','',concat('https://".$_SERVER['SERVER_NAME']."/storage/student/',c.file_name)) as file_name,s.name as std_name")
+                ->selectRaw("*,if(c.file_name = '','',concat('https://".$_SERVER['SERVER_NAME']."/storage/circular/',c.file_name)) as file_name,s.name as std_name")
                 ->where("c.standard_id", "=", $standard_id)
                 ->where("c.syear", "=", $syear)
                 ->where("c.sub_institute_id", "=", $sub_institute_id)
