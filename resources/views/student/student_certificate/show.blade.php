@@ -25,6 +25,12 @@
         </div>
         @php
         $from_date = $to_date = '';
+        if(isset($data['from_date'])){
+            $from_date = $data['from_date'];
+        }
+        if(isset($data['to_date'])){
+            $to_date = $data['to_date'];
+        }
         @endphp
         <div class="card">
             @if ($sessionData = Session::get('data'))
@@ -74,7 +80,7 @@
                             <th>{{App\Helpers\get_string('standard','request')}}</th>
                             <th>{{App\Helpers\get_string('division','request')}}</th>
                             <th>Certificate No.</th>
-                            <th>Certificate Type</th>
+                            <th class="text-left">Certificate Type</th>
                         </tr>
                     </thead>
                     <tbody>
