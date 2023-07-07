@@ -200,7 +200,8 @@ class other_fee_map_controller extends Controller
         $res['data']['heads'] = $fees_title;
         
         $type = $request->input('type');
-        // return is_mobile($type, "fees/other_fee_map/show", $res, "view");
+        // return \App\Helpers\is_mobile($type, "other_fee_map.index", $res, "redirect");
+        return is_mobile($type, "fees/other_fee_map/show", $res, "view");
     }
 
 }

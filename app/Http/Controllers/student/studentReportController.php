@@ -72,7 +72,7 @@ class studentReportController extends Controller
         $tblcustom_fields['first_name'] = 'First Name';
         $tblcustom_fields['middle_name'] = 'Middle Name';
         $tblcustom_fields['last_name'] = 'Surname';
-        $tblcustom_fields['mobile'] = 'Mobile';
+        $tblcustom_fields['studentmobile'] = get_string('studentmobile','request');
         $tblcustom_fields['father_name'] = 'Father Name';
         $tblcustom_fields['mother_name'] = 'Mother Name';
         $tblcustom_fields['gender'] = 'Gender';
@@ -98,6 +98,8 @@ class studentReportController extends Controller
         $tblcustom_fields['image'] = 'Image';
         $tblcustom_fields['house'] = get_string('house','request');
         $tblcustom_fields['van'] = 'Van';
+        $tblcustom_fields['nationality'] = get_string('nationality','request');
+        $tblcustom_fields['birthplace'] = get_string('birthplace','request');
 
         $tblcustoms = DB::table("tblcustom_fields")
             ->where(["status" => "1", "table_name" => "tblstudent"])
