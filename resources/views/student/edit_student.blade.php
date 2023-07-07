@@ -132,15 +132,15 @@ br {
                                             <input type="text" id='username' required name="username" value="{{ $student_data->username }}"  class="form-control">
                                         </div>
                                         <div class="col-md-4 form-group">
-                                            <label>{{ App\Helpers\get_string('grno','request')}}</label>
+                                            <label>{{ App\Helpers\get_string('grno','request')}}<i class="mdi mdi-lead-pencil"></i></label>
                                             <input type="text" id='enrollment_no' required value="{{ $student_data->enrollment_no }}" name="enrollment_no" class="form-control">
                                         </div>
                                         <div class="col-md-4 form-group">
                                             <label>Mother Name</label>
-                                            <input type="text" value="{{ $student_data->mother_name }}" id='mother_name' name="mother_name" class="form-control" require>
+                                            <input type="text" value="{{ $student_data->mother_name ? $student_data->mother_name : '-' }}" id='mother_name' name="mother_name" class="form-control" require>
                                         </div>
                                         <div class="col-md-4 form-group">
-                                            <label>{{ App\Helpers\get_string('fathername','request')}}</label>
+                                            <label>{{ App\Helpers\get_string('fathername','request')}}<i class="mdi mdi-lead-pencil"></i></label>
                                             <input type="text" id='father_name' name="father_name" value="{{ $student_data->father_name }}" class="form-control">
                                         </div>
                                         <div class="col-md-4 form-group">
@@ -148,7 +148,7 @@ br {
                                             <input type="text" id='mobile' required  pattern="[1-9]{1}[0-9]{9}" name="mobile" value="{{ $student_data->mobile }}" class="form-control">
                                         </div>
                                         <div class="col-md-4 form-group">
-                                            <label>{{ App\Helpers\get_string('studentmobile','request')}}</label>
+                                            <label>{{ App\Helpers\get_string('studentmobile','request')}}<i class="mdi mdi-lead-pencil"></i></label>
                                             <input type="text" id='student_mobile' pattern="[1-9]{1}[0-9]{9}" name="student_mobile" value="{{ $student_data->student_mobile }}" class="form-control">
                                         </div>
                                         <div class="col-md-4 form-group" >
@@ -240,7 +240,7 @@ br {
                                         </div> 
                                         
                                         <div class="col-md-4 form-group">
-                                            <label>{{App\Helpers\get_string('studentquota','request')}}</label>
+                                            <label>{{App\Helpers\get_string('studentquota','request')}}<i class="mdi mdi-lead-pencil"></i></label>
                                             <select id='student_quota' required name="student_quota" class="form-control" >
                                                 <option value="">--Select--</option>
                                                 @if(isset($data['student_quota']))
@@ -261,7 +261,7 @@ br {
                                         </div>    
 
                                         <div class="col-md-4 form-group">
-                                            <label>{{ App\Helpers\get_string('house','request')}}</label>
+                                            <label>{{ App\Helpers\get_string('house','request')}}<i class="mdi mdi-lead-pencil"></i></label>
                                             <select id='house' name="house" class="form-control">
                                                 <option value="">--Select--</option>  
                                                 @if(isset($data['house_data']))
@@ -347,12 +347,12 @@ br {
                                         </div>
 
                                         <div class="col-md-4 form-group">
-                                            <label>Nationality</label>
+                                            <label>{{ App\Helpers\get_string('nationality','request')}}<i class="mdi mdi-lead-pencil"></i></label>
                                             <input type="text" value="{{ $student_data->nationality }}" id='nationality' name="nationality" class="form-control">
                                         </div>
 
                                         <div class="col-md-4 form-group">
-                                            <label>Caste</label>
+                                            <label>{{ App\Helpers\get_string('cast','request')}}<i class="mdi mdi-lead-pencil"></i></label>
                                             <input type="text" id='subcast' value="{{ $student_data->subcast }}" name="subcast" class="form-control">
                                         </div>
 
@@ -379,7 +379,7 @@ br {
                                         </div>
                                         
                                         <div class="col-md-4 form-group">
-                                            <label>{{ App\Helpers\get_string('annualincome','request')}}</label>
+                                            <label>{{ App\Helpers\get_string('annualincome','request')}}<i class="mdi mdi-lead-pencil"></i></label>
                                             <input type="number" id='anuualincome' value="{{ $student_data->anuualincome }}" name="anuualincome" class="form-control">
                                         </div>
                                         {{--  For Euro School --}}
@@ -398,7 +398,7 @@ br {
                                             <input type="text" id='admission_docket_no' value="{{ $student_data->admission_docket_no }}"  name="admission_docket_no" class="form-control">
                                         </div>
                                         <div class="col-md-4 form-group">
-                                            <label>Birth Place</label>
+                                            <label>{{ App\Helpers\get_string('birthplace','request')}}<i class="mdi mdi-lead-pencil"></i></label>
                                             <input type="text" id='place_of_birth' value="{{ $student_data->place_of_birth }}"  name="place_of_birth" class="form-control">
                                         </div>
 
