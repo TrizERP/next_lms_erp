@@ -164,7 +164,7 @@ class photo_video_gallaryController extends Controller
             $standard_id = $_REQUEST['standard_id'];
 
             $server = "https://".$_SERVER['HTTP_HOST'];
-
+            
             $result_data = DB::table("photo_video_gallary as pvg")
                 ->selectRaw("pvg.id,pvg.syear,pvg.standard_id,pvg.album_title,pvg.title,pvg.`type`,pvg.ai,
                     if(pvg.file_name IS NULL OR pvg.file_name = '','-',if(pvg.`type` = 'Video', pvg.file_name, 
@@ -175,7 +175,7 @@ class photo_video_gallaryController extends Controller
                 ->where("pvg.sub_institute_id", "=", $sub_institute_id)
                 ->where(function ($q) {
                     if (isset($_REQUEST["type"]) && $_REQUEST["type"] != "") {
-                        $q->whereRaw('type', $_REQUEST["type"]);
+                        $q->whereRaw('type = ?', [$_REQUEST["type"]]);
                     }
                 })
                 ->get()->toArray();

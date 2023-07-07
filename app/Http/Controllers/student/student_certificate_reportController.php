@@ -55,11 +55,11 @@ class student_certificate_reportController extends Controller
             ->where('sr.SYEAR', $syear);
 
         if ($from_date != '') {
-            $result = $result->where('sr.CREATED_AT', '>=', $from_date);
+            $result = $result->where('sr.CREATED_AT', '<>', $from_date);
         }
 
         if ($to_date != '') {
-            $result = $result->where('sr.CREATED_AT', '<=', $to_date);
+            $result = $result->where('sr.CREATED_AT', '<>', $to_date);
         }
 
         $result = $result->groupBy('sr.id')->get()->toArray();

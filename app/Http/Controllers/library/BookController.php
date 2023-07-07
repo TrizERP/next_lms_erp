@@ -25,8 +25,10 @@ class BookController extends Controller
     public function index(Request $request)
     {
         if ($request->ajax()) {
-            $data = LibraryBook::latest()
-                ->get();
+            $sub_institute_id = session()->get('sub_institute_id');
+            
+            $data = LibraryBook::where('sub_institute_id', $sub_institute_id)->latest()->get();
+
             return DataTables::of($data)
                 ->addColumn('checkbox', function ($row) {
                     return '<input type="checkbox" id="' . $row->id . '" name="someCheckbox" class="checkSingle" />';
@@ -141,9 +143,11 @@ class BookController extends Controller
                 $createBook->file_att = $filepath ? $filename : '';
             }
             if ($createBook->save()) {
-                $itemCount = LibraryItem::where('book_id', $createBook->id)->get()->count();
+                $sub_institute_id = session()->get('sub_institute_id');
+
+                $itemCount = LibraryItem::where(['book_id' => $createBook->id, 'sub_institute_id' => $sub_institute_id])->get()->count();
                 if ($request->no_of_items < $itemCount) {
-                    LibraryItem::where('book_id', $createBook->id)->where('item_code', '<', $request->no_of_items)->delete();
+                    LibraryItem::where(['book_id' => $createBook->id, 'sub_institute_id' => $sub_institute_id])->where('item_code', '<', $request->no_of_items)->delete();
                 }
                 for ($i = 1; $i <= $request->no_of_items; $i++) {
                     $objItem = LibraryItem::updateOrCreate([

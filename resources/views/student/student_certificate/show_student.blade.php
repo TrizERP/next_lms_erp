@@ -19,16 +19,16 @@
             }
         @endphp
         <div class="card">
-            @if ($sessionData = Session::get('data'))
-                @if($sessionData['status_code'] == 1)
-                <div class="alert alert-success alert-block">
-                @else
-                <div class="alert alert-danger alert-block">
-                @endif
-                    <button type="button" class="close" data-dismiss="alert">×</button>
-                    <strong>{{ $sessionData['message'] }}</strong>
-                </div>
-            @endif
+        @if(!empty($data['message']))
+                    @if($data['status_code'] == 1)
+                        <div class="alert alert-success alert-block">
+                            @else
+                                <div class="alert alert-danger alert-block">
+                                    @endif
+                                    <button type="button" class="close" data-dismiss="alert">×</button>
+                                    <strong>{{ $data['message'] }}</strong>
+                                </div>
+                            @endif
             <form action="{{ route('student_certificate.show_student') }}" enctype="multipart/form-data" method="post">
             {{ method_field("POST") }}
             @csrf
@@ -60,6 +60,7 @@
                                             <option value="Bonafide">Bonafide Certificate</option>
                                             <option value="Character Certificate">Character Certificate</option>
                                             <option value="Transfer Certificate">Transfer Certificate</option>
+                                            <option value="Student Fees Certificate">Student Fees Certificate</option>                                            
                                         </select>
                                     </div>
                                     <div class="col-md-4 form-group">
@@ -75,7 +76,7 @@
                                         <th>{{App\Helpers\get_string('grno','request')}}</th>
                                         <th>{{App\Helpers\get_string('studentname','request')}}</th>
                                         <th>{{App\Helpers\get_string('standard','request')}}</th>
-                                        <th>{{App\Helpers\get_string('division','request')}}</th>
+                                        <th  class="text-left">{{App\Helpers\get_string('division','request')}}</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -105,7 +106,7 @@
                                             <input type="hidden" name="grade_id" @if(isset($data['grade_id'])) value="{{$data['grade_id']}}" @endif">
                         	<input type="hidden" name="standard_id" @if(isset($data['standard_id'])) value="{{$data['standard_id']}}" @endif
                                             ">
-                                            <input type="submit" name="submit" value="Submit" class="btn btn-success">
+                                            <input type="submit" name="submit" value="Submit" class="btn btn-success" onclick="check_validation()">
                                         </center>
                                     </div>
                                 </div>
@@ -134,7 +135,25 @@
 	         }
 	     }
 	}
+    function check_validation()
+{    
+    var checked_questions = err = 0;
+
+    $("input[name='students[]']:checked").each(function ()
+    {             
+        checked_questions = checked_questions + 1;
+    });
+    if(checked_questions == 0)
+    {
+        alert("Please Select Atleast one question in paper from search");
+        err = 1;
+        return false;
+    }else{
+        return true;
+    }
+}
 </script>
+
 <!-- <script>
 $(document).ready(function () {
     $('#example').DataTable();

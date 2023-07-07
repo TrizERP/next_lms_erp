@@ -97,13 +97,24 @@ class studentCertificateController extends Controller
             $certificate_no = $certificate_no_result[0]->certificate_no;
             $certificate_no1 = $certificate_no + $i;
             $i++;
-            $html_content = $tData[0]['html_content'];
+            if(!isset($tData[0]['html_content']) || empty($tData[0]['html_content']) || $tData[0]['html_content']==null){
+                $res['status_code'] = 0;
+                $res['message'] = "Please Set Template For ".$request->template;
+                return is_mobile($type, "student/student_certificate/show_student", $res, "view");                
+            }
+            else{
+            $html_content = $tData[0]['html_content'];                
+            }
             $new_html_content = $this->create_html_content($syear, $sub_institute_id, $html_content, $value,
                 $receipt_book_arr, $template, $certificate_no1);
 
             if ($template == 'Transfer Certificate') {
                 $new_html .= '<div class="row" style="margin-right: 2% !important;margin-left: 2% !important;">'.$new_html_content.'</div>
                               <div class="pagebreak"></div>';
+            }
+            else if($template == 'Student Fees Certificate'){
+                $new_html .= '<div class="row" style="margin-right: 2% !important;margin-left: 2% !important;">'.$new_html_content.'</div>
+                <div class="pagebreak"></div>';
             } else {
                 $new_html .= '<div class="row" style="margin-right: 2% !important;margin-left: 2% !important;">'.$new_html_content.'</div>
                               <div class="pagebreak"></div>'; //margin-left: 5% !important;
@@ -163,15 +174,7 @@ class studentCertificateController extends Controller
         return json_encode($res);
     }
 
-    public function create_html_content(
-        $syear,
-        $sub_institute_id,
-        $html_content,
-        $value,
-        $receipt_book_arr,
-        $template,
-        $certificate_no
-    ) {
+    public function create_html_content($syear,$sub_institute_id,$html_content,$value,$receipt_book_arr,$template,$certificate_no) {
         $display_year = $syear."-".($syear + 1);
 
         $image_path1 = "http://".$_SERVER['HTTP_HOST']."/storage/fees/".$receipt_book_arr->receipt_logo;
@@ -307,9 +310,90 @@ class studentCertificateController extends Controller
             strtoupper($value['any_other_remarks']), $html_content);
         $html_content = str_replace(htmlspecialchars("<<student_uniqueid_value>>"), strtoupper($value['unique_id']),
             $html_content);
+       
+        // student fees cetificate
 
-        //End Transfer certificate Tags
+        $html_content = str_replace(htmlspecialchars("<<student_father_name>>"),  strtoupper($value['father_name']) ,$html_content);
+        
+    $fees_data = DB::table('fees_collect')
+    ->where(['sub_institute_id' => $sub_institute_id, 'syear' => $syear, 'student_id' => $value['id']])
+    ->get();
 
+
+    $fees_heads = DB::table('fees_title')
+    ->where(['sub_institute_id' => $sub_institute_id, 'mandatory' => 1,'syear'=>$syear])->orderBy('sort_order','ASC')
+    ->get();
+
+    $fees_month = DB::table('fees_collect')
+    ->where(['sub_institute_id' => $sub_institute_id, 'syear' => $syear, 'student_id' => $value['id']])
+    ->groupBy('term_id')->get();
+    
+        $totalAmount = 0; 
+        $months = [
+            1 => 'Jan', 2 => 'Feb', 3 => 'Mar', 4 => 'Apr', 5 => 'May', 6 => 'Jun', 7 => 'Jul', 8 => 'Aug', 9 => 'Sep',
+            10 => 'Oct', 11 => 'Nov', 12 => 'Dec',
+        ];
+        $fees_details = "<h4 style='font-weigth:bold'>Apr-".$syear." To Mar-".($syear+1)."</h4>
+        <div class='table-responsive mb-2' style='display:inline-table;margin-top:10px;width:60%'>
+            <table class='table table-striped'>";
+        foreach ($fees_heads as $title) {
+            $fees_details .= "<tr><td style='font-weight:600'>" . $title->display_name . "</td>";
+            $termIds = [];
+            $month_name=[];
+            foreach ($fees_month as $fees) {
+                if (isset($fees->{$title->fees_title})) {
+                    $termIds[] = $fees->term_id;
+                }
+            }
+
+        $month_name = [];
+
+        foreach ($termIds as $arr) {
+            $y = $arr / 10000;
+            $month = (int)$y;
+            $year = substr($arr, -4);
+            $month_name[$year . '-' . str_pad($month, 2, '0', STR_PAD_LEFT)] = $months[$month] . '-' . $year;
+        }
+
+        if (!empty($month_name)) {
+            uksort($month_name, function ($a, $b) {
+                return strtotime($a . '-01') <=> strtotime($b . '-01');
+            });
+
+        }     
+            $fees_details .= "<td>" . $fees_data->sum($title->fees_title) ?? 0 . "  ";
+            $fees_details.="/- ";
+
+            if (!empty($month_name)) {
+                $firstMonth = reset($month_name);
+                $lastMonth = end($month_name);
+                $print_month =["Tuition Fees","Computer Fees","Security Charges","Smart Class"];
+                if(in_array($title->display_name,$print_month)){        
+                $fees_details .= "(".$firstMonth;
+                    if ($firstMonth !== $lastMonth) {
+                        $fees_details .= " To " . $lastMonth.")";
+                    }else{
+                        $fees_details.= ")";
+                    }
+                }
+            
+            }
+            
+            $fees_details .= "</td></tr>";
+            
+            $totalAmount += $fees_data->sum($title->fees_title); 
+        }
+        $fees_details .="<tr>
+        <td>Total</td>
+        <td>".$totalAmount."/- </td>
+        </tr>";
+        $fees_details .= "
+            </table></div>
+        ";
+        // Output the total amount
+        // $fees_details .= "<p>Total Amount: $totalAmount</p>";
+        $html_content = str_replace(htmlspecialchars("<<fees_details>>"), $fees_details ,$html_content);
+        $html_content = str_replace(htmlspecialchars("<<total_amount_in_words>>"), $this->convert_number_to_words($totalAmount) ,$html_content);
         return $html_content;
     }
 
