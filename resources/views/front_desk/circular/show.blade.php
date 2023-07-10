@@ -41,7 +41,7 @@
                     </div>
                     <div class="col-md-4 form-group">
                         <label>File</label>
-                        <input type="file" name="attachment[]" id="attachment[]" class="form-control" multiple="multiple" >
+                        <input type="file" name="attachment" id="attachment" class="form-control">
                         <span class="text-danger font-weight-bold">Note: Select multiple or single files from here.</span>
                     </div>
                 </div>
@@ -56,6 +56,17 @@
         </div>                    
         <div class="card">
             <div class="col-lg-12 col-sm-12 col-xs-12">
+                @if ($sessionData = Session::get('data'))
+                    @if($sessionData['status'] == 1)
+                    <div class="alert alert-success alert-block">
+                    @else
+                    <div class="alert alert-danger alert-block">
+                    @endif
+                        <button type="button" class="close" data-dismiss="alert">×</button>
+                        <strong>{{ $sessionData['message'] }}</strong>
+                    </div>
+                    @endif
+                </div>
                 <div class="table-responsive">
                     <table id="example" class="table table-striped">
                         <thead>
