@@ -72,7 +72,7 @@ class studentReportController extends Controller
         $tblcustom_fields['first_name'] = 'First Name';
         $tblcustom_fields['middle_name'] = 'Middle Name';
         $tblcustom_fields['last_name'] = 'Surname';
-        $tblcustom_fields['studentmobile'] = get_string('studentmobile','request');
+        $tblcustom_fields['student_mobile'] = get_string('studentmobile','request');
         $tblcustom_fields['father_name'] = 'Father Name';
         $tblcustom_fields['mother_name'] = 'Mother Name';
         $tblcustom_fields['gender'] = 'Gender';
@@ -245,8 +245,8 @@ class studentReportController extends Controller
             // $res['message'] = "Please select one checkbox atlease to view report";
             // return is_mobile($type, "student_report.index", $res);
         } else {
-            $searchArr1 = ['enrollment_no', 'first_name', 'last_name', 'place_of_birth'];
-            $replaceArr1 = [get_string('grno','request'), 'First Name', 'Surname', get_string('birthplace','request')];
+            $searchArr1 = ['enrollment_no', 'first_name', 'last_name', 'place_of_birth', 'student_mobile'];
+            $replaceArr1 = [get_string('grno','request'), 'First Name', 'Surname', get_string('birthplace','request'), get_string('studentmobile','request')];
             foreach ($request->input('dynamicFields') as $key => $value) {
                 if ($value != "bloodgroup" && $value != "van") {
                     $array[] = $value;
@@ -264,6 +264,7 @@ class studentReportController extends Controller
             $array[] = 'blood_group.bloodgroup as bloodgroup';
             $array[] = 'transport_vehicle.title as van';
             $array[] = 'tblstudent.place_of_birth as birthplace';
+            $array[] = 'tblstudent.student_mobile as studentmobile';
         }
         $array[] = 'concat_ws(" ",tblstudent.first_name,tblstudent.middle_name,tblstudent.last_name) AS student_name';
 
