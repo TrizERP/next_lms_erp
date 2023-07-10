@@ -99,7 +99,7 @@ class studentReportController extends Controller
         $tblcustom_fields['house'] = get_string('house','request');
         $tblcustom_fields['van'] = 'Van';
         $tblcustom_fields['nationality'] = get_string('nationality','request');
-        $tblcustom_fields['birthplace'] = get_string('birthplace','request');
+        $tblcustom_fields['place_of_birth'] = get_string('birthplace','request');
 
         $tblcustoms = DB::table("tblcustom_fields")
             ->where(["status" => "1", "table_name" => "tblstudent"])
@@ -245,8 +245,8 @@ class studentReportController extends Controller
             // $res['message'] = "Please select one checkbox atlease to view report";
             // return is_mobile($type, "student_report.index", $res);
         } else {
-            $searchArr1 = ['enrollment_no', 'first_name', 'last_name'];
-            $replaceArr1 = [get_string('grno','request'), 'First Name', 'Surname'];
+            $searchArr1 = ['enrollment_no', 'first_name', 'last_name', 'place_of_birth'];
+            $replaceArr1 = [get_string('grno','request'), 'First Name', 'Surname', get_string('birthplace','request')];
             foreach ($request->input('dynamicFields') as $key => $value) {
                 if ($value != "bloodgroup" && $value != "van") {
                     $array[] = $value;
@@ -263,6 +263,7 @@ class studentReportController extends Controller
             $array[] = 'caste.caste_name as cast';
             $array[] = 'blood_group.bloodgroup as bloodgroup';
             $array[] = 'transport_vehicle.title as van';
+            $array[] = 'tblstudent.place_of_birth as birthplace';
         }
         $array[] = 'concat_ws(" ",tblstudent.first_name,tblstudent.middle_name,tblstudent.last_name) AS student_name';
 
@@ -289,7 +290,7 @@ class studentReportController extends Controller
         $res['student_data'] = $student_data;
         $res['grade_id'] = $grade_id;
         $res['standard_id'] = $standard_id;
-        $res['division_id'] = $division_id;
+        $res['division_id'] = $division_id; 
         $res['data'] = $this->customFields($request);
         $res['headers'] = $header;
 
