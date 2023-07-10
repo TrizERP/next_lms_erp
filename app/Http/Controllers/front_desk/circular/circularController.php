@@ -244,19 +244,132 @@ class circularController extends Controller
             $user_id = session()->get('user_id');
         }
 
-        if ($request->hasFile('attachment')) {
-            foreach ($request->file('attachment') as $key => $file_data) {
-                $file_name = "";
-                $originalname = $file_data->getClientOriginalName();
-                $name = 'circular_'.$key.'_'.date('YmdHis');
-                $ext = File::extension($originalname);
-                $file_name = $name.'.'.$ext;
-                $path = $file_data->storeAs('public/circular/', $file_name);
+        $validator = Validator::make($request->all(), [
+            'attachment' => 'required|mimes:jpeg,jpg,png,pdf',
+        ]);
+        
+        if ($validator->fails()) {
 
+            $res = [
+                "status"  => 0,
+                "message" => "Please select only png, jpg, jpeg, pdf file.",
+            ];
+
+            $type = $request->input('type');
+
+            return is_mobile($type, "circular.index", $res, "redirect");
+            //$res['message'] = $validator->messages();
+        }
+        else
+        {
+            if ($request->hasFile('attachment')) {
+                //foreach ($request->file('attachment') as $key => $file_data) {
+                    $file_name = "";
+                    $originalname = $request->file('attachment')->getClientOriginalName();
+                    $name = 'circular_'.$originalname.'_'.date('YmdHis');
+                    $ext = File::extension($originalname);
+                    $file_name = $name.'.'.$ext;
+                    $path = $request->file('attachment')->storeAs('public/circular/', $file_name);
+
+                    if (isset($_REQUEST['standard'])) {
+                        foreach ($_REQUEST['standard'] as $id => $std) {
+                            foreach ($_REQUEST['division'] as $ids => $div_id) {
+
+                                $values = [
+                                    'syear'            => $syear,
+                                    'standard_id'      => $std,
+                                    'division_id'      => $div_id,
+                                    'title'            => $_REQUEST['title'],
+                                    'type'             => $_REQUEST['type'],
+                                    'message'          => $_REQUEST['message'],
+                                    'file_name'        => $file_name,
+                                    'date_'            => $_REQUEST['date_'],
+                                    'sub_institute_id' => $sub_institute_id,
+                                    'created_at'       => now(),
+                                    'updated_at'       => now(),
+                                ];
+                                DB::table('circular')->insert($values);
+
+                                //START Send Notification Code
+                                $student_data = DB::table("tblstudent_enrollment as se")
+                                    ->join('tblstudent as s', function ($join) {
+                                        $join->whereRaw("s.id = se.student_id AND s.sub_institute_id = se.sub_institute_id");
+                                    })
+                                    ->selectRaw("*,concat_ws(' ',s.first_name,s.middle_name,s.last_name) as student_name")
+                                    ->where("se.standard_id", "=", $std)
+                                    ->where("se.section_id", "=", $div_id)
+                                    ->where("se.syear", "=", $syear)
+                                    ->whereNull("se.end_date")
+                                    ->where("se.sub_institute_id", "=", $sub_institute_id)
+                                    ->get()->toArray();
+
+                                $schoolData = SchoolModel::where(['id' => $sub_institute_id])->get()->toArray();
+                                $schoolName = $schoolData[0]['SchoolName'];
+                                $schoolLogo = $_SERVER['APP_URL'].'/admin_dep/images/'.$schoolData[0]['Logo'];
+
+                                if (count($student_data) > 0) {
+                                    foreach ($student_data as $key => $val) {
+                                        $student_id = $val->student_id;
+                                        $mobile_no = $val->mobile;
+                                        $student_name = $val->student_name;
+
+                                        $pushMessage = $student_name. " - ".$_REQUEST['title']." has been added in Circular for date : ".date('d-m-Y',
+                                                strtotime($_REQUEST['date_']));
+
+                                        $app_notification_content = [
+                                            'NOTIFICATION_TYPE'        => 'Circular',
+                                            'NOTIFICATION_DATE'        => $_REQUEST['date_'],
+                                            'STUDENT_ID'               => $student_id,
+                                            'NOTIFICATION_DESCRIPTION' => $_REQUEST['title'].' - '.$pushMessage,
+                                            'STATUS'                   => 0,
+                                            'SUB_INSTITUTE_ID'         => $sub_institute_id,
+                                            'SYEAR'                    => $syear,
+                                            'SCREEN_NAME'              => 'circular_events',
+                                            'CREATED_BY'               => $user_id,
+                                            'CREATED_IP'               => $_SERVER['REMOTE_ADDR'],
+                                        ];
+
+                                        $gcm_data = DB::table("gcm_users")
+                                            ->where("mobile_no", "=", $mobile_no)
+                                            ->where("sub_institute_id", "=", $sub_institute_id)
+                                            ->groupBy("gcm_regid")
+                                            ->get()->toArray();
+                                        //new end
+
+                                        $gcmRegIds = [];
+                                        if (count($gcm_data) > 0) {
+                                            foreach ($gcm_data as $key1 => $val1) {
+                                                $gcmRegIds[] = $val1->gcm_regid;
+                                            }
+                                        }
+
+                                        $bunch_arr = array_chunk($gcmRegIds, 1000);
+                                        if (! empty($bunch_arr)) {
+                                            foreach ($bunch_arr as $val) {
+                                                if (isset($val) && isset($pushMessage)) {
+                                                    $type = 'Circular';
+                                                    $message = array(
+                                                        'body'    => $pushMessage, 'TYPE' => $type,
+                                                        'USER_ID' => $student_id, 'title' => $schoolName,
+                                                        'image'   => $schoolLogo,
+                                                    );
+                                                    $pushStatus = send_FCM_Notification($val, $message);
+                                                    sendNotification($app_notification_content);
+                                                }
+                                            }
+                                        }
+
+                                    }
+                                }
+                                //END Send Notification Code
+                            }
+                        }
+                    }
+                //}
+            } else {
                 if (isset($_REQUEST['standard'])) {
                     foreach ($_REQUEST['standard'] as $id => $std) {
                         foreach ($_REQUEST['division'] as $ids => $div_id) {
-
                             $values = [
                                 'syear'            => $syear,
                                 'standard_id'      => $std,
@@ -264,7 +377,6 @@ class circularController extends Controller
                                 'title'            => $_REQUEST['title'],
                                 'type'             => $_REQUEST['type'],
                                 'message'          => $_REQUEST['message'],
-                                'file_name'        => $file_name,
                                 'date_'            => $_REQUEST['date_'],
                                 'sub_institute_id' => $sub_institute_id,
                                 'created_at'       => now(),
@@ -273,6 +385,7 @@ class circularController extends Controller
                             DB::table('circular')->insert($values);
 
                             //START Send Notification Code
+
                             $student_data = DB::table("tblstudent_enrollment as se")
                                 ->join('tblstudent as s', function ($join) {
                                     $join->whereRaw("s.id = se.student_id AND s.sub_institute_id = se.sub_institute_id");
@@ -295,8 +408,8 @@ class circularController extends Controller
                                     $mobile_no = $val->mobile;
                                     $student_name = $val->student_name;
 
-                                    $pushMessage = "Dear Parents, ".$_REQUEST['title']." has been added in Circular for date : ".date('d-m-Y',
-                                            strtotime($_REQUEST['date_']));
+                                    $pushMessage = "Dear Parents, ".$_REQUEST['title']." has been added in Circular for date : ".
+                                        date('d-m-Y', strtotime($_REQUEST['date_']));
 
                                     $app_notification_content = [
                                         'NOTIFICATION_TYPE'        => 'Circular',
@@ -315,8 +428,6 @@ class circularController extends Controller
                                         ->where("mobile_no", "=", $mobile_no)
                                         ->where("sub_institute_id", "=", $sub_institute_id)
                                         ->get()->toArray();
-                                    //new end
-
                                     $gcmRegIds = [];
                                     if (count($gcm_data) > 0) {
                                         foreach ($gcm_data as $key1 => $val1) {
@@ -347,99 +458,7 @@ class circularController extends Controller
                     }
                 }
             }
-        } else {
-            if (isset($_REQUEST['standard'])) {
-                foreach ($_REQUEST['standard'] as $id => $std) {
-                    foreach ($_REQUEST['division'] as $ids => $div_id) {
-                        $values = [
-                            'syear'            => $syear,
-                            'standard_id'      => $std,
-                            'division_id'      => $div_id,
-                            'title'            => $_REQUEST['title'],
-                            'type'             => $_REQUEST['type'],
-                            'message'          => $_REQUEST['message'],
-                            'date_'            => $_REQUEST['date_'],
-                            'sub_institute_id' => $sub_institute_id,
-                            'created_at'       => now(),
-                            'updated_at'       => now(),
-                        ];
-                        DB::table('circular')->insert($values);
-
-                        //START Send Notification Code
-
-                        $student_data = DB::table("tblstudent_enrollment as se")
-                            ->join('tblstudent as s', function ($join) {
-                                $join->whereRaw("s.id = se.student_id AND s.sub_institute_id = se.sub_institute_id");
-                            })
-                            ->selectRaw("*,concat_ws(' ',s.first_name,s.middle_name,s.last_name) as student_name")
-                            ->where("se.standard_id", "=", $std)
-                            ->where("se.section_id", "=", $div_id)
-                            ->where("se.syear", "=", $syear)
-                            ->whereNull("se.end_date")
-                            ->where("se.sub_institute_id", "=", $sub_institute_id)
-                            ->get()->toArray();
-
-                        $schoolData = SchoolModel::where(['id' => $sub_institute_id])->get()->toArray();
-                        $schoolName = $schoolData[0]['SchoolName'];
-                        $schoolLogo = $_SERVER['APP_URL'].'/admin_dep/images/'.$schoolData[0]['Logo'];
-
-                        if (count($student_data) > 0) {
-                            foreach ($student_data as $key => $val) {
-                                $student_id = $val->student_id;
-                                $mobile_no = $val->mobile;
-                                $student_name = $val->student_name;
-
-                                $pushMessage = "Dear Parents, ".$_REQUEST['title']." has been added in Circular for date : ".
-                                    date('d-m-Y', strtotime($_REQUEST['date_']));
-
-                                $app_notification_content = [
-                                    'NOTIFICATION_TYPE'        => 'Circular',
-                                    'NOTIFICATION_DATE'        => $_REQUEST['date_'],
-                                    'STUDENT_ID'               => $student_id,
-                                    'NOTIFICATION_DESCRIPTION' => $_REQUEST['title'].' - '.$pushMessage,
-                                    'STATUS'                   => 0,
-                                    'SUB_INSTITUTE_ID'         => $sub_institute_id,
-                                    'SYEAR'                    => $syear,
-                                    'SCREEN_NAME'              => 'circular_events',
-                                    'CREATED_BY'               => $user_id,
-                                    'CREATED_IP'               => $_SERVER['REMOTE_ADDR'],
-                                ];
-
-                                $gcm_data = DB::table("gcm_users")
-                                    ->where("mobile_no", "=", $mobile_no)
-                                    ->where("sub_institute_id", "=", $sub_institute_id)
-                                    ->get()->toArray();
-                                $gcmRegIds = [];
-                                if (count($gcm_data) > 0) {
-                                    foreach ($gcm_data as $key1 => $val1) {
-                                        $gcmRegIds[] = $val1->gcm_regid;
-                                    }
-                                }
-
-                                $bunch_arr = array_chunk($gcmRegIds, 1000);
-                                if (! empty($bunch_arr)) {
-                                    foreach ($bunch_arr as $val) {
-                                        if (isset($val) && isset($pushMessage)) {
-                                            $type = 'Circular';
-                                            $message = array(
-                                                'body'    => $pushMessage, 'TYPE' => $type,
-                                                'USER_ID' => $student_id, 'title' => $schoolName,
-                                                'image'   => $schoolLogo,
-                                            );
-                                            $pushStatus = send_FCM_Notification($val, $message);
-                                            sendNotification($app_notification_content);
-                                        }
-                                    }
-                                }
-
-                            }
-                        }
-                        //END Send Notification Code
-                    }
-                }
-            }
         }
-
         if (isset($_REQUEST['action']) && $_REQUEST['action'] == "API") {
             return 1;
         } else {
