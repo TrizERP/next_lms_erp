@@ -42,7 +42,7 @@
                     <div class="col-md-4 form-group">
                         <label>File</label>
                         <input type="file" name="attachment" id="attachment" class="form-control">
-                        <span class="text-danger font-weight-bold">Note: Select multiple or single files from here.</span>
+                        <span class="text-danger font-weight-bold">Note: Select single file from here.</span>
                     </div>
                 </div>
 				<div class="col-md-12 form-group">
