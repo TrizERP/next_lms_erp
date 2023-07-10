@@ -313,7 +313,7 @@ class circularController extends Controller
                                         $mobile_no = $val->mobile;
                                         $student_name = $val->student_name;
 
-                                        $pushMessage = "Dear Parents, ".$_REQUEST['title']." has been added in Circular for date : ".date('d-m-Y',
+                                        $pushMessage = $student_name. " - ".$_REQUEST['title']." has been added in Circular for date : ".date('d-m-Y',
                                                 strtotime($_REQUEST['date_']));
 
                                         $app_notification_content = [
@@ -332,6 +332,7 @@ class circularController extends Controller
                                         $gcm_data = DB::table("gcm_users")
                                             ->where("mobile_no", "=", $mobile_no)
                                             ->where("sub_institute_id", "=", $sub_institute_id)
+                                            ->groupBy("gcm_regid")
                                             ->get()->toArray();
                                         //new end
 
