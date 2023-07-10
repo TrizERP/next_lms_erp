@@ -10,7 +10,7 @@
             <div class="col-lg-3 col-md-4 col-sm-4 col-xs-12">
                 <h4 class="page-title">Edit Tasks</h4> </div>
         </div>        
-        <div class="card">
+        <div class="card"> 
             <div class="row">
                 <!-- @TODO: Create a saperate tmplate for messages and include in all tempate -->
                     @if ($sessionData = Session::get('data'))
@@ -90,7 +90,11 @@
                                 <label for="input-file-now">Task Attachment</label>
                                 <input type="file" @if(isset($data['TASK_ATTACHMENT'])) data-default-file="/storage/frontdesk/{{ $data['TASK_ATTACHMENT'] }}" @endif name="TASK_ATTACHMENT" id="input-file-now" class="dropify" />
                             </div>
-
+                            <div class="col-md-4 form-group">
+                                <label>Reply </label>
+                                <textarea type="text" id='reply' required name='reply' class="form-control">{{ $data['reply'] }}
+                                </textarea>
+                            </div>
                             <div class="col-md-12 form-group">
                                     <input type="submit" name="submit" value="Update" class="btn btn-success" >
                             </div>
