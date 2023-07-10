@@ -65,6 +65,7 @@
                                     <th>Date</th>
                                     <th>Allocator</th>
                                     <th>Allocated To</th>
+                                    <th>Reply</th>
                                     <th>Status</th>
                                     <th>Approved By</th>
                                     <th>Attachment</th>
@@ -84,6 +85,7 @@
                                     <td>{{date('d-m-Y H:i:s',strtotime($value->TASK_DATE))}}</td>
                                     <td>{{$value->ALLOCATOR}}</td>
                                     <td>{{$value->ALLOCATED_TO}}</td>
+                                    <td>{{$value->reply}}</td>
                                     <td>{{$value->STATUS}}</td>
                                     <td>@if($value->approved_by == "") - @else {{$value->approved_by}} @endif</td>
                                     <td>

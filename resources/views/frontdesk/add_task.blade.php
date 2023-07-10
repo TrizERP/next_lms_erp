@@ -116,7 +116,11 @@
                                 <label for="input-file-now">Task Attachment</label>
                                 <input type="file" name="TASK_ATTACHMENT" id="input-file-now" class="dropify" />
                             </div>
-
+                            <div class="col-md-3 form-group">
+                                <label>Reply </label>
+                                <textarea type="text" id='reply' required name='reply' class="form-control">
+                                </textarea>
+                            </div>
                             <div class="col-md-12 form-group">
                                 <input type="submit" name="submit" value="Save" class="btn btn-success" >
                             </div>
