@@ -385,7 +385,7 @@ br {
                                         {{--  For Euro School --}}
                                         @if (Session::get('sub_institute_id') != '195')
                                          <div class="col-md-4 form-group">
-                                            <label>{{ App\Helpers\get_string('uniquid','request')}}</label>
+                                            <label>{{ App\Helpers\get_string('uniqueid','request')}}</label>
                                             <input type="text" id='uniqueid' value="{{ $student_data->uniqueid }}" name="uniqueid" class="form-control">
                                         </div> 
                                         @endif  

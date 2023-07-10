@@ -111,7 +111,7 @@ class cbse_1t5_result_controller extends Controller {
             $responce_arr[$cur_student_id]['grade_range'] = $all_grd_data;            
         }
 
-        session()->put('term_id', $academicTerms[1]->term_id);
+        session()->put('term_id', $academicTerms[0]->term_id);
         //getting year detail
         //getting all exam name with mark
         $all_exam = $this->getAllExam($_REQUEST['standard']);
@@ -248,8 +248,8 @@ class cbse_1t5_result_controller extends Controller {
             $total_mark = $total_mark + $obj->points;
         }
 
-        $responce[1]['exam'] = "Marks Obtained";
-        $responce[1]['mark'] = $total_mark;
+        $responce[$id + 1]['exam'] = "Marks Obtained";
+        $responce[$id + 1]['mark'] = $total_mark;
 
 //        echo "<pre>";
 //        print_r($responce);
