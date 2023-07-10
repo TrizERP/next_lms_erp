@@ -569,7 +569,7 @@ class fees_collect_controller extends Controller
             }
         }
 
-
+        $regular_insert_arr = [];
         foreach ($new_insert_arr as $month_id => $arr) {
             foreach ($arr as $r_id => $vals) {
                 if (isset($vals['fine']) && $vals['fine'] !== null && $vals['fine'] != 0) {
