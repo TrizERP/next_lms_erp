@@ -248,8 +248,8 @@ class cbse_1t5_result_controller extends Controller {
             $total_mark = $total_mark + $obj->points;
         }
 
-        $responce[$id + 1]['exam'] = "Marks Obtained";
-        $responce[$id + 1]['mark'] = $total_mark;
+        $responce[1]['exam'] = "Marks Obtained";
+        $responce[1]['mark'] = $total_mark;
 
 //        echo "<pre>";
 //        print_r($responce);
