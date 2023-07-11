@@ -220,7 +220,7 @@ class leaveApplicationController extends Controller
                 $mobile_no = $student_data[0]->mobile;
                 $student_name = $student_data[0]->student_name;
 
-                $pushMessage = "Dear Parents, Your message : ".$get_student[0]->message." on date : ".$apply_date." <br>"." Reply : ".$get_student[0]->reply." on date : ".$reply_on_date." & status of Leave Application is : ".$get_student[0]->status;
+                $pushMessage = "Leave Application, Your message : ".$get_student[0]->message." on date : ".$apply_date." <br>"." Reply : ".$get_student[0]->reply." on date : ".$reply_on_date." & status of Leave Application is : ".$get_student[0]->status;
 
                 $app_notification_content = [
                     'NOTIFICATION_TYPE'        => 'Leave Application',
