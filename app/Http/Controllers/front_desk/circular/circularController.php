@@ -244,7 +244,7 @@ class circularController extends Controller
             $user_id = session()->get('user_id');
         }
 
-        $validator = Validator::make($request->all(), [
+        /*$validator = Validator::make($request->all(), [
             'attachment' => 'required|mimes:jpeg,jpg,png,pdf',
         ]);
         
@@ -258,18 +258,18 @@ class circularController extends Controller
             $type = $request->input('type');
 
             return is_mobile($type, "circular.index", $res, "redirect");
-            //$res['message'] = $validator->messages();
         }
-        else
+        else*/
         {
             if ($request->hasFile('attachment')) {
-                //foreach ($request->file('attachment') as $key => $file_data) {
+                foreach ($request->file('attachment') as $key => $file_data) 
+                {
                     $file_name = "";
-                    $originalname = $request->file('attachment')->getClientOriginalName();
-                    $name = 'circular_'.$originalname.'_'.date('YmdHis');
-                    $ext = File::extension($originalname);
+                    $originalname = $file_data->getClientOriginalName();
+                    $name = 'circular_'.$key.'_'.date('YmdHis');
+                    $ext = \File::extension($originalname);
                     $file_name = $name.'.'.$ext;
-                    $path = $request->file('attachment')->storeAs('public/circular/', $file_name);
+                    $path = $file_data->storeAs('public/circular/', $file_name);
 
                     if (isset($_REQUEST['standard'])) {
                         foreach ($_REQUEST['standard'] as $id => $std) {
@@ -365,7 +365,7 @@ class circularController extends Controller
                             }
                         }
                     }
-                //}
+                }
             } else {
                 if (isset($_REQUEST['standard'])) {
                     foreach ($_REQUEST['standard'] as $id => $std) {
@@ -408,7 +408,7 @@ class circularController extends Controller
                                     $mobile_no = $val->mobile;
                                     $student_name = $val->student_name;
 
-                                    $pushMessage = "Dear Parents, ".$_REQUEST['title']." has been added in Circular for date : ".
+                                    $pushMessage = $student_name. " - ".$_REQUEST['title']." has been added in Circular for date : ".
                                         date('d-m-Y', strtotime($_REQUEST['date_']));
 
                                     $app_notification_content = [
@@ -427,6 +427,7 @@ class circularController extends Controller
                                     $gcm_data = DB::table("gcm_users")
                                         ->where("mobile_no", "=", $mobile_no)
                                         ->where("sub_institute_id", "=", $sub_institute_id)
+                                        ->groupBy("gcm_regid")
                                         ->get()->toArray();
                                     $gcmRegIds = [];
                                     if (count($gcm_data) > 0) {
