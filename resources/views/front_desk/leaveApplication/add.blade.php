@@ -50,49 +50,39 @@
                                 <tbody>                                
                                     <tr>
                                         <!--<td><input type="checkbox" name="@php echo 'sendsms['.$col_arr['mobile'].']'; @endphp" class="ckbox1">  </td>-->
-                                        <td>@php echo $id+1; @endphp</td>
-                                        <td>@php echo $col_arr['name']; @endphp</td>
-                                        <td>@php echo $col_arr['stddiv']; @endphp</td>
-                                        <td>@php echo $col_arr['mobile']; @endphp</td>
-                                        <td>@php echo $col_arr['apply_date']; @endphp</td>
-                                        <td>@php echo $col_arr['from_date']; @endphp</td>
-                                        <td>@php echo $col_arr['to_date']; @endphp</td>
-                                        <td>@php echo $col_arr['message']; @endphp</td>
+                                        <td>{{ $id+1 }}</td>
+                                        <td>{{ $col_arr['name'] }}</td>
+                                        <td>{{ $col_arr['stddiv'] }}</td>
+                                        <td>{{ $col_arr['mobile'] }}</td>
+                                        <td>{{ $col_arr['apply_date'] }}</td>
+                                        <td>{{ $col_arr['from_date'] }}</td>
+                                        <td>{{ $col_arr['to_date'] }}</td>
+                                        <td>{{ $col_arr['message'] }}</td>
                                         <td>
                                             <a href="<?php echo asset('storage/leave_application/' . $col_arr['files']); ?>" download>Download</a> 
                                         </td>
                                         <td>
-                                            <textarea name="reply[<?php echo $col_arr['leave_app_id']; ?>]" >@php echo $col_arr['reply']; @endphp</textarea>
+                                            @if(!empty($col_arr['reply']))
+                                                {{ $col_arr['reply'] }}
+                                            @else
+                                                <textarea name="reply[<?php echo $col_arr['leave_app_id']; ?>]" >{{ $col_arr['reply'] }}</textarea>
+                                            @endif
                                         </td>
                                         <td>
-                                           @php echo $col_arr['reply_by']; @endphp
+                                           {{ $col_arr['reply_by'] }} 
                                         </td>
                                         <td>
-                                            <select name="status[<?php echo $col_arr['leave_app_id']; ?>]" class="form-control" style="width: 135px;">
-                                                <?php
-                                                $ap_select = "";
-                                                $rj_select = "";
-                                                $mta_select = "";
-                                                $mtp_select = "";
-                                                if ($col_arr['status'] == 'Approved') {
-                                                    $ap_select = "selected=selcted";
-                                                }
-                                                if ($col_arr['status'] == 'Rejected') {
-                                                    $rj_select = "selected=selcted";
-                                                }
-                                                if ($col_arr['status'] == 'Meet To Administrators') {
-                                                    $mta_select = "selected=selcted";
-                                                }
-                                                if ($col_arr['status'] == 'Meet To Principal') {
-                                                    $mtp_select = "selected=selcted";
-                                                }
-                                                ?>
+                                        @if(!empty($col_arr['status']))
+                                            {{ $col_arr['status'] }}
+                                        @else
+                                            <select name="status[{{ $col_arr['leave_app_id'] }}]" class="form-control" style="width: 135px;">
                                                 <option value="">Select Status</option>
-                                                <option <?php echo $ap_select; ?> value="Approved">Approved</option>
-                                                <option <?php echo $rj_select; ?> value="Rejected">Rejected</option>
-                                                <option <?php echo $mta_select; ?> value="Meet To Administrators">Meet To Administrators</option>
-                                                <option <?php echo $mtp_select; ?> value="Meet To Principal">Meet To Principal</option>
+                                                <option {{ $col_arr['status'] == 'Approved' ? 'selected' : '' }} value="Approved">Approved</option>
+                                                <option {{ $col_arr['status'] == 'Rejected' ? 'selected' : '' }} value="Rejected">Rejected</option>
+                                                <option {{ $col_arr['status'] == 'Meet To Administrators' ? 'selected' : '' }} value="Meet To Administrators">Meet To Administrators</option>
+                                                <option {{ $col_arr['status'] == 'Meet To Principal' ? 'selected' : '' }} value="Meet To Principal">Meet To Principal</option>
                                             </select>
+                                        @endif
                                         </td>
                                     </tr>
                                 </tbody>
