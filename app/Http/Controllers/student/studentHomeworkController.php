@@ -216,6 +216,7 @@ class studentHomeworkController extends Controller
                 'CREATED_BY'               => $created_by,
                 'CREATED_IP'               => $_SERVER['REMOTE_ADDR'],
             ];
+            
             sendNotification($app_notification_content);
             //END Send Notification Code
         }
