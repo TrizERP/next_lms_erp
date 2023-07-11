@@ -150,7 +150,7 @@
 								<div class="table-responsive">
 									<table class="table table-stripped">
 										<tr>
-											<td>GR. No</td>
+											<td>{{ App\Helpers\get_string('grno','request')}}<i class="mdi mdi-lead-pencil"></i></td>
 											<td>
 												{{ $data['stu_data']['enrollment']; }}
 											</td>
