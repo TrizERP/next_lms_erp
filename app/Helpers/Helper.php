@@ -1557,6 +1557,10 @@ if (! function_exists('getStudents')) {
         }
         //END 23-11-2021 Added FOR Add Homework API
 
+        if (!is_array($student_ids)) {
+            $student_ids = explode(',', $student_ids);
+        }
+
         $stud_arr = implode(',', $student_ids);
         $extra_where = " AND s.id in (".$stud_arr.")";
 

@@ -570,57 +570,70 @@ class fees_collect_controller extends Controller
         }
 
         $regular_insert_arr = [];
+        $inserted = false;
+        
         foreach ($new_insert_arr as $month_id => $arr) {
             foreach ($arr as $r_id => $vals) {
-                if (isset($vals['fine']) && $vals['fine'] !== null && $vals['fine'] != 0) {
-                    $amount = $vals['amount'];
-                    $fine = $vals['fine'];
-                    
-                    // Make sure $amount and $fine are both integers
-                    $amount = (int)$amount;
-                    $fine = (int)$fine;
-                    
-                    $totalAmount = $amount + $fine;
-                    $vals['amount'] = $totalAmount;
+                if (!$inserted) {
+                    if (isset($vals['fine']) && $vals['fine'] !== null && $vals['fine'] != 0) {
+                        $amount = $vals['amount'];
+                        $fine = $vals['fine'];
+                        
+                        // Make sure $amount and $fine are both integers
+                        $amount = (int)$amount;
+                        $fine = (int)$fine;
+                        
+                        $totalAmount = $amount + $fine;
+                        $vals['amount'] = $totalAmount;
+                    }
+
+
+                    if (isset($_REQUEST['cheque_date']) && $_REQUEST['cheque_date'] != '') {
+                        $cheque_date = $_REQUEST['cheque_date'];
+                    } else {
+                        $cheque_date = $_REQUEST['receiptdate'];
+                    }
+
+                    if (isset($_REQUEST['remarks']) && $_REQUEST['remarks'] != '') {
+                        $remarks = $_REQUEST['remarks'];
+                    } else {
+                        $remarks = '';
+                    }
+
+                    $receipt_id_arr = explode('_', $r_id);
+                    $receipt_id = $receipt_id_arr[0];
+
+                    $insert_arr = [
+                        'student_id' => $stu_arr[0],
+                        'standard_id' => $standard_ids[$month_id] ?? null,
+                        'term_id' => $month_id,
+                        'syear' => $syears[$month_id],
+                        'sub_institute_id' => session()->get('sub_institute_id'),
+                        'payment_mode' => $_REQUEST['PAYMENT_MODE'],
+                        'created_date' => date('Y-m-d h:i:s'),
+                        'bank_branch' => $_REQUEST['bank_branch'],
+                        'receiptdate' => $_REQUEST['receiptdate'],
+                        'cheque_no' => $_REQUEST['cheque_no'],
+                        'cheque_date' => $cheque_date,
+                        'cheque_bank_name' => $_REQUEST['bank_name'],
+                        'receipt_no' => $receipt_id,
+                        'remarks' => $remarks,
+                        'created_by' => session()->get('user_id'),
+                    ];
+
+                    $insert_arr = array_merge($insert_arr, $vals);
+                    $insert_id = DB::table('fees_collect')->insertGetId($insert_arr);
+                    $regular_insert_arr[] = $insert_id;
+
+                    $inserted = true;
                 }
-
-
-                if (isset($_REQUEST['cheque_date']) && $_REQUEST['cheque_date'] != '') {
-                    $cheque_date = $_REQUEST['cheque_date'];
-                } else {
-                    $cheque_date = $_REQUEST['receiptdate'];
+                else
+                {
+                    $type = $request->input('type');
+                    $res['status_code'] = '0';
+                    $res['message'] = 'Fees already paid.';
+                    return is_mobile($type, "fees/fees_collect", $res, "view");
                 }
-
-                if (isset($_REQUEST['remarks']) && $_REQUEST['remarks'] != '') {
-                    $remarks = $_REQUEST['remarks'];
-                } else {
-                    $remarks = '';
-                }
-
-                $receipt_id_arr = explode('_', $r_id);
-                $receipt_id = $receipt_id_arr[0];
-
-                $insert_arr = [
-                    'student_id' => $stu_arr[0],
-                    'standard_id' => $standard_ids[$month_id] ?? null,
-                    'term_id' => $month_id,
-                    'syear' => $syears[$month_id],
-                    'sub_institute_id' => session()->get('sub_institute_id'),
-                    'payment_mode' => $_REQUEST['PAYMENT_MODE'],
-                    'created_date' => date('Y-m-d h:i:s'),
-                    'bank_branch' => $_REQUEST['bank_branch'],
-                    'receiptdate' => $_REQUEST['receiptdate'],
-                    'cheque_no' => $_REQUEST['cheque_no'],
-                    'cheque_date' => $cheque_date,
-                    'cheque_bank_name' => $_REQUEST['bank_name'],
-                    'receipt_no' => $receipt_id,
-                    'remarks' => $remarks,
-                    'created_by' => session()->get('user_id'),
-                ];
-
-                $insert_arr = array_merge($insert_arr, $vals);
-                $insert_id = DB::table('fees_collect')->insertGetId($insert_arr);
-                $regular_insert_arr[] = $insert_id;
 
             }
         }
@@ -739,13 +752,31 @@ class fees_collect_controller extends Controller
 
     public function store(Request $request)
     {
+        $abFlag = 0;
 
-        $res = $this->pay_fees($request);
+        if ($abFlag==0) {
+            $res = $this->pay_fees($request);
+            $abFlag = 1;
+
+            $res['standard_id'] = $request->standard_id;
+            $type = $request->input('type');
+
+            return is_mobile($type, "fees/fees_collect/receipt_view", $res, "view");
+            // continue;
+        }
+        else
+        {   
+            // $res = $this->pay_fees($request);
+            $type = $request->input('type');
+            $res['status_code'] = '0';
+            $res['message'] = 'Fees already paid.';
+            return is_mobile($type, "fees/fees_collect", $res, "view");
+        }
         // return $res;exit;
-        $res['standard_id'] = $request->standard_id;
+        /* $res['standard_id'] = $request->standard_id;
         $type = $request->input('type');
 
-        return is_mobile($type, "fees/fees_collect/receipt_view", $res, "view");
+        return is_mobile($type, "fees/fees_collect/receipt_view", $res, "view"); */
     }
 
     public function add_discount($fees_arr, $insert_table)
