@@ -208,7 +208,7 @@ class studentHomeworkController extends Controller
                 'NOTIFICATION_TYPE'        => 'Homework',
                 'NOTIFICATION_DATE'        => date('Y-m-d'),
                 'STUDENT_ID'               => $addhomeworkArray['student_id'],
-                'NOTIFICATION_DESCRIPTION' => $$addhomeworkArray['title'],
+                'NOTIFICATION_DESCRIPTION' => $addhomeworkArray['title'],
                 'STATUS'                   => 0,
                 'SUB_INSTITUTE_ID'         => $addhomeworkArray['sub_institute_id'],
                 'SYEAR'                    => $addhomeworkArray['syear'],
