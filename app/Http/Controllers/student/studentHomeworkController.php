@@ -207,16 +207,16 @@ class studentHomeworkController extends Controller
             $app_notification_content = [
                 'NOTIFICATION_TYPE'        => 'Homework',
                 'NOTIFICATION_DATE'        => date('Y-m-d'),
-                'STUDENT_ID'               => $student_id,
-                'NOTIFICATION_DESCRIPTION' => $title,
+                'STUDENT_ID'               => $addhomeworkArray['student_id'],
+                'NOTIFICATION_DESCRIPTION' => $$addhomeworkArray['title'],
                 'STATUS'                   => 0,
-                'SUB_INSTITUTE_ID'         => $sub_institute_id,
-                'SYEAR'                    => $syear,
+                'SUB_INSTITUTE_ID'         => $addhomeworkArray['sub_institute_id'],
+                'SYEAR'                    => $addhomeworkArray['syear'],
                 'SCREEN_NAME'              => 'home_work',
-                'CREATED_BY'               => $created_by,
+                'CREATED_BY'               => $addhomeworkArray['created_by'],
                 'CREATED_IP'               => $_SERVER['REMOTE_ADDR'],
             ];
-            
+
             sendNotification($app_notification_content);
             //END Send Notification Code
         }
