@@ -5,7 +5,6 @@ namespace App\Http\Controllers\student;
 use App\Http\Controllers\Controller;
 use App\Models\school_setup\subjectModel;
 use App\Models\student\studentHomeworkModel;
-use App\Models\school_setup\SchoolModel;
 use GenTux\Jwt\GetsJwtToken;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -18,7 +17,6 @@ use function App\Helpers\getStudents;
 use function App\Helpers\is_mobile;
 use function App\Helpers\SearchStudent;
 use function App\Helpers\sendNotification;
-use function App\Helpers\send_FCM_Notification;
 
 class studentHomeworkController extends Controller
 {
@@ -182,10 +180,6 @@ class studentHomeworkController extends Controller
             $path = $file->storeAs('public/student/', $file_name);
         }
 
-        $schoolData = SchoolModel::where(['id' => $sub_institute_id])->get()->toArray();
-        $schoolName = $schoolData[0]['SchoolName'];
-        $schoolLogo = $_SERVER['APP_URL'].'/admin_dep/images/'.$schoolData[0]['Logo'];
-
         foreach ($student_details as $id => $arr) {
             $student_id = $arr['id'];
             $standard_id = $arr['standard_id'];
@@ -209,8 +203,6 @@ class studentHomeworkController extends Controller
             $addhomeworkArray['created_by'] = $created_by;
             studentHomeworkModel::insert($addhomeworkArray);
 
-            $mobile_no = $arr['mobile'];
-
             //START Send Notification Code
             $app_notification_content = [
                 'NOTIFICATION_TYPE'        => 'Homework',
@@ -224,33 +216,7 @@ class studentHomeworkController extends Controller
                 'CREATED_BY'               => $created_by,
                 'CREATED_IP'               => $_SERVER['REMOTE_ADDR'],
             ];
-            
-            $gcm_data = DB::table("gcm_users")
-                    ->where("mobile_no", "=", $mobile_no)
-                    ->where("sub_institute_id", "=", session()->get('sub_institute_id'))
-                    ->get()->toArray();
-
-                $gcmRegIds = [];
-                if (count($gcm_data) > 0) {
-                    foreach ($gcm_data as $key1 => $val1) {
-                        $gcmRegIds[] = $val1->gcm_regid;
-                    }
-                }
-
-                $bunch_arr = array_chunk($gcmRegIds, 1000);
-                if (! empty($bunch_arr)) {
-                    foreach ($bunch_arr as $val) {
-                        if (isset($val)) {
-                            $type = 'Student Homework';
-                            $message = array(
-                                'body'  => $title, 'TYPE' => $type, 'USER_ID' => $student_id,
-                                'title' => $schoolName, 'image' => $schoolLogo,
-                            );
-                            $pushStatus = send_FCM_Notification($val, $message);
-                            sendNotification($app_notification_content);
-                        }
-                    }
-                }
+            sendNotification($app_notification_content);
             //END Send Notification Code
         }
 
@@ -542,10 +508,16 @@ class studentHomeworkController extends Controller
                     ->where('t.standard_id', $standard_id)
                     ->where('t.division_id', $section_id)
                     ->groupBy('t.subject_id')->orderBy('display_name')->get()->toArray();
-
-                $res['status'] = 1;
-                $res['message'] = "Success";
-                $res['data'] = $data;
+                    
+                    if(!empty($data) && count($data)>0 && $data!==null){
+                        $res['status'] = 1;
+                        $res['message'] = "Success";
+                        $res['data'] = $data;
+                    }else{
+                        $res['status'] = 0;
+                        $res['message'] = "No Data Found";
+                    }
+               
             } else {
                 $res['status'] = 0;
                 $res['message'] = "Wrong Parameters";
@@ -595,11 +567,11 @@ class studentHomeworkController extends Controller
         }
 
         // $class_teacher_sql = "SELECT s.subject_id,s.display_name,ct.grade_id,ct.standard_id,ct.division_id,ct.teacher_id
-        // 					FROM sub_std_map s
-        // 					INNER JOIN class_teacher ct ON ct.standard_id = s.standard_id AND ct.sub_institute_id = s.sub_institute_id
-        // 					WHERE s.sub_institute_id = '".$sub_institute_id."' AND s.standard_id = '".$standard_id."' AND ct.syear = '".$syear."' AND ct.teacher_id = '".$teacher_id."'
-        // 					GROUP BY s.subject_id
-        // 					ORDER BY s.display_name";					
+        //                  FROM sub_std_map s
+        //                  INNER JOIN class_teacher ct ON ct.standard_id = s.standard_id AND ct.sub_institute_id = s.sub_institute_id
+        //                  WHERE s.sub_institute_id = '".$sub_institute_id."' AND s.standard_id = '".$standard_id."' AND ct.syear = '".$syear."' AND ct.teacher_id = '".$teacher_id."'
+        //                  GROUP BY s.subject_id
+        //                  ORDER BY s.display_name";                   
         // $class_teacher_subjects_data = DB::select($class_teacher_sql);
         // $class_teacher_subjects_data = json_decode(json_encode($class_teacher_subjects_data),true);
 
