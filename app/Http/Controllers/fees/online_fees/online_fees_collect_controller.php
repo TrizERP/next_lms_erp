@@ -23,7 +23,8 @@ class online_fees_collect_controller extends Controller
 
     public function site_name()
     {
-        $site_name = "https://erp.triz.co.in/";
+        // $site_name = "https://erp.triz.co.in/";
+        $site_name = "http://127.0.0.1:8000/";
         return $site_name;
     }
 
@@ -58,16 +59,20 @@ class online_fees_collect_controller extends Controller
         $OldData = $controller->getOnlinebk($request, $all_student[0]->sub_institute_id, $year - 1, $_REQUEST["student_id"]);
         $data = $controller->getOnlinebk($request, $all_student[0]->sub_institute_id, $year, $_REQUEST["student_id"]);
         // echo $year;
-        // echo '<pre>'; print_r($data); exit;
         $fees_amt = 0;
-        if (isset($OldData["total_fees"])) {
+        if (isset($OldData["final_fee"])) {
             $get_old_data = 0;
-            foreach ($OldData["total_fees"] as $id => $arr) {
-                if ($arr["month"] == "Total" && $arr["remain"] != 0) {
-                    $get_old_data = 1;
-                    $fees_amt = $arr["remain"];
-                }
+            if($OldData["final_fee"]['Total']!=0){
+                    $get_old_data = 1;    
+                    $fees_amt = $OldData["final_fee"]['Total'];            
             }
+            // foreach ($OldData["final_fee"] as $id => $arr) {
+            //     if ($arr["month"] == "Total" && $arr["remain"] != 0) {
+            //         $get_old_data = 1;
+            //         $fees_amt = $arr["remain"];
+            //     }
+            // }
+            
             // Start Add code for showing previous year fees bf 25-11-2021
             if ($get_old_data == 1) {
                 $data = $OldData;
@@ -90,7 +95,7 @@ class online_fees_collect_controller extends Controller
         $data["dd_arr"] = $dd_arr;
         $data["student_id"] = $_REQUEST["student_id"];
         $data["cur_year"] = $year;
-        // echo '<pre>'; print_r($data); exit;
+        // echo '<pre>'; print_r($dd_arr); exit;
         $data["fees_type"] = $all_student[0]->fees_type;
         $data["syear"] = $year;
         return $data;
