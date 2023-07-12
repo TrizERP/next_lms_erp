@@ -1200,10 +1200,11 @@ class online_fees_collect_controller extends Controller
             ->get();
         $payment_acsept_type = $get_map_bank_data[0]->fees_type;
         $amount = 0;
+
         if ($payment_acsept_type == "fix") {
-            $amount = number_format(floatval($_REQUEST["total"]), 0, '.', '');
+            $amount = number_format(floatval($_REQUEST["total"]) * 100, 2, '.', '');
         } else {
-            $amount = number_format(floatval($_REQUEST["pay_amount"]), 0, '.', '');
+            $amount = number_format(floatval($_REQUEST["pay_amount"]) * 100, 2, '.', '');
         }
 
         $student_id = $_REQUEST["student_id"];

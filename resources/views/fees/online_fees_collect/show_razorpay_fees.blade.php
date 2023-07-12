@@ -141,7 +141,8 @@
                                 <table class="table table-stripped">
                                     <tr>
                                         <?php
-                                        $no = 0;
+                                        $no = $pay_amount = 0;
+                                        $i = 1;
                                         foreach ($data['month_arr'] as $id => $val) {
                                             $no++;
                                             $slected = "";
@@ -184,6 +185,7 @@
 
                                                         } else {
                                                             echo "<input type='hidden' id='totalVal' name='total' value=" . $val . " class='form-control'>";
+                                                            $pay_amount = $val;
                                                         }
                                                         ?>
                                                     </tr>
@@ -197,7 +199,8 @@
                                             <td></td>
                                             <td>Collection Amount</td>
                                             <td></td>
-                                            <td><input type="number" id="pay_amount" name="pay_amount" max="{{$data['final_fee']['Total']}}" class="form-control" value="{{$data['final_fee']['Total']}}"></td>
+                                            <!--<td><input type="number" id="pay_amount" name="pay_amount" max="{{$data['final_fee']['Total']}}" class="form-control" value="{{$data['final_fee']['Total']}}"></td>-->
+                                            <td><input type="number" id="pay_amount" name="pay_amount" max="<?php echo $pay_amount; ?>" class="form-control" value="<?php echo $pay_amount; ?>"></td>
                                         </tr>
                                     <?php } ?>
                                 </table>
@@ -327,7 +330,7 @@
                 if (isNaN(dis)) {} else {
                     tot = (tot - dis) + fin;
                 }
-                $("#grandTotal").val(tot);
+                $("#pay_amount").val(tot);//grandTotal
             }
         }
 
@@ -361,7 +364,7 @@
                     $("#fees_head").html(data);
                     tot = $("#totalVal").val();
                     $("#discount").val(0);
-                    $("#grandTotal").val(tot);
+                    $("#pay_amount").val(tot);//grandTotal
 
                 }
             });
