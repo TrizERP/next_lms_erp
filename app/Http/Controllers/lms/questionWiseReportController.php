@@ -52,7 +52,7 @@ class questionWiseReportController extends Controller
             ->get();
         $queryResult = DB::table('tblstudent as ts')
             ->join('tblstudent_enrollment as tse', function ($join) {
-                $join->whereRaw('tse.student_id = ts.id');
+                $join->whereRaw('tse.student_id = ts.id AND tse.end_date is null');
             })->join('standard as std', function ($join) {
                 $join->whereRaw('std.id = tse.standard_id');
             })->join('std_div_map as sdm', function ($join) {
