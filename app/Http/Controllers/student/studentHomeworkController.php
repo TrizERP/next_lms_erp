@@ -545,7 +545,7 @@ class studentHomeworkController extends Controller
 
                 if(isset($data) && !empty($data) && count($data)>0 && $data!==null){
                         $res['status'] = 1;
-                        $res['message'] = "Success";
+                        $res['message'] = "Success Done";
                         $res['data'] = $data;
                     }else{
                         $res['status'] = 0;
@@ -560,7 +560,7 @@ class studentHomeworkController extends Controller
             $res['message'] = "Parameter Missing";
         }
 
-        return json_encode($data);
+        return json_encode($res);
     }
 
     /**
