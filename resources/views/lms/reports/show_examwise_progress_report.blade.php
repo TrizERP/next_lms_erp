@@ -148,7 +148,7 @@
                                                 @foreach ($all_marks[$data['id']] as $question_paper_id => $all_markss)
                                                     @php
                                                         $m = explode(',', $all_markss);
-                                                        $m = array_pad($m, $numColumns, 0);
+                                                        $m = array_pad($m, $numColumns, '-');
                                                     @endphp
                                                     @foreach ($m as $am)
                                                         <td>{{ $am }}</td>

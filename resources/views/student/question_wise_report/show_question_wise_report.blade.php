@@ -239,27 +239,33 @@
                                     {{-- <td>{{ $stu_rollno }}</td>
                                     <td>{{ $stu_name }}</td> --}}
                                     <td>{{ $student[0]->roll_no }}</td>
-                                                <td>{{ $student[0]->student_name }}</td>
-                                                @foreach( $student as $key => $value )
+                                    <td>{{ $student[0]->student_name }}</td>
+                                    @foreach( $student as $key => $value )
+                                    @php
+                                            // echo "<pre>"; print_r($value); exit;
+                                                $cell_bg_color = '';
+                                        @endphp
                                         @php
-                                                        // echo "<pre>"; print_r($value); exit;
-                                                            $cell_bg_color = '';
-                                                    @endphp
-                                                    @php
-                                                        if ( $value->ans_status == 'right' ) {
-                                                            $colCountAns[$row][] = 1;
-                                                            $totalRightAns++;
-                                                            $ans = '1';
-                                                        } else {
-                                                            $colCountAns[$row][] = 0;
-                                                            $ans = '0';
-                                                        }
+                                            if ( $value->ans_status == 'right' ) {
+                                                $colCountAns[$row][] = 1;
+                                                $totalRightAns++;
+                                                $ans = '1';
+                                            } elseif($value->ans_status == 'wrong') {
+                                                $colCountAns[$row][] = 0;
+                                                $ans = '0';
+                                            }
+                                            else
+                                            {
+                                                //$colCountAns[$row][] = '';
+                                                $ans = '-';
+                                            }
 
-                                                    @endphp
+                                        @endphp
 
-                                                    <td class="" style="{{ ($ans === '0' ) ? 'background-color:#FFC7CE' : '' }}">{{ $ans }}</td>
-                                                    @php $row++; @endphp
+                                        <td class="" style="{{ ($ans === '0' ) ? 'background-color:#FFC7CE' : '' }}">{{ $ans }}</td>
+                                        @php $row++; @endphp
                                     @endforeach
+                                    
                                                 <td class="font-weight-bold" style="background-color: #ffe699;">{{ $totalRightAns }}</td>
                                                 <td class="font-weight-bold" style="background-color: #ffe699;">{{ $countQuestion }}</td>
 
