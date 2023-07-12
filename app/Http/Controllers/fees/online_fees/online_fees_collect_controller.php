@@ -29,7 +29,7 @@ class online_fees_collect_controller extends Controller
 
     public function get_fees(Request $request)
     {
-        // echo '<pre>'; print_r($_REQUEST); exit;
+        //echo '<pre>'; print_r($_REQUEST); exit;
         $all_student = DB::table("tblstudent as s")
             ->join('fees_online_maping as fo', 'fo.sub_institute_id', '=', 's.sub_institute_id')
             ->select(
@@ -58,6 +58,7 @@ class online_fees_collect_controller extends Controller
         $OldData = $controller->getOnlinebk($request, $all_student[0]->sub_institute_id, $year - 1, $_REQUEST["student_id"]);
         $data = $controller->getOnlinebk($request, $all_student[0]->sub_institute_id, $year, $_REQUEST["student_id"]);
         // echo $year;
+        // echo '<pre>'; print_r($OldData);
         // echo '<pre>'; print_r($data); exit;
         $fees_amt = 0;
         if (isset($OldData["total_fees"])) {
