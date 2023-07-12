@@ -543,9 +543,14 @@ class studentHomeworkController extends Controller
                     ->where('t.division_id', $section_id)
                     ->groupBy('t.subject_id')->orderBy('display_name')->get()->toArray();
 
-                $res['status'] = 1;
-                $res['message'] = "Success";
-                $res['data'] = $data;
+                if(isset($data) && !empty($data) && count($data)>0 && $data!==null){
+                        $res['status'] = 1;
+                        $res['message'] = "Success";
+                        $res['data'] = $data;
+                    }else{
+                        $res['status'] = 0;
+                        $res['message'] = "No Data Found";
+                    }
             } else {
                 $res['status'] = 0;
                 $res['message'] = "Wrong Parameters";
@@ -555,7 +560,7 @@ class studentHomeworkController extends Controller
             $res['message'] = "Parameter Missing";
         }
 
-        return json_encode($stud_data);
+        return json_encode($data);
     }
 
     /**
