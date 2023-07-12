@@ -104,7 +104,7 @@ class contentController extends Controller
         $data['lms_mapping_type'] = $lms_mapping_type;
 
         //START Get Content Category
-        $data['content_category'] = lmsContentCategoryModel::where('status', '1')->get()->toArray();
+        $data['content_category'] = lmsContentCategoryModel::where('status', '2')->get()->toArray();
         //END Get Content Category
 
         $data['breadcrum_data'] = $this->getBreadcrum($sub_institute_id, $request->get('chapter_id'),
@@ -144,7 +144,7 @@ class contentController extends Controller
         $data['lms_mapping_type'] = $lms_mapping_type;
 
         //START Get Content Category
-        $data['content_category'] = lmsContentCategoryModel::where('status', '1')->get()->toArray();
+        $data['content_category'] = lmsContentCategoryModel::where('status', '2')->get()->toArray();
         //END Get Content Category
 
         $data['breadcrum_data'] = $this->getBreadcrum($sub_institute_id, $request->get('chapter_id'));
