@@ -32,11 +32,10 @@
                                 <strong>{{ $sessionData['message'] }}</strong>
                             </div>
                         @endif
-                        <form action="{{ route('show_monthwise_student_attendance_report') }}"
-                              enctype="multipart/form-data" method="post">
+                        <form action="{{ route('show_monthwise_student_attendance_report') }}" enctype="multipart/form-data" method="post">
+                        @csrf
                             <div class="row">
-
-                                {{ App\Helpers\SearchChain('4','single','grade,std,div',$grade_id,$standard_id,$division_id) }}
+                                {{ App\Helpers\SearchChain('4','required','grade,std,div',$grade_id,$standard_id,$division_id) }}
                                 <div class="col-md-4 form-group">
                                     <label>Year</label>
                                     <select class="form-control" name="year" id="year">
@@ -141,11 +140,11 @@
                                     <tbody>
                                     @foreach($student_data as $key => $value)
                                         <tr>
-                                            <?php
+                                            @php
                                             $totalWorkingDays = 0;
                                             $totalP = 0;
                                             $totalA = 0;
-                                            ?>
+                                            @endphp
                                             <td>{{$j++}}</td>
                                             <td>{{$value['enrollment_no']}}</td>
                                             <td>{{$value['first_name']." ".$value['middle_name']." ".$value['last_name']}}</td>
@@ -153,7 +152,7 @@
                                                 <td>
                                                     @if(isset($data['attendance_data'][$value['id']][$i]))
                                                         {{$data['attendance_data'][$value['id']][$i]}}
-                                                        <?php
+                                                        @php
                                                         if ($data['attendance_data'][$value['id']][$i] == 'A') {
                                                             $totalA++;
                                                         } else {
@@ -161,7 +160,7 @@
                                                         }
 
                                                         $totalWorkingDays++;
-                                                        ?>
+                                                        @endphp
                                                     @else
                                                         @if(in_array($i,$data['sundays']))
                                                             S
@@ -169,9 +168,9 @@
                                                             H
                                                         @else
                                                             -
-                                                            <?php
+                                                            @php
                                                             $totalWorkingDays++;
-                                                            ?>
+                                                            @endphp
                                                         @endif
                                                     @endif
                                                 </td>

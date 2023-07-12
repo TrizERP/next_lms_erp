@@ -104,7 +104,8 @@ class tblstudentModel extends Model
         'distance_from_school',
         'updated_on',
         'father_dob',
-        'expire_date'
+        'expire_date',
+        'marking_period_id'
     ];
 
     public function getFullNameAttribute()

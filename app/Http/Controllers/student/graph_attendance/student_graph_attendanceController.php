@@ -25,7 +25,7 @@ class student_graph_attendanceController extends Controller
         $syear = $request->session()->get('syear');
         $term_id = $request->session()->get('term_id');
         $sub_institute_id = $request->session()->get('sub_institute_id');
-
+        $marking_period_id = session()->get('term_id');
         $date = "2019-08-22";
 
 
@@ -41,8 +41,10 @@ class student_graph_attendanceController extends Controller
                 $join->whereRaw("s.id = se.student_id AND se.syear = '".$syear."'");
             })->join('academic_section as acs', function ($join) {
                 $join->whereRaw("acs.id = se.grade_id");
-            })->join('standard as sm', function ($join) {
-                $join->whereRaw("se.standard_id = sm.id");
+            })->join('standard as sm', function ($join) use($marking_period_id) {
+                $join->whereRaw("se.standard_id = sm.id")->when($marking_period_id,function($query) use($marking_period_id){
+                    $query->where('sm.marking_period_id',$marking_period_id);
+                });
             })->join('division as dm', function ($join) {
                 $join->whereRaw("se.section_id = dm.id");
             })->leftJoin('attendance_student as a', function ($join) use ($date) {

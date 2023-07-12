@@ -43,6 +43,7 @@ class questionWiseReportController extends Controller
         $question_paper_id = $request->exam;
         $sub_institute_id = session()->get('sub_institute_id');
         $syear = session()->get('syear');
+        $marking_period_id = session()->get('term_id');
         // return $request;exit;
         $examData = questionpaperModel::where([
             'sub_institute_id' => $sub_institute_id, 'standard_id' => $standard, 'subject_id' => $subject,
@@ -53,8 +54,10 @@ class questionWiseReportController extends Controller
         $queryResult = DB::table('tblstudent as ts')
             ->join('tblstudent_enrollment as tse', function ($join) {
                 $join->whereRaw('tse.student_id = ts.id');
-            })->join('standard as std', function ($join) {
-                $join->whereRaw('std.id = tse.standard_id');
+            })->join('standard as std', function ($join) use($marking_period_id){
+                $join->whereRaw('std.id = tse.standard_id')->when($marking_period_id,function($query) use($marking_period_id){
+                    $query->where('std.marking_period_id',$marking_period_id);
+                });
             })->join('std_div_map as sdm', function ($join) {
                 $join->whereRaw('sdm.standard_id = std.id');
             })->join('division as divi', function ($join) {

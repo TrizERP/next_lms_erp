@@ -170,7 +170,8 @@ class AJAXController extends Controller
         $path = str_ends_with($path, '/') ? substr($path, 0, strlen($path) - 1) : $path;
         preg_match("/[^\/]+$/", $path, $matches);
         $module_name = $matches[0];
-
+        $marking_period_id = session()->get('term_id');
+        
         $module_array = [
             '1' => 'student_homework',
         ];
@@ -193,14 +194,16 @@ class AJAXController extends Controller
                 $query->whereIn('id', $classTeacherStdArr);
             }
             //END Check for class teacher assigned standards
-
+            if($marking_period_id!=null && $marking_period_id !=0 ){
+                $query->where('marking_period_id', $marking_period_id);
+            }
             //START Check for subject teacher assigned
             $subjectTeacherStdArr = session()->get('subjectTeacherStdArr');
             if ($subjectTeacherStdArr != "" && ($classTeacherStdArr == "" || in_array($module_name, $module_array))) {
                 $query->whereIn('id', $subjectTeacherStdArr);
             }
             //END Check for subject teacher assigned
-
+            $query->orderBy('sort_order');
             $standard = $query->pluck("name", "id");
 
         } else {
@@ -218,12 +221,16 @@ class AJAXController extends Controller
                 $query->whereIn('id', $classTeacherStdArr);
             }
             //END Check for class teacher assigned standards
-
+            if($marking_period_id!=null && $marking_period_id !=0 ){
+                $query->where('marking_period_id', $marking_period_id);
+            }
             //START Check for subject teacher assigned
             $subjectTeacherStdArr = session()->get('subjectTeacherStdArr');
             if ($subjectTeacherStdArr != "" && ($classTeacherStdArr == "" || in_array($module_name, $module_array))) {
                 $query->whereIn('id', $subjectTeacherStdArr);
             }
+            $query->orderBy('sort_order');
+            
             //END Check for subject teacher assigned
             $standard = $query->pluck("name", "id");
         }
@@ -1711,6 +1718,7 @@ class AJAXController extends Controller
         }
     }
  public function collectsct(Request $req){
+     $marking_period_id = session()->get('term_id');
         $option ='<option>Select</option>';
         if($req->sectionId == 1){
             $academy = academic_sectionModel::where('sub_institute_id', $req->session()->get('sub_institute_id'))->get(['id','title','short_name','sort_order','shift','medium']);
@@ -1728,7 +1736,9 @@ class AJAXController extends Controller
                 $option .= '<option value='.$row['id'].'>'.$row['name'].'</option>';
             }
         }else if($req->sectionId == 5){
-            $std = standardModel::where(['sub_institute_id'=> $req->session()->get('sub_institute_id'),'grade_id'=>$req->grade])->get(['id','short_name']);
+            $std = standardModel::where(['sub_institute_id'=> $req->session()->get('sub_institute_id'),'grade_id'=>$req->grade])->when($marking_period_id,function($query) use($marking_period_id){
+                $query->where('marking_period_id',$marking_period_id);
+            })->get(['id','short_name']);
             foreach($std as $row){
                 $option .= '<option value='.$row['id'].'>'.$row['short_name'].'</option>';
             }

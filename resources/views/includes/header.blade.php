@@ -28,15 +28,14 @@
 <!-- ============================================================== -->
 <!-- Wrapper -->
 <!-- ============================================================== -->
-<?php
+@php
 $school_logo = session()->get('school_logo');
 $loginpage_link = session()->get('loginpage_link');
 $getInstitutes = session()->get('getInstitutes');
 $academicYears = session()->get('academicYears');
 $academicTerms = session()->get('academicTerms');
 // dd(count($academicYears));
-
-?>
+@endphp
 <div id="wrapper">
     <div id="page">
         <header class="navbar justify-content-between flex-nowrap fixed-top">
@@ -46,22 +45,27 @@ $academicTerms = session()->get('academicTerms');
                         <em class="fas fa-bars"></em>
                     </button>
                     <div class="text-center flex-fill">
-                        <?php
+                       @php
+                       if(session()->get('institute_type')==="college"){
+                        $col_md = "col-md-3";                           
+                       }else{
+                           $col_md = "col-md-5";
+                       }
                         if($school_logo != ""){
-                        ?>
+                        @endphp
                         <a class="navbar-brand" href="{{ route('dashboard') }}"><img
                                 src="/admin_dep/images/{{$school_logo}}" style="height: 50px;" alt="home"></a>
-                        <?php
+                        @php
                         }
                         else
                         {
                         $words = explode(" ", Session::get('name'));
                         $name_initial = strtoupper($words[0][0] . $words[1][0]);
-                        ?>
+                        @endphp
                         <div id="profileImage">{{$name_initial}}</div>
-                        <?php
+                        @php
                         }
-                        ?>
+                       @endphp
                     </div>
 
                     <button class="collapse-btn right-collapse-btn d-md-none">
@@ -77,15 +81,14 @@ $academicTerms = session()->get('academicTerms');
             <div class="d-md-flex align-items-center justify-content-end header-right">
                 <div class="d-md-flex header-select">
                     <div class="row">
-                        <div class="col-md-3">
+                        <div class="{{$col_md}}">
                             <div class="ui-widget">
-                                <input type="text" name="search_menu" id="search_menu" value=""
-                                       class="form-control mb-0" autocomplete="off" placeholder="Search Anything">
+                                <input type="text" name="search_menu" id="search_menu" value="" class="form-control mb-0" autocomplete="off" placeholder="Search Anything">
                             </div>
                         </div>
 
                         @if(Session::get('is_admin') == 1 && Session::get('user_profile_name') == 'Super Admin')
-                            <div class="col-md-3">
+                            <div class="{{$col_md}}">
                                 <form id="institute" class="app-search hidden-sm hidden-xs m-r-5">
                                     @csrf
                                     <select class="cust-select form-control"
@@ -104,7 +107,7 @@ $academicTerms = session()->get('academicTerms');
                                 </form>
                             </div>
                         @endif
-                        <div class="col-md-3">
+                        <div class="{{$col_md}}">
                             <form role="search" id="academicYears" class="app-search hidden-sm hidden-xs m-r-5">
                                 @csrf
                                 <select class="cust-select form-control year-sel mb-0"
@@ -121,7 +124,8 @@ $academicTerms = session()->get('academicTerms');
                                 </select>
                             </form>
                         </div>
-                        <div class="col-md-3">
+                        @if(session::get('institute_type')==="college")
+                        <div class="{{$col_md}}">
                             <form role="search" id="academicTerms" class="app-search hidden-sm hidden-xs m-r-5">
                                 @csrf
                                 <select class="cust-select form-control mb-0"
@@ -138,6 +142,7 @@ $academicTerms = session()->get('academicTerms');
                                 </select>
                             </form>
                         </div>
+                        @endif                        
                     </div>
                 </div>
                 <div class="d-xl-flex d-md-block d-flex flex-wrap align-items-center justify-content-between">
@@ -154,7 +159,7 @@ $academicTerms = session()->get('academicTerms');
                     <div class="dropdown user-dropdown">
                         <button class="dropdown-toggle d-flex align-items-center" type="button" id="dropdownMenuButton"
                                 data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                            <span class="user-photo"><img src="/storage/user/{{ Session::get('image') }}" alt=""></span>
+                            <span class="user-photo"><img src="/storage/user/{{ $school_logo }}" alt=""></span>
                             <span class="user-name">{{ Session::get('name') }}</span>
                         </button>
                         <div class="dropdown-menu dropdown-menu-right mt-3" aria-labelledby="dropdownMenuButton">

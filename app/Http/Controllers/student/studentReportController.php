@@ -19,29 +19,6 @@ class studentReportController extends Controller
     public function index(Request $request)
     {
         $type = $request->input('type');
-        // $tblcustom_fields = DB::table("tblcustom_fields")
-        // ->where(["sub_institute_id" => session()->get('sub_institute_id'),"table_name" => "tblstudent"])
-        // ->pluck("field_label", "field_name");
-
-        // $tblcustom_fields['enrollment_no'] = 'Enrollment No';
-        // $tblcustom_fields['first_name'] = 'First Name';
-        // $tblcustom_fields['middle_name'] = 'Middle Name';
-        // $tblcustom_fields['last_name'] = 'Last Name';
-        // $tblcustom_fields['father_name'] = 'Father Name';
-        // $tblcustom_fields['mother_name'] = 'Mother Name';
-        // $tblcustom_fields['gender'] = 'Gender';
-        // $tblcustom_fields['dob'] = 'Birthdate';
-        // $tblcustom_fields['mobile'] = 'Mobile';
-        // $tblcustom_fields['mother_mobile'] = 'Mother Mobile';
-        // $tblcustom_fields['email'] = 'Email';
-        // $tblcustom_fields['username'] = 'Username';
-        // $tblcustom_fields['admission_year'] = 'Admission Year';
-        // $tblcustom_fields['admission_date'] = 'Admission Date';
-        // $tblcustom_fields['city'] = 'City';
-        // $tblcustom_fields['state'] = 'State';
-        // $tblcustom_fields['address'] = 'Address';
-        // $tblcustom_fields['pincode'] = 'Pincode';
-
         $tblcustom_fields = $this->customFields($request);
         $res['status_code'] = 1;
         $res['message'] = "Success";
@@ -192,7 +169,8 @@ class studentReportController extends Controller
         $type = $request->input('type');
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $syear = $request->session()->get('syear');
-
+        $marking_period_id=session()->get('term_id');
+        
         $extra_order_by = '';
         $extraSearchArray = [];
         $extraSearchArray['tblstudent_enrollment.sub_institute_id'] = $sub_institute_id;
@@ -270,7 +248,11 @@ class studentReportController extends Controller
             ->select(DB::raw(implode(',', $array)))
             ->join('tblstudent_enrollment', 'tblstudent.id', '=', 'tblstudent_enrollment.student_id')
             ->join('academic_section', 'academic_section.id', '=', 'tblstudent_enrollment.grade_id')
-            ->join('standard', 'standard.id', '=', 'tblstudent_enrollment.standard_id')
+            ->join('standard',function($join) use($marking_period_id){
+                $join->on( 'standard.id', '=', 'tblstudent_enrollment.standard_id')->when($marking_period_id,function($query) use($marking_period_id){
+                    $query->where('standard.marking_period_id',$marking_period_id);
+                });
+            })
             ->join('division', 'division.id', '=', 'tblstudent_enrollment.section_id')
             ->leftjoin('religion', 'religion.id', '=', 'tblstudent.religion')
             ->leftjoin('house_master', 'house_master.id', '=', 'tblstudent_enrollment.house_id')

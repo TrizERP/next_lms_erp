@@ -93,6 +93,7 @@ class onlineAdmissionConfirmController extends Controller
         $created_by = $request->session()->get('user_id');
         $created_on = date('Y-m-d');
         $created_ip = $_SERVER['REMOTE_ADDR'];
+        $marking_period_id = session()->get('term_id');
 
         foreach ($students as $key => $student_id) {
             $res = array();
@@ -141,26 +142,34 @@ class onlineAdmissionConfirmController extends Controller
                     $new_enrollment_no = $get_enrollment_no + 1; //$enrollment_result[0]->new_enrollment_no;
 
                     if (count($students_check) == 0) {
-                        $sql = "INSERT INTO tblstudent(admission_id,first_name,father_name,mother_name,gender,dob,mobile,mother_mobile,email,password,admission_year,admission_date,city,state,address,pincode,sub_institute_id,status,created_on,aadhar_document_upload,birth_certificate,place_of_birth,religion,cast,subcast,bloodgroup,father_dob,height,admission_token_no,enrollment_no)
-						SELECT n.id,n.child_name,n.father_name,n.mother_name,n.gender,n.date_of_birth,n.mobile,n.mother_mobile_no,n.mail,MD5('student'),n.syear,CURDATE(),n.city,n.state,n.address,n.pin_code,'".$sub_institute_id."',1,Now(),n.student_adharcard,n.birth_certificate,n.birth_place,n.religion,n.cast,n.sub_cast,n.blood_group,n.father_dob,n.height,n.token,'PP".$new_enrollment_no."'
-						FROM new_admission_inquiry_registration n
-						WHERE n.id = '".$student_id."' "; // OR token = '".$token_no."'
 
-                        $result = DB::insert($sql);
-                        $inserted_student_id = DB::getPdo()->lastInsertId();
+                        $result = DB::table('new_admission_inquiry_registration as n')
+                            ->select(['n.syear', 's.id', 'ss.id as standard_id', 's.sub_institute_id', 'ac.id as grade_id', 'dd.id as section_id', 'sq.id as student_quota'])
+                            ->join('tblstudent as s', 's.admission_id', '=', 'n.id')
+                            ->join('standard as ss', function ($join) {
+                                $join->on('ss.name', '=', 'n.admission_std')
+                                    ->on('ss.sub_institute_id', '=', 's.sub_institute_id')->when($marking_period_id, function ($query) use ($marking_period_id) {
+                                        $query->where('ss.marking_period_id');
+                                    });
+                            })
+                            ->join('academic_section as ac', function ($join) {
+                                $join->on('ac.id', '=', 'ss.grade_id')
+                                    ->on('ac.sub_institute_id', '=', 's.sub_institute_id');
+                            })
+                            ->join('division as dd', 'dd.sub_institute_id', '=', 's.sub_institute_id')
+                            ->join('student_quota as sq', 'sq.sub_institute_id', '=', 's.sub_institute_id')
+                            ->where('n.id', '=', $student_id)
+                            ->where('s.admission_id', '=', $student_id)
+                            ->limit(1);
 
-                        $insert_enrolnment = "INSERT INTO tblstudent_enrollment(syear,student_id,standard_id,sub_institute_id,grade_id,section_id,student_quota)
-						SELECT n.syear,s.id,ss.id,s.sub_institute_id,ac.id,dd.id,sq.id
-						FROM new_admission_inquiry_registration n
-						INNER JOIN tblstudent s ON s.admission_id = n.id
-						INNER JOIN standard ss ON ss.name = n.admission_std AND ss.sub_institute_id = s.sub_institute_id
-						INNER JOIN academic_section ac ON ac.id = ss.grade_id and ac.sub_institute_id = s.sub_institute_id
-						INNER JOIN division dd on dd.sub_institute_id = s.sub_institute_id
-						INNER JOIN student_quota sq ON sq.sub_institute_id = s.sub_institute_id
-						WHERE n.id = '".$student_id."' and s.admission_id = '".$student_id."'
-						limit 1";
-                        // die;
-                        $result_enrollment = DB::insert($insert_enrolnment);
+                        $insert_enrollment = DB::table('tblstudent_enrollment')
+                            ->insertUsing(['syear','student_id','standard_id','sub_institute_id','grade_id','section_id','student_quota',], $result);
+
+                        $inserted_student_id = DB::table('tblstudent')
+                            ->insertGetId(['admission_id' => DB::raw('n.id'),'first_name' => DB::raw('n.child_name'),'father_name' => DB::raw('n.father_name'),'mother_name' => DB::raw('n.mother_name'),'gender' => DB::raw('n.gender'),'dob' => DB::raw('n.date_of_birth'),'mobile' => DB::raw('n.mobile'),'mother_mobile' => DB::raw('n.mother_mobile_no'),'email' => DB::raw('n.mail'),'password' => DB::raw("MD5('student')"),'admission_year' => DB::raw('n.syear'),'admission_date' => DB::raw('CURDATE()'),'city' => DB::raw('n.city'),'state' => DB::raw('n.state'),'address' => DB::raw('n.address'),'pincode' => DB::raw('n.pin_code'),'sub_institute_id' => DB::raw("'" . $sub_institute_id . "'"),'status' => 1,'created_on' => DB::raw('Now()'),'aadhar_document_upload' => DB::raw('n.student_adharcard'),'birth_certificate' => DB::raw('n.birth_certificate'),'place_of_birth' => DB::raw('n.birth_place'),'religion' => DB::raw('n.religion'),'cast' => DB::raw('n.cast'),'subcast' => DB::raw('n.sub_cast'),'bloodgroup' => DB::raw('n.blood_group'),'father_dob' => DB::raw('n.father_dob'),'height' => DB::raw('n.height'),'admission_token_no' => DB::raw("CONCAT('PP', '" . $new_enrollment_no . "')"),'enrollment_no' => DB::raw("CONCAT('PP', '" . $new_enrollment_no . "')"),]);
+
+// $inserted_student_id contains the ID of the inserted student record
+
 
                         $result = DB::table('tblstudent as s')
                             ->select("s.first_name,s.id AS student_id,n.birth_certificate,n.student_adharcard,
@@ -178,64 +187,124 @@ class onlineAdmissionConfirmController extends Controller
                         if (isset($result) > 0) {
                             $return_array = array();
                             if ($result->birth_certificate != "") {
-                                $return_array[$inserted_student_id][] = $this->insert_document($inserted_student_id,
-                                    'Birth Certificate', $result->birth_certificate, '3');
+                                $return_array[$inserted_student_id][] = $this->insert_document(
+                                    $inserted_student_id,
+                                    'Birth Certificate',
+                                    $result->birth_certificate,
+                                    '3'
+                                );
                             }
                             if ($result->student_adharcard != "") {
-                                $return_array[$inserted_student_id][] = $this->insert_document($inserted_student_id,
-                                    'Student Adharcard', $result->student_adharcard, '2');
+                                $return_array[$inserted_student_id][] = $this->insert_document(
+                                    $inserted_student_id,
+                                    'Student Adharcard',
+                                    $result->student_adharcard,
+                                    '2'
+                                );
                             }
                             if ($result->student_cast_certificate != "") {
-                                $return_array[$inserted_student_id][] = $this->insert_document($inserted_student_id,
-                                    'Student Cast Certificate', $result->student_cast_certificate, '11');
+                                $return_array[$inserted_student_id][] = $this->insert_document(
+                                    $inserted_student_id,
+                                    'Student Cast Certificate',
+                                    $result->student_cast_certificate,
+                                    '11'
+                                );
                             }
                             if ($result->father_cast_certificate != "") {
-                                $return_array[$inserted_student_id][] = $this->insert_document($inserted_student_id,
-                                    'Father Cast Certificate', $result->father_cast_certificate, '30');
+                                $return_array[$inserted_student_id][] = $this->insert_document(
+                                    $inserted_student_id,
+                                    'Father Cast Certificate',
+                                    $result->father_cast_certificate,
+                                    '30'
+                                );
                             }
                             if ($result->student_passport_size_photo != "") {
-                                $return_array[$inserted_student_id][] = $this->insert_document($inserted_student_id,
-                                    'Student Passport Size Photo', $result->student_passport_size_photo, '43');
+                                $return_array[$inserted_student_id][] = $this->insert_document(
+                                    $inserted_student_id,
+                                    'Student Passport Size Photo',
+                                    $result->student_passport_size_photo,
+                                    '43'
+                                );
                             }
                             if ($result->family_photo != "") {
-                                $return_array[$inserted_student_id][] = $this->insert_document($inserted_student_id,
-                                    'Family Photo', $result->family_photo, '8');
+                                $return_array[$inserted_student_id][] = $this->insert_document(
+                                    $inserted_student_id,
+                                    'Family Photo',
+                                    $result->family_photo,
+                                    '8'
+                                );
                             }
                             if ($result->vaccination_record != "") {
-                                $return_array[$inserted_student_id][] = $this->insert_document($inserted_student_id,
-                                    'Vaccination Record', $result->vaccination_record, '7');
+                                $return_array[$inserted_student_id][] = $this->insert_document(
+                                    $inserted_student_id,
+                                    'Vaccination Record',
+                                    $result->vaccination_record,
+                                    '7'
+                                );
                             }
                             if ($result->medical_examination_report != "") {
-                                $return_array[$inserted_student_id][] = $this->insert_document($inserted_student_id,
-                                    'Medical Examination Report', $result->medical_examination_report, '6');
+                                $return_array[$inserted_student_id][] = $this->insert_document(
+                                    $inserted_student_id,
+                                    'Medical Examination Report',
+                                    $result->medical_examination_report,
+                                    '6'
+                                );
                             }
                             if ($result->father_adharcard != "") {
-                                $return_array[$inserted_student_id][] = $this->insert_document($inserted_student_id,
-                                    'Father Adharcard', $result->father_adharcard, '25');
+                                $return_array[$inserted_student_id][] = $this->insert_document(
+                                    $inserted_student_id,
+                                    'Father Adharcard',
+                                    $result->father_adharcard,
+                                    '25'
+                                );
                             }
                             if ($result->mother_adharcard != "") {
-                                $return_array[$inserted_student_id][] = $this->insert_document($inserted_student_id,
-                                    'Mother Adharcard', $result->mother_adharcard, '26');
+                                $return_array[$inserted_student_id][] = $this->insert_document(
+                                    $inserted_student_id,
+                                    'Mother Adharcard',
+                                    $result->mother_adharcard,
+                                    '26'
+                                );
                             }
                             if ($result->address_proof != "") {
-                                $return_array[$inserted_student_id][] = $this->insert_document($inserted_student_id,
-                                    'Address Proof', $result->address_proof, '10');
+                                $return_array[$inserted_student_id][] = $this->insert_document(
+                                    $inserted_student_id,
+                                    'Address Proof',
+                                    $result->address_proof,
+                                    '10'
+                                );
                             }
                             if ($result->father_signature != "") {
-                                $return_array[$inserted_student_id][] = $this->insert_document($inserted_student_id,
-                                    'Father Signature', $result->father_signature, '44');
+                                $return_array[$inserted_student_id][] = $this->insert_document(
+                                    $inserted_student_id,
+                                    'Father Signature',
+                                    $result->father_signature,
+                                    '44'
+                                );
                             }
                             if ($result->mother_signature != "") {
-                                $return_array[$inserted_student_id][] = $this->insert_document($inserted_student_id,
-                                    'Mother Signature', $result->mother_signature, '45');
+                                $return_array[$inserted_student_id][] = $this->insert_document(
+                                    $inserted_student_id,
+                                    'Mother Signature',
+                                    $result->mother_signature,
+                                    '45'
+                                );
                             }
                             if ($result->any_other_doc != "") {
-                                $return_array[$inserted_student_id][] = $this->insert_document($inserted_student_id,
-                                    'Any Other Doc', $result->any_other_doc, '46');
+                                $return_array[$inserted_student_id][] = $this->insert_document(
+                                    $inserted_student_id,
+                                    'Any Other Doc',
+                                    $result->any_other_doc,
+                                    '46'
+                                );
                             }
                             if ($result->other_doc != "") {
-                                $return_array[$inserted_student_id][] = $this->insert_document($inserted_student_id,
-                                    'Other Doc', $result->other_doc, '47');
+                                $return_array[$inserted_student_id][] = $this->insert_document(
+                                    $inserted_student_id,
+                                    'Other Doc',
+                                    $result->other_doc,
+                                    '47'
+                                );
                             }
                         }
 
@@ -251,51 +320,6 @@ class onlineAdmissionConfirmController extends Controller
         }
 
         return is_mobile($type, "admission/show_online_admission_confirm", $res, "view");
-    }
-
-    /**
-     * Display the specified resource.
-     *
-     * @param  int  $id
-     * @return void
-     */
-    public function show($id)
-    {
-        //
-    }
-
-    /**
-     * Show the form for editing the specified resource.
-     *
-     * @param  int  $id
-     * @return void
-     */
-    public function edit($id)
-    {
-        //
-    }
-
-    /**
-     * Update the specified resource in storage.
-     *
-     * @param  Request  $request
-     * @param  int  $id
-     * @return void
-     */
-    public function update(Request $request, $id)
-    {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     *
-     * @param  int  $id
-     * @return void
-     */
-    public function destroy($id)
-    {
-        //
     }
 
     public function onlineAdmissionReport(Request $request)

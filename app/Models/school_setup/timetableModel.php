@@ -21,6 +21,7 @@ class timetableModel extends Model
         'week_day',
         'merge',
         'created_at',
-        'updated_at'
+        'updated_at',
+        'marking_period_id',
     ];
 }

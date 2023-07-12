@@ -116,9 +116,12 @@ class feesRefundController extends Controller
         $PAID_DATA = json_decode(json_encode($fees_paid_data), true);
 
         $paid_data_title_wise = array();
+        // echo "<pre>";print_r($fees_title);exit;                    
         foreach ($PAID_DATA as $key => $val) {
             foreach ($fees_title as $fees_title_name => $fees_title_id) {
+                if(isset($val[$fees_title_id])){
                 $paid_data_title_wise[$fees_title_id] = $val[$fees_title_id].'/'.$fees_title_name;
+                }
             }
         }
         $res['stu_data'] = $getBk['stu_data'];
@@ -144,28 +147,6 @@ class feesRefundController extends Controller
         }
     }
 
-    /**
-     * Update the specified resource in storage.
-     *
-     * @param  Request  $request
-     * @param  int  $id
-     * @return void
-     */
-    public function update(Request $request, $id)
-    {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     *
-     * @param  int  $id
-     * @return void
-     */
-    public function destroy($id)
-    {
-        //
-    }
 
     public function showFees(Request $request)
     {
@@ -178,6 +159,7 @@ class feesRefundController extends Controller
         $to_date = $request->input('to_date');
         $syear = $request->session()->get('syear');
         $sub_institute_id = $request->session()->get('sub_institute_id');
+        $marking_period_id = session()->get('term_id');
 
         $extraSearchArray = $other_extraSearchArray = array();
         $other_extraSearchArrayRaw = " 1 = 1 ";
@@ -226,7 +208,11 @@ class feesRefundController extends Controller
             date_format(fees_paid_other.created_date,'%Y-%m-%d %H:%i:%s') as created_on,tblstudent.id as student_id")
             ->join('tblstudent_enrollment', 'tblstudent.id', '=', 'tblstudent_enrollment.student_id')
             ->join('academic_section', 'academic_section.id', '=', 'tblstudent_enrollment.grade_id')
-            ->join('standard', 'standard.id', '=', 'tblstudent_enrollment.standard_id')
+            ->join('standard', function($join) use($marking_period_id) {
+                $join->on('standard.id', '=', 'tblstudent_enrollment.standard_id')->when($marking_period_id,function($query) use($marking_period_id){
+                    $query->where('standard.marking_period_id',$marking_period_id);
+                });
+            })
             ->join('division', 'division.id', '=', 'tblstudent_enrollment.section_id')
             ->join('fees_paid_other', 'fees_paid_other.student_id', '=', 'tblstudent.id')
             ->where($other_extraSearchArray)
@@ -238,7 +224,11 @@ class feesRefundController extends Controller
             date_format(fees_collect.created_date,'%Y-%m-%d %H:%i:%s') as created_on,tblstudent.id as student_id")
             ->join('tblstudent_enrollment', 'tblstudent.id', '=', 'tblstudent_enrollment.student_id')
             ->join('academic_section', 'academic_section.id', '=', 'tblstudent_enrollment.grade_id')
-            ->join('standard', 'standard.id', '=', 'tblstudent_enrollment.standard_id')
+            ->join('standard', function($join) use($marking_period_id) {
+                $join->on('standard.id', '=', 'tblstudent_enrollment.standard_id')->when($marking_period_id,function($query) use($marking_period_id){
+                    $query->where('standard.marking_period_id',$marking_period_id);
+                });
+            })
             ->join('division', 'division.id', '=', 'tblstudent_enrollment.section_id')
             ->join('fees_collect', 'fees_collect.student_id', '=', 'tblstudent.id')
             ->where($extraSearchArray)
@@ -252,7 +242,8 @@ class feesRefundController extends Controller
             $res['status_code'] = 0;
             $res['message'] = "No Fees Receipt Found Please Search Again";
 
-            return is_mobile($type, "fees_cancel.index", $res);
+            // return is_mobile($type, "fees_cancel.index", $res);
+            return is_mobile($type, "fees_refund.index", $res, "redirect");
         }
 
         $fees_config = DB::table('fees_config_master as fc')
@@ -305,6 +296,7 @@ class feesRefundController extends Controller
         $bank_name = $request->input('bank_name');
         $bank_branch = $request->input('bank_branch');
         $refund_remark = $request->input('refund_remark');
+        $marking_period_id=session()->get('term_id');
 
         $fees_controller = new fees_collect_controller;
         $getBk = $fees_controller->getBk($request, $student_id);
@@ -425,8 +417,10 @@ class feesRefundController extends Controller
                 $join->whereRaw('se.student_id = s.id AND s.sub_institute_id = se.sub_institute_id');
             })->join('academic_section as aa', function ($join) {
                 $join->whereRaw('aa.id = se.grade_id');
-            })->join('standard as st', function ($join) {
-                $join->whereRaw('st.id = se.standard_id AND st.sub_institute_id = se.sub_institute_id');
+            })->join('standard as st', function($join) use($marking_period_id) {
+                $join->on('st.id', '=', 'se.standard_id')->when($marking_period_id,function($query) use($marking_period_id){
+                    $query->where('st.marking_period_id',$marking_period_id);
+                });
             })->join('division as d', function ($join) {
                 $join->whereRaw('d.id = se.section_id AND d.sub_institute_id = se.sub_institute_id');
             })->selectRaw("s.id,CONCAT_WS(' ',s.first_name,s.last_name) AS stu_name,CONCAT_WS('/',st.name,d.name) AS std_name,

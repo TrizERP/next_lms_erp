@@ -30,72 +30,6 @@ class feesReportController extends Controller
         return is_mobile($type, "fees/fees_report/index", $res, "view");
     }
 
-    /**
-     * Show the form for creating a new resource.
-     *
-     * @return void
-     */
-    public function create()
-    {
-        //
-    }
-
-    /**
-     * Store a newly created resource in storage.
-     *
-     * @param Request $request
-     * @return void
-     */
-    public function store(Request $request)
-    {
-        //
-    }
-
-    /**
-     * Display the specified resource.
-     *
-     * @param int $id
-     * @return void
-     */
-    public function show($id)
-    {
-        //
-    }
-
-    /**
-     * Show the form for editing the specified resource.
-     *
-     * @param int $id
-     * @return void
-     */
-    public function edit($id)
-    {
-        //
-    }
-
-    /**
-     * Update the specified resource in storage.
-     *
-     * @param Request $request
-     * @param int $id
-     * @return void
-     */
-    public function update(Request $request, $id)
-    {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     *
-     * @param int $id
-     * @return void
-     */
-    public function destroy($id)
-    {
-        //
-    }
-
     public function showFees(Request $request)
     {
         $type = $request->input("type");
@@ -111,69 +45,41 @@ class feesReportController extends Controller
         $syear = $request->session()->get('syear');
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $client_id = $request->session()->get('client_id');
+        $marking_period_id = session()->get('term_id');
 
         $extra_fp = "  AND fp.syear = '" . $syear . "' AND te.syear = '" . $syear . "' AND t.sub_institute_id = '" . $sub_institute_id . "' AND fp.sub_institute_id = '" . $sub_institute_id . "' AND fp.is_deleted = 'N' ";
-
         $extra_fo = "  AND fo.syear = '" . $syear . "' AND te.syear = '" . $syear . "' AND t.sub_institute_id = '" . $sub_institute_id . "' AND fo.sub_institute_id = '" . $sub_institute_id . "' AND fo.is_deleted = 'N' ";
 
-        /*if ($grade != '') {
-            $extra_fp .= " AND te.grade_id = '" . $grade . "'";
-            $extra_fo .= " AND te.grade_id = '" . $grade . "'";
-        }*/
         if (!empty($grade)) {
-            $gradeString = implode("','", $grade); // Convert the array to a comma-separated string
-            $extra_fp .= " AND te.grade_id IN ('" . $gradeString . "')"; // Use IN operator for multiple values
-            $extra_fo .= " AND te.grade_id IN ('" . $gradeString . "')"; // Use IN operator for multiple values
+            $extra_fp .= " AND te.grade_id IN ('" . implode("','", $grade) . "')"; // Use IN operator for multiple values
+            $extra_fo .= " AND te.grade_id IN ('" . implode("','", $grade) . "')"; // Use IN operator for multiple values
         }
 
-        /*if ($standard != '') {
-            $extra_fp .= " AND te.standard_id = '" . $standard . "'";
-            $extra_fo .= " AND te.standard_id = '" . $standard . "'";
-        }*/
         if (!empty($standard)) {
-            $standardString = implode("','", $standard); // Convert the array to a comma-separated string
-            $extra_fp .= " AND te.standard_id IN ('" . $standardString . "')"; // Use IN operator for multiple values
-            $extra_fo .= " AND te.standard_id IN ('" . $standardString . "')"; // Use IN operator for multiple values
+            $extra_fp .= " AND te.standard_id IN ('" . implode("','", $standard) . "')"; // Use IN operator for multiple values
+            $extra_fo .= " AND te.standard_id IN ('" . implode("','", $standard) . "')"; // Use IN operator for multiple values
         }
 
-        /*if ($division != '') {
-            $extra_fp .= " AND te.section_id = '" . $division . "'";
-            $extra_fo .= " AND te.section_id = '" . $division . "'";
-        }*/
         if (!empty($division)) {
-            $divisionString = implode("','", $division); // Convert the array to a comma-separated string
-            $extra_fp .= " AND te.section_id IN ('" . $divisionString . "')"; // Use IN operator for multiple values
-            $extra_fo .= " AND te.section_id IN ('" . $divisionString . "')"; // Use IN operator for multiple values
+            $extra_fp .= " AND te.section_id IN ('" . implode("','", $division) . "')"; // Use IN operator for multiple values
+            $extra_fo .= " AND te.section_id IN ('" . implode("','", $division) . "')"; // Use IN operator for multiple values
         }
 
         if ($enrollment_no != '') {
             $extra_fp .= " AND t.enrollment_no = '" . $enrollment_no . "'";
             $extra_fo .= " AND t.enrollment_no = '" . $enrollment_no . "'";
         }
+
         if ($name != '') {
-            // if($name == "t.first_name"){
-            //     $extra_fp .= " AND t.first_name = '".$name."'";
-            //     $extra_fo .= " AND t.first_name = '".$name."'";
-            // }elseif($name == "t.last_name"){
-            //     $extra_fp .= " AND t.last_name = '".$name."'";
-            //     $extra_fo .= " AND t.last_name = '".$name."'";
-            // }elseif($name == "t.middle_name"){
-            //     $extra_fp .= " AND t.middle_name = '".$name."'";
-            //     $extra_fo .= " AND t.middle_name = '".$name."'";
-            // }
             $extra_fp .= " AND (t.first_name = '" . $name . "' OR t.last_name = '" . $name . "' OR t.middle_name = '" . $name . "') ";
             $extra_fo .= " AND (t.first_name = '" . $name . "' OR t.last_name = '" . $name . "' OR t.middle_name = '" . $name . "')";
         }
+
         if ($mb_no != '') {
             $extra_fp .= " AND t.mobile = '" . $mb_no . "'";
             $extra_fo .= " AND t.mobile = '" . $mb_no . "'";
         }
-        /*
-                if($receipt_no != ''){
-                    $extra_fp .= " AND fp.receipt_no = '".$receipt_no."'";
-                    $extra_fo .= " AND fo.reciept_id = '".$receipt_no."'";
-                }
-        */
+
         if ($from_date != '') {
             $extra_fp .= " AND fp.receiptdate >= '" . $from_date . "'";
             $extra_fo .= " AND fo.receiptdate >= '" . $from_date . "'";
@@ -183,43 +89,54 @@ class feesReportController extends Controller
             $extra_fp .= " AND fp.receiptdate <= '" . $to_date . "'";
             $extra_fo .= " AND fo.receiptdate <= '" . $to_date . "'";
         }
-        if($client_id == 6){
+
+        if ($client_id == 6) {
             $extra_fp .= " AND fp.standard_id=te.standard_id ";
-            //$extra_fo .= " AND fo.receiptdate <= '".$to_date."'";
         }
 
-        $sql = "SELECT M.student_id,M.enrollment_no,M.roll_no,M.uniqueid,M.student_name,M.mobile,M.grade,M.standard_name,M.division_name,M.created_date,M.user_name,M.term_id,M.receiptdate,M.receipt_no,M.payment_mode,M.cheque_bank_name,M.bank_branch,M.cheque_no,M.cheque_date,
-            (IFNULL(M.amount,0) + IFNULL(N.actual_amountpaid,0)) AS actual_amountpaid
-            FROM (
-            SELECT fp.student_id,t.enrollment_no,t.roll_no,t.uniqueid,CONCAT_WS(' ',t.first_name,t.middle_name,t.last_name) AS student_name,t.mobile,ac.title AS grade,s.name AS standard_name,d.name AS division_name,fp.created_date,CONCAT_WS(' ',u.first_name,u.last_name) AS user_name,fp.term_id,fp.receiptdate,fp.receipt_no,fp.payment_mode,fp.cheque_bank_name,fp.bank_branch,fp.cheque_no,fp.cheque_date,SUM(IFNULL(fp.amount,0)) AS amount
-            FROM tblstudent t
-            INNER JOIN tblstudent_enrollment te ON t.id = te.student_id
-            INNER JOIN academic_section ac ON ac.id = te.grade_id
-            INNER JOIN standard s ON s.id = te.standard_id
-            INNER JOIN division d ON d.id = te.section_id
-            INNER JOIN fees_collect fp ON fp.student_id = te.student_id
-            LEFT JOIN tbluser u ON fp.created_by = u.id
-            WHERE 1=1 $extra_fp
-            GROUP BY fp.student_id, fp.receipt_no, fp.syear, fp.receiptdate, fp.payment_mode, fp.cheque_no
-            ORDER BY fp.receiptdate ASC, fp.receipt_no ASC) AS M
-            LEFT JOIN (
-            SELECT fo.student_id, SUM(IFNULL(fo.actual_amountpaid,0)) AS actual_amountpaid,fo.reciept_id
-            FROM tblstudent t
-            INNER JOIN tblstudent_enrollment te ON t.id = te.student_id
-            INNER JOIN academic_section ac ON ac.id = te.grade_id
-            INNER JOIN standard s ON s.id = te.standard_id
-            INNER JOIN division d ON d.id = te.section_id
-            INNER JOIN fees_paid_other fo ON fo.student_id = te.student_id
-            WHERE 1=1 $extra_fo
-            GROUP BY fo.student_id, fo.reciept_id, fo.syear, fo.receiptdate, fo.payment_mode, fo.cheque_dd_no
-            ORDER BY fo.receiptdate ASC, fo.reciept_id ASC) AS N ON M.student_id = N.student_id AND M.receipt_no = N.reciept_id 
-            HAVING (M.receiptdate IS NOT NULL)
-            ORDER BY M.receiptdate,CAST(M.receipt_no AS SIGNED)";
-            //           --add receipt_no in 02/06/23   -- WHERE t.first_name = $name OR t.middle_name = $name OR t.last_name = $name SET LINE 180
-//echo $sql;
-//die();
-        $result = DB::select(DB::raw($sql));
-        $feesData = json_decode(json_encode($result), true);
+        $M = DB::table('tblstudent as t')
+            ->selectRaw("fp.student_id, t.enrollment_no, t.roll_no, t.uniqueid, CONCAT_WS(' ', t.first_name, t.middle_name, t.last_name) AS student_name, t.mobile, ac.title AS grade, s.name AS standard_name, d.name AS division_name, fp.created_date, CONCAT_WS(' ', u.first_name, u.last_name) AS user_name, fp.term_id, fp.receiptdate, fp.receipt_no, fp.payment_mode, fp.cheque_bank_name, fp.bank_branch, fp.cheque_no, fp.cheque_date, SUM(IFNULL(fp.amount, 0)) AS amount")
+            ->join('tblstudent_enrollment as te', 't.id', '=', 'te.student_id')
+            ->join('academic_section as ac', 'ac.id', '=', 'te.grade_id')
+            ->join('standard as s', function($join) use($marking_period_id){
+                $join->on('s.id', '=', 'te.standard_id')->when($marking_period_id,function($query) use ($marking_period_id){
+                    $query->where('s.marking_period_id',$marking_period_id);
+                });
+            })
+            ->join('division as d', 'd.id', '=', 'te.section_id')
+            ->join('fees_collect as fp', 'fp.student_id', '=', 'te.student_id')
+            ->leftJoin('tbluser as u', 'fp.created_by', '=', 'u.id')
+            ->whereRaw("1=1 {$extra_fp}")
+            ->groupBy('fp.student_id', 'fp.receipt_no', 'fp.syear', 'fp.receiptdate', 'fp.payment_mode', 'fp.cheque_no');
+
+        $N = DB::table('tblstudent as t')
+            ->selectRaw("fo.student_id, SUM(IFNULL(fo.actual_amountpaid, 0)) AS actual_amountpaid, fo.reciept_id")
+            ->join('tblstudent_enrollment as te', 't.id', '=', 'te.student_id')
+            ->join('academic_section as ac', 'ac.id', '=', 'te.grade_id')
+            ->join('standard as s', function($join) use($marking_period_id){
+                $join->on('s.id', '=', 'te.standard_id')->when($marking_period_id,function($query) use ($marking_period_id){
+                    $query->where('s.marking_period_id',$marking_period_id);
+                });
+            })
+            ->join('division as d', 'd.id', '=', 'te.section_id')
+            ->join('fees_paid_other as fo', 'fo.student_id', '=', 'te.student_id')
+            ->whereRaw("1=1 {$extra_fo}")
+            ->groupBy('fo.student_id', 'fo.reciept_id', 'fo.syear', 'fo.receiptdate', 'fo.payment_mode', 'fo.cheque_dd_no');
+
+        $query = DB::table(DB::raw("({$M->toSql()}) as M"))
+            ->selectRaw("M.student_id, M.enrollment_no, M.roll_no, M.uniqueid, M.student_name, M.mobile, M.grade, M.standard_name, M.division_name, M.created_date, M.user_name, M.term_id, M.receiptdate, M.receipt_no, M.payment_mode, M.cheque_bank_name, M.bank_branch, M.cheque_no, M.cheque_date, (IFNULL(M.amount, 0) + IFNULL(N.actual_amountpaid, 0)) AS actual_amountpaid")
+            ->leftJoin(DB::raw("({$N->toSql()}) as N"), function ($join) {
+                $join->on('M.student_id', '=', 'N.student_id')
+                    ->on('M.receipt_no', '=', 'N.reciept_id');
+            })
+            ->mergeBindings($M)
+            ->mergeBindings($N)
+            ->havingNotNull('M.receiptdate')
+            ->orderByRaw("M.receiptdate, CAST(M.receipt_no AS SIGNED)");
+
+        $feesData = $query->get()->toArray();
+
+        $feesData = json_decode(json_encode($feesData), true);
 
         $res['status_code'] = 1;
         $res['message'] = "Success";

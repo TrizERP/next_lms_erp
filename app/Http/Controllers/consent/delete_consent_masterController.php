@@ -42,14 +42,17 @@ class delete_consent_masterController extends Controller
         $type = $request->input('type');
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $syear = $request->session()->get('syear');
+        $marking_period_id = session()->get('term_id');
 
         $result = DB::table('consent_master as CM')
             ->join('tblstudent as s', function ($join) {
                 $join->whereRaw("s.id = CM.student_id AND s.sub_institute_id = CM.sub_institute_id");
             })->join('tblstudent_enrollment as SE', function ($join) use ($syear) {
                 $join->whereRaw("SE.student_id = s.id AND SE.syear = '" . $syear . "'");
-            })->join('standard as CS', function ($join) {
-                $join->whereRaw("CS.id = SE.standard_id");
+            })->join('standard as CS', function ($join) use($marking_period_id) {
+                $join->whereRaw("CS.id = SE.standard_id")->when($marking_period_id,function($query) use($marking_period_id){
+                    $query->where('CS.marking_period_id',$marking_period_id);
+                });
             })->join('academic_section as SG', function ($join) use ($sub_institute_id) {
                 $join->whereRaw("SG.id = CS.grade_id AND SG.sub_institute_id = '" . $sub_institute_id . "'");
             })->join('division as SS', function ($join) {

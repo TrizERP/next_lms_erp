@@ -48,6 +48,7 @@ class facultywisetimetableController extends Controller
     public function getTimetable_data(Request $request, $teacher_id, $sub_institute_id, $syear)
     {
         $html = "";
+        $marking_priod_id=session()->get('term_id');
         $get_teacher_name = DB::table('tbluser')
             ->selectRaw("id,CONCAT_WS(' ',first_name,middle_name,last_name) as teacher_name")
             ->where('id', $teacher_id)
@@ -56,7 +57,11 @@ class facultywisetimetableController extends Controller
         $timetable_data_arr = timetableModel::select('timetable.*',
             'subject.subject_name', 'subject.subject_code', 'batch.title as batch_name', 'period.title as period_name',
             'standard.name as standard_name', 'division.name as division_name')
-            ->join('standard', 'standard.id', "=", 'timetable.standard_id')
+            ->join('standard',function($join) use($marking_priod_id){
+                $join->on('standard.id', "=", 'timetable.standard_id')->when($marking_priod_id,function($query) use($marking_priod_id){
+                    $query->where('standard.marking_period_id',$marking_priod_id);
+                });
+            })
             ->join('subject', 'subject.id', "=", 'timetable.subject_id')
             ->leftjoin('division', 'division.id', "=", 'timetable.division_id')
             ->join('period', 'period.id', "=", 'timetable.period_id')
@@ -227,11 +232,13 @@ class facultywisetimetableController extends Controller
         $teacher_id = $request->input("teacher_id");
         $sub_institute_id = $request->input("sub_institute_id");
         $syear = $request->input("syear");
-
+        $marking_priod_id = session()->get('term_id');
         if ($teacher_id != "" && $sub_institute_id != "" && $syear != "") {
             $data = DB::table('timetable as t')
-                ->join('standard as s', function ($join) {
-                    $join->whereRaw('s.id = t.standard_id and s.sub_institute_id = t.sub_institute_id');
+                ->join('standard as s', function ($join) use($marking_priod_id){
+                    $join->whereRaw('s.id = t.standard_id and s.sub_institute_id = t.sub_institute_id')->when($marking_priod_id,function($query) use($marking_priod_id){
+                        $query->where('s.marking_period_id',$marking_priod_id);
+                    });
                 })->join('division as d', function ($join) {
                     $join->whereRaw('d.id = t.division_id and d.sub_institute_id = t.sub_institute_id');
                 })->join('subject as sub', function ($join) {

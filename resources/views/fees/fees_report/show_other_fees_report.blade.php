@@ -31,18 +31,8 @@
             @endif
                 <form action="{{ route('other_fees_report.create') }}" enctype="multipart/form-data" class="row">                    
                     @csrf                                    
-                    {{ App\Helpers\SearchChain('4','single','grade,std,div',$grade_id,$standard_id,$division_id) }}
-                    <!-- <div class="col-md-4 form-group">
-                        <label>Other Fees Head</label>
-                        <select id="otherfeeshead" name="otherfeeshead"class="form-control">
-                            <option value="">Select</option>
-                            @if(isset($data['feesOtherHead_data']))
-                                @foreach($data['feesOtherHead_data'] as $key => $val)
-                                    <option value={{$val['display_name']}}>{{$val['display_name']}}</option>
-                                @endforeach
-                            @endif
-                        </select>
-                    </div> -->
+                    {{ App\Helpers\SearchChain('4','required','grade,std,div',$grade_id,$standard_id,$division_id) }}
+                   
                     <div class="col-md-12 form-group">
                         <center>
                             <input type="submit" name="submit" value="Search" class="btn btn-success">

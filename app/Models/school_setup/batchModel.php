@@ -16,6 +16,7 @@ class batchModel extends Model
         'syear',
         'rollover_id',
         'created_at',
-        'updated_at'
+        'updated_at',
+        'marking_period_id',
     ];
 }

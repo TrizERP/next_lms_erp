@@ -169,6 +169,8 @@ if (!function_exists('SearchChain')) {
             $std_name = 'standard[]';
             $div_name = 'division[]';
             $batch_section = 'batchsection[]';
+        }else if($multiple == 'required'){
+            $multiple ='required="required"';
         } else {
             if ($multiple == 'single') {
                 $multiple = '';
@@ -636,6 +638,7 @@ if (! function_exists('SearchStudent')) {
         if ($syear == '') {
             $syear = session()->get('syear');
         }
+        $marking_period_id = session()->get('term_id');
 
         $grade_arr = array();
         $standard_arr = array();
@@ -683,6 +686,11 @@ if (! function_exists('SearchStudent')) {
         );
 
         $query = tblstudentModel::from('tblstudent as ts');
+    
+            $query->when($marking_period_id,function($join)use($marking_period_id){
+                $join->where('ts.marking_period_id',$marking_period_id);
+            });
+
         if ($mobile != '') {
             $query->where('ts.mobile', $mobile);
         }

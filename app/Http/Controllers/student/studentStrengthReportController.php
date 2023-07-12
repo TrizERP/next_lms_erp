@@ -13,9 +13,6 @@ class studentStrengthReportController extends Controller
     //
     public function index(Request $request){
         $type = $request->input('type');
-        $sub_institute_id = $request->session()->get('sub_institute_id');
-        $syear = $request->session()->get('syear');
-
         $res['status_code'] = 1;
         $res['message'] = "Success";
 
@@ -24,15 +21,22 @@ class studentStrengthReportController extends Controller
 
     public function create(Request $request)
     {
+        $marking_period_id = session()->get('term_id');
+        $sub_institute_id=  session()->get('sub_institute_id');
+        $syear = session()->get('syear');
+
         $query = DB::table('standard')
-        ->leftJoin('tblstudent_enrollment', function ($join) use($request){
+        ->leftJoin('tblstudent_enrollment', function ($join) use($request,$sub_institute_id,$syear){
             $join->on('tblstudent_enrollment.standard_id', '=', 'standard.id')
-                ->where('tblstudent_enrollment.sub_institute_id', session()->get('sub_institute_id'))
+                ->where('tblstudent_enrollment.sub_institute_id',   $sub_institute_id)
                 ->when(!isset($request['general']), function ($query) {
                     return $query->whereNull('tblstudent_enrollment.end_date');
                 })
-                ->where('tblstudent_enrollment.syear', session()->get('syear'));
+                ->where('tblstudent_enrollment.syear', $syear);
         })
+        ->when($marking_period_id,function($query) use($marking_period_id){
+                $query->where('standard.marking_period_id',$marking_period_id);
+            })
         ->leftJoin('tblstudent', 'tblstudent_enrollment.student_id', '=', 'tblstudent.id')
         ->Join('division', 'tblstudent_enrollment.section_id', '=', 'division.id')
         ->select(

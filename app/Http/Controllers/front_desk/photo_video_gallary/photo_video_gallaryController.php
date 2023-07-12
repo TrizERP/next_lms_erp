@@ -43,9 +43,14 @@ class photo_video_gallaryController extends Controller
 
     public function getData()
     {
+        $marking_period_id = session()->get('term_id');
         return DB::table("photo_video_gallary as c")
-            ->join('standard as s', function ($join) {
-                $join->whereRaw("s.id = c.standard_id AND s.sub_institute_id = c.sub_institute_id");
+            ->join('standard as s', function ($join) use($marking_period_id) {
+                $join->whereRaw("s.id = c.standard_id AND s.sub_institute_id = c.sub_institute_id")->when($marking_period_id, function ($query) use ($marking_period_id) {
+                    $query->where('st.marking_period_id', $marking_period_id) ->when($marking_period_id, function ($query) use ($marking_period_id) {
+                        $query->where('st.marking_period_id', $marking_period_id);
+                    });
+                });
             })
             ->leftJoin('division as d', function ($join) {
                 $join->whereRaw("d.id = c.division_id AND d.sub_institute_id = c.sub_institute_id");
@@ -61,6 +66,7 @@ class photo_video_gallaryController extends Controller
     public function fetchData(Request $request)
     {
         $response = ['response' => '', 'success' => false];
+        $marking_period_id = session()->get('term_id');
 
         $validator = Validator::make($request->all(), [
             'student_id'       => 'required|numeric',
@@ -85,8 +91,10 @@ class photo_video_gallaryController extends Controller
                 ->join('academic_section as g', function ($join) {
                     $join->whereRaw("g.id = se.grade_id");
                 })
-                ->join('standard as st', function ($join) {
-                    $join->whereRaw("st.id = se.standard_id");
+                ->join('standard as st', function ($join) use ($marking_period_id) {
+                    $join->whereRaw("st.id = se.standard_id")->when($marking_period_id, function ($query) use ($marking_period_id) {
+                        $query->where('st.marking_period_id', $marking_period_id);
+                    });
                 })
                 ->join('division as d', function ($join) {
                     $join->whereRaw("d.id = se.section_id");

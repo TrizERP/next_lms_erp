@@ -32,11 +32,10 @@
                                 <strong>{{ $sessionData['message'] }}</strong>
                             </div>
                         @endif
-                        <form action="{{ route('show_yearly_student_attendance') }}" enctype="multipart/form-data"
-                              method="post">
+                        <form action="{{ route('show_yearly_student_attendance') }}" enctype="multipart/form-data"method="post">
+                        @csrf
                             <div class="row">
-
-                            {{ App\Helpers\SearchChain('4','single','grade,std,div',$grade_id,$standard_id,$division_id) }}
+                            {{ App\Helpers\SearchChain('4','required','grade,std,div',$grade_id,$standard_id,$division_id) }}
                             <!-- from month -->
                                 <div class="col-md-4 form-group">
                                     <label>From Date</label>
@@ -76,7 +75,8 @@
 
                                 <table class="table table-bordered table-center" border=1>
                                     <!-- <h2 id="head-table"></h2> -->
-                                    <?php $month_name = [1 => "Jan", 2 => "Feb", 3 => "Mar", 4 => "Apr", 5 => "May", 6 => "June", 7 => "July", 8 => "Aug", 9 => "Sept", 10 => "Oct", 11 => "Nov", 12 => "Dec"];?>
+                                    @php $month_name = [1 => "Jan", 2 => "Feb", 3 => "Mar", 4 => "Apr", 5 => "May", 6 => "June", 7 => "July", 8 => "Aug", 9 => "Sept", 10 => "Oct", 11 => "Nov", 12 => "Dec"]; 
+                                    @endphp
                                     <thead id="another">
                                     <tr id="heads"></tr>
                                     <!-- first heading -->
@@ -86,35 +86,40 @@
                                         <th><b>{{App\Helpers\get_string('studentname','request')}}</b></th>
                                     <!-- <th>{{ session()->get('sub_institute_id') }}</th> -->
                                         @foreach($data['month'] as $key => $i)
-                                            <th><b><?php echo $month_name[$i];?></b></th>
+                                            <th><b>{{$month_name[$i]}}</b></th>
                                         @endforeach
-                                        <th><b>Total School Year Day</b></th>
-                                        <?php $working_day = 0; ?>
+                                        <th class="text-left"><b>Total School Year Day</b></th>
+                                        @php $working_day = 0; @endphp
                                     </tr>
                                     <tr>
                                         <th><b>Sr No</b></th>
                                         <th><b>{{App\Helpers\get_string('grno','request')}}</b></th>
                                         <th><b>{{App\Helpers\get_string('studentname','request')}}</b></th>
+                                        @if(isset($data['month']))
                                         @foreach($data['month'] as $key => $i)
                                             <th style="text-align:center"><b>
-                                                    <?php $working_day += $data['working_day'][$i]; ?>
                                                     @if(isset($data['working_day'][$i]))
+                                                    @php $working_day += $data['working_day'][$i]; @endphp
                                                         {{ $data['working_day'][$i] }}
+                                                    @else
+                                                        0
                                                     @endif
-                                                </b></th>
+                                                </b>
+                                                </th>
                                         @endforeach
-                                        <th style="text-align:center"><b><?php echo $working_day; ?></b></th>
+                                        @endif
+                                        <th style="text-align:center"><b>{{$working_day}}</b></th>
                                     </tr>
                                     </thead>
                                     <tbody>
                                     <!-- second heading  -->
                                     @foreach($student_data as $key => $value)
                                         <tr>
-                                            <?php
+                                            @php
                                             $totalAttandance = 0;
                                             $totalP = 0;
                                             $totalA = 0;
-                                            ?>
+                                            @endphp
                                             <td style="text-align:center">{{$j++}}</td>
                                             <td style="text-align:center">{{$value['enrollment_no']}}</td>
                                             <td class="px-6">{{$value['first_name']." ".$value['middle_name']." ".$value['last_name']}}</td>
@@ -122,7 +127,7 @@
                                                 <td style="text-align:center">
                                                     @if(isset($data['attendance_data'][$value['id']][$ii]))
                                                         {{$data['attendance_data'][$value['id']][$ii]}}
-                                                        <?php $totalAttandance += $data['attendance_data'][$value['id']][$ii]; ?>
+                                                        @php $totalAttandance += $data['attendance_data'][$value['id']][$ii]; @endphp
                                                     @else
                                                         -
                                                     @endif

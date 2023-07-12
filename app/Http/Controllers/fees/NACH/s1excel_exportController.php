@@ -61,28 +61,43 @@ class s1excel_exportController extends Controller {
 		
 		if($from_date != null  && $to_date != null)
 		{
-			$extra .= " AND pm.payment_date between '".$from_date."' AND '".$to_date."'";
+			$extra .= "pm.payment_date between '".$from_date."' AND '".$to_date."'";
 		}
 
-        // echo "SELECT bd.*,pm.payment_method,CONCAT_WS(' ',s.first_name,s.middle_name,s.last_name) as student_name,s.id as student_id, 
-        // s.enrollment_no,s.mobile
-        // FROM tblstudent_payment_method_mapping pm 
-        // INNER JOIN tblstudent_bank_detail bd ON bd.student_id = pm.student_id
-        // INNER JOIN tblstudent s ON s.id = pm.student_id
-        // WHERE s.sub_institute_id = '".$sub_institute_id."' ".$extra."
-        // GROUP BY pm.student_id";die;
+        // $studentData = DB::select("SELECT bd.*,pm.payment_method,CONCAT_WS(' ',s.first_name,s.middle_name,s.last_name) as student_name,s.id as student_id, 
+		// s.enrollment_no,s.mobile
+		// FROM tblstudent_payment_method_mapping pm 
+		// INNER JOIN tblstudent_bank_detail bd ON bd.student_id = pm.student_id
+		// INNER JOIN tblstudent s ON s.id = pm.student_id
+		// WHERE s.sub_institute_id = '".$sub_institute_id."' ".$extra."
+		// GROUP BY pm.student_id");
+		// $studentData = json_decode(json_encode($studentData),true);
 
-        $studentData = DB::select("SELECT bd.*,pm.payment_method,CONCAT_WS(' ',s.first_name,s.middle_name,s.last_name) as student_name,s.id as student_id, 
-		s.enrollment_no,s.mobile
-		FROM tblstudent_payment_method_mapping pm 
-		INNER JOIN tblstudent_bank_detail bd ON bd.student_id = pm.student_id
-		INNER JOIN tblstudent s ON s.id = pm.student_id
-		WHERE s.sub_institute_id = '".$sub_institute_id."' ".$extra."
-		GROUP BY pm.student_id");
-		$studentData = json_decode(json_encode($studentData),true);
+        // $NachData = DB::select("SELECT * FROM NACH_MASTER WHERE sub_institute_id = '".$sub_institute_id."'");
+        // $NachData = json_decode(json_encode($NachData),true);
+        $marking_period_id = session()->get('term_id');
+        $studentData = DB::table('tblstudent_payment_method_mapping as pm')
+        ->selectRaw('bd.*, pm.payment_method, CONCAT_WS(" ", s.first_name, s.middle_name, s.last_name) as student_name, s.id as student_id, s.enrollment_no, s.mobile')
+        ->join('tblstudent_bank_detail as bd', 'bd.student_id', '=', 'pm.student_id')
+        ->join('tblstudent as s',function($join) use($marking_period_id){
+            $join->on('s.id', '=', 'pm.student_id')->when($marking_period_id,function($query) use ($marking_period_id){
+                $query->where('marking_period_id',$marking_period_id);
+            });
+        })
+        ->where('s.sub_institute_id', '=', $sub_institute_id)
+        ->when($extra, function ($query) use ($extra) {
+            return $query->whereRaw($extra);
+        })
+        ->groupBy('pm.student_id')
+        ->get();
 
-        $NachData = DB::select("SELECT * FROM NACH_MASTER WHERE sub_institute_id = '".$sub_institute_id."'");
-        $NachData = json_decode(json_encode($NachData),true);
+    $studentData = json_decode(json_encode($studentData), true);
+
+    $NachData = DB::table('NACH_MASTER')
+        ->where('sub_institute_id', '=', $sub_institute_id)
+        ->get();
+
+    $NachData = json_decode(json_encode($NachData), true);
 
         if(count($NachData) <= 0 )
         {            

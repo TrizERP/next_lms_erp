@@ -27,12 +27,18 @@ class tblfeesLateController extends Controller
         $type = $request->input('type');
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $syear = $request->session()->get('syear');
+        $marking_period_id=session()->get('term_id'); 
 
         $data = tblfeesLateModel::selectRaw('fees_late_master.*')
             ->selectRaw("CONCAT_WS(' ',tbluser.first_name,tbluser.last_name) as user")
             ->selectRaw("standard.name as standard")
             ->join('tbluser', 'fees_late_master.created_by', '=', 'tbluser.id')
-            ->join('standard', 'fees_late_master.standard_id', '=', 'standard.id')
+            ->join('standard', function($join) use($marking_period_id) {
+                $join->on('fees_late_master.standard_id', '=', 'standard.id')
+                ->when($marking_period_id,function($join)use($marking_period_id){
+                    $join->where('standard.marking_period_id',$marking_period_id);
+                });
+            })
             ->where(['fees_late_master.sub_institute_id' => $sub_institute_id, 'fees_late_master.syear' => $syear])
             ->get();
 
@@ -52,12 +58,16 @@ class tblfeesLateController extends Controller
     {
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $syear = $request->session()->get('syear');
-        $data = standardModel::where(['sub_institute_id' => $sub_institute_id])->get()->toArray();
+        $marking_period_id =session()->get('term_id');
+
+        $data = standardModel::where(['sub_institute_id' => $sub_institute_id])->when($marking_period_id,function($query)use($marking_period_id){
+            $query->where('marking_period_id',$marking_period_id);
+        })->get()->toArray();
 
         $term_list = academic_yearModel::where([
             'sub_institute_id' => $sub_institute_id, 'syear' => $syear,
         ])->get()->toArray();
-
+            // return $data;exit;
         view()->share('standard_list', $data);
         view()->share('term_list', $term_list);
 
@@ -80,6 +90,7 @@ class tblfeesLateController extends Controller
             $request->request->set('standard_id', $value);
             $data = $this->saveData($request);
         }
+        // return $data;exit;
 
         $res['status_code'] = "1";
         $res['message'] = "Fees Late Start Date Added successfully";
@@ -97,15 +108,20 @@ class tblfeesLateController extends Controller
         $finalArray['sub_institute_id'] = $sub_institute_id;
         $finalArray['syear'] = $syear;
         $finalArray['created_by'] = $user_id;
-
+        
         foreach ($newRequest as $key => $value) {
             if ($key != '_method' && $key != '_token' && $key != 'submit') {
-                if (is_array($value)) {
-                    $value = implode(",", $value);
+                if ($key == 'late_date') {
+                    $lateDate = \DateTime::createFromFormat('d-m-Y', $value);
+                    $finalArray[$key] = $lateDate->format('Y-m-d');
+                } elseif (is_array($value)) {
+                    $finalArray[$key] = implode(",", $value);
+                } else {
+                    $finalArray[$key] = $value;
                 }
-                $finalArray[$key] = $value;
             }
         }
+        // return $finalArray;exit;        
 
         tblfeesLateModel::insert($finalArray);
 
@@ -150,7 +166,10 @@ class tblfeesLateController extends Controller
     {
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $syear = $request->session()->get('syear');
-        $data = standardModel::where(['sub_institute_id' => $sub_institute_id])->get()->toArray();
+        $marking_period_id = session()->get('term_id');
+        $data = standardModel::where(['sub_institute_id' => $sub_institute_id])->when($marking_period_id,function($query)use($marking_period_id){
+            $query->where('marking_period_id',$marking_period_id);
+        })->get()->toArray();
 
         $term_list = academic_yearModel::where([
             'sub_institute_id' => $sub_institute_id, 'syear' => $syear,

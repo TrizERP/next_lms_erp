@@ -37,6 +37,7 @@ class send_late_sms_controller extends Controller
 
     public function create(Request $request)
     {
+        $marking_period_id = session()->get('term_id');
         $student_data = DB::table("tblstudent as ts")
             ->join('transport_map_student as tm', function ($join) {
                 $join->whereRaw("tm.student_id = ts.id");
@@ -48,6 +49,8 @@ class send_late_sms_controller extends Controller
                 $q->where('tm.from_bus_id', $_REQUEST['bus'])->orWhere('tm.to_bus_id', $_REQUEST['bus']);
             })->where(function ($q) {
                 $q->where('tm.from_shift_id', $_REQUEST['shift'])->orWhere('tm.to_shift_id', $_REQUEST['shift']);
+            })->when($marking_period_id,function($query) use ($marking_period_id){
+                $query->where('ts.marking_period_id',$marking_period_id);
             });
 
         if (isset($_REQUEST['stop']) && $_REQUEST['stop'] != '') {
