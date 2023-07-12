@@ -555,7 +555,7 @@ class studentHomeworkController extends Controller
             $res['message'] = "Parameter Missing";
         }
 
-        return json_encode($res);
+        return json_encode($stud_data);
     }
 
     /**
