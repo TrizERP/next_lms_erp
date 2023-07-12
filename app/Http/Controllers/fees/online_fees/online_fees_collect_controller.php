@@ -23,8 +23,7 @@ class online_fees_collect_controller extends Controller
 
     public function site_name()
     {
-        // $site_name = "https://erp.triz.co.in/";
-        $site_name = "http://127.0.0.1:8000/";
+        $site_name = env('APP_URL');
         return $site_name;
     }
 
