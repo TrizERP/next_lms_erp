@@ -263,7 +263,7 @@
                             <div class="form-group">
                                 <label for="subject">Select Content Catergory:</label>
                                 <select name="content_category" id="content_category" class="form-control">
-
+                                        <option value="">--Select--</option>
                                     @if(isset($data['content_category']))
                                         @foreach($data['content_category'] as $key => $value)
                                             <option

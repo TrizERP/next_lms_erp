@@ -331,7 +331,6 @@ class lms_apiController extends Controller
                             AND c.subject_id = '".$subject_id."'  AND c.show_hide = '1'
                             ORDER BY c.sort_order
                              ");// AND c.syear = se.syear
-
             $chapterdata = json_decode(json_encode($chapterdata),true);
             $finaldata = array();
             if(count($chapterdata) > 0)
@@ -366,10 +365,15 @@ class lms_apiController extends Controller
                     }
                 }
             }                     
-                    
-            $res['status'] = 1;
-            $res['message'] = "Success";
-            $res['data'] = $finaldata;   
+            if(!empty($finaldata) && count($finaldata)>0){
+                $res['status'] = 1;
+                $res['message'] = "Success";
+                $res['data'] = $finaldata;   
+            } else{
+                $res['status'] = 0;
+                $res['message'] = "No Data Found";
+            }       
+           
         }else{
             $res['status'] = 0;
             $res['message'] = "Parameter Missing";

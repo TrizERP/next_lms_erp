@@ -508,16 +508,15 @@ class studentHomeworkController extends Controller
                     ->where('t.standard_id', $standard_id)
                     ->where('t.division_id', $section_id)
                     ->groupBy('t.subject_id')->orderBy('display_name')->get()->toArray();
-                    
-                    if(!empty($data) && count($data)>0 && $data!==null){
+
+                if(isset($data) && !empty($data) && count($data)>0 && $data!==null){
                         $res['status'] = 1;
-                        $res['message'] = "Success";
+                        $res['message'] = "Success Done";
                         $res['data'] = $data;
                     }else{
                         $res['status'] = 0;
                         $res['message'] = "No Data Found";
                     }
-               
             } else {
                 $res['status'] = 0;
                 $res['message'] = "Wrong Parameters";
