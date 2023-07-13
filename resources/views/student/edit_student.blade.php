@@ -1229,7 +1229,7 @@ br {
                                                 </div>                                     
                                             </div> 
 
-                                            <div class="h4 text-primary">Payment Method Mapping</div>
+                                        <div class="h4 text-primary">Payment Method Mapping</div>
                                             <div class="row border rounded mb-3 mb-md-4 mt-3 p-4"> 
                                                 <div class="table-responsive">
                                                     <table class="table table-bordered">
@@ -1271,11 +1271,79 @@ br {
                                         <div class="col-md-12 form-group">
                                             <input type="submit" name="submit" value="Save" class="btn btn-success triz-btn">
                                         </div>
-                                    @endif    
-                                    </form>                                                                
+                                    @endif 
+                                    
+                                    <div class="h4 text-primary">Student Fees History</div>
+                                        <div class="row border rounded mb-3 mb-md-4 mt-3 p-4"> 
+                                            <div class="table-responsive">
+                                            <div class="box-title">
+                                                <label>Fees Structure</label>
+                                            </div>
+                                            <div class="table-responsive">
+                                                <table class="table table-stripped" style="color:#000 !important;">
+                                                    <tr>
+                                                        <th>Month</th>
+                                                        <th>Fees</th>
+                                                        <th>Paid</th>
+                                                        <th>Remaining</th>
+                                                    </tr>
+                                                    @php
+                                                        $remainFees = 0;
+                                                        $feesDetails= [];
+                                                        $bk=$paid=$remain =array();
+                                                        foreach ($data['paid_unpaid_fees'] as $id => $arr) {
+                                                        $feesDetails[$arr['month']] = $arr['remain'];
+                                                        if(isset($arr['bk'])){
+                                                    @endphp
+                                                    <tr>
+                                                        <td>
+                                                            {{ $arr['month'] }}
+                                                        </td>
+                                                        <td>
+                                                            @php $bk[] = $arr['bk']; echo $arr['bk'];  @endphp
+                                                        </td>
+                                                        <td>
+                                                            @php $paid[] = $arr['paid']; echo $arr['paid']; @endphp
+                                                        </td>
+                                                        <td>
+                                                            @php $remain[] = $arr['remain'];echo $arr['remain'];  @endphp
+                                                        </td>
+                                                    </tr>
+                                                    @php
+                                                        }
+                                                            $remainFees += $arr['remain'];
+                                                            } 
+                                                    @endphp
+                                                    <tr>
+                                                        <td>Total</td>
+                                                        <td>
+                                                            {{ array_sum($bk) }}
+                                                        </td>
+                                                        <td>
+                                                            {{array_sum($paid) }}
+                                                        </td>
+                                                        <td>
+                                                            {{array_sum($remain) }}
+                                                        </td>
+                                                    </tr>
+
+                                                </table>
+                                            </div>
+                                            <div class="row">
+                                                <div class="col-md-12 text-center mt-4">
+                                                <button type="button" class="btn btn-info" data-toggle="modal" id="add_data" onclick="javascript:add_data({{ $data['stu_data']['enrollment']}},{{$data['stu_data']['student_id']}});">
+                                                        Paid History
+                                                    </button>
+                                                </div>
+                                            </div>
+                                                </table>
+                                            </div>
+                                        </div>  
+                                    
+                                    </form>
                                 </div>
                                 <!-- END STUDENT FEES DETAILS -->
-
+                                
                                 <!-- START STUDENT TC INFORMATION -->                                
                                 <div class="tab-pane p-3" id="section-linemove-12" role="tabpanel">
                                     <form name="student_tc_form" id="student_tc_form" method="post" action="{{ route('student_tc_detail.store') }}">
@@ -1486,6 +1554,68 @@ br {
         </div>
     </div>
 </div>
+
+<!--Modal: Add ChapterModal-->
+<div id="printThis">
+    <div class="modal fade right modal-scrolling" id="ChapterModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel"
+        style="display: none;" aria-hidden="true">
+        <div class="modal-dialog modal-side modal-bottom-right modal-notify modal-info" role="document" style="min-width: 85%;">
+            <!--Content-->
+            <div class="modal-content">
+                <!--Header-->
+                <div class="modal-header">
+                    <h5 class="modal-title" id="heading">Fees Payment History</h5>
+                    <button type="button" class="close" id="refresh_data" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">x</span>
+                    </button>
+                </div>
+                <!--Body-->
+                <div class="modal-body">
+                    <div class="row">
+                        <!-- TABLE START-->
+                        <div class="card">
+                            <div class="table-responsive">
+                                <table id="example" class="table table-striped">
+                                    <thead>
+                                        <tr>
+                                            <th>Sr No.</th>
+                                            <th>GR No.</th>
+                                            <th>{{App\Helpers\get_string('StudentName','request')}}<span id="menuId" style="display:none"></span><a href="{{route('norm-clature.create')}}"><i class="mdi mdi-lead-pencil"></i></a></th>
+                                            <th>Std-Div</th>
+                                            <th>Uniqueid</th>
+                                            <th>Month</th>
+                                            <th>Receipt No</th>
+                                            <th>Payment Mode</th>
+                                            <th>Bank Details</th>
+                                            <!--<th>Cheque Date</th>-->
+                                            <th>Receipt Date</th>
+                                            <th>Collected By</th>
+                                            <!--<th>Created On</th>-->
+                                            <th>Amount</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="table_data">
+                                        <!-- //data -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <!-- table end -->
+                    </div>
+                </div>
+                <!--Footer-->
+                <!--  <div class="modal-footer" style="display: block !important;">
+                        <div id="overlay" style="display:none;"><center><p style="margin-top: 273px;color:red;font-weight: 700;">Please do not refresh the page, while the process is going on.</p><img src="http://dev.triz.co.in/admin_dep/images/loader.gif"></center></div>
+                        <center>
+                            <button id="ajax_PDF" type="button" class="btn btn-primary">Print Receipt</button>
+                        </center>
+                    </div>
+                </div> -->
+                <!--/.Content-->
+            </div>
+        </div>
+    </div>
+<!--Modal: Add ChapterModal-->
 
 @include('includes.footerJs')
 <script src="../../../admin_dep/js/cbpFWTabs.js"></script>
@@ -1886,3 +2016,74 @@ br {
             });
       </script>
 @include('includes.footer')
+
+<!--fees payment history code  -->
+<script src="https://cdn.jsdelivr.net/gh/gitbrent/bootstrap4-toggle@3.6.1/js/bootstrap4-toggle.min.js"></script>
+		<script>
+			function add_data(grno, student_id) {
+				$(document).ready(function() {
+					$.ajax({
+						url: '/fees/feesDetails/getDetails/' + grno + "/" + student_id,
+						type: 'GET',
+						dataType: 'json',
+						success: function(data) {
+							const months = ["Jan", "Feb", "Mar", "Apr", "May", "June", "July", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+							$.each(data, function(index, value) {
+								index++;
+								const term_id = value['term_id'];
+								year = String(term_id).slice(-4);
+								month = String(term_id).substring(0, String(term_id).length - 4);
+								month--;
+								// const d = new Date(value['term_id']);
+								let monthyear = months[month] + "/" + year;
+								// console.log(monthyear);
+
+								if (value['uniqueid'] == 'null') {
+									valueuni = value['uniqueid'];
+								} else {
+									valueuni = '';
+								}
+								// console.log(value['student_name']);
+								$('#table_data').append("<tr><td>" + index + "</td><td>" + value['enrollment_no'] + "</td><td>" + value[
+										'student_name'] + "</td><td>" + value['division_name'] + "</td><td>" + valueuni + "</td><td>" +
+									monthyear + "</td><td>" + value['receipt_no'] + "</td><td>" + value['payment_mode'] + "</td><td>" +
+									value['cheque_bank_name'] + "</td><td>" + value['receiptdate'] + "</td><td>" + value['user_name'] +
+									"</td><td id='total_amt'>" + value['actual_amountpaid'] + "</td></tr>");
+							});
+
+							var total = 0;
+
+							$('#table_data tr').each(function(index) {
+								var found = $(this).find('#total_amt')
+								if (found) {
+									total += parseInt(found.text());
+								}
+								// console.log(total);
+							});
+
+							$('#table_data').append("<tr><td colspan=11>Total</td><td>" + total + "</td></tr>");
+							$('#ChapterModal').modal('show');
+
+						}
+					});
+				});
+			}
+
+			$('body').on('hidden.bs.modal', '.modal', function() {
+				$("#table_data").empty();
+			});
+		</script>
+
+<script>
+    var menuId = localStorage.getItem('current_id');
+    var spans = document.querySelectorAll('span.menuId');
+    for (var i = 0; i < spans.length; i++) {
+        spans[i].textContent = menuId;
+    }
+    var url = '{{ route("norm-clature.create") }}?menu_id=' + menuId;
+    var links = document.querySelectorAll('a[href="{{ route("norm-clature.create") }}"]');
+    for (var j = 0; j < links.length; j++) {
+        links[j].href = url;
+    }
+</script>

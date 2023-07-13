@@ -44,6 +44,7 @@ use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\NotFoundExceptionInterface;
 use function App\Helpers\FeeBreakoffHeadWise;
 use function App\Helpers\is_mobile;
+use App\Http\Controllers\fees\fees_collect\fees_collect_controller;
 
 class tblstudentController extends Controller
 {
@@ -790,6 +791,11 @@ class tblstudentController extends Controller
         ->select('year')
         ->get();
 
+        $controller = new fees_collect_controller;
+        $OldData = $controller->getBk($request, $id);
+        $res['paid_unpaid_fees'] = $OldData['total_fees'];
+        $res['stu_data'] = $OldData['stu_data'];
+        
         $res['admission_year'] = $admission_year;        
         $res['student_quota'] = $studentQuota;
 		$res['breakoff_MonthArr'] = $breakoff_MonthArr;
