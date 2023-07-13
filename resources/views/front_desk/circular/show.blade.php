@@ -41,7 +41,7 @@
                     </div>
                     <div class="col-md-4 form-group">
                         <label>File</label>
-                        <input type="file" name="attachment" id="attachment" class="form-control" accept="image/*,application/pdf">
+                        <input type="file" name="attachment[]" id="attachment[]" class="form-control" accept="image/*,application/pdf">
                         <span class="text-danger font-weight-bold">Note: Select single file from here.</span>
                     </div>
                 </div>
