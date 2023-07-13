@@ -58,7 +58,13 @@
     </div>
     <div id="overlay" style="display:none;"><center><p style="margin-top: 273px;color:red;font-weight: 700;">Please do not refresh the page, while the process is going on.</p><img src="https://erp.triz.co.in/admin_dep/images/loader.gif"></center></div>
     <center> <input type="button" value="Print Receipt" class="btn btn-success mb-2" id="ajax_PDF"/> {{--onclick="PrintDiv('printableArea')"--}}
-    <input type="button" value="Send Email" class="btn btn-success mb-2" id="ajax_sendEmail" /></center>
+    @php 
+    $send_email =  DB::table('fees_config_master')->where(['sub_institute_id'=>session()->get('sub_institute_id'),'syear'=>session()->get('syear')])->pluck('send_email');    
+    @endphp
+    @if($send_email[0] == 1)
+    <input type="button" value="Send Email" class="btn btn-success mb-2" id="ajax_sendEmail"/>
+    @endif
+    </center>
 </div>
 
 {{-- <div id="printableArea" class="col-md-12"> --}}
@@ -80,19 +86,9 @@
 @include('includes.footerJs')
 <script>
 
-    // function PrintDiv(divName) {
-    //     var divToPrint = document.getElementById(divName);
-    //     var popupWin = window.open('', '_blank', 'width=300,height=300');
-    //     popupWin.document.open();
-    //     popupWin.document.write('<html>');
-    //     var mainCss = "page {background: white;display: block;margin: 0cm;margin-bottom: 0cm;}page[size='A4'] {width: 21cm;height: 29.7cm;}page[size='A4'][layout='landscape'] {width: 29.7cm;height: 21cm;}page[size='A3'] {width: 29.7cm;height: 42cm;}page[size='A3'][layout='landscape'] {width: 42cm;height: 29.7cm;}page[size='A5'] {width: 14.8cm;height: 21cm;}page[size='A5'][layout='landscape'] {width: 21cm;height: 14.8cm;}media print {body,page {margin: 0;box-shadow: 0;}}";
-    //     // var css = "{{$data['css']}}";
-    //     var finalCss = mainCss;
-    //     // popupWin.document.write("<style>" + css + "</style>");
-    //     popupWin.document.write("<style>" + finalCss + "</style>");
-    //     popupWin.document.write('<body onload="window.print()"><?php echo $page; ?>' + divToPrint.innerHTML + '</page></html>');
-    //     popupWin.document.close();
-    // }
+ function send_mail(){
+     
+ }
 
     if ( window.history.replaceState ) {
       window.history.replaceState( null, null, window.location.href );
