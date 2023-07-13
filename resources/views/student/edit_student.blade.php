@@ -97,6 +97,7 @@ br {
                             <li class="nav-item"><a href="#section-linemove-12" class="nav-link" aria-selected="false" data-toggle="tab"><span>TC Information</span></a></li>
                             <li class="nav-item"><a href="#section-linemove-13" class="nav-link" aria-selected="false" data-toggle="tab"><span>Attendance</span></a></li>
                             <li class="nav-item"><a href="#section-linemove-14" class="nav-link" aria-selected="false" data-toggle="tab"><span>Parent Communication</span></a></li>
+                            <li class="nav-item"><a href="#section-linemove-15" class="nav-link" aria-selected="false" data-toggle="tab"><span>Leave Application</span></a></li>
                         </ul>
                             
                             @if(isset($data['data']))
@@ -1470,6 +1471,10 @@ br {
                                                 <th>Total Present Days</th>
                                             </thead>
                                             <tbody>
+                                                @php
+                                                $total_present = 0;
+                                                $total_absent = 0;
+                                                @endphp
                                                 @if( $data['attendance_data'] )
                                                     @foreach ( $data['attendance_data'] as $attendance )
                                                         @if ( $attendance->TOTAL_CLASSES > 0 )
@@ -1479,6 +1484,8 @@ br {
                                                             <td>{{ $attendance->TOTAL_ABSENT }}</td>
                                                             <td>{{ $attendance->TOTAL_PRESENT + $attendance->TOTAL_ABSENT }}</td>
                                                             @php
+                                                                $total_present += $attendance->TOTAL_PRESENT;
+                                                                $total_absent += $attendance->TOTAL_ABSENT;
                                                                 $percent_friendly = '0%';
                                                                 if ( $attendance->TOTAL_PRESENT ) {
                                                                     $totalDays = $attendance->TOTAL_PRESENT + $attendance->TOTAL_ABSENT;
@@ -1494,6 +1501,21 @@ br {
                                                             </tr>
                                                         @endif
                                                     @endforeach
+                                                    <tr>
+                                                        <td>Total</td>
+                                                        <td>{{ $total_present }}</td>
+                                                        <td>{{ $total_absent }}</td>
+                                                        <td>{{ $total_present + $total_absent }}</td>
+                                                        @php
+                                                            $total_percent_friendly = '0%';
+                                                            if ( $total_present ) {
+                                                                $total_days = $total_present + $total_absent;
+                                                                $total_percent = $total_present/$total_days;
+                                                                $total_percent_friendly = number_format( $total_percent * 100, 2 ) . '%';
+                                                            }
+                                                        @endphp
+                                                        <td>{{ $total_percent_friendly }}</td>
+                                                    </tr>
                                                 @else
                                                     <tr>
                                                         <td colspan="6">No Data Found</td>
@@ -1540,7 +1562,56 @@ br {
                                         </div>
                                     </div>
                                 </div>
-                                <!-- END PARENT COMMUNICATION -->                                
+                                <!-- END PARENT COMMUNICATION -->
+                                
+                                <!-- START LEAVE APPLICATION -->
+                                <div class="tab-pane p-3" id="section-linemove-15" role="tabpanel">
+                                    <div class="tab-pane p-3" id="section-linemove-14" role="tabpanel">
+                                        <div class="table-responsive">
+                                            <table id="leave-application" class="table table-striped">
+                                                <thead>
+                                                    <th>No</th>
+                                                    <th>Student Name</th>
+                                                    <th>STD/DIV</th>
+                                                    <th>Mobile</th>
+                                                    <th>Apply Date</th>
+                                                    <th>From Date</th>
+                                                    <th>To Date</th>
+                                                    <th>Message</th>
+                                                    <th>File</th>
+                                                    <th>Reply</th>
+                                                    <th>Reply By</th>
+                                                    <th>Status</th>
+                                                </thead>
+                                                <tbody>
+                                                @if($arr = $data['leave_data'])
+                                                    @foreach($arr as $id => $leaveData)
+                                                        <tr>
+                                                            <td>{{ intval($id) + 1 }}</td>
+                                                            <td>{{ $leaveData['name'] }}</td>
+                                                            <td>{{ $leaveData['stddiv'] }}</td>
+                                                            <td>{{ $leaveData['mobile'] }}</td>
+                                                            <td>{{ $leaveData['apply_date'] }}</td>
+                                                            <td>{{ $leaveData['from_date'] }}</td>
+                                                            <td>{{ $leaveData['to_date'] }}</td>
+                                                            <td>{{ $leaveData['message'] }}</td>
+                                                            <td>{{ $leaveData['files'] }}</td>
+                                                            <td>{{ $leaveData['reply'] }}</td>
+                                                            <td>{{ $leaveData['reply_by'] }}</td>
+                                                            <td>{{ $leaveData['status'] }}</td>
+                                                        </tr>
+                                                    @endforeach
+                                                @else
+                                                    <tr>
+                                                        <td colspan="6">No Data Found</td>
+                                                    </tr>
+                                                @endif
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                                <!-- END LEAVE APPLICATION --> 
                                 
                                 <div id="overlay" style="display:none;"><img id="loading" src="https://i1.wp.com/cdnjs.cloudflare.com/ajax/libs/galleriffic/2.0.1/css/loader.gif"></div>
                             

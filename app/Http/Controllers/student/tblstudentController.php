@@ -45,6 +45,7 @@ use Psr\Container\NotFoundExceptionInterface;
 use function App\Helpers\FeeBreakoffHeadWise;
 use function App\Helpers\is_mobile;
 use App\Http\Controllers\fees\fees_collect\fees_collect_controller;
+use App\Http\Controllers\front_desk\leave_application\leaveApplicationController;
 
 class tblstudentController extends Controller
 {
@@ -792,7 +793,13 @@ class tblstudentController extends Controller
         ->get();
 
         $controller = new fees_collect_controller;
+        $leave_controller = new leaveApplicationController;
+
+        $request->request->add(['student_id' => $id]);
+        $LeaveData = $leave_controller->create($request, $id);
         $OldData = $controller->getBk($request, $id);
+        
+        $res['leave_data'] = isset($LeaveData['stu_data']) ? $LeaveData['stu_data'] : [];
         $res['paid_unpaid_fees'] = $OldData['total_fees'];
         $res['stu_data'] = $OldData['stu_data'];
         

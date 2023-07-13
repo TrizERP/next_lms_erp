@@ -48,7 +48,7 @@ class leaveApplicationController extends Controller
      *
      * @return Response
      */
-    public function create(Request $request)
+    public function create(Request $request, $id='')
     {
         $grade_id = "";
         $standard_id = "";
@@ -84,6 +84,7 @@ class leaveApplicationController extends Controller
         }
 
         $requestData = $_REQUEST;
+        // return $requestData;exit;
         $result = DB::table("tblstudent as s")
             ->join('tblstudent_enrollment as se', function ($join) {
                 $join->whereRaw("se.student_id = s.id");
@@ -110,7 +111,7 @@ class leaveApplicationController extends Controller
                     pc.to_date,pc.files,CONCAT_WS(' ',u.first_name,u.middle_name,u.last_name) as reply_by")
             ->where("s.sub_institute_id", "=", session()->get('sub_institute_id'))
             ->where("se.syear", "=", session()->get('syear'))
-            ->where(function ($q) use ($classteacher_data, $grades_ids, $standards_ids, $divisions_ids, $requestData) {
+            ->where(function ($q) use ($classteacher_data, $grades_ids, $standards_ids, $divisions_ids, $requestData, $id) {
                 if (count($classteacher_data) > 0) {
                     $q->whereRaw("se.grade_id IN  (" . $grades_ids . ") AND se.standard_id IN (" . $standards_ids . ")
                                 AND se.section_id IN (" . $divisions_ids . ")");
@@ -124,6 +125,10 @@ class leaveApplicationController extends Controller
                     if (isset($requestData['division']) && $requestData['division'] != '') {
                         $q->where('se.section_id', $requestData['division']);
                     }
+                    if(isset($id) && $id !== '')
+                    {
+                        $q->where('s.id', $id);
+                    }
                 }
 
                 if (isset($_REQUEST['from_date']) && $_REQUEST['from_date'] != '') {
@@ -134,7 +139,7 @@ class leaveApplicationController extends Controller
                 }
             })
             ->get()->toarray();
-
+            
         $responce_arr = [];
         foreach ($result as $id => $arr) {
             $responce_arr['stu_data'][$id]['sr.no'] = $id + 1;
@@ -154,7 +159,14 @@ class leaveApplicationController extends Controller
         }
         $type = $request->input('type');
 
-        return is_mobile($type, "front_desk/leaveApplication/add", $responce_arr, "view");
+        if(!isset($id) && $id == '')
+        {
+            return is_mobile($type, "front_desk/leaveApplication/add", $responce_arr, "view");
+        }
+        else
+        {
+            return ($responce_arr);
+        }
     }
 
     /**
