@@ -220,7 +220,7 @@ class leaveApplicationController extends Controller
                 $mobile_no = $student_data[0]->mobile;
                 $student_name = $student_data[0]->student_name;
 
-                $pushMessage = "Dear Parents, Your message : ".$get_student[0]->message." on date : ".$apply_date." <br>"." Reply : ".$get_student[0]->reply." on date : ".$reply_on_date." & status of Leave Application is : ".$get_student[0]->status;
+                $pushMessage = $student_name . " - Your message : ".$get_student[0]->message." on date : ".$apply_date." <br>"." Reply : ".$get_student[0]->reply." on date : ".$reply_on_date." & status of Leave Application is : ".$get_student[0]->status;
 
                 $app_notification_content = [
                     'NOTIFICATION_TYPE'        => 'Leave Application',
@@ -238,6 +238,7 @@ class leaveApplicationController extends Controller
                 $gcm_data = DB::table("gcm_users")
                     ->where("mobile_no", "=", $mobile_no)
                     ->where("sub_institute_id", "=", session()->get('sub_institute_id'))
+                    ->groupBy("gcm_regid")
                     ->get()->toArray();
 
                 $gcmRegIds = [];
@@ -251,10 +252,13 @@ class leaveApplicationController extends Controller
                 if (! empty($bunch_arr)) {
                     foreach ($bunch_arr as $val) {
                         if (isset($val)) {
-                            $type = 'Parent Communication';
+                            $type = 'Leave Application';
                             $message = array(
-                                'body'  => $pushMessage, 'TYPE' => $type, 'USER_ID' => $student_id,
-                                'title' => $schoolName, 'image' => $schoolLogo,
+                                'body'  => $pushMessage,
+                                'TYPE' => $type,
+                                'USER_ID' => $student_id,
+                                'title' => $schoolName.' - '.$type,
+                                'image' => $schoolLogo,
                             );
                             $pushStatus = send_FCM_Notification($val, $message);
                             sendNotification($app_notification_content);
