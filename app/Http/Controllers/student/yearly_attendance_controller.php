@@ -43,10 +43,14 @@ class yearly_attendance_controller extends Controller
 
         $whereAtt['syear'] = $syear;
         $whereAtt['sub_institute_id'] = $sub_institute_id;
-        // $whereAtt['term_id'] = $term_id;
-        $whereAtt['standard_id'] = $standard_id;
-        $whereAtt['section_id'] = $division_id;
-        // DB::enableQueryLog();
+         // $whereAtt['term_id'] = $term_id;
+         if(isset($standard_id)){
+            $whereAtt['standard_id'] = $standard_id;
+        }
+        if(isset($division_id)){
+            $whereAtt['section_id'] = $division_id;    
+        }
+        
         $attendanceData = DB::table("attendance_student")
             ->where($whereAtt)
             ->whereBetween("attendance_date", [$from_date, $to_date])

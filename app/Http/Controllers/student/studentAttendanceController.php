@@ -397,9 +397,13 @@ class studentAttendanceController extends Controller
             ->toArray();
 
         // $whereAtt['term_id'] = $term_id;
-        $whereAtt['standard_id'] = $standard_id;
-        $whereAtt['section_id'] = $division_id;
-
+        if(isset($standard_id)){
+            $whereAtt['standard_id'] = $standard_id;
+        }
+        if(isset($division_id)){
+            $whereAtt['section_id'] = $division_id;    
+        }
+     
         $attendanceData = DB::table("attendance_student")
             ->where($whereAtt)
             ->whereBetween("attendance_date", [$from_date, $to_date])

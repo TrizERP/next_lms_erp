@@ -35,13 +35,13 @@
                         <form action="{{ route('show_yearly_student_attendance') }}" enctype="multipart/form-data"method="post">
                         @csrf
                             <div class="row">
-                            {{ App\Helpers\SearchChain('4','required','grade,std,div',$grade_id,$standard_id,$division_id) }}
+                            {{ App\Helpers\SearchChain('4','single','grade,std,div',$grade_id,$standard_id,$division_id) }}
                             <!-- from month -->
                                 <div class="col-md-4 form-group">
                                     <label>From Date</label>
                                     <input type="text" id="from_date" name="from_date"
                                            value="@if(isset($data['from_date'])){{$data['from_date']}}@endif"
-                                           class="form-control mydatepicker" autocomplete="off">
+                                           class="form-control mydatepicker" autocomplete="off" required>
                                 </div>
 
                                 <!-- to month -->
@@ -50,7 +50,7 @@
                                     <label>To Date</label>
                                     <input type="text" id="to_date" name="to_date"
                                            value="@if(isset($data['to_date'])){{$data['to_date']}}@endif"
-                                           class="form-control mydatepicker" autocomplete="off">
+                                           class="form-control mydatepicker" autocomplete="off"  required>
 
                                 </div>
                                 <div class="col-md-12 form-group">
@@ -70,6 +70,10 @@
                                 }
                         @endphp
                         <div class="card">
+                        @php
+                            echo App\Helpers\get_school_details($grade_id,$standard_id,$division_id);
+                            echo '<br><center><span style=" font-size: 14px;font-weight: 600;font-family: Arial, Helvetica, sans-serif !important">From Date : '.date('d-m-Y',strtotime($data['from_date'])) .' - </span><span style=" font-size: 14px;font-weight: 600;font-family: Arial, Helvetica, sans-serif !important">To Date : '.date('d-m-Y',strtotime($data['to_date'])) .'</span></center><br>';
+                        @endphp    
                             <div class="table-responsive" id="printPage">
                                 <div class="my-4" id="head-table"></div>
 
@@ -81,34 +85,33 @@
                                     <tr id="heads"></tr>
                                     <!-- first heading -->
                                     <tr>
-                                        <th><b>Sr No</b></th>
-                                        <th><b>{{App\Helpers\get_string('grno','request')}}</b></th>
-                                        <th><b>{{App\Helpers\get_string('studentname','request')}}</b></th>
+                                        <th>Sr No</th>
+                                        <th>{{App\Helpers\get_string('grno','request')}}</th>
+                                        <th>{{App\Helpers\get_string('studentname','request')}}</th>
                                     <!-- <th>{{ session()->get('sub_institute_id') }}</th> -->
                                         @foreach($data['month'] as $key => $i)
-                                            <th><b>{{$month_name[$i]}}</b></th>
+                                            <th>{{$month_name[$i]}}</th>
                                         @endforeach
-                                        <th class="text-left"><b>Total School Year Day</b></th>
+                                        <th class="text-left">Total School Year Day</th>
                                         @php $working_day = 0; @endphp
                                     </tr>
                                     <tr>
-                                        <th><b>Sr No</b></th>
-                                        <th><b>{{App\Helpers\get_string('grno','request')}}</b></th>
-                                        <th><b>{{App\Helpers\get_string('studentname','request')}}</b></th>
+                                        <th>Sr No</th>
+                                        <th>{{App\Helpers\get_string('grno','request')}}</th>
+                                        <th>{{App\Helpers\get_string('studentname','request')}}</th>
                                         @if(isset($data['month']))
                                         @foreach($data['month'] as $key => $i)
-                                            <th style="text-align:center"><b>
+                                            <th style="text-align:center">
                                                     @if(isset($data['working_day'][$i]))
                                                     @php $working_day += $data['working_day'][$i]; @endphp
                                                         {{ $data['working_day'][$i] }}
                                                     @else
                                                         0
                                                     @endif
-                                                </b>
                                                 </th>
                                         @endforeach
                                         @endif
-                                        <th style="text-align:center"><b>{{$working_day}}</b></th>
+                                        <th style="text-align:center">{{$working_day}}</th>
                                     </tr>
                                     </thead>
                                     <tbody>
