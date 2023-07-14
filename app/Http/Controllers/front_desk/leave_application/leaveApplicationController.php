@@ -391,16 +391,19 @@ class leaveApplicationController extends Controller
 
     public function studentLeaveApplicationAPI(Request $request)
     {
-        try {
-            if (! $this->jwtToken()->validate()) {
-                $response = ['status' => '2', 'message' => 'Token Auth Failed', 'data' => []];
+        if($request->type == "API")
+        {
+            try {
+                if (! $this->jwtToken()->validate()) {
+                    $response = ['status' => '2', 'message' => 'Token Auth Failed', 'data' => []];
+
+                    return response()->json($response, 401);
+                }
+            } catch (\Exception $e) {
+                $response = ['status' => '2', 'message' => $e->getMessage(), 'data' => []];
 
                 return response()->json($response, 401);
             }
-        } catch (\Exception $e) {
-            $response = ['status' => '2', 'message' => $e->getMessage(), 'data' => []];
-
-            return response()->json($response, 401);
         }
 
         $student_id = $request->input("student_id");
