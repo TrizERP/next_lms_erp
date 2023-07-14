@@ -123,65 +123,35 @@ class smtpController extends Controller
      
         $where_arr = [
             "sub_institute_id" => $sub_institute_id,
-<<<<<<< HEAD
-=======
             "syear"=>$syear,
->>>>>>> fe69c2bd32e323f4fe3b13ca925e17de5a1b100e
         ];
         $smtp_details = DB::table('smtp_details')
             ->where($where_arr)
             ->get();
         if (count($smtp_details) > 0) {
             $to_arr =$_REQUEST['to_email'];
-<<<<<<< HEAD
-
-            $subject = "Test Email";
-            $message = "Test For SMTP Email is OK";
-            $attechment = $path;
-
-            $from = $smtp_details[0]->gmail;
-            $from_pass = $smtp_details[0]->password;
-            // echo "<pre>";print($from);exit;
-            // trizinnovation2018@gmail.com
-
-=======
             $subject = "Check SMTP Email";
             $message = "Test For SMTP Email is OK";
 
             $from = $smtp_details[0]->gmail;
             $from_pass = $smtp_details[0]->password;
        
->>>>>>> fe69c2bd32e323f4fe3b13ca925e17de5a1b100e
             $mail = new PHPMailer\PHPMailer();
             $mail->IsSMTP();
             $mail->isHTML(true);
             $mail->SMTPDebug = 0;
             $mail->SMTPAuth = true;
-<<<<<<< HEAD
-            $mail->SMTPSecure = "ssl";
-            $mail->Host = $smtp_details[0]->server_address;
-            $mail->Port = $smtp_details[0]->port;
-
-                $mail->AddAddress($to_arr);
-
-=======
             $mail->SMTPSecure = "tls";
             $mail->Host = $smtp_details[0]->server_address;
             $mail->Port = $smtp_details[0]->port;
             // $mail->SMTPDebug = 2;
             $mail->AddAddress($to_arr);
->>>>>>> fe69c2bd32e323f4fe3b13ca925e17de5a1b100e
             $mail->Username = $from;
             $mail->Password = $from_pass;
             $mail->SetFrom($from, $from);
             $mail->AddReplyTo($from, $from);
-<<<<<<< HEAD
-            $mail->addAttachment($attechment);
-            $mail->Subject = $subject;
-=======
             // $mail->addAttachment($attechment);
             $mail->Subject = $subject;            
->>>>>>> fe69c2bd32e323f4fe3b13ca925e17de5a1b100e
             $mail->Body = $message;
             $mail->AltBody = $message;
             // echo "<pre>";print_r($mail);exit;
