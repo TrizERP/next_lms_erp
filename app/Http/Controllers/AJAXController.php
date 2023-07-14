@@ -1003,7 +1003,7 @@ class AJAXController extends Controller
 
     public function ajax_sendmail(Request $request)
     {
-        require_once('mailer/class.phpmailer.php');
+        // require_once('mailer/class.phpmailer.php');
         $sub_institute_id = $request->session()->get('sub_institute_id');
 
         $mail = DB::table('smtp_details')->where('sub_institute_id', $sub_institute_id)->get()->toArray();
@@ -1023,7 +1023,7 @@ class AJAXController extends Controller
             $mail->isHTML(true);
             $mail->SMTPDebug = 0;
             $mail->SMTPAuth = true;
-            $mail->SMTPSecure = "ssl";
+            $mail->SMTPSecure = "tls";
             $mail->Host = $smtp_details['server_address'];
             $mail->Port = $smtp_details['port'];
 
@@ -1043,12 +1043,13 @@ class AJAXController extends Controller
             $mail->AltBody = $message;
             $mail->Send();
         }
-
+        // return $request;
         return redirect()->back();
     }
 
     public function ajax_sendEmailFeesReceipt(Request $request)
     {
+    //    return $this->ajax_sendmail($request);exit;
         $sub_institute_id = session()->get('sub_institute_id');
         $syear = session()->get('syear');
         $student_id = $request->input('student_id');

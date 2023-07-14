@@ -36,12 +36,12 @@
                         </select>
                     </div>
                     <div id="photo" class="col-md-4 form-group">
-                        <label>File</label>
-                        <input type="file" name="attachment[]" id="attachment[]" class="form-control" multiple="multiple">
+                        <label>Browse Files</label>
+                        <input type="file" name="attachment[]" id="attachment[]" class="form-control" multiple="multiple" accept="image/*">
                         <span class="text-danger font-weight-bold">Note: Select multiple or single files from here.</span>
                     </div>
                     <div id="video" style="display: none;" class="col-md-4 form-group">
-                        <label>Link</label>
+                        <label>Youtube Link</label>
                         <input type="text" name="attachment" id="attachment" class="form-control">
                     </div>
                     <div class="col-md-12">

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\student;
 use App\Http\Controllers\Controller;
 use App\Models\school_setup\subjectModel;
 use App\Models\student\studentHomeworkModel;
+use App\Models\school_setup\SchoolModel;
 use GenTux\Jwt\GetsJwtToken;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -17,6 +18,7 @@ use function App\Helpers\getStudents;
 use function App\Helpers\is_mobile;
 use function App\Helpers\SearchStudent;
 use function App\Helpers\sendNotification;
+use function App\Helpers\send_FCM_Notification;
 
 class studentHomeworkController extends Controller
 {
@@ -180,6 +182,10 @@ class studentHomeworkController extends Controller
             $path = $file->storeAs('public/student/', $file_name);
         }
 
+        $schoolData = SchoolModel::where(['id' => $sub_institute_id])->get()->toArray();
+        $schoolName = $schoolData[0]['SchoolName'];
+        $schoolLogo = $_SERVER['APP_URL'].'/admin_dep/images/'.$schoolData[0]['Logo'];
+
         foreach ($student_details as $id => $arr) {
             $student_id = $arr['id'];
             $standard_id = $arr['standard_id'];
@@ -204,11 +210,32 @@ class studentHomeworkController extends Controller
             studentHomeworkModel::insert($addhomeworkArray);
 
             //START Send Notification Code
+            $student_data = DB::table("tblstudent_enrollment as se")
+                            ->join('tblstudent as s', function ($join) {
+                                $join->whereRaw("s.id = se.student_id AND s.sub_institute_id = se.sub_institute_id");
+                            })
+                            ->selectRaw("*,concat_ws(' ',s.first_name,s.middle_name,s.last_name) as student_name")
+                            ->where("s.id", "=", $student_id)
+                            ->where("se.syear", "=", $syear)
+                            ->whereNull("se.end_date")
+                            ->where("se.sub_institute_id", "=", $sub_institute_id)
+                            ->get()->toArray();
+
+            $schoolData = SchoolModel::where(['id' => session()->get('sub_institute_id')])->get()->toArray();
+            $schoolName = $schoolData[0]['SchoolName'];
+            $schoolLogo = $_SERVER['APP_URL'].'/admin_dep/images/'.$schoolData[0]['Logo'];
+            
+            if (count($student_data) > 0) {
+                $mobile_no = $student_data[0]->mobile;
+                $student_name = $student_data[0]->student_name;
+
+                $pushMessage = $student_name . " - Assigned Homework For Date : " . date('d-m-Y');
+
             $app_notification_content = [
                 'NOTIFICATION_TYPE'        => 'Homework',
                 'NOTIFICATION_DATE'        => date('Y-m-d'),
                 'STUDENT_ID'               => $student_id,
-                'NOTIFICATION_DESCRIPTION' => $title,
+                'NOTIFICATION_DESCRIPTION' => $pushMessage,
                 'STATUS'                   => 0,
                 'SUB_INSTITUTE_ID'         => $sub_institute_id,
                 'SYEAR'                    => $syear,
@@ -216,7 +243,35 @@ class studentHomeworkController extends Controller
                 'CREATED_BY'               => $created_by,
                 'CREATED_IP'               => $_SERVER['REMOTE_ADDR'],
             ];
-            sendNotification($app_notification_content);
+            
+            $gcm_data = DB::table("gcm_users")
+                    ->where("mobile_no", "=", $mobile_no)
+                    ->where("sub_institute_id", "=", session()->get('sub_institute_id'))
+                    ->groupBy("gcm_regid")
+                    ->get()->toArray();
+
+                $gcmRegIds = [];
+                if (count($gcm_data) > 0) {
+                    foreach ($gcm_data as $key1 => $val1) {
+                        $gcmRegIds[] = $val1->gcm_regid;
+                    }
+                }
+
+                $bunch_arr = array_chunk($gcmRegIds, 1000);
+                if (! empty($bunch_arr)) {
+                    foreach ($bunch_arr as $val) {
+                        if (isset($val)) {
+                            $type = 'Homework';
+                            $message = array(
+                                'body'  => $pushMessage, 'TYPE' => $type, 'USER_ID' => $student_id,
+                                'title' => $schoolName.' - '.$type, 'image' => $schoolLogo,
+                            );
+                            $pushStatus = send_FCM_Notification($val, $message);
+                            sendNotification($app_notification_content);
+                        }
+                    }
+                }
+            }
             //END Send Notification Code
         }
 
@@ -509,14 +564,9 @@ class studentHomeworkController extends Controller
                     ->where('t.division_id', $section_id)
                     ->groupBy('t.subject_id')->orderBy('display_name')->get()->toArray();
 
-                if(isset($data) && !empty($data) && count($data)>0 && $data!==null){
-                        $res['status'] = 1;
-                        $res['message'] = "Success Done";
-                        $res['data'] = $data;
-                    }else{
-                        $res['status'] = 0;
-                        $res['message'] = "No Data Found";
-                    }
+                $res['status'] = 1;
+                $res['message'] = "Success";
+                $res['data'] = $data;
             } else {
                 $res['status'] = 0;
                 $res['message'] = "Wrong Parameters";
@@ -566,11 +616,11 @@ class studentHomeworkController extends Controller
         }
 
         // $class_teacher_sql = "SELECT s.subject_id,s.display_name,ct.grade_id,ct.standard_id,ct.division_id,ct.teacher_id
-        //                  FROM sub_std_map s
-        //                  INNER JOIN class_teacher ct ON ct.standard_id = s.standard_id AND ct.sub_institute_id = s.sub_institute_id
-        //                  WHERE s.sub_institute_id = '".$sub_institute_id."' AND s.standard_id = '".$standard_id."' AND ct.syear = '".$syear."' AND ct.teacher_id = '".$teacher_id."'
-        //                  GROUP BY s.subject_id
-        //                  ORDER BY s.display_name";                   
+        // 					FROM sub_std_map s
+        // 					INNER JOIN class_teacher ct ON ct.standard_id = s.standard_id AND ct.sub_institute_id = s.sub_institute_id
+        // 					WHERE s.sub_institute_id = '".$sub_institute_id."' AND s.standard_id = '".$standard_id."' AND ct.syear = '".$syear."' AND ct.teacher_id = '".$teacher_id."'
+        // 					GROUP BY s.subject_id
+        // 					ORDER BY s.display_name";					
         // $class_teacher_subjects_data = DB::select($class_teacher_sql);
         // $class_teacher_subjects_data = json_decode(json_encode($class_teacher_subjects_data),true);
 

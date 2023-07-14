@@ -459,7 +459,7 @@ class lms_apiController extends Controller
                 ->where('student_id', $student_id)
                 ->where('question_paper_id', $question_paper_id)->get()->toArray();
 
-            if ($data['questionpaper_data']['open_date'] <= date('Y-m-d h:i:s') && $data['questionpaper_data']['close_date'] >= date('Y-m-d h:i:s') && ($attempted[0]->count_attempted <= $data['questionpaper_data']['attempt_allowed'] || $data['questionpaper_data']['attempt_allowed'] == 'unlimited')) {
+            if ($data['questionpaper_data']['open_date'] <= date('Y-m-d h:i:s') && $data['questionpaper_data']['close_date'] >= date('Y-m-d h:i:s') && ($attempted[0]->count_attempted <= $data['questionpaper_data']['attempt_allowed'] || $data['questionpaper_data']['attempt_allowed'] == 0)) {
 
                 $question_ids = explode(",", $data['questionpaper_data']['question_ids']);
 
