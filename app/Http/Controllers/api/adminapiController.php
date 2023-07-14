@@ -2107,8 +2107,7 @@ class adminapiController extends Controller
             'message'          => 'required',
             'date_'            => 'required|date',
             'sub_institute_id' => 'required|numeric',
-            'attachment'       => 'required',
-        ]);
+        ]);//'attachment'       => 'required',
 
         if ($validator->fails()) {
             $response['response'] = $validator->messages();

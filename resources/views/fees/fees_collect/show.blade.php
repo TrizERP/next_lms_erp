@@ -13,7 +13,7 @@
 
         <div class="card">
         @if(!empty($data['message']))
-                    @if($data['status_code'] == 1)
+                    @if(!empty($data['status_code']) && $data['status_code'] == 1)
                         <div class="alert alert-success alert-block">
                             @else
                                 <div class="alert alert-danger alert-block">

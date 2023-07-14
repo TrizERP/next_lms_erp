@@ -209,14 +209,33 @@ class studentHomeworkController extends Controller
             $addhomeworkArray['created_by'] = $created_by;
             studentHomeworkModel::insert($addhomeworkArray);
 
-            $mobile_no = $arr['mobile'];
-
             //START Send Notification Code
+            $student_data = DB::table("tblstudent_enrollment as se")
+                            ->join('tblstudent as s', function ($join) {
+                                $join->whereRaw("s.id = se.student_id AND s.sub_institute_id = se.sub_institute_id");
+                            })
+                            ->selectRaw("*,concat_ws(' ',s.first_name,s.middle_name,s.last_name) as student_name")
+                            ->where("s.id", "=", $student_id)
+                            ->where("se.syear", "=", $syear)
+                            ->whereNull("se.end_date")
+                            ->where("se.sub_institute_id", "=", $sub_institute_id)
+                            ->get()->toArray();
+
+            $schoolData = SchoolModel::where(['id' => session()->get('sub_institute_id')])->get()->toArray();
+            $schoolName = $schoolData[0]['SchoolName'];
+            $schoolLogo = $_SERVER['APP_URL'].'/admin_dep/images/'.$schoolData[0]['Logo'];
+            
+            if (count($student_data) > 0) {
+                $mobile_no = $student_data[0]->mobile;
+                $student_name = $student_data[0]->student_name;
+
+                $pushMessage = $student_name . " - Assigned Homework For Date : " . date('d-m-Y');
+
             $app_notification_content = [
                 'NOTIFICATION_TYPE'        => 'Homework',
                 'NOTIFICATION_DATE'        => date('Y-m-d'),
                 'STUDENT_ID'               => $student_id,
-                'NOTIFICATION_DESCRIPTION' => $title,
+                'NOTIFICATION_DESCRIPTION' => $pushMessage,
                 'STATUS'                   => 0,
                 'SUB_INSTITUTE_ID'         => $sub_institute_id,
                 'SYEAR'                    => $syear,
@@ -228,6 +247,7 @@ class studentHomeworkController extends Controller
             $gcm_data = DB::table("gcm_users")
                     ->where("mobile_no", "=", $mobile_no)
                     ->where("sub_institute_id", "=", session()->get('sub_institute_id'))
+                    ->groupBy("gcm_regid")
                     ->get()->toArray();
 
                 $gcmRegIds = [];
@@ -241,16 +261,17 @@ class studentHomeworkController extends Controller
                 if (! empty($bunch_arr)) {
                     foreach ($bunch_arr as $val) {
                         if (isset($val)) {
-                            $type = 'Student Homework';
+                            $type = 'Homework';
                             $message = array(
-                                'body'  => $title, 'TYPE' => $type, 'USER_ID' => $student_id,
-                                'title' => $schoolName, 'image' => $schoolLogo,
+                                'body'  => $pushMessage, 'TYPE' => $type, 'USER_ID' => $student_id,
+                                'title' => $schoolName.' - '.$type, 'image' => $schoolLogo,
                             );
                             $pushStatus = send_FCM_Notification($val, $message);
                             sendNotification($app_notification_content);
                         }
                     }
                 }
+            }
             //END Send Notification Code
         }
 
