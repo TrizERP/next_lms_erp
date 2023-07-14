@@ -47,14 +47,14 @@ if (!function_exists('is_mobile')) {
         }
     }
 }
-if (! function_exists('ValidateInsertData')) {
+if (!function_exists('ValidateInsertData')) {
 
     function ValidateInsertData($table, $type = 'insert')
     {
 
         $files_arr = ["Logo", "Image"];
 
-        $columns = DB::select("SHOW COLUMNS FROM ".$table);
+        $columns = DB::select("SHOW COLUMNS FROM " . $table);
 
         $required_fields = array();
         $validation_status = true;
@@ -169,6 +169,8 @@ if (!function_exists('SearchChain')) {
             $std_name = 'standard[]';
             $div_name = 'division[]';
             $batch_section = 'batchsection[]';
+        } else if ($multiple == 'required') {
+            $multiple = 'required="required"';
         } else {
             if ($multiple == 'single') {
                 $multiple = '';
@@ -306,7 +308,7 @@ if (!function_exists('SearchChain')) {
             }
         }
 
-            $div_option = "<option value=''>Select</option>";
+        $div_option = "<option value=''>Select</option>";
         if ($std_val != "") {
             if (is_array($std_val)) {
                 $query = DB::table('std_div_map');
@@ -412,7 +414,7 @@ if (!function_exists('SearchChain')) {
         $searchsection = 'Search Section';
         $grade = '<div class="col-md-' . $col . '">
                     <div class="form-group">
-                        <label>'.get_string('searchsection','request').': </label>
+                        <label>' . get_string('searchsection', 'request') . ': </label>
                         <select name="' . $grade_name . '" id="grade" class="form-control" ' . $multiple . '>
                             ' . $option . '
                         </select>
@@ -423,7 +425,7 @@ if (!function_exists('SearchChain')) {
 
         $std = '<div class="col-md-' . $col . '">
                     <div class="form-group">
-                        <label>'.get_string('searchstandard','request').': </label>
+                        <label>' . get_string('searchstandard', 'request') . ': </label>
                         <select name="' . $std_name . '" id="standard" class="form-control" ' . $multiple . '>
                             ' . $std_option . '
                         </select>
@@ -433,7 +435,7 @@ if (!function_exists('SearchChain')) {
 
         $div = ' <div class="col-md-' . $col . '">
                     <div class="form-group">
-                        <label>'.get_string('searchdivision','request').': </label>
+                        <label>' . get_string('searchdivision', 'request') . ': </label>
                         <select name="' . $div_name . '" id="division" class="form-control" ' . $multiple . '>
                             ' . $div_option . '
                         </select>
@@ -476,7 +478,7 @@ if (!function_exists('SearchChain')) {
     }
 }
 
-if (! function_exists('SearchChainSubject')) {
+if (!function_exists('SearchChainSubject')) {
 
     function SearchChainSubject($col, $multiple, $listed_drop, $grade_val = "", $std_val = "", $sub_val = "")
     {
@@ -548,29 +550,29 @@ if (! function_exists('SearchChainSubject')) {
             }
         }
 
-        $grade = '<div class="col-md-'.$col.'">
+        $grade = '<div class="col-md-' . $col . '">
                     <div class="form-group">
                         <label for="title">Select Grade:</label>
-                        <select name="'.$grade_name.'" id="gradeS" class="form-control" '.$multiple.'>
-                            '.$option.'
+                        <select name="' . $grade_name . '" id="gradeS" class="form-control" ' . $multiple . '>
+                            ' . $option . '
                         </select>
                     </div>
                 </div>';
 
-        $std = '<div class="col-md-'.$col.'">
+        $std = '<div class="col-md-' . $col . '">
                     <div class="form-group">
                         <label for="title">Select Standard:</label>
-                        <select name="'.$std_name.'" id="standardS" class="form-control" '.$multiple.'>
-                            '.$std_option.'
+                        <select name="' . $std_name . '" id="standardS" class="form-control" ' . $multiple . '>
+                            ' . $std_option . '
                         </select>
                     </div>
                 </div>';
 
-        $sub = ' <div class="col-md-'.$col.'">
+        $sub = ' <div class="col-md-' . $col . '">
                     <div class="form-group">
                         <label for="title">Select Subject:</label>
-                        <select name="'.$sub_name.'" id="subject" class="form-control" '.$multiple.'>
-                            '.$sub_option.'
+                        <select name="' . $sub_name . '" id="subject" class="form-control" ' . $multiple . '>
+                            ' . $sub_option . '
                         </select>
                     </div>
                 </div>';
@@ -591,7 +593,7 @@ if (! function_exists('SearchChainSubject')) {
         echo $html;
     }
 }
-if (! function_exists('TermDD')) {
+if (!function_exists('TermDD')) {
 
     function TermDD($selected_val = "", $col = 4)
     {
@@ -600,7 +602,7 @@ if (! function_exists('TermDD')) {
         $academic_year = DB::table("academic_year")
             ->where([
                 "sub_institute_id" => session()->get('sub_institute_id'),
-                "syear"            => session()->get('syear'),
+                "syear" => session()->get('syear'),
             ])
             ->pluck("title", "term_id");
 
@@ -613,10 +615,10 @@ if (! function_exists('TermDD')) {
             $option .= "<option $selected value=$id>$val</option>";
         }
 
-        $term = '<div class="col-md-'.$col.' form-group">
+        $term = '<div class="col-md-' . $col . ' form-group">
                     <label for="title">Select Term:</label>
                     <select name="term" id="term" class="form-control">
-                        '.$option.'
+                        ' . $option . '
                     </select>
                 </div>';
 
@@ -625,10 +627,10 @@ if (! function_exists('TermDD')) {
         echo $html;
     }
 }
-if (! function_exists('SearchStudent')) {
+if (!function_exists('SearchStudent')) {
 
-    function SearchStudent($grade, $standard = "", $div = "", $sub_institute_id = "", $syear = "", $roll_no = "",$stu_name="",$uniqueid="",$mobile="",$grno="")
-    { 
+    function SearchStudent($grade, $standard = "", $div = "", $sub_institute_id = "", $syear = "", $roll_no = "", $stu_name = "", $uniqueid = "", $mobile = "", $grno = "")
+    {
         if ($sub_institute_id == '') {
             $sub_institute_id = session()->get('sub_institute_id');
         }
@@ -636,6 +638,7 @@ if (! function_exists('SearchStudent')) {
         if ($syear == '') {
             $syear = session()->get('syear');
         }
+        $marking_period_id = session()->get('term_id');
 
         $grade_arr = array();
         $standard_arr = array();
@@ -644,29 +647,29 @@ if (! function_exists('SearchStudent')) {
         $classTeacherDivArr = session()->get('classTeacherDivArr');
 
         if ($grade != '') {
-            $grade_arr = (array) $grade;
+            $grade_arr = (array)$grade;
         }
         if ($standard != '') {
-            $standard_arr = (array) $standard;
+            $standard_arr = (array)$standard;
         }
         if ($div != '') {
-            $div_arr = (array) $div;
+            $div_arr = (array)$div;
         }
 
         $enrollment_join = array(
-            'se.student_id'       => 'ts.id',
+            'se.student_id' => 'ts.id',
             'se.sub_institute_id' => 'ts.sub_institute_id',
         );
         $grade_join = array(
-            'acs.id'               => 'se.grade_id',
+            'acs.id' => 'se.grade_id',
             'acs.sub_institute_id' => 'se.sub_institute_id',
         );
         $std_join = array(
-            's.id'               => 'se.standard_id',
+            's.id' => 'se.standard_id',
             's.sub_institute_id' => 'se.sub_institute_id',
         );
         $div_join = array(
-            'd.id'               => 'se.section_id',
+            'd.id' => 'se.section_id',
             'd.sub_institute_id' => 'se.sub_institute_id',
         );
 
@@ -677,12 +680,17 @@ if (! function_exists('SearchStudent')) {
                 se.house_id,se.lc_number";
         $select_fields = preg_replace('/\s+/', '', $select_fields);
         $where = array(
-            'se.syear'            => $syear,
+            'se.syear' => $syear,
             'ts.sub_institute_id' => $sub_institute_id,
-            'se.end_date'         => null,
+            'se.end_date' => null,
         );
 
         $query = tblstudentModel::from('tblstudent as ts');
+
+        $query->when($marking_period_id, function ($join) use ($marking_period_id) {
+            $join->where('ts.marking_period_id', $marking_period_id);
+        });
+
         if ($mobile != '') {
             $query->where('ts.mobile', $mobile);
         }
@@ -727,7 +735,7 @@ if (! function_exists('SearchStudent')) {
 
         if (isset($classTeacherStdArr) && count($standard_arr) < 0) {
             if (count($classTeacherStdArr) > 0) {
-                $extraRaw = "s.id IN (".implode(",", $classTeacherStdArr).")";
+                $extraRaw = "s.id IN (" . implode(",", $classTeacherStdArr) . ")";
             } else {
                 $extraRaw = "s.id IN (' ')";
             }
@@ -735,16 +743,16 @@ if (! function_exists('SearchStudent')) {
 
         if (isset($classTeacherDivArr)) {
             if (count($classTeacherDivArr) > 0 && count($div_arr) < 0) {
-                $extraRaw .= " and d.id IN (".implode(",", $classTeacherDivArr).")";
+                $extraRaw .= " and d.id IN (" . implode(",", $classTeacherDivArr) . ")";
             }
         }
         //END Check for class teacher assigned standards
 
 
         if ($roll_no != '') {
-            $extraRaw .= " AND ts.roll_no = '".$roll_no."' ";
+            $extraRaw .= " AND ts.roll_no = '" . $roll_no . "' ";
         }
-       
+
         $query->whereraw($extraRaw);
 
         $query->orderBy('ts.roll_no');
@@ -752,13 +760,13 @@ if (! function_exists('SearchStudent')) {
         return $query->get($columns)->toArray();
     }
 }
-if (! function_exists('FeeMonthId')) {
+if (!function_exists('FeeMonthId')) {
 
     function FeeMonthId()
     {
         $data = map_year::where([
             'sub_institute_id' => session()->get('sub_institute_id'),
-            'syear'            => session()->get('syear'),
+            'syear' => session()->get('syear'),
         ])->get()->toArray();
         if (count($data) == 0) {
             return array();
@@ -769,14 +777,14 @@ if (! function_exists('FeeMonthId')) {
         $end_month = $data[0]['to_month'];
 
         $months = [
-            1  => 'Jan', 2 => 'Feb', 3 => 'Mar', 4 => 'Apr', 5 => 'May', 6 => 'Jun', 7 => 'Jul', 8 => 'Aug', 9 => 'Sep',
+            1 => 'Jan', 2 => 'Feb', 3 => 'Mar', 4 => 'Apr', 5 => 'May', 6 => 'Jun', 7 => 'Jul', 8 => 'Aug', 9 => 'Sep',
             10 => 'Oct', 11 => 'Nov', 12 => 'Dec',
         ];
         $months_arr = [];
         $syear = session()->get('syear');
 
         for ($i = 1; $i <= 12; $i++) {
-            $months_arr[$start_month.$syear] = $months[$start_month].'/'.$syear;
+            $months_arr[$start_month . $syear] = $months[$start_month] . '/' . $syear;
             if ($start_month == 12) {
                 $start_month = 0;
                 ++$syear;
@@ -788,13 +796,13 @@ if (! function_exists('FeeMonthId')) {
     }
 }
 // last year
-if (! function_exists('FeeMonthIdlast')) {
+if (!function_exists('FeeMonthIdlast')) {
 
     function FeeMonthIdlast()
     {
         $data = map_year::where([
             'sub_institute_id' => session()->get('sub_institute_id'),
-            'syear'            => (session()->get('syear') - 1),
+            'syear' => (session()->get('syear') - 1),
         ])->get()->toArray();
         if (count($data) == 0) {
             return array();
@@ -805,14 +813,14 @@ if (! function_exists('FeeMonthIdlast')) {
         $end_month = $data[0]['to_month'];
 
         $months = [
-            1  => 'Jan', 2 => 'Feb', 3 => 'Mar', 4 => 'Apr', 5 => 'May', 6 => 'Jun', 7 => 'Jul', 8 => 'Aug', 9 => 'Sep',
+            1 => 'Jan', 2 => 'Feb', 3 => 'Mar', 4 => 'Apr', 5 => 'May', 6 => 'Jun', 7 => 'Jul', 8 => 'Aug', 9 => 'Sep',
             10 => 'Oct', 11 => 'Nov', 12 => 'Dec',
         ];
         $months_arr = [];
-        $syear = (session()->get('syear')-1);
+        $syear = (session()->get('syear') - 1);
 
         for ($i = 1; $i <= 12; $i++) {
-            $months_arr[$start_month.$syear] = $months[$start_month].'/'.$syear;
+            $months_arr[$start_month . $syear] = $months[$start_month] . '/' . $syear;
             if ($start_month == 12) {
                 $start_month = 0;
                 ++$syear;
@@ -824,7 +832,7 @@ if (! function_exists('FeeMonthIdlast')) {
     }
 }
 // last year end
-if (! function_exists('FeeBreackoff')) {
+if (!function_exists('FeeBreackoff')) {
 
     function FeeBreackoff($student_ids, $standard = null)
     {
@@ -878,7 +886,7 @@ if (! function_exists('FeeBreackoff')) {
     }
 }
 // last year start
-if (! function_exists('FeeBreackofflast')) {
+if (!function_exists('FeeBreackofflast')) {
 
     function FeeBreackofflast($student_ids, $standard = null)
     {
@@ -932,7 +940,7 @@ if (! function_exists('FeeBreackofflast')) {
 }
 
 // last year end
-if (! function_exists('FeeBreakoffHeadWise')) {
+if (!function_exists('FeeBreakoffHeadWise')) {
 
     function FeeBreakoffHeadWise($student_ids, $from_date = null, $to_date = null, $fees_head = null)
     {
@@ -940,7 +948,7 @@ if (! function_exists('FeeBreakoffHeadWise')) {
         $syear = session()->get('syear');
 
         $stud_arr = implode(',', $student_ids);
-        $extra_where = " AND s.id in (".$stud_arr.")";
+        $extra_where = " AND s.id in (" . $stud_arr . ")";
 
         $result = DB::table('tblstudent as s')
             ->join('tblstudent_enrollment as se', function ($join) {
@@ -952,13 +960,13 @@ if (! function_exists('FeeBreakoffHeadWise')) {
             })->leftJoin('division as d', function ($join) {
                 $join->whereRaw(' d.id = se.section_id');
             })->join('fees_breackoff as fb', function ($join) use ($syear, $sub_institute_id) {
-                $join->whereRaw("fb.syear = '".$syear."' AND fb.admission_year = s.admission_year AND fb.quota = se.student_quota
-                 AND fb.grade_id = se.grade_id AND fb.standard_id = se.standard_id AND fb.sub_institute_id = '".$sub_institute_id."'");
+                $join->whereRaw("fb.syear = '" . $syear . "' AND fb.admission_year = s.admission_year AND fb.quota = se.student_quota
+                 AND fb.grade_id = se.grade_id AND fb.standard_id = se.standard_id AND fb.sub_institute_id = '" . $sub_institute_id . "'");
             })->join('fees_title as ft', function ($join) use ($fees_head) {
                 $join->whereRaw('fb.fee_type_id = ft.id')
-                ->when($fees_head, function ($join) use ($fees_head) {
-                    $join->whereRaw('ft.fees_title In ("'.implode('","', $fees_head).'")');
-                });
+                    ->when($fees_head, function ($join) use ($fees_head) {
+                        $join->whereRaw('ft.fees_title In ("' . implode('","', $fees_head) . '")');
+                    });
             })->leftJoin('admission_registration as ar', function ($join) {
                 $join->whereRaw('ar.enrollment_no = s.enrollment_no AND ar.sub_institute_id = s.sub_institute_id');
             })->leftJoin('admission_enquiry as ae', function ($join) {
@@ -986,10 +994,10 @@ if (! function_exists('FeeBreakoffHeadWise')) {
             $paid_fees = $paid_fees = DB::table('fees_collect')
                 ->selectRaw("sum(ifnull($fees_title,0)) total_paid,receiptdate")
                 ->where([
-                    'term_id'          => $month_id,
+                    'term_id' => $month_id,
                     'sub_institute_id' => $sub_institute_id,
-                    'is_deleted'       => 'N',
-                    'student_id'       => $value->id,
+                    'is_deleted' => 'N',
+                    'student_id' => $value->id,
                 ])->when(isset($request['from_date'], $request['to_date']), function ($q) use ($request) {
                     $q->where('fees_collect.receiptdate', '<=', $request['to_date']);
                 })->get()->toArray();
@@ -1014,7 +1022,7 @@ if (! function_exists('FeeBreakoffHeadWise')) {
             $student_data[$value->id]['id'] = $value->id;
             $student_data[$value->id]['enrollment_no'] = $value->enrollment_no;
             $student_data[$value->id]['surname'] = $value->last_name;
-            $student_data[$value->id]['student_name'] = $value->first_name." ".$value->middle_name;
+            $student_data[$value->id]['student_name'] = $value->first_name . " " . $value->middle_name;
             $student_data[$value->id]['gender'] = $value->gender;
             $student_data[$value->id]['mobile'] = $value->mobile;
             $student_data[$value->id]['dob'] = $value->dob;
@@ -1032,15 +1040,15 @@ if (! function_exists('FeeBreakoffHeadWise')) {
     }
 }
 // last year
-if (! function_exists('FeeBreakoffHeadWiselast')) {
+if (!function_exists('FeeBreakoffHeadWiselast')) {
 
     function FeeBreakoffHeadWiselast($student_ids, $from_date = null, $to_date = null)
     {
         $sub_institute_id = session()->get('sub_institute_id');
-        $syear = (session()->get('syear') -1);
+        $syear = (session()->get('syear') - 1);
 
         $stud_arr = implode(',', $student_ids);
-        $extra_where = " AND s.id in (".$stud_arr.")";
+        $extra_where = " AND s.id in (" . $stud_arr . ")";
 
         $result = DB::table('tblstudent as s')
             ->join('tblstudent_enrollment as se', function ($join) {
@@ -1052,8 +1060,8 @@ if (! function_exists('FeeBreakoffHeadWiselast')) {
             })->leftJoin('division as d', function ($join) {
                 $join->whereRaw(' d.id = se.section_id');
             })->join('fees_breackoff as fb', function ($join) use ($syear, $sub_institute_id) {
-                $join->whereRaw("fb.syear = '".$syear."' AND fb.admission_year = s.admission_year AND fb.quota = se.student_quota
-                 AND fb.grade_id = se.grade_id AND fb.standard_id = se.standard_id AND fb.sub_institute_id = '".$sub_institute_id."'");
+                $join->whereRaw("fb.syear = '" . $syear . "' AND fb.admission_year = s.admission_year AND fb.quota = se.student_quota
+                 AND fb.grade_id = se.grade_id AND fb.standard_id = se.standard_id AND fb.sub_institute_id = '" . $sub_institute_id . "'");
             })->join('fees_title as ft', function ($join) {
                 $join->whereRaw('fb.fee_type_id = ft.id');
             })->leftJoin('admission_registration as ar', function ($join) {
@@ -1083,10 +1091,10 @@ if (! function_exists('FeeBreakoffHeadWiselast')) {
             $paid_fees = $paid_fees = DB::table('fees_collect')
                 ->selectRaw("sum(ifnull($fees_title,0)) total_paid,receiptdate")
                 ->where([
-                    'term_id'          => $month_id,
+                    'term_id' => $month_id,
                     'sub_institute_id' => $sub_institute_id,
-                    'is_deleted'       => 'N',
-                    'student_id'       => $value->id,
+                    'is_deleted' => 'N',
+                    'student_id' => $value->id,
                 ])->when(isset($request['from_date'], $request['to_date']), function ($q) use ($request) {
                     $q->where('fees_collect.receiptdate', '<=', $request['to_date']);
                 })->get()->toArray();
@@ -1111,7 +1119,7 @@ if (! function_exists('FeeBreakoffHeadWiselast')) {
             $student_data[$value->id]['id'] = $value->id;
             $student_data[$value->id]['enrollment_no'] = $value->enrollment_no;
             $student_data[$value->id]['surname'] = $value->last_name;
-            $student_data[$value->id]['student_name'] = $value->first_name." ".$value->middle_name;
+            $student_data[$value->id]['student_name'] = $value->first_name . " " . $value->middle_name;
             $student_data[$value->id]['gender'] = $value->gender;
             $student_data[$value->id]['mobile'] = $value->mobile;
             $student_data[$value->id]['dob'] = $value->dob;
@@ -1129,7 +1137,7 @@ if (! function_exists('FeeBreakoffHeadWiselast')) {
     }
 }
 // last byear end
-if (! function_exists('getStringOfAmount')) {
+if (!function_exists('getStringOfAmount')) {
 
     function getStringOfAmount($number)
     {
@@ -1140,9 +1148,9 @@ if (! function_exists('getStringOfAmount')) {
         $i = 0;
         $str = [];
         $words = [
-            '0'  => '', '1' => 'one', '2' => 'two',
-            '3'  => 'three', '4' => 'four', '5' => 'five', '6' => 'six',
-            '7'  => 'seven', '8' => 'eight', '9' => 'nine',
+            '0' => '', '1' => 'one', '2' => 'two',
+            '3' => 'three', '4' => 'four', '5' => 'five', '6' => 'six',
+            '7' => 'seven', '8' => 'eight', '9' => 'nine',
             '10' => 'ten', '11' => 'eleven', '12' => 'twelve',
             '13' => 'thirteen', '14' => 'fourteen',
             '15' => 'fifteen', '16' => 'sixteen', '17' => 'seventeen',
@@ -1160,10 +1168,10 @@ if (! function_exists('getStringOfAmount')) {
             if ($number) {
                 $plural = (($counter = count($str)) && $number > 9) ? 's' : null;
                 $hundred = ($counter == 1 && $str[0]) ? ' and ' : null;
-                $str[] = ($number < 21) ? $words[$number].
-                    " ".$digits[$counter].$plural." ".$hundred : $words[floor($number / 10) * 10]
-                    ." ".$words[$number % 10]." "
-                    .$digits[$counter].$plural." ".$hundred;
+                $str[] = ($number < 21) ? $words[$number] .
+                    " " . $digits[$counter] . $plural . " " . $hundred : $words[floor($number / 10) * 10]
+                    . " " . $words[$number % 10] . " "
+                    . $digits[$counter] . $plural . " " . $hundred;
             } else {
                 $str[] = null;
             }
@@ -1172,19 +1180,19 @@ if (! function_exists('getStringOfAmount')) {
         $str = array_reverse($str);
         $result = implode('', $str);
         $points = ($point) ?
-            ".".$words[$point / 10]." ".
+            "." . $words[$point / 10] . " " .
             $words[$point = $point % 10] : '';
 
         $returnValue = $result;
         if ($points != '') {
-            $returnValue .= ".".$points;
+            $returnValue .= "." . $points;
         }
 
-        return ucwords($returnValue)." Only";
+        return ucwords($returnValue) . " Only";
     }
 }
 
-if (! function_exists('ClassTeacherSearch')) {
+if (!function_exists('ClassTeacherSearch')) {
 
     function ClassTeacherSearch($stdiv = null)
     {
@@ -1212,13 +1220,13 @@ if (! function_exists('ClassTeacherSearch')) {
         $returnHtml .= '<option value=""> Select Standard Division </option>';
 
         foreach ($result as $key => $value) {
-            $newValue = $value->standard_id."||".$value->division_id;
+            $newValue = $value->standard_id . "||" . $value->division_id;
 
             $selected = '';
             if ($newValue == $stdiv) {
                 $selected = 'selected="selected"';
             }
-            $returnHtml .= "<option value='".$newValue."' ".$selected.">".$value->standard_name." - ".$value->division_name."</option>";
+            $returnHtml .= "<option value='" . $newValue . "' " . $selected . ">" . $value->standard_name . " - " . $value->division_name . "</option>";
         }
 
         $returnHtml .= "</select>";
@@ -1226,7 +1234,7 @@ if (! function_exists('ClassTeacherSearch')) {
         echo $returnHtml;
     }
 }
-if (! function_exists('OtherBreackOff')) {
+if (!function_exists('OtherBreackOff')) {
 
     function OtherBreackOff($student_id_arr, $month_arr, $other_bf_amount = '', $from_date = null, $to_date = null)
     {
@@ -1289,9 +1297,9 @@ if (! function_exists('OtherBreackOff')) {
         $fees_title = fees_title::select('id', 'display_name', 'fees_title', 'mandatory', 'syear', 'other_fee_id')
             ->where([
                 'sub_institute_id' => session()->get('sub_institute_id'),
-                'syear'            => session()->get('syear'),
-                'fees_title_id'    => 1,
-            ])->orderBy('sort_order','ASC')->get()->toArray();
+                'syear' => session()->get('syear'),
+                'fees_title_id' => 1,
+            ])->orderBy('sort_order', 'ASC')->get()->toArray();
 
         $bk_off_with_name = array();
         foreach ($fees_title as $id => $arr) {
@@ -1315,12 +1323,12 @@ if (! function_exists('OtherBreackOff')) {
 }
 // last year start
 // last year end
-if (! function_exists('OtherBreackOfflast')) {
+if (!function_exists('OtherBreackOfflast')) {
 
     function OtherBreackOfflast($student_id_arr, $month_arr, $other_bf_amount = '', $from_date = null, $to_date = null)
     {
 
-        $syear = (session()->get('syear')-1);
+        $syear = (session()->get('syear') - 1);
         $student_id = $student_id_arr[0];
         $moth_ids = implode(',', $month_arr);
 
@@ -1380,9 +1388,9 @@ if (! function_exists('OtherBreackOfflast')) {
         $fees_title = fees_title::select('id', 'display_name', 'fees_title', 'mandatory', 'syear', 'other_fee_id')
             ->where([
                 'sub_institute_id' => session()->get('sub_institute_id'),
-                'syear'            => $syear,
-                'fees_title_id'    => 1,
-            ])->orderBy('sort_order','ASC')->get()->toArray();
+                'syear' => $syear,
+                'fees_title_id' => 1,
+            ])->orderBy('sort_order', 'ASC')->get()->toArray();
 
         $bk_off_with_name = array();
         foreach ($fees_title as $id => $arr) {
@@ -1406,7 +1414,7 @@ if (! function_exists('OtherBreackOfflast')) {
 }
 
 
-if (! function_exists('OtherBreackOffHead')) {
+if (!function_exists('OtherBreackOffHead')) {
 
     function OtherBreackOffHead()
     {
@@ -1421,7 +1429,7 @@ if (! function_exists('OtherBreackOffHead')) {
     }
 }
 
-if (! function_exists('OtherBreackOfMonth')) {
+if (!function_exists('OtherBreackOfMonth')) {
 
     function OtherBreackOfMonth($student_id_arr)
     {
@@ -1445,14 +1453,14 @@ if (! function_exists('OtherBreackOfMonth')) {
         return $responce_arr;
     }
 }
-if (! function_exists('OtherBreackOfMonthlast')) {
+if (!function_exists('OtherBreackOfMonthlast')) {
 
     function OtherBreackOfMonthlast($student_id_arr)
     {
 
         $student_id = $student_id_arr[0];
         $sub_institute_id = session()->get('sub_institute_id');
-        $syear = (session()->get('syear')-1);
+        $syear = (session()->get('syear') - 1);
 
         $fees_title = DB::table('fees_breakoff_other')
             ->selectRaw('sum(amount) as tot_amount,month_id')
@@ -1469,7 +1477,7 @@ if (! function_exists('OtherBreackOfMonthlast')) {
         return $responce_arr;
     }
 }
-if (! function_exists('OtherBreackOfMonthHead')) {
+if (!function_exists('OtherBreackOfMonthHead')) {
 
     function OtherBreackOfMonthHead($student_id_arr, $month_arr)
     {
@@ -1495,14 +1503,14 @@ if (! function_exists('OtherBreackOfMonthHead')) {
         return $final_bk;
     }
 }
-if (! function_exists('OtherBreackOfMonthHeadlast')) {
+if (!function_exists('OtherBreackOfMonthHeadlast')) {
 
     function OtherBreackOfMonthHeadlast($student_id_arr, $month_arr)
     {
         $student_id = $student_id_arr[0];
 
         $sub_institute_id = session()->get('sub_institute_id');
-        $syear = (session()->get('syear')-1);
+        $syear = (session()->get('syear') - 1);
 
         $fees_breckoff = DB::table('fees_breakoff_other')
             ->selectRaw('*,sum(amount) as tot_amount')
@@ -1521,7 +1529,7 @@ if (! function_exists('OtherBreackOfMonthHeadlast')) {
         return $final_bk;
     }
 }
-if (! function_exists('getCountDays')) {
+if (!function_exists('getCountDays')) {
 
     function getCountDays($from_date, $to_date)
     {
@@ -1543,7 +1551,7 @@ if (! function_exists('getCountDays')) {
     }
 }
 
-if (! function_exists('getStudents')) {
+if (!function_exists('getStudents')) {
 
     function getStudents($student_ids, $sub_institute_id = '', $syear = '')
     {
@@ -1558,7 +1566,7 @@ if (! function_exists('getStudents')) {
         //END 23-11-2021 Added FOR Add Homework API
 
         $stud_arr = implode(',', $student_ids);
-        $extra_where = " AND s.id in (".$stud_arr.")";
+        $extra_where = " AND s.id in (" . $stud_arr . ")";
 
         $result = DB::table('tblstudent as s')
             ->join('tblstudent_enrollment as se', function ($join) {
@@ -1604,8 +1612,8 @@ if (! function_exists('getStudents')) {
         foreach ($result as $key => $value) {
             $student_data[$value->id]['id'] = $value->id;
             $student_data[$value->id]['enrollment_no'] = $value->enrollment_no;
-            $student_data[$value->id]['student_name'] = $value->first_name." ".$value->last_name;
-            $student_data[$value->id]['student_full_name'] = $value->first_name." ".$value->middle_name." ".$value->last_name;
+            $student_data[$value->id]['student_name'] = $value->first_name . " " . $value->last_name;
+            $student_data[$value->id]['student_full_name'] = $value->first_name . " " . $value->middle_name . " " . $value->last_name;
             $student_data[$value->id]['gender'] = $value->gender;
             $student_data[$value->id]['mobile'] = $value->mobile;
             $student_data[$value->id]['dob'] = $value->dob;
@@ -1674,19 +1682,19 @@ if (! function_exists('getStudents')) {
     }
 }
 
-if (! function_exists('send_FCM_Notification')) {
+if (!function_exists('send_FCM_Notification')) {
     function send_FCM_Notification($to, $message)
     {
         $url = 'https://fcm.googleapis.com/fcm/send';
         foreach ($to as $val) {
             $fields = [
                 'registration_ids' => array($val),
-                'notification'     => $message,
+                'notification' => $message,
             ];
 
 
             $headers = array(
-                'Authorization: key='."AAAApM0aBq0:APA91bEMbTNrawzSIm6Ra-IedYR4PmLZjznNGqmjep6-Opk7mSBha3UssNij8k7AhU4q1m2Y0fIh8bhFHgn3yfsGhS6GWFnKbiBQnICF9lYISJfX9t6cdYskBUyOeJVYW38aRKgg7VkK",
+                'Authorization: key=' . "AAAApM0aBq0:APA91bEMbTNrawzSIm6Ra-IedYR4PmLZjznNGqmjep6-Opk7mSBha3UssNij8k7AhU4q1m2Y0fIh8bhFHgn3yfsGhS6GWFnKbiBQnICF9lYISJfX9t6cdYskBUyOeJVYW38aRKgg7VkK",
                 'Content-Type: application/json',
             );
 
@@ -1706,14 +1714,14 @@ if (! function_exists('send_FCM_Notification')) {
     }
 }
 
-if (! function_exists('sendNotification')) {
+if (!function_exists('sendNotification')) {
     function sendNotification($notification_arr)
     {
         appNotificationModel::insert($notification_arr);
     }
 }
 
-if (! function_exists('htmlToPDF')) {
+if (!function_exists('htmlToPDF')) {
     function htmlToPDF($htmlPath, $pdfPath)
     {
         $command = '/usr/local/bin/wkhtmltopdf ';
@@ -1724,7 +1732,7 @@ if (! function_exists('htmlToPDF')) {
     }
 }
 
-if (! function_exists('htmlToPDFPortrait')) {
+if (!function_exists('htmlToPDFPortrait')) {
     function htmlToPDFPortrait($htmlPath, $pdfPath)
     {
         $command = '/usr/local/bin/wkhtmltopdf -L 0 -R 0 -B 0 -T 0.5 -s A4 '; // --page-height 297mm //-L 0 -R 0 -B 0 -T 0 -s A4
@@ -1735,7 +1743,7 @@ if (! function_exists('htmlToPDFPortrait')) {
     }
 }
 
-if (! function_exists('htmlToPDFLandscape')) {
+if (!function_exists('htmlToPDFLandscape')) {
     function htmlToPDFLandscape($htmlPath, $pdfPath)
     {
         $command = '/usr/local/bin/wkhtmltopdf -L 0 -R 0 -B 0 -T 0.5 --page-height 250mm --page-width 300mm '; // --page-height 297mm //-L 0 -R 0 -B 0 -T 0 -s A4
@@ -1746,7 +1754,7 @@ if (! function_exists('htmlToPDFLandscape')) {
     }
 }
 
-if (! function_exists('htmlToPDFLandscapeCertificate')) {
+if (!function_exists('htmlToPDFLandscapeCertificate')) {
     function htmlToPDFLandscapeCertificate($htmlPath, $pdfPath)
     {
         $command = '/usr/local/bin/wkhtmltopdf -L 5 -R 5 -B 5 -T 5 -s A5 --orientation "Landscape" '; // --page-height 297mm //-L 0 -R 0 -B 0 -T 0 -s A4
@@ -1757,7 +1765,7 @@ if (! function_exists('htmlToPDFLandscapeCertificate')) {
     }
 }
 
-if (! function_exists('sendSMS')) {
+if (!function_exists('sendSMS')) {
     function sendSMS($mobile, $text, $sub_institute_id)
     {
         $data = manage_sms_api::where(['sub_institute_id' => $sub_institute_id])
@@ -1770,7 +1778,7 @@ if (! function_exists('sendSMS')) {
             $errorMessage = true;
             $text = urlencode($text);
             $data['last_var'] = urlencode($data['last_var']);
-            $url = $data['url'].$data['pram'].$data['mobile_var'].$mobile.$data['text_var'].$text.$data['last_var'];
+            $url = $data['url'] . $data['pram'] . $data['mobile_var'] . $mobile . $data['text_var'] . $text . $data['last_var'];
             $ch = curl_init();
 
             // Ignore SSL certificate verification
@@ -1801,7 +1809,7 @@ if (! function_exists('sendSMS')) {
     }
 }
 
-if (! function_exists('LMSSearchChain')) {
+if (!function_exists('LMSSearchChain')) {
 
     function LMSSearchChain(
         $col,
@@ -1886,7 +1894,7 @@ if (! function_exists('LMSSearchChain')) {
             $chapters = DB::table('chapter_master')
                 ->where([
                     'sub_institute_id' => session()->get('sub_institute_id'), 'subject_id' => $sub_val,
-                    "standard_id"      => $std_val,
+                    "standard_id" => $std_val,
                 ])
                 ->pluck('chapter_name', 'id');
 
@@ -1915,38 +1923,38 @@ if (! function_exists('LMSSearchChain')) {
             }
         }
 
-        $std = '<div class="col-md-'.$col.'">
+        $std = '<div class="col-md-' . $col . '">
                     <div class="form-group">
                         <label for="title">Select Standard</label>
-                        <select name="'.$prefix.$std_name.'" id="'.$prefix.'standard" class="form-control" '.$multiple.'>
-                            '.$std_option.'
+                        <select name="' . $prefix . $std_name . '" id="' . $prefix . 'standard" class="form-control" ' . $multiple . '>
+                            ' . $std_option . '
                         </select>
                     </div>
                 </div>';
 
-        $sub = ' <div class="col-md-'.$col.'">
+        $sub = ' <div class="col-md-' . $col . '">
                     <div class="form-group">
                         <label for="title">Select Subject</label>
-                        <select name="'.$prefix.$sub_name.'" id="'.$prefix.'subject" class="form-control" '.$multiple.'>
-                            '.$sub_option.'
+                        <select name="' . $prefix . $sub_name . '" id="' . $prefix . 'subject" class="form-control" ' . $multiple . '>
+                            ' . $sub_option . '
                         </select>
                     </div>
                 </div>';
 
-        $chapter = ' <div class="col-md-'.$col.'">
+        $chapter = ' <div class="col-md-' . $col . '">
                     <div class="form-group">
                         <label for="title">Select Chapter</label>
-                        <select name="'.$prefix.$chapter_name.'" id="'.$prefix.'chapter" class="form-control" '.$multiple.'>
-                            '.$chapter_option.'
+                        <select name="' . $prefix . $chapter_name . '" id="' . $prefix . 'chapter" class="form-control" ' . $multiple . '>
+                            ' . $chapter_option . '
                         </select>
                     </div>
                 </div>';
 
-        $topic = ' <div class="col-md-'.$col.'">
+        $topic = ' <div class="col-md-' . $col . '">
                     <div class="form-group">
                         <label for="title">Select Topic</label>
-                        <select name="'.$prefix.$topic_name.'" id="'.$prefix.'topic" class="form-control" '.$multiple.'>
-                            '.$topic_option.'
+                        <select name="' . $prefix . $topic_name . '" id="' . $prefix . 'topic" class="form-control" ' . $multiple . '>
+                            ' . $topic_option . '
                         </select>
                     </div>
                 </div>';
@@ -1974,14 +1982,14 @@ if (! function_exists('LMSSearchChain')) {
     }
 }
 
-if (! function_exists('getGrade')) {
+if (!function_exists('getGrade')) {
     function getGrade($grade_arr, $total_mark, $total_gain_mark)
     {
         if ($total_mark == 0) {
             return "-";
         }
 
-        $per = round((100 * $total_gain_mark) / $total_mark,0);
+        $per = round((100 * $total_gain_mark) / $total_mark, 0);
 
         foreach ($grade_arr as $id => $data) {
             if (!isset($grade)) {
@@ -1998,31 +2006,31 @@ if (! function_exists('getGrade')) {
     }
 }
 
-if (! function_exists('getGradeComment')) {
+if (!function_exists('getGradeComment')) {
     function getGradeComment($grade_arr, $total_mark, $total_gain_mark)
-{
-    if (!is_numeric($total_mark) || !is_numeric($total_gain_mark)) {
-        return 0;
-    }
-    $per = round((100 * $total_gain_mark) / $total_mark,0);
-    foreach ($grade_arr as $id => $data) {
-        if (! isset($comment)) {
-            if ($per >= $data['breakoff']) {
-                $comment = $data['comment'];
+    {
+        if (!is_numeric($total_mark) || !is_numeric($total_gain_mark)) {
+            return 0;
+        }
+        $per = round((100 * $total_gain_mark) / $total_mark, 0);
+        foreach ($grade_arr as $id => $data) {
+            if (!isset($comment)) {
+                if ($per >= $data['breakoff']) {
+                    $comment = $data['comment'];
+                }
             }
         }
-    }
-    if (! isset($comment)) {
-        $comment = "-";
+        if (!isset($comment)) {
+            $comment = "-";
+        }
+
+        return $comment;
     }
 
-    return $comment;
 }
 
-}
 
-
-if (! function_exists('getGradeScale')) {
+if (!function_exists('getGradeScale')) {
     function getGradeScale()
     {
         $sub_institute_id = session()->get('sub_institute_id');
@@ -2030,13 +2038,13 @@ if (! function_exists('getGradeScale')) {
         $standard_id = session()->get('standard');
 
         $ret_grade = DB::table('result_std_grd_maping as sgm')
-        ->join('grade_master_data as dt', 'dt.grade_id', '=', 'sgm.grade_scale')
-        ->select('dt.*')
-        ->where('sgm.standard', $standard_id)
-        ->where('sgm.sub_institute_id', $sub_institute_id)
-        ->where('dt.syear', $syear)
-        ->orderBy('dt.breakoff', 'DESC')
-        ->get()->toArray();
+            ->join('grade_master_data as dt', 'dt.grade_id', '=', 'sgm.grade_scale')
+            ->select('dt.*')
+            ->where('sgm.standard', $standard_id)
+            ->where('sgm.sub_institute_id', $sub_institute_id)
+            ->where('dt.syear', $syear)
+            ->orderBy('dt.breakoff', 'DESC')
+            ->get()->toArray();
 
         //converting it into array 
         $grade_arr = array();
@@ -2057,8 +2065,9 @@ if (! function_exists('getGradeScale')) {
     }
 }
 
-if (! function_exists('getBestOf')) {
-    function getBestOf($elemArr) {
+if (!function_exists('getBestOf')) {
+    function getBestOf($elemArr)
+    {
         $newArr = array();
         rsort($elemArr);
         $srNo = 0;
@@ -2072,29 +2081,29 @@ if (! function_exists('getBestOf')) {
     }
 }
 
-if (! function_exists('get_string')) {
+if (!function_exists('get_string')) {
 
     function get_string($arg, $type = '')
     {
         $sub_institute_id = session()->get('sub_institute_id');
-        $strings = DB::table('app_language')->whereRaw('sub_institute_id = 0 and string = "'.$arg.'"')->value('value');
-        $strings_id = DB::table('app_language')->whereRaw('sub_institute_id = 0 and string = "'.$arg.'"')->groupBy('menu_id')->value('menu_id');        
+        $strings = DB::table('app_language')->whereRaw('sub_institute_id = 0 and string = "' . $arg . '"')->value('value');
+        $strings_id = DB::table('app_language')->whereRaw('sub_institute_id = 0 and string = "' . $arg . '"')->groupBy('menu_id')->value('menu_id');        
         // return $arg;exit;
         
         // dd($strings);
         if ($type === 'menu_id') {
             $menu_id = $arg;
-            $normClature = normClature::whereRaw('sub_institute_id='.$sub_institute_id.' and status=1')
+            $normClature = normClature::whereRaw('sub_institute_id=' . $sub_institute_id . ' and status=1')
                 ->where('menu_id', $menu_id)
                 ->first();
         } else {
             $requestValue = $arg;
-            $normClature = normClature::whereRaw('sub_institute_id='.$sub_institute_id.' and status=1')
+            $normClature = normClature::whereRaw('sub_institute_id=' . $sub_institute_id . ' and status=1')
                 ->where('string', $requestValue)
                 ->first();
         }
-    
-  
+
+
         if ($normClature) {
             if (!empty($normClature->value)) {
                 return $normClature->value;
@@ -2104,5 +2113,103 @@ if (! function_exists('get_string')) {
         } else {
             return $strings ?? '';
         }
+    }
+
+    function get_school_details($grade = '', $std = '', $div = '')
+    {
+
+        $marking_period_id = session()->get('term_id');
+        $get_name_data = DB::table('academic_section as ac')
+            ->join('standard as s', function ($join) use ($marking_period_id) {
+                $join->whereRaw('s.grade_id = ac.id AND ac.sub_institute_id = s.sub_institute_id')
+                    ->when($marking_period_id, function ($query) use ($marking_period_id) {
+                        $query->where('s.marking_period_id', $marking_period_id);
+                    });
+            })
+            ->selectRaw("ac.title AS academic_name, s.name AS std_name")
+            ->where('ac.sub_institute_id', session()->get('sub_institute_id'))
+            ->when($grade, function ($q) use ($grade) {
+                $q->where('ac.id', $grade);
+            })
+            ->when($std, function ($q) use ($std) {
+                $q->where('s.id', $std);
+            });
+
+        if ($div) {
+            $get_name_data->join('std_div_map as sd', function ($join) {
+                $join->whereRaw('sd.standard_id = s.id AND sd.sub_institute_id = s.sub_institute_id');
+            })->join('division as d', function ($join) {
+                $join->whereRaw('d.id = sd.division_id');
+            })->when($div, function ($q) use ($div) {
+                $q->where('d.id', $div);
+            })->selectRaw("d.name AS div_name");
+        }
+
+        $get_name_data = $get_name_data->get()->toArray();
+
+        $result = DB::table('fees_receipt_book_master')
+            ->selectRaw('*,GROUP_CONCAT(fees_head_id) heads')
+            ->where('syear', session()->get('syear'))
+            ->where('sub_institute_id', session()->get('sub_institute_id'))
+            ->groupByRaw("receipt_line_1,receipt_line_2,receipt_line_3,
+            receipt_line_4,receipt_prefix,receipt_logo,last_receipt_number")
+            ->get()->toArray();
+
+        $receipt_book_arr = [];
+        $html ='';
+        foreach ($result as $temp_id => $receipt_detail) {
+            $receipt_book_arr = $receipt_detail;
+        }
+
+        // $image_path = "http://" . $_SERVER['HTTP_HOST'] . "/storage/fees/" . $receipt_book_arr->receipt_logo;
+        if(count($result)>0){
+        $html .= '<table style="margin:0 auto;" width="80%">
+        <tbody>
+            <tr>';
+                // <td style=" width: 165px;text-align: center;" align="left">';
+
+        // $html .= '    <img style="width: 100px;height: 90px;margin: 0;" src="' . $image_path . '" alt="SCHOOL LOGO">';
+        // $html .= '</td>';
+        $html .= '<td colspan="3" style="text-align:center !important;" align="center"> ';
+        if ($receipt_book_arr->receipt_line_1 != '') {
+            $html .= '<span style=" font-size: 26px;font-weight: 700;font-family: Arial, Helvetica, sans-serif !important;">' . $receipt_book_arr->receipt_line_1 . '</span><br>';
+        }
+        if ($receipt_book_arr->receipt_line_2 != '') {
+            $html .= '<span style=" font-size: 18px;font-weight: 700;font-family: Arial, Helvetica, sans-serif !important">' . $receipt_book_arr->receipt_line_2 . '</span><br>';
+        }
+        if ($receipt_book_arr->receipt_line_3 != '') {
+            $html .= '<span style=" font-size: 14px;font-weight: 600;font-family: Arial, Helvetica, sans-serif !important">' . $receipt_book_arr->receipt_line_3 . '</span><br>';
+        }
+        if ($receipt_book_arr->receipt_line_4 != '') {
+            $html .= '<span style=" font-size: 14px;font-weight: 600;font-family: Arial, Helvetica, sans-serif !important;">' . $receipt_book_arr->receipt_line_4 . '</span><br>';
+        }
+        $html .= '</td>';
+        $html .= '</tr>';
+        $html .= '<tr>
+    <td>&nbsp;</td>
+  </tr>';
+        $html .= '<tr>';
+        if (isset($get_name_data)) {
+
+            if (isset($get_name_data[0]->academic_name)) {
+                $html .= '
+         <td colspan="3" style="text-align:center !important;" align="center">
+        <span style=" font-size: 18px;font-weight: 700;font-family: Arial, Helvetica, sans-serif !important;margin-left: 15% !important;">Academic Section : ' . $get_name_data[0]->academic_name . '</span>';
+            }
+
+            if (isset($get_name_data[0]->std_name)) {
+                $html .= ' | <span style=" font-size: 18px;font-weight: 700;font-family: Arial, Helvetica, sans-serif !important">Standard : ' . $get_name_data[0]->std_name . '</span>';
+            }
+
+            if (isset($get_name_data[0]->div_name)) {
+                $html .= ' | <span style=" font-size: 18px;font-weight: 700;font-family: Arial, Helvetica, sans-serif !important">Division : ' . $get_name_data[0]->div_name . '</span>';
+            }
+            $html .= '</td>';
+        }
+        $html .= '</tr>';
+        $html .= '</tbody>';
+        $html .= '</table>';
+    }
+        return $html;
     }
 }

@@ -59,7 +59,11 @@
                                         <td>{{ $col_arr['to_date'] }}</td>
                                         <td>{{ $col_arr['message'] }}</td>
                                         <td>
-                                            <a href="<?php echo asset('storage/leave_application/' . $col_arr['files']); ?>" download>Download</a> 
+                                        @if(!empty($col_arr['files']))
+                                            <a target="blank" href="/storage/leave_application/{{$col_arr['files']}}">View</a>
+                                        @else
+                                            -</td>
+                                        @endif
                                         </td>
                                         <td>
                                             @if(!empty($col_arr['reply']))

@@ -83,7 +83,7 @@
                                     <td>{{$j}}</td>
                                     <td>{{$value->TASK_TITLE}}</td>
                                     <td>{{$value->TASK_DESCRIPTION}}</td>
-                                    <td>{{date('d-m-Y',strtotime($value->TASK_DATE))}}</td>
+                                    <td>{{ $value->TASK_DATE ? date('d-m-Y', strtotime($value->TASK_DATE)) : '-' }}</td>
                                     <td>{{$value->ALLOCATOR}}</td>
                                     <td>{{$value->ALLOCATED_TO}}</td>
                                     <td>{{$value->reply}}</td>
@@ -91,7 +91,7 @@
                                     <td>@if($value->approved_by == "") - @else {{$value->approved_by}} @endif</td>
                                     <td>
                                         <a target="blank" href="/storage/frontdesk/{{$value->TASK_ATTACHMENT}}">{{$value->TASK_ATTACHMENT}}</a> </td>
-                                    <td>{{date('d-m-Y H:i:s',strtotime($value->approved_on))}}</td>
+                                    <td>{{ $value->approved_on ? date('d-m-Y H:i:s', strtotime($value->approved_on)) : '-' }}</td>
                                     <td>
                                         <div class="d-inline">
                                             <a href="{{ route('task.edit',$value->ID)}}" class="btn btn-info btn-outline"><i class="ti-pencil-alt"></i></a>
