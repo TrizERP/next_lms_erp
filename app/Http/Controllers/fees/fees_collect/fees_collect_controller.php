@@ -290,11 +290,20 @@ class fees_collect_controller extends Controller
                     $join->whereRaw('se.student_id = s.id')->when($marking_period_id, function ($join) use ($marking_period_id) {
                         $join->where('s.marking_period_id', $marking_period_id);
                     });
+                })->join('standard as st', function ($join) use($marking_period_id) {
+                    $join->whereRaw('st.id = se.standard_id')->when($marking_period_id, function ($join) use ($marking_period_id) {
+                        $join->where('st.marking_period_id', $marking_period_id);
+                    });
+                })->leftJoin('division as d', function ($join) {
+                    $join->whereRaw('d.id = se.section_id');
+                })->leftJoin('student_quota as sq', function ($join) {
+                    $join->whereRaw('sq.id = se.student_quota AND sq.sub_institute_id = se.sub_institute_id');
                 })
                 ->where('s.sub_institute_id', session()->get('sub_institute_id'))
                 ->where('se.syear', session()->get('syear'))
-                //->whereNotNull('s.admission_date')
-                //->whereNull('se.end_date')
+                ->selectRaw("s.*,se.syear,se.student_id,se.grade_id,concat(s.first_name,' ',s.middle_name,' ',s.last_name) as full_name,
+                se.standard_id,se.section_id,se.student_quota,sq.title AS stu_quota,se.start_date,
+                se.end_date, st.name standard_name, d.name as division_name,s.admission_year")
                 ->where(function ($q) use ($request) {
                     if (isset($request['mobile']) && $request['mobile'] != '') {
                         $q->where('s.mobile', $request['mobile']);
@@ -348,6 +357,14 @@ class fees_collect_controller extends Controller
                     $responce_arr['status_code'] = 0;
                     $responce_arr['message'] = "Fees Breakoff Not Found";
                 }
+                $stud_details=[
+                    "Student Name"=>$check[0]->full_name,
+                    "Standard"=>$check[0]->standard_name  ,
+                    "Division"=>$check[0]->division_name,
+                    "Student Quota"=>$check[0]->stu_quota,
+                    "Admission Year"=>$check[0]->admission_year,
+                ];
+                $responce_arr['Error_details']=$stud_details;
             } else {
                 $responce_arr['status_code'] = 0;
                 $responce_arr['message'] = "Student Details Not Found";
@@ -2400,28 +2417,7 @@ class fees_collect_controller extends Controller
         }
     }
 
-    /**
-     * Update the specified resource in storage.
-     *
-     * @param  Request  $request
-     * @param  int  $id
-     * @return void
-     */
-    public function update(Request $request, $id)
-    {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     *
-     * @param  int  $id
-     * @return void
-     */
-    public function destroy($id)
-    {
-        //
-    }
+ 
 
     public function studentFeesDetailAPI(Request $request)
     {

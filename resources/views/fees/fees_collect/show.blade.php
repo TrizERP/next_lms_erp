@@ -13,16 +13,23 @@
 
         <div class="card">
         @if(!empty($data['message']))
-                    @if(!empty($data['status_code']) && $data['status_code'] == 1)
+            @if(!empty($data['status_code']) && $data['status_code'] == 1)
                         <div class="alert alert-success alert-block">
-                            @else
-                                <div class="alert alert-danger alert-block">
-                                    @endif
-                                    <button type="button" class="close" data-dismiss="alert">×</button>
-                                    <strong>{{ $data['message'] }}</strong>
-                                </div>
-                            @endif
-            @php
+            @else
+                        <div class="alert alert-danger alert-block">
+            @endif
+                <button type="button" class="close" data-dismiss="alert">×</button>
+                <strong>{{ $data['message'] }}
+            @if(isset($data['Error_details']))
+            <div style="display:flex;flex-wrap:wrap;justify-content:space-between">
+            @foreach($data['Error_details'] as $key=>$val)
+            <div>{{$key.' : '.$val}}</div>
+            @endforeach
+            </div>
+            @endif </strong>
+            </div>
+        @endif
+        @php
         $grade_id = $standard_id = $division_id = '';
 
             if(isset($data['grade_id'])){
