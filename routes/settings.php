@@ -15,6 +15,7 @@ Route::group(['prefix' => 'settings', 'middleware' => ['session', 'menu', 'logRo
     Route::resource('biomatrix', biomatrixController::class);
     Route::get('setsession', [tblcustomfieldsController::class, 'setsession'])->name('setsession');
     Route::get('setinstitute', [tblcustomfieldsController::class, 'setinstitute'])->name('setinstitute');
+    Route::post('check-email', [smtpController::class, 'CheckEmail'])->name('check-email');    
 
     Route::resource('templatemaster', templateMasterController::class);
     Route::get('view_all_tag', [templateMasterController::class, 'viewAllTag'])->name('view_all_tag');
