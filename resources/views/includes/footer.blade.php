@@ -20,6 +20,10 @@
 			xhttp.onreadystatechange = function() {
 				if (this.readyState == 4 && this.status == 200) {
 					location.reload();
+					var form = document.querySelector('form');
+					if (form) {
+						form.submit();
+					}
 				}
 			};
 			xhttp.open("GET", "{{route('setsession')}}?"+item+"="+object, true);
