@@ -36,7 +36,7 @@
 	                                <option value="1" @if(isset($data))@if("1" == $data['send_sms']) selected @endif  @endif> Yes </option>
 	                                <option value="0" @if(isset($data))@if("0" == $data['send_sms']) selected @endif  @endif> No. </option>
 	                            </select>
-	                        </div>
+	                        </div>-->	
 	                        <div class="col-md-4 form-group">
 	                            <label>Fees Paid Send Email</label>
 	                            <select name="send_email" id="send_email" class="form-control" required>
@@ -45,7 +45,7 @@
 	                                <option value="0" @if(isset($data))@if("0" == $data['send_email']) selected @endif  @endif> No. </option>
 	                            </select>
 	                        </div>
--->							
+						
 	                        <div class="col-md-4 form-group">
 	                            <label>Fees Receipt Template</label>
 	                            <select name="fees_receipt_template" id="fees_receipt_template" class="form-control" required>

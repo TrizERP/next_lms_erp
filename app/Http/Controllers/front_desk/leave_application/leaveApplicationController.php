@@ -189,8 +189,6 @@ class leaveApplicationController extends Controller
                 ]);
 
             //START Send Notification Code
-
-
             $get_student = DB::table("leave_applications")
                 ->where("id", "=", $leave_app_id)
                 ->where("syear", "=", session()->get('syear'))
@@ -217,11 +215,11 @@ class leaveApplicationController extends Controller
             $schoolName = $schoolData[0]['SchoolName'];
             $schoolLogo = $_SERVER['APP_URL'].'/admin_dep/images/'.$schoolData[0]['Logo'];
 
-            if (count($student_data) > 0) {
+            if (count($student_data) > 0 && !empty($get_student[0]->reply)) {
                 $mobile_no = $student_data[0]->mobile;
                 $student_name = $student_data[0]->student_name;
 
-                $pushMessage = $student_name . " - Your message : ".$get_student[0]->message." on date : ".$apply_date." <br>"." Reply : ".$get_student[0]->reply." on date : ".$reply_on_date." & status of Leave Application is : ".$get_student[0]->status;
+                $pushMessage = $student_name . " - Your message : ".$get_student[0]->message." on date : ".$apply_date." - Reply : ".$get_student[0]->reply." on date : ".$reply_on_date." & status of Leave Application is : ".$get_student[0]->status;
 
                 $app_notification_content = [
                     'NOTIFICATION_TYPE'        => 'Leave Application',

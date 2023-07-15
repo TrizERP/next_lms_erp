@@ -19,7 +19,7 @@
             }
                 $getInstitutes = session()->get('getInstitutes');
                  $academicYears = session()->get('academicYears');
-
+                 $month_name=[1=>"January",2=>"February",3=>"March",4=>"April",5=>"May",6=>"June",7=>"July",8=>"August",9=>"September",10=>"October",11=>"November",12=>"December"];                 
         @endphp
         <div class="card">
             @if ($sessionData = Session::get('data'))
@@ -32,16 +32,14 @@
                                 <strong>{{ $sessionData['message'] }}</strong>
                             </div>
                         @endif
-                        <form action="{{ route('show_monthwise_student_attendance_report') }}"
-                              enctype="multipart/form-data" method="post">
+                        <form action="{{ route('show_monthwise_student_attendance_report') }}" enctype="multipart/form-data" method="post">
+                        @csrf
                             <div class="row">
-
                                 {{ App\Helpers\SearchChain('4','single','grade,std,div',$grade_id,$standard_id,$division_id) }}
                                 <div class="col-md-4 form-group">
                                     <label>Year</label>
-                                    <select class="form-control" name="year" id="year">
+                                    <select class="form-control" name="year" id="year" required>
                                         <option value="">Select Year</option>
-
                                         @if(count($academicYears) > 0)
                                             @foreach($academicYears as $kay => $vay)
                                                 <option value="{{$vay->syear}}"
@@ -52,58 +50,14 @@
                                 </div>
                                 <div class="col-md-4 form-group">
                                     <label>Month</label>
-                                    <select name="month" class="form-control" required="required">
+                                    <select class="form-control" name="month" id="month" required>
                                         <option value="">Select Month</option>
-                                        <option value="1"
-                                                @if(isset($data['month'])) @if($data['month'] == '1') selected="selected" @endif @endif>
-                                            January
-                                        </option>
-                                        <option value="2"
-                                                @if(isset($data['month'])) @if($data['month'] == '2') selected="selected" @endif @endif>
-                                            February
-                                        </option>
-                                        <option value="3"
-                                                @if(isset($data['month'])) @if($data['month'] == '3') selected="selected" @endif @endif>
-                                            March
-                                        </option>
-                                        <option value="4"
-                                                @if(isset($data['month'])) @if($data['month'] == '4') selected="selected" @endif @endif>
-                                            April
-                                        </option>
-                                        <option value="5"
-                                                @if(isset($data['month'])) @if($data['month'] == '5') selected="selected" @endif @endif>
-                                            May
-                                        </option>
-                                        <option value="6"
-                                                @if(isset($data['month'])) @if($data['month'] == '6') selected="selected" @endif @endif>
-                                            June
-                                        </option>
-                                        <option value="7"
-                                                @if(isset($data['month'])) @if($data['month'] == '7') selected="selected" @endif @endif>
-                                            July
-                                        </option>
-                                        <option value="8"
-                                                @if(isset($data['month'])) @if($data['month'] == '8') selected="selected" @endif @endif>
-                                            August
-                                        </option>
-                                        <option value="9"
-                                                @if(isset($data['month'])) @if($data['month'] == '9') selected="selected" @endif @endif>
-                                            September
-                                        </option>
-                                        <option value="10"
-                                                @if(isset($data['month'])) @if($data['month'] == '10') selected="selected" @endif @endif>
-                                            October
-                                        </option>
-                                        <option value="11"
-                                                @if(isset($data['month'])) @if($data['month'] == '11') selected="selected" @endif @endif>
-                                            November
-                                        </option>
-                                        <option value="12"
-                                                @if(isset($data['month'])) @if($data['month'] == '12') selected="selected" @endif @endif>
-                                            December
-                                        </option>
+                                        @foreach($month_name as $key => $val)
+                                            <option value="{{$key}}" @if(isset($data['month']) && $data['month'] == $key) selected @endif>{{$val}}</option>
+                                        @endforeach
                                     </select>
-                                </div>
+                                </div>  
+
                                 <div class="col-md-12 form-group">
                                     <center>
                                         <input type="submit" name="submit" value="Search" class="btn btn-success">
@@ -121,6 +75,10 @@
                                 }
                         @endphp
                         <div class="card">
+                    @php
+                        echo App\Helpers\get_school_details($grade_id,$standard_id,$division_id);
+                        echo '<br><center><span style=" font-size: 14px;font-weight: 600;font-family: Arial, Helvetica, sans-serif !important">Month : '.$month_name[$data['month']].' / </span><span style=" font-size: 14px;font-weight: 600;font-family: Arial, Helvetica, sans-serif !important">Year : '.$data['year'].'</span></center><br>';
+                    @endphp                        
                             <div class="table-responsive">
                                 <table id="example" class="table display" style="border:none !important">
                                     <!-- <h2 id="head-table"></h2> -->
@@ -141,11 +99,11 @@
                                     <tbody>
                                     @foreach($student_data as $key => $value)
                                         <tr>
-                                            <?php
+                                            @php
                                             $totalWorkingDays = 0;
                                             $totalP = 0;
                                             $totalA = 0;
-                                            ?>
+                                            @endphp
                                             <td>{{$j++}}</td>
                                             <td>{{$value['enrollment_no']}}</td>
                                             <td>{{$value['first_name']." ".$value['middle_name']." ".$value['last_name']}}</td>
@@ -153,7 +111,7 @@
                                                 <td>
                                                     @if(isset($data['attendance_data'][$value['id']][$i]))
                                                         {{$data['attendance_data'][$value['id']][$i]}}
-                                                        <?php
+                                                        @php
                                                         if ($data['attendance_data'][$value['id']][$i] == 'A') {
                                                             $totalA++;
                                                         } else {
@@ -161,7 +119,7 @@
                                                         }
 
                                                         $totalWorkingDays++;
-                                                        ?>
+                                                        @endphp
                                                     @else
                                                         @if(in_array($i,$data['sundays']))
                                                             S
@@ -169,9 +127,9 @@
                                                             H
                                                         @else
                                                             -
-                                                            <?php
+                                                            @php
                                                             $totalWorkingDays++;
-                                                            ?>
+                                                            @endphp
                                                         @endif
                                                     @endif
                                                 </td>
