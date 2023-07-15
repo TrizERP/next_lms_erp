@@ -565,13 +565,11 @@ class AJAXController extends Controller
 
         foreach ($till_now_breckoff as $month_id => $fees_detail) {
             foreach ($fees_detail as $head_name => $arr) {
-                if($arr['amount'] !==0){
                 if (! isset($reg_bk_month_wise[$arr['title']])) {
                     $reg_bk_month_wise[$arr['title']] = 0;
                 }
                 $reg_bk_month_wise[$arr['title']] += $arr['amount'];
                 $final_bk_name[$arr['title']] = $head_name;
-            }
             }
         }
         // return $final_bk_name;exit;
