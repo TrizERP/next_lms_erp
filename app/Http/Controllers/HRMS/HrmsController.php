@@ -10,6 +10,8 @@ use App\Models\PayrollType;
 use App\Models\user\tbluserModel;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use function App\Helpers\is_mobile;
+
 
 class HrmsController extends Controller
 {
@@ -66,6 +68,7 @@ class HrmsController extends Controller
 
     public function hrmsDestroy(Request $request, $id)
     {
+        $type = $request->input('type');
         if ($id > 0) {
             HrmsJobTitle::where('id', $id)->delete();
         }
@@ -260,11 +263,11 @@ class HrmsController extends Controller
             $hrmsList = $hrmsList->where('user_id',$request->employee_id);
         }
         $hrmsList = $hrmsList->get();
-//        return $hrmsList;
+
         //return json_decode($employeeSalaryStructures[0]['employee_salary_data'], true);
+//        return view('HRMS.hrms_attendance_report.index', compact('employees', 'employeeLists','from_date','end_date','hrmsList'));
         return is_mobile($type, "HRMS.hrms_attendance_report.index", compact('employees','employeeLists','from_date','end_date','hrmsList'), "view",'compact');
 
-//        return view('HRMS.hrms_attendance_report.index', compact('employees', 'employeeLists','from_date','end_date','hrmsList'));
     }
 
     public function earlyGoingHrmsAttendanceReport(Request $request) {
