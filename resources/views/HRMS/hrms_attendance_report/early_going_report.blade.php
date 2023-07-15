@@ -92,9 +92,9 @@
                         <tr>
                             <td>{{$j++}}</td>
                             <td>{{$hrmsAttendance['user_id']}}</td>
-                            <td>{{$hrmsAttendance->getUser['first_name'] .' '. $hrmsAttendance->getUser['last_name']}}</td>
-                            <td>{{date('h:i',strtotime($hrmsAttendance['punchout_time']))}}</td>
-                            <td>{{date('h:i',strtotime($hrmsAttendance['expected_time']))}}</td>
+                            <td>{{isset($hrmsAttendance['getUser']) ? $hrmsAttendance['getUser']['first_name'] .'-'.$hrmsAttendance['getUser']['last_name'] : ''}}</td>
+                            <td>{{ $hrmsAttendance['punchin_time']}}</td>
+                            <td>{{$hrmsAttendance['punchout_time']}}</td>
                         </tr>
                         @endforeach
                         </tbody>
