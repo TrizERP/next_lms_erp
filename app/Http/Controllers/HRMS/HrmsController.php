@@ -16,20 +16,26 @@ class HrmsController extends Controller
     public function hrmsJobTitle(Request $request)
     {
         $data['data'] = HrmsJobTitle::all();
-        return view('HRMS.hrms_job_title.index', ["data" => $data]);
+//        return $data;
+        $type = $request->input('type');
+        return is_mobile($type, "HRMS.hrms_job_title.index", $data, "view");
+//     return view('HRMS.hrms_job_title.index', ["data" => $data]);
     }
 
     public function hrmsCreate(Request $request, $id = 0)
     {
+        $type = $request->input('type');
         if ($id) {
             $hrmsJobTitle = HrmsJobTitle::find($id);
-            return view('HRMS.hrms_job_title.create', compact('hrmsJobTitle'));
+            return is_mobile($type, "HRMS.hrms_job_title.create", compact('hrmsJobTitle'), "view",'compact');
+            //return view('HRMS.hrms_job_title.create', compact('hrmsJobTitle'));
         }
         $hrmsJobTitle['title'] = '';
         $hrmsJobTitle['description'] = '';
         $hrmsJobTitle['is_active'] = 1;
         $hrmsJobTitle['id'] = 0;
-        return view('HRMS.hrms_job_title.create', compact('hrmsJobTitle'));
+        return is_mobile($type, "HRMS.hrms_job_title.create", compact('hrmsJobTitle'), "view",'compact');
+        //return view('HRMS.hrms_job_title.create', compact('hrmsJobTitle'));
     }
 
     public function hrmsStore(Request $request)
@@ -37,7 +43,7 @@ class HrmsController extends Controller
 
         $clientId = $request->session()->get('client_id');
         $subInstituteId = $request->session()->get('sub_institute_id');
-
+        $type = $request->input('type');
         $request->validate([
             'title' => 'required|unique:hrms_job_titles,title,' . $request->id,
             'status' => 'required',
@@ -54,8 +60,8 @@ class HrmsController extends Controller
         $hrmsJobTitle->client_id = $clientId;
         $hrmsJobTitle->is_active = $request->status;
         $hrmsJobTitle->save();
-
-        return redirect('hrms-job-title');
+        return is_mobile($type, "hrms-job-title", null, "redirect");
+//        return redirect('hrms-job-title');
     }
 
     public function hrmsDestroy(Request $request, $id)
@@ -63,12 +69,15 @@ class HrmsController extends Controller
         if ($id > 0) {
             HrmsJobTitle::where('id', $id)->delete();
         }
-        return redirect('hrms-job-title');
+        return is_mobile($type, "hrms-job-title", null, "redirect");
+//        return redirect('hrms-job-title');
     }
 
     public function hrmsInOutTime(Request $request)
     {
-        $userId = $request->session()->get('user_id');
+        $type = $request->input('type');
+        if ($type == 'API') $userId = $request->input('user_id');
+        else $userId = $request->session()->get('user_id');
         $hrmsInOutTimeDetails = HrmsInOutTime::where([['user_id', $userId], ['day', Carbon::now()->format('Y-m-d')]])->get();
         if (count($hrmsInOutTimeDetails) == 1) {
             $hrmsInOutTimeDetails = $hrmsInOutTimeDetails->first();
@@ -88,14 +97,24 @@ class HrmsController extends Controller
         }
         $hrmsInOutTime['date'] = Carbon::now()->format('d-m-Y');
         $hrmsInOutTime['id'] = 0;
-        return view('HRMS.hrms_inout_time.index', compact('hrmsInOutTime'));
+        return is_mobile($type, "HRMS.hrms_inout_time.index", compact('hrmsInOutTime'), "view",'compact');
+//        return view('HRMS.hrms_inout_time.index', compact('hrmsInOutTime'));
     }
 
     public function hrmsInTimeStore(Request $request)
     {
-        $userId = $request->session()->get('user_id');
-        $clientId = $request->session()->get('client_id');
-        $subInstituteId = $request->session()->get('sub_institute_id');
+
+        $type = $request->input('type');
+        if ($type == 'API'){
+            $userId = $request->input('user_id');
+            $clientId = $request->input('client_id');
+            $subInstituteId = $request->input('sub_institute_id');
+        } else{
+            $userId = $request->session()->get('user_id');
+            $clientId = $request->session()->get('client_id');
+            $subInstituteId = $request->session()->get('sub_institute_id');
+        }
+
         //return $request->all();
         if ($request->indate && $request->intime) {
             $hrmsInOutTime = new HrmsInOutTime();
@@ -106,22 +125,29 @@ class HrmsController extends Controller
             $hrmsInOutTime->sub_institute_id = $subInstituteId;
             $hrmsInOutTime->save();
         }
-        return redirect('hrms-inout-time')->with(['message' =>'check In successfully']);
+        return is_mobile($type, "hrms-inout-time", null, "redirect");
+        //return redirect('hrms-inout-time')->with(['message' =>'check In successfully']);
     }
 
     public function hrmsOutTimeStore(Request $request)
     {
-        $userId = $request->session()->get('user_id');
+        $type = $request->input('type');
+        if ($type == 'API') $userId = $request->input('user_id');
+        else $userId = $request->session()->get('user_id');
         $hrmsInOutTime = HrmsInOutTime::where([['user_id', $userId], ['day', Carbon::now()->format('Y-m-d')], ['out_time', null]])->first();
         if ($hrmsInOutTime) {
             $hrmsInOutTime->out_time = Carbon::now()->format('h:i:s');
             $hrmsInOutTime->save();
         }
-        return redirect('hrms-inout-time')->with(['message' =>'check Out successfully']);
+        return is_mobile($type, "hrms-inout-time", null, "redirect");
+        //return redirect('hrms-inout-time')->with(['message' =>'check Out successfully']);
     }
 
     public function hrmsAttendance(Request $request)
     {
+        $type = $request->input('type');
+        if ($type == 'API') $subInstituteId = $request->input('sub_institute_id');
+        else   $subInstituteId = $request->session()->get('sub_institute_id');
         if ($request->employee_id) {
             $hrmsAttendanceInOutTime['employee_id'] = $request->employee_id;
             $date = $request->date ? Carbon::parse($request->date)->format('Y-m-d') : Carbon::now()->format('Y-m-d');
@@ -143,14 +169,14 @@ class HrmsController extends Controller
             $hrmsAttendanceInOutTime['employee_id'] = 0;
             $hrmsAttendanceInOutTime['date'] = Carbon::now();
         }
-        $subInstituteId = $request->session()->get('sub_institute_id');
+
         $employeeLists = tbluserModel::where('sub_institute_id', $subInstituteId)->get();
 
         $hrmsAttendanceInOutTime['id'] = 0;
         $hrmsAttendanceInOutTime['time'] = Carbon::now()->format('H:i:s');
 //return $hrmsAttendanceInOutTime;
-
-        return view('HRMS.hrms_attendance.index', compact('hrmsAttendanceInOutTime', 'employeeLists'));
+        return is_mobile($type, "HRMS.hrms_attendance.index", compact('hrmsAttendanceInOutTime','employeeLists'), "view",'compact');
+        //return view('HRMS.hrms_attendance.index', compact('hrmsAttendanceInOutTime', 'employeeLists'));
     }
 
     public function hrmsAttendanceInTimeStore(Request $request)
@@ -162,8 +188,14 @@ class HrmsController extends Controller
         ]);
 //        return $request->all();
 //       return Carbon::parse($request->indate)->format('Y-m-d');
-        $clientId = $request->session()->get('client_id');
-        $subInstituteId = $request->session()->get('sub_institute_id');
+        $type = $request->input('type');
+        if ($type == 'API') {
+            $clientId = $request->input('client_id');
+            $subInstituteId = $request->input('sub_institute_id');
+        } else {
+            $clientId = $request->session()->get('client_id');
+            $subInstituteId = $request->session()->get('sub_institute_id');
+        }
         $hrmsAttendanceInTime = new HrmsAttendance();
         $hrmsAttendanceInTime->user_id = $request->employee;
         $hrmsAttendanceInTime->punchin_time = Carbon::parse($request->indate .' '.$request->intime)->format('Y-m-d H:i:s');
@@ -175,10 +207,12 @@ class HrmsController extends Controller
         $hrmsAttendanceInTime->sub_institute_id = $subInstituteId;
         $hrmsAttendanceInTime->save();
 
-        return redirect('hrms-attendance')->with(['message' =>'check In successfully']);
+        return is_mobile($type, "hrms-attendance", null, "redirect");
+        //return redirect('hrms-attendance')->with(['message' =>'check In successfully']);
     }
 
     public function hrmsAttendanceOutTimeStore(Request $request) {
+        $type = $request->input('type');
         $request->validate([
             'employee' => 'required',
             'outdate' => 'required',
@@ -199,12 +233,18 @@ class HrmsController extends Controller
             $hrmsAttendanceOutTime->timestamp_diff = $diff;
             $hrmsAttendanceOutTime->save();
         }
-        return redirect('hrms-attendance')->with(['message' =>'check Out successfully']);
+        return is_mobile($type, "hrms-attendance", null, "redirect");
+       // return redirect('hrms-attendance')->with(['message' =>'check Out successfully']);
     }
 
     public function hrmsAttendanceReport(Request $request) {
 
-        $sub_institute_id = $request->session()->get('sub_institute_id');
+        $type = $request->input('type');
+        if ($type == 'API') {
+            $sub_institute_id = $request->input('sub_institute_id');
+        } else {
+            $sub_institute_id = $request->session()->get('sub_institute_id');
+        }
         $employees = $employeeLists = tbluserModel::where('sub_institute_id', $sub_institute_id)->get();
         $hrmsList = HrmsAttendance::with('getUser');
         if ($request->from_date && $request->end_date) {
@@ -220,13 +260,21 @@ class HrmsController extends Controller
             $hrmsList = $hrmsList->where('user_id',$request->employee_id);
         }
         $hrmsList = $hrmsList->get();
+//        return $hrmsList;
         //return json_decode($employeeSalaryStructures[0]['employee_salary_data'], true);
-        return view('HRMS.hrms_attendance_report.index', compact('employees', 'employeeLists','from_date','end_date','hrmsList'));
+        return is_mobile($type, "HRMS.hrms_attendance_report.index", compact('employees','employeeLists','from_date','end_date','hrmsList'), "view",'compact');
+
+//        return view('HRMS.hrms_attendance_report.index', compact('employees', 'employeeLists','from_date','end_date','hrmsList'));
     }
 
     public function earlyGoingHrmsAttendanceReport(Request $request) {
         $employee_id = 0;
-        $sub_institute_id = $request->session()->get('sub_institute_id');
+        $type = $request->input('type');
+        if ($type == 'API') {
+            $sub_institute_id = $request->input('sub_institute_id');
+        } else {
+            $sub_institute_id = $request->session()->get('sub_institute_id');
+        }
         $employees = $employeeLists = tbluserModel::where('sub_institute_id', $sub_institute_id)->get();
         $hrmsList = HrmsAttendance::with('getUser');
         $date = $request->date ?? Carbon::now();
@@ -243,12 +291,12 @@ class HrmsController extends Controller
         }
 
         $hrmsList = $hrmsList->map(function ($e) use ($day){
-           if($day =='Mon' && !$e->getUser['monday']) {
-              if($e->getUser['monday_out_date'] &&  $e->getUser['monday_out_date'] >=  date('H:i:s',strtotime($e->punchout_time))) {
-                  $e['is_late'] = 1;
-                  $e['expected_time'] = $e->getUser['monday_out_date'];
-              }
-           }
+            if($day =='Mon' && !$e->getUser['monday']) {
+                if($e->getUser['monday_out_date'] &&  $e->getUser['monday_out_date'] >=  date('H:i:s',strtotime($e->punchout_time))) {
+                    $e['is_late'] = 1;
+                    $e['expected_time'] = $e->getUser['monday_out_date'];
+                }
+            }
             if($day =='Tue' && !$e->getUser['tuesday']) {
                 if($e->getUser['tuesday_out_date'] &&  $e->getUser['tuesday_out_date'] >=  date('H:i:s',strtotime($e->punchout_time))) {
                     $e['is_late'] = 1;
@@ -285,8 +333,10 @@ class HrmsController extends Controller
                     $e['expected_time'] = $e->getUser['sunday_out_date'];
                 }
             }
-           return $e;
+            return $e;
         })->where('is_late',1);
-        return view('HRMS.hrms_attendance_report.early_going_report', compact('employees','employee_id', 'employeeLists','date','hrmsList'));
+        return is_mobile($type, "HRMS.hrms_attendance_report.early_going_report", compact('employees','employee_id','employeeLists','date','hrmsList'), "view",'compact');
+
+       // return view('HRMS.hrms_attendance_report.early_going_report', compact('employees','employee_id', 'employeeLists','date','hrmsList'));
     }
 }
