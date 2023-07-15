@@ -45,7 +45,8 @@ use Psr\Container\NotFoundExceptionInterface;
 use function App\Helpers\FeeBreakoffHeadWise;
 use function App\Helpers\is_mobile;
 use App\Http\Controllers\fees\fees_collect\fees_collect_controller;
-use App\Http\Controllers\front_desk\leave_application\leaveApplicationController;
+use App\Http\Controllers\fees\fees_report\feesReportController;
+use Illuminate\Support\Facades\Session;
 
 class tblstudentController extends Controller
 {
@@ -427,7 +428,6 @@ class tblstudentController extends Controller
             $syear = session()->get('syear');
 		}
 
-
         // $data = file_get_contents('https://erp.triz.co.in/get_adminParentCommunicationListAPI');
         // $payload = array(
 		//     // 'exp' => time() + 7200,
@@ -444,18 +444,30 @@ class tblstudentController extends Controller
 		$postData = [
             'sub_institute_id' => $sub_institute_id,
             'syear' => $syear,
-            'student_id' => $id
-            // 'token' => session()->get('_token')
+            'student_id' => $id,
         ];
 
         $payload = json_encode($postData);
 
         // Prepare new cURL resource
-        $ch = curl_init("https://" . $_SERVER['SERVER_NAME'] . "/studentParentcommunicationListAPI");
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLINFO_HEADER_OUT, true);
-        curl_setopt($ch, CURLOPT_POST, true);
-        curl_setopt($ch, CURLOPT_POSTFIELDS, $payload);
+        $ch = curl_init("https://" . $_SERVER['SERVER_NAME'] . "/studentParentcommunicationListAPI"); 
+        $leave = curl_init("https://" . $_SERVER['SERVER_NAME'] . "/studentLeaveApplicationAPI");
+
+        if(isset($ch))
+        {
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($ch, CURLINFO_HEADER_OUT, true);
+            curl_setopt($ch, CURLOPT_POST, true);
+            curl_setopt($ch, CURLOPT_POSTFIELDS, $payload);
+        }
+        
+        if(isset($leave))
+        {
+            curl_setopt($leave, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($leave, CURLINFO_HEADER_OUT, true);
+            curl_setopt($leave, CURLOPT_POST, true);
+            curl_setopt($leave, CURLOPT_POSTFIELDS, $payload);
+        }
 
         // Set HTTP Header for POST request
         curl_setopt($ch, CURLOPT_HTTPHEADER, [
@@ -464,18 +476,32 @@ class tblstudentController extends Controller
             ]
         );
 
+        curl_setopt($leave, CURLOPT_HTTPHEADER, [
+                'Content-Type: application/json',
+                'Content-Length: ' . strlen($payload),
+            ]
+        );
+
         // Submit the POST request
         $getResult = curl_exec($ch);
-
+        $getLeaveResult = curl_exec($leave);
+        
         // decode json result
         $result = json_decode($getResult);
-
+        $leaveResult = json_decode($getLeaveResult);
+        
         // Close cURL session handle
         curl_close($ch);
+        curl_close($leave);
 
         $stuParCommunication = [];
         if (!empty($result) && $result->status_code == 1) {
             $stuParCommunication = $result->data;
+        }
+
+        $leaveApplication = [];
+        if (!empty($leaveResult) && $leaveResult->status == 1) {
+            $leaveApplication = $leaveResult->data;
         }
 
         if ($sub_institute_id == 198) {
@@ -791,17 +817,15 @@ class tblstudentController extends Controller
         ) AS subquery"))
         ->select('year')
         ->get();
-
-        $controller = new fees_collect_controller;
-        $leave_controller = new leaveApplicationController;
-
-        $request->request->add(['student_id' => $id]);
-        $LeaveData = $leave_controller->create($request, $id);
-        $OldData = $controller->getBk($request, $id);
         
-        $res['leave_data'] = isset($LeaveData['stu_data']) ? $LeaveData['stu_data'] : [];
-        $res['paid_unpaid_fees'] = $OldData['total_fees'];
-        $res['stu_data'] = $OldData['stu_data'];
+        $controller = new fees_collect_controller;
+
+        $OldData = $controller->getBk($request, $id);
+        $FeesData = $controller->retrieveDataByUserId($request, '', $id);
+        
+        $res['paid_unpaid_fees'] = $OldData['total_fees'] ?? [];
+        $res['stu_data'] = $OldData['stu_data'] ?? [];
+        $res['fees_data'] = $FeesData;
         
         $res['admission_year'] = $admission_year;        
         $res['student_quota'] = $studentQuota;
@@ -822,6 +846,7 @@ class tblstudentController extends Controller
 		$res['city_data'] = $cityData;
 		$res['attendance_data'] = $attendanceData;
 		$res['stu_par_communication'] = $stuParCommunication;
+		$res['leave_application'] = $leaveApplication;
 
 		return is_mobile($type, "student/edit_student", $res, "view");
 	}

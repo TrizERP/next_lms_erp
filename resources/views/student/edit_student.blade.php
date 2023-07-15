@@ -1330,17 +1330,104 @@ br {
 
                                                 </table>
                                             </div>
-                                            <div class="row">
-                                                <div class="col-md-12 text-center mt-4">
-                                                <button type="button" class="btn btn-info" data-toggle="modal" id="add_data" onclick="javascript:add_data({{ $data['stu_data']['enrollment']}},{{$data['stu_data']['student_id']}});">
-                                                        Paid History
-                                                    </button>
-                                                </div>
-                                            </div>
+                                            </table>
+                                        </div>
+                                    </div>
+                                    <div class="h4 text-primary">Paid History</div>
+                                        <div class="row border rounded mb-3 mb-md-4 mt-3 p-4"> 
+                                            <div class="table-responsive">
+                                                <table id="example" class="table table-striped">
+                                                    <thead>
+                                                        <tr>
+                                                            <th>Sr No.</th>
+                                                            <th>{{App\Helpers\get_string('grno','request')}}</th>
+                                                            <th>{{App\Helpers\get_string('studentname','request')}}</th>
+                                                            <th>{{App\Helpers\get_string('std/div','request')}}</th>
+                                                            <th>{{App\Helpers\get_string('uniqueid','request')}}</th>
+                                                            <th>Month</th>
+                                                            <th>Receipt No</th>
+                                                            <th>Payment Mode</th>
+                                                            <th>Bank Details</th>
+                                                            <!--<th>Cheque Date</th>-->
+                                                            <th>Receipt Date</th>
+                                                            <th>Collected By</th>
+                                                            <!--<th>Created On</th>-->
+                                                            <th>Amount</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>    
+                                                    @php
+                                                    $j=1;
+                                                    $amount = 0;
+
+                                                    @endphp
+                                                    @if(isset($data['fees_data']))
+                                                        @foreach($data['fees_data'] as $key => $value)
+                                                        @php
+
+                                                        $month_name = '';
+
+                                                        $months = [
+                                                            1 => 'Jan', 2 => 'Feb', 3 => 'Mar', 4 => 'Apr', 5 => 'May', 6 => 'Jun', 7 => 'Jul', 8 => 'Aug', 9 => 'Sep',
+                                                            10 => 'Oct', 11 => 'Nov', 12 => 'Dec',
+                                                        ];
+
+                                                        $y = $value['term_id'] / 10000;
+                                                        $month = (int)$y;
+                                                        $year = substr($value['term_id'], -4);
+                                                        $month_name .= $months[$month] . "/" . $year . ',';
+                                                        
+                                                        $month_name = substr($month_name, 0, -1);
+
+                                                            if($value['cheque_date'] != '' && $value['cheque_date'] != '0000-00-00')
+                                                            {
+                                                                $cheque_date = date('d-m-Y',strtotime($value['cheque_date']));
+                                                            }else{
+                                                                $cheque_date = '';
+                                                            }
+                                                        @endphp
+                                                        <tr>
+                                                            <td>{{$j}}</td>
+                                                            <td>{{$value['enrollment_no']}}</td>
+                                                            <td>{{$value['student_name']}}</td>
+                                                            <td>{{$value['standard_name']}} - {{$value['division_name']}}</td>
+                                                            <td>{{$value['uniqueid']}}</td>
+                                                            <td>{{ $month_name }}</td>
+                                                            <td>{{$value['receipt_no']}}</td>
+                                                            <td>{{$value['payment_mode']}}</td>
+                                                            <td>{{$value['cheque_no']}} {{$value['cheque_bank_name']}} {{$value['bank_branch']}}</td>
+                                                            <!--<td>{{$cheque_date}}</td>-->
+                                                            <td>{{date('d-m-Y',strtotime($value['receiptdate']))}}</td>
+                                                            <td>{{$value['user_name']}}</td>
+                                                            <!--<td>{{date('d-m-Y h:i:s',strtotime($value['created_date']))}}</td>-->
+                                                            <td>{{$value['actual_amountpaid']}}</td>
+                                                        </tr>
+                                                    @php
+                                                    $amount += $value['actual_amountpaid'];
+                                                    $j++;
+                                                    @endphp
+                                                        @endforeach
+                                                        <tr>
+                                                            <th>Total</th>
+                                                            <td></td>
+                                                            <td></td>
+                                                            <td></td>
+                                                            <td></td>
+                                                            <td></td>
+                                                            <!--<td></td>-->
+                                                            <td></td>
+                                                            <td></td>
+                                                            <td></td>
+                                                            <td></td>
+                                                            <td></td>
+                                                            <!--<td></td>-->
+                                                            <th>{{$amount}}</th>
+                                                        </tr>
+                                                    @endif
+                                                    </tbody>
                                                 </table>
                                             </div>
-                                        </div>  
-                                    
+                                        </div>   
                                     </form>
                                 </div>
                                 <!-- END STUDENT FEES DETAILS -->
@@ -1570,40 +1657,34 @@ br {
                                         <div class="table-responsive">
                                             <table id="leave-application" class="table table-striped">
                                                 <thead>
-                                                    <th>No</th>
-                                                    <th>Student Name</th>
-                                                    <th>STD/DIV</th>
-                                                    <th>Mobile</th>
+                                                    <th>Title</th>
+                                                    <th>Message</th>
+                                                    <th>Files</th>
                                                     <th>Apply Date</th>
                                                     <th>From Date</th>
                                                     <th>To Date</th>
-                                                    <th>Message</th>
-                                                    <th>File</th>
                                                     <th>Reply</th>
                                                     <th>Reply By</th>
                                                     <th>Status</th>
                                                 </thead>
                                                 <tbody>
-                                                @if($arr = $data['leave_data'])
-                                                    @foreach($arr as $id => $leaveData)
+                                                @if($data['leave_application'])
+                                                    @foreach($data['leave_application'] as $leaveData)
                                                         <tr>
-                                                            <td>{{ intval($id) + 1 }}</td>
-                                                            <td>{{ $leaveData['name'] }}</td>
-                                                            <td>{{ $leaveData['stddiv'] }}</td>
-                                                            <td>{{ $leaveData['mobile'] }}</td>
-                                                            <td>{{ $leaveData['apply_date'] }}</td>
-                                                            <td>{{ $leaveData['from_date'] }}</td>
-                                                            <td>{{ $leaveData['to_date'] }}</td>
-                                                            <td>{{ $leaveData['message'] }}</td>
-                                                            <td>{{ $leaveData['files'] }}</td>
-                                                            <td>{{ $leaveData['reply'] }}</td>
-                                                            <td>{{ $leaveData['reply_by'] }}</td>
-                                                            <td>{{ $leaveData['status'] }}</td>
+                                                            <td>{{ $leaveData->title }}</td>
+                                                            <td>{{ $leaveData->message }}</td>
+                                                            <td><a href="<?php echo asset('storage/leave_application/' . $leaveData->files); ?>" download>Download</a></td>
+                                                            <td>{{ $leaveData->apply_date }}</td>
+                                                            <td>{{ $leaveData->from_date }}</td>
+                                                            <td>{{ $leaveData->to_date }}</td>
+                                                            <td>{{ $leaveData->reply }}</td>
+                                                            <td>{{ $leaveData->reply_on }}</td>
+                                                            <td>{{ $leaveData->status }}</td>
                                                         </tr>
                                                     @endforeach
                                                 @else
                                                     <tr>
-                                                        <td colspan="6">No Data Found</td>
+                                                        <td colspan="12">No Data Found</td>
                                                     </tr>
                                                 @endif
                                                 </tbody>

@@ -48,7 +48,7 @@ class leaveApplicationController extends Controller
      *
      * @return Response
      */
-    public function create(Request $request, $id='')
+    public function create(Request $request)
     {
         $grade_id = "";
         $standard_id = "";
@@ -111,7 +111,7 @@ class leaveApplicationController extends Controller
                     pc.to_date,pc.files,CONCAT_WS(' ',u.first_name,u.middle_name,u.last_name) as reply_by")
             ->where("s.sub_institute_id", "=", session()->get('sub_institute_id'))
             ->where("se.syear", "=", session()->get('syear'))
-            ->where(function ($q) use ($classteacher_data, $grades_ids, $standards_ids, $divisions_ids, $requestData, $id) {
+            ->where(function ($q) use ($classteacher_data, $grades_ids, $standards_ids, $divisions_ids, $requestData) {
                 if (count($classteacher_data) > 0) {
                     $q->whereRaw("se.grade_id IN  (" . $grades_ids . ") AND se.standard_id IN (" . $standards_ids . ")
                                 AND se.section_id IN (" . $divisions_ids . ")");
@@ -124,10 +124,6 @@ class leaveApplicationController extends Controller
                     }
                     if (isset($requestData['division']) && $requestData['division'] != '') {
                         $q->where('se.section_id', $requestData['division']);
-                    }
-                    if(isset($id) && $id !== '')
-                    {
-                        $q->where('s.id', $id);
                     }
                 }
 
@@ -159,14 +155,7 @@ class leaveApplicationController extends Controller
         }
         $type = $request->input('type');
 
-        if(!isset($id) && $id == '')
-        {
-            return is_mobile($type, "front_desk/leaveApplication/add", $responce_arr, "view");
-        }
-        else
-        {
-            return ($responce_arr);
-        }
+        return is_mobile($type, "front_desk/leaveApplication/add", $responce_arr, "view");
     }
 
     /**
@@ -403,18 +392,20 @@ class leaveApplicationController extends Controller
 
     public function studentLeaveApplicationAPI(Request $request)
     {
-        try {
-            if (! $this->jwtToken()->validate()) {
-                $response = ['status' => '2', 'message' => 'Token Auth Failed', 'data' => []];
+        if($request->type == "API")
+        {
+            try {
+                if (! $this->jwtToken()->validate()) {
+                    $response = ['status' => '2', 'message' => 'Token Auth Failed', 'data' => []];
+
+                    return response()->json($response, 401);
+                }
+            } catch (\Exception $e) {
+                $response = ['status' => '2', 'message' => $e->getMessage(), 'data' => []];
 
                 return response()->json($response, 401);
             }
-        } catch (\Exception $e) {
-            $response = ['status' => '2', 'message' => $e->getMessage(), 'data' => []];
-
-            return response()->json($response, 401);
         }
-
         $student_id = $request->input("student_id");
         $sub_institute_id = $request->input("sub_institute_id");
         $syear = $request->input("syear");
