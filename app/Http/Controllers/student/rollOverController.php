@@ -264,7 +264,7 @@ class rollOverController extends Controller
                                 FROM fees_breackoff fb
                                 LEFT JOIN fees_title ft ON ft.rollover_id = fb.fee_type_id AND ft.sub_institute_id = fb.sub_institute_id 
                                 AND ft.syear = '".$to_next_syear."'
-                                WHERE fb.syear = '".$from_current_syear."' AND fb.sub_institute_id = '".$sub_institute_id."' ");
+                                WHERE fb.syear = '".$from_current_syear."' AND fb.sub_institute_id = '".$sub_institute_id."' AND fb.amount <> 0");
                         }
                         break;
 
@@ -532,7 +532,7 @@ class rollOverController extends Controller
                 $check_student = DB::table('tblstudent_enrollment as se')
                     ->selectRaw('count(se.id) as total_student')
                     ->where('se.student_id', $student_id)
-                    ->where('se.syear', $from_current_syear)
+                    ->where('se.syear', $to_next_syear)
                     ->where('se.sub_institute_id', $sub_institute_id)
                     ->whereNull('se.end_date')->get()->toArray();
 
