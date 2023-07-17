@@ -519,8 +519,9 @@ class tblstudentController extends Controller
         } else {
 
             $student_data = tblstudentModel::select('tblstudent.*', 'tblstudent_enrollment.*', 'tblstudent.id as id',
-                'tblstudent_enrollment.house_id')
+                'tblstudent_enrollment.house_id', 'admission_enquiry.enquiry_no')
                 ->join('tblstudent_enrollment', 'tblstudent.id', '=', 'tblstudent_enrollment.student_id')
+                ->leftJoin('admission_enquiry', 'tblstudent.admission_id', '=', 'admission_enquiry.id')
                 ->where([
                     'tblstudent_enrollment.sub_institute_id' => $sub_institute_id,
                     'tblstudent_enrollment.syear' => $syear,
@@ -528,7 +529,7 @@ class tblstudentController extends Controller
                     'tblstudent.id' => $id,
                 ])->first();
         }
-
+        //echo "<pre>";print_r($student_data);exit;
 		// RAJESH	->whereRaw('tblstudent_enrollment.end_date is NULL')
 		$dataCustomFields = tblcustomfieldsModel::where(['status' => "1", 'table_name' => "tblstudent"])
 			->whereRaw('(sub_institute_id = ' . $sub_institute_id . ' OR common_to_all = 1)')

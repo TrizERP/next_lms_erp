@@ -169,6 +169,10 @@ br {
                                             <input type="email" value="{{ $student_data->email }}" id='email' required name="email" class="form-control">
                                         </div>
                                         <div class="col-md-4 form-group">
+                                            <label>Admision Enquiry No</label>
+                                            <span><br><b>{{ $student_data->enquiry_no ? $student_data->enquiry_no : '-'}}</b></span>
+                                        </div>
+                                        <div class="col-md-4 form-group">
                                             <label>Admission Year</label>
                                             <select id='admission_year' name="admission_year" class="form-control" required>
                                                 <option value="">--Select--</option>  
