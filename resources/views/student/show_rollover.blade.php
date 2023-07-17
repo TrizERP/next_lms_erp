@@ -40,6 +40,11 @@
 
         @endphp
         <div class="card">
+        <div class="row mb-2">  
+        <div class="col-lg-12 col-sm-12 col-xs-12">
+        <span class="d-block p-2  alert-warning">Note: Before Rollover Please Map Next Grade and Standard</span>
+        </div>        
+        </div>  
             @if ($sessionData = Session::get('data'))
                 @if($sessionData['status'] == 1)
                     <div class="alert alert-success alert-block">
