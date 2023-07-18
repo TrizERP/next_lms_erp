@@ -375,6 +375,7 @@ Route::post('generate_create_result_excel', 'result\MarkUploadController@create'
 Route::get('upload_create_result', 'result\MarkUploadController@store')->name('upload_create_result');
 
 Route::get('fetch_payment_status', 'fees\online_fees\online_fees_collect_controller@razorpay_fetch_payment_status');
+Route::get('icici_fetch_payment_status', 'fees\online_fees\online_fees_collect_controller@icici_fetch_payment_status');
 
 Route::group(['middleware' => ['session', 'menu', 'logRoute']], function () {
     Route::resource('leave-type', LeaveTypeController::class);
