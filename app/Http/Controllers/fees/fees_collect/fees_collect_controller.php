@@ -2473,37 +2473,36 @@ class fees_collect_controller extends Controller
         }
 
         $sql = "SELECT M.student_id,M.enrollment_no,M.roll_no,M.uniqueid,M.student_name,M.mobile,M.grade,M.standard_name,M.division_name,M.created_date,M.user_name,M.term_id,M.receiptdate,M.receipt_no,M.payment_mode,M.cheque_bank_name,M.bank_branch,M.cheque_no,M.cheque_date,
-            (IFNULL(M.amount,0) + IFNULL(N.actual_amountpaid,0)) AS actual_amountpaid
-            FROM (
-            SELECT fp.student_id,t.enrollment_no,t.roll_no,t.uniqueid,CONCAT_WS(' ',t.first_name,t.middle_name,t.last_name) AS student_name,t.mobile,ac.title AS grade,s.name AS standard_name,d.name AS division_name,fp.created_date,CONCAT_WS(' ',u.first_name,u.last_name) AS user_name,fp.term_id,fp.receiptdate,fp.receipt_no,fp.payment_mode,fp.cheque_bank_name,fp.bank_branch,fp.cheque_no,fp.cheque_date,SUM(IFNULL(fp.amount,0)) AS amount
-            FROM tblstudent t
-            -- WHERE t.first_name = $name OR t.middle_name = $name OR t.last_name = $name
-            INNER JOIN tblstudent_enrollment te ON t.id = te.student_id
-            INNER JOIN academic_section ac ON ac.id = te.grade_id
-            INNER JOIN standard s ON s.id = te.standard_id
-            INNER JOIN division d ON d.id = te.section_id
-            INNER JOIN fees_collect fp ON fp.student_id = te.student_id
-            LEFT JOIN tbluser u ON fp.created_by = u.id
-            WHERE 1=1 $extra_fp
-            GROUP BY fp.student_id, fp.receipt_no, fp.syear, fp.receiptdate, fp.payment_mode, fp.cheque_no
-            ORDER BY fp.receiptdate ASC, fp.receipt_no ASC) AS M
-            LEFT JOIN (
-            SELECT fo.student_id, SUM(IFNULL(fo.actual_amountpaid,0)) AS actual_amountpaid
-            FROM tblstudent t
-            INNER JOIN tblstudent_enrollment te ON t.id = te.student_id
-            INNER JOIN academic_section ac ON ac.id = te.grade_id
-            INNER JOIN standard s ON s.id = te.standard_id
-            INNER JOIN division d ON d.id = te.section_id
-            INNER JOIN fees_paid_other fo ON fo.student_id = te.student_id
-            WHERE 1=1 $extra_fo
-            GROUP BY fo.student_id, fo.reciept_id, fo.syear, fo.receiptdate, fo.payment_mode, fo.cheque_dd_no
-            ORDER BY fo.receiptdate ASC, fo.reciept_id ASC) AS N ON M.student_id = N.student_id
-            HAVING (M.receiptdate IS NOT NULL)
-            ORDER BY M.receiptdate,CAST(M.receipt_no AS SIGNED)";
+        (IFNULL(M.amount,0) + IFNULL(N.actual_amountpaid,0)) AS actual_amountpaid
+        FROM (
+        SELECT fp.student_id,t.enrollment_no,t.roll_no,t.uniqueid,CONCAT_WS(' ',t.first_name,t.middle_name,t.last_name) AS student_name,t.mobile,ac.title AS grade,s.name AS standard_name,d.name AS division_name,fp.created_date,CONCAT_WS(' ',u.first_name,u.last_name) AS user_name,fp.term_id,fp.receiptdate,fp.receipt_no,fp.payment_mode,fp.cheque_bank_name,fp.bank_branch,fp.cheque_no,fp.cheque_date,SUM(IFNULL(fp.amount,0)) AS amount
+        FROM tblstudent t
+        INNER JOIN tblstudent_enrollment te ON t.id = te.student_id
+        INNER JOIN academic_section ac ON ac.id = te.grade_id
+        INNER JOIN standard s ON s.id = te.standard_id
+        INNER JOIN division d ON d.id = te.section_id
+        INNER JOIN fees_collect fp ON fp.student_id = te.student_id
+        LEFT JOIN tbluser u ON fp.created_by = u.id
+        WHERE 1=1 $extra_fp
+        GROUP BY fp.student_id, fp.receipt_no, fp.syear, fp.receiptdate, fp.payment_mode, fp.cheque_no
+        ORDER BY fp.receiptdate ASC, fp.receipt_no ASC) AS M
+        LEFT JOIN (
+        SELECT fo.student_id, SUM(IFNULL(fo.actual_amountpaid,0)) AS actual_amountpaid,fo.reciept_id
+        FROM tblstudent t
+        INNER JOIN tblstudent_enrollment te ON t.id = te.student_id
+        INNER JOIN academic_section ac ON ac.id = te.grade_id
+        INNER JOIN standard s ON s.id = te.standard_id
+        INNER JOIN division d ON d.id = te.section_id
+        INNER JOIN fees_paid_other fo ON fo.student_id = te.student_id
+        WHERE 1=1 $extra_fo
+        GROUP BY fo.student_id, fo.reciept_id, fo.syear, fo.receiptdate, fo.payment_mode, fo.cheque_dd_no
+        ORDER BY fo.receiptdate ASC, fo.reciept_id ASC) AS N ON M.student_id = N.student_id AND M.receipt_no = N.reciept_id 
+        HAVING (M.receiptdate IS NOT NULL)
+        ORDER BY M.receiptdate,CAST(M.receipt_no AS SIGNED)";
 
         $result = DB::select(DB::raw($sql));
         $feesData = json_decode(json_encode($result), true);
-
+        
         $res['status_code'] = 1;
         $res['message'] = "Success";
         $res['fees_data'] = $feesData;

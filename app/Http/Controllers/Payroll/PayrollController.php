@@ -10,6 +10,7 @@ use App\Models\user\tbluserModel;
 use App\Traits\Helpers;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use function App\Helpers\is_mobile;
 use DB;
 use PDF;
@@ -20,6 +21,8 @@ class PayrollController extends Controller
     {
         $data['data'] = PayrollType::all();
         return view('payroll.payroll_type.index', ["data" => $data]);
+        $type = $request->input('type');
+        return is_mobile($type, "payroll.payroll_type.index", $data, "view");
     }
 
     public function payrollCreate(Request $request, $id = 0)
@@ -88,7 +91,7 @@ class PayrollController extends Controller
 
     public function employeeSalaryStructureStore(Request $request)
     {
-       // return $request->all();
+        // return $request->all();
         $year = Carbon::now()->format('Y');
         // return $year;
         if ($request->emp) {
@@ -186,7 +189,7 @@ class PayrollController extends Controller
     {
         $employees = tbluserModel::paginate(10);
         $payrollTypes = PayrollType::where('status', 1)->get();
-        $employeeSalaryStructures = EmployeeSalaryStructure::where('year', (Carbon::now()->format('Y') + 1))->get();
+        $employeeSalaryStructures = EmployeeSalaryStructure::where('year', (Carbon::now()->format('Y')))->get();
         $employeeSalaryStructures = $employeeSalaryStructures->map(function ($employee) {
             $reult['employee_salary_data'] = json_decode($employee->employee_salary_data, true);
             $reult['year'] = $employee->year;
@@ -199,7 +202,6 @@ class PayrollController extends Controller
 
     public function rolloverEmployeeSalaryStructure(Request $request)
     {
-        // return $request->all();
         $year = Carbon::now()->format('Y');
         // return $year;
         if ($request->emp) {
@@ -220,7 +222,7 @@ class PayrollController extends Controller
 
     public function monthlyPayrollReport(Request $request)
     {
-        //return $request->all();
+
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $payrollTypes = PayrollType::where('status', 1)->get();
 //        return $payrollTypes;
@@ -241,7 +243,7 @@ class PayrollController extends Controller
         $header['total_payment'] = 'Total Payment';
         $header['received_by'] = 'Received By';
         if ($request->employee_id && $request->year && $request->month) {
-           // return $request->all();
+            // return $request->all();
             $employeeName = tbluserModel::find($request->employee_id);
             $employeeSalaryData = EmployeeMonthlySalaryData::where([['employee_id', $request->employee_id],['month', $request->month],['year',$request->year],[ 'sub_institute_id', $sub_institute_id]])->first();
             $totalDay = $request->total_day;
@@ -307,10 +309,14 @@ class PayrollController extends Controller
             // return $employeeSalaryDetails;
         }
 
+        if ($request->total_day > 31) {
+            return view('payroll.monthly_payroll_report.index', ['employees' => $employeeDetails,'hide_button'=>$hide_button, 'header' => $header, 'list' => $list, 'employeeSalaryDetails' => $employeeSalaryDetails, 'total_day' => $totalDay, 'hideButton' => $hide_button,'totaldeduction'=> $totaldeduction,'totalallowance' => $totalallowance,'months' => $months,'years' => $years])->with(['message' => 'please enter valid days']);
+        }
+
         if ($request->emp && $request->save) {
             $employeeSalaryData = EmployeeMonthlySalaryData::where([['employee_id', $request->emp['id']],['month',$request->month],['year',$request->year],[ 'sub_institute_id', $sub_institute_id]])->first();
             if(!$employeeSalaryData) {
-               // return $request->emp['total_payment'];
+                // return $request->emp['total_payment'];
                 EmployeeMonthlySalaryData::create([
                     'month' => $request->month,
                     'year' => $request->year,
@@ -383,7 +389,7 @@ class PayrollController extends Controller
                     $deductionkey = $deductionkey + 1;
                 }
             }
-             ksort($salaryData);
+            ksort($salaryData);
             $salaryData = array_chunk($salaryData,2);
 //            return $salaryData;
             $employeeData['salary_data'] = $salaryData;
@@ -391,9 +397,9 @@ class PayrollController extends Controller
 
 
             $employeeData['total_actual_payment'] = $actualpayment;
-              view()->share('employeeData',$employeeData);
-           $pdf = PDF::loadView('payroll.monthly_payroll_report.employeeSalaryPdf');
-           return $pdf->download('salary.pdf');
+            view()->share('employeeData',$employeeData);
+            $pdf = PDF::loadView('payroll.monthly_payroll_report.employeeSalaryPdf');
+            return $pdf->download('salary.pdf');
         } else{
             return redirect()->back();
         }
@@ -499,8 +505,8 @@ class PayrollController extends Controller
 
         if ($request->employee_id && $request->year) {
             $year = explode('-',$request->year);
-           $startYear = $year[0];
-           $endYear = $year[1];
+            $startYear = $year[0];
+            $endYear = $year[1];
             $currentYearemployeeDetails = EmployeeMonthlySalaryData::whereIn('month',['Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'])->where([['year',$startYear],['employee_id',$request->employee_id],['sub_institute_id',$sub_institute_id]])->get();
             $currentYearemployeeDetails = $currentYearemployeeDetails->map(function($employee){
                 $data = [];

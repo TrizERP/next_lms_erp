@@ -84,6 +84,7 @@ class leaveApplicationController extends Controller
         }
 
         $requestData = $_REQUEST;
+        // return $requestData;exit;
         $result = DB::table("tblstudent as s")
             ->join('tblstudent_enrollment as se', function ($join) {
                 $join->whereRaw("se.student_id = s.id");
@@ -134,7 +135,7 @@ class leaveApplicationController extends Controller
                 }
             })
             ->get()->toarray();
-
+            
         $responce_arr = [];
         foreach ($result as $id => $arr) {
             $responce_arr['stu_data'][$id]['sr.no'] = $id + 1;
@@ -403,7 +404,6 @@ class leaveApplicationController extends Controller
                 return response()->json($response, 401);
             }
         }
-
         $student_id = $request->input("student_id");
         $sub_institute_id = $request->input("sub_institute_id");
         $syear = $request->input("syear");
