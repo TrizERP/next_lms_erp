@@ -2401,6 +2401,7 @@ class fees_collect_controller extends Controller
                     c.cheque_date,c.cheque_no,c.cheque_bank_name,SUM(amount) as paid_amount')
                 ->where('c.student_id', $student_id)
                 ->where('c.syear', $syear)
+                ->where('c.is_deleted', 'N')
                 ->where('sub_institute_id', $sub_institute_id)
                 ->groupBy('receipt_no')->get()->toArray();
 

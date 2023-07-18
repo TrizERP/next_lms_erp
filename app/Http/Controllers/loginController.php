@@ -379,7 +379,9 @@ class loginController extends Controller
                     
                     // return $schoolData[0]['expire_date'];exit;
                     // if($userprofiledetails[0]['name']=='Admin' && strtotime($user['last_login']) <= strtotime('-30 days')){
-                    if($schoolData[0]['expire_date'] == null){
+                    if(session()->get('is_admin') == 1){
+                        return is_mobile($type, "dashboard", $res);
+                    }elseif($schoolData[0]['expire_date'] == null){
                         return is_mobile($type, "dashboard", $res);
                     }else{
                         return is_mobile($type, "setup-institute-details", $res,'redirect');

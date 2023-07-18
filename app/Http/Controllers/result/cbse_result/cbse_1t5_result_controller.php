@@ -197,7 +197,7 @@ class cbse_1t5_result_controller extends Controller {
     {
         $str = "SELECT * from result_book_master b
                 INNER JOIN result_trust_master t on b.trust_id = t.id
-                WHERE b.standard = '".$standard_id."' AND b.sub_institute_id = '".session()->get('sub_institute_id')."'
+                WHERE b.standard = '".$standard_id."' AND t.syear = '".session()->get('syear')."' AND b.sub_institute_id = '".session()->get('sub_institute_id')."'
                 LIMIT 1";
         $result = DB::select(DB::raw($str));
         $result = json_decode(json_encode($result),true);
@@ -210,6 +210,7 @@ class cbse_1t5_result_controller extends Controller {
         $str = 'select rm.* 
                 from result_master_confrigration rm
                 where rm.standard_id = ' . $standard_id . ' 
+                and rm.syear = ' . session()->get('syear') . '
                 and rm.sub_institute_id = ' . session()->get('sub_institute_id') . '';
         $str=str_replace("\r\n", "", $str);
         $result = DB::select(DB::raw($str));
