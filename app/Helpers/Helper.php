@@ -29,6 +29,7 @@ if (!function_exists('is_mobile')) {
             }
 
             return json_encode($data);
+            // return "Api called";
         } else {
             if ($redirect_type == 'redirect') {
 
