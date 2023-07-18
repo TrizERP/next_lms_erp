@@ -97,6 +97,7 @@ br {
                             <li class="nav-item"><a href="#section-linemove-12" class="nav-link" aria-selected="false" data-toggle="tab"><span>TC Information</span></a></li>
                             <li class="nav-item"><a href="#section-linemove-13" class="nav-link" aria-selected="false" data-toggle="tab"><span>Attendance</span></a></li>
                             <li class="nav-item"><a href="#section-linemove-14" class="nav-link" aria-selected="false" data-toggle="tab"><span>Parent Communication</span></a></li>
+                            <li class="nav-item"><a href="#section-linemove-15" class="nav-link" aria-selected="false" data-toggle="tab"><span>Leave Application</span></a></li>
                         </ul>
                             
                             @if(isset($data['data']))
@@ -166,6 +167,10 @@ br {
                                             <label>Email</label>
                                             <!--<span><br><b>{{ $student_data->email }}</b></span>-->
                                             <input type="email" value="{{ $student_data->email }}" id='email' required name="email" class="form-control">
+                                        </div>
+                                        <div class="col-md-4 form-group">
+                                            <label>Admision Enquiry No</label>
+                                            <span><br><b>{{ $student_data->enquiry_no ? $student_data->enquiry_no : '-'}}</b></span>
                                         </div>
                                         <div class="col-md-4 form-group">
                                             <label>Admission Year</label>
@@ -1229,7 +1234,7 @@ br {
                                                 </div>                                     
                                             </div> 
 
-                                            <div class="h4 text-primary">Payment Method Mapping</div>
+                                        <div class="h4 text-primary">Payment Method Mapping</div>
                                             <div class="row border rounded mb-3 mb-md-4 mt-3 p-4"> 
                                                 <div class="table-responsive">
                                                     <table class="table table-bordered">
@@ -1271,11 +1276,166 @@ br {
                                         <div class="col-md-12 form-group">
                                             <input type="submit" name="submit" value="Save" class="btn btn-success triz-btn">
                                         </div>
-                                    @endif    
-                                    </form>                                                                
+                                    @endif 
+                                    
+                                    <div class="h4 text-primary">Student Fees History</div>
+                                        <div class="row border rounded mb-3 mb-md-4 mt-3 p-4"> 
+                                            <div class="table-responsive">
+                                            <div class="box-title">
+                                                <label>Fees Structure</label>
+                                            </div>
+                                            <div class="table-responsive">
+                                                <table class="table table-stripped" style="color:#000 !important;">
+                                                    <tr>
+                                                        <th>Month</th>
+                                                        <th>Fees</th>
+                                                        <th>Paid</th>
+                                                        <th>Remaining</th>
+                                                    </tr>
+                                                    @php
+                                                        $remainFees = 0;
+                                                        $feesDetails= [];
+                                                        $bk=$paid=$remain =array();
+                                                        foreach ($data['paid_unpaid_fees'] as $id => $arr) {
+                                                        $feesDetails[$arr['month']] = $arr['remain'];
+                                                        if(isset($arr['bk'])){
+                                                    @endphp
+                                                    <tr>
+                                                        <td>
+                                                            {{ $arr['month'] }}
+                                                        </td>
+                                                        <td>
+                                                            @php $bk[] = $arr['bk']; echo $arr['bk'];  @endphp
+                                                        </td>
+                                                        <td>
+                                                            @php $paid[] = $arr['paid']; echo $arr['paid']; @endphp
+                                                        </td>
+                                                        <td>
+                                                            @php $remain[] = $arr['remain'];echo $arr['remain'];  @endphp
+                                                        </td>
+                                                    </tr>
+                                                    @php
+                                                        }
+                                                            $remainFees += $arr['remain'];
+                                                            } 
+                                                    @endphp
+                                                    <tr>
+                                                        <td>Total</td>
+                                                        <td>
+                                                            {{ array_sum($bk) }}
+                                                        </td>
+                                                        <td>
+                                                            {{array_sum($paid) }}
+                                                        </td>
+                                                        <td>
+                                                            {{array_sum($remain) }}
+                                                        </td>
+                                                    </tr>
+
+                                                </table>
+                                            </div>
+                                            </table>
+                                        </div>
+                                    </div>
+                                    <div class="h4 text-primary">Paid History</div>
+                                        <div class="row border rounded mb-3 mb-md-4 mt-3 p-4"> 
+                                            <div class="table-responsive">
+                                                <table id="example" class="table table-striped">
+                                                    <thead>
+                                                        <tr>
+                                                            <th>Sr No.</th>
+                                                            <th>{{App\Helpers\get_string('grno','request')}}</th>
+                                                            <th>{{App\Helpers\get_string('studentname','request')}}</th>
+                                                            <th>{{App\Helpers\get_string('std/div','request')}}</th>
+                                                            <th>{{App\Helpers\get_string('uniqueid','request')}}</th>
+                                                            <th>Month</th>
+                                                            <th>Receipt No</th>
+                                                            <th>Payment Mode</th>
+                                                            <th>Bank Details</th>
+                                                            <!--<th>Cheque Date</th>-->
+                                                            <th>Receipt Date</th>
+                                                            <th>Collected By</th>
+                                                            <!--<th>Created On</th>-->
+                                                            <th>Amount</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>    
+                                                    @php
+                                                    $j=1;
+                                                    $amount = 0;
+
+                                                    @endphp
+                                                    @if(isset($data['fees_data']))
+                                                        @foreach($data['fees_data'] as $key => $value)
+                                                        @php
+
+                                                        $month_name = '';
+
+                                                        $months = [
+                                                            1 => 'Jan', 2 => 'Feb', 3 => 'Mar', 4 => 'Apr', 5 => 'May', 6 => 'Jun', 7 => 'Jul', 8 => 'Aug', 9 => 'Sep',
+                                                            10 => 'Oct', 11 => 'Nov', 12 => 'Dec',
+                                                        ];
+
+                                                        $y = $value['term_id'] / 10000;
+                                                        $month = (int)$y;
+                                                        $year = substr($value['term_id'], -4);
+                                                        $month_name .= $months[$month] . "/" . $year . ',';
+                                                        
+                                                        $month_name = substr($month_name, 0, -1);
+
+                                                            if($value['cheque_date'] != '' && $value['cheque_date'] != '0000-00-00')
+                                                            {
+                                                                $cheque_date = date('d-m-Y',strtotime($value['cheque_date']));
+                                                            }else{
+                                                                $cheque_date = '';
+                                                            }
+                                                        @endphp
+                                                        <tr>
+                                                            <td>{{$j}}</td>
+                                                            <td>{{$value['enrollment_no']}}</td>
+                                                            <td>{{$value['student_name']}}</td>
+                                                            <td>{{$value['standard_name']}} - {{$value['division_name']}}</td>
+                                                            <td>{{$value['uniqueid']}}</td>
+                                                            <td>{{ $month_name }}</td>
+                                                            <td>{{$value['receipt_no']}}</td>
+                                                            <td>{{$value['payment_mode']}}</td>
+                                                            <td>{{$value['cheque_no']}} {{$value['cheque_bank_name']}} {{$value['bank_branch']}}</td>
+                                                            <!--<td>{{$cheque_date}}</td>-->
+                                                            <td>{{date('d-m-Y',strtotime($value['receiptdate']))}}</td>
+                                                            <td>{{$value['user_name']}}</td>
+                                                            <!--<td>{{date('d-m-Y h:i:s',strtotime($value['created_date']))}}</td>-->
+                                                            <td>{{$value['actual_amountpaid']}}</td>
+                                                        </tr>
+                                                    @php
+                                                    $amount += $value['actual_amountpaid'];
+                                                    $j++;
+                                                    @endphp
+                                                        @endforeach
+                                                        <tr>
+                                                            <th>Total</th>
+                                                            <td></td>
+                                                            <td></td>
+                                                            <td></td>
+                                                            <td></td>
+                                                            <td></td>
+                                                            <!--<td></td>-->
+                                                            <td></td>
+                                                            <td></td>
+                                                            <td></td>
+                                                            <td></td>
+                                                            <td></td>
+                                                            <!--<td></td>-->
+                                                            <th>{{$amount}}</th>
+                                                        </tr>
+                                                    @endif
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </div>   
+                                    </form>
                                 </div>
                                 <!-- END STUDENT FEES DETAILS -->
-
+                                
                                 <!-- START STUDENT TC INFORMATION -->                                
                                 <div class="tab-pane p-3" id="section-linemove-12" role="tabpanel">
                                     <form name="student_tc_form" id="student_tc_form" method="post" action="{{ route('student_tc_detail.store') }}">
@@ -1402,6 +1562,10 @@ br {
                                                 <th>Total Present Days</th>
                                             </thead>
                                             <tbody>
+                                                @php
+                                                $total_present = 0;
+                                                $total_absent = 0;
+                                                @endphp
                                                 @if( $data['attendance_data'] )
                                                     @foreach ( $data['attendance_data'] as $attendance )
                                                         @if ( $attendance->TOTAL_CLASSES > 0 )
@@ -1411,6 +1575,8 @@ br {
                                                             <td>{{ $attendance->TOTAL_ABSENT }}</td>
                                                             <td>{{ $attendance->TOTAL_PRESENT + $attendance->TOTAL_ABSENT }}</td>
                                                             @php
+                                                                $total_present += $attendance->TOTAL_PRESENT;
+                                                                $total_absent += $attendance->TOTAL_ABSENT;
                                                                 $percent_friendly = '0%';
                                                                 if ( $attendance->TOTAL_PRESENT ) {
                                                                     $totalDays = $attendance->TOTAL_PRESENT + $attendance->TOTAL_ABSENT;
@@ -1426,6 +1592,21 @@ br {
                                                             </tr>
                                                         @endif
                                                     @endforeach
+                                                    <tr>
+                                                        <td>Total</td>
+                                                        <td>{{ $total_present }}</td>
+                                                        <td>{{ $total_absent }}</td>
+                                                        <td>{{ $total_present + $total_absent }}</td>
+                                                        @php
+                                                            $total_percent_friendly = '0%';
+                                                            if ( $total_present ) {
+                                                                $total_days = $total_present + $total_absent;
+                                                                $total_percent = $total_present/$total_days;
+                                                                $total_percent_friendly = number_format( $total_percent * 100, 2 ) . '%';
+                                                            }
+                                                        @endphp
+                                                        <td>{{ $total_percent_friendly }}</td>
+                                                    </tr>
                                                 @else
                                                     <tr>
                                                         <td colspan="6">No Data Found</td>
@@ -1472,7 +1653,50 @@ br {
                                         </div>
                                     </div>
                                 </div>
-                                <!-- END PARENT COMMUNICATION -->                                
+                                <!-- END PARENT COMMUNICATION -->
+                                
+                                <!-- START LEAVE APPLICATION -->
+                                <div class="tab-pane p-3" id="section-linemove-15" role="tabpanel">
+                                    <div class="tab-pane p-3" id="section-linemove-14" role="tabpanel">
+                                        <div class="table-responsive">
+                                            <table id="leave-application" class="table table-striped">
+                                                <thead>
+                                                    <th>Title</th>
+                                                    <th>Message</th>
+                                                    <th>Files</th>
+                                                    <th>Apply Date</th>
+                                                    <th>From Date</th>
+                                                    <th>To Date</th>
+                                                    <th>Reply</th>
+                                                    <th>Reply By</th>
+                                                    <th>Status</th>
+                                                </thead>
+                                                <tbody>
+                                                @if($data['leave_application'])
+                                                    @foreach($data['leave_application'] as $leaveData)
+                                                        <tr>
+                                                            <td>{{ $leaveData->title }}</td>
+                                                            <td>{{ $leaveData->message }}</td>
+                                                            <td><a href="<?php echo asset('storage/leave_application/' . $leaveData->files); ?>" download>Download</a></td>
+                                                            <td>{{ $leaveData->apply_date }}</td>
+                                                            <td>{{ $leaveData->from_date }}</td>
+                                                            <td>{{ $leaveData->to_date }}</td>
+                                                            <td>{{ $leaveData->reply }}</td>
+                                                            <td>{{ $leaveData->reply_on }}</td>
+                                                            <td>{{ $leaveData->status }}</td>
+                                                        </tr>
+                                                    @endforeach
+                                                @else
+                                                    <tr>
+                                                        <td colspan="12">No Data Found</td>
+                                                    </tr>
+                                                @endif
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                                <!-- END LEAVE APPLICATION --> 
                                 
                                 <div id="overlay" style="display:none;"><img id="loading" src="https://i1.wp.com/cdnjs.cloudflare.com/ajax/libs/galleriffic/2.0.1/css/loader.gif"></div>
                             
@@ -1486,6 +1710,68 @@ br {
         </div>
     </div>
 </div>
+
+<!--Modal: Add ChapterModal-->
+<div id="printThis">
+    <div class="modal fade right modal-scrolling" id="ChapterModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel"
+        style="display: none;" aria-hidden="true">
+        <div class="modal-dialog modal-side modal-bottom-right modal-notify modal-info" role="document" style="min-width: 85%;">
+            <!--Content-->
+            <div class="modal-content">
+                <!--Header-->
+                <div class="modal-header">
+                    <h5 class="modal-title" id="heading">Fees Payment History</h5>
+                    <button type="button" class="close" id="refresh_data" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">x</span>
+                    </button>
+                </div>
+                <!--Body-->
+                <div class="modal-body">
+                    <div class="row">
+                        <!-- TABLE START-->
+                        <div class="card">
+                            <div class="table-responsive">
+                                <table id="example" class="table table-striped">
+                                    <thead>
+                                        <tr>
+                                            <th>Sr No.</th>
+                                            <th>GR No.</th>
+                                            <th>{{App\Helpers\get_string('StudentName','request')}}<span id="menuId" style="display:none"></span><a href="{{route('norm-clature.create')}}"><i class="mdi mdi-lead-pencil"></i></a></th>
+                                            <th>Std-Div</th>
+                                            <th>Uniqueid</th>
+                                            <th>Month</th>
+                                            <th>Receipt No</th>
+                                            <th>Payment Mode</th>
+                                            <th>Bank Details</th>
+                                            <!--<th>Cheque Date</th>-->
+                                            <th>Receipt Date</th>
+                                            <th>Collected By</th>
+                                            <!--<th>Created On</th>-->
+                                            <th>Amount</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="table_data">
+                                        <!-- //data -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <!-- table end -->
+                    </div>
+                </div>
+                <!--Footer-->
+                <!--  <div class="modal-footer" style="display: block !important;">
+                        <div id="overlay" style="display:none;"><center><p style="margin-top: 273px;color:red;font-weight: 700;">Please do not refresh the page, while the process is going on.</p><img src="http://dev.triz.co.in/admin_dep/images/loader.gif"></center></div>
+                        <center>
+                            <button id="ajax_PDF" type="button" class="btn btn-primary">Print Receipt</button>
+                        </center>
+                    </div>
+                </div> -->
+                <!--/.Content-->
+            </div>
+        </div>
+    </div>
+<!--Modal: Add ChapterModal-->
 
 @include('includes.footerJs')
 <script src="../../../admin_dep/js/cbpFWTabs.js"></script>
@@ -1886,3 +2172,74 @@ br {
             });
       </script>
 @include('includes.footer')
+
+<!--fees payment history code  -->
+<script src="https://cdn.jsdelivr.net/gh/gitbrent/bootstrap4-toggle@3.6.1/js/bootstrap4-toggle.min.js"></script>
+		<script>
+			function add_data(grno, student_id) {
+				$(document).ready(function() {
+					$.ajax({
+						url: '/fees/feesDetails/getDetails/' + grno + "/" + student_id,
+						type: 'GET',
+						dataType: 'json',
+						success: function(data) {
+							const months = ["Jan", "Feb", "Mar", "Apr", "May", "June", "July", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+							$.each(data, function(index, value) {
+								index++;
+								const term_id = value['term_id'];
+								year = String(term_id).slice(-4);
+								month = String(term_id).substring(0, String(term_id).length - 4);
+								month--;
+								// const d = new Date(value['term_id']);
+								let monthyear = months[month] + "/" + year;
+								// console.log(monthyear);
+
+								if (value['uniqueid'] == 'null') {
+									valueuni = value['uniqueid'];
+								} else {
+									valueuni = '';
+								}
+								// console.log(value['student_name']);
+								$('#table_data').append("<tr><td>" + index + "</td><td>" + value['enrollment_no'] + "</td><td>" + value[
+										'student_name'] + "</td><td>" + value['division_name'] + "</td><td>" + valueuni + "</td><td>" +
+									monthyear + "</td><td>" + value['receipt_no'] + "</td><td>" + value['payment_mode'] + "</td><td>" +
+									value['cheque_bank_name'] + "</td><td>" + value['receiptdate'] + "</td><td>" + value['user_name'] +
+									"</td><td id='total_amt'>" + value['actual_amountpaid'] + "</td></tr>");
+							});
+
+							var total = 0;
+
+							$('#table_data tr').each(function(index) {
+								var found = $(this).find('#total_amt')
+								if (found) {
+									total += parseInt(found.text());
+								}
+								// console.log(total);
+							});
+
+							$('#table_data').append("<tr><td colspan=11>Total</td><td>" + total + "</td></tr>");
+							$('#ChapterModal').modal('show');
+
+						}
+					});
+				});
+			}
+
+			$('body').on('hidden.bs.modal', '.modal', function() {
+				$("#table_data").empty();
+			});
+		</script>
+
+<script>
+    var menuId = localStorage.getItem('current_id');
+    var spans = document.querySelectorAll('span.menuId');
+    for (var i = 0; i < spans.length; i++) {
+        spans[i].textContent = menuId;
+    }
+    var url = '{{ route("norm-clature.create") }}?menu_id=' + menuId;
+    var links = document.querySelectorAll('a[href="{{ route("norm-clature.create") }}"]');
+    for (var j = 0; j < links.length; j++) {
+        links[j].href = url;
+    }
+</script>

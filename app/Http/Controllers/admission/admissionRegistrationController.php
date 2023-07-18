@@ -37,7 +37,7 @@ class admissionRegistrationController extends Controller
             })->leftJoin('tblstudent as ts', function ($join) {
                 $join->whereRaw('ts.admission_id = ae.id AND ts.admission_year = ae.syear AND ts.sub_institute_id = ae.sub_institute_id');
             })->leftJoin('standard as s', function ($join) {
-                $join->whereRaw('ts.admission_id = ae.id AND ts.admission_year = ae.syear AND ts.sub_institute_id = ae.sub_institute_id');
+                $join->on('s.id', '=', 'ae.admission_standard');
             })
             ->selectRaw("ae.*,COUNT(ts.id) AS total_student_count,ae.remarks AS enquiry_remark,s.name AS std_name")
             ->where('ae.sub_institute_id', $sub_institute_id)
