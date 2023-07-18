@@ -125,6 +125,7 @@
                                             <td><input type="text" name="total_day" value="{{$total_day}}">
                                                 @if($hide_button)
                                                     <input type="submit" name="add" class="btn btn-primary" value="add">
+                                                    <p style="color: red">{{isset($message) ?$message : ''}}</p>
                                                 @endif
                                             </td>
                                         @elseif(isset($employeeSalaryDetails[$hkey]) && $hkey != 'total_deduction' && $hkey != 'total_payment' && $hkey != 'received_by')
