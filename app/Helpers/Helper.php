@@ -687,9 +687,9 @@ if (!function_exists('SearchStudent')) {
 
         $query = tblstudentModel::from('tblstudent as ts');
 
-        $query->when($marking_period_id, function ($join) use ($marking_period_id) {
-            $join->where('ts.marking_period_id', $marking_period_id);
-        });
+        // $query->when($marking_period_id, function ($join) use ($marking_period_id) {
+        //     $join->where('ts.marking_period_id', $marking_period_id);
+        // });
 
         if ($mobile != '') {
             $query->where('ts.mobile', $mobile);
