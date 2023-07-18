@@ -81,6 +81,7 @@ class bulkStudentController extends Controller
         $tblcustom_fields['roll_no']['name'] = 'Roll Number';
         $tblcustom_fields['image']['name'] = 'Image';
         $tblcustom_fields['uniqueid']['name'] = 'Unique ID';
+        $tblcustom_fields['updated_on']['name'] = 'Updated On';
 
         $tblcustom_fields['enrollment_no']['type'] = 'textbox';
         $tblcustom_fields['first_name']['type'] = 'textbox';
@@ -115,6 +116,7 @@ class bulkStudentController extends Controller
         $tblcustom_fields['roll_no']['type'] = 'textbox';
         $tblcustom_fields['image']['type'] = 'file';
         $tblcustom_fields['uniqueid']['type'] = 'textbox';
+        $tblcustom_fields['updated_on']['type'] = 'textbox';   
 
         $tblcustoms = tblcustomfieldsModel::select(['field_name', 'field_label', 'field_type'])
             ->where(["status" => "1", "table_name" => "tblstudent"])
@@ -300,7 +302,7 @@ class bulkStudentController extends Controller
         //$extraRaw .= " and tblstudent.id IN (93452,17777,17509)";
 
         $student_data = tblstudentModel::select($array)
-            ->selectRaw("Concat_ws(' ',tblstudent.first_name,tblstudent.middle_name,tblstudent.last_name) as student_name,sum(fees_collect.amount) as total_amount,tblstudent_enrollment.house_id as house")
+            ->selectRaw("Concat_ws(' ',tblstudent.first_name,tblstudent.middle_name,tblstudent.last_name) as student_name,sum(fees_collect.amount) as total_amount,tblstudent_enrollment.house_id as house,tblstudent_enrollment.updated_on")
             ->join('tblstudent_enrollment', 'tblstudent.id', '=', 'tblstudent_enrollment.student_id')
             ->join('academic_section', 'academic_section.id', '=', 'tblstudent_enrollment.grade_id')
             ->join('standard', 'standard.id', '=', 'tblstudent_enrollment.standard_id')
