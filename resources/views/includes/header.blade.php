@@ -183,7 +183,7 @@ $academicTerms = session()->get('academicTerms');
                                 <a class="dropdown-item" href="{{route('manage_institute.index')}}"><i
                                         class="mdi mdi-home-city"></i> Manage Institute</a>
                             @endif
-                        <!-- <a class="dropdown-item" target="_blank" href="{{route('onlineEnquiryFirst', ['id' => Session::get('sub_institute_id'), 'title' => Session::get('school_name')])}}"><i class="ti-book"></i>Admission Form</a> -->
+                        
                             @if(isset($loginpage_link) && $loginpage_link != '')
                                 <a class="dropdown-item" href="{{$loginpage_link}}"><i class="mdi mdi-power"></i> Logout</a>
                             @else
