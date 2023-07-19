@@ -32,7 +32,11 @@ class studentHomeworkController extends Controller
     {
         $type = $request->input('type');
         $submit = $request->input('submit');
-        $sub_institute_id = $request->session()->get('sub_institute_id');
+        if($type=="API"){
+            $sub_institute_id = $request->input('sub_institute_id');
+        }else{
+            $sub_institute_id = $request->session()->get('sub_institute_id');            
+        }
         $res['status_code'] = 1;
         $res['message'] = "Success";
 
