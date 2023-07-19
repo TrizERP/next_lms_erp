@@ -9,6 +9,7 @@ use App\Http\Controllers\fees\fees_collect\fees_collect_controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Razorpay\Api\Api;
+use Illuminate\Support\Facades\Http;
 
 class online_fees_collect_controller extends Controller
 {
@@ -441,6 +442,102 @@ class online_fees_collect_controller extends Controller
         );
         return \App\Helpers\is_mobile($type, "fees/online_fees_collect/icici_RequestHandler", $data, "view");
     }
+
+        /**
+     * Fetch payment status from RAZORPAY
+     */
+    public function icici_fetch_payment_status(Request $request) {
+
+        // get payment data if payment status is not captured and is not null and order id is not null
+
+        // $limit = 150; // Set the desired limit here
+
+        $payment_data = DB::table('fees_payment AS fp')
+            ->select('fp.id', 'fp.student_id', 'fi.merchant_id', 'fi.enc_key', 'fp.icici_order_id', 'tse.syear', 'fp.sub_institute_id', 'fp.amount','fp.icici_bank_res')
+            ->join('tblstudent_enrollment AS tse', function ($join) {
+                $join->on('tse.student_id', '=', 'fp.student_id')
+                    ->on('tse.syear', '=', 'fp.syear')
+                    ->on('tse.sub_institute_id', '=', 'fp.sub_institute_id');
+            })
+            ->join('academic_section AS a', 'a.id', '=', 'tse.grade_id')
+            ->join('fees_icici AS fi', function ($join) {
+                $join->on('fi.medium', '=', 'a.medium')
+                    ->on('fi.sub_institute_id', '=', 'tse.sub_institute_id');
+            })
+            ->where(function ($query) {
+                $query->where('fp.razorpay_dashboard_ps', '!=', 'captured')
+                    ->where('fp.razorpay_dashboard_ps', '!=', 'refunded')
+                    ->where('fp.razorpay_dashboard_ps', '!=', 'Success')                    
+                    ->orWhereNull('fp.razorpay_dashboard_ps');
+            })
+            // ->where('tse.student_id',195449)
+            ->whereNotNull('fp.icici_order_id')
+            ->groupBy('fp.id')
+            // ->orderBy('fp.id','DESC')
+            // ->limit($limit)
+            ->get();
+            // return $payment_data;exit;
+            $check = [];
+        if ( !empty($payment_data) ) {
+
+            foreach ( $payment_data as $data ) {
+                $id = $data->id;
+                $key_id = $data->merchant_id;
+                $key_secret = $data->enc_key;
+                $payment_id = $data->icici_order_id;
+                $student_id = $data->student_id;
+                $amount = $data->amount;
+                $res = $data->icici_bank_res;
+                // initial razorpay api
+                $url = "https://eazypay.icicibank.com/EazyPGVerify?merchantid=".$key_id."&pgreferenceno=".$payment_id."&dstatus=Y";
+                $payment_status = Http::get($url);
+                $payment_ex = explode('&', $payment_status);
+
+                $payment = [];
+                foreach ($payment_ex as $item) {
+                    $itemParts = explode('=', $item);
+                    $key = $itemParts[0];
+                    $value = $itemParts[1];
+                    $payment[$key] = $value;
+                }
+
+                if ( !empty( $payment ) ) {
+                    $status = $payment['status'];
+                    
+                    $json_response = $this->icici_payment_response_data_to_array($payment);
+
+                    $update_arr = array(
+                        "razorpay_dashboard_ps" => $status,
+                        "aggre_pay_bank_res" => "cron",
+                        "id"=>$payment_id,
+                        "icici_bank_res" => $res,
+                        "updated_at" => now()
+                    );
+                   // print_r($update_arr);exit;
+                    DB::table("fees_payment")
+                    ->where('id', $id)
+                    ->update($update_arr);
+                
+                    $request->merge([
+                        '_key' => csrf_token(),
+                        'student_id' => $student_id,
+                        'inserted_id' => $id,
+                        'icici_payment_id' => $payment_id,
+                        'syear' => $data->syear,
+                        'sub_institute_id' => $data->sub_institute_id
+                    ]);
+
+                    // echo "<pre>"; print_r($request->all()); exit;
+                    if($status == 'Success')
+                        $check = DB::table('fees_collect')->whereRaw('cheque_no='.$payment_id.' AND student_id='.$student_id.' AND syear='.$data->syear.' AND sub_institute_id='.$data->sub_institute_id)->get()->toArray();                        
+                        if($check < 0){
+                            $schooldata = $this->pay_fees($request, $data->student_id, $data->syear, $data->sub_institute_id, $amount, $payment_id);
+                        }
+                }
+            }
+        }
+    }
+
     public function icici_response_handler(Request $request)
     {
         $get_map_bank_detail = DB::table("fees_icici")
@@ -490,6 +587,21 @@ class online_fees_collect_controller extends Controller
             // return \App\Helpers\is_mobile($type, "fees/online_fees_collect/axis_RequestHandler", $data, "view");
         }
     }
+
+    public function icici_payment_response_data_to_array($response)
+    {
+
+        if (!empty($response)) {
+            $data = [];
+            foreach ($response as $key => $value) {
+                $data[$key] = $value;
+            }
+
+            // echo "<pre>"; print_r(json_encode($data)); exit;
+            return json_encode($data);
+        }
+    }
+
 
     public function axis(Request $request)
     {
@@ -1012,13 +1124,10 @@ class online_fees_collect_controller extends Controller
                 "bank_branch" => "",
                 "submit" => "Save",
             );
-            // echo '<pre>';
-            // print_r($send_arr);
-            // print_r($_REQUEST);
+         
             $_REQUEST = $send_arr;
             $paid_fees = $controller->pay_fees($request);
             return $paid_fees;
-            // print_r($paid_fees);
         }
     }
 
