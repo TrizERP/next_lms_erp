@@ -209,80 +209,30 @@ class fees_collect_controller extends Controller
                     $q->whereNull('se.end_date');
                 }
             })->groupBy('s.id')->havingNotNull('bkoff')->get()->toArray();
-// dd(DB::getQueryLog($result));
 
-        $paid_result = DB::table(function ($query) use ($fees_join, $paid_other_join,$marking_period_id) {
-            $query->select(DB::raw('SUM(amount) as paid_amt, student_id as id'))
-                ->from(function ($subquery) use ($fees_join, $paid_other_join,$marking_period_id) {
-                    $subquery->select(
-                        DB::raw('SUM(fc.amount) + SUM(fc.fees_discount) as amount, se.student_id')
-                    )
-                        ->from('tblstudent as s')
-                        ->join('tblstudent_enrollment as se', function ($join) use($marking_period_id){
-                            $join->whereRaw('se.student_id = s.id')->where('se.syear', session()->get('syear'))->when($marking_period_id, function ($join) use ($marking_period_id) {
-                                $join->where('s.marking_period_id', $marking_period_id);
-                            });
-                        })->join('academic_section as g', function ($join) {
-                            $join->whereRaw('g.id = se.grade_id');
-                        })->join('standard as st', function ($join) use($marking_period_id) {
-                            $join->whereRaw('st.id = se.standard_id')->when($marking_period_id, function ($join) use ($marking_period_id) {
-                                $join->where('st.marking_period_id', $marking_period_id);
-                            });
-                        })
-                        ->leftJoin('division as d', 'd.id', '=', 'se.section_id')
-                        ->join('fees_collect as fc', function ($join) use ($fees_join) {
-                            $join->on('fc.student_id', '=', 's.id')
-                                ->where('fc.is_deleted', 'N')
-                                ->where('fc.sub_institute_id', session()->get('sub_institute_id'))
-                                ->whereRaw('fc.syear = ' . session()->get('syear') . ' ' . $fees_join);
-                        })
-                        ->where('s.sub_institute_id', session()->get('sub_institute_id'))
-                        ->groupBy('s.id');
-
-                    if ($paid_other_join) {
-                        $subquery->unionAll(function ($union) use ($paid_other_join,$marking_period_id) {
-                            $union->select(
-                                DB::raw('SUM(fpo.actual_amountpaid) + SUM(fpo.fees_discount) as aa, se.student_id')
-                            )
-                                ->from('tblstudent as s')
-                                ->join('tblstudent_enrollment as se', function ($join) use($marking_period_id){
-                                    $join->whereRaw('se.student_id = s.id')->where('se.syear', session()->get('syear'))->when($marking_period_id, function ($join) use ($marking_period_id) {
-                                        $join->where('s.marking_period_id', $marking_period_id);
-                                    });
-                                })->join('academic_section as g', function ($join) {
-                                    $join->whereRaw('g.id = se.grade_id');
-                                })->join('standard as st', function ($join) use($marking_period_id) {
-                                    $join->whereRaw('st.id = se.standard_id')->when($marking_period_id, function ($join) use ($marking_period_id) {
-                                        $join->where('st.marking_period_id', $marking_period_id);
-                                    });
-                                })
-                                ->leftJoin('division as d', 'd.id', '=', 'se.section_id')
-                                ->join('fees_paid_other as fpo', function ($join) use ($paid_other_join) {
-                                    $join->on('fpo.student_id', '=', 's.id');
-                                    $join->whereRaw('1=1' . $paid_other_join);
-                                })
-                                ->where('s.sub_institute_id', session()->get('sub_institute_id'))
-                                ->groupBy('s.id');
-                        });
-                    }
-                }, 'temp_table')
-                ->groupBy('student_id');
-        })->get();
-
-        // return $result;exit;
+        // Create an instance of the Request class and pass it as the first argument
+        $request = Request::capture();
+        
         foreach ($result as $id => $arr) {
             $bk_stu_id = $arr->id;
-            foreach ($paid_result as $r_id => $r_arr) {
-                $pd_stu_id = $r_arr->id;
-                if ($bk_stu_id == $pd_stu_id) {
-                    if ($r_arr->paid_amt > $arr->bkoff) {
+            $paid_result = $this->getBk($request, $bk_stu_id);
+            $pd_stu_id = $paid_result['stu_data']['student_id'];
+            $remain = $paid_result['final_fee']['Total'];
+            $previous = isset($paid_result['final_fee']['Previous Fees']) ? $paid_result['final_fee']['Previous Fees'] : 0;
+            if ($bk_stu_id == $pd_stu_id) {
+              
+                if ($previous < 0) {
+                    $arr->bkoff = ($remain - $previous);
+                } else {
+                    if ($remain > 0){
+                    $arr->bkoff = $remain;
+                    }else{
                         $arr->bkoff = 0;
-                    } else {
-                        $arr->bkoff = abs($arr->bkoff - $r_arr->paid_amt);
                     }
                 }
             }
         }
+                
         // fees validation admission year,student quota,division,fees_breakoff
         if (empty($result)) {
             $check = DB::table('tblstudent as s')
@@ -372,7 +322,9 @@ class fees_collect_controller extends Controller
         }
         // return $result;exit;
         $responce_arr['stu_data'] = $result;
-
+        $responce_arr['grade_id'] = $_REQUEST['grade'];
+        $responce_arr['standard_id'] = $_REQUEST['standard'] ?? '';
+        $responce_arr['division_id'] =  $_REQUEST['division'] ?? '';
 
         return is_mobile($type, "fees/fees_collect/show", $responce_arr, "view");
     }
@@ -1878,7 +1830,8 @@ class fees_collect_controller extends Controller
             "0" => $id,
         ];
 
-        $request->session()->put('stu_arr', $stu_arr);
+        // $request->session()->put('stu_arr', $stu_arr);
+        session(['stu_arr' => $stu_arr]);
 
         $student_id = $id;
 
