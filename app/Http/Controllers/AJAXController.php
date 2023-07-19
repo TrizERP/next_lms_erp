@@ -1291,8 +1291,9 @@ class AJAXController extends Controller
             $dom .= $fees_receipt_css;
             $dom .= '</head>
                         <body>';
-
+            $dom .= ' <div style="page-break-inside: avoid !important">';
             $dom .= $this->get_PageSetup($paper_size);
+            $dom .= '</div>';
 
             $dom .= '</body>
                 </html>';
