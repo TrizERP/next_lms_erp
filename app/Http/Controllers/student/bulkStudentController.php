@@ -385,7 +385,7 @@ class bulkStudentController extends Controller
 
         $fileName = 'email/' . $currentDate . '.txt';
         
-        $fileData = "{ User ID: {$request->session()->get('user_id')}, Sub Institute ID: {$request->session()->get('sub_institute_id')}, Current Date: " . date('Y-m-d H:i:s') . " \n}";
+        $fileData = "{ User ID: {$request->session()->get('user_id')}, Sub Institute ID: {$request->session()->get('sub_institute_id')}, Current Date: " . date('Y-m-d H:i:s') . " }\n";
 
         if (Storage::exists($fileName)) {
             // Append data to the existing file
