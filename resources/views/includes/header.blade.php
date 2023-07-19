@@ -205,14 +205,20 @@ $academicTerms = session()->get('academicTerms');
             <nav aria-label="breadcrumb">
                 <ol class="breadcrumb mt-2">
                     <li class="breadcrumb-item"><a href="{{ route('home') }}">Home</a></li>
-                    @php
+                   @php
                         $link = url('/');
-
                         $all_segments = request()->segments();
-                        // unset($all_segments[0]);
+                        $search = $all_segments[1] ?? $all_segments[0];
+                        $bread = DB::table('tblmenumaster')->whereRaw('link LIKE "'.$search.'%"')->get();
                         $i = 1;
                     @endphp
-
+                    @if(count($bread)>0)
+                    @php
+                    $main = DB::table('tblmenumaster')->where('id',$bread[0]->parent_menu_id)->get();                        
+                    @endphp
+                    <li class="breadcrumb-item"><a href="{{ route('home') }}">{{$main[0]->name ?? ''}}</a></li>
+                    <li class="breadcrumb-item "><a href="{{ route($bread[0]->link) }}" class="text-dark">{{$bread[0]->name ?? ''}}</a></li>        
+                    @else   
                     @foreach($all_segments as $segment)
                         @php
                             $segment = str_replace('breackoff','structure',$segment);
@@ -231,6 +237,7 @@ $academicTerms = session()->get('academicTerms');
                         @endif
                         @php $i++; @endphp
                     @endforeach
+                    @endif            
                 </ol>
             </nav>
     @endif
