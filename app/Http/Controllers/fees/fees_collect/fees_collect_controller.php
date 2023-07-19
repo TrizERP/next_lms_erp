@@ -2458,8 +2458,8 @@ class fees_collect_controller extends Controller
                 $online_link = "http://" . $_SERVER['SERVER_NAME'] . "/fees/online_fees_collect";
             }
 
-            if (isset($fees_data['total_fees'])) {
                 $fees_data = $this->getBk($request, $student_id);
+            if (isset($fees_data['total_fees'])) {                
                 foreach ($fees_data['total_fees'] as $key => $val) {
                     unset($val['bk']);
                     unset($val['paid']);
