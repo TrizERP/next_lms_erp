@@ -22,6 +22,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\File;
 use function App\Helpers\is_mobile;
+use Illuminate\Support\Facades\Storage;
 
 class bulkStudentController extends Controller
 {
@@ -379,8 +380,20 @@ class bulkStudentController extends Controller
         $syear = $request->session()->get('syear');
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $values = $request->post('values');
-        $file = $request->file('values');
-        //dd($file);        
+        $file = $request->file('values');    
+        $currentDate = date('Y-m-d'); 
+
+        $fileName = 'email/' . $currentDate . '.txt';
+        
+        $fileData = "{ User ID: {$request->session()->get('user_id')}, Sub Institute ID: {$request->session()->get('sub_institute_id')}, Current Date: " . date('Y-m-d H:i:s') . " \n}";
+
+        if (Storage::exists($fileName)) {
+            // Append data to the existing file
+            Storage::append($fileName, $fileData);
+        } else {
+            // Create a new file and put the data in it
+            Storage::put($fileName, $fileData);
+        }
 
         foreach ($values as $key => $value) {
 
