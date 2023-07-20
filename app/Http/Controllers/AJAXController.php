@@ -1616,11 +1616,7 @@ class AJAXController extends Controller
                                 </page>
                             </div>';
         } elseif ($paper_size == "A4DB") {
-<<<<<<< HEAD
               if(in_array($sub_institute_id,$four_res)){
-=======
-              if($sub_institute_id==239){
->>>>>>> f078320e14ef3499483c06d222fa694864d89d0b
                   $extra_html = ' <div>
                                 <page size="A4">
                                 <div>
@@ -1632,8 +1628,7 @@ class AJAXController extends Controller
                                 </div>
                                 </page>
                             </div>';
-              }
-                else{
+              }else{
                     $extra_html = ' <div>
                                 <page size="A4">
                                 <div>
