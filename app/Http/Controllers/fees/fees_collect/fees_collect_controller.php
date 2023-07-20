@@ -144,15 +144,17 @@ class fees_collect_controller extends Controller
         // DB::enableQueryLog();
         $result = DB::table('tblstudent as s')
             ->join('tblstudent_enrollment as se', function ($join) use ($marking_period_id) {
-                $join->whereRaw('se.student_id = s.id')->when($marking_period_id, function ($join) use ($marking_period_id) {
-                    $join->where('s.marking_period_id', $marking_period_id);
-                });
+                $join->whereRaw('se.student_id = s.id');
+                // ->when($marking_period_id, function ($join) use ($marking_period_id) {
+                //     $join->where('s.marking_period_id', $marking_period_id);
+                // });
             })->join('academic_section as g', function ($join) {
                 $join->whereRaw('g.id = se.grade_id');
             })->join('standard as st', function ($join) use ($marking_period_id) {
-                $join->whereRaw('st.id = se.standard_id')->when($marking_period_id, function ($join) use ($marking_period_id) {
-                    $join->where('st.marking_period_id', $marking_period_id);
-                });
+                $join->whereRaw('st.id = se.standard_id');
+                // ->when($marking_period_id, function ($join) use ($marking_period_id) {
+                //     $join->where('st.marking_period_id', $marking_period_id);
+                // });
             })->leftJoin('division as d', function ($join) {
                 $join->whereRaw('d.id = se.section_id');
             })->leftJoin('student_quota as sq', function ($join) {
@@ -172,7 +174,7 @@ class fees_collect_controller extends Controller
                 bkoff, st.name standard_name, d.name as division_name")
             ->where('s.sub_institute_id', session()->get('sub_institute_id'))
             ->where('se.syear', session()->get('syear'))
-            ->whereNotNull('s.admission_date')
+            // ->whereNotNull('s.admission_date')
            
             //->whereNull('se.end_date')
             ->where(function ($q) use ($request) {
@@ -235,15 +237,18 @@ class fees_collect_controller extends Controller
                 
         // fees validation admission year,student quota,division,fees_breakoff
         if (empty($result)) {
+            // DB::enableQueryLog();
             $check = DB::table('tblstudent as s')
                 ->join('tblstudent_enrollment as se', function ($join) use ($marking_period_id) {
-                    $join->whereRaw('se.student_id = s.id')->when($marking_period_id, function ($join) use ($marking_period_id) {
-                        $join->where('s.marking_period_id', $marking_period_id);
-                    });
+                    $join->whereRaw('se.student_id = s.id');
+                    // ->when($marking_period_id, function ($join) use ($marking_period_id) {
+                    //     $join->where('s.marking_period_id', $marking_period_id);
+                    // });
                 })->join('standard as st', function ($join) use($marking_period_id) {
-                    $join->whereRaw('st.id = se.standard_id')->when($marking_period_id, function ($join) use ($marking_period_id) {
-                        $join->where('st.marking_period_id', $marking_period_id);
-                    });
+                    $join->whereRaw('st.id = se.standard_id');
+                    // ->when($marking_period_id, function ($join) use ($marking_period_id) {
+                    //     $join->where('st.marking_period_id', $marking_period_id);
+                    // });
                 })->leftJoin('division as d', function ($join) {
                     $join->whereRaw('d.id = se.section_id');
                 })->leftJoin('student_quota as sq', function ($join) {
@@ -289,7 +294,8 @@ class fees_collect_controller extends Controller
                     }
 
                 })->groupBy('s.id')->get()->toArray();
-    //return $check;exit;
+    // return $check;exit;
+                // dd(DB::getQueryLog($check));
             if (!empty($check)) {
                 if ($check[0]->section_id == null || $check[0]->section_id == 0) {
                     $responce_arr['status_code'] = 0;
@@ -689,10 +695,10 @@ class fees_collect_controller extends Controller
         }
 
         $sub_institute_id = session()->get('sub_institute_id');
-
+        $syear = session()->get('syear');
         $fees_config = DB::table('fees_config_master as fc')
             ->join('fees_receipt_css as frc', 'frc.receipt_id', '=', 'fc.fees_receipt_template')
-            ->selectRaw('fc.* ,frc.css')->where('fc.sub_institute_id', $sub_institute_id)->get()->toArray();
+            ->selectRaw('fc.* ,frc.css')->where(['fc.sub_institute_id'=>$sub_institute_id,'syear'=>$syear])->get()->toArray();
 
         $res = [];
         if (count($fees_config)) {
@@ -1693,15 +1699,17 @@ class fees_collect_controller extends Controller
 
             $result = DB::table('tblstudent as s')
                 ->join('tblstudent_enrollment as se', function ($join) use($marking_period_id){
-                    $join->whereRaw('se.student_id = s.id')->when($marking_period_id, function ($join) use ($marking_period_id) {
-                        $join->where('s.marking_period_id', $marking_period_id);
-                    });
+                    $join->whereRaw('se.student_id = s.id');
+                    // ->when($marking_period_id, function ($join) use ($marking_period_id) {
+                    //     $join->where('s.marking_period_id', $marking_period_id);
+                    // });
                 })->join('academic_section as g', function ($join) {
                     $join->whereRaw('g.id = se.grade_id');
                 })->join('standard as st', function ($join) use($marking_period_id){
-                    $join->whereRaw('st.id = se.standard_id')->when($marking_period_id, function ($join) use ($marking_period_id) {
-                        $join->where('st.marking_period_id', $marking_period_id);
-                    });
+                    $join->whereRaw('st.id = se.standard_id');
+                    // ->when($marking_period_id, function ($join) use ($marking_period_id) {
+                    //     $join->where('st.marking_period_id', $marking_period_id);
+                    // });
                 })->leftJoin('division as d', function ($join) {
                     $join->whereRaw('d.id = se.section_id');
                 })->join('fees_breackoff as fb', function ($join) use ($breackoff_join, $requestData) {
@@ -1738,15 +1746,17 @@ class fees_collect_controller extends Controller
                         $subQuery->selectRaw('SUM(fc.amount) + SUM(fc.fees_discount) as amount, se.student_id')
                             ->from('tblstudent as s')
                             ->join('tblstudent_enrollment as se', function ($join) use ($marking_period_id) {
-                                $join->on('se.student_id', '=', 's.id')->when($marking_period_id, function ($join) use ($marking_period_id) {
-                                    $join->where('s.marking_period_id', $marking_period_id);
-                                });
+                                $join->on('se.student_id', '=', 's.id');
+                                // ->when($marking_period_id, function ($join) use ($marking_period_id) {
+                                //     $join->where('s.marking_period_id', $marking_period_id);
+                                // });
                             })
                             ->join('academic_section as g', 'g.id', '=', 'se.grade_id')
                             ->join('standard as st', function ($join) use ($marking_period_id) {
-                                $join->on('se.student_id', '=', 'st.id')->when($marking_period_id, function ($join) use ($marking_period_id) {
-                                    $join->where('st.marking_period_id', $marking_period_id);
-                                });
+                                $join->on('se.student_id', '=', 'st.id');
+                                // ->when($marking_period_id, function ($join) use ($marking_period_id) {
+                                //     $join->where('st.marking_period_id', $marking_period_id);
+                                // });
                             })
                             ->leftJoin('division as d', 'd.id', '=', 'se.section_id')
                             ->join('fees_collect as fc', function ($join) use ($sub_institute_id) {
@@ -1766,15 +1776,17 @@ class fees_collect_controller extends Controller
                         $subQuery->selectRaw('SUM(fpo.actual_amountpaid) + SUM(fpo.fees_discount) as aa, se.student_id')
                             ->from('tblstudent as s')
                             ->join('tblstudent_enrollment as se', function ($join) use ($marking_period_id) {
-                                $join->on('se.student_id', '=', 's.id')->when($marking_period_id, function ($join) use ($marking_period_id) {
-                                    $join->where('s.marking_period_id', $marking_period_id);
-                                });
+                                $join->on('se.student_id', '=', 's.id');
+                                // ->when($marking_period_id, function ($join) use ($marking_period_id) {
+                                //     $join->where('s.marking_period_id', $marking_period_id);
+                                // });
                             })
                             ->join('academic_section as g', 'g.id', '=', 'se.grade_id')
                             ->join('standard as st', function ($join) use ($marking_period_id) {
-                                $join->on('se.student_id', '=', 'st.id')->when($marking_period_id, function ($join) use ($marking_period_id) {
-                                    $join->where('st.marking_period_id', $marking_period_id);
-                                });
+                                $join->on('se.student_id', '=', 'st.id');
+                                // ->when($marking_period_id, function ($join) use ($marking_period_id) {
+                                //     $join->where('st.marking_period_id', $marking_period_id);
+                                // });
                             })
                             ->leftJoin('division as d', 'd.id', '=', 'se.section_id')
                             ->join('fees_paid_other as fpo', function ($join) use ($sub_institute_id) {
