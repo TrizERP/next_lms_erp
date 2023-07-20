@@ -76,6 +76,7 @@ class fees_collect_controller extends Controller
         $currunt_month = date('m');
         $currunt_year = date('Y');
         $currunt_month_id = $currunt_month . $currunt_year;
+        $marking_period_id = session()->get('term_id');
 
         $search_ids = [];
         foreach ($month_arr as $id => $arr) {
@@ -142,12 +143,18 @@ class fees_collect_controller extends Controller
         $request = $_REQUEST;
         // DB::enableQueryLog();
         $result = DB::table('tblstudent as s')
-            ->join('tblstudent_enrollment as se', function ($join) {
+            ->join('tblstudent_enrollment as se', function ($join) use ($marking_period_id) {
                 $join->whereRaw('se.student_id = s.id');
+                // ->when($marking_period_id, function ($join) use ($marking_period_id) {
+                //     $join->where('s.marking_period_id', $marking_period_id);
+                // });
             })->join('academic_section as g', function ($join) {
                 $join->whereRaw('g.id = se.grade_id');
-            })->join('standard as st', function ($join) {
+            })->join('standard as st', function ($join) use ($marking_period_id) {
                 $join->whereRaw('st.id = se.standard_id');
+                // ->when($marking_period_id, function ($join) use ($marking_period_id) {
+                //     $join->where('st.marking_period_id', $marking_period_id);
+                // });
             })->leftJoin('division as d', function ($join) {
                 $join->whereRaw('d.id = se.section_id');
             })->leftJoin('student_quota as sq', function ($join) {
@@ -167,7 +174,8 @@ class fees_collect_controller extends Controller
                 bkoff, st.name standard_name, d.name as division_name")
             ->where('s.sub_institute_id', session()->get('sub_institute_id'))
             ->where('se.syear', session()->get('syear'))
-            ->whereNotNull('s.admission_date')
+            // ->whereNotNull('s.admission_date')
+           
             //->whereNull('se.end_date')
             ->where(function ($q) use ($request) {
                 if (isset($request['mobile']) && $request['mobile'] != '') {
@@ -203,80 +211,54 @@ class fees_collect_controller extends Controller
                     $q->whereNull('se.end_date');
                 }
             })->groupBy('s.id')->havingNotNull('bkoff')->get()->toArray();
-// dd(DB::getQueryLog($result));
 
-        $paid_result = DB::table(function ($query) use ($fees_join, $paid_other_join) {
-            $query->select(DB::raw('SUM(amount) as paid_amt, student_id as id'))
-                ->from(function ($subquery) use ($fees_join, $paid_other_join) {
-                    $subquery->select(
-                        DB::raw('SUM(fc.amount) + SUM(fc.fees_discount) as amount, se.student_id')
-                    )
-                        ->from('tblstudent as s')
-                        ->join('tblstudent_enrollment as se', function ($join) {
-                            $join->on('se.student_id', '=', 's.id')
-                                ->where('se.syear', session()->get('syear'));
-                        })
-                        ->join('academic_section as g', 'g.id', '=', 'se.grade_id')
-                        ->join('standard as st', 'st.id', '=', 'se.standard_id')
-                        ->leftJoin('division as d', 'd.id', '=', 'se.section_id')
-                        ->join('fees_collect as fc', function ($join) use ($fees_join) {
-                            $join->on('fc.student_id', '=', 's.id')
-                                ->where('fc.is_deleted', 'N')
-                                ->where('fc.sub_institute_id', session()->get('sub_institute_id'))
-                                ->whereRaw('fc.syear = ' . session()->get('syear') . ' ' . $fees_join);
-                        })
-                        ->where('s.sub_institute_id', session()->get('sub_institute_id'))
-                        ->groupBy('s.id');
-
-                    if ($paid_other_join) {
-                        $subquery->unionAll(function ($union) use ($paid_other_join) {
-                            $union->select(
-                                DB::raw('SUM(fpo.actual_amountpaid) + SUM(fpo.fees_discount) as aa, se.student_id')
-                            )
-                                ->from('tblstudent as s')
-                                ->join('tblstudent_enrollment as se', function ($join) {
-                                    $join->on('se.student_id', '=', 's.id')
-                                        ->where('se.syear', session()->get('syear'));
-                                })
-                                ->join('academic_section as g', 'g.id', '=', 'se.grade_id')
-                                ->join('standard as st', 'st.id', '=', 'se.standard_id')
-                                ->leftJoin('division as d', 'd.id', '=', 'se.section_id')
-                                ->join('fees_paid_other as fpo', function ($join) use ($paid_other_join) {
-                                    $join->on('fpo.student_id', '=', 's.id');
-                                    $join->whereRaw('1=1' . $paid_other_join);
-                                })
-                                ->where('s.sub_institute_id', session()->get('sub_institute_id'))
-                                ->groupBy('s.id');
-                        });
-                    }
-                }, 'temp_table')
-                ->groupBy('student_id');
-        })->get();
-
-        // return $result;exit;
+        // Create an instance of the Request class and pass it as the first argument
+        $request = Request::capture();
+        
         foreach ($result as $id => $arr) {
             $bk_stu_id = $arr->id;
-            foreach ($paid_result as $r_id => $r_arr) {
-                $pd_stu_id = $r_arr->id;
+            $paid_result = $this->getBk($request, $bk_stu_id);
+            $pd_stu_id = $paid_result['stu_data']['student_id'];
+            $remain = $paid_result['final_fee']['Total'];
+            $previous = isset($paid_result['final_fee']['Previous Fees']) ? $paid_result['final_fee']['Previous Fees'] : 0;
             if ($bk_stu_id == $pd_stu_id) {
-                if($r_arr->paid_amt > $arr->bkoff){
-                    $arr->bkoff = 0;
-                }else{
-                    $arr->bkoff = abs($arr->bkoff - $r_arr->paid_amt);
-                }
+              
+                if ($previous < 0) {
+                    $arr->bkoff = ($remain - $previous);
+                } else {
+                    if ($remain > 0){
+                    $arr->bkoff = $remain;
+                    }else{
+                        $arr->bkoff = 0;
+                    }
                 }
             }
         }
+                
         // fees validation admission year,student quota,division,fees_breakoff
         if (empty($result)) {
+            // DB::enableQueryLog();
             $check = DB::table('tblstudent as s')
-                ->join('tblstudent_enrollment as se', function ($join) {
+                ->join('tblstudent_enrollment as se', function ($join) use ($marking_period_id) {
                     $join->whereRaw('se.student_id = s.id');
+                    // ->when($marking_period_id, function ($join) use ($marking_period_id) {
+                    //     $join->where('s.marking_period_id', $marking_period_id);
+                    // });
+                })->join('standard as st', function ($join) use($marking_period_id) {
+                    $join->whereRaw('st.id = se.standard_id');
+                    // ->when($marking_period_id, function ($join) use ($marking_period_id) {
+                    //     $join->where('st.marking_period_id', $marking_period_id);
+                    // });
+                })->leftJoin('division as d', function ($join) {
+                    $join->whereRaw('d.id = se.section_id');
+                })->leftJoin('student_quota as sq', function ($join) {
+                    $join->whereRaw('sq.id = se.student_quota AND sq.sub_institute_id = se.sub_institute_id');
                 })
                 ->where('s.sub_institute_id', session()->get('sub_institute_id'))
                 ->where('se.syear', session()->get('syear'))
-                //->whereNotNull('s.admission_date')
-                //->whereNull('se.end_date')
+                ->selectRaw("s.*,se.syear,se.student_id,se.grade_id,concat(s.first_name,' ',s.middle_name,' ',s.last_name) as full_name,
+                se.standard_id,se.section_id,se.student_quota,sq.title AS stu_quota,se.start_date,
+                se.end_date, st.name standard_name, d.name as division_name,s.admission_year")
                 ->where(function ($q) use ($request) {
                     if (isset($request['mobile']) && $request['mobile'] != '') {
                         $q->where('s.mobile', $request['mobile']);
@@ -310,9 +292,10 @@ class fees_collect_controller extends Controller
                     } else {
                         $q->whereNull('se.end_date');
                     }
-                    
+
                 })->groupBy('s.id')->get()->toArray();
-    //return $check;exit;
+    // return $check;exit;
+                // dd(DB::getQueryLog($check));
             if (!empty($check)) {
                 if ($check[0]->section_id == null || $check[0]->section_id == 0) {
                     $responce_arr['status_code'] = 0;
@@ -323,13 +306,21 @@ class fees_collect_controller extends Controller
                 } elseif ($check[0]->admission_year == null || $check[0]->admission_year == 0) {
                     $responce_arr['status_code'] = 0;
                     $responce_arr['message'] = "Admission Year Not Found";
-                }elseif ($check[0]->end_date != null) {
+                } elseif ($check[0]->end_date != null) {
                     $responce_arr['status_code'] = 0;
                     $responce_arr['message'] = "Inactive User Not Found";
                 } else {
                     $responce_arr['status_code'] = 0;
                     $responce_arr['message'] = "Fees Breakoff Not Found";
                 }
+                $stud_details=[
+                    "Student Name"=>$check[0]->full_name,
+                    "Standard"=>$check[0]->standard_name  ,
+                    "Division"=>$check[0]->division_name,
+                    "Student Quota"=>$check[0]->stu_quota,
+                    "Admission Year"=>$check[0]->admission_year,
+                ];
+                $responce_arr['Error_details']=$stud_details;
             } else {
                 $responce_arr['status_code'] = 0;
                 $responce_arr['message'] = "Student Details Not Found";
@@ -337,7 +328,9 @@ class fees_collect_controller extends Controller
         }
         // return $result;exit;
         $responce_arr['stu_data'] = $result;
-
+        $responce_arr['grade_id'] = $_REQUEST['grade'];
+        $responce_arr['standard_id'] = $_REQUEST['standard'] ?? '';
+        $responce_arr['division_id'] =  $_REQUEST['division'] ?? '';
 
         return is_mobile($type, "fees/fees_collect/show", $responce_arr, "view");
     }
@@ -397,7 +390,7 @@ class fees_collect_controller extends Controller
                 }
             }
         }
- 
+
         $other_fee_heads = [];
         foreach ($_REQUEST['fees_data'] as $id => $vals) {
             if (!in_array($id, $reg_fee_heads)) {
@@ -569,7 +562,7 @@ class fees_collect_controller extends Controller
             }
         }
 
-        $regular_insert_arr = [];
+        $regular_insert_arr=[];
         foreach ($new_insert_arr as $month_id => $arr) {
             foreach ($arr as $r_id => $vals) {
                 if (isset($vals['fine']) && $vals['fine'] !== null && $vals['fine'] != 0) {
@@ -579,7 +572,7 @@ class fees_collect_controller extends Controller
                     // Make sure $amount and $fine are both integers
                     $amount = (int)$amount;
                     $fine = (int)$fine;
-                    
+
                     $totalAmount = $amount + $fine;
                     $vals['amount'] = $totalAmount;
                 }
@@ -624,7 +617,7 @@ class fees_collect_controller extends Controller
 
             }
         }
-        
+
         $other_insert_arr = [];
         foreach ($new_insert_other_arr as $month_id => $arr) {
             foreach ($arr as $r_id => $vals) {
@@ -635,7 +628,7 @@ class fees_collect_controller extends Controller
                     // Make sure $amount and $fine are both integers
                     $amount = (int)$amount;
                     $fine = (int)$fine;
-                    
+
                     $totalAmount = $amount + $fine;
                     $vals['amount'] = $totalAmount;
                 }
@@ -702,10 +695,10 @@ class fees_collect_controller extends Controller
         }
 
         $sub_institute_id = session()->get('sub_institute_id');
-
+        $syear = session()->get('syear');
         $fees_config = DB::table('fees_config_master as fc')
             ->join('fees_receipt_css as frc', 'frc.receipt_id', '=', 'fc.fees_receipt_template')
-            ->selectRaw('fc.* ,frc.css')->where('fc.sub_institute_id', $sub_institute_id)->get()->toArray();
+            ->selectRaw('fc.* ,frc.css')->where(['fc.sub_institute_id'=>$sub_institute_id,'syear'=>$syear])->get()->toArray();
 
         $res = [];
         if (count($fees_config)) {
@@ -1705,12 +1698,18 @@ class fees_collect_controller extends Controller
             $requestData = $_REQUEST;
 
             $result = DB::table('tblstudent as s')
-                ->join('tblstudent_enrollment as se', function ($join) {
+                ->join('tblstudent_enrollment as se', function ($join) use($marking_period_id){
                     $join->whereRaw('se.student_id = s.id');
+                    // ->when($marking_period_id, function ($join) use ($marking_period_id) {
+                    //     $join->where('s.marking_period_id', $marking_period_id);
+                    // });
                 })->join('academic_section as g', function ($join) {
                     $join->whereRaw('g.id = se.grade_id');
-                })->join('standard as st', function ($join) {
+                })->join('standard as st', function ($join) use($marking_period_id){
                     $join->whereRaw('st.id = se.standard_id');
+                    // ->when($marking_period_id, function ($join) use ($marking_period_id) {
+                    //     $join->where('st.marking_period_id', $marking_period_id);
+                    // });
                 })->leftJoin('division as d', function ($join) {
                     $join->whereRaw('d.id = se.section_id');
                 })->join('fees_breackoff as fb', function ($join) use ($breackoff_join, $requestData) {
@@ -1739,47 +1738,71 @@ class fees_collect_controller extends Controller
                 return $response;
             }
 
-            // TODO: Chnage this query to DB/Eloqunt Model
-            $sql = "
-                    SELECT SUM(amount) paid_amt,student_id id
-            FROM(
-                select SUM(fc.amount)+SUM(fc.fees_discount) amount,se.student_id
-                    FROM tblstudent s
-                    INNER JOIN tblstudent_enrollment se ON se.student_id = s.id
-                    INNER JOIN academic_section g ON g.id = se.grade_id
-                    INNER JOIN standard st ON st.id = se.standard_id
-                    LEFT JOIN division d ON  d.id = se.section_id
-                    INNER JOIN fees_collect fc ON
-                            (
-                             fc.student_id = s.id AND
-                             fc.is_deleted = 'N' AND
-                             fc.sub_institute_id = '" . $sub_institute_id . "'
-                                 $fees_join
-                            )
+           // code convert - 10-07-23
 
-                    WHERE s.sub_institute_id = '" . $sub_institute_id . "'
-                    AND s.id = '" . $student_id . "'
-                    GROUP BY s.id
-                    UNION ALL
-                    select SUM(fpo.actual_amountpaid)+SUM(fpo.fees_discount) aa,se.student_id
-                    FROM tblstudent s
-                    INNER JOIN tblstudent_enrollment se ON se.student_id = s.id
-                    INNER JOIN academic_section g ON g.id = se.grade_id
-                    INNER JOIN standard st ON st.id = se.standard_id
-                    LEFT JOIN division d ON  d.id = se.section_id
-                    INNER JOIN fees_paid_other fpo ON
-                        (fpo.student_id = s.id  $paid_other_join)
-                    WHERE s.sub_institute_id = '" . $sub_institute_id . "'
-                    AND s.id = '" . $student_id . "'
-                    GROUP BY s.id
-                ) temp_table
-                GROUP BY student_id
+            $paid_result = DB::table(function ($query) use ($sub_institute_id, $student_id, $fees_join, $paid_other_join) {
+                $query->selectRaw('SUM(amount) as paid_amt, student_id as id')
+                    ->from(function ($subQuery) use ($sub_institute_id, $student_id, $fees_join) {
+                        $subQuery->selectRaw('SUM(fc.amount) + SUM(fc.fees_discount) as amount, se.student_id')
+                            ->from('tblstudent as s')
+                            ->join('tblstudent_enrollment as se', function ($join) use ($marking_period_id) {
+                                $join->on('se.student_id', '=', 's.id');
+                                // ->when($marking_period_id, function ($join) use ($marking_period_id) {
+                                //     $join->where('s.marking_period_id', $marking_period_id);
+                                // });
+                            })
+                            ->join('academic_section as g', 'g.id', '=', 'se.grade_id')
+                            ->join('standard as st', function ($join) use ($marking_period_id) {
+                                $join->on('se.student_id', '=', 'st.id');
+                                // ->when($marking_period_id, function ($join) use ($marking_period_id) {
+                                //     $join->where('st.marking_period_id', $marking_period_id);
+                                // });
+                            })
+                            ->leftJoin('division as d', 'd.id', '=', 'se.section_id')
+                            ->join('fees_collect as fc', function ($join) use ($sub_institute_id) {
+                                $join->on('fc.student_id', '=', 's.id')
+                                    ->where('fc.is_deleted', '=', 'N')
+                                    ->where('fc.sub_institute_id', '=', $sub_institute_id);
+                            })
+                            ->where('s.sub_institute_id', '=', $sub_institute_id)
+                            ->where('s.id', '=', $student_id)
+                            ->groupBy('s.id');
 
-                    ";
+                        if (!empty($fees_join)) {
+                            $subQuery->whereRaw($fees_join);
+                        }
+                    }, 'temp_table')
+                    ->unionAll(function ($subQuery) use ($sub_institute_id, $student_id, $paid_other_join) {
+                        $subQuery->selectRaw('SUM(fpo.actual_amountpaid) + SUM(fpo.fees_discount) as aa, se.student_id')
+                            ->from('tblstudent as s')
+                            ->join('tblstudent_enrollment as se', function ($join) use ($marking_period_id) {
+                                $join->on('se.student_id', '=', 's.id');
+                                // ->when($marking_period_id, function ($join) use ($marking_period_id) {
+                                //     $join->where('s.marking_period_id', $marking_period_id);
+                                // });
+                            })
+                            ->join('academic_section as g', 'g.id', '=', 'se.grade_id')
+                            ->join('standard as st', function ($join) use ($marking_period_id) {
+                                $join->on('se.student_id', '=', 'st.id');
+                                // ->when($marking_period_id, function ($join) use ($marking_period_id) {
+                                //     $join->where('st.marking_period_id', $marking_period_id);
+                                // });
+                            })
+                            ->leftJoin('division as d', 'd.id', '=', 'se.section_id')
+                            ->join('fees_paid_other as fpo', function ($join) use ($sub_institute_id) {
+                                $join->on('fpo.student_id', '=', 's.id');
+                            })
+                            ->where('s.sub_institute_id', '=', $sub_institute_id)
+                            ->where('s.id', '=', $student_id)
+                            ->groupBy('s.id');
 
-            $sql = preg_replace('/\n+/', '', $sql);
-
-            $paid_result = DB::select($sql);
+                        if (!empty($paid_other_join)) {
+                            $subQuery->whereRaw($paid_other_join);
+                        }
+                    })
+                    ->groupBy('student_id');
+            })
+                ->get();
 
             $return_data = [
                 "student_id" => $student_id,
@@ -1819,7 +1842,8 @@ class fees_collect_controller extends Controller
             "0" => $id,
         ];
 
-        $request->session()->put('stu_arr', $stu_arr);
+        // $request->session()->put('stu_arr', $stu_arr);
+        session(['stu_arr' => $stu_arr]);
 
         $student_id = $id;
 
@@ -1854,8 +1878,8 @@ class fees_collect_controller extends Controller
 
         foreach ($search_ids as $id => $val) {
             if ($id == 0) {
-                $fees_join .= " AND (";
-                $paid_other_join .= " AND (";
+                $fees_join .= "  (";
+                $paid_other_join .= " (";
             }
             if (count($search_ids) == ($id + 1)) {
                 $fees_join .= "fc.term_id = $val)";
@@ -1866,50 +1890,93 @@ class fees_collect_controller extends Controller
             }
         }
 
-        // TODO: Change this query
-        $sql = "
-            SELECT SUM(amount) amount,term_id
-       FROM(
-            select SUM(fc.amount)+SUM(fc.fees_discount) amount,fc.term_id
-                FROM tblstudent s
-                INNER JOIN fees_collect fc ON(fc.student_id = s.id AND fc.is_deleted = 'N' AND fc.sub_institute_id = '" . session()->get('sub_institute_id') . "' AND
-                         fc.syear = '" . session()->get('syear') . "' $fees_join )
-                WHERE s.sub_institute_id = '" . session()->get('sub_institute_id') . "' AND s.id = $student_id
-                GROUP BY s.id,fc.term_id
-                UNION ALL
-                select SUM(fpo.actual_amountpaid)+SUM(fpo.fees_discount) aa,fpo.month_id
-                FROM tblstudent s
-                INNER JOIN fees_paid_other fpo ON
-                    (fpo.student_id = s.id  AND fpo.syear='" . session()->get('syear') . "' $paid_other_join)
-                WHERE s.sub_institute_id = '" . session()->get('sub_institute_id') . "' AND s.id = $student_id
-                GROUP BY s.id,fpo.month_id
-            ) temp_table
-            GROUP BY term_id";
+  // code convert - 10-07-23
 
-        $sql = preg_replace('/\n+/', '', $sql);
-        $paid_result = DB::select($sql);
+        $termIdQuery = DB::table(function ($query) use ($sub_institute_id, $student_id, $fees_join, $paid_other_join) {
+            $query->selectRaw('SUM(fc.amount) + SUM(fc.fees_discount) as amount, fc.term_id')
+                ->from('tblstudent as s')
+                ->join('fees_collect as fc', function ($join) use ($sub_institute_id) {
+                    $join->on('fc.student_id', '=', 's.id')
+                        ->where('fc.is_deleted', '=', 'N')
+                        ->where('fc.sub_institute_id', '=', $sub_institute_id);
+                })
+                ->where('s.sub_institute_id', '=', $sub_institute_id)
+                ->where('s.id', '=', $student_id)
+                ->where('fc.syear', '=', session()->get('syear'))
+                ->groupBy('s.id', 'fc.term_id');
 
-        $sql2 = "
-            SELECT SUM(amount) amount,term_id
-       FROM(
-            select SUM(fc.amount)+SUM(fc.fees_discount) amount,fc.term_id
-                FROM tblstudent s
-                INNER JOIN fees_collect fc ON(fc.student_id = s.id AND fc.is_deleted = 'N' AND fc.sub_institute_id = '" . session()->get('sub_institute_id') . "' AND
-                         (fc.syear = '" . (session()->get('syear') - 1) . "' or fc.syear ='" . session()->get('syear') . "' ) $fees_join )
-                WHERE s.sub_institute_id = '" . session()->get('sub_institute_id') . "' AND s.id = $student_id
-                GROUP BY s.id,fc.term_id
-                UNION ALL
-                select SUM(fpo.actual_amountpaid)+SUM(fpo.fees_discount) aa,fpo.month_id
-                FROM tblstudent s
-                INNER JOIN fees_paid_other fpo ON
-                    (fpo.student_id = s.id  AND fpo.syear='" . (session()->get('syear') - 1) . "' $paid_other_join)
-                WHERE s.sub_institute_id = '" . session()->get('sub_institute_id') . "' AND s.id = $student_id
-                GROUP BY s.id,fpo.month_id
-            ) temp_table
-            GROUP BY term_id";
+            if (!empty($fees_join)) {
+                $query->whereRaw($fees_join);
+            }
+// code convert - 10-07-23
 
-        $sql2 = preg_replace('/\n+/', '', $sql2);
-        $paid_result2 = DB::select($sql2);
+            $query->unionAll(function ($subQuery) use ($sub_institute_id, $student_id, $paid_other_join) {
+                $subQuery->selectRaw('SUM(fpo.actual_amountpaid) + SUM(fpo.fees_discount) as amount, fpo.month_id')
+                    ->from('tblstudent as s')
+                    ->join('fees_paid_other as fpo', function ($join) {
+                        $join->on('fpo.student_id', '=', 's.id');
+                    })
+                    ->where('s.sub_institute_id', '=', $sub_institute_id)
+                    ->where('s.id', '=', $student_id)
+                    ->where('fpo.syear', '=', session()->get('syear'))
+                    ->groupBy('s.id', 'fpo.month_id');
+
+                if (!empty($paid_other_join)) {
+                    $subQuery->whereRaw($paid_other_join);
+                }
+            });
+        }, 'temp_table')
+            ->selectRaw('SUM(amount) as amount, term_id')
+            ->groupBy('term_id');
+
+        $paid_result = $termIdQuery->selectRaw('SUM(amount) as amount, term_id')
+            ->groupBy('term_id')
+            ->get();
+    
+// code convert - 10-07-23
+        $termIdQuery2 = DB::table(function ($query) use ($sub_institute_id, $student_id, $fees_join, $paid_other_join) {
+            $query->selectRaw('SUM(fc.amount) + SUM(fc.fees_discount) as amount, fc.term_id')
+                ->from('tblstudent as s')
+                ->join('fees_collect as fc', function ($join) use ($sub_institute_id) {
+                    $join->on('fc.student_id', '=', 's.id')
+                        ->where('fc.is_deleted', '=', 'N')
+                        ->where('fc.sub_institute_id', '=', $sub_institute_id)
+                        ->where(function ($query) {
+                            $query->where('fc.syear', '=', session()->get('syear') - 1)
+                                ->orWhere('fc.syear', '=', session()->get('syear'));
+                        });
+                })
+                ->where('s.sub_institute_id', '=', $sub_institute_id)
+                ->where('s.id', '=', $student_id)
+                ->groupBy('s.id', 'fc.term_id');
+
+            if (!empty($fees_join)) {
+                $query->whereRaw($fees_join);
+            }
+
+            $query->unionAll(function ($subQuery) use ($sub_institute_id, $student_id, $paid_other_join) {
+                $subQuery->selectRaw('SUM(fpo.actual_amountpaid) + SUM(fpo.fees_discount) as amount, fpo.month_id')
+                    ->from('tblstudent as s')
+                    ->join('fees_paid_other as fpo', function ($join) {
+                        $join->on('fpo.student_id', '=', 's.id');
+                    })
+                    ->where('s.sub_institute_id', '=', $sub_institute_id)
+                    ->where('s.id', '=', $student_id)
+                    ->where('fpo.syear', '=', session()->get('syear') - 1)
+                    ->groupBy('s.id', 'fpo.month_id');
+
+                if (!empty($paid_other_join)) {
+                    $subQuery->whereRaw($paid_other_join);
+                }
+            });
+        }, 'temp_table')
+            ->selectRaw('SUM(amount) as amount, term_id')
+            ->groupBy('term_id');
+
+        $paid_result2 = $termIdQuery2->selectRaw('SUM(amount) as amount, term_id')
+            ->groupBy('term_id')
+            ->get();
+    
 
         // echo "<pre>";print_r($paid_result2);exit;
         $fees_paid_arr = [];
@@ -1993,9 +2060,9 @@ class fees_collect_controller extends Controller
             } else {
                 $left_bk_table[$i]['paid'] = 0;
             }
-            if($left_bk_table[$i]['paid'] > $left_bk_table[$i]['bk']){
-                $left_bk_table[$i]['remain'] =0;
-            }else{
+            if ($left_bk_table[$i]['paid'] > $left_bk_table[$i]['bk']) {
+                $left_bk_table[$i]['remain'] = 0;
+            } else {
                 $left_bk_table[$i]['remain'] = $left_bk_table[$i]['bk'] - $left_bk_table[$i]['paid'];
             }
 
@@ -2049,7 +2116,7 @@ class fees_collect_controller extends Controller
                 }
             }
         }
-      
+
         $syear = session()->get('syear');
         $prviouse_syear = $syear - 1;
 
@@ -2315,28 +2382,7 @@ class fees_collect_controller extends Controller
         }
     }
 
-    /**
-     * Update the specified resource in storage.
-     *
-     * @param  Request  $request
-     * @param  int  $id
-     * @return void
-     */
-    public function update(Request $request, $id)
-    {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     *
-     * @param  int  $id
-     * @return void
-     */
-    public function destroy($id)
-    {
-        //
-    }
+ 
 
     public function studentFeesDetailAPI(Request $request)
     {
@@ -2378,7 +2424,7 @@ class fees_collect_controller extends Controller
             }
 
                 $fees_data = $this->getBk($request, $student_id);
-            if (isset($fees_data['total_fees'])) {
+            if (isset($fees_data['total_fees'])) {                
                 foreach ($fees_data['total_fees'] as $key => $val) {
                     unset($val['bk']);
                     unset($val['paid']);
@@ -2401,7 +2447,6 @@ class fees_collect_controller extends Controller
                     c.cheque_date,c.cheque_no,c.cheque_bank_name,SUM(amount) as paid_amount')
                 ->where('c.student_id', $student_id)
                 ->where('c.syear', $syear)
-                ->where('c.is_deleted', 'N')
                 ->where('sub_institute_id', $sub_institute_id)
                 ->groupBy('receipt_no')->get()->toArray();
 
@@ -2473,36 +2518,37 @@ class fees_collect_controller extends Controller
         }
 
         $sql = "SELECT M.student_id,M.enrollment_no,M.roll_no,M.uniqueid,M.student_name,M.mobile,M.grade,M.standard_name,M.division_name,M.created_date,M.user_name,M.term_id,M.receiptdate,M.receipt_no,M.payment_mode,M.cheque_bank_name,M.bank_branch,M.cheque_no,M.cheque_date,
-        (IFNULL(M.amount,0) + IFNULL(N.actual_amountpaid,0)) AS actual_amountpaid
-        FROM (
-        SELECT fp.student_id,t.enrollment_no,t.roll_no,t.uniqueid,CONCAT_WS(' ',t.first_name,t.middle_name,t.last_name) AS student_name,t.mobile,ac.title AS grade,s.name AS standard_name,d.name AS division_name,fp.created_date,CONCAT_WS(' ',u.first_name,u.last_name) AS user_name,fp.term_id,fp.receiptdate,fp.receipt_no,fp.payment_mode,fp.cheque_bank_name,fp.bank_branch,fp.cheque_no,fp.cheque_date,SUM(IFNULL(fp.amount,0)) AS amount
-        FROM tblstudent t
-        INNER JOIN tblstudent_enrollment te ON t.id = te.student_id
-        INNER JOIN academic_section ac ON ac.id = te.grade_id
-        INNER JOIN standard s ON s.id = te.standard_id
-        INNER JOIN division d ON d.id = te.section_id
-        INNER JOIN fees_collect fp ON fp.student_id = te.student_id
-        LEFT JOIN tbluser u ON fp.created_by = u.id
-        WHERE 1=1 $extra_fp
-        GROUP BY fp.student_id, fp.receipt_no, fp.syear, fp.receiptdate, fp.payment_mode, fp.cheque_no
-        ORDER BY fp.receiptdate ASC, fp.receipt_no ASC) AS M
-        LEFT JOIN (
-        SELECT fo.student_id, SUM(IFNULL(fo.actual_amountpaid,0)) AS actual_amountpaid,fo.reciept_id
-        FROM tblstudent t
-        INNER JOIN tblstudent_enrollment te ON t.id = te.student_id
-        INNER JOIN academic_section ac ON ac.id = te.grade_id
-        INNER JOIN standard s ON s.id = te.standard_id
-        INNER JOIN division d ON d.id = te.section_id
-        INNER JOIN fees_paid_other fo ON fo.student_id = te.student_id
-        WHERE 1=1 $extra_fo
-        GROUP BY fo.student_id, fo.reciept_id, fo.syear, fo.receiptdate, fo.payment_mode, fo.cheque_dd_no
-        ORDER BY fo.receiptdate ASC, fo.reciept_id ASC) AS N ON M.student_id = N.student_id AND M.receipt_no = N.reciept_id 
-        HAVING (M.receiptdate IS NOT NULL)
-        ORDER BY M.receiptdate,CAST(M.receipt_no AS SIGNED)";
+            (IFNULL(M.amount,0) + IFNULL(N.actual_amountpaid,0)) AS actual_amountpaid
+            FROM (
+            SELECT fp.student_id,t.enrollment_no,t.roll_no,t.uniqueid,CONCAT_WS(' ',t.first_name,t.middle_name,t.last_name) AS student_name,t.mobile,ac.title AS grade,s.name AS standard_name,d.name AS division_name,fp.created_date,CONCAT_WS(' ',u.first_name,u.last_name) AS user_name,fp.term_id,fp.receiptdate,fp.receipt_no,fp.payment_mode,fp.cheque_bank_name,fp.bank_branch,fp.cheque_no,fp.cheque_date,SUM(IFNULL(fp.amount,0)) AS amount
+            FROM tblstudent t
+            -- WHERE t.first_name = $name OR t.middle_name = $name OR t.last_name = $name
+            INNER JOIN tblstudent_enrollment te ON t.id = te.student_id
+            INNER JOIN academic_section ac ON ac.id = te.grade_id
+            INNER JOIN standard s ON s.id = te.standard_id
+            INNER JOIN division d ON d.id = te.section_id
+            INNER JOIN fees_collect fp ON fp.student_id = te.student_id
+            LEFT JOIN tbluser u ON fp.created_by = u.id
+            WHERE 1=1 $extra_fp
+            GROUP BY fp.student_id, fp.receipt_no, fp.syear, fp.receiptdate, fp.payment_mode, fp.cheque_no
+            ORDER BY fp.receiptdate ASC, fp.receipt_no ASC) AS M
+            LEFT JOIN (
+            SELECT fo.student_id, SUM(IFNULL(fo.actual_amountpaid,0)) AS actual_amountpaid
+            FROM tblstudent t
+            INNER JOIN tblstudent_enrollment te ON t.id = te.student_id
+            INNER JOIN academic_section ac ON ac.id = te.grade_id
+            INNER JOIN standard s ON s.id = te.standard_id
+            INNER JOIN division d ON d.id = te.section_id
+            INNER JOIN fees_paid_other fo ON fo.student_id = te.student_id
+            WHERE 1=1 $extra_fo
+            GROUP BY fo.student_id, fo.reciept_id, fo.syear, fo.receiptdate, fo.payment_mode, fo.cheque_dd_no
+            ORDER BY fo.receiptdate ASC, fo.reciept_id ASC) AS N ON M.student_id = N.student_id
+            HAVING (M.receiptdate IS NOT NULL)
+            ORDER BY M.receiptdate,CAST(M.receipt_no AS SIGNED)";
 
         $result = DB::select(DB::raw($sql));
         $feesData = json_decode(json_encode($result), true);
-        
+
         $res['status_code'] = 1;
         $res['message'] = "Success";
         $res['fees_data'] = $feesData;
