@@ -18,11 +18,11 @@
                     {{ App\Helpers\SearchChain('4','multiple','grade,std,div') }}
                     <div class="col-md-4 form-group">
                         <label>Date</label>
-                        <input type="text" name="date_" class="form-control mydatepicker" autocomplete="off">
+                        <input type="text" name="date_" class="form-control mydatepicker" autocomplete="off" required>
                     </div>
 					<div class="col-md-4 form-group">
                         <label>Title</label>
-                        <input type="text" name="title" id="title" class="form-control" autocomplete="off">
+                        <input type="text" name="title" id="title" class="form-control" autocomplete="off" required>
                         <!-- <input type="text" name="title" class="form-control"> -->
                     </div>
 					<div class="col-md-4 form-group">
@@ -41,8 +41,8 @@
                     </div>
                     <div class="col-md-4 form-group">
                         <label>File</label>
-                        <input type="file" name="attachment[]" id="attachment[]" class="form-control" multiple="multiple" >
-                        <span class="text-danger font-weight-bold">Note: Select multiple or single files from here.</span>
+                        <input type="file" name="attachment[]" id="attachment[]" class="form-control" accept="image/*,application/pdf">
+                        <span class="text-danger font-weight-bold">Note: Select single file from here.</span>
                     </div>
                 </div>
 				<div class="col-md-12 form-group">
@@ -56,6 +56,17 @@
         </div>                    
         <div class="card">
             <div class="col-lg-12 col-sm-12 col-xs-12">
+                @if ($sessionData = Session::get('data'))
+                    @if($sessionData['status'] == 1)
+                    <div class="alert alert-success alert-block">
+                    @else
+                    <div class="alert alert-danger alert-block">
+                    @endif
+                        <button type="button" class="close" data-dismiss="alert">×</button>
+                        <strong>{{ $sessionData['message'] }}</strong>
+                    </div>
+                    @endif
+                </div>
                 <div class="table-responsive">
                     <table id="example" class="table table-striped">
                         <thead>
@@ -88,7 +99,12 @@
                                 <td>{{date('d-m-Y',strtotime($data->date_))}}</td>
                                 <td>{{$data->std_name}}</td>
                                 <td>{{$data->div_name}}</td>                                  
-                                <td><a href="<?php echo asset('storage/circular/' . $data->file_name); ?>" target="_blank">View</a> </td> 
+                                <td>
+                                @if(isset($data->file_name))
+                                    <a href="<?php echo asset('storage/circular/' . $data->file_name); ?>" target="_blank">View</a>
+                                @else
+                                -</td>
+                                @endif
                                 <td>
                                     <form action="{{ route('circular.destroy', $data->id)}}" method="post">
                                         @csrf

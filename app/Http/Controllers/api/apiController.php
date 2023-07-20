@@ -436,7 +436,7 @@ class apiController extends Controller
         $data["android"]["isComplusory"] = 0;
         $data["android"]["is_maintenance"] = 0;
         $data["android"]["maintenance_message"] = "Application is under maintenance. Please try after some time.";
-        $data["android"]["message"] = "New version 1.0.4 Available";
+        $data["android"]["message"] = "New version 1.0.20 Available";
 
         $data["ios"]["type"] = "ios";
         $data["ios"]["appVersion"] = "1.0.20";
@@ -444,7 +444,7 @@ class apiController extends Controller
         $data["ios"]["isComplusory"] = 0;
         $data["ios"]["is_maintenance"] = 0;
         $data["ios"]["maintenance_message"] = "Application is under maintenance. Please try after some time.";
-        $data["ios"]["message"] = "New version 1.0.4 Available";
+        $data["ios"]["message"] = "New version 1.0.20 Available";
 
         $send_data["data"] = $data;
 

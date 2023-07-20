@@ -83,7 +83,7 @@ class MenuMiddleware
                     })->leftJoin('tblgroupwise_rights as g', function ($join) {
                         $join->whereRaw("u.user_profile_id = g.profile_id AND u.sub_institute_id = g.sub_institute_id");
                     })->join('tblmenumaster as m', function ($join) use ($sub_institute_id) {
-                        $join->whereRaw("(i.menu_id = m.id OR g.menu_id = m.id) AND FIND_IN_SET(".$sub_institute_id.", m.sub_institute_id)");
+                        $join->whereRaw("(i.menu_id = m.id OR g.menu_id = m.id) AND FIND_IN_SET(?, m.sub_institute_id)", [$sub_institute_id]);
                     })->selectRaw("GROUP_CONCAT(distinct m.id) AS MID")
                     ->whereIn('u.sub_institute_id', explode(',', $sub_institute_id))
                     ->where(function ($q) use ($user_id) {

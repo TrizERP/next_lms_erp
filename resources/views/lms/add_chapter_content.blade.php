@@ -47,9 +47,9 @@
             <nav aria-label="breadcrumb">
                 <ol class="breadcrumb bg-transparent p-0">
                     <li class="breadcrumb-item"><a href="{{route('course_master.index')}}">LMS</a></li>
-                    <li class="breadcrumb-item"><a href="{{ route('chapter_master.index',['standard_id'=>$data['breadcrum_data']->standard_id,'subject_id'=>$data['breadcrum_data']->subject_id]) }}">{{$data['breadcrum_data']->subject_name}}</a></li>
-                    <li class="breadcrumb-item"><a href="{{ route('topic_master.index',['id'=>$data['breadcrum_data']->chapter_id]) }}">{{$data['breadcrum_data']->chapter_name}}</a></li>
-                    <li class="breadcrumb-item"><a href="{{ route('topic_master.index',['id'=>$data['breadcrum_data']->chapter_id]) }}">{{$data['breadcrum_data']->topic_name}}</a></li>
+                    <li class="breadcrumb-item"><a href="{{ route('chapter_master.index',['standard_id'=>$data['breadcrum_data']->standard_id ?? '','subject_id'=>$data['breadcrum_data']->subject_id ?? '']) }}">{{$data['breadcrum_data']->subject_name  ?? ''}}</a></li>
+                    <li class="breadcrumb-item"><a href="{{ route('topic_master.index',['id'=>$data['breadcrum_data']->chapter_id ?? '']) }}">{{$data['breadcrum_data']->chapter_name ?? ''}}</a></li>
+                    <li class="breadcrumb-item"><a href="{{ route('topic_master.index',['id'=>$data['breadcrum_data']->chapter_id ?? '']) }}">{{$data['breadcrum_data']->topic_name ?? ''}}</a></li>
                     <li class="breadcrumb-item active" aria-current="page">Add Content</li>
                 </ol>
             </nav>
@@ -63,10 +63,10 @@
                     @csrf
                     <input type="hidden" name="hid_chapter_id" id="hid_chapter_id" value="{{$_REQUEST['chapter_id']}}">
                     {{-- <input type="hidden" name="hid_topic_id" id="hid_topic_id" value="{{$_REQUEST['topic_id']}}"> --}}
-                    <input type="hidden" name="hid_standard_name" id="hid_standard_name" value="{{$data['breadcrum_data']->standard_name}}">
-                    <input type="hidden" name="hid_subject_name" id="hid_subject_name" value="{{$data['breadcrum_data']->subject_name}}">
-                    <input type="hidden" name="hid_chapter_name" id="hid_chapter_name" value="{{$data['breadcrum_data']->chapter_name}}">
-                    <input type="hidden" name="hid_topic_name" id="hid_topic_name" value="{{$data['breadcrum_data']->topic_name}}">
+                    <input type="hidden" name="hid_standard_name" id="hid_standard_name" value="{{$data['breadcrum_data']->standard_name ?? ''}}">
+                    <input type="hidden" name="hid_subject_name" id="hid_subject_name" value="{{$data['breadcrum_data']->subject_name ?? ''}}">
+                    <input type="hidden" name="hid_chapter_name" id="hid_chapter_name" value="{{$data['breadcrum_data']->chapter_name ?? ''}}">
+                    <input type="hidden" name="hid_topic_name" id="hid_topic_name" value="{{$data['breadcrum_data']->topic_name ?? ''}}">
 
                     <div class="mt-2 mb-4 col-md-8">
                         <button type="button" class="btn btn-info" data-toggle="modal" onclick="javascript:add_data();">
@@ -263,7 +263,7 @@
                             <div class="form-group">
                                 <label for="subject">Select Content Catergory:</label>
                                 <select name="content_category" id="content_category" class="form-control">
-
+                                        <option value="">--Select--</option>
                                     @if(isset($data['content_category']))
                                         @foreach($data['content_category'] as $key => $value)
                                             <option

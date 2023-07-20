@@ -776,7 +776,7 @@ class teacherapiController extends Controller
         if ($validator->fails()) {
             $response['response'] = $validator->messages();
         } else {
-            $result = DB::table('tbluser')->selectRaw("CONCAT(first_name,' ',last_name)")
+            $result = DB::table('tbluser')->selectRaw("CONCAT(first_name,' ',last_name) as name")
                 ->where('id', $request->get('teacher_id'))->get()->toArray();
 
             $teacher_name = $result[0]->name;

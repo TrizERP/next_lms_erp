@@ -134,6 +134,7 @@
                                 @foreach($data['headers'] as $hkey => $header)
                                     <th data-toggle="tooltip" title="{{$header['name']}}"> {{$header['name']}} </th>
                                 @endforeach
+                                <th data-toggle="tooltip" title="Updated On"> Updated On </th>
                             </tr>
                         </thead> 
                         <tbody>
@@ -188,8 +189,13 @@
                                                 </td>
                                             @endif
                                         @endif
-
                                     @endforeach 
+                                    <td>@if ($value['updated_on'])
+                                            {{ date('d-m-Y H:i:s', strtotime($value['updated_on'])) }}
+                                        @else
+                                            -
+                                        @endif
+                                    </td>
                                 </tr>
                             @endforeach 
                         </tbody>

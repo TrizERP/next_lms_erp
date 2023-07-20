@@ -19,6 +19,7 @@ class taskModel extends Model
         'STATUS',
         'TASK_ALLOCATED',
         'TASK_ALLOCATED_TO',
+        'reply',
         'CREATED_ON',
         'CREATED_BY',
         'CREATED_IP_ADDRESS',

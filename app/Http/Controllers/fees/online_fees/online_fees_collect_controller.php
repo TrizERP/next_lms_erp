@@ -141,10 +141,11 @@ class online_fees_collect_controller extends Controller
             ->get();
         $amount = 0;
         if ($payment_acsept_type == "fix") {
-            $amount = number_format($_REQUEST["total"], 2, '.', '');
+            $amount = number_format(floatval($_REQUEST["total"]), 0, '.', '');
         } else {
-            $amount = number_format($_REQUEST["pay_amount"], 2, '.', '');
+            $amount = number_format(floatval($_REQUEST["pay_amount"]), 0, '.', '');
         }
+
         $txnid = substr(hash('sha256', mt_rand() . microtime()), 0, 20);
         $orderId = $_REQUEST["student_id"] . (mt_rand(10, 10000000000));
         $in_arr = array(
@@ -342,10 +343,11 @@ class online_fees_collect_controller extends Controller
 
         $amount = 0;
         if ($payment_acsept_type == "fix") {
-            $amount = number_format($_REQUEST["total"], 0, '.', '');
+            $amount = number_format(floatval($_REQUEST["total"]), 0, '.', '');
         } else {
-            $amount = number_format($_REQUEST["pay_amount"], 0, '.', '');
+            $amount = number_format(floatval($_REQUEST["pay_amount"]), 0, '.', '');
         }
+
         $where_arr = array(
             "sub_institute_id" => session()->get("sub_institute_id"),
             "id" => $student_id
@@ -632,9 +634,9 @@ class online_fees_collect_controller extends Controller
         $payment_acsept_type = $get_map_bank_data[0]->fees_type;
         $amount = 0;
         if ($payment_acsept_type == "fix") {
-            $amount = number_format($_REQUEST["total"], 2, '.', '');
+            $amount = number_format(floatval($_REQUEST["total"]), 0, '.', '');
         } else {
-            $amount = number_format($_REQUEST["pay_amount"], 2, '.', '');
+            $amount = number_format(floatval($_REQUEST["pay_amount"]), 0, '.', '');
         }
         $student_id = $_REQUEST["student_id"];
         $where_arr = array(
@@ -788,9 +790,9 @@ class online_fees_collect_controller extends Controller
         $payment_acsept_type = $get_map_bank_data[0]->fees_type;
         $amount = 0;
         if ($payment_acsept_type == "fix") {
-            $amount = number_format($_REQUEST["total"], 2, '.', '');
+            $amount = number_format(floatval($_REQUEST["total"]), 0, '.', '');
         } else {
-            $amount = number_format($_REQUEST["pay_amount"], 2, '.', '');
+            $amount = number_format(floatval($_REQUEST["pay_amount"]), 0, '.', '');
         }
         $student_id = $_REQUEST["student_id"];
         $where_arr = array(
@@ -1306,26 +1308,16 @@ class online_fees_collect_controller extends Controller
      */
     public function razorpay_request_handler(Request $request)
     {
-        //echo '<pre>';
-        //print_r($_REQUEST);
-        // echo "########################";
-        //$input = $request->all();
-        //print_r($input);
-        // echo session()->get("sub_institute_id");
-        //exit;
-
-        // Custom added payment amount
-        //$custom_payment_amount = number_format($request->pay_amount, 2, '.', '');
-
         $get_map_bank_data = DB::table("fees_online_maping")
             ->where(["sub_institute_id" => session()->get("sub_institute_id")])
             ->get();
         $payment_acsept_type = $get_map_bank_data[0]->fees_type;
         $amount = 0;
+
         if ($payment_acsept_type == "fix") {
-            $amount = number_format($_REQUEST["total"] * 100, 2, '.', '');
+            $amount = number_format(floatval($_REQUEST["total"]) * 100, 2, '.', '');
         } else {
-            $amount = number_format($_REQUEST["pay_amount"] * 100, 2, '.', '');
+            $amount = number_format(floatval($_REQUEST["pay_amount"]) * 100, 2, '.', '');
         }
 
         $student_id = $_REQUEST["student_id"];
@@ -1355,12 +1347,6 @@ class online_fees_collect_controller extends Controller
         DB::table("fees_payment")
             ->insert($in_arr);
         $id = DB::getPdo()->lastInsertId();
-        // echo '<pre>'; print_r($_REQUEST); exit;
-        // Session::put('inserted_id', $id);
-        // Session::put('paid_amount', $_REQUEST["total"]);
-        // echo '<pre>'; print_r($_REQUEST); exit;
-
-        //$final_payment_amount = number_format($request->pay_amount * 100, 2, '.', '');
 
         $data = array(
             "student_id" => $student_id,

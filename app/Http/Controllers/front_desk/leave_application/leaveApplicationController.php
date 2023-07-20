@@ -85,6 +85,7 @@ class leaveApplicationController extends Controller
         }
 
         $requestData = $_REQUEST;
+        // return $requestData;exit;
         $result = DB::table("tblstudent as s")
             ->join('tblstudent_enrollment as se', function ($join) {
                 $join->whereRaw("se.student_id = s.id");
@@ -137,7 +138,7 @@ class leaveApplicationController extends Controller
                 }
             })
             ->get()->toarray();
-
+            
         $responce_arr = [];
         foreach ($result as $id => $arr) {
             $responce_arr['stu_data'][$id]['sr.no'] = $id + 1;
@@ -191,8 +192,6 @@ class leaveApplicationController extends Controller
                 ]);
 
             //START Send Notification Code
-
-
             $get_student = DB::table("leave_applications")
                 ->where("id", "=", $leave_app_id)
                 ->where("syear", "=", session()->get('syear'))
@@ -219,11 +218,11 @@ class leaveApplicationController extends Controller
             $schoolName = $schoolData[0]['SchoolName'];
             $schoolLogo = $_SERVER['APP_URL'].'/admin_dep/images/'.$schoolData[0]['Logo'];
 
-            if (count($student_data) > 0) {
+            if (count($student_data) > 0 && !empty($get_student[0]->reply)) {
                 $mobile_no = $student_data[0]->mobile;
                 $student_name = $student_data[0]->student_name;
 
-                $pushMessage = "Dear Parents, Your message : ".$get_student[0]->message." on date : ".$apply_date." <br>"." Reply : ".$get_student[0]->reply." on date : ".$reply_on_date." & status of Leave Application is : ".$get_student[0]->status;
+                $pushMessage = $student_name . " - Your message : ".$get_student[0]->message." on date : ".$apply_date." - Reply : ".$get_student[0]->reply." on date : ".$reply_on_date." & status of Leave Application is : ".$get_student[0]->status;
 
                 $app_notification_content = [
                     'NOTIFICATION_TYPE'        => 'Leave Application',
@@ -241,6 +240,7 @@ class leaveApplicationController extends Controller
                 $gcm_data = DB::table("gcm_users")
                     ->where("mobile_no", "=", $mobile_no)
                     ->where("sub_institute_id", "=", session()->get('sub_institute_id'))
+                    ->groupBy("gcm_regid")
                     ->get()->toArray();
 
                 $gcmRegIds = [];
@@ -254,10 +254,13 @@ class leaveApplicationController extends Controller
                 if (! empty($bunch_arr)) {
                     foreach ($bunch_arr as $val) {
                         if (isset($val)) {
-                            $type = 'Parent Communication';
+                            $type = 'Leave Application';
                             $message = array(
-                                'body'  => $pushMessage, 'TYPE' => $type, 'USER_ID' => $student_id,
-                                'title' => $schoolName, 'image' => $schoolLogo,
+                                'body'  => $pushMessage,
+                                'TYPE' => $type,
+                                'USER_ID' => $student_id,
+                                'title' => $schoolName.' - '.$type,
+                                'image' => $schoolLogo,
                             );
                             $pushStatus = send_FCM_Notification($val, $message);
                             sendNotification($app_notification_content);
@@ -390,18 +393,20 @@ class leaveApplicationController extends Controller
 
     public function studentLeaveApplicationAPI(Request $request)
     {
-        try {
-            if (! $this->jwtToken()->validate()) {
-                $response = ['status' => '2', 'message' => 'Token Auth Failed', 'data' => []];
+        if($request->type == "API")
+        {
+            try {
+                if (! $this->jwtToken()->validate()) {
+                    $response = ['status' => '2', 'message' => 'Token Auth Failed', 'data' => []];
+
+                    return response()->json($response, 401);
+                }
+            } catch (\Exception $e) {
+                $response = ['status' => '2', 'message' => $e->getMessage(), 'data' => []];
 
                 return response()->json($response, 401);
             }
-        } catch (\Exception $e) {
-            $response = ['status' => '2', 'message' => $e->getMessage(), 'data' => []];
-
-            return response()->json($response, 401);
         }
-
         $student_id = $request->input("student_id");
         $sub_institute_id = $request->input("sub_institute_id");
         $syear = $request->input("syear");

@@ -113,7 +113,7 @@
 								<div class="table-responsive">
 									<table class="table table-stripped">
 										<tr>
-											<td>Unique Id/Adm.No.</td>
+											<td>{{ App\Helpers\get_string('uniqueid','request')}}<i class="mdi mdi-lead-pencil"></i></td>
 											<td>
 												{{ $data['stu_data']['uniqueid']; }}
 											</td>
@@ -150,7 +150,7 @@
 								<div class="table-responsive">
 									<table class="table table-stripped">
 										<tr>
-											<td>GR. No</td>
+											<td>{{ App\Helpers\get_string('grno','request')}}<i class="mdi mdi-lead-pencil"></i></td>
 											<td>
 												{{ $data['stu_data']['enrollment']; }}
 											</td>
@@ -405,6 +405,7 @@
 												<option value="UPI">UPI</option>
 												<option value="Swipe1">Swipe1</option>
 												<option value="Swipe2">Swipe2</option>
+												<option value="Swipe3">Swipe3</option>
 											</select>
 										</td>
 										<td>Receipt Date</td>

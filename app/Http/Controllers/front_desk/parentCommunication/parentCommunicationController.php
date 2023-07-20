@@ -199,7 +199,7 @@ class parentCommunicationController extends Controller
                         $mobile_no = $student_data[0]->mobile;
                         $student_name = $student_data[0]->student_name;
 
-                        $pushMessage = "Dear Parents, Your message : ".$get_student[0]->message." on date : ".$message_date." <br>"." Reply : ".$get_student[0]->reply." on date : ".$reply_on_date;
+                        $pushMessage = $student_name . " - Your message : ".$get_student[0]->message." on date : ".$message_date." <br>"." Reply : ".$get_student[0]->reply." on date : ".$reply_on_date;
 
                         $app_notification_content = [
                             'NOTIFICATION_TYPE'        => 'Parent Communication',
@@ -217,6 +217,7 @@ class parentCommunicationController extends Controller
                         $gcm_data = DB::table("gcm_users")
                             ->where("mobile_no", "=", $mobile_no)
                             ->where("sub_institute_id", "=", $sub_institute_id)
+                            ->groupBy("gcm_regid")
                             ->get()->toArray();
 
                         $gcmRegIds = [];
@@ -235,12 +236,12 @@ class parentCommunicationController extends Controller
                                         'body'    => $pushMessage,
                                         'TYPE'    => $type,
                                         'USER_ID' => $student_id,
-                                        'title'   => $schoolName,
+                                        'title'   => $schoolName.' - '.$type,
                                         'image'   => $schoolLogo,
                                     ];
 
-                                    //$pushStatus = send_FCM_Notification($val, $message);
-                                    //sendNotification($app_notification_content);
+                                    $pushStatus = send_FCM_Notification($val, $message);
+                                    sendNotification($app_notification_content);
                                 }
                             }
                         }

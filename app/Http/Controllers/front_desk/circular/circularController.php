@@ -295,14 +295,14 @@ class circularController extends Controller
                                     $mobile_no = $val->mobile;
                                     $student_name = $val->student_name;
 
-                                    $pushMessage = "Dear Parents, ".$_REQUEST['title']." has been added in Circular for date : ".date('d-m-Y',
+                                    $pushMessage = $student_name. " - ".$_REQUEST['title']." has been added in Circular for date : ".date('d-m-Y',
                                             strtotime($_REQUEST['date_']));
 
                                     $app_notification_content = [
                                         'NOTIFICATION_TYPE'        => 'Circular',
                                         'NOTIFICATION_DATE'        => $_REQUEST['date_'],
                                         'STUDENT_ID'               => $student_id,
-                                        'NOTIFICATION_DESCRIPTION' => $_REQUEST['title'].' - '.$pushMessage,
+                                        'NOTIFICATION_DESCRIPTION' => $pushMessage,
                                         'STATUS'                   => 0,
                                         'SUB_INSTITUTE_ID'         => $sub_institute_id,
                                         'SYEAR'                    => $syear,
@@ -314,6 +314,7 @@ class circularController extends Controller
                                     $gcm_data = DB::table("gcm_users")
                                         ->where("mobile_no", "=", $mobile_no)
                                         ->where("sub_institute_id", "=", $sub_institute_id)
+                                        ->groupBy("gcm_regid")
                                         ->get()->toArray();
                                     //new end
 
@@ -331,7 +332,7 @@ class circularController extends Controller
                                                 $type = 'Circular';
                                                 $message = array(
                                                     'body'    => $pushMessage, 'TYPE' => $type,
-                                                    'USER_ID' => $student_id, 'title' => $schoolName,
+                                                    'USER_ID' => $student_id, 'title' => $schoolName.' - '.$type,
                                                     'image'   => $schoolLogo,
                                                 );
                                                 $pushStatus = send_FCM_Notification($val, $message);
@@ -389,14 +390,14 @@ class circularController extends Controller
                                 $mobile_no = $val->mobile;
                                 $student_name = $val->student_name;
 
-                                $pushMessage = "Dear Parents, ".$_REQUEST['title']." has been added in Circular for date : ".
+                                $pushMessage = $student_name. " - ".$_REQUEST['title']." has been added in Circular for date : ".
                                     date('d-m-Y', strtotime($_REQUEST['date_']));
 
                                 $app_notification_content = [
                                     'NOTIFICATION_TYPE'        => 'Circular',
                                     'NOTIFICATION_DATE'        => $_REQUEST['date_'],
                                     'STUDENT_ID'               => $student_id,
-                                    'NOTIFICATION_DESCRIPTION' => $_REQUEST['title'].' - '.$pushMessage,
+                                    'NOTIFICATION_DESCRIPTION' => $pushMessage,
                                     'STATUS'                   => 0,
                                     'SUB_INSTITUTE_ID'         => $sub_institute_id,
                                     'SYEAR'                    => $syear,
@@ -408,6 +409,7 @@ class circularController extends Controller
                                 $gcm_data = DB::table("gcm_users")
                                     ->where("mobile_no", "=", $mobile_no)
                                     ->where("sub_institute_id", "=", $sub_institute_id)
+                                    ->groupBy("gcm_regid")
                                     ->get()->toArray();
                                 $gcmRegIds = [];
                                 if (count($gcm_data) > 0) {
@@ -423,7 +425,7 @@ class circularController extends Controller
                                             $type = 'Circular';
                                             $message = array(
                                                 'body'    => $pushMessage, 'TYPE' => $type,
-                                                'USER_ID' => $student_id, 'title' => $schoolName,
+                                                'USER_ID' => $student_id, 'title' => $schoolName.' - '.$type,
                                                 'image'   => $schoolLogo,
                                             );
                                             $pushStatus = send_FCM_Notification($val, $message);

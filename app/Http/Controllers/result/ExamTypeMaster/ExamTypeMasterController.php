@@ -20,8 +20,14 @@ class ExamTypeMasterController extends Controller
             }
         }
 
-        $school_data['data'] = $this->getData();
         $type = $request->input('type');
+
+        if ($type == "API") {
+            $sub_institute_id = $request->input('sub_institute_id');
+            $school_data['data'] = $this->getData($sub_institute_id);
+        } else {
+            $school_data['data'] = $this->getData();
+		}
 
         return is_mobile($type, "result/ExamTypeMaster/show_exam_type", $school_data, "view");
     }
@@ -66,9 +72,12 @@ class ExamTypeMasterController extends Controller
         return is_mobile($type, "exam_type_master.index", $res, "redirect");
     }
 
-    public function getData()
+    public function getData($sub_institute_id = '')
     {
-        $sub_institute_id = session()->get('sub_institute_id');
+        if($sub_institute_id == ''){
+            $sub_institute_id = session()->get('sub_institute_id');
+        }
+        
         $exam_type = ExamTypeMater::where(['SubInstituteId' => $sub_institute_id])
             ->orderBy('id')->get();
 
