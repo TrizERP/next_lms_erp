@@ -44,7 +44,7 @@ $loginpage_backgrond = session()->get('loginpage_backgrond');
             <div class="col-lg-6 col-xl-5 p-0 l-logo-wrap">
                 @if(!empty($loginpage_logo))
                 <div class="image-column-content"
-                    style="box-shadow:none !important;background: transparent; !important;">
+                    style="box-shadow:none !important;background: transparent !important;">
                     @else
                     <div class="image-column-content">
                         @endif
