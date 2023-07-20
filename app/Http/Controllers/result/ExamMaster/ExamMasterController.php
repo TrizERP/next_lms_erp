@@ -22,8 +22,14 @@ class ExamMasterController extends Controller
             }
         }
 
-        $school_data['data'] = $this->getData();
         $type = $request->input('type');
+        
+        if ($type == "API") {
+            $sub_institute_id = $request->input('sub_institute_id');
+            $school_data['data'] = $this->getData($sub_institute_id);
+        } else {
+            $school_data['data'] = $this->getData();
+		}
 
         return is_mobile($type, "result/ExamMaster/show_exam", $school_data, "view");
     }
@@ -71,9 +77,13 @@ class ExamMasterController extends Controller
         return is_mobile($type, "exam_master.index", $res, "redirect");
     }
 
-    public function getData()
+    public function getData($sub_institute_id = '')
     {
-        $sub_institute_id = session()->get('sub_institute_id');
+        if($sub_institute_id == '')
+        {
+            $sub_institute_id = session()->get('sub_institute_id');
+        }
+
         $exam = ExamMaster::select('result_exam_master.*',
             DB::raw('COUNT(result_create_exam.id) AS total_count,result_exam_type_master.ExamType'))
             ->join('result_exam_type_master', 'result_exam_type_master.id', '=', 'result_exam_master.ExamType')
