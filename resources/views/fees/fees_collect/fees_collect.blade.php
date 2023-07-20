@@ -405,6 +405,7 @@
 												<option value="UPI">UPI</option>
 												<option value="Swipe1">Swipe1</option>
 												<option value="Swipe2">Swipe2</option>
+												<option value="Swipe3">Swipe3</option>
 											</select>
 										</td>
 										<td>Receipt Date</td>

@@ -33,8 +33,10 @@ class studentHomeworkController extends Controller
     public function index(Request $request)
     {
         $type = $request->input('type');
+        // return $type;exit;
         $submit = $request->input('submit');
-        if($type=="API"){
+        // $sub_institute_id = $request->session()->get('sub_institute_id');
+          if($type=="API"){
             $sub_institute_id = $request->input('sub_institute_id');
         }else{
             $sub_institute_id = $request->session()->get('sub_institute_id');            
@@ -186,10 +188,6 @@ class studentHomeworkController extends Controller
             $path = $file->storeAs('public/student/', $file_name);
         }
 
-        $schoolData = SchoolModel::where(['id' => $sub_institute_id])->get()->toArray();
-        $schoolName = $schoolData[0]['SchoolName'];
-        $schoolLogo = $_SERVER['APP_URL'].'/admin_dep/images/'.$schoolData[0]['Logo'];
-
         foreach ($student_details as $id => $arr) {
             $student_id = $arr['id'];
             $standard_id = $arr['standard_id'];
@@ -225,7 +223,7 @@ class studentHomeworkController extends Controller
                             ->where("se.sub_institute_id", "=", $sub_institute_id)
                             ->get()->toArray();
 
-            $schoolData = SchoolModel::where(['id' => session()->get('sub_institute_id')])->get()->toArray();
+            $schoolData = SchoolModel::where(['id' => $sub_institute_id])->get()->toArray();
             $schoolName = $schoolData[0]['SchoolName'];
             $schoolLogo = $_SERVER['APP_URL'].'/admin_dep/images/'.$schoolData[0]['Logo'];
             
@@ -250,7 +248,7 @@ class studentHomeworkController extends Controller
             
             $gcm_data = DB::table("gcm_users")
                     ->where("mobile_no", "=", $mobile_no)
-                    ->where("sub_institute_id", "=", session()->get('sub_institute_id'))
+                    ->where("sub_institute_id", "=", $sub_institute_id)
                     ->groupBy("gcm_regid")
                     ->get()->toArray();
 
@@ -265,12 +263,12 @@ class studentHomeworkController extends Controller
                 if (! empty($bunch_arr)) {
                     foreach ($bunch_arr as $val) {
                         if (isset($val)) {
-                            $type = 'Homework';
-                            $message = array(
-                                'body'  => $pushMessage, 'TYPE' => $type, 'USER_ID' => $student_id,
-                                'title' => $schoolName.' - '.$type, 'image' => $schoolLogo,
+                            $type_1 = 'Homework';
+                            $message_1 = array(
+                                'body'  => $pushMessage, 'TYPE' => $type_1, 'USER_ID' => $student_id,
+                                'title' => $schoolName.' - '.$type_1, 'image' => $schoolLogo,
                             );
-                            $pushStatus = send_FCM_Notification($val, $message);
+                            $pushStatus = send_FCM_Notification($val, $message_1);
                             sendNotification($app_notification_content);
                         }
                     }
@@ -283,6 +281,7 @@ class studentHomeworkController extends Controller
         $res['message'] = "Homework Added successfully";
 
         return is_mobile($type, "student_homework.index", $res);
+
     }
 
     /**
@@ -620,11 +619,11 @@ class studentHomeworkController extends Controller
         }
 
         // $class_teacher_sql = "SELECT s.subject_id,s.display_name,ct.grade_id,ct.standard_id,ct.division_id,ct.teacher_id
-        // 					FROM sub_std_map s
-        // 					INNER JOIN class_teacher ct ON ct.standard_id = s.standard_id AND ct.sub_institute_id = s.sub_institute_id
-        // 					WHERE s.sub_institute_id = '".$sub_institute_id."' AND s.standard_id = '".$standard_id."' AND ct.syear = '".$syear."' AND ct.teacher_id = '".$teacher_id."'
-        // 					GROUP BY s.subject_id
-        // 					ORDER BY s.display_name";					
+        //                  FROM sub_std_map s
+        //                  INNER JOIN class_teacher ct ON ct.standard_id = s.standard_id AND ct.sub_institute_id = s.sub_institute_id
+        //                  WHERE s.sub_institute_id = '".$sub_institute_id."' AND s.standard_id = '".$standard_id."' AND ct.syear = '".$syear."' AND ct.teacher_id = '".$teacher_id."'
+        //                  GROUP BY s.subject_id
+        //                  ORDER BY s.display_name";                   
         // $class_teacher_subjects_data = DB::select($class_teacher_sql);
         // $class_teacher_subjects_data = json_decode(json_encode($class_teacher_subjects_data),true);
 
