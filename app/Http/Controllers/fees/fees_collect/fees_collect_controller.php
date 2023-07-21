@@ -376,10 +376,8 @@ class fees_collect_controller extends Controller
         $other_bk_off_month_head_wise = OtherBreackOfMonthHead($stu_arr, $search_ids);
         $year_arr = FeeMonthId();
         $head_wise_fees = FeeBreakoffHeadWise($stu_arr);
-
         $reg_fee_heads = [];
         $reg_fee_bk = [];
-
         foreach ($head_wise_fees as $student_id => $detail_arr) {
             $reg_fee_bk = $detail_arr['breakoff'];
             foreach ($detail_arr['breakoff'] as $id => $arr) {
@@ -515,7 +513,9 @@ class fees_collect_controller extends Controller
         $oth_insert_arr = [];
         foreach ($other_bk_off_month_head_wise as $month => $bk_off) {
             if (in_array($month, $oth_months_pay)) {
+
                 foreach ($bk_off as $title => $amount) {
+              
                     if (array_key_exists($title, $_REQUEST['fees_data'])) {
                         $insert_amount = 0;
                         if ($_REQUEST['fees_data'][$title] > $amount) {
@@ -530,13 +530,14 @@ class fees_collect_controller extends Controller
                 }
             }
         }
-
+        
         $new_insert_other_arr = [];
         foreach ($oth_insert_arr as $month_id => $arr) {
             foreach ($arr as $id => $val) {
-                $head_id = $heds_with_id[$id];
+                $head_id = $heds_with_id[$id]; 
                 foreach ($receipt_number as $temp_id => $arr_head_rid) {
                     $heds = explode(',', $arr_head_rid['heds']);
+
                     if (in_array($head_id, $heds)) {
                         $receipt_number[$temp_id]['used'] = 1;
                         $new_insert_other_arr[$month_id][$arr_head_rid['rid'] . '_' . $temp_id][$id] = $val;
@@ -618,40 +619,31 @@ class fees_collect_controller extends Controller
             }
         }
 
-        $other_insert_arr = [];
-        foreach ($new_insert_other_arr as $month_id => $arr) {
-            foreach ($arr as $r_id => $vals) {
-                if (isset($vals['fine']) && $vals['fine'] !== null && $vals['fine'] != 0) {
-                    $amount = $vals['amount'];
-                    $fine = $vals['fine'];
-                    
-                    // Make sure $amount and $fine are both integers
-                    $amount = (int)$amount;
-                    $fine = (int)$fine;
-
-                    $totalAmount = $amount + $fine;
-                    $vals['amount'] = $totalAmount;
-                }
-
-                if (isset($_REQUEST['cheque_date']) && $_REQUEST['cheque_date'] != '') {
+        $other_insert_arr = array();
+        foreach ($new_insert_other_arr as $month_id => $arr) 
+        {
+            foreach ($arr as $r_id => $vals) 
+            {
+                if(isset($_REQUEST['cheque_date']) && $_REQUEST['cheque_date'] != ''){
                     $cheque_date = $_REQUEST['cheque_date'];
-                } else {
-                    $cheque_date = $_REQUEST['receiptdate'];
+                }else{
+                    $cheque_date = $_REQUEST['receiptdate'];                    
                 }
 
-                if (isset($_REQUEST['remarks']) && $_REQUEST['remarks'] != '') {
+                if(isset($_REQUEST['remarks']) && $_REQUEST['remarks'] != ''){
                     $remarks = $_REQUEST['remarks'];
-                } else {
-                    $remarks = '';
+                }else{
+                    $remarks = '';                    
                 }
 
                 $receipt_id_arr = explode('_', $r_id);
                 $receipt_id = $receipt_id_arr[0];
-                $insert_arr = [
+                $insert_arr = array(
                     'student_id' => $stu_arr[0],
                     'month_id' => $month_id,
-                    'syear' => isset($syear) ? $syears[$month_id] : session()->get('syear'),
+                    'syear' => session()->get('syear'),
                     'sub_institute_id' => session()->get('sub_institute_id'),
+                    //'actual_amountpaid' => array_sum($vals),
                     'payment_mode' => $_REQUEST['PAYMENT_MODE'],
                     'created_date' => date('Y-m-d h:i:s'),
                     'bank_branch' => $_REQUEST['bank_branch'],
@@ -661,16 +653,19 @@ class fees_collect_controller extends Controller
                     'bank_name' => $_REQUEST['bank_name'],
                     'reciept_id' => $receipt_id,
                     'remarks' => $remarks,
-                    'created_by' => session()->get('user_id'),
-                ];
+                    'created_by' => session()->get('user_id')
+                );
 
-                $insert_arr += $vals;
+                $insert_arr = $insert_arr + $vals;
+                //                echo "<pre>";
+                //                print_r($insert_arr);
+                //                exit;
+                //
 
                 $insert_id = DB::table('fees_paid_other')->insertGetId($insert_arr);
                 $other_insert_arr[] = $insert_id;
             }
         }
-
         //getting array ready for insert into fees receipt
         $fees_receipt_insert = [];
         foreach ($receipt_number as $id => $arr) {
@@ -1183,8 +1178,6 @@ class fees_collect_controller extends Controller
             }
         }
               
-        // echo "<pre>";print_r($new_fees_arr);
-        // exit;
         foreach ($new_fees_arr as $id => $arr) {
             if (count($arr) == 0) {
                 unset($new_fees_arr[$id]);
