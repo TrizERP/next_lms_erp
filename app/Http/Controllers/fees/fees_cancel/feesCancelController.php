@@ -265,8 +265,9 @@ class feesCancelController extends Controller
         $syear = $request->session()->get('syear');
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $user_id = $request->session()->get('user_id');
+        // return $receipt_nos;exit;
 
-        if ($receipt_nos == '') {
+        if($receipt_nos == '') {
             $res['status_code'] = 0;
             $res['message'] = "Please select receipt no to cancel fees";
 
@@ -303,8 +304,8 @@ class feesCancelController extends Controller
                 $feesCancelLog['amountpaid'] = $feesDetails->total_amount;
                 $feesCancelLog['received_date'] = $feesDetails->created_date;
                 $feesCancelLog['cancel_date'] = date('Y-m-d H:i:s');
-                $feesCancelLog['cancel_type'] = $cancel_type[$value];
-                $feesCancelLog['cancel_remark'] = $cancel_remark[$value];
+                $feesCancelLog['cancel_type'] = $cancel_type[$value] ?? null;
+                $feesCancelLog['cancel_remark'] = $cancel_remark[$value] ?? null;
                 $feesCancelLog['cancelled_by'] = $user_id;
                 $feesCancelLog['ip_address'] = $_SERVER['REMOTE_ADDR'];
                 // print_r($feesCancelLog);exit;
@@ -340,8 +341,8 @@ class feesCancelController extends Controller
             $feesCancelLog['amountpaid'] = $feesDetails->total_amount;
             $feesCancelLog['received_date'] = $feesDetails->created_date;
             $feesCancelLog['cancel_date'] = date('Y-m-d H:i:s');
-            $feesCancelLog['cancel_type'] = $cancel_type[$value];
-            $feesCancelLog['cancel_remark'] = $cancel_remark[$value];
+            $feesCancelLog['cancel_type'] = $cancel_type[$value] ?? null;
+            $feesCancelLog['cancel_remark'] = $cancel_remark[$value] ?? null;
             $feesCancelLog['cancelled_by'] = $user_id;
             $feesCancelLog['ip_address'] = $_SERVER['REMOTE_ADDR'];
         // print_r($cancel_remark[$value]);

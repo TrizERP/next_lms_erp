@@ -1291,9 +1291,7 @@ class AJAXController extends Controller
             $dom .= $fees_receipt_css;
             $dom .= '</head>
                         <body>';
-            $dom .= ' <div style="page-break-inside: avoid !important">';
             $dom .= $this->get_PageSetup($paper_size);
-            $dom .= '</div>';
 
             $dom .= '</body>
                 </html>';
@@ -1586,6 +1584,7 @@ class AJAXController extends Controller
     public function get_PageSetup($paper_size)
     {
         $sub_institute_id = session()->get('sub_institute_id');
+        $four_res = [239];
         $syear = session()->get('syear');
 
         $extra_html = '';
@@ -1617,7 +1616,20 @@ class AJAXController extends Controller
                                 </page>
                             </div>';
         } elseif ($paper_size == "A4DB") {
-            $extra_html = ' <div>
+              if(in_array($sub_institute_id,$four_res)){
+                  $extra_html = ' <div>
+                                <page size="A4">
+                                <div>
+                                   ##HTML_SEC##
+                                </div>
+                                <div style="page-break-after: always !important;"></div>
+                                     <div style="margin-top:20px">
+                                   ##HTML_SEC##
+                                </div>
+                                </page>
+                            </div>';
+              }else{
+                    $extra_html = ' <div>
                                 <page size="A4">
                                 <div>
                                    ##HTML_SEC##
@@ -1626,7 +1638,10 @@ class AJAXController extends Controller
                                    ##HTML_SEC##
                                 </div>
                                 </page>
-                            </div>';
+                            </div> 
+                            <div style="page-break-after: avoid !important;"></div>';
+                }
+          
         } else {
             $extra_html = '<div>
                                 ##HTML_SEC##
