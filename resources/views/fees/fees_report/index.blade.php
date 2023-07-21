@@ -7,11 +7,18 @@
 				<h4 class="page-title">Fees Collection Report</h4>
 			</div>
 		</div>
-		@php $grade_id = $standard_id = $division_id = $enrollment_no = $receipt_no = $from_date = $to_date = $name = $mb_no ='';
+		@php 
+		$grade_id = $standard_id = $division_id = $enrollment_no = $receipt_no = $from_date = $to_date = $name = $mb_no ='';
 		if(isset($data['grade_id'])){ $grade_id = $data['grade_id']; $standard_id = $data['standard_id']; $division_id = $data['division_id'];
-		} if(isset($data['enrollment_no'])) { $enrollment_no = $data['enrollment_no']; } if(isset($data['name'])) { $name = $data['name'];
-		} if(isset($data['mb_no'])) { $mb_no = $data['mb_no']; } if(isset($data['receipt_no'])) { $receipt_no = $data['receipt_no'];
-		} if(isset($data['from_date'])) { $from_date = $data['from_date']; } if(isset($data['to_date'])) { $to_date = $data['to_date'];
+		} 
+		if(isset($data['enrollment_no'])) { $enrollment_no = $data['enrollment_no']; } 
+		if(isset($data['name'])) { $name = $data['name'];
+		} 
+		if(isset($data['mb_no'])) { $mb_no = $data['mb_no']; } 
+		if(isset($data['receipt_no'])) { $receipt_no = $data['receipt_no'];
+		} 
+		if(isset($data['from_date'])) { $from_date = $data['from_date']; } 
+		if(isset($data['to_date'])) { $to_date = $data['to_date'];
 		} @endphp
 		<div class="card">
 			@if ($sessionData = Session::get('data')) @if($sessionData['status_code'] == 1)
@@ -58,7 +65,10 @@
 
 				</form>
 			</div>
-			@if(isset($data['fees_data'])) @php if(isset($data['fees_data'])){ $fees_data = $data['fees_data']; } @endphp
+			@if(isset($data['fees_data'])) 
+			@php 
+			if(isset($data['fees_data'])){ $fees_data = $data['fees_data']; } 
+			@endphp
 			<div class="card">
 				<div class="table-responsive">
 					<table id="example" class="table table-striped">
@@ -68,27 +78,39 @@
 								<th>{{App\Helpers\get_string('grno','request')}}</th>
 								<th>{{App\Helpers\get_string('studentname','request')}}</th>
 								<th>{{App\Helpers\get_string('std/div','request')}}</th>
+								@if(isset($data['fees_data']) && $data['fees_data'][0]['batch']!='') 
+								<th>Batch</th>								
+								@endif
+								<th>{{App\Helpers\get_string('studentquota','request')}}</th>
 								<th>{{App\Helpers\get_string('uniqueid','request')}}</th>
 								<th>Month</th>
 								<th>Receipt No</th>
 								<th>Payment Mode</th>
 								<th>Bank Details</th>
-								<!--<th>Cheque Date</th>-->
 								<th>Receipt Date</th>
 								<th>Collected By</th>
-								<!--<th>Created On</th>-->
 								<th>Amount</th>
 							</tr>
 						</thead>
 						<tbody>
-							@php $j=1; $amount = 0; @endphp @if(isset($data['fees_data'])) @foreach($fees_data as $key => $value) @php if($value['cheque_date']
-							!= '' && $value['cheque_date'] != '0000-00-00') { $cheque_date = date('d-m-Y',strtotime($value['cheque_date'])); }else{
-							$cheque_date = ''; } @endphp
+							@php $j=1; $amount = 0; @endphp 
+							@if(isset($data['fees_data'])) 
+							@foreach($fees_data as $key => $value) 
+							@php
+							if($value['cheque_date']
+								!= '' && $value['cheque_date'] != '0000-00-00') { $cheque_date = date('d-m-Y',strtotime($value['cheque_date'])); 
+							}
+							else{
+								$cheque_date = ''; 
+								} 
+							@endphp
 							<tr>
 								<td>{{$j}}</td>
 								<td>{{$value['enrollment_no']}}</td>
 								<td>{{$value['student_name']}}</td>
 								<td>{{$value['standard_name']}} - {{$value['division_name']}}</td>
+								@if(isset($value['batch']))<td>{{$value['batch']}}</td>@endif	
+								<td>{{$value['quota']}}</td>															
 								<td>{{$value['uniqueid']}}</td>
 								<td>{{$data['months'][$value['term_id']]}}</td>
 								<td>{{$value['receipt_no']}}</td>
@@ -106,7 +128,11 @@
 								<td></td>
 								<td></td>
 								<td></td>
+								@if(isset($data['fees_data']) && $data['fees_data'][0]['batch']!='') 
+								<td></td>								
+								@endif
 								<td></td>
+								<td></td>								
 								<td></td>
 								<!--<td></td>-->
 								<td></td>
