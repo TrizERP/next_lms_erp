@@ -509,7 +509,6 @@ class online_fees_collect_controller extends Controller
                     $update_arr = array(
                         "razorpay_dashboard_ps" => $status,
                         "aggre_pay_bank_res" => "cron",
-                        "id"=>$payment_id,
                         "icici_bank_res" => $res,
                         "updated_at" => now()
                     );
