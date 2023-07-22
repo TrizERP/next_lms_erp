@@ -1257,9 +1257,12 @@ br {
                                                                         </select>
                                                                     </td>
                                                                     <td> 
+                                                                        @php
+                                                                            $payment_date = (isset($data['studentPM_Arr'][$mkey]['payment_date']) && $data['studentPM_Arr'][$mkey]['payment_date'] !== '0000-00-00') ? $data['studentPM_Arr'][$mkey]['payment_date'] : '';
+                                                                        @endphp
+
                                                                         <input type="text" id="month_date[{{$mkey}}]" name="month_date[{{$mkey}}]" 
-                                                                        value="@if(isset($data['studentPM_Arr'][$mkey]) && $data['studentPM_Arr'][$mkey]['payment_date'] != '0000-00-00' ) {{$data['studentPM_Arr'][$mkey]['payment_date']}} @endif "
-                                                                        class="form-control mydatepicker" autocomplete="off">
+                                                                            value="{{ $payment_date }}" class="form-control mydatepicker" autocomplete="off">
                                                                     </td>
                                                                     <td>
                                                                         <textarea type="text" id='month_remark[{{$mkey}}]' name="month_remark[{{$mkey}}]" class="form-control">@if(isset($data['studentPM_Arr'][$mkey])) {{$data['studentPM_Arr'][$mkey]['remarks']}} @endif</textarea>

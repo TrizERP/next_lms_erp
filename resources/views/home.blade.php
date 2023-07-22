@@ -155,6 +155,7 @@
                     @if(isset($data['totalFees']))
                     <div class="card">
                         <div class="text-center card-body">
+                        <a href="{{route('fees_collection_report.index')}}">
                             <div class=" text-center">
                                 <h3>{{$data['totalFees']}}</h3>
                             </div>
@@ -163,6 +164,7 @@
                                 <div class="progress-bar bg-danger" role="progressbar" style="width: 55%" aria-valuenow="{{$data['totalFees']}}" aria-valuemin="0" aria-valuemax="100"></div>
                             </div>
                         </div>
+                        </a>
                     </div>
                     @endif
                 </div>
@@ -375,7 +377,14 @@
                                     </tbody>
                                 </table>
                             </div>
-                        </div>
+                            
+                        </div> 
+                        <div class="row sales-report mb-3">
+                                <div class="col-md-6 col-sm-6 col-xs-6 mt-2">                                                               
+                                <a href="{{route('fees_collection_report.index')}}">Fees Collection Report</a><BR>
+                                <a href="{{route('fees_monthly_report.index')}}">Monthly Fees Report</a>                            
+                                </div>
+                            </div>                   
                     </div>
                 </div>
                 @endif
