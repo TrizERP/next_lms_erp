@@ -78,8 +78,8 @@
 								<th>{{App\Helpers\get_string('grno','request')}}</th>
 								<th>{{App\Helpers\get_string('studentname','request')}}</th>
 								<th>{{App\Helpers\get_string('std/div','request')}}</th>
-								@if(isset($data['fees_data']) && $data['fees_data'][0]['batch']!='') 
-								<th>Batch</th>								
+								@if(isset($data['fees_data']) && count($data['fees_data']) > 0 && isset($data['fees_data'][0]['batch']) && $data['fees_data'][0]['batch'] != '')
+    							<th>Batch</th>
 								@endif
 								<th>{{App\Helpers\get_string('studentquota','request')}}</th>
 								<th>{{App\Helpers\get_string('uniqueid','request')}}</th>
