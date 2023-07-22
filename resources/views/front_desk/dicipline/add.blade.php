@@ -105,6 +105,9 @@
 
 
 @include('includes.footerJs')
+<script src="https://cdn.datatables.net/1.10.19/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.10.19/js/dataTables.bootstrap.min.js"></script>
+
 <script>
     $(function () {
         var $tblChkBox = $("input:checkbox");
@@ -114,34 +117,29 @@
     });
 </script>
 <script>
-    $(document).ready(function() {
-    // Setup - add a text input to each footer cell
-    $('#example thead tr').clone(true).appendTo( '#example thead' );
-    $('#example thead tr:eq(1) th').each( function (i) {
-        var title = $(this).text();
-        $(this).html( '<input type="text" style="color:black;" placeholder="Search '+title+'" />' );
- 
-        $( 'input', this ).on( 'keyup change', function () {
-            if ( table.column(i).search() !== this.value ) {
-                table
-                    .column(i)
-                    .search( this.value )
-                    .draw();
-            }
-        } );
-    } );
- 
+$(document).ready(function() {
     var table = $('#example').DataTable( {
-        orderCellsTop: true,
-        fixedHeader: true,
-        dom: 'Bfrtip',
-        buttons: [
-            'copyHtml5',
-            'excelHtml5',
-            'csvHtml5',
-            'pdfHtml5'
-        ]
-    } );
+         select: true,          
+         lengthMenu: [ 
+            [100, 500, 1000, -1], 
+            ['100', '500', '1000', 'Show All'] 
+        ],
+        }); 
+
+        $('#example thead tr').clone(true).appendTo( '#example thead' );
+        $('#example thead tr:eq(1) th').each( function (i) {
+            var title = $(this).text();
+            $(this).html( '<input type="text" placeholder="Search '+title+'" />' );
+
+            $( 'input', this ).on( 'keyup change', function () {
+                if ( table.column(i).search() !== this.value ) {
+                    table
+                        .column(i)
+                        .search( this.value )
+                        .draw();
+                }
+            } );
+        } );
 } );
 </script>
 
