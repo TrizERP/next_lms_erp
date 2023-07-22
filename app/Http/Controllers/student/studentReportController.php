@@ -70,12 +70,13 @@ class studentReportController extends Controller
         $tblcustom_fields['first_name'] = 'First Name';
         $tblcustom_fields['middle_name'] = 'Middle Name';
         $tblcustom_fields['last_name'] = 'Surname';
+        $tblcustom_fields['mobile'] = 'Mobile';
         $tblcustom_fields['student_mobile'] = get_string('studentmobile','request');
+        $tblcustom_fields['mother_mobile'] = 'Mother Mobile';
         $tblcustom_fields['father_name'] = 'Father Name';
         $tblcustom_fields['mother_name'] = 'Mother Name';
         $tblcustom_fields['gender'] = 'Gender';
         $tblcustom_fields['dob'] = 'Birthdate';
-        $tblcustom_fields['mother_mobile'] = 'Mother Mobile';
         $tblcustom_fields['email'] = 'Email';
         $tblcustom_fields['username'] = 'Username';
         $tblcustom_fields['uniqueid'] = get_string('uniqueid','request');        
@@ -159,7 +160,7 @@ class studentReportController extends Controller
         ];
         $header = [
             'standard'     => get_string('standard','request'), 'division' => get_string('division','request'), 'grade' => get_string('academicsection','request'),
-            'student_name' => 'Student Name',
+            'student_name' => 'Student Name','id' => 'Stu_ID',
         ];
         $searchArr = ['_'];
         $replaceArr = [' '];
@@ -171,7 +172,7 @@ class studentReportController extends Controller
             ];
             $header = [
                 'standard'     => get_string('standard','request'), 'division' => get_string('division','request'), 'grade' => get_string('academicsection','request'),
-                'student_name' => 'Student Name',
+                'student_name' => 'Student Name','id' => 'Stu_ID',
             ];
             // $res['status_code'] = 0;
             // $res['message'] = "Please select one checkbox atlease to view report";
