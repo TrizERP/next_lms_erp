@@ -14,6 +14,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\fees\fees_collect\fees_collect_controller;
 use App\Http\Controllers\AJAXController;
+use Illuminate\Support\Facades\Storage;
 
 require('excel_upload/PHPExcel/IOFactory.php');
 require('excel_upload/PHPExcel/Shared/Date.php');
@@ -69,25 +70,28 @@ class s4excel_importController extends Controller {
 		$falilureStatusArr = array(
 		    'RETURN', 'failure', 'failed','Returned'
 		);
-	
+		if (!file_exists('storage/NachExcel/Uploads/')) {
+			mkdir('storage/NachExcel/Uploads/', 0777, true);
+		}
+		
 		if($request->hasFile('s4file'))
         {
-            $file = $request->file('s4file');
+			$file = $request->file('s4file');
+			if ($file->isValid()) {
             $originalname = $file->getClientOriginalName();
             $name = "NACH_S4_Import_".date('Y_m_d_H_i_s');
             $ext = \File::extension($originalname);
-            $file_name = $name . "." . $ext;
-            $path = $file->storeAs('public/NachExcel/Uploads/',$file_name);        
+			$file_name = $name . "." . $ext;
 
-            $inputFileName = 'storage/NachExcel/Uploads/'.$file_name;
-            try {
-                $inputFileType = PHPExcel_IOFactory::identify($inputFileName);
+			$path = $file->storeAs('public/NachExcel/Uploads/',$file_name);    
+
+			$filePath = 'NachExcel/Uploads/' . $file_name;
+			$inputFileName = storage_path('app/public/' . $filePath);
+
+		        $inputFileType = PHPExcel_IOFactory::identify($inputFileName);
                 $objReader = PHPExcel_IOFactory::createReader($inputFileType);
                 $objPHPExcel = $objReader->load($inputFileName);
-            } catch (Exception $e) {
-                die('Error loading file "' . pathinfo($inputFileName, PATHINFO_BASENAME) . '": ' . $e->getMessage());
-            }
-
+            
             $worksheet = $objPHPExcel->getSheet(0);
 	        $highestRow = $worksheet->getHighestRow();
 	        $highestColumn = $worksheet->getHighestColumn();
@@ -208,11 +212,8 @@ class s4excel_importController extends Controller {
 
 	            $totalRecords = count($dataArr) - 1;
 	            
-	            $successCnt = $failureCnt = $notFoundCnt = $paidCnt = $maxCnt = 0;
-	            
-	            // echo '<pre>';
-	            // print_r($dataArr);
-	            
+	            $successCnt = $failureCnt = $notFoundCnt = $paidCnt = $maxCnt = $returned = 0;
+	     
 	            foreach ($dataArr as $value) 
 	            {	    	           
                 	if ($m == 1) 
@@ -246,7 +247,6 @@ class s4excel_importController extends Controller {
 
 	                    $STUDENT_GR_NO = $TRANSACTION_REF_ARR[0];
 	                    $STUDENT_NAME = trim(str_replace($TRANSACTION_REF_ARR[0], '', $TRANSACTION_REF));
-	
 	                    $REMARKS = $TRANSACTION_REMARKS;
 	                    if ($REMARKS == '') {
 	                        $REMARKS = '-';
@@ -254,6 +254,8 @@ class s4excel_importController extends Controller {
 
 	                    $STUDENT_DETAILS = $this->get_students_general_details_with_multiple_parameters($STUDENT_NAME, $STUDENT_GR_NO, $sub_institute_id, $syear);	                   	                                      	
 						$STUDENT_ID =  "";
+
+						// print_r($STUDENT_DETAILS);
 
                     	if (in_array($TRANSACTION_STATUS, $successStatusArr)) 
                     	{
@@ -272,10 +274,12 @@ class s4excel_importController extends Controller {
 	                        } 
 	                        else
 	                        {
-	                        	$STUDENT_ID = $STUDENT_DETAILS['STUDENT_ID'];
+								$STUDENT_ID = $STUDENT_DETAILS['STUDENT_ID'];
 	                            // Get Already Paid Fees Students
-	                            $fees_paid_chk = $this->is_fees_paid_chk($STUDENT_ID,$MONTH_ID,$syear);
-	                            if (!empty($fees_paid_chk)) 
+								$fees_paid_chk = $this->is_fees_paid_chk($STUDENT_ID,$MONTH_ID,$syear);
+								// dd($fees_paid_chk);
+								
+	                            if (!empty($fees_paid_chk) || $fees_paid_chk !== "") 
 	                            {
 	                                $fees_paid_str.="<tr>";
 	                                echo $maxCnt;
@@ -293,7 +297,7 @@ class s4excel_importController extends Controller {
 
 	                        if ($STUDENT_ID != "") 
 	                        {
-	                            //dd($STUDENT_DETAILS);
+	                            // dd($STUDENT_DETAILS);
 	                            $pay_month = array($MONTH_ID => $MONTH_ID);
 
 	                            //START Fees paid code
@@ -407,27 +411,35 @@ class s4excel_importController extends Controller {
 
 									$failed_chk_flg = 1;
 								}
-								//dd($send_arr);
-
-	                            //END Fees paid code	                                               
                         }
                     } 
                     else if (in_array($TRANSACTION_STATUS, $falilureStatusArr)) 
-                    {                       
+                    {      
+						$STUDENT_ID = $STUDENT_DETAILS['STUDENT_ID'];
+						// echo "hello";
                         if ($STUDENT_ID != "") 
 						{
-                            $failInsSql = "INSERT INTO tblstudent_fees_failure
-							(student_id,month_id, syear, sub_institute_id,amount, remarks, created_by)
-							VALUES('".$STUDENT_ID."', '".$MONTH_ID."', '".$syear."','".$sub_institute_id."','".$STUDENT_FEES_AMOUNT."',
-							'".$REMARKS."','".$user_id."')";
-                            DB::select($failInsSql);
-                            $failed_bnk_chk_flg = 1;
+							// echo $STUDENT_ID;exit;
+							$check = DB::table('tblstudent_fees_failure')->whereRaw("student_id='".$STUDENT_ID."' AND month_id='".$MONTH_ID."' AND  syear='".$syear."' AND sub_institute_id='".$sub_institute_id."' AND amount='".$STUDENT_FEES_AMOUNT."'")->get()->toArray();
+							if(empty($check)){
+								$failInsSql = "INSERT INTO tblstudent_fees_failure
+								(student_id,month_id, syear, sub_institute_id,amount, remarks, created_by)
+								VALUES('".$STUDENT_ID."', '".$MONTH_ID."', '".$syear."','".$sub_institute_id."','".$STUDENT_FEES_AMOUNT."',
+								'".$REMARKS."','".$user_id."')";
+								DB::select($failInsSql);
 
+							$returned++;							
+								
+							}
+                          
+                            $failed_bnk_chk_flg = 1;
+							
                             $failed_bnk_str.="<tr>";
                             for ($i = 0; $i < $maxCnt; $i++) {
                                 $failed_bnk_str.="<td>" . (isset($value[$i]) ? $value[$i] : '') . "</td>";
                             }
-                            $failed_bnk_str.="</tr>";
+							$failed_bnk_str.="</tr>";
+							
 
                             if ($TRANSACTION_STATUS == 'account mismatch') 
 							{
@@ -440,12 +452,12 @@ class s4excel_importController extends Controller {
                             }
 //                            $mess = "<center><font color=red>Fees has been paid successfully.</font></center>";
                         }
-                    }
-                  
+					}
+					
                   
                 }
                 $m++;
-            	}
+				}
 					$not_found_str.="</table>";
 					//$not_found_str.="<div style=clear:both;>&nbsp;</div>";
 					$not_found_str.="</div>";
@@ -470,6 +482,7 @@ class s4excel_importController extends Controller {
 							. '<br/>Total Records : ' . $totalRecords . '<br/>'
 							. '<br/>Success Records : ' . $successCnt . '<br/>'
 							. '<br/>Failed Records : ' . $failureCnt . '<br/>'
+							. '<br/>Returned Failed Records : ' . $returned . '<br/>'							
 							. '<br/>Not Found Records : ' . $notFoundCnt . '<br/>'
 							. '<br/>Already Paid Records : ' . $paidCnt . '<br/>'
 							. '</font>';
@@ -496,7 +509,10 @@ class s4excel_importController extends Controller {
 					
 					$res['status_code'] = 1;
 					$res['message'] = $mess;					
-        	}
+			}
+		} else {
+			die('Invalid file upload.');
+		}
     	}
 		else
 		{
@@ -517,16 +533,16 @@ class s4excel_importController extends Controller {
 			s.uniqueid as UNIQUEID
 			FROM tblstudent s
 			INNER JOIN tblstudent_enrollment se ON s.id = se.student_id
-			INNER JOIN academic_section a ON a.id = se.grade_id AND a.sub_institute_id = se.sub_institute_id
-			INNER JOIN standard st ON st.id = se.standard_id AND st.sub_institute_id = se.sub_institute_id
-			LEFT JOIN division d ON d.id = se.section_id AND d.sub_institute_id = se.sub_institute_id
-			LEFT JOIN student_quota sq ON sq.id = se.student_quota AND sq.sub_institute_id = se.sub_institute_id
+			INNER JOIN academic_section a ON a.id = se.grade_id 
+			INNER JOIN standard st ON st.id = se.standard_id
+			LEFT JOIN division d ON d.id = se.section_id
+			LEFT JOIN student_quota sq ON sq.id = se.student_quota
 			WHERE s.sub_institute_id = '".$sub_institute_id."' AND se.syear = '".$syear."' AND s.enrollment_no = '".$STUDENT_GR_NO."'
 			AND if (se.END_DATE IS NOT NULL,se.END_DATE >= CURDATE(),se.END_DATE IS NULL)
-			AND ( CONCAT_WS(' ',s.first_name,s.middle_name,s.last_name) LIKE CONCAT('%','".$STUDENT_FULL_NAME."','%')) 
 			";
 		$stud_data = DB::select($studet_sql);
 		$stud_data = json_decode(json_encode($stud_data),true);
+		// dd($syear);
 		if(count($stud_data) > 0)
 		{
 			$return_arr = $stud_data[0];
@@ -557,55 +573,6 @@ class s4excel_importController extends Controller {
 	   }
 	   	   
 	   return $return_arr;
-	}
-
-
-	/**
-	 * Store a newly created resource in storage.
-	 *
-	 * @param  \Illuminate\Http\Request  $request
-	 * @return \Illuminate\Http\Response
-	 */
-
-	/**
-	 * Display the specified resource.
-	 *
-	 * @param  int  $id
-	 * @return \Illuminate\Http\Response
-	 */
-	public function show($id) {
-		//
-	}
-
-	/**
-	 * Show the form for editing the specified resource.
-	 *
-	 * @param  int  $id
-	 * @return \Illuminate\Http\Response
-	 */
-	public function edit($id) {
-		//
-	}
-
-	/**
-	 * Update the specified resource in storage.
-	 *
-	 * @param  \Illuminate\Http\Request  $request
-	 * @param  int  $id
-	 * @return \Illuminate\Http\Response
-	 */
-	public function update(Request $request, $id) {
-		//
-	}
-
-	/**
-	 * Remove the specified resource from storage.
-	 *
-	 * @param  int  $id
-	 * @return \Illuminate\Http\Response
-	 */
-	public function destroy($id) {
-		//
 	}
 
 }

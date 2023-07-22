@@ -18,6 +18,7 @@ require('excel_upload/PHPExcel.php');
 require('excel_upload/PHPExcel/Writer/Excel2007.php');
 use PhpExcel;
 use PHPExcel_Writer_Excel2007;
+use function League\Flysystem\isDir;
 
 
 class s3excel_exportController extends Controller {
@@ -64,12 +65,10 @@ class s3excel_exportController extends Controller {
             $extra .= " AND f.standard_id = '".$standard."'";
         }
 
-        $NachData = DB::select("SELECT * FROM NACH_MASTER WHERE sub_institute_id = '".$sub_institute_id."'");
-        $NachData = json_decode(json_encode($NachData),true);
+        $NachData = DB::table('NACH_MASTER')->where('sub_institute_id',$sub_institute_id)->get()->toArray();
         $NachData = $NachData[0];        
 
         $sql = "
-
             SELECT 'ACH Transaction Code (2) M' as ACH_TRANSACTION_CODE,'Control (9) O' as CONTROL_1,'Destination Account Type (2) O' as DESTINATION_AC_TYPE,
             'Ledger Folio Number (3) O' as LEDGER_FOLIO_NUMBER,'Control (15) O' as CONTROL_2, 'Beneficiary Account Holder\'s Name (40) M' as BENEFICIARY_AC_HOLDER_NAME,
             'Control (9) O' as CONTROL_3,'Control (7) O' as CONTROL_4,'User Name / Narration (20) O' as USER_NAME,'Control (13) O' as CONTROL_5,
@@ -82,7 +81,7 @@ class s3excel_exportController extends Controller {
             UNION 
            
 
-            SELECT '56' AS ACH_TRANSACTION_CODE,'' AS CONTROL_1,'".$NachData['name_of_utility']."' AS DESTINATION_AC_TYPE,'' AS LEDGER_FOLIO_NUMBER,'' AS CONTROL_2, 
+            SELECT '56' AS ACH_TRANSACTION_CODE,'' AS CONTROL_1,'".$NachData->name_of_utility."' AS DESTINATION_AC_TYPE,'' AS LEDGER_FOLIO_NUMBER,'' AS CONTROL_2, 
             '' AS BENEFICIARY_AC_HOLDER_NAME,'' AS CONTROL_3,'' AS CONTROL_4,'' AS USER_NAME,'' AS CONTROL_5, DATE_FORMAT(NOW(),'%d%m%Y') AS AMOUNT,
             '' AS RESERVED_ACH_ITEM_SEQ_NO, '' AS RESERVED_CHECKSUM,'' AS RESERVED_FLAG_SUCCESS_RETURN,'NACH00000000005440' AS RESERVED_REASON_CODE,
             'MILL0000000000001' AS DESTINATION_BANK_IFSC_CODE, 'KKBK0RTGSMI' AS DESTINATION_BANK_AC_NUMBER,
@@ -92,8 +91,8 @@ class s3excel_exportController extends Controller {
 
             UNION
             
-            SELECT '67' AS ACH_TRANSACTION_CODE,'' AS CONTROL_1,AC_TYPE AS DESTINATION_AC_TYPE,'' AS LEDGER_FOLIO_NUMBER,'' AS CONTROL_2, 
-            M.ac_holder_name AS BENEFICIARY_AC_HOLDER_NAME,'' AS CONTROL_3,'' AS CONTROL_4,'".$NachData['name_of_utility']."' AS USER_NAME,
+            SELECT '67' AS ACH_TRANSACTION_CODE,'' AS CONTROL_1,AC_TYPE AS DESTINATION_AC_TYPE,'' AS LEDGER_FOLIO_NUMBER,'' AS CONTROL_2,
+            M.ac_holder_name AS BENEFICIARY_AC_HOLDER_NAME,'' AS CONTROL_3,'' AS CONTROL_4,'".$NachData->name_of_utility."' AS USER_NAME,
             '' AS CONTROL_5,(M.totalFees + 0) AS AMOUNT,'' AS RESERVED_ACH_ITEM_SEQ_NO,'' AS RESERVED_CHECKSUM,'' AS RESERVED_FLAG_SUCCESS_RETURN,
             '' AS RESERVED_REASON_CODE,M.ifsc_code AS DESTINATION_BANK_IFSC_CODE,M.ac_number AS DESTINATION_BANK_AC_NUMBER,
             'KKBK0RTGSMI' AS SPONSOR_BANK_IFSC_CODE,'' AS USER_NUMBER,SUBSTRING(CONCAT(M.enrollment_no,' ', UPPER(M.full_name)),1,30) AS TRANSACTION_REFERENCE,
@@ -102,12 +101,12 @@ class s3excel_exportController extends Controller {
             
                 SELECT s.id,s.enrollment_no,CONCAT_WS(' ',s.first_name,s.middle_name,s.last_name) AS full_name,
                 se.student_quota,f.month_id,bd.ac_type,bd.ac_holder_name,bd.ifsc_code,bd.ac_number,bd.UMRN,
-                sum(f.amount) AS totalFees,fc.amount AS paid_amount from tblstudent s 
-                INNER JOIN tblstudent_enrollment se ON se.student_id = s.id AND se.sub_institute_id = s.sub_institute_id
-                INNER JOIN tblstudent_bank_detail bd ON bd.student_id = se.student_id AND bd.sub_institute_id = se.sub_institute_id
-                INNER JOIN fees_breackoff f ON f.standard_id = se.standard_id AND f.grade_id = se.grade_id AND f.syear = se.syear AND f.admission_year = s.admission_year AND se.student_quota = f.quota
-                INNER JOIN tblstudent_payment_method_mapping spm ON spm.student_id = se.student_id AND spm.syear = se.syear AND spm.month_id = f.month_id
-                LEFT JOIN fees_collect fc ON fc.student_id = s.id AND fc.sub_institute_id = s.sub_institute_id AND fc.syear = se.syear AND fc.term_id = f.month_id
+                f.amount AS totalFees,fc.amount AS paid_amount from tblstudent s 
+                INNER JOIN tblstudent_enrollment se ON se.student_id = s.id 
+                INNER JOIN tblstudent_bank_detail bd ON bd.student_id = se.student_id AND bd.sub_institute_id = '".$sub_institute_id."'
+                INNER JOIN fees_breackoff f ON f.standard_id = se.standard_id AND f.grade_id = se.grade_id AND f.admission_year = s.admission_year AND se.student_quota = f.quota AND f.sub_institute_id = '".$sub_institute_id."' AND f.syear = '".$syear."' 
+                INNER JOIN tblstudent_payment_method_mapping spm ON spm.student_id = se.student_id AND spm.sub_institute_id = '".$sub_institute_id."'
+                LEFT JOIN fees_collect fc ON fc.student_id = s.id AND fc.term_id = f.month_id
                 WHERE s.sub_institute_id = '".$sub_institute_id."' AND se.syear = '".$syear."' AND se.end_date IS NULL
                 AND f.month_id = '".$month_id."' AND spm.payment_method = 'NHCS'
                 AND (CURRENT_DATE <= spm.payment_date OR spm.payment_date IS NULL) ".$extra."
@@ -116,10 +115,8 @@ class s3excel_exportController extends Controller {
             ) 
             as M";           
 
-        //echo $sql;die;
         $studentData = DB::select($sql);
-		$studentData = json_decode(json_encode($studentData),true);
-
+        $studentData = json_decode(json_encode($studentData),true);
 		$excelFile_path = $this->getExcelFile($studentData);
 
 		$res['status_code'] = 1;
@@ -255,6 +252,9 @@ class s3excel_exportController extends Controller {
 
 
     $name = "NACH_S3_EXPORT_".date("Y_m_d_H_i_s");
+    if(!file_exists('storage/NachExcel')){
+        mkdir('storage/NachExcel/',0777);
+    }
     $objWriter->save("storage/NachExcel/$name.xlsx");
 
     //echo "<br><br><a href='../storage/NachExcel/$name.xlsx' class=btn_medium>Download Excel</a>";
