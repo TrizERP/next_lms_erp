@@ -28,7 +28,7 @@
                         @csrf
                         <div class="row">                        	
 	                        <div class="col-md-4 form-group">
-	                            <label>Late Fees Start Date</label>
+	                        	<label>{{ App\Helpers\get_string('standard','request')}} </label>
 	                            <select name="standard_id" id="standard_id" class="form-control" required>
 	                                @foreach($standard_list as $key => $value)
 	                                   <option value="{{$value['id']}}" @if(isset($data['standard_id']))@if($value['id'] == $data['standard_id']) selected @endif @endif>{{$value['name']}}</option>
@@ -36,7 +36,7 @@
 	                            </select>
 	                        </div>
 	                        <div class="col-md-4 form-group">
-	                            <label>{{ App\Helpers\get_string('standard','request')}} </label>
+	                            <label>Late Fees Start Date</label>
 	                            <input type="text" id='late_date' value="@if(isset($data['late_date'])){{ $data['late_date'] }}@endif" required name="late_date" class="form-control">
 	                        </div>                        
 	                        <div class="col-md-4 form-group">
