@@ -160,8 +160,8 @@ class studentReportController extends Controller
         ];
         $header = [
             'standard'     => get_string('standard','request'), 'division' => get_string('division','request'), 'grade' => get_string('academicsection','request'),
-            'student_name' => 'Student Name','id' => 'Stu_ID',
-        ];
+            'student_name' => 'Student Name',
+        ];//,'id' => 'Stu_ID'
         $searchArr = ['_'];
         $replaceArr = [' '];
 
@@ -172,8 +172,8 @@ class studentReportController extends Controller
             ];
             $header = [
                 'standard'     => get_string('standard','request'), 'division' => get_string('division','request'), 'grade' => get_string('academicsection','request'),
-                'student_name' => 'Student Name','id' => 'Stu_ID',
-            ];
+                'student_name' => 'Student Name',
+            ];//'id' => 'Stu_ID',
             // $res['status_code'] = 0;
             // $res['message'] = "Please select one checkbox atlease to view report";
             // return is_mobile($type, "student_report.index", $res);
