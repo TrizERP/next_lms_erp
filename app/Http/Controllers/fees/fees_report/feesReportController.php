@@ -107,7 +107,10 @@ class feesReportController extends Controller
             ->join('division as d', 'd.id', '=', 'te.section_id')
             ->join('student_quota as sq', 'sq.id', '=', 'te.student_quota')            
             ->leftjoin('batch as b',function($join) {
-                $join->on('b.standard_id', '=', 'te.standard_id')->whereRaw('b.division_id = te.section_id');
+                $join->on('b.standard_id', '=', 'te.standard_id')
+                ->whereRaw('b.division_id = te.section_id')
+                ->whereRaw('b.id = t.studentbatch')
+                ->whereRaw('b.syear = te.syear');
             })  
             ->join('fees_collect as fp', 'fp.student_id', '=', 'te.student_id')
             ->leftJoin('tbluser as u', 'fp.created_by', '=', 'u.id')

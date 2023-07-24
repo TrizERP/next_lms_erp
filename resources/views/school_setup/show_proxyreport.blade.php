@@ -131,7 +131,7 @@
 </div>
 
 @include('includes.footerJs')
-
+<script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js"></script>
 <script>
     $(document).ready(function () {
         var table = $('#proxy_list').DataTable({
@@ -176,18 +176,27 @@
     });
 
     function validate_dates() {
-        var from_date = $("#from_date").val();
-        var to_date = $("#to_date").val();
+    var from_date = $("#from_date").val();
+    var to_date = $("#to_date").val();
 
-        if (Date.parse(from_date) < Date.parse(to_date)) {
-            return true;
-        } else {
-            $("#showerr").css("display", "block");
-            $("#err").html("Please select Proper Dates");
-            //alert("Please select Proper Dates");
-            return false;
-        }
+    // Convert input date strings to Moment.js objects with the correct format
+    var momentFrom = moment(from_date, "DD-MM-YYYY");
+    var momentTo = moment(to_date, "DD-MM-YYYY");
+
+    // Format the dates in "MM/DD/YYYY" format for comparison
+    var formattedFrom = momentFrom.format("MM/DD/YYYY");
+    var formattedTo = momentTo.format("MM/DD/YYYY");
+
+    // Perform the date comparison
+    if (momentFrom.isBefore(momentTo)) {
+        return true;
+    } else {
+        $("#showerr").css("display", "block");
+        $("#err").html("Please select Proper Dates");
+        return false;
     }
+}
+
 
 </script>
 

@@ -1584,6 +1584,7 @@ class AJAXController extends Controller
     public function get_PageSetup($paper_size)
     {
         $sub_institute_id = session()->get('sub_institute_id');
+        $four_res = [239];
         $syear = session()->get('syear');
 
         $extra_html = '';
@@ -1615,7 +1616,7 @@ class AJAXController extends Controller
                                 </page>
                             </div>';
         } elseif ($paper_size == "A4DB") {
-              if($sub_institute_id==239){
+              if(in_array($sub_institute_id,$four_res)){
                   $extra_html = ' <div>
                                 <page size="A4">
                                 <div>
@@ -1627,8 +1628,7 @@ class AJAXController extends Controller
                                 </div>
                                 </page>
                             </div>';
-              }
-                else{
+              }else{
                     $extra_html = ' <div>
                                 <page size="A4">
                                 <div>
