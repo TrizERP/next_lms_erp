@@ -630,7 +630,7 @@ if (!function_exists('TermDD')) {
 }
 if (!function_exists('SearchStudent')) {
 
-    function SearchStudent($grade, $standard = "", $div = "", $sub_institute_id = "", $syear = "", $roll_no = "", $stu_name = "", $uniqueid = "", $mobile = "", $grno = "")
+    function SearchStudent($grade="", $standard = "", $div = "", $sub_institute_id = "", $syear = "", $roll_no = "", $stu_name = "", $uniqueid = "", $mobile = "", $grno = "",$stud_id="")
     {
         if ($sub_institute_id == '') {
             $sub_institute_id = session()->get('sub_institute_id');
@@ -655,6 +655,9 @@ if (!function_exists('SearchStudent')) {
         }
         if ($div != '') {
             $div_arr = (array)$div;
+        }
+        if($stud_id!=''){
+            $stud_id = $stud_id;
         }
 
         $enrollment_join = array(
@@ -707,6 +710,9 @@ if (!function_exists('SearchStudent')) {
                     ->orWhere('ts.middle_name', 'like', '%' . $stu_name . '%')
                     ->orWhere('ts.last_name', 'like', '%' . $stu_name . '%');
             });
+        }
+        if($stud_id !=''){
+            $query->where('ts.id',$stud_id);
         }
         $columns = explode(',', $select_fields);
         $columns[] = "s.name as standard_name";
