@@ -449,9 +449,9 @@ class online_fees_collect_controller extends Controller
     public function icici_fetch_payment_status(Request $request) {
 
         // get payment data if payment status is not captured and is not null and order id is not null
-
         // $limit = 150; // Set the desired limit here
-
+//DB::enableQueryLog();
+$ids = [4248];
         $payment_data = DB::table('fees_payment AS fp')
             ->select('fp.id', 'fp.student_id', 'fi.merchant_id', 'fi.enc_key', 'fp.icici_order_id', 'tse.syear', 'fp.sub_institute_id', 'fp.amount','fp.icici_bank_res')
             ->join('tblstudent_enrollment AS tse', function ($join) {
@@ -465,18 +465,19 @@ class online_fees_collect_controller extends Controller
                     ->on('fi.sub_institute_id', '=', 'tse.sub_institute_id');
             })
             ->where(function ($query) {
-                $query->where('fp.razorpay_dashboard_ps', '!=', 'captured')
-                    ->where('fp.razorpay_dashboard_ps', '!=', 'refunded')
-                    ->where('fp.razorpay_dashboard_ps', '!=', 'Success')                    
-                    ->orWhereNull('fp.razorpay_dashboard_ps');
+                $query->where('fp.icici_payment_status', '!=', 'PS')
+                    ->where('fp.icici_payment_status', '!=', 'PF')
+                    ->whereNull('fp.razorpay_payment_status');
             })
-            // ->where('tse.student_id',195449)
+            // ->where('tse.student_id',195449)  ->where('fp.razorpay_payment_status', '!=', 'Success')
             ->whereNotNull('fp.icici_order_id')
+//            ->whereIn('fp.id', $ids)
             ->groupBy('fp.id')
             // ->orderBy('fp.id','DESC')
             // ->limit($limit)
             ->get();
-            // return $payment_data;exit;
+//dd(DB::getQueryLog());
+//return $payment_data;exit;
             $check = [];
         if ( !empty($payment_data) ) {
 
@@ -488,7 +489,7 @@ class online_fees_collect_controller extends Controller
                 $student_id = $data->student_id;
                 $amount = $data->amount;
                 $res = $data->icici_bank_res;
-                // initial razorpay api
+                // initial icici status api
                 $url = "https://eazypay.icicibank.com/EazyPGVerify?merchantid=".$key_id."&pgreferenceno=".$payment_id."&dstatus=Y";
                 $payment_status = Http::get($url);
                 $payment_ex = explode('&', $payment_status);
@@ -507,13 +508,13 @@ class online_fees_collect_controller extends Controller
                     $json_response = $this->icici_payment_response_data_to_array($payment);
 
                     $update_arr = array(
-                        "razorpay_dashboard_ps" => $status,
+                        "razorpay_payment_status" => $status,
                         "aggre_pay_bank_res" => "cron",
-                        "id"=>$payment_id,
-                        "icici_bank_res" => $res,
+                        "icici_bank_res" => $payment_status,
                         "updated_at" => now()
                     );
-                   // print_r($update_arr);exit;
+//echo "<pre>"; print_r($update_arr);
+//exit;
                     DB::table("fees_payment")
                     ->where('id', $id)
                     ->update($update_arr);
@@ -527,12 +528,13 @@ class online_fees_collect_controller extends Controller
                         'sub_institute_id' => $data->sub_institute_id
                     ]);
 
-                    // echo "<pre>"; print_r($request->all()); exit;
-                    if($status == 'Success')
-                        $check = DB::table('fees_collect')->whereRaw('cheque_no='.$payment_id.' AND student_id='.$student_id.' AND syear='.$data->syear.' AND sub_institute_id='.$data->sub_institute_id)->get()->toArray();                        
-                        if($check < 0){
+//                    echo "<pre>"; print_r($request->all()); exit;
+                    if($status == 'Success'){
+                        $check = DB::table('fees_collect')->whereRaw('cheque_no='.$payment_id.' AND student_id='.$student_id.' AND syear='.$data->syear.' AND sub_institute_id='.$data->sub_institute_id)->get()->toArray();
+                        if(count($check) == 0){
                             $schooldata = $this->pay_fees($request, $data->student_id, $data->syear, $data->sub_institute_id, $amount, $payment_id);
                         }
+                    }
                 }
             }
         }
