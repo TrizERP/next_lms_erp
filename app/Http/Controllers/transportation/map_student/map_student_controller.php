@@ -43,6 +43,13 @@ class map_student_controller extends Controller
                 }
             }
         }
+        $grade=0;
+        if(isset($request->id)){
+            $student_data = SearchStudent("", "","", "", "", "", "", "", "",  "",$request->id);
+            $grade = $student_data[0]['grade_id'];          
+        }else{
+            $grade = $_REQUEST['grade'];
+        }
 
         //START set default shift_from and shift_to
         $result = DB::table("academic_section as a")
@@ -51,7 +58,7 @@ class map_student_controller extends Controller
             })
             ->selectRaw('*,s.id as shift_id')
             ->where("a.sub_institute_id", "=", session()->get('sub_institute_id'))
-            ->where("a.id", "=", $_REQUEST['grade'])
+            ->where("a.id", "=", $grade)
             ->get()->toArray();//->whereRaw("shift_title like concat('%',shift,'%')")
 
         $default_shift_id = $result[0]->shift_id;
@@ -68,6 +75,11 @@ class map_student_controller extends Controller
             $responce_arr['stu_data'][$id]['std-div'] = $arr['standard_name']." / ".$arr['division_name'];
             $responce_arr['stu_data'][$id]['enrollment_no'] = $arr['enrollment_no'];
 
+            if(isset($request->id)){
+                $responce_arr['stu_data'][$id]['address'] = $arr['address'];
+                $responce_arr['stu_data'][$id]['city'] = $arr['city'];
+                $responce_arr['stu_data'][$id]['state'] = $arr['state'];
+            }
             $matchThese = [
                 "syear"            => session()->get('syear'),
                 "student_id"       => $arr['student_id'],
@@ -174,8 +186,11 @@ class map_student_controller extends Controller
                 $responce_arr['stu_data'][$id]['ddShift'] = $this->ddShift();
             }
         }
-
-        return is_mobile($type, "transportation/map_student/add", $responce_arr, "view");
+        if(isset($request->id)){
+            return $responce_arr;
+        }else{
+            return is_mobile($type, "transportation/map_student/add", $responce_arr, "view");
+        }
     }
 
     public function ddShift()
