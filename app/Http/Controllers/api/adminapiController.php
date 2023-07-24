@@ -2270,6 +2270,7 @@ class adminapiController extends Controller
         $syear = $request->input("syear");
         $from_date = $request->get('from_date');
         $to_date = $request->get('to_date');
+        $exam_type_id = $request->input("exam_type_id");
 
         $validator = Validator::make($request->all(), [
             'sub_institute_id' => 'required|numeric',
@@ -2277,6 +2278,7 @@ class adminapiController extends Controller
             'syear'            => 'required',
             'from_date'        => 'required|date',
             'to_date'          => 'required|date',
+            'exam_type_id'     => 'required',
         ]);
 
         if ($validator->fails()) {
@@ -2322,8 +2324,7 @@ class adminapiController extends Controller
                 $grade_arr = cbse_1t5_result_controller::getGradeScale($student_data['standard_id'], $type);
 
                 //getting all exam master heading
-                $all_exam_master = $WRT_object->getAllExamMaster($student_data['standard_id'], $from_date, $to_date,
-                    $type);
+                $all_exam_master = $WRT_object->getAllExamMaster($student_data['standard_id'], $from_date, $to_date, $type, $exam_type_id);
 
                 //getting all exam marks        
                 $all_WRT_data = $WRT_object->getWRTData($get_student_data, $student_data['standard_id'], $type);
@@ -2595,6 +2596,7 @@ class adminapiController extends Controller
                 $data['student_id'] = $student_id;
                 $data['sub_institute_id'] = $sub_institute_id;
                 $data['syear'] = $syear;
+                $data['exam_type_id'] = $exam_type_id;
                 $data['title'] = 'WRT Progress Report';
                 $data['file_name'] = "https://".$_SERVER['SERVER_NAME']."/storage/WRT_result_pdf/".$pdf_filename;
 
