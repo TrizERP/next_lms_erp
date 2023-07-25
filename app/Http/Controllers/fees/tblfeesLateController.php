@@ -100,10 +100,15 @@ class tblfeesLateController extends Controller
 
         foreach ($newRequest as $key => $value) {
             if ($key != '_method' && $key != '_token' && $key != 'submit') {
-                if (is_array($value)) {
-                    $value = implode(",", $value);
+                if ($key === 'late_date') {
+                    $formattedDate = date('Y-m-d', strtotime($value));
+                    $finalArray[$key] = $formattedDate;
+                } else {
+                    if (is_array($value)) {
+                        $value = implode(",", $value);
+                    }
+                    $finalArray[$key] = $value;
                 }
-                $finalArray[$key] = $value;
             }
         }
 
