@@ -32,6 +32,8 @@ class map_student_controller extends Controller
     public function create(Request $request)
     {
         $type = $request->input('type');
+        $sub_institute_id = session()->get('sub_institute_id');
+        $syear = session()->get('syear');
         if (isset($_REQUEST['grade'], $_REQUEST['standard'], $_REQUEST['division'])) {
             $student_data = SearchStudent($_REQUEST['grade'], $_REQUEST['standard'], $_REQUEST['division']);
         } else {
@@ -59,10 +61,13 @@ class map_student_controller extends Controller
             ->selectRaw('*,s.id as shift_id')
             ->where("a.sub_institute_id", "=", session()->get('sub_institute_id'))
             ->where("a.id", "=", $grade)
-            ->get()->toArray();//->whereRaw("shift_title like concat('%',shift,'%')")
+            ->get()->toArray();
 
         $default_shift_id = $result[0]->shift_id ?? '';
+<<<<<<< HEAD
         //END set default shift_from and shift_to
+=======
+>>>>>>> 0166d278b4b488fe535673e6918c444aa2aec833
 
         $responce_arr = [];
 
@@ -94,9 +99,21 @@ class map_student_controller extends Controller
                 $responce_arr['stu_data'][$id]['to_shift_id'] = $results[0]['to_shift_id'];
                 $responce_arr['stu_data'][$id]['to_bus_id'] = $results[0]['to_bus_id'];
                 $responce_arr['stu_data'][$id]['to_stop'] = $results[0]['to_stop'];
-
+                $responce_arr['stu_data'][$id]['total_amount'] = $results[0]['amount'];
+                $responce_arr['stu_data'][$id]['distance'] = $results[0]['distance'];     
+                $shift = DB::table('transport_school_shift')->where(['id'=>$results[0]['from_shift_id'],'sub_institute_id'=>$sub_institute_id])->get()->toArray();
+                if (count($shift) > 0 && isset($request->id) ) {
+                $responce_arr['stu_data'][$id]['shift_rate'] = $shift[0]->shift_rate;
+                $responce_arr['stu_data'][$id]['km_amount'] = $shift[0]->km_amount;
+                $responce_arr['stu_data'][$id]['van-shift'] = $results[0]['from_bus_id']."-".$results[0]['from_shift_id'];
+                $responce_arr['stu_data'][$id]['van_shift'] = $this->van_shift();
+                $responce_arr['stu_data'][$id]['area'] = $this->area();
+                
+                }     
+             
                 $responce_arr['stu_data'][$id]['ddShift'] = $this->ddShift();
-
+               
+                        
                 //dd from bus
                 $where = [
                     "tv.sub_institute_id" => session()->get('sub_institute_id'),
@@ -137,7 +154,6 @@ class map_student_controller extends Controller
                     ->where($where)
                     ->groupBy('ts.id')
                     ->pluck('ts.stop_name', 'ts.id');
-
 
                 $responce_arr['stu_data'][$id]['ddFrom'] = $routs;
 
@@ -192,7 +208,14 @@ class map_student_controller extends Controller
             return is_mobile($type, "transportation/map_student/add", $responce_arr, "view");
         }
     }
-
+    public function area()
+    {
+        return DB::table('transport_stop')
+        ->select('stop_name', 'id')
+        ->where("sub_institute_id", session()->get('sub_institute_id'))
+        ->pluck('stop_name','id');
+    
+    }
     public function ddShift()
     {
         return DB::table('transport_school_shift')
@@ -200,6 +223,23 @@ class map_student_controller extends Controller
             ->where("transport_school_shift.sub_institute_id", session()->get('sub_institute_id'))
             ->pluck('shift_title', 'id');
     }
+    public function van_shift()
+    {
+        $shifts = DB::table('transport_vehicle')
+            ->select('transport_school_shift.shift_title', 'transport_school_shift.id', 'transport_vehicle.id as vid', 'transport_vehicle.vehicle_number')
+            ->join('transport_school_shift', 'transport_school_shift.id', '=', 'transport_vehicle.school_shift')
+            ->where("transport_school_shift.sub_institute_id", session()->get('sub_institute_id'))
+            ->get();
+    
+        $result = [];
+    
+        foreach ($shifts as $shift) {
+            $transport = $shift->vehicle_number . '[' . $shift->shift_title . ']';
+            $result[$shift->vid.'-'.$shift->id] = $transport;
+        }
+    
+        return $result;
+    }    
 
     public function fetchData(Request $request)
     {
