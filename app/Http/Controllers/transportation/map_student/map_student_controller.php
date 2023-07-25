@@ -61,7 +61,7 @@ class map_student_controller extends Controller
             ->where("a.id", "=", $grade)
             ->get()->toArray();//->whereRaw("shift_title like concat('%',shift,'%')")
 
-        $default_shift_id = $result[0]->shift_id;
+        $default_shift_id = $result[0]->shift_id ?? '';
         //END set default shift_from and shift_to
 
         $responce_arr = [];
