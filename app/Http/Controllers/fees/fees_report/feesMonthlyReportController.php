@@ -143,7 +143,7 @@ class feesMonthlyReportController extends Controller
             ->join('tblstudent_enrollment as s', function ($join) {
                 $join->whereRaw('s.sub_institute_id = f.sub_institute_id AND f.student_id = s.student_id');
             })->leftJoin('fees_paid_other as fo', function ($join) {
-                $join->whereRaw('fo.sub_institute_id = f.sub_institute_id and fo.student_id = f.student_id and fo.month_id = f.term_id');
+                $join->whereRaw('fo.sub_institute_id = f.sub_institute_id and fo.student_id = f.student_id and fo.month_id = f.term_id AND fo.is_deleted = "N"');
             })->selectRaw("" . $columns . " DATE_FORMAT(f.receiptdate,'%Y-%m-%d') AS fees_date")
             ->where('f.is_deleted', 'N')
             ->where('f.sub_institute_id', session()->get('sub_institute_id'))

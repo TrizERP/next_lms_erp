@@ -49,7 +49,8 @@ class feesReportController extends Controller
 
         $extra_fp = "  AND fp.syear = '" . $syear . "' AND te.syear = '" . $syear . "' AND t.sub_institute_id = '" . $sub_institute_id . "' AND fp.sub_institute_id = '" . $sub_institute_id . "' AND fp.is_deleted = 'N' ";
         $extra_fo = "  AND fo.syear = '" . $syear . "' AND te.syear = '" . $syear . "' AND t.sub_institute_id = '" . $sub_institute_id . "' AND fo.sub_institute_id = '" . $sub_institute_id . "' AND fo.is_deleted = 'N' ";
-
+        // $extra_fo = '';
+        // $extra_fp='';
         if (!empty($grade)) {
             $extra_fp .= " AND te.grade_id IN ('" . implode("','", $grade) . "')"; // Use IN operator for multiple values
             $extra_fo .= " AND te.grade_id IN ('" . implode("','", $grade) . "')"; // Use IN operator for multiple values
@@ -79,72 +80,120 @@ class feesReportController extends Controller
             $extra_fp .= " AND t.mobile = '" . $mb_no . "'";
             $extra_fo .= " AND t.mobile = '" . $mb_no . "'";
         }
+        // ->whereRaw("DATE_FORMAT(fp.receiptdate,'%Y-%m-%d') between '" . $from_date . "' AND '" . $to_date . "'");
 
-        if ($from_date != '') {
-            $extra_fp .= " AND fp.receiptdate >= '" . $from_date . "'";
-            $extra_fo .= " AND fo.receiptdate >= '" . $from_date . "'";
-        }
-
-        if ($to_date != '') {
-            $extra_fp .= " AND fp.receiptdate <= '" . $to_date . "'";
-            $extra_fo .= " AND fo.receiptdate <= '" . $to_date . "'";
+        if ($from_date != '' && $to_date != '') {
+            $extra_fp .= " AND DATE_FORMAT(fp.receiptdate,'%Y-%m-%d') between '" . $from_date . "' AND '" . $to_date . "' ";
+            $extra_fo .= " AND DATE_FORMAT(fo.receiptdate,'%Y-%m-%d') between '" . $from_date . "' AND '" . $to_date . "'";
         }
 
         if ($client_id == 6) {
             $extra_fp .= " AND fp.standard_id=te.standard_id ";
         }
 
-        $M = DB::table('tblstudent as t')
-            ->selectRaw("fp.student_id, t.enrollment_no, t.roll_no, t.uniqueid, CONCAT_WS(' ', t.first_name, t.middle_name, t.last_name) AS student_name, t.mobile, ac.title AS grade, s.name AS standard_name, d.name AS division_name, fp.created_date, CONCAT_WS(' ', u.first_name, u.last_name) AS user_name, fp.term_id, fp.receiptdate, fp.receipt_no, fp.payment_mode, fp.cheque_bank_name, fp.bank_branch, fp.cheque_no, fp.cheque_date, SUM(IFNULL(fp.amount, 0)) AS amount,b.title as batch,sq.title as quota")
-            ->join('tblstudent_enrollment as te', 't.id', '=', 'te.student_id')
-            ->join('academic_section as ac', 'ac.id', '=', 'te.grade_id')
-            ->join('standard as s', function($join) use($marking_period_id){
-                $join->on('s.id', '=', 'te.standard_id');
-                // ->when($marking_period_id,function($query) use ($marking_period_id){
-                //     $query->where('s.marking_period_id',$marking_period_id);
-                // });
-            })
-            ->join('division as d', 'd.id', '=', 'te.section_id')
-            ->join('student_quota as sq', 'sq.id', '=', 'te.student_quota')            
-            ->leftjoin('batch as b',function($join) {
-                $join->on('b.standard_id', '=', 'te.standard_id')
-                ->whereRaw('b.division_id = te.section_id')
-                ->whereRaw('b.id = t.studentbatch')
-                ->whereRaw('b.syear = te.syear');
-            })  
-            ->join('fees_collect as fp', 'fp.student_id', '=', 'te.student_id')
-            ->leftJoin('tbluser as u', 'fp.created_by', '=', 'u.id')
-            ->whereRaw("1=1 {$extra_fp}")
-            ->groupBy('fp.student_id', 'fp.receipt_no', 'fp.syear', 'fp.receiptdate', 'fp.payment_mode', 'fp.cheque_no');
+        // $M = DB::table('tblstudent as t')
+        //     ->selectRaw("fp.student_id, t.enrollment_no, t.roll_no, t.uniqueid, CONCAT_WS(' ', t.first_name, t.middle_name, t.last_name) AS student_name, t.mobile, ac.title AS grade, s.name AS standard_name, d.name AS division_name, fp.created_date, CONCAT_WS(' ', u.first_name, u.last_name) AS user_name, fp.term_id, fp.receiptdate, fp.receipt_no, fp.payment_mode, fp.cheque_bank_name, fp.bank_branch, fp.cheque_no, fp.cheque_date, SUM(IFNULL(fp.amount, 0)) AS amount,b.title as batch,sq.title as quota")
+        //     ->join('tblstudent_enrollment as te', 't.id', '=', 'te.student_id')
+        //     ->join('academic_section as ac', 'ac.id', '=', 'te.grade_id')
+        //     ->join('standard as s', function($join) use($marking_period_id){
+        //         $join->on('s.id', '=', 'te.standard_id');
+        //         // ->when($marking_period_id,function($query) use ($marking_period_id){
+        //         //     $query->where('s.marking_period_id',$marking_period_id);
+        //         // });
+        //     })
+        //     ->join('division as d', 'd.id', '=', 'te.section_id')
+        //     ->join('student_quota as sq', 'sq.id', '=', 'te.student_quota')            
+        //     ->leftjoin('batch as b',function($join) {
+        //         $join->on('b.standard_id', '=', 'te.standard_id')
+        //         ->whereRaw('b.division_id = te.section_id')
+        //         ->whereRaw('b.id = t.studentbatch')
+        //         ->whereRaw('b.syear = te.syear');
+        //     })  
+        //     ->join('fees_collect as fp', 'fp.student_id', '=', 'te.student_id')
+        //     ->leftJoin('tbluser as u', 'fp.created_by', '=', 'u.id')
+        //     ->whereRaw("1=1 {$extra_fp}")
+        //     ->groupBy('fp.student_id', 'fp.receipt_no', 'fp.syear', 'fp.receiptdate', 'fp.payment_mode', 'fp.cheque_no');
 
-        $N = DB::table('tblstudent as t')
-            ->selectRaw("fo.student_id, SUM(IFNULL(fo.actual_amountpaid, 0)) AS actual_amountpaid, fo.reciept_id")
-            ->join('tblstudent_enrollment as te', 't.id', '=', 'te.student_id')
-            ->join('academic_section as ac', 'ac.id', '=', 'te.grade_id')
-            ->join('standard as s', function($join) use($marking_period_id){
-                $join->on('s.id', '=', 'te.standard_id');
-                // ->when($marking_period_id,function($query) use ($marking_period_id){
-                //     $query->where('s.marking_period_id',$marking_period_id);
-                // });
-            })
-            ->join('division as d', 'd.id', '=', 'te.section_id')
-            ->join('fees_paid_other as fo', 'fo.student_id', '=', 'te.student_id')
-            ->whereRaw("1=1 {$extra_fo}")
-            ->groupBy('fo.student_id', 'fo.reciept_id', 'fo.syear', 'fo.receiptdate', 'fo.payment_mode', 'fo.cheque_dd_no');
+        // $N = DB::table('tblstudent as t')
+        //     ->selectRaw("fo.student_id, SUM(IFNULL(fo.actual_amountpaid, 0)) AS actual_amountpaid, fo.reciept_id")
+        //     ->join('tblstudent_enrollment as te', 't.id', '=', 'te.student_id')
+        //     ->join('academic_section as ac', 'ac.id', '=', 'te.grade_id')
+        //     ->join('standard as s', function($join) use($marking_period_id){
+        //         $join->on('s.id', '=', 'te.standard_id');
+        //         // ->when($marking_period_id,function($query) use ($marking_period_id){
+        //         //     $query->where('s.marking_period_id',$marking_period_id);
+        //         // });
+        //     })
+        //     ->join('division as d', 'd.id', '=', 'te.section_id')
+        //     ->join('fees_paid_other as fo', 'fo.student_id', '=', 'te.student_id')
+        //     ->whereRaw("1=1 {$extra_fo}")
+        //     ->groupBy('fo.student_id', 'fo.reciept_id', 'fo.syear', 'fo.receiptdate', 'fo.payment_mode', 'fo.cheque_dd_no');
 
-        $query = DB::table(DB::raw("({$M->toSql()}) as M"))
-            ->selectRaw("M.student_id, M.enrollment_no, M.roll_no, M.uniqueid, M.student_name, M.mobile, M.grade, M.standard_name, M.division_name, M.created_date, M.user_name, M.term_id, M.receiptdate, M.receipt_no, M.payment_mode, M.cheque_bank_name, M.bank_branch, M.cheque_no, M.cheque_date, (IFNULL(M.amount, 0) + IFNULL(N.actual_amountpaid, 0)) AS actual_amountpaid,M.batch,M.quota")
-            ->leftJoin(DB::raw("({$N->toSql()}) as N"), function ($join) {
-                $join->on('M.student_id', '=', 'N.student_id')
-                    ->on('M.receipt_no', '=', 'N.reciept_id');
-            })
-            ->mergeBindings($M)
-            ->mergeBindings($N)
-            ->havingNotNull('M.receiptdate')
-            ->orderByRaw("M.receiptdate, CAST(M.receipt_no AS SIGNED)");
+        // $query = DB::table(DB::raw("({$M->toSql()}) as M"))
+        //     ->selectRaw("M.student_id, M.enrollment_no, M.roll_no, M.uniqueid, M.student_name, M.mobile, M.grade, M.standard_name, M.division_name, M.created_date, M.user_name, M.term_id, M.receiptdate, M.receipt_no, M.payment_mode, M.cheque_bank_name, M.bank_branch, M.cheque_no, M.cheque_date, (IFNULL(M.amount, 0) + IFNULL(N.actual_amountpaid, 0)) AS actual_amountpaid,M.batch,M.quota")
+        //     ->leftJoin(DB::raw("({$N->toSql()}) as N"), function ($join) {
+        //         $join->on('M.student_id', '=', 'N.student_id')
+        //             ->on('M.receipt_no', '=', 'N.reciept_id');
+        //     })
+        //     ->mergeBindings($M)
+        //     ->mergeBindings($N)
+        //     ->havingNotNull('M.receiptdate')
+        //     ->orderByRaw("M.receiptdate, CAST(M.receipt_no AS SIGNED)");
 
-        $feesData = $query->get()->toArray();
 
+        $queryCollect = DB::table('tblstudent as t')
+        ->join('tblstudent_enrollment as te', function ($join) {
+            $join->on('te.student_id', '=', 't.id');
+        })
+     ->join('academic_section as g','g.id','=','te.grade_id')        
+        ->join('standard as s','s.id','=','te.standard_id')
+        ->join('division as d','d.id','=','te.section_id')  
+        ->join('student_quota as sq','sq.id','=','te.student_quota') 
+        ->leftjoin('batch as b',function($join) {
+            $join->on('b.standard_id', '=', 'te.standard_id')
+            ->whereRaw('b.division_id = te.section_id')
+            ->whereRaw('b.id = t.studentbatch')
+            ->whereRaw('b.syear = te.syear');
+        })  
+        ->Join('fees_collect as fp', 'fp.student_id', '=', 'te.student_id')
+        ->leftJoin('tbluser as u', 'fp.created_by', '=', 'u.id')
+    
+        ->selectRaw('t.id as student_id, t.enrollment_no, t.roll_no, t.uniqueid, '
+            .DB::raw("CONCAT_WS(' ', t.first_name, t.middle_name, t.last_name) as student_name").', g.title as grade, s.name as standard_name, d.name as division_name, fp.created_date, '
+            .DB::raw('CONCAT_WS(" ", u.first_name, u.last_name) AS user_name, fp.term_id, fp.receiptdate, fp.receipt_no, fp.payment_mode, '
+            .'fp.cheque_bank_name, fp.bank_branch, fp.cheque_no, fp.cheque_date, b.title as batch, sq.title as quota, '
+            .'IFNULL(fp.amount, 0) AS actual_amountpaid')
+        )
+        ->whereRaw("1=1 " . $extra_fp);
+    
+    
+    $queryOther = DB::table('tblstudent as t')
+        ->join('tblstudent_enrollment as te', function ($join) {
+            $join->on('te.student_id', '=', 't.id');
+        })
+     ->join('academic_section as g','g.id','=','te.grade_id')        
+        ->join('standard as s','s.id','=','te.standard_id')
+        ->join('division as d','d.id','=','te.section_id')  
+        ->join('student_quota as sq','sq.id','=','te.student_quota') 
+        ->leftjoin('batch as b',function($join) {
+            $join->on('b.standard_id', '=', 'te.standard_id')
+            ->whereRaw('b.division_id = te.section_id')
+            ->whereRaw('b.id = t.studentbatch')
+            ->whereRaw('b.syear = te.syear');
+        })  
+      
+    ->leftJoin('fees_paid_other as fo', 'fo.student_id', '=', 'te.student_id')
+    ->leftJoin('tbluser as u', 'fo.created_by', '=', 'u.id')
+    ->selectRaw('t.id as student_id, t.enrollment_no, t.roll_no, t.uniqueid, '
+        .DB::raw("CONCAT_WS(' ', t.first_name, t.middle_name, t.last_name) as student_name").', g.title as grade, s.name as standard_name, d.name as division_name, NULL AS created_date, '
+        .DB::raw('CONCAT_WS(" ", u.first_name, u.last_name) AS user_name, fo.month_id AS term_id, fo.receiptdate AS receiptdate, fo.reciept_id AS receipt_no, NULL AS payment_mode, '
+        .'fo.bank_name as cheque_bank_name, fo.bank_branch, fo.cheque_dd_no as cheque_no, fo.cheque_dd_date AS cheque_date, b.title as batch, sq.title as quota, '
+        .'IFNULL(fo.actual_amountpaid, 0) AS actual_amountpaid')
+    )
+    ->whereRaw("1=1 " . $extra_fo);
+    
+    $feesData = $queryCollect->union($queryOther)->get()->toArray();
+    
         $feesData = json_decode(json_encode($feesData), true);
         // echo "<pre>";print_r($feesData);exit;
         $res['status_code'] = 1;
