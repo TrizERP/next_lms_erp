@@ -96,7 +96,9 @@ class studentReportController extends Controller
         $tblcustom_fields['roll_no'] = 'Roll No';
         $tblcustom_fields['image'] = 'Image';
         $tblcustom_fields['house'] = get_string('house','request');
-        $tblcustom_fields['van'] = 'Van';
+        $tblcustom_fields['van'] = 'Van(Shift Wise)';
+        $tblcustom_fields['distance'] = 'Distance';
+        $tblcustom_fields['amount'] = 'Amount';
         $tblcustom_fields['optional_subjects'] = 'Optional Subjects';        
         $tblcustom_fields['nationality'] = get_string('nationality','request');
         $tblcustom_fields['place_of_birth'] = get_string('birthplace','request');
@@ -156,23 +158,26 @@ class studentReportController extends Controller
 
         $array = [
             'standard.name as standard', 'division.name as division', 'academic_section.title as grade',
-            'tblstudent.id as id',
+            'tblstudent.id as id', 'CONCAT(transport_vehicle.title, " (", transport_vehicle.school_shift, ")") as van',
         ];
         $header = [
             'standard'     => get_string('standard','request'), 'division' => get_string('division','request'), 'grade' => get_string('academicsection','request'),
             'student_name' => 'Student Name',
+            'van'          => 'Van(Shift Wise)',
         ];//,'id' => 'Stu_ID'
+
         $searchArr = ['_'];
         $replaceArr = [' '];
 
         if ($request->input('dynamicFields') == '') {
             $array = [
                 'standard.name as standard', 'division.name as division', 'academic_section.title as grade',
-                'tblstudent.id as id',
+                'tblstudent.id as id', 'CONCAT(transport_vehicle.title, " (", transport_vehicle.school_shift, ")") as van',
             ];
             $header = [
                 'standard'     => get_string('standard','request'), 'division' => get_string('division','request'), 'grade' => get_string('academicsection','request'),
                 'student_name' => 'Student Name',
+                'van'          => 'Van(Shift Wise)',
             ];//'id' => 'Stu_ID',
             // $res['status_code'] = 0;
             // $res['message'] = "Please select one checkbox atlease to view report";
@@ -180,6 +185,7 @@ class studentReportController extends Controller
         } else {
             $searchArr1 = ['enrollment_no', 'first_name', 'last_name', 'place_of_birth', 'student_mobile','optional_subjects'];
             $replaceArr1 = [get_string('grno','request'), 'First Name', 'Surname', get_string('birthplace','request'), get_string('studentmobile','request'),'Optional Subjects'];
+
             foreach ($request->input('dynamicFields') as $key => $value) {
                 if ($value != "bloodgroup" && $value != "van" && $value != "optional_subjects") {
                     $array[] = $value;
@@ -189,13 +195,13 @@ class studentReportController extends Controller
 
                 $header[$value] = ucfirst($value2);
             }
-
+            
             $array[] = 'religion.religion_name as religion';
             $array[] = 'house_master.house_name as house';
             $array[] = 'student_quota.title as student_quota';
             $array[] = 'caste.caste_name as cast';
             $array[] = 'blood_group.bloodgroup as bloodgroup';
-            $array[] = 'transport_vehicle.title as van';
+            $array[] = 'CONCAT(transport_vehicle.title, " (", transport_vehicle.school_shift, ")") as van';
             $array[] = 'tblstudent.place_of_birth as place_of_birth';
             $array[] = 'tblstudent.student_mobile as studentmobile';
             $array[] = 'GROUP_CONCAT(IFNULL(subject.subject_name, "-")) as optional_subjects';            
@@ -219,7 +225,11 @@ class studentReportController extends Controller
             ->leftjoin('caste', 'caste.id', '=', 'tblstudent.cast')
             ->leftjoin('blood_group', 'blood_group.id', '=', 'tblstudent.bloodgroup')
             ->leftjoin('transport_map_student', 'transport_map_student.student_id', '=', 'tblstudent.id')
-            ->leftjoin('transport_vehicle', 'transport_vehicle.id', '=', 'transport_map_student.from_bus_id')
+            //->leftjoin('transport_vehicle', 'transport_vehicle.id', '=', 'transport_map_student.from_bus_id')
+            ->leftjoin('transport_vehicle', function($join) {
+                $join->on('transport_vehicle.id', '=', 'transport_map_student.from_bus_id')
+                     ->where('transport_vehicle.sub_institute_id', '=', DB::raw('tblstudent_enrollment.sub_institute_id'));
+            })
             ->leftjoin('student_optional_subject',function($join){
                 $join->on('student_optional_subject.student_id', '=', 'tblstudent.id')->where('student_optional_subject.syear',session()->get('syear')); 
             })            
