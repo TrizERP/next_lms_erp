@@ -1702,72 +1702,94 @@ br {
                                 </div>
                                 <!-- END LEAVE APPLICATION --> 
 
-                                 <!-- START LEAVE APPLICATION -->
+                                 <!-- START Transport -->
                                  <div class="tab-pane p-3" id="section-linemove-16" role="tabpanel">
                                     <div class="tab-pane p-3" id="section-linemove-14" role="tabpanel">
-                                    <form action="{{ route('add_student.update', $student_data->id) }}" enctype="multipart/form-data" method="post">
+                                    <form action="{{ route('add_student.update', [$student_data->id]) }}" enctype="multipart/form-data" method="post">
                                         <div class="row equal">
                                         {{ method_field("PUT") }}
                                             @csrf
                                             @foreach($data['trans_details'] as $id=>$val)
                                         <div class="col-md-4 form-group">
                                             <label>Address </label>
-                                            <input type="text" id='first_name' required name="first_name" value="{{ $val['address'] }}" class="form-control">
+                                            <input type="text" id='address' required name="address" value="{{ $val['address'] }}" class="form-control">
                                         </div>
                                         <div class="col-md-4 form-group">
                                         <label>Area </label>                                        
-                                        <select name="values[<?php echo $val['student_id']; ?>][from_stop]" id="from_stop" class="from_stop form-control" required data-studentid="{{$val['student_id']}}">
+                                        <select name="values[{{$val['student_id']}}][from_stop]" id="from_stop" class="from_stop form-control" required data-studentid="{{$val['student_id']}}">
                                             <option value="">--Select--</option>
-                                            <?php
-                                            foreach ($val['ddFrom'] as $id => $arr) {
+                                            @php
+                                            if(isset($val['area'])){
+                                            foreach ($val['area'] as $id => $arr) {
                                                 $selected = "";
                                                 if ($id == $val['from_stop'])
                                                     $selected = "selected=selected";
                                                 echo "<option $selected value='$id'>$arr</option>";
                                             }
-                                            ?>
+                                            }
+                                            @endphp
                                         </select>
                                         </div>
                                         <div class="col-md-4 form-group">
                                             <label>City </label>
-                                            <input type="text" id='first_name' required name="first_name" value="{{ $val['city'] }}" class="form-control">
+                                            <input type="text" id='city' name="city" value="{{ $val['city'] }}" class="form-control" readonly>
                                         </div>
                                         <div class="col-md-4 form-group">
                                             <label>State </label>
-                                            <input type="text" id='first_name' required name="first_name" value="{{ $val['state'] }}" class="form-control">
+                                            <input type="text" id='state'  name="state" value="{{ $val['state'] }}" class="form-control" readonly>
                                         </div>
 
                                          <div class="col-md-4 form-group">
                                             <label>Zip/Postal Code </label>
-                                            <input type="text" id='first_name' required name="first_name" class="form-control">
+                                            <input type="text" id='zip' name="zip" class="form-control">
                                         </div>
                                         <div class="col-md-4 form-group">
                                             <label>Van </label>
-                                            <select name="values[<?php echo $val['student_id']; ?>][from_bus]" id="from_bus" data-from_bus="$val['from_bus_id']" class="from_bus form-control" required data-studentid="{{$val['student_id']}}">
+                                            <select name="values[{{$val['student_id']}}][van-shift]" id="van-shift" data-from_bus="$val['van-shift']" class="from_bus form-control" required data-studentid="{{$val['student_id']}}">
                                             <option value="">--Select--</option>
-                                            <?php
-                                            foreach ($val['ddFromBus'] as $id => $arr) {
+                                            @php
+                                            if(isset($val['van_shift'])){
+                                            foreach ($val['van_shift'] as $id => $arr) {
                                                 $selected = "";
-                                                if ($id == $val['from_bus_id'])
+                                                if ($id == $val['van-shift'])
                                                     $selected = "selected=selected";
                                                 echo "<option $selected value='$id'>$arr</option>";
                                             }
-                                            ?>
+                                            }
+                                            @endphp
                                         </select>
                                         </div>
 
-                                         <div class="col-md-4 form-group">
+                                        <div class="col-md-4 form-group">
                                             <label>Distance </label>
-                                            <input type="text" id='first_name' required name="first_name"  class="form-control">
+                                            <input type="number" id='distance' name="distance"  class="form-control" value="{{ $val['distance'] ?? 0 }}">
+                                        </div>
+                                        <input type="hidden" name="transport_details" value="true">
+                                        <div class="col-md-4 form-group">
+                                            <label>Amount (Fix Shift Rate + Distance * KM Amount)</label>
+                                            @php
+                                            $km_amount = $distance = $shift_rate = $total_amt =0;
+                                            $distance=$val['distance'] ?? 0;
+                                            $shift_rate=$val['shift_rate'] ?? 0;
+                                            $km_amount=$val['km_amount'] ?? 0;
+                                            $total_amt = (($shift_rate+$distance)*$km_amount);
+                                            @endphp
+                                            <input type="text" id='amount' name="amount"  class="form-control" value="{{ $total_amt}}" readonly>
                                         </div>
                                         @endforeach
                                         </div>
+                                        <div class="col-md-4 form-group">
+                                        <center>
+                                        <input type="submit" class="btn btn-success" value="submit" name="submit">
+                                        </center>
+                                        </div>                                        
                                         </form>
                                     </div>
                                 </div>
                                 <!-- END LEAVE APPLICATION --> 
                                 
-                                <div id="overlay" style="display:none;"><img id="loading" src="https://i1.wp.com/cdnjs.cloudflare.com/ajax/libs/galleriffic/2.0.1/css/loader.gif"></div>
+                                <div id="overlay" style="display:none;"><img id="loading" src="https://i1.wp.com/cdnjs.cloudflare.com/ajax/libs/galleriffic/2.0.1/css/loader.gif">
+                                </div>
                             
                             </div>
                             <!-- /content -->
@@ -1879,7 +1901,18 @@ br {
        //END if once fees is paid for current year admission year,standard,student quota,academic section can't be edited
 
     });
+    function updateAmount() {
+            const distance = parseFloat($('#distance').val());
+            const shiftRate = parseFloat("{{ $val['shift_rate'] ?? 0 }}");
+            const kmAmount = parseFloat("{{ $val['km_amount'] ?? 0 }}");
+            const totalAmt = (shiftRate + distance) * kmAmount;
+            $('#amount').val(totalAmt.toFixed(2));
+        }
 
+        // Call the updateAmount function when the distance input is changed
+        $('#distance').on('input', function () {
+            updateAmount();
+        });
     function getUsername(){
 
         var first_name = document.getElementById("first_name").value;
