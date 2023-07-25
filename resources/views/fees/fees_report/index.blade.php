@@ -78,9 +78,6 @@
 								<th>{{App\Helpers\get_string('grno','request')}}</th>
 								<th>{{App\Helpers\get_string('studentname','request')}}</th>
 								<th>{{App\Helpers\get_string('std/div','request')}}</th>
-								@if(isset($data['fees_data']) && count($data['fees_data']) > 0 && isset($data['fees_data'][0]['batch']) && $data['fees_data'][0]['batch'] != '')
-    							<th>Batch</th>
-								@endif
 								<th>{{App\Helpers\get_string('studentquota','request')}}</th>
 								<th>{{App\Helpers\get_string('uniqueid','request')}}</th>
 								<th>Month</th>
@@ -108,9 +105,8 @@
 								<td>{{$j}}</td>
 								<td>{{$value['enrollment_no']}}</td>
 								<td>{{$value['student_name']}}</td>
-								<td>{{$value['standard_name']}} - {{$value['division_name']}}</td>
-								@if(isset($value['batch']))<td>{{$value['batch']}}</td>@endif	
-								<td>{{$value['quota']}}</td>															
+								<td>{{$value['standard_name']}} - {{$value['division_name']}} {{$value['batch']}}</td>
+								<td>{{$value['quota']}}</td>
 								<td>{{$value['uniqueid']}}</td>
 								<td>{{$data['months'][$value['term_id']]}}</td>
 								<td>{{$value['receipt_no']}}</td>
@@ -128,9 +124,6 @@
 								<td></td>
 								<td></td>
 								<td></td>
-								@if(isset($data['fees_data']) && $data['fees_data'][0]['batch']!='') 
-								<td></td>								
-								@endif
 								<td></td>
 								<td></td>								
 								<td></td>

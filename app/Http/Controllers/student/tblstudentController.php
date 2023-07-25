@@ -46,6 +46,7 @@ use function App\Helpers\FeeBreakoffHeadWise;
 use function App\Helpers\is_mobile;
 use App\Http\Controllers\fees\fees_collect\fees_collect_controller;
 use App\Http\Controllers\fees\fees_report\feesReportController;
+use App\Http\Controllers\transportation\map_student\map_student_controller;
 use Illuminate\Support\Facades\Session;
 
 class tblstudentController extends Controller
@@ -823,6 +824,13 @@ class tblstudentController extends Controller
 
         $OldData = $controller->getBk($request, $id);
         $FeesData = $controller->retrieveDataByUserId($request, '', $id);
+
+        //transport details 
+        $trans_controller = new map_student_controller;
+        $request = new Request(['id' => $id]);
+        $trans_details = $trans_controller->create($request);       
+        
+        // echo "<pre>";print_r($trans_details['stu_data']);exit;
         
         $res['paid_unpaid_fees'] = $OldData['total_fees'] ?? [];
         $res['stu_data'] = $OldData['stu_data'] ?? [];
@@ -847,7 +855,8 @@ class tblstudentController extends Controller
 		$res['city_data'] = $cityData;
 		$res['attendance_data'] = $attendanceData;
 		$res['stu_par_communication'] = $stuParCommunication;
-		$res['leave_application'] = $leaveApplication;
+        $res['leave_application'] = $leaveApplication;
+        $res['trans_details']=$trans_details['stu_data'];
 
 		return is_mobile($type, "student/edit_student", $res, "view");
 	}
