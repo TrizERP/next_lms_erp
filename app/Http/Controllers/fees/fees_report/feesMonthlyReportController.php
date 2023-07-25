@@ -143,11 +143,11 @@ class feesMonthlyReportController extends Controller
             ->join('tblstudent_enrollment as s', function ($join) {
                 $join->whereRaw('s.sub_institute_id = f.sub_institute_id AND f.student_id = s.student_id');
             })->leftJoin('fees_paid_other as fo', function ($join) {
-                $join->whereRaw('fo.sub_institute_id = f.sub_institute_id and fo.student_id = f.student_id and fo.month_id = f.term_id');
-            })->selectRaw("" . $columns . " DATE_FORMAT(f.receiptdate,'%Y-%m-%d') AS fees_date")
+                $join->whereRaw('fo.sub_institute_id = f.sub_institute_id and fo.student_id = f.student_id and fo.month_id = f.term_id AND fo.receiptdate=f.receiptdate');
+            })->selectRaw("" . $columns . " f.receiptdate AS fees_date")
             ->where('f.is_deleted', 'N')
             ->where('f.sub_institute_id', session()->get('sub_institute_id'))
-            ->whereRaw("DATE_FORMAT(f.receiptdate,'%Y-%m-%d') between '" . $from_date . "' AND '" . $to_date . "'");
+            ->whereRaw("f.receiptdate between '" . $from_date . "' AND '" . $to_date . "'");
         if ($grade != "") {
             $data = $data->where('s.grade_id', $grade);
         }
@@ -157,7 +157,7 @@ class feesMonthlyReportController extends Controller
         if ($division != "") {
             $data = $data->where('s.section_id', $division);
         }
-        $data = $data->groupByRaw("DATE_FORMAT(f.receiptdate,'%Y-%m-%d')")->get()->toArray();
+        $data = $data->groupByRaw("f.receiptdate")->get()->toArray();
 
         $data = json_decode(json_encode($data), true);
         foreach ($data as $key => $val) {
