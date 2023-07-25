@@ -1730,7 +1730,7 @@ br {
                                             @endphp
                                         </select>
                                         </div>
-                                        <div class="col-md-4 form-group">
+                                        <!-- <div class="col-md-4 form-group">
                                             <label>City </label>
                                             <input type="text" id='city' name="city" value="{{ $val['city'] }}" class="form-control" readonly>
                                         </div>
@@ -1742,7 +1742,7 @@ br {
                                          <div class="col-md-4 form-group">
                                             <label>Zip/Postal Code </label>
                                             <input type="text" id='zip' name="zip" class="form-control">
-                                        </div>
+                                        </div> -->
                                         <div class="col-md-4 form-group">
                                             <label>Van </label>
                                             <select name="values[{{$val['student_id']}}][van-shift]" id="van-shift" data-from_bus="$val['van-shift']" class="from_bus form-control" required data-studentid="{{$val['student_id']}}">
