@@ -15,6 +15,7 @@ use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\fees\fees_collect\fees_collect_controller;
 use App\Http\Controllers\AJAXController;
 use Illuminate\Support\Facades\Storage;
+use function App\Helpers\FeeMonthId;
 
 require('excel_upload/PHPExcel/IOFactory.php');
 require('excel_upload/PHPExcel/Shared/Date.php');
@@ -34,6 +35,7 @@ class s4excel_importController extends Controller {
 	{
 		$type = $request->input('type');		
 		$res = array();		
+		$res['fee_month'] = FeeMonthId();
 		
 		return is_mobile($type, "fees/NACH/show_s4_excel_import", $res, "view");
 	}
@@ -49,6 +51,7 @@ class s4excel_importController extends Controller {
 		$sub_institute_id = $request->session()->get('sub_institute_id');
 		$syear = $request->session()->get('syear');
 		$user_id = $request->session()->get('user_id');
+		$MONTH_ID = $request->input('month_id');
 
 		$NACH_master = DB::select("select * from fees_config_master f where f.sub_institute_id = '".$sub_institute_id."'");
 		$NACH_master = json_decode(json_encode($NACH_master[0]),true);
@@ -230,7 +233,7 @@ class s4excel_importController extends Controller {
 	                    $DAY = substr(trim($DATE),-2);
 	                    $FEES_DATE_VALUES_DB = $YEAR."-".$MONTH."-".$DAY." 12:00:00";
 	                    $FEES_CHEQUE_DD_DATE_VALUES_DB = $YEAR."-".$MONTH."-".$DAY;
-	                    $MONTH_ID = ltrim($MONTH, '0').$YEAR;	                   
+	                    //$MONTH_ID = ltrim($MONTH, '0').$YEAR;	                   
 
 	                    $STUDENT_FEES_AMOUNT = isset($value[10]) ? $value[10] : '';
 	                    
