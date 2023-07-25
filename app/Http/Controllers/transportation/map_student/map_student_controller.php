@@ -64,10 +64,6 @@ class map_student_controller extends Controller
             ->get()->toArray();
 
         $default_shift_id = $result[0]->shift_id ?? '';
-<<<<<<< HEAD
-        //END set default shift_from and shift_to
-=======
->>>>>>> 0166d278b4b488fe535673e6918c444aa2aec833
 
         $responce_arr = [];
 
