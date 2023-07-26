@@ -75,7 +75,7 @@ class ExcelDownloadController extends Controller implements FromCollection, With
 
         $headers = [
             'student_id',
-            'student_name',
+            'comment',
             'exam_id',
             'points',            
         ];
