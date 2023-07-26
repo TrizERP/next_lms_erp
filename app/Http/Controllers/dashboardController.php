@@ -111,7 +111,7 @@ class dashboardController extends Controller
                 $fees_collection = fees_collect::selectRaw('fees_collect.*,CONCAT_WS(" ",tblstudent.first_name,tblstudent.middle_name,tblstudent.last_name) as student_name,sum(amount) as total_fees')
                     ->join('tblstudent', 'tblstudent.id', '=', 'fees_collect.student_id')
                     ->where(['fees_collect.sub_institute_id' => $sub_institute_id, 'fees_collect.is_deleted' => "N"])
-                    ->whereRaw("date_format(fees_collect.created_date,'%Y-%m-%d') = '".$date."'")
+                    ->whereRaw("date_format(fees_collect.receiptdate,'%Y-%m-%d') = '".$date."'")
                     ->groupBy('payment_mode')
                     ->take(10)->get()->toArray();
                 
@@ -136,7 +136,7 @@ class dashboardController extends Controller
                     ->select('X.payment_mode', DB::raw('SUM(X.total_fees) as total_fees'))
                     ->groupBy('X.payment_mode')
                     ->get()->toArray();
-*/
+                */
                 $admissionBlock = DB::table("standard as s")
                     ->leftJoin("admission_enquiry as e", function ($join) {
                         $join->whereRaw('s.id = e.admission_standard and e.sub_institute_id=s.sub_institute_id');
@@ -303,7 +303,7 @@ class dashboardController extends Controller
                     ->join('standard as s', function ($join) {
                         $join->whereRaw("s.id = se.standard_id");
                     })
-                    ->whereRaw('DATE_FORMAT(fc.created_date, "%Y-%m-%d") = '.$today.' and fc.sub_institute_id = '.$sub_institute_id.' group by se.standard_id')
+                    ->whereRaw('DATE_FORMAT(fc.receiptdate, "%Y-%m-%d") = '.$today.' and fc.sub_institute_id = '.$sub_institute_id.' group by se.standard_id')
                     ->get()->toArray();
 
                 $parameters = array(
@@ -380,7 +380,7 @@ class dashboardController extends Controller
                     })
                     ->join('standard as s', function ($join) use ($syear) {
                         $join->whereRaw("s.id = se.standard_id");
-                    })->whereDate('fc.created_date', $today)
+                    })->whereDate('fc.receiptdate', $today)
                     ->where("fc.sub_institute_id", "=", $sub_institute_id)
                     ->where("fc.payment_mode", "=", "cash")
                     ->groupBy('se.standard_id')->get()->toArray();
@@ -399,7 +399,7 @@ class dashboardController extends Controller
                     })
                     ->join('standard as s', function ($join) {
                         $join->whereRaw("s.id = se.standard_id");
-                    })->whereDate('fc.created_date', $today)
+                    })->whereDate('fc.receiptdate', $today)
                     ->where("fc.sub_institute_id", "=", $sub_institute_id)
                     ->where("fc.payment_mode", "=", "cheque")
                     ->get()->toArray();
@@ -1071,12 +1071,12 @@ class dashboardController extends Controller
 
             $fees_collects = fees_collect::selectRaw("ifnull(sum(amount),0) as fees")
                 ->where(['sub_institute_id' => $sub_institute_id, 'syear' => $syear, 'is_deleted' => "N"])
-                ->whereRaw("date_format(created_date,'%Y-%m-%d') = '".$date."'")->get()->toArray();
+                ->whereRaw("date_format(receiptdate,'%Y-%m-%d') = '".$date."'")->get()->toArray();
 
 
             $other_fees_collects = DB::table('fees_paid_other')->selectRaw("IFNULL(SUM(actual_amountpaid),0) AS fees")
                 ->where(['sub_institute_id' => $sub_institute_id, 'syear' => $syear, 'is_deleted' => "N"])
-                ->whereRaw("DATE_FORMAT(created_date,'%Y-%m-%d') = '".$date."'")->get()->toArray();
+                ->whereRaw("DATE_FORMAT(receiptdate,'%Y-%m-%d') = '".$date."'")->get()->toArray();
             $other_fees_collects = json_decode(json_encode($other_fees_collects), true);
 
             if ($user_profile_name == 'Student') {
@@ -1477,14 +1477,14 @@ class dashboardController extends Controller
 
             $fees_collects = fees_collect::selectRaw("ifnull(sum(amount),0) as fees")
                 ->where(['sub_institute_id' => $sub_institute_id, 'syear' => $syear, 'is_deleted' => "N"])
-                ->whereRaw("date_format(created_date,'%Y-%m-%d') = '".$date."'")->get()->toArray();
+                ->whereRaw("date_format(receiptdate,'%Y-%m-%d') = '".$date."'")->get()->toArray();
 
 
             $other_fees_collects = DB::table('fees_paid_other')
                 ->selectRaw("IFNULL(SUM(actual_amountpaid),0) AS fees")
                 ->where('sub_institute_id', '=', $sub_institute_id)
                 ->where('syear', '=', $syear)
-                ->whereRaw("DATE_FORMAT(created_date,'%Y-%m-%d') = '".$date."'")
+                ->whereRaw("DATE_FORMAT(receiptdate,'%Y-%m-%d') = '".$date."'")
                 ->where('is_deleted', '=', 'N')->get()->toArray();
             $other_fees_collects = json_decode(json_encode($other_fees_collects), true);
 
@@ -1501,7 +1501,7 @@ class dashboardController extends Controller
                 tblstudent.last_name) as student_name,sum(amount) as total_fees')
                 ->join('tblstudent', 'tblstudent.id', '=', 'fees_collect.student_id')
                 ->where(['fees_collect.sub_institute_id' => $sub_institute_id, 'fees_collect.is_deleted' => "N"])
-                ->whereRaw("date_format(fees_collect.created_date,'%Y-%m-%d') = '".$date."'")
+                ->whereRaw("date_format(fees_collect.receiptdate,'%Y-%m-%d') = '".$date."'")
                 ->groupBy('payment_mode')
                ->take(10)->get()->toArray();
             
@@ -1611,7 +1611,7 @@ class dashboardController extends Controller
                     $join->whereRaw("s.id = se.standard_id");
                 })
                 ->selectRaw("sum(fc.amount) amount,s.name")
-                ->whereRaw('DATE_FORMAT(fc.created_date, "%Y-%m-%d") = '.$today.' and fc.sub_institute_id = '.$sub_institute_id)
+                ->whereRaw('DATE_FORMAT(fc.receiptdate, "%Y-%m-%d") = '.$today.' and fc.sub_institute_id = '.$sub_institute_id)
                 ->groupBy('se.standard_id')->get()->toArray();
 
             $parameters = array(
@@ -1689,7 +1689,7 @@ class dashboardController extends Controller
                     $join->whereRaw("s.id = se.standard_id");
                 })
                 ->selectRaw("fc.amount,s.name")
-                ->whereRaw('DATE_FORMAT(fc.created_date, "%Y-%m-%d") = '.$today.' and fc.sub_institute_id = '.$sub_institute_id)
+                ->whereRaw('DATE_FORMAT(fc.receiptdate, "%Y-%m-%d") = '.$today.' and fc.sub_institute_id = '.$sub_institute_id)
                 ->where('payment_mode', 'cash')
                 ->groupBy('se.standard_id')->get()->toArray();
 
@@ -1709,7 +1709,7 @@ class dashboardController extends Controller
                     $join->whereRaw("s.id = se.standard_id");
                 })
                 ->selectRaw("fc.amount,s.name")
-                ->whereRaw('DATE_FORMAT(fc.created_date, "%Y-%m-%d") = '.$today.' and fc.sub_institute_id = '.$sub_institute_id)
+                ->whereRaw('DATE_FORMAT(fc.receiptdate, "%Y-%m-%d") = '.$today.' and fc.sub_institute_id = '.$sub_institute_id)
                 ->where('payment_mode', 'cheque')
                 ->get()->toArray();
 
@@ -2192,13 +2192,13 @@ class dashboardController extends Controller
 
             $fees_collects = fees_collect::selectRaw("ifnull(sum(amount),0) as fees")->where([
                 'sub_institute_id' => $sub_institute_id, 'syear' => $syear, 'is_deleted' => "N",
-            ])->whereRaw("date_format(created_date,'%Y-%m-%d') = '".$date."'")->get()->toArray();
+            ])->whereRaw("date_format(receiptdate,'%Y-%m-%d') = '".$date."'")->get()->toArray();
 
             $other_fees_collects = DB::table('fees_paid_other')
                 ->selectRaw("IFNULL(SUM(actual_amountpaid),0) AS fees")
                 ->where('sub_institute_id', $sub_institute_id)
                 ->where('syear', $syear)
-                ->whereRaw("DATE_FORMAT(created_date,'%Y-%m-%d') = '".$date."'")
+                ->whereRaw("DATE_FORMAT(receiptdate,'%Y-%m-%d') = '".$date."'")
                 ->where('is_deleted', 'N')
                 ->get()->toArray();
             $other_fees_collects = json_decode(json_encode($other_fees_collects), true);

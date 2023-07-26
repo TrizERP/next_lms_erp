@@ -837,7 +837,11 @@ class tblstudentController extends Controller
 		$res['attendance_data'] = $attendanceData;
 		$res['stu_par_communication'] = $stuParCommunication;
         $res['leave_application'] = $leaveApplication;
+        if(isset($trans_details['stu_data'])){
         $res['trans_details']=$trans_details['stu_data'];
+    }else{
+        $res['trans_details']=[];
+    }
 
 		return is_mobile($type, "student/edit_student", $res, "view");
 	}
