@@ -64,7 +64,10 @@ class s3excel_exportController extends Controller {
         {
             $extra .= " AND f.standard_id = '".$standard."'";
         }
-
+        if($division != null)
+        {
+            $extra .= " AND se.section_id = '".$division."'";
+        }
         $NachData = DB::table('NACH_MASTER')->where('sub_institute_id',$sub_institute_id)->get()->toArray();
         $NachData = $NachData[0];        
 
@@ -123,7 +126,8 @@ class s3excel_exportController extends Controller {
 		$res['message'] = "Success";
 		$res['student_data'] = $studentData;
 		$res['excelFile_path'] = $excelFile_path;
-		$res['standard'] = $standard;
+        $res['division'] = $division;
+        $res['standard'] = $standard;
         $res['grade'] = $grade;
 		$res['month_id'] = $month_id;
         $res['fee_month'] = FeeMonthId();
@@ -163,10 +167,10 @@ class s3excel_exportController extends Controller {
 
     $objPHPExcel = new PHPExcel();
     $objPHPExcel->setActiveSheetIndex(0);
-    $rowCount = 1;
-    foreach ($excel_header as $id => $val) {
+    $rowCount = 0;
+    /*foreach ($excel_header as $id => $val) {
         $objPHPExcel->getActiveSheet()->SetCellValue($id . $rowCount, $val);
-    }
+    }*/
 
     foreach ($studentRet as $cnt => $arr) {
          $rowCount = $rowCount + 1;
@@ -245,7 +249,8 @@ class s3excel_exportController extends Controller {
                 default:
                     $set_value = "";
             }
-            $objPHPExcel->getActiveSheet()->SetCellValue($id . $rowCount, $set_value);
+            //$objPHPExcel->getActiveSheet()->SetCellValue($id . $rowCount, $set_value);
+            $objPHPExcel->getActiveSheet()->setCellValueExplicit($id . $rowCount, $set_value,'s');
         }
     }
     $objWriter = new PHPExcel_Writer_Excel2007($objPHPExcel);
