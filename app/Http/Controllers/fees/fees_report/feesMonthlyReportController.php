@@ -29,71 +29,6 @@ class feesMonthlyReportController extends Controller
         return is_mobile($type, 'fees/fees_report/fees_monthly_report', $res, "view");
     }
 
-    /**
-     * Show the form for creating a new resource.
-     *
-     * @param Request $request
-     * @return void
-     */
-    public function create(Request $request)
-    {
-        //
-    }
-
-    /**
-     * Store a newly created resource in storage.
-     *
-     * @param Request $request
-     * @return void
-     */
-    public function store(Request $request)
-    {
-    }
-
-    /**
-     * Display the specified resource.
-     *
-     * @param int $id
-     * @return void
-     */
-    public function show($id)
-    {
-        //
-    }
-
-    /**
-     * Show the form for editing the specified resource.
-     *
-     * @param int $id
-     * @return void
-     */
-    public function edit($id)
-    {
-        //
-    }
-
-    /**
-     * Update the specified resource in storage.
-     *
-     * @param Request $request
-     * @param int $id
-     * @return void
-     */
-    public function update(Request $request, $id)
-    {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     *
-     * @param int $id
-     * @return void
-     */
-    public function destroy($id)
-    {
-        //
-    }
 
     public function getfeesMonthlyReport(Request $request)
     {
@@ -107,15 +42,32 @@ class feesMonthlyReportController extends Controller
         $to_date = $request->input('to_date');
 
         $fees_title_result = DB::table('fees_title')
-            ->where('sub_institute_id', session()->get('sub_institute_id'))->orderBy('sort_order')->get()->toArray();
+            ->where('sub_institute_id', session()->get('sub_institute_id'))->where('syear',session()->get('syear'))->orderBy('sort_order')->get()->toArray();
         $fees_title_result = json_decode(json_encode($fees_title_result), true);
 
         $columns = "";
         $heading_arr = $report_data = array();
-        foreach ($fees_title_result as $key => $val) {
-            $columns .= " SUM(`" . $val['fees_title'] . "`) as total_" . $val['fees_title'] . ",";
-            $heading_arr[$val['fees_title']] = $val['display_name'];
-        }
+        // foreach ($fees_title_result as $key => $val) {
+        //     $columns .= " SUM(`" . $val['fees_title'] . "`) as total_" . $val['fees_title'] . ",";
+        //     $heading_arr[$val['fees_title']] = $val['display_name'];
+        // }
+
+            $discountAdded = false;
+            $fineAdded = false;
+
+            foreach ($fees_title_result as $key => $val) {
+                $columns .= "IFNULL(SUM(`" . $val['fees_title'] . "`),0) as total_" . $val['fees_title'] . ",";
+                $heading_arr[$val['fees_title']] = $val['display_name'];
+                
+                if (!$discountAdded) {
+                    $heading_arr[$val['fees_title'] . '_discount'] = "Discount";
+                    $discountAdded = true;
+                }
+                if (!$fineAdded) {
+                    $heading_arr[$val['fees_title'] . '_fine'] = "Fine";
+                    $fineAdded = true;
+                }
+            }
 
         $extra_query = "";
         if ($grade != "") {
@@ -143,11 +95,13 @@ class feesMonthlyReportController extends Controller
             ->join('tblstudent_enrollment as s', function ($join) {
                 $join->whereRaw('s.sub_institute_id = f.sub_institute_id AND f.student_id = s.student_id');
             })->leftJoin('fees_paid_other as fo', function ($join) {
-                $join->whereRaw('fo.sub_institute_id = f.sub_institute_id and fo.student_id = f.student_id and fo.month_id = f.term_id AND fo.is_deleted = "N"');
-            })->selectRaw("" . $columns . " DATE_FORMAT(f.receiptdate,'%Y-%m-%d') AS fees_date")
-            ->where('f.is_deleted', 'N')
+                $join->whereRaw('fo.sub_institute_id = f.sub_institute_id AND f.student_id = fo.student_id AND fo.is_deleted = "N" ');
+            })
+            ->selectRaw("" . $columns . "IFNULL(SUM(f.fees_discount),0) as total_tution_fee_discount,IFNULL(SUM(f.fine),0) as total_tution_fee_fine, DATE_FORMAT(f.receiptdate,'%Y-%m-%d') AS fees_date")
+            ->whereRaw('f.is_deleted = "N"')
             ->where('f.sub_institute_id', session()->get('sub_institute_id'))
-            ->whereRaw("DATE_FORMAT(f.receiptdate,'%Y-%m-%d') between '" . $from_date . "' AND '" . $to_date . "'");
+            ->where('f.syear',session()->get('syear'))
+            ->whereRaw("DATE_FORMAT(f.receiptdate,'%Y-%m-%d') BETWEEN '" . $from_date . "' AND '" . $to_date . "'");
         if ($grade != "") {
             $data = $data->where('s.grade_id', $grade);
         }
@@ -158,7 +112,7 @@ class feesMonthlyReportController extends Controller
             $data = $data->where('s.section_id', $division);
         }
         $data = $data->groupByRaw("DATE_FORMAT(f.receiptdate,'%Y-%m-%d')")->get()->toArray();
-
+        // dd($data->toSql());
         $data = json_decode(json_encode($data), true);
         foreach ($data as $key => $val) {
             $final_data[$val['fees_date']] = $val;
@@ -176,7 +130,7 @@ class feesMonthlyReportController extends Controller
             }
             $from_date_new = date("Y-m-d", strtotime("+1 day", strtotime($from_date_new)));
         }
-
+        // echo "<pre>";print_r($report_data);exit;
         $res['status_code'] = 1;
         $res['message'] = "Success";
         $res['heading_arr'] = $heading_arr;
