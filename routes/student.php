@@ -46,6 +46,7 @@ use App\Http\Controllers\student\tblstudentPastEducationController;
 use App\Http\Controllers\student\tblstudentTcController;
 use App\Http\Controllers\student\teacherIcardController;
 use App\Http\Controllers\student\transferStudentController;
+use App\Http\Controllers\student\studentBulkUpdateController;
 use Illuminate\Support\Facades\Route;
 
 
@@ -83,6 +84,7 @@ Route::group(['prefix' => 'student', 'middleware' => ['session', 'menu', 'logRou
     Route::resource('student_transfer', studentTransferController::class);
     Route::resource('rollover', rollOverController::class);
     Route::resource('house_automation', houseAutomationController::class);
+    Route::resource('student_bulk_update', studentBulkUpdateController::class);
 
     Route::get('selected_student_view', [rollOverController::class, 'selected_student_view'])->name("selected_student_view");
 
