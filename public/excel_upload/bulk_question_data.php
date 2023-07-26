@@ -55,10 +55,12 @@ if (isset($_REQUEST['submit'])) {
 
         $records_uploaded = $records_not_uploaded = 0;
         $problematic_reocords = "";
-
+        
+        if (!empty($dataArr) && is_array($dataArr)) {
         foreach ($dataArr as $key => $value) {
 
-            if ($value['Question'] != "") {
+            if (isset($value['Question']) && is_string($value['Question'])) {
+                $problematic_reocords .= "Question -  " . $value['Question'] . "<br><br>";            
 
                 //$url = 'https://getbloomslevel-o76ko55i2a-el.a.run.app';
                 $url = 'https://getbloomslevel-gyzqqaohja-el.a.run.app';
@@ -102,11 +104,14 @@ if (isset($_REQUEST['submit'])) {
                     //END Get Question Type ID
 
                     //START Get Question Level ID - LMS Mapping type is Difficulty Level
-                    $questionLevel = "SELECT * FROM lms_mapping_type WHERE name = '" . mysqli_real_escape_string($cn, $value['QuestionLevel']) . "'
-					AND parent_id = 9";
+                    $questionLevel = "SELECT id FROM lms_mapping_type WHERE name = '" . mysqli_real_escape_string($cn, $value['QuestionLevel']) . "' AND parent_id = 9 LIMIT 1";
                     $questionLevelArr = mysqli_query($cn, $questionLevel) or die(mysqli_error($cn));
-                    $question_level_id = mysqli_fetch_assoc($questionLevelArr);
-                    $question_level_id = $question_level_id['id'];
+                    $question_level_row  = mysqli_fetch_row($questionLevelArr);
+                    if ($question_level_row) {
+                        $question_level_id = $question_level_row[0]; // Assuming the ID is in the first column of the result
+                    } else {
+                        $question_level_id = 0;
+                    }
                     //END Get Question Level ID
 
                     //START Get Question Category ID - LMS Mapping type is Blooms Taxonomy
@@ -158,6 +163,10 @@ if (isset($_REQUEST['submit'])) {
                     $problematic_reocords .= "Question -  " . $value['Question'] . "<br><br>";
                 }
             }
+            else {
+
+            }
+        }
         }
 
     }
