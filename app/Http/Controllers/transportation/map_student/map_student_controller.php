@@ -24,6 +24,8 @@ class map_student_controller extends Controller
         }
 
         $data['data'] = [];
+        $data['area'] = $this->area();
+        $data['sel_area'] = $request->area;
         $type = $request->input('type');
 
         return is_mobile($type, "transportation/map_student/show", $data, "view");
@@ -34,20 +36,43 @@ class map_student_controller extends Controller
         $type = $request->input('type');
         $sub_institute_id = session()->get('sub_institute_id');
         $syear = session()->get('syear');
+        $grade=$name=$grno=$area="";
+
+        if(isset($_REQUEST['name'])){
+           $name =   $_REQUEST['name'];
+        }
+        
+        if(isset($_REQUEST['grno'])){
+            $grno =   $_REQUEST['grno'];
+         }
+         $stud_id = [];
+         
+        if(isset($_REQUEST['area'])){
+           $data =  map_student::where('from_stop',$_REQUEST['area'])->get()->toArray();
+            foreach($data as $val){
+                $stud_id[]=$val['student_id'];
+            }
+            $area =   $_REQUEST['area'];
+            
+         }
+        //  echo "<pre>";print_r($data);exit;
         if (isset($_REQUEST['grade'], $_REQUEST['standard'], $_REQUEST['division'])) {
-            $student_data = SearchStudent($_REQUEST['grade'], $_REQUEST['standard'], $_REQUEST['division']);
+            $student_data = SearchStudent($_REQUEST['grade'], $_REQUEST['standard'], $_REQUEST['division'],"","","",$name,"","",$grno, $stud_id);
         } else {
             if (isset($_REQUEST['grade'], $_REQUEST['standard'])) {
-                $student_data = SearchStudent($_REQUEST['grade'], $_REQUEST['standard']);
+                $student_data = SearchStudent($_REQUEST['grade'], $_REQUEST['standard'],"","","","",$name,"","",$grno, $stud_id);
             } else {
                 if (isset($_REQUEST['grade'])) {
-                    $student_data = SearchStudent($_REQUEST['grade']);
+                    $student_data = SearchStudent($_REQUEST['grade'],"","","","","",$name,"","",$grno, $stud_id);
+                }elseif(isset($_REQUEST['area'])){
+                    $student_data = SearchStudent("", "","", "", "", "",$name,"","",$grno, $stud_id);
                 }
             }
         }
-        $grade=0;
+       
         if(isset($request->id)){
-            $student_data = SearchStudent("", "","", "", "", "", "", "", "",  "",$request->id);
+            $ids = [$request->id];
+            $student_data = SearchStudent("", "","", "", "", "", "", "", "",  "",$ids);
             $grade = $student_data[0]['grade_id'];          
         }else{
             $grade = $_REQUEST['grade'];
@@ -201,6 +226,7 @@ class map_student_controller extends Controller
         if(isset($request->id)){
             return $responce_arr;
         }else{
+            $responce_arr['area']=$area;
             return is_mobile($type, "transportation/map_student/add", $responce_arr, "view");
         }
     }
