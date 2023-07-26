@@ -522,6 +522,7 @@ class s4excel_importController extends Controller {
 			$res['status_code'] = 0;
 			$res['message'] = "Please select file to import fees";
 		}
+		$res['fee_month'] = FeeMonthId();
 		
 		return is_mobile($type, "fees/NACH/show_s4_excel_import", $res, "view");
 	}
