@@ -76,6 +76,7 @@ class studentReportController extends Controller
         $tblcustom_fields['father_name'] = 'Father Name';
         $tblcustom_fields['mother_name'] = 'Mother Name';
         $tblcustom_fields['gender'] = 'Gender';
+        $tblcustom_fields['studentbatch'] = 'Batch';
         $tblcustom_fields['dob'] = 'Birthdate';
         $tblcustom_fields['email'] = 'Email';
         $tblcustom_fields['username'] = 'Username';
@@ -158,12 +159,11 @@ class studentReportController extends Controller
 
         $array = [
             'standard.name as standard', 'division.name as division', 'academic_section.title as grade',
-            'tblstudent.id as id', 'CONCAT(transport_vehicle.title, " (", transport_vehicle.school_shift, ")") as van',
+            'tblstudent.id as id',
         ];
         $header = [
             'standard'     => get_string('standard','request'), 'division' => get_string('division','request'), 'grade' => get_string('academicsection','request'),
             'student_name' => 'Student Name',
-            'van'          => 'Van(Shift Wise)',
         ];//,'id' => 'Stu_ID'
 
         $searchArr = ['_'];
@@ -172,12 +172,11 @@ class studentReportController extends Controller
         if ($request->input('dynamicFields') == '') {
             $array = [
                 'standard.name as standard', 'division.name as division', 'academic_section.title as grade',
-                'tblstudent.id as id', 'CONCAT(transport_vehicle.title, " (", transport_vehicle.school_shift, ")") as van',
+                'tblstudent.id as id',
             ];
             $header = [
                 'standard'     => get_string('standard','request'), 'division' => get_string('division','request'), 'grade' => get_string('academicsection','request'),
                 'student_name' => 'Student Name',
-                'van'          => 'Van(Shift Wise)',
             ];//'id' => 'Stu_ID',
             // $res['status_code'] = 0;
             // $res['message'] = "Please select one checkbox atlease to view report";
@@ -204,7 +203,8 @@ class studentReportController extends Controller
             $array[] = 'CONCAT(transport_vehicle.vehicle_number, " (", transport_school_shift.shift_title, ")") as van';
             $array[] = 'tblstudent.place_of_birth as place_of_birth';
             $array[] = 'tblstudent.student_mobile as studentmobile';
-            $array[] = 'GROUP_CONCAT(IFNULL(subject.subject_name, "-")) as optional_subjects';            
+            $array[] = 'GROUP_CONCAT(IFNULL(subject.subject_name, "-")) as optional_subjects';
+            $array[] = 'batch.title as studentbatch';            
         }
         $array[] = 'concat_ws(" ",tblstudent.first_name,tblstudent.middle_name,tblstudent.last_name) AS student_name';
 
@@ -224,6 +224,7 @@ class studentReportController extends Controller
             ->leftjoin('student_quota', 'student_quota.id', '=', 'tblstudent_enrollment.student_quota')
             ->leftjoin('caste', 'caste.id', '=', 'tblstudent.cast')
             ->leftjoin('blood_group', 'blood_group.id', '=', 'tblstudent.bloodgroup')
+            ->leftjoin('batch', 'tblstudent.studentbatch', '=', 'batch.id')
             ->leftjoin('transport_map_student', 'transport_map_student.student_id', '=', 'tblstudent.id')
             //->leftjoin('transport_vehicle', 'transport_vehicle.id', '=', 'transport_map_student.from_bus_id')
             ->leftjoin('transport_vehicle', function($join) {
