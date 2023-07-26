@@ -72,7 +72,7 @@
                     <div class="col-lg-12 col-sm-12 col-xs-12">
                         <div class="table-responsive">
                             <table class="table table-box table-bordered">
-                                <thead>
+                                <!--<thead>
                                 <tr>
                                     <th data-toggle="tooltip" title="Sr.No.">Sr.No.</th>
                                     <th data-toggle="tooltip" title="ACH Transaction Code (2) M">ACH Transaction Code
@@ -111,10 +111,10 @@
                                     </th>
                                     <th data-toggle="tooltip" title="UMRN (20) M">UMRN (20) M</th>
                                 </tr>
-                                </thead>
+                                </thead>-->
                                 <tbody>
                                 @php
-                                    $j=1;
+                                    $j=-1;
                                 @endphp
                                 @if(count($student_data) > 0)
                                     @foreach($student_data as $key => $studata)
