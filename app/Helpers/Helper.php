@@ -712,7 +712,7 @@ if (!function_exists('SearchStudent')) {
             });
         }
         if($stud_id !=''){
-            $query->where('ts.id',$stud_id);
+            $query->whereIn('ts.id',$stud_id);
         }
         $columns = explode(',', $select_fields);
         $columns[] = "s.name as standard_name";
