@@ -24,6 +24,8 @@ class map_student_controller extends Controller
         }
 
         $data['data'] = [];
+        $data['area'] = $this->area();
+        $data['sel_area'] = $request->area;
         $type = $request->input('type');
 
         return is_mobile($type, "transportation/map_student/show", $data, "view");
@@ -34,59 +36,81 @@ class map_student_controller extends Controller
         $type = $request->input('type');
         $sub_institute_id = session()->get('sub_institute_id');
         $syear = session()->get('syear');
+        $grade=$name=$grno=$area="";
+
+        if(isset($_REQUEST['name'])){
+           $name =   $_REQUEST['name'];
+        }
+        
+        if(isset($_REQUEST['grno'])){
+            $grno =   $_REQUEST['grno'];
+         }
+         $stud_id = [];
+         
+        if(isset($_REQUEST['area'])){
+           $data =  map_student::where('from_stop',$_REQUEST['area'])->get()->toArray();
+            foreach($data as $val){
+                $stud_id[]=$val['student_id'];
+            }
+            $area =   $_REQUEST['area'];
+            
+         }
+        //  echo "<pre>";print_r($data);exit;
         if (isset($_REQUEST['grade'], $_REQUEST['standard'], $_REQUEST['division'])) {
-            $student_data = SearchStudent($_REQUEST['grade'], $_REQUEST['standard'], $_REQUEST['division']);
+            $student_data = SearchStudent($_REQUEST['grade'], $_REQUEST['standard'], $_REQUEST['division'],"","","",$name,"","",$grno, $stud_id);
         } else {
             if (isset($_REQUEST['grade'], $_REQUEST['standard'])) {
-                $student_data = SearchStudent($_REQUEST['grade'], $_REQUEST['standard']);
+                $student_data = SearchStudent($_REQUEST['grade'], $_REQUEST['standard'],"","","","",$name,"","",$grno, $stud_id);
             } else {
                 if (isset($_REQUEST['grade'])) {
-                    $student_data = SearchStudent($_REQUEST['grade']);
+                    $student_data = SearchStudent($_REQUEST['grade'],"","","","","",$name,"","",$grno, $stud_id);
+                }elseif(isset($_REQUEST['area'])){
+                    $student_data = SearchStudent("", "","", "", "", "",$name,"","",$grno, $stud_id);
                 }
             }
         }
-        $grade=0;
-        if (isset($request->id)) {
-            $student_data = SearchStudent("", "", "", "", "", "", "", "", "", "", $request->id);
-            $grade = !empty($student_data) ? $student_data[0]['grade_id'] : 0;
-        } else {
+       
+        if(isset($request->id)){
+            $ids = [$request->id];
+            $student_data = SearchStudent("", "","", "", "", "", "", "", "",  "",$ids);
+            $grade = $student_data[0]['grade_id'];          
+        }else{
             $grade = $_REQUEST['grade'];
         }
 
         //START set default shift_from and shift_to
         $result = DB::table("academic_section as a")
-        ->join('transport_school_shift as s', function ($join) {
-            $join->whereRaw("s.sub_institute_id = a.sub_institute_id");
-        })
-        ->selectRaw('*,s.id as shift_id')
-        ->where("a.sub_institute_id", "=", session()->get('sub_institute_id'))
-        ->where("a.id", "=", $grade)
-        ->get()->toArray();
+            ->join('transport_school_shift as s', function ($join) {
+                $join->whereRaw("s.sub_institute_id = a.sub_institute_id");
+            })
+            ->selectRaw('*,s.id as shift_id')
+            ->where("a.sub_institute_id", "=", session()->get('sub_institute_id'))
+            ->where("a.id", "=", $grade)
+            ->get()->toArray();
 
-        $default_shift_id = !empty($result) ? $result[0]->shift_id : '';
+        $default_shift_id = $result[0]->shift_id ?? '';
 
         $responce_arr = [];
 
         foreach ($student_data as $id => $arr) {
+
             $responce_arr['stu_data'][$id]['sr.no'] = $id + 1;
-            $responce_arr['stu_data'][$id]['name'] = $arr['first_name'] . ' ' . $arr['middle_name'] . ' ' . $arr['last_name'];
+            $responce_arr['stu_data'][$id]['name'] = $arr['first_name'].' '.$arr['middle_name'].' '.$arr['last_name'];
             $responce_arr['stu_data'][$id]['student_id'] = $arr['student_id'];
             $responce_arr['stu_data'][$id]['mobile'] = $arr['mobile'];
-            $responce_arr['stu_data'][$id]['std-div'] = $arr['standard_name'] . " / " . $arr['division_name'];
+            $responce_arr['stu_data'][$id]['std-div'] = $arr['standard_name']." / ".$arr['division_name'];
             $responce_arr['stu_data'][$id]['enrollment_no'] = $arr['enrollment_no'];
-        
-            if (isset($request->id)) {
+
+            if(isset($request->id)){
                 $responce_arr['stu_data'][$id]['address'] = $arr['address'];
                 $responce_arr['stu_data'][$id]['city'] = $arr['city'];
                 $responce_arr['stu_data'][$id]['state'] = $arr['state'];
             }
-        
             $matchThese = [
                 "syear"            => session()->get('syear'),
                 "student_id"       => $arr['student_id'],
                 "sub_institute_id" => session()->get('sub_institute_id'),
             ];
-        
             $results = map_student::where($matchThese)->get()->toArray();
 
             if (count($results) > 0) {
@@ -180,7 +204,7 @@ class map_student_controller extends Controller
                     "tv.sub_institute_id" => session()->get('sub_institute_id'),
                     "tv.school_shift"     => $default_shift_id,
                 ];
-        
+
                 $bus = DB::table('transport_vehicle as tv')
                     ->where($where)
                     ->pluck('tv.title', 'tv.id');
@@ -202,6 +226,7 @@ class map_student_controller extends Controller
         if(isset($request->id)){
             return $responce_arr;
         }else{
+            $responce_arr['area']=$area;
             return is_mobile($type, "transportation/map_student/add", $responce_arr, "view");
         }
     }
