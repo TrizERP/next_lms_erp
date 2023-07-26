@@ -18,6 +18,14 @@
                 <h4 class="page-title">S4-NACH Excel Import</h4>
             </div>
         </div>
+        @php
+            $month_id = '';
+            if(isset($data['month_id']))
+            {
+                $month_id = $data['month_id'];
+            }
+
+        @endphp
         <div class="card">
 
             <!-- <div class="alert alert-success alert-block">
@@ -27,6 +35,15 @@
             <form action="{{ route('NACH_s4excel_import.store') }}" enctype='multipart/form-data' method='post'>
                 @csrf
                 <div class="row">
+                    <div class="col-md-4 form-group ml-0 mr-0">
+                        <label>Month</label>
+                        <select id="month_id" name="month_id" class="form-control" required>
+                            <option value="">Select</option>
+                            @foreach ($data['fee_month'] as $id => $val)
+                                <option value="{{$id}}" @if($month_id == $id) selected @endif>{{$val}}</option>
+                            @endforeach
+                        </select>
+                    </div>
                     <div class="col-md-4 form-group ml-0 mr-0">
                         <label>Select File</label>
 

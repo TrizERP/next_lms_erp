@@ -38,6 +38,7 @@ class ExcelDownloadController extends Controller implements FromCollection, With
   // new
     public function create(Request $request)
     {
+        // return $request;exit;
       // Previous code...
         $type = $request->input('type');
         $syear = session()->get('syear');
@@ -67,8 +68,7 @@ class ExcelDownloadController extends Controller implements FromCollection, With
             ->where('se.section_id', $division)
             ->groupByRaw('s.id')->get()->toArray();
 
-        $exam_name = DB::table('question_paper')->where(['sub_institute_id' => $sub_institute_id, 'syear' => $syear])->where('grade_id', $grade)->where('subject_id', $subject)->whereIn('id', $exams)
-            ->where('standard_id', $standard)->select('paper_name', 'total_marks')->get();
+        $exam_name = DB::table('result_create_exam')->whereIn('id', $exams)->select('title as paper_name', 'points as total_marks')->get();
 
         $headers = [
             'Student Id',

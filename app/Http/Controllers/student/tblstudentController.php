@@ -397,26 +397,7 @@ class tblstudentController extends Controller
         return $data;
     }
 
-    /**
-     * Display the specified resource.
-     *
-     * @param  int  $id
-     * @return void
-     */
-    public function show($id)
-    {
-        //
-    }
 
-    /**
-     * Show the form for editing the specified resource.
-     *
-     * @param  Request  $request
-     * @param  int  $id
-     * @throws ContainerExceptionInterface
-     * @throws NotFoundExceptionInterface
-     * @return Response
-     */
     public function edit(Request $request, $id)
     {
         $type = $request->input('type');
@@ -856,11 +837,48 @@ class tblstudentController extends Controller
 		$res['attendance_data'] = $attendanceData;
 		$res['stu_par_communication'] = $stuParCommunication;
         $res['leave_application'] = $leaveApplication;
+        if(isset($trans_details['stu_data'])){
         $res['trans_details']=$trans_details['stu_data'];
+    }else{
+        $res['trans_details']=[];
+    }
 
 		return is_mobile($type, "student/edit_student", $res, "view");
 	}
 
+    public function update_transport(Request $request,$id){
+		$sub_institute_id = $request->session()->get('sub_institute_id');
+		$syear = $request->session()->get('syear');
+        $type = $request->input('type');        
+        // Access the 'from_stop' value associated with the given ID
+        // return $request;exit;
+        
+        $area = $request['values'][$id]['from_stop'];
+        $van_shift = explode('-',$request['values'][$id]['van-shift']);
+        $distance = $request['distance'];
+        $amount = $request['amount'];
+
+        $update_arr = [
+            "from_stop"=>$area,
+            "to_stop"=>$area,          
+            "from_bus_id"=>$van_shift[0],
+            "to_bus_id"=>$van_shift[0],
+            "from_shift_id"=>$van_shift[1],
+            "to_shift_id"=>$van_shift[1],   
+            "distance"=>$distance,       
+            "amount"=>$amount,     
+            "updated_at"=>now(),  
+        ];
+
+        $data = DB::table('transport_map_student')->where(['sub_institute_id'=>$sub_institute_id,'syear'=>$syear,'student_id'=>$id])->update($update_arr);
+        $res['status_code'] = 1;
+		$res['message'] = "Student updated successfully.";
+        $res['data'] = $data;
+
+		// return is_mobile($type, "search_student.index", $res);
+		return $res;
+		// return redirect()->back();
+    }
     /**
      * Update the specified resource in storage.
      *
@@ -873,8 +891,13 @@ class tblstudentController extends Controller
 		$sub_institute_id = $request->session()->get('sub_institute_id');
 		$term_id = $request->session()->get('term_id');
 		$syear = $request->session()->get('syear');
-		$type = $request->input('type');
-
+        $type = $request->input('type');
+        
+        if(isset($request->transport_details)){
+        $send_data = $this->update_transport($request,$id);
+        $res['status_code'] = $send_data['status_code'];
+        $res['message'] = $send_data['message'];        
+        }else{
 		$file_name = $ext = $file_size = "";
 		if ($request->hasFile('student_image')) {
 			$file = $request->file('student_image');
@@ -963,7 +986,8 @@ class tblstudentController extends Controller
 
 		$res['status_code'] = 1;
 		$res['message'] = "Student updated successfully.";
-		$res['data'] = $data;
+        $res['data'] = $data;
+    }
 		// return is_mobile($type, "search_student.index", $res);
 		// return redirect()->route('add_student.show', $res);
 		return redirect()->back();
