@@ -60,7 +60,7 @@
                                             <option value="Bonafide">Bonafide Certificate</option>
                                             <option value="Character Certificate">Character Certificate</option>
                                             <option value="Transfer Certificate">Transfer Certificate</option>
-                                            <option value="Student Fees Certificate">Student Fees Certificate</option>                                            
+                                            <option value="Fees Statement">Fees Statement</option>                                            
                                         </select>
                                     </div>
                                     <div class="col-md-4 form-group">
