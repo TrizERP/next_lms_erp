@@ -132,6 +132,7 @@ class monthlyBreakoffController extends Controller
                                     'month_id'=>$next_month_id,
                                     'amount'=>$amount,
                                     'sub_institute_id'=>$sub_institute_id,
+                                    'created_at'=>now()
                                 ]);
                                 $add_data++;
                             }
@@ -160,10 +161,8 @@ class monthlyBreakoffController extends Controller
                             'amount'=>$amount,
                             'sub_institute_id'=>$sub_institute_id,
                         ];
-                      
-                            $insert = DB::table('fees_breackoff')->insert($arr,[
-                            'created_at'=>now()                                
-                            ]);
+                            $arr['created_at'] = now();                      
+                            $insert = DB::table('fees_breackoff')->insert($arr);
                             $add_data++;
                             
                     }

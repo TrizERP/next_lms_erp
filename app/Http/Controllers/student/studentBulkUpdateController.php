@@ -15,6 +15,7 @@ use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\NotFoundExceptionInterface;
 use function App\Helpers\is_mobile;
 use function App\Helpers\SearchStudent;
+use function App\Helpers\FeeMonthId;
 use Illuminate\Support\Str;
 
 class studentBulkUpdateController extends Controller
@@ -34,7 +35,7 @@ class studentBulkUpdateController extends Controller
         $get_student_enrollments = tblstudentEnrollmentModel::where(['sub_institute_id' => $sub_institute_id, 'syear' => $syear])->whereNull('end_date')->get()->toArray();
 
         $res['get_student_enrollments'] = $get_student_enrollments;
-
+        $res['bk_month'] = FeeMonthId(); 
         return is_mobile($type, "student/student_bluk_update", $res, "view");
     }
 
@@ -51,110 +52,73 @@ class studentBulkUpdateController extends Controller
         $sub_institute_id = session()->get('sub_institute_id');
         $syear = session()->get('syear');
         $type = $request->get('type');
-
-        $get_student_enrollments = tblstudentEnrollmentModel::where(['sub_institute_id' => $sub_institute_id, 'syear' => $syear])->whereNull('end_date')->get();
-
-        foreach ($get_student_enrollments as $get_student_enrollment) {
+        $bk_months=$request->bk_month;
+        // return $request;exit;
+        if($request->has('tables')){
+          $get_student_enrollments = tblstudentEnrollmentModel::where(['sub_institute_id' => $sub_institute_id, 'syear' => $syear])->whereNull('end_date')->get();
+            foreach ($get_student_enrollments as $get_student_enrollment) {
             $get_student_enrollment->end_date = date('Y-m-d');
             $get_student_enrollment->save();
+            }
+            if(!empty($get_student_enrollments)){
+                $res['status'] = "1";
+                $res['message'] = "Inactive Student Bulk Updated Successfully.";
+            }else{
+                $res['status'] = "0";
+                $res['message'] = "Student are already Inactive.";
+            }
+        }elseif($request->has('bk_month')){
+            $bk_data = DB::table('fees_breackoff')->where(['sub_institute_id' => $sub_institute_id, 'syear' => $syear])->whereIn('month_id',$bk_months)->get()->toArray();
+            if(!empty($bk_data)){
+                foreach($bk_months as $id=>$mon){
+                    $get_array = DB::table('fees_breackoff')->where(['sub_institute_id' => $sub_institute_id, 'syear' => $syear])->where('month_id',$mon)->get()->toArray(); 
+
+                    foreach($get_array as $key=>$val){
+                        $amount = $val->amount;
+                        $admission_year =$val->admission_year;  
+                        $standard_id = $val->standard_id;    
+                        $fee_type_id = $val->fee_type_id;
+                        $student_quota = $val->quota;   
+                        $grade_id = $val->grade_id;
+                        $month_id = $val->month_id;                        
+                        $arr=[
+                            'syear'=>$syear,
+                            'sub_institute_id'=>$sub_institute_id,
+                            'admission_year'=>$admission_year,
+                            'fee_type_id'=>$fee_type_id,
+                            'quota'=>$student_quota,
+                            'grade_id'=>$grade_id,
+                            'standard_id'=>$standard_id,                                    
+                            'section_id'=>0,
+                            'month_id'=>$month_id,
+                            'amount'=>$amount,
+                            'sub_institute_id'=>$sub_institute_id,
+                        ];
+                    $check_in = DB::table('fees_breackoff_logs')->where($arr)->get()->toArray();
+
+                      if(empty($check_in)){
+                        $arr['created_at'] = now();
+                        $insert = DB::table('fees_breackoff_logs')->insert($arr);
+                      } 
+
+                      $delete = DB::table('fees_breackoff')->where(['sub_institute_id' => $sub_institute_id, 'syear' => $syear])->where('month_id',$mon)->delete(); 
+                    }
+                }
+                $res['status'] = "1";
+                $res['message'] = "Deleted Successfully.";
+            }else{
+                $res['status'] = "0";
+                $res['message'] = "No Breakoff Found.";
+            }
+        }else{
+            $res['status'] = "0";
+            $res['message'] = "No Changes Made.";
         }
 
-        $res['status'] = "1";
-        $res['message'] = "Data Student Bulk Updated Successfully.";
+        $res['sel_bk_month'] = $bk_months;
+        // return $request;exit;
 
         return is_mobile($type, "student_bulk_update.index", $res, "redirect");
-    }
-
-    /**
-     * Display the specified resource.
-     *
-     * @param  int  $id
-     * @return void
-     */
-    public function show($id)
-    {
-        //
-    }
-
-    /**
-     * Show the form for editing the specified resource.
-     *
-     * @param  int  $id
-     * @return void
-     */
-    public function edit($id)
-    {
-        //
-    }
-
-    /**
-     * Update the specified resource in storage.
-     *
-     * @param  Request  $request
-     * @param  int  $id
-     * @return void
-     */
-    public function update(Request $request, $id)
-    {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     *
-     * @param  int  $id
-     * @return void
-     */
-    public function destroy($id)
-    {
-        //
-    }
-
-    public function ajax_toAcademicSections(Request $request)
-    {
-        $to_sub_institute_id = $request->input("to_sub_institute_id");
-
-        return academic_sectionModel::where(['sub_institute_id' => $to_sub_institute_id])->get()->toArray();
-    }
-
-    public function ajax_toStandards(Request $request)
-    {
-        $to_academic_section = $request->input("to_academic_section");
-
-        return standardModel::where(['grade_id' => $to_academic_section])->get()->toArray();
-    }
-
-    public function ajax_toDivisions(Request $request)
-    {
-        $to_standard = $request->input("to_standard");
-
-        return std_div_mappingModel::select('division.*')
-            ->join("division", function ($join) {
-                $join->on("division.id", "=", "std_div_map.division_id")
-                    ->on("division.sub_institute_id", "=", "std_div_map.sub_institute_id");
-            })
-            ->where(['std_div_map.standard_id' => $to_standard])
-            ->get()->toArray();
-    }
-
-    public function selected_student_view()
-    {
-        $sub_institute_id = session()->get('sub_institute_id');
-        $from_institute_details = school_setupModel::where(['id' => $sub_institute_id])->get()->toArray();
-        $from_institute_name = '';
-        if (count($from_institute_details) > 0) {
-            $from_institute_name = $from_institute_details[0]['SchoolName'];
-        }
-        $type='';
-        $to_academic_sections = academic_sectionModel::where(['sub_institute_id' => $sub_institute_id])->get()->toArray();
-
-        $res['status'] = 1;
-        $res['message'] = "Success";
-        $res['to_academic_sections'] = $to_academic_sections;
-        $res['from_institute_name'] = $from_institute_name;
-        return is_mobile($type, "student.show_rollover_selected_students", $res, "view");
-
-        // return view('student/show_rollover_selected_students', $res);
     }
 
 }
