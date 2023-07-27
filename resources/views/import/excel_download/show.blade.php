@@ -29,7 +29,7 @@
 
                             <div class="col-md-4 form-group">
                                 <label for="title">Select Exam:</label>
-                                <select name="exam_id[]" id="exam" class="form-control" multiple>
+                                <select name="exam_id" id="exam" class="form-control">
                                     <option value="">Select</option>
                                 </select>
                             </div>

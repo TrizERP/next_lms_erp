@@ -25,16 +25,10 @@
                     <form action="{{ route('map_student.store') }}" enctype="multipart/form-data" method="post">
                         {{ method_field("POST") }}
                         {{csrf_field()}}
-                        <!--                        <center>
-                            <h3>
-                                SMS Text
-                            </h3>
-                        </center>-->
-                        <!--<center><textarea name="smsText" required></textarea></center><br><br>-->
+                
                         <div class="table-responsive">
                             <table class="table-bordered table" id="myTable" width="100%">
                                 <tr>
-                                    <!--<th><input type="checkbox" name="all" id="ckbCheckAll" class="ckbox">  </th>-->
                                     <th></th>
                                     <th>Sr. No.</th>
                                     <th>Student Name</th>
@@ -49,10 +43,8 @@
                                     <th>To</th>
                                 </tr>
                                 @php
-
                                 $arr = $data['stu_data'];
                                 foreach ($arr as $id=>$col_arr){
-                                    // dd($col_arr);
                                 @endphp
                                 <tr>
                                     <td><input type="checkbox" name="@php echo 'values['.$col_arr['student_id'].'][ckbox]'; @endphp" class="ckbox1">  </td>
@@ -62,85 +54,84 @@
                                     <td>{{$col_arr['enrollment_no']}}</td>
                                     <td>@php echo $col_arr['mobile']; @endphp</td>
                                     <td>
-                                        <select name="values[<?php echo $col_arr['student_id']; ?>][from_shift]" disabled="true" id="from_shift" data-from_shift="$col_arr['from_shift_id']" class="form-control from_shift" required>
+                                        <select name="values[{{$col_arr['student_id']}}][from_shift]" disabled="true" id="from_shift" data-from_shift="$col_arr['from_shift_id']" class="form-control from_shift" required>
                                             <option value="">--Select--</option>
-                                            <?php
+                                            @php
                                             foreach ($col_arr['ddShift'] as $id => $arr) {
                                                 $selected = "";
                                                 if ($id == $col_arr['from_shift_id'])
                                                     $selected = "selected=selected";
                                                 echo "<option $selected value='$id'>$arr</option>";
                                             }
-                                            ?>
+                                            @endphp
                                         </select>
                                     </td>
                                     <td>
-                                        <select name="values[<?php echo $col_arr['student_id']; ?>][from_bus]" disabled="true" id="from_bus" data-from_bus="$col_arr['from_bus_id']" class="from_bus form-control" required data-studentid="{{$col_arr['student_id']}}">
+                                        <select name="values[{{$col_arr['student_id']}}][from_bus]" disabled="true" id="from_bus" data-from_bus="$col_arr['from_bus_id']" class="from_bus form-control" required data-studentid="{{$col_arr['student_id']}}">
                                             <option value="">--Select--</option>
-                                            <?php
+                                            @php
                                             foreach ($col_arr['ddFromBus'] as $id => $arr) {
                                                 $selected = "";
                                                 if ($id == $col_arr['from_bus_id'])
                                                     $selected = "selected=selected";
                                                 echo "<option $selected value='$id'>$arr</option>";
                                             }
-                                            ?>
+                                            @endphp
                                         </select>
                                         <span class="remain_capacity_success"></span>
                                     </td>
                                     <td>
-                                        <select name="values[<?php echo $col_arr['student_id']; ?>][from_stop]" disabled="true" id="from_stop" class="from_stop form-control" required data-studentid="{{$col_arr['student_id']}}">
+                                        <select name="values[{{ $col_arr['student_id'] }}][from_stop]" disabled="true" id="from_stop" class="from_stop form-control" required data-studentid="{{$col_arr['student_id']}}">
                                             <option value="">--Select--</option>
-                                            <?php
+                                            @php
                                             foreach ($col_arr['ddFrom'] as $id => $arr) {
                                                 $selected = "";
                                                 if ($id == $col_arr['from_stop'])
                                                     $selected = "selected=selected";
                                                 echo "<option $selected value='$id'>$arr</option>";
                                             }
-                                            ?>
+                                            @endphp
                                         </select>
                                     </td>
                                     <td>
-                                        <select name="values[<?php echo $col_arr['student_id']; ?>][to_shift]" disabled="true" id="to_shift" class="form-control to_shift" required>
+                                        <select name="values[{{$col_arr['student_id']}}][to_shift]" disabled="true" id="to_shift" class="form-control to_shift" required>
                                             <option value="">--Select--</option>
-                                            <?php
+                                            @php
                                             foreach ($col_arr['ddShift'] as $id => $arr) {
                                                 $selected = "";
                                                 if ($id == $col_arr['to_shift_id'])
                                                     $selected = "selected=selected";
                                                 echo "<option $selected value='$id'>$arr</option>";
                                             }
-                                            ?>
+                                            @endphp
                                         </select>
                                     </td>
                                     <td>
-                                        <select name="values[<?php echo $col_arr['student_id']; ?>][to_bus]" disabled="true" id="to_bus" class="to_bus form-control" required>
+                                        <select name="values[{{$col_arr['student_id']}}][to_bus]" disabled="true" id="to_bus" class="to_bus form-control" required>
                                             <option value="">--Select--</option>
-                                            <?php
+                                            @php
                                             foreach ($col_arr['ddToBus'] as $id => $arr) {
                                                 $selected = "";
                                                 if ($id == $col_arr['to_bus_id'])
                                                     $selected = "selected=selected";
                                                 echo "<option $selected value='$id'>$arr</option>";
                                             }
-                                            ?>
+                                            @endphp
                                         </select>
                                     </td>
                                     <td>
-                                        <select name="values[<?php echo $col_arr['student_id']; ?>][to_stop]" disabled="true" id="to_stop" class="to_stop form-control" required>
+                                        <select name="values[{{$col_arr['student_id']}}][to_stop]" disabled="true" id="to_stop" class="to_stop form-control" required>
                                             <option value="">--Select--</option>
-                                            <?php
+                                            @php
                                             foreach ($col_arr['ddTo'] as $id => $arr) {
                                                 $selected = "";
                                                 if ($id == $col_arr['to_stop'])
                                                     $selected = "selected=selected";
                                                 echo "<option $selected value='$id'>$arr</option>";
                                             }
-                                            ?>
+                                            @endphp
                                         </select>
                                     </td>
-
                                 </tr>
                                 @php
                                 }

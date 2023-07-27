@@ -60,33 +60,29 @@ class ExcelDownloadController extends Controller implements FromCollection, With
                 $join->whereRaw('st.id = se.standard_id AND st.sub_institute_id = se.sub_institute_id');
             })->leftJoin('division as d', function ($join) {
                 $join->whereRaw('d.id = se.section_id AND d.sub_institute_id = se.sub_institute_id');
-            })->selectRaw("s.id,s.roll_no,s.enrollment_no,CONCAT_WS(' ',s.first_name,s.middle_name,s.last_name) AS student_name,
-          CONCAT_WS('/',st.name,d.name) AS std")
+            })->selectRaw("s.enrollment_no,CONCAT_WS(' ',s.first_name,s.middle_name,s.last_name) AS student_name,
+          e.title as exam_id")
+          ->leftJoin('result_create_exam as e',function($join) use ($exams){
+              $join->whereRaw('se.standard_id = e.standard_id AND se.sub_institute_id = e.sub_institute_id AND se.syear = e.syear')->where('e.id',$exams);
+          })
             ->where(['s.sub_institute_id' => $sub_institute_id, 'se.syear' => $syear])
             ->where('se.grade_id', $grade)
             ->where('se.standard_id', $standard)
             ->where('se.section_id', $division)
             ->groupByRaw('s.id')->get()->toArray();
 
-        $exam_name = DB::table('result_create_exam')->whereIn('id', $exams)->select('title as paper_name', 'points as total_marks')->get();
+        // $exam_name = DB::table('result_create_exam')->whereIn('id', $exams)->select('title as paper_name', 'points as total_marks')->get();
 
         $headers = [
-            'Student Id',
-            'Roll No',
-            'Gr No.',
-            'Student Name',
-            'STD/DIV',
+            'student_id',
+            'comment',
+            'exam_id',
+            'points',            
         ];
 
-      // Add the exam_name to the headers array
-        foreach ($exam_name as $exam) {
-            $headers[] = $exam->paper_name . "(" . $exam->total_marks . ")";
-        }
-          // return $headers;exit;
-
+    
         $this->data = $data;
         $this->headers = $headers;
-        $this->exam_name = $exam_name;
 
       // Export the data to Excel
         return Excel::download($this, 'Result_Marks.xlsx');
@@ -114,15 +110,11 @@ class ExcelDownloadController extends Controller implements FromCollection, With
 
     public function map($row) : array
     {
-        // Map the data to match the column headers
-        // You need to modify this based on your data structure
+       
         return [
-            $row->id,
-            $row->roll_no,
             $row->enrollment_no,
             $row->student_name,
-            $row->std,
-            // Add other data fields here...
+            $row->exam_id,
         ];
     }
 

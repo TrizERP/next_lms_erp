@@ -7,7 +7,7 @@
     <div class="container-fluid">
         <div class="row bg-title">
             <div class="col-lg-3 col-md-4 col-sm-4 col-xs-12">
-                <h4 class="page-title">Transportation Report</h4>
+                <h4 class="page-title">Vanwise Report</h4>
             </div>
         </div>
         <div class="row" style=" margin-top: 25px;">
@@ -24,6 +24,7 @@
                         <thead>
                             <tr>
                                 <th>SR No</th>
+                                <th>Gr No.</th>
                                 <th>Name</th>
                                 <th>Std/Div</th>
                                 <th>Mobile</th>
@@ -31,8 +32,8 @@
                                 <th>Route Name</th>
                                 <th>Bus</th>
                                 <th>Stop</th>
-                                <th>Conductor</th>
                                 <th>Driver</th>
+                                <th>Conductor</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -43,6 +44,7 @@
 
                             <tr>
                                 <td>{{$j++}}</td>
+                                <td>{{$data->enrollment_no}}</td>
                                 <td>{{$data->name}}</td>
                                 <td>{{$data->stddiv}}</td>
                                 <td>{{$data->mobile}}</td>
@@ -50,8 +52,8 @@
                                 <td>{{$data->route_name}}</td>
                                 <td>{{$data->bus_name}}</td>
                                 <td>{{$data->stop_name}}</td>
-                                <td>{{$data->conductor}}</td>
                                 <td>{{$data->driver}}</td>
+                                <td>{{$data->conductor}}</td>
                             </tr>
                             @endforeach
 
@@ -100,7 +102,7 @@
         buttons: [ 
             { 
                 extend: 'pdfHtml5',
-                title: 'Transportation Report',
+                title: 'Vanwise Report',
                 orientation: 'landscape',
                 pageSize: 'LEGAL',                
                 pageSize: 'A0',
@@ -108,9 +110,9 @@
                      columns: ':visible'                             
                 },
             }, 
-            { extend: 'csv', text: ' CSV', title: 'Transportation Report' }, 
-            { extend: 'excel', text: ' EXCEL', title: 'Transportation Report' }, 
-            { extend: 'print', text: ' PRINT', title: 'Transportation Report' }, 
+            { extend: 'csv', text: ' CSV', title: 'Vanwise Report' }, 
+            { extend: 'excel', text: ' EXCEL', title: 'Vanwise Report' }, 
+            { extend: 'print', text: ' PRINT', title: 'Vanwise Report' }, 
             'pageLength' 
         ], 
         }); 
