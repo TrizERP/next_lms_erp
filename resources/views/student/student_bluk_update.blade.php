@@ -6,12 +6,13 @@
     <div class="container-fluid">
         <div class="row bg-title">
             <div class="col-lg-3 col-md-4 col-sm-4 col-xs-12">
-                <h4 class="page-title">Student Bulk Update</h4>
+                <h4 class="page-title">Inactive Student Bulk Update</h4>
             </div>
         </div>
         <div class="card">
             <div class="row mb-2">     
         </div>  
+        @php $field =Session::get('data'); @endphp
         @if ($sessionData = Session::get('data'))
             @if($sessionData['status'] == 1)
                 <div class="alert alert-success alert-block">
@@ -39,15 +40,31 @@
                             <tr>
                                 <td>Can all students inactive</td>
                                 <td>
-                                    <input type="checkbox" id="student_bluk_update" value="" name="tables">
+                                    <input type="checkbox" id="student_bluk_update" value="1" name="tables">
                                 </td>
                             </tr>
+                            <tr>
+                            <td>Delete Fees Breakoff</td>
+                            <td>	
+                            <div class="col-md-4 form-group" style="margin-left: 0px !important">
+							<select id='bk_month' name="bk_month[]" class="form-control" multiple>
+								<option>--Select BK Month--</option>
+                                @if(isset($data['bk_month'])) 
+                                @foreach($data['bk_month'] as $key => $value)
+								<option value="{{$key}}" @if(isset($field['sel_bk_month']) && in_array($key,$field  ['sel_bk_month'])) selected @endif>{{$value}}</option>
+								@endforeach 
+                                @endif
+							</select>
+						</div>
+                        </td>
+                        </tr>
+
                             </tbody>
                         </table>
                     </div>
                     <div class="col-sm-12 form-group mt-3">
                         <center>
-                            <input type="submit" name="submit" value="Student Bulk Update Data" class="btn btn-success">
+                            <input type="submit" name="submit" value="Submit" class="btn btn-success">
                         </center>
                     </div>
                 </form>
@@ -56,37 +73,5 @@
     </div>
 
     @include('includes.footerJs')
-    <script>
-        /* $('#submit_student_bulk_update_form').submit(function () {
-            var selected_tables = $("input[name='tables']:checked").length;
-            if (selected_tables < 1) {
-                alert("Please Select Atleast Table for Student Bluk Update.");
-                return false;
-            } else {
-                return true;
-            }
-        }); */
 
-        document.getElementById('submit_student_bulk_update_form').addEventListener('submit', function(event) {
-            var checkbox = document.getElementById('student_bluk_update');
-
-            if (!checkbox.checked) {
-                alert('Please Select Atleast Table for Student Bluk Update.');
-                event.preventDefault();
-            }
-        });
-
-        /* $('input[name="tblstudent_enrollment"]:radio').change(function () {
-            var selected_radio_value = $(this).attr("value");
-            if (selected_radio_value == 'selected_students') {
-                var tables_arr = new Array();
-                $.each($("input[name='tables[]']:checked"), function () {
-                    tables_arr.push($(this).val());
-                });
-
-            window.location.href = "{{ route('selected_student_view') }}"+"?tables="+tables_arr+"&tblstudent_enrollment_value="+selected_radio_value;
-        }
-    }); */
-
-</script>
 @include('includes.footer')
