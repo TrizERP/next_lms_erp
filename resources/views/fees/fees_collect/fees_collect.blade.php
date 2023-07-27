@@ -361,11 +361,11 @@
 										<td>
 											@if(in_array(session()->get('sub_institute_id'),$sub_institute_id) )
 
-											<input type="text" name="fees_data[fine]" id="cheque_return_charges1" class="form-control cheque_return_charges1" value="@if(date('d') >= 5 && $total_amt!=0) 100 @else {{$cheque_return_charges0}} @endif" >
+											<input type="text" name="fees_data[fine]" id="cheque_return_charges1" class="form-control cheque_return_charges1" value="@if(date('d') >= 5 && $total_amt!=0) {{$data['fees_config_data']['late_fees_amount']}} @else {{$cheque_return_charges0}} @endif" >
 											<!-- <input type="hidden" name="hidden_cheque_return_charges"
                                                                id="hidden_cheque_return_charges" class="form-control"
                                                                value="@if(isset($cheque_return_charges) && $cheque_return_charges>0){{ $cheque_return_charges}};@else {{$data['cheque_return_charges'][0]}} @endif"> -->
-											<input type="hidden" name="hidden_cheque_return_charges" id="hidden_cheque_return_charges" class="form-control cheque_return_charges1" value="100"> @else
+											<input type="hidden" name="hidden_cheque_return_charges" id="hidden_cheque_return_charges" class="form-control cheque_return_charges1" value="{{$data['fees_config_data']['late_fees_amount']}}"> @else
 											<input type="text" name="fees_data[fine]" id="cheque_return_charges" class="form-control" value="@php if(isset($cheque_return_charges0)) echo $cheque_return_charges0; @endphp"
 											 readonly="readonly">
 											<input type="hidden" name="hidden_cheque_return_charges" id="hidden_cheque_return_charges" class="form-control" value="@if(isset($cheque_return_charges0)){{$cheque_return_charges0}}@endif"> @endif
