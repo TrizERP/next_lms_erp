@@ -343,7 +343,7 @@ br{
                                         @if (Str::contains($data2['question_title'], '<img '))
                                             {!! $data2['question_title'] !!} {{-- Display the image --}}
                                         @else
-                                            {{ $data2['question_title'] }} {{-- Display the text --}}
+                                            {!! $data2['question_title'] !!} {{-- Display the text --}}
                                         @endif
                                     </td>
                                     <td>{{$data2['chapter_name']}}</td>
