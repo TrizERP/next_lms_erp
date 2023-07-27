@@ -47,6 +47,7 @@ use App\Http\Controllers\student\tblstudentTcController;
 use App\Http\Controllers\student\teacherIcardController;
 use App\Http\Controllers\student\transferStudentController;
 use App\Http\Controllers\student\studentBulkUpdateController;
+use App\Http\Controllers\student\studentOptionalSubjectController;
 use Illuminate\Support\Facades\Route;
 
 
@@ -85,6 +86,7 @@ Route::group(['prefix' => 'student', 'middleware' => ['session', 'menu', 'logRou
     Route::resource('rollover', rollOverController::class);
     Route::resource('house_automation', houseAutomationController::class);
     Route::resource('student_bulk_update', studentBulkUpdateController::class);
+    Route::resource('student_optional_subject', studentOptionalSubjectController::class);
 
     Route::get('selected_student_view', [rollOverController::class, 'selected_student_view'])->name("selected_student_view");
 
@@ -100,6 +102,7 @@ Route::group(['prefix' => 'student', 'middleware' => ['session', 'menu', 'logRou
 
     Route::resource('student_change_request_type', studentChangeRequestTypeController::class);
     Route::post('show_search_student', [studentSearchController::class, 'searchStudent'])->name("show_search_student");
+    Route::post('show_search_student_optional_subject', [studentOptionalSubjectController::class, 'searchStudentOptionalSubject'])->name("show_search_student_optional_subject");
     Route::post('show_student_report', [studentReportController::class, 'searchStudent'])->name("show_student_report");
     Route::resource('missing_document_report', missingDocumentReportController::class);
     Route::resource('inactive_student_report', InactiveStudentReportController::class);
