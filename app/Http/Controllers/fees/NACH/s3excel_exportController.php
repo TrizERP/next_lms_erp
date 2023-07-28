@@ -102,7 +102,7 @@ class s3excel_exportController extends Controller {
             '' AS PRODUCT_TYPE,'' AS BENEFICIARY_ADHAAR_NUMBER,M.UMRN
             FROM (
             
-                SELECT s.id,s.enrollment_no,CONCAT_WS(' ',s.first_name,s.middle_name,s.last_name) AS full_name,
+                SELECT s.id,s.enrollment_no,CONCAT_WS(' ',s.first_name,s.last_name) AS full_name,
                 se.student_quota,f.month_id,bd.ac_type,bd.ac_holder_name,bd.ifsc_code,bd.ac_number,bd.UMRN,
                 f.amount AS totalFees,fc.amount AS paid_amount from tblstudent s 
                 INNER JOIN tblstudent_enrollment se ON se.student_id = s.id 
