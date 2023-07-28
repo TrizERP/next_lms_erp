@@ -455,47 +455,14 @@ class circularController extends Controller
         }
     }
 
-    /**
-     * Display the specified resource.
-     *
-     * @param  int  $id
-     * @return void
-     */
-    public function show($id)
-    {
-        //
-    }
-
-    /**
-     * Show the form for editing the specified resource.
-     *
-     * @param  int  $id
-     * @return void
-     */
-    public function edit($id)
-    {
-        //
-    }
-
-    /**
-     * Update the specified resource in storage.
-     *
-     * @param  Request  $request
-     * @param  int  $id
-     * @return void
-     */
-    public function update(Request $request, $id)
-    {
-        //
-    }
-
+ 
     public function destroy(Request $request, $id)
     {
         $type = $request->input('type');
         DB::table('circular')->where(["Id" => $id])->delete();
 
         $res = [
-            "status_code" => 1,
+            "status" => 1,
             "message"     => "Data Deleted",
         ];
 

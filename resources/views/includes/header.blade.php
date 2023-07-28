@@ -211,6 +211,7 @@ $academicTerms = session()->get('academicTerms');
                         $search = $all_segments[1] ?? $all_segments[0];
                         $bread = DB::table('tblmenumaster')->whereRaw('link LIKE "'.$search.'%"')->get();
                         $i = 1;
+                       request()->session()->put('current_menu_id', $bread[0]->id ?? '');		
                     @endphp
                     @if(count($bread)>0)
                     @php

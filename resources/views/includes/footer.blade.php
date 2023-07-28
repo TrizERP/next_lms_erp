@@ -13,6 +13,56 @@
 	});
 </script>
 </body>
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  document.querySelectorAll("form").forEach(function (form) {
+    form.querySelectorAll("button[type='submit'], input[type='submit']").forEach(function (submitButton) {
+      submitButton.addEventListener("click", function (event) {
+        event.preventDefault();
+
+        const isSubmitAction = submitButton.matches("[name='submit']");
+        const isSearchAction = submitButton.matches("[name='search']");
+        const isDeleteAction = submitButton.matches("[name='delete']");
+        const isEditAction = submitButton.matches("[name='edit']");
+
+        const menu_id = {{ session()->get('current_menu_id') }};
+
+        fetch("{{ route('check_permissions') }}", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            menu_id: menu_id,
+          }),
+        })
+        .then((response) => response.json())
+        .then((data) => {
+          console.log(menu_id);
+          console.log(data.can_add);
+		  const submitFormFunction = Object.getPrototypeOf(form).submit;
+          if ((isSubmitAction && data.can_add === 1) || 
+              (isSearchAction && data.can_view === 1) || 
+              (isDeleteAction && data.can_delete === 1) || 
+              (isEditAction && data.can_edit === 1)) {
+				submitFormFunction.call(form);
+          } else {
+            let actionName = isDeleteAction ? "delete" : isEditAction ? "edit" : "perform this action";
+            alert(`You don't have rights to ${actionName}.`);
+          }
+        })
+        .catch((error) => {
+          console.error("Error checking permissions:", error);
+          alert("Error checking permissions. Please try again later.");
+        });
+      });
+    });
+  });
+});
+
+
+</script>
+
 	<script>
 		function setSession(item,object)
 		{
@@ -20,9 +70,9 @@
 			xhttp.onreadystatechange = function() {
 				if (this.readyState == 4 && this.status == 200) {
 					location.reload();
-					var form = document.querySelector('form');
-					if (form) {
-						form.submit();
+					var form_session = document.querySelector('form');
+					if (form_session) {
+						form_session.submit();
 					}
 				}
 			};
