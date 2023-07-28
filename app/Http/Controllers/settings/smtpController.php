@@ -101,7 +101,7 @@ class smtpController extends Controller
         $type = $request->input('type');
         if ($type == "API") {
             $sub_institute_id = $_REQUEST['sub_institute_id'];
-            $syear = $_REQUEST['syear'];
+            //$syear = $_REQUEST['syear'];
             $user_id = $_REQUEST['teacher_id'];
             try {
                 if (! $this->jwtToken()->validate()) {
@@ -122,9 +122,8 @@ class smtpController extends Controller
 
      
         $where_arr = [
-            "sub_institute_id" => $sub_institute_id,
-            "syear"=>$syear,
-        ];
+            "sub_institute_id" => $sub_institute_id
+        ];//            "syear"=>$syear,
         $smtp_details = DB::table('smtp_details')
             ->where($where_arr)
             ->get();

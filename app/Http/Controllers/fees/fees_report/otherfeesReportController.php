@@ -52,11 +52,12 @@ class otherfeesReportController extends Controller
 
         $other_head_title_column = "";
         foreach ($other_fee_title as $key => $val) {
-            $other_head_title_column .= "sum(fp." . $val->fees_title . ") as sum_" . $val->fees_title . ",";
+            //$other_head_title_column .= "sum(fp." . $val->fees_title . ") as sum_" . $val->fees_title . ",";
+            $other_head_title_column .= "fp." . $val->fees_title . " as sum_" . $val->fees_title . ",";
         }
 
         $extraSearchArray = array();
-        $extraSearchArrayRaw = " 1=1 ";
+        $extraSearchArrayRaw = " fp.is_deleted='N' AND 1=1 ";
 
         if ($grade != '') {
             $extraSearchArray['tblstudent_enrollment.grade_id'] = $grade;
@@ -83,7 +84,7 @@ class otherfeesReportController extends Controller
             ->join('fees_paid_other as fp', 'fp.student_id', '=', 'tblstudent_enrollment.student_id')
             ->where($extraSearchArray)
             ->whereRaw($extraSearchArrayRaw)
-            ->groupby('tblstudent_enrollment.student_id')
+            //->groupby('tblstudent_enrollment.student_id')
             ->get()
             ->toArray();
 
