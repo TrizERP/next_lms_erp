@@ -105,7 +105,11 @@
 								<td>{{$j}}</td>
 								<td>{{$value['enrollment_no']}}</td>
 								<td>{{$value['student_name']}}</td>
-								<td>{{$value['standard_name']}} - {{$value['division_name']}} {{$value['batch']}}</td>
+								<td>{{$value['standard_name']}} - {{$value['division_name']}} {{$value['batch']}}
+							@if (Session::get('sub_institute_id') == '257')
+							  {{$value['place_of_birth']}}
+							@endif
+								</td>
 								<td>{{$value['quota']}}</td>
 								<td>{{$value['uniqueid']}}</td>
 								<td>{{$data['months'][$value['term_id']]}}</td>
