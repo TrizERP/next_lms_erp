@@ -94,12 +94,13 @@
                                         foreach($data['heading_arr'] as $hkey => $hval)
                                         {
                                             $hname = 'total_'.$hkey;
-                                            if( isset($rval[$hname]) )
+                                            if(isset($rval[$hname]) )
                                             {
                                                 echo "<th>".$rval[$hname]."</th>";
                                                 $total += $rval[$hname];
                                                 $$hkey += $rval[$hname];
-                                            }else
+                                            }
+                                            else
                                             {
                                                 echo "<th>0</th>";
                                             }

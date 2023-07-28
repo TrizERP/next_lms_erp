@@ -40,9 +40,9 @@ class studentStrengthReportController extends Controller
             'division.name as division_name',
             'tblstudent.sub_institute_id',
             DB::raw('COUNT(tblstudent.id) as total_students')
-        )
-        ->where('standard.name', '!=', 'Nursery')
-        ->orWhere('standard.name', '1');
+        );
+        // ->where('standard.name', '!=', 'Nursery')
+        // ->orWhere('standard.name', '1');
        // Add group by date, standard, and division
        if(!in_array('division',$request['standard_wise']) ){
             $query->groupBy('standard.name');

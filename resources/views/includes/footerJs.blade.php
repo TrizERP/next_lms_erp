@@ -357,14 +357,22 @@
 
       // });
   }
+  window.addEventListener("beforeunload", function () {
+  // This code will be executed just before the page is unloaded (refreshed or navigated away)
+  var current_id = 1; // Replace this with the appropriate value for 'menu_id'
+  var xhttp = new XMLHttpRequest();
+  xhttp.open("GET", "{{ route('check_access') }}?type=API&menu_id=" + current_id, true);
+  xhttp.send();
+});
 
   function redirect_pages_soni(x, menu_id, main_menu_id,current_id) {
       
       localStorage.setItem('menu_id', menu_id);
       localStorage.setItem('main_menu_id', main_menu_id);
-      localStorage.setItem('current_id', current_id);      
-      
+      localStorage.setItem('current_id', current_id);   
+    
       window.location.replace(x);
+   
   }
 
   function load_rightside_menu(menu_id, main_menu_id) {

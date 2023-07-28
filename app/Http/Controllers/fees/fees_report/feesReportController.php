@@ -158,7 +158,7 @@ class feesReportController extends Controller
         ->Join('fees_collect as fp', 'fp.student_id', '=', 'te.student_id')
         ->leftJoin('tbluser as u', 'fp.created_by', '=', 'u.id')
     
-        ->selectRaw('t.id as student_id, t.enrollment_no, t.roll_no, t.uniqueid, '
+        ->selectRaw('t.id as student_id, t.enrollment_no, t.roll_no, t.uniqueid, t.place_of_birth, '
             .DB::raw("CONCAT_WS(' ', t.first_name, t.middle_name, t.last_name) as student_name").', g.title as grade, s.name as standard_name, d.name as division_name, fp.created_date, '
             .DB::raw('CONCAT_WS(" ", u.first_name, u.last_name) AS user_name, fp.term_id, fp.receiptdate, fp.receipt_no, fp.payment_mode, '
             .'fp.cheque_bank_name, fp.bank_branch, fp.cheque_no, fp.cheque_date, b.title as batch, sq.title as quota, '
@@ -184,9 +184,9 @@ class feesReportController extends Controller
       
     ->leftJoin('fees_paid_other as fo', 'fo.student_id', '=', 'te.student_id')
     ->leftJoin('tbluser as u', 'fo.created_by', '=', 'u.id')
-    ->selectRaw('t.id as student_id, t.enrollment_no, t.roll_no, t.uniqueid, '
+    ->selectRaw('t.id as student_id, t.enrollment_no, t.roll_no, t.uniqueid, t.place_of_birth, '
         .DB::raw("CONCAT_WS(' ', t.first_name, t.middle_name, t.last_name) as student_name").', g.title as grade, s.name as standard_name, d.name as division_name, NULL AS created_date, '
-        .DB::raw('CONCAT_WS(" ", u.first_name, u.last_name) AS user_name, fo.month_id AS term_id, fo.receiptdate AS receiptdate, fo.reciept_id AS receipt_no, NULL AS payment_mode, '
+        .DB::raw('CONCAT_WS(" ", u.first_name, u.last_name) AS user_name, fo.month_id AS term_id, fo.receiptdate AS receiptdate, fo.reciept_id AS receipt_no, fo.payment_mode AS payment_mode, '
         .'fo.bank_name as cheque_bank_name, fo.bank_branch, fo.cheque_dd_no as cheque_no, fo.cheque_dd_date AS cheque_date, b.title as batch, sq.title as quota, '
         .'IFNULL(fo.actual_amountpaid, 0) AS actual_amountpaid')
     )

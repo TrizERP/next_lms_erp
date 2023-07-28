@@ -120,7 +120,7 @@
 										</tr>
 										<tr>
 										<tr>
-											<td>{{ App\Helpers\get_string('studentname','request')}}<span id="menuId" style="display:none"></span><a href="{{route('norm-clature.create')}}"><i class="mdi mdi-lead-pencil"></i></a></td>
+											<td>{{ App\Helpers\get_string('studentname','request')}}<i class="mdi mdi-lead-pencil"></i></td>
 											<td>
 												{{ $data['stu_data']['name']; }}
 											</td>
@@ -138,7 +138,7 @@
 											</td>
 										</tr>
 										<tr>
-											<td>{{ App\Helpers\get_string('studentquota','request')}}<span id="menuId" style="display:none"></span><a href="{{route('norm-clature.create')}}"><i class="mdi mdi-lead-pencil"></i></a></td>
+											<td>{{ App\Helpers\get_string('studentquota','request')}}<i class="mdi mdi-lead-pencil"></i></td>
 											<td>
 												{{ $data['stu_data']['student_quota']; }}
 											</td>
@@ -156,7 +156,7 @@
 											</td>
 										</tr>
 										<tr>
-											<td>{{ App\Helpers\get_string('std/div','request')}}<span id="menuId" style="display:none"></span><a href="{{route('norm-clature.create')}}"><i class="mdi mdi-lead-pencil"></i></a></td>
+											<td>{{ App\Helpers\get_string('std/div','request')}}<i class="mdi mdi-lead-pencil"></i></td>
 											<td>
 												{{ $data['stu_data']['stddiv']; }}
 											</td>
@@ -266,7 +266,7 @@
 													<th style="width: 10%;padding-left: 15px;">Amount</th>
 													<th style="width: 20%;padding-left: 15px;">Collection Amount
 													</th>
-													<th style="width: 20%;padding-left: 15px;">{{ App\Helpers\get_string('Discount','request') }}<span id="menuId" style="display:none"></span><a href="{{route('norm-clature.create')}}"><i class="mdi mdi-lead-pencil"></i></a></th>
+													<th style="width: 20%;padding-left: 15px;">{{ App\Helpers\get_string('Discount','request') }}<i class="mdi mdi-lead-pencil"></i></th>
 													<th style="width: 20%;padding-left: 15px;">Fine</th>
 												</tr>
 												@php
@@ -361,11 +361,11 @@
 										<td>
 											@if(in_array(session()->get('sub_institute_id'),$sub_institute_id) )
 
-											<input type="text" name="fees_data[fine]" id="cheque_return_charges1" class="form-control cheque_return_charges1" value="@if(date('d') >= 5 && $total_amt!=0) 100 @else {{$cheque_return_charges0}} @endif" >
+											<input type="text" name="fees_data[fine]" id="cheque_return_charges1" class="form-control cheque_return_charges1" value="@if(date('d') >= 5 && $total_amt!=0) {{$data['fees_config_data']['late_fees_amount']}} @else {{$cheque_return_charges0}} @endif" >
 											<!-- <input type="hidden" name="hidden_cheque_return_charges"
                                                                id="hidden_cheque_return_charges" class="form-control"
                                                                value="@if(isset($cheque_return_charges) && $cheque_return_charges>0){{ $cheque_return_charges}};@else {{$data['cheque_return_charges'][0]}} @endif"> -->
-											<input type="hidden" name="hidden_cheque_return_charges" id="hidden_cheque_return_charges" class="form-control cheque_return_charges1" value="100"> @else
+											<input type="hidden" name="hidden_cheque_return_charges" id="hidden_cheque_return_charges" class="form-control cheque_return_charges1" value="{{$data['fees_config_data']['late_fees_amount']}}"> @else
 											<input type="text" name="fees_data[fine]" id="cheque_return_charges" class="form-control" value="@php if(isset($cheque_return_charges0)) echo $cheque_return_charges0; @endphp"
 											 readonly="readonly">
 											<input type="hidden" name="hidden_cheque_return_charges" id="hidden_cheque_return_charges" class="form-control" value="@if(isset($cheque_return_charges0)){{$cheque_return_charges0}}@endif"> @endif
@@ -486,7 +486,7 @@
 											<tr>
 												<th>Sr No.</th>
 												<th>GR No.</th>
-												<th>{{App\Helpers\get_string('StudentName','request')}}<span id="menuId" style="display:none"></span><a href="{{route('norm-clature.create')}}"><i class="mdi mdi-lead-pencil"></i></a></th>
+												<th>{{App\Helpers\get_string('StudentName','request')}}<i class="mdi mdi-lead-pencil"></i></th>
 												<th>Std-Div</th>
 												<th>Uniqueid</th>
 												<th>Month</th>

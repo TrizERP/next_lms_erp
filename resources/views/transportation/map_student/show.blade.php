@@ -29,7 +29,36 @@
                                 {{ App\Helpers\SearchChain('4','single','grade,std,div') }}                            
                             </div>
                         </div>
+                        <div class="col-md-12 form-group">
+                            <div class="row">
+                        <div class="col-md-4 form-group">
+                            <label>{{App\Helpers\get_string('StudentName','request')}}</label>
+                            <input type="text" id='name' name="name" value="@if(isset($data['name'])){{ $data['name'] }} @endif" class="form-control" placeholder="Enter {{App\Helpers\get_string('StudentName','request')}}">
+                        </div>
 
+                        <div class="col-md-4 form-group">
+                            <label>{{App\Helpers\get_string('grno','request')}}</label>
+                            <input type="text" id='grno' name="address" value="@if(isset($data['grno'])){{ $data['grno'] }}@endif" class="form-control" placeholder="Enter {{App\Helpers\get_string('grno','request')}}">
+                        </div>
+
+                        <div class="col-md-4 form-group">
+                        <label>Area </label>                                        
+                        <select name="area" id="from_stop" class="from_stop form-control">
+                            <option value="">--Select--</option>
+                            @php
+                            if(isset($data['area'])){
+                            foreach ($data['area'] as $id => $arr) {
+                                $selected = "";
+                                if ($id == $data['sel_area'])
+                                    $selected = "selected=selected";
+                                echo "<option $selected value='$id'>$arr</option>";
+                            }
+                            }
+                            @endphp
+                        </select>
+                        </div>
+                        </div>
+                        </div>
                         <div class="col-md-12 form-group">
                             <center>
                                 <input type="submit" name="submit" value="Search" class="btn btn-success" >
@@ -51,7 +80,7 @@ $(document).ready(function () {
 
     });
 
-    $("#grade").attr("required", "true");
+    // $("#grade").attr("required", "true");
 });
 
 </script>
