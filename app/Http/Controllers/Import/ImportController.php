@@ -178,7 +178,8 @@ class ImportController extends Controller
                     if ($student_id) {
                         $standard_id = DB::table('tblstudent_enrollment')->select('standard_id')->where([['student_id', $student_id->id], ['sub_institute_id', session()->get('sub_institute_id')], ['syear', session()->get('syear')]])->first();
                         if ($standard_id) {
-                            $prepareData['standard_id'] = $standard_id;//1
+                            $prepareData['standard_id'] = $standard_id;
+                            $prepareData['standard_id'] = $standard_id->standard_id;
                             $prepareData['student_id'] = $student_id->id;
                         }
                         unset($prepareData['enrollment_no']);
