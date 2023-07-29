@@ -30,6 +30,7 @@ use App\Models\school_setup\divisionModel;
 use App\Models\school_setup\academic_sectionModel;
 use function App\Helpers\get_string;
 //use function App\Helpers\FeeBreakoffHeadWise;
+use GuzzleHttp\Client;
 
 class AJAXController extends Controller
 {
@@ -1772,5 +1773,32 @@ class AJAXController extends Controller
         ]);
     
     }
+    }
+
+    public function chat(Request $request)
+    {
+        $message ="hello";
+
+        $apiKey = ' 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'; // Replace with your actual API key
+        $endpoint = 'https://api.openai.com/v1/engines/text-davinci-003/completions';
+        $headers = [
+            'Authorization' => 'Bearer ' . $apiKey,
+        ];
+
+        $client = new Client();
+
+        $response = $client->post($endpoint, [
+            'headers' => $headers,
+            'json' => [
+                'prompt' => $message,
+                'max_tokens' => 100,
+            ],
+        ]);
+
+        $responseData = json_decode($response->getBody(), true);
+
+        $responseText = $responseData['choices'][0]['text'] ?? 'Sorry, I could not generate a response.';
+
+        return response()->json(['response' => $responseText->response]);
     }
 }

@@ -26,43 +26,41 @@ class studentStrengthReportController extends Controller
         $syear = session()->get('syear');
 
         $query = DB::table('standard')
-        ->leftJoin('tblstudent_enrollment', function ($join) use($request,$sub_institute_id,$syear){
+        ->leftjoin('tblstudent_enrollment', function ($join) {
             $join->on('tblstudent_enrollment.standard_id', '=', 'standard.id')
-                ->where('tblstudent_enrollment.sub_institute_id',   $sub_institute_id)
-                ->when(!isset($request['general']), function ($query) {
-                    return $query->whereNull('tblstudent_enrollment.end_date');
-                })
-                ->where('tblstudent_enrollment.syear', $syear);
+                ->whereNull('tblstudent_enrollment.end_date')
+                ->where('tblstudent_enrollment.syear', 2023);
         })
-        ->when($marking_period_id,function($query) use($marking_period_id){
-                $query->where('standard.marking_period_id',$marking_period_id);
-            })
-        ->leftJoin('tblstudent', 'tblstudent_enrollment.student_id', '=', 'tblstudent.id')
-        ->Join('division', 'tblstudent_enrollment.section_id', '=', 'division.id')
+        ->join('tblstudent', 'tblstudent_enrollment.student_id', '=', 'tblstudent.id')
+        ->leftJoin('division', 'tblstudent_enrollment.section_id', '=', 'division.id')
+        ->where('standard.sub_institute_id', 51)
         ->select(
             'standard.name as standard_name',
             'division.name as division_name',
             'tblstudent.sub_institute_id',
             DB::raw('COUNT(tblstudent.id) as total_students')
         );
+        // ->get();
         // ->where('standard.name', '!=', 'Nursery')
         // ->orWhere('standard.name', '1');
        // Add group by date, standard, and division
        if(!in_array('division',$request['standard_wise']) ){
             $query->groupBy('standard.name');
        }else{
-            $query->groupBy('standard.name', 'division.name');
+            $query->groupBy('standard.name', 'division.id');
        }
        
-        $query->orderByRaw('standard.id,division.id');
+        $query->orderByRaw('standard.sort_order,division.id');
         // Filter by start_date or admission_date
         if ($request['one_date'] === 'start') {
-            $query->whereBetween('tblstudent_enrollment.start_date', [date('Y-m-d', strtotime($request['from_date'])), date('Y-m-d', strtotime($request['to_date']))]);
+            $query->orwhereBetween('tblstudent_enrollment.start_date', [date('Y-m-d', strtotime($request['from_date'])), date('Y-m-d', strtotime($request['to_date']))])->where(['tblstudent_enrollment.sub_institute_id'=>$sub_institute_id,'syear'=>$syear]);
 
         } elseif ($request['one_date'] === 'add') {
-            $query->whereBetween('tblstudent.admission_date', [date('Y-m-d', strtotime($request['from_date'])), date('Y-m-d', strtotime($request['to_date']))]);
+            $query->orwhereBetween('tblstudent.admission_date', [date('Y-m-d', strtotime($request['from_date'])), date('Y-m-d', strtotime($request['to_date']))])->where(['tblstudent_enrollment.sub_institute_id'=>$sub_institute_id,'syear'=>$syear]);
 
         }
+    //    $query->get();
+    //         return $query;exit;
     
         // Filter by religion
         if (isset($request['religion'])) {
