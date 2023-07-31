@@ -130,8 +130,14 @@ if (isset($_REQUEST['submit'])) {
                 } else {
                     if (in_array($valueFields['field'], $relationFields)) {
                         // $relationQuery = "SELECT " . strtoupper($relationTable[$valueFields['field']]['INSERT_FIELD']) . " FROM " . $relationTable[$valueFields['field']]['TABLE_NAME'] . "  WHERE  " . $relationTable[$valueFields['field']]['TABLE_FIELD'] . " = '" . mysqli_real_escape_string($cn, $value[$valueFields['field']]) . "' AND sub_institute_id = '" . $_SESSION['SUB_INSTITUTE_ID'] . "'";
-                        $relationQuery = "SELECT " . strtoupper($relationTable[$valueFields['field']]['INSERT_FIELD']) . " FROM " . $relationTable[$valueFields['field']]['TABLE_NAME'] . " WHERE " . $relationTable[$valueFields['field']]['TABLE_FIELD'] . " = '" . mysqli_real_escape_string($cn, $value[$valueFields['field']]) . "'";
+                        if($relationTable[$valueFields['field']]['TABLE_NAME']!="fees_breakoff_other"){
 
+                            $relationQuery = "SELECT " . strtoupper($relationTable[$valueFields['field']]['INSERT_FIELD']) . " FROM " . $relationTable[$valueFields['field']]['TABLE_NAME'] . " WHERE " . $relationTable[$valueFields['field']]['TABLE_FIELD'] . " = '" . mysqli_real_escape_string($cn, $value[$valueFields['field']]) . "'";
+                          }else{
+                             
+                          $relationQuery = "SELECT " . strtoupper($relationTable[$valueFields['field']]['INSERT_FIELD']) . " FROM " . $relationTable[$valueFields['field']]['TABLE_NAME'] . "  WHERE  " . $relationTable[$valueFields['field']]['TABLE_FIELD'] . " = '" . mysqli_real_escape_string($cn, $value[$valueFields['field']]) . "' AND sub_institute_id = '" . $_SESSION['SUB_INSTITUTE_ID'] . "'"; 
+                          }
+                          
                         if (isset($relationTable[$valueFields['field']]['SUB_INSTITUTE_COLUMN'])) {
                             $relationQuery .= " AND " . $relationTable[$valueFields['field']]['SUB_INSTITUTE_COLUMN'] . " = '" . $_SESSION['SUB_INSTITUTE_ID'] . "'";
                         }
