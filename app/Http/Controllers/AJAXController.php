@@ -31,6 +31,8 @@ use App\Models\school_setup\academic_sectionModel;
 use function App\Helpers\get_string;
 //use function App\Helpers\FeeBreakoffHeadWise;
 use GuzzleHttp\Client;
+use Illuminate\Support\Facades\Http;
+use function App\Helpers\is_mobile;
 
 class AJAXController extends Controller
 {
@@ -185,12 +187,12 @@ class AJAXController extends Controller
             //START Check for class teacher assigned standards
             $classTeacherStdArr = session()->get('classTeacherStdArr');
 
-            if(is_array($classTeacherStdArr)){
-                $checkstd =count($classTeacherStdArr)>0;
-            }else{
+            if (is_array($classTeacherStdArr)) {
+                $checkstd = count($classTeacherStdArr) > 0;
+            } else {
                 $checkstd = '1=1';
             }
-            if ($checkstd && $classTeacherStdArr != "" && ! in_array($module_name, $module_array)) {
+            if ($checkstd && $classTeacherStdArr != "" && !in_array($module_name, $module_array)) {
                 $query->whereIn('id', $classTeacherStdArr);
             }
             //END Check for class teacher assigned standards
@@ -210,12 +212,12 @@ class AJAXController extends Controller
 
             //START Check for class teacher assigned standards
             $classTeacherStdArr = session()->get('classTeacherStdArr');
-            if(is_array($classTeacherStdArr)){
-                $checkstd =count($classTeacherStdArr)>0;
-            }else{
+            if (is_array($classTeacherStdArr)) {
+                $checkstd = count($classTeacherStdArr) > 0;
+            } else {
                 $checkstd = '1=1';
             }
-            if ($checkstd && $classTeacherStdArr != "" && ! in_array($module_name, $module_array)) {
+            if ($checkstd && $classTeacherStdArr != "" && !in_array($module_name, $module_array)) {
                 $query->whereIn('id', $classTeacherStdArr);
             }
             //END Check for class teacher assigned standards
@@ -254,12 +256,12 @@ class AJAXController extends Controller
 
             //START Check for class teacher assigned standards
             $classTeacherDivArr = session()->get('classTeacherDivArr');
-            if(is_array($classTeacherDivArr)){
-                $checkdiv =count($classTeacherDivArr)>0;
-            }else{
+            if (is_array($classTeacherDivArr)) {
+                $checkdiv = count($classTeacherDivArr) > 0;
+            } else {
                 $checkdiv = '1=1';
             }
-            if ($checkdiv && $classTeacherDivArr != "" && ! in_array($module_name, $module_array)) {
+            if ($checkdiv && $classTeacherDivArr != "" && !in_array($module_name, $module_array)) {
                 $query->whereIn('division.id', $classTeacherDivArr);
             }
             //END Check for class teacher assigned standards
@@ -280,12 +282,12 @@ class AJAXController extends Controller
             $query->where("std_div_map.standard_id", $request->standard_id);
             //START Check for class teacher assigned standards
             $classTeacherDivArr = session()->get('classTeacherDivArr');
-            if(is_array($classTeacherDivArr)){
-                $checkdiv =count($classTeacherDivArr)>0;
-            }else{
+            if (is_array($classTeacherDivArr)) {
+                $checkdiv = count($classTeacherDivArr) > 0;
+            } else {
                 $checkdiv = '1=1';
             }
-            if ($checkdiv && $classTeacherDivArr != "" && ! in_array($module_name, $module_array)) {
+            if ($checkdiv && $classTeacherDivArr != "" && !in_array($module_name, $module_array)) {
                 $query->whereIn('division.id', $classTeacherDivArr);
             }
             //END Check for class teacher assigned standards
@@ -324,7 +326,7 @@ class AJAXController extends Controller
         if ($refer_arr[count($refer_arr) - 2] == 'exam_creation' || in_array('marks_entry', $refer_arr)) {
             $where = array(
                 "sub_std_map.sub_institute_id" => session()->get('sub_institute_id'),
-                "sub_std_map.allow_grades"     => "Yes",
+                "sub_std_map.allow_grades" => "Yes",
             );
         } else {
             $where = array(
@@ -377,7 +379,7 @@ class AJAXController extends Controller
             $chapter_list = DB::table('chapter_master')
                 ->where([
                     'sub_institute_id' => session()->get('sub_institute_id'), 'subject_id' => $request->subject_id,
-                    "standard_id"      => $standard_id,
+                    "standard_id" => $standard_id,
                 ])
                 ->pluck('chapter_name', 'id');
         }
@@ -409,10 +411,10 @@ class AJAXController extends Controller
     {
         $where = array(
             "re.sub_institute_id" => session()->get('sub_institute_id'),
-            "re.syear"            => session()->get('syear'),
-            "re.term_id"          => $request->term_id,
-            "re.standard_id"      => $request->standard_id,
-            "re.subject_id"       => $request->subject_id,
+            "re.syear" => session()->get('syear'),
+            "re.term_id" => $request->term_id,
+            "re.standard_id" => $request->standard_id,
+            "re.subject_id" => $request->subject_id,
         );
 
         $std_sub_map = DB::table('result_create_exam as re')
@@ -439,8 +441,8 @@ class AJAXController extends Controller
     {
         $where = array(
             "re.sub_institute_id" => session()->get('sub_institute_id'),
-            "re.parent_id"        => $request->co_scholastic_parent_id,
-            "re.term_id"          => $request->term_id,
+            "re.parent_id" => $request->co_scholastic_parent_id,
+            "re.term_id" => $request->term_id,
         );
 
         $co_scholastic_parent = DB::table('result_co_scholastic as re')
@@ -454,7 +456,7 @@ class AJAXController extends Controller
     {
         $where = array(
             "tv.sub_institute_id" => session()->get('sub_institute_id'),
-            "tv.school_shift"     => $request->shift_id,
+            "tv.school_shift" => $request->shift_id,
         );
 
         $bus = DB::table('transport_vehicle as tv')
@@ -506,7 +508,7 @@ class AJAXController extends Controller
         $year_arr2 = FeeMonthIdlast();
 
         $currunt_month = date('m');
-        $last_y_month_id = $currunt_month.(session()->get('syear')-1);
+        $last_y_month_id = $currunt_month . (session()->get('syear') - 1);
         $search_ids2 = [];
         foreach ($year_arr2 as $id => $arr) {
             if ($id == $last_y_month_id) {
@@ -526,7 +528,7 @@ class AJAXController extends Controller
 
         $reg_bk_off2 = FeeBreackofflast($stu_arr);
         $other_bk_off2 = OtherBreackOfflast($stu_arr, $search_ids2);
-        
+
 
         $head_wise_fees = FeeBreakoffHeadWise($stu_arr);
         $head_wise_fees2 = FeeBreakoffHeadWiselast($stu_arr);
@@ -541,8 +543,8 @@ class AJAXController extends Controller
                 }
             }
         }
-         foreach ($search_ids2 as $id => $val) {
-             foreach ($head_wise_fees2 as $temp_id => $arr) {
+        foreach ($search_ids2 as $id => $val) {
+            foreach ($head_wise_fees2 as $temp_id => $arr) {
                 foreach ($head_wise_fees2[$temp_id]['breakoff'] as $month_id => $fees_detail) {
                     if ($month_id == $val) {
                         $till_now_breckoff2[$month_id] = $fees_detail;
@@ -559,19 +561,19 @@ class AJAXController extends Controller
 
         foreach ($till_now_breckoff as $month_id => $fees_detail) {
             foreach ($fees_detail as $head_name => $arr) {
-                if($arr['amount'] !==0){
-                if (! isset($reg_bk_month_wise[$arr['title']])) {
-                    $reg_bk_month_wise[$arr['title']] = 0;
+                if ($arr['amount'] !== 0) {
+                    if (!isset($reg_bk_month_wise[$arr['title']])) {
+                        $reg_bk_month_wise[$arr['title']] = 0;
+                    }
+                    $reg_bk_month_wise[$arr['title']] += $arr['amount'];
+                    $final_bk_name[$arr['title']] = $head_name;
                 }
-                $reg_bk_month_wise[$arr['title']] += $arr['amount'];
-                $final_bk_name[$arr['title']] = $head_name;
-            }
             }
         }
         // return $final_bk_name;exit;
         foreach ($till_now_breckoff2 as $month_id => $fees_detail) {
             foreach ($fees_detail as $head_name => $arr) {
-                if (! isset($reg_bk_month_wise2[$arr['title']])) {
+                if (!isset($reg_bk_month_wise2[$arr['title']])) {
                     $reg_bk_month_wise2[$arr['title']] = 0;
                 }
                 $reg_bk_month_wise2[$arr['title']] += $arr['amount'];
@@ -584,13 +586,13 @@ class AJAXController extends Controller
         $full_bk2 = array_merge($reg_bk_month_wise2, $other_bk_off2);
         $previous = array_sum($full_bk2);
         // return $previous;exit;
-        
-        if($previous>0){
-        $full_bk['Previous Fees'] = $previous;
-        $final_bk_name["Previous Fees"] = "previous_fees";
+
+        if ($previous > 0) {
+            $full_bk['Previous Fees'] = $previous;
+            $final_bk_name["Previous Fees"] = "previous_fees";
 
         }
-      
+
         foreach ($full_bk as $id => $val) {
             $total = $total + $val;
         }
@@ -604,7 +606,7 @@ class AJAXController extends Controller
                 }
 
             }
-          
+
         }
 
         $full_bk["Total"] = $total;
@@ -614,7 +616,7 @@ class AJAXController extends Controller
                         <th  align="center" style="width: 30%;align-content: center;">Particular</th>
                         <th style="width: 10%;padding-left: 15px;">Amount</th>
                         <th style="width: 20%;padding-left: 15px;">Collection Amount</th>
-                        <th style="width: 20%;padding-left: 15px;">'.get_string('Discount','requests').'</th>
+                        <th style="width: 20%;padding-left: 15px;">' . get_string('Discount', 'requests') . '</th>
                         <th style="width: 20%;padding-left: 15px;">Fine</th>
                     </tr>';
         foreach ($full_bk as $id => $val) {
@@ -625,13 +627,13 @@ class AJAXController extends Controller
             ";
             if ($id != 'Total') {
                 // $response .= "<td style='width: 20%'><input type='number' min=0 max=$val  value='" . $val . "' name='fees_data[" . $final_bk_name[$id] . "]' class='form-control allField1'></td>";
-                $response .= "<td style='width: 20%'><input type='number' min='0' max='$val' value='$val' name='fees_data[" . $final_bk_name[$id] . "]' class='form-control allField1' id=" . $final_bk_name[$id] ."></td>";
+                $response .= "<td style='width: 20%'><input type='number' min='0' max='$val' value='$val' name='fees_data[" . $final_bk_name[$id] . "]' class='form-control allField1' id=" . $final_bk_name[$id] . "></td>";
 
                 $response .= "<input type='hidden' value='" . $val . "' name='hid_fees_data[" . $final_bk_name[$id] . "]' class='hid_allField1'>";
                 $response .= "<td style='width: 20%'><input type='number' value='0' name='discount_data[" . $final_bk_name[$id] . "]' class='form-control allDisField' style='min-width:150px;'></td>"; // min=0 max=$val
                 $response .= "<td style='width: 20%'><input type='number'  min=0 value=0 name='fine_data[" . $final_bk_name[$id] . "]' class='form-control allFinField' style='min-width:150px;'></td>";
             } else {
-                $response .= "<td style='width: 25%'><input type='text' id='totalVal' name='total' value='".$total."' class='form-control'></td>";
+                $response .= "<td style='width: 25%'><input type='text' id='totalVal' name='total' value='" . $total . "' class='form-control'></td>";
                 $response .= "<td style='width: 25%'><input type='text' id='totalDis' name='totalDis' value='0' class='form-control directdiscount'></td>";
                 $response .= "<td style='width: 25%'><input id='totalFin' type='text' name='totalFin' value='0' class='form-control directfine'></td>";
             }
@@ -680,7 +682,7 @@ class AJAXController extends Controller
 
         foreach ($till_now_breckoff as $month_id => $fees_detail) {
             foreach ($fees_detail as $head_name => $arr) {
-                if (! isset($reg_bk_month_wise[$arr['title']])) {
+                if (!isset($reg_bk_month_wise[$arr['title']])) {
                     $reg_bk_month_wise[$arr['title']] = 0;
                 }
                 $reg_bk_month_wise[$arr['title']] += $arr['amount'];
@@ -719,7 +721,7 @@ class AJAXController extends Controller
                     <td style='width: 20%'>$val</td>
             ";
             if ($id == 'Total') {
-                $response .= "<input type='hidden' id='totalVal' name='total' value='".$total."' class='form-control'>";
+                $response .= "<input type='hidden' id='totalVal' name='total' value='" . $total . "' class='form-control'>";
             }
 
             $response .= "</tr>";
@@ -768,7 +770,7 @@ class AJAXController extends Controller
 
         foreach ($till_now_breckoff as $month_id => $fees_detail) {
             foreach ($fees_detail as $head_name => $arr) {
-                if (! isset($reg_bk_month_wise[$arr['title']])) {
+                if (!isset($reg_bk_month_wise[$arr['title']])) {
                     $reg_bk_month_wise[$arr['title']] = 0;
                 }
                 $reg_bk_month_wise[$arr['title']] += $arr['amount'];
@@ -804,7 +806,7 @@ class AJAXController extends Controller
 
         $where = array(
             'learning_outcome_pdf.standard' => $standard,
-            'learning_outcome_pdf.medium'   => $medium,
+            'learning_outcome_pdf.medium' => $medium,
         );
 
         $std_sub_map = DB::table('learning_outcome_pdf')
@@ -822,8 +824,8 @@ class AJAXController extends Controller
 
         $where = array(
             'learning_outcome_indicator.standard' => $standard,
-            'learning_outcome_indicator.medium'   => $medium,
-            'learning_outcome_indicator.subject'  => $subject,
+            'learning_outcome_indicator.medium' => $medium,
+            'learning_outcome_indicator.subject' => $subject,
         );
 
         $std_sub_map = DB::table('learning_outcome_indicator')
@@ -860,8 +862,12 @@ class AJAXController extends Controller
         $all_student = DB::table("tblstudent as s")
             ->join('fees_online_maping as fo', 'fo.sub_institute_id', '=', 's.sub_institute_id')
             ->join('school_setup as ss', 'ss.id', '=', 'fo.sub_institute_id')
-            ->select(DB::raw("CONCAT(s.first_name,' ',s.last_name,' - ',ss.shortcode) AS name"), 's.id', 'fo.bank_name',
-                's.sub_institute_id')
+            ->select(
+                DB::raw("CONCAT(s.first_name,' ',s.last_name,' - ',ss.shortcode) AS name"),
+                's.id',
+                'fo.bank_name',
+                's.sub_institute_id'
+            )
             ->where(['s.mobile' => $mobile]) //,'fo.sub_institute_id' => $sub_institute_id
             ->get();
 
@@ -880,8 +886,8 @@ class AJAXController extends Controller
         $bf_data = DB::table('tblstudent as s')
             ->leftJoin('fees_breackoff as fb', function ($join) use ($get_enrollment_data) {
                 $join->whereRaw("fb.sub_institute_id = s.sub_institute_id AND fb.admission_year = s.admission_year AND fb.quota = '"
-                    .$get_enrollment_data->student_quota."' AND fb.grade_id = '".$get_enrollment_data->grade_id."' AND fb.syear = '"
-                    .$get_enrollment_data->syear."' AND fb.standard_id = '".$get_enrollment_data->standard_id."'");
+                    . $get_enrollment_data->student_quota . "' AND fb.grade_id = '" . $get_enrollment_data->grade_id . "' AND fb.syear = '"
+                    . $get_enrollment_data->syear . "' AND fb.standard_id = '" . $get_enrollment_data->standard_id . "'");
             })
             ->selectRaw('SUM(IFNULL(fb.amount,0)) AS total_amount')
             ->where('s.id', $student_id)->get()->toArray();
@@ -889,7 +895,7 @@ class AJAXController extends Controller
         $medium_data = DB::table('academic_section')->where('id', $get_enrollment_data->grade_id)
             ->select('medium')->get()->toArray();
 
-        return $bf_data[0]->total_amount.'####'.$medium_data[0]->medium;
+        return $bf_data[0]->total_amount . '####' . $medium_data[0]->medium;
     }
 
     public function ajax_load_rightSideMenu(Request $request)
@@ -960,11 +966,11 @@ class AJAXController extends Controller
                     $child_li .= '<li class="d-flex align-items-center"><i class="fa fa-angle-right" style="margin-right: 8px;">
                     </i><a href="' . route($cval['link']) . '" onclick="sessionMenu(' . $cval['tblmenu_master_id'] . ');" >' . $cval['name'] . '</a></li>';
                     if ($cval['name'] == 'Field Settings') {
-                        $export_import_link = "window.open('".env('APP_URL')."/excel_upload/export_xlsx.php?sub_institute_iderp=".$sub_institute_id."','scrollbars=yes,resizable=no,status=no,location=no,toolbar=no,menubar=no','width=600,height=300,left=100,top=100')";
+                        $export_import_link = "window.open('" . env('APP_URL') . "/excel_upload/export_xlsx.php?sub_institute_iderp=" . $sub_institute_id . "','scrollbars=yes,resizable=no,status=no,location=no,toolbar=no,menubar=no','width=600,height=300,left=100,top=100')";
                         $child_li .= '<li><i class="fa fa-angle-right" style="margin-right: 8px;">
-                    </i><a href="javascript:void(0);" onclick="'.$export_import_link.'" class="waves-effect">Excel Import/Export</a></li>';
+                    </i><a href="javascript:void(0);" onclick="' . $export_import_link . '" class="waves-effect">Excel Import/Export</a></li>';
                         $child_li .= '<li><i class="fa fa-angle-right" style="margin-right: 8px;">
-                    </i><a href="'.route('workflow.index').'">Workflow</a></li>';
+                    </i><a href="' . route('workflow.index') . '">Workflow</a></li>';
                     }
                 }
                 $child_menu .= '<div class="tab-pane show ' . $active . '" id="right-tab-' . $i . '"
@@ -976,7 +982,7 @@ class AJAXController extends Controller
             }
         }
 
-        return $main_menu."####".$child_menu;
+        return $main_menu . "####" . $child_menu;
     }
 
     public function ajax_load_helpguide(Request $request)
@@ -995,7 +1001,7 @@ class AJAXController extends Controller
             $data = $data[0];
 
             if ($data['youtube_link'] != "") {
-                return $data['youtube_link']."####".$data['pdf_link'];
+                return $data['youtube_link'] . "####" . $data['pdf_link'];
             } else {
                 return "0";
             }
@@ -1036,7 +1042,7 @@ class AJAXController extends Controller
             $mail->SetFrom($from, $from);
             $mail->AddReplyTo($from, $from);
 
-            if (! empty($request->get('attachment'))) {
+            if (!empty($request->get('attachment'))) {
                 $attachment = $request->get('attachment');
                 $mail->addAttachment($attachment);
             }
@@ -1061,7 +1067,7 @@ class AJAXController extends Controller
 
         $fees_receipt_html = $this->get_FeesHtml($student_id, $action, $receipt_id);
         $fees_css = $this->get_FeesCss($action);
-        $fees_receipt_css = "<style>".$fees_css."</style>";
+        $fees_receipt_css = "<style>" . $fees_css . "</style>";
 
         if ($fees_receipt_html != '') {
             $dom = '<!DOCTYPE html>
@@ -1088,20 +1094,20 @@ class AJAXController extends Controller
 
             $to_arr = $getEmails['email'];
 
-            $save_path = $_SERVER['DOCUMENT_ROOT'].'/storage/mail_receipt_pdf';
+            $save_path = $_SERVER['DOCUMENT_ROOT'] . '/storage/mail_receipt_pdf';
 
             $CUR_TIME = date('YmdHis');
-            $html_filename = $student_id.'_'.$CUR_TIME.".html";
-            $pdf_filename = $student_id.'_'.$CUR_TIME.".pdf";
+            $html_filename = $student_id . '_' . $CUR_TIME . ".html";
+            $pdf_filename = $student_id . '_' . $CUR_TIME . ".pdf";
 
             $html = '';
             $html .= $fees_receipt_html;
-            $path = 'src="http://'.$_SERVER['HTTP_HOST'];
+            $path = 'src="http://' . $_SERVER['HTTP_HOST'];
             $html = str_replace('src="', $path, $html);
             $html = str_replace('##HTML_SEC##', $html, $dom);
 
-            $html_file_path = $save_path.'/'.$html_filename;
-            $pdf_file_path = $save_path.'/'.$pdf_filename;
+            $html_file_path = $save_path . '/' . $html_filename;
+            $pdf_file_path = $save_path . '/' . $pdf_filename;
             file_put_contents($html_file_path, $html);
             htmlToPDF($html_file_path, $pdf_file_path);
 
@@ -1187,20 +1193,20 @@ class AJAXController extends Controller
 
                 $to_arr = $getEmails['email'];
 
-                $save_path = $_SERVER['DOCUMENT_ROOT'].'/storage/mail_receipt_pdf';
+                $save_path = $_SERVER['DOCUMENT_ROOT'] . '/storage/mail_receipt_pdf';
 
                 $CUR_TIME = date('YmdHis');
-                $html_filename = $student_id.'_'.$CUR_TIME.".html";
-                $pdf_filename = $student_id.'_'.$CUR_TIME.".pdf";
+                $html_filename = $student_id . '_' . $CUR_TIME . ".html";
+                $pdf_filename = $student_id . '_' . $CUR_TIME . ".pdf";
 
                 $html = '';
                 $html .= $fees_receipt_html;
-                $path = 'src="http://'.$_SERVER['HTTP_HOST'];
+                $path = 'src="http://' . $_SERVER['HTTP_HOST'];
                 $html = str_replace('src="', $path, $html);
                 $html = str_replace('##HTML_SEC##', $html, $dom);
 
-                $html_file_path = $save_path.'/'.$html_filename;
-                $pdf_file_path = $save_path.'/'.$pdf_filename;
+                $html_file_path = $save_path . '/' . $html_filename;
+                $pdf_file_path = $save_path . '/' . $pdf_filename;
                 file_put_contents($html_file_path, $html);
                 if ($action == 'fees_circular') {
                     htmlToPDFLandscape($html_file_path, $pdf_file_path);
@@ -1261,7 +1267,7 @@ class AJAXController extends Controller
     public function ajax_PDF_FeesReceipt(Request $request)
     {
         //Start For Empty folder before creating new PDF
-        $folder_path = $_SERVER['DOCUMENT_ROOT'].'/storage/print_receipt_pdf/*';
+        $folder_path = $_SERVER['DOCUMENT_ROOT'] . '/storage/print_receipt_pdf/*';
         $files = glob($folder_path); // get all file names
         foreach ($files as $file) { // iterate files
             if (is_file($file)) {
@@ -1280,7 +1286,7 @@ class AJAXController extends Controller
 
         $fees_receipt_html = $this->get_FeesHtml($student_id, $action, $receipt_id);
         $fees_css = $this->get_FeesCss($action);
-        $fees_receipt_css = "<style>".$fees_css."</style>";
+        $fees_receipt_css = "<style>" . $fees_css . "</style>";
 
         if ($fees_receipt_html != '') {
             $dom = '<!DOCTYPE html>
@@ -1297,11 +1303,11 @@ class AJAXController extends Controller
             $dom .= '</body>
                 </html>';
 
-            $save_path = $_SERVER['DOCUMENT_ROOT'].'/storage/print_receipt_pdf';
+            $save_path = $_SERVER['DOCUMENT_ROOT'] . '/storage/print_receipt_pdf';
 
             $CUR_TIME = date('YmdHis');
-            $html_filename = $student_id.'_'.$CUR_TIME.".html";
-            $pdf_filename = $student_id.'_'.$CUR_TIME.".pdf";
+            $html_filename = $student_id . '_' . $CUR_TIME . ".html";
+            $pdf_filename = $student_id . '_' . $CUR_TIME . ".pdf";
 
             $html = '';
             if (is_array($fees_receipt_html) == 1) {
@@ -1313,21 +1319,21 @@ class AJAXController extends Controller
             }
 
             if ($action != 'certificate_re_receipt') {
-                $path = 'src="http://'.$_SERVER['HTTP_HOST'];
+                $path = 'src="http://' . $_SERVER['HTTP_HOST'];
                 $html = str_replace('src="', $path, $html);
             }
 
             $html = str_replace('##HTML_SEC##', $html, $dom);
 
-            $html_file_path = $save_path.'/'.$html_filename;
-            $pdf_file_path = $save_path.'/'.$pdf_filename;
+            $html_file_path = $save_path . '/' . $html_filename;
+            $pdf_file_path = $save_path . '/' . $pdf_filename;
             file_put_contents($html_file_path, $html);
 
             $htmlToPDF = $this->htmlToPDF_making($paper_size, $html_file_path, $pdf_file_path);
 
             unlink($html_file_path);
 
-            $PDF_path_for_open = "http://".$_SERVER['HTTP_HOST'].'/storage/print_receipt_pdf/'.$pdf_filename;
+            $PDF_path_for_open = "http://" . $_SERVER['HTTP_HOST'] . '/storage/print_receipt_pdf/' . $pdf_filename;
 
             return $PDF_path_for_open;
         }
@@ -1338,10 +1344,10 @@ class AJAXController extends Controller
         //Start For Empty folder before creating new PDF
         $folder_path = $_SERVER['DOCUMENT_ROOT'] . '/storage/print_receipt_pdf/*';
         $files = glob($folder_path); // get all file names
-        foreach($files as $file){ // iterate files
-          if(is_file($file)) {
-            unlink($file); // delete file
-          }
+        foreach ($files as $file) { // iterate files
+            if (is_file($file)) {
+                unlink($file); // delete file
+            }
         }
         //END For Empty folder before creating new PDF
 
@@ -1350,20 +1356,18 @@ class AJAXController extends Controller
         $last_inserted_ids = $request->input('inserted_ids');
         $action = $request->input('action');
 
-        $inserted_ids_arr = explode(',',$last_inserted_ids);
+        $inserted_ids_arr = explode(',', $last_inserted_ids);
 
         $html = '';
-        foreach ($inserted_ids_arr as $key => $value) 
-        { 
+        foreach ($inserted_ids_arr as $key => $value) {
 
-           $html_data = $this->get_FeesHtmlForBulk($action,$value);
-           $student_id = $html_data['student_id'];
-           $fees_receipt_html = $html_data['fees_receipt_html'];
+            $html_data = $this->get_FeesHtmlForBulk($action, $value);
+            $student_id = $html_data['student_id'];
+            $fees_receipt_html = $html_data['fees_receipt_html'];
            // dd($html_data);
 
-           if($fees_receipt_html != '') 
-           {
-                 $dom = '<!DOCTYPE html>
+            if ($fees_receipt_html != '') {
+                $dom = '<!DOCTYPE html>
                         <html>
                             <head>
                                <title></title>
@@ -1385,8 +1389,8 @@ class AJAXController extends Controller
                 $save_path = $_SERVER['DOCUMENT_ROOT'] . '/storage/print_receipt_pdf';
 
                 $CUR_TIME = date('YmdHis');
-                $html_filename = $student_id.'_'.$CUR_TIME . ".html";
-                $pdf_filename = $student_id.'_'.$CUR_TIME . ".pdf";
+                $html_filename = $student_id . '_' . $CUR_TIME . ".html";
+                $pdf_filename = $student_id . '_' . $CUR_TIME . ".pdf";
 
                 // $html = '';
                 $html .= $fees_receipt_html;//.'<div class="last_page" style="page-break-before: always !important;"></div>';
@@ -1396,16 +1400,15 @@ class AJAXController extends Controller
                 $pdf_file_path = $save_path . '/' . $pdf_filename;
                 file_put_contents($html_file_path, $html);
 
-                if($action == 'Bonafide' || $action == 'Character Certificate' || $action == 'other_fees_collect_receipt' || $action == 'imprest_fees_cancel_refund_receipt')
-                {
+                if ($action == 'Bonafide' || $action == 'Character Certificate' || $action == 'other_fees_collect_receipt' || $action == 'imprest_fees_cancel_refund_receipt') {
                     htmlToPDFLandscapeCertificate($html_file_path, $pdf_file_path);
-                }else{
+                } else {
                     htmlToPDF($html_file_path, $pdf_file_path);
                 }
-         
+
                 unlink($html_file_path);
 
-                $PDF_path_for_open = "http://".$_SERVER['HTTP_HOST'].'/storage/print_receipt_pdf/'.$pdf_filename;
+                $PDF_path_for_open = "http://" . $_SERVER['HTTP_HOST'] . '/storage/print_receipt_pdf/' . $pdf_filename;
             }
         }
         return $PDF_path_for_open;
@@ -1463,7 +1466,7 @@ class AJAXController extends Controller
                 ->where('fo.sub_institute_id', $sub_institute_id)
                 ->where('fo.syear', $syear)
                 ->where('fo.student_id', $student_id)
-                ->whereRaw("(fro.RECEIPT_ID_1 = '".$receipt_id."' OR fro.RECEIPT_ID_2 = '".$receipt_id."' OR fro.RECEIPT_ID_3 = '".$receipt_id."' OR fro.RECEIPT_ID_4 = '".$receipt_id."' OR fro.RECEIPT_ID_5 = '".$receipt_id."' OR fro.RECEIPT_ID_6 = '".$receipt_id."')")
+                ->whereRaw("(fro.RECEIPT_ID_1 = '" . $receipt_id . "' OR fro.RECEIPT_ID_2 = '" . $receipt_id . "' OR fro.RECEIPT_ID_3 = '" . $receipt_id . "' OR fro.RECEIPT_ID_4 = '" . $receipt_id . "' OR fro.RECEIPT_ID_5 = '" . $receipt_id . "' OR fro.RECEIPT_ID_6 = '" . $receipt_id . "')")
                 ->groupBy('fo.paid_fees_html');
 
             $get_data = DB::table('fees_collect as fc')
@@ -1617,8 +1620,8 @@ class AJAXController extends Controller
                                 </page>
                             </div>';
         } elseif ($paper_size == "A4DB") {
-              if(in_array($sub_institute_id,$four_res)){
-                  $extra_html = ' <div>
+            if (in_array($sub_institute_id, $four_res)) {
+                $extra_html = ' <div>
                                 <page size="A4">
                                 <div>
                                    ##HTML_SEC##
@@ -1629,8 +1632,8 @@ class AJAXController extends Controller
                                 </div>
                                 </page>
                             </div>';
-              }else{
-                    $extra_html = ' <div>
+            } else {
+                $extra_html = ' <div>
                                 <page size="A4">
                                 <div>
                                    ##HTML_SEC##
@@ -1641,8 +1644,8 @@ class AJAXController extends Controller
                                 </page>
                             </div> 
                             <div style="page-break-after: avoid !important;"></div>';
-                }
-          
+            }
+
         } else {
             $extra_html = '<div>
                                 ##HTML_SEC##
@@ -1653,11 +1656,11 @@ class AJAXController extends Controller
 
     public function htmlToPDF_making($paper_size, $html_file_path, $pdf_file_path)
     {
-        if ($paper_size == "A5" ) {
+        if ($paper_size == "A5") {
             htmlToPDFLandscapeCertificate($html_file_path, $pdf_file_path);
-        } elseif( $paper_size == "A4"){
+        } elseif ($paper_size == "A4") {
             htmlToPDFPortrait($html_file_path, $pdf_file_path);
-        }elseif ($paper_size == "A5DB") {
+        } elseif ($paper_size == "A5DB") {
             htmlToPDFLandscape($html_file_path, $pdf_file_path);
         } elseif ($paper_size == "A4DB") {
             htmlToPDFPortrait($html_file_path, $pdf_file_path);
@@ -1678,12 +1681,12 @@ class AJAXController extends Controller
             })->leftJoin('tblgroupwise_rights as g', function ($join) {
                 $join->whereRaw('u.user_profile_id = g.profile_id AND u.sub_institute_id = g.sub_institute_id');
             })->join('tblmenumaster as m', function ($join) use ($sub_institute_id) {
-                $join->whereRaw("(i.menu_id = m.id OR g.menu_id = m.id) AND FIND_IN_SET(".$sub_institute_id.", m.sub_institute_id)");
+                $join->whereRaw("(i.menu_id = m.id OR g.menu_id = m.id) AND FIND_IN_SET(" . $sub_institute_id . ", m.sub_institute_id)");
             })->selectRaw('GROUP_CONCAT(distinct m.id) AS MID')
             ->where('u.sub_institute_id', $sub_institute_id)->where('u.id', $user_id)->get()->toArray();
 
         $rightsQuery = array_map(function ($value) {
-            return (array) $value;
+            return (array)$value;
         }, $rightsQuery);
 
         $rightsMenusIds = 0;
@@ -1693,7 +1696,7 @@ class AJAXController extends Controller
         }
 
         return tblmenumasterModel::where('parent_menu_id', '!=', 0)
-            ->whereRaw("find_in_set('$sub_institute_id',sub_institute_id) AND LEVEL IN (2,3) AND link != 'javascript:void(0);' AND id IN (".$rightsMenusIds.") AND status = 1 AND NAME LIKE '%".$searchValue."%' ")
+            ->whereRaw("find_in_set('$sub_institute_id',sub_institute_id) AND LEVEL IN (2,3) AND link != 'javascript:void(0);' AND id IN (" . $rightsMenusIds . ") AND status = 1 AND NAME LIKE '%" . $searchValue . "%' ")
             ->orderBy('sort_order')
             ->get()
             ->toArray();
@@ -1730,75 +1733,82 @@ class AJAXController extends Controller
             return $result;
         }
     }
- public function collectsct(Request $req){
-        $option ='<option>Select</option>';
-        if($req->sectionId == 1){
-            $academy = academic_sectionModel::where('sub_institute_id', $req->session()->get('sub_institute_id'))->get(['id','title','short_name','sort_order','shift','medium']);
-            foreach($academy as $row){
-                $option .= '<option value='.$row['id'].'>'.$row['title'].'</option>';
+    public function collectsct(Request $req)
+    {
+        $option = '<option>Select</option>';
+        if ($req->sectionId == 1) {
+            $academy = academic_sectionModel::where('sub_institute_id', $req->session()->get('sub_institute_id'))->get(['id', 'title', 'short_name', 'sort_order', 'shift', 'medium']);
+            foreach ($academy as $row) {
+                $option .= '<option value=' . $row['id'] . '>' . $row['title'] . '</option>';
             }
-        }else if($req->sectionId == 2){
-            $std = standardModel::where('sub_institute_id', $req->session()->get('sub_institute_id'))->get(['id','short_name']);
-            foreach($std as $row){
-                $option .= '<option value='.$row['id'].'>'.$row['short_name'].'</option>';
+        } else if ($req->sectionId == 2) {
+            $std = standardModel::where('sub_institute_id', $req->session()->get('sub_institute_id'))->get(['id', 'short_name']);
+            foreach ($std as $row) {
+                $option .= '<option value=' . $row['id'] . '>' . $row['short_name'] . '</option>';
             }
-        }else if($req->sectionId == 3){
-            $divs = divisionModel::where('sub_institute_id', $req->session()->get('sub_institute_id'))->get(['id','name']);
-            foreach($divs as $row){
-                $option .= '<option value='.$row['id'].'>'.$row['name'].'</option>';
+        } else if ($req->sectionId == 3) {
+            $divs = divisionModel::where('sub_institute_id', $req->session()->get('sub_institute_id'))->get(['id', 'name']);
+            foreach ($divs as $row) {
+                $option .= '<option value=' . $row['id'] . '>' . $row['name'] . '</option>';
             }
-        }else if($req->sectionId == 5){
-            $std = standardModel::where(['sub_institute_id'=> $req->session()->get('sub_institute_id'),'grade_id'=>$req->grade])->get(['id','short_name']);
-            foreach($std as $row){
-                $option .= '<option value='.$row['id'].'>'.$row['short_name'].'</option>';
+        } else if ($req->sectionId == 5) {
+            $std = standardModel::where(['sub_institute_id' => $req->session()->get('sub_institute_id'), 'grade_id' => $req->grade])->get(['id', 'short_name']);
+            foreach ($std as $row) {
+                $option .= '<option value=' . $row['id'] . '>' . $row['short_name'] . '</option>';
             }
         }
         return $option;
     }
-    public function check_access(Request $request){
+    public function check_access(Request $request)
+    {
         $userProfileId = session()->get('user_profile_id');
         $menu_id = $request->input("menu_id");
 
         $permissions = DB::table('tblgroupwise_rights')->where('menu_id', $menu_id)
-        ->where('profile_id', $userProfileId)
-        ->where('sub_institute_id',session()->get('sub_institute_id'))
-        ->first();
+            ->where('profile_id', $userProfileId)
+            ->where('sub_institute_id', session()->get('sub_institute_id'))
+            ->first();
 
-    if ($permissions) {
-        return response()->json([
-            'can_view' => $permissions->can_view,
-            'can_edit' => $permissions->can_edit,
-            'can_add' => $permissions->can_add,
-            'can_delete' => $permissions->can_delete,
-        ]);
-    
-    }
+        if ($permissions) {
+            return response()->json([
+                'can_view' => $permissions->can_view,
+                'can_edit' => $permissions->can_edit,
+                'can_add' => $permissions->can_add,
+                'can_delete' => $permissions->can_delete,
+            ]);
+
+        }
     }
 
     public function chat(Request $request)
     {
-        $message ="hello";
+        // $message = "what is laravel?";
 
-        $apiKey = ' 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'; // Replace with your actual API key
-        $endpoint = 'https://api.openai.com/v1/engines/text-davinci-003/completions';
-        $headers = [
+        //$apiKey = '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'; // uma uma.actiza
+       // $apiKey = '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';//kalpesh sir 2005
+        //$apiKey='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';//3rd key infosystem
+        $apiKey ='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';
+        $message = "Your user message goes here.";
+
+        $data = Http::withHeaders([
+            'Content-Type' => 'application/Json',
             'Authorization' => 'Bearer ' . $apiKey,
-        ];
-
-        $client = new Client();
-
-        $response = $client->post($endpoint, [
-            'headers' => $headers,
-            'json' => [
-                'prompt' => $message,
-                'max_tokens' => 100,
-            ],
-        ]);
-
-        $responseData = json_decode($response->getBody(), true);
-
-        $responseText = $responseData['choices'][0]['text'] ?? 'Sorry, I could not generate a response.';
-
-        return response()->json(['response' => $responseText->response]);
+            ])->post("https://api.openai.com/v1/chat/completions", [
+                'model'=>'gpt-3.5-turbo',
+                'messages' => [
+                    [
+                        'role' => 'user',
+                        'content' => $message
+                    ]
+                ],
+                "temperature" => 0.7,
+                "max_tokens" => 256,
+                "top_p" => 1,
+                "frequency_penalty" => 0,
+                "presence_penalty" => 0,
+                "stop" => ["11."]
+            ])->json();
+       $res['answer'] = response()->json($data, 200, array(), JSON_PRETTY_PRINT);
+       return $res['answer'];
     }
 }
