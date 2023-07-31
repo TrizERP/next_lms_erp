@@ -48,6 +48,8 @@ use App\Http\Controllers\fees\tblfeesConfigController;
 use App\Http\Controllers\fees\tblfeesHeadTypeMasterController;
 use App\Http\Controllers\fees\tblfeesLateController;
 use App\Http\Controllers\fees\update_fees_breackoff\update_fees_breackoff_controller;
+use App\Http\Controllers\fees\fees_breackoff\monthlyBreakoffController;
+
 use Illuminate\Support\Facades\Route;
 
 Route::group(['prefix' => 'fees', 'middleware' => ['session', 'menu', 'logRoute']], function () {
@@ -65,6 +67,7 @@ Route::group(['prefix' => 'fees', 'middleware' => ['session', 'menu', 'logRoute'
     Route::resource('NACH_s3excel_export', s3excel_exportController::class);
     Route::resource('NACH_s4excel_import', s4excel_importController::class);
     Route::resource('daily_voucher', daily_voucherController::class);
+    Route::resource('monthly_breakoff', monthlyBreakoffController::class);    
 
     Route::get('ajax_ledgerData', [otherNewfeesReportController::class, 'ajax_ledgerData'])->name('ajax_ledgerData');
 

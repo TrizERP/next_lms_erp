@@ -397,3 +397,6 @@ Route::group(['middleware' => ['session', 'menu', 'logRoute']], function () {
 Route::get('privacyPolicy', [dashboardController::class, 'privacyPolicy'])->name('privacyPolicy');
 Route::get('termAndCondition', [dashboardController::class, 'termAndCondition'])->name('termAndCondition');
 Route::get('otherPolicy', [dashboardController::class, 'otherPolicy'])->name('otherPolicy');
+Route::get('otherPolicy', [dashboardController::class, 'otherPolicy'])->name('otherPolicy');
+Route::any('check_permissions',[AJAXController::class, 'check_access'])->name('check_permissions');
+Route::any('check_access',[AJAXController::class, 'check_access'])->name('check_access');

@@ -16,6 +16,7 @@ use App\Http\Controllers\fees\fees_collect\fees_collect_controller;
 use App\Http\Controllers\AJAXController;
 use Illuminate\Support\Facades\Storage;
 use function App\Helpers\FeeMonthId;
+use App\Models\easy_com\manage_sms_api\manage_sms_api;
 
 require('excel_upload/PHPExcel/IOFactory.php');
 require('excel_upload/PHPExcel/Shared/Date.php');
@@ -23,7 +24,7 @@ require('excel_upload/PHPExcel/Cell.php');
 use PHPExcel_IOFactory;
 use PHPExcel_Shared_Date;
 use PHPExcel_Cell;
-
+// 9724348847
 
 class s4excel_importController extends Controller {
 	/**
@@ -91,10 +92,10 @@ class s4excel_importController extends Controller {
 			$filePath = 'NachExcel/Uploads/' . $file_name;
 			$inputFileName = storage_path('app/public/' . $filePath);
 
-		        $inputFileType = PHPExcel_IOFactory::identify($inputFileName);
-                $objReader = PHPExcel_IOFactory::createReader($inputFileType);
-                $objPHPExcel = $objReader->load($inputFileName);
-            
+			$inputFileType = PHPExcel_IOFactory::identify($inputFileName);
+			$objReader = PHPExcel_IOFactory::createReader($inputFileType);
+			$objPHPExcel = $objReader->load($inputFileName);					
+			
             $worksheet = $objPHPExcel->getSheet(0);
 	        $highestRow = $worksheet->getHighestRow();
 	        $highestColumn = $worksheet->getHighestColumn();
@@ -206,7 +207,6 @@ class s4excel_importController extends Controller {
 	            }
 	            $failed_bnk_str.="</tr>";
 
-
 	            $m = 0;
 	            $failed_chk_flg = 0;
 	            $failed_bnk_chk_flg = 0;
@@ -221,7 +221,12 @@ class s4excel_importController extends Controller {
 	            {	    	           
                 	if ($m == 1) 
                 	{
-                    	$maxCnt = count($titleArr);//count($value);
+<<<<<<< HEAD
+						$maxCnt = count($titleArr);//count($value);
+						// echo "m1 exit";exit;
+=======
+						$maxCnt = count($titleArr);
+>>>>>>> 25887c10c6d0695e6aa2ad78e1ad260346c7b632
                 	}
                 	if ($m >= 2) 
                 	{
@@ -258,8 +263,11 @@ class s4excel_importController extends Controller {
 	                    $STUDENT_DETAILS = $this->get_students_general_details_with_multiple_parameters($STUDENT_NAME, $STUDENT_GR_NO, $sub_institute_id, $syear);	                   	                                      	
 						$STUDENT_ID =  "";
 
-						// print_r($STUDENT_DETAILS);
+<<<<<<< HEAD
+						// print_r($TRANSACTION_STATUS);exit;
 
+=======
+>>>>>>> 25887c10c6d0695e6aa2ad78e1ad260346c7b632
                     	if (in_array($TRANSACTION_STATUS, $successStatusArr)) 
                     	{
                        		
@@ -280,7 +288,6 @@ class s4excel_importController extends Controller {
 								$STUDENT_ID = $STUDENT_DETAILS['STUDENT_ID'];
 	                            // Get Already Paid Fees Students
 								$fees_paid_chk = $this->is_fees_paid_chk($STUDENT_ID,$MONTH_ID,$syear);
-								// dd($fees_paid_chk);
 								
 	                            if (!empty($fees_paid_chk) || $fees_paid_chk !== "") 
 	                            {
@@ -300,7 +307,6 @@ class s4excel_importController extends Controller {
 
 	                        if ($STUDENT_ID != "") 
 	                        {
-	                            // dd($STUDENT_DETAILS);
 	                            $pay_month = array($MONTH_ID => $MONTH_ID);
 
 	                            //START Fees paid code
@@ -416,13 +422,11 @@ class s4excel_importController extends Controller {
 								}
                         }
                     } 
-                    else if (in_array($TRANSACTION_STATUS, $falilureStatusArr)) 
+                 if (in_array($TRANSACTION_STATUS, $falilureStatusArr)) 
                     {      
 						$STUDENT_ID = $STUDENT_DETAILS['STUDENT_ID'];
-						// echo "hello";
                         if ($STUDENT_ID != "") 
 						{
-							// echo $STUDENT_ID;exit;
 							$check = DB::table('tblstudent_fees_failure')->whereRaw("student_id='".$STUDENT_ID."' AND month_id='".$MONTH_ID."' AND  syear='".$syear."' AND sub_institute_id='".$sub_institute_id."' AND amount='".$STUDENT_FEES_AMOUNT."'")->get()->toArray();
 							if(empty($check)){
 								$failInsSql = "INSERT INTO tblstudent_fees_failure
@@ -430,11 +434,32 @@ class s4excel_importController extends Controller {
 								VALUES('".$STUDENT_ID."', '".$MONTH_ID."', '".$syear."','".$sub_institute_id."','".$STUDENT_FEES_AMOUNT."',
 								'".$REMARKS."','".$user_id."')";
 								DB::select($failInsSql);
-
-							$returned++;							
-								
 							}
-                          
+							$returned++;							
+<<<<<<< HEAD
+							
+							// $number = '';
+							// echo $STUDENT_DETAILS['MOBILE_NUMBER'];
+							$sms_text = "Fees Payment Failed";
+=======
+
+							$sms_text = "Dear Parents, Your Monthly Fee NACH is returned from the bank. Please arrange Sufficient Funds";
+>>>>>>> 25887c10c6d0695e6aa2ad78e1ad260346c7b632
+							$send_sms = $this->sendSMS($STUDENT_DETAILS['MOBILE_NUMBER'], $sms_text, $sub_institute_id);
+							if (isset($send_sms['error']) && $send_sms['error'] == 1) {
+								break;
+							} else {
+								DB::table('sms_sent_parents')->insert([
+									'SYEAR'            => $syear,
+									'STUDENT_ID'       => $STUDENT_DETAILS['STUDENT_ID'],
+									'SMS_TEXT'         => $sms_text,
+									'SMS_NO'           => $STUDENT_DETAILS['MOBILE_NUMBER'],
+									'MODULE_NAME'      => 'S4 NACH',
+									'sub_institute_id' => $sub_institute_id,
+								]);
+							}
+						 print_R($send_sms);
+							
                             $failed_bnk_chk_flg = 1;
 							
                             $failed_bnk_str.="<tr>";
@@ -460,7 +485,7 @@ class s4excel_importController extends Controller {
                   
                 }
                 $m++;
-				}
+				}exit;
 					$not_found_str.="</table>";
 					//$not_found_str.="<div style=clear:both;>&nbsp;</div>";
 					$not_found_str.="</div>";
@@ -577,5 +602,55 @@ class s4excel_importController extends Controller {
 	   	   
 	   return $return_arr;
 	}
+	public function sendSMS($mobile, $text, $sub_institute_id)
+    {
+        $data = manage_sms_api::where(['sub_institute_id' => $sub_institute_id])
+            ->get()->first();
 
+        if ($data) {
+            $data = $data->toArray();
+            $isError = 0;
+            $errorMessage = true;
+
+            $text = urlencode($text);
+            $data['last_var'] = urlencode($data['last_var']);
+
+            $url = $data['url'].$data['pram'].$data['mobile_var'].$mobile.$data['text_var'].$text.$data['last_var'];
+            $ch = curl_init();
+
+<<<<<<< HEAD
+            // Ignore SSL certificate verification
+=======
+>>>>>>> 25887c10c6d0695e6aa2ad78e1ad260346c7b632
+            curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 0);
+            curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, 0);
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($ch, CURLOPT_URL, $url);
+            $output = curl_exec($ch);
+<<<<<<< HEAD
+			print_r($output);
+
+            //Print error if any
+=======
+
+>>>>>>> 25887c10c6d0695e6aa2ad78e1ad260346c7b632
+            if (curl_errno($ch)) {
+                $isError = true;
+                $errorMessage = curl_error($ch);
+            }
+            curl_close($ch);
+        } else {
+			$isError = 1;
+			$errorMessage = "Please add api details first.";
+        }
+        $responce = [];
+        if ($isError) {
+            $responce = ['error' => 1, 'message' => $errorMessage];
+		}
+		 else {
+            $responce = ['message' => "Sent Message Successfully!!"];
+        }
+
+        return $responce;
+    }
 }

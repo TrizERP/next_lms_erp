@@ -122,6 +122,7 @@ class smtpController extends Controller
         $where_arr = [
             "sub_institute_id" => $sub_institute_id,
         ];
+
         $smtp_details = DB::table('smtp_details')
             ->where($where_arr)
             ->get();

@@ -120,7 +120,7 @@
 										</tr>
 										<tr>
 										<tr>
-											<td>{{ App\Helpers\get_string('studentname','request')}}<span id="menuId" style="display:none"></span><a href="{{route('norm-clature.create')}}"><i class="mdi mdi-lead-pencil"></i></a></td>
+											<td>{{ App\Helpers\get_string('studentname','request')}}<i class="mdi mdi-lead-pencil"></i></td>
 											<td>
 												{{ $data['stu_data']['name']; }}
 											</td>
@@ -138,7 +138,7 @@
 											</td>
 										</tr>
 										<tr>
-											<td>{{ App\Helpers\get_string('studentquota','request')}}<span id="menuId" style="display:none"></span><a href="{{route('norm-clature.create')}}"><i class="mdi mdi-lead-pencil"></i></a></td>
+											<td>{{ App\Helpers\get_string('studentquota','request')}}<i class="mdi mdi-lead-pencil"></i></td>
 											<td>
 												{{ $data['stu_data']['student_quota']; }}
 											</td>
@@ -156,7 +156,7 @@
 											</td>
 										</tr>
 										<tr>
-											<td>{{ App\Helpers\get_string('std/div','request')}}<span id="menuId" style="display:none"></span><a href="{{route('norm-clature.create')}}"><i class="mdi mdi-lead-pencil"></i></a></td>
+											<td>{{ App\Helpers\get_string('std/div','request')}}<i class="mdi mdi-lead-pencil"></i></td>
 											<td>
 												{{ $data['stu_data']['stddiv']; }}
 											</td>
@@ -266,7 +266,7 @@
 													<th style="width: 10%;padding-left: 15px;">Amount</th>
 													<th style="width: 20%;padding-left: 15px;">Collection Amount
 													</th>
-													<th style="width: 20%;padding-left: 15px;">{{ App\Helpers\get_string('Discount','request') }}<span id="menuId" style="display:none"></span><a href="{{route('norm-clature.create')}}"><i class="mdi mdi-lead-pencil"></i></a></th>
+													<th style="width: 20%;padding-left: 15px;">{{ App\Helpers\get_string('Discount','request') }}<i class="mdi mdi-lead-pencil"></i></th>
 													<th style="width: 20%;padding-left: 15px;">Fine</th>
 												</tr>
 												@php
@@ -486,7 +486,7 @@
 											<tr>
 												<th>Sr No.</th>
 												<th>GR No.</th>
-												<th>{{App\Helpers\get_string('StudentName','request')}}<span id="menuId" style="display:none"></span><a href="{{route('norm-clature.create')}}"><i class="mdi mdi-lead-pencil"></i></a></th>
+												<th>{{App\Helpers\get_string('StudentName','request')}}<i class="mdi mdi-lead-pencil"></i></th>
 												<th>Std-Div</th>
 												<th>Uniqueid</th>
 												<th>Month</th>
