@@ -13,23 +13,16 @@
 
         <div class="card">
         @if(!empty($data['message']))
-            @if(!empty($data['status_code']) && $data['status_code'] == 1)
+                    @if(!empty($data['status_code']) && $data['status_code'] == 1)
                         <div class="alert alert-success alert-block">
-            @else
-                        <div class="alert alert-danger alert-block">
-            @endif
-                <button type="button" class="close" data-dismiss="alert">×</button>
-                <strong>{{ $data['message'] }}
-            @if(isset($data['Error_details']))
-            <div style="display:flex;flex-wrap:wrap;justify-content:space-between">
-            @foreach($data['Error_details'] as $key=>$val)
-            <div>{{$key.' : '.$val}}</div>
-            @endforeach
-            </div>
-            @endif </strong>
-            </div>
-        @endif
-        @php
+                            @else
+                                <div class="alert alert-danger alert-block">
+                                    @endif
+                                    <button type="button" class="close" data-dismiss="alert">×</button>
+                                    <strong>{{ $data['message'] }}</strong>
+                                </div>
+                            @endif
+            @php
         $grade_id = $standard_id = $division_id = '';
 
             if(isset($data['grade_id'])){
@@ -51,20 +44,20 @@
                     </div>
                     
                     <div class="col-md-4 form-group">
-                        <label>{{App\Helpers\get_string('studentname','request')}}<span id="menuId" style="display:none"></span><a href="{{route('norm-clature.create')}}"><i class="mdi mdi-lead-pencil"></i></a></label>
-                        <input type="text" id="stu_name" placeholder="Name" name="stu_name" class="form-control" @if(isset($data['stu_name'])) value="{{$data['stu_name']}}" @endif>
+                        <label>{{App\Helpers\get_string('studentname','request')}}<i class="mdi mdi-lead-pencil"></i></label>
+                        <input type="text" id="stu_name" placeholder="{{App\Helpers\get_string('studentname','request')}}" name="stu_name" class="form-control" @if(isset($data['stu_name'])) value="{{$data['stu_name']}}" @endif>
                     </div>
                     <div class="col-md-4 form-group">
-                        <label>{{App\Helpers\get_string('uniqueid','request')}}<span id="menuId" style="display:none"></span><a href="{{route('norm-clature.create')}}"><i class="mdi mdi-lead-pencil"></i></a></label>
-                        <input type="text" id="uniqueid" placeholder="UniqueID/Adm.No" name="uniqueid" class="form-control" @if(isset($data['uniqueid'])) value="{{$data['uniqueid']}}" @endif>
+                        <label>{{App\Helpers\get_string('uniqueid','request')}}<i class="mdi mdi-lead-pencil"></i></label>
+                        <input type="text" id="uniqueid" placeholder="{{App\Helpers\get_string('uniqueid','request')}}" name="uniqueid" class="form-control" @if(isset($data['uniqueid'])) value="{{$data['uniqueid']}}" @endif>
                     </div>
                     <div class="col-md-4 form-group">
                         <label>Mobile</label>
                         <input type="text" id="mobile" placeholder="Mobile" name="mobile" class="form-control" @if(isset($data['mobile'])) value="{{$data['mobile']}}" @endif>
                     </div>                        
                     <div class="col-md-4 form-group">
-                        <label>{{App\Helpers\get_string('grno','request')}}<span id="menuId" style="display:none"></span><a href="{{route('norm-clature.create')}}"><i class="mdi mdi-lead-pencil"></i></a></label>
-                        <input type="text" id="grno" placeholder="Gr No." name="grno" class="form-control" @if(isset($data['grno'])) value="{{$data['grno']}}" @endif>
+                        <label>{{App\Helpers\get_string('grno','request')}}<i class="mdi mdi-lead-pencil"></i></label>
+                        <input type="text" id="grno" placeholder="{{App\Helpers\get_string('grno','request')}}" name="grno" class="form-control" @if(isset($data['grno'])) value="{{$data['grno']}}" @endif>
                         @if(app('request')->input('implementation') == 1)
                         <input type="hidden" name="implementation" value="1">
                         @endif
@@ -99,8 +92,8 @@
                     <table class="table table-box table-bordered">
                         <tr>
                             <th>Sr No.</th>
-                            <th>{{App\Helpers\get_string('studentname','request')}}</th>
-                            <th>{{App\Helpers\get_string('grno','request')}}</th>
+                            <th>{{ App\Helpers\get_string('studentname','request')}}</th>
+                            <th>{{ App\Helpers\get_string('grno','request')}}</th>
                             <th>{{ App\Helpers\get_string('standard','request')}}</th>
                             <th>{{ App\Helpers\get_string('division','request')}}</a></th>                            
                             <th>{{ App\Helpers\get_string('studentquota','request')}}</th>

@@ -221,7 +221,12 @@ class s4excel_importController extends Controller {
 	            {	    	           
                 	if ($m == 1) 
                 	{
+<<<<<<< HEAD
+						$maxCnt = count($titleArr);//count($value);
+						// echo "m1 exit";exit;
+=======
 						$maxCnt = count($titleArr);
+>>>>>>> 25887c10c6d0695e6aa2ad78e1ad260346c7b632
                 	}
                 	if ($m >= 2) 
                 	{
@@ -258,6 +263,11 @@ class s4excel_importController extends Controller {
 	                    $STUDENT_DETAILS = $this->get_students_general_details_with_multiple_parameters($STUDENT_NAME, $STUDENT_GR_NO, $sub_institute_id, $syear);	                   	                                      	
 						$STUDENT_ID =  "";
 
+<<<<<<< HEAD
+						// print_r($TRANSACTION_STATUS);exit;
+
+=======
+>>>>>>> 25887c10c6d0695e6aa2ad78e1ad260346c7b632
                     	if (in_array($TRANSACTION_STATUS, $successStatusArr)) 
                     	{
                        		
@@ -426,8 +436,15 @@ class s4excel_importController extends Controller {
 								DB::select($failInsSql);
 							}
 							$returned++;							
+<<<<<<< HEAD
+							
+							// $number = '';
+							// echo $STUDENT_DETAILS['MOBILE_NUMBER'];
+							$sms_text = "Fees Payment Failed";
+=======
 
 							$sms_text = "Dear Parents, Your Monthly Fee NACH is returned from the bank. Please arrange Sufficient Funds";
+>>>>>>> 25887c10c6d0695e6aa2ad78e1ad260346c7b632
 							$send_sms = $this->sendSMS($STUDENT_DETAILS['MOBILE_NUMBER'], $sms_text, $sub_institute_id);
 							if (isset($send_sms['error']) && $send_sms['error'] == 1) {
 								break;
@@ -468,7 +485,7 @@ class s4excel_importController extends Controller {
                   
                 }
                 $m++;
-				}
+				}exit;
 					$not_found_str.="</table>";
 					//$not_found_str.="<div style=clear:both;>&nbsp;</div>";
 					$not_found_str.="</div>";
@@ -601,12 +618,22 @@ class s4excel_importController extends Controller {
             $url = $data['url'].$data['pram'].$data['mobile_var'].$mobile.$data['text_var'].$text.$data['last_var'];
             $ch = curl_init();
 
+<<<<<<< HEAD
+            // Ignore SSL certificate verification
+=======
+>>>>>>> 25887c10c6d0695e6aa2ad78e1ad260346c7b632
             curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 0);
             curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, 0);
             curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
             curl_setopt($ch, CURLOPT_URL, $url);
             $output = curl_exec($ch);
+<<<<<<< HEAD
+			print_r($output);
 
+            //Print error if any
+=======
+
+>>>>>>> 25887c10c6d0695e6aa2ad78e1ad260346c7b632
             if (curl_errno($ch)) {
                 $isError = true;
                 $errorMessage = curl_error($ch);
