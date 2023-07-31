@@ -74,14 +74,18 @@
         }
         @endphp
         <div class="card">
-            <form method="POST" action="show_student_certificate">
+            <form method="POST" action="{{ route('student_optional_subject.store') }}">
                 @csrf
                 <div class="row">
                     <div class="col-md-4 form-group">
                         <label>Optional Activities</label>
-                        <select class="form-control" name="subject[]" required="required" multiple>
+                        <select class="form-control" name="subjects[]" required="required" multiple>
                             <option value="">Select Activities</option>
-                            <option value="Bonafide">Bonafide Certificate</option>                                 
+                            @if(isset($data['co_scholastic_masters']))
+                                @foreach ($data['co_scholastic_masters'] as $activity)
+                                    <option value="{{ $activity['id'] }}">{{ $activity['title'] }}</option>
+                                @endforeach
+                            @endif                                                                
                         </select>
                     </div>
                     <div class="col-lg-12 col-sm-12 col-xs-12">

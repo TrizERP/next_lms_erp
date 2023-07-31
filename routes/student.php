@@ -103,6 +103,7 @@ Route::group(['prefix' => 'student', 'middleware' => ['session', 'menu', 'logRou
     Route::resource('student_change_request_type', studentChangeRequestTypeController::class);
     Route::post('show_search_student', [studentSearchController::class, 'searchStudent'])->name("show_search_student");
     Route::post('show_search_student_optional_subject', [studentOptionalSubjectController::class, 'searchStudentOptionalSubject'])->name("show_search_student_optional_subject");
+    //Route::post('add_student_optional_subject', [studentOptionalSubjectController::class, 'addStudentOptionalSubject'])->name('add_student_optional_subject');
     Route::post('show_student_report', [studentReportController::class, 'searchStudent'])->name("show_student_report");
     Route::resource('missing_document_report', missingDocumentReportController::class);
     Route::resource('inactive_student_report', InactiveStudentReportController::class);
