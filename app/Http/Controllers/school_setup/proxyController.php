@@ -189,12 +189,12 @@ class proxyController extends Controller
                 'timetable.syear'            => $syear,
             ])
             ->whereIn('week_day', $days)
-            ->whereNotIn('timetable.id', function ($query) use ($sub_institute_id, $proxy_teacher_id, $from_date, $to_date) {
+            /* ->whereNotIn('timetable.id', function ($query) use ($sub_institute_id, $proxy_teacher_id, $from_date, $to_date) {
                 $query->select(DB::raw('ifnull(group_concat(timetable_id),0)'))
                     ->from('proxy_master')
                     ->whereRaw("sub_institute_id = $sub_institute_id  and teacher_id = $proxy_teacher_id")
                     ->whereBetween('proxy_date', [$from_date, $to_date]);
-            })
+            }) */
             ->groupby('p.id')
             ->orderBy('week_day', 'asc')
             ->get()->toArray();
@@ -234,7 +234,7 @@ class proxyController extends Controller
                 ->groupBy('ti.teacher_id')
                 ->orderBy('t.first_name')
                 ->get();
-
+                
                 $proxydata[] = [
                     'date'          => $val,
                     'standard_id'   => $tval['standard_id'],
