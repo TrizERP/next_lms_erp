@@ -30,6 +30,8 @@ use App\Models\school_setup\divisionModel;
 use App\Models\school_setup\academic_sectionModel;
 use function App\Helpers\get_string;
 //use function App\Helpers\FeeBreakoffHeadWise;
+use Google\Cloud\NaturalLanguage\LanguageServiceClient;
+
 
 class AJAXController extends Controller
 {
@@ -1772,5 +1774,19 @@ class AJAXController extends Controller
         ]);
     
     }
+    }
+
+     public function bard_chat(Request $request)
+    {
+        $text = $request->input('text');
+
+        $client = new LanguageServiceClient();
+        $document = $client->document($text);
+        $entities = $document->entities();
+
+        return view('bard', [
+            'text' => $text,
+            'entities' => $entities,
+        ]);
     }
 }
