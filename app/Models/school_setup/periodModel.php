@@ -21,6 +21,7 @@ class periodModel extends Model
         'status',
         'sub_institute_id',
         'created_at',
-        'updated_at'
+        'updated_at',
+        'marking_period_id',
     ];
 }

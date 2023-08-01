@@ -25,8 +25,12 @@ class std_divController extends Controller
     public function getData(Request $request)
     {
         $sub_institute_id = $request->session()->get('sub_institute_id');
+        $marking_period_id = session()->get('term_id');
+
         $std_data = DB::table('standard')->select('id',
-            'name')->where(['sub_institute_id' => $sub_institute_id])->get();
+            'name')->where(['sub_institute_id' => $sub_institute_id])->when($marking_period_id,function($query) use($marking_period_id){
+                $query->where('marking_period_id',$marking_period_id);
+            })->get();
         $div_data = DB::table('division')->select('id',
             'name')->where(['sub_institute_id' => $sub_institute_id])->get();
         $std_div_map_data = DB::table('std_div_map')->select('standard_id',

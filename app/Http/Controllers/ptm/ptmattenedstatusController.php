@@ -30,9 +30,12 @@ class ptmattenedstatusController extends Controller
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $res['status_code'] = 1;
         $res['message'] = "Success";
+        $marking_period_id = session()->get('term_id');
 
         $standard = standardModel::select('id', 'name')
-            ->where(['sub_institute_id' => $sub_institute_id])->get()->toArray();
+            ->where(['sub_institute_id' => $sub_institute_id])->when($marking_period_id,function($query) use ($marking_period_id){
+                $query->where('marking_period_id',$marking_period_id);
+            })->get()->toArray();
 
         $user_data = tbluserModel::select('tbluser.*', DB::raw('concat(tbluser.first_name," ",tbluser.middle_name," ",
                 tbluser.last_name) as teacher_name'))
@@ -59,6 +62,7 @@ class ptmattenedstatusController extends Controller
         $type = $request->input('type');
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $syear = $request->session()->get('syear');
+        $marking_period_id = session()->get('term_id');
 
         $result = DB::table("ptm_booking_master as PBM")
             ->join('ptm_time_slots_master as PTS', function ($join) {
@@ -70,8 +74,10 @@ class ptmattenedstatusController extends Controller
             ->join('tblstudent_enrollment as se', function ($join) use ($syear) {
                 $join->whereRaw("se.student_id = s.id AND se.syear = '".$syear."'");
             })
-            ->join('standard as cs', function ($join) {
-                $join->whereRaw("cs.id = se.standard_id");
+            ->join('standard as cs', function ($join) use($marking_period_id) {
+                $join->whereRaw("cs.id = se.standard_id")->when($marking_period_id,function($query) use ($marking_period_id){
+                    $query->where('cs.marking_period_id',$marking_period_id);
+                });
             })
             ->join('division as ss', function ($join) {
                 $join->whereRaw("ss.id = se.section_id");
@@ -263,7 +269,7 @@ class ptmattenedstatusController extends Controller
         $sub_institute_id = $request->input("sub_institute_id");
         $syear = $request->input("syear");
         $time_slot_id = $request->input("time_slot_id");
-
+        $marking_period_id = session()->get('term_id');
 
         if ($student_id != "" && $sub_institute_id != "" && $syear != "" && $time_slot_id != "") {
 
@@ -271,8 +277,10 @@ class ptmattenedstatusController extends Controller
                 ->join('ptm_time_slots_master as ps', function ($join) {
                     $join->whereRaw("ps.id= pb.TIME_SLOT_ID");
                 })
-                ->join('standard as cs', function ($join) {
-                    $join->whereRaw("cs.id = ps.standard_id");
+                ->join('standard as cs', function ($join) use($marking_period_id) {
+                    $join->whereRaw("cs.id = ps.standard_id")->when($marking_period_id,function($query) use ($marking_period_id){
+                        $query->where('cs.marking_period_id',$marking_period_id);
+                    });
                 })
                 ->join('tblstudent_enrollment as se', function ($join) {
                     $join->whereRaw("se.standard_id = cs.id");
@@ -320,12 +328,14 @@ class ptmattenedstatusController extends Controller
         $sub_institute_id = $request->input("sub_institute_id");
         $syear = $request->input("syear");
         $date = $request->input("date");
-
+        $marking_period_id = session()->get('term_id');
 
         if ($student_id != "" && $sub_institute_id != "" && $syear != "" && $date != "") {
             $data = DB::table("ptm_time_slots_master as ps")
-                ->join('standard as cs', function ($join) {
-                    $join->whereRaw("cs.id = ps.standard_id");
+                ->join('standard as cs', function ($join) use($marking_period_id){
+                    $join->whereRaw("cs.id = ps.standard_id")->when($marking_period_id,function($query) use ($marking_period_id){
+                        $query->where('cs.marking_period_id',$marking_period_id);
+                    });
                 })
                 ->join('tblstudent_enrollment as se', function ($join) {
                     $join->whereRaw("se.standard_id = cs.id");

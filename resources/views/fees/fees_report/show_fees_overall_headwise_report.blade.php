@@ -160,7 +160,7 @@
                             }
                             @endphp                                                    
                         </tr>
-                        <tr>
+                        <tr>    
                             @if(isset($data['bk_title_months_array']))
 
                                 @foreach($data['bk_title_months_array'] as $main_head => $child_head)
@@ -198,7 +198,7 @@
                                 @foreach($data['bk_title_months_array'] as $main_head => $child_head)
                                     @if(is_array($child_head))
                                         @foreach($child_head as $child_key => $child_val)
-                                            <th>{{$child_val}}</th>   
+                                            <th>{{$child_val}}0</th>   
                                         @endforeach
                                     @endif
                                 @endforeach

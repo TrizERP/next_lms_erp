@@ -39,18 +39,14 @@ class classwisetimetableController extends Controller
         return is_mobile($type, 'school_setup/show_classwisetimetable', $res, "view");
     }
 
-    public function getTimetable_data(
-        Request $request,
-        $academic_section_id,
-        $standard_id,
-        $division_id,
-        $sub_institute_id
-    ) {
+    public function getTimetable_data(Request $request,$academic_section_id,$standard_id,$division_id,$sub_institute_id) {
         $syear = $request->session()->get('syear');
-
+        $marking_period_id = session()->get('term_id');
         $get_name_data = DB::table('academic_section as ac')
-            ->join('standard as s', function ($join) {
-                $join->whereRaw('s.grade_id = ac.id AND ac.sub_institute_id = s.sub_institute_id');
+            ->join('standard as s', function ($join) use($marking_period_id){
+                $join->whereRaw('s.grade_id = ac.id AND ac.sub_institute_id = s.sub_institute_id')->when($marking_period_id,function($query) use($marking_period_id){
+                    $query->where('s.marking_period_id',$marking_period_id);
+                });
             })->join('std_div_map as sd', function ($join) {
                 $join->whereRaw('sd.standard_id = s.id AND sd.sub_institute_id = s.sub_institute_id');
             })->join('division as d', function ($join) {
@@ -239,7 +235,7 @@ class classwisetimetableController extends Controller
         $student_id = $request->input("student_id");
         $sub_institute_id = $request->input("sub_institute_id");
         $syear = $request->input("syear");
-
+        $marking_period_id = session()->get('term_id');
         if ($student_id != "" && $sub_institute_id != "" && $syear != "") {
             /*$data = DB::select("SELECT * FROM (
             SELECT CASE
@@ -269,10 +265,12 @@ class classwisetimetableController extends Controller
                 ->join('tblstudent_enrollment as se', function ($join) {
                     $join->whereRaw('se.standard_id = t.standard_id AND se.section_id = t.division_id AND se.sub_institute_id 
                         = t.sub_institute_id AND se.syear = t.syear');
-                })->join('tblstudent as ts', function ($join) {
+                })->join('tblstudent as ts', function ($join){
                     $join->whereRaw("ts.id = se.student_id AND ts.sub_institute_id = se.sub_institute_id");
-                })->join('standard as s', function ($join) {
-                    $join->whereRaw("s.id = t.standard_id AND s.sub_institute_id = t.sub_institute_id");
+                })->join('standard as s', function ($join) use($marking_period_id){
+                    $join->whereRaw("s.id = t.standard_id AND s.sub_institute_id = t.sub_institute_id")->when($marking_period_id,function($query) use($marking_period_id){
+                        $query->where('s.marking_period_id',$marking_period_id);
+                    });
                 })->join('subject as sub', function ($join) {
                     $join->whereRaw("sub.id = t.subject_id AND sub.sub_institute_id = t.sub_institute_id");
                 })->join('tbluser as u', function ($join) {

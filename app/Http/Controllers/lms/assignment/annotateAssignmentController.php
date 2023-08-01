@@ -36,13 +36,17 @@ class annotateAssignmentController extends Controller
     {
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $syear = $request->session()->get('syear');
-
+        $marking_period_id = session()->get('term_id');
         $data['assignment_data'] = DB::table('lms_assignment as a')
             ->select('a.*', 'subject_name',
                 DB::raw('concat_ws(" ",ts.first_name,ts.middle_name,ts.last_name) as student_name,st.name as standard_name'))
             ->join('subject as s', 's.id', 'a.subject_id')
             ->join('tblstudent as ts', 'ts.id', 'a.student_id')
-            ->join('standard as st', 'st.id', 'a.standard_id')
+            ->join('standard as st',function($join) use($marking_period_id) {
+                $join->on('st.id', 'a.standard_id')->when($marking_period_id,function($query) use($marking_period_id){
+                    $query->where('st.marking_period_id',$marking_period_id);
+                });
+            })
             ->where(['a.sub_institute_id' => $sub_institute_id, 'a.syear' => $syear])
             ->get()->toArray();
 

@@ -260,10 +260,13 @@ class studentInfirmaryController extends Controller
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $syear = $request->session()->get('syear');
         $req = $request->except('_token', '_method', 'submit');
+        $marking_period_id = session()->get('term_id');
 
         $result = DB::table($req['health_type']." as si")
-            ->join('tblstudent as s', function ($join) {
-                $join->whereRaw("si.student_id = s.id");
+            ->join('tblstudent as s', function ($join) use($marking_period_id){
+                $join->whereRaw("si.student_id = s.id")->when(function($query) use($marking_period_id){
+                    $query->where('s.marking_period_id',$marking_period_id);
+                });
             })->join('tblstudent_enrollment as se', function ($join) use ($syear) {
                 $join->whereRaw("se.student_id = s.id and se.syear = '".$syear."'");
             })->selectRaw("si.*, CONCAT_WS(' ',s.first_name,s.middle_name,s.last_name) AS student_name")

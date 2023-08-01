@@ -46,72 +46,6 @@ class imprestFeesCancelController extends Controller
         return is_mobile($type, "fees/imprest_fees_cancel/index", $res , "view");
     }
 
-    /**
-     * Show the form for creating a new resource.
-     *
-     * @return \Illuminate\Http\Response
-     */
-    public function create()
-    {
-        //
-    }
-
-    /**
-     * Store a newly created resource in storage.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\Response
-     */
-    public function store(Request $request)
-    {
-        //
-    }
-
-    /**
-     * Display the specified resource.
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
-    public function show($id)
-    {
-        //
-    }
-
-    /**
-     * Show the form for editing the specified resource.
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
-    public function edit($id)
-    {
-        //
-    }
-
-    /**
-     * Update the specified resource in storage.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
-    public function update(Request $request, $id)
-    {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
-    public function destroy($id)
-    {
-        //
-    }
-
     public function showImprestFees(Request $request)
     {
         // dd($request);
@@ -125,10 +59,10 @@ class imprestFeesCancelController extends Controller
         $receipt_no = $request->input('receipt_no');
         $syear = $request->session()->get('syear');
         $sub_institute_id = $request->session()->get('sub_institute_id');
+        $marking_period_id = session()->get('term_id');
 
         $other_extraSearchArray = array();
         $other_extraSearchArrayRaw = " fees_paid_other.is_deleted = 'N' ";
-
         if($grade != '')
         {
             $other_extraSearchArray['tblstudent_enrollment.grade_id'] = $grade;
@@ -174,7 +108,11 @@ class imprestFeesCancelController extends Controller
             CONCAT_WS(' ',tblstudent.first_name,tblstudent.middle_name,tblstudent.last_name) AS student_name,academic_section.title as grade,standard.name as standard_name,division.name as division_name,tblstudent.enrollment_no,date_format(fees_paid_other.created_date,'%Y-%m-%d %H:%i:%s') as created_on,tblstudent.id as student_id,fees_paid_other.id as fees_paid_other_id")
             ->join('tblstudent_enrollment', 'tblstudent.id', '=', 'tblstudent_enrollment.student_id')
             ->join('academic_section', 'academic_section.id', '=', 'tblstudent_enrollment.grade_id')
-            ->join('standard', 'standard.id', '=', 'tblstudent_enrollment.standard_id')
+            ->join('standard', function ($join) use($marking_period_id){
+                $join->on('standard.id', '=', 'tblstudent_enrollment.standard_id')->when($marking_period_id,function($query) use ($marking_period_id){
+                    $query->where('standard.marking_period_id',$marking_period_id);
+                });
+            })
             ->join('division', 'division.id', '=', 'tblstudent_enrollment.section_id')
             ->join('fees_paid_other', 'fees_paid_other.student_id', '=', 'tblstudent.id')
             ->leftjoin('fees_other_collection', function ($join) {
@@ -248,6 +186,7 @@ class imprestFeesCancelController extends Controller
         $syear = $request->session()->get('syear');
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $user_id = $request->session()->get('user_id');
+        $marking_period_id = session()->get('term_id');
 
         if($receipt_nos == '')
         {
@@ -384,17 +323,39 @@ class imprestFeesCancelController extends Controller
             $RECEIPT_NO_result = DB::select($sql_receipt);
             $RECEIPT_NO = $syear.'/'.($RECEIPT_NO_result[0]->rid + 1);
 
-            $student_sql = "SELECT s.id,CONCAT_WS(' ',s.first_name,s.last_name) AS stu_name,
-                            CONCAT_WS('/',st.name,d.name) AS std_name,s.enrollment_no,s.mobile
-                            FROM tblstudent s
-                            INNER JOIN tblstudent_enrollment se ON se.student_id = s.id AND s.sub_institute_id = se.sub_institute_id
-                            INNER JOIN academic_section aa ON aa.id = se.grade_id
-                            INNER JOIN standard st ON st.id = se.standard_id AND st.sub_institute_id = se.sub_institute_id
-                            INNER JOIN division d ON d.id = se.section_id AND d.sub_institute_id = se.sub_institute_id
-                            WHERE s.id = '" . $feesDetails->student_id . "' AND se.syear = '" . $syear . "' AND se.end_date IS NULL
-                            AND s.sub_institute_id = '" . $sub_institute_id . "'";
-            $stu_data = DB::select($student_sql);
-
+            // $student_sql = "SELECT s.id,CONCAT_WS(' ',s.first_name,s.last_name) AS stu_name,
+            //                 CONCAT_WS('/',st.name,d.name) AS std_name,s.enrollment_no,s.mobile
+            //                 FROM tblstudent s
+            //                 INNER JOIN tblstudent_enrollment se ON se.student_id = s.id AND s.sub_institute_id = se.sub_institute_id
+            //                 INNER JOIN academic_section aa ON aa.id = se.grade_id
+            //                 INNER JOIN standard st ON st.id = se.standard_id AND st.sub_institute_id = se.sub_institute_id
+            //                 INNER JOIN division d ON d.id = se.section_id AND d.sub_institute_id = se.sub_institute_id
+            //                 WHERE s.id = '" . $feesDetails->student_id . "' AND se.syear = '" . $syear . "' AND se.end_date IS NULL
+            //                 AND s.sub_institute_id = '" . $sub_institute_id . "'";
+            // $stu_data = DB::select($student_sql);
+            $stu_data = DB::table('tblstudent as s')
+            ->selectRaw('s.id, CONCAT_WS(" ", s.first_name, s.last_name) AS stu_name,
+                CONCAT_WS("/", st.name, d.name) AS std_name, s.enrollment_no, s.mobile')
+            ->join('tblstudent_enrollment as se', function ($join) use ($feesDetails, $syear, $sub_institute_id) {
+                $join->on('se.student_id', '=', 's.id')
+                    ->where('s.sub_institute_id', '=', $sub_institute_id)
+                    ->where('s.id', '=', $feesDetails->student_id)
+                    ->where('se.syear', '=', $syear)
+                    ->whereNull('se.end_date');
+            })
+            ->join('academic_section as aa', 'aa.id', '=', 'se.grade_id')
+            ->join('standard as st', function ($join) use($marking_period_id) {
+                $join->on('st.id', '=', 'se.standard_id')
+                    ->when($marking_period_id, function($query) use($marking_period_id) {
+                        $query->where('st.marking_period_id',$marking_period_id);
+                    });
+            })
+            ->join('division as d', function ($join) {
+                $join->on('d.id', '=', 'se.section_id');
+                        })
+            ->where('s.sub_institute_id', '=', $sub_institute_id)
+            ->get();
+        // return $stu_data;exit;
             $receipt_book_arr = array();
             foreach ($result as $temp_id => $receipt_detail) {
                 $receipt_book_arr = $receipt_detail;

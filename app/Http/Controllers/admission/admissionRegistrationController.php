@@ -30,14 +30,16 @@ class admissionRegistrationController extends Controller
         $type = $request->input('type');
         $sub_institute_id = $request->session()->get("sub_institute_id");
         $syear = session()->get("syear");
-
+        $marking_period_id = session()->get('term_id');
         $data = DB::table('admission_enquiry as ae')
             ->join('admission_form as af', function ($join) {
                 $join->whereRaw('ae.id = af.enquiry_id');
             })->leftJoin('tblstudent as ts', function ($join) {
                 $join->whereRaw('ts.admission_id = ae.id AND ts.admission_year = ae.syear AND ts.sub_institute_id = ae.sub_institute_id');
-            })->leftJoin('standard as s', function ($join) {
-                $join->on('s.id', '=', 'ae.admission_standard');
+            })->leftJoin('standard as s', function ($join) use($marking_period_id) {
+                $join->whereRaw('ts.admission_id = ae.id AND ts.admission_year = ae.syear AND ts.sub_institute_id = ae.sub_institute_id')->when($marking_period_id,function($query) use ($marking_period_id){
+                    $query->where('s.marking_period_id',$marking_period_id);
+                });
             })
             ->selectRaw("ae.*,COUNT(ts.id) AS total_student_count,ae.remarks AS enquiry_remark,s.name AS std_name")
             ->where('ae.sub_institute_id', $sub_institute_id)
@@ -55,38 +57,6 @@ class admissionRegistrationController extends Controller
     }
 
     /**
-     * Show the form for creating a new resource.
-     *
-     * @return void
-     */
-    public function create()
-    {
-        //
-    }
-
-    /**
-     * Store a newly created resource in storage.
-     *
-     * @param  Request  $request
-     * @return void
-     */
-    public function store(Request $request)
-    {
-        //
-    }
-
-    /**
-     * Display the specified resource.
-     *
-     * @param  int  $id
-     * @return void
-     */
-    public function show($id)
-    {
-        //
-    }
-
-    /**
      * Show the form for editing the specified resource.
      *
      * @param  int  $id
@@ -96,7 +66,7 @@ class admissionRegistrationController extends Controller
     {
         $type = $request->input('type');
         $sub_institute_id = $request->session()->get('sub_institute_id');
-
+        $marking_period_id = session()->get('term_id');
         if ($sub_institute_id == 198) // For Mahaeshvari school
         {
             $data = DB::table('admission_enquiry as ae')
@@ -158,8 +128,10 @@ class admissionRegistrationController extends Controller
         $bloodgroupData = bloodgroupModel::select()->get();
 
         $getDiv = DB::table('std_div_map as sdm')
-            ->join('standard as s', function ($join) {
-                $join->whereRaw('s.id =sdm.standard_id AND s.sub_institute_id = sdm.sub_institute_id');
+            ->join('standard as s', function ($join) use($marking_period_id) {
+                $join->whereRaw('s.id =sdm.standard_id AND s.sub_institute_id = sdm.sub_institute_id')->when($marking_period_id,function($query) use ($marking_period_id){
+                    $query->where('tblstudent.marking_period_id',$marking_period_id);
+                });
             })->join('division as d', function ($join) {
                 $join->whereRaw('d.id = sdm.division_id AND d.sub_institute_id = sdm.sub_institute_id');
             })->selectRaw('d.id,d.name,sdm.standard_id')
@@ -518,10 +490,12 @@ class admissionRegistrationController extends Controller
     {
         $standard_id = $request->input("standard_id");
         $sub_institute_id = session()->get("sub_institute_id");
-
+        $marking_period_id = session()->get('term_id');
         return DB::table('std_div_map as sdm')
-            ->join('standard ad s', function ($join) {
-                $join->whereRaw('s.id =sdm.standard_id AND s.sub_institute_id = sdm.sub_institute_id');
+            ->join('standard ad s', function ($join) use($marking_period_id) {
+                $join->whereRaw('s.id =sdm.standard_id AND s.sub_institute_id = sdm.sub_institute_id')->when($marking_period_id,function($query) use ($marking_period_id){
+                    $query->where('s.marking_period_id',$marking_period_id);
+                });
             })->join('division ad d', function ($join) {
                 $join->whereRaw('d.id = sdm.division_id AND d.sub_institute_id = sdm.sub_institute_id');
             })->selectRaw("d.id,d.name,sdm.standard_id")

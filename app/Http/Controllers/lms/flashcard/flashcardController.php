@@ -42,12 +42,17 @@ class flashcardController extends Controller
             $syear = $request->session()->get('syear');
         }
         $data['flashcard_data'] = array();
+        $marking_period_id = session()->get('term_id');
 
         $where_condition['lms_question_master.sub_institute_id'] = $sub_institute_id;
 
         $data['flashcard_data'] = flashcardModel::select('lms_flashcard.*', 's.name as standard_name', 'c.chapter_name',
             'sub.subject_name')
-            ->join('standard as s', 's.id', 'lms_flashcard.standard_id')
+            ->join('standard as s',function($join) use($marking_period_id){
+                $join->on('s.id', 'lms_flashcard.standard_id')->when($marking_period_id,function($query) use($marking_period_id){
+                    $query->where('s.marking_period_id',$marking_period_id);
+                });
+            })
             ->join('subject as sub', 'sub.id', 'lms_flashcard.subject_id')
             ->join('chapter_master as c', 'c.id', 'lms_flashcard.chapter_id')
             ->where([
@@ -56,8 +61,8 @@ class flashcardController extends Controller
             ])
             ->get();
 //  $data['content_category'] = lmsContentCategoryModel::where('status', '2')->get()->toArray();
-$data['content_data'] = contentModel::find($request->content_id)->toArray();
-$data['breadcrum_data'] = $this->getBreadcrum($sub_institute_id,$data['content_data']['chapter_id'] ?? '',$data['content_data']['topic_id']);
+        $data['content_data'] = contentModel::find($request->content_id)->toArray();
+        $data['breadcrum_data'] = $this->getBreadcrum($sub_institute_id, $data['content_data']['chapter_id'] ?? '', $data['content_data']['topic_id']);
         // $data['breadcrum_data'] = $this->getBreadcrum($sub_institute_id, $syear, $request->get('content_id'));
 
         return $data;
@@ -65,21 +70,7 @@ $data['breadcrum_data'] = $this->getBreadcrum($sub_institute_id,$data['content_d
 
     public function getBreadcrum($sub_institute_id, $chapter_id, $topic_id ='')
     {
-        // $breadcrum_data = DB::table('content_master as c')
-        //     ->join('standard as st', function ($join) {
-        //         $join->whereRaw('st.id = c.standard_id');
-        //     })->join('sub_std_map as su', function ($join) {
-        //         $join->whereRaw('su.subject_id = c.subject_id AND su.standard_id = c.standard_id');
-        //     })->join('chapter_master as ch', function ($join) {
-        //         $join->whereRaw('ch.id = c.chapter_id');
-        //     })->join('topic_master as t', function ($join) {
-        //         $join->whereRaw('t.chapter_id = c.id');
-        //     })->selectRaw("c.*,st.name AS standard_name,su.display_name AS subject_name,
-        //             ch.chapter_name,t.name AS topic_name,c.id as content_id")
-        //     ->where('c.sub_institute_id', $sub_institute_id)
-        //     ->where('c.id', $content_id)->get()->toArray();
-
-        // return $breadcrum_data[0] ?? [];
+     
         
         $where = '';
         $topic = '';
@@ -96,7 +87,7 @@ $data['breadcrum_data'] = $this->getBreadcrum($sub_institute_id,$data['content_d
                 $join->whereRaw('s.subject_id = c.subject_id AND s.standard_id = c.standard_id');
             })->join('standard as st', function ($join) {
                 $join->whereRaw('st.id = c.standard_id');
-            })->join('topic_master as t', function ($join) {
+            })->LeftJoin('topic_master as t', function ($join) {
                 $join->whereRaw('t.chapter_id = c.id');
             })->selectRaw('c.subject_id,s.display_name AS subject_name,c.standard_id,st.name AS standard_name,
                 c.id AS chapter_id, c.chapter_name, '.$topic.' t.name as topic_name')

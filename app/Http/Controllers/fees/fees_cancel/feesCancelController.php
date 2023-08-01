@@ -129,6 +129,7 @@ class feesCancelController extends Controller
         $receipt_no = $request->input('receipt_no');
         $syear = $request->session()->get('syear');
         $sub_institute_id = $request->session()->get('sub_institute_id');
+        $marking_period_id = session()->get('term_id');
 
         $extraSearchArray = $other_extraSearchArray = [];
         $other_extraSearchArrayRaw = " fees_paid_other.is_deleted = 'N'  ";
@@ -189,8 +190,12 @@ class feesCancelController extends Controller
             division_name,tblstudent.enrollment_no,date_format(fees_paid_other.created_date,'%Y-%m-%d %H:%i:%s') as created_on,
             tblstudent.id as student_id")
             ->join('tblstudent_enrollment', 'tblstudent.id', '=', 'tblstudent_enrollment.student_id')
-            ->join('academic_section', 'academic_section.id', '=', 'tblstudent_enrollment.grade_id')
-            ->join('standard', 'standard.id', '=', 'tblstudent_enrollment.standard_id')
+            ->join('academic_section', 'academic_section.id', '=', 'tblstudent_enrollment.grade_id')            
+            ->join('standard', function ($join) use($marking_period_id){
+                $join->on('standard.id', '=', 'tblstudent_enrollment.standard_id')->when($marking_period_id,function($query) use ($marking_period_id){
+                    $query->where('standard.marking_period_id',$marking_period_id);
+                });
+            })
             ->join('division', 'division.id', '=', 'tblstudent_enrollment.section_id')
             ->join('fees_paid_other', 'fees_paid_other.student_id', '=', 'tblstudent.id')
             ->where($other_extraSearchArray)
@@ -201,7 +206,11 @@ class feesCancelController extends Controller
             SUM(fees_collect.amount) as total_amount,CONCAT_WS(' ',tblstudent.first_name,tblstudent.middle_name,tblstudent.last_name) AS student_name,academic_section.title as grade,standard.name as standard_name,division.name as division_name,tblstudent.enrollment_no,date_format(fees_collect.created_date,'%Y-%m-%d %H:%i:%s') as created_on,tblstudent.id as student_id")
             ->join('tblstudent_enrollment', 'tblstudent.id', '=', 'tblstudent_enrollment.student_id')
             ->join('academic_section', 'academic_section.id', '=', 'tblstudent_enrollment.grade_id')
-            ->join('standard', 'standard.id', '=', 'tblstudent_enrollment.standard_id')
+            ->join('standard', function ($join) use($marking_period_id){
+                $join->on('standard.id', '=', 'tblstudent_enrollment.standard_id')->when($marking_period_id,function($query) use ($marking_period_id){
+                    $query->where('standard.marking_period_id',$marking_period_id);
+                });
+            })
             ->join('division', 'division.id', '=', 'tblstudent_enrollment.section_id')
             ->join('fees_collect', 'fees_collect.student_id', '=', 'tblstudent.id')
             ->where($extraSearchArray)

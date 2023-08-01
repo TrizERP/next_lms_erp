@@ -44,6 +44,9 @@ class timetableController extends Controller
         $sub_institute_id = $request->session()->get("sub_institute_id");
 
         return standardModel::where(['sub_institute_id' => $sub_institute_id, 'grade_id' => $academic_id])
+        ->when($marking_period_id,function($query) use ($marking_period_id){
+            $query->where('marking_period_id',$marking_period_id);
+        })
             ->get()->toArray();
     }
 
@@ -55,8 +58,9 @@ class timetableController extends Controller
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $syear = $request->session()->get('syear');
         $type = $request->input('type');
+        $marking_period_id = session()->get('term_id');
         $res = $this->getTimetable_data($request, $academic_section_id, $standard_id, $division_id, $sub_institute_id,
-            $syear);
+            $syear,$marking_period_id);
 
         return is_mobile($type, 'school_setup/show_timetable', $res, "view");
     }
@@ -83,7 +87,7 @@ class timetableController extends Controller
         $hid_division_id = $_REQUEST['hid_division_id'];
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $syear = $request->session()->get('syear');
-
+        $marking_period_id = session()->get('term_id');
         // timetableModel::where(
         //     [
         //     "sub_institute_id" => $sub_institute_id,
@@ -106,7 +110,11 @@ class timetableController extends Controller
                             ->where('standard_id', $hid_standard_id)
                             ->where('division_id', $hid_division_id)
                             ->where('period_id', $period_id)
-                            ->where('week_day', $week_day)->get()->toArray();
+                            ->where('week_day', $week_day)
+                            ->when($marking_period_id,function($query) use ($marking_period_id){
+                                $query->where('marking_period_id',$marking_period_id);
+                            })
+                           ->get()->toArray();
 
                         if (is_array($pval[$week_day])) {
                             foreach ($pval[$week_day] as $key => $val) {
@@ -124,7 +132,11 @@ class timetableController extends Controller
                                         ->where('division_id', $hid_division_id)
                                         ->where('period_id', $period_id)
                                         ->where('batch_id', $batch_id)
-                                        ->where('week_day', $week_day)->get()->toArray();
+                                        ->where('week_day', $week_day)
+                                        ->when($marking_period_id,function($query) use ($marking_period_id){
+                                            $query->where('marking_period_id',$marking_period_id);
+                                        })
+                                       ->get()->toArray();
 
 
                                     if ($check_exist_data_batch[0]->total_data != 0) {
@@ -141,6 +153,7 @@ class timetableController extends Controller
                                             "standard_id"         => $hid_standard_id,
                                             "division_id"         => $hid_division_id, "period_id" => $period_id,
                                             "week_day"            => $week_day, "batch_id" => $batch_id,
+                                            'marking_period_id'   => $marking_period_id,
                                         ])->update($finalArray);
                                     } else {
 
@@ -157,6 +170,7 @@ class timetableController extends Controller
                                             'week_day'            => $week_day,
                                             'created_at'          => now(),
                                             'updated_at'          => now(),
+                                            'marking_period_id'   => $marking_period_id,                                            
                                         ];
                                         timetableModel::insert($finalArray);
                                     }
@@ -181,6 +195,7 @@ class timetableController extends Controller
                                     "academic_section_id" => $hid_academic_section_id,
                                     "standard_id"         => $hid_standard_id, "division_id" => $hid_division_id,
                                     "period_id"           => $period_id, "week_day" => $week_day,
+                                    'marking_period_id'   => $marking_period_id,                                    
                                 ])->update($finalArray);
                             } else {
                                 $finalArray = [
@@ -197,6 +212,7 @@ class timetableController extends Controller
                                     'merge'               => $merge,
                                     'created_at'          => now(),
                                     'updated_at'          => now(),
+                                    'marking_period_id'   => $marking_period_id,                                    
                                 ];
                                 timetableModel::insert($finalArray);
                             }
@@ -222,6 +238,7 @@ class timetableController extends Controller
                                         "standard_id"         => $standard_arr[$period_id][$week_day],
                                         "division_id"         => $division_arr[$period_id][$week_day],
                                         "period_id"           => $period_id, "week_day" => $week_day,
+                                        'marking_period_id'   => $marking_period_id,                                        
                                     ])->update($finalArray);
                                 } else {
                                     $finalArray = [
@@ -238,6 +255,7 @@ class timetableController extends Controller
                                         'merge'               => $merge,
                                         'created_at'          => now(),
                                         'updated_at'          => now(),
+                                        'marking_period_id'   => $marking_period_id,                                        
                                     ];
                                     timetableModel::insert($finalArray);
                                 }
@@ -262,7 +280,8 @@ class timetableController extends Controller
         $standard_id,
         $division_id,
         $sub_institute_id,
-        $syear
+        $syear,
+        $marking_period_id=''
     ) {
         $html = "";
         $timetable_data = timetableModel::
@@ -272,6 +291,7 @@ class timetableController extends Controller
             'standard_id'         => $standard_id,
             'division_id'         => $division_id,
             'syear'               => $syear,
+            'marking_period_id'   => $marking_period_id,            
         ])->get()->toArray();
 
         foreach ($timetable_data as $k => $p) {
@@ -287,6 +307,7 @@ class timetableController extends Controller
             'standard_id' => $standard_id,
             'division_id' => $division_id,
             'syear' => $syear,
+            'marking_period_id'   => $marking_period_id,            
         ])->get()->toArray();
         $total_batches = count($batch_data);
 
@@ -313,13 +334,17 @@ class timetableController extends Controller
                     ->on("t.sub_institute_id", "=", "tbluser.sub_institute_id");
             })
             ->where(['tbluser.sub_institute_id' => $sub_institute_id, 'tbluserprofilemaster.name' => 'Teacher'])
-            ->groupby("tbluser.id")
+            ->when($marking_period_id,function($query) use ($marking_period_id){
+                $query->where('t.marking_period_id',$marking_period_id);
+            })
+           ->groupby("tbluser.id")
             ->orderby("tbluser.first_name")
             ->get();
 
         $week_data = $this->getweeks();
-        $html = "<form action=".route('timetable.store')." name='timetable' id='timetable' method='post'>
-                <table class='table table-bordered table-center'>
+        $html = "<form action=".route('timetable.store')." name='timetable' id='timetable' method='post'>";
+        $html .= csrf_field();
+        $html .="<table class='table table-bordered table-center'>
                 <tr>
                 <td style='display: table-cell;width:30px;'>
                     <span class='label label-info'>Days/Lectures</span>
@@ -394,6 +419,9 @@ class timetableController extends Controller
                                 'sub_institute_id' => $sub_institute_id, 'syear' => $syear, 'period_id' => $pval['id'],
                                 'week_day'         => $wval,
                             ])
+                            ->when($marking_period_id,function($query) use ($marking_period_id){
+                                $query->where('marking_period_id',$marking_period_id);
+                            })                
                             ->get()->toArray();
 
                         $old_assigned_teacher_id_array = [];
@@ -423,7 +451,10 @@ class timetableController extends Controller
                                 - COUNT(t.id) END) AS remaining_lecture')
                             ->whereRaw('(tbluser.sub_institute_id = "' . $sub_institute_id . '" AND tbluserprofilemaster.name
                                 = "Teacher") ' . $extra_where)
-                            ->groupBy('tbluser.id')
+                            ->when($marking_period_id,function($query) use ($marking_period_id){
+                                    $query->where('t.marking_period_id',$marking_period_id);
+                                })
+                               ->groupBy('tbluser.id')
                             ->orderBy('tbluser.first_name')->get()->toArray();
 
                         $old_teacher_data_arr = json_decode(json_encode($old_teacher_data), true);
@@ -504,7 +535,10 @@ class timetableController extends Controller
                             'sub_institute_id' => $sub_institute_id, 'syear' => $syear, 'period_id' => $pval['id'],
                             'week_day'         => $wval,
                         ])
-                        ->get()->toArray();
+                        ->when($marking_period_id,function($query) use ($marking_period_id){
+                            $query->where('marking_period_id',$marking_period_id);
+                        })
+                       ->get()->toArray();
 
                     $assigned_teacher_id_array = array();
                     foreach ($assigned_teacher_data as $teacher_data1) {
@@ -529,6 +563,9 @@ class timetableController extends Controller
                                 - COUNT(t.id) END) AS remaining_lecture')
                         ->whereRaw('(tbluser.sub_institute_id = "' . $sub_institute_id . '" AND tbluserprofilemaster.name
                                 = "Teacher") ' . $extra_where)
+                        ->when($marking_period_id,function($query) use ($marking_period_id){
+                                    $query->where('t.marking_period_id',$marking_period_id);
+                                })
                         ->groupBy('tbluser.id')
                         ->orderBy('tbluser.first_name')->get()->toArray();
                     $new_teacher_data = json_decode(json_encode($new_teacher_data), true);
@@ -610,17 +647,23 @@ class timetableController extends Controller
         $mode = $request->input("mode");
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $syear = $request->session()->get('syear');
-
+        $marking_period_id = session()->get('term_id');
         $arr = explode("-", $id);
 
         $subject_data = sub_std_mapModel::where([
             'sub_institute_id' => $sub_institute_id,
             "standard_id"      => $standard_id,
-        ])->get(["subject_id", "display_name"])->toArray();
+        ]) ->when($marking_period_id,function($query) use ($marking_period_id){
+            $query->where('marking_period_id',$marking_period_id);
+        })
+       ->get(["subject_id", "display_name"])->toArray();
 
         $teacher_data = tbluserModel::select('tbluser.*')
             ->join('tbluserprofilemaster', 'tbluserprofilemaster.id', "=", 'tbluser.user_profile_id')
             ->where(['tbluser.sub_institute_id' => $sub_institute_id, 'tbluserprofilemaster.name' => 'Teacher',])
+            ->when($marking_period_id,function($query) use ($marking_period_id){
+                $query->where('marking_period_id',$marking_period_id);
+            })
             ->get();
 
         $batch_data = batchModel::where([
@@ -628,6 +671,7 @@ class timetableController extends Controller
             'standard_id'      => $standard_id,
             'division_id'      => $division_id,
             'syear'            => $syear,
+            'marking_period_id'=> $marking_period_id,
         ])->get()->toArray();
         $total_batches = count($batch_data);
 
@@ -716,14 +760,20 @@ class timetableController extends Controller
         $subject_data = sub_std_mapModel::where([
             'sub_institute_id' => $sub_institute_id,
             "standard_id"      => $standard_id,
-        ])->get(["subject_id", "display_name"])->toArray();
+        ]) ->when($marking_period_id,function($query) use ($marking_period_id){
+            $query->where('marking_period_id',$marking_period_id);
+        })
+       ->get(["subject_id", "display_name"])->toArray();
 
         $teacher_data = tbluserModel::select('tbluser.*')
             ->join('tbluserprofilemaster', 'tbluserprofilemaster.id', "=", 'tbluser.user_profile_id')
             ->where(['tbluser.sub_institute_id' => $sub_institute_id, 'tbluserprofilemaster.name' => 'Teacher',])
             ->get();
 
-        $standard_data = standardModel::where(['sub_institute_id' => $sub_institute_id])->get([
+        $standard_data = standardModel::where(['sub_institute_id' => $sub_institute_id]) ->when($marking_period_id,function($query) use ($marking_period_id){
+            $query->where('marking_period_id',$marking_period_id);
+        })
+       ->get([
             "id", "name",
         ])->toArray();
         $division_data = divisionModel::where(['sub_institute_id' => $sub_institute_id])->get([
@@ -780,7 +830,7 @@ class timetableController extends Controller
         $standard_id = $request->input("standard_id");
         $sub_institute_id = session()->get('sub_institute_id');
         $syear = session()->get('syear');
-
+        $marking_period_id=session()->get('term_id');
         $arr = explode("-", $id);
         $week_day = $arr[0];
         $period_id = $arr[1];
@@ -792,6 +842,7 @@ class timetableController extends Controller
             'division_id'      => $division_id,
             'week_day'         => $week_day,
             'period_id'        => $period_id,
+            'marking_period_id'=> $marking_period_id,
         ])->get()->toArray();
 
         if (count($check_timetable_data) > 0) {
@@ -803,6 +854,7 @@ class timetableController extends Controller
                     "syear"            => $syear,
                     "week_day"         => $week_day,
                     "period_id"        => $period_id,
+                    "marking_period_id"=>$marking_period_id,
                 ])->delete();
         }
 
@@ -818,7 +870,7 @@ class timetableController extends Controller
         $standard_id = $request->input("standard_id");
         $sub_institute_id = session()->get('sub_institute_id');
         $syear = session()->get('syear');
-
+        $marking_period_id = session()->get('term_id');
         $arr = explode("-", $id);
 
         $subject_data = sub_std_mapModel::where([

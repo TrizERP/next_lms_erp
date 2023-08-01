@@ -25,50 +25,42 @@ class student_fees_graphController extends Controller
         $syear = $request->session()->get('syear');
         $term_id = $request->session()->get('term_id');
         $sub_institute_id = $request->session()->get('sub_institute_id');
-
+        $marking_period_id = session()->get('term_id');
         $date = "2019-08-22";
-        // return is_mobile($type, "student/fees_graph/view", $res, "view");
 
-
-        // SUM(CASE WHEN s.gender = 'M' THEN 1 ELSE 0 END) AS BOY,
-        // SUM(CASE WHEN s.gender = 'F' THEN 1 ELSE 0 END) AS GIRL,
-        // SUM(CASE WHEN s.gender = 'M' AND a.attendance_code = 'P' THEN 1 ELSE 0 END) TBP,
-        // SUM(CASE WHEN s.gender = 'F' AND a.attendance_code = 'P' THEN 1 ELSE 0 END) TGP,
-        // SUM(CASE WHEN s.gender = 'M' AND a.attendance_code = 'A' THEN 1 ELSE 0 END) TBA,
-        // SUM(CASE WHEN s.gender = 'F' AND a.attendance_code = 'A' THEN 1 ELSE 0 END) TGA
-        $query = "SELECT acs.title,sm.name AS standard_name, 
-        dm.name AS division_name,
-        se.standard_id,se.section_id,count(se.student_id) tot_amount,
-        sum(fb.amount) tot_amount,
-        tot_paid
-		FROM tblstudent s
-		INNER JOIN tblstudent_enrollment se ON s.id = se.student_id AND se.syear = '".$syear."'
-        INNER JOIN academic_section acs on acs.id = se.grade_id
-		INNER JOIN standard sm ON se.standard_id = sm.id
-		INNER JOIN division dm ON se.section_id = dm.id
-        INNER JOIN fees_breackoff fb ON (  
-            fb.syear = se.syear AND
-            fb.admission_year = s.admission_year AND
-            fb.quota = se.student_quota AND
-            fb.grade_id = se.grade_id AND
-            fb.standard_id = se.standard_id
-        )
-        LEFT JOIN (
-            select if(ifnull(sum(fp.amount),0)='',0,ifnull(sum(fp.amount),0)) tot_paid,se.grade_id,se.standard_id,se.section_id
-            from fees_collect fp
-            INNER JOIN tblstudent_enrollment se ON fp.student_id = se.student_id AND se.syear = '".$syear."'
-            group by se.grade_id,se.standard_id,se.section_id
-        ) fp ON (
-            fp.grade_id = se.grade_id AND
-            fp.standard_id = se.standard_id AND
-            fp.section_id = se.section_id 
-        )
-		WHERE s.sub_institute_id = '".$sub_institute_id."'
-        GROUP BY se.grade_id,se.standard_id,se.section_id";
-        $query = trim(preg_replace('/\s\s+/', ' ', $query));
-
-        $data = DB::select($query);
-
+        $query = DB::table('tblstudent as s')
+        ->join('tblstudent_enrollment as se', function ($join) use ($syear) {
+            $join->on('s.id', '=', 'se.student_id')
+                ->where('se.syear', '=', $syear);
+        })
+        ->join('academic_section as acs', 'acs.id', '=', 'se.grade_id')
+        ->join('standard as sm', function($join) use($marking_period_id) {
+            $join->on('se.standard_id', '=', 'sm.id')->when($marking_period_id,function($query) use($marking_period_id){
+                $query->where('sm.marking_period_id',$marking_period_id);
+            } );
+        })
+        ->join('division as dm', 'se.section_id', '=', 'dm.id')
+        ->join('fees_breackoff as fb', function ($join) use ($syear) {
+            $join->on('fb.syear', '=', 'se.syear')
+                ->on('fb.admission_year', '=', 's.admission_year')
+                ->on('fb.quota', '=', 'se.student_quota')
+                ->on('fb.grade_id', '=', 'se.grade_id')
+                ->on('fb.standard_id', '=', 'se.standard_id');
+        })
+        ->leftJoin(DB::raw('(SELECT if(ifnull(sum(fp.amount),0)="",0,ifnull(sum(fp.amount),0)) as tot_paid, se.grade_id, se.standard_id, se.section_id
+                    FROM fees_collect as fp
+                    INNER JOIN tblstudent_enrollment as se ON fp.student_id = se.student_id AND se.syear = "' . $syear . '"
+                    GROUP BY se.grade_id, se.standard_id, se.section_id) as fp'), function ($join) {
+            $join->on('fp.grade_id', '=', 'se.grade_id')
+                ->on('fp.standard_id', '=', 'se.standard_id')
+                ->on('fp.section_id', '=', 'se.section_id');
+        })
+        ->where('s.sub_institute_id', '=', $sub_institute_id)
+        ->groupBy('se.grade_id', 'se.standard_id', 'se.section_id')
+        ->select('acs.title', 'sm.name as standard_name', 'dm.name as division_name', 'se.standard_id', 'se.section_id', DB::raw('count(se.student_id) as tot_amount'), DB::raw('sum(fb.amount) as tot_amount'), 'fp.tot_paid');
+    
+    $data = $query->get();
+    
         foreach ($data as $id => $arr) {
             if (
                 $arr->tot_paid == '' ||
