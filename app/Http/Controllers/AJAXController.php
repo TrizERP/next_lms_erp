@@ -30,14 +30,9 @@ use App\Models\school_setup\divisionModel;
 use App\Models\school_setup\academic_sectionModel;
 use function App\Helpers\get_string;
 //use function App\Helpers\FeeBreakoffHeadWise;
-<<<<<<< HEAD
-use Google\Cloud\NaturalLanguage\LanguageServiceClient;
-
-=======
 use GuzzleHttp\Client;
 use Illuminate\Support\Facades\Http;
 use function App\Helpers\is_mobile;
->>>>>>> ce34ac857b2fe16e3f518d2aec4f9aa2b108bf49
 
 class AJAXController extends Controller
 {
@@ -1815,19 +1810,5 @@ class AJAXController extends Controller
             ])->json();
        $res['answer'] = response()->json($data, 200, array(), JSON_PRETTY_PRINT);
        return $res['answer'];
-    }
-
-     public function bard_chat(Request $request)
-    {
-        $text = $request->input('text');
-
-        $client = new LanguageServiceClient();
-        $document = $client->document($text);
-        $entities = $document->entities();
-
-        return view('bard', [
-            'text' => $text,
-            'entities' => $entities,
-        ]);
     }
 }

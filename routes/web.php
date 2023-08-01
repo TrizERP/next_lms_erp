@@ -400,9 +400,3 @@ Route::get('otherPolicy', [dashboardController::class, 'otherPolicy'])->name('ot
 Route::get('otherPolicy', [dashboardController::class, 'otherPolicy'])->name('otherPolicy');
 Route::any('check_permissions',[AJAXController::class, 'check_access'])->name('check_permissions');
 Route::any('check_access',[AJAXController::class, 'check_access'])->name('check_access');
-<<<<<<< HEAD
-Route::any('bard_chat',[AJAXController::class, 'bard_chat'])->name('bard_chat');
-=======
-Route::get('chat',[AJAXController::class, 'chat'])->name('chat');
-
->>>>>>> ce34ac857b2fe16e3f518d2aec4f9aa2b108bf49

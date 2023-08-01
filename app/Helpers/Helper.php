@@ -710,9 +710,15 @@ if (!function_exists('SearchStudent')) {
                     ->orWhere('ts.last_name', 'like', '%' . $stu_name . '%');
             });
         }
-        if($stud_id !=''){
-            $query->whereIn('ts.id',$stud_id);
+        if (!empty($stud_id)) {
+            // Check if $stud_id is already an array, if not, convert it to an array
+            if (!is_array($stud_id)) {
+                $stud_id = [$stud_id];
+            }
+            // Now, you can safely use the whereIn function with $stud_id
+            $query->whereIn('ts.id', $stud_id);
         }
+
         $columns = explode(',', $select_fields);
         $columns[] = "s.name as standard_name";
         $columns[] = "s.medium as medium";
