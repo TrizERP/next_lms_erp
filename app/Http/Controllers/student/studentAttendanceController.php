@@ -26,7 +26,7 @@ class studentAttendanceController extends Controller
     {
         $type = $request->input('type');
         $submit = $request->input('submit');
-
+        $marking_period_id = session()->get('term_id');
         if ($type == "API") {
             $sub_institute_id = $request->input('sub_institute_id');
             $syear = $request->input('syear');
@@ -34,7 +34,10 @@ class studentAttendanceController extends Controller
 
             $result = DB::table('class_teacher as ct')
                 ->join('standard as s', function ($join) {
-                    $join->whereRaw('ct.standard_id = s.id AND ct.sub_institute_id = s.sub_institute_id');
+                    $join->whereRaw('ct.standard_id = s.id AND ct.sub_institute_id = s.sub_institute_id') ->when($marking_period_id,function($query) use ($marking_period_id){
+                        $query->where('s.marking_period_id',$marking_period_id);
+                    })
+                   ;
                 })->join('division as d', function ($join) {
                     $join->whereRaw('d.id = ct.division_id AND d.sub_institute_id = ct.sub_institute_id');
                 })
@@ -61,6 +64,7 @@ class studentAttendanceController extends Controller
     {
         $type = $request->input('type');
         $date = $request->input('date');
+        $marking_period_id = session()->get('term_id');
 
         if ($type == "API") {
             $term_id = $request->input('term_id');
@@ -122,9 +126,11 @@ class studentAttendanceController extends Controller
                 $join->on("academic_section.id", "=", "tblstudent_enrollment.grade_id")
                     ->on("academic_section.sub_institute_id", "=", "tblstudent_enrollment.sub_institute_id");
             })
-            ->join("standard", function ($join) {
+            ->join("standard", function ($join) use($marking_period_id) {
                 $join->on("standard.id", "=", "tblstudent_enrollment.standard_id")
-                    ->on("standard.sub_institute_id", "=", "tblstudent_enrollment.sub_institute_id");
+                    ->on("standard.sub_institute_id", "=", "tblstudent_enrollment.sub_institute_id")->when($marking_period_id,function($query) use($marking_period_id){
+                        $query->where('standard.marking_period_id',$marking_period_id);
+                    });
             })
             ->join("division", function ($join) {
                 $join->on("division.id", "=", "tblstudent_enrollment.section_id")
@@ -311,13 +317,16 @@ class studentAttendanceController extends Controller
         $syear = $request->session()->get('syear');
         $term_id = $request->session()->get('term_id');
         $sub_institute_id = $request->session()->get('sub_institute_id');
+        $marking_period_id=session()->get('term_id');
 
         $data = DB::table('tblstudent as s')
             ->join('tblstudent_enrollment as se', function ($join) use ($syear) {
                 $join->whereRaw("s.id = se.student_id AND se.syear = '" . $syear . "' AND s.sub_institute_id = se.sub_institute_id
                 AND se.end_date IS NULL");
-            })->join('standard as sm', function ($join) {
-                $join->whereRaw('se.standard_id = sm.id');
+            })->join('standard as sm', function ($join) use($marking_period_id) {
+                $join->whereRaw('se.standard_id = sm.id')->when($marking_period_id,function($query) use($marking_period_id){
+                    $query->where('sm.marking_period_id',$marking_period_id);
+                });
             })->join('division as dm', function ($join) {
                 $join->whereRaw('se.section_id = dm.id');
             })->leftJoin('attendance_student as a', function ($join) use ($date, $syear) {

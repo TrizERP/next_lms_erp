@@ -29,7 +29,7 @@
                         <div class="row ">
                             <div class="col-md-12 form-group">
                                 <div class="row ">
-                                    {{ App\Helpers\SearchChain('4','single','grade,std,div',$data['academic_section_id'],$data['standard_id'],$data['division_id']) }}
+                                    {{ App\Helpers\SearchChain('4','required','grade,std,div',$data['academic_section_id'],$data['standard_id'],$data['division_id']) }}
                                 </div>
                             </div>
                             <div class="col-md-12 form-group">
@@ -42,6 +42,7 @@
                 </div>
             </div>
         </div>
+        @if( isset($data['HTML']) )
 
         <div class="card">
             <div class="row">
@@ -57,7 +58,6 @@
                     </div>
                 </div>
 
-                @if( isset($data['HTML']) )
                     <div class="col-md-12 form-group">
                         <center>
                             <button class="btn btn-success" onclick="PrintDiv('printPage');">Print</button>

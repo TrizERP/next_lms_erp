@@ -120,12 +120,15 @@ class feesFineDiscountReportController extends Controller
         $division = $request->input('division');
         $from_date = $request->input('from_date');
         $to_date = $request->input('to_date');
+        $marking_period_id = session()->get('term_id');
 
         $result = DB::table('tblstudent as S')
             ->join('tblstudent_enrollment as SE', function ($join) use ($syear) {
                 $join->whereRaw('S.id = SE.student_id AND SE.SYEAR=' . $syear);
-            })->join('standard as CS', function ($join) {
-                $join->whereRaw('SE.standard_id = CS.id');
+            })->join('standard as CS', function ($join) use($marking_period_id){
+                $join->whereRaw('SE.standard_id = CS.id')->when($marking_period_id,function ($query) use($marking_period_id){
+                    $query->where('CS.marking_period_id',$marking_period_id);
+                });
             })->join('division as SS', function ($join) {
                 $join->whereRaw('SE.section_id = SS.id');
             })->join('fees_collect as FP', function ($join) {

@@ -28,7 +28,7 @@
                 @endif
                 @csrf       
                 <div class="row">                                                                     
-                    {{ App\Helpers\SearchChain('3','single','grade,std,div',$data['grade_id'],$data['standard_id'],$data['division_id']) }}                              
+                    {{ App\Helpers\SearchChain('3','required','grade,std,div',$data['grade_id'],$data['standard_id'],$data['division_id']) }}                              
                     <div class="col-md-3 form-group"> 
                         <label>Capacity</label>                                                                         
                         <input type="number" name="capacity" id="capacity" class="form-control" required="required" placeholder="Enter total number of capacity" autocomplete="off" value="@if(isset($data['capacity'])){{$data['capacity']}}@endif">                        

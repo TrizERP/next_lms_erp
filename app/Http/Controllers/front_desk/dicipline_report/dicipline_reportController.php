@@ -45,6 +45,8 @@ class dicipline_reportController extends Controller
     {
 
         $requestData = $_REQUEST;
+        $marking_period_id = session()->get('term_id');
+
         $result = DB::table("tblstudent as s")
             ->join('tblstudent_enrollment as se', function ($join) {
                 $join->whereRaw("se.student_id = s.id");
@@ -52,8 +54,10 @@ class dicipline_reportController extends Controller
             ->join('academic_section as g', function ($join) {
                 $join->whereRaw("g.id = se.grade_id");
             })
-            ->join('standard as st', function ($join) {
-                $join->whereRaw("st.id = se.standard_id");
+            ->join('standard as st', function ($join) use($marking_period_id){
+                $join->whereRaw("st.id = se.standard_id")->when($marking_period_id,function($query) use ($marking_period_id){
+                    $query->where('st.marking_period_id',$marking_period_id);
+                });
             })
             ->join('division as d', function ($join) {
                 $join->whereRaw("d.id = se.section_id");

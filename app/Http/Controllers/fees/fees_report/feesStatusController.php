@@ -115,26 +115,16 @@ class feesStatusController extends Controller
                                     $displayBreakoff[$student_id][$valueArray['title']] = $valueArray['amount'] + $displayBreakoff[$student_id][$valueArray['title']];
                                 } else {
 
-                                    //if(isset($valueArray['amount']))
-                                    //{
                                     $displayBreakoff[$student_id][$valueArray['title']] = $valueArray['amount'];
-                                    //}
                                 }
-                                // if(isset($feesPaid[$student_id][$key][$head]))
-                                // {
-                                // 	$displayBreakoff[$student_id][$valueArray['title']] = $displayBreakoff[$student_id][$valueArray['title']] - $feesPaid[$student_id][$key][$head];
-                                // }
-
+                              
                                 $amountLogs += $displayBreakoff[$student_id][$valueArray['title']];
                             }
                         }
                     }
                 }
             }
-            // if($amountLogs <= 0)
-            // {
-            // 	unset($data[$student_id]);
-            // }
+          
         }
 
         $res['status_code'] = 1;

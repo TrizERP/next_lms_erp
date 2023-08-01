@@ -37,6 +37,7 @@ class NewLMS_ApiController extends Controller
         $birthdate = $request->input("birthdate");
         $email = $request->input("email");
         $mobile = $request->input("mobile");
+        $institute_type = $request->input("institute_type");        
         $institute_name = $request->input("institute_name");
 
         $validator = Validator::make($request->all(), [
@@ -46,6 +47,7 @@ class NewLMS_ApiController extends Controller
             'email'          => 'required|email',
             'mobile'         => 'required|numeric|digits:10',
             'institute_name' => 'required',
+            'institute_type' => 'required',            
         ]);
 
         if ($validator->fails()) {
@@ -56,7 +58,7 @@ class NewLMS_ApiController extends Controller
 
             if ($check_user_exist != 0) {
                 if ($user_type != "" && $first_name != "" && $last_name != "" 
-                    && $email != "" && $mobile != "" && $institute_name != "") {
+                    && $email != "" && $mobile != "" && $institute_name != "" && $institute_type != "") {
 
                     $otp = rand(100000, 999999);
                     $sub_institute_id = 1; // Triz Innovation
@@ -131,6 +133,7 @@ class NewLMS_ApiController extends Controller
                         'email'          => $email,
                         'otp'            => $otp,
                         'institute_name' => $institute_name,
+                        'institute_type' => $institute_type,
                         'syear'          => date('Y'),
                         'mobile'         => $mobile,
                         'ip_address'     => $_SERVER['REMOTE_ADDR'],
@@ -158,6 +161,7 @@ class NewLMS_ApiController extends Controller
         $email = $request->input("email");
         $mobile = $request->input("mobile");
         $institute_name = $request->input("institute_name_confirm");
+        $institute_type = $request->input("institute_type");        
          $type = $request->input('type');
         // return $request;
         $validator = Validator::make($request->all(), [
@@ -189,6 +193,7 @@ class NewLMS_ApiController extends Controller
                         'birthdate'      => $birthdate,
                         'email'          => $email,
                         'institute_name' => $institute_name,
+                        'institute_type' => $institute_type,
                         'syear'          => date('Y'),
                         'mobile' =>$_REQUEST['mobile'],
                         'confirm'=>"confirm",
@@ -315,8 +320,7 @@ class NewLMS_ApiController extends Controller
             "institute"=>$request->institute_name_confirm,
             "mobile"=>$request->mobile,
             "type"=>$request->type,
-
-
+            "institute_type"=>$request->institute_type,
         ]?? [];
         // return $request;exit;
         if($request!=null){
@@ -344,20 +348,10 @@ class NewLMS_ApiController extends Controller
         
             Storage::disk('public')->put('user/' . $fileName, $imageData);
 
-            // Retrieve the stored image URL
-            // $imageUrl = Storage::disk('public')->url('admin_dep/images/' . $fileName);
-        
-            // Retrieve the stored image URL
-            // $imageUrl = asset('admin_dep/images/' . $fileName);
-        
-            // Display the image
-            // echo "<img src='".$imageUrl."' >";
         } else {
             $fileName = ' ';
         }
         
-        //  echo "<img src='".$imageUrl ."' >";
-        // exit;
             $new_index = ['PRE_PRI', 'PRI', 'SEC', 'HSEC'];
             $selectedRadios = $request->input('exampleRadios');
             $mobile = $request->input('mobile');
@@ -373,12 +367,10 @@ class NewLMS_ApiController extends Controller
                 }
             }
 
-          $section = $indexes;
+            $section = $indexes;
                $board = $request->input('exampleRadiosboard');
-            // $board=$request->input('exampleRadiosboard');
              
-
-        // echo "<pre>"; print_r($adata);exit;
+            $institute_type = $request->institute_type;
             $data = temp_signupModel::select('*')
                 ->where(["mobile" => $mobile])
                 ->get();
@@ -392,7 +384,7 @@ class NewLMS_ApiController extends Controller
                 // END STEP 1 -> INSERT INTO tblclient table
 
                 // START STEP 2 -> INSERT INTO school_setup table
-                $sub_institute_id = $this->INSERT_SCHOOLSETUP($data, $client_id,$fileName);
+                $sub_institute_id = $this->INSERT_SCHOOLSETUP($data, $client_id,$fileName,$institute_type);
                 // END STEP 2 -> INSERT INTO school_setup table
 
                 // START STEP 3 -> INSERT INTO tbluserprofilemaster table
@@ -523,7 +515,7 @@ class NewLMS_ApiController extends Controller
         return DB::getPdo()->lastInsertId();
     }
 
-    public function INSERT_SCHOOLSETUP($data, $client_id,$filename)
+    public function INSERT_SCHOOLSETUP($data, $client_id,$filename,$institute_type)
     {
         $contact_person = $data->first_name.' '.$data->last_name;
         $data = [
@@ -539,6 +531,7 @@ class NewLMS_ApiController extends Controller
             'is_lms'        => 'N',
             'syear'         => date('Y'),
             'expire_date'   => date('Y-m-d', strtotime(date('Y-m-d').' + 1 months')),
+            'institute_type' => $institute_type,
         ];
         school_setupModel::insert($data);
 
@@ -573,7 +566,7 @@ class NewLMS_ApiController extends Controller
         $userprofile_data = $userprofile_data[0];
 
         $user_name = strtolower($data->first_name.'.'.$data->last_name);
-        $surfix = strtolower($data->name_suffix);
+        $surfix = isset($data->name_suffix) ? strtolower($data->name_suffix) : '';
 
         $data = [
             'user_name'        => $user_name,
@@ -630,195 +623,235 @@ class NewLMS_ApiController extends Controller
 
     public function INSERT_ACADEMIC_SECTION($sub_institute_id,$board,$section)
     {
-        $academic_section_array = ['PRI' => 'PRIMARY', 'SEC' => 'SECONDARY', 'HSEC' => 'HIGH-SECONDARY'];
+        if($board !== '' && $section !== ''){
+            $academic_section_array = ['PRI' => 'PRIMARY', 'SEC' => 'SECONDARY', 'HSEC' => 'HIGH-SECONDARY'];
 
+            $j = 1;
+             foreach($board as $index => $bod){
+            foreach ($section as $key => $val) {
+                $data = [
+                    'sub_institute_id' => $sub_institute_id,
+                    'title'            => $bod.'-'.$val,
+                    'short_name'       => $index,
+                    'sort_order'       => $j++,
+                    'shift'            => '1',
+                    'medium'           => $val,
+                    'created_at'       => now(),
+                    'updated_at'       => now(),
+                ];
+                academic_sectionModel::insert($data);
+                     // echo "<pre>";print_r($data);
+            }
+        }
+    }else{
+        $academic_section_array = array('PRI'=>'PRIMARY','SEC'=>'SECONDARY','HSEC'=>'HIGH-SECONDARY');
         $j = 1;
-         foreach($board as $index => $bod){
-        foreach ($section as $key => $val) {
-            $data = [
+        foreach($academic_section_array as $key => $val)
+        {            
+            $data = array(
                 'sub_institute_id' => $sub_institute_id,
-                'title'            => $bod.'-'.$val,
-                'short_name'       => $key,
-                'sort_order'       => $j++,
-                'shift'            => '1',
-                'medium'           => $val,
-                'created_at'       => now(),
-                'updated_at'       => now(),
-            ];
-            academic_sectionModel::insert($data);
-                 // echo "<pre>";print_r($data);
+                'title' => $val,
+                'short_name' => $key,
+                'sort_order' => $j++,
+                'shift' => '1',
+                'medium' => 'CBSE',
+                'created_at' => now(),
+                'updated_at' => now()
+            );
+            academic_sectionModel::insert($data);  
         }
     }
-       // exit;
-
-        // foreach ($academic_section_array as $key => $val) {
-        //     $data = [
-        //         'sub_institute_id' => $sub_institute_id,
-        //         'title'            => $val,
-        //         'short_name'       => $key,
-        //         'sort_order'       => $j++,
-        //         'shift'            => '1',
-        //         'medium'           => 'CBSE',
-        //         'created_at'       => now(),
-        //         'updated_at'       => now(),
-        //     ];
-
-        //     academic_sectionModel::insert($data);
-        // }
+      
     }
 
     public function INSERT_STANDARD($sub_institute_id,$section,$board)
     {
-        $grades =[];
-        $j =[];
-        foreach($board as $key=>$medium){
-        
-        if($medium=='GSEB'){
-        $name = 'GSEB-';
-        $title="GSEB";
-        $short_name = 'G-';
-        }
-         if($medium=='CBSE'){
-        $name = 'CBSE-';
-        $title="CBSE";
-        $short_name = 'C-';
-        }
-        if($medium=='BSEB'){
-         $name = 'BSEB-';
-         $title="BSEB";
-        $short_name = 'B-';
+        if ($board !== '' && $section !== '') {
+            $grades = [];
+            $j = [];
+            foreach ($board as $key => $medium) {
 
-        }
-        if($medium=='BSEAP'){
-         $name = 'BSEAP-';
-         $title="BSEAP";
-        $short_name = 'BP-';
+                if ($medium == 'GSEB') {
+                    $name = 'GSEB-';
+                    $title = "GSEB";
+                    $short_name = 'G-';
+                }
+                if ($medium == 'CBSE') {
+                    $name = 'CBSE-';
+                    $title = "CBSE";
+                    $short_name = 'C-';
+                }
+                if ($medium == 'BSEB') {
+                    $name = 'BSEB-';
+                    $title = "BSEB";
+                    $short_name = 'B-';
 
-        }
+                }
+                if ($medium == 'BSEAP') {
+                    $name = 'BSEAP-';
+                    $title = "BSEAP";
+                    $short_name = 'BP-';
 
-    if (isset($section['PRE_PRI'])) {
+                }
 
-        $grade_title = 'PRE-PRIMARY';
+                if (isset($section['PRE_PRI'])) {
 
-          $adatas = academic_sectionModel::select('*')->where([
-                'title' => $grade_title.'-'.$title, 'sub_institute_id' => $sub_institute_id,
-            ])->get()->toArray();
-            $adata = $adatas[$key]??$adatas[0];
+                    $grade_title = 'PRE-PRIMARY';
+
+                    $adatas = academic_sectionModel::select('*')->where([
+                        'title' => $grade_title . '-' . $title, 'sub_institute_id' => $sub_institute_id,
+                    ])->get()->toArray();
+                    $adata = $adatas[$key] ?? $adatas[0];
             // echo "<pre>";print_r($adatas[0]);exit;
-        $data = [
-                'grade_id'         => isset($adata['id']) ? $adata['id'] : null,
-                'name'             => $name."NUR",
-                'short_name'       => $name."NUR",
-                'sort_order'       =>1,
-                'medium'           => 'ENGLISH',
-                'sub_institute_id' => $sub_institute_id,
-                'course_duration'  => '1 Year',
-                'created_at'       => now(),
-                'updated_at'       => now(),
-                ];
-            standardModel::insert($data);
+                    $data = [
+                        'grade_id' => isset($adata['id']) ? $adata['id'] : null,
+                        'name' => $name . "NUR",
+                        'short_name' => $name . "NUR",
+                        'sort_order' => 1,
+                        'medium' => 'ENGLISH',
+                        'sub_institute_id' => $sub_institute_id,
+                        'course_duration' => '1 Year',
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ];
+                    standardModel::insert($data);
 
-        $data2 = [
-                'grade_id'         => isset($adata['id']) ? $adata['id'] : null,
-                'name'             =>  $name."JR",
-                'short_name'       => $name."JR",
-                'sort_order'       =>2,
-                'medium'           => 'ENGLISH',
-                'sub_institute_id' => $sub_institute_id,
-                'course_duration'  => '1 Year',
-                'created_at'       => now(),
-                'updated_at'       => now(),
-                ];
-            standardModel::insert($data2);
+                    $data2 = [
+                        'grade_id' => isset($adata['id']) ? $adata['id'] : null,
+                        'name' => $name . "JR",
+                        'short_name' => $name . "JR",
+                        'sort_order' => 2,
+                        'medium' => 'ENGLISH',
+                        'sub_institute_id' => $sub_institute_id,
+                        'course_duration' => '1 Year',
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ];
+                    standardModel::insert($data2);
 
-        $data3 = [
-                'grade_id'         => isset($adata['id']) ? $adata['id'] : null,
-                'name'             => $name."SR",
-                'short_name'       => $name."SR",
-                'sort_order'       =>3,
-                'medium'           => 'ENGLISH',
-                'sub_institute_id' => $sub_institute_id,
-                'course_duration'  => '1 Year',
-                'created_at'       => now(),
-                'updated_at'       => now(),
-                ];
-            standardModel::insert($data3);
-    } 
+                    $data3 = [
+                        'grade_id' => isset($adata['id']) ? $adata['id'] : null,
+                        'name' => $name . "SR",
+                        'short_name' => $name . "SR",
+                        'sort_order' => 3,
+                        'medium' => 'ENGLISH',
+                        'sub_institute_id' => $sub_institute_id,
+                        'course_duration' => '1 Year',
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ];
+                    standardModel::insert($data3);
+                }
 
-  if (isset($section['PRI'])) {
-    for ($i = 1; $i <= 5; $i++) {
+                if (isset($section['PRI'])) {
+                    for ($i = 1; $i <= 5; $i++) {
 
-        $grade_title = 'PRIMARY';
-          $adatas = academic_sectionModel::select('*')->where([
-                'title' => $grade_title.'-'.$title, 'sub_institute_id' => $sub_institute_id,
-            ])->get()->toArray();
-            $adata = $adatas[$key] ?? $adatas[0];
+                        $grade_title = 'PRIMARY';
+                        $adatas = academic_sectionModel::select('*')->where([
+                            'title' => $grade_title . '-' . $title, 'sub_institute_id' => $sub_institute_id,
+                        ])->get()->toArray();
+                        $adata = $adatas[$key] ?? $adatas[0];
 
-        $data = [
-                'grade_id'         => isset($adata['id']) ? $adata['id'] : null,
-                'name'             => $name.$i,
-                'short_name'       => $short_name.$i,
-                'sort_order'       =>$i,
-                'medium'           => 'ENGLISH',
-                'sub_institute_id' => $sub_institute_id,
-                'course_duration'  => '1 Year',
-                'created_at'       => now(),
-                'updated_at'       => now(),
-    ];
-            standardModel::insert($data);
+                        $data = [
+                            'grade_id' => isset($adata['id']) ? $adata['id'] : null,
+                            'name' => $name . $i,
+                            'short_name' => $short_name . $i,
+                            'sort_order' => $i,
+                            'medium' => 'ENGLISH',
+                            'sub_institute_id' => $sub_institute_id,
+                            'course_duration' => '1 Year',
+                            'created_at' => now(),
+                            'updated_at' => now(),
+                        ];
+                        standardModel::insert($data);
 
-    }
-    } 
-    if (isset($section['SEC'])) {
+                    }
+                }
+                if (isset($section['SEC'])) {
 
-        for ($i = 6; $i <= 10; $i++) {
+                    for ($i = 6; $i <= 10; $i++) {
 
-             $grade_title ='SECONDARY';
-              $adatas = academic_sectionModel::select('*')->where([
-                'title' => $grade_title.'-'.$title,'sub_institute_id' => $sub_institute_id,
-            ])->get()->toArray();
-            $adata = $adatas[$key] ?? $adatas[0];
-       
-        $data = [
-                'grade_id'         => isset($adata['id']) ? $adata['id'] : null,
-                'name'             => $name.$i,
-                'short_name'       => $short_name.$i,
-                'sort_order'       =>$i,
-                'medium'           => 'ENGLISH',
-                'sub_institute_id' => $sub_institute_id,
-                'course_duration'  => '1 Year',
-                'created_at'       => now(),
-                'updated_at'       => now(),
-    ];
-            standardModel::insert($data);
-    }
-    } 
-    if (isset($section['HSEC'])) {
+                        $grade_title = 'SECONDARY';
+                        $adatas = academic_sectionModel::select('*')->where([
+                            'title' => $grade_title . '-' . $title, 'sub_institute_id' => $sub_institute_id,
+                        ])->get()->toArray();
+                        $adata = $adatas[$key] ?? $adatas[0];
 
-        for ($i = 11; $i <= 12; $i++) {
-             $grade_title = 'HIGH-SECONDARY';
-              $adatas = academic_sectionModel::select('*')->where([
-                'title' => $grade_title.'-'.$title,'sub_institute_id' => $sub_institute_id,
-            ])->get()->toArray();
-            $adata = $adatas[$key] ?? $adatas[0];
-  
-        $data = [
-                'grade_id'         => $adata['id'],
-                'name'             => $name.$i,
-                'short_name'       => $short_name.$i,
-                'sort_order'       =>$i,
-                'medium'           => 'ENGLISH',
-                'sub_institute_id' => $sub_institute_id,
-                'course_duration'  => '1 Year',
-                'created_at'       => now(),
-                'updated_at'       => now(),
-    ];
-            standardModel::insert($data);
+                        $data = [
+                            'grade_id' => isset($adata['id']) ? $adata['id'] : null,
+                            'name' => $name . $i,
+                            'short_name' => $short_name . $i,
+                            'sort_order' => $i,
+                            'medium' => 'ENGLISH',
+                            'sub_institute_id' => $sub_institute_id,
+                            'course_duration' => '1 Year',
+                            'created_at' => now(),
+                            'updated_at' => now(),
+                        ];
+                        standardModel::insert($data);
+                    }
+                }
+                if (isset($section['HSEC'])) {
 
-    }
-    }
+                    for ($i = 11; $i <= 12; $i++) {
+                        $grade_title = 'HIGH-SECONDARY';
+                        $adatas = academic_sectionModel::select('*')->where([
+                            'title' => $grade_title . '-' . $title, 'sub_institute_id' => $sub_institute_id,
+                        ])->get()->toArray();
+                        $adata = $adatas[$key] ?? $adatas[0];
 
-    }
+                        $data = [
+                            'grade_id' => $adata['id'],
+                            'name' => $name . $i,
+                            'short_name' => $short_name . $i,
+                            'sort_order' => $i,
+                            'medium' => 'ENGLISH',
+                            'sub_institute_id' => $sub_institute_id,
+                            'course_duration' => '1 Year',
+                            'created_at' => now(),
+                            'updated_at' => now(),
+                        ];
+                        standardModel::insert($data);
+
+                    }
+                }
+            }
+        } else {
+            for($i=1;$i<=12;$i++)
+            {
+                $name = 'CBSE-'.$i;
+                $short_name = 'C-'.$i;
+    
+                if($i >= 1 && $i <= 5)
+                {
+                    $grade_title = 'PRIMARY';
+                }
+                else if($i >= 6 && $i <= 10)
+                {
+                    $grade_title = 'SECONDARY'; 
+                }
+                else if($i >= 11 && $i <= 12)
+                {
+                    $grade_title = 'HIGH-SECONDARY'; 
+                }
+    
+                $adata = academic_sectionModel::select('*')->where(['title'=>$grade_title,'sub_institute_id'=>$sub_institute_id])->get()->toArray();
+                $adata = $adata[0];
+    
+                $data = array(
+                    'grade_id' => $adata['id'],
+                    'name' => $name,
+                    'short_name' => $short_name,
+                    'sort_order' => $i,    
+                    'medium' => 'ENGLISH',
+                    'sub_institute_id' => $sub_institute_id,
+                    'course_duration' => '1 Year',
+                    'created_at' => now(),
+                    'updated_at' => now()
+                );
+                standardModel::insert($data);
+            }
+        }
 }
 
     public function INSERT_DIVISION($sub_institute_id,$board)
@@ -839,27 +872,47 @@ class NewLMS_ApiController extends Controller
 
     public function INSERT_SUBJECT($sub_institute_id,$board)
     {
-        $sub_array = ['Eng' => 'English', 'Math' => 'Math', 'Hindi' => 'Hindi', 'Sci' => 'Science'];
+        if ($board !== '') {
+            $sub_array = ['Eng' => 'English', 'Math' => 'Math', 'Hindi' => 'Hindi', 'Sci' => 'Science'];
 
-        $j = 1;
-            foreach($board as $medium){
+            $j = 1;
+            foreach ($board as $medium) {
 
-        foreach ($sub_array as $key => $val) {
-            $subject_code = "000".$j++;
-            $data = [
-                'subject_name'     => $val,
-                'subject_code'     => $subject_code,
-                'subject_type'     => 'Major',
-                'short_name'       => $key,
-                'sub_institute_id' => $sub_institute_id,
-                'status'           => '1',
-                'created_at'       => now(),
-                'updated_at'       => now(),
-            ];
+                foreach ($sub_array as $key => $val) {
+                    $subject_code = "000" . $j++;
+                    $data = [
+                        'subject_name' => $val,
+                        'subject_code' => $subject_code,
+                        'subject_type' => 'Major',
+                        'short_name' => $key,
+                        'sub_institute_id' => $sub_institute_id,
+                        'status' => '1',
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ];
 
-            subjectModel::insert($data);
+                    subjectModel::insert($data);
+                }
+            }
+        } else {
+            $sub_array = array('Eng' => 'English', 'Math' => 'Math', 'Hindi' => 'Hindi', 'Sci' => 'Science');
+
+            $j = 1;
+            foreach ($sub_array as $key => $val) {
+                $subject_code = "000" . $j++;
+                $data = array(
+                    'subject_name' => $val,
+                    'subject_code' => $subject_code,
+                    'subject_type' => 'Major',
+                    'short_name' => $key,
+                    'sub_institute_id' => $sub_institute_id,
+                    'status' => '1',
+                    'created_at' => now(),
+                    'updated_at' => now()
+                );
+                subjectModel::insert($data);
+            }
         }
-    }
     }
 
     public function INSERT_STUDENTQUOTA($sub_institute_id,$board)

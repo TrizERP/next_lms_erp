@@ -36,6 +36,7 @@ class examWiseProgressReportController extends Controller
         $subject = $request->input('subject');
         $exams = $request->input('exam_id');
         $type = $request->input('type');
+        $marking_period_id = session()->get('term_id');
 
         if ($type == "API") {
             $sub_institute_id = $request->input('sub_institute_id');
@@ -63,8 +64,10 @@ class examWiseProgressReportController extends Controller
                     = '".$syear."' AND se.end_date IS NULL");
             })->join('academic_section as ac', function ($join) {
                 $join->whereRaw('ac.id = se.grade_id AND ac.sub_institute_id = se.sub_institute_id');
-            })->join('standard as st', function ($join) {
-                $join->whereRaw('st.id = se.standard_id AND st.sub_institute_id = se.sub_institute_id');
+            })->join('standard as st', function ($join) use($marking_period_id) {
+                $join->whereRaw('st.id = se.standard_id AND st.sub_institute_id = se.sub_institute_id')->when($marking_period_id,function($query) use($marking_period_id){
+                    $query->where('st.marking_period_id',$marking_period_id);
+                });
             })->leftJoin('division as d', function ($join) {
                 $join->whereRaw('d.id = se.section_id AND d.sub_institute_id = se.sub_institute_id');
             })->join('question_paper as qp', function ($join) {

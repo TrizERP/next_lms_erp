@@ -70,9 +70,7 @@
             </a>
         </div>
     </div>
-    <?php
-    // echo "<pre>";print_r($data);exit;
-    ?>
+
     <!-- Setup Your Details -->
     <section class="detail-section">
         <div class="container">
@@ -89,6 +87,7 @@
                 </div>
                 <input type="hidden" name="mobile" value="@if(isset($data['mobile'])){{$data['mobile']}} @endif" />
                 <input type="hidden" name="type" value="@if(isset($data['type'])){{$data['type']}} @endif" />
+                <input type="hidden" name="institute_type" value="@if(isset($data['institute_type'])){{$data['institute_type']}} @endif" />                
 
                 <!-- <div class="form-group file-design">
                     <label class="d-block">Upload Institute Logo</label>

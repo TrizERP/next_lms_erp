@@ -14,9 +14,7 @@
         <div id="printableArea" class="card">
             <div class="row">
                 <div class="col-lg-12 col-sm-12 col-xs-12">
-                    <?php
-                    //dd($data);
-                    //die();
+                    @php
                         $page = "";
                         if($data['paper'] == "A5"){    
                             $page = '<page size="A5" layout="landscape">'; 
@@ -25,18 +23,18 @@
                         else if($data['paper'] == "A5DB")
                         {    
                             $page = '<page size="A5" layout="landscape">'; 
-                    ?>
+                    @endphp
                             <table width="100%">
                                 <tr>
                                     <td style="width:50%">
-                                        <?php echo $data['data']; ?>
+                                        {{$data['data']}}
                                     </td>
                                     <td style="width:50%;">
-                                        <?php echo $data['data']; ?>
+                                      {{ $data['data']}}
                                     </td>
                                 </tr>
                             </table>
-                    <?php
+                @php
                         }
                         else  if($data['paper'] == "A4")
                         {    
@@ -49,7 +47,7 @@
                             echo $data['data']; 
                             echo $data['data']; 
                         }
-                    ?>
+                @endphp
                     <input type="hidden" name="action" id="action" value="fees_collect_receipt">
                     <input type="hidden" name="student_id" id="student_id" value="{{$data['student_id']}}">
                     <input type="hidden" name="receipt_id_html" id="receipt_id_html" value="{{$data['receipt_id_html']}}">

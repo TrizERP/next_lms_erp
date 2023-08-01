@@ -37,6 +37,7 @@ class fees_breackoff_controller extends Controller
 
     function getData()
     {
+        $marking_period_id=session()->get('term_id');
         $result = DB::table('fees_breackoff as fb')
             ->join('fees_title as ft', function ($join) {
                 $join->whereRaw('ft.id = fb.fee_type_id');
@@ -44,8 +45,10 @@ class fees_breackoff_controller extends Controller
                 $join->whereRaw('sq.id = fb.quota');
             })->join('academic_section as acs', function ($join) {
                 $join->whereRaw('acs.id = fb.grade_id');
-            })->join('standard as st', function ($join) {
-                $join->whereRaw('st.id = fb.standard_id');
+            })->join('standard as st', function ($join) use($marking_period_id) {
+                $join->whereRaw('st.id = fb.standard_id')->when($marking_period_id,function($join) use ($marking_period_id){
+                    $join->where('st.marking_period_id',$marking_period_id);
+                });
             })->leftJoin('division as d', function ($join) {
                 $join->whereRaw('d.id = fb.section_id');
             })->selectRaw('fb.syear,fb.admission_year,ft.display_name fees_head,sq.title quota,acs.title grade_name,
@@ -315,7 +318,7 @@ class fees_breackoff_controller extends Controller
             $school_data['data']['title_arr'] = $title_arr;
             $school_data['data']['quota_arr'] = $quota_arr;
             $type = $request->input('type');
-
+            // echo "<pre>";print_r($school_data);exit;
             return is_mobile($type, "fees/fees_breackoff/edit", $school_data, "view");
         }
     }

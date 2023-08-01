@@ -2,17 +2,14 @@
 <html lang="en">
 
 <!-- Mirrored from www.ampleadmin.wrappixel.com/ampleadmin-html/ampleadmin-minimal/login.html by HTTrack Website Copier/3.x [XR&CO'2014], Thu, 30 Aug 2018 10:12:45 GMT -->
-
-<?php
-
+@php
 $loginpage_link = session()->get('loginpage_link');
 $loginpage_logo = session()->get('loginpage_logo');
 $loginpage_title = session()->get('loginpage_title');
 $loginpage_description = session()->get('loginpage_description');
 $loginpage_favicon = session()->get('loginpage_favicon');
 $loginpage_backgrond = session()->get('loginpage_backgrond');
-
-?>
+@endphp
 <!-- old -->
 <!-- new  -->
 
@@ -93,19 +90,19 @@ $loginpage_backgrond = session()->get('loginpage_backgrond');
                         <h2>Sign up</h2>
                     </div>
                     @if(!empty($data['message']))
-                                    <div class="success-text d-flex align-items-center">
-                                        <img src="{{ asset('/Images/green-check-icon.svg')}} ">
-                                        <span>{{ $data['message'] }}</span>
-                                    </div>
-                                    @endif
+                        <div class="success-text d-flex align-items-center">
+                            <img src="{{ asset('/Images/green-check-icon.svg')}} ">
+                            <span>{{ $data['message'] }}</span>
+                        </div>
+                        @endif
 
-                                    
-                                    @if(!empty($data['failed']))
-                                    <div class="danger-text d-flex align-items-center">
-                                        <img src="{{ asset('/Images/green-check-icon.svg')}} ">
-                                        <span>{{ $data['failed'] }}</span>
-                                    </div>
-                                    @endif
+                        
+                        @if(!empty($data['failed']))
+                        <div class="danger-text d-flex align-items-center">
+                            <img src="{{ asset('/Images/green-check-icon.svg')}} ">
+                            <span>{{ $data['failed'] }}</span>
+                        </div>
+                        @endif
                     @if(!isset($data['mobile']))
                     <form class="" action="{{ route('NewLMS_temp_signup') }}" id="signupform" method="POST">
                         @elseif(!isset($data['confirm']))
@@ -179,46 +176,7 @@ $loginpage_backgrond = session()->get('loginpage_backgrond');
                                     <input type="email" class="form-control" name="email" placeholder="Email Address"
                                         value="@if(isset($data['email'])){{$data['email']}} @endif" required>
                                 </div>
-                                <!-- <div class="form-group  m-t-10">
-                                    <div class="col-xs-12">
-                                        <label>Gender <span style="color: red;font-size: large;">*</span></label>
-                                        <div class="radio-list">
-                                            <label class="radio-inline p-0">
-                                                <div class="radio radio-success">
-                                                    <input type="radio" name="gender" id="male" value="M"
-                                                        @if(isset($data['gender']) && $data['gender']=='M' ) checked
-                                                        @endif required>
-                                                    <label for="male">Male</label>
-                                                </div>
-                                            </label>
-                                            <label class="radio-inline">
-                                                <div class="radio radio-success">
-                                                    <input type="radio" name="gender" id="female" value="F"
-                                                        @if(isset($data['gender']) && $data['gender']=='F' ) checked
-                                                        @endif required>
-                                                    <label for="female">Female</label>
-                                                </div>
-                                            </label>
-                                            <label class="radio-inline">
-                                                <div class="radio radio-success">
-                                                    <input type="radio" name="gender" id="other" value="O"
-                                                        @if(isset($data['gender']) && $data['gender']=='O' ) checked
-                                                        @endif required>
-                                                    <label for="other">Other</label>
-                                                </div>
-                                            </label>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="form-group  m-t-10">
-                                    <div class="col-xs-12">
-                                        <label>Birth Date<span style="color: red;font-size: large;">*</span></label>
-                                        <input type="text" id='birthdate' required name="birthdate"
-                                            class="form-control mydatepicker" autocomplete="off"
-                                            placeholder="Enter Birthdate"
-                                            value="@if(isset($data['birthdate'])){{$data['birthdate']}} @endif">
-                                    </div>
-                                </div> -->
+                                
                                 <div class="form-group  m-t-10" id="institute_name_div">
                                     <div class="col-xs-12">
                                         <label>Institute Name<span style="color: red;font-size: large;">*</span></label>
@@ -227,11 +185,13 @@ $loginpage_backgrond = session()->get('loginpage_backgrond');
                                             value="@if(isset($data['institute_name'])){{$data['institute_name']}} @endif">
                                     </div>
                                 </div>
-                                <div class="form-group  m-t-10" id="standard_div">
+                                <div class="form-group  m-t-10">
                                     <div class="col-xs-12">
-                                        <label>Standard<span style="color: red;font-size: large;">*</span></label>
-                                        <select class="form-control" name="standard" id="standard">
-                                            <option value="">Select Standard</option>
+                                        <label>Select Institute Type<span style="color: red;font-size: large;">*</span></label>
+                                        <select class="form-control" name="institute_type" id="institute_type" required>
+                                            <option value="">Select Institute</option>
+                                            <option value="school" @if(isset($data['institute_type']) && $data['institute_type']="school") selected @endif>School</option>
+                                            <option value="college" @if(isset($data['institute_type']) && $data['institute_type']="college") selected @endif>College</option>                                            
                                         </select>
                                     </div>
                                 </div>

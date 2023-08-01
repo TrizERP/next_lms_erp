@@ -45,6 +45,7 @@ class subject1Controller extends Controller {
     }
     public function store(Request $request){
         $sub_institute_id = $request->session()->get('sub_institute_id'); 
+        $marking_period_id = $request->session()->get('term_id');
         
         //Check if Subject Already Exist or not
         $exist = $this->check_exist($request->get('subject_name'),$sub_institute_id);       
@@ -56,6 +57,7 @@ class subject1Controller extends Controller {
                 'subject_code' => $request->get('subject_code'),
                 'short_name' => $request->get('short_name'),
                 'sub_institute_id' => $sub_institute_id,
+                'marking_period_id'=>session()->get('term_id') ?? null,
                 'status' => "1",            
             ]);
                  
@@ -106,6 +108,7 @@ class subject1Controller extends Controller {
                 'subject_type' => $request->get('subject_type'),
                 'subject_code' => $request->get('subject_code'),
                 'short_name' => $request->get('short_name'),
+                'marking_period_id' =>session()->get('term_id') ?? null,                
                 'sub_institute_id' => $sub_institute_id,            
             );
             subjectModel::where(["id" => $id])->update($data);
@@ -135,6 +138,7 @@ class subject1Controller extends Controller {
 
     public function insert_data(Request $request){
         $master = $request->Slsection;
+        $marking_period_id = $request->session()->get('term_id');                
 
         $sub_institute_id = $request->session()->get('sub_institute_id');
 
@@ -197,8 +201,9 @@ class subject1Controller extends Controller {
                 "medium" => $st_medium,
                 "sub_institute_id"=>$sub_institute_id,
                 "course_duration"=>$st_course_duration,
-                "next_grade_id"=>$st_next_grade_id,
-                "next_standard_id"=>$st_next_standard_id
+                "next_grade_id"=>$st_next_grade_id ?? null,
+                "next_standard_id"=>$st_next_standard_id ?? null,
+                "marking_period_id"=> $marking_period_id ?? null,
                 ]);
                 if($data== true){
                     return redirect()->back()->with('success','Standard Added Successfully !');
@@ -252,22 +257,15 @@ class subject1Controller extends Controller {
                 'subject_code' => $request->get('subject_code'),
                 'short_name' => $request->get('short_name'),
                 'sub_institute_id' => $sub_institute_id,
+                'marking_period_id'=>$marking_period_id ?? null,
                 'status' => "1",            
             ]);
                  
             $sub->save();
-            // $res = array(
-            //  "status_code" => 1,
-            //  "message" => "Subject Added Successfully",
-            // );
             return redirect()->back()->with('success','Subject Added Successfully');
         }
         else
         {
-            // $res = array(
-            //  "status_code" => 0,
-            //  "message" => "Subject Already Exist",
-            // );
             return redirect()->back()->with('failed','Subject Already Exist');
 
         }

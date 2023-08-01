@@ -159,8 +159,8 @@ class tblstudentController extends Controller
 		$sub_institute_id = $request->session()->get('sub_institute_id');
 		$term_id = $request->session()->get('term_id');
 		$syear = $request->session()->get('syear');
-		$type = $request->input('type');
-
+        $type = $request->input('type');
+        $marking_period_id = session()->get('term_id');
 		$validator = Validator::make($request->all(), [
 			'student_image' => 'size:1000',
 		]);
@@ -257,7 +257,7 @@ class tblstudentController extends Controller
 		$sub_institute_id = $request->session()->get('sub_institute_id');
 		$finalArray['sub_institute_id'] = $sub_institute_id;
 		$finalArrayAdmission['sub_institute_id'] = $sub_institute_id;
-
+        $finalArray['marking_period_id']=session()->get('term_id');
 		$studentUserProfile = tbluserprofilemasterModel::where(['sub_institute_id' => $sub_institute_id, 'name' => 'Student'])->get()->toArray();
 
 		$finalArray['password'] = md5('student');

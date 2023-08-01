@@ -110,17 +110,7 @@ class studentHealthController extends Controller
         return is_mobile($type, "student_health.index", $res);
     }
 
-    /**
-     * Display the specified resource.
-     *
-     * @param  int  $id
-     * @return void
-     */
-    public function show($id)
-    {
-        //
-    }
-
+  
     /**
      * Show the form for editing the specified resource.
      *
