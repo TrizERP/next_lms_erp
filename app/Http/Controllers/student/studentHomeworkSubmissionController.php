@@ -50,25 +50,17 @@ class studentHomeworkSubmissionController extends Controller
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $syear = $request->session()->get('syear');
         $extra_query = '';
-
-
-        $sql = "SELECT ah.id AS CHECKBOX,s.roll_no,s.enrollment_no, CONCAT_WS(' ',s.last_name,s.first_name,s.middle_name) AS student_name,cs.name AS standard,
-			ss.name as division,s.email,s.mobile,ah.id, ah.title,ah.description,ah.image, DATE_FORMAT(ah.submission_date,'%d-%m-%Y') AS SUBMISSION_DATE,
-			DATE_FORMAT(ah.date,'%d-%m-%Y') AS HOMEWORK_DATE,'' REMARKS,submission_remarks
-			FROM homework ah
-			INNER JOIN tblstudent s ON s.id = ah.student_id
-			INNER JOIN tblstudent_enrollment se ON (s.id = se.student_id AND se.end_date IS NULL)
-			INNER JOIN standard cs ON (cs.id = ah.standard_id)
-			INNER JOIN division ss ON (ss.id = ah.division_id)
-			WHERE se.syear = '".$syear."' AND ah.completion_status = 'N' AND s.sub_institute_id = '".$sub_institute_id."' ";
+        $marking_period_id = session()->get('term_id');
 
         $result = DB::table('homework as ah')
             ->join('tblstudent as s', function ($join) {
                 $join->whereRaw('s.id = ah.student_id');
             })->join('tblstudent_enrollment as se', function ($join) {
                 $join->whereRaw('(s.id = se.student_id AND se.end_date IS NULL)');
-            })->join('standard as cs', function ($join) {
-                $join->whereRaw('(cs.id = ah.standard_id)');
+            })->join('standard as cs', function ($join) use ($marking_period_id){
+                $join->whereRaw('(cs.id = ah.standard_id)')->when($marking_period_id,function($query) use($marking_period_id) {
+                    $query->where('cs.marking_period_id');
+                });
             })->join('division as ss', function ($join) {
                 $join->whereRaw('(ss.id = ah.division_id)');
             })->selectRaw("ah.id AS CHECKBOX,s.roll_no,s.enrollment_no, CONCAT_WS(' ',s.last_name,s.first_name,s.middle_name) AS
@@ -250,6 +242,7 @@ class studentHomeworkSubmissionController extends Controller
         $from_date = $request->input('from_date');
         $to_date = $request->input('to_date');
         $submission_status = $request->input('status');
+        $marking_period_id = session()->get('marking_period_id');
 
         $subjects = subjectModel::select('id',
             'subject_name')->where(['sub_institute_id' => $sub_institute_id])->get()->toArray();
@@ -259,8 +252,10 @@ class studentHomeworkSubmissionController extends Controller
                 $join->whereRaw('s.id = ah.student_id AND s.sub_institute_id = ah.sub_institute_id');
             })->join('tblstudent_enrollment as se', function ($join) {
                 $join->whereRaw('(s.id = se.student_id AND se.end_date IS NULL)');
-            })->join('standard as cs', function ($join) {
-                $join->whereRaw('(cs.id = ah.standard_id)');
+            })->join('standard as cs', function ($join) use($marking_period_id) {
+                $join->whereRaw('(cs.id = ah.standard_id)')->when($marking_period_id,function($query) use($marking_period_id) {
+                    $query->where('cs.marking_period_id',$marking_period_id);
+                });
             })->join('division as ss', function ($join) {
                 $join->whereRaw('(ss.id = ah.division_id)');
             })->join('tbluser as tu', function ($join) {

@@ -31,13 +31,17 @@ class classteacherReportController extends Controller
     public function getData($request)
     {
         $sub_institute_id = $request->session()->get('sub_institute_id');
-
+        $marking_period_id = session()->get('term_id');
         return classteacherModel::from("class_teacher as ct")
             ->select('ct.*', 'a.title as academic_section_name', 's.name as standard_name', 'd.name as division_name',
                 DB::raw('concat(u.first_name," ",u.middle_name," ",u.last_name) as teacher_name')
             )
             ->join('academic_section as a', 'a.id', '=', 'ct.grade_id')
-            ->join('standard as s', 's.id', '=', 'ct.standard_id')
+            ->join('standard as s', function($join) use($marking_period_id){
+                $join->on('s.id', '=', 'ct.standard_id')->when($marking_period_id,function($query) use($marking_period_id){
+                    $query->where('s.marking_period_id',$marking_period_id);
+                });
+            })
             ->join('division as d', 'd.id', '=', 'ct.division_id')
             ->join('tbluser as u', 'u.id', '=', 'ct.teacher_id')
             ->where(['ct.sub_institute_id' => $sub_institute_id])
@@ -71,7 +75,7 @@ class classteacherReportController extends Controller
         $teacher_id = $request->input('teacher_id');
         $syear = $request->session()->get('syear');
         $sub_institute_id = $request->session()->get('sub_institute_id');
-
+        $marking_period_id = session()->get('term_id');
         $extraSearchArray = [];
         $extraSearchArrayRaw = " 1=1 ";
 
@@ -99,7 +103,11 @@ class classteacherReportController extends Controller
                 DB::raw('concat(u.first_name," ",u.middle_name," ",u.last_name) as teacher_name')
             )
             ->join('academic_section as a', 'a.id', '=', 'ct.grade_id')
-            ->join('standard as s', 's.id', '=', 'ct.standard_id')
+            ->join('standard as s', function($join) use($marking_period_id){
+                $join->on('s.id', '=', 'ct.standard_id')->when($marking_period_id,function($query) use($marking_period_id){
+                    $query->where('s.marking_period_id',$marking_period_id);
+                });
+            })
             ->join('division as d', 'd.id', '=', 'ct.division_id')
             ->join('tbluser as u', 'u.id', '=', 'ct.teacher_id')
             ->where($extraSearchArray)
@@ -118,61 +126,5 @@ class classteacherReportController extends Controller
 
         return is_mobile($type, "school_setup/show_classteacherReport", $res, "view");
 
-    }
-
-    /**
-     * Store a newly created resource in storage.
-     *
-     * @param  Request  $request
-     * @return void
-     */
-    public function store(Request $request)
-    {
-        //
-    }
-
-    /**
-     * Display the specified resource.
-     *
-     * @param  int  $id
-     * @return void
-     */
-    public function show($id)
-    {
-        //
-    }
-
-    /**
-     * Show the form for editing the specified resource.
-     *
-     * @param  int  $id
-     * @return void
-     */
-    public function edit(Request $request, $id)
-    {
-        // 
-    }
-
-    /**
-     * Update the specified resource in storage.
-     *
-     * @param  Request  $request
-     * @param  int  $id
-     * @return void
-     */
-    public function update(Request $request, $id)
-    {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     *
-     * @param  int  $id
-     * @return void
-     */
-    public function destroy(Request $request, $id)
-    {
-        //
     }
 }

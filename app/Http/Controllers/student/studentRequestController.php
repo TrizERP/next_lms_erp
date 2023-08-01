@@ -90,14 +90,13 @@ class studentRequestController extends Controller
             $studentRequest['STUDENT_ID'] = $student_id;
             $studentRequest['SYEAR'] = $syear;
             $studentRequest['SUB_INSTITUTE_ID'] = $sub_institute_id;
-            $studentRequest['CHANGE_REQUEST_ID'] = $CHANGE_REQUEST_IDS[$student_id];
+            $studentRequest['CHANGE_REQUEST_ID'] = $CHANGE_REQUEST_IDS[$student_id] ?? '';
             $studentRequest['REASON'] = $REASONS[$student_id];
             $studentRequest['PROOF_OF_DOCUMENT'] = $DESCRIPTIONS[$student_id];
-            $studentRequest['DESCRIPTION'] = $PROOF_OF_DOCUMENTS[$student_id];
+            $studentRequest['DESCRIPTION'] = $PROOF_OF_DOCUMENTS[$student_id]??'';
             $studentRequest['STANDARD_ID'] = $STANDARD_IDS[$student_id];
             $studentRequest['SECTION_ID'] = $SECTION_IDS[$student_id];
             $studentRequest['CREATED_BY'] = $user_id;
-
 
             studentRequestModel::insert($studentRequest);
         }

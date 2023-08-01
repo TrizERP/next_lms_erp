@@ -35,11 +35,15 @@ class virtualclassroomController extends Controller
     {
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $data['content_data'] = array();
-
+        $marking_period_id = session()->get('term_id');
         $data['content_data'] = contentModel::select('content_master.*', 'standard.name as standard_name',
             'academic_section.title as grade_name',
             'subject_name', 'chapter_name', 'tm.name as topic_name', 'stm.name as sub_topic_name')
-            ->join('standard', 'standard.id', '=', 'content_master.standard_id')
+            ->join('standard',function($join) use($marking_period_id){
+                $join->on('standard.id', '=', 'content_master.standard_id')->when($marking_period_id,function($query) use($marking_period_id){
+                    $query->where('s.marking_period_id',$marking_period_id);
+                });
+            })
             ->join('academic_section', 'academic_section.id', '=', 'content_master.grade_id')
             ->join('subject', 'subject.id', '=', 'content_master.subject_id')
             ->join('chapter_master as cm', 'cm.id', '=', 'content_master.chapter_id')
@@ -63,9 +67,12 @@ class virtualclassroomController extends Controller
 
     public function getBreadcrum($sub_institute_id, $chapter_id, $topic_id)
     {
+        $marking_period_id=session()->get('term_id');
         $breadcrum_data = DB::table('chapter_master as c')
-            ->join('sub_std_map as s', function ($join) {
-                $join->whereRaw('s.subject_id = c.subject_id AND s.standard_id = c.standard_id');
+            ->join('sub_std_map as s', function ($join) use($main_topic_id){
+                $join->whereRaw('s.subject_id = c.subject_id AND s.standard_id = c.standard_id')->when($marking_period_id,function($query) use($marking_period_id){
+                    $query->where('s.marking_period_id',$marking_period_id);
+                });
             })->join('standard as st', function ($join) {
                 $join->whereRaw('st.id = c.standard_id');
             })->join('topic_master as t', function ($join) {
@@ -302,6 +309,7 @@ class virtualclassroomController extends Controller
         $grade = $request->input('grade');
         $standard = $request->input('standard');
         $subject = $request->input('subject');
+        $marking_period_id=session()->get('term_id');
 
         $search_arr = array(
             'chapter_master.grade_id'         => $grade,
@@ -312,7 +320,11 @@ class virtualclassroomController extends Controller
         $data = array();
         $data['data'] = chapterModel::select('chapter_master.*', 'standard.name as standard_name'
             , 'academic_section.title as grade_name', 'subject_name')
-            ->join('standard', 'standard.id', '=', 'chapter_master.standard_id')
+            ->join('standard', function($join) use($marking_period_id){
+                $join->on('standard.id', '=', 'chapter_master.standard_id')->when($marking_period_id,function($query) use($marking_period_id){
+                    $query->where('s.marking_period_id',$marking_period_id);
+                });
+            })
             ->join('academic_section', 'academic_section.id', '=', 'chapter_master.grade_id')
             ->join('subject', 'subject.id', '=', 'chapter_master.subject_id')
             ->where($search_arr)
@@ -409,13 +421,16 @@ class virtualclassroomController extends Controller
         $type = $request->input("type");
         $sub_institute_id = $request->input("sub_institute_id");
         $syear = $request->input("syear");
+        $marking_period_id = session()->get('term_id');
 
         if ($student_id != "" && $sub_institute_id != "" && $syear != "") {
             $data = DB::table('tblstudent_enrollment as s')
                 ->join('lms_virtual_classroom as v', function ($join) {
                     $join->whereRaw('s.standard_id = v.standard_id AND s.sub_institute_id = v.sub_institute_id');
-                })->join('standard as st', function ($join) {
-                    $join->whereRaw('st.id = v.standard_id AND st.sub_institute_id = s.sub_institute_id');
+                })->join('standard as st', function ($join) use($marking_period_id) {
+                    $join->whereRaw('st.id = v.standard_id AND st.sub_institute_id = s.sub_institute_id')->when($marking_period_id,function($query) use($marking_period_id){
+                        $query->where('s.marking_period_id',$marking_period_id);
+                    });
                 })->join('subject as sub', function ($join) {
                     $join->whereRaw('sub.id = v.subject_id AND sub.sub_institute_id = s.sub_institute_id');
                 })->join('chapter_master as c', function ($join) {

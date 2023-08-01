@@ -60,7 +60,7 @@ class contentController extends Controller
                 $join->whereRaw('s.subject_id = c.subject_id AND s.standard_id = c.standard_id');
             })->join('standard as st', function ($join) {
                 $join->whereRaw('st.id = c.standard_id');
-            })->LeftJoin('topic_master as t', function ($join) {
+            })->Leftjoin('topic_master as t', function ($join) {
                 $join->whereRaw('t.chapter_id = c.id');
             })->selectRaw('c.subject_id,s.display_name AS subject_name,c.standard_id,st.name AS standard_name,
                 c.id AS chapter_id, c.chapter_name, '.$topic.' t.name as topic_name')
@@ -104,7 +104,7 @@ class contentController extends Controller
         $data['lms_mapping_type'] = $lms_mapping_type;
 
         //START Get Content Category
-        $data['content_category'] = lmsContentCategoryModel::where('status', '2')->get()->toArray();
+        $data['content_category'] = lmsContentCategoryModel::where('status', '1')->get()->toArray();
         //END Get Content Category
 
         $data['breadcrum_data'] = $this->getBreadcrum($sub_institute_id, $request->get('chapter_id'),
@@ -144,7 +144,7 @@ class contentController extends Controller
         $data['lms_mapping_type'] = $lms_mapping_type;
 
         //START Get Content Category
-        $data['content_category'] = lmsContentCategoryModel::where('status', '2')->get()->toArray();
+        $data['content_category'] = lmsContentCategoryModel::where('status', '1')->get()->toArray();
         //END Get Content Category
 
         $data['breadcrum_data'] = $this->getBreadcrum($sub_institute_id, $request->get('chapter_id'));

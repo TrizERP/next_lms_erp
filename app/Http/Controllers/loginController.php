@@ -243,7 +243,9 @@ class loginController extends Controller
 
                         $request->session()->put('sub_institute_id', '');
                         $request->session()->put('syear', $getTermId[0]['syear']);
-                        $request->session()->put('term_id', $getTermId[0]['term_id']);
+                        if($schools[0]['institute_type']=="college"){
+                            $request->session()->put('term_id', $getTermId[0]['term_id']);
+                        }
                         $request->session()->put('academicTerms', $getAcademicTerms);
                         $request->session()->put('academicYears', $getAcademicYear);
                         $request->session()->put('getInstitutes', $getInstitutes);
@@ -269,8 +271,9 @@ class loginController extends Controller
                         $schoolData = SchoolModel::where(['id' => $user['sub_institute_id']])->get()->toArray();
                         $ShortCode = $schoolData[0]['ShortCode'];
                         $SchoolName = $schoolData[0]['SchoolName'];
+                        $institute_type = $schoolData[0]['institute_type'];                        
                         $Logo = $schoolData[0]['Logo'];
-
+                        // return $schoolData;exit;
                         if (isset($schoolData[0]['client_id'])) {
                             $getMultiInst = DB::table('tblclient')->where(['id' => $schoolData[0]['client_id']])->get()->toArray();
                             if (isset($getMultiInst['0']->multischool)) {
@@ -330,9 +333,13 @@ class loginController extends Controller
                         $request->session()->put('sub_institute_id', $user['sub_institute_id']);
                         $request->session()->put('expire_date', $schoolData[0]['expire_date']);
                         $request->session()->put('syear', $getTermId[0]['syear']);
-                        $request->session()->put('term_id', $getTermId[0]['term_id']);
+                        // $request->session()->put('term_id', $getTermId[0]['term_id']);
+                        if($schoolData[0]['institute_type']=="college"){
+                            $request->session()->put('term_id', $getTermId[0]['term_id']);
+                        }
                         $request->session()->put('academicTerms', $getAcademicTerms);
                         $request->session()->put('academicYears', $getAcademicYear);
+                        $request->session()->put('institute_type', $institute_type);                        
                         $request->session()->put('getInstitutes', '');
 
                         $checkUserTour = tourModel::where([

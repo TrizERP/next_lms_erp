@@ -11,84 +11,6 @@ use function App\Helpers\is_mobile;
 
 class feesStructureReportController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     *
-     * @param Request $request
-     * @return void
-     */
-    public function index(Request $request)
-    {
-        //
-    }
-
-    /**
-     * Show the form for creating a new resource.
-     *
-     * @param Request $request
-     * @return void
-     */
-    public function create(Request $request)
-    {
-        //
-    }
-
-    /**
-     * Store a newly created resource in storage.
-     *
-     * @param Request $request
-     * @return void
-     */
-    public function store(Request $request)
-    {
-
-    }
-
-    /**
-     * Display the specified resource.
-     *
-     * @param int $id
-     * @return void
-     */
-    public function show($id)
-    {
-        //
-    }
-
-    /**
-     * Show the form for editing the specified resource.
-     *
-     * @param int $id
-     * @return void
-     */
-    public function edit($id)
-    {
-        //
-    }
-
-    /**
-     * Update the specified resource in storage.
-     *
-     * @param Request $request
-     * @param int $id
-     * @return void
-     */
-    public function update(Request $request, $id)
-    {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     *
-     * @param int $id
-     * @return void
-     */
-    public function destroy($id)
-    {
-        //
-    }
-
     public function feesStructureReportIndex(Request $request)
     {
         $type = $request->input('type');
@@ -108,6 +30,7 @@ class feesStructureReportController extends Controller
         $syear = $request->session()->get('syear');
         $grade = $request->input('grade');
         $standard = $request->input('standard');
+        $marking_period_id = session()->get('term_id');
 
         $data = map_year::where([
             'sub_institute_id' => session()->get('sub_institute_id'),
@@ -132,7 +55,10 @@ class feesStructureReportController extends Controller
 
         $std_result = DB::table('standard as s')
             ->selectRaw('*,s.name AS standard_name')
-            ->where('s.sub_institute_id', session()->get('sub_institute_id'));
+            ->where('s.sub_institute_id', session()->get('sub_institute_id'))
+            ->when($marking_period_id,function($query) use($marking_period_id) {
+                $query->where('s.marking_period_id',$marking_period_id);
+            });
         if ($grade != "") {
             $std_result = $std_result->where('s.grade_id', $grade);
         }
@@ -175,10 +101,7 @@ class feesStructureReportController extends Controller
 
             }
         }
-        // echo '<pre>';
-        // print_r($months_arr);
-        // print_r($final_data);
-        // die;
+     
         $res['status_code'] = 1;
         $res['message'] = "Success";
         $res['months_arr'] = $months_arr;

@@ -39,11 +39,13 @@ class studentRequestReportController extends Controller
         $syear = $request->session()->get('syear');
         $from_date = $request->input('from_date');
         $to_date = $request->input('to_date');
-
+        $marking_period_id = session()->get('term_id');
 
         $result = DB::table('student_change_request as sr')
-            ->join('tblstudent as ts', function ($join) {
-                $join->whereRaw('sr.STUDENT_ID = ts.id');
+            ->join('tblstudent as ts', function ($join)use($marking_period_id) {
+                $join->whereRaw('sr.STUDENT_ID = ts.id')->when($marking_period_id,function($query) use($marking_period_id){
+                    $query->where('ts.marking_period_id',$marking_period_id);
+                });
             })->join('standard as s', function ($join) {
                 $join->whereRaw('s.id = sr.STANDARD_ID');
             })->join('division as d', function ($join) {
@@ -67,6 +69,8 @@ class studentRequestReportController extends Controller
 
         $res['status_code'] = 1;
         $res['message'] = "Success";
+        $res['from_date']=$from_date;
+        $res['to_date']=$to_date;
         $res['result_report'] = $result;
 
         return is_mobile($type, "student/student_request_report", $res, "view");

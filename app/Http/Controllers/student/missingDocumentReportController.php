@@ -41,12 +41,15 @@ class missingDocumentReportController extends Controller
         $grade_id = $request->input("grade");
         $standard_id = $request->input("standard");
         $division_id = $request->input("division");
+        $marking_period_id = session()->get('term_id');
 
         $result = DB::table('tblstudent as s')
             ->join('tblstudent_enrollment as se', function ($join) {
                 $join->whereRaw('s.id = se.student_id');
-            })->join('standard as st', function ($join) {
-                $join->whereRaw('st.id = se.standard_id');
+            })->join('standard as st', function ($join) use($marking_period_id) {
+                $join->whereRaw('st.id = se.standard_id')->when($marking_period_id,function($query) use($marking_period_id){
+                    $query->where('st.marking_period_id',$marking_period_id);
+                });
             })->join('division as d', function ($join) {
                 $join->whereRaw('d.id = se.section_id');
             })->leftJoin('tblstudent_document as sd', function ($join) {

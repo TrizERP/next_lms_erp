@@ -49,72 +49,6 @@ class feesCircularController extends Controller
         return is_mobile($type, "fees/fees_circular/show", $res, "view");
     }
 
-    /**
-     * Show the form for creating a new resource.
-     *
-     * @return void
-     */
-    public function create()
-    {
-        //
-    }
-
-    /**
-     * Store a newly created resource in storage.
-     *
-     * @param  Request  $request
-     * @return void
-     */
-    public function store(Request $request)
-    {
-        //
-    }
-
-    /**
-     * Display the specified resource.
-     *
-     * @param  int  $id
-     * @return void
-     */
-    public function show($id)
-    {
-        //
-    }
-
-    /**
-     * Show the form for editing the specified resource.
-     *
-     * @param  int  $id
-     * @return void
-     */
-    public function edit($id)
-    {
-        //
-    }
-
-    /**
-     * Update the specified resource in storage.
-     *
-     * @param  Request  $request
-     * @param  int  $id
-     * @return void
-     */
-    public function update(Request $request, $id)
-    {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     *
-     * @param  int  $id
-     * @return void
-     */
-    public function destroy($id)
-    {
-        //
-    }
-
        public function showStudent(Request $request)
     {
         $type = $request->input('type');
@@ -140,8 +74,10 @@ class feesCircularController extends Controller
                     $join->whereRaw('se.student_id = s.id');
                 })->join('academic_section as g', function ($join) {
                     $join->whereRaw('g.id = se.grade_id');
-                })->join('standard as st', function ($join) {
-                    $join->whereRaw('st.id = se.standard_id');
+                })->join('standard as st', function ($join) use($marking_period_id){
+                    $join->on('st.id', '=', 'se.standard_id')->when($marking_period_id,function($query) use ($marking_period_id){
+                        $query->where('st.marking_period_id',$marking_period_id);
+                    });
                 })->leftJoin('division as d', function ($join) {
                     $join->whereRaw('d.id = se.section_id');
                 })->join('fees_breackoff as fb', function ($join) use ($syear, $sub_institute_id) {

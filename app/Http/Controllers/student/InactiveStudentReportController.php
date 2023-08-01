@@ -109,6 +109,7 @@ class InactiveStudentReportController extends Controller
         $type = $request->input('type');
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $syear = $request->session()->get('syear');
+        $marking_period_id = session()->get('term_id');
 
         $extra_order_by = '';
         $extraSearchArray = [];
@@ -187,7 +188,11 @@ class InactiveStudentReportController extends Controller
             ->select(DB::raw(implode(',', $array)))
             ->join('tblstudent_enrollment', 'tblstudent.id', '=', 'tblstudent_enrollment.student_id')
             ->join('academic_section', 'academic_section.id', '=', 'tblstudent_enrollment.grade_id')
-            ->join('standard', 'standard.id', '=', 'tblstudent_enrollment.standard_id')
+            ->join('standard',function($join) use($marking_period_id){
+                $join->on('standard.id', '=', 'tblstudent_enrollment.standard_id')->when($marking_period_id,function($query) use($marking_period_id){
+                    $query->where('standard.marking_period_id',$marking_period_id);
+                });
+            })
             ->join('division', 'division.id', '=', 'tblstudent_enrollment.section_id')
             ->leftjoin('religion', 'religion.id', '=', 'tblstudent.religion')
             ->leftjoin('house_master', 'house_master.id', '=', 'tblstudent_enrollment.house_id')

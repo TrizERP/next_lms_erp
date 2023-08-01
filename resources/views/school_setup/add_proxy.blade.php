@@ -123,21 +123,33 @@
                                     </td>
                                             <td>{{$val['period_name']}}</td>
                                             <td>{{$val['subject_name']}}</td>
+                                            @php
+                                                $check = DB::table('proxy_master')
+                                                    ->whereRaw('sub_institute_id='.session()->get('sub_institute_id').
+                                                            ' and syear='.session()->get('syear').
+                                                            ' and teacher_id='.$data['teacher'].
+                                                            ' and period_id='.$val['period_id'].
+                                                            ' and subject_id='.$val['subject_id'].'')
+                                                    ->whereBetween('proxy_date', [$data['from_date'], $data['to_date']])
+                                                    ->get()
+                                                    ->toArray();
+                                            @endphp
                                             <td>
                                                 <select class="selectpicker form-control"
                                                         name="teacher_id['{{$val['date']}}/{{$val['timetable_id']}}']"
-                                                        id="teacher_id['{{$val['date']}}/{{$val['timetable_id']}}']">
+                                                        id="teacher_id['{{$val['date']}}/{{$val['timetable_id']}}']"  @if(!empty($check)) style="pointer-events:none" readonly @endif>
                                                     <option value="">Select Teacher</option>
                                                     @if(isset($val['teacher_data']))
                                                         @foreach($val['teacher_data'] as $key =>$val)
                                                             @if( isset($data['teacher']) && $data['teacher'] != $val->id )
                                                                 <option
-                                                                    value="{{$val->id}}">{{$val->teacher_name}}</option>
+                                                                    value="{{$val->id}}" @if(!empty($check) && $val->id == $check[0]->proxy_teacher_id)) selected @endif>{{$val->teacher_name}}</option>
                                                             @endif
                                                         @endforeach
                                                     @endif
                                                 </select>
                                             </td>
+                                          
                                         </tr>
                                     @endforeach
                                     </tbody>

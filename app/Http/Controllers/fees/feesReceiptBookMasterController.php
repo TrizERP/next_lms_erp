@@ -19,14 +19,19 @@ class feesReceiptBookMasterController extends Controller
         $type = $request->input('type');
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $syear = $request->session()->get('syear');
-
+        $marking_period_id = session()->get('term_id');
         $data = feesReceiptBookMasterModel::selectRaw('fees_receipt_book_master.*')
             ->selectRaw("group_concat(distinct academic_section.short_name) as grade")
             ->selectRaw("group_concat(distinct standard.name) as standard")
             ->selectRaw("CASE WHEN fees_receipt_book_master.status = 1 THEN 'Active' ELSE 'Inactive' END as status")
             ->selectRaw("group_concat(distinct fees_title.display_name ORDER BY fees_title.sort_order) as fees_head")
             ->join('academic_section', 'fees_receipt_book_master.grade_id', '=', 'academic_section.id')
-            ->join('standard', 'fees_receipt_book_master.standard_id', '=', 'standard.id')
+            ->join('standard', function($join) use($marking_period_id) {
+                $join->on('fees_receipt_book_master.standard_id', '=', 'standard.id')
+                ->when($marking_period_id,function($join)use($marking_period_id){
+                    $join->where('standard.marking_period_id',$marking_period_id);
+                });
+            })
             ->join('fees_title', 'fees_receipt_book_master.fees_head_id', '=', 'fees_title.id')
             ->where([
                 'fees_receipt_book_master.sub_institute_id' => $sub_institute_id,

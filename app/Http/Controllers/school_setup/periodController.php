@@ -27,9 +27,13 @@ class periodController extends Controller
     public function getData($request)
     {
         $sub_institute_id = $request->session()->get('sub_institute_id');
+        $marking_period_id = session()->get('term_id');
 
         return periodModel::select('period.*')
             ->where(['period.sub_institute_id' => $sub_institute_id])
+            ->when($marking_period_id,function($query) use ($marking_period_id){
+                $query->where('marking_period_id',$marking_period_id);
+            })
             ->get();
     }
 
@@ -54,9 +58,10 @@ class periodController extends Controller
         ValidateInsertData('period', 'insert');
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $length = $this->gettime_diff($request->get('start_time'), $request->get('end_time'));
+        $marking_period_id = session()->get('term_id');
 
         //Check if Subject Already Exist or not
-        $exist = $this->check_exist($request->get('title'), $request->get('academic_section_id'), $sub_institute_id);
+        $exist = $this->check_exist($request->get('title'), $request->get('academic_section_id'), $sub_institute_id,$marking_period_id);
         if ($exist == 0) {
             $period = new periodModel([
                 'title'               => $request->get('title'),
@@ -69,6 +74,7 @@ class periodController extends Controller
                 'end_time'            => $request->get('end_time'),
                 'length'              => $length,
                 'sub_institute_id'    => $sub_institute_id,
+                'marking_period_id'   => $marking_period_id,
                 'status'              => "1",
             ]);
 
@@ -88,7 +94,7 @@ class periodController extends Controller
         return is_mobile($type, "period_master.index", $res, "redirect");
     }
 
-    public function check_exist($title, $academic_section_id = null, $sub_institute_id)
+    public function check_exist($title, $academic_section_id = null, $sub_institute_id,$marking_period_id='')
     {
         $title = strtoupper($title);
 
@@ -96,6 +102,9 @@ class periodController extends Controller
             ->selectRaw('count(*) as tot')
             ->where('sub_institute_id', $sub_institute_id)
             ->whereRaw("UPPER(title) = '".$title."'")
+            ->when($marking_period_id,function($query) use ($marking_period_id){
+                $query->where('marking_period_id',$marking_period_id);
+            })
             ->get()->toArray();
 
         return $data[0]->tot;
@@ -120,9 +129,9 @@ class periodController extends Controller
         ValidateInsertData('period', 'update');
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $length = $this->gettime_diff($request->get('start_time'), $request->get('end_time'));
-
+        $marking_period_id = session()->get('term_id');
         //Check if Subject Already Exist or not
-        $exist = $this->check_exist($request->get('title'), $request->get('academic_section_id'), $sub_institute_id);
+        $exist = $this->check_exist($request->get('title'), $request->get('academic_section_id'), $sub_institute_id,$marking_period_id);
 
         $data = DB::table('period')
             ->selectRaw('count(*) as tot')
@@ -131,7 +140,7 @@ class periodController extends Controller
             ->get()->toArray();
 
         $total_count = $data[0]->tot;
-        if ($total_count > 0 && $exist == 0) {
+        if ($total_count > 0 && $exist == 1) {
             $period_data = [
                 'title'               => $request->get('title'),
                 'short_name'          => $request->get('short_name'),
@@ -143,6 +152,7 @@ class periodController extends Controller
                 'end_time'            => $request->get('end_time'),
                 'length'              => $length,
                 'sub_institute_id'    => $sub_institute_id,
+                'marking_period_id'   => $marking_period_id,                
                 'status'              => "1",
             ];
             periodModel::where(["id" => $id])->update($period_data);

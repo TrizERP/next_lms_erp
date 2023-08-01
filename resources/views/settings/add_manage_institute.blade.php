@@ -32,6 +32,14 @@
                             @csrf
                       
                         <div class="row">
+                        <div class="col-md-4 form-group">
+                            <label>Select Institute Type<span style="color: red;font-size: large;">*</span></label>
+                            <select class="form-control" name="institute_type" id="institute_type" required @if(isset($data->institute_type)) style="pointer-events:none" readonly @endif>
+                                <option value="" >Select Institute</option>
+                                <option value="school" @if(isset($data->institute_type) && $data->institute_type="school") selected @endif>School</option>
+                                <option value="college" @if(isset($data->institute_type) && $data->institute_type="college") selected @endif>College</option>                                            
+                            </select>
+                        </div>
                             <div class="col-md-4 form-group">
                                 <label>Institute Name<font color="red">*</font></label>
                                 <input type="text" id='SchoolName' value="@if(isset($data->SchoolName)){{$data->SchoolName}}@endif" required name="SchoolName" class="form-control">
@@ -74,7 +82,12 @@
                             </div>                                                                                       
                             <div class="col-md-4 ol-sm-4 col-xs-12">                         
                                 <label for="input-file-now">Institute Logo<font color="red">*</font></label>
-                                <input type="file" accept="image/*" name="Logo" @if(isset($data->Logo))data-default-file="/admin_dep/images/{{$data->Logo}}" @else required @endif id="input-file-now" class="dropify" /> 
+                                @if(isset($data->Logo))
+                                <div class="logo p-2">
+                                <img src="/admin_dep/images/{{$data->Logo}}" style="height:50px" alt="logo">
+                                </div>
+                                @endif
+                                <input type="file" accept="image/*" name="Logo" @if(isset($data->Logo)) @else required @endif id="input-file-now" class="dropify" /> 
                             </div>
                             <div class="col-md-4 form-group">
                                 <label>Cheque Return Charges</label>

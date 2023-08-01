@@ -15,6 +15,7 @@ class subjectModel extends Model
         'short_name',
         'sub_institute_id',
         'status',
+        'marking_period_id',
         'created_at',
         'updated_at'
     ];

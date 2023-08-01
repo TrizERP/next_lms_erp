@@ -50,6 +50,7 @@ class imprestRefundReportController extends Controller
         $otherfeeshead = $request->input('otherfeeshead');
         $syear = $request->session()->get('syear');
         $sub_institute_id = $request->session()->get('sub_institute_id');
+        $marking_period_id = session()->get('term_id');
 
         $extraSearch = "1=1 ";
 
@@ -74,8 +75,10 @@ class imprestRefundReportController extends Controller
                 $join->whereRaw('s.id = c.student_id AND c.sub_institute_id = s.sub_institute_id');
             })->join('tblstudent_enrollment as se', function ($join) {
                 $join->whereRaw('se.student_id = s.id AND se.syear = c.syear');
-            })->join('standard as st', function ($join) {
-                $join->whereRaw('st.id = se.standard_id');
+            })->join('standard as st', function ($join) use($marking_period_id) {
+                $join->whereRaw('st.id = se.standard_id')->when($marking_period_id,function($query) use($marking_period_id){
+                    $query->where('st.marking_period_id',$marking_period_id);
+                });
             })->join('division as d', function ($join) {
                 $join->whereRaw('se.section_id = d.id');
             })->join('tbluser as u', function ($join) {
