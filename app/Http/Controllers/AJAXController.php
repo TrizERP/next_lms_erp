@@ -1754,5 +1754,23 @@ class AJAXController extends Controller
         }
         return $option;
     }
+    public function check_access(Request $request){
+        $userProfileId = session()->get('user_profile_id');
+        $menu_id = $request->input("menu_id");
 
+        $permissions = DB::table('tblgroupwise_rights')->where('menu_id', $menu_id)
+        ->where('profile_id', $userProfileId)
+        ->where('sub_institute_id',session()->get('sub_institute_id'))
+        ->first();
+
+    if ($permissions) {
+        return response()->json([
+            'can_view' => $permissions->can_view,
+            'can_edit' => $permissions->can_edit,
+            'can_add' => $permissions->can_add,
+            'can_delete' => $permissions->can_delete,
+        ]);
+    
+    }
+    }
 }

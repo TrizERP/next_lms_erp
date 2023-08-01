@@ -109,7 +109,7 @@
                                     <form action="{{ route('circular.destroy', $data->id)}}" method="post">
                                         @csrf
                                         @method('DELETE')
-                                        <button type="submit" onclick="return confirmDelete();" class="btn btn-info btn-outline-danger"><i class="mdi mdi-close"></i></button>
+                                        <button type="submit" name="delete" onclick="return confirmDelete();" class="btn btn-info btn-outline-danger"><i class="mdi mdi-close"></i></button>
                                     </form>
                                 </td>
                             </tr>

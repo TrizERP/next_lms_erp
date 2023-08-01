@@ -44,11 +44,11 @@
                     </div>
                     
                     <div class="col-md-4 form-group">
-                        <label>{{App\Helpers\get_string('studentname','request')}}<span id="menuId" style="display:none"></span><a href="{{route('norm-clature.create')}}"><i class="mdi mdi-lead-pencil"></i></a></label>
+                        <label>{{App\Helpers\get_string('studentname','request')}}<i class="mdi mdi-lead-pencil"></i></label>
                         <input type="text" id="stu_name" placeholder="{{App\Helpers\get_string('studentname','request')}}" name="stu_name" class="form-control" @if(isset($data['stu_name'])) value="{{$data['stu_name']}}" @endif>
                     </div>
                     <div class="col-md-4 form-group">
-                        <label>{{App\Helpers\get_string('uniqueid','request')}}<span id="menuId" style="display:none"></span><a href="{{route('norm-clature.create')}}"><i class="mdi mdi-lead-pencil"></i></a></label>
+                        <label>{{App\Helpers\get_string('uniqueid','request')}}<i class="mdi mdi-lead-pencil"></i></label>
                         <input type="text" id="uniqueid" placeholder="{{App\Helpers\get_string('uniqueid','request')}}" name="uniqueid" class="form-control" @if(isset($data['uniqueid'])) value="{{$data['uniqueid']}}" @endif>
                     </div>
                     <div class="col-md-4 form-group">
@@ -56,7 +56,7 @@
                         <input type="text" id="mobile" placeholder="Mobile" name="mobile" class="form-control" @if(isset($data['mobile'])) value="{{$data['mobile']}}" @endif>
                     </div>                        
                     <div class="col-md-4 form-group">
-                        <label>{{App\Helpers\get_string('grno','request')}}<span id="menuId" style="display:none"></span><a href="{{route('norm-clature.create')}}"><i class="mdi mdi-lead-pencil"></i></a></label>
+                        <label>{{App\Helpers\get_string('grno','request')}}<i class="mdi mdi-lead-pencil"></i></label>
                         <input type="text" id="grno" placeholder="{{App\Helpers\get_string('grno','request')}}" name="grno" class="form-control" @if(isset($data['grno'])) value="{{$data['grno']}}" @endif>
                         @if(app('request')->input('implementation') == 1)
                         <input type="hidden" name="implementation" value="1">
