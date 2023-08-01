@@ -38,7 +38,7 @@
 
                         <div class="col-md-4 form-group">
                             <label>{{App\Helpers\get_string('grno','request')}}</label>
-                            <input type="text" id='grno' name="address" value="@if(isset($data['grno'])){{ $data['grno'] }}@endif" class="form-control" placeholder="Enter {{App\Helpers\get_string('grno','request')}}">
+                            <input type="text" id='grno' name="grno" value="@if(isset($data['grno'])){{ $data['grno'] }}@endif" class="form-control" placeholder="Enter {{App\Helpers\get_string('grno','request')}}">
                         </div>
 
                         <div class="col-md-4 form-group">

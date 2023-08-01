@@ -56,18 +56,16 @@ class map_student_controller extends Controller
             
          }
         //  echo "<pre>";print_r($data);exit;
-        if (isset($_REQUEST['grade'], $_REQUEST['standard'], $_REQUEST['division'])) {
-            $student_data = SearchStudent($_REQUEST['grade'], $_REQUEST['standard'], $_REQUEST['division'],"","","",$name,"","",$grno, $stud_id);
-        } else {
-            if (isset($_REQUEST['grade'], $_REQUEST['standard'])) {
-                $student_data = SearchStudent($_REQUEST['grade'], $_REQUEST['standard'],"","","","",$name,"","",$grno, $stud_id);
+        if (isset($_REQUEST['grade']) &&  isset($_REQUEST['standard']) &&  isset($_REQUEST['division'])) {
+            $student_data = SearchStudent($_REQUEST['grade'], $_REQUEST['standard'], $_REQUEST['division'],"","","",$name,"","",$grno, "");
+        } else if (isset($_REQUEST['grade']) &&  isset($_REQUEST['standard'])) {
+                $student_data = SearchStudent($_REQUEST['grade'], $_REQUEST['standard'],"","","","",$name,"","",$grno, "");
             } else {
                 if (isset($_REQUEST['grade'])) {
-                    $student_data = SearchStudent($_REQUEST['grade'],"","","","","",$name,"","",$grno, $stud_id);
-                }elseif(isset($_REQUEST['area'])){
-                    $student_data = SearchStudent("", "","", "", "", "",$name,"","",$grno, $stud_id);
+                    $student_data = SearchStudent($_REQUEST['grade'],"","","","","",$name,"","",$grno, "");
+                }elseif(isset($_REQUEST['area']) || isset($_REQUEST['grno']) || isset($_REQUEST['name'])){
+                    $student_data = SearchStudent("", "","", "", "", "",$name,"","",$grno, "");
                 }
-            }
         }
         $grade=0;
         if (isset($request->id)) {
