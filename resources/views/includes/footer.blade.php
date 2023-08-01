@@ -26,7 +26,7 @@ document.addEventListener("DOMContentLoaded", function () {
         const isEditAction = submitButton.matches("[name='edit']");
 
         const menu_id = {{ session()->get('current_menu_id') }};
-
+			
         fetch("{{ route('check_permissions') }}", {
           method: "POST",
           headers: {

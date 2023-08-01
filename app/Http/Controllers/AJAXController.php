@@ -1762,13 +1762,27 @@ class AJAXController extends Controller
     public function check_access(Request $request)
     {
         $userProfileId = session()->get('user_profile_id');
+        $user_id = session()->get('user_id');
         $menu_id = $request->input("menu_id");
+        $permissions = [];
 
-        $permissions = DB::table('tblgroupwise_rights')->where('menu_id', $menu_id)
+        $individual = DB::table('tblindividual_rights')->where('menu_id', $menu_id)
+        ->where('profile_id', $userProfileId)
+        ->where('user_id',$user_id)
+        ->where('sub_institute_id', session()->get('sub_institute_id'))
+        ->first();
+
+        $group = DB::table('tblgroupwise_rights')->where('menu_id', $menu_id)
             ->where('profile_id', $userProfileId)
             ->where('sub_institute_id', session()->get('sub_institute_id'))
             ->first();
 
+            if(!empty($individual) ){
+                $permissions=$individual;
+            }else{
+                $permissions=$group;
+            }
+            
         if ($permissions) {
             return response()->json([
                 'can_view' => $permissions->can_view,
