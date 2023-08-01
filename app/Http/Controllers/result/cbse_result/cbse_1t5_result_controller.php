@@ -773,7 +773,10 @@ else
 
             foreach ($reg_bk_off as $key => $val) 
             {
-                if(($val->month_id == '42022' || $val->month_id == '72022' || $val->month_id == '102022') && $val->student_quota != '2383') //Condition added by Rajesh 21_07_2022 only Quarter-1 fees paid to display result //Condition added by jinal 07_10_2022 only Quarter-2 fees paid to display result
+                if(($val->month_id == '42023' || $val->month_id == '72023') && $val->student_quota != '2383') 
+                //Condition added by Rajesh 21_07_2022 only Quarter-1 fees paid to display result 
+                //Condition added by jinal 07_10_2022 only Quarter-2 fees paid to display result
+                //condition remove by rajesh 29-07-2023  || $val->month_id == '102023' for Altius
                     $total_bf = $total_bf + $val->bkoff;
                 else
                     break;
@@ -803,8 +806,7 @@ else
                                     INNER JOIN academic_section g ON g.id = se.grade_id
                                     INNER JOIN standard st ON st.id = se.standard_id
                                     LEFT JOIN division d ON d.id = se.section_id
-                                    INNER JOIN fees_paid_other fpo ON 
-                                     (fpo.student_id = s.id)
+                                    INNER JOIN fees_paid_other fpo ON (fpo.student_id = s.id AND fpo.is_deleted = 'N')
                                     WHERE s.sub_institute_id = '".$request->get('sub_institute_id')."' AND s.id = '".$request->get('student_id')."'
                                     GROUP BY s.id
                                     ) temp_table
