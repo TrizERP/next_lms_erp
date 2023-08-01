@@ -4,7 +4,7 @@ namespace App\Http\Controllers\student;
 
 use App\Http\Controllers\Controller;
 use App\Models\student\tblstudentModel;
-use App\Models\result\co_scholastic_master\co_scholastic_master;
+use App\Models\school_setup\sub_std_mapModel;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Contracts\View\Factory;
 use Illuminate\Contracts\View\View;
@@ -181,12 +181,20 @@ class studentOptionalSubjectController extends Controller
             ->get();
             // dd(DB::getQueryLog($student_data));
 
-        $get_co_scholastic_masters = co_scholastic_master::where('sub_institute_id', $sub_institute_id)->get()->toArray();
+        $optional_subject_data = sub_std_mapModel::select('sub_std_map.*', 'subject.subject_name',
+        'subject.subject_code')
+        ->join('subject', 'subject.id', '=', 'sub_std_map.subject_id')
+        ->where([
+            'sub_std_map.sub_institute_id' => $sub_institute_id,
+            'sub_std_map.standard_id'      => $standard_id, 
+            'sub_std_map.elective_subject' => 'Yes',
+        ])
+        ->get()->toArray();
         
         $res['status_code'] = 1;
         $res['message'] = "Student List";
         $res['data'] = $student_data;
-        $res['co_scholastic_masters'] = $get_co_scholastic_masters;
+        $res['optional_subject_data'] = $optional_subject_data;
         $res['grade_id'] = $grade_id;
         $res['standard_id'] = $standard_id;
         $res['division_id'] = $division_id;

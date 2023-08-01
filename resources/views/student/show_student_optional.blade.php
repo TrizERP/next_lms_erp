@@ -78,12 +78,12 @@
                 @csrf
                 <div class="row">
                     <div class="col-md-4 form-group">
-                        <label>Optional Activities</label>
+                        <label>Optional Subjects</label>
                         <select class="form-control" name="subjects[]" required="required" multiple>
-                            <option value="">Select Activities</option>
-                            @if(isset($data['co_scholastic_masters']))
-                                @foreach ($data['co_scholastic_masters'] as $activity)
-                                    <option value="{{ $activity['id'] }}">{{ $activity['title'] }}</option>
+                            <option value="">Select Subjects</option>
+                            @if(isset($data['optional_subject_data']))
+                                @foreach ($data['optional_subject_data'] as $subjects)
+                                    <option value="{{ $subjects['subject_id'] }}">{{ $subjects['subject_name'] }}</option>
                                 @endforeach
                             @endif                                                                
                         </select>
