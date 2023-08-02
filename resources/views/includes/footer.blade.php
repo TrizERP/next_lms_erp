@@ -26,7 +26,10 @@ document.addEventListener("DOMContentLoaded", function () {
         const isEditAction = submitButton.matches("[name='edit']");
 
         const menu_id = {{ session()->get('current_menu_id') }};
-			
+				const user_profile_name = "{{session()->get('user_profile_name')}}";
+				const submitFormFunction = Object.getPrototypeOf(form).submit;
+				
+				if(user_profile_name !== "Super Admin"){
         fetch("{{ route('check_permissions') }}", {
           method: "POST",
           headers: {
@@ -38,9 +41,8 @@ document.addEventListener("DOMContentLoaded", function () {
         })
         .then((response) => response.json())
         .then((data) => {
-          console.log(menu_id);
-          console.log(data.can_add);
-		  const submitFormFunction = Object.getPrototypeOf(form).submit;
+          // console.log(menu_id);
+          // console.log(user_profile_name);
           if ((isSubmitAction && data.can_add === 1) || 
               (isSearchAction && data.can_view === 1) || 
               (isDeleteAction && data.can_delete === 1) || 
@@ -55,6 +57,9 @@ document.addEventListener("DOMContentLoaded", function () {
           console.error("You are not authorized to access this menu, Contact to admin and ask for the rights of this menu:", error);
           alert("You are not authorized to access this menu, Contact to admin and ask for the rights of this menu.");
         });
+			}else{
+				submitFormFunction.call(form);
+			}
       });
     });
   });
