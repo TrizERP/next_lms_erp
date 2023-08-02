@@ -59,6 +59,7 @@ class feesCircularController extends Controller
         $division = $request->input('division');
         $month = $request->input('month');
         $receipt_id = $request->input('receipt_id');
+        $marking_period_id = session()->get('marking_period_id');
 
         $months = FeeMonthId();
 
@@ -75,9 +76,10 @@ class feesCircularController extends Controller
                 })->join('academic_section as g', function ($join) {
                     $join->whereRaw('g.id = se.grade_id');
                 })->join('standard as st', function ($join) use($marking_period_id){
-                    $join->on('st.id', '=', 'se.standard_id')->when($marking_period_id,function($query) use ($marking_period_id){
-                        $query->where('st.marking_period_id',$marking_period_id);
-                    });
+                    $join->on('st.id', '=', 'se.standard_id');
+                    // ->when($marking_period_id,function($query) use ($marking_period_id){
+                    //     $query->where('st.marking_period_id',$marking_period_id);
+                    // });
                 })->leftJoin('division as d', function ($join) {
                     $join->whereRaw('d.id = se.section_id');
                 })->join('fees_breackoff as fb', function ($join) use ($syear, $sub_institute_id) {
