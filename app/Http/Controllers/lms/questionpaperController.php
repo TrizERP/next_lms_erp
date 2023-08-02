@@ -136,8 +136,6 @@ class questionpaperController extends Controller
      */
     public function store($request)
     {
-        //$open_d1 = substr(str_replace('/', '-', $_REQUEST['open_date']),0,16);        
-        //$close_d1 = substr(str_replace('/', '-', $_REQUEST['close_date']),0,16);        
         $open_date = $close_date = null;
         if ($request['open_date'] != "") {
             $open_date = date('Y-m-d H:i:s', strtotime($_REQUEST['open_date']));
@@ -646,16 +644,16 @@ $validate = Validator::make($request->all(), [
         $timelimit_enable = $request->get('timelimit_enable');
         $time_allowed     = $request->get('time_allowed');
         $total_ques       = $request->get('total_ques');
-        $total_marks     = $request->get('total_marks');
+        $total_marks      = $request->get('total_marks');
         $question_ids     = $request->get('questions');
-        $shuffle_question=$request->get('shuffle_question');
+        $shuffle_question =$request->get('shuffle_question');
         $attempt_allowed  = $request->get('attempt_allowed');
-        $show_feedback   = $request->get('show_feedback');
+        $show_feedback    = $request->get('show_feedback');
         $show_hide        = $request->get('show_hide');
         $result_show_ans  = $request->get('result_show_ans');
         $exam_type        = $request->get('exam_type');
 
-if($request->input('submit') == 'Search'){
+if(!isset($request->paper_name) && !isset($request->attempt_allowed) && !isset($request->time_allowed) || $request->action=="Search" ){
     if(!empty($grade) && !empty($standard) && !empty($subject) && !empty($search_chapter)){
          $all_data = array(
                 "grade"=>$grade,
@@ -673,16 +671,16 @@ if($request->input('submit') == 'Search'){
     }else{
         return back()->with("failed","Please Select Required Fileds !");
         }
-            // return $request;
 } 
-if($request->input('submit') == 'Save'){
+if(isset($request->paper_name) && isset($request->attempt_allowed) && isset($request->time_allowed) || $request->action=="Save"){
+            // return $request;exit;
         if($validate->fails()){
           return back()->with('failed','Please Fill Required Fileds Paper Name,Exam Descripton,Attempt Allowed or Allowed Time');
         }else{
         $array = array(
-            'grade'         => $grade,
-            'standard'      => $standard,
-            'subject'       => $subject,
+            'grade'            => $grade,
+            'standard'         => $standard,
+            'subject'          => $subject,
             'paper_name'       => $paper_name,
             'paper_desc'       => $paper_desc,
             'open_date'        => $open_date,
@@ -701,14 +699,13 @@ if($request->input('submit') == 'Save'){
             'exam_type'        => $exam_type,
             'sub_institute_id' => $sub_institute_id,
             'syear'            => $syear,
-            'type' => $type,
+            'type'             => $type,
     );
         // return $array;
         return $this->store($array);
     }
 
 }
-            // return $request->submit;
 
 }
 public function search_question($all_data){
@@ -729,8 +726,6 @@ public function search_question($all_data){
         if (isset($all_data["search_topic"]) && $all_data["search_topic"] != [null]) {
 
                 $search_topic = $all_data["search_topic"];
-        // return $search_topic;exit;
-
                 $extra .= " AND qm.topic_id IN (".implode(",",$search_topic).") ";
             }
 
