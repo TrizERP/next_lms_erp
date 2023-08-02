@@ -451,7 +451,7 @@ class online_fees_collect_controller extends Controller
         // get payment data if payment status is not captured and is not null and order id is not null
         //$limit = 2; // Set the desired limit here
 //DB::enableQueryLog();
-$ids = [61,257];
+//$ids = [61,257];
         $payment_data = DB::table('fees_payment AS fp')
             ->select('fp.id', 'fp.student_id', 'fi.merchant_id', 'fi.enc_key', 'fp.icici_order_id', 'tse.syear', 'fp.sub_institute_id', 'fp.amount','fp.icici_bank_res')
             ->join('tblstudent_enrollment AS tse', function ($join) {
@@ -471,7 +471,7 @@ $ids = [61,257];
             })
             // ->where('tse.student_id',195449)  ->where('fp.razorpay_payment_status', '!=', 'Success')
             ->whereNotNull('fp.icici_order_id')
-            ->whereIn('fp.sub_institute_id', $ids)
+//            ->whereIn('fp.sub_institute_id', $ids)
             ->groupBy('fp.id')
             // ->orderBy('fp.id','DESC')
             //->limit($limit)
