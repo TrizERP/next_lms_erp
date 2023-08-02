@@ -59,12 +59,7 @@ class yearly_attendance_controller extends Controller
 
         // dd(DB::getQueryLog());
         // echo "<pre>";print_r($attendanceData);
-        if (count($attendanceData) == 0) {
-            $res['status_code'] = 0;
-            $res['message'] = "Failed To Find";
-            return is_mobile($type, "yearly_student_attendance", $res);
-        }
-
+      
         $finalAttendanceArray = array();
         $count = array();
 
@@ -107,21 +102,26 @@ class yearly_attendance_controller extends Controller
 
         // $image_path = "http://" . $_SERVER['HTTP_HOST']."/storage/fees/" . $receipt_book_arr->receipt_logo;
         // return $image_path;exit;
-
-        $res['status_code'] = 1;
-        $res['message'] = "Success";
+        if (count($attendanceData) == 0) {
+            $res['status_code'] = 0;
+            $res['message'] = "No Attendance Found";
+        }else{
+            $res['status_code'] = 1;
+            $res['message'] = "Success";
+        }
+       
         $res['month'] = $month;
         $res['to_month'] = (int)date('m', strtotime($to_date));
-        // $res['year'] = $selected_year;
+        // echo "<pre>";print_r($month);exit;
         $res['grade_id'] = $grade_id;
         $res['standard_id'] = $standard_id;
         $res['division_id'] = $division_id;
         $res['student_data'] = $student_data;
         $res['attendance_data'] = $finalAttendanceArray;
-        $res['working_day'] = $working;
+        $res['working_day'] = $working ?? '';
         $res['to_date'] = $to_date;
         $res['from_date'] = $from_date;
-        // echo "<pre>";print_r($res);exit;
+        // echo "<pre>";print_r($working);exit;
         return is_mobile($type, "student/yearly_attendance_report", $res, "view");
     }
 }

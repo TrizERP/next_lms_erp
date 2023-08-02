@@ -18,9 +18,6 @@ class student_certificate_reportController extends Controller
     public function index(Request $request)
     {
         $type = $request->input('type');
-        $sub_institute_id = $request->session()->get('sub_institute_id');
-        $syear = $request->session()->get('syear');
-
         $res['status_code'] = 1;
         $res['message'] = "Success";
 
@@ -39,14 +36,17 @@ class student_certificate_reportController extends Controller
         $syear = $request->session()->get('syear');
         $from_date = $request->input('from_date');
         $to_date = $request->input('to_date');
+        $marking_period_id = session()->get('term_id');
 
         $result = DB::table('certificate_history as sr')
             ->join('tblstudent as ts', function ($join) {
                 $join->whereRaw('sr.STUDENT_ID = ts.id');
             })->join('tblstudent_enrollment as se', function ($join) {
                 $join->whereRaw('se.student_id = ts.id');
-            })->join('standard as s', function ($join) {
-                $join->whereRaw('s.id = se.STANDARD_ID');
+            })->join('standard as s', function ($join) use ($marking_period_id) {
+                $join->whereRaw('s.id = se.STANDARD_ID')->when($marking_period_id,function($query) use($marking_period_id){
+                    $query->where('s.marking_period_id',$marking_period_id);
+                });
             })->join('division as d', function ($join) {
                 $join->whereRaw('d.id = se.SECTION_ID');
             })->selectRaw("sr.*,ts.enrollment_no, CONCAT_WS(' ',ts.first_name,ts.last_name) AS student_name,

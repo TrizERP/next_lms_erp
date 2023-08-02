@@ -58,6 +58,7 @@ class leaveApplicationController extends Controller
         $grades_ids = '';
         $standards_ids = '';
         $divisions_ids = '';
+        $marking_period_id = session()->get('term_id');
         if (session()->get("user_profile_name") == "Teacher") {
             $where_arr = [
                 "teacher_id" => session()->get("user_id"),
@@ -92,8 +93,10 @@ class leaveApplicationController extends Controller
             ->join('academic_section as g', function ($join) {
                 $join->whereRaw("g.id = se.grade_id");
             })
-            ->join('standard as st', function ($join) {
-                $join->whereRaw("st.id = se.standard_id");
+            ->join('standard as st', function ($join) use($marking_period_id){
+                $join->whereRaw("st.id = se.standard_id")->when($marking_period_id, function ($query) use ($marking_period_id) {
+                    $query->where('st.marking_period_id', $marking_period_id);
+                });
             })
             ->join('division as d', function ($join) {
                 $join->whereRaw("d.id = se.section_id");
@@ -446,7 +449,7 @@ class leaveApplicationController extends Controller
         $teacher_id = $request->input("teacher_id");
         $sub_institute_id = $request->input("sub_institute_id");
         $syear = $request->input("syear");
-
+        $marking_period_id = session()->get('term_id');
         if ($teacher_id != "" && $sub_institute_id != "" && $syear != "") {
             $data = DB::table("leave_applications as la")
                 ->join('tblstudent_enrollment as se', function ($join) {
@@ -456,7 +459,9 @@ class leaveApplicationController extends Controller
                     $join->whereRaw("s.id = se.student_id and s.sub_institute_id = se.sub_institute_id");
                 })
                 ->join('standard as st', function ($join) {
-                    $join->whereRaw("st.id = se.standard_id");
+                    $join->whereRaw("st.id = se.standard_id")->when($marking_period_id, function ($query) use ($marking_period_id) {
+                        $query->where('st.marking_period_id', $marking_period_id);
+                    });
                 })
                 ->join('division as di', function ($join) {
                     $join->whereRaw("di.id = se.section_id");

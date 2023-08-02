@@ -31,11 +31,21 @@ class sub_std_mapController extends Controller
     {
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $data = sub_std_mapModel::where(['sub_institute_id' => $sub_institute_id])->get();
-
+        $marking_period_id=session()->get('term_id');
         $data = sub_std_mapModel::select('sub_std_map.*', 'subject.subject_name', 'subject.subject_code',
             'standard.name')
-            ->join('standard', 'standard.id', '=', 'sub_std_map.standard_id')
-            ->join('subject', 'subject.id', '=', 'sub_std_map.subject_id')
+            ->join('standard', function($query) use($marking_period_id){
+                $query->on('standard.id', '=', 'sub_std_map.standard_id');
+                $query->when($marking_period_id,function($query) use ($marking_period_id){
+                    $query->where('standard.marking_period_id',$marking_period_id);
+                });    
+            })
+            ->join('subject', function($query) use($marking_period_id){
+                $query->on('subject.id', '=', 'sub_std_map.subject_id');
+                $query->when($marking_period_id,function($query) use ($marking_period_id){
+                    $query->where('subject.marking_period_id',$marking_period_id);
+                });    
+            })
             ->where(['sub_std_map.sub_institute_id' => $sub_institute_id])
             ->orderby('sub_std_map.standard_id')
             ->get();
@@ -47,10 +57,16 @@ class sub_std_mapController extends Controller
     {
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $type = $request->input('type');
+        $marking_period_id=session()->get('term_id');
+        
         $std_data = standardModel::where(['sub_institute_id' => $sub_institute_id])->select('id', 'name',
-            'short_name')->get();
+            'short_name')->when($marking_period_id,function($query) use ($marking_period_id){
+                $query->where('marking_period_id',$marking_period_id);
+            })->get();
         $sub_data = subjectModel::where(['sub_institute_id' => $sub_institute_id])->select('id', 'subject_name',
-            'subject_code')->get();
+            'subject_code')->when($marking_period_id,function($query) use ($marking_period_id){
+                $query->where('marking_period_id',$marking_period_id);
+            })->get();
         $data['content_category'] = lmsContentCategoryModel::where('status', '1')
             ->where(function ($query) use ($sub_institute_id) {
                 $query->where('sub_institute_id', '=', $sub_institute_id)

@@ -36,7 +36,7 @@ class proxyController extends Controller
     public function getData($request)
     {
         $sub_institute_id = $request->session()->get('sub_institute_id');
-
+        $marking_period_id = session()->get('term_id');
         return proxyModel::select(
             'proxy_master.*',
             's.name as standard_name',
@@ -45,8 +45,11 @@ class proxyController extends Controller
             DB::raw('concat(u1.first_name," ",u1.middle_name," ",u1.last_name) as proxy_teacher_name'),
             'p.title as period_name',
             DB::raw('concat(sub.subject_name,"(",sub.subject_code,")") as sub_name')
-        )
-            ->join('standard as s', 's.id', '=', 'proxy_master.standard_id')
+        )->join('standard as s',function($join) use($marking_period_id){
+                $join->on( 's.id', '=', 'proxy_master.standard_id')->when($marking_period_id,function($query) use($marking_period_id){
+                    $query->where('s.marking_period_id',$marking_period_id);
+                });
+            })
             ->join('division as d', 'd.id', '=', 'proxy_master.division_id')
             ->join('tbluser as u', 'u.id', '=', 'proxy_master.teacher_id')
             ->join('tbluser as u1', 'u1.id', '=', 'proxy_master.proxy_teacher_id')
@@ -58,6 +61,7 @@ class proxyController extends Controller
 
     public function getproxydata(Request $request)
     {
+        $marking_period_id = session()->get('term_id');
         try {
             if (! $this->jwtToken()->validate()) {
                 $response = ['status' => '2', 'message' => 'Token Auth Failed', 'data' => []];
@@ -92,7 +96,11 @@ class proxyController extends Controller
                 'p.title as period_name',
                 DB::raw('concat(sub.subject_name,"(",sub.subject_code,")") as sub_name')
             )
-                ->join('standard as s', 's.id', '=', 'proxy_master.standard_id')
+            ->join('standard as s',function($join) use($marking_period_id){
+                $join->on( 's.id', '=', 'proxy_master.standard_id')->when($marking_period_id,function($query) use($marking_period_id){
+                    $query->where('s.marking_period_id',$marking_period_id);
+                });
+            })
                 ->join('division as d', 'd.id', '=', 'proxy_master.division_id')
                 ->join('tbluser as u', 'u.id', '=', 'proxy_master.teacher_id')
                 ->join('tbluser as u1', 'u1.id', '=', 'proxy_master.proxy_teacher_id')
@@ -141,7 +149,7 @@ class proxyController extends Controller
         $proxy_teacher_id = $request->get('proxy_teacher_id');
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $syear = $request->session()->get('syear');
-
+        $marking_period_id= session()->get('term_id');
         $days_arr = $this->getcountdays($from_date, $to_date);
         $days = array_keys($days_arr);
         $timetable_data = timetableModel::select(
@@ -153,9 +161,12 @@ class proxyController extends Controller
             'p.title as period_name',
             'timetable.id as timetable_id'
         )
-            ->join('standard AS s', function ($join) {
+            ->join('standard AS s', function ($join)  use($marking_period_id){
                 $join->on('s.id', '=', 'timetable.standard_id');
                 $join->on('s.sub_institute_id', '=', 'timetable.sub_institute_id');
+                $join->when($marking_period_id,function($query) use($marking_period_id){
+                    $query->where('s.marking_period_id',$marking_period_id);
+                });
             })
             ->join('division AS d', function ($join) {
                 $join->on('d.id', '=', 'timetable.division_id');
@@ -350,6 +361,7 @@ class proxyController extends Controller
     public function edit(Request $request, $id)
     {
         $sub_institute_id = $request->session()->get('sub_institute_id');
+        $marking_period_id = session()->get('term_id');
 
         $timetable_data = proxyModel::select(
             'proxy_master.*',
@@ -360,9 +372,12 @@ class proxyController extends Controller
             'p.title as period_name',
             'proxy_master.id as proxy_master_id'
         )
-            ->join('standard AS s', function ($join) {
+            ->join('standard AS s', function ($join) use($marking_period_id) {
                 $join->on('s.id', '=', 'proxy_master.standard_id');
                 $join->on('s.sub_institute_id', '=', 'proxy_master.sub_institute_id');
+                $join->when($marking_period_id,function($query) use($marking_period_id){
+                    $query->where('s.marking_period_id',$marking_period_id);
+                });
             })
             ->join('division AS d', function ($join) {
                 $join->on('d.id', '=', 'proxy_master.division_id');

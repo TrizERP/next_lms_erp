@@ -29,7 +29,6 @@ if (!function_exists('is_mobile')) {
             }
 
             return json_encode($data);
-            // return "Api called";
         } else {
             if ($redirect_type == 'redirect') {
 
@@ -711,9 +710,15 @@ if (!function_exists('SearchStudent')) {
                     ->orWhere('ts.last_name', 'like', '%' . $stu_name . '%');
             });
         }
-        if($stud_id !=''){
-            $query->whereIn('ts.id',$stud_id);
+        if (!empty($stud_id)) {
+            // Check if $stud_id is already an array, if not, convert it to an array
+            if (!is_array($stud_id)) {
+                $stud_id = [$stud_id];
+            }
+            // Now, you can safely use the whereIn function with $stud_id
+            $query->whereIn('ts.id', $stud_id);
         }
+
         $columns = explode(',', $select_fields);
         $columns[] = "s.name as standard_name";
         $columns[] = "s.medium as medium";
@@ -902,9 +907,6 @@ if (!function_exists('FeeBreackofflast')) {
         if ($sub_institute_id != '' && $syear != '') {
             $sub_institute_id = $sub_institute_id;
             $syear = $syear;
-        } else {
-            $sub_institute_id = request()->get('sub_institute_id');
-            $syear = request()->get('syear');
         }
         //DB::enableQueryLog();
         $data = DB::table('tblstudent as s')
@@ -984,6 +986,7 @@ if (!function_exists('FeeBreakoffHeadWise')) {
                 fb.month_id,ft.display_name,ft.fees_title, ft.mandatory,'' as breakoff,s.father_name,s.mother_name,
                 RIGHT(fb.month_id, 4) as sort_year,CAST(SUBSTRING(fb.month_id,1,CHAR_LENGTH(fb.month_id)-4) as int) as sort_month,
                 ae.fees_circular_form_no")
+                ->havingRaw("sum(fb.amount) != 0")
             ->where('s.sub_institute_id', $sub_institute_id)
             ->where('se.syear', $syear)
             ->whereIn('s.id', $student_ids)
@@ -1081,6 +1084,7 @@ if (!function_exists('FeeBreakoffHeadWiselast')) {
                 fb.month_id,ft.display_name,ft.fees_title, ft.mandatory,'' as breakoff,s.father_name,s.mother_name,
                 RIGHT(fb.month_id, 4) as sort_year,CAST(SUBSTRING(fb.month_id,1,CHAR_LENGTH(fb.month_id)-4) as int) as sort_month,
                 ae.fees_circular_form_no")
+                ->havingRaw("fb.amount != 0")
             ->where('s.sub_institute_id', $sub_institute_id)
             ->where('se.syear', $syear)
             ->whereIn('s.id', $student_ids)

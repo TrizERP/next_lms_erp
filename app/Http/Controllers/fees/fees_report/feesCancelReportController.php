@@ -10,84 +10,6 @@ use function App\Helpers\is_mobile;
 
 class feesCancelReportController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     *
-     * @param Request $request
-     * @return void
-     */
-    public function index(Request $request)
-    {
-        //
-    }
-
-    /**
-     * Show the form for creating a new resource.
-     *
-     * @param Request $request
-     * @return void
-     */
-    public function create(Request $request)
-    {
-        //
-    }
-
-    /**
-     * Store a newly created resource in storage.
-     *
-     * @param Request $request
-     * @return void
-     */
-    public function store(Request $request)
-    {
-
-    }
-
-    /**
-     * Display the specified resource.
-     *
-     * @param int $id
-     * @return void
-     */
-    public function show($id)
-    {
-        //
-    }
-
-    /**
-     * Show the form for editing the specified resource.
-     *
-     * @param int $id
-     * @return void
-     */
-    public function edit($id)
-    {
-        //
-    }
-
-    /**
-     * Update the specified resource in storage.
-     *
-     * @param Request $request
-     * @param int $id
-     * @return void
-     */
-    public function update(Request $request, $id)
-    {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     *
-     * @param int $id
-     * @return void
-     */
-    public function destroy($id)
-    {
-        //
-    }
-
     public function feesCancelReportIndex(Request $request)
     {
         $type = $request->input('type');
@@ -124,6 +46,7 @@ class feesCancelReportController extends Controller
         $from_date = $request->input('from_date');
         $to_date = $request->input('to_date');
         $cancel_type = $request->input('cancel_type');
+        $marking_period_id = session()->get('term_id');
 
         $feesCancelType = DB::table('fees_cancel_type')->pluck('title', 'id');
 
@@ -134,8 +57,10 @@ class feesCancelReportController extends Controller
                 $join->whereRaw('te.student_id = ts.id AND te.syear = fc.syear');
             })->join('student_quota as sq', function ($join) {
                 $join->whereRaw('sq.id = te.student_quota AND ts.sub_institute_id = sq.sub_institute_id');
-            })->join('standard as s', function ($join) {
-                $join->whereRaw('s.id = te.standard_id');
+            })->join('standard as s', function ($join) use($marking_period_id) {
+                $join->whereRaw('s.id = te.standard_id')->when($marking_period_id,function ($query) use($marking_period_id){
+                    $query->where('s.marking_period_id',$marking_period_id);
+                });
             })->join('tbluser as u', function ($join) {
                 $join->whereRaw('u.id = fc.cancelled_by');
             })->selectRaw("fc.id,fc.reciept_id,ts.enrollment_no, CONCAT_WS(' ',ts.first_name,ts.middle_name,ts.last_name)

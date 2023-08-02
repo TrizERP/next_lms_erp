@@ -13,6 +13,8 @@ use App\Models\school_setupModel;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use function App\Helpers\is_mobile;
+use Illuminate\Support\Facades\Storage;
+
 
 class manageInstituteController extends Controller
 {
@@ -61,6 +63,8 @@ class manageInstituteController extends Controller
             $ext = \File::extension($originalname);
             $file_name = $name.'.'.$ext;
             $path = $file->move(public_path('/admin_dep/images'), $file_name);
+            $imageData = file_get_contents($path);
+            Storage::disk('public')->put('user/' . $file_name, $imageData);
         }
         $school_setup = new school_setupModel([
             'SchoolName'            => $request->get('SchoolName'),
@@ -79,6 +83,7 @@ class manageInstituteController extends Controller
             'created_by'            => $created_by,
             'created_ip'            => $created_ip,
             'client_id'             => $client_id,
+            'institute_type'        => $request->get('institute_type') ?? 'school',            
         ]);
 
         $data_array = [
@@ -93,6 +98,8 @@ class manageInstituteController extends Controller
         $data = (object) $data_array;
 
         $school_setup->save();
+        $board = '';
+        $section = '';
         $sub_institute_id = DB::getPdo()->lastInsertId();
 
         $functions_object = new NewLMS_ApiController();
@@ -102,7 +109,7 @@ class manageInstituteController extends Controller
         // INSERT INTO tbluserprofilemaster table                 
 
         // INSERT INTO tbluser table
-        $functions_object->INSERT_USER($data, $sub_institute_id);
+        $functions_object->INSERT_USER($data, $sub_institute_id, $file_name);
         // INSERT INTO tbluser table  
 
         // INSERT INTO academic_year table
@@ -114,35 +121,35 @@ class manageInstituteController extends Controller
         // INSERT INTO fees_map_years table 
 
         // INSERT INTO academic_section table
-        $functions_object->INSERT_ACADEMIC_SECTION($sub_institute_id);
+        $functions_object->INSERT_ACADEMIC_SECTION($sub_institute_id,$section,$board);
         // INSERT INTO academic_section table 
 
         // INSERT INTO standard table
-        $functions_object->INSERT_STANDARD($sub_institute_id);
+        $functions_object->INSERT_STANDARD($sub_institute_id,$section,$board);
         // INSERT INTO standard table 
 
         // INSERT INTO division table                
-        $functions_object->INSERT_DIVISION($sub_institute_id);
+        $functions_object->INSERT_DIVISION($sub_institute_id,$board);
         // INSERT INTO division table 
 
         // INSERT INTO std_div_map table                
-        $this->INSERT_STD_DIV_MAP($sub_institute_id);
+        $this->INSERT_STD_DIV_MAP($sub_institute_id,$board);
         // INSERT INTO std_div_map table
 
         // INSERT INTO subject table                
-        $functions_object->INSERT_SUBJECT($sub_institute_id);
+        $functions_object->INSERT_SUBJECT($sub_institute_id,$board);
         // INSERT INTO subject table                 
 
         // INSERT INTO student_quota table                
-        $functions_object->INSERT_STUDENTQUOTA($sub_institute_id);
+        $functions_object->INSERT_STUDENTQUOTA($sub_institute_id,$board);
         // INSERT INTO student_quota table                 
 
         // INSERT INTO tblmenumaster & rightside_menumaster           
-        $functions_object->INSERT_MENUMASTER($sub_institute_id);
+        $functions_object->INSERT_MENUMASTER($sub_institute_id,$board);
         // INSERT INTO tblmenumaster & rightside_menumaster            
 
         // INSERT INTO tblgroupwiseright
-        $functions_object->INSERT_RIGHTS($data, $sub_institute_id);
+        $functions_object->INSERT_RIGHTS($data, $sub_institute_id,$board);
         // INSERT INTO tblgroupwiseright   
 
         $res['status_code'] = "1";
@@ -155,7 +162,6 @@ class manageInstituteController extends Controller
     {
         $type = $request->input('type');
         $data = school_setupModel::find($id);
-
         return view('settings/add_manage_institute', ['data' => $data]);
     }
 
@@ -173,6 +179,7 @@ class manageInstituteController extends Controller
             'FeeEmail'              => $request->get('FeeEmail'),
             'ReceiptContact'        => $request->get('ReceiptContact'),
             'SortOrder'             => $request->get('SortOrder'),
+            'institute_type'        => $request->get('institute_type'),            
             'cheque_return_charges' => $request->get('cheque_return_charges'),
             'updated_at'            => $updated_at,
         ];
@@ -187,6 +194,8 @@ class manageInstituteController extends Controller
             $ext = \File::extension($originalname);
             $file_name = $name.'.'.$ext;
             $path = $file->move(public_path('/admin_dep/images'), $file_name);
+            $imageData = file_get_contents($path);
+            Storage::disk('public')->put('user/' . $file_name, $imageData);
         }
 
         if ($file_name != "") {

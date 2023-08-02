@@ -28,14 +28,19 @@ class admissionEnquiryController extends Controller
         $type = $request->input('type');
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $syear = $request->session()->get('syear');
-      
+        $marking_period_id=session()->get('marking_period_id');
+
         $data = DB::table('admission_enquiry')
             ->leftJoin('admission_form as af', function ($join) {
                 $join->whereRaw('af.enquiry_id = admission_enquiry.id AND af.sub_institute_id = admission_enquiry.sub_institute_id');
-            })->leftJoin('tblstudent', function ($join) {
-                $join->whereRaw('`tblstudent`.`admission_id` = `admission_enquiry`.`id`');
-            })->leftJoin('standard', function ($join) {
-                $join->whereRaw('`standard`.`id` = `admission_enquiry`.`admission_standard`');
+            })->leftJoin('tblstudent', function ($join) use($marking_period_id) {
+                $join->whereRaw('`tblstudent`.`admission_id` = `admission_enquiry`.`id`')->when($marking_period_id,function($query) use ($marking_period_id){
+                    $query->where('tblstudent.marking_period_id',$marking_period_id);
+                });
+            })->leftJoin('standard', function ($join)use($marking_period_id) {
+                $join->whereRaw('`standard`.`id` = `admission_enquiry`.`admission_standard`')->when($marking_period_id,function($query) use ($marking_period_id){
+                    $query->where('standard.marking_period_id',$marking_period_id);
+                });
             })->leftJoin('follow_up as fu', function ($join) {
                 $join->whereRaw('fu.id = (SELECT id FROM follow_up AS fu1 WHERE fu1.enquiry_id = admission_enquiry.id ORDER BY fu1.id DESC LIMIT 1)');
             })
@@ -71,6 +76,7 @@ class admissionEnquiryController extends Controller
         $type = $request->input('type');
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $syear = $request->session()->get('syear');
+        $marking_period_id = session()->get('term_id');
 
         $category = castModel::get()->toArray();
 
@@ -90,7 +96,7 @@ class admissionEnquiryController extends Controller
         $FORM_NO = $this->get_enquiry_no($sub_institute_id, $syear);
 
         $standard = standardModel::where(['sub_institute_id' => $sub_institute_id])->get()->toArray();
-
+        // return $standard;exit;
         $res['status_code'] = 1;
         $res['message'] = "Success";
         $res['enquiry_no'] = $FORM_NO;

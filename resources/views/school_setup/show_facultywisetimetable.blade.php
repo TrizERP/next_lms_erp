@@ -50,6 +50,7 @@
                 </div>
             </div>
         </div>
+        @if( isset($data['HTML']) )        
         <div class="card">
             <div class="row">
                 <div class="col-lg-12 col-sm-12 col-xs-12">
@@ -64,7 +65,6 @@
                     </div>
                 </div>
 
-                @if( isset($data['HTML']) )
                     <div class="col-md-12 form-group">
                         <center>
                             <button class="btn btn-success" onclick="PrintDiv('printPage');">Print</button>

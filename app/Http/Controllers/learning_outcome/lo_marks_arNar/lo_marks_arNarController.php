@@ -93,7 +93,7 @@ class lo_marks_arNarController extends Controller
         $std = $_REQUEST['std'];
         $lo = $_REQUEST['lo'];
         $subject = $_REQUEST['subject'];
-
+        $marking_period_id = session()->get('term_id');
 
         $result = DB::table("learning_outcome_question_master")
             ->where("MEDIUM", "=", $medium)
@@ -123,8 +123,10 @@ class lo_marks_arNarController extends Controller
             ->join('tblstudent_enrollment as se', function ($join) {
                 $join->whereRaw("se.student_id = s.id");
             })
-            ->join('standard as stds', function ($join) {
-                $join->whereRaw("stds.id = se.standard_id");
+            ->join('standard as stds', function ($join) use($marking_period_id){
+                $join->whereRaw("stds.id = se.standard_id")->when($marking_period_id,function($query) use($marking_period_id){
+                    $query->where('stds.marking_period_id',$marking_period_id);
+                });
             })
             ->join('division as d', function ($join) {
                 $join->whereRaw("d.id = se.section_id");

@@ -24,10 +24,14 @@ class feesCircularMasterController extends Controller
         $type = $request->input('type');
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $syear = $request->session()->get('syear');
-
+        $marking_period_id = session()->get('term_id');
         $data = feesCircularMasterModel::select('fees_circular_master.*', 'standard.name as standard_name',
             'academic_section.title as grade_name')
-            ->join('standard', 'standard.id', '=', 'fees_circular_master.standard_id')
+            ->join('standard', function ($join) use($marking_period_id){
+                $join->on('standard.id', '=', 'fees_circular_master.standard_id')->when($marking_period_id,function($query) use ($marking_period_id){
+                    $query->where('standard.marking_period_id',$marking_period_id);
+                });
+            })
             ->join('academic_section', 'academic_section.id', '=', 'fees_circular_master.grade_id')
             ->where([
                 'fees_circular_master.sub_institute_id' => $sub_institute_id, 'fees_circular_master.syear' => $syear,

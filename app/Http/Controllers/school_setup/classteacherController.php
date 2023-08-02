@@ -38,13 +38,17 @@ class classteacherController extends Controller
     {
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $syear = $request->session()->get('syear');
-
+        $marking_period_id = session()->get('term_id');
         return classteacherModel::from("class_teacher as ct")
             ->select('ct.*', 'a.title as academic_section_name', 's.name as standard_name', 'd.name as division_name',
                 DB::raw('concat(u.first_name," ",u.middle_name," ",u.last_name) as teacher_name')
             )
             ->join('academic_section as a', 'a.id', '=', 'ct.grade_id')
-            ->join('standard as s', 's.id', '=', 'ct.standard_id')
+            ->join('standard as s',function($join) use($marking_period_id){
+                $join->on( 's.id', '=', 'ct.standard_id')->when($marking_period_id,function($query) use($marking_period_id){
+                    $query->where('s.marking_period_id',$marking_period_id);
+                });
+            })
             ->join('division as d', 'd.id', '=', 'ct.division_id')
             ->join('tbluser as u', 'u.id', '=', 'ct.teacher_id')
             ->where(['ct.sub_institute_id' => $sub_institute_id, 'ct.syear' => $syear])
@@ -63,14 +67,6 @@ class classteacherController extends Controller
             ->get();
     }
 
-    /**
-     * Show the form for creating a new resource.
-     *
-     * @return void
-     */
-    public function create(Request $request)
-    {
-    }
 
     /**
      * Store a newly created resource in storage.
@@ -122,16 +118,6 @@ class classteacherController extends Controller
         return is_mobile($type, "classteacher.index", $res, "redirect");
     }
 
-    /**
-     * Display the specified resource.
-     *
-     * @param  int  $id
-     * @return void
-     */
-    public function show($id)
-    {
-        //
-    }
 
     /**
      * Show the form for editing the specified resource.

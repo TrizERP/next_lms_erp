@@ -45,14 +45,17 @@ class register_parents_report_controller extends Controller
         $to_date = $request->input('to_date');
         $syear = $request->session()->get('syear');
         $sub_institute_id = $request->session()->get('sub_institute_id');
-
+        $marking_period_id = session()->get('term_id');
+        
         $data = DB::table('gcm_users as gu')
             ->join('tblstudent as s', function ($join) use ($sub_institute_id) {
                 $join->whereRaw('s.mobile=gu.mobile_no AND s.sub_institute_id= '.$sub_institute_id.'');
             })->join('tblstudent_enrollment as se', function ($join) use ($sub_institute_id) {
                 $join->whereRaw('se.student_id=s.id AND se.sub_institute_id = '.$sub_institute_id.'');
-            })->join('standard as ss', function ($join) use ($sub_institute_id)  {
-                $join->whereRaw('ss.id = se.standard_id');
+            })->join('standard as ss', function ($join) use($marking_period_id){
+                $join->whereRaw('ss.id = se.standard_id')->when($marking_period_id,function($query) use($marking_period_id){
+                    $query->where('marking_period_id',$marking_period_id);
+                });
             })->join('academic_section as aa', function ($join) use ($sub_institute_id) {
                 $join->whereRaw('aa.id=ss.grade_id AND aa.sub_institute_id='.$sub_institute_id.'');
             })->join('division as dd', function ($join) use ($sub_institute_id) {

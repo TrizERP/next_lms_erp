@@ -245,7 +245,7 @@ class hostel_reportController extends Controller
         $admissionCategory = $request->input("admissionCategory");
         $hostel = $request->input("hostel");
         $room = $request->input("room");
-
+        $marking_period_id = session()->get('term_id');
         $extraSearchArray = [];
         $extraSearchArray['tblstudent_enrollment.sub_institute_id'] = $sub_institute_id;
         $extraSearchArray['tblstudent_enrollment.syear'] = $syear;
@@ -279,7 +279,11 @@ class hostel_reportController extends Controller
             ->selectRaw("hostel_room_allocation.admission_category_id, hostel_room_allocation.hostel_id, hostel_room_allocation.room_id, hostel_room_allocation.bed_no,hostel_room_allocation.locker_no,hostel_room_allocation.table_no,hostel_room_allocation.bedsheet_no")
             ->join('tblstudent_enrollment', 'tblstudent.id', '=', 'tblstudent_enrollment.student_id')
             ->join('academic_section', 'academic_section.id', '=', 'tblstudent_enrollment.grade_id')
-            ->join('standard', 'standard.id', '=', 'tblstudent_enrollment.standard_id')
+            ->join('standard', function($join) use($marking_period_id){
+                $join->on('standard.id', '=', 'tblstudent_enrollment.standard_id')->when($marking_period_id,function($query) use($marking_period_id){
+                    $query->where('standard.marking_period_id',$marking_period_id);
+                });
+            })
             ->join('division', 'division.id', '=', 'tblstudent_enrollment.section_id')
             ->join('tbluserprofilemaster', 'tbluserprofilemaster.Id', '=', DB::raw('8'))
             ->join('hostel_room_allocation', function ($join) use ($syear) {

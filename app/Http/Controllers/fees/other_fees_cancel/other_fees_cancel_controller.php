@@ -63,7 +63,7 @@ class other_fees_cancel_controller extends Controller
         $type = $request->input('type');
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $syear = $request->session()->get('syear');
-
+        $marking_period_id = session()->get('term_id');
         $extraSearchArray = [];
         $extraSearchArrayRaw = " 1=1 ";
 
@@ -119,7 +119,12 @@ tblstudent.enrollment_no,tblstudent.mobile,standard.name AS std_name,division.na
             ->join('tblstudent', 'tblstudent.id', '=', 'fees_other_collection.student_id')
             ->join('tblstudent_enrollment', 'tblstudent.id', '=', 'tblstudent_enrollment.student_id')
             ->join('academic_section', 'academic_section.id', '=', 'tblstudent_enrollment.grade_id')
-            ->join('standard', 'standard.id', '=', 'tblstudent_enrollment.standard_id')
+            ->join('standard', function ($join) use ($marking_period_id) {
+                $join->on('standard.id', '=', 'tblstudent_enrollment.standard_id')
+                    ->when($marking_period_id, function ($query) use ($marking_period_id) {
+                        $query->where('standard.marking_period_id', $marking_period_id);
+                    });
+            })
             ->join('division', 'division.id', '=', 'tblstudent_enrollment.section_id')
             ->join('student_quota', 'student_quota.id', '=', 'tblstudent_enrollment.student_quota')
             ->where($extraSearchArray)

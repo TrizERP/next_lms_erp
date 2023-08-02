@@ -18,16 +18,8 @@ class SessionMiddleware
     {
         $type = $request->input("type");
 
-        if($type == "API"){
-            // $secret = $request->header('app_secret_key');
-            // $data = tblapplicationModel::where(['app_secret_key'=>$secret])->get()->toArray();
-
-            // if(empty($data)){
-            //     $res['status_code'] = 0;
-            //     $res['message'] = "Authentication Invalid";
-            //     return response()->json($res);
-            // }
-        }else{
+        if($type !== "API"){
+         
             $user_id = $request->session()->get('user_id');
             if(empty($user_id)){
                 

@@ -24,10 +24,14 @@ class chapterController extends Controller
     public function getData($request)
     {
         $sub_institute_id = $request->session()->get('sub_institute_id');
-
+        $marking_period_id = session()->get('term_id');
         return chapterModel::select('chapter_master.*', 'standard.name as standard_name'
             , 'academic_section.title as grade_name', 'subject_name')
-            ->join('standard', 'standard.id', '=', 'chapter_master.standard_id')
+            ->join('standard', function($join) use($marking_period_id){
+                $join->on('standard.id', '=', 'chapter_master.standard_id')->when($marking_period_id,function($query) use($marking_period_id){
+                    $query->where('standard.marking_period_id',$marking_period_id);
+                });
+            })
             ->join('academic_section', 'academic_section.id', '=', 'chapter_master.grade_id')
             ->join('subject', 'subject.id', '=', 'chapter_master.subject_id')
             ->where(['chapter_master.sub_institute_id' => $sub_institute_id])

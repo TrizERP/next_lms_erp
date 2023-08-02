@@ -87,7 +87,10 @@
                             <label>Previous Standard </label>
                             <select id='previous_standard' name="previous_standard" class="form-control">
                                 <option value=""> Select Standard </option>
-                                <option value="NA"> NA </option>
+                                @foreach($data['standard'] as $key=>$previous)
+                                <option value="{{$previous['id']}}"> {{$previous['name']}}</option>
+                                @endforeach
+                                <!-- <option value="NA"> NA </option>
                                 <option value="NURSERY"> Nursery </option>
                                 <option value="JRKG"> Jrkg </option>
                                 <option value="SRKG"> Srkg </option>
@@ -106,7 +109,7 @@
                                 <option value="11SCI"> 11 SCI </option>
                                 <option value="12COM"> 12 COM </option>
                                 <option value="12ART"> 12 ART </option>
-                                <option value="12SCI"> 12 SCI </option>
+                                <option value="12SCI"> 12 SCI </option> -->
                             </select>
                         </div>
                         <!-- <div class="col-md-3 form-group">                                                   
