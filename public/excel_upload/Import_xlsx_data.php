@@ -1,11 +1,12 @@
 <?php
+
 // ini_set('display_errors', 1);
 // ini_set('display_startup_errors', 1);
  error_reporting(0);
 include('db.php');
+
 require_once('PHPExcel.php');
 session_start();
-
 // if($_REQUEST['modfunc'] == "SAVE"){
 //  $random_num = rand(1, 50000);
 //     $file_name = $random_num . "-" . str_replace(" ", _, $_FILES["file"]["name"]);
@@ -69,11 +70,11 @@ if (isset($_REQUEST['submit'])) {
         $getRelations = mysqli_query($cn, "SELECT * FROM relation_table_fields WHERE table_name = '" . $_REQUEST['table'] . "'");
         while ($value = mysqli_fetch_assoc($getRelations)) {
             $relationFields[] = $value["table_field"];
+            $relationTable[$value["table_field"]]['main_table'] = $value["table_name"];
             $relationTable[$value["table_field"]]['TABLE_NAME'] = $value["relation_table_name"];
             $relationTable[$value["table_field"]]['TABLE_FIELD'] = $value["relation_table_field"];
             $relationTable[$value["table_field"]]['INSERT_FIELD'] = $value["relation_table_id"];
         }
-
         $getFields = mysqli_query($cn, "SELECT FIELD FROM import_table_fields where display_status=1 and table_name = '" . $_REQUEST['table'] . "' order by id asc");
 
         $insertQuery = "  INSERT INTO " . $_REQUEST['table'] . " (";
@@ -129,15 +130,18 @@ if (isset($_REQUEST['submit'])) {
                     }
                 } else {
                     if (in_array($valueFields['field'], $relationFields)) {
-                        // $relationQuery = "SELECT " . strtoupper($relationTable[$valueFields['field']]['INSERT_FIELD']) . " FROM " . $relationTable[$valueFields['field']]['TABLE_NAME'] . "  WHERE  " . $relationTable[$valueFields['field']]['TABLE_FIELD'] . " = '" . mysqli_real_escape_string($cn, $value[$valueFields['field']]) . "' AND sub_institute_id = '" . $_SESSION['SUB_INSTITUTE_ID'] . "'";
-                        if($relationTable[$valueFields['field']]['TABLE_NAME']!="fees_breakoff_other"){
 
-                            $relationQuery = "SELECT " . strtoupper($relationTable[$valueFields['field']]['INSERT_FIELD']) . " FROM " . $relationTable[$valueFields['field']]['TABLE_NAME'] . " WHERE " . $relationTable[$valueFields['field']]['TABLE_FIELD'] . " = '" . mysqli_real_escape_string($cn, $value[$valueFields['field']]) . "'";
-                          }else{
-                             
-                          $relationQuery = "SELECT " . strtoupper($relationTable[$valueFields['field']]['INSERT_FIELD']) . " FROM " . $relationTable[$valueFields['field']]['TABLE_NAME'] . "  WHERE  " . $relationTable[$valueFields['field']]['TABLE_FIELD'] . " = '" . mysqli_real_escape_string($cn, $value[$valueFields['field']]) . "' AND sub_institute_id = '" . $_SESSION['SUB_INSTITUTE_ID'] . "'"; 
-                          }
-                          
+
+                        if($relationTable[$valueFields['field']]['main_table']==="fees_breakoff_other"){
+                        $relationQuery = "SELECT " . strtoupper($relationTable[$valueFields['field']]['INSERT_FIELD']) . " FROM " . $relationTable[$valueFields['field']]['TABLE_NAME'] . "  WHERE  " . $relationTable[$valueFields['field']]['TABLE_FIELD'] . " = '" . mysqli_real_escape_string($cn, $value[$valueFields['field']]) . "' AND sub_institute_id = '" . $_SESSION['SUB_INSTITUTE_ID'] . "'"; 
+                         
+                        }else{
+                           
+                        // $relationQuery = "SELECT " . strtoupper($relationTable[$valueFields['field']]['INSERT_FIELD']) . " FROM " . $relationTable[$valueFields['field']]['TABLE_NAME'] . "  WHERE  " . $relationTable[$valueFields['field']]['TABLE_FIELD'] . " = '" . mysqli_real_escape_string($cn, $value[$valueFields['field']]) . "' AND sub_institute_id = '" . $_SESSION['SUB_INSTITUTE_ID'] . "'"; 
+                             $relationQuery = "SELECT " . strtoupper($relationTable[$valueFields['field']]['INSERT_FIELD']) . " FROM " . $relationTable[$valueFields['field']]['TABLE_NAME'] . " WHERE " . $relationTable[$valueFields['field']]['TABLE_FIELD'] . " = '" . mysqli_real_escape_string($cn, $value[$valueFields['field']]) . "'";
+                        }
+                      
+
                         if (isset($relationTable[$valueFields['field']]['SUB_INSTITUTE_COLUMN'])) {
                             $relationQuery .= " AND " . $relationTable[$valueFields['field']]['SUB_INSTITUTE_COLUMN'] . " = '" . $_SESSION['SUB_INSTITUTE_ID'] . "'";
                         }
@@ -149,13 +153,20 @@ if (isset($_REQUEST['submit'])) {
                         }
                         
                         $getRelationValue = mysqli_fetch_assoc(mysqli_query($cn, $relationQuery));
+
                         $keyId = strtoupper($relationTable[$valueFields['field']]['INSERT_FIELD']);
+                        // print_r($getRelationValue);exit;
          
                         if (isset($getRelationValue) && count($getRelationValue) > 0) {                            
                             $finalValue = $getRelationValue[$keyId];
                             $valueQuery .= "'" . $finalValue . "',";
                         } else {
-                            echo "<h5 style='color:red'>Problem Occurred while upload for <b style='color:black'>" . $valueFields['field'] . "</b> when value is <b style='color:black'>" . $value[$valueFields['field']] . "</b> please check and reupload the file.</h5>";
+                            if($relationTable[$valueFields['field']]['main_table']=="fees_breakoff_other"){
+                                 $valueQuery .="'" . $value[$valueFields['field']] . "',";
+                            }else{
+                                    echo "<h5 style='color:red'>Problem Occurred while upload for <b style='color:black'>" . $valueFields['field'] . "</b> when value is <b style='color:black'>" . $value[$valueFields['field']] . "</b> please check and reupload the file.</h5>";
+                            }
+                           
                         }
                     } else {
                         if(!isset($value[$valueFields['field']])){
