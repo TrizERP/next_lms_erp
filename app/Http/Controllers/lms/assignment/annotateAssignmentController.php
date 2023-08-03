@@ -43,8 +43,9 @@ class annotateAssignmentController extends Controller
             ->join('subject as s', 's.id', 'a.subject_id')
             ->join('tblstudent as ts', 'ts.id', 'a.student_id')
             ->join('standard as st',function($join) use($marking_period_id) {
-                $join->on('st.id', 'a.standard_id')->when($marking_period_id,function($query) use($marking_period_id){
-                    $query->where('st.marking_period_id',$marking_period_id);
+                $join->on('st.id', 'a.standard_id');
+                // ->when($marking_period_id,function($query) use($marking_period_id){
+                //     $query->where('st.marking_period_id',$marking_period_id);
                 });
             })
             ->where(['a.sub_institute_id' => $sub_institute_id, 'a.syear' => $syear])

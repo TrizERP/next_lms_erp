@@ -243,9 +243,9 @@ class loginController extends Controller
 
                         $request->session()->put('sub_institute_id', '');
                         $request->session()->put('syear', $getTermId[0]['syear']);
-                        if($schools[0]['institute_type']=="college"){
+                        // if($schools[0]['institute_type']=="college"){
                             $request->session()->put('term_id', $getTermId[0]['term_id']);
-                        }
+                        // }
                         $request->session()->put('academicTerms', $getAcademicTerms);
                         $request->session()->put('academicYears', $getAcademicYear);
                         $request->session()->put('getInstitutes', $getInstitutes);
@@ -334,9 +334,9 @@ class loginController extends Controller
                         $request->session()->put('expire_date', $schoolData[0]['expire_date']);
                         $request->session()->put('syear', $getTermId[0]['syear']);
                         // $request->session()->put('term_id', $getTermId[0]['term_id']);
-                        if($schoolData[0]['institute_type']=="college"){
+                        // if($schoolData[0]['institute_type']=="college"){
                             $request->session()->put('term_id', $getTermId[0]['term_id']);
-                        }
+                        // }
                         $request->session()->put('academicTerms', $getAcademicTerms);
                         $request->session()->put('academicYears', $getAcademicYear);
                         $request->session()->put('institute_type', $institute_type);                        

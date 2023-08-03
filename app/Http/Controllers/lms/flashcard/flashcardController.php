@@ -49,8 +49,9 @@ class flashcardController extends Controller
         $data['flashcard_data'] = flashcardModel::select('lms_flashcard.*', 's.name as standard_name', 'c.chapter_name',
             'sub.subject_name')
             ->join('standard as s',function($join) use($marking_period_id){
-                $join->on('s.id', 'lms_flashcard.standard_id')->when($marking_period_id,function($query) use($marking_period_id){
-                    $query->where('s.marking_period_id',$marking_period_id);
+                $join->on('s.id', 'lms_flashcard.standard_id');
+                // ->when($marking_period_id,function($query) use($marking_period_id){
+                //     $query->where('s.marking_period_id',$marking_period_id);
                 });
             })
             ->join('subject as sub', 'sub.id', 'lms_flashcard.subject_id')
