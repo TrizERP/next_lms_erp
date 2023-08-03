@@ -98,7 +98,7 @@ class admissionFormController extends Controller
         $editData = $data;
 
         $selected_standard = DB::table('standard as s')
-            ->join('academic_section as a', function ($query) use($marking_period_id) {
+            ->join('academic_section as a', function ($join) use($marking_period_id) {
                 $join->whereRaw('a.id = s.grade_id AND a.sub_institute_id = s.sub_institute_id');
                 // ->when($marking_period_id,function($join) use ($marking_period_id){
                 //     $query->where('tblstudent.marking_period_id',$marking_period_id);

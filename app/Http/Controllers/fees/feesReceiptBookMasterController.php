@@ -27,10 +27,10 @@ class feesReceiptBookMasterController extends Controller
             ->selectRaw("group_concat(distinct fees_title.display_name ORDER BY fees_title.sort_order) as fees_head")
             ->join('academic_section', 'fees_receipt_book_master.grade_id', '=', 'academic_section.id')
             ->join('standard', function($join) use($marking_period_id) {
-                $join->on('fees_receipt_book_master.standard_id', '=', 'standard.id')
-                ->when($marking_period_id,function($join)use($marking_period_id){
-                    $join->where('standard.marking_period_id',$marking_period_id);
-                });
+                $join->on('fees_receipt_book_master.standard_id', '=', 'standard.id');
+                // ->when($marking_period_id,function($join)use($marking_period_id){
+                //     $join->where('standard.marking_period_id',$marking_period_id);
+                // });
             })
             ->join('fees_title', 'fees_receipt_book_master.fees_head_id', '=', 'fees_title.id')
             ->where([
