@@ -80,9 +80,10 @@ class s1excel_exportController extends Controller {
         ->selectRaw('bd.*, pm.payment_method, CONCAT_WS(" ", s.first_name, s.middle_name, s.last_name) as student_name, s.id as student_id, s.enrollment_no, s.mobile')
         ->join('tblstudent_bank_detail as bd', 'bd.student_id', '=', 'pm.student_id')
         ->join('tblstudent as s',function($join) use($marking_period_id){
-            $join->on('s.id', '=', 'pm.student_id')->when($marking_period_id,function($query) use ($marking_period_id){
-                $query->where('marking_period_id',$marking_period_id);
-            });
+            $join->on('s.id', '=', 'pm.student_id');
+            // ->when($marking_period_id,function($query) use ($marking_period_id){
+            //     $query->where('marking_period_id',$marking_period_id);
+            // });
         })
         ->where('s.sub_institute_id', '=', $sub_institute_id)
         ->when($extra, function ($query) use ($extra) {

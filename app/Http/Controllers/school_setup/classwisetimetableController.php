@@ -44,9 +44,10 @@ class classwisetimetableController extends Controller
         $marking_period_id = session()->get('term_id');
         $get_name_data = DB::table('academic_section as ac')
             ->join('standard as s', function ($join) use($marking_period_id){
-                $join->whereRaw('s.grade_id = ac.id AND ac.sub_institute_id = s.sub_institute_id')->when($marking_period_id,function($query) use($marking_period_id){
-                    $query->where('s.marking_period_id',$marking_period_id);
-                });
+                $join->whereRaw('s.grade_id = ac.id AND ac.sub_institute_id = s.sub_institute_id');
+                // ->when($marking_period_id,function($query) use($marking_period_id){
+                //     $query->where('s.marking_period_id',$marking_period_id);
+                // });
             })->join('std_div_map as sd', function ($join) {
                 $join->whereRaw('sd.standard_id = s.id AND sd.sub_institute_id = s.sub_institute_id');
             })->join('division as d', function ($join) {
@@ -268,9 +269,10 @@ class classwisetimetableController extends Controller
                 })->join('tblstudent as ts', function ($join){
                     $join->whereRaw("ts.id = se.student_id AND ts.sub_institute_id = se.sub_institute_id");
                 })->join('standard as s', function ($join) use($marking_period_id){
-                    $join->whereRaw("s.id = t.standard_id AND s.sub_institute_id = t.sub_institute_id")->when($marking_period_id,function($query) use($marking_period_id){
-                        $query->where('s.marking_period_id',$marking_period_id);
-                    });
+                    $join->whereRaw("s.id = t.standard_id AND s.sub_institute_id = t.sub_institute_id");
+                    // ->when($marking_period_id,function($query) use($marking_period_id){
+                    //     $query->where('s.marking_period_id',$marking_period_id);
+                    // });
                 })->join('subject as sub', function ($join) {
                     $join->whereRaw("sub.id = t.subject_id AND sub.sub_institute_id = t.sub_institute_id");
                 })->join('tbluser as u', function ($join) {

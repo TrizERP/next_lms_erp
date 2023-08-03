@@ -47,9 +47,10 @@ class proxyReportController extends Controller
             DB::raw('concat(u1.first_name," ",u1.middle_name," ",u1.last_name) as proxy_teacher_name'),
             'p.title as period_name', DB::raw('concat(sub.subject_name,"(",sub.subject_code,")") as sub_name'))
             ->join('standard as s',function($join) use($marking_period_id){
-                $join->on( 's.id', '=', 'proxy_master.standard_id')->when($marking_period_id,function($query) use($marking_period_id){
-                    $query->where('s.marking_period_id',$marking_period_id);
-                });
+                $join->on( 's.id', '=', 'proxy_master.standard_id');
+                // ->when($marking_period_id,function($query) use($marking_period_id){
+                //     $query->where('s.marking_period_id',$marking_period_id);
+                // });
             })
             ->join('division as d', 'd.id', '=', 'proxy_master.division_id')
             ->join('tbluser as u', 'u.id', '=', 'proxy_master.teacher_id')

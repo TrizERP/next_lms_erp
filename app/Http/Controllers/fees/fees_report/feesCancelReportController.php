@@ -58,9 +58,10 @@ class feesCancelReportController extends Controller
             })->join('student_quota as sq', function ($join) {
                 $join->whereRaw('sq.id = te.student_quota AND ts.sub_institute_id = sq.sub_institute_id');
             })->join('standard as s', function ($join) use($marking_period_id) {
-                $join->whereRaw('s.id = te.standard_id')->when($marking_period_id,function ($query) use($marking_period_id){
-                    $query->where('s.marking_period_id',$marking_period_id);
-                });
+                $join->whereRaw('s.id = te.standard_id');
+                // ->when($marking_period_id,function ($query) use($marking_period_id){
+                //     $query->where('s.marking_period_id',$marking_period_id);
+                // });
             })->join('tbluser as u', function ($join) {
                 $join->whereRaw('u.id = fc.cancelled_by');
             })->selectRaw("fc.id,fc.reciept_id,ts.enrollment_no, CONCAT_WS(' ',ts.first_name,ts.middle_name,ts.last_name)

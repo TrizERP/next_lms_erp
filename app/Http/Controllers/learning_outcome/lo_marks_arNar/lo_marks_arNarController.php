@@ -124,9 +124,10 @@ class lo_marks_arNarController extends Controller
                 $join->whereRaw("se.student_id = s.id");
             })
             ->join('standard as stds', function ($join) use($marking_period_id){
-                $join->whereRaw("stds.id = se.standard_id")->when($marking_period_id,function($query) use($marking_period_id){
-                    $query->where('stds.marking_period_id',$marking_period_id);
-                });
+                $join->whereRaw("stds.id = se.standard_id");
+                // ->when($marking_period_id,function($query) use($marking_period_id){
+                //     $query->where('stds.marking_period_id',$marking_period_id);
+                // });
             })
             ->join('division as d', function ($join) {
                 $join->whereRaw("d.id = se.section_id");

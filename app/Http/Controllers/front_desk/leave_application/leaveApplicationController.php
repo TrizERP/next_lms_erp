@@ -94,9 +94,10 @@ class leaveApplicationController extends Controller
                 $join->whereRaw("g.id = se.grade_id");
             })
             ->join('standard as st', function ($join) use($marking_period_id){
-                $join->whereRaw("st.id = se.standard_id")->when($marking_period_id, function ($query) use ($marking_period_id) {
-                    $query->where('st.marking_period_id', $marking_period_id);
-                });
+                $join->whereRaw("st.id = se.standard_id");
+                // ->when($marking_period_id, function ($query) use ($marking_period_id) {
+                //     $query->where('st.marking_period_id', $marking_period_id);
+                // });
             })
             ->join('division as d', function ($join) {
                 $join->whereRaw("d.id = se.section_id");
@@ -459,9 +460,10 @@ class leaveApplicationController extends Controller
                     $join->whereRaw("s.id = se.student_id and s.sub_institute_id = se.sub_institute_id");
                 })
                 ->join('standard as st', function ($join) {
-                    $join->whereRaw("st.id = se.standard_id")->when($marking_period_id, function ($query) use ($marking_period_id) {
-                        $query->where('st.marking_period_id', $marking_period_id);
-                    });
+                    $join->whereRaw("st.id = se.standard_id");
+                    // ->when($marking_period_id, function ($query) use ($marking_period_id) {
+                    //     $query->where('st.marking_period_id', $marking_period_id);
+                    // });
                 })
                 ->join('division as di', function ($join) {
                     $join->whereRaw("di.id = se.section_id");

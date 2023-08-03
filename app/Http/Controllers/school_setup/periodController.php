@@ -31,9 +31,9 @@ class periodController extends Controller
 
         return periodModel::select('period.*')
             ->where(['period.sub_institute_id' => $sub_institute_id])
-            ->when($marking_period_id,function($query) use ($marking_period_id){
-                $query->where('marking_period_id',$marking_period_id);
-            })
+            // ->when($marking_period_id,function($query) use ($marking_period_id){
+            //     $query->where('marking_period_id',$marking_period_id);
+            // })
             ->get();
     }
 
@@ -102,9 +102,9 @@ class periodController extends Controller
             ->selectRaw('count(*) as tot')
             ->where('sub_institute_id', $sub_institute_id)
             ->whereRaw("UPPER(title) = '".$title."'")
-            ->when($marking_period_id,function($query) use ($marking_period_id){
-                $query->where('marking_period_id',$marking_period_id);
-            })
+            // ->when($marking_period_id,function($query) use ($marking_period_id){
+            //     $query->where('marking_period_id',$marking_period_id);
+            // })
             ->get()->toArray();
 
         return $data[0]->tot;

@@ -68,7 +68,7 @@ class examWiseProgressReportController extends Controller
                 $join->whereRaw('st.id = se.standard_id AND st.sub_institute_id = se.sub_institute_id');
                 // ->when($marking_period_id,function($query) use($marking_period_id){
                 //     $query->where('st.marking_period_id',$marking_period_id);
-                });
+                // });
             })->leftJoin('division as d', function ($join) {
                 $join->whereRaw('d.id = se.section_id AND d.sub_institute_id = se.sub_institute_id');
             })->join('question_paper as qp', function ($join) {
