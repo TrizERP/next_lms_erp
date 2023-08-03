@@ -105,28 +105,28 @@
                                                                         <th align="left"><b>Subject Name</b></th>
                                                                         <!-- term - 1 -->
                                                                         <?php
-                                                        $failed = 0;
-                                                        $exams = array_column($all_data['exam'], 'exam');
-                                                        $uniqueExams = array_unique($exams, SORT_REGULAR);
+                                                                            $failed = 0;
+                                                                            $exams = array_column($all_data['exam'], 'exam');
+                                                                            $uniqueExams = array_unique($exams, SORT_REGULAR);
 
-                                                                    foreach ($all_data['mark'] as $subject => $subject_data) {
+                                                                            foreach ($all_data['mark'] as $subject => $subject_data) {
+                                                                                if ($all_data['class'] != "IX") {
+                                                                                    foreach ($uniqueExams as $temp_id => $exam_data) {
+                                                                                        $mark = array_column($all_data['mark'], 'mark', 'exam');
 
-                                                                         if($all_data['class']!="IX"){ 
-                                                                        foreach ($uniqueExams as $temp_id => $exam_data) {
-                                                                            $mark = array_column($all_data['mark'] , 'mark','exam');
-
-                                                                            ?>
-                                                                            <th style="text-align: center;"><b><?php echo $exam_data; ?><br>(<?php echo $mark[$exam_data]; ?>)</b></th>   
-                                                                            <?php
-                                                                        }
-                                                                        ?>
-                                                                        <th style="text-align: center;"><b>Grade</b></th>
-                                                                        <?php
-                                                                    }
-
-                                                        $exams = array_column($term_2_data[$stuent_id]['exam'], 'exam');
-                                                        $uniqueExams = array_unique($exams, SORT_REGULAR);
-                                                        // echo "<pre>";print_r($term_2_data[$stuent_id]['exam']);
+                                                                                        // Check if the key exists in the $mark array before accessing it
+                                                                                        $mark_value = isset($mark[$exam_data]) ? $mark[$exam_data] : 'N/A';
+                                                                                        ?>
+                                                                                        <th style="text-align: center;"><b><?php echo $exam_data; ?><br>(<?php echo $mark_value; ?>)</b></th>
+                                                                                        <?php
+                                                                                    }
+                                                                                    ?>
+                                                                                    <th style="text-align: center;"><b>Grade</b></th>
+                                                                                    <?php
+                                                                                }
+                                                                        $exams = array_column($term_2_data[$stuent_id]['exam'], 'exam');
+                                                                        $uniqueExams = array_unique($exams, SORT_REGULAR);
+                                                                        // echo "<pre>";print_r($term_2_data[$stuent_id]['exam']);
                                                                       foreach ($uniqueExams as $temp_id => $exam_data) {
 
                                                                         $mark = array_column($term_2_data[$stuent_id]['exam'], 'mark','exam');
