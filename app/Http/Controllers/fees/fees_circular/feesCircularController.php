@@ -92,14 +92,15 @@ class feesCircularController extends Controller
                     d.name AS division_name,fb.amount,ft.display_name,ft.fees_title,SUM(fb.amount) AS total_breakoff")
                 ->where('s.sub_institute_id', $sub_institute_id)
                 ->where('se.syear', $syear)
-                ->where(function ($q) use ($grade, $standard) {
-                    if ($grade != '') {
+                ->when($grade,function ($q) use ($grade) {
                         $q->where('se.grade_id', $grade);
-                    }
-                    if ($standard != '') {
+                })
+                ->when($standard,function ($q) use ($standard) {
                         $q->where('se.standard_id', $standard);
-                    }
-                })->groupBy('s.id')->get()->toArray();
+                })
+                ->when($division,function ($q) use ($division) {
+                    $q->where('se.section_id', $division);
+            })->groupBy('s.id')->get()->toArray();
 
             $studentData = json_decode(json_encode($data), true);
             foreach($studentData as $key => $val){
