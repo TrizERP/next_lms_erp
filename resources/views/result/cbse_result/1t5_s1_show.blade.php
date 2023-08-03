@@ -44,20 +44,14 @@
                                         <td>
                                             <table class="report-card" style="border-collapse:collapse;" width="100%" cellspacing="0" cellpadding="0">
                                                 <tbody>
-                                                    <tr>
-                                                         <!--<td style="width: 165px;text-align: center;" align="left">
-                                                            <img style="width: 100px;height: 90px;margin: 0;" src="/storage/result/left_logo/{{$header_data['left_logo']}}" alt="SCHOOL LOGO">
-                                                         </td>-->
-                                                         <td style="text-align:center !important;" align="center"> 
-                                                            <span class="sc-hd">{{$header_data['line1']}}</span><br>   
-                                                            <span class="ma-hd">{{$header_data['line2']}}</span><br>  
-                                                            <span class="rg-hd">{{$header_data['line3']}}</span><br> 
-                                                            <span class="rg-hd">{{$header_data['line4']}}</span><br>
-                                                         </td>
-                                                         <!--<td style="width: 165px;text-align: center;" align="left">
-                                                            <img style="width: 100px;height: 90px;margin: 0;" src="/storage/result/right_logo/{{$header_data['right_logo']}}" alt="SCHOOL LOGO">                                                            
-                                                         </td>-->
-                                                    </tr>
+                                                <tr>
+                                                    <td style="text-align:center !important;" align="center">
+                                                        @if(isset($header_data['line1']))<span class="sc-hd">{{$header_data['line1']}}</span><br>@endif
+                                                        @if(isset($header_data['line2']))<span class="ma-hd">{{$header_data['line2']}}</span><br>@endif
+                                                        @if(isset($header_data['line3']))<span class="rg-hd">{{$header_data['line3']}}</span><br>@endif
+                                                        @if(isset($header_data['line4']))<span class="rg-hd">{{$header_data['line4']}}</span><br>@endif
+                                                    </td>
+                                                </tr>
                                                     <tr>
                                                         <td colspan="4">
                                                             <br/><br/><br/><br/><br/><br/><br/><hr></hr>
