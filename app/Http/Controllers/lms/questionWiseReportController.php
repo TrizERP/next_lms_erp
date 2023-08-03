@@ -58,7 +58,7 @@ class questionWiseReportController extends Controller
                 $join->whereRaw('std.id = tse.standard_id');
                 // ->when($marking_period_id,function($query) use($marking_period_id){
                 //     $query->where('std.marking_period_id',$marking_period_id);
-                });
+                // });
             })->join('std_div_map as sdm', function ($join) {
                 $join->whereRaw('sdm.standard_id = std.id');
             })->join('division as divi', function ($join) {

@@ -44,9 +44,9 @@ class timetableController extends Controller
         $sub_institute_id = $request->session()->get("sub_institute_id");
 
         return standardModel::where(['sub_institute_id' => $sub_institute_id, 'grade_id' => $academic_id])
-        ->when($marking_period_id,function($query) use ($marking_period_id){
-            $query->where('marking_period_id',$marking_period_id);
-        })
+        // ->when($marking_period_id,function($query) use ($marking_period_id){
+        //     $query->where('marking_period_id',$marking_period_id);
+        // })
             ->get()->toArray();
     }
 
@@ -111,9 +111,9 @@ class timetableController extends Controller
                             ->where('division_id', $hid_division_id)
                             ->where('period_id', $period_id)
                             ->where('week_day', $week_day)
-                            ->when($marking_period_id,function($query) use ($marking_period_id){
-                                $query->where('marking_period_id',$marking_period_id);
-                            })
+                            // ->when($marking_period_id,function($query) use ($marking_period_id){
+                            //     $query->where('marking_period_id',$marking_period_id);
+                            // })
                            ->get()->toArray();
 
                         if (is_array($pval[$week_day])) {
@@ -133,9 +133,9 @@ class timetableController extends Controller
                                         ->where('period_id', $period_id)
                                         ->where('batch_id', $batch_id)
                                         ->where('week_day', $week_day)
-                                        ->when($marking_period_id,function($query) use ($marking_period_id){
-                                            $query->where('marking_period_id',$marking_period_id);
-                                        })
+                                        // ->when($marking_period_id,function($query) use ($marking_period_id){
+                                        //     $query->where('marking_period_id',$marking_period_id);
+                                        // })
                                        ->get()->toArray();
 
 
@@ -334,9 +334,9 @@ class timetableController extends Controller
                     ->on("t.sub_institute_id", "=", "tbluser.sub_institute_id");
             })
             ->where(['tbluser.sub_institute_id' => $sub_institute_id, 'tbluserprofilemaster.name' => 'Teacher'])
-            ->when($marking_period_id,function($query) use ($marking_period_id){
-                $query->where('t.marking_period_id',$marking_period_id);
-            })
+            // ->when($marking_period_id,function($query) use ($marking_period_id){
+            //     $query->where('t.marking_period_id',$marking_period_id);
+            // })
            ->groupby("tbluser.id")
             ->orderby("tbluser.first_name")
             ->get();
@@ -419,9 +419,9 @@ class timetableController extends Controller
                                 'sub_institute_id' => $sub_institute_id, 'syear' => $syear, 'period_id' => $pval['id'],
                                 'week_day'         => $wval,
                             ])
-                            ->when($marking_period_id,function($query) use ($marking_period_id){
-                                $query->where('marking_period_id',$marking_period_id);
-                            })                
+                            // ->when($marking_period_id,function($query) use ($marking_period_id){
+                            //     $query->where('marking_period_id',$marking_period_id);
+                            // })                
                             ->get()->toArray();
 
                         $old_assigned_teacher_id_array = [];
@@ -451,9 +451,9 @@ class timetableController extends Controller
                                 - COUNT(t.id) END) AS remaining_lecture')
                             ->whereRaw('(tbluser.sub_institute_id = "' . $sub_institute_id . '" AND tbluserprofilemaster.name
                                 = "Teacher") ' . $extra_where)
-                            ->when($marking_period_id,function($query) use ($marking_period_id){
-                                    $query->where('t.marking_period_id',$marking_period_id);
-                                })
+                            // ->when($marking_period_id,function($query) use ($marking_period_id){
+                            //         $query->where('t.marking_period_id',$marking_period_id);
+                            //     })
                                ->groupBy('tbluser.id')
                             ->orderBy('tbluser.first_name')->get()->toArray();
 
@@ -535,9 +535,9 @@ class timetableController extends Controller
                             'sub_institute_id' => $sub_institute_id, 'syear' => $syear, 'period_id' => $pval['id'],
                             'week_day'         => $wval,
                         ])
-                        ->when($marking_period_id,function($query) use ($marking_period_id){
-                            $query->where('marking_period_id',$marking_period_id);
-                        })
+                        // ->when($marking_period_id,function($query) use ($marking_period_id){
+                        //     $query->where('marking_period_id',$marking_period_id);
+                        // })
                        ->get()->toArray();
 
                     $assigned_teacher_id_array = array();
@@ -563,9 +563,9 @@ class timetableController extends Controller
                                 - COUNT(t.id) END) AS remaining_lecture')
                         ->whereRaw('(tbluser.sub_institute_id = "' . $sub_institute_id . '" AND tbluserprofilemaster.name
                                 = "Teacher") ' . $extra_where)
-                        ->when($marking_period_id,function($query) use ($marking_period_id){
-                                    $query->where('t.marking_period_id',$marking_period_id);
-                                })
+                        // ->when($marking_period_id,function($query) use ($marking_period_id){
+                        //             $query->where('t.marking_period_id',$marking_period_id);
+                        //         })
                         ->groupBy('tbluser.id')
                         ->orderBy('tbluser.first_name')->get()->toArray();
                     $new_teacher_data = json_decode(json_encode($new_teacher_data), true);
@@ -653,17 +653,18 @@ class timetableController extends Controller
         $subject_data = sub_std_mapModel::where([
             'sub_institute_id' => $sub_institute_id,
             "standard_id"      => $standard_id,
-        ]) ->when($marking_period_id,function($query) use ($marking_period_id){
-            $query->where('marking_period_id',$marking_period_id);
-        })
+        ]) 
+        // ->when($marking_period_id,function($query) use ($marking_period_id){
+        //     $query->where('marking_period_id',$marking_period_id);
+        // })
        ->get(["subject_id", "display_name"])->toArray();
 
         $teacher_data = tbluserModel::select('tbluser.*')
             ->join('tbluserprofilemaster', 'tbluserprofilemaster.id', "=", 'tbluser.user_profile_id')
             ->where(['tbluser.sub_institute_id' => $sub_institute_id, 'tbluserprofilemaster.name' => 'Teacher',])
-            ->when($marking_period_id,function($query) use ($marking_period_id){
-                $query->where('marking_period_id',$marking_period_id);
-            })
+            // ->when($marking_period_id,function($query) use ($marking_period_id){
+            //     $query->where('marking_period_id',$marking_period_id);
+            // })
             ->get();
 
         $batch_data = batchModel::where([
@@ -760,9 +761,10 @@ class timetableController extends Controller
         $subject_data = sub_std_mapModel::where([
             'sub_institute_id' => $sub_institute_id,
             "standard_id"      => $standard_id,
-        ]) ->when($marking_period_id,function($query) use ($marking_period_id){
-            $query->where('marking_period_id',$marking_period_id);
-        })
+        ]) 
+        // ->when($marking_period_id,function($query) use ($marking_period_id){
+        //     $query->where('marking_period_id',$marking_period_id);
+        // })
        ->get(["subject_id", "display_name"])->toArray();
 
         $teacher_data = tbluserModel::select('tbluser.*')
@@ -770,9 +772,10 @@ class timetableController extends Controller
             ->where(['tbluser.sub_institute_id' => $sub_institute_id, 'tbluserprofilemaster.name' => 'Teacher',])
             ->get();
 
-        $standard_data = standardModel::where(['sub_institute_id' => $sub_institute_id]) ->when($marking_period_id,function($query) use ($marking_period_id){
-            $query->where('marking_period_id',$marking_period_id);
-        })
+        $standard_data = standardModel::where(['sub_institute_id' => $sub_institute_id])
+        // ->when($marking_period_id,function($query) use ($marking_period_id){
+        //     $query->where('marking_period_id',$marking_period_id);
+        // })
        ->get([
             "id", "name",
         ])->toArray();

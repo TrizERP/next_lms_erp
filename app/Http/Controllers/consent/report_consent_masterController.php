@@ -49,9 +49,10 @@ class report_consent_masterController extends Controller
             })->join('tblstudent_enrollment as SE', function ($join) use ($syear) {
                 $join->whereRaw("SE.student_id = s.id AND SE.syear = '" . $syear . "'");
             })->join('standard as CS', function ($join) use($marking_period_id){
-                $join->whereRaw("CS.id = SE.standard_id")->when($marking_period_id,function($query) use($marking_period_id){
-                    $query->where('CS.marking_period_id',$marking_period_id);
-                });
+                $join->whereRaw("CS.id = SE.standard_id");
+                // ->when($marking_period_id,function($query) use($marking_period_id){
+                //     $query->where('CS.marking_period_id',$marking_period_id);
+                // });
             })->join('academic_section as SG', function ($join) use ($sub_institute_id) {
                 $join->whereRaw("SG.id = CS.grade_id AND SG.sub_institute_id = '" . $sub_institute_id . "'");
             })->join('division as SS', function ($join) {

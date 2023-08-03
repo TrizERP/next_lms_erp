@@ -154,9 +154,10 @@ class tallyExportReportController extends Controller
             })->join('academic_section as a', function ($join) {
                 $join->whereRaw('a.id = se.grade_id');
             })->join('standard as s', function ($join) use($marking_period_id) {
-                $join->whereRaw('s.id = se.standard_id')->when($marking_period_id,function($query) use($marking_period_id){
-                    $query->where('s.marking_period_id',$marking_period_id);
-                });
+                $join->whereRaw('s.id = se.standard_id');
+                // ->when($marking_period_id,function($query) use($marking_period_id){
+                //     $query->where('s.marking_period_id',$marking_period_id);
+                // });
             })->join('division as d', function ($join) {
                 $join->whereRaw('d.id = se.section_id');
             })->selectRaw("fc.id,fc.student_id,CONCAT_WS(' ',ts.first_name,ts.middle_name,ts.last_name) AS student_name,

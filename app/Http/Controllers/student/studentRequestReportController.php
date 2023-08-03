@@ -43,9 +43,10 @@ class studentRequestReportController extends Controller
 
         $result = DB::table('student_change_request as sr')
             ->join('tblstudent as ts', function ($join)use($marking_period_id) {
-                $join->whereRaw('sr.STUDENT_ID = ts.id')->when($marking_period_id,function($query) use($marking_period_id){
-                    $query->where('ts.marking_period_id',$marking_period_id);
-                });
+                $join->whereRaw('sr.STUDENT_ID = ts.id');
+                // ->when($marking_period_id,function($query) use($marking_period_id){
+                //     $query->where('ts.marking_period_id',$marking_period_id);
+                // });
             })->join('standard as s', function ($join) {
                 $join->whereRaw('s.id = sr.STANDARD_ID');
             })->join('division as d', function ($join) {

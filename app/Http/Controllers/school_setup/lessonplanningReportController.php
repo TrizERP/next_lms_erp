@@ -32,9 +32,10 @@ class lessonplanningReportController extends Controller
                 DB::raw('ifnull(le.lessonplan_reason,"-") as lessonplan_reason'),
                 DB::raw('ifnull(le.school_date,"-") as lessonplan_date'))
             ->join('standard as s',function($join) use($marking_period_id){
-                $join->on( 's.id', '=', 'l.standard_id')->when($marking_period_id,function($query) use($marking_period_id){
-                    $query->where('s.marking_period_id',$marking_period_id);
-                });
+                $join->on( 's.id', '=', 'l.standard_id');
+                // ->when($marking_period_id,function($query) use($marking_period_id){
+                //     $query->where('s.marking_period_id',$marking_period_id);
+                // });
             })
             ->join('division as d', 'd.id', '=', 'l.division_id')
             ->join('subject as ss', 'ss.id', '=', 'l.subject_id')

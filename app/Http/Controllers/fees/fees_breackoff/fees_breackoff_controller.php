@@ -46,9 +46,10 @@ class fees_breackoff_controller extends Controller
             })->join('academic_section as acs', function ($join) {
                 $join->whereRaw('acs.id = fb.grade_id');
             })->join('standard as st', function ($join) use($marking_period_id) {
-                $join->whereRaw('st.id = fb.standard_id')->when($marking_period_id,function($join) use ($marking_period_id){
-                    $join->where('st.marking_period_id',$marking_period_id);
-                });
+                $join->whereRaw('st.id = fb.standard_id');
+                // ->when($marking_period_id,function($join) use ($marking_period_id){
+                //     $join->where('st.marking_period_id',$marking_period_id);
+                // });
             })->leftJoin('division as d', function ($join) {
                 $join->whereRaw('d.id = fb.section_id');
             })->selectRaw('fb.syear,fb.admission_year,ft.display_name fees_head,sq.title quota,acs.title grade_name,

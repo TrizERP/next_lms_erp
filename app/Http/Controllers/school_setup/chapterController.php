@@ -28,9 +28,10 @@ class chapterController extends Controller
         return chapterModel::select('chapter_master.*', 'standard.name as standard_name'
             , 'academic_section.title as grade_name', 'subject_name')
             ->join('standard', function($join) use($marking_period_id){
-                $join->on('standard.id', '=', 'chapter_master.standard_id')->when($marking_period_id,function($query) use($marking_period_id){
-                    $query->where('standard.marking_period_id',$marking_period_id);
-                });
+                $join->on('standard.id', '=', 'chapter_master.standard_id');
+                // ->when($marking_period_id,function($query) use($marking_period_id){
+                //     $query->where('standard.marking_period_id',$marking_period_id);
+                // });
             })
             ->join('academic_section', 'academic_section.id', '=', 'chapter_master.grade_id')
             ->join('subject', 'subject.id', '=', 'chapter_master.subject_id')

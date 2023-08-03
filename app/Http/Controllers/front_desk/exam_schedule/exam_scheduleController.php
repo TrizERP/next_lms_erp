@@ -43,9 +43,10 @@ class exam_scheduleController extends Controller
         $marking_period_id=session()->get('term_id');
         return DB::table("exam_schedule as c")
             ->join('standard as s', function ($join) use($marking_period_id){
-                $join->whereRaw("s.id = c.standard_id") ->when($marking_period_id, function ($query) use ($marking_period_id) {
-                    $query->where('s.marking_period_id', $marking_period_id);
-                });
+                $join->whereRaw("s.id = c.standard_id");
+                // ->when($marking_period_id, function ($query) use ($marking_period_id) {
+                //     $query->where('s.marking_period_id', $marking_period_id);
+                // });
             })
             ->join('division as d', function ($join) {
                 $join->whereRaw("d.id = c.division_id");

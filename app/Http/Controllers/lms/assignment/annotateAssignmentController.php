@@ -45,8 +45,8 @@ class annotateAssignmentController extends Controller
             ->join('standard as st',function($join) use($marking_period_id) {
                 $join->on('st.id', 'a.standard_id');
                 // ->when($marking_period_id,function($query) use($marking_period_id){
-                //     $query->where('st.marking_period_id',$marking_period_id);
-                });
+                //      $query->where('st.marking_period_id',$marking_period_id);
+                // });
             })
             ->where(['a.sub_institute_id' => $sub_institute_id, 'a.syear' => $syear])
             ->get()->toArray();

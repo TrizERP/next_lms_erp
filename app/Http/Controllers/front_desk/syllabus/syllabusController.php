@@ -47,9 +47,10 @@ class syllabusController extends Controller
         if (strtoupper($user_profile_name) == 'TEACHER') {
             $result = DB::table("syllabus as c")
                 ->join('standard as s', function ($join) use ($marking_period_id) {
-                    $join->whereRaw("s.id = c.standard_id")->when($marking_period_id,function($query) use($marking_period_id){
-                        $query->where('s.marking_period_id',$marking_period_id);
-                    });
+                    $join->whereRaw("s.id = c.standard_id");
+                    // ->when($marking_period_id,function($query) use($marking_period_id){
+                    //     $query->where('s.marking_period_id',$marking_period_id);
+                    // });
                 })
                 ->join('sub_std_map as su', function ($join) {
                     $join->whereRaw("su.subject_id = c.subject_id AND su.standard_id = c.standard_id");
@@ -65,9 +66,10 @@ class syllabusController extends Controller
         } else {
             $result = DB::table("syllabus as c")
                 ->join('standard as s', function ($join) use ($marking_period_id) {
-                    $join->whereRaw("s.id = c.standard_id")->when($marking_period_id, function ($query) use ($marking_period_id) {
-                        $query->where('s.marking_period_id', $marking_period_id);
-                    });
+                    $join->whereRaw("s.id = c.standard_id");
+                    // ->when($marking_period_id, function ($query) use ($marking_period_id) {
+                    //     $query->where('s.marking_period_id', $marking_period_id);
+                    // });
                 })
                 ->join('sub_std_map as su', function ($join) {
                     $join->whereRaw("su.subject_id = c.subject_id AND su.standard_id = c.standard_id");

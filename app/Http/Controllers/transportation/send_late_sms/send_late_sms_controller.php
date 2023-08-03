@@ -49,9 +49,10 @@ class send_late_sms_controller extends Controller
                 $q->where('tm.from_bus_id', $_REQUEST['bus'])->orWhere('tm.to_bus_id', $_REQUEST['bus']);
             })->where(function ($q) {
                 $q->where('tm.from_shift_id', $_REQUEST['shift'])->orWhere('tm.to_shift_id', $_REQUEST['shift']);
-            })->when($marking_period_id,function($query) use ($marking_period_id){
-                $query->where('ts.marking_period_id',$marking_period_id);
             });
+            // ->when($marking_period_id,function($query) use ($marking_period_id){
+            //     $query->where('ts.marking_period_id',$marking_period_id);
+            // });
 
         if (isset($_REQUEST['stop']) && $_REQUEST['stop'] != '') {
             $student_data = $student_data->whereIn('tm.to_stop', $_REQUEST['stop']);

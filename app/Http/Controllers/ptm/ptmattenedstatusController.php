@@ -33,9 +33,11 @@ class ptmattenedstatusController extends Controller
         $marking_period_id = session()->get('term_id');
 
         $standard = standardModel::select('id', 'name')
-            ->where(['sub_institute_id' => $sub_institute_id])->when($marking_period_id,function($query) use ($marking_period_id){
-                $query->where('marking_period_id',$marking_period_id);
-            })->get()->toArray();
+            ->where(['sub_institute_id' => $sub_institute_id])
+            // ->when($marking_period_id,function($query) use ($marking_period_id){
+            //     $query->where('marking_period_id',$marking_period_id);
+            // })
+            ->get()->toArray();
 
         $user_data = tbluserModel::select('tbluser.*', DB::raw('concat(tbluser.first_name," ",tbluser.middle_name," ",
                 tbluser.last_name) as teacher_name'))
@@ -75,9 +77,10 @@ class ptmattenedstatusController extends Controller
                 $join->whereRaw("se.student_id = s.id AND se.syear = '".$syear."'");
             })
             ->join('standard as cs', function ($join) use($marking_period_id) {
-                $join->whereRaw("cs.id = se.standard_id")->when($marking_period_id,function($query) use ($marking_period_id){
-                    $query->where('cs.marking_period_id',$marking_period_id);
-                });
+                $join->whereRaw("cs.id = se.standard_id");
+                // ->when($marking_period_id,function($query) use ($marking_period_id){
+                //     $query->where('cs.marking_period_id',$marking_period_id);
+                // });
             })
             ->join('division as ss', function ($join) {
                 $join->whereRaw("ss.id = se.section_id");
@@ -278,9 +281,10 @@ class ptmattenedstatusController extends Controller
                     $join->whereRaw("ps.id= pb.TIME_SLOT_ID");
                 })
                 ->join('standard as cs', function ($join) use($marking_period_id) {
-                    $join->whereRaw("cs.id = ps.standard_id")->when($marking_period_id,function($query) use ($marking_period_id){
-                        $query->where('cs.marking_period_id',$marking_period_id);
-                    });
+                    $join->whereRaw("cs.id = ps.standard_id");
+                    // ->when($marking_period_id,function($query) use ($marking_period_id){
+                    //     $query->where('cs.marking_period_id',$marking_period_id);
+                    // });
                 })
                 ->join('tblstudent_enrollment as se', function ($join) {
                     $join->whereRaw("se.standard_id = cs.id");
@@ -333,9 +337,10 @@ class ptmattenedstatusController extends Controller
         if ($student_id != "" && $sub_institute_id != "" && $syear != "" && $date != "") {
             $data = DB::table("ptm_time_slots_master as ps")
                 ->join('standard as cs', function ($join) use($marking_period_id){
-                    $join->whereRaw("cs.id = ps.standard_id")->when($marking_period_id,function($query) use ($marking_period_id){
-                        $query->where('cs.marking_period_id',$marking_period_id);
-                    });
+                    $join->whereRaw("cs.id = ps.standard_id");
+                    // ->when($marking_period_id,function($query) use ($marking_period_id){
+                    //     $query->where('cs.marking_period_id',$marking_period_id);
+                    // });
                 })
                 ->join('tblstudent_enrollment as se', function ($join) {
                     $join->whereRaw("se.standard_id = cs.id");

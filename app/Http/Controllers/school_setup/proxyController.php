@@ -46,9 +46,10 @@ class proxyController extends Controller
             'p.title as period_name',
             DB::raw('concat(sub.subject_name,"(",sub.subject_code,")") as sub_name')
         )->join('standard as s',function($join) use($marking_period_id){
-                $join->on( 's.id', '=', 'proxy_master.standard_id')->when($marking_period_id,function($query) use($marking_period_id){
-                    $query->where('s.marking_period_id',$marking_period_id);
-                });
+                $join->on( 's.id', '=', 'proxy_master.standard_id');
+                // ->when($marking_period_id,function($query) use($marking_period_id){
+                //     $query->where('s.marking_period_id',$marking_period_id);
+                // });
             })
             ->join('division as d', 'd.id', '=', 'proxy_master.division_id')
             ->join('tbluser as u', 'u.id', '=', 'proxy_master.teacher_id')
@@ -97,9 +98,10 @@ class proxyController extends Controller
                 DB::raw('concat(sub.subject_name,"(",sub.subject_code,")") as sub_name')
             )
             ->join('standard as s',function($join) use($marking_period_id){
-                $join->on( 's.id', '=', 'proxy_master.standard_id')->when($marking_period_id,function($query) use($marking_period_id){
-                    $query->where('s.marking_period_id',$marking_period_id);
-                });
+                $join->on( 's.id', '=', 'proxy_master.standard_id');
+                // ->when($marking_period_id,function($query) use($marking_period_id){
+                //     $query->where('s.marking_period_id',$marking_period_id);
+                // });
             })
                 ->join('division as d', 'd.id', '=', 'proxy_master.division_id')
                 ->join('tbluser as u', 'u.id', '=', 'proxy_master.teacher_id')
@@ -164,9 +166,9 @@ class proxyController extends Controller
             ->join('standard AS s', function ($join)  use($marking_period_id){
                 $join->on('s.id', '=', 'timetable.standard_id');
                 $join->on('s.sub_institute_id', '=', 'timetable.sub_institute_id');
-                $join->when($marking_period_id,function($query) use($marking_period_id){
-                    $query->where('s.marking_period_id',$marking_period_id);
-                });
+                // $join->when($marking_period_id,function($query) use($marking_period_id){
+                //     $query->where('s.marking_period_id',$marking_period_id);
+                // });
             })
             ->join('division AS d', function ($join) {
                 $join->on('d.id', '=', 'timetable.division_id');
@@ -375,9 +377,9 @@ class proxyController extends Controller
             ->join('standard AS s', function ($join) use($marking_period_id) {
                 $join->on('s.id', '=', 'proxy_master.standard_id');
                 $join->on('s.sub_institute_id', '=', 'proxy_master.sub_institute_id');
-                $join->when($marking_period_id,function($query) use($marking_period_id){
-                    $query->where('s.marking_period_id',$marking_period_id);
-                });
+                // $join->when($marking_period_id,function($query) use($marking_period_id){
+                //     $query->where('s.marking_period_id',$marking_period_id);
+                // });
             })
             ->join('division AS d', function ($join) {
                 $join->on('d.id', '=', 'proxy_master.division_id');
