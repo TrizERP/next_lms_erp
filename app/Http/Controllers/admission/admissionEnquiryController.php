@@ -34,13 +34,15 @@ class admissionEnquiryController extends Controller
             ->leftJoin('admission_form as af', function ($join) {
                 $join->whereRaw('af.enquiry_id = admission_enquiry.id AND af.sub_institute_id = admission_enquiry.sub_institute_id');
             })->leftJoin('tblstudent', function ($join) use($marking_period_id) {
-                $join->whereRaw('`tblstudent`.`admission_id` = `admission_enquiry`.`id`')->when($marking_period_id,function($query) use ($marking_period_id){
-                    $query->where('tblstudent.marking_period_id',$marking_period_id);
-                });
+                $join->whereRaw('`tblstudent`.`admission_id` = `admission_enquiry`.`id`');
+                // ->when($marking_period_id,function($query) use ($marking_period_id){
+                //     $query->where('tblstudent.marking_period_id',$marking_period_id);
+                // });
             })->leftJoin('standard', function ($join)use($marking_period_id) {
-                $join->whereRaw('`standard`.`id` = `admission_enquiry`.`admission_standard`')->when($marking_period_id,function($query) use ($marking_period_id){
-                    $query->where('standard.marking_period_id',$marking_period_id);
-                });
+                $join->whereRaw('`standard`.`id` = `admission_enquiry`.`admission_standard`');
+                // ->when($marking_period_id,function($query) use ($marking_period_id){
+                //     $query->where('standard.marking_period_id',$marking_period_id);
+                // });
             })->leftJoin('follow_up as fu', function ($join) {
                 $join->whereRaw('fu.id = (SELECT id FROM follow_up AS fu1 WHERE fu1.enquiry_id = admission_enquiry.id ORDER BY fu1.id DESC LIMIT 1)');
             })

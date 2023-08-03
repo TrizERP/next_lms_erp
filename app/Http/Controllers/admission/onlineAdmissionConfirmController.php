@@ -148,9 +148,10 @@ class onlineAdmissionConfirmController extends Controller
                             ->join('tblstudent as s', 's.admission_id', '=', 'n.id')
                             ->join('standard as ss', function ($join) {
                                 $join->on('ss.name', '=', 'n.admission_std')
-                                    ->on('ss.sub_institute_id', '=', 's.sub_institute_id')->when($marking_period_id, function ($query) use ($marking_period_id) {
-                                        $query->where('ss.marking_period_id');
-                                    });
+                                    ->on('ss.sub_institute_id', '=', 's.sub_institute_id');
+                                    // ->when($marking_period_id, function ($query) use ($marking_period_id) {
+                                    //     $query->where('ss.marking_period_id');
+                                    // });
                             })
                             ->join('academic_section as ac', function ($join) {
                                 $join->on('ac.id', '=', 'ss.grade_id')
