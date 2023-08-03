@@ -124,9 +124,10 @@ class van_wise_report_controller extends Controller
                 $join->whereRaw("se.student_id = ts.id AND se.syear = '".session()->get('syear')."' AND se.end_date IS NULL");
             })
             ->join('standard as s', function ($join) use($marking_period_id){
-                $join->whereRaw("s.id = se.standard_id")->when($marking_period_id,function($uqery) use($marking_period_id){
-                    $uqery->where('s.marking_period_id',$marking_period_id);
-                });
+                $join->whereRaw("s.id = se.standard_id");
+                // ->when($marking_period_id,function($uqery) use($marking_period_id){
+                //     $uqery->where('s.marking_period_id',$marking_period_id);
+                // });
             })
             ->join('division as d', function ($join) {
                 $join->whereRaw("d.id = se.section_id");

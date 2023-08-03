@@ -45,9 +45,10 @@ class classteacherController extends Controller
             )
             ->join('academic_section as a', 'a.id', '=', 'ct.grade_id')
             ->join('standard as s',function($join) use($marking_period_id){
-                $join->on( 's.id', '=', 'ct.standard_id')->when($marking_period_id,function($query) use($marking_period_id){
-                    $query->where('s.marking_period_id',$marking_period_id);
-                });
+                $join->on( 's.id', '=', 'ct.standard_id');
+                // ->when($marking_period_id,function($query) use($marking_period_id){
+                //     $query->where('s.marking_period_id',$marking_period_id);
+                // });
             })
             ->join('division as d', 'd.id', '=', 'ct.division_id')
             ->join('tbluser as u', 'u.id', '=', 'ct.teacher_id')

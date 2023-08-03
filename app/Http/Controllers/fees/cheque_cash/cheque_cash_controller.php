@@ -137,9 +137,10 @@ class cheque_cash_controller extends Controller
         $query->join('tblstudent_enrollment as se', $enrollment_join);
         $query->join('academic_section as acs', $grade_join);
         $query->join('standard as s',function($join) use($marking_period_id,$std_join){
-            $join->on($std_join)->when($marking_period_id,function($query) use($marking_period_id){
-                $query->where('s.marking_period_id',$marking_period_id);
-            });
+            $join->on($std_join);
+            // ->when($marking_period_id,function($query) use($marking_period_id){
+            //     $query->where('s.marking_period_id',$marking_period_id);
+            // });
         });
         $query->join('division as d', $div_join);
         $query->join('fees_collect as fc', $paid_join);

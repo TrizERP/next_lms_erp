@@ -110,10 +110,10 @@ class other_fees_collect_controller extends Controller
             })
             ->join('academic_section', 'academic_section.id', '=', 'tblstudent_enrollment.grade_id')
             ->join('standard', function ($join) use($marking_period_id) {
-                $join->on('standard.id', '=', 'tblstudent_enrollment.standard_id')
-                    ->when($marking_period_id, function($query) use($marking_period_id) {
-                        $query->where('standard.marking_period_id',$marking_period_id);
-                    });
+                $join->on('standard.id', '=', 'tblstudent_enrollment.standard_id');
+                    // ->when($marking_period_id, function($query) use($marking_period_id) {
+                    //     $query->where('standard.marking_period_id',$marking_period_id);
+                    // });
             })         
              ->join('division', 'division.id', '=', 'tblstudent_enrollment.section_id')
             ->join('student_quota', 'student_quota.id', '=', 'tblstudent_enrollment.student_quota')

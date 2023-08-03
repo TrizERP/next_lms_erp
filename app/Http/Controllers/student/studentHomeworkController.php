@@ -120,9 +120,10 @@ class studentHomeworkController extends Controller
                 })->join('academic_section as g', function ($join) {
                     $join->whereRaw('g.id = se.grade_id');
                 })->join('standard as st', function ($join) use($marking_period_id) {
-                    $join->whereRaw('st.id = se.standard_id')->when($marking_period_id,function($query) use($marking_period_id) {
-                        $query->where('st.marking_period_id',$marking_period_id);
-                    });
+                    $join->whereRaw('st.id = se.standard_id');
+                    // ->when($marking_period_id,function($query) use($marking_period_id) {
+                    //     $query->where('st.marking_period_id',$marking_period_id);
+                    // });
                 })->join('division as d', function ($join) {
                     $join->whereRaw('d.id = se.section_id');
                 })->join('school_setup as ss', function ($join) {
@@ -315,9 +316,10 @@ class studentHomeworkController extends Controller
             ->join('tblstudent as ts', function ($join) {
                 $join->whereRaw('ts.id = h.student_id AND ts.sub_institute_id = h.sub_institute_id');
             })->join('standard as s', function ($join) use($marking_period_id){
-                $join->whereRaw('h.standard_id = s.id AND h.sub_institute_id = s.sub_institute_id')->when($marking_period_id,function($query) use($marking_period_id){
-                    $query->where('s.marking_period_id',$marking_period_id);
-                });
+                $join->whereRaw('h.standard_id = s.id AND h.sub_institute_id = s.sub_institute_id');
+                // ->when($marking_period_id,function($query) use($marking_period_id){
+                //     $query->where('s.marking_period_id',$marking_period_id);
+                // });
             })->join('division as d', function ($join) {
                 $join->whereRaw('d.id = h.division_id AND h.sub_institute_id= d.sub_institute_id');
             })->join('subject as ss', function ($join) {
@@ -396,9 +398,10 @@ class studentHomeworkController extends Controller
                 ->join('tblstudent as ts', function ($join) {
                     $join->whereRaw('ts.id = h.student_id AND ts.sub_institute_id = h.sub_institute_id');
                 })->join('standard as s', function ($join) use($marking_period_id) {
-                    $join->whereRaw('h.standard_id = s.id AND h.sub_institute_id = s.sub_institute_id')->when($marking_period_id,function($query) use($marking_period_id){
-                        $query->where('s.marking_period_id',$marking_period_id);
-                    } );
+                    $join->whereRaw('h.standard_id = s.id AND h.sub_institute_id = s.sub_institute_id');
+                    // ->when($marking_period_id,function($query) use($marking_period_id){
+                    //     $query->where('s.marking_period_id',$marking_period_id);
+                    // });
                 })->join('division as d', function ($join) {
                     $join->whereRaw('d.id = h.division_id AND h.sub_institute_id= d.sub_institute_id');
                 })->join('subject as ss', function ($join) {
@@ -450,9 +453,10 @@ class studentHomeworkController extends Controller
                 ->join('tblstudent as ts', function ($join) {
                     $join->whereRaw('ts.id = h.student_id AND ts.sub_institute_id = h.sub_institute_id');
                 })->join('standard as s', function ($join) use($marking_period_id) {
-                    $join->whereRaw('h.standard_id = s.id AND h.sub_institute_id = s.sub_institute_id')->when($marking_period_id,function($query) use($marking_period_id){
-                        $query->where('s.marking_period_id',$marking_period_id);
-                    });
+                    $join->whereRaw('h.standard_id = s.id AND h.sub_institute_id = s.sub_institute_id');
+                    // ->when($marking_period_id,function($query) use($marking_period_id){
+                    //     $query->where('s.marking_period_id',$marking_period_id);
+                    // });
                 })->join('division as d', function ($join) {
                     $join->whereRaw('d.id = h.division_id AND h.sub_institute_id= d.sub_institute_id');
                 })->join('subject as ss', function ($join) {

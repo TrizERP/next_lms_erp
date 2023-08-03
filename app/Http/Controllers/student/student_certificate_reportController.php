@@ -44,9 +44,10 @@ class student_certificate_reportController extends Controller
             })->join('tblstudent_enrollment as se', function ($join) {
                 $join->whereRaw('se.student_id = ts.id');
             })->join('standard as s', function ($join) use ($marking_period_id) {
-                $join->whereRaw('s.id = se.STANDARD_ID')->when($marking_period_id,function($query) use($marking_period_id){
-                    $query->where('s.marking_period_id',$marking_period_id);
-                });
+                $join->whereRaw('s.id = se.STANDARD_ID');
+                // ->when($marking_period_id,function($query) use($marking_period_id){
+                //     $query->where('s.marking_period_id',$marking_period_id);
+                // });
             })->join('division as d', function ($join) {
                 $join->whereRaw('d.id = se.SECTION_ID');
             })->selectRaw("sr.*,ts.enrollment_no, CONCAT_WS(' ',ts.first_name,ts.last_name) AS student_name,
