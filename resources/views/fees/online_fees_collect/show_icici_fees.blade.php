@@ -209,16 +209,14 @@
                                             <td>Collection Amount</td>
                                             <td></td>
                                             <!--<td><input type="number" id="pay_amount" name="pay_amount" max="{{$data['final_fee']['Total']}}" class="form-control" value="{{$data['final_fee']['Total']}}"></td>-->
-                                            <td><input type="number" id="pay_amount" name="pay_amount" max="<?php echo $pay_amount; ?>" class="form-control" value="<?php echo $pay_amount; ?>"></td>
+                                            <td><input type="number" id="pay_amount" name="pay_amount" max="<?php echo $pay_amount; ?>" class="form-control" value="<?php echo $pay_amount; ?>" readonly="readonly"></td>
                                         </tr>
                                     <?php } ?>
                                 </table>
                             </div>
                             <div class="table-responsive col-md-12">
-                                <div class="col-md-6 form-group">
-
-                                </div>
-                                <div class="col-md-6 form-group">
+                                <div class="col-md-4 text-center form-group"></div>
+                                <div class="col-md-4 text-center form-group">
                                     <?php
                                     if ($data['error'] == "") {
                                         ?>
@@ -231,7 +229,8 @@
                                     }
                                     ?>
                                 </div>
-                            </div>
+                                <div class="col-md-4 text-center form-group"></div>
+                            </div><br/><br/><br/>
                         </form>
                     </div>
                 </div>

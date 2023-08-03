@@ -165,7 +165,7 @@ br{
                                 <div class="col-md-1 form-group">
                                         <input type="hidden" name="action" value="search">
 
-                                    <input type="submit" name="submit" value="Search" class="btn btn-success">
+                                    <input type="submit" name="search" value="Search" class="btn btn-success">
                                     <!-- <input type="button" name="search" value="hello" class="btn btn-success" onclick="search_questionList();"> -->
                                 </div> 
             @endif
@@ -350,7 +350,7 @@ br{
                                     <td>{{$data2['sort_order']}}</td>
                                     <td>@if(isset($data2['topic_name'])){{$data2['topic_name']}}@endif</td>
                                     <td>{{$data2['question_type']}}</td>
-                                    <td>{{$data2['correct_answer']}}</td>
+                                    <td><input type="hidden" value="{{$data2['correct_answer']}}" name="correct_answer">{{$data2['correct_answer']}}</td>
                                     <td>{{$data2['points']}}</td>
                                     <td>@if(isset($data2['LMS_MAPPING_DATA'])){!! $data2['LMS_MAPPING_DATA'] !!}@endif</td>
                                     </tr>
@@ -367,7 +367,6 @@ br{
                         }    
                         @endphp
                            <input type="hidden" name="edit_id" value="@if(isset($data['edit_id'])){{$data['edit_id']}} @endif">                        
-
                         <input type="hidden" id="hidden_question_ids" name="hidden_question_ids" value={{$question_ids}}>
                         <div class="col-md-12 form-group">
                             <center>
@@ -556,87 +555,27 @@ $("#subject").change(function(){
 })
 //END Load Questions
 
-function search_questionList()
-{
-    get_questionList(); //Bind Question List
-}
 
-function get_questionList()
-{
-    var subject = $("#subject").val();        
-    var standard = $("#standard").val(); 
-    var search_chapter = $("#search_chapter").val(); 
-    var search_topic = $("#search_topic").val(); 
-    var search_mapping_type = $("#search_mapping_type").val(); 
-    var search_mapping_value = $("#search_mapping_value").val(); 
-
-    var extra_search = "";
-    if(search_chapter != "")
-    {
-        extra_search += "&search_chapter="+search_chapter;
-    }
-    if(search_topic != "")
-    {
-        extra_search += "&search_topic="+search_topic;
-    }
-    if(search_mapping_type != "")
-    {
-        extra_search += "&search_mapping_type="+search_mapping_type;
-    }
-    if(search_mapping_value != "")
-    {
-        extra_search += "&search_mapping_value="+search_mapping_value;
-    }
-
-    var path = "{{ route('ajax_SubjectwiseQuestion') }}";  
-    $.ajax({
-        url:path,
-        data:'sub_id='+subject+'&std_id='+standard+extra_search,
-        success:function(result){             
-            $("#questiondiv").css("display", "block")           
-            $("#questiontable_tbody").empty();                        
-                console.log(result);
-
-            var hidden_question_ids = $("#hidden_question_ids").val();   
-            for(var i=0;i <= result.length ;i++)
-            {
-                // console.log(result[i]['question_title']);
-                var sel = "";
-                     
-                if(hidden_question_ids != "")
-                {        
-                    edit_question_ids = hidden_question_ids.split(",");        
-                    for (j = 0; j < edit_question_ids.length; j++) {                       
-                        if(result[i]['id'] == edit_question_ids[j])
-                        {
-                            sel = "checked";
-                        }
-                    }
-                } 
-
-                $("#questiontable_tbody").append('<tr class="child"><td><input type="checkbox" '+sel+' onclick="add_question();" name="questions[]" title="'+result[i]['points']+'" value="'+result[i]['id']+'"></td><td>'+result[i]['question_title']+'</td><td>'+result[i]['chapter_name']+'</td><td>'+result[i]['sort_order']+'</td><td>'+result[i]['topic_name']+'</td><td>'+result[i]['question_type']+'</td><td>'+result[i]['correct_answer']+'</td><td>'+result[i]['points']+'</td><td>'+result[i]['LMS_MAPPING_DATA']+'<td></td></tr>');            
-                  MathJax.Hub.Queue(["Typeset",MathJax.Hub,"questiontable_tbody"]);                
-            }
-
-            if(result.length == 0)
-            {
-                $("#questiontable_tbody").append('<tr class="child"><td colspan="9">No Questions Found</td>');
-            }
-        }         
-    });
-}
-
-function add_question(points){
+function add_question(points) {
     var checked_questions = total_marks = 0;
-    $("input[name='questions[]']:checked").each(function ()
-    {
+
+    $("input[name='questions[]']:checked").each(function () {
         var val = $(this).attr('title');
         total_marks = parseInt(total_marks) + parseInt(val);
         checked_questions = checked_questions + 1;
+
+        var correctAnswer = $(this).closest('tr').find("input[name='correct_answer']").val();
+        console.log(correctAnswer);
+        // Display the correct answer in an alert for the current selected checkbox
+        if (correctAnswer && correctAnswer == '-' || correctAnswer == 'NULL' || correctAnswer == '') {
+            alert("Answer of selected question not mapped . Please map answer first");
+            $(this).prop('checked', false);
+        }
     });
+
     $("#total_ques").val(checked_questions);   
     $("#total_marks").val(total_marks);
-    $("#total_marks").attr(checked);              
+    $("#total_marks").attr('checked', 'checked');
 }
 
 function check_validation()
