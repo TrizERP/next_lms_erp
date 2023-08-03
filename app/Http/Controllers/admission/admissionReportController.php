@@ -46,9 +46,10 @@ class admissionReportController extends Controller
                 })->leftJoin('follow_up as fu', function ($join) {
                     $join->whereRaw('fu.enquiry_id = ai.id AND fu.sub_institute_id = ai.sub_institute_id');
                 })->join('standard as s', function ($join) use ($marking_period_id){
-                    $join->whereRaw('s.id = ai.admission_standard AND s.sub_institute_id = ai.sub_institute_id')->when($marking_period_id,function($query) use($marking_period_id){
-                        $query->where('s.marking_period_id',$marking_period_id);
-                    });
+                    $join->whereRaw('s.id = ai.admission_standard AND s.sub_institute_id = ai.sub_institute_id');
+                    // ->when($marking_period_id,function($query) use($marking_period_id){
+                    //     $query->where('s.marking_period_id',$marking_period_id);
+                    // });
                 })
                 ->selectRaw("ai.enquiry_no, DATE_FORMAT(ai.created_on, '%d-%m-%Y %h:%i:%s') as created_on, DATE_FORMAT(ai.followup_date, '%d-%m-%Y') as followup_date, ai.first_name, ai.middle_name, ai.last_name,
                     ai.gender, ai.mobile, ai.email, ai.address, DATE_FORMAT(ai.date_of_birth, '%d-%m-%Y') as date_of_birth, ai.age, ai.syear, ai.previous_school_name,ai.previous_standard,
@@ -331,9 +332,10 @@ class admissionReportController extends Controller
                 })->join('tbluser as ts', function ($join) {
                     $join->whereRaw('ts.id = ar.created_by AND ts.sub_institute_id = ai.sub_institute_id');
                 })->join('standard as s', function ($join) use($marking_period_id) {
-                    $join->whereRaw('s.id = ai.admission_standard AND s.sub_institute_id = ai.sub_institute_id')->when($marking_period_id,function($query) use($marking_period_id){
-                        $query->where('s.marking_period_id',$marking_period_id);
-                    });
+                    $join->whereRaw('s.id = ai.admission_standard AND s.sub_institute_id = ai.sub_institute_id');
+                    // ->when($marking_period_id,function($query) use($marking_period_id){
+                    //     $query->where('s.marking_period_id',$marking_period_id);
+                    // });
                 })->join('std_div_map as sd', function ($join) {
                     $join->whereRaw('sd.standard_id = ai.admission_standard AND sd.sub_institute_id = ai.sub_institute_id');
                 })->join('division as d', function ($join) {
@@ -413,9 +415,10 @@ class admissionReportController extends Controller
                 ->join('follow_up as fu', function ($join) {
                     $join->whereRaw("fu.enquiry_id = ae.id AND fu.sub_institute_id = ae.sub_institute_id AND fu.module_type = 'enquiry'");
                 })->join('standard as st', function ($join) use($marking_period_id) {
-                    $join->whereRaw('st.id = ae.admission_standard AND st.sub_institute_id = ae.sub_institute_id')->when($marking_period_id,function($query) use($marking_period_id){
-                        $query->where('st.marking_period_id',$marking_period_id);
-                    });
+                    $join->whereRaw('st.id = ae.admission_standard AND st.sub_institute_id = ae.sub_institute_id');
+                    // ->when($marking_period_id,function($query) use($marking_period_id){
+                    //     $query->where('st.marking_period_id',$marking_period_id);
+                    // });
                 })
                 ->selectRaw("ae.id AS enquiry_id,ae.enquiry_no,DATE_FORMAT(ae.created_on,'%d-%m-%Y') AS enquiry_date,
 						CONCAT_WS(' ',ae.first_name,ae.middle_name,ae.last_name) AS student_name,
