@@ -33,9 +33,10 @@ class admissionFormController extends Controller
             })->leftJoin('tblstudent as ts', function ($join) {
                 $join->whereRaw('ts.admission_id = ae.id AND ts.admission_year = ae.syear AND ts.sub_institute_id = ae.sub_institute_id');
             })->leftJoin('standard as s', function ($join) use ($sub_institute_id,$marking_period_id) {
-                $join->whereRaw("s.id = ae.admission_standard AND s.sub_institute_id = '".$sub_institute_id."'")->when($marking_period_id,function($query) use ($marking_period_id){
-                    $query->where('tblstudent.marking_period_id',$marking_period_id);
-                });
+                $join->whereRaw("s.id = ae.admission_standard AND s.sub_institute_id = '".$sub_institute_id."'");
+                // ->when($marking_period_id,function($query) use ($marking_period_id){
+                //     $query->where('tblstudent.marking_period_id',$marking_period_id);
+                // });
             })
             ->selectRaw('ae.*,COUNT(ts.id) AS total_student_count,ae.remarks AS enquiry_remark,s.name AS std_name,af.form_no,
                 af.admission_docket_no,af.registration_no,af.id as form_id,af.admission_form_fee,af.receipt_id,af.receipt_html')
@@ -98,9 +99,10 @@ class admissionFormController extends Controller
 
         $selected_standard = DB::table('standard as s')
             ->join('academic_section as a', function ($query) use($marking_period_id) {
-                $join->whereRaw('a.id = s.grade_id AND a.sub_institute_id = s.sub_institute_id')->when($marking_period_id,function($join) use ($marking_period_id){
-                    $query->where('tblstudent.marking_period_id',$marking_period_id);
-                });
+                $join->whereRaw('a.id = s.grade_id AND a.sub_institute_id = s.sub_institute_id');
+                // ->when($marking_period_id,function($join) use ($marking_period_id){
+                //     $query->where('tblstudent.marking_period_id',$marking_period_id);
+                // });
             })
             ->selectRaw("s.id,s.grade_id,s.sub_institute_id,s.name AS std_name,s.short_name AS std_sort_name,
                 a.title AS grade,a.short_name AS grade_short_name")
@@ -115,9 +117,11 @@ class admissionFormController extends Controller
             $FORM_NO = $this->get_form_no($sub_institute_id, $syear, $selected_standard[0]['grade']);
         }
 
-        $standard = standardModel::where(['sub_institute_id' => $sub_institute_id])->when($marking_period_id,function($query) use ($marking_period_id){
-            $query->where('marking_period_id',$marking_period_id);
-        })->get()->toArray();
+        $standard = standardModel::where(['sub_institute_id' => $sub_institute_id])
+        // ->when($marking_period_id,function($query) use ($marking_period_id){
+        //     $query->where('marking_period_id',$marking_period_id);
+        // })
+        ->get()->toArray();
 
         $dataCustomFields = tblcustomfieldsModel::where(['status' => "1", 'table_name' => "admission_form"])
             ->whereRaw('(sub_institute_id = '.$sub_institute_id.' OR common_to_all = 1)')
@@ -209,9 +213,11 @@ class admissionFormController extends Controller
 
             $standard = standardModel::where([
                 'id' => $all_data[0]['admission_standard'], 'sub_institute_id' => $sub_institute_id,
-            ])->when($marking_period_id,function($query) use ($marking_period_id){
-                $query->where('marking_period_id',$marking_period_id);
-            })->get()->toArray();
+            ])
+            // ->when($marking_period_id,function($query) use ($marking_period_id){
+            //     $query->where('marking_period_id',$marking_period_id);
+            // })
+            ->get()->toArray();
             $standard_name = $standard[0]['name'];
 
             $style = '<style type="text/css">
