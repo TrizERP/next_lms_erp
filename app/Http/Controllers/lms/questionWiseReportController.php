@@ -55,8 +55,9 @@ class questionWiseReportController extends Controller
             ->join('tblstudent_enrollment as tse', function ($join) {
                 $join->whereRaw('tse.student_id = ts.id');
             })->join('standard as std', function ($join) use($marking_period_id){
-                $join->whereRaw('std.id = tse.standard_id')->when($marking_period_id,function($query) use($marking_period_id){
-                    $query->where('std.marking_period_id',$marking_period_id);
+                $join->whereRaw('std.id = tse.standard_id');
+                // ->when($marking_period_id,function($query) use($marking_period_id){
+                //     $query->where('std.marking_period_id',$marking_period_id);
                 });
             })->join('std_div_map as sdm', function ($join) {
                 $join->whereRaw('sdm.standard_id = std.id');

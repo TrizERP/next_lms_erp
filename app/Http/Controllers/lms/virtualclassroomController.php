@@ -40,8 +40,9 @@ class virtualclassroomController extends Controller
             'academic_section.title as grade_name',
             'subject_name', 'chapter_name', 'tm.name as topic_name', 'stm.name as sub_topic_name')
             ->join('standard',function($join) use($marking_period_id){
-                $join->on('standard.id', '=', 'content_master.standard_id')->when($marking_period_id,function($query) use($marking_period_id){
-                    $query->where('s.marking_period_id',$marking_period_id);
+                $join->on('standard.id', '=', 'content_master.standard_id');
+                // ->when($marking_period_id,function($query) use($marking_period_id){
+                //     $query->where('s.marking_period_id',$marking_period_id);
                 });
             })
             ->join('academic_section', 'academic_section.id', '=', 'content_master.grade_id')

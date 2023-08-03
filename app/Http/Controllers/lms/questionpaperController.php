@@ -64,9 +64,10 @@ class questionpaperController extends Controller
                     date_format(open_date,"%Y-%m-%d") as open_date,date_format(close_date,"%Y-%m-%d") as close_date,
                     if(now() between open_date and close_date,"yes","no") as active_exam'))
                     ->join('standard', function($join) use($marking_period_id){
-                        $join->on('standard.id', '=', 'question_paper.standard_id')->when($marking_period_id,function($query) use($marking_period_id){
-                            $query->where('standard.marking_period_id',$marking_period_id);
-                        });
+                        $join->on('standard.id', '=', 'question_paper.standard_id');
+                        // ->when($marking_period_id,function($query) use($marking_period_id){
+                        //     $query->where('standard.marking_period_id',$marking_period_id);
+                        // });
                     })
                     ->join('academic_section', 'academic_section.id', '=', 'question_paper.grade_id')
                     ->join('subject', 'subject.id', '=', 'question_paper.subject_id')
