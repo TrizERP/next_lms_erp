@@ -71,8 +71,8 @@ class ExcelDownloadController extends Controller implements FromCollection, With
             ->where('se.section_id', $division)
             ->groupByRaw('s.id')->get()->toArray();
 
+                $standard_name = DB::table('standard')->where(['id'=>$standard,'sub_institute_id'=>$sub_institute_id])->get();
         // $exam_name = DB::table('result_create_exam')->whereIn('id', $exams)->select('title as paper_name', 'points as total_marks')->get();
-
         $headers = [
             'student_id',
             'standard_id',
@@ -86,7 +86,7 @@ class ExcelDownloadController extends Controller implements FromCollection, With
         $this->headers = $headers;
 
       // Export the data to Excel
-        return Excel::download($this, 'Result_Marks.xlsx');
+        return Excel::download($this, 'Result_Marks-'.$standard_name[0]->name .'.xlsx');
 
     }
 
