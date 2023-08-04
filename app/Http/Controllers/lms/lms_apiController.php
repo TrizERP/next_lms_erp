@@ -8,6 +8,8 @@ use App\Models\lms\lmsOnlineExamAnswerModel;
 use App\Models\lms\lmsOnlineExamModel;
 use App\Models\lms\lmsQuestionMasterModel;
 use App\Models\lms\questionpaperModel;
+use App\Models\lms\topicModel;
+use App\Models\lms\contentModel;
 use App\Models\student\tblstudentEnrollmentModel;
 use GenTux\Jwt\GetsJwtToken;
 use Illuminate\Http\Request;
@@ -323,44 +325,68 @@ class lms_apiController extends Controller
 
         if($student_id != "" && $sub_institute_id != "" && $syear != "" && $subject_id != "")
         {         
-            $chapterdata = DB::select("SELECT c.id AS chapter_id,c.syear,c.standard_id,c.subject_id,c.chapter_name,c.chapter_desc,c.availability,c.show_hide,c.sort_order
-                            FROM tblstudent s
-                            INNER JOIN tblstudent_enrollment se ON s.id = se.student_id
-                            INNER JOIN chapter_master c ON c.sub_institute_id = se.sub_institute_id AND c.standard_id = se.standard_id           
-                            WHERE s.sub_institute_id = '".$sub_institute_id."' AND s.id = '".$student_id."' AND se.syear = '".$syear."' 
-                            AND c.subject_id = '".$subject_id."'  AND c.show_hide = '1'
-                            ORDER BY c.sort_order
-                             ");// AND c.syear = se.syear
+            $chapterdata = DB::select("SELECT c.id AS chapter_id, c.syear, c.standard_id, c.subject_id, c.chapter_name, c.chapter_desc, c.availability, c.show_hide, c.sort_order, ssm.add_content
+                    FROM tblstudent s
+                    INNER JOIN tblstudent_enrollment se ON s.id = se.student_id
+                    INNER JOIN chapter_master c ON c.sub_institute_id = se.sub_institute_id AND c.standard_id = se.standard_id
+                    INNER JOIN sub_std_map ssm ON c.subject_id = ssm.subject_id AND c.standard_id = ssm.standard_id
+                    WHERE s.sub_institute_id = '".$sub_institute_id."' AND s.id = '".$student_id."' AND se.syear = '".$syear."'
+                    AND c.subject_id = '".$subject_id."' AND c.show_hide = '1'
+                    ORDER BY c.sort_order");
+                    // AND c.syear = se.syear
+            //echo("<pre>");print_r($chapterdata);exit;
             $chapterdata = json_decode(json_encode($chapterdata),true);
             $finaldata = array();
             if(count($chapterdata) > 0)
             {          
-                foreach($chapterdata as $key => $val)
-                {                
+                foreach ($chapterdata as $key => $val) {
                     $chapter_id = $val['chapter_id'];
-                    $topicData = DB::select("SELECT * FROM topic_master 
-                                WHERE sub_institute_id = '".$sub_institute_id."' AND chapter_id = '".$chapter_id."' 
-                                AND topic_show_hide = '1'
-                                ORDER BY topic_sort_order
-                                ");//AND syear = '".$syear."' 
-                    $topicData = json_decode(json_encode($topicData),true);  
-
-                    $finaldata[$chapter_id] = $val;
-                    $finaldata[$chapter_id]['topicData'] = $topicData;
-
-                    if(count($topicData) > 0)
-                    {
-                        foreach($topicData as $tkey => $tval)
-                        {
-                            $contentData = DB::select("SELECT *, 
-                                        if(filename = '','',
-                                            if(file_type = 'link',filename,concat('https://".$_SERVER['SERVER_NAME']."/storage',file_folder,'/',filename))) as full_path 
-                                        FROM content_master 
-                                        WHERE sub_institute_id = '".$sub_institute_id."' AND chapter_id = '".$chapter_id."'  
-                                        AND topic_id = '".$tval['id']."' AND subject_id = '".$subject_id."' AND show_hide = '1'                                 
-                                        ");//AND syear = '".$syear."'
-                            $contentData = json_decode(json_encode($contentData),true);
-                            $finaldata[$chapter_id]['topicData'][$tkey]['contentData'] = $contentData;  
+                    if ($val['add_content'] == "topicwise") {
+                        $topicData = DB::select("SELECT * FROM topic_master 
+                            WHERE sub_institute_id = '".$sub_institute_id."' AND chapter_id = '".$chapter_id."' 
+                            AND topic_show_hide = '1'
+                            ORDER BY topic_sort_order
+                            ");
+                        $topicData = json_decode(json_encode($topicData), true);
+                        $finaldata[$chapter_id] = $val;
+                        $finaldata[$chapter_id]['topicData'] = $topicData;
+                    } else {
+                        $topicData = contentModel::join('topic_master', 'content_master.topic_id', '=', 'topic_master.id')
+                            ->where('content_master.sub_institute_id', $sub_institute_id)
+                            ->where('content_master.chapter_id', $chapter_id)
+                            ->where('content_master.show_hide', '1')
+                            //->orderBy('content_master.sort_order', )
+                            ->select('topic_master.id as topic_id', 'content_master.sub_institute_id', 'content_master.chapter_id', 'topic_master.main_topic_id' , 'content_master.title', 'content_master.description', 'topic_master.chapter_id', 'topic_master.topic_sort_order', 'content_master.syear', 'content_master.created_at', 'topic_master.created_by')
+                            ->get();
+                        $topicData = json_decode(json_encode($topicData), true);
+                        $finaldata[$chapter_id] = $val;
+                        $finaldata[$chapter_id]['topicData'] = $topicData;
+                    }
+                
+                    if (count($topicData) > 0) {
+                        foreach ($topicData as $tkey => $tval) {
+                            // Check if the key 'topic_id' exists in the $tval array before accessing it.
+                            if (isset($tval['topic_id'])) {
+                                $contentData = DB::select("SELECT *, 
+                                    if(filename = '', '',
+                                        if(file_type = 'link', filename, concat('https://".$_SERVER['SERVER_NAME']."/storage', file_folder, '/', filename))) as full_path 
+                                    FROM content_master 
+                                    WHERE sub_institute_id = '".$sub_institute_id."' AND chapter_id = '".$chapter_id."'  
+                                    AND topic_id = '".$tval['topic_id']."' AND subject_id = '".$subject_id."' AND show_hide = '1'");
+                                $contentData = json_decode(json_encode($contentData), true);
+                                $finaldata[$chapter_id]['topicData'][$tkey]['contentData'] = $contentData;
+                            }
+                            else
+                            {
+                                $contentData = DB::select("SELECT *, 
+                                    if(filename = '', '',
+                                        if(file_type = 'link', filename, concat('https://".$_SERVER['SERVER_NAME']."/storage', file_folder, '/', filename))) as full_path 
+                                    FROM content_master 
+                                    WHERE sub_institute_id = '".$sub_institute_id."' AND chapter_id = '".$chapter_id."'  
+                                    AND topic_id = '".$tval['id']."' AND subject_id = '".$subject_id."' AND show_hide = '1'");
+                                $contentData = json_decode(json_encode($contentData), true);
+                                $finaldata[$chapter_id]['topicData'][$tkey]['contentData'] = $contentData;
+                            }
                         }
                     }
                 }

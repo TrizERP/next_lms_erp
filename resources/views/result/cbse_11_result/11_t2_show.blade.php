@@ -145,6 +145,7 @@
             <tr>
             <td style="text-align:left"><?php echo $subject; ?></td>
             <?php
+            $total_avg = 0;
             $theory_total = $theory_gain = $grand_total = $grand_obt = $term2_total = $term2_obt = 0;
             foreach($subject_data as $stud_id => $stud_data){
            
@@ -293,7 +294,7 @@ if($subject != "MATHEMATICS"){
                  ?>
                  <td style="text-align:center"><?php echo $term2_obt; ?></td>
                  <td style="text-align:center"><?php echo $grand_obt; ?></td>
-                 <td style="text-align:center"><?php echo $total_avg; ?></td> <!--."**".$theory_gain."/".$theorytotal."=".$total_per."% ->failed-".$failed;-->
+                 <td style="text-align:center"><?php echo isset($total_avg) ? $total_avg : 'N/A'; ?></td> 
                  </tr>
                  <?php
                  	if($total_avg != "N.A." && $total_avg != "EX"){
