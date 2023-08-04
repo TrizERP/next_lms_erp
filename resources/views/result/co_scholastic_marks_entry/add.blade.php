@@ -65,6 +65,33 @@
 
                     </form>
                 </div>
+
+                  @php
+                $users = ["Admin"];
+                @endphp
+                @if(in_array(session()->get('user_profile_name'),$users))
+                <form action="{{ route('co_scholastic_marks_entry_approve') }}" enctype="multipart/form-data" method="post" style="margin-top:40px">
+                        {{ method_field("POST") }}
+                        {{csrf_field()}}
+                        <div class="row mb-2 mt-6"> 
+                            <div class="col-md-6 text-right ">
+                                <label for="approve">Approved</label> 
+                                <input type="checkbox" name="approve" id="approve" value="1" @if(isset($data['approve_status']) && $data['co_scholastic']==$data['approve_status']->exam_id && $data['approve_status']->status ==1) checked @endif>
+                            </div> 
+                            <div class="col-md-6">
+                                <input type="hidden" name="term_id" value="{{$data['term_id']}}">
+                                <input type="hidden" name="standard_id" value="{{$data['standard']}}">
+                                <input type="hidden" name="division_id" value="{{$data['division']}}">
+                                <input type="hidden" name="subject_id" value="0">
+                                <input type="hidden" name="exam_id" value="{{$data['co_scholastic']}}">
+
+                                <input type="submit"  class="btn btn-outline-secondary" name="submit" id="submit" Value="Approved Marks">
+                            </div>
+                            <!-- subject_id,standard_id,division_id,exam_id,term_id,status,sub_institute_id,created_by,module_name -->
+                        </div> 
+                    </form>
+                        @endif
+
                 <div class="col-lg-12 col-sm-12 col-xs-12">
                     @php
                     if(isset($data['stu_data'])){
@@ -100,10 +127,19 @@
                             <td>@php echo $id+1; @endphp</td>
                             <td>@php echo $col_arr['name']; @endphp</td>
                             @php
+                            $disable = "";
+                            
                             if($data['mark_type'] == 'GRADE'){
+                           
                             $name = "values[".$col_arr['student_id']."][grade]";
+                            if(isset($data['approve_status']) && $data['approve_status']->status ==1 && $data['stu_data'][$id][$col_arr['student_id']]['grade_marks']!==0 && $data['co_scholastic']==$data['approve_status']->exam_id){
+                                $disable="disabled";
+                            @endphp
+                                <input type="hidden" name="{{$name}}" value="{{$data['stu_data'][$id][$col_arr['student_id']]['grade_marks']}}">
+                            @php
+                            }
                             echo "<td>
-                                <select name=$name id='grade' class='form-control'>
+                                <select name=$name id='grade' class='form-control' $disable>
                                     <option value=''>Select</option>";
                                     foreach ($data["co_scholastic_grade_dd"] as $id_dd=>$arr_dd){
                                     $selected = "";
@@ -117,11 +153,14 @@
                             </td>';
                             }
                             else{
+                                if(isset($data['approve_status']) && $data['approve_status']->status ==1 && $data['co_scholastic']==$data['approve_status']->exam_id){
+                                $disable="disabled";
+                            }
                             $name = "values[".$col_arr['student_id']."][points]";
                             $value = $col_arr['points'];
                             $max_mark = $col_arr['outof'];
-                            echo "<td> <input type=text class=att name=$name style='width: 50px;' value=$value /> Out Of <lable>$max_mark</lable></td>";
-                            }
+                            echo '<td> <input type="text" class="att" name="' . $name . '" style="width: 50px;" onchange="check_input(this, ' . $col_arr["outof"] . ')" ' . $disable . ' value="' . $value . '" /> Out Of <label>' . $max_mark . '</label></td>';
+}
                             @endphp
 
                             </tr>
@@ -137,6 +176,8 @@
                         </div>
 
                     </form>
+
+              
                     @php
                     }else{
                     echo "No Student Found.";
@@ -248,5 +289,29 @@
         }
 
     });
+
+    
+    function check_input(inputElement,outof) {
+    var inputValue = inputElement.value;
+    var values = inputValue.trim().split(/\s+/); 
+    var totalValue = 0;
+    var isValidValue = 0;
+
+    var isValidValue = false;
+
+    for (var i = 0; i < values.length; i++) {
+        var intValue = parseInt(values[i]);
+        if (!isNaN(intValue)) {
+            totalValue += intValue;
+        } 
+    }
+
+    if (totalValue > outof) {
+        alert("Total value cannot be greater than " + outof + ".");
+        inputElement.value =0;    
+        }
+
+}
+
 </script>
 @include('includes.footer')

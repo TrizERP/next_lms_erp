@@ -66,9 +66,11 @@ class courseController extends Controller
 
         $query = DB::table('sub_std_map AS s')  
             ->join('standard AS STD', function ($join) use ($marking_period_id){
-                $join->on('STD.id', '=', 's.standard_id')->when($marking_period_id,function ($query) use ($marking_period_id){
-                    $query->where('STD.marking_period_id',$marking_period_id);
-                }); })
+                $join->on('STD.id', '=', 's.standard_id');
+                // ->when($marking_period_id,function ($query) use ($marking_period_id){
+                //     $query->where('STD.marking_period_id',$marking_period_id);
+                // });
+                 })
             ->leftJoin('timetable AS t', function ($join) use ($syear, $user_id, $sub_institute_id, $extra) {
                 $join->on('t.standard_id', '=', 's.standard_id')
                     ->on('t.subject_id', '=', 's.subject_id')

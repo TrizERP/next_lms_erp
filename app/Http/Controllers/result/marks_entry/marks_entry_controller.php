@@ -42,7 +42,51 @@ class marks_entry_controller extends Controller
 
         return is_mobile($type, "result/marks_entry/show", $data, "view");
     }
+    public function approve(Request $request)
+    {
+        // return $request;exit;
+        $sub_institute_id = session()->get('sub_institute_id');
+        $term_id=$request->term_id;
+        $standard_id = $request->standard_id;
+        $division_id = $request->division_id;
+        $subject_id = $request->subject_id;
+        $exam_id = $request->exam_id;
+        $user = session()->get('user_id');        
+        $module_name = "result_mark";
 
+        $data=[
+            "subject_id"=>$subject_id,
+            "standard_id"=>$standard_id,
+            "division_id"=>$division_id,
+            "exam_id"=>$exam_id,
+            "term_id"=>$term_id,      
+            "sub_institute_id"=>$sub_institute_id,      
+            "module_name"=>$module_name,
+        ];
+    
+        $check = DB::table('result_exam_approve')->where($data)->get()->toArray();
+
+        if(!empty($check) && $check > 0){
+            $query = DB::table('result_exam_approve')->where($data)->update(['status'=>$request->approve ?? 0,'created_by'=>$user,'updated_at'=>now()]);
+            $res = [
+                "status_code" => 1,
+                "message"     => "Data Upadted",
+                "class"       => "success",
+            ];
+        }else{
+            $data += ['status'=>$request->approve ?? 0,'created_by'=>$user,'created_at'=>now()];            
+            $query = DB::table('result_exam_approve')->insert($data);
+            $res = [
+                "status_code" => 1,
+                "message"     => "Data Saved",
+                "class"       => "success",
+            ];
+        }
+   
+        $type = $request->input('type');
+
+        return is_mobile($type, "marks_entry.index", $res, "redirect");
+    }
     public function get_marks_dd()
     {
         $sub_institute_id = $_REQUEST["sub_institute_id"];
@@ -182,6 +226,8 @@ class marks_entry_controller extends Controller
 
         $student_data = SearchStudent($_REQUEST['grade'], $_REQUEST['standard'], $_REQUEST['division']);
         $grd_data = $this->getGreadData($_REQUEST['standard']);
+       
+        
         //marks_entry
         $type = $request->input('type');
 
@@ -201,6 +247,18 @@ class marks_entry_controller extends Controller
         $responce_arr['exam_dd'] = $this->getExamDD($_REQUEST["term"], $_REQUEST["standard"], $_REQUEST['subject']);
         $responce_arr['exam'] = $_REQUEST['exam'];
         $responce_arr['grd_data'] = $grd_data;
+
+        $approve_status=[
+            "subject_id"=>$_REQUEST['subject'],
+            "standard_id"=>$_REQUEST["standard"],
+            "division_id"=>$_REQUEST['division'],
+            "exam_id"=>$_REQUEST['exam'],
+            "term_id"=>$_REQUEST["term"],      
+            "sub_institute_id"=>session()->get('sub_institute_id'),      
+            "module_name"=>"result_mark",
+        ];
+        $check_approve = DB::table('result_exam_approve')->where($approve_status)->first();
+        $responce_arr['approve_status'] = $check_approve;
         $attendance_data = "";
         if (! empty($student_data)) {
             foreach ($student_data as $id => $arr) {
@@ -529,36 +587,6 @@ class marks_entry_controller extends Controller
      */
     public function store(Request $request)
     {
-        // $new_data = array(
-        //     "3117" => array(
-        //             "exam_id" => 206,
-        //             "points" => 10,
-        //             "per" => "10.00%",
-        //             "grade" => "A2",
-        //             "comment" => "",
-        //         ),
-        //     "3118" => array(
-        //             "exam_id" => 206,
-        //             "points" => 10,
-        //             "per" => "10.00%",
-        //             "grade" => "A2",
-        //             "comment" => "",
-        //         ),
-        // );
-        // echo ('<pre>');print_r(json_encode($new_data));exit;
-        //
-        //        echo "<pre>";
-        //        print_r($_REQUEST);
-        //        exit;
-        //         'id',
-        //        'student_id',
-        //        'exam_id',
-        //        'points',
-        //        'grade',
-        //        'per',
-        //        'comment',
-        //        'is_absent',
-        //        'sub_institute_id'
 
         $sub_institute_id = session()->get('sub_institute_id');
         $all_data = [];
@@ -571,14 +599,88 @@ class marks_entry_controller extends Controller
         }
 
         foreach ($all_data as $student_id => $arr) {
-            marks_entry::where([
+           $check = marks_entry::where([
                 'sub_institute_id' => $sub_institute_id,
                 'student_id'       => $student_id,
                 'exam_id'          => $arr['exam_id'],
-            ])->delete();
+            ])->get()->toArray();
+            if(!empty($check) && $check>0){
+                if ($arr['points'] != '') {
+                if (preg_match("/[a-z]/i", $arr['points']) ) {
+                    if (strtoupper($arr['points']) == "AB" || strtoupper($arr['points']) == "N.A." || strtoupper($arr['points']) == "EX") {
+                    $data =[
+                        'student_id'       => $student_id,
+                        'exam_id'          => $arr['exam_id'],
+                        'points'           => 0,
+                        'per'              => 0,
+                        'grade'            => $arr['grade'],
+                        'comment'          => $arr['comment'],
+                        'is_absent'        => $arr['points'],
+                        'sub_institute_id' => $sub_institute_id,
+                    ]; 
+                }else{
+                    $data =[
+                        'student_id'       => $student_id,
+                        'exam_id'          => $arr['exam_id'],
+                        'points'           => 0,
+                        'per'              => 0,
+                        'grade'            => $arr['grade'],
+                        'comment'          => $arr['comment'],
+                        'is_absent'        => "AB",
+                        'sub_institute_id' => $sub_institute_id,
+                    ];   
+                    }
+                    marks_entry::where([
+                        'sub_institute_id' => $sub_institute_id,
+                        'student_id'       => $student_id,
+                        'exam_id'          => $arr['exam_id'],
+                    ])
+                    ->update($data);
+                    
+                }else{
+                    $arr['per'] = rtrim($arr['per'], '%');
+                    $data =[
+                        'student_id'       => $student_id,
+                        'exam_id'          => $arr['exam_id'],
+                        'points'           => $arr['points'],
+                        'per'              => $arr['per'],
+                        'grade'            => $arr['grade'],
+                        'is_absent'        => '',
+                        'comment'          => $arr['comment'],
+                        'sub_institute_id' => $sub_institute_id,
+                    ];
+                    marks_entry::where([
+                        'sub_institute_id' => $sub_institute_id,
+                        'student_id'       => $student_id,
+                        'exam_id'          => $arr['exam_id'],
+                    ])
+                    ->update($data);
+                }
+            }
+            $res = [
+                "status_code" => 1,
+                "message"     => "Data Updated",
+                "class"       => "success",
+            ];
+            }else{
+                
             if ($arr['points'] != '') {
                 if (preg_match("/[a-z]/i", $arr['points'])) {
-                    if (strtoupper($arr['points']) == "AB") {
+                    if (strtoupper($arr['points']) == "AB" || strtoupper($arr['points']) == "N.A." || strtoupper($arr['points']) == "EX") {
+
+                            $data = new marks_entry([
+                                'student_id' => $student_id,
+                                'exam_id' => $arr['exam_id'],
+                                'points' => 0,
+                                'per' => 0,
+                                'grade' => "-",
+                                'comment' => $arr['comment'],
+                                'is_absent'=> $arr['points'],
+                                'sub_institute_id' => $sub_institute_id,
+                            ]);
+                            $data->save();
+                    }
+                  else{
                         $data = new marks_entry([
                             'student_id' => $student_id,
                             'exam_id' => $arr['exam_id'],
@@ -590,34 +692,6 @@ class marks_entry_controller extends Controller
                             'sub_institute_id' => $sub_institute_id,
                         ]);
                         $data->save();
-                    }
-                    elseif (strtoupper($arr['points']) == "N.A.") {
-                         $data = new marks_entry([
-                            'student_id' => $student_id,
-                            'exam_id' => $arr['exam_id'],
-                            'points' => 0,
-                            'per' => 0,
-                            'grade' => '-',
-                            'comment' => $arr['comment'],
-                            'is_absent' => "N.A.",
-                            'sub_institute_id' => $sub_institute_id,
-                        ]);
-                        $data->save();
-                    
-                    }
-                    elseif (strtoupper($arr['points']) == "EX") {
-                         $data = new marks_entry([
-                            'student_id' => $student_id,
-                            'exam_id' => $arr['exam_id'],
-                            'points' => 0,
-                            'per' => 0,
-                            'grade' => '-',
-                            'comment' => $arr['comment'],
-                            'is_absent' => "EX",
-                            'sub_institute_id' => $sub_institute_id,
-                        ]);
-                        $data->save();
-                    
                     }
                 } else {
                     $arr['per'] = rtrim($arr['per'], '%');
@@ -633,60 +707,102 @@ class marks_entry_controller extends Controller
                     $data->save();
                 }
             }
+            $res = [
+                "status_code" => 1,
+                "message"     => "Data Saved",
+                "class"       => "success",
+            ];
         }
-        $res = [
-            "status_code" => 1,
-            "message"     => "Data Saved",
-            "class"       => "success",
-        ];
+    }
+     
 
         $type = $request->input('type');
 
         return is_mobile($type, "marks_entry.index", $res, "redirect");
     }
 
-    /**
-     * Display the specified resource.
-     *
-     * @param  int  $id
-     * @return void
-     */
-    public function show($id)
-    {
-        //
+    // marks approval report
+    public function show(Request $request){
+        if (session()->has('data')) { // check if it exists
+            $data_arr = session('data'); // to retrieve value
+            if (isset($data_arr['message'])) {
+                $data['message'] = $data_arr['message'];
+            }
+            if (isset($data_arr['class'])) {
+                $data['class'] = $data_arr['class'];
+            }
+        }
+
+        $data['data'] = [];
+        $type = $request->input('type');
+        return is_mobile($type, "result/result_report/marks_approval_report", $data, "view");
     }
 
-    /**
-     * Show the form for editing the specified resource.
-     *
-     * @param  int  $id
-     * @return void
-     */
-    public function edit($id)
-    {
-        //
+    public function getMarksApproval(Request $request){
+        
+        $responce_arr['term'] = $_REQUEST["term"];
+        $responce_arr['standard'] = $_REQUEST["standard"];
+        $responce_arr['grade'] = $_REQUEST['grade'];
+        $responce_arr['division'] = $_REQUEST['division'];
+        $responce_arr['subject_dd'] = $this->getSubjectDD($_REQUEST["standard"]);
+        $sub_institute_id  = session()->get('sub_institute_id');
+        $request = $_REQUEST;
+        // get scholastic approval report
+        //     $scholastic = DB::table('result_create_exam as cm')
+    //    ->leftJoin('result_exam_master as em',function($join) use($request){
+    //         $join->on('cm.exam_id','=','em.id');
+    //     })
+    //     ->leftJoin('result_exam_type_master as etm',function($join) use($request){
+    //         $join->on('em.ExamType','=','etm.id');
+    //     })->leftJoin('subject as sub',function($join) use($request){
+    //             $join->on('sub.id','=','cm.subject_id');
+    //     })
+    //     ->selectRaw("em.ExamTitle as exam_name,group_concat(cm.title) as exam_title,group_concat(cm.exam_id) as c_exam,em.id as exam_id,sub.subject_name,cm.standard_id,etm.ExamType as exam_type,sub.id as subject_id")
+    //     ->where(['cm.standard_id'=>$request['standard'],'cm.term_id'=>$request['term'],'cm.sub_institute_id'=>$sub_institute_id])
+    //     ->groupByRaw('cm.subject_id')->get()->toArray();
+
+    $scholastic = DB::table('result_create_exam as cm')
+    ->leftJoin('result_exam_master as em', function ($join) use ($request) {
+        $join->on('cm.exam_id', '=', 'em.id');
+    })
+    ->leftJoin('result_exam_type_master as etm', function ($join) use ($request) {
+        $join->on('em.ExamType', '=', 'etm.id');
+    })
+    ->leftJoin('subject as sub', function ($join) use ($request) {
+        $join->on('sub.id', '=', 'cm.subject_id');
+    })
+    ->selectRaw("em.ExamTitle as exam_name, group_concat(DISTINCT em.ExamType) as exam_type_id, group_concat(DISTINCT cm.title) as exam_title, group_concat(DISTINCT cm.exam_id) as create_exam, group_concat(DISTINCT cm.id) as exam_id,sub.subject_name, cm.standard_id, etm.ExamType as exam_type, sub.id as subject_id")
+    ->where(['cm.standard_id' => $request['standard'], 'cm.term_id' => $request['term'], 'cm.sub_institute_id' => $sub_institute_id])
+    ->groupByRaw('cm.subject_id,em.ExamType')
+    ->get()
+    ->toArray();
+
+    
+    $subjects = DB::table('result_create_exam as cm')
+    ->join('subject as sub','sub.id','=','cm.subject_id')
+    ->selectRaw('sub.id as sub_id,sub.subject_name')    
+    ->where(['cm.standard_id' => $request['standard'], 'cm.term_id' => $request['term'], 'cm.sub_institute_id' => $sub_institute_id])
+    ->groupByRaw('cm.subject_id')->get();
+    $exam_type = DB::table('result_exam_type_master')->where(['SubInstituteId' => $sub_institute_id])->get();
+
+    $co_scholastic = DB::table('result_co_scholastic_marks_entries as rcme')->join('result_co_scholastic as rcs','rcs.id','=','rcme.co_scholastic_id')
+    ->selectRaw("rcme.id as create_id,rcme.standard_id,rcme.term_id,rcme.co_scholastic_id,rcs.id as main_id,rcs.title as exam_name")
+    ->where(['rcme.standard_id' => $request['standard'], 'rcme.term_id' => $request['term'], 'rcme.sub_institute_id' => $sub_institute_id])
+    ->groupByRaw('rcme.co_scholastic_id')->get();
+        // dd($scholastic->toSql());
+        //  $scholastic->get()->toArray();
+        $grade_type = DB::table('result_co_scholastic')->where([ 'term_id' => $request['term'], 'sub_institute_id' => $sub_institute_id])->groupBy('mark_type')->selectRaw('group_concat(DISTINCT title) as title,mark_type,group_concat(DISTINCT id) as grade_id')->get();
+
+        // echo "<pre>";print_r($grade_type);exit;
+        $responce_arr['scholastic']=$scholastic;
+        $responce_arr['subject_head']=$subjects;
+        $responce_arr['exam_type']=$exam_type; 
+        $responce_arr['grade_type']=$grade_type;                       
+        $responce_arr['co_scholastic'] = $co_scholastic;
+
+        $type = "";
+        return is_mobile($type, "result/result_report/marks_approval_report", $responce_arr, "view");
     }
 
-    /**
-     * Update the specified resource in storage.
-     *
-     * @param  Request  $request
-     * @param  int  $id
-     * @return void
-     */
-    public function update(Request $request, $id)
-    {
-        //
-    }
 
-    /**
-     * Remove the specified resource from storage.
-     *
-     * @param  int  $id
-     * @return void
-     */
-    public function destroy($id)
-    {
-        //
-    }
 }
