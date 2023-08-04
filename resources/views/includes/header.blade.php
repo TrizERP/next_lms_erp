@@ -46,11 +46,11 @@ $academicTerms = session()->get('academicTerms');
                     </button>
                     <div class="text-center flex-fill">
                        @php
-                       if(session()->get('institute_type')==="college"){
-                        $col_md = "col-md-3";                           
-                       }else{
-                           $col_md = "col-md-5";
-                       }
+                  //  if(session()->get('institute_type')==="college"){
+                     //   $col_md = "col-md-3";                           
+                      // }else{ -->
+                           $col_md = "col-md-4";
+                       // } -->
                         if($school_logo != ""){
                         @endphp
                         <a class="navbar-brand" href="{{ route('dashboard') }}"><img
@@ -124,7 +124,7 @@ $academicTerms = session()->get('academicTerms');
                                 </select>
                             </form>
                         </div>
-                        @if(session::get('institute_type')==="college")
+                       
                         <div class="{{$col_md}}">
                             <form role="search" id="academicTerms" class="app-search hidden-sm hidden-xs m-r-5">
                                 @csrf
@@ -142,7 +142,7 @@ $academicTerms = session()->get('academicTerms');
                                 </select>
                             </form>
                         </div>
-                        @endif                        
+                      
                     </div>
                 </div>
                 <div class="d-xl-flex d-md-block d-flex flex-wrap align-items-center justify-content-between">

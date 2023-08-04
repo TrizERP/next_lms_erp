@@ -109,9 +109,10 @@ class imprestFeesCancelController extends Controller
             ->join('tblstudent_enrollment', 'tblstudent.id', '=', 'tblstudent_enrollment.student_id')
             ->join('academic_section', 'academic_section.id', '=', 'tblstudent_enrollment.grade_id')
             ->join('standard', function ($join) use($marking_period_id){
-                $join->on('standard.id', '=', 'tblstudent_enrollment.standard_id')->when($marking_period_id,function($query) use ($marking_period_id){
-                    $query->where('standard.marking_period_id',$marking_period_id);
-                });
+                $join->on('standard.id', '=', 'tblstudent_enrollment.standard_id');
+                // ->when($marking_period_id,function($query) use ($marking_period_id){
+                //     $query->where('standard.marking_period_id',$marking_period_id);
+                // });
             })
             ->join('division', 'division.id', '=', 'tblstudent_enrollment.section_id')
             ->join('fees_paid_other', 'fees_paid_other.student_id', '=', 'tblstudent.id')
@@ -345,10 +346,10 @@ class imprestFeesCancelController extends Controller
             })
             ->join('academic_section as aa', 'aa.id', '=', 'se.grade_id')
             ->join('standard as st', function ($join) use($marking_period_id) {
-                $join->on('st.id', '=', 'se.standard_id')
-                    ->when($marking_period_id, function($query) use($marking_period_id) {
-                        $query->where('st.marking_period_id',$marking_period_id);
-                    });
+                $join->on('st.id', '=', 'se.standard_id');
+                    // ->when($marking_period_id, function($query) use($marking_period_id) {
+                    //     $query->where('st.marking_period_id',$marking_period_id);
+                    // });
             })
             ->join('division as d', function ($join) {
                 $join->on('d.id', '=', 'se.section_id');

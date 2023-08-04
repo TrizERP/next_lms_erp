@@ -160,9 +160,10 @@ class lessonplanningController extends Controller
                 'l.id as lessonplan_id',
                 DB::raw('concat(t.first_name," ",t.middle_name," ",t.last_name) as teacher_name'))
             ->join('standard as s',function($join) use($marking_period_id){
-                $join->on('s.id', '=', 'lp.standard_id')->when($marking_period_id,function($query) use($marking_period_id){
-                    $query->where('s.marking_period_id',$marking_period_id);
-                });
+                $join->on('s.id', '=', 'lp.standard_id');
+                // ->when($marking_period_id,function($query) use($marking_period_id){
+                //     $query->where('s.marking_period_id',$marking_period_id);
+                // });
             })
             ->join('division as d', 'd.id', '=', 'lp.division_id')
             ->join('subject as sub', 'sub.id', '=', 'lp.subject_id')
@@ -182,9 +183,10 @@ class lessonplanningController extends Controller
         return timetableModel::from("timetable as t")
             ->select(DB::raw('distinct(t.standard_id) as std_id'), 's.name as std_name', 's.grade_id')
             ->join('standard as s',function($join) use($marking_period_id){
-                $join->on('s.id', '=', 't.standard_id')->when($marking_period_id,function($query) use($marking_period_id){
-                    $query->where('s.marking_period_id',$marking_period_id);
-                });
+                $join->on('s.id', '=', 't.standard_id');
+                // ->when($marking_period_id,function($query) use($marking_period_id){
+                //     $query->where('s.marking_period_id',$marking_period_id);
+                // });
             })
             ->where(['t.sub_institute_id' => $sub_institute_id, 't.teacher_id' => $user_id])
             ->get()->toArray();
