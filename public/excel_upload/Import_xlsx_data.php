@@ -113,7 +113,7 @@ if (isset($_REQUEST['submit'])) {
                     $valueQuery .= "now(),";
                 } else if ($valueFields['field'] == "CREATED_IP_ADDRESS" || $valueFields['field'] == "created_ip_address") {
                     $valueQuery .= "'" . $_SERVER['REMOTE_ADDR'] . "',";
-                } else if ($valueFields['field'] == "admission_date" || $valueFields['field'] == "ADMISSION_DATE" || $valueFields['field'] == "dob" || $valueFields['field'] == "DOB" || $valueFields['field'] == "start_date" || $valueFields['field'] == "followup_date" || $valueFields['field'] == "date_of_birth" || $valueFields['field'] == "birthdate" ||$valueFields['field'] == "from_date"||$valueFields['field'] == "to_date" || $valueFields['field'] == "day" || $valueFields['field'] == "punchin_time"|| $valueFields['field'] == "punchout_time" ) {
+                } else if ($valueFields['field'] == "admission_date" || $valueFields['field'] == "ADMISSION_DATE" || $valueFields['field'] == "dob" || $valueFields['field'] == "DOB" || $valueFields['field'] == "start_date" || $valueFields['field'] == "followup_date" || $valueFields['field'] == "date_of_birth" || $valueFields['field'] == "birthdate" || $valueFields['field'] == "from_date" || $valueFields['field'] == "to_date" || $valueFields['field'] == "day" || $valueFields['field'] == "punchin_time" || $valueFields['field'] == "punchout_time" || $valueFields['field'] == "receiptdate") {
     
                     $excelDateTime = $value[$valueFields['field']];
 
@@ -183,6 +183,7 @@ if (isset($_REQUEST['submit'])) {
             $valueQuery .= ' ),';
         }
         $valueQuery = rtrim($valueQuery, ',');
+        echo $insertQuery ." ". $fieldQuery ." ". $valueQuery ."<br/><br/>"; 
        $query = mysqli_query($cn, $insertQuery . $fieldQuery . $valueQuery) or die(mysqli_error($cn));
        if($query==true){
         echo "<h4 style='color:green'>Data Imported Successfully.</h4>";
