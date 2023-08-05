@@ -2200,7 +2200,7 @@ if (!function_exists('get_string')) {
     <td>&nbsp;</td>
   </tr>';
         $html .= '<tr>';
-        if (isset($get_name_data)) {
+        if (isset($get_name_data) && !$std == '') {
 
             if (isset($get_name_data[0]->academic_name)) {
                 $html .= '

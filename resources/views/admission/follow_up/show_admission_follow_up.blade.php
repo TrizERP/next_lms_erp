@@ -69,6 +69,7 @@
                 <div class="row">                
                     <div class="col-lg-12 col-sm-12 col-xs-12">
                         <div class="table-responsive">
+                            {!! App\Helpers\get_school_details("","","") !!}
                             <table id="example" class="table table-striped table-bordered">
                                 <thead>
                                     <tr>
