@@ -48,11 +48,11 @@ class WRT_progress_report_controller extends Controller
         $result_year = $syear."-".$next_year;
 
         //getting all exam master heading
-        $all_exam_master = $this->getAllExamMaster($_REQUEST['standard'], $_REQUEST['from_date'], $_REQUEST['to_date'], $type, $_REQUEST['exam_type_id']);
+        $all_exam_master = $this->getAllExamMaster($_REQUEST['standard'], $_REQUEST['from_date'], $_REQUEST['to_date'], $type, $_REQUEST['exam_type']);
 
         //getting all exam marks
         $all_WRT_data = $this->getWRTData($all_student, $_REQUEST['standard'], $type, $exam_type,
-            $_REQUEST['from_date'], $_REQUEST['to_date'], $_REQUEST['exam_type_id']);
+            $_REQUEST['from_date'], $_REQUEST['to_date']);
 
         //getting result header
         $header_data = $this->getHeader($_REQUEST['standard'], $type);
@@ -98,7 +98,7 @@ class WRT_progress_report_controller extends Controller
         return $result[0] ?? [];
     }
 
-    public function getWRTData($all_student, $standard_id, $type, $exam_type = null, $from_date = null, $to_date = null,$exam_type_id=null)
+    public function getWRTData($all_student, $standard_id, $type, $exam_type = null, $from_date = null, $to_date = null)
     {
         if ($type == 'API') {
             $syear = $_REQUEST['syear'];
@@ -108,7 +108,7 @@ class WRT_progress_report_controller extends Controller
             $division_id = $all_student[0]['division_id'];
             $from_date = $_REQUEST['from_date'];
             $to_date = $_REQUEST['to_date'];
-            $exam_type_id = $_REQUEST['exam_type_id'];
+            $exam_type = isset($_REQUEST['exam_type']) ? $_REQUEST['exam_type'] : null;
         } else {
             $syear = session()->get('syear');
             $sub_institute_id = session()->get('sub_institute_id');
@@ -135,7 +135,6 @@ class WRT_progress_report_controller extends Controller
             ->where("e.sub_institute_id", "=", $sub_institute_id)
             ->where("e.syear", "=", $syear)
             ->where("e.standard_id", "=", $standard_id)
-            ->where("e.exam_id", "=", $exam_type_id)
             ->whereIn("student_id", $student_id_arr)
             ->whereBetween("e.exam_date", [$from_date, $to_date]);
 
@@ -171,7 +170,7 @@ class WRT_progress_report_controller extends Controller
         return $marks_arr;
     }
 
-    public function getAllExamMaster($standard_id, $from_date, $to_date, $type, $exam_type_id)
+    public function getAllExamMaster($standard_id, $from_date, $to_date, $type, $exam_type=null)
     {
         if ($type == 'API') {
             $syear = $_REQUEST['syear'];
@@ -188,11 +187,11 @@ class WRT_progress_report_controller extends Controller
             ->where("r.sub_institute_id", "=", $sub_institute_id)
             ->where("r.standard_id", "=", $standard_id)
             ->where("r.syear", "=", $syear)
-            ->where("r.exam_id", "=", $exam_type_id)
+            ->where("r.exam_id", "=", $exam_type)
             ->whereBetween("r.exam_date", [$from_date, $to_date])
             ->groupBy('title')
             ->get()->toArray();
-
+        
         $result = json_decode(json_encode($result), true);
 
         return $result;
