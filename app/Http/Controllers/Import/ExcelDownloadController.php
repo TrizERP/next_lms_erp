@@ -60,7 +60,7 @@ class ExcelDownloadController extends Controller implements FromCollection, With
                 $join->whereRaw('st.id = se.standard_id AND st.sub_institute_id = se.sub_institute_id');
             })->leftJoin('division as d', function ($join) {
                 $join->whereRaw('d.id = se.section_id AND d.sub_institute_id = se.sub_institute_id');
-            })->selectRaw("s.enrollment_no,CONCAT_WS(' ',s.first_name,s.middle_name,s.last_name) AS student_name,
+            })->selectRaw("s.enrollment_no,se.standard_id,CONCAT_WS(' ',s.first_name,s.middle_name,s.last_name) AS student_name,
           e.title as exam_id")
           ->leftJoin('result_create_exam as e',function($join) use ($exams){
               $join->whereRaw('se.standard_id = e.standard_id AND se.sub_institute_id = e.sub_institute_id AND se.syear = e.syear')->where('e.id',$exams);
@@ -75,6 +75,7 @@ class ExcelDownloadController extends Controller implements FromCollection, With
         // $exam_name = DB::table('result_create_exam')->whereIn('id', $exams)->select('title as paper_name', 'points as total_marks')->get();
         $headers = [
             'student_id',
+            'standard_id',
             'student_name',
             'exam_id',
             'points',            
@@ -113,6 +114,7 @@ class ExcelDownloadController extends Controller implements FromCollection, With
        
         return [
             $row->enrollment_no,
+            $row->standard_id,
             $row->student_name,
             $row->exam_id,
         ];
