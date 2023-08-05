@@ -53,6 +53,7 @@
                 <!-- scholastic -->
                 @if(isset($data['scholastic']) && isset($data['subject_head']) )
                 <div class="table-responsive">
+                {!!  App\Helpers\get_school_details($grade,$std,$div) !!}
                         <table class="table-bordered table" id="myTable">
                             <thead>
                             <tr>
