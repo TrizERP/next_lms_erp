@@ -45,7 +45,7 @@ class periodController extends Controller
 
         $academic_section_data = academic_sectionModel::where(['sub_institute_id' => $sub_institute_id])->get();
         $academic_year_data = academic_yearModel::where([
-            'sub_institute_id' => $sub_institute_id, 'syear' => $syear,
+            'sub_institute_id' => $sub_institute_id, 'syear' => $syear
         ])->get();
         $data['academic_section_data'] = $academic_section_data;
         $data['academic_year_data'] = $academic_year_data;
@@ -68,13 +68,13 @@ class periodController extends Controller
                 'short_name'          => $request->get('short_name'),
                 'sort_order'          => $request->get('sort_order'),
                 'used_for_attendance' => $request->get('used_for_attendance') != '' ? $request->get('used_for_attendance') : "",
-                'academic_section_id' => $request->get('academic_section_id'),
-                'academic_year_id'    => $request->get('academic_year_id'),
+                'academic_section_id' => $request->get('academic_section_id') ?? null,
+                'academic_year_id'    => $request->get('academic_year_id') ?? null,
                 'start_time'          => $request->get('start_time'),
                 'end_time'            => $request->get('end_time'),
                 'length'              => $length,
                 'sub_institute_id'    => $sub_institute_id,
-                'marking_period_id'   => $marking_period_id,
+                //'marking_period_id'   => $marking_period_id,
                 'status'              => "1",
             ]);
 
@@ -115,8 +115,9 @@ class periodController extends Controller
         $type = $request->input('type');
         $period_data = periodModel::find($id);
         $sub_institute_id = $request->session()->get('sub_institute_id');
+        $syear = $request->session()->get('syear');
         $academic_section_data = academic_sectionModel::where(['sub_institute_id' => $sub_institute_id])->get();
-        $academic_year_data = academic_yearModel::where(['sub_institute_id' => $sub_institute_id])->get();
+        $academic_year_data = academic_yearModel::where(['sub_institute_id' => $sub_institute_id, 'syear' => $syear])->get();
         $data['academic_section_data'] = $academic_section_data;
         $data['academic_year_data'] = $academic_year_data;
         $data['period_data'] = $period_data;
@@ -146,8 +147,8 @@ class periodController extends Controller
                 'short_name'          => $request->get('short_name'),
                 'sort_order'          => $request->get('sort_order'),
                 'used_for_attendance' => $request->get('used_for_attendance') != '' ? $request->get('used_for_attendance') : "",
-                'academic_section_id' => $request->get('academic_section_id'),
-                'academic_year_id'    => $request->get('academic_year_id'),
+                'academic_section_id' => $request->get('academic_section_id') ?? null,
+                'academic_year_id'    => $request->get('academic_year_id') ?? null,
                 'start_time'          => $request->get('start_time'),
                 'end_time'            => $request->get('end_time'),
                 'length'              => $length,

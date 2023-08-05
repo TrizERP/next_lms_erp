@@ -48,11 +48,11 @@ class WRT_progress_report_controller extends Controller
         $result_year = $syear."-".$next_year;
 
         //getting all exam master heading
-        $all_exam_master = $this->getAllExamMaster($_REQUEST['standard'], $_REQUEST['from_date'], $_REQUEST['to_date'], $type, $_REQUEST['exam_type_id']);
+        $all_exam_master = $this->getAllExamMaster($_REQUEST['standard'], $_REQUEST['from_date'], $_REQUEST['to_date'], $type, $_REQUEST['exam_type']);
 
         //getting all exam marks
         $all_WRT_data = $this->getWRTData($all_student, $_REQUEST['standard'], $type, $exam_type,
-            $_REQUEST['from_date'], $_REQUEST['to_date'], $_REQUEST['exam_type_id']);
+            $_REQUEST['from_date'], $_REQUEST['to_date']);
 
         //getting result header
         $header_data = $this->getHeader($_REQUEST['standard'], $type);

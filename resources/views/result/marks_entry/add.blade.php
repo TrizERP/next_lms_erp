@@ -12,23 +12,18 @@
                 </div>
                 @endif
                 <div class="col-lg-12 col-sm-12 col-xs-12">
-                    @php
-
-
-                    @endphp
+               
                     <form action="{{ route('marks_entry.create') }}" enctype="multipart/form-data" method="post">
                         {{ method_field("GET") }}
                         {{csrf_field()}}
 
                         <div class="row">
-                            {{ App\Helpers\TermDD($data['term_id']) }}
+                            {{ App\Helpers\TermDD($data['term_id'] ) }}
                         
-                            {{ App\Helpers\SearchChain('4','single','grade,std,div',$data['grade'],$data['standard'],$data['division']) }}
-                        
-
+                            {{ App\Helpers\SearchChain('4','required','grade,std,div',$data['grade'],$data['standard'],$data['division']) }}
                             <div class="col-md-4 form-group">
                                 <label for="title">Select Subject:</label>
-                                <select name="subject" id="subject" class="form-control">
+                                <select name="subject" id="subject" class="form-control" required>
                                     <option value="">Select</option>
                                     @php
                                     foreach ($data['subject_dd'] as $id_dd=>$arr_dd){
@@ -44,7 +39,7 @@
 
                             <div class="col-md-4 form-group">
                                 <label for="title">Select Exam:</label>
-                                <select name="exam" id="exam" class="form-control">
+                                <select name="exam" id="exam" class="form-control" required>
                                     <option value="">Select</option>
                                     @php
                                     foreach ($data['exam_dd'] as $id_dd=>$arr_dd){
@@ -67,17 +62,47 @@
 
                     </form>
                 </div>
+                @php
+                $users = ["Admin"];
+                @endphp
+                @if(in_array(session()->get('user_profile_name'),$users))
+                <form action="{{ route('approve') }}" enctype="multipart/form-data" method="post" style="margin-top:40px">
+                        {{ method_field("POST") }}
+                        {{csrf_field()}}
+                        <div class="row mb-2 mt-6"> 
+                            <div class="col-md-6 text-right ">
+                                <label for="approve">Approved</label>                            
+                                <input type="checkbox" name="approve" id="approve" value="1" @if(isset($data['approve_status']) && $data['approve_status']->status ==1) checked @endif>
+                            </div> 
+                            <div class="col-md-6">
+                                <input type="hidden" name="term_id" value="{{$data['term_id']}}">
+                                <input type="hidden" name="standard_id" value="{{$data['standard']}}">
+                                <input type="hidden" name="division_id" value="{{$data['division']}}">
+                                <input type="hidden" name="subject_id" value="{{$data['subject']}}">                                
+                                <input type="hidden" name="exam_id" value="{{$data['exam']}}">
+
+                                <input type="submit"  class="btn btn-outline-secondary" name="submit" id="submit" Value="Approved Marks">
+                            </div>
+                            <!-- subject_id,standard_id,division_id,exam_id,term_id,status,sub_institute_id,created_by,module_name -->
+                        </div> 
+                    </form>
+                        @endif
                 <div class="col-lg-12 col-sm-12 col-xs-12">
+              
                     @php
                     if(isset($data['stu_data'])){
                     @endphp
+                        <div class="row mb-2">  
+                    <div class="col-lg-12 col-sm-12 col-xs-12">
+                        <span class="d-block p-2  alert-secondary">Note: Please consider this spelling while adding "AB", "N.A." ,"EX".</span>
+                    </div>        
+                </div>
                     <form action="{{ route('marks_entry.store') }}" enctype="multipart/form-data" method="post">
                         {{ method_field("POST") }}
                         {{csrf_field()}}
                         <div class="table-responsive">
                         <table class="table-bordered table" id="myTable">
                             <tr>
-                              
                                 <th>Roll No</th>
                                 <th>Student Name</th>
                                 <th>Marks</th>
@@ -86,8 +111,11 @@
                                 <th>Remark</th>
                             </tr>
                             @php
-
                             $arr = $data['stu_data'];
+                             $disable = "";                            
+                            if(isset($data['approve_status']) && $data['approve_status']->status ==1){
+                                $disable = "disabled";
+                            }
                             foreach ($arr as $id=>$col_arr){
                             @endphp
                             <tr>
@@ -96,10 +124,13 @@
                            
                             <td>@php echo $col_arr['roll_no']; @endphp</td>
                             <td>@php echo $col_arr['name']; @endphp</td>
-                            <td> <input type="text" class="att" name="values[{{ $col_arr['student_id'] }}][points]" style="width: 100px;" value="{{ $col_arr['points'] }}" /> Out Of <lable>{{$col_arr['outof']}}</lable></td>
+                            <td> 
+                                <input type="text" class="att" name="values[{{ $col_arr['student_id'] }}][points]" style="width: 100px;" value="{{ $col_arr['points'] }}" onchange="check_input(this,{{$col_arr['outof']}})" {{$disable}} />
+                                Out Of 
+                                <lable>{{$col_arr['outof']}}</lable>
+                             </td>
                             <td style="display: none;"><label class="at_per">{{ $col_arr['per'] }}%</label> <input type="hidden" class="at_per_val" name="values[{{ $col_arr['student_id'] }}][per]" readonly="readonly" style="width: 70px;"  value="{{ $col_arr['per'] }}%" /></td>
 
-<!--<input type="text" class="at_per" name="values[{{ $col_arr['student_id'] }}][per]" readonly="readonly" style="width: 70px;"  value="{{ $col_arr['per'] }}%" />-->
                             <td style="display: none;"><label class="at_grd">{{ $col_arr['grade'] }}</label> <input type="hidden" class="at_grd_val" name="values[{{ $col_arr['student_id'] }}][grade]" readonly="readonly" style="width: 70px;"  value="{{ $col_arr['grade'] }}" /></td>
                             <td>
                                 <textarea name="values[{{ $col_arr['student_id'] }}][comment]" rows="2" cols="20">{{ $col_arr['comment'] }}</textarea>
@@ -310,5 +341,35 @@
         }
 
     });
+
+    function check_input(inputElement,outof) {
+    var inputValue = inputElement.value;
+    var values = inputValue.trim().split(/\s+/); 
+    var totalValue = 0;
+    var isValidValue = 0;
+
+    var isValidValue = false;
+
+    for (var i = 0; i < values.length; i++) {
+        var intValue = parseInt(values[i]);
+        if (!isNaN(intValue)) {
+            totalValue += intValue;
+        } else if (values[i] !== "AB" && values[i] !== "N.A." && values[i] !== "EX") {
+            isValidValue = true;
+            break;
+        }
+    }
+
+    if (totalValue > outof) {
+        alert("Total value cannot be greater than " + outof + ".");
+        inputElement.value =0;    
+        }
+
+    if (isValidValue) {
+        alert("Enter value must be a digit or 'AB', 'N.A.', or 'EX'.");
+        inputElement.value = 0;
+    }
+}
+
 </script>
 @include('includes.footer')

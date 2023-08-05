@@ -291,7 +291,7 @@ class timetableController extends Controller
             'standard_id'         => $standard_id,
             'division_id'         => $division_id,
             'syear'               => $syear,
-            'marking_period_id'   => $marking_period_id,            
+            //'marking_period_id'   => $marking_period_id,            
         ])->get()->toArray();
 
         foreach ($timetable_data as $k => $p) {
@@ -307,7 +307,7 @@ class timetableController extends Controller
             'standard_id' => $standard_id,
             'division_id' => $division_id,
             'syear' => $syear,
-            'marking_period_id'   => $marking_period_id,            
+            //'marking_period_id'   => $marking_period_id,            
         ])->get()->toArray();
         $total_batches = count($batch_data);
 
@@ -672,7 +672,7 @@ class timetableController extends Controller
             'standard_id'      => $standard_id,
             'division_id'      => $division_id,
             'syear'            => $syear,
-            'marking_period_id'=> $marking_period_id,
+            //'marking_period_id'=> $marking_period_id,
         ])->get()->toArray();
         $total_batches = count($batch_data);
 
@@ -845,7 +845,7 @@ class timetableController extends Controller
             'division_id'      => $division_id,
             'week_day'         => $week_day,
             'period_id'        => $period_id,
-            'marking_period_id'=> $marking_period_id,
+            //'marking_period_id'=> $marking_period_id,
         ])->get()->toArray();
 
         if (count($check_timetable_data) > 0) {
@@ -857,7 +857,7 @@ class timetableController extends Controller
                     "syear"            => $syear,
                     "week_day"         => $week_day,
                     "period_id"        => $period_id,
-                    "marking_period_id"=>$marking_period_id,
+                    //"marking_period_id"=>$marking_period_id,
                 ])->delete();
         }
 

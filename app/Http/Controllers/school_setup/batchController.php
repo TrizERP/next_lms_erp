@@ -68,7 +68,7 @@ class batchController extends Controller
                     'syear'            => $syear,
                     'created_at'       => now(),
                     'updated_at'       => now(),
-                    'marking_period_id'=>$marking_period_id ?? null,
+                    //'marking_period_id'=>$marking_period_id ?? null,
                 ];
                 batchModel::insert($finalArray);
                 $res = [
@@ -148,7 +148,7 @@ class batchController extends Controller
                     'division_id'      => $request->get('division_id'),
                     'sub_institute_id' => $sub_institute_id,
                     'syear'            => $syear,
-                    'marking_period_id'=>$marking_period_id ?? null,
+                    //'marking_period_id'=>$marking_period_id ?? null,
                     
                 ];
             }
@@ -187,7 +187,7 @@ class batchController extends Controller
                     'division_id' => $val['division_id'],
                     'title'       => $val['title'] ?? "",
                     'syear'       => $syear,
-                    'marking_period_id'=>$marking_period_id ?? null,
+                    //'marking_period_id'=>$marking_period_id ?? null,
                     
                 ],
                 [
@@ -196,7 +196,7 @@ class batchController extends Controller
                     'title'            => $val['title'],
                     'sub_institute_id' => $sub_institute_id,
                     'syear'            => $syear,
-                    'marking_period_id'=>$marking_period_id ?? null,
+                    //'marking_period_id'=>$marking_period_id ?? null,
                     
                 ]
             );
