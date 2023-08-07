@@ -35,9 +35,10 @@ class student_fees_graphController extends Controller
         })
         ->join('academic_section as acs', 'acs.id', '=', 'se.grade_id')
         ->join('standard as sm', function($join) use($marking_period_id) {
-            $join->on('se.standard_id', '=', 'sm.id')->when($marking_period_id,function($query) use($marking_period_id){
-                $query->where('sm.marking_period_id',$marking_period_id);
-            } );
+            $join->on('se.standard_id', '=', 'sm.id');
+            // ->when($marking_period_id,function($query) use($marking_period_id){
+            //     $query->where('sm.marking_period_id',$marking_period_id);
+            // } );
         })
         ->join('division as dm', 'se.section_id', '=', 'dm.id')
         ->join('fees_breackoff as fb', function ($join) use ($syear) {

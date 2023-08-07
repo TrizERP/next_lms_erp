@@ -58,9 +58,10 @@ class facultywisetimetableController extends Controller
             'subject.subject_name', 'subject.subject_code', 'batch.title as batch_name', 'period.title as period_name',
             'standard.name as standard_name', 'division.name as division_name')
             ->join('standard',function($join) use($marking_priod_id){
-                $join->on('standard.id', "=", 'timetable.standard_id')->when($marking_priod_id,function($query) use($marking_priod_id){
-                    $query->where('standard.marking_period_id',$marking_priod_id);
-                });
+                $join->on('standard.id', "=", 'timetable.standard_id');
+                // ->when($marking_priod_id,function($query) use($marking_priod_id){
+                //     $query->where('standard.marking_period_id',$marking_priod_id);
+                // });
             })
             ->join('subject', 'subject.id', "=", 'timetable.subject_id')
             ->leftjoin('division', 'division.id', "=", 'timetable.division_id')
@@ -236,9 +237,10 @@ class facultywisetimetableController extends Controller
         if ($teacher_id != "" && $sub_institute_id != "" && $syear != "") {
             $data = DB::table('timetable as t')
                 ->join('standard as s', function ($join) use($marking_priod_id){
-                    $join->whereRaw('s.id = t.standard_id and s.sub_institute_id = t.sub_institute_id')->when($marking_priod_id,function($query) use($marking_priod_id){
-                        $query->where('s.marking_period_id',$marking_priod_id);
-                    });
+                    $join->whereRaw('s.id = t.standard_id and s.sub_institute_id = t.sub_institute_id');
+                    // ->when($marking_priod_id,function($query) use($marking_priod_id){
+                    //     $query->where('s.marking_period_id',$marking_priod_id);
+                    // });
                 })->join('division as d', function ($join) {
                     $join->whereRaw('d.id = t.division_id and d.sub_institute_id = t.sub_institute_id');
                 })->join('subject as sub', function ($join) {

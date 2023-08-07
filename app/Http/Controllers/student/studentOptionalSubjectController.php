@@ -4,6 +4,7 @@ namespace App\Http\Controllers\student;
 
 use App\Http\Controllers\Controller;
 use App\Models\student\tblstudentModel;
+use App\Models\school_setup\sub_std_mapModel;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Contracts\View\Factory;
 use Illuminate\Contracts\View\View;
@@ -14,8 +15,10 @@ use Illuminate\Support\Facades\DB;
 use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\NotFoundExceptionInterface;
 use function App\Helpers\is_mobile;
+use function App\Helpers\getStudents;
+//use Illuminate\Support\Facades\Session;
 
-class studentSearchController extends Controller
+class studentOptionalSubjectController extends Controller
 {
     /**
      * Display a listing of the resource.
@@ -28,7 +31,52 @@ class studentSearchController extends Controller
         $res['status_code'] = 1;
         $res['message'] = "Success";
 
-        return is_mobile($type, "student/show_student", $res, "view");
+        return is_mobile($type, "student/show_student_optional", $res, "view");
+    }
+
+    /**
+     * Display the specified resource.
+     *
+     * @param  int  $id
+     * @return void
+     */
+    public function show($id)
+    {
+        //
+    }
+
+    /**
+     * Show the form for editing the specified resource.
+     *
+     * @param  int  $id
+     * @return void
+     */
+    public function edit($id)
+    {
+        //
+    }
+
+    /**
+     * Update the specified resource in storage.
+     *
+     * @param  Request  $request
+     * @param  int  $id
+     * @return void
+     */
+    public function update(Request $request, $id)
+    {
+        //
+    }
+
+    /**
+     * Remove the specified resource from storage.
+     *
+     * @param  int  $id
+     * @return void
+     */
+    public function destroy($id)
+    {
+        //
     }
 
     /**
@@ -39,7 +87,7 @@ class studentSearchController extends Controller
      *
      * @return false|Application|Factory|View|RedirectResponse|string|void
      */
-    public function searchStudent(Request $request)
+    public function searchStudentOptionalSubject(Request $request)
     {
         // return $request;exit;
         $grade_id = $request->input("grade");
@@ -57,7 +105,6 @@ class studentSearchController extends Controller
         $gr_no = $request->input('gr_no');
         $including_inactive = $request->input('including_inactive');
         $unique_id = $request->input('unique_id');
-        $marking_period_id = session()->get('term_id');
 
         $extraSearchArray = [];
         $extraSearchArray['tblstudent_enrollment.sub_institute_id'] = $sub_institute_id;
@@ -127,20 +174,27 @@ class studentSearchController extends Controller
             'academic_section.title as grade', DB::raw($inactive_colour))
             ->join('tblstudent_enrollment', 'tblstudent.id', '=', 'tblstudent_enrollment.student_id')
             ->join('academic_section', 'academic_section.id', '=', 'tblstudent_enrollment.grade_id')
-            ->join('standard',function($join) use($marking_period_id){
-                $join->on('standard.id', '=', 'tblstudent_enrollment.standard_id');
-                // ->when($marking_period_id,function($query) use($marking_period_id){
-                //     $query->where('standard.marking_period_id',$marking_period_id);
-                // });
-            })
+            ->join('standard', 'standard.id', '=', 'tblstudent_enrollment.standard_id')
             ->join('division', 'division.id', '=', 'tblstudent_enrollment.section_id')
             ->where($extraSearchArray)
             ->whereRaw($extraRaw)
             ->get();
             // dd(DB::getQueryLog($student_data));
+
+        $optional_subject_data = sub_std_mapModel::select('sub_std_map.*', 'subject.subject_name',
+        'subject.subject_code')
+        ->join('subject', 'subject.id', '=', 'sub_std_map.subject_id')
+        ->where([
+            'sub_std_map.sub_institute_id' => $sub_institute_id,
+            'sub_std_map.standard_id'      => $standard_id, 
+            'sub_std_map.elective_subject' => 'Yes',
+        ])
+        ->get()->toArray();
+        
         $res['status_code'] = 1;
         $res['message'] = "Student List";
         $res['data'] = $student_data;
+        $res['optional_subject_data'] = $optional_subject_data;
         $res['grade_id'] = $grade_id;
         $res['standard_id'] = $standard_id;
         $res['division_id'] = $division_id;
@@ -151,7 +205,56 @@ class studentSearchController extends Controller
         $res['unique_id'] = $unique_id;
         $res['including_inactive'] = $including_inactive;
 
-        return is_mobile($type, "student/show_student", $res, "view");
+        return is_mobile($type, "student/show_student_optional", $res, "view");
+    }
+
+    public function store(Request $request)
+    {
+        $type = $request->input('type');
+        $subjects = $request->input('subjects');
+        $student_ids = $request->input('students');
+        $syear = $request->session()->get('syear');
+        $sub_institute_id = $request->session()->get('sub_institute_id');
+        $grade_id = $request->input('grade_id');
+        $standard_id = $request->input('standard_id');
+
+        //$data = getStudents($student_ids);
+        
+        // Insert the data into the database
+        foreach ($student_ids as $student_id) {
+            foreach ($subjects as $subject) {
+                // Check if the combination of subject_id and student_id already exists
+                $data = DB::table('student_optional_subject')
+                    ->where('subject_id', $subject)
+                    ->where('student_id', $student_id)
+                    ->where('sub_institute_id', $sub_institute_id)
+                    ->where('syear', $syear)
+                    ->first();
+    
+                // If the record does not exist, insert it
+                if (!$data) {
+                    DB::table('student_optional_subject')->insert([
+                        'subject_id' => $subject,
+                        'student_id' => $student_id,
+                        'sub_institute_id' => $sub_institute_id,
+                        'syear' => $syear,
+                    ]);
+                }
+            }
+        }
+
+        $res['status_code'] = 1;
+        $res['message'] = "Success";
+        //$res['data'] = $data;
+       /*  $res['template'] = $template;
+        $res['str'] = $new_html;
+        $res['insert_ids'] = $insert_ids;
+        if ($certificate_reason != '') {
+            $res['certificate_reason'] = $certificate_reason;
+        } */
+
+        return is_mobile($type, "student_optional_subject.index", $res);
+        //return is_mobile($type, "student/show_student_optional", $res, "view");
     }
 
     public function searchStudentName(Request $request)
@@ -216,20 +319,14 @@ class studentSearchController extends Controller
         $extraSearchArray = [];
         $extraSearchArray['tblstudent_enrollment.sub_institute_id'] = $sub_institute_id;
         $extraSearchArray['tblstudent.status'] = 1;
-        $marking_period_id=session()->get('term_id');
-        
+
         return tblstudentModel::select('standard.name as standard', 'division.name as division',
             'academic_section.title as grade')
             ->selectRaw('tblstudent.enrollment_no,CONCAT_WS(" ",tblstudent.first_name,tblstudent.middle_name,tblstudent.last_name) 
             as student_name,tblstudent.id')
             ->join('tblstudent_enrollment', 'tblstudent.id', '=', 'tblstudent_enrollment.student_id')
             ->join('academic_section', 'academic_section.id', '=', 'tblstudent_enrollment.grade_id')
-            ->join('standard',function($join) use($marking_period_id){
-                $join->on('standard.id', '=', 'tblstudent_enrollment.standard_id');
-                // ->when($marking_period_id,function($query) use($marking_period_id){
-                //     $query->where('standard.marking_period_id',$marking_period_id);
-                // });
-            })
+            ->join('standard', 'standard.id', '=', 'tblstudent_enrollment.standard_id')
             ->join('division', 'division.id', '=', 'tblstudent_enrollment.section_id')
             ->whereRaw('tblstudent_enrollment.end_date is NULL')
             ->whereRaw('tblstudent.id IN ('.$searchValue.')')

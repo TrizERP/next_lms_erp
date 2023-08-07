@@ -710,9 +710,15 @@ if (!function_exists('SearchStudent')) {
                     ->orWhere('ts.last_name', 'like', '%' . $stu_name . '%');
             });
         }
-        if($stud_id !=''){
-            $query->whereIn('ts.id',$stud_id);
+        if (!empty($stud_id)) {
+            // Check if $stud_id is already an array, if not, convert it to an array
+            if (!is_array($stud_id)) {
+                $stud_id = [$stud_id];
+            }
+            // Now, you can safely use the whereIn function with $stud_id
+            $query->whereIn('ts.id', $stud_id);
         }
+
         $columns = explode(',', $select_fields);
         $columns[] = "s.name as standard_name";
         $columns[] = "s.medium as medium";
@@ -2126,10 +2132,10 @@ if (!function_exists('get_string')) {
         $marking_period_id = session()->get('term_id');
         $get_name_data = DB::table('academic_section as ac')
             ->join('standard as s', function ($join) use ($marking_period_id) {
-                $join->whereRaw('s.grade_id = ac.id AND ac.sub_institute_id = s.sub_institute_id')
-                    ->when($marking_period_id, function ($query) use ($marking_period_id) {
-                        $query->where('s.marking_period_id', $marking_period_id);
-                    });
+                $join->whereRaw('s.grade_id = ac.id AND ac.sub_institute_id = s.sub_institute_id');
+                    // ->when($marking_period_id, function ($query) use ($marking_period_id) {
+                    //     $query->where('s.marking_period_id', $marking_period_id);
+                    // });
             })
             ->selectRaw("ac.title AS academic_name, s.name AS std_name")
             ->where('ac.sub_institute_id', session()->get('sub_institute_id'))

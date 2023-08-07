@@ -126,9 +126,10 @@ class feesFineDiscountReportController extends Controller
             ->join('tblstudent_enrollment as SE', function ($join) use ($syear) {
                 $join->whereRaw('S.id = SE.student_id AND SE.SYEAR=' . $syear);
             })->join('standard as CS', function ($join) use($marking_period_id){
-                $join->whereRaw('SE.standard_id = CS.id')->when($marking_period_id,function ($query) use($marking_period_id){
-                    $query->where('CS.marking_period_id',$marking_period_id);
-                });
+                $join->whereRaw('SE.standard_id = CS.id');
+                // ->when($marking_period_id,function ($query) use($marking_period_id){
+                //     $query->where('CS.marking_period_id',$marking_period_id);
+                // });
             })->join('division as SS', function ($join) {
                 $join->whereRaw('SE.section_id = SS.id');
             })->join('fees_collect as FP', function ($join) {

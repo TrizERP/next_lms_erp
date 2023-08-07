@@ -67,48 +67,48 @@ class map_student_controller extends Controller
                     $student_data = SearchStudent("", "","", "", "", "",$name,"","",$grno, "");
                 }
         }
-       
-        if(isset($request->id)){
-            $ids = [$request->id];
-            $student_data = SearchStudent("", "","", "", "", "", "", "", "",  "",$ids);
-            $grade = $student_data[0]['grade_id'];          
-        }else{
+        $grade=0;
+        if (isset($request->id)) {
+            $student_data = SearchStudent("", "", "", "", "", "", "", "", "", "", $request->id);
+            $grade = !empty($student_data) ? $student_data[0]['grade_id'] : 0;
+        } else {
             $grade = $_REQUEST['grade'];
         }
 
         //START set default shift_from and shift_to
         $result = DB::table("academic_section as a")
-            ->join('transport_school_shift as s', function ($join) {
-                $join->whereRaw("s.sub_institute_id = a.sub_institute_id");
-            })
-            ->selectRaw('*,s.id as shift_id')
-            ->where("a.sub_institute_id", "=", session()->get('sub_institute_id'))
-            ->where("a.id", "=", $grade)
-            ->get()->toArray();
+        ->join('transport_school_shift as s', function ($join) {
+            $join->whereRaw("s.sub_institute_id = a.sub_institute_id");
+        })
+        ->selectRaw('*,s.id as shift_id')
+        ->where("a.sub_institute_id", "=", session()->get('sub_institute_id'))
+        ->where("a.id", "=", $grade)
+        ->get()->toArray();
 
-        $default_shift_id = $result[0]->shift_id ?? '';
+        $default_shift_id = !empty($result) ? $result[0]->shift_id : '';
 
         $responce_arr = [];
 
         foreach ($student_data as $id => $arr) {
-
             $responce_arr['stu_data'][$id]['sr.no'] = $id + 1;
-            $responce_arr['stu_data'][$id]['name'] = $arr['first_name'].' '.$arr['middle_name'].' '.$arr['last_name'];
+            $responce_arr['stu_data'][$id]['name'] = $arr['first_name'] . ' ' . $arr['middle_name'] . ' ' . $arr['last_name'];
             $responce_arr['stu_data'][$id]['student_id'] = $arr['student_id'];
             $responce_arr['stu_data'][$id]['mobile'] = $arr['mobile'];
-            $responce_arr['stu_data'][$id]['std-div'] = $arr['standard_name']." / ".$arr['division_name'];
+            $responce_arr['stu_data'][$id]['std-div'] = $arr['standard_name'] . " / " . $arr['division_name'];
             $responce_arr['stu_data'][$id]['enrollment_no'] = $arr['enrollment_no'];
-
-            if(isset($request->id)){
+        
+            if (isset($request->id)) {
                 $responce_arr['stu_data'][$id]['address'] = $arr['address'];
                 $responce_arr['stu_data'][$id]['city'] = $arr['city'];
                 $responce_arr['stu_data'][$id]['state'] = $arr['state'];
             }
+        
             $matchThese = [
                 "syear"            => session()->get('syear'),
                 "student_id"       => $arr['student_id'],
                 "sub_institute_id" => session()->get('sub_institute_id'),
             ];
+        
             $results = map_student::where($matchThese)->get()->toArray();
 
             if (count($results) > 0) {
@@ -202,7 +202,7 @@ class map_student_controller extends Controller
                     "tv.sub_institute_id" => session()->get('sub_institute_id'),
                     "tv.school_shift"     => $default_shift_id,
                 ];
-
+        
                 $bus = DB::table('transport_vehicle as tv')
                     ->where($where)
                     ->pluck('tv.title', 'tv.id');

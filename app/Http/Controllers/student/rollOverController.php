@@ -61,9 +61,9 @@ class rollOverController extends Controller
 
         $batch = DB::table('batch')->selectRaw('COUNT(*) AS total_data')
             ->where('syear', $to_next_syear)
-            ->when($marking_period_id,function($query) use ($marking_period_id){
-                $query->where('marking_period_id',$marking_period_id);
-            })
+            // ->when($marking_period_id,function($query) use ($marking_period_id){
+            //     $query->where('marking_period_id',$marking_period_id);
+            // })
             ->where('sub_institute_id', $sub_institute_id)->get()->toArray();
 
         $class_teacher = DB::table('class_teacher')->selectRaw('COUNT(*) AS total_data')
@@ -96,9 +96,9 @@ class rollOverController extends Controller
 
         $timetable = DB::table('timetable')->selectRaw('COUNT(*) AS total_data')
             ->where('syear', $to_next_syear)
-            ->when($marking_period_id,function($query) use ($marking_period_id){
-                $query->where('marking_period_id',$marking_period_id);
-            })
+            // ->when($marking_period_id,function($query) use ($marking_period_id){
+            //     $query->where('marking_period_id',$marking_period_id);
+            // })
             ->where('sub_institute_id', $sub_institute_id)->get()->toArray();
 
         $transport_map_student = DB::table('transport_map_student')->selectRaw('COUNT(*) AS total_data')
@@ -128,9 +128,11 @@ class rollOverController extends Controller
         $table_array_check['tblstudent_enrollment'] = $current_year_students[0]->old_year_students.'/'.$next_year_students[0]->new_year_students.'/'.$remaining_rollover_students;
         $table_array_check['advance_fees'] = $advance_fees[0]->total_data;
 
-        $to_academic_sections = academic_sectionModel::where(['sub_institute_id' => $sub_institute_id])->when($marking_period_id,function($query) use ($marking_period_id){
-            $query->where('marking_period_id',$marking_period_id);
-        })->get()->toArray();
+        $to_academic_sections = academic_sectionModel::where(['sub_institute_id' => $sub_institute_id])
+        // ->when($marking_period_id,function($query) use ($marking_period_id){
+        //     $query->where('marking_period_id',$marking_period_id);
+        // })
+        ->get()->toArray();
 
         $res['status'] = 1;
         $res['message'] = "Success";
@@ -194,9 +196,11 @@ class rollOverController extends Controller
                         }
                         break;
                     case 'batch':
-                        $check_batch = DB::table('batch')->where(['sub_institute_id'=>$sub_institute_id,'syear'=>$to_next_syear])->when($marking_period_id,function($query) use($marking_period_id){
-                            $query->where('marking_period_id',$marking_period_id);
-                        })->get();
+                        $check_batch = DB::table('batch')->where(['sub_institute_id'=>$sub_institute_id,'syear'=>$to_next_syear])
+                        // ->when($marking_period_id,function($query) use($marking_period_id){
+                        //     $query->where('marking_period_id',$marking_period_id);
+                        // })
+                        ->get();
                         // DB::select("SELECT * FROM batch WHERE sub_institute_id = '".$sub_institute_id."' AND syear = '".$to_next_syear."' ");
                         if (count($check_batch) == 0) {
                             DB::INSERT("INSERT INTO batch (title,standard_id,division_id,sub_institute_id,syear,created_at,rollover_id)
@@ -296,9 +300,11 @@ class rollOverController extends Controller
                     case 'timetable':
                         $check_timetable = DB::table('timetable')
                             ->where('sub_institute_id', $sub_institute_id)
-                            ->where('syear', $to_next_syear)->when($marking_period_id,function($query) use($marking_period_id){
-                                $query->where('marking_period_id',$marking_period_id);
-                            })->get()->toArray();
+                            ->where('syear', $to_next_syear)
+                            // ->when($marking_period_id,function($query) use($marking_period_id){
+                            //     $query->where('marking_period_id',$marking_period_id);
+                            // })
+                            ->get()->toArray();
 
                         if (count($check_timetable) == 0) {
                             DB::INSERT("INSERT INTO timetable (sub_institute_id,syear,academic_section_id,standard_id,division_id,

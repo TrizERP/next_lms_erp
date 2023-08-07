@@ -58,9 +58,10 @@ class studentHomeworkSubmissionController extends Controller
             })->join('tblstudent_enrollment as se', function ($join) {
                 $join->whereRaw('(s.id = se.student_id AND se.end_date IS NULL)');
             })->join('standard as cs', function ($join) use ($marking_period_id){
-                $join->whereRaw('(cs.id = ah.standard_id)')->when($marking_period_id,function($query) use($marking_period_id) {
-                    $query->where('cs.marking_period_id');
-                });
+                $join->whereRaw('(cs.id = ah.standard_id)');
+                // ->when($marking_period_id,function($query) use($marking_period_id) {
+                //     $query->where('cs.marking_period_id');
+                // });
             })->join('division as ss', function ($join) {
                 $join->whereRaw('(ss.id = ah.division_id)');
             })->selectRaw("ah.id AS CHECKBOX,s.roll_no,s.enrollment_no, CONCAT_WS(' ',s.last_name,s.first_name,s.middle_name) AS
@@ -253,9 +254,10 @@ class studentHomeworkSubmissionController extends Controller
             })->join('tblstudent_enrollment as se', function ($join) {
                 $join->whereRaw('(s.id = se.student_id AND se.end_date IS NULL)');
             })->join('standard as cs', function ($join) use($marking_period_id) {
-                $join->whereRaw('(cs.id = ah.standard_id)')->when($marking_period_id,function($query) use($marking_period_id) {
-                    $query->where('cs.marking_period_id',$marking_period_id);
-                });
+                $join->whereRaw('(cs.id = ah.standard_id)');
+                // ->when($marking_period_id,function($query) use($marking_period_id) {
+                //     $query->where('cs.marking_period_id',$marking_period_id);
+                // });
             })->join('division as ss', function ($join) {
                 $join->whereRaw('(ss.id = ah.division_id)');
             })->join('tbluser as tu', function ($join) {

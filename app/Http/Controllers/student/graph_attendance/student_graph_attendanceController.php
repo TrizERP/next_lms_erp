@@ -42,9 +42,10 @@ class student_graph_attendanceController extends Controller
             })->join('academic_section as acs', function ($join) {
                 $join->whereRaw("acs.id = se.grade_id");
             })->join('standard as sm', function ($join) use($marking_period_id) {
-                $join->whereRaw("se.standard_id = sm.id")->when($marking_period_id,function($query) use($marking_period_id){
-                    $query->where('sm.marking_period_id',$marking_period_id);
-                });
+                $join->whereRaw("se.standard_id = sm.id");
+                // ->when($marking_period_id,function($query) use($marking_period_id){
+                //     $query->where('sm.marking_period_id',$marking_period_id);
+                // });
             })->join('division as dm', function ($join) {
                 $join->whereRaw("se.section_id = dm.id");
             })->leftJoin('attendance_student as a', function ($join) use ($date) {

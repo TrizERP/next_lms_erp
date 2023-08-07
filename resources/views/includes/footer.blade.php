@@ -13,7 +13,7 @@
 	});
 </script>
 </body>
-<script>
+<!-- <script>
 document.addEventListener("DOMContentLoaded", function () {
   document.querySelectorAll("form").forEach(function (form) {
     form.querySelectorAll("button[type='submit'], input[type='submit']").forEach(function (submitButton) {
@@ -54,8 +54,8 @@ document.addEventListener("DOMContentLoaded", function () {
           }
         })
         .catch((error) => {
-          console.error("Error checking permissions:", error);
-          alert("Error checking permissions. Please try again later.");
+          console.error("You are not authorized to access this menu, Contact to admin and ask for the rights of this menu:", error);
+          alert("You are not authorized to access this menu, Contact to admin and ask for the rights of this menu.");
         });
 			}else{
 				submitFormFunction.call(form);
@@ -65,8 +65,7 @@ document.addEventListener("DOMContentLoaded", function () {
   });
 });
 
-
-</script>
+</script> -->
 
 	<script>
 		function setSession(item,object)

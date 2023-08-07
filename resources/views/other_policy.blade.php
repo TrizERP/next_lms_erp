@@ -1,1 +1,1 @@
-<h1>This is other policy page</h1>
+<h1>This Other Policy Page</h1>

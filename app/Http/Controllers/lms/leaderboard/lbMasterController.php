@@ -35,9 +35,10 @@ class lbMasterController extends Controller
         $data['lbmaster_data'] = lb_masterModel::select('lb_master.*', 'a.title', 's.name')
             ->join('academic_section as a', 'a.id', 'lb_master.grade_id')
             ->join('standard as s',function($join) use($marking_period_id){
-                $join->on('s.id', 'lb_master.standard_id')->when($marking_period_id,function($query) use($marking_period_id){
-                    $query->where('s.marking_period_id',$marking_period_id);
-                });
+                $join->on('s.id', 'lb_master.standard_id');
+                //  ->when($marking_period_id,function($query) use($marking_period_id){
+                //      $query->where('s.marking_period_id',$marking_period_id);
+                // });
             })
             ->where(['lb_master.sub_institute_id' => $sub_institute_id])
             ->get();

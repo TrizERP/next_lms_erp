@@ -55,10 +55,10 @@ class feesStructureReportController extends Controller
 
         $std_result = DB::table('standard as s')
             ->selectRaw('*,s.name AS standard_name')
-            ->where('s.sub_institute_id', session()->get('sub_institute_id'))
-            ->when($marking_period_id,function($query) use($marking_period_id) {
-                $query->where('s.marking_period_id',$marking_period_id);
-            });
+            ->where('s.sub_institute_id', session()->get('sub_institute_id'));
+            // ->when($marking_period_id,function($query) use($marking_period_id) {
+            //     $query->where('s.marking_period_id',$marking_period_id);
+            // });
         if ($grade != "") {
             $std_result = $std_result->where('s.grade_id', $grade);
         }

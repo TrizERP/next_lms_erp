@@ -112,10 +112,10 @@ class calendar_controller extends Controller
                 })->join('academic_section as g', function ($join) {
                     $join->whereRaw('g.id = se.grade_id');
                 })->join('standard as st', function ($join) use ($marking_period_id) {
-                    $join->on('st.id', '=', 'se.standard_id')
-                        ->when($marking_period_id, function ($query) use ($marking_period_id) {
-                            $query->where('st.marking_period_id', $marking_period_id);
-                        });
+                    $join->on('st.id', '=', 'se.standard_id');
+                        // ->when($marking_period_id, function ($query) use ($marking_period_id) {
+                        //     $query->where('st.marking_period_id', $marking_period_id);
+                        // });
                 })->join('division as d', function ($join) {
                     $join->whereRaw('d.id = se.section_id');
                 })->join('school_setup as ss', function ($join) {
