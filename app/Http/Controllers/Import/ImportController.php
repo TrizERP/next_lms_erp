@@ -10,6 +10,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Maatwebsite\Excel\Facades\Excel;
+use PhpOffice\PhpSpreadsheet\IOFactory;
 
 class ImportController extends Controller
 {
@@ -40,23 +41,45 @@ class ImportController extends Controller
         $syear = session()->get('syear');
 
         $fileUrl = $request->file('csv_file');
-        $file = fopen($fileUrl, "r");
-        $fileHeader = fgetcsv($file, 0, ',');
-
         $filePath = 'import';
         $generateFileName = $sub_institute_id . "_" . $syear . "_" . rand('11111', '99999') . "." . $fileUrl->getClientOriginalExtension();
         $destinationFileUrl = $filePath . "/" . $generateFileName;
         $filePath = $filePath . "/";
         $fileUrl->move($filePath, $generateFileName);
+        $extension = $fileUrl->getClientOriginalExtension();
+
+        if ($extension == "xlsx") {
+            $spreadsheet = IOFactory::load($destinationFileUrl);
+            $worksheet = $spreadsheet->getActiveSheet();
+            $fileHeader = $worksheet->toArray()[0];
+        } else {
+            $file = fopen($destinationFileUrl, "r");
+            $fileHeader = fgetcsv($file, 0, ',');
+            fclose($file);
+        }
+
         $csv_header_fields = [];
         foreach ($fileHeader as $header) {
             $csv_header_fields[] = Str::slug($header, ",");
         }
+
         $fileDetails = [];
-        while (!feof($file)) {
-            $fileDetail = [];
-            if ($file != false) $fileDetails[] = fgetcsv($file, 0, ',');
+
+        if ($extension != 'xlsx') {
+            $file = fopen($destinationFileUrl, "r");
+            while (!feof($file)) {
+                $fileDetails[] = fgetcsv($file, 0, ',');
+            }
+            fclose($file);
+        } else {
+            $fileDetails = $worksheet->toArray();
+            array_shift($fileDetails);
         }
+
+        if (!empty($fileDetails) && empty(end($fileDetails))) {
+            array_pop($fileDetails);
+        }
+
         array_pop($fileDetails);
 
         if (count($fileDetails) > 0) {
@@ -71,6 +94,8 @@ class ImportController extends Controller
                 $table_fields = DB::table('import_table_fields')->select('display_field', 'field', 'is_required')->whereIn('table_name', [$request->tablename, 'tblstudent_enrollment'])->where('display_status', 1)->get();
             } else if ($request->tablename == 'fees_collect') {
                 $table_fields = DB::table('import_table_fields')->select('display_field', 'field', 'is_required')->whereIn('table_name', [$request->tablename, 'fees_receipt'])->where('display_status', 1)->get();
+            } else if ($request->tablename == 'result_marks') {
+                $table_fields = DB::table('import_table_fields')->select('display_field', 'field', 'is_required')->whereIn('table_name', [$request->tablename, 'tblstudent', 'result_create_exam'])->where('display_status', 1)->get();
             } else {
                 $table_fields = DB::table('import_table_fields')->select('display_field', 'field', 'is_required')->where([['display_status', 1], ['table_name', $request->tablename]])->get();
             }
@@ -275,10 +300,53 @@ class ImportController extends Controller
                         $totalInsertRecordCount = $totalInsertRecordCount + 1;
                     }
                 }
+
+                if ($request->table_name == 'result_marks') {
+                    $prepareData['sub_institute_id'] = session()->get('sub_institute_id');
+                    $found = false;       
+
+                    $result_marks = DB::table("result_marks as rs")->join('result_create_exam as rce', 'rce.id', '=', 'rs.exam_id')->join('tblstudent as s', 's.id', '=', 'rs.student_id')->selectRaw('s.id as student_id,rce.id as exam_id,rs.points,rce.standard_id')->where(['rs.sub_institute_id' => $prepareData['sub_institute_id'], 'rce.title' => $prepareData['exam_id'], 'rce.standard_id' => $prepareData['standard_id'], 's.enrollment_no' => $prepareData['student_id']])->first();
+
+                    if (!$result_marks) {
+                        $new_record = DB::table('tblstudent as s')->join('result_create_exam as rce', 's.sub_institute_id', '=', 'rce.sub_institute_id')->selectRaw('s.id as student_id,rce.id as exam_id')->where(['s.sub_institute_id' => $prepareData['sub_institute_id'], 'rce.title' => $prepareData['exam_id'], 'rce.standard_id' => $prepareData['standard_id'], 's.enrollment_no' => $prepareData['student_id']])->groupBy('s.id')->first();
+                        
+                        if ($new_record) {
+                            DB::table($request->table_name)->insert([
+                                "student_id" => $new_record->student_id,
+                                "exam_id" => $new_record->exam_id,
+                                "points" => $prepareData['points'] ?? 0,
+                                "sub_institute_id" => $prepareData['sub_institute_id'],
+                                "created_at" => now(),
+                            ]);
+                            $totalInsertRecordCount = $totalInsertRecordCount + 1;
+                        }
+                    } else {
+                        $found = true;
+
+                        if ($result_marks) {
+                            
+                            DB::table($request->table_name)->where([
+                                "student_id" => $result_marks->student_id,
+                                "exam_id" => $result_marks->exam_id,
+                                "sub_institute_id" => $prepareData['sub_institute_id'],
+                            ])->update([
+                                "student_id" => $result_marks->student_id,
+                                "exam_id" => $result_marks->exam_id,
+                                "points" => $prepareData['points'] ?? 0,
+                                "sub_institute_id" => $prepareData['sub_institute_id'],
+                                "updated_at" => now(),
+                            ]);
+                            $totalOverwiteRecordCount = $totalOverwiteRecordCount + 1;
+                            $totalOverwiteRecordArray[] = $rowKey + 1;
+                        }
+                    }
+
+
+                }
+
             }
         }
-
-
+    //    exit;
         /*if (is_array($csv_data)) {
             $totalRecordCount = count($csv_data);
             foreach ($csv_data as $key => $row) {
