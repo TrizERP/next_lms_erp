@@ -132,9 +132,9 @@
 											</td>
 										</tr>
 										<tr>
-											<td>Parent Email</td>
+											<td>Father Name</td>
 											<td>
-												{{ $data['stu_data']['email']; }}
+												{{ $data['stu_data']['father_name']; }}
 											</td>
 										</tr>
 										<tr>
@@ -167,9 +167,15 @@
 												{{ $data['stu_data']['mobile']; }}
 											</td>
 										</tr>
-										<tr style="color: red;">
-											<td>Pending Fees</td>
+										<tr>
+											<td>Parent Email</td>
 											<td>
+												{{ $data['stu_data']['email']; }}
+											</td>
+										</tr>										
+										<tr>
+											<td style="color: red;">Pending Fees</td>
+											<td style="color: red;">
 												{{ $data['stu_data']['pending']; }}
 											</td>
 										</tr>
