@@ -183,7 +183,7 @@ if (isset($_REQUEST['submit'])) {
             $valueQuery .= ' ),';
         }
         $valueQuery = rtrim($valueQuery, ',');
-        echo $insertQuery ." ". $fieldQuery ." ". $valueQuery ."<br/><br/>"; 
+        //echo $insertQuery ." ". $fieldQuery ." ". $valueQuery ."<br/><br/>"; 
        $query = mysqli_query($cn, $insertQuery . $fieldQuery . $valueQuery) or die(mysqli_error($cn));
        if($query==true){
         echo "<h4 style='color:green'>Data Imported Successfully.</h4>";
