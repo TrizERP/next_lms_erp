@@ -55,6 +55,10 @@ class bulkStudentController extends Controller
         $tblcustom_fields['last_name']['name'] = 'Surname';
         //$tblcustom_fields['standard']['name'] = 'Standard';
         $tblcustom_fields['division']['name'] = 'Division';
+        if($sub_institute_id == 257)
+        {
+            $tblcustom_fields['student_quota']['name'] = 'Student Quota';
+        }
         //$tblcustom_fields['grade']['name'] = 'Academic Section';
         $tblcustom_fields['mobile']['name'] = 'Mobile';
         $tblcustom_fields['father_name']['name'] = 'Father Name';
@@ -73,7 +77,6 @@ class bulkStudentController extends Controller
         $tblcustom_fields['pincode']['name'] = 'Pincode';
         $tblcustom_fields['religion']['name'] = 'Religion';
         $tblcustom_fields['house']['name'] = 'House';
-        $tblcustom_fields['student_quota']['name'] = 'Student Quota';
         $tblcustom_fields['cast']['name'] = 'Caste';
         $tblcustom_fields['subcast']['name'] = 'Subcaste';
         $tblcustom_fields['bloodgroup']['name'] = 'Blood Group';
@@ -90,6 +93,10 @@ class bulkStudentController extends Controller
         $tblcustom_fields['last_name']['type'] = 'textbox';
         //$tblcustom_fields['standard']['type'] = 'dropdown';
         $tblcustom_fields['division']['type'] = 'dropdown';
+        if($sub_institute_id == 257)
+        {
+            $tblcustom_fields['student_quota']['type'] = 'dropdown';
+        }
         //$tblcustom_fields['grade']['type'] = 'dropdown';
         $tblcustom_fields['mobile']['type'] = 'textbox';
         $tblcustom_fields['father_name']['type'] = 'textbox';
@@ -108,7 +115,6 @@ class bulkStudentController extends Controller
         $tblcustom_fields['pincode']['type'] = 'textbox';
         $tblcustom_fields['religion']['type'] = 'dropdown';
         $tblcustom_fields['house']['type'] = 'dropdown';
-        $tblcustom_fields['student_quota']['type'] = 'dropdown';
         $tblcustom_fields['cast']['type'] = 'dropdown';
         $tblcustom_fields['subcast']['type'] = 'textbox';
         $tblcustom_fields['bloodgroup']['type'] = 'dropdown';

@@ -145,6 +145,7 @@
         @if(isset($data['result']))
         <div class="card">            
             <div class="table-responsive">
+                {!! App\Helpers\get_school_details("","","") !!}
                 <table id="example" class="table table-striped text-center">
                 @if(count($data['result'])>0)
 

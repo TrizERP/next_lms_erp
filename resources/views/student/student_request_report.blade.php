@@ -47,6 +47,7 @@
         @endphp
         <div class="card">            
             <div class="table-responsive">
+                {!! App\Helpers\get_school_details("","","") !!}
                 <table id="example" class="table table-striped">
                     <thead>
                         <tr>

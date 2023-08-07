@@ -4,6 +4,7 @@ namespace App\Http\Controllers\student;
 
 use App\Http\Controllers\Controller;
 use App\Models\student\tblstudentModel;
+use App\Models\student\tblstudentQuotaModel;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Contracts\View\Factory;
 use Illuminate\Contracts\View\View;
@@ -25,6 +26,10 @@ class studentSearchController extends Controller
     public function index(Request $request)
     {
         $type = $request->input('type');
+        
+        $student_quotas = tblstudentQuotaModel::where('sub_institute_id', session()->get('sub_institute_id'))->get()->toArray();
+        
+        $res['student_quotas'] = $student_quotas;
         $res['status_code'] = 1;
         $res['message'] = "Success";
 
@@ -58,7 +63,8 @@ class studentSearchController extends Controller
         $including_inactive = $request->input('including_inactive');
         $unique_id = $request->input('unique_id');
         $marking_period_id = session()->get('term_id');
-
+        $student_quota = $request->input('student_quota');
+    
         $extraSearchArray = [];
         $extraSearchArray['tblstudent_enrollment.sub_institute_id'] = $sub_institute_id;
         $extraSearchArray['tblstudent_enrollment.syear'] = $syear;
@@ -78,7 +84,12 @@ class studentSearchController extends Controller
         if ($user_profile_name == 'Student') {
             $extraRaw .= " AND tblstudent.id = '".$user_id."' ";
         }
-
+        if ($sub_institute_id == 257)
+        {
+            if ($student_quota != '') {
+                $extraRaw .= " AND tblstudent_enrollment.student_quota = '".$student_quota."'";
+            }
+        }
         if ($including_inactive != 'Yes') {
             $extraRaw .= " AND tblstudent_enrollment.end_date is NULL";
         }
@@ -122,9 +133,7 @@ class studentSearchController extends Controller
 
         //END Check for class teacher assigned standards
         // DB::enableQueryLog();		
-        $student_data = tblstudentModel::select('tblstudent.*', 'tblstudent_enrollment.*', 'standard.name as standard',
-            'division.name as division',
-            'academic_section.title as grade', DB::raw($inactive_colour))
+        $student_data = tblstudentModel::select('tblstudent.*', 'tblstudent_enrollment.*', 'standard.name as standard','division.name as division', 'academic_section.title as grade', 'student_quota.title as student_quota', DB::raw($inactive_colour))
             ->join('tblstudent_enrollment', 'tblstudent.id', '=', 'tblstudent_enrollment.student_id')
             ->join('academic_section', 'academic_section.id', '=', 'tblstudent_enrollment.grade_id')
             ->join('standard',function($join) use($marking_period_id){
@@ -134,10 +143,14 @@ class studentSearchController extends Controller
                 // });
             })
             ->join('division', 'division.id', '=', 'tblstudent_enrollment.section_id')
+            ->join('student_quota', 'student_quota.id', '=', 'tblstudent_enrollment.student_quota')
             ->where($extraSearchArray)
             ->whereRaw($extraRaw)
             ->get();
             // dd(DB::getQueryLog($student_data));
+        
+        $student_quotas = tblstudentQuotaModel::where('sub_institute_id', session()->get('sub_institute_id'))->get()->toArray();
+
         $res['status_code'] = 1;
         $res['message'] = "Student List";
         $res['data'] = $student_data;
@@ -149,6 +162,8 @@ class studentSearchController extends Controller
         $res['mobile'] = $mobile;
         $res['gr_no'] = $gr_no;
         $res['unique_id'] = $unique_id;
+        $res['student_quotas'] = $student_quotas;
+        $res['student_quota'] = $student_quota;
         $res['including_inactive'] = $including_inactive;
 
         return is_mobile($type, "student/show_student", $res, "view");
