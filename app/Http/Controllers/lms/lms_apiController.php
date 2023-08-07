@@ -351,12 +351,10 @@ class lms_apiController extends Controller
                         $finaldata[$chapter_id] = $val;
                         $finaldata[$chapter_id]['topicData'] = $topicData;
                     } else {
-                        $topicData = contentModel::join('topic_master', 'content_master.topic_id', '=', 'topic_master.id')
-                            ->where('content_master.sub_institute_id', $sub_institute_id)
+                        $topicData = contentModel::where('content_master.sub_institute_id', $sub_institute_id)
                             ->where('content_master.chapter_id', $chapter_id)
                             ->where('content_master.show_hide', '1')
-                            //->orderBy('content_master.sort_order', )
-                            ->select('topic_master.id as topic_id', 'content_master.sub_institute_id', 'content_master.chapter_id', 'topic_master.main_topic_id' , 'content_master.title', 'content_master.description', 'topic_master.chapter_id', 'topic_master.topic_sort_order', 'content_master.syear', 'content_master.created_at', 'topic_master.created_by')
+                            ->select('content_master.sub_institute_id', 'content_master.chapter_id', 'content_master.content_category as topic_name' , 'content_master.syear', 'content_master.created_at')->groupBy('content_master.content_category')
                             ->get();
                         $topicData = json_decode(json_encode($topicData), true);
                         $finaldata[$chapter_id] = $val;
@@ -365,14 +363,15 @@ class lms_apiController extends Controller
                 
                     if (count($topicData) > 0) {
                         foreach ($topicData as $tkey => $tval) {
-                            // Check if the key 'topic_id' exists in the $tval array before accessing it.
-                            if (isset($tval['topic_id'])) {
+                            // Check if the key 'topic_id' exists in the $tval array before accessing it.AND topic_id = '".$tval['id']."'
+                            if (isset($tval['id'])) {
                                 $contentData = DB::select("SELECT *, 
                                     if(filename = '', '',
                                         if(file_type = 'link', filename, concat('https://".$_SERVER['SERVER_NAME']."/storage', file_folder, '/', filename))) as full_path 
                                     FROM content_master 
                                     WHERE sub_institute_id = '".$sub_institute_id."' AND chapter_id = '".$chapter_id."'  
-                                    AND topic_id = '".$tval['topic_id']."' AND subject_id = '".$subject_id."' AND show_hide = '1'");
+                                    AND topic_id = '".$tval['id']."' 
+                                    AND subject_id = '".$subject_id."' AND show_hide = '1'");
                                 $contentData = json_decode(json_encode($contentData), true);
                                 $finaldata[$chapter_id]['topicData'][$tkey]['contentData'] = $contentData;
                             }
@@ -383,7 +382,7 @@ class lms_apiController extends Controller
                                         if(file_type = 'link', filename, concat('https://".$_SERVER['SERVER_NAME']."/storage', file_folder, '/', filename))) as full_path 
                                     FROM content_master 
                                     WHERE sub_institute_id = '".$sub_institute_id."' AND chapter_id = '".$chapter_id."'  
-                                    AND topic_id = '".$tval['id']."' AND subject_id = '".$subject_id."' AND show_hide = '1'");
+                                    AND content_category = '".$tval['topic_name']."'  AND subject_id = '".$subject_id."' AND show_hide = '1'");
                                 $contentData = json_decode(json_encode($contentData), true);
                                 $finaldata[$chapter_id]['topicData'][$tkey]['contentData'] = $contentData;
                             }
