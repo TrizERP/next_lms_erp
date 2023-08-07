@@ -2205,7 +2205,7 @@ if (!function_exists('get_string')) {
             if (isset($get_name_data[0]->academic_name)) {
                 $html .= '
          <td colspan="3" style="text-align:center !important;" align="center">
-        <span style=" font-size: 18px;font-weight: 700;font-family: Arial, Helvetica, sans-serif !important;margin-left: 15% !important;">Academic Section : ' . $get_name_data[0]->academic_name . '</span>';
+        <span style=" font-size: 18px;font-weight: 700;font-family: Arial, Helvetica, sans-serif !important;">Academic Section : ' . $get_name_data[0]->academic_name . '</span>';
             }
 
             if (isset($get_name_data[0]->std_name)) {
