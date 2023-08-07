@@ -80,6 +80,7 @@
                         echo '<br><center><span style=" font-size: 14px;font-weight: 600;font-family: Arial, Helvetica, sans-serif !important">Month : '.$month_name[$data['month']].' / </span><span style=" font-size: 14px;font-weight: 600;font-family: Arial, Helvetica, sans-serif !important">Year : '.$data['year'].'</span></center><br>';
                     @endphp                        
                             <div class="table-responsive">
+                                {!! App\Helpers\get_school_details("$grade_id","$standard_id","$division_id") !!}
                                 <table id="example" class="table display" style="border:none !important">
                                     <!-- <h2 id="head-table"></h2> -->
                                     <thead>

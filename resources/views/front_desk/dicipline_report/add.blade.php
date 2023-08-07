@@ -25,7 +25,8 @@
                     <form action="{{ route('dicipline_report.index') }}" enctype="multipart/form-data" method="post">
                         {{ method_field("POST") }}
                         {{csrf_field()}}
-                        <div class="table-responsive">                            
+                        <div class="table-responsive">    
+                            {!! App\Helpers\get_school_details("","","") !!}                        
                             <table class="table table-stripped" id="example">
                                 <thead>                                    
                                     <tr>
