@@ -62,7 +62,7 @@ use DB;
                                 @php if ( $data['show_content'] == 'chapterwise' ) { @endphp
                                 <span>{{$chdata->chapter_name}}</span>
                                 @php } else { @endphp
-                                <a href="{{ route('topic_master.index',['id'=>$chdata->id]) }}">{{$chdata->chapter_name}}
+                                <a href="{{ route('topic_master.index',['id'=>$chdata->id,'standard_id'=>$_REQUEST['standard_id']]) }}">{{$chdata->chapter_name}}
                                     @php } @endphp
                                     {{-- @php
                                         if($chdata->chapter_desc){
@@ -118,7 +118,7 @@ use DB;
 
                                     {{-- Add Chapter wise Question : START --}}
                                     <a target="_blank"
-                                       href="{{ route('question_chapter_master', ['chapter_id' => $chdata->id]) }}"
+                                       href="{{ route('question_chapter_master', ['chapter_id' => $chdata->id,'standard_id'=>$_REQUEST['standard_id']]) }}"
                                        class="btn btn-outline-dark mx-1 my-1">Question Answer</a>
                                     {{-- Add Chapter wise Question : END --}}
                                 @endif

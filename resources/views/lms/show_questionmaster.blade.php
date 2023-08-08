@@ -24,7 +24,7 @@
                 </nav>
             </div>
             <div class="col-md-3 mb-4 text-md-right">
-                <a href="{{ route('question_master.create',['chapter_id' => $_REQUEST['chapter_id'],'topic_id' => $_REQUEST['topic_id']]) }}"
+                <a href="{{ route('question_master.create',['chapter_id' => $_REQUEST['chapter_id'],'topic_id' => $_REQUEST['topic_id'],'standard_id'=>$_REQUEST['standard_id']]) }}"
                    class="btn btn-info add-new"><i class="fa fa-plus"></i> Add Question</a>
             </div>
         </div>
@@ -52,6 +52,7 @@
                                         <th>Chapter</th>
                                         <th>Question</th>
                                         <th>Question Type</th>
+                                        <th>Mapping Type</th>
                                         <th>Multiple Answer</th>
                                         <th>Status</th>
                                         <th>Action</th>
@@ -61,6 +62,10 @@
                                     @if(count($data['data']) > 0)
                                         @php $i = 1;@endphp
                                         @foreach($data['data'] as $key => $quesdata)
+                                        @php
+                                                $map_type = explode(',', $quesdata->type_name);
+                                                $j =1;
+                                            @endphp
                                             <tr>
                                                 <td>@php echo $i++;@endphp</td>
                                                 <td>{{$quesdata->grade_name}}</td>
@@ -69,6 +74,13 @@
                                                 <td>{{$quesdata->chapter_name}}</td>
                                                 <td>{!!$quesdata->question_title!!}</td>
                                                 <td>{{ucwords($quesdata->question_type)}}</td>
+                                                <td>
+                                                    @foreach($map_type as $map)
+                                                    @if(!empty($map))
+                                                    {{ $j++.")".$map }}<br>
+                                                    @endif
+                                                    @endforeach
+                                                    </td>
                                                 <td>
                                                     @if($quesdata->multiple_answer == 1)
                                                         Yes
