@@ -19,7 +19,7 @@
             }
                 $getInstitutes = session()->get('getInstitutes');
                  $academicYears = session()->get('academicYears');
-
+                 
         @endphp
         <div class="card">
             @if ($sessionData = Session::get('data'))
@@ -76,7 +76,7 @@
                         @endphp    
                             <div class="table-responsive" id="printPage">
                                 <div class="my-4" id="head-table"></div>
-
+                                
                                 <table class="table table-bordered table-center" border=1>
                                     <!-- <h2 id="head-table"></h2> -->
                                     @php $month_name = [1 => "Jan", 2 => "Feb", 3 => "Mar", 4 => "Apr", 5 => "May", 6 => "June", 7 => "July", 8 => "Aug", 9 => "Sept", 10 => "Oct", 11 => "Nov", 12 => "Dec"]; 
