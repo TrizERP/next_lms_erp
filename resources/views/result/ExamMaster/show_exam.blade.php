@@ -8,7 +8,7 @@
 
                     @if(!empty($data['message']))
                     <div class="alert alert-success alert-block">
-                        <button type="button" class="close" data-dismiss="alert">×</button>
+                        <button type="button" class="close" data-dismiss="alert">×</button> 
                         <strong>{{ $data['message'] }}</strong>
                     </div>
                     @endif
@@ -21,9 +21,10 @@
                             <thead>
                                 <tr>
                                     <th>Sr No.</th>
-                                    <th>Code</th>
-                                    <th>Exam Title</th>
-                                    <th>Exam Type</th>
+                                    <th>Exam Title</th>  
+                                    <th>Standard</th>                                                                      
+                                    <th>Term</th>
+                                    <th>Weightage</th>                                    
                                     <th>Sort Order</th>
                                     <th>Action</th>
                                 </tr>
@@ -32,9 +33,10 @@
                                 @foreach($data['data'] as $key => $data)
                                 <tr>    
                                     <td>{{$data->SrNo}}</td>
-                                    <td>{{$data->Code}}</td>
-                                    <td>{{$data->ExamTitle}}</td>
-                                    <td>{{$data->ExamType}}</td>
+                                    <td>{{$data->ExamTitle}}</td>                                    
+                                    <td>{{$data->std_name}}</td>
+                                    <td>{{$data->term}}</td>                                    
+                                    <td>{{$data->weightage}}</td>
                                     <td>{{$data->SortOrder}}</td>                 
                                     <td>
                                         <div class="d-inline">

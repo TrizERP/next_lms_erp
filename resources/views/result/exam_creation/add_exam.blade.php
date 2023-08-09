@@ -23,8 +23,7 @@
                         {{csrf_field()}}
                         <div class="row">
                             
-                            {{ App\Helpers\TermDD() }}
-                            
+                        {{ App\Helpers\TermDD() }}
 
                             <div class="col-md-4 form-group">
                                 <label>Medium : </label>
@@ -34,20 +33,20 @@
                                     <option value="GSEB">GSEB</option>
                                 </select>
                             </div>
-
+                            {{ App\Helpers\SearchChain('4','single','grade,std') }} 
+                            
                             <div class="col-md-4 form-group">
-                                <label>Exam : </label>
-                                <select name="exam_id" class="form-control">
+                                <label for="title" >Select Subject:</label>
+                                <select name="subject[]" id="subject" class="form-control" multiple>
                                     <option value="">Select</option>
-                                    @foreach ($data as $key => $value)
-                                    <option value="{{ $key }}"
-                                            >{{ $value }}</option>
-                                    @endforeach
-
                                 </select>
                             </div>
-                            <div class="col-md-12 form-group">
-                                {{ App\Helpers\SearchChainSubject('4','multiple','grade,std,sub') }}
+
+                            <div class="col-md-4 form-group">
+                                <label for="title">Select Exam:</label>
+                                <select name="exam" id="exam" class="form-control">
+                                    <option value="">Select</option>
+                                </select>
                             </div>
 
                             <div class="col-md-4 form-group ml-0 mr-0">
@@ -148,6 +147,92 @@
 
 
 @include('includes.footerJs')
+
+<script>
+    $("#grade").prop('required', true);
+    $("#standard").prop('required', true);
+    $("#division").prop('required', true);
+    $("#subject").prop('required', true);
+    $("#term").prop('required', true);
+    $("#exam").prop('required', true);
+    $('#term').change(function () {
+        $("#grade").val("");
+        $("#standard").empty();
+        $("#standard").append('<option value="">Select</option>');
+        $("#division").empty();
+        $("#division").append('<option value="">Select</option>');
+        $("#subject").empty();
+        $("#subject").append('<option value="">Select</option>');
+        $("#exam").empty();
+        $("#exam").append('<option value="">Select</option>');
+    });
+    $('#grade').change(function () {
+        $("#subject").empty();
+        $("#subject").append('<option value="">Select</option>');
+        $("#exam").empty();
+        $("#exam").append('<option value="">Select</option>');
+    });
+    $('#standard').change(function () {
+        $("#exam").empty();
+        $("#exam").append('<option value="">Select</option>');
+        var standardID = $("#standard").val();
+        var divisionID = $("#division").val();
+        if (standardID) {
+            $.ajax({
+                type: "GET",
+                url: "/api/get-subject-list?standard_id=" + standardID,
+                success: function (res) {
+                    if (res) {
+                        $("#subject").empty();
+                        $("#subject").append('<option value="">Select</option>');
+                        $.each(res, function (key, value) {
+                            $("#subject").append('<option value="' + key + '">' + value + '</option>');
+                        });
+
+                    } else {
+                        $("#subject").empty();
+                    }
+                }
+            });
+        } else {
+            $("#subject").empty();
+        }
+
+    });
+    $('#subject').on('change', function () {
+        var standardID = $("#standard").val();
+        var subjectID = $("#subject").val();
+        var termID = $("#term").val();
+
+        if (standardID && subjectID && termID) {
+            $.ajax({
+                type: "GET",
+                url: "/api/get-exam-master-list?standard_id=" + standardID +
+                        "&term_id=" + termID,
+                success: function (res) {
+                    if (res) {
+                        $("#exam").empty();
+                        $("#exam").append('<option value="">Select</option>');
+                        $.each(res, function (key, value) {
+                            $("#exam").append('<option value="' + key + '">' + value + '</option>');
+                        });
+
+                    } else {
+                        $("#exam").empty();
+                    }
+                }
+            });
+        } else {
+            $("#exam").empty();
+            $("#exam").append('<option value="">Select</option>');
+            if (termID == "") {
+                alert("Please Select Term.");
+            }
+        }
+
+    });
+
+</script>
 <script>
     $(document).ready(function () {
         var counter = 0;
