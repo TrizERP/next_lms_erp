@@ -529,7 +529,7 @@
                                            href="{{ route('content_master.create', ['chapter_id' => $_REQUEST['id'],'topic_id' => $list_topicvalue->id]) }}"
                                            class="btn btn-outline-dark mx-1 my-1">Add Content</a>
                                         <a target="_blank"
-                                           href="{{route('question_master.index', ['chapter_id' => $_REQUEST['id'],'topic_id' => $list_topicvalue->id])}}"
+                                           href="{{route('question_master.index', ['chapter_id' => $_REQUEST['id'],'topic_id' => $list_topicvalue->id,'standard_id'=>$_REQUEST['standard_id']])}}"
                                            class="btn btn-outline-dark mx-1 my-1">Question Answer</a>
                                         <a target="_blank"
                                            href="{{ route('virtual_classroom_master.create', ['chapter_id' => $_REQUEST['id'],'topic_id' => $list_topicvalue->id]) }}"
