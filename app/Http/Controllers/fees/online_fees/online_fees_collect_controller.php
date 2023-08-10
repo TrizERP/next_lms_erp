@@ -653,9 +653,9 @@ exit; */
         $payment_acsept_type = $get_map_bank_data[0]->fees_type;
         $amount = 0;
         if ($payment_acsept_type == "fix") {
-            $amount = number_format(floatval($_REQUEST["total"]), 0, '.', '');
-        } else {
             $amount = number_format(floatval($_REQUEST["pay_amount"]), 0, '.', '');
+        } else {
+            $amount = number_format(floatval($_REQUEST["total"]), 0, '.', '');
         }
         $student_id = $_REQUEST["student_id"];
         $where_arr = array(

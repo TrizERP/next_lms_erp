@@ -10,6 +10,15 @@
                 <h4 class="page-title">Student Discipline Report</h4>            
             </div>                    
         </div>
+        @php
+            $grade_id = $standard_id = $division_id = '';
+            
+            if(isset($data['grade_id'])){
+                $grade_id = $data['grade_id'];
+                $standard_id = $data['standard_id'];
+                $division_id = $data['division_id'];
+            }
+        @endphp
         <div class="card">
             @if ($message = Session::get('success'))
             <div class="alert alert-success alert-block">
@@ -22,11 +31,19 @@
                     @php
                     if(isset($data['data'])){
                     @endphp
+                    @php
+                        $fromDate = request('from_date');
+                        $toDate = request('to_date');
+                    @endphp
                     <form action="{{ route('dicipline_report.index') }}" enctype="multipart/form-data" method="post">
                         {{ method_field("POST") }}
                         {{csrf_field()}}
-                        <div class="table-responsive">    
-                            {!! App\Helpers\get_school_details("","","") !!}                        
+                        <div class="table-responsive">
+                            @php
+                                echo App\Helpers\get_school_details("$grade_id","$standard_id","$division_id");
+                                echo '<br><center><span style=" font-size: 14px;font-weight: 600;font-family: Arial, Helvetica, sans-serif !important">From Date : '.$fromDate .' - </span><span style=" font-size: 14px;font-weight: 600;font-family: Arial, Helvetica, sans-serif !important">To Date : '.$toDate .'</span></center><br>';
+                            @endphp
+                                                    
                             <table class="table table-stripped" id="example">
                                 <thead>                                    
                                     <tr>
