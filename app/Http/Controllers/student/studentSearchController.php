@@ -27,9 +27,6 @@ class studentSearchController extends Controller
     {
         $type = $request->input('type');
         
-        $student_quotas = tblstudentQuotaModel::where('sub_institute_id', session()->get('sub_institute_id'))->get()->toArray();
-        
-        $res['student_quotas'] = $student_quotas;
         $res['status_code'] = 1;
         $res['message'] = "Success";
 
@@ -63,7 +60,6 @@ class studentSearchController extends Controller
         $including_inactive = $request->input('including_inactive');
         $unique_id = $request->input('unique_id');
         $marking_period_id = session()->get('term_id');
-        $student_quota = $request->input('student_quota');
     
         $extraSearchArray = [];
         $extraSearchArray['tblstudent_enrollment.sub_institute_id'] = $sub_institute_id;
@@ -83,12 +79,6 @@ class studentSearchController extends Controller
 
         if ($user_profile_name == 'Student') {
             $extraRaw .= " AND tblstudent.id = '".$user_id."' ";
-        }
-        if ($sub_institute_id == 257)
-        {
-            if ($student_quota != '') {
-                $extraRaw .= " AND tblstudent_enrollment.student_quota = '".$student_quota."'";
-            }
         }
         if ($including_inactive != 'Yes') {
             $extraRaw .= " AND tblstudent_enrollment.end_date is NULL";
@@ -148,8 +138,6 @@ class studentSearchController extends Controller
             ->whereRaw($extraRaw)
             ->get();
             // dd(DB::getQueryLog($student_data));
-        
-        $student_quotas = tblstudentQuotaModel::where('sub_institute_id', session()->get('sub_institute_id'))->get()->toArray();
 
         $res['status_code'] = 1;
         $res['message'] = "Student List";
@@ -162,8 +150,6 @@ class studentSearchController extends Controller
         $res['mobile'] = $mobile;
         $res['gr_no'] = $gr_no;
         $res['unique_id'] = $unique_id;
-        $res['student_quotas'] = $student_quotas;
-        $res['student_quota'] = $student_quota;
         $res['including_inactive'] = $including_inactive;
 
         return is_mobile($type, "student/show_student", $res, "view");

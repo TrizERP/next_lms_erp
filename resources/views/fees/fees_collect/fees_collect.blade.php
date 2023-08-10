@@ -714,7 +714,7 @@
 							$('#previous_fees').attr('readonly', true);
 
 						}
-
+						
 						tot = $("#totalVal").val();
 
 						// START 30-12-2021 Added for total fine box value display wrong

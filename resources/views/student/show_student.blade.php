@@ -31,19 +31,6 @@
                     {{ App\Helpers\SearchChain('4','single','grade,std,div',$grade_id,$standard_id,$division_id) }}
                 </div>
                 <div class="row">
-                    @if(session()->get('sub_institute_id') == 257)
-                        <div class="col-md-4 form-group">
-                            <label class="box-title after-none mb-0">Student Quota</label>
-                            <select class="form-control" name="student_quota">
-                                <option value="">Select</option>
-                                @if(isset($data['student_quotas']))
-                                    @foreach($data['student_quotas'] as $student_quotas)
-                                        <option value="{{ $student_quotas['id'] }}" @if($student_quotas['id'] == $data['student_quota']) selected="selected" @endif>{{ $student_quotas['title'] }}</option>
-                                    @endforeach
-                                @endif
-                            </select>
-                        </div>
-                    @endif
                     <div class="col-md-4 form-group">
                         <label class="box-title after-none mb-0">Last Name</label>
                         <div class = "ui-widget">
@@ -112,9 +99,6 @@
                                     <th>{{App\Helpers\get_string('grno','request')}}</th>
                                     <th>{{App\Helpers\get_string('uniqueid','request')}}</th>
                                     <th>Academic Section</th>
-                                    @if(session()->get('sub_institute_id') == 257)
-                                        <th>Student Quota</th>
-                                    @endif
                                     <th>{{App\Helpers\get_string('standard','request')}}</th>
                                     <th>{{App\Helpers\get_string('division','request')}}</th>
                                     <th>Gender</th>
@@ -133,9 +117,6 @@
                                         <td>{{$data->enrollment_no}}</td>
                                         <td>{{$data->uniqueid}}</td>
                                         <td>{{$data->grade}}</td>
-                                        @if(session()->get('sub_institute_id') == 257)
-                                            <td>{{$data->student_quota}}</td>
-                                        @endif
                                         <td>{{$data->standard}}</td>
                                         <td>{{$data->division}}</td>
                                         <td>{{$data->gender}}</td>
