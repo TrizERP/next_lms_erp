@@ -76,6 +76,7 @@
             @if( isset($data['proxydata']) )
                 <div class="col-lg-12 col-sm-12 col-xs-12">
 				<div class="table-responsive">
+                    {!! App\Helpers\get_school_details("","","") !!}
                     <table id="proxy_list" class="table table-striped">
                         <thead>
                         <tr>

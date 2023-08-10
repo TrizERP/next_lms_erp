@@ -155,14 +155,18 @@
                                                 @endif                                                    
                                             @elseif($header['type'] == "dropdown")
                                             <td>													
-                                                @php
+                                                <!-- @php
                                                     $disable = "";
-                                                    if($hkey == "student_quota" && $value->total_amount > 0)
+                                                    if(session()->get('sub_institute_id') == 257)
+                                                    {
+                                                        $disable = "";
+                                                    }
+                                                    elseif($hkey == "student_quota" && $value->total_amount > 0)
                                                     {
                                                         $disable = "disabled";
                                                     }
-                                                @endphp
-                                                <select class="form-control" name="values[{{$value->id}}][{{$hkey}}]" value="{{$value->$hkey}}" {{$disable}}>
+                                                @endphp -->
+                                                <select class="form-control" name="values[{{$value->id}}][{{$hkey}}]" value="{{$value->$hkey}}">
                                                     <option value=""> select {{$hkey}} </option>
                                                     @if(isset($data['fieldsData'][$hkey]))
                                                         @foreach($data['fieldsData'][$hkey] as $dkey => $dvalue)

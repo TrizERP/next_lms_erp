@@ -811,9 +811,10 @@ class tblstudentController extends Controller
         $request = new Request(['id' => $id]);
         $trans_details = $trans_controller->create($request);       
         
-        // echo "<pre>";print_r($trans_details['stu_data']);exit;
+        //echo "<pre>";print_r($OldData['final_fee']['Total']);exit;
         
         $res['paid_unpaid_fees'] = $OldData['total_fees'] ?? [];
+        $res['check_fees'] = $OldData['final_fee']['Total'] ?? [];
         $res['stu_data'] = $OldData['stu_data'] ?? [];
         $res['fees_data'] = $FeesData;
         
