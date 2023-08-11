@@ -39,6 +39,51 @@ class co_scholastic_marks_entry_controller extends Controller
         return is_mobile($type, "result/co_scholastic_marks_entry/show", $data, "view");
     }
 
+    public function approve(Request $request)
+    {
+        // return $request;exit;
+        $sub_institute_id = session()->get('sub_institute_id');
+        $term_id=$request->term_id;
+        $standard_id = $request->standard_id;
+        $division_id = $request->division_id;
+        $subject_id = $request->subject_id;
+        $exam_id = $request->exam_id;
+        $user = session()->get('user_id');        
+        $module_name = "co_scholastic";
+
+        $data=[
+            "subject_id"=>$subject_id,
+            "standard_id"=>$standard_id,
+            "division_id"=>$division_id,
+            "exam_id"=>$exam_id,
+            "term_id"=>$term_id,      
+            "sub_institute_id"=>$sub_institute_id,      
+            "module_name"=>$module_name,
+        ];
+    
+        $check = DB::table('result_exam_approve')->where($data)->get()->toArray();
+
+        if(!empty($check) && $check > 0){
+            $query = DB::table('result_exam_approve')->where($data)->update(['status'=>$request->approve ?? 0,'created_by'=>$user,'updated_at'=>now()]);
+            $res = [
+                "status_code" => 1,
+                "message"     => "Data Upadted",
+                "class"       => "success",
+            ];
+        }else{
+            $data += ['status'=>$request->approve ?? 0,'created_by'=>$user,'created_at'=>now()];            
+            $query = DB::table('result_exam_approve')->insert($data);
+            $res = [
+                "status_code" => 1,
+                "message"     => "Data Saved",
+                "class"       => "success",
+            ];
+        }
+   
+        $type = $request->input('type');
+
+        return is_mobile($type, "co_scholastic_marks_entry.index", $res, "redirect");
+    }
     /**
      * Show the form for creating a new resource.
      *
@@ -73,6 +118,19 @@ class co_scholastic_marks_entry_controller extends Controller
             'sub_institute_id' => session()->get('sub_institute_id'),
         ];
         $marks_entry = co_scholastic_marks_entry::where($where)->get()->toArray();
+
+        $approve_status=[
+            "subject_id"=>"0",
+            "standard_id"=>$_REQUEST["standard"],
+            "division_id"=>$_REQUEST['division'],
+            "exam_id"=>$_REQUEST['co_scholastic'],
+            "term_id"=>$_REQUEST["term"],      
+            "sub_institute_id"=>session()->get('sub_institute_id'),      
+            "module_name"=>"co_scholastic",
+        ];
+        $check_approve = DB::table('result_exam_approve')->where($approve_status)->first();
+        // print_r($check_approve);exit;
+        $responce_arr['approve_status'] = $check_approve;
 
         $attendance_data = "";
         $responce_arr['term_id'] = $_REQUEST["term"];
@@ -109,17 +167,19 @@ class co_scholastic_marks_entry_controller extends Controller
                 $responce_arr['stu_data'][$id]['outof'] = $max_mark;
 //                $responce_arr['stu_data'][$id]['per'] = $temp_arr["per"];
                 $responce_arr['stu_data'][$id]['grade'] = $temp_arr["grade"];
+                $responce_arr['stu_data'][$id][$arr['id']]['grade_marks'] = $temp_arr["grade"];
 //                $responce_arr['stu_data'][$id]['comment'] = $temp_arr["comment"];
             } else {
                 $responce_arr['stu_data'][$id]['points'] = 0;
                 $responce_arr['stu_data'][$id]['outof'] = $max_mark;
 //                $responce_arr['stu_data'][$id]['per'] = 0;
                 $responce_arr['stu_data'][$id]['grade'] = "-";
+                $responce_arr['stu_data'][$id][$arr['id']]['grade_marks'] = "-";
+                
 //                $responce_arr['stu_data'][$id]['comment'] = "";
             }
             $responce_arr['stu_data'][$id]['student_id'] = $arr['student_id'];
         }
-
         return is_mobile($type, "result/co_scholastic_marks_entry/add", $responce_arr, "view");
     }
 
@@ -181,7 +241,7 @@ class co_scholastic_marks_entry_controller extends Controller
             $all_data = $_REQUEST['values'];
         }
         foreach ($all_data as $student_id => $arr) {
-            co_scholastic_marks_entry::where([
+           $check = co_scholastic_marks_entry::where([
                 'grade_id'         => $arr['grade_id'],
                 'standard_id'      => $arr["standard_id"],
                 'term_id'          => $arr["term_id"],
@@ -189,34 +249,35 @@ class co_scholastic_marks_entry_controller extends Controller
                 'syear'            => $syear,
                 'sub_institute_id' => $sub_institute_id,
                 'student_id'       => $student_id,
-            ])->delete();
-            if (isset($arr['points'])) {
-                $data = new co_scholastic_marks_entry([
+            ])->get()->toArray();
+            if(!empty($check)){
+                $data = [
                     'grade_id'         => $arr['grade_id'],
                     'standard_id'      => $arr['standard_id'],
                     'term_id'          => $arr['term_id'],
                     'student_id'       => $student_id,
                     'co_scholastic_id' => $arr['co_scholastic'],
-                    'grade'            => "",
-                    'points'           => $arr['points'],
                     'sub_institute_id' => $sub_institute_id,
                     'syear'            => $syear,
+                ];
+                $update = DB::table('result_co_scholastic_marks_entries')->where($data)->update([
+                'grade'=> $arr['grade'] ?? " ",
+                'points'=> $arr['points'] ?? " "
                 ]);
-                $data->save();
-            } else {
-                $data = new co_scholastic_marks_entry([
+            }else{
+                $data = new co_scholastic_marks_entry([ 
                     'grade_id'         => $arr['grade_id'],
                     'standard_id'      => $arr['standard_id'],
                     'term_id'          => $arr['term_id'],
                     'student_id'       => $student_id,
                     'co_scholastic_id' => $arr['co_scholastic'],
-                    'grade'            => $arr['grade'],
-                    'points'           => "",
+                    'grade'            => $arr['grade'] ?? " ",
+                    'points'           => $arr['points'] ?? " ",
                     'sub_institute_id' => $sub_institute_id,
                     'syear'            => $syear,
                 ]);
                 $data->save();
-            }
+        }
         }
         $res = [
             "status_code" => 1,

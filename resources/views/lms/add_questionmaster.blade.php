@@ -51,7 +51,7 @@ br {
                             <div class="row align-items-center">                        
                                 <div class="col-md-12">
                                     <div class="form-group">
-                                        <textarea name="question_title" id="question_title" contenteditable="true">
+                                        <textarea name="question_title" id="question_title" contenteditable="true" onchange="check_input(this)">
                                             
                                         </textarea>
                                         <label for="topicType">Question</label>
@@ -75,7 +75,7 @@ br {
                             <div class="col-md-4">
                                 <div class="form-group">
                                     <label for="topicType">Mapping Type</label>
-                                    <select class="load_map_value cust-select form-control mb-0" name="mapping_type[]" data-new = "1">
+                                    <select class="load_map_value cust-select form-control mb-0" name="mapping_type[]" data-new = "1" id="mapping_type">
                                         <option value="">Select Mapping Type</option>
                                         @if(isset($data['lms_mapping_type'])) 
                                             @foreach($data['lms_mapping_type'] as $key => $value)
@@ -88,7 +88,7 @@ br {
                             <div class="col-md-4">
                                 <div class="form-group">
                                     <label for="topicType2">Mapping Value</label>
-                                    <select class="cust-select form-control map-value mb-0" name="mapping_value[]" data-new="1">                                    
+                                    <select class="cust-select form-control map-value mb-0" name="mapping_value[]" data-new="1" id="mapping_value">                                    
                                         <option value="">Select Mapping Value</option>                                                                                                    
                                     </select>
                                 </div>
@@ -230,36 +230,18 @@ br {
                             url:path,
                             data:'mapping_type=82',
                             success:function(result){                     
-                                //var e = $('#mapping_value[data-new='+data_new+']');           
                                 var e = $('select[name="mapping_value[]"][data-new=1]');           
                                 $(e).find('option').remove().end();            
                                 for(var i=0;i < result.length ;i++)
                                 {
                                     console.log(res.prediction, result[i]['name']);
                                     $(e).append($("<option></option>").val(result[i]['id']).html(result[i]['name']));
-                                    //$("#mapping_value[]").append($("<option></option>").val(result[i]['id']).html(result[i]['name']));
                                 }
 
                                 var prediction = res.prediction;
-                                // if ( res.prediction == 'creating' ) {
-                                //     prediction = 'Create';
-                                // }
-
-                                // var prediction_search = prediction.charAt(0).toUpperCase() + prediction.slice(1);
-
-                                // console.log(prediction_search);
-                                // $(".map-value option:contains("+ prediction. +")").attr('selected', 'selected');
-
+                               
                                 $('.map-value option').filter(function () { return $(this).html() == `${prediction}`; }).attr('selected', true);
-                                
-                                // $('.map-value option').each( function (index) {
-                                //     var attr_set = false;
-                                //     if ($(this).html() == prediction) {
-                                //         attr_set = true;
-                                //     }
-
-                                //     $(this).attr('selected', attr_set);
-                                // } );
+                              
                             }
                         });
                     }
@@ -302,16 +284,6 @@ br {
 
 <script>
 
-$( document ).ready(function() {   
-
-    // $('.summernote').summernote({
-    //     height: 200, // set editor height
-    //     minHeight: null, // set minimum height of editor
-    //     maxHeight: null, // set maximum height of editor
-    //     focus: false // set focus to editable area after initializing summernote
-    // });
-});
-
 
 $(document).on('change','.load_map_value', function(e){    
     e.stopPropagation();
@@ -321,18 +293,15 @@ $(document).on('change','.load_map_value', function(e){
     //alert(mapping_type);
     
     var path = "{{ route('ajax_LMS_MappingValue') }}";
-    //$('#mapping_value').find('option').remove().end();    
     $.ajax({
         url:path,
         data:'mapping_type='+mapping_type,
         success:function(result){                     
-            //var e = $('#mapping_value[data-new='+data_new+']');           
             var e = $('select[name="mapping_value[]"][data-new='+data_new+']');           
             $(e).find('option').remove().end();            
             for(var i=0;i < result.length ;i++)
             {
                 $(e).append($("<option></option>").val(result[i]['id']).html(result[i]['name']));
-                //$("#mapping_value[]").append($("<option></option>").val(result[i]['id']).html(result[i]['name']));
             }
         }
     });
@@ -530,7 +499,96 @@ $("#lomaster").change(function(){
     });
 })
 //END Bind LO Indicator
+</script>
 
+@php
+$std_name = DB::table('standard')->where(['id'=>$_REQUEST['standard_id'],'sub_institute_id'=>session()->get('sub_institute_id')])->first();
+ @endphp
+<script>
+//map value
 
+// Define the load_map_value function
+function load_map_value(data_new, selectedValue,map_val) {
+    var mapping_type = $('select[name="mapping_type[]"][data-new=' + data_new + ']').val();
+    console.log(map_val);
+    var path = "{{ route('ajax_LMS_MappingValue') }}";
+    $.ajax({
+        url: path,
+        data: 'mapping_type=' + mapping_type,
+        success: function(result) {
+            var e = $('select[name="mapping_value[]"][data-new=' + data_new + ']');
+            $(e).find('option').remove().end();
+            for (var i = 0; i < result.length; i++) {
+                $(e).append($("<option></option>").val(result[i]['id']).html(result[i]['name']));                 
+                if (result[i]['name'] === map_val) {
+                    $(e).find('option[value="' + result[i]['id'] + '"]').attr('selected', true);
+                }
+            }
+        }
+    });
+}
+
+// map type
+function check_input(inputElement) {
+    var inputValue = inputElement.value;
+    var std ={!!$std_name->name!!};
+
+      var data = {
+        "question": inputValue,
+        "standard": std,
+        "type_depth":9,
+        "type_bloom":82, 
+    };
+   
+    var path = "{{ route('chat') }}";
+    $.ajax({
+        url:path,
+        data: data,
+        success:function(result){  
+            console.log(result);
+            var selectElement_type = document.getElementById("mapping_type");
+         
+            $('select[name="mapping_type[]"]').each(function() {
+                data_new =  parseInt($(this).attr('data-new'));
+                html = $(this).html();
+            });
+         
+            data_new = parseInt(data_new) + 1; 
+         
+           var parsedResult = JSON.parse(result);
+
+// Extract the values for answer_depth and answer_bloom
+var answer_depth = parsedResult[0];
+var answer_bloom = parsedResult[1];
+
+var mappingTypeValues = [9, 82];
+        var mapping_type_data = html;
+        if(data_new <= 2){
+        var htmlcontent = '';    
+        htmlcontent += '<div class="clearfix"></div><div class="addButtonCheckbox1"><div class="row align-items-center">';
+        htmlcontent += '<div class="col-md-4"><div class="form-group"><label for="topicType">Mapping Type</label><select class="load_map_value cust-select form-control mb-0" name="mapping_type[]" data-new=' + data_new + '>' + mapping_type_data + '</select></div></div>';
+        htmlcontent += '<div class="col-md-4"><div class="form-group"><label for="topicType2">Mapping Value</label><select class="cust-select form-control mb-0" name="mapping_value[]" data-new=' + data_new + '><option value="">Select Mapping Value</option></select></div></div>';
+        htmlcontent += '<div class="col-md-4"><a href="javascript:void(0);" onclick="removeNewRow1();" class="btn btn-danger btn-sm"><i class="mdi mdi-minus"></i></a></div></div></div>';
+                                
+        $('.addButtonCheckbox1:last').after(htmlcontent);
+}
+        var newSelectElement_type = $('select[name="mapping_type[]"][data-new=' + data_new + ']');
+        var SelectElement_type = $('select[name="mapping_type[]"][data-new=1]');
+   
+    for (var i = 0  ; i <= mappingTypeValues.length; i++) {
+        if(i==0){
+            SelectElement_type.val(9); 
+            load_map_value(1,9,answer_depth);
+        }        
+        if (data_new == i + 1) {            
+        newSelectElement_type.val(mappingTypeValues[i]);
+        load_map_value(data_new, mappingTypeValues[i],answer_bloom);
+        break;
+        }
+    }
+        }
+    });
+
+}
 </script>
 @include('includes.footer')

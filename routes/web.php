@@ -399,3 +399,5 @@ Route::get('termAndCondition', [dashboardController::class, 'termAndCondition'])
 Route::get('otherPolicy', [dashboardController::class, 'otherPolicy'])->name('otherPolicy');
 Route::any('check_permissions',[AJAXController::class, 'check_access'])->name('check_permissions');
 Route::any('check_access',[AJAXController::class, 'check_access'])->name('check_access');
+
+Route::any('chat',[AJAXController::class, 'chat'])->name('chat');

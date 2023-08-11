@@ -81,6 +81,9 @@ Route::group(['prefix' => 'result', 'middleware' => ['session', 'menu', 'logRout
     Route::resource('result_report', result_report_controller::class);
     Route::post('show_result_report', [result_report_controller::class, 'show_result_report'])->name('show_result_report');
     Route::GET('ajax_StandardwiseSubject', [result_report_controller::class, 'ajax_StandardwiseSubject'])->name('ajax_StandardwiseSubject');
+    Route::post('marks_entry/approve', [marks_entry_controller::class,'approve'])->name('approve');
+    Route::post('marks_entry/getMarksApproval', [marks_entry_controller::class,'getMarksApproval'])->name('getMarksApproval');    
+    Route::post('co_scholastic_marks_entry/approve', [co_scholastic_marks_entry_controller::class,'approve'])->name('co_scholastic_marks_entry_approve');    
 
     Route::resource('upload_result', upload_result_controller::class);
     // Route::GET('student_homework_submission_report_index', 'student\studentHomeworkSubmissionController@studentHomeworkSubmissionReportIndex')->name("student_homework_submission_report_index");

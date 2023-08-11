@@ -584,8 +584,23 @@ class AJAXController extends Controller
         $full_bk = array_merge($reg_bk_month_wise, $other_bk_off);
 
         $full_bk2 = array_merge($reg_bk_month_wise2, $other_bk_off2);
+
+        
+        $feeTitles = array_keys($full_bk);
+        $feeTitlesIn = implode("','", $feeTitles);
+        
+        $sortOrders = DB::table('fees_title')
+            ->whereRaw("display_name IN ('".$feeTitlesIn."')")
+            ->where(['sub_institute_id'=>session()->get('sub_institute_id'),'syear'=>session()->get('syear')])
+            ->orderBy('sort_order')
+            ->pluck('sort_order','display_name');
+
+            uksort($full_bk, function($a, $b) use ($sortOrders) {
+                return $sortOrders[$a] <=> $sortOrders[$b];
+            });
+         
+        
         $previous = array_sum($full_bk2);
-        // return $previous;exit;
 
         if ($previous > 0) {
             $full_bk['Previous Fees'] = $previous;
@@ -1796,33 +1811,59 @@ class AJAXController extends Controller
 
     public function chat(Request $request)
     {
-        // $message = "what is laravel?";
-
-        //$apiKey = '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'; // uma uma.actiza
-       // $apiKey = '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';//kalpesh sir 2005
-        //$apiKey='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';//3rd key infosystem
+        $question = $request->question;
+        $standard = $request->standard;
+        $type_name = $request->type_depth;
+        $type_bloom = $request->type_bloom;
+        
+        if($request->has('question') && $question!==''){
+            if($request->type_depth){
+                $options = DB::table('lms_mapping_type')->select(DB::raw('group_concat(name) as type_name'))->where('parent_id',$request->type_depth)->first();                
+                $depth = "'".$question."' give answer from given options in one word this question for standard '".$standard."' student from these options $options->type_name ";
+            }
+             if ($request->type_bloom){
+                $options = DB::table('lms_mapping_type')->select(DB::raw('group_concat(name) as type_name'))->where('parent_id',$request->type_bloom)->first();
+                $bloom = "'".$question."' give answer from given options in one word this question for Blooms Taxonomy? from these options $options->type_name";
+            }
+            $message = array(
+                array("question_depth"=>$depth),
+                array("question_bloom"=>$bloom), 
+                array("always give both questions answer in one array with vlaue only")               
+            );
+        }else{
+            $message = array($request->message);            
+        }
         $apiKey ='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';
-        $message = "Your user message goes here.";
+      
+        $endpoint = "https://api.openai.com/v1/chat/completions";
 
-        $data = Http::withHeaders([
-            'Content-Type' => 'application/Json',
+        $data = [
+            'model' => 'gpt-3.5-turbo',
+            'messages' => [
+                [
+                    'role' => 'user',
+                    'content' => json_encode($message)
+                ]
+            ],
+            "temperature" => 0.7,
+            "max_tokens" => 256,
+            "top_p" => 1,
+            "frequency_penalty" => 0,
+            "presence_penalty" => 0,
+            "stop" => ["11."]
+        ];
+
+        $response = Http::withHeaders([
+            'Content-Type' => 'application/json',
             'Authorization' => 'Bearer ' . $apiKey,
-            ])->post("https://api.openai.com/v1/chat/completions", [
-                'model'=>'gpt-3.5-turbo',
-                'messages' => [
-                    [
-                        'role' => 'user',
-                        'content' => $message
-                    ]
-                ],
-                "temperature" => 0.7,
-                "max_tokens" => 256,
-                "top_p" => 1,
-                "frequency_penalty" => 0,
-                "presence_penalty" => 0,
-                "stop" => ["11."]
-            ])->json();
-       $res['answer'] = response()->json($data, 200, array(), JSON_PRETTY_PRINT);
+        ])->post($endpoint, $data)->json();
+
+        if (isset($response['choices'][0]['message']['content'])) {
+          
+            $res['answer'] = $response['choices'][0]['message']['content'];
+        }else{
+            $res['answer'] = $response;
+        }
        return $res['answer'];
     }
 }
