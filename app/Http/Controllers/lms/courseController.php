@@ -53,8 +53,9 @@ class courseController extends Controller
 	                WHERE sub_institute_id = '" . $sub_institute_id . "' AND grade_id IN (
 	                SELECT id
 	                FROM academic_section
-	                WHERE sub_institute_id = '" . $sub_institute_id . "' AND title = 'Other'))
-	            ))";
+	                WHERE sub_institute_id = '" . $sub_institute_id . "' AND title = 'Other')
+	                )
+	            )";
 	    }
 
 	    $getIsLms = DB::table('school_setup')
@@ -109,7 +110,8 @@ class courseController extends Controller
 	            })
 	            ->whereRaw($sub_institute_id_by_lms)
 	            ->where('s.allow_content', '=', 'Yes')
-	            ->whereRaw($extra)
+	            // ->whereRaw($extra)
+	            ->whereRaw(ltrim($extra, ' AND '))
 	            ->groupBy('s.subject_id', 's.standard_id', 's.subject_category')
 	            ->orderBy('s.sort_order')
 	            ->get();
