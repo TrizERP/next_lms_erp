@@ -64,8 +64,13 @@
                 </div>
                 @php
                 $users = ["Admin"];
+                $message = "";
+                if(isset($data['approve_status']) && $data['approve_status']->status ==1 && isset($data['approved_user'])){
+                    $message = "Approved By ".$data['approved_user']->first_name." ".$data['approved_user']->last_name." ";   
+                }
                 @endphp
                 @if(in_array(session()->get('user_profile_name'),$users))
+                
                 <form action="{{ route('approve') }}" enctype="multipart/form-data" method="post" style="margin-top:40px">
                         {{ method_field("POST") }}
                         {{csrf_field()}}
@@ -82,12 +87,12 @@
                                 <input type="hidden" name="exam_id" value="{{$data['exam']}}">
 
                                 <input type="submit"  class="btn btn-outline-secondary" name="submit" id="submit" Value="Approved Marks">
+                                <div id="passwordHelpBlock" class="form-text">
+                                {{$message}}</div>
                             </div>
-                            <!-- subject_id,standard_id,division_id,exam_id,term_id,status,sub_institute_id,created_by,module_name -->
-                        </div> 
+                    </div>                        
                     </form>
                         @endif
-                <div class="col-lg-12 col-sm-12 col-xs-12">
               
                     @php
                     if(isset($data['stu_data'])){
@@ -112,7 +117,7 @@
                             </tr>
                             @php
                             $arr = $data['stu_data'];
-                             $disable = "";                            
+                             $disable  = "";                            
                             if(isset($data['approve_status']) && $data['approve_status']->status ==1){
                                 $disable = "disabled";
                             }
@@ -141,13 +146,14 @@
                             @endphp
                         </table>
                         </div>
-
-                        <div class="col-md-12 form-group">
+                        @if(isset($data['approve_status']->status) && $data['approve_status']->status ==1)
+                        @else
+                        <div class="col-md-12 form-group mt-4">
                             <center>
-                                <input type="submit" name="submit" value="Save" class="btn btn-success" >
+                                <input type="submit" name="submit" value="Save" class="btn btn-success"  >
                             </center>
                         </div>
-
+                        @endif
                     </form>
                     @php
                     }else{
