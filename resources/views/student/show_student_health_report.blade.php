@@ -85,7 +85,15 @@
         @endphp
                         <div class="card">
                             <div class="table-responsive">
-                                {!! App\Helpers\get_school_details("$grade_id","$standard_id","$division_id") !!}
+                            @php
+                                echo App\Helpers\get_school_details($grade_id, $standard_id, $division_id);
+                                echo '<br><center><span style="font-size: 14px; font-weight: 600; font-family: Arial, Helvetica, sans-serif !important">';
+                                echo 'Health : ' . (isset($data['health_type']) ? $data['health_type'] : '');
+                                echo '</span> <span style="font-size: 14px; font-weight: 600; font-family: Arial, Helvetica, sans-serif !important">';
+                                echo 'From Date : ' . (isset($data['from_date']) ? date('d-m-Y', strtotime($data['from_date'])) : '') . ' - ';
+                                echo '</span><span style="font-size: 14px; font-weight: 600; font-family: Arial, Helvetica, sans-serif !important">';
+                                echo 'To Date : ' . (isset($data['to_date']) ? date('d-m-Y', strtotime($data['to_date'])) : '') . '</span></center><br>';
+                            @endphp
                                 <table id="example" class="table table-striped">
                                     <thead>
                                     <tr>

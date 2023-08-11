@@ -2306,10 +2306,10 @@ class fees_collect_controller extends Controller
         }
 
 
-
+        
         $full_bk["Total"] = $total;
         $full_bk_new["Total"] = $total;
-// echo "<pre>";print_r($full_bk_new);exit;
+ //echo "<pre>";print_r($full_bk);exit;
 
         $type = "web";
         $res['total_fees'] = $left_bk_table ?? [];
@@ -2333,6 +2333,8 @@ class fees_collect_controller extends Controller
             ->where('fc.sub_institute_id', $sub_institute_id)
             ->where('fc.syear', $syear)->get()->toArray();
 
+            $late_fees_amount = $fees_config[0]->late_fees_amount;
+            //echo "<pre>";print_r($late_fees_amount);exit;
         if (count($fees_config) > 0) {
             $receipt_css = $fees_config[0]->css;
             $paper_size = $fees_config[0]->fees_receipt_template;
@@ -2342,6 +2344,7 @@ class fees_collect_controller extends Controller
             $receipt_css = $fees_config[0]->css;
             $paper_size = 'A5';
         }
+
         $res['receipt_css_data'] = $receipt_css;
         $res['paper_size'] = $paper_size;
         // echo "<pre>";print_r($res);exit;

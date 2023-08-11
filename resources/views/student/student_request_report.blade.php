@@ -47,7 +47,10 @@
         @endphp
         <div class="card">            
             <div class="table-responsive">
-                {!! App\Helpers\get_school_details("","","") !!}
+                @php
+                    echo App\Helpers\get_school_details("","","");
+                    echo '<br><center><span style=" font-size: 14px;font-weight: 600;font-family: Arial, Helvetica, sans-serif !important">From Date : '.date('d-m-Y',strtotime($data['from_date'])) .' - </span><span style=" font-size: 14px;font-weight: 600;font-family: Arial, Helvetica, sans-serif !important">To Date : '.date('d-m-Y',strtotime($data['to_date'])) .'</span></center><br>';
+                @endphp
                 <table id="example" class="table table-striped">
                     <thead>
                         <tr>

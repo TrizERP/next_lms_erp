@@ -312,9 +312,9 @@ class questionmasterController extends Controller
         // return array
         if ($request->get('topic_id')) {
             return redirect()->route('question_master.index',
-                ['chapter_id' => $request->get('chapter_id'), 'topic_id' => $request->get('topic_id')]);
+                ['chapter_id' => $request->get('chapter_id'), 'topic_id' => $request->get('topic_id'),'standard_id'=>$request->get('standard_id')]);
         } else {
-            return redirect()->route('question_chapter_master', ['chapter_id' => $request->get('chapter_id')]);
+            return redirect()->route('question_chapter_master', ['chapter_id' => $request->get('chapter_id'),'standard_id'=>$request->get('standard_id')]);
         }
 
         //return is_mobile($type, "question_master.index", $res, "redirect");

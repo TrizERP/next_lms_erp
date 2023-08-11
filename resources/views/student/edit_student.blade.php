@@ -244,25 +244,34 @@ br {
                                         <div class="col-md-4 form-group">
                                             <span id="division_error_span"></span>
                                         </div> 
-                                        
+                                        @php
+                                            $disable = " ";
+
+                                        @endphp
                                         <div class="col-md-4 form-group">
                                             <label>{{App\Helpers\get_string('studentquota','request')}}<i class="mdi mdi-lead-pencil"></i></label>
-                                            <select id='student_quota' required name="student_quota" class="form-control" >
+                                            @php 
+                                            if(session()->get('sub_institute_id') == 257){                                                $disable = " ";
+                                            }elseif($data['check_fees'] == 0){
+                                                $disable = "disabled";}
+                                            @endphp
+                                            <select id='student_quota' required name="student_quota" class="form-control" {{$disable}}>
                                                 <option value="">--Select--</option>
-                                                @if(isset($data['student_quota']))
+                                                
+                                                    @if(isset($data['student_quota']))
 
-                                                    @foreach($data['student_quota'] as $key => $value)
-                                                            @php
-                                                                $selected = '';
-                                                            @endphp
-                                                        @if($student_data['student_quota']== $value['id'])
-                                                            @php
-                                                                $selected = 'selected';
-                                                            @endphp
-                                                        @endif
-                                                        <option {{ $selected }} value="{{ $value['id'] }}">{{ $value['title'] }}</option>
-                                                    @endforeach
-                                                @endif
+                                                        @foreach($data['student_quota'] as $key => $value)
+                                                                @php
+                                                                    $selected = '';
+                                                                @endphp
+                                                            @if($student_data['student_quota']== $value['id'])
+                                                                @php
+                                                                    $selected = 'selected';
+                                                                @endphp
+                                                            @endif
+                                                            <option {{ $selected }} value="{{ $value['id'] }}">{{ $value['title'] }}</option>
+                                                        @endforeach
+                                                    @endif
                                             </select>
                                         </div>    
 
