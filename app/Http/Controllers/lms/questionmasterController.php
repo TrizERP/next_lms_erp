@@ -96,7 +96,8 @@ class questionmasterController extends Controller
                 $query->on('s.subject_id', '=', 'c.subject_id')
                     ->on('s.standard_id', '=', 'c.standard_id');
             })
-            ->join('standard as st', 'st.id', '=', "c.standard_id");
+            ->join('standard as st', 'st.id', '=', "c.standard_id")
+            ->where('c.id',$chapter_id);
 
         if ($topic_id) {
             $breadcrum_data->addSelect('t.id as topic_id', 't.name as topic_name');
