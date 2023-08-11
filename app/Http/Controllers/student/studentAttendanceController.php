@@ -470,37 +470,40 @@ class studentAttendanceController extends Controller
             $attendance_data = DB::table('attendance_student')->select('attendance_date', 'attendance_code')
                 ->where('sub_institute_id', $sub_institute_id)
                 ->where('student_id', $student_id)
-                ->where('syear', $syear)->get()->toArray();
+                ->where('syear', $syear)
+                ->whereNotNull('attendance_date')
+                ->orderBy('attendance_date')
+                ->get()->toArray();
 
             $holiday_data = DB::table('tblstudent_enrollment as s')
                 ->leftJoin('calendar_events as c', function ($join) {
-                    $join->whereRaw('find_in_set(s.standard_id,c.standard)');
+                    $join->whereRaw('find_in_set(s.standard_id,c.standard) AND s.syear=c.syear');
                 })
-                ->selectRaw('c.school_date,c.title,c.description')
+                ->selectRaw('c.school_date,c.title,c.description,c.event_type')
                 ->where('s.sub_institute_id', $sub_institute_id)
                 ->where('s.student_id', $student_id)
                 ->where('event_type', '=', 'holiday')
-                ->where('s.syear', $syear)->orderBy('school_date')->get()->toArray();
+                ->where('c.syear', $syear)->orderBy('school_date')->get()->toArray();
 
             $event_data = DB::table('tblstudent_enrollment as s')
                 ->leftJoin('calendar_events as c', function ($join) {
-                    $join->whereRaw('find_in_set(s.standard_id,c.standard)');
+                    $join->whereRaw('find_in_set(s.standard_id,c.standard) AND s.syear=c.syear');
                 })
-                ->selectRaw('c.school_date,c.title,c.description')
+                ->selectRaw('c.school_date,c.title,c.description,c.event_type')
                 ->where('s.sub_institute_id', $sub_institute_id)
                 ->where('s.student_id', $student_id)
                 ->where('event_type', '=', 'event')
-                ->where('s.syear', $syear)->orderBy('school_date')->get()->toArray();
+                ->where('c.syear', $syear)->orderBy('school_date')->get()->toArray();
 
             $vacation_data = DB::table('tblstudent_enrollment as s')
                 ->leftJoin('calendar_events as c', function ($join) {
-                    $join->whereRaw('find_in_set(s.standard_id,c.standard)');
+                    $join->whereRaw('find_in_set(s.standard_id,c.standard) AND s.syear=c.syear');
                 })
-                ->selectRaw('c.school_date,c.title,c.description')
+                ->selectRaw('c.school_date,c.title,c.description,c.event_type')
                 ->where('s.sub_institute_id', $sub_institute_id)
                 ->where('s.student_id', $student_id)
-                ->where('event_type', '=', 'vaction')
-                ->where('s.syear', $syear)->orderBy('school_date')->get()->toArray();
+                ->where('event_type', '=', 'vacation')
+                ->where('c.syear', $syear)->orderBy('school_date')->get()->toArray();
 
             $res['status'] = 1;
             $res['message'] = "Success";
