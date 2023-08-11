@@ -541,7 +541,26 @@ class dynamic_report_controller extends Controller
                                     $this->query->leftjoin('transport_vehicle as tv', $tblvehicle_join);
                                 }
                             }
-                        }    
+                        }
+                    else{
+                        if ($main_module_name == "Online Payment LOG") {
+                            $this->query = DB::table('tblstudent as s');
+                            $main_table_initial = "s";
+                            foreach ($sub_module_name as $id => $arr) {
+                                if ($arr->sub_module == "Student") {
+                                    $tblstudent_join = [
+                                        'fp.student_id'       => 'se.student_id',
+                                        'fp.sub_institute_id' => 'se.sub_institute_id',
+                                        //'fp.syear' => session()->get('syear'),
+                                    ];
+                                    $this->query->join('tblstudent_enrollment as se', $enrollment_join);
+                                    $this->query->join('academic_section as acs', $grade_join);
+                                    $this->query->join('standard as st', $std_join);
+                                    $this->query->join('division as di', $div_join);
+                                    $this->query->leftjoin('fees_payment as fp', $tblstudent_join);
+                                }
+                            }
+                        }        
                     else {
                         if ($main_module_name == "Circular") {
                             $this->query = DB::table('circular as c');
@@ -564,17 +583,19 @@ class dynamic_report_controller extends Controller
             }
         }
     }
+    }
                 }
             }
         }
     }
 }
+//echo("<pre>");print_r($all_fields_name);exit;
 // |COUNT(DISTINCT cm.content_category) as total_content|GROUP_CONCAT(DISTINCT cm.content_category) as content_type|COUNT(DISTINCT cm.title) as total_sub_content|GROUP_CONCAT(DISTINCT cm.title) as sub_contents
 
 // Standard,Chapter Name,Subject Name,Total Contents,Content Name,Total Sub Content,Sub Content Name
         $col = [];
         foreach ($all_detail["selected_fields"] as $id => $val) {
-            if ($main_module_name !="Transport" && $all_fields_name[$val] == " Full Name") {
+            if ($main_module_name !="Transport" && $all_fields_name[$val] == "Full Name") {
                 $col[] = DB::raw("concat_ws(' ',s.first_name,s.middle_name,s.last_name) as full_name");
             }elseif($main_module_name =="Transport" && $all_fields_name[$val] == " Full Name")
             {
@@ -600,11 +621,15 @@ class dynamic_report_controller extends Controller
                 $col[] = DB::raw("COUNT(DISTINCT cm.title) as total_sub_content");
             }
             else {
-                $col[] = $all_fields_index[$val];
+/* echo("<pre>");print_r($all_fields_name);echo("<br>");echo"value";
+echo("<pre>");print_r($val); */
+
+
+             $col[] = $all_fields_index[$val];
             }
         }
         // echo "<pre>";print_r($col);
-// exit;
+        // exit;
         $result = "";
         $sub_institute_id = session()->get('sub_institute_id');
         foreach ($all_detail["condition"] as $must_any => $arr) {
