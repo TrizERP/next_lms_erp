@@ -258,7 +258,11 @@ class marks_entry_controller extends Controller
             "module_name"=>"result_mark",
         ];
         $check_approve = DB::table('result_exam_approve')->where($approve_status)->first();
+        if(isset($check_approve->created_by)){
+            $approved_user = DB::table('tbluser')->where('id',$check_approve->created_by)->first();
+        }
         $responce_arr['approve_status'] = $check_approve;
+        $responce_arr['approved_user'] = $approved_user ?? '';        
         $attendance_data = "";
         if (! empty($student_data)) {
             foreach ($student_data as $id => $arr) {
