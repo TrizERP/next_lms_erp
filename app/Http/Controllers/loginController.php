@@ -369,6 +369,7 @@ class loginController extends Controller
                     $request->session()->put('client_id', $user['client_id']);
                     $request->session()->put('is_admin', $user['is_admin']);
                     $request->session()->put('user_profile_name', $userprofiledetails[0]['name']);
+                    $request->session()->put('profile_parent_id', $userprofiledetails[0]['parent_id']);
                     $request->session()->put('user_name', $user['user_name']);
                     $request->session()->put('name', $user['first_name'].' '.$user['last_name']);
                     $request->session()->put('email', $user['email']);
@@ -384,8 +385,6 @@ class loginController extends Controller
                     $res['academicTerms'] = $getAcademicTerms;
                     $res['academicYears'] = $getAcademicYear;
                     
-                    // return $schoolData[0]['expire_date'];exit;
-                    // if($userprofiledetails[0]['name']=='Admin' && strtotime($user['last_login']) <= strtotime('-30 days')){
                     if(session()->get('is_admin') == 1){
                         return is_mobile($type, "dashboard", $res);
                     }elseif($schoolData[0]['expire_date'] == null){
