@@ -57,6 +57,56 @@
 						<label>To Date</label>
 						<input type="text" id="to_date" name="to_date" value="{{$to_date}}" class="form-control mydatepicker" autocomplete="off">
 					</div>
+					@php
+						$payment_mode = '';
+						if(isset($data['payment_mode'])){ 
+							$payment_mode = $data['payment_mode'];
+						}
+					@endphp
+					<div class="col-md-4 form-group">
+						<label>Payment Mode</label>
+						<select class="form-control" name="payment_mode" id="payment_mode">
+							<option value="">Select Payment Mode</option>
+							<option @if($payment_mode == 'Cash') selected="selected"
+                                                    @endif value="Cash">Cash</option>
+							<option @if($payment_mode == 'Cheque') selected="selected"
+                                                    @endif value="Cheque">Cheque</option>
+							<option @if($payment_mode == 'DD') selected="selected"
+                                                    @endif value="DD">DD</option>
+							<option @if($payment_mode == 'Online') selected="selected"
+                                                    @endif value="Online">Online</option>
+							<option @if($payment_mode == 'NACH') selected="selected"
+                                                    @endif value="NACH">NACH</option>
+							<option @if($payment_mode == 'UPI') selected="selected"
+                                                    @endif value="UPI">UPI</option>
+							<option @if($payment_mode == 'Swipe1') selected="selected"
+                                                    @endif value="Swipe1">Swipe1</option>
+							<option @if($payment_mode == 'Swipe2') selected="selected"
+                                                    @endif value="Swipe2">Swipe2</option>
+							<option @if($payment_mode == 'Swipe3') selected="selected"
+                                                    @endif value="Swipe3">Swipe3</option>
+						</select>
+					</div>
+					@php 
+						if(isset($data['get_users'])){ 
+							$get_users = $data['get_users']; 
+						} 
+
+						$selected_user_name ='';
+						if(isset($data['selected_user_name'])){ 
+							$selected_user_name = $data['selected_user_name']; 
+						}
+					@endphp
+					<div class="col-md-4 form-group">
+						<label>Collected By</label>
+						<select class="form-control" name="user_name" id="user_name">
+							<option value="">Select</option>
+							@foreach($get_users as $key => $value)
+								<option @if($value->id == $selected_user_name) selected="selected"
+                                                    @endif value="{{$value->id}}">{{$value->user_name}}</option>
+							@endforeach
+						</select>
+					</div>
 					<div class="col-md-12 form-group">
 						<center>
 							<input type="submit" name="submit" value="Search" class="btn btn-success">
@@ -146,7 +196,7 @@
 				</div>
                 <div class="mt-4" style="display:inline-grid;justify-content:center;width:100%">
 				<div class="table-responsive">
-						<table  class="table table-striped">
+						<table id="example" class="table table-striped">
 							@php 
                             $printedModes = []; // Track the printed payment modes 
                             $j=1;
@@ -207,6 +257,9 @@
 	</div>
 
 	@include('includes.footerJs')
+	<link href="https://code.jquery.com/ui/1.10.4/themes/ui-lightness/jquery-ui.css" rel="stylesheet">
+	<script src="https://code.jquery.com/jquery-1.10.2.js"></script>
+	<script src="https://code.jquery.com/ui/1.10.4/jquery-ui.js"></script>
 	<script>
 		function checkAll(ele) {
 			var checkboxes = document.getElementsByTagName('input');
@@ -234,7 +287,7 @@
 					[100, 500, 1000, -1],
 					['100', '500', '1000', 'Show All']
 				],
-				dom: 'Bfrtip',
+				/* dom: 'Bfrtip',
 				buttons: [{
 						extend: 'pdfHtml5',
 						title: 'Fees Collection Report',
@@ -261,7 +314,7 @@
 						title: 'Fees Collection Report'
 					},
 					'pageLength'
-				],
+				], */
 			});
 
 			$('#example thead tr').clone(true).appendTo('#example thead');

@@ -24,7 +24,20 @@ class feesReportController extends Controller
     {
         $type = $request->input('type');
 
+        $syear = session()->get('syear');
+        $sub_institute_id = session()->get('sub_institute_id');
+
+        $get_users = DB::table('fees_collect as fc')
+        ->join('tbluser as u', 'fc.created_by', '=', 'u.id')
+        ->where('fc.syear', '=', $syear)
+        ->where('fc.sub_institute_id', '=', $sub_institute_id)
+        ->selectRaw('u.id, u.user_name')
+        ->groupBy('fc.created_by')
+        ->get()->toArray();
+        //echo "<pre>";print_r($get_users);exit;
+
         $res['status_code'] = "1";
+        $res['get_users'] = $get_users;
         $res['message'] = "Success";
 
         return is_mobile($type, "fees/fees_report/index", $res, "view");
@@ -42,6 +55,9 @@ class feesReportController extends Controller
         $from_date = $request->input('from_date');
         $to_date = $request->input('to_date');
         $receipt_no = $request->input('receipt_no');
+        $payment_mode = $request->input('payment_mode');
+        $selected_user_name = $request->input('user_name');
+        //echo "<pre>";print_r($selected_user_name);exit;
         $syear = $request->session()->get('syear');
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $client_id = $request->session()->get('client_id');
@@ -89,6 +105,16 @@ class feesReportController extends Controller
 
         if ($client_id == 6) {
             $extra_fp .= " AND fp.standard_id=te.standard_id ";
+        }
+
+        if ($selected_user_name != '') {
+            $extra_fp .= " AND u.id = '" . $selected_user_name . "'";
+            $extra_fo .= " AND u.id = '" . $selected_user_name . "'";
+        }
+
+        if ($payment_mode != '') {
+            $extra_fp .= " AND fp.payment_mode = '" . $payment_mode . "'";
+            $extra_fo .= " AND fo.payment_mode = '" . $payment_mode . "'";
         }
 
         // $M = DB::table('tblstudent as t')
@@ -145,57 +171,66 @@ class feesReportController extends Controller
         ->join('tblstudent_enrollment as te', function ($join) {
             $join->on('te.student_id', '=', 't.id');
         })
-     ->join('academic_section as g','g.id','=','te.grade_id')        
-        ->join('standard as s','s.id','=','te.standard_id')
-        ->join('division as d','d.id','=','te.section_id')  
-        ->join('student_quota as sq','sq.id','=','te.student_quota') 
-        ->leftjoin('batch as b',function($join) {
-            $join->on('b.standard_id', '=', 'te.standard_id')
-            ->whereRaw('b.division_id = te.section_id')
-            ->whereRaw('b.id = t.studentbatch')
-            ->whereRaw('b.syear = te.syear');
-        })  
-        ->Join('fees_collect as fp', 'fp.student_id', '=', 'te.student_id')
-        ->leftJoin('tbluser as u', 'fp.created_by', '=', 'u.id')
-    
+        ->join('academic_section as g','g.id','=','te.grade_id')        
+            ->join('standard as s','s.id','=','te.standard_id')
+            ->join('division as d','d.id','=','te.section_id')  
+            ->join('student_quota as sq','sq.id','=','te.student_quota') 
+            ->leftjoin('batch as b',function($join) {
+                $join->on('b.standard_id', '=', 'te.standard_id')
+                ->whereRaw('b.division_id = te.section_id')
+                ->whereRaw('b.id = t.studentbatch')
+                ->whereRaw('b.syear = te.syear');
+            })  
+            ->Join('fees_collect as fp', 'fp.student_id', '=', 'te.student_id')
+            ->leftJoin('tbluser as u', 'fp.created_by', '=', 'u.id')
+        
+            ->selectRaw('t.id as student_id, t.enrollment_no, t.roll_no, t.uniqueid, t.place_of_birth, '
+                .DB::raw("CONCAT_WS(' ', t.first_name, t.middle_name, t.last_name) as student_name").', g.title as grade, s.name as standard_name, d.name as division_name, fp.created_date, '
+                .DB::raw('CONCAT_WS(" ", u.first_name, u.last_name) AS user_name, fp.term_id, fp.receiptdate, fp.receipt_no, fp.payment_mode, '
+                .'fp.cheque_bank_name, fp.bank_branch, fp.cheque_no, fp.cheque_date, b.title as batch, sq.title as quota, '
+                .'IFNULL(fp.amount, 0) AS actual_amountpaid')
+            )
+            ->whereRaw("1=1 " . $extra_fp);
+        
+        
+        $queryOther = DB::table('tblstudent as t')
+            ->join('tblstudent_enrollment as te', function ($join) {
+                $join->on('te.student_id', '=', 't.id');
+            })
+        ->join('academic_section as g','g.id','=','te.grade_id')        
+            ->join('standard as s','s.id','=','te.standard_id')
+            ->join('division as d','d.id','=','te.section_id')  
+            ->join('student_quota as sq','sq.id','=','te.student_quota') 
+            ->leftjoin('batch as b',function($join) {
+                $join->on('b.standard_id', '=', 'te.standard_id')
+                ->whereRaw('b.division_id = te.section_id')
+                ->whereRaw('b.id = t.studentbatch')
+                ->whereRaw('b.syear = te.syear');
+            })  
+        
+        ->leftJoin('fees_paid_other as fo', 'fo.student_id', '=', 'te.student_id')
+        ->leftJoin('tbluser as u', 'fo.created_by', '=', 'u.id')
         ->selectRaw('t.id as student_id, t.enrollment_no, t.roll_no, t.uniqueid, t.place_of_birth, '
-            .DB::raw("CONCAT_WS(' ', t.first_name, t.middle_name, t.last_name) as student_name").', g.title as grade, s.name as standard_name, d.name as division_name, fp.created_date, '
-            .DB::raw('CONCAT_WS(" ", u.first_name, u.last_name) AS user_name, fp.term_id, fp.receiptdate, fp.receipt_no, fp.payment_mode, '
-            .'fp.cheque_bank_name, fp.bank_branch, fp.cheque_no, fp.cheque_date, b.title as batch, sq.title as quota, '
-            .'IFNULL(fp.amount, 0) AS actual_amountpaid')
+            .DB::raw("CONCAT_WS(' ', t.first_name, t.middle_name, t.last_name) as student_name").', g.title as grade, s.name as standard_name, d.name as division_name, NULL AS created_date, '
+            .DB::raw('CONCAT_WS(" ", u.first_name, u.last_name) AS user_name, fo.month_id AS term_id, fo.receiptdate AS receiptdate, fo.reciept_id AS receipt_no, fo.payment_mode AS payment_mode, '
+            .'fo.bank_name as cheque_bank_name, fo.bank_branch, fo.cheque_dd_no as cheque_no, fo.cheque_dd_date AS cheque_date, b.title as batch, sq.title as quota, '
+            .'IFNULL(fo.actual_amountpaid, 0) AS actual_amountpaid')
         )
-        ->whereRaw("1=1 " . $extra_fp);
+        ->whereRaw("1=1 " . $extra_fo);
     
-    
-    $queryOther = DB::table('tblstudent as t')
-        ->join('tblstudent_enrollment as te', function ($join) {
-            $join->on('te.student_id', '=', 't.id');
-        })
-     ->join('academic_section as g','g.id','=','te.grade_id')        
-        ->join('standard as s','s.id','=','te.standard_id')
-        ->join('division as d','d.id','=','te.section_id')  
-        ->join('student_quota as sq','sq.id','=','te.student_quota') 
-        ->leftjoin('batch as b',function($join) {
-            $join->on('b.standard_id', '=', 'te.standard_id')
-            ->whereRaw('b.division_id = te.section_id')
-            ->whereRaw('b.id = t.studentbatch')
-            ->whereRaw('b.syear = te.syear');
-        })  
-      
-    ->leftJoin('fees_paid_other as fo', 'fo.student_id', '=', 'te.student_id')
-    ->leftJoin('tbluser as u', 'fo.created_by', '=', 'u.id')
-    ->selectRaw('t.id as student_id, t.enrollment_no, t.roll_no, t.uniqueid, t.place_of_birth, '
-        .DB::raw("CONCAT_WS(' ', t.first_name, t.middle_name, t.last_name) as student_name").', g.title as grade, s.name as standard_name, d.name as division_name, NULL AS created_date, '
-        .DB::raw('CONCAT_WS(" ", u.first_name, u.last_name) AS user_name, fo.month_id AS term_id, fo.receiptdate AS receiptdate, fo.reciept_id AS receipt_no, fo.payment_mode AS payment_mode, '
-        .'fo.bank_name as cheque_bank_name, fo.bank_branch, fo.cheque_dd_no as cheque_no, fo.cheque_dd_date AS cheque_date, b.title as batch, sq.title as quota, '
-        .'IFNULL(fo.actual_amountpaid, 0) AS actual_amountpaid')
-    )
-    ->whereRaw("1=1 " . $extra_fo);
-    
-    $feesData = $queryCollect->union($queryOther)->get()->toArray();
+        $feesData = $queryCollect->union($queryOther)->get()->toArray();
     
         $feesData = json_decode(json_encode($feesData), true);
-        // echo "<pre>";print_r($feesData);exit;
+        
+        $get_users = DB::table('fees_collect as fc')
+        ->join('tbluser as u', 'fc.created_by', '=', 'u.id')
+        ->where('fc.syear', '=', $syear)
+        ->where('fc.sub_institute_id', '=', $sub_institute_id)
+        ->selectRaw('u.id, u.user_name')
+        ->groupBy('fc.created_by')
+        ->get()->toArray();
+
+        //echo "<pre>";print_r($collected_by);exit;
         $res['status_code'] = 1;
         $res['message'] = "Success";
         $res['fees_data'] = $feesData;
@@ -208,6 +243,9 @@ class feesReportController extends Controller
         $res['mb_no'] = $mb_no;
         $res['from_date'] = $from_date;
         $res['to_date'] = $to_date;
+        $res['payment_mode'] = $payment_mode;
+        $res['selected_user_name'] = $selected_user_name;
+        $res['get_users'] = $get_users;
         $res['months'] = FeeMonthId();
 
         return is_mobile($type, "fees/fees_report/index", $res, "view");

@@ -20,6 +20,7 @@ use App\Http\Controllers\fees\fees_report\feesMonthlyReportController;
 use App\Http\Controllers\fees\fees_report\feesOverallHeadwisePendingReportController;
 use App\Http\Controllers\fees\fees_report\feesOverallHeadwiseReportController;
 use App\Http\Controllers\fees\fees_report\feesOverallReportController;
+use App\Http\Controllers\fees\fees_report\feesDefaulterReportController;
 use App\Http\Controllers\fees\fees_report\feesReportController;
 use App\Http\Controllers\fees\fees_report\feesStatusController;
 use App\Http\Controllers\fees\fees_report\feesStructureReportController;
@@ -77,6 +78,7 @@ Route::group(['prefix' => 'fees', 'middleware' => ['session', 'menu', 'logRoute'
     Route::resource('fees_overall_headwise_report', feesOverallHeadwiseReportController::class);
     Route::resource('fees_headwise_pending_report', feesOverallHeadwisePendingReportController::class);
     Route::resource('fees_overall_report', feesOverallReportController::class);
+    Route::resource('fees_defaulter_report', feesDefaulterReportController::class);
     Route::resource('fees_status_report', feesStatusController::class);
 
     // Remain fees send SMS
@@ -156,6 +158,8 @@ Route::group(['prefix' => 'fees', 'middleware' => ['session', 'menu', 'logRoute'
     Route::post('fees/fees_collection_report', [feesReportController::class, 'showFees'])->name('show_fees_collection_report');
 
     Route::post('fees/fees_overall_report', [feesOverallReportController::class, 'showFeesOverall'])->name('show_fees_overall_report');
+
+    Route::post('fees/fees_defaulter_report', [feesDefaulterReportController::class, 'showFeesDefaulter'])->name('show_fees_defaulter_report');
 
     Route::post('fees/fees_status_report', [feesStatusController::class, 'feesStatusReport'])->name('show_fees_status_report');
 
