@@ -1220,8 +1220,7 @@ if (!function_exists('ClassTeacherSearch')) {
                 if (session()->get('user_profile_name') == 'Teacher') {
                     $q->where('ct.teacher_id', session()->get('user_id'));
                 } else {
-                    if (strtoupper(session()->get('user_profile_name')) != 'SCHOOL ADMIN'
-                        && strtoupper(session()->get('user_profile_name')) != 'ADMIN') {
+                    if (session()->get('profile_parent_id') != '1') {
                         $q->whereRaw('1 != 1');
                     }
                 }
