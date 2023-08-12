@@ -63,23 +63,22 @@ class feesReportController extends Controller
         $client_id = $request->session()->get('client_id');
         $marking_period_id = session()->get('term_id');
 
-        $extra_fp = "  AND fp.syear = '" . $syear . "' AND te.syear = '" . $syear . "' AND t.sub_institute_id = '" . $sub_institute_id . "' AND fp.sub_institute_id = '" . $sub_institute_id . "' AND fp.is_deleted = 'N' ";
-        $extra_fo = "  AND fo.syear = '" . $syear . "' AND te.syear = '" . $syear . "' AND t.sub_institute_id = '" . $sub_institute_id . "' AND fo.sub_institute_id = '" . $sub_institute_id . "' AND fo.is_deleted = 'N' ";
-        // $extra_fo = '';
-        // $extra_fp='';
+        $extra_fp = "  AND fp.syear = '" . $syear . "' AND  fp.sub_institute_id = '" . $sub_institute_id . "' AND fp.is_deleted = 'N' ";
+        $extra_fo = "  AND fo.syear = '" . $syear . "' AND fo.sub_institute_id = '" . $sub_institute_id . "' AND fo.is_deleted = 'N' ";
+      
         if (!empty($grade)) {
-            $extra_fp .= " AND te.grade_id IN ('" . implode("','", $grade) . "')"; // Use IN operator for multiple values
-            $extra_fo .= " AND te.grade_id IN ('" . implode("','", $grade) . "')"; // Use IN operator for multiple values
+            $extra_fp .= " AND te.grade_id IN ('" . implode("','", $grade) . "')"; 
+            $extra_fo .= " AND te.grade_id IN ('" . implode("','", $grade) . "')"; 
         }
 
         if (!empty($standard)) {
-            $extra_fp .= " AND te.standard_id IN ('" . implode("','", $standard) . "')"; // Use IN operator for multiple values
-            $extra_fo .= " AND te.standard_id IN ('" . implode("','", $standard) . "')"; // Use IN operator for multiple values
+            $extra_fp .= " AND te.standard_id IN ('" . implode("','", $standard) . "')"; 
+            $extra_fo .= " AND te.standard_id IN ('" . implode("','", $standard) . "')"; 
         }
 
         if (!empty($division)) {
-            $extra_fp .= " AND te.section_id IN ('" . implode("','", $division) . "')"; // Use IN operator for multiple values
-            $extra_fo .= " AND te.section_id IN ('" . implode("','", $division) . "')"; // Use IN operator for multiple values
+            $extra_fp .= " AND te.section_id IN ('" . implode("','", $division) . "')"; 
+            $extra_fo .= " AND te.section_id IN ('" . implode("','", $division) . "')"; 
         }
 
         if ($enrollment_no != '') {
@@ -96,7 +95,6 @@ class feesReportController extends Controller
             $extra_fp .= " AND t.mobile = '" . $mb_no . "'";
             $extra_fo .= " AND t.mobile = '" . $mb_no . "'";
         }
-        // ->whereRaw("DATE_FORMAT(fp.receiptdate,'%Y-%m-%d') between '" . $from_date . "' AND '" . $to_date . "'");
 
         if ($from_date != '' && $to_date != '') {
             $extra_fp .= " AND DATE_FORMAT(fp.receiptdate,'%Y-%m-%d') between '" . $from_date . "' AND '" . $to_date . "' ";
@@ -231,6 +229,7 @@ class feesReportController extends Controller
         ->get()->toArray();
 
         //echo "<pre>";print_r($collected_by);exit;
+
         $res['status_code'] = 1;
         $res['message'] = "Success";
         $res['fees_data'] = $feesData;

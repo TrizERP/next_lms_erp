@@ -324,7 +324,7 @@ class online_fees_collect_controller extends Controller
     {
         //echo '<pre>'; print_r($_REQUEST); exit;
         $student_id = $_REQUEST["student_id"];
-        $fine = $_REQUEST["fees_data"]["fine"];
+        $fine = isset($_REQUEST["fees_data"]["fine"]) ? $_REQUEST["fees_data"]["fine"] : 0;
         //echo '<pre>'; print_r($fine); exit;
         $medium_data = DB::select("SELECT a.*,e.grade_id,s.name AS standard, d.name AS division,CONCAT_WS('_',t.first_name,t.middle_name,t.last_name) AS student_name, t.mobile, t.enrollment_no, t.email,ifnull(b.title,0) AS batch FROM tblstudent_enrollment e
             inner join academic_section a on e.grade_id = a.id
@@ -353,9 +353,9 @@ class online_fees_collect_controller extends Controller
             
         $amount = 0;
         if ($payment_acsept_type == "fix") {
-            $amount = number_format(floatval($_REQUEST["pay_amount"]), 0, '.', '');
-        } else {
             $amount = number_format(floatval($_REQUEST["total"]), 0, '.', '');
+        } else {
+            $amount = number_format(floatval($_REQUEST["pay_amount"]), 0, '.', '');
         }
 
         $where_arr = array(
@@ -431,10 +431,15 @@ class online_fees_collect_controller extends Controller
             "&submerchantid=" . $submerchantid .
             "&transaction amount=" . $transactionamount .
             "&paymode=" . $paymode;
+
+        // Assuming $amount and $fine are supposed to be numeric values
+        $amount = intval($amount); // Convert $amount to int
+        $fine = intval($fine);     // Convert $fine to int
+
         $in_arr = array(
             "student_id" => $_REQUEST["student_id"],
             "syear" => session()->get("syear"),
-            "amount" => $amount,
+            "amount" => ($amount - $fine),
             "fine" => $fine,
             "icici_order_id" => $orderId,
             "icici_plain_request" => $simple_action_url,
@@ -653,9 +658,9 @@ exit; */
         $payment_acsept_type = $get_map_bank_data[0]->fees_type;
         $amount = 0;
         if ($payment_acsept_type == "fix") {
-            $amount = number_format(floatval($_REQUEST["pay_amount"]), 0, '.', '');
-        } else {
             $amount = number_format(floatval($_REQUEST["total"]), 0, '.', '');
+        } else {
+            $amount = number_format(floatval($_REQUEST["pay_amount"]), 0, '.', '');
         }
         $student_id = $_REQUEST["student_id"];
         $where_arr = array(

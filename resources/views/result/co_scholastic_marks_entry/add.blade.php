@@ -68,6 +68,10 @@
 
                   @php
                 $users = ["Admin"];
+                $message = "";
+                if(isset($data['approve_status']) && $data['approve_status']->status ==1 && isset($data['approved_user'])){
+                    $message = "Approved By ".$data['approved_user']->first_name." ".$data['approved_user']->last_name." ";   
+                }
                 @endphp
                 @if(in_array(session()->get('user_profile_name'),$users))
                 <form action="{{ route('co_scholastic_marks_entry_approve') }}" enctype="multipart/form-data" method="post" style="margin-top:40px">
@@ -86,6 +90,8 @@
                                 <input type="hidden" name="exam_id" value="{{$data['co_scholastic']}}">
 
                                 <input type="submit"  class="btn btn-outline-secondary" name="submit" id="submit" Value="Approved Marks">
+                                <div id="passwordHelpBlock" class="form-text">
+                                {{$message}}</div>
                             </div>
                             <!-- subject_id,standard_id,division_id,exam_id,term_id,status,sub_institute_id,created_by,module_name -->
                         </div> 
@@ -132,7 +138,7 @@
                             if($data['mark_type'] == 'GRADE'){
                            
                             $name = "values[".$col_arr['student_id']."][grade]";
-                            if(isset($data['approve_status']) && $data['approve_status']->status ==1 && $data['stu_data'][$id][$col_arr['student_id']]['grade_marks']!==0 && $data['co_scholastic']==$data['approve_status']->exam_id){
+                            if(isset($data['approve_status']) && $data['approve_status']->status ==1  && $data['co_scholastic']==$data['approve_status']->exam_id){
                                 $disable="disabled";
                             @endphp
                                 <input type="hidden" name="{{$name}}" value="{{$data['stu_data'][$id][$col_arr['student_id']]['grade_marks']}}">
@@ -169,12 +175,16 @@
                             @endphp
                         </table>
                         </div>
-                        <div class="col-md-12 form-group">
+
+                        @if(isset($data['approve_status']->status) && $data['approve_status']->status ==1)
+                        @else
+                        <div class="col-md-12 form-group mt-4">
                             <center>
                                 <input type="submit" name="submit" value="Save" class="btn btn-success" >
                             </center>
                         </div>
-
+                        @endif
+                       
                     </form>
 
               

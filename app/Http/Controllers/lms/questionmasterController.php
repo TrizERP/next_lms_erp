@@ -96,7 +96,8 @@ class questionmasterController extends Controller
                 $query->on('s.subject_id', '=', 'c.subject_id')
                     ->on('s.standard_id', '=', 'c.standard_id');
             })
-            ->join('standard as st', 'st.id', '=', "c.standard_id");
+            ->join('standard as st', 'st.id', '=', "c.standard_id")
+            ->where('c.id',$chapter_id);
 
         if ($topic_id) {
             $breadcrum_data->addSelect('t.id as topic_id', 't.name as topic_name');
@@ -312,9 +313,9 @@ class questionmasterController extends Controller
         // return array
         if ($request->get('topic_id')) {
             return redirect()->route('question_master.index',
-                ['chapter_id' => $request->get('chapter_id'), 'topic_id' => $request->get('topic_id')]);
+                ['chapter_id' => $request->get('chapter_id'), 'topic_id' => $request->get('topic_id'),'standard_id'=>$request->get('standard_id')]);
         } else {
-            return redirect()->route('question_chapter_master', ['chapter_id' => $request->get('chapter_id')]);
+            return redirect()->route('question_chapter_master', ['chapter_id' => $request->get('chapter_id'),'standard_id'=>$request->get('standard_id')]);
         }
 
         //return is_mobile($type, "question_master.index", $res, "redirect");

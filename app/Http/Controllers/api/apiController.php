@@ -47,7 +47,7 @@ class apiController extends Controller
                 "tblstudent.gender",
                 "school_setup.is_lms",
             ];
-            $student_syear = 2023;
+//            $student_syear = 2023;
             $data = DB::table("tblstudent")
                 ->join('school_setup', 'school_setup.id', '=', 'tblstudent.sub_institute_id')
                 ->join('tblstudent_enrollment', 'tblstudent_enrollment.student_id', '=', 'tblstudent.id')
@@ -59,8 +59,10 @@ class apiController extends Controller
                     "tblstudent.mother_mobile"  => $_REQUEST['mobile'],
                     "tblstudent.student_mobile" => $_REQUEST['mobile'],
                 ])
-                ->where(["sms_api_details.is_active" => "1"])
-                ->where('school_setup.syear', '=', $student_syear)
+                ->where([
+                    "sms_api_details.is_active" => "1", 
+//                    'school_setup.syear' => 'tblstudent_enrollment.syear'
+                ])
                 ->whereRaw('tblstudent_enrollment.end_date is NULL')
                 ->get($select);
 
@@ -219,7 +221,7 @@ class apiController extends Controller
                 "tbluserprofilemaster.name as user_profile_name",
                 "tbluserprofilemaster.id as user_profile_id",
             ];
-            $student_syear = 2023;
+//            $student_syear = 2023;
             $data = DB::table("tblstudent")
                 ->join('school_setup', 'school_setup.id', '=', 'tblstudent.sub_institute_id')
                 ->join('tblstudent_enrollment', 'tblstudent_enrollment.student_id', '=', 'tblstudent.id')
@@ -241,7 +243,7 @@ class apiController extends Controller
                         ->orderBy('tblstudent_enrollment.syear', 'DESC')
                         ->take(1);
                 })
-                ->where('school_setup.syear', '=', $student_syear)
+//                ->where('school_setup.syear', '=', 'tblstudent_enrollment.syear')
                 ->groupBy('tblstudent.id')
                 ->get($select);
 
