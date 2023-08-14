@@ -1693,7 +1693,7 @@ if (!function_exists('getStudents')) {
 }
 
 if (!function_exists('send_FCM_Notification')) {
-    function send_FCM_Notification($to, $message)
+    function send_FCM_Notification($to, $message, $sub_institute_id)
     {
         $url = 'https://fcm.googleapis.com/fcm/send';
         foreach ($to as $val) {
@@ -1702,11 +1702,17 @@ if (!function_exists('send_FCM_Notification')) {
                 'notification' => $message,
             ];
 
-
-            $headers = array(
-                'Authorization: key=' . "AAAApM0aBq0:APA91bEMbTNrawzSIm6Ra-IedYR4PmLZjznNGqmjep6-Opk7mSBha3UssNij8k7AhU4q1m2Y0fIh8bhFHgn3yfsGhS6GWFnKbiBQnICF9lYISJfX9t6cdYskBUyOeJVYW38aRKgg7VkK",
-                'Content-Type: application/json',
-            );
+            if($sub_institute_id == 254){
+                $headers = array(
+                    'Authorization: key=' . "AAAAIbBYYCQ:APA91bElNhyJBqYr7hVMqFyH5kT3hO7EtiOQIoEN656ZzabihtIQ64PA72mpCuKv59XuMoq1-EDq-oiel1J9zvazDm4Mb2eKdA6k23_IC9cVAfuE5lQDx1jn4wkhst5Heyw0vVVlvN3J",
+                    'Content-Type: application/json',
+                );
+            }else{
+                $headers = array(
+                    'Authorization: key=' . "AAAApM0aBq0:APA91bEMbTNrawzSIm6Ra-IedYR4PmLZjznNGqmjep6-Opk7mSBha3UssNij8k7AhU4q1m2Y0fIh8bhFHgn3yfsGhS6GWFnKbiBQnICF9lYISJfX9t6cdYskBUyOeJVYW38aRKgg7VkK",
+                    'Content-Type: application/json',
+                );
+            }
 
             $ch = curl_init();
             curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 0);
