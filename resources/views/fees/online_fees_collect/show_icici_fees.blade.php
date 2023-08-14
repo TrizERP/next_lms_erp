@@ -185,11 +185,12 @@
                                                     <th align="center" style="width: 30%;padding-left: 15px;">Particular</th>
                                                     <th style="width: 10%;padding-left: 15px;">Amount</th>
                                                 </tr>
-                                                @php 
+												<?php
                                                 $total = [];
-                                                $cheque_return_charges0 = $data['cheque_return_charges'][0]; $cheque_return_charges = $data['fees_config_data'][0]['late_fees_amount'];
-									            $sub_institute_id=[257]; @endphp
-                                                <?php foreach ($data['final_fee'] as $id => $val) { ?>
+                                                $cheque_return_charges0 = $data['cheque_return_charges'][0]; 
+                                                $cheque_return_charges = $data['fees_config_data'][0]['late_fees_amount'];
+									            $sub_institute_id=[257];
+                                                 foreach ($data['final_fee'] as $id => $val) { ?>
                                                     
                                                     <tr>
                                                         <td style="width: 20%"><?php echo $id; ?></td>
