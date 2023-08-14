@@ -263,7 +263,7 @@ class leaveApplicationController extends Controller
                                 'title' => $schoolName.' - '.$type,
                                 'image' => $schoolLogo,
                             );
-                            $pushStatus = send_FCM_Notification($val, $message);
+                            $pushStatus = send_FCM_Notification($val, $message, session()->get('sub_institute_id'));
                             sendNotification($app_notification_content);
                         }
                     }
