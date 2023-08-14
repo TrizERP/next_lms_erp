@@ -53,6 +53,7 @@ class studentCertificateController extends Controller
     {
         $type = $request->input('type');
         $template = $request->input('template');
+        //echo("<pre>");print_r($template);exit;
         $certificate_reason = $request->input('certificate_reason');
         $student_ids = $request->input('students');
         $syear = $request->session()->get('syear');
@@ -69,8 +70,9 @@ class studentCertificateController extends Controller
                 (SELECT sub_institute_id FROM template_master WHERE module_name ="'.$template.'" AND 
                     sub_institute_id = "'.session()->get('sub_institute_id').'"
                 ),0)')->get()->toArray();
+        
         $tData = json_decode(json_encode($tData), true);
-
+        //echo("<pre>");print_r($tData);exit;
 
         $result = DB::table('fees_receipt_book_master')
             ->selectRaw('*,GROUP_CONCAT(fees_head_id) heads')
