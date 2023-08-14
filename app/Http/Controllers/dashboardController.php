@@ -57,7 +57,9 @@ class dashboardController extends Controller
         }
         //END Dynamic Dashboard
 
-        if ($profile_parent_id == '1') {
+        if ($user_profile_name == 'Super Admin' || $user_profile_name == 'Admin' || $user_profile_name == 'ADMIN' ||
+            $user_profile_name == 'admin' || $user_profile_name == 'school admin' || $user_profile_name == 'SCHOOL ADMIN'
+            || $user_profile_name == 'School Admin') {
             if ($sub_institute_id != 0 && $is_admin == '') {
 
                 $date = date('Y-m-d');
@@ -1447,7 +1449,8 @@ class dashboardController extends Controller
         $user_profile_name = $request->session()->get("user_profile_name");
         $profile_parent_id = $request->session()->get("profile_parent_id");
 
-        if ($profile_parent_id == '1') {
+        if ($user_profile_name == 'Admin' || $user_profile_name == 'ADMIN' || $user_profile_name == 'admin' || $user_profile_name == 'school admin'
+            || $user_profile_name == 'SCHOOL ADMIN' || $user_profile_name == 'School Admin') {
 
             $date = date('Y-m-d');
             $date15 = date('Y-m-d', strtotime($date.' +15 day'));
