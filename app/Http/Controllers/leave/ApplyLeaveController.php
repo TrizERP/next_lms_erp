@@ -21,9 +21,12 @@ class ApplyLeaveController extends Controller
      */
     public function index()
     {
+        $sub_institute_id = session()->get('sub_institute_id');
+
         try {
             $departments = HrmsDepartment::where('status', true)->pluck('department', 'id');
-            $users = tbluserModel::all();
+            $users = tbluserModel::where('sub_institute_id', $sub_institute_id)->get();
+            //echo("<pre>");print_r($users);exit;
             $leave_types = HrmsLeaveType::get();
             return view('leave.apply_leave', compact('departments', 'users', 'leave_types'));
         } catch (Exception $e) {
@@ -33,9 +36,11 @@ class ApplyLeaveController extends Controller
 
     public function importLeave()
     {
+        $sub_institute_id = session()->get('sub_institute_id');
+
         try {
             $departments = HrmsDepartment::where('status', true)->pluck('department', 'id');
-            $users = tbluserModel::all();
+            $users = tbluserModel::where('sub_institute_id', $sub_institute_id)->get();
             $leave_types = HrmsLeaveType::get();
             return view('leave.import_leave', compact('departments', 'users', 'leave_types'));
         } catch (Exception $e) {
