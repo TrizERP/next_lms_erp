@@ -93,6 +93,11 @@ class online_fees_collect_controller extends Controller
                 $dd_arr[$i] = $i;
             }
         }
+
+        $data['fees_config_data'] = tblfeesConfigModel::where([
+            'sub_institute_id' => $all_student[0]->sub_institute_id, 'syear' => $year,
+        ])->get()->toArray();
+        
         $data["redirect_url"] = $_SERVER["HTTP_ORIGIN"] . $_SERVER["REQUEST_URI"];
         $data["dd_arr"] = $dd_arr;
         $data["student_id"] = $_REQUEST["student_id"];
@@ -307,15 +312,8 @@ class online_fees_collect_controller extends Controller
 
     public function icici(Request $request)
     {
-        $sub_institute_id = session()->get('sub_institute_id');
-        $syear = session()->get('syear');
         $data = $this->get_fees($request);
-
-        $data['fees_config_data'] = tblfeesConfigModel::where([
-            'sub_institute_id' => $sub_institute_id, 'syear' => $syear,
-        ])->get()->toArray();
-
-        //dd($data);
+       //dd($data);
         $type = "web";
         return \App\Helpers\is_mobile($type, "fees/online_fees_collect/show_icici_fees", $data, "view");
     }
