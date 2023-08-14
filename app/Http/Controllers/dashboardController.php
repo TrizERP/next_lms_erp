@@ -34,6 +34,7 @@ class dashboardController extends Controller
         $is_admin = session()->get('is_admin');
         $syear = $request->session()->get('syear');
         $user_profile_name = $request->session()->get("user_profile_name");
+        $profile_parent_id = $request->session()->get("profile_parent_id");
         $user_profile_id = $request->session()->get("user_profile_id");
         $user_id = $request->session()->get("user_id");
 
@@ -1446,6 +1447,7 @@ class dashboardController extends Controller
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $syear = $request->session()->get('syear');
         $user_profile_name = $request->session()->get("user_profile_name");
+        $profile_parent_id = $request->session()->get("profile_parent_id");
 
         if ($user_profile_name == 'Admin' || $user_profile_name == 'ADMIN' || $user_profile_name == 'admin' || $user_profile_name == 'school admin'
             || $user_profile_name == 'SCHOOL ADMIN' || $user_profile_name == 'School Admin') {

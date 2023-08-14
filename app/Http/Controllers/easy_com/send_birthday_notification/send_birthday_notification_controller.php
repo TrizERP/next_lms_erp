@@ -73,7 +73,7 @@ class send_birthday_notification_controller extends Controller
                         'image'   => $schoolLogo,
                     ];
 
-                    $pushStatus = send_FCM_Notification([$student->gcm_regid], $message);
+                    $pushStatus = send_FCM_Notification([$student->gcm_regid], $message, $student->sub_institute_id);
                     sendNotification($app_notification_content);
                 }
             }
@@ -109,7 +109,7 @@ class send_birthday_notification_controller extends Controller
                         'image'   => $schoolLogo,
                     ];
 
-                    $pushStatus = send_FCM_Notification($user, $message);
+                    $pushStatus = send_FCM_Notification($user, $message, $user->sub_institute_id);
                     sendNotification($app_notification_content);
                 }
             }
