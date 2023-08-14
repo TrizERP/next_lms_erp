@@ -2224,7 +2224,7 @@ class adminapiController extends Controller
                                 'image'   => $schoolLogo,
                             ];
 
-                            $pushStatus = send_FCM_Notification($bval, $message);
+                            $pushStatus = send_FCM_Notification($bval, $message, $sub_institute_id);
                             sendNotification($app_notification_content);
                         }
                     }
