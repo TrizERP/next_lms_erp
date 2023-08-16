@@ -13,59 +13,6 @@
 	});
 </script>
 </body>
-<!-- <script>
-document.addEventListener("DOMContentLoaded", function () {
-  document.querySelectorAll("form").forEach(function (form) {
-    form.querySelectorAll("button[type='submit'], input[type='submit']").forEach(function (submitButton) {
-      submitButton.addEventListener("click", function (event) {
-        event.preventDefault();
-
-        const isSubmitAction = submitButton.matches("[name='submit']");
-        const isSearchAction = submitButton.matches("[name='search']");
-        const isDeleteAction = submitButton.matches("[name='delete']");
-        const isEditAction = submitButton.matches("[name='edit']");
-
-        const menu_id = {{ session()->get('current_menu_id') }};
-				const user_profile_name = "{{session()->get('user_profile_name')}}";
-				const submitFormFunction = Object.getPrototypeOf(form).submit;
-				
-				if(user_profile_name !== "Super Admin"){
-        fetch("{{ route('check_permissions') }}", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            menu_id: menu_id,
-          }),
-        })
-        .then((response) => response.json())
-        .then((data) => {
-          // console.log(menu_id);
-          // console.log(user_profile_name);
-          if ((isSubmitAction && data.can_add === 1) || 
-              (isSearchAction && data.can_view === 1) || 
-              (isDeleteAction && data.can_delete === 1) || 
-              (isEditAction && data.can_edit === 1)) {
-				submitFormFunction.call(form);
-          } else {
-            let actionName = isDeleteAction ? "delete" : isEditAction ? "edit" : "perform this action";
-            alert(`You don't have rights to ${actionName}.`);
-          }
-        })
-        .catch((error) => {
-          console.error("You are not authorized to access this menu, Contact to admin and ask for the rights of this menu:", error);
-          alert("You are not authorized to access this menu, Contact to admin and ask for the rights of this menu.");
-        });
-			}else{
-				submitFormFunction.call(form);
-			}
-      });
-    });
-  });
-});
-
-</script> -->
 
 	<script>
 		function setSession(item,object)
@@ -135,9 +82,7 @@ document.addEventListener("DOMContentLoaded", function () {
 				// and test its normalized href against the url pathname regexp
 				if(urlRegExp.test(this.href.replace(/\/$/,''))){
 					$(this).parent('li').addClass('active');
-					// $(this).parent('li').parents('.sub-drop-body').css("display", "block");
-					// $(this).parent('li').parents('.sub-drop-panel').addClass('open');
-					// $(this).parent('li').parents('.tab-pane').addClass('active');
+			
 				}
 			});
 		});
@@ -165,9 +110,7 @@ document.addEventListener("DOMContentLoaded", function () {
 		$('.panel-click').on('click', function(event) {
         event.preventDefault();
 		event.stopPropagation();
-		// $(this).parents('.tab-pane').find('.sub-drop-panel').removeClass("open");
-		// $(this).parents('.tab-pane').find('.sub-drop-panel').find('.sub-drop-body').slideUp(500);
-        $(".sub-drop-panel.open > .sub-drop-body").show();
+	     $(".sub-drop-panel.open > .sub-drop-body").show();
         // Just Remove .stop("true", "true")
 		$(this).closest('.sub-drop-panel').toggleClass('open').children(".sub-drop-body").slideToggle(100);
 		$(this).closest('.sub-drop-panel').siblings().find(".sub-drop-body").slideUp(100);
