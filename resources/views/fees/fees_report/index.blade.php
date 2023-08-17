@@ -287,7 +287,7 @@
 					[100, 500, 1000, -1],
 					['100', '500', '1000', 'Show All']
 				],
-				/* dom: 'Bfrtip',
+				dom: 'Bfrtip',
 				buttons: [{
 						extend: 'pdfHtml5',
 						title: 'Fees Collection Report',
@@ -309,12 +309,15 @@
 						title: 'Fees Collection Report'
 					},
 					{
-						extend: 'print',
-						text: ' PRINT',
-						title: 'Fees Collection Report'
-					},
-					'pageLength'
-				], */
+                        extend: 'print',
+                        text: ' PRINT',
+                        title: 'Fees Collection Report',
+                        customize: function (win) {
+                            $(win.document.body).prepend(`{!! App\Helpers\get_school_details("$grade_id", "$standard_id", "$division_id") !!}`);
+                        }
+                    },
+                    'pageLength'
+				],
 			});
 
 			$('#example thead tr').clone(true).appendTo('#example thead');
