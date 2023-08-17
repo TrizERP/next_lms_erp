@@ -219,11 +219,11 @@ class s4excel_importController extends Controller {
 	     
 	            foreach ($dataArr as $value) 
 	            {	    	           
-                	if ($m == 1) 
+                	if ($m == 0) 
                 	{
 						$maxCnt = count($titleArr);
                 	}
-                	if ($m >= 2) 
+                	if ($m >= 1) 
                 	{
 	                    $AC_HOLDER_NAME = isset($value[5]) ? str_replace($searchArr, $replaceArr, $value[5]) : '';
 	                    
@@ -393,8 +393,7 @@ class s4excel_importController extends Controller {
  								$paid_fees =  $controller->pay_fees($request);
 								// echo '<pre>';
 								// print_r($paid_fees);
-								if($paid_fees['data'] != "")
-								{
+							if (isset($paid_fees['data']) && $paid_fees['data'] !== "") {
 									$successCnt++;
 									$upSql = "UPDATE tblstudent_bank_detail SET is_registered = 'Y' WHERE student_id = '".$STUDENT_ID."'";
                                     DB::select($upSql);
@@ -441,7 +440,7 @@ class s4excel_importController extends Controller {
 									'sub_institute_id' => $sub_institute_id,
 								]);
 							}
-						 print_R($send_sms);
+						 // print_R($send_sms);
 							
                             $failed_bnk_chk_flg = 1;
 							
