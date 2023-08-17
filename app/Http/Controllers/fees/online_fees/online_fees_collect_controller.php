@@ -59,6 +59,7 @@ class online_fees_collect_controller extends Controller
         // echo '<pre>'; print_r($_REQUEST); exit;
         $OldData = $controller->getOnlinebk($request, $all_student[0]->sub_institute_id, $year - 1, $_REQUEST["student_id"]);
         $data = $controller->getOnlinebk($request, $all_student[0]->sub_institute_id, $year, $_REQUEST["student_id"]);
+        
         // echo $year;
         $fees_amt = 0;
         // echo '<pre>'; print_r($data); exit;
@@ -97,7 +98,7 @@ class online_fees_collect_controller extends Controller
         $data['fees_config_data'] = tblfeesConfigModel::where([
             'sub_institute_id' => $all_student[0]->sub_institute_id, 'syear' => $year,
         ])->get()->toArray();
-        
+
         $data["redirect_url"] = $_SERVER["HTTP_ORIGIN"] . $_SERVER["REQUEST_URI"];
         $data["dd_arr"] = $dd_arr;
         $data["student_id"] = $_REQUEST["student_id"];
@@ -465,7 +466,8 @@ class online_fees_collect_controller extends Controller
         // get payment data if payment status is not captured and is not null and order id is not null
         //$limit = 2; // Set the desired limit here
 //DB::enableQueryLog();
-//$ids = [61,257];
+//$ids = [61,244,246,247,248];
+
         $payment_data = DB::table('fees_payment AS fp')
             ->select('fp.id', 'fp.student_id', 'fi.merchant_id', 'fi.enc_key', 'fp.icici_order_id', 'tse.syear', 'fp.sub_institute_id', 'fp.amount', 'fp.fine','fp.icici_bank_res')
             ->join('tblstudent_enrollment AS tse', function ($join) {
@@ -480,18 +482,21 @@ class online_fees_collect_controller extends Controller
             })
             ->where(function ($query) {
                 $query->where('fp.icici_payment_status', '!=', 'PS')
-                    ->where('fp.icici_payment_status', '!=', 'PF')
-                    ->whereNull('fp.razorpay_payment_status');
+                      ->where(function ($query) {
+                            $query->whereNotIn('fp.razorpay_payment_status', ['NotInitiated', 'FAILED', 'Success'])
+                                  ->orWhereNull('fp.razorpay_payment_status');
+                      });
             })
-            // ->where('tse.student_id',195449)  ->where('fp.razorpay_payment_status', '!=', 'Success')
             ->whereNotNull('fp.icici_order_id')
 //            ->whereIn('fp.sub_institute_id', $ids)
+//            ->whereIn('fp.student_id', [199428,199461,195283,195156,195227])
             ->groupBy('fp.id')
             // ->orderBy('fp.id','DESC')
             //->limit($limit)
             ->get();
 //dd(DB::getQueryLog());
 //return $payment_data;exit;
+
             $check = [];
         if ( !empty($payment_data) ) {
 
