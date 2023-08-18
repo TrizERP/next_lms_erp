@@ -126,6 +126,8 @@
                                                             S
                                                         @elseif(in_array($i,$data['holidays']))
                                                             H
+                                                        @elseif(in_array($i,$data['events']))
+                                                            -
                                                         @else
                                                             -
                                                             @php
