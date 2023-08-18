@@ -275,9 +275,18 @@ class ImportController extends Controller
 
                     $found = false;
                     $student_id = DB::table($request->table_name)->where($condition)->where('sub_institute_id', $sub_institute_id)->first();
+                    if($student_id){
+                        $enroll_det = DB::table('tblstudent_enrollment')->where('student_id',$student_id->id)->where(['sub_institute_id'=> $sub_institute_id,'syear'=>session()->get('syear')])->first();
+                    }
                     if (isset($data->is_skip) && $data->is_skip !== null) {
                         if ($data->is_skip == 1) {
-                            if ($student_id) {
+                            if($student_id && !$enroll_det){
+                                $found = true;
+                                $student_enroll_data['student_id'] = $student_id->id;
+                                DB::table('tblstudent_enrollment')->insert($student_enroll_data);
+                                $totalInsertRecordCount = $totalInsertRecordCount + 1;
+                            }
+                                else if ($student_id) {
                                 $found = true;
                                 $totalSkipRecordCount = $totalSkipRecordCount + 1;
                                 $totalSkipRecordArray[] = $rowKey + 1;
