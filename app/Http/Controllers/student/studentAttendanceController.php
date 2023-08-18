@@ -394,9 +394,27 @@ class studentAttendanceController extends Controller
         $holidays = DB::table("calendar_events")
             ->selectRaw("DATE_FORMAT(school_date,'%d') AS DATE")
             ->where($whereAtt)
+            ->where('event_type', '=', 'holiday')
             ->whereRaw("month(school_date) = " . $month)
             ->pluck('DATE')
             ->toArray();
+            
+        $events = DB::table("calendar_events")
+            ->selectRaw("DATE_FORMAT(school_date,'%d') AS DATE, event_type")
+            ->where($whereAtt)
+            ->where('event_type', '=', 'event')
+            ->whereRaw("month(school_date) = " . $month)
+            ->get();
+        
+        $eventsArray = [];
+        foreach ($events as $event) {
+            $eventsArray[] = $event->DATE; // Add event date to the array without event type
+        }
+        
+        /* echo("<pre>");
+        print_r($holidays);
+        print_r($eventsArray);
+        die; */
 
         // $whereAtt['term_id'] = $term_id;
         if(isset($standard_id)){
@@ -440,6 +458,7 @@ class studentAttendanceController extends Controller
         $res['attendance_data'] = $finalAttendanceArray;
         $res['sundays'] = $sundays;
         $res['holidays'] = $holidays;
+        $res['events'] = $eventsArray;
         $res['to_date'] = date('d', strtotime($to_date));
 
         return is_mobile($type, "student/monthwise_attendance_report", $res, "view");
