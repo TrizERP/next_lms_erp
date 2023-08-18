@@ -148,7 +148,7 @@ class ImportController extends Controller
                     }
                 }
                 $condition = [];
-                if (isset($match_fields) && isset($daqta->is_skip) && !empty($match_fields) && $data->is_skip !== null) {
+                if (isset($match_fields) && isset($data->is_skip) && !empty($match_fields) && $data->is_skip !== null) {
                     if ($data->is_skip === 1) {
                         foreach ($match_fields as $field) {
                             if (!isset($prepareData[$field])) continue;
@@ -172,7 +172,7 @@ class ImportController extends Controller
                     $prepareData['sub_institute_id'] = session()->get('sub_institute_id');
                     $found = false;
                     $tbluser = DB::table($request->table_name)->where($condition)->where('sub_institute_id', $sub_institute_id)->first();
-                    if (isset($daqta->is_skip) && $data->is_skip !== null) {
+                    if (isset($data->is_skip) && $data->is_skip !== null) {
                         if ($data->is_skip == 1) {
                             if ($tbluser) {
                                 $found = true;
@@ -213,7 +213,7 @@ class ImportController extends Controller
                         $fees_receipt_data['SYEAR'] = $prepareData['syear'] = session()->get('syear');
                         $fees_receipt_data['SUB_INSTITUTE_ID'] = $prepareData['sub_institute_id'] = session()->get('sub_institute_id');
                         $found = false;
-                        if (isset($daqta->is_skip) && $data->is_skip !== null) {
+                        if (isset($data->is_skip) && $data->is_skip !== null) {
                             if ($data->is_skip == 1) {
                                 $is_found = DB::table($request->table_name)->where([['student_id', $student_id->id], ['sub_institute_id', session()->get('sub_institute_id')]])->where('syear', $syear)->first();
                                 if ($is_found) {
@@ -275,9 +275,18 @@ class ImportController extends Controller
 
                     $found = false;
                     $student_id = DB::table($request->table_name)->where($condition)->where('sub_institute_id', $sub_institute_id)->first();
-                    if (isset($daqta->is_skip) && $data->is_skip !== null) {
+                    if($student_id){
+                        $enroll_det = DB::table('tblstudent_enrollment')->where('student_id',$student_id->id)->where(['sub_institute_id'=> $sub_institute_id,'syear'=>session()->get('syear')])->first();
+                    }
+                    if (isset($data->is_skip) && $data->is_skip !== null) {
                         if ($data->is_skip == 1) {
-                            if ($student_id) {
+                            if($student_id && !$enroll_det){
+                                $found = true;
+                                $student_enroll_data['student_id'] = $student_id->id;
+                                DB::table('tblstudent_enrollment')->insert($student_enroll_data);
+                                $totalInsertRecordCount = $totalInsertRecordCount + 1;
+                            }
+                                else if ($student_id) {
                                 $found = true;
                                 $totalSkipRecordCount = $totalSkipRecordCount + 1;
                                 $totalSkipRecordArray[] = $rowKey + 1;
