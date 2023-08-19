@@ -67,10 +67,16 @@ class ImportController extends Controller
 
         if ($extension != 'xlsx') {
             $file = fopen($destinationFileUrl, "r");
-            while (!feof($file)) {
-                $fileDetails[] = fgetcsv($file, 0, ',');
-            }
-            fclose($file);
+             $headerSkipped = false;  // To track if header row has been skipped
+                while (!feof($file)) {
+                    $row = fgetcsv($file, 0, ',');
+                    if (!$headerSkipped) {
+                        $headerSkipped = true;  // Skip the first row (header)
+                        continue;
+                    }
+                    $fileDetails[] = $row;
+                }
+                fclose($file);
         } else {
             $fileDetails = $worksheet->toArray();
             array_shift($fileDetails);
@@ -196,6 +202,7 @@ class ImportController extends Controller
 
                 }
 
+                
                 if ($request->table_name == 'fees_collect') {
                     $prepareData['sub_institute_id'] = session()->get('sub_institute_id');
                     $prepareData['created_by'] = session()->get('user_id');
@@ -203,7 +210,7 @@ class ImportController extends Controller
                     if ($student_id) {
                         $standard_id = DB::table('tblstudent_enrollment')->select('standard_id')->where([['student_id', $student_id->id], ['sub_institute_id', session()->get('sub_institute_id')], ['syear', session()->get('syear')]])->first();
                         if ($standard_id) {
-                            $prepareData['standard_id'] = $standard_id;
+                            // $prepareData['standard_id'] = $standard_id;
                             $prepareData['standard_id'] = $standard_id->standard_id;
                             $prepareData['student_id'] = $student_id->id;
                         }
@@ -275,18 +282,9 @@ class ImportController extends Controller
 
                     $found = false;
                     $student_id = DB::table($request->table_name)->where($condition)->where('sub_institute_id', $sub_institute_id)->first();
-                    if($student_id){
-                        $enroll_det = DB::table('tblstudent_enrollment')->where('student_id',$student_id->id)->where(['sub_institute_id'=> $sub_institute_id,'syear'=>session()->get('syear')])->first();
-                    }
                     if (isset($data->is_skip) && $data->is_skip !== null) {
                         if ($data->is_skip == 1) {
-                            if($student_id && !$enroll_det){
-                                $found = true;
-                                $student_enroll_data['student_id'] = $student_id->id;
-                                DB::table('tblstudent_enrollment')->insert($student_enroll_data);
-                                $totalInsertRecordCount = $totalInsertRecordCount + 1;
-                            }
-                                else if ($student_id) {
+                            if ($student_id) {
                                 $found = true;
                                 $totalSkipRecordCount = $totalSkipRecordCount + 1;
                                 $totalSkipRecordArray[] = $rowKey + 1;
@@ -355,7 +353,7 @@ class ImportController extends Controller
 
             }
         }
-    //    exit;
+       // exit;
         /*if (is_array($csv_data)) {
             $totalRecordCount = count($csv_data);
             foreach ($csv_data as $key => $row) {

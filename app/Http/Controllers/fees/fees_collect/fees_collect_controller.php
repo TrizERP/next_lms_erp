@@ -2416,7 +2416,7 @@ class fees_collect_controller extends Controller
 
             $online_link = "";
             if (count($fees_online_link) > 0) {
-                $online_link = "http://" . $_SERVER['SERVER_NAME'] . "/fees/online_fees_collect";
+                $online_link = env('APP_URL') . "fees/online_fees_collect";
             }
 
                 $fees_data = $this->getBk($request, $student_id);

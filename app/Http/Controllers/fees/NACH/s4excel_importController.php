@@ -427,7 +427,7 @@ class s4excel_importController extends Controller {
 								'".$REMARKS."','".$user_id."')";
 								DB::select($failInsSql);
 							}
-							$returned++;
+							$returned++;							
 
 							$sms_text = "Dear Parents, Your Monthly Fee NACH is returned from the bank. Please arrange Sufficient Funds";
 							$send_sms = $this->sendSMS($STUDENT_DETAILS['MOBILE_NUMBER'], $sms_text, $sub_institute_id);
@@ -443,8 +443,7 @@ class s4excel_importController extends Controller {
 									'sub_institute_id' => $sub_institute_id,
 								]);
 							}
-						  print_R($send_sms);
-						  echo $sms_text."<br/><br/>";
+						 // print_R($send_sms);
 							
                             $failed_bnk_chk_flg = 1;
 							

@@ -43,7 +43,7 @@ class online_fees_collect_controller extends Controller
             )
             ->where("s.id", $_REQUEST["student_id"])
             ->get();
-        $get_syear = DB::select("SELECT s.id,s.mobile,se.syear,se.sub_institute_id
+        $get_syear = DB::select("SELECT s.id,s.mobile,se.syear,se.sub_institute_id,s.admission_under
                                 FROM tblstudent s
                                 INNER JOIN tblstudent_enrollment se ON se.student_id = s.id AND se.sub_institute_id = s.sub_institute_id
                                 WHERE s.id = '" . $_REQUEST["student_id"] . "'
@@ -55,6 +55,7 @@ class online_fees_collect_controller extends Controller
         }
         // echo '<pre>'; print_r($_REQUEST); exit;
         $CurruntYear = $get_syear['0']->syear; //date("Y");
+        $admission_under = $get_syear['0']->admission_under; 
         $controller = new fees_collect_controller;
         // echo '<pre>'; print_r($_REQUEST); exit;
         $OldData = $controller->getOnlinebk($request, $all_student[0]->sub_institute_id, $year - 1, $_REQUEST["student_id"]);
@@ -106,6 +107,7 @@ class online_fees_collect_controller extends Controller
         // echo '<pre>'; print_r($dd_arr); exit;
         $data["fees_type"] = $all_student[0]->fees_type;
         $data["syear"] = $year;
+        $data["admission_under"] = $admission_under;
         return $data;
     }
 

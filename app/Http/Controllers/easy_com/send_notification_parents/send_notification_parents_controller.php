@@ -138,12 +138,14 @@ class send_notification_parents_controller extends Controller
                     $pushMessage = $text;
 
                     $bunch_arr = array_chunk($gcmRegIds, 1000);
+                                // echo "<pre>";print_r($bunch_arr);
+                    
                     if (! empty($bunch_arr)) {
                         foreach ($bunch_arr as $val) {
                             if (isset($val, $pushMessage)) {
-                                $type = 'Notification';
+                                $type1 = 'Notification';
                                 $message = [
-                                    'body'  => $pushMessage, 'TYPE' => $type, 'USER_ID' => $student_id,
+                                    'body'  => $pushMessage, 'TYPE' => $type1, 'USER_ID' => $student_id,
                                     'title' => $schoolName, 'image' => $schoolLogo,
                                 ];
                                 $pushStatus = send_FCM_Notification($val, $message, $sub_institute_id);
@@ -164,7 +166,7 @@ class send_notification_parents_controller extends Controller
                 }
             }
         }
-
+// exit;
         $type = $request->input('type');
 
         return is_mobile($type, "send_notification_parents.index", $res, "redirect");
