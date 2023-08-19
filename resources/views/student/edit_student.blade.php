@@ -423,9 +423,10 @@ br {
                                         </div> 
 
                                         <div class="col-md-4 form-group">
-                                            <label>Admission under GENERAL/RTE</label>
+                                            <label>Admission under</label>
                                             <select id='admission_under' name="admission_under" class="form-control">
-                                                <option>Select Admission Under</option>
+                                                <option>New</option>
+                                                <option value="Old" @if(isset($student_data->admission_under) && $student_data->admission_under == 'Old') selected="selected" @endif>Old</option>
                                                 <option value="GENERAL" @if(isset($student_data->admission_under) && $student_data->admission_under == 'GENERAL') selected="selected" @endif>GENERAL</option>
                                                 <option value="RTE" @if(isset($student_data->admission_under) && $student_data->admission_under == 'RTE') selected="selected" @endif>RTE</option>
                                             </select>

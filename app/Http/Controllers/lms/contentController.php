@@ -298,7 +298,7 @@ class contentController extends Controller
         //return is_mobile($type, "content_master.index", $res, "redirect");
         // return redirect()->route('topic_master.index', ['id' => $request->get('hid_chapter_id')]);
         if ( $request->has('hid_topic_id') ) {
-            return redirect()->route('topic_master.index', ['id' => $request->get('hid_chapter_id')]);
+            return redirect()->route('topic_master.index', ['id' => $request->get('hid_chapter_id'),'standard_id' => $chapter_data['standard_id']]);
         } else {
             return redirect()->route('chapter_master.index', ['standard_id' => $chapter_data['standard_id'], 'subject_id' => $chapter_data['subject_id']]);
         }
@@ -663,12 +663,12 @@ class contentController extends Controller
         
         $contentdata = contentModel::where(["id" => $id])->get()->toArray();
         $chapter_id = $contentdata[0]['chapter_id'];
+        $std = $contentdata[0]['standard_id'];
 
         contentModel::where(["id" => $id])->delete();
         $res['status_code'] = "1";
         $res['message'] = "Content Deleted Successfully";
-
-        return redirect()->route('topic_master.index', ['id' => $chapter_id]);
+        return redirect()->route('topic_master.index', ['id' => $chapter_id,'standard_id' => $std]);
     }
 	
     public function ajax_LMS_MappingValue(Request $request)
