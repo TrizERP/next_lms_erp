@@ -80,7 +80,6 @@ class send_notification_parents_controller extends Controller
         $text = $_REQUEST['notificationText'];
         $res = array();
         $student_data = SearchStudent($_REQUEST['grade'], $_REQUEST['standard'], $_REQUEST['division']);
-
         foreach ($_REQUEST['sendNotification'] as $number => $on) {
 
             $requestData = $_REQUEST;
@@ -104,7 +103,6 @@ class send_notification_parents_controller extends Controller
                         $q->where('se.section_id', $requestData['division']);
                     }
                 })->get()->toArray();
-
             $schoolData = SchoolModel::where(['id' => $sub_institute_id])->get()->toArray();
 
             $schoolName = $schoolData[0]['SchoolName'];
@@ -172,48 +170,4 @@ class send_notification_parents_controller extends Controller
         return is_mobile($type, "send_notification_parents.index", $res, "redirect");
     }
 
-    /**
-     * Display the specified resource.
-     *
-     * @param  int  $id
-     * @return void
-     */
-    public function show($id)
-    {
-        //
-    }
-
-    /**
-     * Show the form for editing the specified resource.
-     *
-     * @param  int  $id
-     * @return void
-     */
-    public function edit($id)
-    {
-        //
-    }
-
-    /**
-     * Update the specified resource in storage.
-     *
-     * @param  Request  $request
-     * @param  int  $id
-     * @return void
-     */
-    public function update(Request $request, $id)
-    {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     *
-     * @param  int  $id
-     * @return void
-     */
-    public function destroy($id)
-    {
-        //
-    }
 }
