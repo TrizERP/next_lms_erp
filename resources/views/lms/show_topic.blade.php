@@ -544,6 +544,7 @@
                                                   onsubmit="return delete_topic({{$list_topicvalue->id}});">
                                                 @csrf
                                                 @method('DELETE')
+                                                <input type="hidden" name="standard_id" value="{{$_REQUEST['standard_id']}}}">
                                                 <button onclick="return confirmDelete();" type="submit"
                                                         class="btn btn-outline-danger btn-sm mx-1 my-1">
                                                     <i class="mdi mdi-delete-outline"></i></button>
@@ -629,6 +630,8 @@
                                                       method="post">
                                                     @csrf
                                                     @method('DELETE')
+                                                    <input type="hidden" name="standard_id" value="{{$_REQUEST['standard_id']}}}">
+
                                                     <button onclick="return confirmDelete();" type="submit"
                                                             class="btn btn-outline-danger btn-sm mx-1">
                                                         <i class="mdi mdi-delete-outline"></i></button>
@@ -690,12 +693,15 @@
                                 <div class="col-lg-12 col-sm-12 col-xs-12">
                                     <input type="hidden" id='hidchapter_id' name='hidchapter_id'
                                            value="{{$_REQUEST['id']}}" class="form-control">
+                                       <input type="hidden" name="standard_id" value="{{$_REQUEST['standard_id']}}">
+                                           
                                     <div class="addButtonCheckbox">
                                         <div class="col-md-12 form-group">
                                             <label>Topic Name</label>
                                             <input type="text" id='topic_name' required name="topic_name[]"
                                                    class="form-control">
                                         </div>
+                                        
                                         <div class="col-md-12 form-group">
                                             <label>Description</label>
                                             <textarea id="topic_desc" name="topic_desc[]"
@@ -732,81 +738,12 @@
         <!--/.Content-->
     </div>
 </div>
-<!--Modal: TopicModal-->
 
-<!--Modal: SubTopicModal-->
-<!-- <div class="modal fade right modal-scrolling" id="SubTopicModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" style="display: none;" aria-hidden="true">
-                    <div class="modal-dialog modal-side modal-bottom-right modal-notify modal-info" role="document">
-
-                        <div class="modal-content">
-                            <div class="modal-header">
-                                <h5 class="modal-title" >Add Sub Topic</h5>
-                                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                                    <span aria-hidden="true">x</span>
-                                </button>
-                            </div>
-                            <form action="{{ route('subtopic_master.store') }}" method="post">
-
-                                {{ method_field("POST") }}
-
-@csrf
-    <div class="modal-body">
-        <div class="row">
-            <div class="white-box">
-                <div class="panel-body">
-@if ($message = Session::get('success'))
-    <div class="alert alert-success alert-block">
-        <button type="button" class="close" data-dismiss="alert">×</button>
-        <strong>{{ $message }}</strong>
-                                            </div>
-                                            @endif
-    <div class="col-lg-12 col-sm-12 col-xs-12">
-        <input type="text" id='ST_hidchapter_id' name='ST_hidchapter_id' value="{{$_REQUEST['id']}}" class="form-control">
-                                                <input type="text" id='ST_hidtopic_id' name='ST_hidtopic_id' class="form-control">
-                                                 <div class="addButtonCheckbox">
-                                                    <div class="col-md-12 form-group">
-                                                        <label>Sub Topic Name</label>
-                                                        <input type="text" id='subtopic_name' required name="subtopic_name[]" class="form-control">
-                                                    </div>
-                                                    <div class="col-md-12 form-group">
-                                                        <label>Description</label>
-                                                        <textarea id="subtopic_desc" name="subtopic_desc[]" class="form-control"></textarea>
-                                                    </div>
-                                                    <div class="col-md-12 form-group">
-                                                        <label>Sort Order</label>
-                                                        <input type="text" id="subtopic_sort_order" name="subtopic_sort_order[]" class="form-control">
-                                                    </div>
-                                                    <div class="col-md-12 form-group">
-                                                        <label>Show</label><br>
-                                                        <input type="checkbox" value="1" id="subtopic_show_hide" name="subtopic_show_hide[]">
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-
-                            <div class="modal-footer flex-center">
-                                <input type="submit" name="submit" id="submit" value="Save" class="btn btn-success" >
-                            </div>
-                            </form>
-                        </div>
-
-                    </div>
-                </div> -->
-<!--Modal: SubTopicModal-->
 @include('includes.lmsfooterJs')
 <script src="https://cdn.datatables.net/1.10.19/js/jquery.dataTables.min.js"></script>
 <script src="https://cdn.datatables.net/1.10.19/js/dataTables.bootstrap.min.js"></script>
 <script>
-    // function open_subtopicModal(topic_id)
-    // {
-    //     $("#ST_hidtopic_id").val(topic_id);
-    //     $('#SubTopicModal').modal('show');
-    // }
-
+ 
     function edit_data(url, topic_id, topic_name, topic_desc, topic_sort_order, topic_show_hide) {
         $("#topic_name").val(topic_name);
         $("#topic_desc").val(topic_desc);
@@ -874,47 +811,5 @@
         $(this).toggleClass('active');
     });
 </script>
-
-//
-<script>
-    //     function openModal() {
-    //         $(this).parent('.video-box').find('.flash-card-modal').addClass('d-block');
-    //         document.getElementById("myModal").style.display = "block";
-    //     }
-
-    //     function closeModal() {
-    //         $(this).parent('.video-box').find('.close').removeClass('d-block');
-    //         document.getElementById("myModal").style.display = "none";
-    //     }
-
-    //     var slideIndex = 1;
-    //     showSlides(slideIndex);
-
-    //     function plusSlides(n) {
-    //     showSlides(slideIndex += n);
-    //     }
-
-    //     function currentSlide(n) {
-    //     showSlides(slideIndex = n);
-    //     }
-
-    //     function showSlides(n) {
-    //     var i;
-    //     var slides = document.getElementsByClassName("mySlides");
-    //     var dots = document.getElementsByClassName("demo");
-    //     var captionText = document.getElementById("caption");
-    //     if (n > slides.length) {slideIndex = 1}
-    //     if (n < 1) {slideIndex = slides.length}
-    //     for (i = 0; i < slides.length; i++) {
-    //         slides[i].style.display = "none";
-    //     }
-    //     for (i = 0; i < dots.length; i++) {
-    //         dots[i].className = dots[i].className.replace(" active", "");
-    //     }
-    //     slides[slideIndex-1].style.display = "block";
-    //     dots[slideIndex-1].className += " active";
-    //     captionText.innerHTML = dots[slideIndex-1].title;
-    //     }
-    // </script>
 
 @include('includes.footer')

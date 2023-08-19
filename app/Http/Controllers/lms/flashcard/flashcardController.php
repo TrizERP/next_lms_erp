@@ -50,9 +50,6 @@ class flashcardController extends Controller
             'sub.subject_name')
             ->join('standard as s',function($join) use($marking_period_id){
                 $join->on('s.id', 'lms_flashcard.standard_id');
-                //  ->when($marking_period_id,function($query) use($marking_period_id){
-                //      $query->where('s.marking_period_id',$marking_period_id);
-                // });
             })
             ->join('subject as sub', 'sub.id', 'lms_flashcard.subject_id')
             ->join('chapter_master as c', 'c.id', 'lms_flashcard.chapter_id')
@@ -61,10 +58,8 @@ class flashcardController extends Controller
                 'lms_flashcard.content_id'       => $request->get('content_id'),
             ])
             ->get();
-//  $data['content_category'] = lmsContentCategoryModel::where('status', '2')->get()->toArray();
         $data['content_data'] = contentModel::find($request->content_id)->toArray();
         $data['breadcrum_data'] = $this->getBreadcrum($sub_institute_id, $data['content_data']['chapter_id'] ?? '', $data['content_data']['topic_id']);
-        // $data['breadcrum_data'] = $this->getBreadcrum($sub_institute_id, $syear, $request->get('content_id'));
 
         return $data;
     }
@@ -72,13 +67,10 @@ class flashcardController extends Controller
     public function getBreadcrum($sub_institute_id, $chapter_id, $topic_id ='')
     {
      
-        
         $where = '';
         $topic = '';
         $topic_id = '';
 
-        // return $chapter_id;exit;
-        // $breadcrum_data = array();
         if ($topic_id != '') {
             $topic = 't.id as topic_id,';
         }
@@ -88,7 +80,7 @@ class flashcardController extends Controller
                 $join->whereRaw('s.subject_id = c.subject_id AND s.standard_id = c.standard_id');
             })->join('standard as st', function ($join) {
                 $join->whereRaw('st.id = c.standard_id');
-            })->LeftJoin('topic_master as t', function ($join) {
+            })->Join('topic_master as t', function ($join) {
                 $join->whereRaw('t.chapter_id = c.id');
             })->selectRaw('c.subject_id,s.display_name AS subject_name,c.standard_id,st.name AS standard_name,
                 c.id AS chapter_id, c.chapter_name, '.$topic.' t.name as topic_name')
@@ -149,6 +141,7 @@ class flashcardController extends Controller
      */
     public function store(Request $request)
     {
+        // return $request;exit;
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $syear = $request->session()->get('syear');
         $user_id = $request->session()->get('user_id');
@@ -195,7 +188,7 @@ class flashcardController extends Controller
 
         $data['flashcard_data'] = flashcardModel::find($id)->toArray();
 
-        $data['breadcrum_data'] = $this->getBreadcrum($sub_institute_id, $syear, $data['flashcard_data']['content_id']);
+        $data['breadcrum_data'] = $this->getBreadcrum($sub_institute_id, $data['flashcard_data']['chapter_id'] ?? '', $data['flashcard_data']['topic_id']);
 
         return is_mobile($type, "lms/flashcard/add_flashcard", $data, "view");
     }
