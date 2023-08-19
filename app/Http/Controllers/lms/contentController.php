@@ -298,7 +298,7 @@ class contentController extends Controller
         //return is_mobile($type, "content_master.index", $res, "redirect");
         // return redirect()->route('topic_master.index', ['id' => $request->get('hid_chapter_id')]);
         if ( $request->has('hid_topic_id') ) {
-            return redirect()->route('topic_master.index', ['id' => $request->get('hid_chapter_id')]);
+            return redirect()->route('topic_master.index', ['id' => $request->get('hid_chapter_id'),'standard_id' => $chapter_data['standard_id']]);
         } else {
             return redirect()->route('chapter_master.index', ['standard_id' => $chapter_data['standard_id'], 'subject_id' => $chapter_data['subject_id']]);
         }
@@ -553,7 +553,7 @@ class contentController extends Controller
     public function update(Request $request,$id)
     {
         //ValidateInsertData('subject','update');        
-
+        // echo "<pre>";print_r($request);exit;
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $syear = $request->session()->get('syear');
         $user_id = $request->session()->get('user_id');
@@ -618,6 +618,7 @@ class contentController extends Controller
             'content_category'             => $request->get('content_category'),
             'created_by'                   => $user_id,
             'sub_institute_id'             => $sub_institute_id,
+            'url'                          => $request->get('link'),
             'restrict_date'                => $request->get('restrict_date'),
             'pre_grade_topic'              => $pre_topic,
             'post_grade_topic'             => $post_topic,
@@ -662,12 +663,12 @@ class contentController extends Controller
         
         $contentdata = contentModel::where(["id" => $id])->get()->toArray();
         $chapter_id = $contentdata[0]['chapter_id'];
+        $std = $contentdata[0]['standard_id'];
 
         contentModel::where(["id" => $id])->delete();
         $res['status_code'] = "1";
         $res['message'] = "Content Deleted Successfully";
-
-        return redirect()->route('topic_master.index', ['id' => $chapter_id]);
+        return redirect()->route('topic_master.index', ['id' => $chapter_id,'standard_id' => $std]);
     }
 	
     public function ajax_LMS_MappingValue(Request $request)
