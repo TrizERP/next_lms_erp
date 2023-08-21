@@ -544,7 +544,7 @@
                                                   onsubmit="return delete_topic({{$list_topicvalue->id}});">
                                                 @csrf
                                                 @method('DELETE')
-                                                <input type="hidden" name="standard_id" value="{{$_REQUEST['standard_id']}}}">
+                                                <input type="hidden" name="standard_id" value="{{$_REQUEST['standard_id']}}">
                                                 <button onclick="return confirmDelete();" type="submit"
                                                         class="btn btn-outline-danger btn-sm mx-1 my-1">
                                                     <i class="mdi mdi-delete-outline"></i></button>
@@ -630,7 +630,7 @@
                                                       method="post">
                                                     @csrf
                                                     @method('DELETE')
-                                                    <input type="hidden" name="standard_id" value="{{$_REQUEST['standard_id']}}}">
+                                                    <input type="hidden" name="standard_id" value="{{$_REQUEST['standard_id']}}">
 
                                                     <button onclick="return confirmDelete();" type="submit"
                                                             class="btn btn-outline-danger btn-sm mx-1">
