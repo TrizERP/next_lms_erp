@@ -107,7 +107,12 @@ class templateMasterController extends Controller
         <li><b><< whether_ncc_cadet_value >></b> : Whether ncc cadet</li>
         <li><b><< any_other_remarks_value >></b> : Any other remarks</li>
         <li><b><< student_uniqueid_value >></b> : Student unique ID</li>
+        <li><b><< he_she_value >></b> : he/she</li>
         <li><b><< his_her_value >></b> : His/Her</li>
+        <li><b><< certificate_reason >></b> : certificate reason</li>
+        <li><b><< student_father_name >></b> : Father name</li>
+        <li><b><< fees_details >></b> : Fees Details</li>
+        <li><b><< total_amount_in_words >></b> : Total Amount in words</li>
         </ul>";
 
         return is_mobile($type, 'settings/view_all_tag', $data, "view");
