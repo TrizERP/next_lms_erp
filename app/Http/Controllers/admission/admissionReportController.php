@@ -47,12 +47,12 @@ class admissionReportController extends Controller
                     $join->whereRaw('fu.enquiry_id = ai.id AND fu.sub_institute_id = ai.sub_institute_id');
                 })->join('standard as s', function ($join) use ($marking_period_id){
                     $join->whereRaw('s.id = ai.admission_standard AND s.sub_institute_id = ai.sub_institute_id');
-                    // ->when($marking_period_id,function($query) use($marking_period_id){
-                    //     $query->where('s.marking_period_id',$marking_period_id);
-                    // });
+                })
+                ->LeftJoin('standard as s_previous', function ($join) {
+                    $join->whereRaw('s_previous.id = ai.previous_standard AND s_previous.sub_institute_id = ai.sub_institute_id');
                 })
                 ->selectRaw("ai.enquiry_no, DATE_FORMAT(ai.created_on, '%d-%m-%Y %h:%i:%s') as created_on, DATE_FORMAT(ai.followup_date, '%d-%m-%Y') as followup_date, ai.first_name, ai.middle_name, ai.last_name,
-                    ai.gender, ai.mobile, ai.email, ai.address, DATE_FORMAT(ai.date_of_birth, '%d-%m-%Y') as date_of_birth, ai.age, ai.syear, ai.previous_school_name,ai.previous_standard,
+                    ai.gender, ai.mobile, ai.email, ai.address, DATE_FORMAT(ai.date_of_birth, '%d-%m-%Y') as date_of_birth, ai.age, ai.syear, ai.previous_school_name,s_previous.name as previous_standard,
                     s.name as admission_standard, ai.remarks,fu.status as enquiry_status, ai.source_of_enquiry, ai.created_by,
                     ai.counciler_name, ai.father_name,CONCAT_WS(' ',ts.first_name,ts.last_name) AS created_by, cs.caste_name $extra")
                 ->whereRaw("(DATE_FORMAT(ai.created_on, '%Y-%m-%d') BETWEEN '" . $from_date . "' AND '" . $to_date . "')

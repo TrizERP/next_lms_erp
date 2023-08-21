@@ -42,7 +42,7 @@
                     <input type="hidden" name="subject_id" id="subject_id" value="{{$data['breadcrum_data']->subject_id ?? '' }}">
                     <input type="hidden" name="chapter_id" id="chapter_id" value="{{$data['breadcrum_data']->chapter_id ?? '' }}">
                     <input type="hidden" name="topic_id" id="topic_id" value="{{$data['breadcrum_data']->topic_id ?? '' }}">
-                    <input type="hidden" name="content_id" id="content_id" value="{{$data['breadcrum_data']->content_id ?? '' }}">
+                   <input type="hidden" name="content_id" id="content_id" value="@if( isset($data['flashcard_data']['content_id'])){{$data['flashcard_data']['content_id']}} @else {{$_REQUEST['content_id']}} @endif">
 
                     <div class="row">
                         <div class="col-md-8">                           

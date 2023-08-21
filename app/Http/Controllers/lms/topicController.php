@@ -187,7 +187,9 @@ class topicController extends Controller
         ];
         $type = $request->input('type');
 
-        return redirect()->route('topic_master.index', ['id' => $request->get('hidchapter_id')]);
+        return redirect()->route('topic_master.index', ['id' => $request->get('hidchapter_id'),'standard_id' => $request->get('standard_id')]);
+      
+
     }
 
     public function edit(Request $request, $id)
@@ -226,13 +228,13 @@ class topicController extends Controller
         ];
         $type = $request->input('type');
 
-        return redirect()->route('topic_master.index', ['id' => $request->get('hidchapter_id')]);
+        return redirect()->route('topic_master.index', ['id' => $request->get('hidchapter_id'),'standard_id' => $request->get('standard_id')]);
     }
 
     public function destroy(Request $request, $id)
     {
         $type = $request->input('type');
-
+        
         $topicdata = topicModel::where(["id" => $id])->get()->toArray();
         $chapter_id = $topicdata[0]['chapter_id'];
 
@@ -240,7 +242,7 @@ class topicController extends Controller
         $res['status_code'] = "1";
         $res['message'] = "Topic Deleted Successfully";
 
-        return redirect()->route('topic_master.index', ['id' => $chapter_id]);
+        return redirect()->route('topic_master.index', ['id' => $chapter_id,'standard_id' => $request->get('standard_id')]);
     }
 
     public function StandardwiseSubject(Request $request)

@@ -63,7 +63,7 @@
                                     @php $i = 1;
                                     @endphp
                                     @foreach($data['data'] as $key => $fcdata)
-                                    <tr>    
+                               <tr>    
                                         <td>@php echo $i++;@endphp</td>                                        
                                         <td>{{$fcdata->standard_name}}</td> 
                                         <td>{{$fcdata->subject_name}}</td>   								
@@ -80,7 +80,7 @@
                                         </td>     
                                         <td>
                                             <div class="d-flex align-items-center justify-content-end">
-                                                <a class="btn btn-outline-success" href="{{ route('lms_flashcard.edit',['id'=>$fcdata->id])}}">
+                                                <a class="btn btn-outline-success" href="{{ route('lms_flashcard.edit',[$fcdata->id])}}">
                                                     <i class="ti-pencil-alt"></i>
                                                 </a>                                                                                                            
                                                 <form class="d-inline" action="{{ route('lms_flashcard.destroy', $fcdata->id)}}" method="post">
