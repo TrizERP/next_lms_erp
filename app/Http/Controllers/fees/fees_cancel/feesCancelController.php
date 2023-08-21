@@ -276,7 +276,7 @@ class feesCancelController extends Controller
         $syear = $request->session()->get('syear');
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $user_id = $request->session()->get('user_id');
-        // return $receipt_nos;exit;
+       //return $receipt_nos;exit;
 
         if($receipt_nos_a == '') {
             $res['status_code'] = 0;

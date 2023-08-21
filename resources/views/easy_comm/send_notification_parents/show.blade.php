@@ -11,7 +11,11 @@
         </div>
         <div class="card">
             @if(!empty($data['message']))
+            @if(isset($data['status']) && $data['status']==1)
             <div class="alert alert-success alert-block">
+            @else
+            <div class="alert alert-danger alert-block">
+            @endif            
                 <button type="button" class="close" data-dismiss="alert">×</button>
                 <strong>{{ $data['message'] }}</strong>
             </div>

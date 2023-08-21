@@ -64,15 +64,15 @@ class s4excel_importController extends Controller {
 		$DEPOSITED_BANK_ACCOUNT_ID_CONST = '1';
 		$PAYMENT_MODE_CONST = 'NACH';	
 
-		$searchArr = array("'", '"');
-		$replaceArr = array("\'", '\"');
+		$searchArr = array("'", '"', ',');
+		$replaceArr = array("\'", '\"', '');
 
 		$successStatusArr = array(
 		    'REALISED', 'SUCCESS', 'Completed'
 		);
 
 		$falilureStatusArr = array(
-		    'RETURN', 'failure', 'failed','Returned'
+		    'RETURN', 'failure', 'failed','Returned','NPCI Reject'
 		);
 		if (!file_exists('storage/NachExcel/Uploads/')) {
 			mkdir('storage/NachExcel/Uploads/', 0777, true);
@@ -219,11 +219,11 @@ class s4excel_importController extends Controller {
 	     
 	            foreach ($dataArr as $value) 
 	            {	    	           
-                	if ($m == 1) 
+                	if ($m == 0) 
                 	{
 						$maxCnt = count($titleArr);
                 	}
-                	if ($m >= 2) 
+                	if ($m >= 1) 
                 	{
 	                    $AC_HOLDER_NAME = isset($value[5]) ? str_replace($searchArr, $replaceArr, $value[5]) : '';
 	                    
@@ -255,7 +255,7 @@ class s4excel_importController extends Controller {
 	                        $REMARKS = '-';
 	                    }
 
-	                    $STUDENT_DETAILS = $this->get_students_general_details_with_multiple_parameters($STUDENT_NAME, $STUDENT_GR_NO, $sub_institute_id, $syear);	                   	                                      	
+	                    $STUDENT_DETAILS = $this->get_students_general_details_with_multiple_parameters($STUDENT_NAME, $STUDENT_GR_NO, $sub_institute_id, $syear);
 						$STUDENT_ID =  "";
 
                     	if (in_array($TRANSACTION_STATUS, $successStatusArr)) 
@@ -278,7 +278,7 @@ class s4excel_importController extends Controller {
 								$STUDENT_ID = $STUDENT_DETAILS['STUDENT_ID'];
 	                            // Get Already Paid Fees Students
 								$fees_paid_chk = $this->is_fees_paid_chk($STUDENT_ID,$MONTH_ID,$syear);
-								
+
 	                            if (!empty($fees_paid_chk) || $fees_paid_chk !== "") 
 	                            {
 	                                $fees_paid_str.="<tr>";
@@ -390,11 +390,13 @@ class s4excel_importController extends Controller {
 					            );
 
 								$_REQUEST = $send_arr;
+								//echo "<pre>";
+								//print_r($_REQUEST);
+								//die();exit();
  								$paid_fees =  $controller->pay_fees($request);
 								// echo '<pre>';
 								// print_r($paid_fees);
-								if($paid_fees['data'] != "")
-								{
+							if (isset($paid_fees['data']) && $paid_fees['data'] !== "") {
 									$successCnt++;
 									$upSql = "UPDATE tblstudent_bank_detail SET is_registered = 'Y' WHERE student_id = '".$STUDENT_ID."'";
                                     DB::select($upSql);
@@ -441,7 +443,7 @@ class s4excel_importController extends Controller {
 									'sub_institute_id' => $sub_institute_id,
 								]);
 							}
-						 print_R($send_sms);
+						 // print_R($send_sms);
 							
                             $failed_bnk_chk_flg = 1;
 							
@@ -537,7 +539,7 @@ class s4excel_importController extends Controller {
 	public function get_students_general_details_with_multiple_parameters($STUDENT_FULL_NAME,$STUDENT_GR_NO,$sub_institute_id,$syear)
 	{           
         $studet_sql = 
-        	"SELECT CONCAT_WS(' ',s.first_name,s.middle_name,s.last_name) AS FULL_NAME ,s.enrollment_no as ENROLLMENT_NO,s.id AS STUDENT_ID
+        	"SELECT CONCAT_WS(' ',s.first_name,s.last_name) AS FULL_NAME ,s.enrollment_no as ENROLLMENT_NO,s.id AS STUDENT_ID
 			,s.admission_year,a.title AS ACADEMIC_YEAR,st.name AS BRANCH,sq.title AS STUDENT_QUOTA,se.standard_id as STANDARD_ID,
 			d.name AS SECTION_NAME,se.section_id as SECTION_ID,se.student_quota AS STUDENT_QUOTA1,se.start_date AS STUDENT_ENROLLMENT_DATE,
 			s.roll_no AS STUDENT_ROLL_NO,s.gender AS STUDENT_GENDER,se.grade_id as GRADE_ID,s.mobile as MOBILE_NUMBER,
@@ -549,8 +551,10 @@ class s4excel_importController extends Controller {
 			LEFT JOIN division d ON d.id = se.section_id
 			LEFT JOIN student_quota sq ON sq.id = se.student_quota
 			WHERE s.sub_institute_id = '".$sub_institute_id."' AND se.syear = '".$syear."' AND s.enrollment_no = '".$STUDENT_GR_NO."'
-			AND if (se.END_DATE IS NOT NULL,se.END_DATE >= CURDATE(),se.END_DATE IS NULL)
+			AND CONCAT_WS(' ',s.first_name,s.last_name) = '".$STUDENT_FULL_NAME."' AND if (se.END_DATE IS NOT NULL,se.END_DATE >= CURDATE(),se.END_DATE IS NULL)
 			";
+//echo $studet_sql;
+//die();
 		$stud_data = DB::select($studet_sql);
 		$stud_data = json_decode(json_encode($stud_data),true);
 		// dd($syear);

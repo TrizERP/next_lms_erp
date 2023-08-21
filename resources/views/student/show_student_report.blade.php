@@ -207,7 +207,15 @@ function checkedAll() {
                     exportOptions: {
                         columns: ':visible'
                     },
+                    customize: function (doc) {
+                        doc.content.splice(0, 0, {
+                            text: schoolDetails,
+                            margin: [10, 10, 10, 0]
+                        });
+                    }
                 },
+                /* { extend: 'pdf', title: 'TITLE DATE IS '+$('#min').val(), text: '<a class="btn" style="color: #FFFFFF;  padding: 0  !important; height: fit-content !important;"><i class="fas fa-file-pdf"></i> PDF</a>', orientation: 'landscape', 
+                }, */
                 {extend: 'csv', text: ' CSV', title: 'Student Report'},
                 {extend: 'excel', text: ' EXCEL', title: 'Student Report'},
                 {

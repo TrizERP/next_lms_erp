@@ -190,6 +190,26 @@ class apiController extends Controller
             'otp'    => 'required|numeric',
         ]);
 
+        //START - For Hills School - Display only current year student display
+			$exists = DB::table('tblstudent')
+			    ->selectRaw('sub_institute_id')
+                ->orWhere([
+                    "tblstudent.mobile"         => $_REQUEST['mobile'],
+                    "tblstudent.mother_mobile"  => $_REQUEST['mobile'],
+                    "tblstudent.student_mobile" => $_REQUEST['mobile'],
+                ])
+                ->where('sub_institute_id', [254])
+                ->get()->toArray();
+
+            $exists = json_decode(json_encode($exists), true);
+
+            $is_exist = false;
+            if (count($exists) > 0) {
+                $is_exist = true;
+            }
+        //End - For Hills School - Display only current year student display
+
+
         if ($validator->fails()) {
             $response['status'] = '0';
             $response['message'] = $validator->messages();
@@ -221,31 +241,36 @@ class apiController extends Controller
                 "tbluserprofilemaster.name as user_profile_name",
                 "tbluserprofilemaster.id as user_profile_id",
             ];
-//            $student_syear = 2023;
-            $data = DB::table("tblstudent")
-                ->join('school_setup', 'school_setup.id', '=', 'tblstudent.sub_institute_id')
-                ->join('tblstudent_enrollment', 'tblstudent_enrollment.student_id', '=', 'tblstudent.id')
-                ->join('academic_section', 'tblstudent_enrollment.grade_id', '=', 'academic_section.id')
-                ->join('standard', 'standard.id', '=', 'tblstudent_enrollment.standard_id')
-                ->join('division', 'division.id', '=', 'tblstudent_enrollment.section_id')
-                ->join('tbluserprofilemaster', 'tbluserprofilemaster.id', '=', 'tblstudent.user_profile_id')
-                ->orWhere([
-                    "tblstudent.mobile"         => $_REQUEST['mobile'],
-                    "tblstudent.mother_mobile"  => $_REQUEST['mobile'],
-                    "tblstudent.student_mobile" => $_REQUEST['mobile'],
-                ])
-                ->where(["tblstudent.otp" => $_REQUEST['otp']])
-                ->where('tblstudent_enrollment.syear', function ($query) {
-                    $query->select(DB::raw('tblstudent_enrollment.syear'))
-                        ->from('tblstudent_enrollment')
-                        ->whereRaw('tblstudent_enrollment.student_id = tblstudent.id')
-                        ->whereRaw('tblstudent_enrollment.end_date is NULL')
-                        ->orderBy('tblstudent_enrollment.syear', 'DESC')
-                        ->take(1);
-                })
-//                ->where('school_setup.syear', '=', 'tblstudent_enrollment.syear')
-                ->groupBy('tblstudent.id')
-                ->get($select);
+
+			$query = DB::table("tblstudent")
+			    ->join('school_setup', 'school_setup.id', '=', 'tblstudent.sub_institute_id')
+			    ->join('tblstudent_enrollment', 'tblstudent_enrollment.student_id', '=', 'tblstudent.id')
+			    ->join('academic_section', 'tblstudent_enrollment.grade_id', '=', 'academic_section.id')
+			    ->join('standard', 'standard.id', '=', 'tblstudent_enrollment.standard_id')
+			    ->join('division', 'division.id', '=', 'tblstudent_enrollment.section_id')
+			    ->join('tbluserprofilemaster', 'tbluserprofilemaster.id', '=', 'tblstudent.user_profile_id')
+			    ->orWhere([
+			        "tblstudent.mobile" => $_REQUEST['mobile'],
+			        "tblstudent.mother_mobile" => $_REQUEST['mobile'],
+			        "tblstudent.student_mobile" => $_REQUEST['mobile'],
+			    ])
+			    ->where(["tblstudent.otp" => $_REQUEST['otp']])
+			    ->where('tblstudent_enrollment.syear', function ($query) {
+			        $query->select(DB::raw('tblstudent_enrollment.syear'))
+			            ->from('tblstudent_enrollment')
+			            ->whereRaw('tblstudent_enrollment.student_id = tblstudent.id')
+			            ->whereRaw('tblstudent_enrollment.end_date is NULL')
+			            ->orderBy('tblstudent_enrollment.syear', 'DESC')
+			            ->take(1);
+			    });
+
+			if($is_exist) {
+			    $query->whereColumn('school_setup.syear', '=', 'tblstudent_enrollment.syear');
+			}
+
+			$data = $query
+			    ->groupBy('tblstudent.id')
+			    ->get($select);
 
             $send_data = [];
 
