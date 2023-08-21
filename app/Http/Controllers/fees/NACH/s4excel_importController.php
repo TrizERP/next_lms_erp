@@ -64,15 +64,15 @@ class s4excel_importController extends Controller {
 		$DEPOSITED_BANK_ACCOUNT_ID_CONST = '1';
 		$PAYMENT_MODE_CONST = 'NACH';	
 
-		$searchArr = array("'", '"');
-		$replaceArr = array("\'", '\"');
+		$searchArr = array("'", '"', ',');
+		$replaceArr = array("\'", '\"', '');
 
 		$successStatusArr = array(
 		    'REALISED', 'SUCCESS', 'Completed'
 		);
 
 		$falilureStatusArr = array(
-		    'RETURN', 'failure', 'failed','Returned'
+		    'RETURN', 'failure', 'failed','Returned','NPCI Reject'
 		);
 		if (!file_exists('storage/NachExcel/Uploads/')) {
 			mkdir('storage/NachExcel/Uploads/', 0777, true);
@@ -199,7 +199,7 @@ class s4excel_importController extends Controller {
 	            $failed_bnk_str.=$style_str;
 	            $failed_bnk_str.="<table class='table table-bordered table-striped'>";
 	            $failed_bnk_str.="<tr>";
-	            $failed_bnk_str.="<th colspan=30><b>Not Found Students List</b></th>";
+	            $failed_bnk_str.="<th colspan=30><b>Returned Students List</b></th>";
 	            $failed_bnk_str.="</tr>";
 	            $failed_bnk_str.="<tr class=cls_not_found_headings_lbl>";
 	            foreach ($titleArr as $value) {
@@ -235,7 +235,7 @@ class s4excel_importController extends Controller {
 	                    $FEES_CHEQUE_DD_DATE_VALUES_DB = $YEAR."-".$MONTH."-".$DAY;
 	                    //$MONTH_ID = ltrim($MONTH, '0').$YEAR;	                   
 
-	                    $STUDENT_FEES_AMOUNT = isset($value[10]) ? $value[10] : '';
+						$STUDENT_FEES_AMOUNT = isset($value[10]) ? str_replace($searchArr, $replaceArr, $value[10]) : 0;
 	                    
 	                    $IFSC_CODE = isset($value[15]) ? $value[15] : '';
 	                    $AC_NUMBER = isset($value[16]) ? $value[16] : '';
@@ -255,7 +255,7 @@ class s4excel_importController extends Controller {
 	                        $REMARKS = '-';
 	                    }
 
-	                    $STUDENT_DETAILS = $this->get_students_general_details_with_multiple_parameters($STUDENT_NAME, $STUDENT_GR_NO, $sub_institute_id, $syear);	                   	                                      	
+	                    $STUDENT_DETAILS = $this->get_students_general_details_with_multiple_parameters($STUDENT_NAME, $STUDENT_GR_NO, $sub_institute_id, $syear);
 						$STUDENT_ID =  "";
 
                     	if (in_array($TRANSACTION_STATUS, $successStatusArr)) 
@@ -278,7 +278,7 @@ class s4excel_importController extends Controller {
 								$STUDENT_ID = $STUDENT_DETAILS['STUDENT_ID'];
 	                            // Get Already Paid Fees Students
 								$fees_paid_chk = $this->is_fees_paid_chk($STUDENT_ID,$MONTH_ID,$syear);
-								
+
 	                            if (!empty($fees_paid_chk) || $fees_paid_chk !== "") 
 	                            {
 	                                $fees_paid_str.="<tr>";
@@ -309,6 +309,7 @@ class s4excel_importController extends Controller {
 					            $fees_bk_data = $controller->getOnlinebk($request, $sub_institute_id, $syear, $STUDENT_ID);
 
 					            $fees_month = $ajx_controller->getOnlineFeesMonth($arr);
+							if (!empty($fees_bk_data)) {
 					            
 					            $total_fees = $fees_month["Total"];
 					            unset($fees_month["Total"]);
@@ -390,10 +391,13 @@ class s4excel_importController extends Controller {
 					            );
 
 								$_REQUEST = $send_arr;
+								//echo "<pre>";
+								//print_r($_REQUEST);
+								//die();exit();
  								$paid_fees =  $controller->pay_fees($request);
 								// echo '<pre>';
 								// print_r($paid_fees);
-							if (isset($paid_fees['data']) && $paid_fees['data'] !== "") {
+							if (!empty($fees_bk_data) || $fees_bk_data !== "") {
 									$successCnt++;
 									$upSql = "UPDATE tblstudent_bank_detail SET is_registered = 'Y' WHERE student_id = '".$STUDENT_ID."'";
                                     DB::select($upSql);
@@ -409,13 +413,38 @@ class s4excel_importController extends Controller {
 
 									$failed_chk_flg = 1;
 								}
+							}else 
+							{
+								$not_found_str.="<tr>";
+	                            for ($i = 0; $i < $maxCnt; $i++) 
+	                            {
+	                                $not_found_str.="<td>" . (isset($value[$i]) ? $value[$i] : '') . "</td>";
+	                            }
+	                            $not_found_str.="</tr>";
+	                            $not_found_chk_flg = 1;
+	                            $notFoundCnt++;
+							}
+								
                         }
                     } 
                  if (in_array($TRANSACTION_STATUS, $falilureStatusArr)) 
                     {      
-						$STUDENT_ID = $STUDENT_DETAILS['STUDENT_ID'];
-                        if ($STUDENT_ID != "") 
+                        if (empty($STUDENT_DETAILS)) 
+	                        {
+	                            // Get Not Found Students
+	                            $not_found_str.="<tr>";
+	                            for ($i = 0; $i < $maxCnt; $i++) 
+	                            {
+	                                $not_found_str.="<td>" . (isset($value[$i]) ? $value[$i] : '') . "</td>";
+	                            }
+	                            $not_found_str.="</tr>";
+	                            $not_found_chk_flg = 1;
+	                            $notFoundCnt++;
+	                        } 
+	                        else 
 						{
+						$STUDENT_ID = $STUDENT_DETAILS['STUDENT_ID'];
+							
 							$check = DB::table('tblstudent_fees_failure')->whereRaw("student_id='".$STUDENT_ID."' AND month_id='".$MONTH_ID."' AND  syear='".$syear."' AND sub_institute_id='".$sub_institute_id."' AND amount='".$STUDENT_FEES_AMOUNT."'")->get()->toArray();
 							if(empty($check)){
 								$failInsSql = "INSERT INTO tblstudent_fees_failure
@@ -426,20 +455,20 @@ class s4excel_importController extends Controller {
 							}
 							$returned++;							
 
-							$sms_text = "Dear Parents, Your Monthly Fee NACH is returned from the bank. Please arrange Sufficient Funds";
-							$send_sms = $this->sendSMS($STUDENT_DETAILS['MOBILE_NUMBER'], $sms_text, $sub_institute_id);
-							if (isset($send_sms['error']) && $send_sms['error'] == 1) {
-								break;
-							} else {
-								DB::table('sms_sent_parents')->insert([
-									'SYEAR'            => $syear,
-									'STUDENT_ID'       => $STUDENT_DETAILS['STUDENT_ID'],
-									'SMS_TEXT'         => $sms_text,
-									'SMS_NO'           => $STUDENT_DETAILS['MOBILE_NUMBER'],
-									'MODULE_NAME'      => 'S4 NACH',
-									'sub_institute_id' => $sub_institute_id,
-								]);
-							}
+							// $sms_text = "Dear Parents, Your Monthly Fee NACH is returned from the bank. Please arrange Sufficient Funds";
+							// $send_sms = $this->sendSMS($STUDENT_DETAILS['MOBILE_NUMBER'], $sms_text, $sub_institute_id);
+							// if (isset($send_sms['error']) && $send_sms['error'] == 1) {
+							// 	break;
+							// } else {
+							// 	DB::table('sms_sent_parents')->insert([
+							// 		'SYEAR'            => $syear,
+							// 		'STUDENT_ID'       => $STUDENT_DETAILS['STUDENT_ID'],
+							// 		'SMS_TEXT'         => $sms_text,
+							// 		'SMS_NO'           => $STUDENT_DETAILS['MOBILE_NUMBER'],
+							// 		'MODULE_NAME'      => 'S4 NACH',
+							// 		'sub_institute_id' => $sub_institute_id,
+							// 	]);
+							// }
 						 // print_R($send_sms);
 							
                             $failed_bnk_chk_flg = 1;
@@ -536,7 +565,7 @@ class s4excel_importController extends Controller {
 	public function get_students_general_details_with_multiple_parameters($STUDENT_FULL_NAME,$STUDENT_GR_NO,$sub_institute_id,$syear)
 	{           
         $studet_sql = 
-        	"SELECT CONCAT_WS(' ',s.first_name,s.middle_name,s.last_name) AS FULL_NAME ,s.enrollment_no as ENROLLMENT_NO,s.id AS STUDENT_ID
+        	"SELECT CONCAT_WS(' ',s.first_name,s.last_name) AS FULL_NAME ,s.enrollment_no as ENROLLMENT_NO,s.id AS STUDENT_ID
 			,s.admission_year,a.title AS ACADEMIC_YEAR,st.name AS BRANCH,sq.title AS STUDENT_QUOTA,se.standard_id as STANDARD_ID,
 			d.name AS SECTION_NAME,se.section_id as SECTION_ID,se.student_quota AS STUDENT_QUOTA1,se.start_date AS STUDENT_ENROLLMENT_DATE,
 			s.roll_no AS STUDENT_ROLL_NO,s.gender AS STUDENT_GENDER,se.grade_id as GRADE_ID,s.mobile as MOBILE_NUMBER,
@@ -548,8 +577,10 @@ class s4excel_importController extends Controller {
 			LEFT JOIN division d ON d.id = se.section_id
 			LEFT JOIN student_quota sq ON sq.id = se.student_quota
 			WHERE s.sub_institute_id = '".$sub_institute_id."' AND se.syear = '".$syear."' AND s.enrollment_no = '".$STUDENT_GR_NO."'
-			AND if (se.END_DATE IS NOT NULL,se.END_DATE >= CURDATE(),se.END_DATE IS NULL)
+			AND CONCAT_WS(' ',s.first_name,s.last_name) = '".$STUDENT_FULL_NAME."' AND if (se.END_DATE IS NOT NULL,se.END_DATE >= CURDATE(),se.END_DATE IS NULL)
 			";
+//echo $studet_sql;
+//die();
 		$stud_data = DB::select($studet_sql);
 		$stud_data = json_decode(json_encode($stud_data),true);
 		// dd($syear);
