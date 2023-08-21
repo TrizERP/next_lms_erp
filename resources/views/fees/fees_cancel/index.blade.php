@@ -142,7 +142,7 @@
                                         @foreach($fees_data as $key => $value)
                                            
                                             <tr>
-                                                <td><input id="{{$value['id']}}" value="{{$value['receipt_no']}}"
+                                                <td><input id="{{$value['id']}}" value="{{$value['receipt_no']}}/{{$value['student_id']}}"
                                                                name="receipt_no[]" type="checkbox"></td>
                                              
                                                 <td>{{$value['enrollment_no']}}</td>
@@ -156,7 +156,7 @@
                                                     <input type="hidden" name="fees_html_{{$value['id']}}"
                                                            id="fees_html_{{$value['id']}}"
                                                            value="{{$value['fees_html']}}">
-                                                    <input type="hidden" name="student_id[{{$value['receipt_no']}}]"
+                                                    <input type="hidden" name="student_id[{{$value['student_id']}}]"
                                                            value="{{$value['student_id']}}">
                                                 </td>
                                                 <td><input type="hidden" name="totAmt[{{$value['receipt_no']}}]"
@@ -169,17 +169,17 @@
                                                 <td>{{$value['payment_mode']}}</td>
                                                 @if($value['fees_type'] == "REGULAR")
                                                     <td>
-                                                        <select name="cancel_type[{{$value['receipt_no']}}]"
+                                                        <select name="cancel_type[{{$value['receipt_no']}}/{{$value['student_id']}}]"
                                                                 class="form-control">
                                                             <option value="">Select Cancel Type</option>
                                                             @foreach($data['fees_cancel_type'] as $fctId => $fctTitle)
-                                                                <option value="{{$fctTitle}}">{{$fctTitle}}</option>
+                                                                <option value="{{$fctTitle}}/">{{$fctTitle}}</option>
                                                             @endforeach
                                                         </select>
                                                     </td>
                                                     <td>
                                                         <input type="text"
-                                                               name="cancel_remark[{{$value['receipt_no']}}]"
+                                                               name="cancel_remark[{{$value['receipt_no']}}/{{$value['student_id']}}]"
                                                                class="form-control"
                                                                placeholder="Please enter cancel remark">
                                                     </td>
