@@ -445,7 +445,7 @@ class s4excel_importController extends Controller {
 						{
 						$STUDENT_ID = $STUDENT_DETAILS['STUDENT_ID'];
 							
-							$check = DB::table('tblstudent_fees_failure')->whereRaw("student_id='".$STUDENT_ID."' AND month_id='".$MONTH_ID."' AND  syear='".$syear."' AND sub_institute_id='".$sub_institute_id."' AND amount='".$STUDENT_FEES_AMOUNT."'")->get()->toArray();
+							$check = DB::table('tblstudent_fees_failure')->whereRaw("student_id='".$STUDENT_ID."' AND month_id='".$MONTH_ID."' AND  syear='".$syear."' AND sub_institute_id='".$sub_institute_id."' AND amount='".$STUDENT_FEES_AMOUNT."' AND DATE_FORMAT(created_on, '%Y-%m-%d') = '".date("Y-m-d")."' ")->get()->toArray();
 							if(empty($check)){
 								$failInsSql = "INSERT INTO tblstudent_fees_failure
 								(student_id,month_id, syear, sub_institute_id,amount, remarks, created_by)
@@ -455,20 +455,20 @@ class s4excel_importController extends Controller {
 							}
 							$returned++;							
 
-							// $sms_text = "Dear Parents, Your Monthly Fee NACH is returned from the bank. Please arrange Sufficient Funds";
-							// $send_sms = $this->sendSMS($STUDENT_DETAILS['MOBILE_NUMBER'], $sms_text, $sub_institute_id);
-							// if (isset($send_sms['error']) && $send_sms['error'] == 1) {
-							// 	break;
-							// } else {
-							// 	DB::table('sms_sent_parents')->insert([
-							// 		'SYEAR'            => $syear,
-							// 		'STUDENT_ID'       => $STUDENT_DETAILS['STUDENT_ID'],
-							// 		'SMS_TEXT'         => $sms_text,
-							// 		'SMS_NO'           => $STUDENT_DETAILS['MOBILE_NUMBER'],
-							// 		'MODULE_NAME'      => 'S4 NACH',
-							// 		'sub_institute_id' => $sub_institute_id,
-							// 	]);
-							// }
+							$sms_text = "Dear Parents, Your Monthly Fee NACH is returned from the bank. Please arrange Sufficient Funds";
+							$send_sms = $this->sendSMS($STUDENT_DETAILS['MOBILE_NUMBER'], $sms_text, $sub_institute_id);
+							if (isset($send_sms['error']) && $send_sms['error'] == 1) {
+							 	break;
+							 } else {
+							 	DB::table('sms_sent_parents')->insert([
+							 		'SYEAR'            => $syear,
+							 		'STUDENT_ID'       => $STUDENT_DETAILS['STUDENT_ID'],
+							 		'SMS_TEXT'         => $sms_text,
+							 		'SMS_NO'           => $STUDENT_DETAILS['MOBILE_NUMBER'],
+							 		'MODULE_NAME'      => 'S4 NACH',
+							 		'sub_institute_id' => $sub_institute_id,
+							 	]);
+							 }
 						 // print_R($send_sms);
 							
                             $failed_bnk_chk_flg = 1;
@@ -577,7 +577,7 @@ class s4excel_importController extends Controller {
 			LEFT JOIN division d ON d.id = se.section_id
 			LEFT JOIN student_quota sq ON sq.id = se.student_quota
 			WHERE s.sub_institute_id = '".$sub_institute_id."' AND se.syear = '".$syear."' AND s.enrollment_no = '".$STUDENT_GR_NO."'
-			AND CONCAT_WS(' ',s.first_name,s.last_name) = '".$STUDENT_FULL_NAME."' AND if (se.END_DATE IS NOT NULL,se.END_DATE >= CURDATE(),se.END_DATE IS NULL)
+			AND (CONCAT_WS(' ',FIRST_NAME,LAST_NAME) LIKE CONCAT('%','$STUDENT_FULL_NAME','%')) AND if (se.END_DATE IS NOT NULL,se.END_DATE >= CURDATE(),se.END_DATE IS NULL)
 			";
 //echo $studet_sql;
 //die();
