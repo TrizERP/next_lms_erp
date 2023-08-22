@@ -81,6 +81,37 @@ class studentAttendanceController extends Controller
         $division = $standard_division[1];
         $grade = '';
 
+        $sundays = getCountDays($date, $date);
+       
+        $holidays = DB::table("calendar_events")
+            ->where('school_date', '=', $date)
+            ->whereIn('event_type',['holiday','event'])
+            ->where('sub_institute_id', '=', session()->get('sub_institute_id'))
+            ->where('syear', '=', session()->get('syear'))
+            ->get()
+            ->toArray();
+
+        $single_standard = DB::table("standard")
+            ->select('name')
+            ->where('id', '=', $standard)
+            ->where('sub_institute_id', '=', session()->get('sub_institute_id'))
+            ->first();
+        
+        $single_division = DB::table("division")
+            ->select('name')
+            ->where('id', '=', $division)
+            ->where('sub_institute_id', '=', session()->get('sub_institute_id'))
+            ->first();
+            
+        if(!empty($sundays))
+        {
+            foreach ($sundays['S'] as $key => $value) {
+                $sundays[$key] = (int)date('d', strtotime($value));
+            }
+        }
+
+        unset($sundays['S']);
+
         // $student_data = SearchStudent($grade, $standard, $division, $sub_institute_id, $syear);
 
         $extraSearchArray = [];
@@ -164,9 +195,27 @@ class studentAttendanceController extends Controller
             }
         }
 
-        $res['status_code'] = 1;
-        $res['message'] = "Success";
-        $res['student_data'] = $student_data;
+        if (!empty($holidays) && $holidays[0]->event_type === "holiday") 
+        {
+            $res['status_code'] = 0;
+            $res['message'] = "$date is a holiday, so you can't take attendance for " . $single_standard->name . '/' . $single_division->name;
+
+            return is_mobile($type, "student_attendance.index", $res);
+        } 
+        else if (!empty($sundays)) 
+        {
+            $res['status_code'] = 0;
+            $res['message'] = "$date is sunday, so you can't take attendance for " . $single_standard->name . '/' . $single_division->name;
+
+            return is_mobile($type, "student_attendance.index", $res);
+        } 
+        else 
+        {
+            $res['status_code'] = 1;
+            $res['message'] = "Success";
+            $res['student_data'] = $student_data;
+        }
+        
         $res['date'] = $date;
         $res['standard_division'] = $standard_division_orignal;
         $res['attendance_data'] = $attendanceData;

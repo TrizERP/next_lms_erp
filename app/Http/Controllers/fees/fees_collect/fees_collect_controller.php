@@ -2477,23 +2477,29 @@ class fees_collect_controller extends Controller
 
         $extra_fo = "  AND fo.syear = '" . $syear . "' AND te.syear = '" . $syear . "' AND t.sub_institute_id = '" . $sub_institute_id . "' AND fo.sub_institute_id = '" . $sub_institute_id . "' AND fo.is_deleted = 'N' ";
 
+        $extra_ff = " AND ff.syear = '" . $syear . "' AND te.syear = '" . $syear . "' AND t.sub_institute_id = '" . $sub_institute_id . "' AND ff.sub_institute_id = '" . $sub_institute_id . "' "; 
+
         if ($division != '') {
             $extra_fp .= " AND te.section_id = '" . $division . "'";
             $extra_fo .= " AND te.section_id = '" . $division . "'";
+            $extra_ff .= " AND te.section_id = '" . $division . "'";
         }
 
         if ($stud_id != '') {
             $extra_fp .= " AND te.student_id = '" . $stud_id . "'";
             $extra_fo .= " AND te.student_id = '" . $stud_id . "'";
+            $extra_ff .= " AND te.student_id = '" . $stud_id . "'";
         }
 
         if ($enrollment_no != '') {
             $extra_fp .= " AND t.enrollment_no = '" . $enrollment_no . "'";
             $extra_fo .= " AND t.enrollment_no = '" . $enrollment_no . "'";
+            $extra_ff .= " AND t.enrollment_no = '" . $enrollment_no . "'";
         }
         if ($name != '') {
             $extra_fp .= " AND (t.first_name = '" . $name . "' OR t.last_name = '" . $name . "' OR t.middle_name = '" . $name . "') ";
             $extra_fo .= " AND (t.first_name = '" . $name . "' OR t.last_name = '" . $name . "' OR t.middle_name = '" . $name . "')";
+            $extra_ff .= " AND (t.first_name = '" . $name . "' OR t.last_name = '" . $name . "' OR t.middle_name = '" . $name . "')";
         }
         if ($mb_no != '') {
             $extra_fp .= " AND t.mobile = '" . $mb_no . "'";
@@ -2514,11 +2520,10 @@ class fees_collect_controller extends Controller
         }
 
         $sql = "SELECT M.student_id,M.enrollment_no,M.roll_no,M.uniqueid,M.student_name,M.mobile,M.grade,M.standard_name,M.division_name,M.created_date,M.user_name,M.term_id,M.receiptdate,M.receipt_no,M.payment_mode,M.cheque_bank_name,M.bank_branch,M.cheque_no,M.cheque_date,
-            (IFNULL(M.amount,0) + IFNULL(N.actual_amountpaid,0)) AS actual_amountpaid
-            FROM (
+        (IFNULL(M.amount,0) + IFNULL(N.actual_amountpaid,0)) AS actual_amountpaid, 'completed' as action
+        FROM (
             SELECT fp.student_id,t.enrollment_no,t.roll_no,t.uniqueid,CONCAT_WS(' ',t.first_name,t.middle_name,t.last_name) AS student_name,t.mobile,ac.title AS grade,s.name AS standard_name,d.name AS division_name,fp.created_date,CONCAT_WS(' ',u.first_name,u.last_name) AS user_name,fp.term_id,fp.receiptdate,fp.receipt_no,fp.payment_mode,fp.cheque_bank_name,fp.bank_branch,fp.cheque_no,fp.cheque_date,SUM(IFNULL(fp.amount,0)) AS amount
             FROM tblstudent t
-            -- WHERE t.first_name = $name OR t.middle_name = $name OR t.last_name = $name
             INNER JOIN tblstudent_enrollment te ON t.id = te.student_id
             INNER JOIN academic_section ac ON ac.id = te.grade_id
             INNER JOIN standard s ON s.id = te.standard_id
@@ -2527,7 +2532,7 @@ class fees_collect_controller extends Controller
             LEFT JOIN tbluser u ON fp.created_by = u.id
             WHERE 1=1 $extra_fp
             GROUP BY fp.student_id, fp.receipt_no, fp.syear, fp.receiptdate, fp.payment_mode, fp.cheque_no
-            ORDER BY fp.receiptdate ASC, fp.receipt_no ASC) AS M
+            ORDER BY fp.receiptdate ASC, fp.receipt_no ASC) AS M 
             LEFT JOIN (
             SELECT fo.student_id, SUM(IFNULL(fo.actual_amountpaid,0)) AS actual_amountpaid
             FROM tblstudent t
@@ -2538,13 +2543,27 @@ class fees_collect_controller extends Controller
             INNER JOIN fees_paid_other fo ON fo.student_id = te.student_id
             WHERE 1=1 $extra_fo
             GROUP BY fo.student_id, fo.reciept_id, fo.syear, fo.receiptdate, fo.payment_mode, fo.cheque_dd_no
-            ORDER BY fo.receiptdate ASC, fo.reciept_id ASC) AS N ON M.student_id = N.student_id
-            HAVING (M.receiptdate IS NOT NULL)
-            ORDER BY M.receiptdate,CAST(M.receipt_no AS SIGNED)";
+            ORDER BY fo.receiptdate ASC, fo.reciept_id ASC) AS N ON M.student_id = N.student_id 
+            UNION (
+            SELECT ff.student_id,t.enrollment_no,t.roll_no,t.uniqueid,CONCAT_WS(' ',t.first_name,t.middle_name,t.last_name) AS student_name,t.mobile,ac.title AS grade,s.name AS standard_name,d.name AS division_name,null created_date,CONCAT_WS(' ',u.first_name,u.last_name) AS user_name,ff.month_id as term_id,null receiptdate,null receipt_no,null payment_mode,null cheque_bank_name,null bank_branch,null cheque_no,null cheque_date, SUM(IFNULL(ff.amount,0)) AS actual_amountpaid, 'failed' as action
+            FROM tblstudent t
+            INNER JOIN tblstudent_enrollment te ON t.id = te.student_id
+            INNER JOIN academic_section ac ON ac.id = te.grade_id
+            INNER JOIN standard s ON s.id = te.standard_id
+            INNER JOIN division d ON d.id = te.section_id
+            INNER JOIN tblstudent_fees_failure ff ON ff.student_id = te.student_id
+            LEFT JOIN tbluser u ON ff.created_by = u.id
+            WHERE 1=1 $extra_ff
+            GROUP BY ff.student_id
+            ORDER BY ff.student_id ASC)"; 
 
         $result = DB::select(DB::raw($sql));
         $feesData = json_decode(json_encode($result), true);
-
+        //dd($feesData);
+        /* echo("<pre>");
+        print_r($feesData);
+        echo("</pre>");
+        die; */
         $res['status_code'] = 1;
         $res['message'] = "Success";
         $res['fees_data'] = $feesData;
