@@ -277,7 +277,7 @@ class ImportController extends Controller
                         $house_id = DB::table('house_master')->select('id')->where([['house_name', $prepareData['house_id']], ['sub_institute_id', session()->get('sub_institute_id')]])->first();
                         if ($house_id) $student_enroll_data['house_id'] = $house_id->id;
                     }
-                    $student_enroll_data['syear'] = $prepareData['syear'] = session()->get('syear');
+                    $student_enroll_data['syear'] = $prepareData['syear'] ?? session()->get('syear');
                     $student_enroll_data['start_date'] = $prepareData['start_date'] ?? date('Y-m-d');
                     $student_enroll_data['adhar'] = $prepareData['adhar'] ?? 0;
 
