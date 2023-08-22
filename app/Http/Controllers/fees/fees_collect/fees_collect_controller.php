@@ -1835,6 +1835,7 @@ class fees_collect_controller extends Controller
             "0" => $id,
         ];
 
+        // $request->session()->put('stu_arr', $stu_arr);
         session(['stu_arr' => $stu_arr]);
 
         $student_id = $id;
@@ -1845,11 +1846,12 @@ class fees_collect_controller extends Controller
         $currunt_year = date('Y');
         $currunt_month_id = $currunt_month . $currunt_year;
         $last_y_month_id = $currunt_month . ($syear - 1);
-
+// echo $last_y_month_id;exit;
         $search_ids = [];
         foreach ($month_arr as $id => $arr) {
             if ($id == $currunt_month_id) {
                 $search_ids[] = $id;
+                // break;
             } else {
                 $search_ids[] = $id;
             }
@@ -1858,6 +1860,7 @@ class fees_collect_controller extends Controller
         foreach ($month_arr2 as $id => $arr) {
             if ($id == $last_y_month_id) {
                 $search_ids[] = $id;
+                // break;
             } else {
                 $search_ids[] = $id;
             }
@@ -1881,6 +1884,7 @@ class fees_collect_controller extends Controller
         }
 
   // code convert - 10-07-23
+
         $termIdQuery = DB::table(function ($query) use ($sub_institute_id, $student_id, $fees_join, $paid_other_join) {
             $query->selectRaw('SUM(fc.amount) + SUM(fc.fees_discount) as amount, fc.term_id')
                 ->from('tblstudent as s')
@@ -1898,6 +1902,7 @@ class fees_collect_controller extends Controller
                 $query->whereRaw($fees_join);
             }
 // code convert - 10-07-23
+
             $query->unionAll(function ($subQuery) use ($sub_institute_id, $student_id, $paid_other_join) {
                 $subQuery->selectRaw('SUM(fpo.actual_amountpaid) + SUM(fpo.fees_discount) as amount, fpo.month_id')
                     ->from('tblstudent as s')
@@ -1966,6 +1971,7 @@ class fees_collect_controller extends Controller
             ->get();
     
 
+        // echo "<pre>";print_r($paid_result2);exit;
         $fees_paid_arr = [];
         foreach ($paid_result as $id => $arr) {
             $fees_paid_arr[$arr->term_id] = $arr->amount;
@@ -1979,6 +1985,7 @@ class fees_collect_controller extends Controller
         $reg_bk_off = FeeBreackoff($stu_arr, $request->standard);
         $reg_bk_off2 = FeeBreackofflast($stu_arr, $request->standard);
 
+// echo "<pre>";print_r($reg_bk_off2);exit;
         $reg_bk_off_count = is_array($reg_bk_off) ? count($reg_bk_off) : $reg_bk_off->count();
 
         if (count($reg_bk_off) == 0) {
@@ -1987,8 +1994,10 @@ class fees_collect_controller extends Controller
         $other_bk_off = OtherBreackOff($stu_arr, $search_ids);
 
         $other_bk_off_month_wise = OtherBreackOfMonth($stu_arr);
+// echo "<pre>";print_r($month_arr2);exit;
 
         $year_arr = FeeMonthId();
+        // $year_arr2 = FeeMonthId();
 
         $reg_bk_month_wise = $reg_bk_month_wise2 = [];
         foreach ($reg_bk_off as $id => $arr) {
@@ -2001,11 +2010,17 @@ class fees_collect_controller extends Controller
         foreach ($reg_bk_month_wise as $month_id => $val) {
             $new_month_arr[$month_id] = $month_arr[$month_id];
         }
+// echo "<pre>";print_r($month_arr2 ?? []);exit;
+
 
         foreach ($other_bk_off_month_wise as $month_id => $val) {
             $new_month_arr[$month_id] = $month_arr[$month_id];
         }
- 
+// echo "<pre>";print_r($reg_bk_month_wise2 ?? []);exit;
+
+   // foreach ($other_bk_off_month_wise as $month_id => $val) {
+   //          $new_month_arr2[$month_id] = $month_arr2[$month_id];
+   //      }
 
 
         $merge_bk_month_wise = [];
@@ -2018,6 +2033,7 @@ class fees_collect_controller extends Controller
             }
         }
 
+// echo "<pre>";print_r($merge_bk_month_wise2 ?? []);exit;
 
         $left_bk_table = $this_month = $last_month = $left_bk_table2 = [];
         $i = 1;
@@ -2047,6 +2063,7 @@ class fees_collect_controller extends Controller
             $paid_total = $paid_total + $left_bk_table[$i]['paid'];
             $remain_total = $remain_total + $left_bk_table[$i]['remain'];
             $i = $i + 1;
+            // $this_month[] = $left_bk_table[$i]['month_this'];
 
         }
         $pending_fees = 0;
@@ -2058,7 +2075,7 @@ class fees_collect_controller extends Controller
                 }
             }
         }
-
+        // echo "<pre>";print_r($reg_bk_off2);exit; 
         if (isset($reg_bk_off2) && $reg_bk_off2 != null) {
             $reg_bk_off_count2 = is_array($reg_bk_off2) ? count($reg_bk_off2) : $reg_bk_off2->count();
             if (count($reg_bk_off2) == 0) {
@@ -2087,6 +2104,7 @@ class fees_collect_controller extends Controller
         foreach ($search_ids as $id => $val) {
             foreach ($left_bk_table as $temp_id => $arr) {
                 if ($arr['month_id'] == $val) {
+                    // echo "<pre>";print_r($arr);
                     $pending_fees = $pending_fees + $arr['remain'];
                 }
             }
@@ -2115,6 +2133,8 @@ class fees_collect_controller extends Controller
         } else {
             $previous_year_imprest_balance = 0;
         }
+
+        // End Getting previous year imprest balance for The Millennium School Surat
 
         $stu_detail = [
             "student_id" => $reg_bk_off[0]->student_id,
@@ -2158,6 +2178,7 @@ class fees_collect_controller extends Controller
                 }
             }
         }
+        // echo "<pre>";print_r($till_now_breckoff2);exit();
 
         $reg_bk_month_wise = $reg_bk_month_wise2 = [];
         $reg_month_wise = $reg_month_wise2 = array();
@@ -2207,24 +2228,10 @@ class fees_collect_controller extends Controller
                 $final_bk_name[$arr['title']] = $head_name;
             }
         }
+        // echo "<pre>";print_r($reg_month_wise2);exit();
 
         $full_bk = array_merge($reg_bk_month_wise, $other_bk_off);
         $full_bk_new = array_merge($reg_month_wise, $other_bk_off);
-
-        $feeTitles = array_keys($full_bk_new);
-        $feeTitlesIn = implode("','", $feeTitles);
-        
-        $sortOrders = DB::table('fees_title')
-            ->whereRaw("display_name IN ('".$feeTitlesIn."')")
-            ->where(['sub_institute_id'=>session()->get('sub_institute_id'),'syear'=>session()->get('syear')])
-            ->orderBy('sort_order')
-            ->pluck('sort_order','display_name');
-
-            uksort($full_bk_new, function($a, $b) use ($sortOrders) {
-                return $sortOrders[$a] <=> $sortOrders[$b];
-            });
-         
-        
         if (isset($reg_bk_off2) && !empty($reg_bk_off2)) {
 
             $full_bk2 = array_merge($reg_bk_month_wise2, $other_bk_off2);
@@ -2282,6 +2289,7 @@ class fees_collect_controller extends Controller
 
         $other_fee_title = OtherBreackOffHead();
 
+
         foreach ($other_fee_title as $id => $arr) {
             foreach ($full_bk as $title => $val) {
                 if ($title == $arr->display_name) {
@@ -2297,9 +2305,11 @@ class fees_collect_controller extends Controller
             }
         }
 
+
+        
         $full_bk["Total"] = $total;
         $full_bk_new["Total"] = $total;
-// echo "<pre>";print_r($full_bk);exit;
+ //echo "<pre>";print_r($full_bk);exit;
 
         $type = "web";
         $res['total_fees'] = $left_bk_table ?? [];
@@ -2323,6 +2333,8 @@ class fees_collect_controller extends Controller
             ->where('fc.sub_institute_id', $sub_institute_id)
             ->where('fc.syear', $syear)->get()->toArray();
 
+            $late_fees_amount = $fees_config[0]->late_fees_amount;
+            //echo "<pre>";print_r($late_fees_amount);exit;
         if (count($fees_config) > 0) {
             $receipt_css = $fees_config[0]->css;
             $paper_size = $fees_config[0]->fees_receipt_template;
@@ -2332,6 +2344,7 @@ class fees_collect_controller extends Controller
             $receipt_css = $fees_config[0]->css;
             $paper_size = 'A5';
         }
+
         $res['receipt_css_data'] = $receipt_css;
         $res['paper_size'] = $paper_size;
         // echo "<pre>";print_r($res);exit;
@@ -2403,7 +2416,7 @@ class fees_collect_controller extends Controller
 
             $online_link = "";
             if (count($fees_online_link) > 0) {
-                $online_link = "http://" . $_SERVER['SERVER_NAME'] . "/fees/online_fees_collect";
+                $online_link = env('APP_URL') . "fees/online_fees_collect";
             }
 
                 $fees_data = $this->getBk($request, $student_id);

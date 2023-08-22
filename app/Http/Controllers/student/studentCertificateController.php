@@ -53,6 +53,7 @@ class studentCertificateController extends Controller
     {
         $type = $request->input('type');
         $template = $request->input('template');
+        //echo("<pre>");print_r($template);exit;
         $certificate_reason = $request->input('certificate_reason');
         $student_ids = $request->input('students');
         $syear = $request->session()->get('syear');
@@ -69,8 +70,9 @@ class studentCertificateController extends Controller
                 (SELECT sub_institute_id FROM template_master WHERE module_name ="'.$template.'" AND 
                     sub_institute_id = "'.session()->get('sub_institute_id').'"
                 ),0)')->get()->toArray();
+        
         $tData = json_decode(json_encode($tData), true);
-
+        //echo("<pre>");print_r($tData);exit;
 
         $result = DB::table('fees_receipt_book_master')
             ->selectRaw('*,GROUP_CONCAT(fees_head_id) heads')
@@ -106,7 +108,7 @@ class studentCertificateController extends Controller
             $html_content = $tData[0]['html_content'];                
             }
             $new_html_content = $this->create_html_content($syear, $sub_institute_id, $html_content, $value,
-                $receipt_book_arr, $template, $certificate_no1);
+                $receipt_book_arr, $template, $certificate_no1, $certificate_reason);
 
             if ($template == 'Transfer Certificate') {
                 $new_html .= '<div class="row" style="margin-right: 2% !important;margin-left: 2% !important;">'.$new_html_content.'</div>
@@ -174,7 +176,7 @@ class studentCertificateController extends Controller
         return json_encode($res);
     }
 
-    public function create_html_content($syear,$sub_institute_id,$html_content,$value,$receipt_book_arr,$template,$certificate_no) {
+    public function create_html_content($syear,$sub_institute_id,$html_content,$value,$receipt_book_arr,$template,$certificate_no,$certificate_reason) {
         $display_year = $syear."-".($syear + 1);
 
         $image_path1 = "http://".$_SERVER['HTTP_HOST']."/storage/fees/".$receipt_book_arr->receipt_logo;
@@ -230,6 +232,7 @@ class studentCertificateController extends Controller
             $html_content);
         $html_content = str_replace(htmlspecialchars("<<student_division_value>>"), $value['division_name'],
             $html_content);
+
         $html_content = str_replace(htmlspecialchars("<<student_year_value>>"), $display_year, $html_content);
         $html_content = str_replace(htmlspecialchars("<<student_mobile_value>>"), $value['mobile'], $html_content);
         $html_content = str_replace(htmlspecialchars("<<student_dob_value>>"), date('d-m-Y', strtotime($value['dob'])),
@@ -240,6 +243,7 @@ class studentCertificateController extends Controller
         $html_content = str_replace(htmlspecialchars("<<certificate_no>>"), $certificate_no, $html_content);
         $html_content = str_replace(htmlspecialchars("<<his_her_value>>"), $his_her, $html_content);
         $html_content = str_replace(htmlspecialchars("<<he_she_value>>"), $he_she, $html_content);
+        $html_content = str_replace(htmlspecialchars("<<certificate_reason>>"), $certificate_reason, $html_content);
         //END Bonafide certificate Tags
 
         //Start Transfer certificate Tags

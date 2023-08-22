@@ -714,7 +714,7 @@
 							$('#previous_fees').attr('readonly', true);
 
 						}
-
+						
 						tot = $("#totalVal").val();
 
 						// START 30-12-2021 Added for total fine box value display wrong
@@ -805,7 +805,7 @@
 								$('#table_data').append("<tr><td>" + index + "</td><td>" + value['enrollment_no'] + "</td><td>" + value[
 										'student_name'] + "</td><td>" + value['division_name'] + "</td><td>" + valueuni + "</td><td>" +
 									monthyear + "</td><td>" + value['receipt_no'] + "</td><td>" + value['payment_mode'] + "</td><td>" +
-									value['cheque_bank_name'] + "</td><td>" + value['receiptdate'] + "</td><td>" + value['user_name'] +
+									value['cheque_no'] + ' ' + value['cheque_bank_name'] + ' ' + value['bank_branch'] + "</td><td>" + value['receiptdate'] + "</td><td>" + value['user_name'] +
 									"</td><td id='total_amt'>" + value['actual_amountpaid'] + "</td></tr>");
 							});
 

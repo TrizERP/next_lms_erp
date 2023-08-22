@@ -1556,7 +1556,7 @@ class AJAXController extends Controller
             $html_array['fees_receipt_html'] = $fees_circular_data['FEES_CIRCULAR_HTML'];
         }
 
-        if ($action == 'Bonafide' || $action == 'Character Certificate' || $action == 'Transfer Certificate') {
+        if ($action == 'Bonafide' || $action == 'Character Certificate' || $action == 'Transfer Certificate' || $action == 'Fees Statement') {
             $get_data = DB::table('certificate_history')
                 ->where('sub_institute_id', $sub_institute_id)
                 ->where('syear', $syear)

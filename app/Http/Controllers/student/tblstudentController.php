@@ -640,7 +640,7 @@ class tblstudentController extends Controller
         $studentfees_paid = json_decode(json_encode($studentfees_paid), true);
 
         $res['edit_disable'] = "";
-        if (count($studentfees_paid) > 0) {
+        if (count($studentfees_paid) > 0 && $sub_institute_id != 257) {
             $res['edit_disable'] = "disabled";
         }
         //END if once fees is paid for current year admission year,standard,student quota,academic section can't be edited
@@ -811,9 +811,10 @@ class tblstudentController extends Controller
         $request = new Request(['id' => $id]);
         $trans_details = $trans_controller->create($request);       
         
-        // echo "<pre>";print_r($trans_details['stu_data']);exit;
+        //echo "<pre>";print_r($OldData['final_fee']['Total']);exit;
         
         $res['paid_unpaid_fees'] = $OldData['total_fees'] ?? [];
+        $res['check_fees'] = $OldData['final_fee']['Total'] ?? [];
         $res['stu_data'] = $OldData['stu_data'] ?? [];
         $res['fees_data'] = $FeesData;
         

@@ -558,10 +558,11 @@ class studentHomeworkController extends Controller
         $syear = $request->session()->get('syear');
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $user_profile_name = session()->get('user_profile_name');
+        $profile_parent_id = session()->get('profile_parent_id');
         $teacher_id = $request->session()->get('user_id');
         $standard_id = $request->input('standard_id');
 
-        if ($user_profile_name == 'Admin') {
+        if ($profile_parent_id == '1') {
             $subject_teacher_subjects_data = DB::table('sub_std_map as s')
                 ->selectRaw("s.subject_id,s.display_name,s.standard_id, '' as academic_section_id,'' as division_id,'' as teacher_id")
                 ->where('s.sub_institute_id', $sub_institute_id)

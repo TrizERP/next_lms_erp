@@ -333,7 +333,7 @@ class photo_video_gallaryController extends Controller
                                                         'USER_ID' => $student_id, 'title' => $schoolName.' - '.$type,
                                                         'image'   => $schoolLogo,
                                                     ];
-                                                    $pushStatus = send_FCM_Notification($val, $message);
+                                                    $pushStatus = send_FCM_Notification($val, $message, $sub_institute_id);
                                                     sendNotification($app_notification_content);
                                                 }
                                             }
@@ -437,7 +437,7 @@ class photo_video_gallaryController extends Controller
                                                 'USER_ID' => $student_id, 'title' => $schoolName.' - '.$type,
                                                 'image'   => $schoolLogo,
                                             ];
-                                            $pushStatus = send_FCM_Notification($val, $message);
+                                            $pushStatus = send_FCM_Notification($val, $message, $sub_institute_id);
                                             sendNotification($app_notification_content);
                                         }
                                     }

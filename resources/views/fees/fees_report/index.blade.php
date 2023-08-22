@@ -57,6 +57,56 @@
 						<label>To Date</label>
 						<input type="text" id="to_date" name="to_date" value="{{$to_date}}" class="form-control mydatepicker" autocomplete="off">
 					</div>
+					@php
+						$payment_mode = '';
+						if(isset($data['payment_mode'])){ 
+							$payment_mode = $data['payment_mode'];
+						}
+					@endphp
+					<div class="col-md-4 form-group">
+						<label>Payment Mode</label>
+						<select class="form-control" name="payment_mode" id="payment_mode">
+							<option value="">Select Payment Mode</option>
+							<option @if($payment_mode == 'Cash') selected="selected"
+                                                    @endif value="Cash">Cash</option>
+							<option @if($payment_mode == 'Cheque') selected="selected"
+                                                    @endif value="Cheque">Cheque</option>
+							<option @if($payment_mode == 'DD') selected="selected"
+                                                    @endif value="DD">DD</option>
+							<option @if($payment_mode == 'Online') selected="selected"
+                                                    @endif value="Online">Online</option>
+							<option @if($payment_mode == 'NACH') selected="selected"
+                                                    @endif value="NACH">NACH</option>
+							<option @if($payment_mode == 'UPI') selected="selected"
+                                                    @endif value="UPI">UPI</option>
+							<option @if($payment_mode == 'Swipe1') selected="selected"
+                                                    @endif value="Swipe1">Swipe1</option>
+							<option @if($payment_mode == 'Swipe2') selected="selected"
+                                                    @endif value="Swipe2">Swipe2</option>
+							<option @if($payment_mode == 'Swipe3') selected="selected"
+                                                    @endif value="Swipe3">Swipe3</option>
+						</select>
+					</div>
+					@php 
+						if(isset($data['get_users'])){ 
+							$get_users = $data['get_users']; 
+						} 
+
+						$selected_user_name ='';
+						if(isset($data['selected_user_name'])){ 
+							$selected_user_name = $data['selected_user_name']; 
+						}
+					@endphp
+					<div class="col-md-4 form-group">
+						<label>Collected By</label>
+						<select class="form-control" name="user_name" id="user_name">
+							<option value="">Select</option>
+							@foreach($get_users as $key => $value)
+								<option @if($value->id == $selected_user_name) selected="selected"
+                                                    @endif value="{{$value->id}}">{{$value->user_name}}</option>
+							@endforeach
+						</select>
+					</div>
 					<div class="col-md-12 form-group">
 						<center>
 							<input type="submit" name="submit" value="Search" class="btn btn-success">
@@ -124,7 +174,7 @@
 							</tr>
 							@php $amount += $value['actual_amountpaid']; $j++; @endphp @endforeach
 							<tr>
-								<th>Total</th>
+								<td>Total</td>
 								<td></td>
 								<td></td>
 								<td></td>
@@ -138,7 +188,7 @@
 								<td></td>
 								<td></td>
 								<!--<td></td>-->
-								<th>{{$amount}}</th>
+								<td>{{$amount}}</td>
 							</tr>
 							@endif
 						</tbody>
@@ -146,7 +196,7 @@
 				</div>
                 <div class="mt-4" style="display:inline-grid;justify-content:center;width:100%">
 				<div class="table-responsive">
-						<table  class="table table-striped">
+						<table class="table table-striped">
 							@php 
                             $printedModes = []; // Track the printed payment modes 
                             $j=1;
@@ -207,77 +257,48 @@
 	</div>
 
 	@include('includes.footerJs')
-	<script>
-		function checkAll(ele) {
-			var checkboxes = document.getElementsByTagName('input');
-			if (ele.checked) {
-				for (var i = 0; i < checkboxes.length; i++) {
-					if (checkboxes[i].type == 'checkbox') {
-						checkboxes[i].checked = true;
-					}
-				}
-			} else {
-				for (var i = 0; i < checkboxes.length; i++) {
-					console.log(i)
-					if (checkboxes[i].type == 'checkbox') {
-						checkboxes[i].checked = false;
-					}
-				}
-			}
-		}
-	</script>
-	<script>
-		$(document).ready(function() {
-			var table = $('#example').DataTable({
-				select: true,
-				lengthMenu: [
-					[100, 500, 1000, -1],
-					['100', '500', '1000', 'Show All']
-				],
-				dom: 'Bfrtip',
-				buttons: [{
-						extend: 'pdfHtml5',
-						title: 'Fees Collection Report',
-						orientation: 'landscape',
-						pageSize: 'LEGAL',
-						pageSize: 'A0',
-						exportOptions: {
-							columns: ':visible'
-						},
-					},
-					{
-						extend: 'csv',
-						text: ' CSV',
-						title: 'Fees Collection Report'
-					},
-					{
-						extend: 'excel',
-						text: ' EXCEL',
-						title: 'Fees Collection Report'
-					},
-					{
-						extend: 'print',
-						text: ' PRINT',
-						title: 'Fees Collection Report'
-					},
-					'pageLength'
-				],
-			});
 
-			$('#example thead tr').clone(true).appendTo('#example thead');
-			$('#example thead tr:eq(1) th').each(function(i) {
-				var title = $(this).text();
-				$(this).html('<input type="text" placeholder="Search ' + title + '" />');
+	<script>
+	 $(document).ready(function () {
+        var table = $('#example').DataTable({
+            select: true,
+            lengthMenu: [
+                [100, 500, 1000, -1],
+                ['100', '500', '1000', 'Show All']
+            ],
+            dom: 'Bfrtip',
+            buttons: [
+                {
+                    extend: 'pdfHtml5',
+                    title: 'Fees Monthly Report',
+                    orientation: 'landscape',
+                    pageSize: 'LEGAL',
+                    pageSize: 'A0',
+                    exportOptions: {
+                        columns: ':visible'
+                    },
+                },
+                {extend: 'csv', text: ' CSV', title: 'Fees Monthly Report'},
+                {extend: 'excel', text: ' EXCEL', title: 'Fees Monthly Report'},
+                {extend: 'print', text: ' PRINT', title: 'Fees Monthly Report'},
+                'pageLength'
+            ],
+        });
 
-				$('input', this).on('keyup change', function() {
-					if (table.column(i).search() !== this.value) {
-						table
-							.column(i)
-							.search(this.value)
-							.draw();
-					}
-				});
-			});
-		});
+        $('#example thead tr').clone(true).appendTo('#example thead');
+        $('#example thead tr:eq(1) th').each(function (i) {
+            var title = $(this).text();
+            $(this).html('<input type="text" placeholder="Search ' + title + '" />');
+
+            $('input', this).on('keyup change', function () {
+                if (table.column(i).search() !== this.value) {
+                    table
+                        .column(i)
+                        .search( this.value )
+                        .draw();
+                }
+            } );
+        } );
+    } );
 	</script>
 	@include('includes.footer')

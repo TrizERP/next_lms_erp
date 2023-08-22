@@ -170,7 +170,8 @@
                                             echo "</tr>";
                                         }
                                         $i++;
-                                        } ?>
+                                        } 
+                                        ?>
 
                                     </tr>
                                 </div>
@@ -184,32 +185,75 @@
                                                     <th align="center" style="width: 30%;padding-left: 15px;">Particular</th>
                                                     <th style="width: 10%;padding-left: 15px;">Amount</th>
                                                 </tr>
-                                                <?php foreach ($data['final_fee'] as $id => $val) { ?>
+												<?php
+                                                $total = [];
+                                                $cheque_return_charges0 = $data['cheque_return_charges'][0]; 
+                                                $cheque_return_charges = $data['fees_config_data'][0]['late_fees_amount'];
+									            $sub_institute_id=[257];
+                                                 foreach ($data['final_fee'] as $id => $val) { ?>
+                                                    
                                                     <tr>
                                                         <td style="width: 20%"><?php echo $id; ?></td>
+                                                        
                                                         <td style="width: 20%"><?php echo $val; ?></td>
 
                                                         <?php
+                                                        //echo "<pre>";print_r($id);
                                                         if ($id != 'Total') {
 
                                                         } else {
                                                             echo "<input type='hidden' id='totalVal' name='total' value=" . $val . " class='form-control'>";
                                                             $pay_amount = $val;
+                                                            
+                                                            $total[] =$val ?? 0;
+                                                            
+                                                            //echo "<pre>";print_r($total);
+                                                            
                                                         }
                                                         ?>
+                                                        
                                                     </tr>
-                                                <?php } ?>
+                                                    
+                                                <?php
+                                                                                                                                                        
+                                                }
+                                                  $total_amt= array_sum($total);
+                                            ?>
 
                                             </table>
                                         </td>
                                     </tr>
+                                    
                                     <?php if ($data["fees_type"] != "fix") { ?>
+                                        <tr>
+                                            <td></td>
+                                            <td>Fine</td>
+                                            <td></td>
+                                            <td>@if(in_array(session()->get('sub_institute_id'), $sub_institute_id))
+                                                <input type="text" name="fees_data[fine]" id="cheque_return_charges1" class="form-control cheque_return_charges1" value="@if(date('d') > 5 && isset($total_amt) && $total_amt!=0 && $data['admission_under'] == 'Old') {{  $data['fees_config_data'][0]['late_fees_amount'] }} @else {{ $cheque_return_charges0 ?? 0 }} @endif" readonly="readonly">
+                                                <input type="hidden" name="hidden_cheque_return_charges" id="hidden_cheque_return_charges" class="form-control cheque_return_charges1" value="{{ $data['fees_config_data'][0]['late_fees_amount'] }}">
+                                            @else
+                                                <input type="text" name="fees_data[fine]" id="cheque_return_charges" class="form-control" value="@php if(isset($cheque_return_charges0)) echo $cheque_return_charges0; @endphp" readonly="readonly">
+                                                <input type="hidden" name="hidden_cheque_return_charges" id="hidden_cheque_return_charges" class="form-control" value="@if(isset($cheque_return_charges0)){{ $cheque_return_charges0 }}@endif">
+                                            @endif</td>
+                                            
+                                        </tr>
+                                        @php
+                                            // START 30-12-2021 Added for include cheque return charges in grand total
+
+                                            if (isset($cheque_return_charges) && $cheque_return_charges != '') {
+                                                $grand_total_with_cheque_charges = $data['final_fee']['Total'] + $cheque_return_charges;
+                                            } else {
+                                                $grand_total_with_cheque_charges = $data['final_fee']['Total'];
+                                            }
+                                            // END 30-12-2021 Added for include cheque return charges in grand total
+
+                                        @endphp
                                         <tr>
                                             <td></td>
                                             <td>Collection Amount</td>
                                             <td></td>
-                                            <!--<td><input type="number" id="pay_amount" name="pay_amount" max="{{$data['final_fee']['Total']}}" class="form-control" value="{{$data['final_fee']['Total']}}"></td>-->
-                                            <td><input type="number" id="pay_amount" name="pay_amount" max="<?php echo $pay_amount; ?>" class="form-control" value="<?php echo $pay_amount; ?>" readonly="readonly"></td>
+                                            <td><input type="number" id="pay_amount" name="pay_amount" max="<?php echo $grand_total_with_cheque_charges; ?>" class="form-control" value="<?php echo $grand_total_with_cheque_charges; ?>" readonly="readonly"></td>
                                         </tr>
                                     <?php } ?>
                                 </table>
@@ -331,16 +375,29 @@
             fin = parseFloat($("#totalFin").val());
             dis = parseFloat($("#totalDis").val());
 
-            if (dis > tot && dis != 0) {
-                alert("Discount Can Not Be More Then Total Amount.");
-                $("#discount").val(0);
-            } else {
-                if (isNaN(dis)) {} else {
-                    tot = (tot - dis) + fin;
-                }
-                $("#pay_amount").val(tot);//grandTotal
-            }
+            if({{session()->get('sub_institute_id')}} == 257){
+					cheque_return_charges = $("#cheque_return_charges1").val();
+				}else{
+					cheque_return_charges = $("#hidden_cheque_return_charges").val();
+				}
+
+				if (dis > tot && dis != 0) {
+					alert("Discount Can Not Be More Then Total Amount.");
+					$("#discount").val(0);
+					$("#totalDis").val(0)
+				} else {
+					if (isNaN(dis)) {} else {
+						tot = (tot - dis) + fin;
+					}
+					tot = tot + parseFloat(cheque_return_charges);
+                   
+					$("#pay_amount").val(tot);
+				}
         }
+        $(document).on('change', '.cheque_return_charges1', function() {
+
+        calculateTotal();
+        });
 
         function sh_bankDetail(selectedVal) {
             if (selectedVal == 'Cash') {
@@ -374,6 +431,11 @@
                     $("#discount").val(0);
                     $("#pay_amount").val(tot);//grandTotal
 
+                    fin = parseFloat($("#totalFin").val());
+                    cheque_return_charges = $("#hidden_cheque_return_charges").val();
+                    sum = fin + parseFloat(cheque_return_charges);
+                    $("#cheque_return_charges").val(sum);
+                    calculateTotal();
                 }
             });
         });

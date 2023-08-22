@@ -20,6 +20,7 @@
                 @endif
                 <br><br><br>
                 <div class="col-lg-12 col-sm-12 col-xs-12" style="overflow:auto;">
+                    {!! App\Helpers\get_school_details("","","") !!}
                     <table id="example" class="table table-striped table-bordered" style="width:100%">
                         <thead>
                             <tr>

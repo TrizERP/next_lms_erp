@@ -64,6 +64,14 @@
         @endphp
                         <div class="card">
                             <div class="table-responsive">
+                                @php
+                                    echo App\Helpers\get_school_details("","","");
+                                    echo '<br><center><span style="font-size: 14px; font-weight: 600; font-family: Arial, Helvetica, sans-serif !important">';
+                                    echo 'From Date : ' . (isset($data['date']) ? date('d-m-Y', strtotime($data['date'])) : '');
+                                    echo '</span> <span style="font-size: 14px; font-weight: 600; font-family: Arial, Helvetica, sans-serif !important">';
+                                    echo 'Token : ' . (isset($data['taken']) ? $data['taken'] : '');
+                                    echo '</span></center><br>';
+                                @endphp
                                 <table id="daywise_attendance" class="table table-striped table-bordered" border="1"
                                        style="border-collapse: collapse;">
                                     <thead>

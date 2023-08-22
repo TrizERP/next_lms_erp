@@ -135,6 +135,7 @@
         @endphp
                 <div class="card">
                     <div class="table-responsive mt-20 tz-report-table">
+                        {!! App\Helpers\get_school_details("$grade_id","$standard_id","$division_id") !!}
                         <table id="example" class="table table-striped">
                             <thead>
                             <tr>
@@ -173,6 +174,7 @@
     </div>
 
     @include('includes.footerJs')
+</head>
 <script>
     var checked = false;
 function checkedAll() {
@@ -186,50 +188,75 @@ function checkedAll() {
     }
 }
 </script>
-    <script>
-        $(document).ready(function () {
-            var table = $('#example').DataTable({
-                ordering: false,
-                select: true,
-                lengthMenu: [
-                    [100, 500, 1000, -1],
-                    ['100', '500', '1000', 'Show All']
-                ],
-                dom: 'Bfrtip',
-                buttons: [
-                    {
-                        extend: 'pdfHtml5',
-                        title: 'Student Report',
-                        orientation: 'landscape',
-                        pageSize: 'LEGAL',
-                        pageSize: 'A0',
-                        exportOptions: {
-                            columns: ':visible'
-                        },
+
+<script>
+    /* function stripHtmlTags(html) {
+        var tmp = document.createElement("div");
+        tmp.innerHTML = html;
+        return tmp.textContent || tmp.innerText || "";
+    } */
+
+    $(document).ready(function () {
+        var table = $('#example').DataTable({
+            ordering: false,
+            select: true,
+            lengthMenu: [
+                [100, 500, 1000, -1],
+                ['100', '500', '1000', 'Show All']
+            ],
+            dom: 'Bfrtip',
+            buttons: [
+                {
+                    extend: 'pdfHtml5',
+                    title: 'Student Report',
+                    orientation: 'landscape',
+                    pageSize: 'LEGAL',
+                    exportOptions: {
+                        columns: ':visible'
                     },
-                    {extend: 'csv', text: ' CSV', title: 'Student Report'},
-                    {extend: 'excel', text: ' EXCEL', title: 'Student Report'},
-                    {extend: 'print', text: ' PRINT', title: 'Student Report'},
-                    'pageLength'
-                ],
-            });
-            //table.buttons().container().appendTo('#example_wrapper .col-md-6:eq(0)');
+                    customize: function (doc) {
+                        var headerContent = `{!! htmlspecialchars_decode(App\Helpers\get_school_details("$grade_id", "$standard_id", "$division_id")) !!}`;
 
-            $('#example thead tr').clone(true).appendTo('#example thead');
-            $('#example thead tr:eq(1) th').each(function (i) {
-                var title = $(this).text();
-                $(this).html('<input type="text" placeholder="Search ' + title + '" />');
+                        var tmp = document.createElement("div");
+                        tmp.innerHTML = headerContent;
+                        var decodeHeader = tmp.textContent || tmp.innerText;
+                        //var header = doc.content[0];
+                        //header.text += 'Student Report' + headerContent;
 
-                $('input', this).on('keyup change', function () {
-                    if (table.column(i).search() !== this.value) {
-                        table
-                        .column(i)
-                        .search( this.value )
+                        doc.content.unshift({
+                            text: decodeHeader,
+                            alignment: 'center',
+                        });
+                    }
+                },
+                {extend: 'csv', text: ' CSV', title: 'Student Report'},
+                {extend: 'excel', text: ' EXCEL', title: 'Student Report'},
+                {
+                    extend: 'print',
+                    text: ' PRINT',
+                    title: 'Student Report',
+                    customize: function (win) {
+                        $(win.document.body).prepend(`{!! App\Helpers\get_school_details("$grade_id", "$standard_id", "$division_id") !!}`);
+                    }
+                },
+                'pageLength'
+            ],
+        });
+
+        $('#example thead tr').clone(true).appendTo('#example thead');
+        $('#example thead tr:eq(1) th').each(function (i) {
+            var title = $(this).text();
+            $(this).html('<input type="text" placeholder="Search ' + title + '" />');
+
+            $('input', this).on('keyup change', function () {
+                if (table.column(i).search() !== this.value) {
+                    table.column(i)
+                        .search(this.value)
                         .draw();
                 }
-            } );
-        } );
-    } );
+            });
+        });
+    });
 </script>
 
 <script>
