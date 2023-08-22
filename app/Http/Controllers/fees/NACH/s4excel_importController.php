@@ -257,7 +257,7 @@ class s4excel_importController extends Controller {
 
 	                    $STUDENT_DETAILS = $this->get_students_general_details_with_multiple_parameters($STUDENT_NAME, $STUDENT_GR_NO, $sub_institute_id, $syear);
 						$STUDENT_ID =  "";
-
+						// echo "<pre>";print_r($STUDENT_DETAILS);
                     	if (in_array($TRANSACTION_STATUS, $successStatusArr)) 
                     	{
                        		
@@ -307,8 +307,9 @@ class s4excel_importController extends Controller {
 					            $arr["months"] = $pay_month;
 
 					            $fees_bk_data = $controller->getOnlinebk($request, $sub_institute_id, $syear, $STUDENT_ID);
-
-					            $fees_month = $ajx_controller->getOnlineFeesMonth($arr);
+								$fees_month = $ajx_controller->getOnlineFeesMonth($arr);
+								// echo "<pre>";print_r($fees_bk_data);								
+								
 							if (!empty($fees_bk_data)) {
 					            
 					            $total_fees = $fees_month["Total"];
@@ -327,7 +328,6 @@ class s4excel_importController extends Controller {
 	                            if (!empty($failSqlRet)) {
 	                                $failedCnt = $failSqlRet['FAILEDCNT'];
 	                            }*/
-
 	                            $stuSql = "SELECT * FROM tblstudent_bank_detail WHERE student_id = '".$STUDENT_ID."' AND sub_institute_id = '".$sub_institute_id."'";
 	                            $stuSqlRet = DB::select($stuSql);
 								$stuSqlRet = json_decode(json_encode($stuSqlRet),true);
@@ -445,7 +445,7 @@ class s4excel_importController extends Controller {
 						{
 						$STUDENT_ID = $STUDENT_DETAILS['STUDENT_ID'];
 							
-							$check = DB::table('tblstudent_fees_failure')->whereRaw("student_id='".$STUDENT_ID."' AND month_id='".$MONTH_ID."' AND  syear='".$syear."' AND sub_institute_id='".$sub_institute_id."' AND amount='".$STUDENT_FEES_AMOUNT."'")->get()->toArray();
+							$check = DB::table('tblstudent_fees_failure')->whereRaw("student_id='".$STUDENT_ID."' AND month_id='".$MONTH_ID."' AND  syear='".$syear."' AND sub_institute_id='".$sub_institute_id."' AND amount='".$STUDENT_FEES_AMOUNT."' AND DATE_FORMAT(created_on, '%Y-%m-%d') = '".date("Y-m-d")."' ")->get()->toArray();
 							if(empty($check)){
 								$failInsSql = "INSERT INTO tblstudent_fees_failure
 								(student_id,month_id, syear, sub_institute_id,amount, remarks, created_by)
@@ -455,20 +455,20 @@ class s4excel_importController extends Controller {
 							}
 							$returned++;							
 
-							// $sms_text = "Dear Parents, Your Monthly Fee NACH is returned from the bank. Please arrange Sufficient Funds";
-							// $send_sms = $this->sendSMS($STUDENT_DETAILS['MOBILE_NUMBER'], $sms_text, $sub_institute_id);
-							// if (isset($send_sms['error']) && $send_sms['error'] == 1) {
-							// 	break;
-							// } else {
-							// 	DB::table('sms_sent_parents')->insert([
-							// 		'SYEAR'            => $syear,
-							// 		'STUDENT_ID'       => $STUDENT_DETAILS['STUDENT_ID'],
-							// 		'SMS_TEXT'         => $sms_text,
-							// 		'SMS_NO'           => $STUDENT_DETAILS['MOBILE_NUMBER'],
-							// 		'MODULE_NAME'      => 'S4 NACH',
-							// 		'sub_institute_id' => $sub_institute_id,
-							// 	]);
-							// }
+							$sms_text = "Dear Parents, Your Monthly Fee NACH is returned from the bank. Please arrange Sufficient Funds";
+							$send_sms = $this->sendSMS($STUDENT_DETAILS['MOBILE_NUMBER'], $sms_text, $sub_institute_id);
+							if (isset($send_sms['error']) && $send_sms['error'] == 1) {
+							 	break;
+							 } else {
+							 	DB::table('sms_sent_parents')->insert([
+							 		'SYEAR'            => $syear,
+							 		'STUDENT_ID'       => $STUDENT_DETAILS['STUDENT_ID'],
+							 		'SMS_TEXT'         => $sms_text,
+							 		'SMS_NO'           => $STUDENT_DETAILS['MOBILE_NUMBER'],
+							 		'MODULE_NAME'      => 'S4 NACH',
+							 		'sub_institute_id' => $sub_institute_id,
+							 	]);
+							 }
 						 // print_R($send_sms);
 							
                             $failed_bnk_chk_flg = 1;
@@ -497,6 +497,7 @@ class s4excel_importController extends Controller {
                 }
                 $m++;
 				}
+				// exit;
 					$not_found_str.="</table>";
 					//$not_found_str.="<div style=clear:both;>&nbsp;</div>";
 					$not_found_str.="</div>";
@@ -576,13 +577,15 @@ class s4excel_importController extends Controller {
 			INNER JOIN standard st ON st.id = se.standard_id
 			LEFT JOIN division d ON d.id = se.section_id
 			LEFT JOIN student_quota sq ON sq.id = se.student_quota
-			WHERE s.sub_institute_id = '".$sub_institute_id."' AND se.syear = '".$syear."' AND s.enrollment_no = '".$STUDENT_GR_NO."'
-			AND CONCAT_WS(' ',s.first_name,s.last_name) = '".$STUDENT_FULL_NAME."' AND if (se.END_DATE IS NOT NULL,se.END_DATE >= CURDATE(),se.END_DATE IS NULL)
+			WHERE s.sub_institute_id = '".$sub_institute_id."' AND se.syear = '".$syear."' AND (s.enrollment_no = '".$STUDENT_GR_NO."'
+			OR (CONCAT_WS(' ',FIRST_NAME,LAST_NAME) LIKE CONCAT('%','$STUDENT_FULL_NAME','%'))) AND if (se.END_DATE IS NOT NULL,se.END_DATE >= CURDATE(),se.END_DATE IS NULL)
 			";
-//echo $studet_sql;
-//die();
+// echo $studet_sql;
+// die();
 		$stud_data = DB::select($studet_sql);
 		$stud_data = json_decode(json_encode($stud_data),true);
+// echo "<pre>";print_r($stud_data);
+// die();
 		// dd($syear);
 		if(count($stud_data) > 0)
 		{
