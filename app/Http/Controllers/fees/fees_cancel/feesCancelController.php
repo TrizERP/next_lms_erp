@@ -276,7 +276,7 @@ class feesCancelController extends Controller
         $syear = $request->session()->get('syear');
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $user_id = $request->session()->get('user_id');
-       //return $receipt_nos;exit;
+        // return $receipt_nos;exit;
 
         if($receipt_nos_a == '') {
             $res['status_code'] = 0;
@@ -320,7 +320,7 @@ class feesCancelController extends Controller
                     $feesCancelLog['standard_id'] = $feesDetails->standard_id;
                     $feesCancelLog['term_id'] = $feesDetails->month_id;
                     $feesCancelLog['amountpaid'] = $feesDetails->total_amount;
-                    $feesCancelLog['received_date'] = $feesDetails->created_date;
+                    $feesCancelLog['received_date'] = $feesDetails->receiptdate;
                     $feesCancelLog['cancel_date'] = date('Y-m-d H:i:s');
                     $feesCancelLog['cancel_type'] = $cancel_type[$receipt_nos] ?? null;
                     $feesCancelLog['cancel_remark'] = $cancel_remark[$receipt_nos] ?? null;
@@ -331,7 +331,7 @@ class feesCancelController extends Controller
                     DB::table('fees_cancel')->insert($feesCancelLog);
 
                     DB::table('fees_paid_other')
-                    ->where(['reciept_id' => $receipt_nos, 'syear' => $syear, 'sub_institute_id' => $sub_institute_id])
+                    ->where(['reciept_id' => $receipt_nos, 'syear' => $syear, 'sub_institute_id' => $sub_institute_id, 'student_id' => $feesDetails->student_id])
                     ->update(['is_deleted' => 'Y']);
                 }
                 else
@@ -357,7 +357,7 @@ class feesCancelController extends Controller
                         $feesCancelLog['standard_id'] = $feesDetails->standard_id;
                         $feesCancelLog['term_id'] = $feesDetails->term_id;
                         $feesCancelLog['amountpaid'] = $feesDetails->total_amount;
-                        $feesCancelLog['received_date'] = $feesDetails->created_date;
+                        $feesCancelLog['received_date'] = $feesDetails->receiptdate;
                         $feesCancelLog['cancel_date'] = date('Y-m-d H:i:s');
                         //$feesCancelLog['cancel_type'] = $cancel_type[$receipt_nos."/".$student_id_value] ?? null;
                         $feesCancelLog['cancel_type'] = str_replace('/', '', $cancel_type[$receipt_nos."/".$student_id_value]) ?? null;
@@ -378,7 +378,7 @@ class feesCancelController extends Controller
                         $feesCancelLog['cancel_type'] = $cancel_type[$modified_receipt_key."/".$student_id_value] ?? null;
 
                         DB::table('fees_collect')
-                            ->where(['receipt_no' => $receipt_nos, 'student_id' => $student_id[$student_ids], 'syear' => $syear, 'sub_institute_id' => $sub_institute_id])
+                            ->where(['receipt_no' => $receipt_nos, 'student_id' => $student_id[$student_ids], 'syear' => $syear, 'sub_institute_id' => $sub_institute_id, 'student_id' => $feesDetails->student_id, 'standard_id' => $feesDetails->standard_id])
                             ->update(['is_deleted' => 'Y', 'is_waved' => $feesCancelLog['cancel_type']]);
                     }  
                 }
