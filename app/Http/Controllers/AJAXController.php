@@ -1117,7 +1117,7 @@ class AJAXController extends Controller
 
             $html = '';
             $html .= $fees_receipt_html;
-            $path = 'src="http://' . $_SERVER['HTTP_HOST'];
+            $path = 'src="https://' . $_SERVER['HTTP_HOST'];
             $html = str_replace('src="', $path, $html);
             $html = str_replace('##HTML_SEC##', $html, $dom);
 
@@ -1216,7 +1216,7 @@ class AJAXController extends Controller
 
                 $html = '';
                 $html .= $fees_receipt_html;
-                $path = 'src="http://' . $_SERVER['HTTP_HOST'];
+                $path = 'src="https://' . $_SERVER['HTTP_HOST'];
                 $html = str_replace('src="', $path, $html);
                 $html = str_replace('##HTML_SEC##', $html, $dom);
 
@@ -1334,7 +1334,7 @@ class AJAXController extends Controller
             }
 
             if ($action != 'certificate_re_receipt') {
-                $path = 'src="http://' . $_SERVER['HTTP_HOST'];
+                $path = 'src="https://' . $_SERVER['HTTP_HOST'];
                 $html = str_replace('src="', $path, $html);
             }
 
@@ -1348,7 +1348,7 @@ class AJAXController extends Controller
 
             unlink($html_file_path);
 
-            $PDF_path_for_open = "http://" . $_SERVER['HTTP_HOST'] . '/storage/print_receipt_pdf/' . $pdf_filename;
+            $PDF_path_for_open = "https://" . $_SERVER['HTTP_HOST'] . '/storage/print_receipt_pdf/' . $pdf_filename;
 
             return $PDF_path_for_open;
         }
@@ -1423,7 +1423,7 @@ class AJAXController extends Controller
 
                 unlink($html_file_path);
 
-                $PDF_path_for_open = "http://" . $_SERVER['HTTP_HOST'] . '/storage/print_receipt_pdf/' . $pdf_filename;
+                $PDF_path_for_open = "https://" . $_SERVER['HTTP_HOST'] . '/storage/print_receipt_pdf/' . $pdf_filename;
             }
         }
         return $PDF_path_for_open;
