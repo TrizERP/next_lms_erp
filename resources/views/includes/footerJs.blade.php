@@ -1,6 +1,12 @@
 @include('includes.rightsideNavigation')
+@php 
+$link = url('/');
+$all_segments = request()->segments();
+$url = $all_segments[0] ?? $all_segments[1];
+$route = ['dashboard'];
+@endphp
 <footer class="footer text-center"> {{date('Y')}} &copy; Triz Innovation PVT LTD. <a href="{{route('siteMap')}}" style="color:blue;"> Site Map </a> |  <a href="{{route('privacyPolicy')}}" style="color:blue;"> Privacy Policy </a> |  <a href="{{ route('termAndCondition')}}" style="color:blue;"> Term & Condition </a> |  <a href="{{ route('otherPolicy') }}" style="color:blue;"> Other Policy </a> </footer>
-<!-- <footer class="footer text-center"> {{date('Y')}} &copy; Triz Innovation PVT LTD. <a href="{{route('siteMap')}}"> Site Map </a> </footer> -->
+
 </div>
 <div class="help-guide">
   <div class="help-head">
@@ -8,13 +14,8 @@
     <div class="dropdown">
         <button class="dropdown-toggle" type="button" id="dropdownMenuButton" data-toggle="dropdown"
                 aria-haspopup="true" aria-expanded="false">
-            <!-- <i class="mdi mdi-dots-vertical"></i> -->
         </button>
-        <!--  <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
-           <a class="dropdown-item" href="#">Action</a>
-           <a class="dropdown-item" href="#">Another action</a>
-           <a class="dropdown-item" href="#">Something else here</a>
-         </div> -->
+       
     </div>
       <div class="help-arraw">
           <i class="mdi mdi-chevron-down"></i>
@@ -37,20 +38,7 @@
             </a>
           </div>
         </div>
-       <!--  <div class="col-md-4">
-          <div class="help-box">
-            <a href="#" class="nav-link pb-0">
-              <span class="menu-main-icon"><i class="mdi mdi-information-variant md-36"></i></span> FAQs
-            </a>
-          </div>
-        </div> -->
-        <!-- <div class="col-md-4">
-          <div class="help-box">
-            <a href="#" class="nav-link pb-0" data-toggle="modal" data-target="#chatModal">
-              <span class="menu-main-icon"><i class="mdi mdi-chat-outline md-36"></i></span> Quick Chat
-            </a>
-          </div>
-        </div> -->
+    
         <div class="col-6 col-md-6">
           <div class="help-box">
             <a href="#" class="nav-link pb-0" data-toggle="modal" data-target="#emailModal">
@@ -177,41 +165,20 @@
 </div>
 
 
-<!-- /#wrapper -->
-<!-- jQuery -->
-<!-- <script src="{{ asset("/admin_dep/js/jquery-3.5.1.min.js") }}"></script> -->
 <script src="{{ asset("/admin_dep/js/popper.min.js") }}"></script>
 <script src="{{ asset("/admin_dep/js/custom.js") }}"></script>
 <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
 
 
-<!-- <script src="{{ asset("/plugins/bower_components/jquery/dist/jquery.min.js") }}"></script> -->
-<!-- Bootstrap Core JavaScript -->
-<!-- <script src="{{ asset("/admin_dep/bootstrap/dist/js/bootstrap.min.js") }}"></script> -->
-<!-- Menu Plugin JavaScript -->
-<!-- <script src="{{ asset("/plugins/bower_components/sidebar-nav/dist/sidebar-nav.min.js") }}"></script> -->
-<!--slimscroll JavaScript -->
-<!-- <script src="{{ asset("/admin_dep/js/jquery.slimscroll.js") }}"></script> -->
-<!--Wave Effects -->
-<!-- <script src="{{ asset("/admin_dep/js/waves.js") }}"></script> -->
-<!-- chartist chart -->
 <script src="{{ asset("/plugins/bower_components/chartist-js/dist/chartist.min.js") }}"></script>
 <script src="{{ asset("/plugins/bower_components/chartist-plugin-tooltip-master/dist/chartist-plugin-tooltip.min.js") }}"></script>
 <!-- Sparkline chart JavaScript -->
 <script src="{{ asset("/plugins/bower_components/jquery-sparkline/jquery.sparkline.min.js") }}"></script>
-<!-- Custom Theme JavaScript -->
-<!-- <script src="{{ asset("/admin_dep/js/custom.min.js") }}"></script> -->
-<!-- <script src="{{ asset("/admin_dep/js/dashboard1.js") }}"></script> -->
-
-<!--Style Switcher -->
-<!-- <script src="{{ asset("/plugins/bower_components/styleswitcher/jQuery.style.switcher.js") }}"></script> -->
 
 <script src="{{ asset("/plugins/bower_components/jquery.easy-pie-chart/dist/jquery.easypiechart.min.js") }}"></script>
 <script src="{{ asset("plugins/bower_components/jquery.easy-pie-chart/easy-pie-chart.init.js") }}"></script>
-<!-- <script src="{{ asset("plugins/bower_components/toast-master/js/jquery.toast.js") }}"></script> -->
 <script src="{{ asset("plugins/bower_components/bootstrap-datepicker/bootstrap-datepicker.min.js") }}"></script>
 
-<!--<script src="{{ asset("/admin_dep/js/sweetalert.min.js") }}"></script>-->
 
 <script src="https://code.jquery.com/jquery-1.10.2.js"></script>
 <script src="{{ asset("/admin_dep/js/jquery-ui.js") }}"></script>
@@ -243,12 +210,6 @@
 
         //Google Analytics
         setInterval(function () {
-            // var path = "{{ route('google-analytics-summary') }}";
-    // $.ajax({url: path, success: function(result){
-    //     var  nresult = result+" Users online";
-    //     $('#google_analytics').html(nresult);
-    // }
-    // });
 
     // var  nresult = result+" Users online";
     var nresult = "1 Users online";
@@ -279,7 +240,7 @@
     });
 </script>
 
-<!-- Clock Plugin JavaScript -->
+
 <script src="{{ asset("plugins/bower_components/clockpicker/dist/jquery-clockpicker.min.js") }}"></script>
 
 <script>
@@ -327,15 +288,7 @@
   }
 
   function sessionMenu(x) {
-      // if (typeof(Storage) !== "undefined") {
-      //   // Store
-      //   // alert(x);
-      //   localStorage.setItem("right_menu_id", x);
-      //   // alert(x);
-      //   // Retrieve
-      // }
-        // Append the selectedMenuId value to the <h2> element
-
+   
       var xhttp = new XMLHttpRequest();
       xhttp.onreadystatechange = function () {
           if (this.readyState == 4 && this.status == 200) {
@@ -344,18 +297,7 @@
     };
     xhttp.open("GET", "{{route('ajaxMenuSession')}}?type=API&menu_id="+x, true);
     xhttp.send();
-    // $('.list-unstyled  > li').click(function(){
-    //   // alert('s');
-    //   // alert(this);
-    //   var menu_main_id = $(this).parents('.tab-pane').attr("id");
-    //   // alert(menu_main_id);
-      //  $(this).parents('.tab-pane').addClass('active');
-      //   // $(this).parent("[aria-controls='menu-1']").addClass('active');
-      // // alert('.nav-link').attr('href','#'+menu_main_id);
-      // $('.nav-link').attr('href','#'+menu_main_id).addClass('active');
-      //   // $('.nav-link[href="#' + menu_main_id + '"]').addClass('active');
-
-      // });
+   
   }
   window.addEventListener("beforeunload", function () {
   // This code will be executed just before the page is unloaded (refreshed or navigated away)
@@ -415,66 +357,9 @@
       //var tab_pane_id = $('.main-menu-block').find('.active').attr("aria-controls");
   }
 
-  // function hideRightsideMenu(){
-  //   $('.right-sidebar').show();
-  // }
-  // function load_rightside_menu(x)
-  // {
-  //   var path = "{{ route('ajax_load_rightSideMenu') }}";
-  //   $.ajax({
-  //     url : path,
-  //     data:'menu_id='+x,
-  //     success:function(result){
-  //         console.log(result);
-  //         var main_arr = result['Main'];
-  //         var child_arr = result['Child'];
-
-  //         $("#loadRightSideMenu").html('');
-  //         $("#loadSubMenu").html('');
-
-
-  //         for(var i=0,j=1;i < main_arr.length;i++,j++){
-  //             inner_arr = child_arr[main_arr[i].id];
-  //             var childmenus = '';
-  //             // alert("<?php echo "asdasda";?>");
-  //             for(var k=0;k < inner_arr.length;k++){
-  //               var php_route ="<?php echo "{{ route('";?>"+inner_arr[k].link+"<?php echo "') }}";?>";
-  //               console.log(php_route);
-  //               childmenus = childmenus + '<li class="d-flex align-items-center"><em class="fa fa-angle-right"></em><a href="'+php_route+'" onclick="sessionMenu('+inner_arr[k].tblmenu_master_id+');" >'+inner_arr[k].name+'</a></li>';
-  //             }
-
-  //             if(i == 0){
-  //               $("#loadRightSideMenu").append('<li class="nav-item" role="presentation" data-toggle="tooltip" data-placement="top" title="'+main_arr[i].name+'"><a class="nav-link active" data-toggle="tab" href="#right-tab-'+j+'" role="tab" aria-controls="right-tab-'+j+'" aria-selected="false"><img class="icon-nrml" src="http://{{$_SERVER['HTTP_HOST']}}/admin_dep/images/side-'+main_arr[i].icon+'.png" alt=""><img class="icon-hvr" src="http://{{$_SERVER['HTTP_HOST']}}/admin_dep/images/side-'+main_arr[i].icon+'-white.png" alt=""></a></li>');
-  //               $("#loadSubMenu").append('<div class="tab-pane show active" id="right-tab-'+j+'" role="tabpanel"><div class="acc-panel"><div class="acc-header d-flex align-items-center"><span><em class="fa fa-angle-down"></em></span><h4 class="m-0">'+main_arr[i].name+'</h4></div><div class="acc-body" style="display: block;"><ul class="list-unstyled activity-checks">'+childmenus+'</ul><div class="activity-accordian"></div></div></div></div>');
-  //             }else{
-  //               $("#loadRightSideMenu").append('<li class="nav-item" role="presentation" data-toggle="tooltip" data-placement="top" title="'+main_arr[i].name+'"><a class="nav-link" data-toggle="tab" href="#right-tab-'+j+'" role="tab" aria-controls="right-tab-'+j+'" aria-selected="false"><img class="icon-nrml" src="http://{{$_SERVER['HTTP_HOST']}}/admin_dep/images/side-'+main_arr[i].icon+'.png" alt=""><img class="icon-hvr" src="http://{{$_SERVER['HTTP_HOST']}}/admin_dep/images/side-'+main_arr[i].icon+'-white.png" alt=""></a></li>');
-  //               $("#loadSubMenu").append('<div class="tab-pane show" id="right-tab-'+j+'" role="tabpanel"><div class="acc-panel"><div class="acc-header d-flex align-items-center"><span><em class="fa fa-angle-down"></em></span><h4 class="m-0">'+main_arr[i].name+'</h4></div><div class="acc-body" style="display: block;"><ul class="list-unstyled activity-checks">'+childmenus+'</ul><div class="activity-accordian"></div></div></div></div>');
-  //             }
-  //          }
-  //     }
-  //   });
-
-  // }
 </script>
 
-<script type="text/javascript">
-    // function updateTour(module) {
 
-    // //   alert('asd');
-
-  //   var url = {{ route('tourUpdate') }} + "?module="+module;
-    //   var xhttp = new XMLHttpRequest();
-    //   xhttp.onreadystatechange = function() {
-    //     if (this.readyState == 4 && this.status == 200) {
-    //       alert("success");
-    //     }
-    //   };
-    //   xhttp.open("GET", url, true);
-    //   xhttp.send();
-    // }
-
-
-</script>
 <script type="text/javascript">
     var options = {
         series: [{
@@ -598,6 +483,8 @@
 
 <script src="{{ asset("/plugins/bower_components/datatables/datatables.min.js") }}"></script>
 <!-- start - This is for export functionality only -->
+
+@if(!in_array($url,$route))
 <script src="https://cdn.datatables.net/buttons/1.2.2/js/dataTables.buttons.min.js"></script>
 <script src="https://cdn.datatables.net/buttons/1.2.2/js/buttons.flash.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/2.5.0/jszip.min.js"></script>
@@ -605,8 +492,7 @@
 <script src="https://cdn.rawgit.com/bpampuch/pdfmake/0.1.18/build/vfs_fonts.js"></script>
 <script src="https://cdn.datatables.net/buttons/1.2.2/js/buttons.html5.min.js"></script>
 <script src="https://cdn.datatables.net/buttons/1.2.2/js/buttons.print.min.js"></script>
-
-
+@endif
 <script>
     $(document).ready(function () {
 
@@ -626,12 +512,6 @@
                 },
             },
         });
-
-        // $('.sub-drop-panel a').click(function(){
-        //   var tab_pane_id = $('.main-menu-block').find('.active').attr("aria-controls");
-        //   alert(tab_pane_id);
-        //   $("#"+tab_pane_id).addClass('active');
-        // });
 
     });
 
