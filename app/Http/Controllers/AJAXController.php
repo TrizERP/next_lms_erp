@@ -971,8 +971,8 @@ class AJAXController extends Controller
                 $main_menu .= '<li class="nav-item" role="presentation" data-toggle="tooltip" data-placement="top"
                 title="' . $val['name'] . '"><a class="nav-link ' . $active . '" data-toggle="tab" href="#right-tab-' . $i . '"
                 role="tab" aria-controls="right-tab-' . $i . '" aria-selected="false"><img class="icon-nrml"
-                src="http://' . $_SERVER['HTTP_HOST'] . '/admin_dep/images/side-' . $val['icon'] . '.png" alt="">
-                <img class="icon-hvr" src="https://' . $_SERVER['HTTP_HOST'] . '/admin_dep/images/side-' . $val['icon'] . '-white.png"
+                src="'.env('APP_URL') . '/admin_dep/images/side-' . $val['icon'] . '.png" alt="">
+                <img class="icon-hvr" src="'.env('APP_URL') . '/admin_dep/images/side-' . $val['icon'] . '-white.png"
                 alt=""></a></li>';
 
                 $child_arr = $RS_ChildMenu[$val['id']];
