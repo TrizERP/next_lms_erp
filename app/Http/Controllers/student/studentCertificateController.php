@@ -177,6 +177,7 @@ class studentCertificateController extends Controller
     }
 
     public function create_html_content($syear,$sub_institute_id,$html_content,$value,$receipt_book_arr,$template,$certificate_no,$certificate_reason) {
+        
         $display_year = $syear."-".($syear + 1);
 
         $image_path1 = "http://".$_SERVER['HTTP_HOST']."/storage/fees/".$receipt_book_arr->receipt_logo;
@@ -408,8 +409,8 @@ class studentCertificateController extends Controller
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $template = $request->input('template');
         $student_ids = explode(',', $student_id);
-        $certificate_reason = "";
-
+        $certificate_reason = $request->input('certificate_reason');
+        
         $data = getStudents($student_ids);
 
         $tData = DB::table('template_master')
@@ -419,7 +420,6 @@ class studentCertificateController extends Controller
                     sub_institute_id = "'.session()->get('sub_institute_id').'"
                 ),0)')->get()->toArray();
         $tData = json_decode(json_encode($tData), true);
-
 
         $result = DB::table('fees_receipt_book_master')
             ->selectRaw('*,GROUP_CONCAT(fees_head_id) heads')
@@ -442,8 +442,9 @@ class studentCertificateController extends Controller
                 ->where('syear', $syear)->get()->toArray();
 
             $certificate_no = $certificate_no_result[0]->certificate_no;
-
+            
             $html_content = $tData[0]['html_content'];
+            
             $new_html_content = $this->create_html_content($syear, $sub_institute_id, $html_content, $value,
                 $receipt_book_arr, $template, $certificate_no, $certificate_reason);
             DB::table('certificate_history')->insert([
