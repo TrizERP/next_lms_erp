@@ -140,7 +140,8 @@ class send_notification_parents_controller extends Controller
                     $bunch_arr = array_chunk($gcmRegIds, 1000);
                                 // echo "<pre>";print_r($bunch_arr);
                     
-                    if (! empty($bunch_arr)) {
+                    if (! empty($bunch_arr)) 
+                    {
                         foreach ($bunch_arr as $val) {
                             if (isset($val, $pushMessage)) {
                                 $type1 = 'Notification';
@@ -152,15 +153,19 @@ class send_notification_parents_controller extends Controller
                                 sendNotification($app_notification_content);
                             }
                         }
-                        $res = [
+                        $res['status_code'] = 1;
+                        $res['message'] = "Notification Sent successfully.";
+                        /* $res = [
                             "status"  => 1,
                             "message" => "Notification Sent successfully.",
-                        ];
+                        ]; */
                     } else {
-                        $res = [
+                        $res['status_code'] = 0;
+                        $res['message'] = "Notification Not Sent.";
+                        /* $res = [
                             "status"  => 0,
                             "message" => "Notification Not Sent.",
-                        ];
+                        ]; */
                     }
 
                 }
