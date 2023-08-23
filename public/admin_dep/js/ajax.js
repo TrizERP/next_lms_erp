@@ -500,7 +500,8 @@ if ($("#ajax_PDF_Certificate").length != 0)
         var action = $("#action").val();
         var insert_student_ids = $("#insert_ids").val();
         var template_name = $("#template_name").val();
-        var path = '/ajax_saveData?insert_student_ids='+insert_student_ids+'&template='+template_name;
+        var certificate_reason = $("#certificate_reason").val();
+        var path = '/ajax_saveData?insert_student_ids='+insert_student_ids+'&template='+template_name+'&certificate_reason='+certificate_reason;
         $.ajax({
                 url: path,
                 success: function(result){

@@ -9,6 +9,26 @@
     .table-bordered {
         border: 1px solid #dee2e6;
     }
+
+        tr.spaceUnder>th {
+        padding-bottom: 1em !important;
+    }
+    #overlay-new {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5); /* Adjust the opacity as needed */
+        z-index: 9999;
+    }
+
+    #overlay-new center {
+    position: absolute;
+    top: 30%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    }
 </style>
 
 <div id="page-wrapper">
