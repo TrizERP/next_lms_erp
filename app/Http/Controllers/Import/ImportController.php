@@ -66,9 +66,20 @@ class ImportController extends Controller
         $fileDetails = [];
 
         if ($extension != 'xlsx') {
+            // $file = fopen($destinationFileUrl, "r");
+            // while (!feof($file)) {
+            //     $fileDetails[] = fgetcsv($file, 0, ',');
+            // }
+            // fclose($file);
             $file = fopen($destinationFileUrl, "r");
+            $headerSkipped = false; // Keep track of whether the header has been skipped
             while (!feof($file)) {
-                $fileDetails[] = fgetcsv($file, 0, ',');
+                $rowData = fgetcsv($file, 0, ',');
+                if (!$headerSkipped) {
+                    $headerSkipped = true; // Skip the first row (header)
+                    continue;
+                }
+                $fileDetails[] = $rowData;
             }
             fclose($file);
         } else {
@@ -80,7 +91,7 @@ class ImportController extends Controller
             array_pop($fileDetails);
         }
 
-        array_pop($fileDetails);
+        // array_pop($fileDetails);
 
         if (count($fileDetails) > 0) {
             $csv_data = $fileDetails[0];
@@ -266,7 +277,7 @@ class ImportController extends Controller
                         $house_id = DB::table('house_master')->select('id')->where([['house_name', $prepareData['house_id']], ['sub_institute_id', session()->get('sub_institute_id')]])->first();
                         if ($house_id) $student_enroll_data['house_id'] = $house_id->id;
                     }
-                    $student_enroll_data['syear'] = $prepareData['syear'] = session()->get('syear');
+                    $student_enroll_data['syear'] = $prepareData['syear'] ?? session()->get('syear');
                     $student_enroll_data['start_date'] = $prepareData['start_date'] ?? date('Y-m-d');
                     $student_enroll_data['adhar'] = $prepareData['adhar'] ?? 0;
 
