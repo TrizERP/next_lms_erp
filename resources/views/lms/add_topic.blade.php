@@ -35,6 +35,7 @@
                                 <label>Topic Name</label>                                
                                 <input type="text" id='topic_name[]' required name="topic_name[]" class="form-control">
                             </div>
+                            <input type="hidden" name="standard_id" value="{{$_REQUEST['standard_id']}}">
                             <div class="col-md-3 form-group">
                                 <label>Description</label>
                                 <textarea id="topic_desc[]" name="topic_desc[]" class="form-control"></textarea>

@@ -553,7 +553,7 @@ class contentController extends Controller
     public function update(Request $request,$id)
     {
         //ValidateInsertData('subject','update');        
-
+        // echo "<pre>";print_r($request);exit;
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $syear = $request->session()->get('syear');
         $user_id = $request->session()->get('user_id');
@@ -618,6 +618,7 @@ class contentController extends Controller
             'content_category'             => $request->get('content_category'),
             'created_by'                   => $user_id,
             'sub_institute_id'             => $sub_institute_id,
+            'url'                          => $request->get('link'),
             'restrict_date'                => $request->get('restrict_date'),
             'pre_grade_topic'              => $pre_topic,
             'post_grade_topic'             => $post_topic,

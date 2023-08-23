@@ -174,6 +174,7 @@
     </div>
 
     @include('includes.footerJs')
+</head>
 <script>
     var checked = false;
 function checkedAll() {
@@ -187,7 +188,14 @@ function checkedAll() {
     }
 }
 </script>
+
 <script>
+    /* function stripHtmlTags(html) {
+        var tmp = document.createElement("div");
+        tmp.innerHTML = html;
+        return tmp.textContent || tmp.innerText || "";
+    } */
+
     $(document).ready(function () {
         var table = $('#example').DataTable({
             ordering: false,
@@ -203,19 +211,24 @@ function checkedAll() {
                     title: 'Student Report',
                     orientation: 'landscape',
                     pageSize: 'LEGAL',
-                    pageSize: 'A0',
                     exportOptions: {
                         columns: ':visible'
                     },
                     customize: function (doc) {
-                        doc.content.splice(0, 0, {
-                            text: schoolDetails,
-                            margin: [10, 10, 10, 0]
+                        var headerContent = `{!! htmlspecialchars_decode(App\Helpers\get_school_details("$grade_id", "$standard_id", "$division_id")) !!}`;
+
+                        var tmp = document.createElement("div");
+                        tmp.innerHTML = headerContent;
+                        var decodeHeader = tmp.textContent || tmp.innerText;
+                        //var header = doc.content[0];
+                        //header.text += 'Student Report' + headerContent;
+
+                        doc.content.unshift({
+                            text: decodeHeader,
+                            alignment: 'center',
                         });
                     }
                 },
-                /* { extend: 'pdf', title: 'TITLE DATE IS '+$('#min').val(), text: '<a class="btn" style="color: #FFFFFF;  padding: 0  !important; height: fit-content !important;"><i class="fas fa-file-pdf"></i> PDF</a>', orientation: 'landscape', 
-                }, */
                 {extend: 'csv', text: ' CSV', title: 'Student Report'},
                 {extend: 'excel', text: ' EXCEL', title: 'Student Report'},
                 {
