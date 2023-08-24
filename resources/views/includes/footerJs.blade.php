@@ -165,19 +165,19 @@ $route = ['dashboard'];
 </div>
 
 
-<script src="{{ asset("/admin_dep/js/popper.min.js") }}"></script>
-<script src="{{ asset("/admin_dep/js/custom.js") }}"></script>
-<script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+<script src="{{ asset("/admin_dep/js/popper.min.js") }}" ></script>
+<script src="{{ asset("/admin_dep/js/custom.js") }}" ></script>
+<script src="https://cdn.jsdelivr.net/npm/apexcharts" async></script>
 
 
-<script src="{{ asset("/plugins/bower_components/chartist-js/dist/chartist.min.js") }}"></script>
-<script src="{{ asset("/plugins/bower_components/chartist-plugin-tooltip-master/dist/chartist-plugin-tooltip.min.js") }}"></script>
+<script src="{{ asset("/plugins/bower_components/chartist-js/dist/chartist.min.js") }}" async></script>
+<script src="{{ asset("/plugins/bower_components/chartist-plugin-tooltip-master/dist/chartist-plugin-tooltip.min.js") }}" async></script>
 <!-- Sparkline chart JavaScript -->
-<script src="{{ asset("/plugins/bower_components/jquery-sparkline/jquery.sparkline.min.js") }}"></script>
+<script src="{{ asset("/plugins/bower_components/jquery-sparkline/jquery.sparkline.min.js") }}" async></script>
 
-<script src="{{ asset("/plugins/bower_components/jquery.easy-pie-chart/dist/jquery.easypiechart.min.js") }}"></script>
-<script src="{{ asset("plugins/bower_components/jquery.easy-pie-chart/easy-pie-chart.init.js") }}"></script>
-<script src="{{ asset("plugins/bower_components/bootstrap-datepicker/bootstrap-datepicker.min.js") }}"></script>
+<script src="{{ asset("/plugins/bower_components/jquery.easy-pie-chart/dist/jquery.easypiechart.min.js") }}" async></script>
+<script src="{{ asset("plugins/bower_components/jquery.easy-pie-chart/easy-pie-chart.init.js") }}" async></script>
+<script src="{{ asset("plugins/bower_components/bootstrap-datepicker/bootstrap-datepicker.min.js") }}" async></script>
 
 
 <script src="https://code.jquery.com/jquery-1.10.2.js"></script>
@@ -241,7 +241,7 @@ $route = ['dashboard'];
 </script>
 
 
-<script src="{{ asset("plugins/bower_components/clockpicker/dist/jquery-clockpicker.min.js") }}"></script>
+<script src="{{ asset("plugins/bower_components/clockpicker/dist/jquery-clockpicker.min.js") }}" async></script>
 
 <script>
   // Clock pickers
@@ -478,20 +478,20 @@ $route = ['dashboard'];
         var chart = new ApexCharts(document.querySelector("#splineChart"), options);
         chart.render();
     </script>
-<script src="{{ asset("/admin_dep/js/ajax.js") }}"></script>
+<script src="{{ asset("/admin_dep/js/ajax.js") }}" async></script>
 
 
-<script src="{{ asset("/plugins/bower_components/datatables/datatables.min.js") }}"></script>
+<script src="{{ asset("/plugins/bower_components/datatables/datatables.min.js") }}" async></script>
 <!-- start - This is for export functionality only -->
 
 @if(!in_array($url,$route))
-<script src="https://cdn.datatables.net/buttons/1.2.2/js/dataTables.buttons.min.js"></script>
-<script src="https://cdn.datatables.net/buttons/1.2.2/js/buttons.flash.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/2.5.0/jszip.min.js"></script>
-<script src="https://cdn.rawgit.com/bpampuch/pdfmake/0.1.18/build/pdfmake.min.js"></script>
-<script src="https://cdn.rawgit.com/bpampuch/pdfmake/0.1.18/build/vfs_fonts.js"></script>
-<script src="https://cdn.datatables.net/buttons/1.2.2/js/buttons.html5.min.js"></script>
-<script src="https://cdn.datatables.net/buttons/1.2.2/js/buttons.print.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/1.2.2/js/dataTables.buttons.min.js" async></script>
+<script src="https://cdn.datatables.net/buttons/1.2.2/js/buttons.flash.min.js" async></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/2.5.0/jszip.min.js" async></script>
+<script src="https://cdn.rawgit.com/bpampuch/pdfmake/0.1.18/build/pdfmake.min.js" async></script>
+<script src="https://cdn.rawgit.com/bpampuch/pdfmake/0.1.18/build/vfs_fonts.js" async></script>
+<script src="https://cdn.datatables.net/buttons/1.2.2/js/buttons.html5.min.js" async></script>
+<script src="https://cdn.datatables.net/buttons/1.2.2/js/buttons.print.min.js" async></script>
 @endif
 <script>
     $(document).ready(function () {

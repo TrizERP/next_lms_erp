@@ -1,4 +1,4 @@
-<script src="https://miraibot.ai/embed@latest.js" id="687e1c179bbf486788f11fa77d33f82f"></script>
+<script src="https://miraibot.ai/embed@latest.js" id="687e1c179bbf486788f11fa77d33f82f" async></script>
 <script>
 	// Accordian Menu
 	$(document).ready(function(){

@@ -6,29 +6,40 @@
     <meta name="author" content="">
     <link rel="icon" type="image/png" sizes="16x16" href="images/favicon.png">
     <title>TRIZ ERP</title>
+    <link rel="preload" href="{{ asset("/admin_dep/css/bootstrap.css") }}" as="style" onload="this.onload=null;this.rel='stylesheet'">
+
+    <link href="{{ asset("/plugins/bower_components/calendar/dist/fullcalendar.css") }}" rel="preload" as="style" onload="this.onload=null;this.rel='stylesheet'">
+
+    <!-- <link href="{{ asset("/admin_dep/css/bootstrap.css") }}" rel="stylesheet"> -->
+    
+    <link href="{{ asset("/admin_dep/css/bootstrap-select.css") }}" rel="preload" as="style" onload="this.onload=null;this.rel='stylesheet'">
+
+    <link href="{{ asset("/admin_dep/css/bootstrap-datepicker.min.css") }}" rel="preload" as="style" onload="this.onload=null;this.rel='stylesheet'">
+
+    <link href="{{ asset("/admin_dep/css/docs.css") }}" rel="preload" as="style" onload="this.onload=null;this.rel='stylesheet'">
+
+    <link href="{{ asset("/admin_dep/css/css3.css") }}" rel="preload" as="style" onload="this.onload=null;this.rel='stylesheet'">
+
+    <link href="{{ asset("/admin_dep/css/fontawesome.css") }}" rel="preload" as="style" onload="this.onload=null;this.rel='stylesheet'">
+
+    <link href="{{ asset("/admin_dep/css/materialdesignicons.min.css") }}" rel="preload" as="style" onload="this.onload=null;this.rel='stylesheet'">
+
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="preload" as="style" onload="this.onload=null;this.rel='stylesheet'">
+
+    <link href="{{ asset("/admin_dep/css/elements.css") }}" rel="preload" as="style" onload="this.onload=null;this.rel='stylesheet'">
+
+    <link href="{{ asset("/admin_dep/css/style.css") }}" rel="preload" as="style" onload="this.onload=null;this.rel='stylesheet'">
+
+    <link href="{{ asset("/plugins/bower_components/toast-master/css/jquery.toast.css") }}" rel="preload" as="style" onload="this.onload=null;this.rel='stylesheet'"> 
 
 
-    <link href="{{ asset("/plugins/bower_components/calendar/dist/fullcalendar.css") }}" rel="stylesheet">
-
-    <link href="{{ asset("/admin_dep/css/bootstrap.css") }}" rel="stylesheet">
-    <link href="{{ asset("/admin_dep/css/bootstrap-select.css") }}" rel="stylesheet">
-    <link href="{{ asset("/admin_dep/css/bootstrap-datepicker.min.css") }}" rel="stylesheet">
-    <link href="{{ asset("/admin_dep/css/docs.css") }}" rel="stylesheet">
-    <link href="{{ asset("/admin_dep/css/css3.css") }}" rel="stylesheet">
-    <link href="{{ asset("/admin_dep/css/fontawesome.css") }}" rel="stylesheet">
-    <link href="{{ asset("/admin_dep/css/materialdesignicons.min.css") }}" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-    <link href="{{ asset("/admin_dep/css/elements.css") }}" rel="stylesheet">
-    <link href="{{ asset("/admin_dep/css/style.css") }}" rel="stylesheet">
-
-    <link href="{{ asset("/plugins/bower_components/toast-master/css/jquery.toast.css") }}" rel="stylesheet"> 
-
-    <link href="https://cdn.datatables.net/buttons/1.5.6/css/buttons.dataTables.min.css" rel="stylesheet"
+    <link href="https://cdn.datatables.net/buttons/1.5.6/css/buttons.dataTables.min.css" rel="preload" as="style" onload="this.onload=null;this.rel='stylesheet'"
           type="text/css"/>
 
     <style type="text/css">
         @media print {
-            .pagebreak {
+            .pagebreak
+             {
                 page-break-before: always;
             }
 
