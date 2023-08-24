@@ -100,7 +100,8 @@ class HrmsController extends Controller
         }
         $hrmsInOutTime['date'] = Carbon::now()->format('d-m-Y');
         $hrmsInOutTime['id'] = 0;
-        return is_mobile($type, "HRMS.hrms_inout_time.index", compact('hrmsInOutTime'), "view",'compact');
+        //return is_mobile($type, "HRMS.hrms_inout_time.index", compact('hrmsInOutTime'), "view",'compact');
+        return is_mobile($type, "HRMS.hrms_inout_time.index", $hrmsInOutTime, "view");
 //        return view('HRMS.hrms_inout_time.index', compact('hrmsInOutTime'));
     }
 
@@ -128,7 +129,7 @@ class HrmsController extends Controller
             $hrmsInOutTime->sub_institute_id = $subInstituteId;
             $hrmsInOutTime->save();
         }
-        return is_mobile($type, "hrms-inout-time", null, "redirect");
+        return is_mobile($type, "hrms_inout_time.index", null, "redirect");
         //return redirect('hrms-inout-time')->with(['message' =>'check In successfully']);
     }
 
@@ -142,7 +143,7 @@ class HrmsController extends Controller
             $hrmsInOutTime->out_time = Carbon::now()->format('h:i:s');
             $hrmsInOutTime->save();
         }
-        return is_mobile($type, "hrms-inout-time", null, "redirect");
+        return is_mobile($type, "hrms_inout_time.index", null, "redirect");
         //return redirect('hrms-inout-time')->with(['message' =>'check Out successfully']);
     }
 
@@ -177,8 +178,10 @@ class HrmsController extends Controller
 
         $hrmsAttendanceInOutTime['id'] = 0;
         $hrmsAttendanceInOutTime['time'] = Carbon::now()->format('H:i:s');
+        $hrmsAttendanceInOutTime['employeeLists'] = $employeeLists;
 //return $hrmsAttendanceInOutTime;
-        return is_mobile($type, "HRMS.hrms_attendance.index", compact('hrmsAttendanceInOutTime','employeeLists'), "view",'compact');
+        //return is_mobile($type, "HRMS.hrms_attendance.index", compact('hrmsAttendanceInOutTime','employeeLists'), "view",'compact');
+        return is_mobile($type, "HRMS.hrms_attendance.index", $hrmsAttendanceInOutTime, "view");
         //return view('HRMS.hrms_attendance.index', compact('hrmsAttendanceInOutTime', 'employeeLists'));
     }
 
@@ -210,7 +213,7 @@ class HrmsController extends Controller
         $hrmsAttendanceInTime->sub_institute_id = $subInstituteId;
         $hrmsAttendanceInTime->save();
 
-        return is_mobile($type, "hrms-attendance", null, "redirect");
+        return is_mobile($type, "hrms_attendance.index", null, "redirect");
         //return redirect('hrms-attendance')->with(['message' =>'check In successfully']);
     }
 
@@ -236,7 +239,7 @@ class HrmsController extends Controller
             $hrmsAttendanceOutTime->timestamp_diff = $diff;
             $hrmsAttendanceOutTime->save();
         }
-        return is_mobile($type, "hrms-attendance", null, "redirect");
+        return is_mobile($type, "hrms_attendance.index", null, "redirect");
        // return redirect('hrms-attendance')->with(['message' =>'check Out successfully']);
     }
 
