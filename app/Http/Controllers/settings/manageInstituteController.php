@@ -51,7 +51,7 @@ class manageInstituteController extends Controller
         $syear = session()->get('syear');
         $created_by = session()->get('user_id');
         $client_id = session()->get('client_id');
-        $created_at = date('Y-m-d h:i:s');
+        $created_at = date('Y-m-d H:i:s');
         $created_ip = $_SERVER['REMOTE_ADDR'];
 
         $file_name = $file_size = $ext = "";
@@ -167,7 +167,7 @@ class manageInstituteController extends Controller
 
     public function update(Request $request, $id)
     {
-        $updated_at = date('Y-m-d h:i:s');
+        $updated_at = date('Y-m-d H:i:s');
         $data = [
             'SchoolName'            => $request->get('SchoolName'),
             'ShortCode'             => $request->get('ShortCode'),
