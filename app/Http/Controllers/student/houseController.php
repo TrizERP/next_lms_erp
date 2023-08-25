@@ -65,7 +65,7 @@ class houseController extends Controller
             'sub_institute_id' => $sub_institute_id,
             'syear'            => $syear,
             'created_by'       => $user_id,
-            'created_at'       => date('Y-m-d h:i:s'),
+            'created_at'       => date('Y-m-d H:i:s'),
             'created_ip'       => $_SERVER['REMOTE_ADDR'],
         ]);
 

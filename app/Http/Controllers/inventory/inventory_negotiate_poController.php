@@ -71,7 +71,7 @@ class inventory_negotiate_poController extends Controller
             'po_approval_status' => $request->get('po_approval_status'),
             'po_approval_remark' => $request->get('po_approval_remark'),
             'po_approved_by'     => $created_by,
-            'po_approved_date'   => date('Y-m-d h:i:s'),
+            'po_approved_date'   => date('Y-m-d H:i:s'),
         );
         inventory_generate_poModel::where([
             "po_number"        => $request->get('po_number'),
@@ -114,9 +114,9 @@ class inventory_negotiate_poController extends Controller
                     'po_approval_status'    => $request->get('po_approval_status'),
                     'po_approval_remark'    => $request->get('po_approval_remark'),
                     'po_approved_by'        => $created_by,
-                    'po_approved_date'      => date('Y-m-d h:i:s'),
+                    'po_approved_date'      => date('Y-m-d H:i:s'),
                     'created_by'            => $created_by,
-                    'created_on'            => date('Y-m-d h:i:s'),
+                    'created_on'            => date('Y-m-d H:i:s'),
                     'created_ip_address'    => $_SERVER['REMOTE_ADDR'],
                 ]);
                 $negotiate_po->save();
@@ -135,7 +135,7 @@ class inventory_negotiate_poController extends Controller
                     'po_approval_status' => $request->get('po_approval_status'),
                     'po_approval_remark' => $request->get('po_approval_remark'),
                     'po_approved_by'     => $created_by,
-                    'po_approved_date'   => date('Y-m-d h:i:s'),
+                    'po_approved_date'   => date('Y-m-d H:i:s'),
                 ];
                 inventory_negotiate_poModel::where([
                     "po_number"        => $request->get('po_number'),

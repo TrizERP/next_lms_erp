@@ -216,7 +216,7 @@ class inventory_item_allocationController extends Controller
                     'PERSON_RESPONSIBLE'     => $person_responsible[$item_id],
                     'ITEM_ID'                => $item_id,
                     'CREATED_BY'             => $created_by,
-                    'CREATED_ON'             => date('Y-m-d h:i:s'),
+                    'CREATED_ON'             => date('Y-m-d H:i:s'),
                     'CREATED_IP_ADDRESS'     => $_SERVER['REMOTE_ADDR'],
                 ]);
                 $item_allocation->save();
