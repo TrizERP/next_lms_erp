@@ -214,11 +214,13 @@ class feesTypewiseReportController extends Controller
                 $join->whereRaw('s.id = se.standard_id');
             })->join('division as d', function ($join) {
                 $join->whereRaw('d.id = se.section_id');
+            })->join('batch as b', function ($join) {
+                $join->whereRaw('b.id = ts.studentbatch');
             })
             ->selectRaw("fc.id,fc.student_id,CONCAT_WS(' ',ts.first_name,ts.middle_name,ts.last_name) AS student_name,
                 ts.enrollment_no,ts.admission_year,ts.mobile,ts.email,date_format(ts.dob,'%d-%m-%Y') AS dob,a.title AS section,
                 s.name AS std_name,d.name AS div_name,sq.title AS stu_qouta, $fees_columns
-                fc.fine AS total_fine,fc.fees_discount AS tot_disc,fc.receipt_no,sum(fc.amount) as total_amt")
+                fc.fine AS total_fine,fc.fees_discount AS tot_disc,fc.receipt_no,sum(fc.amount) as total_amt,b.title as student_batch_name,fc.receiptdate AS receipt_date")
             ->whereRaw($extraSearchArrayRaw)
             ->where('se.syear', $syear)
             ->where('fc.syear', $syear)
@@ -229,7 +231,7 @@ class feesTypewiseReportController extends Controller
                 $query->selectRaw("fp.id,fp.student_id,CONCAT_WS(' ',ts.first_name,ts.middle_name,ts.last_name) AS student_name,
                 ts.enrollment_no,ts.admission_year,ts.mobile,ts.email,date_format(ts.dob,'%d-%m-%Y') AS dob,a.title AS section,
                 s.name AS std_name,d.name AS div_name,sq.title AS stu_qouta, $other_columns
-                fp.fine AS total_fine,fp.fees_discount AS tot_disc,fp.reciept_id as receipt_no,sum(fp.actual_amountpaid) as total_amt")
+                fp.fine AS total_fine,fp.fees_discount AS tot_disc,fp.reciept_id as receipt_no,sum(fp.actual_amountpaid) as total_amt,b.title as student_batch_name,fp.receiptdate AS receipt_date")
                     ->from('fees_paid_other as fp')
                     ->join('tblstudent as ts', function ($join) {
                         $join->whereRaw('ts.id = fp.student_id AND ts.sub_institute_id = fp.sub_institute_id');
@@ -243,6 +245,8 @@ class feesTypewiseReportController extends Controller
                         $join->whereRaw('s.id = se.standard_id');
                     })->join('division as d', function ($join) {
                         $join->whereRaw('d.id = se.section_id');
+                    })->join('batch as b', function ($join) {
+                        $join->whereRaw('b.id = ts.studentbatch');
                     })
                     ->whereRaw($extraSearchArrayRawfp)
                     ->where('se.syear', $syear)
@@ -255,14 +259,14 @@ class feesTypewiseReportController extends Controller
         ->selectRaw("id,student_id,student_name,
         enrollment_no,admission_year,mobile,email,dob,section,
        std_name,div_name,stu_qouta, ".str_replace(['IFNULL(SUM(', '),0)'], '',$columns)."
-       total_fine,tot_disc,receipt_no,sum(total_amt) as amount")
+       total_fine,tot_disc,receipt_no,sum(total_amt) as amount,student_batch_name,receipt_date")
             ->groupBy('receipt_no')->get()->toArray();
             // 7050
             // echo "<pre>";print_r($fees_data);exit;
         $fees_data = array_map(function ($value) {
             return (array)$value;
         }, $fees_data);
-
+        
         $res['status_code'] = 1;
         $res['message'] = "Success";
         $res['fees_data'] = $fees_data;
