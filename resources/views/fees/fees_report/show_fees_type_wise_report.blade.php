@@ -175,17 +175,20 @@
                             @if(isset($data['fees_heads']))
                                 @foreach($data['fees_heads'] as $k => $val)
                                     @php 
-                                        $total_paid += $fees_value[$val['fees_title']];
-                                        $grand_total[$val['fees_title']] += $fees_value[$val['fees_title']];
-                                        if($fees_value[$val['fees_title']] != "")
+                                        $total_paid += $fees_value["total_".$val['fees_title']];
+                                        $grand_total[$val['fees_title']] += $fees_value["total_".$val['fees_title']];
+                                        
+                                        if($fees_value["total_".$val['fees_title']] != "")
                                         {
-                                            echo "<td>".$fees_value[$val['fees_title']]."</td>";
+                                            echo "<td>".$fees_value["total_".$val['fees_title']]."</td>";
+
                                         }
                                         else
                                         {
                                             echo "<td>0</td>";
                                         }                                        
                                     @endphp
+                                    
                                 @endforeach
                             @endif
 
@@ -195,7 +198,7 @@
                             @endphp
                             <td>{{$fees_value['total_fine']}}</td>                          
                             <td>{{$fees_value['tot_disc']}}</td>                          
-                            <td>{{$fees_value['total_amt']}}</td>                         
+                            <td>{{$fees_value['amount'] + $fees_value['total_fine'] + $fees_value['tot_disc']}}</td>                         
                         </tr>
                     @php
                     $j++;
@@ -221,7 +224,7 @@
                             @endif 
                             <td>{{$total_fine}}</td>
                             <td>{{$total_disc}}</td>
-                            <td>{{$final_grand_total}}</td> 
+                            <td>{{$final_grand_total + $total_fine + $total_disc}}</td> 
                         </tr>
                     @endif
                     </tbody>

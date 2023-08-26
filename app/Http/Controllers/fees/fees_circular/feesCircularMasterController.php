@@ -83,7 +83,7 @@ class feesCircularMasterController extends Controller
         $sub_institute_id = session()->get('sub_institute_id');
         $syear = session()->get('syear');
         $user_id = session()->get('user_id');
-        $created_on = date('Y-m-d h:i:s');
+        $created_on = date('Y-m-d H:i:s');
         $created_ip_address = $_SERVER['REMOTE_ADDR'];
         $finalArray['grade_id'] = $newRequest['grade'];
         $finalArray['standard_id'] = $newRequest['standard'];
@@ -112,7 +112,7 @@ class feesCircularMasterController extends Controller
         $id = $newRequest['id'];
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $user_id = session()->get('user_id');
-        $updated_on = date('Y-m-d h:i:s');
+        $updated_on = date('Y-m-d H:i:s');
 
         $finalArray['grade_id'] = $newRequest['grade'];
         $finalArray['standard_id'] = $newRequest['standard'];
