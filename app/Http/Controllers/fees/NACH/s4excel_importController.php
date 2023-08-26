@@ -331,13 +331,16 @@ class s4excel_importController extends Controller {
 	                            $stuSql = "SELECT * FROM tblstudent_bank_detail WHERE student_id = '".$STUDENT_ID."' AND sub_institute_id = '".$sub_institute_id."'";
 	                            $stuSqlRet = DB::select($stuSql);
 								$stuSqlRet = json_decode(json_encode($stuSqlRet),true);
-	                            $stuSqlRet = $stuSqlRet[0];
+
+								$registrationAmt = 0;
+								if (!empty($stuSqlRet) && isset($stuSqlRet[0])) {
+								    $stuSqlRet = $stuSqlRet[0];
+								    if ($stuSqlRet['is_registered'] == 'N') 
+		                            {
+		                                $registrationAmt = REGISTRATIONAMT;
+		                            }
+								}
 	                            //dd($stuSqlRet);
-	                            $registrationAmt = 0;
-	                            if ($stuSqlRet['is_registered'] == 'N') 
-	                            {
-	                                $registrationAmt = REGISTRATIONAMT;
-	                            }
 
 	                            $failedAmt = $failedCnt * FAILEDCHARGE;	                            
 	                            $FINE = $failedAmt + TRANSACTIONCHARGE + $registrationAmt;
@@ -382,7 +385,7 @@ class s4excel_importController extends Controller {
 					                "totalDis" => 0,
 					                "totalFin" => 0,
 					                "PAYMENT_MODE" => "NACH",
-					                "receiptdate" => date("Y-m-d"),
+					                "receiptdate" => $FEES_CHEQUE_DD_DATE_VALUES_DB, // date("Y-m-d"),
 					                "cheque_date" => "",
 					                "cheque_no" => "",
 					                "bank_name" => "",
@@ -445,7 +448,7 @@ class s4excel_importController extends Controller {
 						{
 						$STUDENT_ID = $STUDENT_DETAILS['STUDENT_ID'];
 							
-							$check = DB::table('tblstudent_fees_failure')->whereRaw("student_id='".$STUDENT_ID."' AND month_id='".$MONTH_ID."' AND  syear='".$syear."' AND sub_institute_id='".$sub_institute_id."' AND amount='".$STUDENT_FEES_AMOUNT."' AND DATE_FORMAT(created_on, '%Y-%m-%d') = '".date("Y-m-d")."' ")->get()->toArray();
+							$check = DB::table('tblstudent_fees_failure')->whereRaw("student_id='".$STUDENT_ID."' AND month_id='".$MONTH_ID."' AND  syear='".$syear."' AND sub_institute_id='".$sub_institute_id."' AND amount='".$STUDENT_FEES_AMOUNT."' AND DATE_FORMAT(created_on, '%Y-%m-%d') = '".$FEES_CHEQUE_DD_DATE_VALUES_DB."' ")->get()->toArray();
 							if(empty($check)){
 								$failInsSql = "INSERT INTO tblstudent_fees_failure
 								(student_id,month_id, syear, sub_institute_id,amount, remarks, created_by)
