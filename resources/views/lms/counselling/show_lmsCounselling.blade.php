@@ -2,8 +2,6 @@
 @include('includes.header')
 @include('includes.sideNavigation')
 
- 
-
 <style>
 br{
 	display:block !important;
@@ -47,21 +45,19 @@ br{
 								<div class="d-flex align-items-center border-bottom p-3">									
 									<img src="../../../storage/counselling_course/{{$val['image']}}" width="40" alt="">									
 
-									@if($val['title'] == 'MBTI' || strtoupper
-									 (session()->get
-									 ('user_profile_name')) == 'STUDENT')
-									 <div class="h6 mb-0 ml-2 badge
-									 badge-info badge-outlined">{{$val
-									 ['title']}} </div> @else <div class="h6
-									 mb-0 ml-2 badge badge-info
-									 badge-outlined" data-toggle="tooltip"
-									 title="Add Question"> <a href="{{ route
-									 ('lmsCounsellingQuestion.index',
-									 ['course_id'=>$val['id']]) }}">{{$val
-									 ['title']}}</a> </div> @endif </div>
-									 <div class="card-body
-									 p-3">									
-									 <p class="mb-0">{!!$val['description']!!}</p> </div>								
+									@if($val['title'] == 'MBTI' || strtoupper(session()->get('user_profile_name')) == 'STUDENT')
+									<div class="h6 mb-0 ml-2 badge badge-info badge-outlined">
+										{{$val['title']}}
+									</div>
+									@else
+									<div class="h6 mb-0 ml-2 badge badge-info badge-outlined" data-toggle="tooltip" title="Add Question">
+										<a href="{{ route('lmsCounsellingQuestion.index',['course_id'=>$val['id']]) }}">{{$val['title']}}</a>
+									</div>
+									@endif
+								</div>
+								<div class="card-body p-3">									
+									<p class="mb-0">{!!$val['description']!!}</p>
+								</div>								
 								
 
 								<!--START Show Attempted User Data -->
@@ -115,11 +111,7 @@ br{
 							</div>
 						</div>
 					@endforeach
-					@endif
-					<iframe src="https://www.mynextmove.org/explore/ip?client=trizinnovation" width="900" height="600" style="border: none"></iframe>
-					<!-- <div class="row mb-4">
-						<div class="embed-onet-ip"></div>
-					</div> -->														
+					@endif														
 				</div>
 				<!-- <div class="text-center">
 					<a href="#" class="btn btn-primary">View all Short Courses in Counselling</a>
@@ -132,8 +124,6 @@ br{
 
 
 @include('includes.lmsfooterJs')
-<!-- <script src="https://services.onetcenter.org/embed/ip.js?client=trizinnovation"></script> -->
-
 <script type="text/javascript">
 $(document).ready(function(){
     $('[data-toggle="tooltip"]').tooltip();   
