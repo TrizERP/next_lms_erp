@@ -595,39 +595,29 @@ class dynamic_report_controller extends Controller
 // Standard,Chapter Name,Subject Name,Total Contents,Content Name,Total Sub Content,Sub Content Name
         $col = [];
         foreach ($all_detail["selected_fields"] as $id => $val) {
-            if ($main_module_name !="Transport" && $all_fields_name[$val] == "Full Name") {
-                $col[] = DB::raw("concat_ws(' ',s.first_name,s.middle_name,s.last_name) as full_name");
-            }elseif($main_module_name =="Transport" && $all_fields_name[$val] == " Full Name")
-            {
-                if($sub_module_name[0] == "vehicle" ){
-                    $col[] = DB::raw("concat_ws(' ',tdd.first_name,tdd.last_name) as full_name");
-                }else{
-                    $col[] = DB::raw("concat_ws(' ',s.first_name,s.middle_name,s.last_name) as full_name");
+            if ($main_module_name != "Transport" && $all_fields_name[$val] == "Full Name") {
+                $col[] = DB::raw("concat_ws(' ', s.first_name, s.middle_name, s.last_name) as full_name");
+            } elseif ($main_module_name == "Transport" && $all_fields_name[$val] == " Full Name") {
+                if ($sub_module_name[0] == "vehicle") {
+                    $col[] = DB::raw("concat_ws(' ', tdd.first_name, tdd.last_name) as full_name");
+                } else {
+                    $col[] = DB::raw("concat_ws(' ', s.first_name, s.middle_name, s.last_name) as full_name");
                 }
-            }
-            elseif($all_fields_name[$val]=="Chapter Name"){
+            } elseif ($all_fields_name[$val] == "Chapter Name") {
                 $col[] = DB::raw("GROUP_CONCAT(DISTINCT chm.chapter_name) as chapter_name");
-            }
-            elseif($all_fields_name[$val]=="Content Name"){
+            } elseif ($all_fields_name[$val] == "Content Name") {
                 $col[] = DB::raw("GROUP_CONCAT(DISTINCT cm.content_category) as content_type");
-            }
-            elseif($all_fields_name[$val]=="Sub Content Name"){
+            } elseif ($all_fields_name[$val] == "Sub Content Name") {
                 $col[] = DB::raw("GROUP_CONCAT(DISTINCT cm.title) as sub_contents");
-            }
-            elseif($all_fields_name[$val]=="Total Contents"){
+            } elseif ($all_fields_name[$val] == "Total Contents") {
                 $col[] = DB::raw("COUNT(DISTINCT cm.content_category) as total_content");
-            }
-            elseif( $all_fields_name[$val] == "Total Sub Content"){
+            } elseif ($all_fields_name[$val] == "Total Sub Content") {
                 $col[] = DB::raw("COUNT(DISTINCT cm.title) as total_sub_content");
+            } else {
+                $col[] = $all_fields_index[$val];
             }
-            else {
-/* echo("<pre>");print_r($all_fields_name);echo("<br>");echo"value";
-echo("<pre>");print_r($val); */
-
-
-             $col[] = $all_fields_index[$val];
-            }
-        }
+        }    
+               
         // echo "<pre>";print_r($col);
         // exit;
         $result = "";
@@ -794,9 +784,10 @@ echo("<pre>");print_r($val); */
         // if(isset($counts) && $counts == "counts"){
         //     $this->query->selectRaw(implode(', ', $col));
         // }else{
-        $this->query->select($col);
+        //$this->query->select($col);
         // }
         $result = $this->query->get();
+        
         $tbl_detail = [];
         foreach ($all_detail["selected_fields"] as $id => $val) {
 
