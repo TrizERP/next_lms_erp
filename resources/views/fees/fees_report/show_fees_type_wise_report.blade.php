@@ -128,11 +128,10 @@
                             <th>{{App\Helpers\get_string('studentname','request')}}</th>
                             <th>{{App\Helpers\get_string('standard','request')}}</th>
                             <th>{{App\Helpers\get_string('division','request')}}</th>
-                            <th>Mobile No.</th>
                             <th>Receipt No.</th>
-                            <th>Email</th>
                             <th>{{App\Helpers\get_string('studentquota','request')}}</th>
-                            <th>Admission Year</th>
+                            <th>Batch</th>
+                            <th>Receipt Date</th>
                             @if(isset($data['fees_heads']))
                                 @foreach($data['fees_heads'] as $key => $val)
                                 <th>{{$val['display_name']}}</th>
@@ -167,11 +166,10 @@
                             <td>{{$fees_value['student_name']}}</td>
                             <td>{{$fees_value['std_name']}}</td>
                             <td>{{$fees_value['div_name']}}</td>
-                            <td>{{$fees_value['mobile']}}</td>
                             <td>{{$fees_value['receipt_no']}}</td>
-                            <td>{{$fees_value['email']}}</td>
                             <td>{{$fees_value['stu_qouta']}}</td>
-                            <td>{{$fees_value['admission_year']}}</td>
+                            <td>{{$fees_value['student_batch_name']}}</td>
+                            <td>{{$fees_value['receipt_date']}}</td>
                             @if(isset($data['fees_heads']))
                                 @foreach($data['fees_heads'] as $k => $val)
                                     @php 
