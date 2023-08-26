@@ -8,6 +8,7 @@ use App\Models\school_setup\academic_yearModel;
 use App\Models\school_setup\divisionModel;
 use App\Models\school_setup\standardModel;
 use App\Models\school_setup\subjectModel;
+use App\Models\school_setup\std_div_mappingModel;
 use App\Models\school_setupModel;
 use App\Models\student\studentQuotaModel;
 use App\Models\tblclientModel;
@@ -868,12 +869,29 @@ class NewLMS_ApiController extends Controller
 
             divisionModel::insert($data);
         }
+
+        $get_standards = DB::table('standard')->where('sub_institute_id', $sub_institute_id)->get();
+
+        foreach($get_standards as $get_standard)
+        {
+            $get_division = DB::table('division')->where(['sub_institute_id' => $sub_institute_id, 'name' => 'A'])->first('id');
+
+            $data = [
+                'standard_id'      => $get_standard->id,
+                'division_id'      => $get_division->id,
+                'sub_institute_id' => $sub_institute_id,
+                'created_at'       => now(),
+                'updated_at'       => now(),
+            ];
+
+            std_div_mappingModel::insert($data);
         }
+    }
 
     public function INSERT_SUBJECT($sub_institute_id,$board)
     {
         if ($board !== '') {
-            $sub_array = ['Eng' => 'English', 'Math' => 'Math', 'Hindi' => 'Hindi', 'Sci' => 'Science'];
+            $sub_array = ['Eng' => 'English', 'Math' => 'Math', 'Hindi' => 'Hindi', 'Sci' => 'Science', 'Guj' => 'Gujarati'];
 
             $j = 1;
             foreach ($board as $medium) {
@@ -884,7 +902,7 @@ class NewLMS_ApiController extends Controller
                         'subject_name' => $val,
                         'subject_code' => $subject_code,
                         'subject_type' => 'Major',
-                        'short_name' => $key,
+                        'short_name' => $key.'-'.$medium,
                         'sub_institute_id' => $sub_institute_id,
                         'status' => '1',
                         'created_at' => now(),
