@@ -125,9 +125,9 @@ class feesTypewiseReportController extends Controller
             if ($feesTitleColumnExistsInCollect) {
                 $fees_columns .= "sum(fc.`". $value['fees_title'] . "`) as total_" . $value['fees_title'] . ",";
                 if($value['fees_title'] == "tution_fee"){
-                    $columns .= "IFNULL(SUM(total_" . $value['fees_title'] . "),0) ,";
+                    $columns .= "IFNULL(SUM(total_" . $value['fees_title'] . "),0) as total_" . $value['fees_title'] . ",";
                 }else{
-                    $columns .= "IFNULL(SUM(total_" . $value['fees_title'] . "),0),";
+                    $columns .= "IFNULL(SUM(total_" . $value['fees_title'] . "),0) as total_" . $value['fees_title'] . ",";
                 }
             } else {
                 $fees_columns .= "NULL as total_" . $columnAlias . ",";
@@ -135,12 +135,12 @@ class feesTypewiseReportController extends Controller
 
             if ($feesTitleColumnExistsInPaidOther) {
                 $other_columns .="sum(fp.`". $value['fees_title'] . "`) as  total_" . $value['fees_title'] . ",";
-                $columns .="IFNULL(SUM(`total_" . $value['fees_title'] . "`),0) ,";                    
+                $columns .="IFNULL(SUM(`total_" . $value['fees_title'] . "`),0) as  total_" . $value['fees_title'] . ",";
             } else {
                 $other_columns .= "NULL as total_" . $columnAlias . ",";
             }
             
-            // echo "<pre>";print_r($columns);
+         //echo "<pre>";print_r($columns);
         
             // $fees_head_sum .= " SUM(fc." . $value['fees_title'] . ") AS " . $value['fees_title'] . ",";
         }
@@ -225,7 +225,6 @@ class feesTypewiseReportController extends Controller
             ->where('se.syear', $syear)
             ->where('fc.syear', $syear)
             ->where('s.sub_institute_id', $sub_institute_id)
-            ->whereNull('se.end_date')
             ->where('fc.is_deleted','N')->groupBy(['fc.student_id', 'fc.receipt_no'])
             ->unionAll(function ($query)  use($extraSearchArrayRawfp,$other_columns,$sub_institute_id,$syear){
                 $query->selectRaw("fp.id,fp.student_id,CONCAT_WS(' ',ts.first_name,ts.middle_name,ts.last_name) AS student_name,
@@ -252,13 +251,12 @@ class feesTypewiseReportController extends Controller
                     ->where('se.syear', $syear)
                     ->where('fp.syear', $syear)
                     ->where('s.sub_institute_id', $sub_institute_id)
-                    ->whereNull('se.end_date')
                     ->where('fp.is_deleted','N')->groupBy(['fp.student_id','fp.reciept_id']);
             });
         })
         ->selectRaw("id,student_id,student_name,
         enrollment_no,admission_year,mobile,email,dob,section,
-       std_name,div_name,stu_qouta, ".str_replace(['IFNULL(SUM(', '),0)'], '',$columns)."
+       std_name,div_name,stu_qouta, ".$columns."
        total_fine,tot_disc,receipt_no,sum(total_amt) as amount,student_batch_name,receipt_date")
             ->groupBy(['student_id', 'receipt_no'])->get()->toArray();
             // 7050

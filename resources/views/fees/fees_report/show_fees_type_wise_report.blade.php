@@ -137,15 +137,15 @@
                                 <th>{{$val['display_name']}}</th>
                                 @endforeach
                             @endif 
-                            <th>Total Fine</th>
-                            <th>Total {{App\Helpers\get_string('discount','request')}}</th>
+                            <th>Fine</th>
+                            <th>{{App\Helpers\get_string('discount','request')}}</th>
                             <th>Total</th>                                                           
                         </tr>
                     </thead>
                     <tbody>
                     @php
                     $j=1;
-                    $final_grand_total = $total_fine = $total_disc = $total_amt=0;
+                    $final_grand_total = $total_fine = $total_disc = $total_amt = 0;
                     if(isset($data['fees_heads']))
                     {
                         foreach($data['fees_heads'] as $key => $val)
@@ -191,8 +191,8 @@
                             @endif
 
                             @php
-                                $total_fine += $fees_value['total_fine'];
-                                $total_disc += $fees_value['tot_disc'];
+                                $total_fine += (int)$fees_value['total_fine'];
+                                $total_disc += (int)$fees_value['tot_disc'];
                             @endphp
                             <td>{{$fees_value['total_fine']}}</td>                          
                             <td>{{$fees_value['tot_disc']}}</td>                          
