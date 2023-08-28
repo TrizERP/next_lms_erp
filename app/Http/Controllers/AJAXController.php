@@ -1813,24 +1813,37 @@ class AJAXController extends Controller
 
     public function chat(Request $request)
     {
+        // return $request;exit;
         $question = $request->question;
         $standard = $request->standard;
         $type_name = $request->type_depth;
         $type_bloom = $request->type_bloom;
+        $type_learning = $request->type_learning;
         
         if($request->has('question') && $question!==''){
             if($request->type_depth){
                 $options = DB::table('lms_mapping_type')->select(DB::raw('group_concat(name) as type_name'))->where('parent_id',$request->type_depth)->first();                
                 $depth = "'".$question."' give answer from given options in one word this question for standard '".$standard."' student from these options $options->type_name ";
+                $reason_depth = "if its one of $options->type_name then why it is give reason";
             }
              if ($request->type_bloom){
                 $options = DB::table('lms_mapping_type')->select(DB::raw('group_concat(name) as type_name'))->where('parent_id',$request->type_bloom)->first();
                 $bloom = "'".$question."' give answer from given options in one word this question for Blooms Taxonomy? from these options $options->type_name";
+                $reason_bloom = "if its one of $options->type_name then why it is give reason from this reasons 'factual','conceptual','procedural','metacoganitive'";                
+            }
+            if ($request->type_learning){
+                // $options = DB::table('lms_mapping_type')->select(DB::raw('group_concat(name) as type_name'))->where('parent_id',$request->type_learning)->first();
+                $learning = "'".$question."' according to this question What will be the learning outcome for standard '".$standard."' student ?";
+                // $reason_learning = "if its one of $options->type_name then why it is give reason";                
             }
             $message = array(
-                array("question_depth"=>$depth),
-                array("question_bloom"=>$bloom), 
-                array("always give both questions answer in one array with vlaue only")               
+                array("question_depth"=>$depth,
+                "reason_depth"=>$reason_depth,                
+                "question_bloom"=>$bloom,
+                "reason_bloom"=>$reason_bloom,                
+                "question_learning"=>$learning), 
+                // array("reason_learning"=>$reason_learning),                                 
+                // array("always give  questions answer in one array with vlaue only")               
             );
         }else{
             $message = array($request->message);            
