@@ -684,13 +684,24 @@
 				}
 			}
 
-			$('.months').click(function() {
-				monthCheck();
+
+$('.months').click(function() {
+				var currentCheckedIndex = $('.months').index(this); 
+
+				$('.months').each(function(index) {
+					if (index <= currentCheckedIndex) {
+					$(this).prop('checked', true);
+					} else {
+					$(this).prop('checked', false);
+					}
+				});
+
+  			monthCheck();
 			});
 
 			function monthCheck() {
 				var checkedMonths = new Array();
-				var j = 0;
+					var j = 0;
 				for (var i = 0; i < document.getElementsByClassName('months').length; i++) {
 					if (document.getElementsByClassName('months')[i].checked) {
 						checkedMonths[j] = document.getElementsByClassName('months')[i].value;
@@ -720,7 +731,7 @@
 							$('#previous_fees').attr('readonly', true);
 
 						}
-						
+
 						tot = $("#totalVal").val();
 
 						// START 30-12-2021 Added for total fine box value display wrong

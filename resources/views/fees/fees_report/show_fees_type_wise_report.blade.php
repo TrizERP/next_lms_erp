@@ -83,7 +83,7 @@
                         <label>{{App\Helpers\get_string('uniqueid','request')}}</label>
                         <input type="text" id="uniqueid" value="{{$uniqueid}}" name="uniqueid" class="form-control">
                     </div>
-                    <div class="col-md-4 form-group">
+                    <!--<div class="col-md-4 form-group">
                         <label>Admission Year</label>
                         <select id='admission_year' name="admission_year" class="form-control">
                             <option>--Select Admission Year--</option>
@@ -93,7 +93,7 @@
                             <option value="2020" @if($admission_year == 2020) selected="selected" @endif>2020</option>
                             <option value="2021" @if($admission_year == 2021) selected="selected" @endif>2021</option>
                         </select>
-                    </div>
+                    </div>-->
                     {{ App\Helpers\SearchChain('4','single','grade,std,div',$grade_id,$standard_id,$division_id) }}
                     <div class="col-md-4 form-group">
                         <label>From Date</label>
@@ -128,11 +128,10 @@
                             <th>{{App\Helpers\get_string('studentname','request')}}</th>
                             <th>{{App\Helpers\get_string('standard','request')}}</th>
                             <th>{{App\Helpers\get_string('division','request')}}</th>
-                            <th>Mobile No.</th>
-                            <th>Receipt No.</th>
-                            <th>Email</th>
+                            <th>Batch</th>
                             <th>{{App\Helpers\get_string('studentquota','request')}}</th>
-                            <th>Admission Year</th>
+                            <th>Receipt No.</th>
+                            <th>Receipt Date</th>
                             @if(isset($data['fees_heads']))
                                 @foreach($data['fees_heads'] as $key => $val)
                                 <th>{{$val['display_name']}}</th>
@@ -167,11 +166,10 @@
                             <td>{{$fees_value['student_name']}}</td>
                             <td>{{$fees_value['std_name']}}</td>
                             <td>{{$fees_value['div_name']}}</td>
-                            <td>{{$fees_value['mobile']}}</td>
-                            <td>{{$fees_value['receipt_no']}}</td>
-                            <td>{{$fees_value['email']}}</td>
+                            <td>{{$fees_value['student_batch_name']}}</td>
                             <td>{{$fees_value['stu_qouta']}}</td>
-                            <td>{{$fees_value['admission_year']}}</td>
+                            <td>{{$fees_value['receipt_no']}}</td>
+                            <td>{{$fees_value['receipt_date']}}</td>
                             @if(isset($data['fees_heads']))
                                 @foreach($data['fees_heads'] as $k => $val)
                                     @php 
@@ -198,7 +196,7 @@
                             @endphp
                             <td>{{$fees_value['total_fine']}}</td>                          
                             <td>{{$fees_value['tot_disc']}}</td>                          
-                            <td>{{$fees_value['amount'] + $fees_value['total_fine'] + $fees_value['tot_disc']}}</td>                         
+                            <td>{{$fees_value['amount']}}</td><!-- + $fees_value['total_fine'] - $fees_value['tot_disc']-->
                         </tr>
                     @php
                     $j++;
@@ -213,7 +211,6 @@
                             <td></td>                           
                             <td></td>                           
                             <td></td>
-                            <td></td>
                             <td>Total</td>
                             @if(isset($data['fees_heads']))
                                  @foreach($data['fees_heads'] as $key => $val)                                    
@@ -224,7 +221,7 @@
                             @endif 
                             <td>{{$total_fine}}</td>
                             <td>{{$total_disc}}</td>
-                            <td>{{$final_grand_total + $total_fine + $total_disc}}</td> 
+                            <td>{{$final_grand_total + $total_fine - $total_disc}}</td>
                         </tr>
                     @endif
                     </tbody>
