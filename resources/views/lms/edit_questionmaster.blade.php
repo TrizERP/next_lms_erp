@@ -78,7 +78,7 @@ br {
                             @foreach($data['question_mapping_data'] as $mkey => $mval)                                
                                 <div class="addButtonCheckbox_old" id="old_data_{{$j}}"> 
                                     <div class="row align-items-center">   
-                                        <div class="col-md-4">
+                                        <div class="col-md-3">
                                             <div class="form-group">
                                                 <label for="topicType">Mapping Type</label>
                                                 <select class="load_map_value cust-select form-control mb-0" name="mapping_type[]" data-new = "{{$j}}">
@@ -91,7 +91,7 @@ br {
                                                 </select>
                                             </div>
                                         </div>
-                                        <div class="col-md-4">
+                                        <div class="col-md-3">
                                             <div class="form-group">
                                                 <label for="topicType2">Mapping Value</label>
                                                 <select name="mapping_value[]" data-new = "{{$j}}" class="cust-select form-control mb-0">
@@ -101,19 +101,27 @@ br {
                                                 </select>
                                             </div>
                                         </div>
-                                        <div class="col-md-4">
+
+                                         <div class="col-md-3">
+                                <div class="form-group">
+                                    <label for="topicType2">Reason</label>
+                                    <textarea name="reasons[]" class="form-control" data-reason="{{$j}}" row="2">{{$mval['REASONS']}}</textarea>
+                                </div>
+                            </div>
+                                        <div class="col-md-3">
                                             <a href="javascript:void(0);" onclick="removeOldRow({{$j}});" class="d-inline btn btn-danger btn-sm"><i class="mdi mdi-minus"></i></a>                                        
                                         </div>
                                         <div class="clearfix"></div>
                                     </div>
                                 </div>
+
                                 @php $j++; @endphp
                             @endforeach
                         @endif
 
                         <div class="addButtonCheckbox_MAPPING">
                             <div class="row align-items-center">        
-                                <div class="col-md-4">
+                                <div class="col-md-3">
                                     <div class="form-group">
                                         <label for="topicType">Mapping Type</label>
                                         <select class="load_map_value cust-select form-control mb-0" name="mapping_type[]" data-new = "999">
@@ -126,7 +134,7 @@ br {
                                         </select>
                                     </div>
                                 </div>
-                                <div class="col-md-4">
+                                <div class="col-md-3">
                                     <div class="form-group">
                                         <label for="topicType2">Mapping Value</label>
                                         <select name="mapping_value[]" data-new = "999" class="cust-select form-control mb-0">                                    
@@ -134,12 +142,25 @@ br {
                                         </select>
                                     </div>
                                 </div>
-                                <div class="col-md-4">
+
+                                        <div class="col-md-3">
+                                <div class="form-group">
+                                    <label for="topicType2">Reason</label>
+                                    <textarea name="reasons[]" class="form-control" data-reason="999" row="2"></textarea>
+                                </div>
+                            </div>
+
+                                <div class="col-md-3">
                                     <a href="javascript:void(0);" onclick="addNewRow_MAPPING();" class="d-inline btn btn-success btn-sm mr-2"><i class="mdi mdi-plus"></i></a>                        
                                 </div>
                             </div>
                         </div>
-
+                        <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="topicType2">Learning Outcome</label>
+                                  <textarea name="learning_outcome" class="form-control" row="2">{{$data['questionmaster_data']['learning_outcome']}}</textarea>
+                                  </div>
+                            </div>
                     <div class="col-md-8 border"> 
                         <label for="title" class="mt-2 text-primary font-weight-bold">Pre Topic</label>               
                         @php
@@ -433,9 +454,10 @@ function addNewRow_MAPPING(){
     var htmlcontent = '';    
     htmlcontent += '<div class="clearfix"></div><div class="addButtonCheckbox_MAPPING" style="display: flex; margin-right: -15px; margin-left: -15px; flex-wrap: wrap;">';
 
-    htmlcontent += '<div class="col-md-4"><div class="form-group"><label for="topicType">Mapping Type</label><select class="load_map_value form-control cust-select" name="mapping_type[]" data-new='+data_new+'>'+mapping_type_data+'</select></div></div>';
-    htmlcontent += '<div class="col-md-4"><div class="form-group"><label for="topicType2">Mapping Value</label><select class="form-control cust-select" name="mapping_value[]" data-new='+data_new+'><option value="">Select Mapping Value</option></select></div></div>';
-    htmlcontent += '<div class="col-md-4" style="margin-top: 32px;"><a href="javascript:void(0);" onclick="removeNewRow_MAPPING();" class="d-inline btn btn-danger btn-sm"><i class="mdi mdi-minus"></i></a></div></div>';
+    htmlcontent += '<div class="col-md-3"><div class="form-group"><label for="topicType">Mapping Type</label><select class="load_map_value form-control cust-select" name="mapping_type[]" data-new='+data_new+'>'+mapping_type_data+'</select></div></div>';
+    htmlcontent += '<div class="col-md-3"><div class="form-group"><label for="topicType2">Mapping Value</label><select class="form-control cust-select" name="mapping_value[]" data-new='+data_new+'><option value="">Select Mapping Value</option></select></div></div>';
+    htmlcontent += '<div class="col-md-3"><div class="form-group"><label for="topicType2">Reasons</label><textarea class="form-control " name="reasons[]" data-reason='+data_new+' row=2></textarea></div></div>';
+    htmlcontent += '<div class="col-md-3" style="margin-top: 32px;"><a href="javascript:void(0);" onclick="removeNewRow_MAPPING();" class="d-inline btn btn-danger btn-sm"><i class="mdi mdi-minus"></i></a></div></div>';
                              
     $('.addButtonCheckbox_MAPPING:last').after(htmlcontent);
 }

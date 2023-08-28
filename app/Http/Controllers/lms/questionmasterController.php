@@ -262,19 +262,27 @@ class questionmasterController extends Controller
             'created_by'                   => $user_id,
             'sub_institute_id'             => $sub_institute_id,
             'hint_text'                    => $request->get('hint_text'),
+            'learning_outcome'             => $request->get('learning_outcome'),
         );
         $question_id = lmsQuestionMasterModel::insertGetId($question);
+        // echo "<pre>";print_r($question);
 
         //START Insert into answer_master
         $mapping_type = $request->get('mapping_type');
         $mapping_value = $request->get('mapping_value');
+        $reasons = $request->get('reasons');
+        
         foreach ($mapping_type as $key => $val) {
             if ($val != "" && $mapping_value[$key] != "") {
                 $contentmappingtype = array(
                     'questionmaster_id' => $question_id,
                     'mapping_type_id'   => $val,
                     'mapping_value_id'  => $mapping_value[$key],
+                    'mapping_value_id'  => $mapping_value[$key], 
+                    'reasons' => $reasons[$key],                   
                 );
+        // echo "<pre>";print_r($contentmappingtype);
+                
                 lmsQuestionMappingModel::insert($contentmappingtype);
             }
         }
@@ -299,11 +307,12 @@ class questionmasterController extends Controller
                     'created_by'       => $user_id,
                     'sub_institute_id' => $sub_institute_id,
                 );
+
                 answermasterModel::insert($answer);
             }
         }
         //END Insert into answer_master
-
+// exit;
         $res = array(
             "status_code" => 1,
             "message"     => "Question-Master Added Successfully",
@@ -352,9 +361,11 @@ class questionmasterController extends Controller
         foreach ($question_mapping_type as $key => $val) {
             $final_question_mapping_type[$i]['TYPE_ID'] = $val['mapping_type_id'];
             $final_question_mapping_type[$i]['VALUE_ID'] = $val['mapping_value_id'];
+            $final_question_mapping_type[$i]['REASONS'] = $val['reasons'];
             $i++;
         }
         $data['question_mapping_data'] = $final_question_mapping_type;
+        // echo "<pre>";print_r($data['question_mapping_data']);
 
         //GET LMS Mapping values
         $lms_mapping_type = DB::table('lms_mapping_type')
@@ -374,6 +385,7 @@ class questionmasterController extends Controller
                 $lms_mapping_value[$lval['id']][$v['id']] = $v['name'];
             }
         }
+        // exit;
         $data['lms_mapping_value'] = $lms_mapping_value;
         $data['lms_mapping_type'] = $lms_mapping_type;
 
@@ -478,6 +490,7 @@ class questionmasterController extends Controller
         if ($request->has('topic_id')) {
             $data['topic_id'] = $request->get('topic_id');
         }
+        // echo "<pre>";print_r($data);exit;
 
         return is_mobile($type, "lms/edit_questionmaster", $data, "view");
     }
@@ -522,6 +535,7 @@ class questionmasterController extends Controller
             'created_by'                   => $user_id,
             'sub_institute_id'             => $sub_institute_id,
             'hint_text'                    => $request->get('hint_text'),
+            'learning_outcome'             => $request->get('learning_outcome'),
         );
 
         lmsQuestionMasterModel::where(["id" => $id])->update($question);
@@ -552,6 +566,7 @@ class questionmasterController extends Controller
 
         $mapping_type = $request->get('mapping_type');
         $mapping_value = $request->get('mapping_value');
+        $reasons = $request->get('reasons');        
 
         foreach ($mapping_type as $key => $val) {
             if ($val != "" && $mapping_value[$key] != "") {
@@ -559,6 +574,7 @@ class questionmasterController extends Controller
                     'questionmaster_id' => $id,
                     'mapping_type_id'   => $val,
                     'mapping_value_id'  => $mapping_value[$key],
+                    'reasons'  => $reasons[$key],                    
                 ];
                 lmsQuestionMappingModel::insert($questionmappingtype);
             }
@@ -575,9 +591,9 @@ class questionmasterController extends Controller
         // return array
         if ($request->get('topic_id')) {
             return redirect()->route('question_master.index',
-                ['chapter_id' => $request->get('chapter_id'), 'topic_id' => $request->get('topic_id')]);
+                ['chapter_id' => $request->get('chapter_id'), 'topic_id' => $request->get('topic_id'),'standard_id'=>$request->get('standard_id')]);
         } else {
-            return redirect()->route('question_chapter_master', ['chapter_id' => $request->get('chapter_id')]);
+            return redirect()->route('question_chapter_master', ['chapter_id' => $request->get('chapter_id'),'standard_id'=>$request->get('standard_id')]);
         }
     }
 
@@ -593,6 +609,7 @@ class questionmasterController extends Controller
         $questiondata = lmsQuestionMasterModel::where(["id" => $id])->get()->toArray();
         $chapter_id = $questiondata[0]['chapter_id'];
         $topic_id = $questiondata[0]['topic_id'];
+        $standard_id = $questiondata[0]['standard_id'];        
 
         lmsQuestionMasterModel::where(["id" => $id])->delete();
         answermasterModel::where(["question_id" => $id])->delete();
@@ -600,7 +617,7 @@ class questionmasterController extends Controller
         $res['status_code'] = "1";
         $res['message'] = "Question-Master Deleted Successfully";
 
-        return redirect()->route('question_master.index', ['chapter_id' => $chapter_id, 'topic_id' => $topic_id]);
+        return redirect()->route('question_master.index', ['chapter_id' => $chapter_id, 'topic_id' => $topic_id,'standard_id'=>$standard_id]);
         //return is_mobile($type, "question_master.index", $res);
     }
 
