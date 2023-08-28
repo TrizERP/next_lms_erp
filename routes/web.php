@@ -64,7 +64,7 @@ use App\Http\Controllers\library\BookController;
 |
 */
 
-if (isset($_REQUEST['sub_institute_id']) && $_REQUEST['sub_institute_id'] != '') {
+if (isset($_REQUEST['sub_institute_id'])  && $_REQUEST['sub_institute_id'] != '') {
     $sub_institute_id = $_REQUEST['sub_institute_id'];
 
     $get_general_data = general_dataModel::where(['sub_institute_id' => $sub_institute_id])->get()->toArray();
@@ -95,7 +95,7 @@ if (isset($_REQUEST['sub_institute_id']) && $_REQUEST['sub_institute_id'] != '')
             }else{
                 return redirect()->route('setup-institute-details');
             }
-           
+
         } else {
             return view('login');
         }
@@ -116,7 +116,7 @@ Route::group([ 'middleware' => ['session', 'menu', 'logRoute']], function () {
     Route::get('/roll-over', [PayrollController::class, 'rollOver'])->name('employee_salary_structure.rollover');
     Route::post('/employee-salary-structure/store', [PayrollController::class, 'employeeSalaryStructureStore'])->name('employee_salary_structure.store');
     Route::post('/rollover-employee-salary-structure/store', [PayrollController::class, 'rolloverEmployeeSalaryStructure'])->name('rollover_employee_salary_structure.store');
-    
+
     Route::get('setup-institute-details', [dashboardController::class, 'setup_details'])->name('setup-institute-details');
 
     Route::get('/salary-structure-report', [PayrollController::class, 'salaryStructureReport'])->name('salary_structure_report.index');
@@ -176,7 +176,7 @@ Route::any('/knowledge-base', [dashboardController::class, 'knowledge_base'])->n
 Route::any('/knowledge-base-detail/{id}/{title}', [dashboardController::class, 'knowledge_base_detail'])->name('knowledge_base_detail')->middleware('session', 'menu');
 
 Route::get('dashboard', [dashboardController::class, 'index'])->name('dashboard')->middleware('session', 'menu', 'logRoute');
-// add by uma 
+// add by uma
 Route::resource('norm-clature', normClatureController::class);
 Route::resource('add-institute-details', institute_detail::class);
 
