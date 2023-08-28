@@ -207,6 +207,34 @@ class ImportController extends Controller
 
                 }
 
+                if ($request->table_name == 'result_personalize_marks') {
+                    $prepareData['sub_institute_id'] = session()->get('sub_institute_id');
+                    $found = false;
+                    $tbluser = DB::table($request->table_name)->where($condition)->where('sub_institute_id', $sub_institute_id)->first();
+                    if (isset($daqta->is_skip) && $data->is_skip !== null) {
+                        if ($data->is_skip == 1) {
+                            if ($tbluser) {
+                                $found = true;
+                                $totalSkipRecordCount = $totalSkipRecordCount + 1;
+                                $totalSkipRecordArray[] = $rowKey + 1;
+                            }
+                        } else if ($data->is_skip == 2) {
+                            $found = true;
+                            $overwriteFound = DB::table($request->table_name)->where($condition)->where('sub_institute_id', $sub_institute_id)->first();
+                            if ($overwriteFound) {
+                                DB::table($request->table_name)->where($condition)->where('sub_institute_id', $sub_institute_id)->update($prepareData);
+                                $totalOverwiteRecordCount = $totalOverwiteRecordCount + 1;
+                                $totalOverwiteRecordArray[] = $rowKey + 1;
+                            }
+                        }
+                    }
+                    if (!$found) {
+                        DB::table($request->table_name)->insert($prepareData);
+                        $totalInsertRecordCount = $totalInsertRecordCount + 1;
+                    }
+
+                }
+
                 if ($request->table_name == 'fees_collect') {
                     $prepareData['sub_institute_id'] = session()->get('sub_institute_id');
                     $prepareData['created_by'] = session()->get('user_id');
@@ -323,13 +351,13 @@ class ImportController extends Controller
 
                 if ($request->table_name == 'result_marks') {
                     $prepareData['sub_institute_id'] = session()->get('sub_institute_id');
-                    $found = false;       
+                    $found = false;
 
                     $result_marks = DB::table("result_marks as rs")->join('result_create_exam as rce', 'rce.id', '=', 'rs.exam_id')->join('tblstudent as s', 's.id', '=', 'rs.student_id')->selectRaw('s.id as student_id,rce.id as exam_id,rs.points,rce.standard_id')->where(['rs.sub_institute_id' => $prepareData['sub_institute_id'], 'rce.title' => $prepareData['exam_id'], 'rce.standard_id' => $prepareData['standard_id'], 's.enrollment_no' => $prepareData['student_id']])->first();
 
                     if (!$result_marks) {
                         $new_record = DB::table('tblstudent as s')->join('result_create_exam as rce', 's.sub_institute_id', '=', 'rce.sub_institute_id')->selectRaw('s.id as student_id,rce.id as exam_id')->where(['s.sub_institute_id' => $prepareData['sub_institute_id'], 'rce.title' => $prepareData['exam_id'], 'rce.standard_id' => $prepareData['standard_id'], 's.enrollment_no' => $prepareData['student_id']])->groupBy('s.id')->first();
-                        
+
                         if ($new_record) {
                             DB::table($request->table_name)->insert([
                                 "student_id" => $new_record->student_id,
@@ -344,7 +372,7 @@ class ImportController extends Controller
                         $found = true;
 
                         if ($result_marks) {
-                            
+
                             DB::table($request->table_name)->where([
                                 "student_id" => $result_marks->student_id,
                                 "exam_id" => $result_marks->exam_id,
