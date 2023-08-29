@@ -129,7 +129,10 @@ class PayrollController extends Controller
 
     public function salaryStructureReport(Request $request)
     {
-        $employeeDetails = EmployeeSalaryStructure::all();
+        $sub_institute_id = session()->get('sub_institute_id');
+
+        $employeeDetails = EmployeeSalaryStructure::where('sub_institute_id', $sub_institute_id)->get();
+        
         return view('payroll.salary_structure_report.index', ['employees' => $employeeDetails]);
     }
 
@@ -187,9 +190,14 @@ class PayrollController extends Controller
 
     public function rollOver(Request $request)
     {
-        $employees = tbluserModel::paginate(10);
+        $sub_institute_id = session()->get('sub_institute_id');
+
+        $employees = tbluserModel::where('sub_institute_id', $sub_institute_id)->get();
+        
         $payrollTypes = PayrollType::where('status', 1)->get();
+
         $employeeSalaryStructures = EmployeeSalaryStructure::where('year', (Carbon::now()->format('Y')))->get();
+
         $employeeSalaryStructures = $employeeSalaryStructures->map(function ($employee) {
             $reult['employee_salary_data'] = json_decode($employee->employee_salary_data, true);
             $reult['year'] = $employee->year;

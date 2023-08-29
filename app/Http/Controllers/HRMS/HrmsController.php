@@ -252,7 +252,9 @@ class HrmsController extends Controller
             $sub_institute_id = $request->session()->get('sub_institute_id');
         }
         $employees = $employeeLists = tbluserModel::where('sub_institute_id', $sub_institute_id)->get();
+        
         $hrmsList = HrmsAttendance::with('getUser');
+
         if ($request->from_date && $request->end_date) {
             $hrmsList = $hrmsList->where('punchin_time', '>=', $request->from_date . ' 00:00:00')->where('punchout_time', '<=', $request->end_date . ' 23:59:59');
             $from_date = $request->from_date;
@@ -268,8 +270,8 @@ class HrmsController extends Controller
         $hrmsList = $hrmsList->get();
 
         //return json_decode($employeeSalaryStructures[0]['employee_salary_data'], true);
-//        return view('HRMS.hrms_attendance_report.index', compact('employees', 'employeeLists','from_date','end_date','hrmsList'));
-        return is_mobile($type, "HRMS.hrms_attendance_report.index", compact('employees','employeeLists','from_date','end_date','hrmsList'), "view",'compact');
+       return view('HRMS.hrms_attendance_report.index', compact('employees', 'employeeLists', 'from_date', 'end_date', 'hrmsList'));
+        //return is_mobile($type, "HRMS.hrms_attendance_report.index", compact('employees', 'employeeLists', 'from_date', 'end_date', 'hrmsList'), "view",'compact');
 
     }
 
@@ -341,8 +343,9 @@ class HrmsController extends Controller
             }
             return $e;
         })->where('is_late',1);
-        return is_mobile($type, "HRMS.hrms_attendance_report.early_going_report", compact('employees','employee_id','employeeLists','date','hrmsList'), "view",'compact');
 
-       // return view('HRMS.hrms_attendance_report.early_going_report', compact('employees','employee_id', 'employeeLists','date','hrmsList'));
+        //return is_mobile($type, "HRMS.hrms_attendance_report.early_going_report", compact('employees','employee_id','employeeLists','date','hrmsList'), "view",'compact');
+
+       return view('HRMS.hrms_attendance_report.early_going_report', compact('employees', 'employee_id',  'employeeLists', 'date', 'hrmsList', 'type'));
     }
 }
