@@ -227,40 +227,38 @@ br {
             var question = $(this).val();
         }
 
-        
+        // if ( question.length > 2 ) {
+        //     $.ajax({
+        //         url: "/api/get-bloom-texonomy?question="+ question,
+        //         method: 'GET',
+        //         dataType: "json",
+        //         success: function(res) {
+        //             console.log(res.prediction);
+        //             if (res.prediction) {
+        //                 $('.load_map_value.cust-select').val(82);
+        //                 var path = "{{ route('ajax_LMS_MappingValue') }}";
+        //                 $.ajax({
+        //                     url:path,
+        //                     data:'mapping_type=82',
+        //                     success:function(result){                     
+        //                         var e = $('select[name="mapping_value[]"][data-new=1]');           
+        //                         $(e).find('option').remove().end();            
+        //                         for(var i=0;i < result.length ;i++)
+        //                         {
+        //                             console.log(res.prediction, result[i]['name']);
+        //                             $(e).append($("<option></option>").val(result[i]['id']).html(result[i]['name']));
+        //                         }
 
-        if ( question.length > 2 ) {
-            $.ajax({
-                url: "/api/get-bloom-texonomy?question="+ question,
-                method: 'GET',
-                dataType: "json",
-                success: function(res) {
-                    console.log(res.prediction);
-                    if (res.prediction) {
-                        $('.load_map_value.cust-select').val(82);
-                        var path = "{{ route('ajax_LMS_MappingValue') }}";
-                        $.ajax({
-                            url:path,
-                            data:'mapping_type=82',
-                            success:function(result){                     
-                                var e = $('select[name="mapping_value[]"][data-new=1]');           
-                                $(e).find('option').remove().end();            
-                                for(var i=0;i < result.length ;i++)
-                                {
-                                    console.log(res.prediction, result[i]['name']);
-                                    $(e).append($("<option></option>").val(result[i]['id']).html(result[i]['name']));
-                                }
-
-                                var prediction = res.prediction;
+        //                         var prediction = res.prediction;
                                
-                                $('.map-value option').filter(function () { return $(this).html() == `${prediction}`; }).attr('selected', true);
+        //                         $('.map-value option').filter(function () { return $(this).html() == `${prediction}`; }).attr('selected', true);
                               
-                            }
-                        });
-                    }
-                }
-            });
-        }
+        //                     }
+        //                 });
+        //             }
+        //         }
+        //     });
+        // }
     });
 </script>
 <!-- <script src="{{asset('/plugins/bower_components/summernote/dist/summernote.min.js')}}"></script> -->
@@ -291,7 +289,13 @@ br {
          filebrowserUploadUrl: "{{route('uploadimage',['_token' => csrf_token() ])}}",
          filebrowserUploadMethod: 'form'
     });
-   
+    var editor = CKEDITOR.instances['question_title'];
+
+ editor.on('blur', function() {
+        // Call the check_input function when the CKEditor loses focus
+        check_input(editor.getData());
+    });
+
 </script>
 
 
@@ -543,7 +547,12 @@ function load_map_value(data_new, selectedValue,map_val) {
 
 // map type
 function check_input(inputElement) {
-    var inputValue = inputElement.value;
+    // alert(inputElement);
+    // var inputValue = inputElement.value;
+    var editor = CKEDITOR.instances['question_title'];
+
+// Get the content from the CKEditor instance
+var inputValue = editor.getData() ?? inputElement.value;
     var std ={!!$std_name->name!!};
 
       var data = {
