@@ -2,8 +2,6 @@
 @include('includes.header')
 @include('includes.sideNavigation')
 
- 
-
 <style>
 br{
 	display:block !important;
@@ -61,7 +59,8 @@ br{
 									 ['title']}}</a> </div> @endif </div>
 									 <div class="card-body
 									 p-3">									
-									 <p class="mb-0">{!!$val['description']!!}</p> </div>								
+									 <p class="mb-0">{!!$val['description']!!}</p> 
+									</div>								
 								
 
 								<!--START Show Attempted User Data -->
@@ -103,7 +102,6 @@ br{
 								@endif
 								<!--END Show Attempted User Data -->
 
-								
 								@if($val['title'] == 'MBTI')
 									<a href="{{route('lmsMBTIPaper.index',['course_id'=>$val['id']])}}" target="_blank" class="btn btn-primary">Take MBTI Test</a>
 								@elseif($val['total_ques'] > 0)
@@ -111,28 +109,21 @@ br{
 								@else
 									<a href="#" class="btn btn-primary">&nbsp;</a>
 								@endif
-
 							</div>
 						</div>
 					@endforeach
 					@endif
-					<iframe src="https://www.mynextmove.org/explore/ip?client=trizinnovation" width="900" height="600" style="border: none"></iframe>
-					<!-- <div class="row mb-4">
+					<div class="row mb-4">
 						<div class="embed-onet-ip"></div>
-					</div> -->														
+					</div>													
 				</div>
-				<!-- <div class="text-center">
-					<a href="#" class="btn btn-primary">View all Short Courses in Counselling</a>
-				</div> -->
 			</div>
 		</div>
     </div>
-
 </div>
 
-
 @include('includes.lmsfooterJs')
-<!-- <script src="https://services.onetcenter.org/embed/ip.js?client=trizinnovation"></script> -->
+<script src="https://services.onetcenter.org/embed/ip.js?client=trizinnovation"></script>
 
 <script type="text/javascript">
 $(document).ready(function(){

@@ -9,6 +9,8 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
 use function App\Helpers\is_mobile;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Http\Client\RequestException;
 
 class lmsCounsellingController extends Controller
 {
@@ -133,6 +135,39 @@ class lmsCounsellingController extends Controller
     public function destroy(Request $request, $id)
     {
 
+    }
+
+    public function lmsIndustryListing(Request $request)
+    {
+        $type = $request->input('type');
+
+        try {
+            $username = 'trizinnovation';
+            $password = '4225aej';
+
+            $credentials = base64_encode($username . ':' . $password);
+           
+            $response = Http::withHeaders([
+                'Authorization' => 'Basic ' . $credentials,
+                'Accept' => 'application/json',
+            ])->get('https://services.onetcenter.org/ws/mnm/browse/');
+           
+            if ($response->successful()) 
+            {
+                $data = $response->json();
+                
+                return view('lms/counselling/industry_listing', compact('data'));
+                //return is_mobile($type, 'lms/counselling/demo_career_exam', ['data' => $data], "view");
+            } 
+            else 
+            {
+                $statusCode = $response->status();
+                $errorMessage = $response->body();
+            }
+        } 
+        catch (RequestException $exception) {
+            $errorMessage = $exception->getMessage();
+        }
     }
 
 }

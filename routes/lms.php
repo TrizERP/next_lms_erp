@@ -132,6 +132,8 @@ Route::group(['prefix' => 'lms', 'middleware' => ['session', 'menu', 'logRoute']
         ->name('ajaxdestroycounsellinganswer_master');
     Route::resource('lmsCounsellingExam', counsellingExamController::class);
 
+    Route::get('lmsIndustryListing', [lmsCounsellingController::class, 'lmsIndustryListing'])->name('lmsIndustryListing');
+
     Route::resource('lmsMBTIPaper', MBTIController::class);
 
     Route::get('ajax_getQuestionList', [onlineExamController::class, 'ajax_getQuestionList'])->name('ajax_getQuestionList');
