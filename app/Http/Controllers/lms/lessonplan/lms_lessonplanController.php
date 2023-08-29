@@ -66,6 +66,7 @@ class lms_lessonplanController extends Controller
         $res['status_code'] = 1;
         $res['message'] = "SUCCESS";
         $res['lessonplan_data'] = $lessonData;
+        // echo "<pre>";print_r($lessonData['lessonDays'][0]['selfstudyactivity']);exit;
         $res['form_data'] = $formData;
         $res['topics'] = $topics;
         $res['chapters'] = $chapters;
@@ -373,6 +374,7 @@ class lms_lessonplanController extends Controller
             $objLessonPlan->focauspoint = $request->focauspoint;
             $objLessonPlan->pedagogicalprocess = $request->pedagogicalprocess;
             $objLessonPlan->resource = $request->resource;
+            $objLessonPlan->classroompresentation = $request->classroompresentation;            
             $objLessonPlan->classroomactivity = implode(',', $request->classroomactivity ?? []);
             $objLessonPlan->classroomdiversity = $request->classroomdiversity;
             $objLessonPlan->prerequisite = $request->prerequisite;
@@ -557,5 +559,4 @@ class lms_lessonplanController extends Controller
         }
         return $counter;
     }
-
 }
