@@ -342,40 +342,95 @@
                 $('.bnakDetail').show();
             }
         }
-        $('.months').click(function () {
-            var checkedMonths = new Array();
-            var j = 0;
-            for (var i = 0; i < document.getElementsByClassName('months').length; i++)
-            {
-                if (document.getElementsByClassName('months')[i].checked) {
-                    checkedMonths[j] = document.getElementsByClassName('months')[i].value;
-                    j = j + 1;
-                }
-            }
-            console.log(checkedMonths);
-            $.ajax({
-                type: "POST",
-                url: "{{route('get-online-fees-list')}}",
-//                url: "/api/get-standard-list?grade_id=1",
-                data: {
+//         $('.months').click(function () {
+//             var checkedMonths = new Array();
+//             var j = 0;
+//             for (var i = 0; i < document.getElementsByClassName('months').length; i++)
+//             {
+//                 if (document.getElementsByClassName('months')[i].checked) {
+//                     checkedMonths[j] = document.getElementsByClassName('months')[i].value;
+//                     j = j + 1;
+//                 }
+//             }
+//             console.log(checkedMonths);
+//             $.ajax({
+//                 type: "POST",
+//                 url: "{{route('get-online-fees-list')}}",
+// //                url: "/api/get-standard-list?grade_id=1",
+//                 data: {
+//                     checkedMonths: checkedMonths, 
+//                     student_id: <?php echo $data['stu_data']['student_id']; ?>,
+//                     fees_type: "<?php echo $data['fees_type']; ?>"
+//                     }, //--> send id of checked checkbox on other page
+//                 success: function (data) {
+//                     $("#fees_head").empty();
+//                     $("#fees_head").html(data);
+//                     tot = $("#totalVal").val();
+//                     $("#discount").val(0);
+// //                    if (isNaN(dis)) {
+// //                    } else {
+// //                        tot = tot - dis;
+// //                    }
+//                     $("#grandTotal").val(tot);
+
+//                 }
+//             });
+//         });
+
+        $('.months').click(function() {
+				var currentCheckedIndex = $('.months').index(this); 
+
+				$('.months').each(function(index) {
+					if (index <= currentCheckedIndex) {
+					$(this).prop('checked', true);
+					} else {
+					$(this).prop('checked', false);
+					}
+				});
+
+  			monthCheck();
+			});
+
+			function monthCheck() {
+				var checkedMonths = new Array();
+					var j = 0;
+				for (var i = 0; i < document.getElementsByClassName('months').length; i++) {
+					if (document.getElementsByClassName('months')[i].checked) {
+						checkedMonths[j] = document.getElementsByClassName('months')[i].value;
+						j = j + 1;
+					}
+				}
+
+				$.ajax({
+					type: "POST",
+					url: "{{route('get-online-fees-list')}}",
+					data: {
                     checkedMonths: checkedMonths, 
                     student_id: <?php echo $data['stu_data']['student_id']; ?>,
                     fees_type: "<?php echo $data['fees_type']; ?>"
-                    }, //--> send id of checked checkbox on other page
-                success: function (data) {
-                    $("#fees_head").empty();
+                    },
+					//--> send id of checked checkbox on other page
+					success: function(data) {
+                        $("#fees_head").empty();
                     $("#fees_head").html(data);
                     tot = $("#totalVal").val();
                     $("#discount").val(0);
-//                    if (isNaN(dis)) {
-//                    } else {
-//                        tot = tot - dis;
-//                    }
+
                     $("#grandTotal").val(tot);
 
-                }
-            });
-        });
+
+						// 26/08/2021 Start Added for The Millennium School for Advanced Imprest Collection payment
+						$('.allField1').each(function() {
+							var new_name = $(this).attr('name');
+							amount = $('input[name="' + new_name + '"]').val();
+							if (amount < 0) {
+								$(this).attr('readonly', true);
+							}
+						});
+						// 26/08/2021 END Added for The Millennium School for Advanced Imprest Collection payment
+					}
+				});
+			}
     </script>
     @if(app('request')->input('implementation') == 1)
 <script type="text/javascript">

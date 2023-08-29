@@ -39,6 +39,19 @@ class HolidayController extends Controller
         }
         $departments = HrmsDepartment::whereStatus(true)->pluck('department', 'id');
         $weekdays = HrmsWeekday::pluck('day_type', 'day');
+
+        if ($weekdays->isEmpty()) {
+            $weekdays = [
+                'monday' => '',    // Default value for Monday
+                'tuesday' => '',   // Default value for Tuesday
+                'wednesday' => '', // Default value for Wednesday
+                'thursday' => '', // Default value for thursday
+                'friday' => '', // Default value for friday
+                'saturday' => '', // Default value for saturday
+                'sunday' => '', // Default value for sunday
+            ];
+        }
+
         return view('leave.holiday_master', compact('weekdays', 'departments'));
     }
 
@@ -60,6 +73,7 @@ class HolidayController extends Controller
      */
     public function store(Request $request)
     {
+        echo("hi");die;
         $request->validate([
             'holiday_name' => 'required',
             'from_date' => 'required|date',

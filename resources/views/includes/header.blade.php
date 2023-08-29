@@ -17,17 +17,7 @@
 </style>
 
 <body class="fix-header">
-<!-- ============================================================== -->
-<!-- Preloader -->
-<!-- ============================================================== -->
-<!--<div class="preloader">-->
-<!--    <svg class="circular" viewBox="25 25 50 50">-->
-<!--        <circle class="path" cx="50" cy="50" r="20" fill="none" stroke-width="2" stroke-miterlimit="10" />-->
-<!--    </svg>-->
-<!--</div>-->
-<!-- ============================================================== -->
-<!-- Wrapper -->
-<!-- ============================================================== -->
+
 @php
 $school_logo = session()->get('school_logo');
 $loginpage_link = session()->get('loginpage_link');
@@ -146,16 +136,7 @@ $academicTerms = session()->get('academicTerms');
                     </div>
                 </div>
                 <div class="d-xl-flex d-md-block d-flex flex-wrap align-items-center justify-content-between">
-                    <!--<div class="d-flex align-items-center">
-                        <div class="user-online d-flex align-items-center text-nowrap">
-                            <em class="fas fa-user"></em>
-                            <span>1 Users online</span>
-                        </div>
-                        <div class="notification-block">
-                            <em class="far fa-bell"></em>
-                            <span class="notify-dot"></span>
-                        </div>
-                    </div>-->
+                  
                     <div class="dropdown user-dropdown">
                         <button class="dropdown-toggle d-flex align-items-center" type="button" id="dropdownMenuButton"
                                 data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">

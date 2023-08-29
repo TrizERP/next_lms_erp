@@ -20,6 +20,10 @@ class lmsCounsellingController extends Controller
     public function index(Request $request)
     {
         $data = $this->getData($request);
+        /*echo("<pre>");
+        print_r($data);
+        echo("</pre>");
+        die;*/
         $type = $request->input('type');
         $res['status_code'] = 1;
         $res['message'] = "SUCCESS";

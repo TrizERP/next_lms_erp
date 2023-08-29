@@ -582,7 +582,7 @@ $(document).ready(function(){
 
 @if(isset($data['standardsJson']))
 <script type="text/javascript">
-    var a = <?php echo $data['standardsJson']; ?>;    
+    var a ={{ $data['standardsJson']}};    
 </script>
 <script type="text/javascript">
     Highcharts.chart('container', {
@@ -594,7 +594,7 @@ $(document).ready(function(){
         text: 'Student Attendance'
     },
     xAxis: {
-        categories: <?php echo $data['standardsJson']; ?>//['CBSE-1', 'CBSE-2']
+        categories: {{$data['standardsJson']}} //['CBSE-1', 'CBSE-2']
     },
     yAxis: {
         title: {
@@ -621,84 +621,10 @@ $(document).ready(function(){
 });
 </script>
 @endif
-<script>
-//     var chart = Highcharts.chart('fees_paid_unpaid_data', {
 
-// chart: {
-//     type: 'column'
-// },
-
-// title: {
-//     text: 'Fees Paid Unpaid Report'
-// },
-
-// subtitle: {
-//     text: 'Resize the frame or click buttons to change appearance'
-// },
-
-// legend: {
-//     align: 'right',
-//     verticalAlign: 'middle',
-//     layout: 'vertical'
-// },
-
-// xAxis: {
-//     categories:<?php //echo $data['std_data']; ?>,
-//     labels: {
-//         x: -10
-//     }
-// },
-
-// yAxis: {
-//     allowDecimals: false,
-//     title: {
-//         text: 'Amount'
-//     }
-// },
-
-// series: [{
-//     name: 'Paid',
-//     data: <?php //echo $data['paid_fee_data']; ?>
-// }, {
-//     name: 'UnPiad',
-//     data: <?php //echo $data['unpaid_fees_data']; ?>
-// }],
-
-// responsive: {
-//     rules: [{
-//         condition: {
-//             maxWidth: 500
-//         },
-//         chartOptions: {
-//             legend: {
-//                 align: 'center',
-//                 verticalAlign: 'bottom',
-//                 layout: 'horizontal'
-//             },
-//             yAxis: {
-//                 labels: {
-//                     align: 'left',
-//                     x: 0,
-//                     y: -5
-//                 },
-//                 title: {
-//                     text: null
-//                 }
-//             },
-//             subtitle: {
-//                 text: null
-//             },
-//             credits: {
-//                 enabled: false
-//             }
-//         }
-//     }]
-// }
-// });
-</script>
 @if(isset($data['chartData']))
 <script>
-    var data = <?php echo $data['chartData']; ?>;
+    var data = {{$data['chartData']}};
     Highcharts.getOptions().colors.splice(0, 0, 'transparent');
 
 
@@ -761,69 +687,7 @@ Highcharts.chart('student_fees_chart', {
 });
 </script>
 @endif
-<script>
-//     var data1 = <?php //echo $data['chart1Data']; ?>;
-//     Highcharts.getOptions().colors.splice(0, 0, 'transparent');
 
-
-// Highcharts.chart('student_fees_chart1', {
-
-//     chart: {
-//         height: '100%'
-//     },
-
-//     title: {
-//         text: 'Fees Chart'
-//     },
-//     colors: ['#ffffff', '#0facf3', '#f089a4'],
-//     series: [{
-//         type: "sunburst",
-//         data: data1,
-//         allowDrillToNode: true,
-//         cursor: 'pointer',
-//         dataLabels: {
-//             format: '{point.name}',
-//             filter: {
-//                 property: 'innerArcLength',
-//                 operator: '>',
-//                 value: 16
-//             }
-//         },
-//         levels: [{
-//             level: 1,
-//             levelIsConstant: false,
-//             dataLabels: {
-//                 filter: {
-//                     property: 'outerArcLength',
-//                     operator: '>',
-//                     value: 64
-//                 }
-//             }
-//         }, {
-//             level: 2,
-//             colorByPoint: true
-//         },
-//         {
-//             level: 3,
-//             colorVariation: {
-//                 key: 'brightness',
-//                 to: -0.5
-//             }
-//         }, {
-//             level: 4,
-//             colorVariation: {
-//                 key: 'brightness',
-//                 to: 0.5
-//             }
-//         }]
-
-//     }],
-//     tooltip: {
-//         headerFormat: "",
-//         pointFormat: 'The Data of <b>{point.name}</b> is <b>{point.value}</b>'
-//     }
-// });
-</script>
 
 <!--  @if(Session::get('erpTour') == 0) //Session::get('erpTour')['dashboard']
 <script src="../../../tooltip/bower_components/todomvc-common/base.js"></script>

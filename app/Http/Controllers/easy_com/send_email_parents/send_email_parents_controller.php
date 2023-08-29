@@ -135,7 +135,8 @@ class send_email_parents_controller extends Controller
             $message = $_REQUEST['content'];
             $attechment = $path;
 
-            $ip = Request::ip();
+            //$ip = Request::ip();
+            $ip = $request->ip();
             $this->saveParentLog($emails, $message, $subject, $attechment, $ip, $syear, $user_id, $sub_institute_id);
 
             $from = $smtp_details[0]->gmail;

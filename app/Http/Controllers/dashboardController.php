@@ -34,7 +34,6 @@ class dashboardController extends Controller
         $is_admin = session()->get('is_admin');
         $syear = $request->session()->get('syear');
         $user_profile_name = $request->session()->get("user_profile_name");
-        $profile_parent_id = $request->session()->get("profile_parent_id");
         $user_profile_id = $request->session()->get("user_profile_id");
         $user_id = $request->session()->get("user_id");
 
@@ -47,7 +46,7 @@ class dashboardController extends Controller
             ["user_profile_id", $user_profile_id],
         ])->get()->toArray();
         $userMenu = array_map(static function ($value) {
-            return (array) $value;
+            return (array)$value;
         }, $userMenu);
 
         $final_userMenu = [];
@@ -63,7 +62,7 @@ class dashboardController extends Controller
             if ($sub_institute_id != 0 && $is_admin == '') {
 
                 $date = date('Y-m-d');
-                $date15 = date('Y-m-d', strtotime($date.' +15 day'));
+                $date15 = date('Y-m-d', strtotime($date . ' +15 day'));
 
                 $users = tbluserModel::selectRaw("count(id) as users")->where([
                     'sub_institute_id' => $sub_institute_id, 'status' => "1",
@@ -71,22 +70,29 @@ class dashboardController extends Controller
 
                 $students = DB::table("tblstudent as ts")
                     ->selectRaw("COUNT(ts.id) students")
-                    ->join("tblstudent_enrollment as se", function ($join) {
-                        $join->whereRaw('se.student_id = ts.id AND se.sub_institute_id = ts.sub_institute_id');
+                    ->join("tblstudent_enrollment as se", function ($join) use ($sub_institute_id) {
+                        $join->on('se.student_id', '=', 'ts.id')
+                            ->where('se.sub_institute_id', '=', $sub_institute_id);
                     })
-                    ->join("standard as s", function ($join) {
-                        $join->whereRaw('s.id = se.standard_id AND se.sub_institute_id = s.sub_institute_id');
-                    })->where([
-                        ["ts.sub_institute_id", $sub_institute_id],
-                        ["se.syear", $syear],
-                        ["se.end_date", null],
-                    ])->get()->toArray();
+                    ->join("standard as s", function ($join) use ($sub_institute_id) {
+                        $join->on('s.id', '=', 'se.standard_id')
+                            ->where('s.sub_institute_id', '=', $sub_institute_id);
+                    })
+                    ->where([
+                        ["ts.sub_institute_id", "=", $sub_institute_id],
+                        ["se.syear", "=", $syear],
+                        ["se.end_date", "=", null],
+                    ])
+                    ->get()
+                    ->toArray();
 
                 $total_admission = DB::table("admission_enquiry")
-                    ->selectRaw("COUNT(id) as total_admissions")
-                    ->where("syear", $syear)
-                    ->where("sub_institute_id", $sub_institute_id)
-                    ->get()->toArray();
+                    ->where([
+                        ["syear", "=", $syear],
+                        ["sub_institute_id", "=", $sub_institute_id],
+                    ])
+                    ->count();
+
 
                 $fees_collects = fees_collect::selectRaw("IFNULL(sum(amount),0) as fees")
                     ->where(["sub_institute_id" => $sub_institute_id, "syear" => $syear, "is_deleted" => "N"])
@@ -112,32 +118,10 @@ class dashboardController extends Controller
                 $fees_collection = fees_collect::selectRaw('fees_collect.*,CONCAT_WS(" ",tblstudent.first_name,tblstudent.middle_name,tblstudent.last_name) as student_name,sum(amount) as total_fees')
                     ->join('tblstudent', 'tblstudent.id', '=', 'fees_collect.student_id')
                     ->where(['fees_collect.sub_institute_id' => $sub_institute_id, 'fees_collect.is_deleted' => "N"])
-                    ->whereRaw("date_format(fees_collect.receiptdate,'%Y-%m-%d') = '".$date."'")
+                    ->whereRaw("date_format(fees_collect.receiptdate,'%Y-%m-%d') = '" . $date . "'")
                     ->groupBy('payment_mode')
                     ->take(10)->get()->toArray();
-                
-                /*$fees_collection = DB::table(function ($query) use ($sub_institute_id, $date) {
-                    $query->select('fc.payment_mode', DB::raw('SUM(fc.amount) as total_fees'))
-                        ->from('tblstudent as t')
-                        ->join('fees_collect as fc', 't.id', '=', 'fc.student_id')
-                        ->where('t.sub_institute_id', $sub_institute_id)
-                        ->where('fc.is_deleted', 'N')
-                        ->where(DB::raw("DATE_FORMAT(fc.receiptdate, '%Y-%m-%d')"), $date)
-                        ->groupBy('fc.payment_mode')
-                        ->unionAll(
-                            DB::table('tblstudent as t')
-                                ->join('fees_paid_other as fo', 't.id', '=', 'fo.student_id')
-                                ->select('fo.payment_mode', DB::raw('SUM(fo.actual_amountpaid) as total_fees'))
-                                ->where('t.sub_institute_id', $sub_institute_id)
-                                ->where('fo.is_deleted', 'N')
-                                ->where(DB::raw("DATE_FORMAT(fo.receiptdate, '%Y-%m-%d')"), $date)
-                                ->groupBy('fo.payment_mode')
-                        );
-                }, 'X')
-                    ->select('X.payment_mode', DB::raw('SUM(X.total_fees) as total_fees'))
-                    ->groupBy('X.payment_mode')
-                    ->get()->toArray();
-                */
+
                 $admissionBlock = DB::table("standard as s")
                     ->leftJoin("admission_enquiry as e", function ($join) {
                         $join->whereRaw('s.id = e.admission_standard and e.sub_institute_id=s.sub_institute_id');
@@ -205,7 +189,7 @@ class dashboardController extends Controller
 
                 if (count($NotificationBlock) > 0) {
                     foreach ($NotificationBlock as $nkey => $nval) {
-                        $ntitle = $nval->notification_type." Notification";
+                        $ntitle = $nval->notification_type . " Notification";
                         $academicBlock[$ntitle] = $nval->total_notification;
                     }
                 }
@@ -215,7 +199,7 @@ class dashboardController extends Controller
 
                 $studentBirthdays = DB::table("tblstudent as s")
                     ->join("tblstudent_enrollment as ts", function ($join) use ($syear) {
-                        $join->whereRaw("s.id = ts.student_id and ts.syear = ".$syear);
+                        $join->whereRaw("s.id = ts.student_id and ts.syear = " . $syear);
                     })
                     ->join("standard as st", function ($join) {
                         $join->whereRaw("ts.standard_id = st.id");
@@ -252,7 +236,7 @@ class dashboardController extends Controller
                         $join->whereRaw("l.student_id = s.id");
                     })
                     ->join("tblstudent_enrollment as se", function ($join) use ($syear) {
-                        $join->whereRaw("s.id = se.student_id AND se.syear = ".$syear);
+                        $join->whereRaw("s.id = se.student_id AND se.syear = " . $syear);
                     })
                     ->join("standard as st", function ($join) {
                         $join->whereRaw("st.id = se.standard_id");
@@ -286,30 +270,30 @@ class dashboardController extends Controller
 
                 foreach ($attendanceCharts as $key => $value) {
                     $standards_att[] = $value->standard;
-                    $absents[] = (int) $value->absent;
-                    $presants[] = (int) $value->present;
+                    $absents[] = (int)$value->absent;
+                    $presants[] = (int)$value->present;
                 }
 
                 $today = date("Y-m-d");
                 $parameters = array(
-                    ":dt"    => $today,
-                    ":sb"    => $sub_institute_id,
+                    ":dt" => $today,
+                    ":sb" => $sub_institute_id,
                     ":syear" => $syear,
                 );
 
                 $fees_chart_data = DB::table('fees_collect as fc')
                     ->join('tblstudent_enrollment as se', function ($join) use ($syear) {
-                        $join->whereRaw("se.student_id = fc.student_id and se.syear = ".$syear);
+                        $join->whereRaw("se.student_id = fc.student_id and se.syear = " . $syear);
                     })
                     ->join('standard as s', function ($join) {
                         $join->whereRaw("s.id = se.standard_id");
                     })
-                    ->whereRaw('DATE_FORMAT(fc.receiptdate, "%Y-%m-%d") = '.$today.' and fc.sub_institute_id = '.$sub_institute_id.' group by se.standard_id')
+                    ->whereRaw('DATE_FORMAT(fc.receiptdate, "%Y-%m-%d") = ' . $today . ' and fc.sub_institute_id = ' . $sub_institute_id . ' group by se.standard_id')
                     ->get()->toArray();
 
                 $parameters = array(
                     ":syear" => $syear,
-                    ":sb"    => $sub_institute_id,
+                    ":sb" => $sub_institute_id,
                 );
 
                 $student_chart_data = DB::table('tblstudent_enrollment as se')
@@ -342,10 +326,10 @@ class dashboardController extends Controller
                 foreach ($fees_chart_data as $key => $value) {
                     $total_fees = $total_fees + $value->amount;
                     $final_chart_data .= "{
-                        'id': '2.".$key."',
+                        'id': '2." . $key . "',
                         'parent': '1.1',
-                        'name': '".$value->name."',
-                        'value':".$value->amount."
+                        'name': '" . $value->name . "',
+                        'value':" . $value->amount . "
                     },";
                 }
                 if (isset($next_id)) {
@@ -358,10 +342,10 @@ class dashboardController extends Controller
                     $total_student = $total_student + $value->total_student;
                     $ids = $next_id + $key;
                     $final_chart_data .= "{
-                        'id': '2.".$ids."',
+                        'id': '2." . $ids . "',
                         'parent': '1.2',
-                        'name': '".$value->name."',
-                        'value':".$value->total_student."
+                        'name': '" . $value->name . "',
+                        'value':" . $value->total_student . "
                     },";
                 }
                 $final_chart_data = rtrim($final_chart_data, ",");
@@ -369,15 +353,15 @@ class dashboardController extends Controller
 
                 $today = date("Y-m-d");
                 $parameters = array(
-                    ":dt"    => $today,
-                    ":sb"    => $sub_institute_id,
+                    ":dt" => $today,
+                    ":sb" => $sub_institute_id,
                     ":syear" => $syear,
-                    ":mode"  => "cash",
+                    ":mode" => "cash",
                 );
 
                 $fees_chart1_cash_data = DB::table('fees_collect as fc')
                     ->join('tblstudent_enrollment as se', function ($join) use ($syear) {
-                        $join->whereRaw("se.student_id = fc.student_id and se.syear = ".$syear);
+                        $join->whereRaw("se.student_id = fc.student_id and se.syear = " . $syear);
                     })
                     ->join('standard as s', function ($join) use ($syear) {
                         $join->whereRaw("s.id = se.standard_id");
@@ -388,15 +372,15 @@ class dashboardController extends Controller
 
                 $today = date("Y-m-d");
                 $parameters = array(
-                    ":dt"    => $today,
-                    ":sb"    => $sub_institute_id,
+                    ":dt" => $today,
+                    ":sb" => $sub_institute_id,
                     ":syear" => $syear,
-                    ":mode"  => "cheque",
+                    ":mode" => "cheque",
                 );
 
                 $fees_chart1_cheque_data = DB::table('fees_collect as fc')
                     ->join('tblstudent_enrollment as se', function ($join) use ($syear) {
-                        $join->whereRaw("se.student_id = fc.student_id and se.syear = ".$syear);
+                        $join->whereRaw("se.student_id = fc.student_id and se.syear = " . $syear);
                     })
                     ->join('standard as s', function ($join) {
                         $join->whereRaw("s.id = se.standard_id");
@@ -421,10 +405,10 @@ class dashboardController extends Controller
 
                 foreach ($fees_chart1_cash_data as $key => $value) {
                     $final_chart1_data .= "{
-                        'id': '2.".$key."',
+                        'id': '2." . $key . "',
                         'parent': '1.1',
-                        'name': '".$value->name."',
-                        'value':".$value->amount."
+                        'name': '" . $value->name . "',
+                        'value':" . $value->amount . "
                     },";
                 }
 
@@ -438,10 +422,10 @@ class dashboardController extends Controller
                     // $total_student = $total_student + $value->total_student;
                     $ids = $next_id + $key;
                     $final_chart1_data .= "{
-                        'id': '2.".$ids."',
+                        'id': '2." . $ids . "',
                         'parent': '1.2',
-                        'name': '".$value->name."',
-                        'value':".$value->amount."
+                        'name': '" . $value->name . "',
+                        'value':" . $value->amount . "
                     },";
                 }
                 $final_chart1_data = rtrim($final_chart1_data, ",");
@@ -460,7 +444,7 @@ class dashboardController extends Controller
                     ->leftJoin('division as d', function ($join) {
                         $join->whereRaw("d.id = se.section_id");
                     })->join('fees_breackoff as fb', function ($join) use ($syear, $sub_institute_id) {
-                        $join->whereRaw("fb.syear = ".$syear." AND fb.admission_year = s.admission_year AND fb.quota = se.student_quota AND fb.grade_id = se.grade_id AND fb.standard_id = se.standard_id AND fb.sub_institute_id = ".$sub_institute_id);
+                        $join->whereRaw("fb.syear = " . $syear . " AND fb.admission_year = s.admission_year AND fb.quota = se.student_quota AND fb.grade_id = se.grade_id AND fb.standard_id = se.standard_id AND fb.sub_institute_id = " . $sub_institute_id);
                     })
                     ->selectRaw("SUM(fb.amount) amt,st.name")
                     ->where("s.sub_institute_id", '=', $sub_institute_id)->where("se.syear", "=", $syear)
@@ -469,8 +453,8 @@ class dashboardController extends Controller
                 $unpaid_data = "[";
                 $std_data = "[";
                 foreach ($fees_chart2_bkoff_data as $id => $arr) {
-                    $unpaid_data .= $arr->amt.",";
-                    $std_data .= "'".$arr->name."'".",";
+                    $unpaid_data .= $arr->amt . ",";
+                    $std_data .= "'" . $arr->name . "'" . ",";
                 }
                 $unpaid_data = rtrim($unpaid_data, ",");
                 $std_data = rtrim($std_data, ",");
@@ -490,7 +474,7 @@ class dashboardController extends Controller
                     ->leftJoin('division as d', function ($join) {
                         $join->whereRaw("d.id = se.section_id");
                     })->join('fees_collect as fc', function ($join) use ($syear, $sub_institute_id) {
-                        $join->whereRaw("fc.student_id = s.id AND fc.syear = ".$syear." AND fc.sub_institute_id = ".$sub_institute_id);
+                        $join->whereRaw("fc.student_id = s.id AND fc.syear = " . $syear . " AND fc.sub_institute_id = " . $sub_institute_id);
                     })
                     ->selectRaw("SUM(fc.amount) + SUM(fc.fees_discount) as amount,st.name")
                     ->where("s.sub_institute_id", '=', $sub_institute_id)
@@ -498,7 +482,7 @@ class dashboardController extends Controller
 
                 $paid_data = "[";
                 foreach ($fees_chart2_fees_data as $id => $arr) {
-                    $paid_data .= $arr->amount.",";
+                    $paid_data .= $arr->amount . ",";
                 }
                 $paid_data = rtrim($paid_data, ",");
                 $paid_data .= "]";
@@ -508,19 +492,21 @@ class dashboardController extends Controller
                     ->get()->toArray();
 
                 $academicSections = array_map(function ($value) {
-                    return (array) $value;
+                    return (array)$value;
                 }, $academicSections);
 
                 $gradeIds = '';
                 foreach ($academicSections as $key => $value) {
-                    $gradeIds .= $value['id'].',';
+                    $gradeIds .= $value['id'] . ',';
                 }
 
-                $standards = DB::table('standard')->whereIn('grade_id',
-                    collect($academicSections)->pluck('id'))->get()->toArray();
+                $standards = DB::table('standard')->whereIn(
+                    'grade_id',
+                    collect($academicSections)->pluck('id')
+                )->get()->toArray();
 
                 $standards = array_map(function ($value) {
-                    return (array) $value;
+                    return (array)$value;
                 }, $standards);
 
                 $standardsArray = array();
@@ -552,7 +538,7 @@ class dashboardController extends Controller
 
                 $chartFees = DB::table('fees_collect as fc')
                     ->join('tblstudent_enrollment as se', function ($join) use ($syear) {
-                        $join->whereRaw("se.student_id = fc.student_id AND se.syear = ".$syear);
+                        $join->whereRaw("se.student_id = fc.student_id AND se.syear = " . $syear);
                     })
                     ->join('standard as s', function ($join) use ($syear) {
                         $join->whereRaw("s.id = se.standard_id");
@@ -585,42 +571,42 @@ class dashboardController extends Controller
                     id: '0.0',
                     parent: '',
                     name: 'Triz ERP',
-                    value: ".$students[0]->students.",
-                    label: ".$students[0]->students."
+                    value: " . $students[0]->students . ",
+                    label: " . $students[0]->students . "
                 }, {
                     id: '1.3',
                     parent: '0.0',
                     name: 'Student',
-                    value: ".$students[0]->students.",
-                    label: ".$students[0]->students.",
+                    value: " . $students[0]->students . ",
+                    label: " . $students[0]->students . ",
                     events: {click: function (event) {alertValue('Student');}}
                 }, {
                     id: '1.1',
                     parent: '0.0',
                     name: 'Fees',
-                    value: ".$students[0]->students.",
-                    label: ".$totalFeesCF.",
+                    value: " . $students[0]->students . ",
+                    label: " . $totalFeesCF . ",
                     events: {click: function (event) {alertValue('Fees');}}
                 }, {
                     id: '1.2',
                     parent: '0.0',
                     name: 'Admission',
-                    value: ".$students[0]->students.",
-                    label: ".$students[0]->students.",
+                    value: " . $students[0]->students . ",
+                    label: " . $students[0]->students . ",
                     events: {click: function (event) {alertValue('Admission');}}
                 }, {
                     id: '1.4',
                     parent: '0.0',
                     name: 'Attendance',
-                    value: ".$students[0]->students.",
-                    label: ".$students[0]->students.",
+                    value: " . $students[0]->students . ",
+                    label: " . $students[0]->students . ",
                     events: {click: function (event) {alertValue('Attendance');}}
                 }, {
                     id: '1.5',
                     parent: '0.0',
                     name: 'Homework',
-                    value: ".$students[0]->students.",
-                    label: ".$students[0]->students.",
+                    value: " . $students[0]->students . ",
+                    label: " . $students[0]->students . ",
                     events: {click: function (event) {alertValue('Homework');}}
                 },";
 
@@ -633,35 +619,35 @@ class dashboardController extends Controller
                     } else {
                         $ca = 0;
                     }
-                    $chart .= "{id: '2.".$child."',
+                    $chart .= "{id: '2." . $child . "',
                         parent: '1.1',
-                        name: '".$v['short_name']."',
-                        value: ".$ca.",
-                        label: ".$ca.",
+                        name: '" . $v['short_name'] . "',
+                        value: " . $ca . ",
+                        label: " . $ca . ",
                         events: {click: function (event) {alertValue('Fees');}}
                     },";
 
                     $childP = 1;
-                    if(isset($standardsArray[$v['id']])){                        
-                    $value = $ca / count($standardsArray[$v['id']]);
-                    foreach ($standardsArray[$v['id']] as $ke => $va) {
-                        if (isset($chartFS[$va['id']])) {
-                            $cs = $chartFS[$va['id']];
-                        } else {
-                            $cs = 0;
-                        }
-                        $j++;
-                        $chart .= "{id: '3.".$childL.$childP."',
-                            parent: '2.".$child."',
-                            name: '".$va['short_name']."',
-                            value: ".$cs.",
-                            label: ".$cs.",
+                    if (isset($standardsArray[$v['id']])) {
+                        $value = $ca / count($standardsArray[$v['id']]);
+                        foreach ($standardsArray[$v['id']] as $ke => $va) {
+                            if (isset($chartFS[$va['id']])) {
+                                $cs = $chartFS[$va['id']];
+                            } else {
+                                $cs = 0;
+                            }
+                            $j++;
+                            $chart .= "{id: '3." . $childL . $childP . "',
+                            parent: '2." . $child . "',
+                            name: '" . $va['short_name'] . "',
+                            value: " . $cs . ",
+                            label: " . $cs . ",
                             events: {click: function (event) {alertValue('Fees');}}
                         },";
-                        $childP++;
+                            $childP++;
 
+                        }
                     }
-                }
                     $child++;
                     $childL++;
                     $j++;
@@ -675,35 +661,35 @@ class dashboardController extends Controller
                     } else {
                         $ca = 0;
                     }
-                    $chart .= "{id: '3.".$child."',
+                    $chart .= "{id: '3." . $child . "',
                         parent: '1.2',
-                        name: '".$v['short_name']."',
-                        value: ".$ca.",
-                        label: ".$ca.",
+                        name: '" . $v['short_name'] . "',
+                        value: " . $ca . ",
+                        label: " . $ca . ",
                         events: {click: function (event) {alertValue('Admission');}}
                     },";
 
                     $childP = 1;
-                    if(isset($standardsArray[$v['id']])){                        
+                    if (isset($standardsArray[$v['id']])) {
 
-                    $value = $ca / count($standardsArray[$v['id']]);
-                    foreach ($standardsArray[$v['id']] as $ke => $va) {
-                        if (isset($chartS[$va['id']])) {
-                            $cs = count($chartS[$va['id']]);
-                        } else {
-                            $cs = 0;
-                        }
-                        $j++;
-                        $chart .= "{id: '4.".$childL.$childP."',
-                            parent: '3.".$child."',
-                            name: '".$va['short_name']."',
-                            value: ".$cs.",
-                            label: ".$cs.",
+                        $value = $ca / count($standardsArray[$v['id']]);
+                        foreach ($standardsArray[$v['id']] as $ke => $va) {
+                            if (isset($chartS[$va['id']])) {
+                                $cs = count($chartS[$va['id']]);
+                            } else {
+                                $cs = 0;
+                            }
+                            $j++;
+                            $chart .= "{id: '4." . $childL . $childP . "',
+                            parent: '3." . $child . "',
+                            name: '" . $va['short_name'] . "',
+                            value: " . $cs . ",
+                            label: " . $cs . ",
                             events: {click: function (event) {alertValue('Admission');}}
                         },";
-                        $childP++;
+                            $childP++;
 
-                    }
+                        }
                     }
                     $child++;
                     $childL++;
@@ -718,34 +704,34 @@ class dashboardController extends Controller
                     } else {
                         $ca = 0;
                     }
-                    $chart .= "{id: '4.".$child."',
+                    $chart .= "{id: '4." . $child . "',
                         parent: '1.3',
-                        name: '".$v['short_name']."',
-                        value: ".$ca.",
-                        label: ".$ca.",
+                        name: '" . $v['short_name'] . "',
+                        value: " . $ca . ",
+                        label: " . $ca . ",
                         events: {click: function (event) {alertValue('Student');}}
                     },";
 
                     $childP = 1;
-                    if(isset($standardsArray[$v['id']])){                        
+                    if (isset($standardsArray[$v['id']])) {
 
-                    $value = $ca / count($standardsArray[$v['id']]);
-                    foreach ($standardsArray[$v['id']] as $ke => $va) {
-                        if (isset($chartS[$va['id']])) {
-                            $cs = count($chartS[$va['id']]);
-                        } else {
-                            $cs = 0;
-                        }
-                        $j++;
-                        $chart .= "{id: '5.".$childL.$childP."',
-                            parent: '4.".$child."',
-                            name: '".$va['short_name']."',
-                            value: ".$cs.",
-                            label: ".$cs.",
+                        $value = $ca / count($standardsArray[$v['id']]);
+                        foreach ($standardsArray[$v['id']] as $ke => $va) {
+                            if (isset($chartS[$va['id']])) {
+                                $cs = count($chartS[$va['id']]);
+                            } else {
+                                $cs = 0;
+                            }
+                            $j++;
+                            $chart .= "{id: '5." . $childL . $childP . "',
+                            parent: '4." . $child . "',
+                            name: '" . $va['short_name'] . "',
+                            value: " . $cs . ",
+                            label: " . $cs . ",
                             events: {click: function (event) {alertValue('Student');}}
                         },";
-                        $childP++;
-}
+                            $childP++;
+                        }
                     }
                     $child++;
                     $childL++;
@@ -760,34 +746,34 @@ class dashboardController extends Controller
                     } else {
                         $ca = 0;
                     }
-                    $chart .= "{id: '5.".$child."',
+                    $chart .= "{id: '5." . $child . "',
                         parent: '1.4',
-                        name: '".$v['short_name']."',
-                        value: ".$ca.",
-                        label: ".$ca.",
+                        name: '" . $v['short_name'] . "',
+                        value: " . $ca . ",
+                        label: " . $ca . ",
                         events: {click: function (event) {alertValue('Attendance');}}
                     },";
 
                     $childP = 1;
-                    if(isset($standardsArray[$v['id']])){                        
+                    if (isset($standardsArray[$v['id']])) {
 
-                    $value = $ca / count($standardsArray[$v['id']]);
-                    foreach ($standardsArray[$v['id']] as $ke => $va) {
-                        if (isset($chartS[$va['id']])) {
-                            $cs = count($chartS[$va['id']]);
-                        } else {
-                            $cs = 0;
-                        }
-                        $j++;
-                        $chart .= "{id: '6.".$childL.$childP."',
-                            parent: '5.".$child."',
-                            name: '".$va['short_name']."',
-                            value: ".$cs.",
-                            label: ".$cs.",
+                        $value = $ca / count($standardsArray[$v['id']]);
+                        foreach ($standardsArray[$v['id']] as $ke => $va) {
+                            if (isset($chartS[$va['id']])) {
+                                $cs = count($chartS[$va['id']]);
+                            } else {
+                                $cs = 0;
+                            }
+                            $j++;
+                            $chart .= "{id: '6." . $childL . $childP . "',
+                            parent: '5." . $child . "',
+                            name: '" . $va['short_name'] . "',
+                            value: " . $cs . ",
+                            label: " . $cs . ",
                             events: {click: function (event) {alertValue('Attendance');}}
                         },";
-                        $childP++;
-}
+                            $childP++;
+                        }
                     }
                     $child++;
                     $childL++;
@@ -802,36 +788,36 @@ class dashboardController extends Controller
                     } else {
                         $ca = 0;
                     }
-                    $chart .= "{id: '6.".$child."',
+                    $chart .= "{id: '6." . $child . "',
                         parent: '1.5',
-                        name: '".$v['short_name']."',
-                        value: ".$ca.",
-                        label: ".$ca.",
+                        name: '" . $v['short_name'] . "',
+                        value: " . $ca . ",
+                        label: " . $ca . ",
                         events: {click: function (event) {alertValue('Homework');}}
                     },";
 
                     $childP = 1;
-                    if(isset($standardsArray[$v['id']])){                        
+                    if (isset($standardsArray[$v['id']])) {
 
-                    $value = $ca / count($standardsArray[$v['id']]);
-                    foreach ($standardsArray[$v['id']] as $ke => $va) {
-                        if (isset($chartS[$va['id']])) {
-                            $cs = count($chartS[$va['id']]);
-                        } else {
-                            $cs = 0;
-                        }
-                        $j++;
-                        $chart .= "{id: '7.".$childL.$childP."',
-                            parent: '6.".$child."',
-                            name: '".$va['short_name']."',
-                            value: ".$cs.",
-                            label: ".$cs.",
+                        $value = $ca / count($standardsArray[$v['id']]);
+                        foreach ($standardsArray[$v['id']] as $ke => $va) {
+                            if (isset($chartS[$va['id']])) {
+                                $cs = count($chartS[$va['id']]);
+                            } else {
+                                $cs = 0;
+                            }
+                            $j++;
+                            $chart .= "{id: '7." . $childL . $childP . "',
+                            parent: '6." . $child . "',
+                            name: '" . $va['short_name'] . "',
+                            value: " . $cs . ",
+                            label: " . $cs . ",
                             events: {click: function (event) {alertValue('Homework');}}
                         },";
-                        $childP++;
+                            $childP++;
 
+                        }
                     }
-                }
                     $child++;
                     $childL++;
                     $j++;
@@ -846,7 +832,7 @@ class dashboardController extends Controller
                 $res['totalUser'] = $users[0]['users'];
                 $res['totalStudent'] = $students[0]->students;
                 $res['totalFees'] = ($fees_collects[0]['fees'] + $other_fees_collects[0]['fees']);
-                $res['totalAdmission'] = $total_admission[0]->total_admissions;
+                $res['totalAdmission'] = $total_admission;
 
 
                 $res['studentBirthdays'] = $studentBirthdays;
@@ -895,7 +881,7 @@ class dashboardController extends Controller
 
 
                 $school_setup_data = DB::table("school_setup")
-                    ->selectRaw("*, DATEDIFF(expire_date, ".$current_date.") as remaining_days, SUM(ifnull(given_space_mb, 0)) as given_space_mb")
+                    ->selectRaw("*, DATEDIFF(expire_date, " . $current_date . ") as remaining_days, SUM(ifnull(given_space_mb, 0)) as given_space_mb")
                     ->where("id", "=", $sub_institute_id)
                     ->get()->toArray();
                 $school_setup_data = json_decode(json_encode($school_setup_data[0]), true);
@@ -1047,7 +1033,7 @@ class dashboardController extends Controller
 
             $date = date('Y-m-d');
 
-            $date15 = date('Y-m-d', strtotime($date.' +15 day'));
+            $date15 = date('Y-m-d', strtotime($date . ' +15 day'));
 
             $users = tbluserModel::selectRaw("count(id) as users")->where([
                 'sub_institute_id' => $sub_institute_id, 'status' => "1",
@@ -1072,17 +1058,17 @@ class dashboardController extends Controller
 
             $fees_collects = fees_collect::selectRaw("ifnull(sum(amount),0) as fees")
                 ->where(['sub_institute_id' => $sub_institute_id, 'syear' => $syear, 'is_deleted' => "N"])
-                ->whereRaw("date_format(receiptdate,'%Y-%m-%d') = '".$date."'")->get()->toArray();
+                ->whereRaw("date_format(receiptdate,'%Y-%m-%d') = '" . $date . "'")->get()->toArray();
 
 
             $other_fees_collects = DB::table('fees_paid_other')->selectRaw("IFNULL(SUM(actual_amountpaid),0) AS fees")
                 ->where(['sub_institute_id' => $sub_institute_id, 'syear' => $syear, 'is_deleted' => "N"])
-                ->whereRaw("DATE_FORMAT(receiptdate,'%Y-%m-%d') = '".$date."'")->get()->toArray();
+                ->whereRaw("DATE_FORMAT(receiptdate,'%Y-%m-%d') = '" . $date . "'")->get()->toArray();
             $other_fees_collects = json_decode(json_encode($other_fees_collects), true);
 
             if ($user_profile_name == 'Student') {
                 $parentCommunication = DB::table('parent_communication as p')
-                    ->join('tblstudent as s', function($join) {
+                    ->join('tblstudent as s', function ($join) {
                         $join->whereRaw('p.student_id = s.id');
                     })
                     ->selectRaw("p.*,CONCAT_WS(' ',s.first_name,s.last_name) as student_name, s.image as student_image")
@@ -1090,7 +1076,7 @@ class dashboardController extends Controller
                     ->where('s.id', '=', $user_id)->orderBy('p.id', 'DESC')->limit(10)->get()->toArray();
             } else {
                 $parentCommunication = DB::table('parent_communication as p')
-                    ->join('tblstudent as s', function($join) {
+                    ->join('tblstudent as s', function ($join) {
                         $join->whereRaw('p.student_id = s.id');
                     })
                     ->selectRaw("p.*,CONCAT_WS(' ',s.first_name,s.last_name) as student_name,s.image as student_image")
@@ -1118,19 +1104,19 @@ class dashboardController extends Controller
             foreach ($attendanceCharts as $key => $value) {
                 // $standards = "'".$value->standard."',";
                 $standards_att[] = $value->standard;
-                $absents[] = (int) $value->absent;
-                $presants[] = (int) $value->present;
+                $absents[] = (int)$value->absent;
+                $presants[] = (int)$value->present;
             }
 
             $admissionBlock = DB::table("standard as s")
-                ->leftJoin("admission_enquiry as e", function($join){
+                ->leftJoin("admission_enquiry as e", function ($join) {
                     $join->whereRaw("s.id = e.admission_standard and e.sub_institute_id=s.sub_institute_id");
                 })
-                ->leftJoin("admission_form as f", function($join){
+                ->leftJoin("admission_form as f", function ($join) {
                     $join->whereRaw("f.admission_standard = s.id and f.sub_institute_id = s.sub_institute_id and e.enquiry_no = f.enquiry_no");
 
                 })
-                ->leftJoin("admission_registration as r", function($join){
+                ->leftJoin("admission_registration as r", function ($join) {
                     $join->whereRaw("r.enquiry_no = f.enquiry_no and r.sub_institute_id = s.sub_institute_id");
                 })
                 ->selectRaw("COUNT(e.id) AS total_enquiry, COUNT(f.id) AS total_form ,COUNT(r.id) as total_registration,
@@ -1140,7 +1126,7 @@ class dashboardController extends Controller
                 ->get()->toArray();
 
             $visitorBlock = DB::table("visitor_master as v")
-                ->join("tbluser as u", function($join){
+                ->join("tbluser as u", function ($join) {
                     $join->whereRaw("u.id = v.to_meet");
                 })
                 ->selectRaw("appointment_type, CONCAT(u.first_name,' ',u.middle_name,' ',u.last_name) as staff_name,name,contact")
@@ -1181,7 +1167,7 @@ class dashboardController extends Controller
 
             $NotificationBlock = DB::table('app_notification')->selectRaw('count(*) as total_notification,notification_type')
                 ->where('sub_institute_id', $sub_institute_id)
-                ->where(function($q) use($user_id) {
+                ->where(function ($q) use ($user_id) {
                     $q->where('student_id', $user_id)->orWhereNull('student_id');
                 })
                 ->groupBy('notification_type')
@@ -1189,7 +1175,7 @@ class dashboardController extends Controller
 
             if (count($NotificationBlock) > 0) {
                 foreach ($NotificationBlock as $nkey => $nval) {
-                    $ntitle = $nval->notification_type." Notification";
+                    $ntitle = $nval->notification_type . " Notification";
                     $academicBlock[$ntitle] = $nval->total_notification;
                 }
             }
@@ -1199,13 +1185,13 @@ class dashboardController extends Controller
             $academicBlock['Total Dicipline'] = $diciplineBlock[0]->total_dicipline;
 
             $studentBirthdays = DB::table("tblstudent as s")
-                ->join("tblstudent_enrollment as ts", function($join) use ($syear){
-                    $join->whereRaw("s.id = ts.student_id and ts.syear = '".$syear."'");
+                ->join("tblstudent_enrollment as ts", function ($join) use ($syear) {
+                    $join->whereRaw("s.id = ts.student_id and ts.syear = '" . $syear . "'");
                 })
-                ->join("standard as st", function($join){
+                ->join("standard as st", function ($join) {
                     $join->whereRaw("ts.standard_id = st.id");
                 })
-                ->join("division as d", function($join){
+                ->join("division as d", function ($join) {
                     $join->whereRaw("ts.section_id = d.id");
                 })
                 ->selectRaw("CONCAT_WS(' ',s.first_name,s.middle_name,s.last_name) as student_name,st.name as standard_name,d.name as division_name, DATE_FORMAT(s.dob, '%d-%m-%Y') AS dob")
@@ -1216,7 +1202,7 @@ class dashboardController extends Controller
                 ->get()->toArray();
 
             $teacherBirthdays = DB::table("tbluser as s")
-                ->join("tbluserprofilemaster as tu", function($join) {
+                ->join("tbluserprofilemaster as tu", function ($join) {
                     $join->whereRaw("s.user_profile_id = tu.id");
                 })
                 ->selectRaw("CONCAT_WS(' ',s.first_name,s.middle_name,s.last_name) as teacher_name,tu.name as designation,s.mobile as contact_number, DATE_FORMAT(s.birthdate, '%d-%m-%Y') AS birthdate")
@@ -1302,10 +1288,10 @@ class dashboardController extends Controller
             }
 
             $get_photo_data = DB::table("photo_video_gallary as p")
-                ->join('tblstudent_enrollment as se', function($join) {
+                ->join('tblstudent_enrollment as se', function ($join) {
                     $join->whereRaw("se.standard_id = p.standard_id AND se.section_id = p.division_id AND se.sub_institute_id = p.sub_institute_id");
                 })
-                ->join('tblstudent as s', function($join) {
+                ->join('tblstudent as s', function ($join) {
                     $join->whereRaw("s.id = se.student_id AND s.sub_institute_id = se.sub_institute_id");
                 })
                 ->selectRaw("SUM(IFNULL(p.file_size,0)) AS file_size")
@@ -1316,7 +1302,7 @@ class dashboardController extends Controller
             }
 
             $get_leave_app_data = DB::table("leave_applications as l")
-                ->join('tblstudent as s', function($join) {
+                ->join('tblstudent as s', function ($join) {
                     $join->whereRaw("s.id = l.student_id AND s.sub_institute_id = l.sub_institute_id");
                 })
                 ->selectRaw("SUM(IFNULL(l.file_size,0)) AS file_size")
@@ -1327,10 +1313,10 @@ class dashboardController extends Controller
             }
 
             $get_exam_schedule_data = DB::table("exam_schedule as e")
-                ->join('tblstudent_enrollment as se', function($join) {
+                ->join('tblstudent_enrollment as se', function ($join) {
                     $join->whereRaw("se.standard_id = e.standard_id AND se.section_id = e.division_id AND se.sub_institute_id = e.sub_institute_id");
                 })
-                ->join('tblstudent as s', function($join) {
+                ->join('tblstudent as s', function ($join) {
                     $join->whereRaw("s.id = se.student_id AND s.sub_institute_id = se.sub_institute_id");
                 })
                 ->selectRaw("SUM(IFNULL(e.file_size,0)) AS file_size")
@@ -1343,7 +1329,7 @@ class dashboardController extends Controller
             if ($user_profile_name == 'Student') {
 
                 $homework_data = DB::table("homework as p")
-                    ->join('tblstudent as s', function($join) {
+                    ->join('tblstudent as s', function ($join) {
                         $join->whereRaw("s.id = p.student_id AND s.sub_institute_id = p.sub_institute_id");
                     })
                     ->selectRaw("IFNULL(SUM(DISTINCT p.image_size),0) AS file_size, CONCAT_WS(' ',s.first_name,s.last_name) AS user_name,
@@ -1362,7 +1348,7 @@ class dashboardController extends Controller
 
             if ($user_profile_name == 'Student') {
                 $homework_submission_data = DB::table("homework as p")
-                    ->join('tblstudent as s', function($join) {
+                    ->join('tblstudent as s', function ($join) {
                         $join->whereRaw("s.id = p.student_id AND s.sub_institute_id = p.sub_institute_id");
                     })
                     ->selectRaw("IFNULL(SUM(DISTINCT p.submission_image_size),0) AS file_size, CONCAT_WS(' ',s.first_name,s.last_name) AS user_name, p.submission_image_size")
@@ -1447,13 +1433,12 @@ class dashboardController extends Controller
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $syear = $request->session()->get('syear');
         $user_profile_name = $request->session()->get("user_profile_name");
-        $profile_parent_id = $request->session()->get("profile_parent_id");
 
         if ($user_profile_name == 'Admin' || $user_profile_name == 'ADMIN' || $user_profile_name == 'admin' || $user_profile_name == 'school admin'
             || $user_profile_name == 'SCHOOL ADMIN' || $user_profile_name == 'School Admin') {
 
             $date = date('Y-m-d');
-            $date15 = date('Y-m-d', strtotime($date.' +15 day'));
+            $date15 = date('Y-m-d', strtotime($date . ' +15 day'));
 
             $users = tbluserModel::selectRaw("count(id) as users")->where([
                 'sub_institute_id' => $sub_institute_id, 'status' => "1",
@@ -1467,7 +1452,7 @@ class dashboardController extends Controller
                     $join->whereRaw("s.id = se.standard_id AND se.sub_institute_id = s.sub_institute_id");
                 })
                 ->selectRaw("COUNT(ts.id) students")
-                ->where("ts.sub_institute_id", "=",$sub_institute_id)
+                ->where("ts.sub_institute_id", "=", $sub_institute_id)
                 ->where("se.syear", "=", $syear)
                 ->whereNull("se.end_date")->get()->toArray();
 
@@ -1479,19 +1464,19 @@ class dashboardController extends Controller
 
             $fees_collects = fees_collect::selectRaw("ifnull(sum(amount),0) as fees")
                 ->where(['sub_institute_id' => $sub_institute_id, 'syear' => $syear, 'is_deleted' => "N"])
-                ->whereRaw("date_format(receiptdate,'%Y-%m-%d') = '".$date."'")->get()->toArray();
+                ->whereRaw("date_format(receiptdate,'%Y-%m-%d') = '" . $date . "'")->get()->toArray();
 
 
             $other_fees_collects = DB::table('fees_paid_other')
                 ->selectRaw("IFNULL(SUM(actual_amountpaid),0) AS fees")
                 ->where('sub_institute_id', '=', $sub_institute_id)
                 ->where('syear', '=', $syear)
-                ->whereRaw("DATE_FORMAT(receiptdate,'%Y-%m-%d') = '".$date."'")
+                ->whereRaw("DATE_FORMAT(receiptdate,'%Y-%m-%d') = '" . $date . "'")
                 ->where('is_deleted', '=', 'N')->get()->toArray();
             $other_fees_collects = json_decode(json_encode($other_fees_collects), true);
 
             $parentCommunication = DB::table('parent_communication as p')
-                ->join('tblstudent as s', function($join) {
+                ->join('tblstudent as s', function ($join) {
                     $join->whereRaw("p.student_id = s.id");
                 })
                 ->selectRaw("p.*,CONCAT_WS(' ',s.first_name,s.last_name) as student_name,s.image as student_image")
@@ -1503,41 +1488,18 @@ class dashboardController extends Controller
                 tblstudent.last_name) as student_name,sum(amount) as total_fees')
                 ->join('tblstudent', 'tblstudent.id', '=', 'fees_collect.student_id')
                 ->where(['fees_collect.sub_institute_id' => $sub_institute_id, 'fees_collect.is_deleted' => "N"])
-                ->whereRaw("date_format(fees_collect.receiptdate,'%Y-%m-%d') = '".$date."'")
+                ->whereRaw("date_format(fees_collect.receiptdate,'%Y-%m-%d') = '" . $date . "'")
                 ->groupBy('payment_mode')
-               ->take(10)->get()->toArray();
+                ->take(10)->get()->toArray();
             
-            /*$fees_collection = DB::table(function ($query) use ($sub_institute_id, $date) {
-                    $query->select('fc.payment_mode', DB::raw('SUM(fc.amount) as total_fees'))
-                        ->from('tblstudent as t')
-                        ->join('fees_collect as fc', 't.id', '=', 'fc.student_id')
-                        ->where('t.sub_institute_id', $sub_institute_id)
-                        ->where('fc.is_deleted', 'N')
-                        ->where(DB::raw("DATE_FORMAT(fc.receiptdate, '%Y-%m-%d')"), $date)
-                        ->groupBy('fc.payment_mode')
-                        ->unionAll(
-                            DB::table('tblstudent as t')
-                                ->join('fees_paid_other as fo', 't.id', '=', 'fo.student_id')
-                                ->select('fo.payment_mode', DB::raw('SUM(fo.actual_amountpaid) as total_fees'))
-                                ->where('t.sub_institute_id', $sub_institute_id)
-                                ->where('fo.is_deleted', 'N')
-                                ->where(DB::raw("DATE_FORMAT(fo.receiptdate, '%Y-%m-%d')"), $date)
-                                ->groupBy('fo.payment_mode')
-                        );
-                }, 'X')
-                    ->select('X.payment_mode', DB::raw('SUM(X.total_fees) as total_fees'))
-                    ->groupBy('X.payment_mode')
-                    ->get()->toArray();
-                    */
-
             $studentBirthdays = DB::table('tblstudent as s')
-                ->join('tblstudent_enrollment as ts', function($join) use($syear) {
-                    $join->whereRaw("s.id = ts.student_id and ts.syear = '".$syear."'");
+                ->join('tblstudent_enrollment as ts', function ($join) use ($syear) {
+                    $join->whereRaw("s.id = ts.student_id and ts.syear = '" . $syear . "'");
                 })
-                ->join('standard as st', function($join) {
+                ->join('standard as st', function ($join) {
                     $join->whereRaw("ts.standard_id = st.id");
                 })
-                ->join('division as d', function($join) {
+                ->join('division as d', function ($join) {
                     $join->whereRaw("ts.section_id = d.id");
                 })
                 ->selectRaw("CONCAT_WS(' ',s.first_name,s.middle_name,s.last_name) as student_name,st.name as standard_name,d.name as division_name, DATE_FORMAT(s.dob, '%d-%m-%Y') AS dob")
@@ -1548,7 +1510,7 @@ class dashboardController extends Controller
                 ->get()->toArray();
 
             $teacherBirthdays = DB::table('tbluser as s')
-                ->join('tbluserprofilemaster as tu', function($join) {
+                ->join('tbluserprofilemaster as tu', function ($join) {
                     $join->whereRaw("s.user_profile_id = tu.id");
                 })
                 ->selectRaw("CONCAT_WS(' ',s.first_name,s.middle_name,s.last_name) as teacher_name,tu.name as designation,s.mobile as contact_number, DATE_FORMAT(s.birthdate, '%d-%m-%Y') AS birthdate")
@@ -1566,7 +1528,7 @@ class dashboardController extends Controller
                     $join->whereRaw("l.student_id = s.id");
                 })
                 ->join('tblstudent_enrollment as se', function ($join) use ($syear) {
-                    $join->whereRaw("s.id = se.id AND se.syear = '".$syear."'");
+                    $join->whereRaw("s.id = se.id AND se.syear = '" . $syear . "'");
                 })
                 ->join('standard as st', function ($join) {
                     $join->whereRaw("st.id = se.standard_id");
@@ -1575,7 +1537,7 @@ class dashboardController extends Controller
                     $join->whereRaw("dt.id = se.section_id");
                 })
                 ->selectRaw("l.*, CONCAT_WS(' ',s.first_name,s.middle_name,s.last_name) AS student_name,st.name AS standard_name,dt.name AS division_name")
-                ->whereRaw("l.sub_institute_id = '".$sub_institute_id."' AND '".$date."' BETWEEN from_date AND to_date")
+                ->whereRaw("l.sub_institute_id = '" . $sub_institute_id . "' AND '" . $date . "' BETWEEN from_date AND to_date")
                 ->get()->toArray();
 
             $standards_att = [];
@@ -1597,31 +1559,31 @@ class dashboardController extends Controller
             foreach ($attendanceCharts as $key => $value) {
                 // $standards = "'".$value->standard."',";
                 $standards_att[] = $value->standard;
-                $absents[] = (int) $value->absent;
-                $presants[] = (int) $value->present;
+                $absents[] = (int)$value->absent;
+                $presants[] = (int)$value->present;
             }
 
             $today = date("Y-m-d");
             $parameters = array(
-                ":dt"    => $today,
-                ":sb"    => $sub_institute_id,
+                ":dt" => $today,
+                ":sb" => $sub_institute_id,
                 ":syear" => $syear,
             );
 
             $fees_chart_data = DB::table('fees_collect as fc')
-                ->join('tblstudent_enrollment as se', function ($join) use($syear) {
-                    $join->whereRaw("se.student_id = fc.student_id and se.syear = ".$syear);
+                ->join('tblstudent_enrollment as se', function ($join) use ($syear) {
+                    $join->whereRaw("se.student_id = fc.student_id and se.syear = " . $syear);
                 })
                 ->join('standard as s', function ($join) {
                     $join->whereRaw("s.id = se.standard_id");
                 })
                 ->selectRaw("sum(fc.amount) amount,s.name")
-                ->whereRaw('DATE_FORMAT(fc.receiptdate, "%Y-%m-%d") = '.$today.' and fc.sub_institute_id = '.$sub_institute_id)
+                ->whereRaw('DATE_FORMAT(fc.receiptdate, "%Y-%m-%d") = ' . $today . ' and fc.sub_institute_id = ' . $sub_institute_id)
                 ->groupBy('se.standard_id')->get()->toArray();
 
             $parameters = array(
                 ":syear" => $syear,
-                ":sb"    => $sub_institute_id,
+                ":sb" => $sub_institute_id,
             );
 
             $student_chart_data = DB::table('tblstudent_enrollment as se')
@@ -1652,10 +1614,10 @@ class dashboardController extends Controller
             foreach ($fees_chart_data as $key => $value) {
                 $total_fees = $total_fees + $value->amount;
                 $final_chart_data .= "{
-                    'id': '2.".$key."',
+                    'id': '2." . $key . "',
                     'parent': '1.1',
-                    'name': '".$value->name."',
-                    'value':".$value->amount."
+                    'name': '" . $value->name . "',
+                    'value':" . $value->amount . "
                 },";
             }
 
@@ -1669,10 +1631,10 @@ class dashboardController extends Controller
                 $total_student = $total_student + $value->total_student;
                 $ids = $next_id + $key;
                 $final_chart_data .= "{
-                    'id': '2.".$ids."',
+                    'id': '2." . $ids . "',
                     'parent': '1.2',
-                    'name': '".$value->name."',
-                    'value':".$value->total_student."
+                    'name': '" . $value->name . "',
+                    'value':" . $value->total_student . "
                 },";
             }
             $final_chart_data = rtrim($final_chart_data, ",");
@@ -1680,41 +1642,41 @@ class dashboardController extends Controller
 
             $today = date("Y-m-d");
             $parameters = array(
-                ":dt"    => $today,
-                ":sb"    => $sub_institute_id,
+                ":dt" => $today,
+                ":sb" => $sub_institute_id,
                 ":syear" => $syear,
-                ":mode"  => "cash",
+                ":mode" => "cash",
             );
 
             $fees_chart1_cash_data = DB::table('fees_collect as fc')
-                ->join('tblstudent_enrollment as se', function ($join) use($syear) {
-                    $join->whereRaw("se.student_id = fc.student_id and se.syear = ".$syear);
+                ->join('tblstudent_enrollment as se', function ($join) use ($syear) {
+                    $join->whereRaw("se.student_id = fc.student_id and se.syear = " . $syear);
                 })
                 ->join('standard as s', function ($join) {
                     $join->whereRaw("s.id = se.standard_id");
                 })
                 ->selectRaw("fc.amount,s.name")
-                ->whereRaw('DATE_FORMAT(fc.receiptdate, "%Y-%m-%d") = '.$today.' and fc.sub_institute_id = '.$sub_institute_id)
+                ->whereRaw('DATE_FORMAT(fc.receiptdate, "%Y-%m-%d") = ' . $today . ' and fc.sub_institute_id = ' . $sub_institute_id)
                 ->where('payment_mode', 'cash')
                 ->groupBy('se.standard_id')->get()->toArray();
 
             $today = date("Y-m-d");
             $parameters = array(
-                ":dt"    => $today,
-                ":sb"    => $sub_institute_id,
+                ":dt" => $today,
+                ":sb" => $sub_institute_id,
                 ":syear" => $syear,
-                ":mode"  => "cheque",
+                ":mode" => "cheque",
             );
 
             $fees_chart1_cheque_data = DB::table('fees_collect as fc')
-                ->join('tblstudent_enrollment as se', function ($join) use($syear) {
-                    $join->whereRaw("se.student_id = fc.student_id and se.syear = ".$syear);
+                ->join('tblstudent_enrollment as se', function ($join) use ($syear) {
+                    $join->whereRaw("se.student_id = fc.student_id and se.syear = " . $syear);
                 })
                 ->join('standard as s', function ($join) {
                     $join->whereRaw("s.id = se.standard_id");
                 })
                 ->selectRaw("fc.amount,s.name")
-                ->whereRaw('DATE_FORMAT(fc.receiptdate, "%Y-%m-%d") = '.$today.' and fc.sub_institute_id = '.$sub_institute_id)
+                ->whereRaw('DATE_FORMAT(fc.receiptdate, "%Y-%m-%d") = ' . $today . ' and fc.sub_institute_id = ' . $sub_institute_id)
                 ->where('payment_mode', 'cheque')
                 ->get()->toArray();
 
@@ -1736,10 +1698,10 @@ class dashboardController extends Controller
             foreach ($fees_chart1_cash_data as $key => $value) {
                 // $total_fees = $total_fees + $value->amount;
                 $final_chart1_data .= "{
-                    'id': '2.".$key."',
+                    'id': '2." . $key . "',
                     'parent': '1.1',
-                    'name': '".$value->name."',
-                    'value':".$value->amount."
+                    'name': '" . $value->name . "',
+                    'value':" . $value->amount . "
                 },";
             }
 
@@ -1753,17 +1715,17 @@ class dashboardController extends Controller
                 // $total_student = $total_student + $value->total_student;
                 $ids = $next_id + $key;
                 $final_chart1_data .= "{
-                    'id': '2.".$ids."',
+                    'id': '2." . $ids . "',
                     'parent': '1.2',
-                    'name': '".$value->name."',
-                    'value':".$value->amount."
+                    'name': '" . $value->name . "',
+                    'value':" . $value->amount . "
                 },";
             }
             $final_chart1_data = rtrim($final_chart1_data, ",");
             $final_chart1_data .= '];';
 
             $fees_chart2_bkoff_data = DB::table('tblstudent as s')
-                ->join('tblstudent_enrollment as se', function ($join) use($syear) {
+                ->join('tblstudent_enrollment as se', function ($join) use ($syear) {
                     $join->whereRaw("se.student_id = s.id");
                 })->join('academic_section as g', function ($join) {
                     $join->whereRaw("g.id = se.grade_id");
@@ -1771,9 +1733,9 @@ class dashboardController extends Controller
                     $join->whereRaw("st.id = se.standard_id");
                 })->leftJoin('division as d', function ($join) {
                     $join->whereRaw("d.id = se.section_id");
-                })->join('fees_breackoff as fb', function ($join) use($syear, $sub_institute_id) {
-                    $join->whereRaw("fb.syear = ".$syear." AND fb.admission_year = s.admission_year AND fb.quota = se.student_quota AND
-                        fb.grade_id = se.grade_id AND fb.standard_id = se.standard_id AND fb.sub_institute_id = ".$sub_institute_id);
+                })->join('fees_breackoff as fb', function ($join) use ($syear, $sub_institute_id) {
+                    $join->whereRaw("fb.syear = " . $syear . " AND fb.admission_year = s.admission_year AND fb.quota = se.student_quota AND
+                        fb.grade_id = se.grade_id AND fb.standard_id = se.standard_id AND fb.sub_institute_id = " . $sub_institute_id);
                 })
                 ->selectRaw("SUM(fb.amount) amt,st.name")
                 ->where('s.sub_institute_id', $sub_institute_id)
@@ -1783,8 +1745,8 @@ class dashboardController extends Controller
             $unpaid_data = "[";
             $std_data = "[";
             foreach ($fees_chart2_bkoff_data as $id => $arr) {
-                $unpaid_data .= $arr->amt.",";
-                $std_data .= "'".$arr->name."'".",";
+                $unpaid_data .= $arr->amt . ",";
+                $std_data .= "'" . $arr->name . "'" . ",";
             }
             $unpaid_data = rtrim($unpaid_data, ",");
             $std_data = rtrim($std_data, ",");
@@ -1793,25 +1755,25 @@ class dashboardController extends Controller
 
             $fees_chart2_fees_data =
                 DB::table('tblstudent as s')
-                    ->join('tblstudent_enrollment as se', function ($join) use($syear) {
-                        $join->whereRaw("se.student_id = s.id");
-                    })->join('academic_section as g', function ($join) {
-                        $join->whereRaw("g.id = se.grade_id");
-                    })->join('standard as st', function ($join) {
-                        $join->whereRaw("st.id = se.standard_id");
-                    })->leftJoin('division as d', function ($join) {
-                        $join->whereRaw("d.id = se.section_id");
-                    })->join('fees_collect as fc', function ($join) use($syear, $sub_institute_id) {
-                        $join->whereRaw("fc.student_id = s.id AND fc.sub_institute_id = ".$sub_institute_id." AND fc.syear = ".$syear);
-                    })
-                    ->selectRaw("SUM(fc.amount)+ SUM(fc.fees_discount) amount,st.name")
-                    ->where('s.sub_institute_id', $sub_institute_id)
-                    ->groupBy('st.id')->orderBy('st.id')
-                    ->get()->toArray();
+                ->join('tblstudent_enrollment as se', function ($join) use ($syear) {
+                    $join->whereRaw("se.student_id = s.id");
+                })->join('academic_section as g', function ($join) {
+                    $join->whereRaw("g.id = se.grade_id");
+                })->join('standard as st', function ($join) {
+                    $join->whereRaw("st.id = se.standard_id");
+                })->leftJoin('division as d', function ($join) {
+                    $join->whereRaw("d.id = se.section_id");
+                })->join('fees_collect as fc', function ($join) use ($syear, $sub_institute_id) {
+                    $join->whereRaw("fc.student_id = s.id AND fc.sub_institute_id = " . $sub_institute_id . " AND fc.syear = " . $syear);
+                })
+                ->selectRaw("SUM(fc.amount)+ SUM(fc.fees_discount) amount,st.name")
+                ->where('s.sub_institute_id', $sub_institute_id)
+                ->groupBy('st.id')->orderBy('st.id')
+                ->get()->toArray();
 
             $paid_data = "[";
             foreach ($fees_chart2_fees_data as $id => $arr) {
-                $paid_data .= $arr->amount.",";
+                $paid_data .= $arr->amount . ",";
             }
             $paid_data = rtrim($paid_data, ",");
             $paid_data .= "]";
@@ -1820,18 +1782,18 @@ class dashboardController extends Controller
             $academicSections = DB::table('academic_section')->where('sub_institute_id', $sub_institute_id)->get()->toArray();
 
             $academicSections = array_map(function ($value) {
-                return (array) $value;
+                return (array)$value;
             }, $academicSections);
 
             $gradeIds = '';
             foreach ($academicSections as $key => $value) {
-                $gradeIds .= $value['id'].',';
+                $gradeIds .= $value['id'] . ',';
             }
 
             $standards = DB::table('standard')->whereIn('grade_id', explode(',', rtrim($gradeIds, ",")))->get()->toArray();
 
             $standards = array_map(function ($value) {
-                return (array) $value;
+                return (array)$value;
             }, $standards);
 
             $standardsArray = array();
@@ -1841,7 +1803,7 @@ class dashboardController extends Controller
             }
 
             $chartStudents = DB::table('tblstudent as s')
-                ->join('tblstudent_enrollment as se', function($join) {
+                ->join('tblstudent_enrollment as se', function ($join) {
                     $join->whereRaw("s.id = se.student_id");
                 })
                 ->selectRaw('s.id,se.grade_id,se.standard_id')
@@ -1860,9 +1822,9 @@ class dashboardController extends Controller
             $chartFS = [];
 
             $chartFees = DB::table('fees_collect as fc')
-                ->join('tblstudent_enrollment as se', function($join) use($syear) {
-                    $join->whereRaw("se.student_id = fc.student_id AND se.syear = ". $syear);
-                })->join('standard as s', function($join) {
+                ->join('tblstudent_enrollment as se', function ($join) use ($syear) {
+                    $join->whereRaw("se.student_id = fc.student_id AND se.syear = " . $syear);
+                })->join('standard as s', function ($join) {
                     $join->whereRaw("s.id = se.standard_id");
                 })
                 ->selectRaw("fc.amount,s.name,se.grade_id,se.standard_id")
@@ -1886,42 +1848,42 @@ class dashboardController extends Controller
                 id: '0.0',
                 parent: '',
                 name: 'Triz ERP',
-                value: ".$students[0]->students.",
-                label: ".$students[0]->students."
+                value: " . $students[0]->students . ",
+                label: " . $students[0]->students . "
             }, {
                 id: '1.3',
                 parent: '0.0',
                 name: 'Student',
-                value: ".$students[0]->students.",
-                label: ".$students[0]->students.",
+                value: " . $students[0]->students . ",
+                label: " . $students[0]->students . ",
                 events: {click: function (event) {alertValue('Student');}}
             }, {
                 id: '1.1',
                 parent: '0.0',
                 name: 'Fees',
-                value: ".$students[0]->students.",
-                label: ".$totalFeesCF.",
+                value: " . $students[0]->students . ",
+                label: " . $totalFeesCF . ",
                 events: {click: function (event) {alertValue('Fees');}}
             }, {
                 id: '1.2',
                 parent: '0.0',
                 name: 'Admission',
-                value: ".$students[0]->students.",
-                label: ".$students[0]->students.",
+                value: " . $students[0]->students . ",
+                label: " . $students[0]->students . ",
                 events: {click: function (event) {alertValue('Admission');}}
             }, {
                 id: '1.4',
                 parent: '0.0',
                 name: 'Attendance',
-                value: ".$students[0]->students.",
-                label: ".$students[0]->students.",
+                value: " . $students[0]->students . ",
+                label: " . $students[0]->students . ",
                 events: {click: function (event) {alertValue('Attendance');}}
             }, {
                 id: '1.5',
                 parent: '0.0',
                 name: 'Homework',
-                value: ".$students[0]->students.",
-                label: ".$students[0]->students.",
+                value: " . $students[0]->students . ",
+                label: " . $students[0]->students . ",
                 events: {click: function (event) {alertValue('Homework');}}
             },";
 
@@ -1934,36 +1896,36 @@ class dashboardController extends Controller
                 } else {
                     $ca = 0;
                 }
-                $chart .= "{id: '2.".$child."',
+                $chart .= "{id: '2." . $child . "',
                     parent: '1.1',
-                    name: '".$v['short_name']."',
-                    value: ".$ca.",
-                    label: ".$ca.",
+                    name: '" . $v['short_name'] . "',
+                    value: " . $ca . ",
+                    label: " . $ca . ",
                     events: {click: function (event) {alertValue('Fees');}}
                 },";
 
                 $childP = 1;
-                    if(isset($standardsArray[$v['id']])){                        
+                if (isset($standardsArray[$v['id']])) {
 
-                $value = $ca / count($standardsArray[$v['id']]);
-                foreach ($standardsArray[$v['id']] as $ke => $va) {
-                    if (isset($chartFS[$va['id']])) {
-                        $cs = $chartFS[$va['id']];
-                    } else {
-                        $cs = 0;
-                    }
-                    $j++;
-                    $chart .= "{id: '3.".$childL.$childP."',
-                        parent: '2.".$child."',
-                        name: '".$va['short_name']."',
-                        value: ".$cs.",
-                        label: ".$cs.",
+                    $value = $ca / count($standardsArray[$v['id']]);
+                    foreach ($standardsArray[$v['id']] as $ke => $va) {
+                        if (isset($chartFS[$va['id']])) {
+                            $cs = $chartFS[$va['id']];
+                        } else {
+                            $cs = 0;
+                        }
+                        $j++;
+                        $chart .= "{id: '3." . $childL . $childP . "',
+                        parent: '2." . $child . "',
+                        name: '" . $va['short_name'] . "',
+                        value: " . $cs . ",
+                        label: " . $cs . ",
                         events: {click: function (event) {alertValue('Fees');}}
                     },";
-                    $childP++;
+                        $childP++;
 
+                    }
                 }
-            }
                 $child++;
                 $childL++;
                 $j++;
@@ -1977,34 +1939,34 @@ class dashboardController extends Controller
                 } else {
                     $ca = 0;
                 }
-                $chart .= "{id: '3.".$child."',
+                $chart .= "{id: '3." . $child . "',
                     parent: '1.2',
-                    name: '".$v['short_name']."',
-                    value: ".$ca.",
-                    label: ".$ca.",
+                    name: '" . $v['short_name'] . "',
+                    value: " . $ca . ",
+                    label: " . $ca . ",
                     events: {click: function (event) {alertValue('Admission');}}
                 },";
 
                 $childP = 1;
-                    if(isset($standardsArray[$v['id']])){                        
+                if (isset($standardsArray[$v['id']])) {
 
-                $value = $ca / count($standardsArray[$v['id']]);
-                foreach ($standardsArray[$v['id']] as $ke => $va) {
-                    if (isset($chartS[$va['id']])) {
-                        $cs = count($chartS[$va['id']]);
-                    } else {
-                        $cs = 0;
-                    }
-                    $j++;
-                    $chart .= "{id: '4.".$childL.$childP."',
-                        parent: '3.".$child."',
-                        name: '".$va['short_name']."',
-                        value: ".$cs.",
-                        label: ".$cs.",
+                    $value = $ca / count($standardsArray[$v['id']]);
+                    foreach ($standardsArray[$v['id']] as $ke => $va) {
+                        if (isset($chartS[$va['id']])) {
+                            $cs = count($chartS[$va['id']]);
+                        } else {
+                            $cs = 0;
+                        }
+                        $j++;
+                        $chart .= "{id: '4." . $childL . $childP . "',
+                        parent: '3." . $child . "',
+                        name: '" . $va['short_name'] . "',
+                        value: " . $cs . ",
+                        label: " . $cs . ",
                         events: {click: function (event) {alertValue('Admission');}}
                     },";
-                    $childP++;
-}
+                        $childP++;
+                    }
                 }
                 $child++;
                 $childL++;
@@ -2019,34 +1981,34 @@ class dashboardController extends Controller
                 } else {
                     $ca = 0;
                 }
-                $chart .= "{id: '4.".$child."',
+                $chart .= "{id: '4." . $child . "',
                     parent: '1.3',
-                    name: '".$v['short_name']."',
-                    value: ".$ca.",
-                    label: ".$ca.",
+                    name: '" . $v['short_name'] . "',
+                    value: " . $ca . ",
+                    label: " . $ca . ",
                     events: {click: function (event) {alertValue('Student');}}
                 },";
 
                 $childP = 1;
-                    if(isset($standardsArray[$v['id']])){                        
+                if (isset($standardsArray[$v['id']])) {
 
-                $value = $ca / count($standardsArray[$v['id']]);
-                foreach ($standardsArray[$v['id']] as $ke => $va) {
-                    if (isset($chartS[$va['id']])) {
-                        $cs = count($chartS[$va['id']]);
-                    } else {
-                        $cs = 0;
-                    }
-                    $j++;
-                    $chart .= "{id: '5.".$childL.$childP."',
-                        parent: '4.".$child."',
-                        name: '".$va['short_name']."',
-                        value: ".$cs.",
-                        label: ".$cs.",
+                    $value = $ca / count($standardsArray[$v['id']]);
+                    foreach ($standardsArray[$v['id']] as $ke => $va) {
+                        if (isset($chartS[$va['id']])) {
+                            $cs = count($chartS[$va['id']]);
+                        } else {
+                            $cs = 0;
+                        }
+                        $j++;
+                        $chart .= "{id: '5." . $childL . $childP . "',
+                        parent: '4." . $child . "',
+                        name: '" . $va['short_name'] . "',
+                        value: " . $cs . ",
+                        label: " . $cs . ",
                         events: {click: function (event) {alertValue('Student');}}
                     },";
-                    $childP++;
-}
+                        $childP++;
+                    }
                 }
                 $child++;
                 $childL++;
@@ -2061,36 +2023,36 @@ class dashboardController extends Controller
                 } else {
                     $ca = 0;
                 }
-                $chart .= "{id: '5.".$child."',
+                $chart .= "{id: '5." . $child . "',
                     parent: '1.4',
-                    name: '".$v['short_name']."',
-                    value: ".$ca.",
-                    label: ".$ca.",
+                    name: '" . $v['short_name'] . "',
+                    value: " . $ca . ",
+                    label: " . $ca . ",
                     events: {click: function (event) {alertValue('Attendance');}}
                 },";
 
                 $childP = 1;
-                    if(isset($standardsArray[$v['id']])){                        
+                if (isset($standardsArray[$v['id']])) {
 
-                $value = $ca / count($standardsArray[$v['id']]);
-                foreach ($standardsArray[$v['id']] as $ke => $va) {
-                    if (isset($chartS[$va['id']])) {
-                        $cs = count($chartS[$va['id']]);
-                    } else {
-                        $cs = 0;
-                    }
-                    $j++;
-                    $chart .= "{id: '6.".$childL.$childP."',
-                        parent: '5.".$child."',
-                        name: '".$va['short_name']."',
-                        value: ".$cs.",
-                        label: ".$cs.",
+                    $value = $ca / count($standardsArray[$v['id']]);
+                    foreach ($standardsArray[$v['id']] as $ke => $va) {
+                        if (isset($chartS[$va['id']])) {
+                            $cs = count($chartS[$va['id']]);
+                        } else {
+                            $cs = 0;
+                        }
+                        $j++;
+                        $chart .= "{id: '6." . $childL . $childP . "',
+                        parent: '5." . $child . "',
+                        name: '" . $va['short_name'] . "',
+                        value: " . $cs . ",
+                        label: " . $cs . ",
                         events: {click: function (event) {alertValue('Attendance');}}
                     },";
-                    $childP++;
+                        $childP++;
 
+                    }
                 }
-            }
                 $child++;
                 $childL++;
                 $j++;
@@ -2104,34 +2066,34 @@ class dashboardController extends Controller
                 } else {
                     $ca = 0;
                 }
-                $chart .= "{id: '6.".$child."',
+                $chart .= "{id: '6." . $child . "',
                     parent: '1.5',
-                    name: '".$v['short_name']."',
-                    value: ".$ca.",
-                    label: ".$ca.",
+                    name: '" . $v['short_name'] . "',
+                    value: " . $ca . ",
+                    label: " . $ca . ",
                     events: {click: function (event) {alertValue('Homework');}}
                 },";
 
                 $childP = 1;
-                    if(isset($standardsArray[$v['id']])){                        
+                if (isset($standardsArray[$v['id']])) {
 
-                $value = $ca / count($standardsArray[$v['id']]);
-                foreach ($standardsArray[$v['id']] as $ke => $va) {
-                    if (isset($chartS[$va['id']])) {
-                        $cs = count($chartS[$va['id']]);
-                    } else {
-                        $cs = 0;
-                    }
-                    $j++;
-                    $chart .= "{id: '7.".$childL.$childP."',
-                        parent: '6.".$child."',
-                        name: '".$va['short_name']."',
-                        value: ".$cs.",
-                        label: ".$cs.",
+                    $value = $ca / count($standardsArray[$v['id']]);
+                    foreach ($standardsArray[$v['id']] as $ke => $va) {
+                        if (isset($chartS[$va['id']])) {
+                            $cs = count($chartS[$va['id']]);
+                        } else {
+                            $cs = 0;
+                        }
+                        $j++;
+                        $chart .= "{id: '7." . $childL . $childP . "',
+                        parent: '6." . $child . "',
+                        name: '" . $va['short_name'] . "',
+                        value: " . $cs . ",
+                        label: " . $cs . ",
                         events: {click: function (event) {alertValue('Homework');}}
                     },";
-                    $childP++;
-}
+                        $childP++;
+                    }
                 }
                 $child++;
                 $childL++;
@@ -2171,16 +2133,16 @@ class dashboardController extends Controller
 
             $date = date('Y-m-d');
 
-            $date15 = date('Y-m-d', strtotime($date.' +15 day'));
+            $date15 = date('Y-m-d', strtotime($date . ' +15 day'));
 
             $users = tbluserModel::selectRaw("count(id) as users")->where([
                 'sub_institute_id' => $sub_institute_id, 'status' => "1",
             ])->get()->toArray();
 
             $students = DB::table('tblstudent as ts')
-                ->join('tblstudent_enrollment as se', function($join) {
+                ->join('tblstudent_enrollment as se', function ($join) {
                     $join->whereRaw("se.student_id = ts.id AND se.sub_institute_id = se.sub_institute_id");
-                })->join('standard as s', function($join) {
+                })->join('standard as s', function ($join) {
                     $join->whereRaw("s.id = se.standard_id AND se.sub_institute_id = s.sub_institute_id");
                 })
                 ->selectRaw("COUNT(ts.id) students")
@@ -2188,63 +2150,64 @@ class dashboardController extends Controller
                 ->where('se.syear', $syear)
                 ->whereNull('se.end_date')->get()->toArray();
 
-
             $total_admission = DB::table('admission_enquiry')
                 ->selectRaw("COUNT(id) as total_admissions")
                 ->where('sub_institute_id', $sub_institute_id)
                 ->where('syear', $syear)
                 ->get()->toArray();
 
-            $fees_collects = fees_collect::selectRaw("ifnull(sum(amount),0) as fees")->where([
-                'sub_institute_id' => $sub_institute_id, 'syear' => $syear, 'is_deleted' => "N",
-            ])->whereRaw("date_format(receiptdate,'%Y-%m-%d') = '".$date."'")->get()->toArray();
+            $fees_collects = fees_collect::where([
+                'sub_institute_id' => $sub_institute_id,
+                'syear' => $syear,
+                'is_deleted' => "N",
+            ])
+                ->whereDate('receiptdate', $date)
+                ->sum('amount');
 
             $other_fees_collects = DB::table('fees_paid_other')
-                ->selectRaw("IFNULL(SUM(actual_amountpaid),0) AS fees")
-                ->where('sub_institute_id', $sub_institute_id)
-                ->where('syear', $syear)
-                ->whereRaw("DATE_FORMAT(receiptdate,'%Y-%m-%d') = '".$date."'")
-                ->where('is_deleted', 'N')
-                ->get()->toArray();
+                ->where([
+                    'sub_institute_id' => $sub_institute_id,
+                    'syear' => $syear,
+                    'is_deleted' => 'N'
+                ])
+                ->whereDate('receiptdate', $date)
+                ->sum('actual_amountpaid');
+
             $other_fees_collects = json_decode(json_encode($other_fees_collects), true);
-
-            $parentCommunication = DB::table('parent_communication as p')
-                ->join('tblstudent as s', function($join) {
-                    $join->whereRaw('p.student_id = s.id');
-                })
-                ->selectRaw("p.*,CONCAT_WS(' ',s.first_name,s.last_name) as student_name,s.image as student_image")
-                ->where('p.sub_institute_id', $sub_institute_id)
+            $parentCommunication = ParentCommunication::with(['student' => function ($query) {
+                $query->select('id', 'first_name', 'last_name', 'image');
+            }])
+                ->where('sub_institute_id', $sub_institute_id)
                 ->where('date_', $date)
-                ->orderBy('p.id', 'desc')
+                ->orderBy('id', 'desc')
                 ->limit(10)
-                ->get()->toArray();
+                ->get()
+                ->toArray();
 
-            $studentBirthdays = DB::table('tblstudent as s')
-                ->join('tblstudent_enrollment as ts', function($join) use($syear) {
-                    $join->whereRaw('s.id = ts.student_id and ts.syear = '.$syear);
-                })->join('standard as st', function($join) {
-                    $join->whereRaw('ts.standard_id = st.id');
-                })->join('division as d', function($join) {
-                    $join->whereRaw('ts.section_id = d.id');
+            $studentBirthdays = tblStudent::selectRaw("CONCAT_WS(' ',first_name, middle_name, last_name) as student_name, standard.name as standard_name, division.name as division_name, DATE_FORMAT(dob, '%d-%m-%Y') as dob")
+                ->join('tblstudent_enrollment as ts', function ($join) use ($syear) {
+                    $join->on('tblstudent.id', '=', 'ts.student_id')
+                        ->where('ts.syear', $syear);
                 })
-                ->selectRaw("CONCAT_WS(' ',s.first_name,s.middle_name,s.last_name) as student_name,st.name as standard_name, d.name as division_name,DATE_FORMAT(s.dob, '%d-%m-%Y') as dob")
-                ->where('s.sub_institute_id', $sub_institute_id)
+                ->join('standard', 'ts.standard_id', '=', 'standard.id')
+                ->join('division as d', 'ts.section_id', '=', 'd.id')
+                ->where('tblstudent.sub_institute_id', $sub_institute_id)
                 ->whereNull('ts.end_date')
-                ->whereRaw("DATE_FORMAT(s.dob, '%m-%d') >= DATE_FORMAT(NOW(), '%m-%d') and DATE_FORMAT(s.dob, '%m-%d') <= DATE_FORMAT((NOW() + INTERVAL +7 DAY), '%m-%d')")
-                ->orderByRaw("DATE_FORMAT(s.dob, '%m-%d')")
-                ->get()->toArray();
+                ->whereRaw("DATE_FORMAT(tblstudent.dob, '%m-%d') >= DATE_FORMAT(NOW(), '%m-%d') and DATE_FORMAT(tblstudent.dob, '%m-%d') <= DATE_FORMAT((NOW() + INTERVAL +7 DAY), '%m-%d')")
+                ->orderByRaw("DATE_FORMAT(tblstudent.dob, '%m-%d')")
+                ->get()
+                ->toArray();
 
-            $teacherBirthdays = DB::table('tbluser as s')
-                ->join('tbluserprofilemaster as tu', function($join) use($syear) {
-                    $join->whereRaw('s.user_profile_id = tu.id');
-                })
-                ->selectRaw("CONCAT_WS(' ',s.first_name,s.middle_name,s.last_name) as teacher_name,tu.name as designation,s.mobile as contact_number, DATE_FORMAT(s.birthdate, '%d-%m-%Y') AS birthdate")
-                ->where('s.sub_institute_id', $sub_institute_id)
-                ->where('s.status', '!=', 0)
-                ->whereRaw("date_format(s.birthdate,'%m-%d') >= DATE_FORMAT(NOW(), '%m-%d') and DATE_FORMAT(s.birthdate, '%m-%d') <= DATE_FORMAT((NOW() + INTERVAL +7 DAY), '%m-%d')")
-                ->orderByRaw("DATE_FORMAT(s.birthdate, '%m-%d')")
-                ->get()->toArray();
 
+            $teacherBirthdays = DB::table('tbluser')
+                ->join('tbluserprofilemaster as tu', 'tbluser.user_profile_id', '=', 'tu.id')
+                ->selectRaw("CONCAT_WS(' ',tbluser.first_name, tbluser.middle_name, tbluser.last_name) as teacher_name, tu.name as designation, tbluser.mobile as contact_number, DATE_FORMAT(tbluser.birthdate, '%d-%m-%Y') AS birthdate")
+                ->where('tbluser.sub_institute_id', $sub_institute_id)
+                ->where('tbluser.status', '!=', 0)
+                ->whereBetween(DB::raw("DATE_FORMAT(tbluser.birthdate, '%m-%d')"), [now()->format('m-d'), now()->addDays(7)->format('m-d')])
+                ->orderByRaw("DATE_FORMAT(tbluser.birthdate, '%m-%d')")
+                ->get()
+                ->toArray();
             $calendarEvents = DB::table('calendar_events')->where('sub_institute_id', $sub_institute_id)
                 ->where('school_date', '>=', $date)->where('school_date', '<=', $date15)->get()->toArray();
 
@@ -2261,91 +2224,38 @@ class dashboardController extends Controller
         }
     }
 
-    /**
-     * Show the form for creating a new resource.
-     *
-     * @return void
-     */
-    public function create(): void
-    {
-        //
-    }
-
-    /**
-     * Store a newly created resource in storage.
-     *
-     * @param  Request  $request
-     * @return void
-     */
-    public function store(Request $request): void
-    {
-        //
-    }
-
-    /**
-     * Display the specified resource.
-     *
-     * @param  int  $id
-     * @return void
-     */
-    public function show($id)
-    {
-        //
-    }
-
-    /**
-     * Show the form for editing the specified resource.
-     *
-     * @param  int  $id
-     * @return void
-     */
-    public function edit($id)
-    {
-        //
-    }
-
-    /**
-     * Update the specified resource in storage.
-     *
-     * @param  Request  $request
-     * @param  int  $id
-     * @return void
-     */
-    public function update(Request $request, $id)
-    {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     *
-     * @param  int  $id
-     * @return void
-     */
-    public function destroy($id)
-    {
-        //
-    }
 
     public function siteMap(Request $request)
     {
         $type = $request->input('type');
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $user_id = $request->session()->get('user_id');
-
         $rightsQuery = DB::table('tbluser as u')
             ->leftJoin('tblindividual_rights as i', function ($join) {
-                $join->whereRaw('u.id = i.user_id AND u.sub_institute_id = i.sub_institute_id');
-            })->leftJoin('tblgroupwise_rights as g', function ($join) {
-                $join->whereRaw('u.user_profile_id = g.profile_id AND u.sub_institute_id = g.sub_institute_id');
-            })->join('tblmenumaster as m', function ($join) use($sub_institute_id) {
-                $join->whereRaw("(i.menu_id = m.id OR g.menu_id = m.id) AND FIND_IN_SET(".$sub_institute_id.", m.sub_institute_id)");
+                $join->on('u.id', '=', 'i.user_id')
+                    ->whereColumn('u.sub_institute_id', '=', 'i.sub_institute_id');
+            })
+            ->leftJoin('tblgroupwise_rights as g', function ($join) {
+                $join->on('u.user_profile_id', '=', 'g.profile_id')
+                    ->whereColumn('u.sub_institute_id', '=', 'g.sub_institute_id');
+            })
+            ->join('tblmenumaster as m', function ($join) use ($sub_institute_id) {
+                $join->on(function ($query) {
+                    $query->whereColumn('i.menu_id', '=', 'm.id')
+                        ->orWhereColumn('g.menu_id', '=', 'm.id');
+                })->whereRaw("FIND_IN_SET(" . $sub_institute_id . ", m.sub_institute_id)");
             })
             ->selectRaw('GROUP_CONCAT(distinct m.id) AS MID')
-            ->where('u.sub_institute_id', $sub_institute_id)->where('u.id', $user_id)->get()->toArray();
+            ->where([
+                ['u.sub_institute_id', '=', $sub_institute_id],
+                ['u.id', '=', $user_id],
+            ])
+            ->get()
+            ->toArray();
+
 
         $rightsQuery = array_map(function ($value) {
-            return (array) $value;
+            return (array)$value;
         }, $rightsQuery);
 
         $rightsMenusIds = 0;
@@ -2354,12 +2264,23 @@ class dashboardController extends Controller
             $rightsMenusIds = $rightsQuery['0']['MID'];
         }
         $rightsMenusIds = rtrim($rightsMenusIds, ',');//RAJESH
-        $data = tblmenumasterModel::where(['parent_menu_id' => "0", 'level' => "1"])
-            ->whereRaw("find_in_set('$sub_institute_id',sub_institute_id) and status = 1 and id in (".$rightsMenusIds.") ")
-            ->orderBy('sort_order')->get()->toArray();
+        $data = tblmenumasterModel::where([
+            'parent_menu_id' => "0",
+            'level' => "1",
+            'status' => 1,
+        ])
+        ->whereIn('id', explode(',', $rightsMenusIds))
+        ->whereRaw("find_in_set('$sub_institute_id', sub_institute_id)")
+        ->orderBy('sort_order')
+        ->get()
+        ->toArray();
+    
 
         $subMenuData = tblmenumasterModel::where('parent_menu_id', '!=', 0)
-            ->whereRaw("find_in_set('$sub_institute_id',sub_institute_id) AND level = 2 and id in (".$rightsMenusIds.") and status = 1 ")
+            ->whereRaw("find_in_set('$sub_institute_id',sub_institute_id)")
+            ->where('level',2 )
+            ->whereIn('id',explode(',',$rightsMenusIds))
+            ->where("status",1)
             ->orderBy('sort_order')->get()->toArray();
 
         $i = 0;
@@ -2369,7 +2290,10 @@ class dashboardController extends Controller
         }
 
         $subChildMenuData = tblmenumasterModel::where('parent_menu_id', '!=', 0)
-            ->whereRaw("find_in_set('$sub_institute_id',sub_institute_id) AND level = 3 and id in (".$rightsMenusIds.") and status = 1 ")
+            ->whereRaw("find_in_set('$sub_institute_id',sub_institute_id)")
+            ->where('level',3)
+            ->whereIn('id',explode(',',$rightsMenusIds))
+            ->where("status",1)
             ->orderBy('sort_order')->get()->toArray();
 
         $i = 0;
@@ -2408,7 +2332,7 @@ class dashboardController extends Controller
 
         return is_mobile($type, 'other_policy', $request, 'view');
     }
-    
+
     public function knowledge_base(Request $request)
     {
         $type = $request->input('type');
@@ -2416,7 +2340,7 @@ class dashboardController extends Controller
         $data = DB::table('knowledge_base')->where('status', 1)->get()->toArray();
 
         $data = array_map(function ($value) {
-            return (array) $value;
+            return (array)$value;
         }, $data);
 
         $res['status_code'] = 1;
@@ -2431,14 +2355,12 @@ class dashboardController extends Controller
         $type = $request->input('type');
 
         $data = DB::table('knowledge_base_detail as kbd')
-            ->join('knowledge_base as kb', function ($join) {
-                $join->whereRaw('kbd.kb_id = kb.id');
-            })
+            ->join('knowledge_base as kb', 'kbd.kb_id = kb.id')
             ->selectRaw("kbd.*,kb.name as kname")
             ->where('kb.status', '=', 1)->get()->toArray();
 
         $data = array_map(function ($value) {
-            return (array) $value;
+            return (array)$value;
         }, $data);
 
         $res['status_code'] = 1;
@@ -2460,27 +2382,39 @@ class dashboardController extends Controller
         // $bytes /= pow(1024, $pow);
         $bytes /= (1 << (10 * $pow));
 
-        return round($bytes, $precision).' '.$units[$pow];
+        return round($bytes, $precision) . ' ' . $units[$pow];
     }
 
-    public function setup_details(Request $request){
+    public function setup_details(Request $request)
+    {
         $type = "";
         // return session();exit;
         $sub_institute_id = session()->get('sub_institute_id');
         $user_id = $request->session()->get('user_id');
+
         $rightsQuery = DB::table('tbluser as u')
-            ->leftJoin('tblindividual_rights as i', function ($join) {
-                $join->whereRaw('u.id = i.user_id AND u.sub_institute_id = i.sub_institute_id ');
-            })->leftJoin('tblgroupwise_rights as g', function ($join) {
-                $join->whereRaw('u.user_profile_id = g.profile_id AND u.sub_institute_id = g.sub_institute_id');
-            })->join('tblmenumaster as m', function ($join) use($sub_institute_id) {
-                $join->whereRaw("(i.menu_id = m.id OR g.menu_id = m.id) AND FIND_IN_SET(".$sub_institute_id.", m.sub_institute_id)");
-            })
-            ->selectRaw('GROUP_CONCAT(distinct m.id) AS MID')
-            ->where('u.sub_institute_id', $sub_institute_id)->where('u.id', $user_id)->get()->toArray();
+        ->leftJoin('tblindividual_rights as i', function ($join) {
+            $join->on('u.id', '=', 'i.user_id')
+                ->whereColumn('u.sub_institute_id', '=', 'i.sub_institute_id');
+        })
+        ->leftJoin('tblgroupwise_rights as g', function ($join) {
+            $join->on('u.user_profile_id', '=', 'g.profile_id')
+                ->whereColumn('u.sub_institute_id', '=', 'g.sub_institute_id');
+        })
+        ->join('tblmenumaster as m', function ($join) use ($sub_institute_id) {
+            $join->on(function ($query) use ($sub_institute_id) {
+                $query->whereColumn('i.menu_id', '=', 'm.id')
+                    ->orWhereColumn('g.menu_id', '=', 'm.id');
+            })->whereRaw("FIND_IN_SET(" . $sub_institute_id . ", m.sub_institute_id)");
+        })
+        ->selectRaw('GROUP_CONCAT(distinct m.id) AS MID')
+        ->where('u.sub_institute_id', $sub_institute_id)
+        ->where('u.id', $user_id)
+        ->get()
+        ->toArray();    
 
         $rightsQuery = array_map(function ($value) {
-            return (array) $value;
+            return (array)$value;
         }, $rightsQuery);
 
         $rightsMenusIds = 0;
@@ -2489,82 +2423,76 @@ class dashboardController extends Controller
             $rightsMenusIds = $rightsQuery['0']['MID'];
         }
         $rightsMenusIds = rtrim($rightsMenusIds, ',');//RAJESH
-        
-            $data = tblmenumasterModel::
-            whereRaw("find_in_set('$sub_institute_id',sub_institute_id) and status = 1  ")
-                ->orderBy('sort_order')->groupBy('menu_title')->get()->toArray();
 
-  $databaseTables = tblmenumasterModel::select('database_table')
-        ->whereRaw("find_in_set('$sub_institute_id', sub_institute_id) and status = 1")
-        ->pluck('database_table')
-        ->toArray();
+        $data = tblmenumasterModel::whereRaw("find_in_set('$sub_institute_id',sub_institute_id)")->where('status',1)
+            ->orderBy('sort_order')->groupBy('menu_title')->get()->toArray();
+
+        $databaseTables = tblmenumasterModel::select('database_table')
+            ->whereRaw("find_in_set('$sub_institute_id', sub_institute_id)")->where('status',1)
+            ->pluck('database_table')
+            ->toArray();
 
        // Check if the specified sub_institute exists in the tables
-    $subInstituteExists = [];
+        $subInstituteExists = [];
 
-    foreach ($databaseTables as $tableName) {
-        if (Schema::hasTable($tableName)) {
+        foreach ($databaseTables as $tableName) {
+            if (Schema::hasTable($tableName)) {
             // Check if the table has the sub_institute_id column
-            if (Schema::hasColumn($tableName, 'sub_institute_id')) {
-                $exists = DB::table($tableName)
-                    ->where('sub_institute_id', $sub_institute_id)
-                    ->exists();
-            } else {
+                if (Schema::hasColumn($tableName, 'sub_institute_id')) {
+                    $exists = DB::table($tableName)
+                        ->where('sub_institute_id', $sub_institute_id)
+                        ->exists();
+                } else {
                 // If the sub_institute_id column doesn't exist, consider it as not found
+                    $exists = false;
+                }
+            } else {
                 $exists = false;
             }
-        } else {
-            $exists = false;
+
+            $subInstituteExists[$tableName] = $exists;
+        }
+    // return $subInstituteExists;exit;
+        $master = tblmenumasterModel::whereRaw("find_in_set('$sub_institute_id',sub_institute_id)")->where('status',1) ->where('menu_type','=','MASTER')
+            ->orderBy('sort_order')->get()->toArray();
+        $i = 0;
+
+        foreach ($master as $key => $value) {
+                // print_r($value);
+            $mastermenu[$value['menu_title']][$i] = $master[$key];
+            $i++;
+        }
+        $entry = tblmenumasterModel::where('parent_menu_id', '!=', 0)
+            ->whereRaw("find_in_set('$sub_institute_id',sub_institute_id)")->where('status',1)->where("menu_type","=","ENTRY")
+            ->orderBy('sort_order')->get()->toArray();
+
+        $i = 0;
+        foreach ($entry as $key => $value) {
+            $finalSubMenu[$value['menu_title']][$i] = $entry[$key];
+            $i++;
         }
 
-        $subInstituteExists[$tableName] = $exists;
-    }
+        $report = tblmenumasterModel::where('parent_menu_id', '!=', 0)
+            ->whereRaw("find_in_set('$sub_institute_id',sub_institute_id)")->where('status',1)->where("menu_type","=","REPORT")
+            ->orderBy('sort_order')->get()->toArray();
 
-
-    // return $subInstituteExists;exit;
-            $master = tblmenumasterModel::
-                whereRaw("find_in_set('$sub_institute_id',sub_institute_id) and status = 1 and menu_type='MASTER' ")
-                ->orderBy('sort_order')->get()->toArray();
-            $i = 0;
-
-            foreach ($master as $key => $value) {
-                // print_r($value);
-                $mastermenu[$value['menu_title']][$i] = $master[$key];
-                $i++;
-            }
-            $entry = tblmenumasterModel::where('parent_menu_id', '!=', 0)
-                ->whereRaw("find_in_set('$sub_institute_id',sub_institute_id) AND status = 1 and menu_type='ENTRY' ")
-                ->orderBy('sort_order')->get()->toArray();
-
-            $i = 0;
-            foreach ($entry as $key => $value) {
-                $finalSubMenu[$value['menu_title']][$i] = $entry[$key];
-                $i++;
-            }
-
-            $report = tblmenumasterModel::where('parent_menu_id', '!=', 0)
-                ->whereRaw("find_in_set('$sub_institute_id',sub_institute_id) and status = 1 and menu_type='REPORT' ")
-                ->orderBy('sort_order')->get()->toArray();
-
-            $i = 0;
-            foreach ($report as $key => $value) {
-                $finalSubChildMenu[$value['menu_title']][$i] = $report[$key];
-                $i++;
-            }
-            $database_table = tblmenumasterModel::select('database_table')->whereRaw("find_in_set('$sub_institute_id',sub_institute_id) and status = 1 ")->get();
+        $i = 0;
+        foreach ($report as $key => $value) {
+            $finalSubChildMenu[$value['menu_title']][$i] = $report[$key];
+            $i++;
+        }
+        $database_table = tblmenumasterModel::select('database_table')->whereRaw("find_in_set('$sub_institute_id',sub_institute_id)")->where('status',1)->get();
 
         $res['status_code'] = 1;
         $res['message'] = "Success";
-        $res['head']=$data;
-        $res['table_name']=$subInstituteExists;
+        $res['head'] = $data;
+        $res['table_name'] = $subInstituteExists;
         $res['groupwisemenuMaster'] = $mastermenu;
         $res['groupwisesubmenuMaster'] = $finalSubMenu ?? [];
         $res['groupwiseSubsubmenuMaster'] = $finalSubChildMenu ?? [];
-        $rr=[];
-// foreach($res['groupwisemenuMaster'] as $key=>$value){
-        // echo "<pre>";print_r($mastermenu);exit;
-        return is_mobile($type, "setup_institute_details", $res,'view');
-        // return is_mobile($type, "implementation", $res);
+        $rr = [];
+
+        return is_mobile($type, "setup_institute_details", $res, 'view');
     }
 
     public function ajaxMenuSession_setup(Request $request)
@@ -2583,7 +2511,7 @@ class dashboardController extends Controller
             $res['message'] = "Parameter Missing";
         }
 
-        return is_mobile($type, "setup_institute_details", $res,'view');
+        return is_mobile($type, "setup_institute_details", $res, 'view');
     }
 
 }
