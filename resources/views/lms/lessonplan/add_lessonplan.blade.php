@@ -253,7 +253,74 @@
             }
         });
     }
+    @php
+$classroomactivity = isset($data['lessonplan_data']['classroomactivity']) ? $data['lessonplan_data']['classroomactivity'] : 0;
+$selfstudyact1 = isset($data['lessonplan_data']['lessonDays'][0]['selfstudyactivity']) ? $data['lessonplan_data']['lessonDays'][0]['selfstudyactivity']: 0;
+$selfstudyact2 = isset($data['lessonplan_data']['lessonDays'][1]['selfstudyactivity']) ? $data['lessonplan_data']['lessonDays'][1]['selfstudyactivity']: 0;
+$selfstudyact3 = isset($data['lessonplan_data']['lessonDays'][2]['selfstudyactivity']) ? $data['lessonplan_data']['lessonDays'][2]['selfstudyactivity']: 0;
+$selfstudyact4 = isset($data['lessonplan_data']['lessonDays'][3]['selfstudyactivity']) ? $data['lessonplan_data']['lessonDays'][3]['selfstudyactivity']: 0;
+$selfstudyact5 = isset($data['lessonplan_data']['lessonDays'][4]['selfstudyactivity']) ? $data['lessonplan_data']['lessonDays'][4]['selfstudyactivity']: 0;
+$selfstudyact6 = isset($data['lessonplan_data']['lessonDays'][5]['selfstudyactivity']) ? $data['lessonplan_data']['lessonDays'][5]['selfstudyactivity']: 0;
+$selfstudyact7 = isset($data['lessonplan_data']['lessonDays'][6]['selfstudyactivity']) ? $data['lessonplan_data']['lessonDays'][6]['selfstudyactivity']: 0;
+$selfstudyact8 = isset($data['lessonplan_data']['lessonDays'][7]['selfstudyactivity']) ? $data['lessonplan_data']['lessonDays'][7]['selfstudyactivity']: 0;
+$selfstudyact9 = isset($data['lessonplan_data']['lessonDays'][8]['selfstudyactivity']) ? $data['lessonplan_data']['lessonDays'][8]['selfstudyactivity']: 0;
+$selfstudyact10 = isset($data['lessonplan_data']['lessonDays'][9]['selfstudyactivity']) ? $data['lessonplan_data']['lessonDays'][9]['selfstudyactivity']: 0;
+$selfstudyact11 = isset($data['lessonplan_data']['lessonDays'][10]['selfstudyactivity']) ? $data['lessonplan_data']['lessonDays'][10]['selfstudyactivity']: 0;
+$selfstudyact12 = isset($data['lessonplan_data']['lessonDays'][11]['selfstudyactivity']) ? $data['lessonplan_data']['lessonDays'][11]['selfstudyactivity']: 0;
 
+@endphp
+var convertclassroomactivity = {!! DB::table('content_master')
+    ->whereRaw('id IN (' . $classroomactivity . ') and sub_institute_id = ' . session()->get('sub_institute_id') . ' and syear = ' . session()->get('syear'))
+    ->selectRaw('id, title, file_folder, filename')
+    ->get() !!};
+var selfstudyact1 = {!! DB::table('content_master')
+    ->whereRaw('id IN (' . $selfstudyact1 . ') and sub_institute_id = ' . session()->get('sub_institute_id') . ' and syear = ' . session()->get('syear'))
+    ->selectRaw('id, title, file_folder, filename')
+    ->get() !!};
+    var selfstudyact2 = {!! DB::table('content_master')
+    ->whereRaw('id IN (' . $selfstudyact2 . ') and sub_institute_id = ' . session()->get('sub_institute_id') . ' and syear = ' . session()->get('syear'))
+    ->selectRaw('id, title, file_folder, filename')
+    ->get() !!};
+    var selfstudyact3 = {!! DB::table('content_master')
+    ->whereRaw('id IN (' . $selfstudyact3 . ') and sub_institute_id = ' . session()->get('sub_institute_id') . ' and syear = ' . session()->get('syear'))
+    ->selectRaw('id, title, file_folder, filename')
+    ->get() !!};
+    var selfstudyact4 = {!! DB::table('content_master')
+    ->whereRaw('id IN (' . $selfstudyact4 . ') and sub_institute_id = ' . session()->get('sub_institute_id') . ' and syear = ' . session()->get('syear'))
+    ->selectRaw('id, title, file_folder, filename')
+    ->get() !!};
+    var selfstudyact5 = {!! DB::table('content_master')
+    ->whereRaw('id IN (' . $selfstudyact5 . ') and sub_institute_id = ' . session()->get('sub_institute_id') . ' and syear = ' . session()->get('syear'))
+    ->selectRaw('id, title, file_folder, filename')
+    ->get() !!};
+    var selfstudyact6 = {!! DB::table('content_master')
+    ->whereRaw('id IN (' . $selfstudyact6 . ') and sub_institute_id = ' . session()->get('sub_institute_id') . ' and syear = ' . session()->get('syear'))
+    ->selectRaw('id, title, file_folder, filename')
+    ->get() !!};
+    var selfstudyact7 = {!! DB::table('content_master')
+    ->whereRaw('id IN (' . $selfstudyact7 . ') and sub_institute_id = ' . session()->get('sub_institute_id') . ' and syear = ' . session()->get('syear'))
+    ->selectRaw('id, title, file_folder, filename')
+    ->get() !!};
+    var selfstudyact8 = {!! DB::table('content_master')
+    ->whereRaw('id IN (' . $selfstudyact8 . ') and sub_institute_id = ' . session()->get('sub_institute_id') . ' and syear = ' . session()->get('syear'))
+    ->selectRaw('id, title, file_folder, filename')
+    ->get() !!};
+    var selfstudyact9 = {!! DB::table('content_master')
+    ->whereRaw('id IN (' . $selfstudyact9 . ') and sub_institute_id = ' . session()->get('sub_institute_id') . ' and syear = ' . session()->get('syear'))
+    ->selectRaw('id, title, file_folder, filename')
+    ->get() !!};
+    var selfstudyact10 = {!! DB::table('content_master')
+    ->whereRaw('id IN (' . $selfstudyact10 . ') and sub_institute_id = ' . session()->get('sub_institute_id') . ' and syear = ' . session()->get('syear'))
+    ->selectRaw('id, title, file_folder, filename')
+    ->get() !!};
+    var selfstudyact11 = {!! DB::table('content_master')
+    ->whereRaw('id IN (' . $selfstudyact11 . ') and sub_institute_id = ' . session()->get('sub_institute_id') . ' and syear = ' . session()->get('syear'))
+    ->selectRaw('id, title, file_folder, filename')
+    ->get() !!};
+    var selfstudyact12 = {!! DB::table('content_master')
+    ->whereRaw('id IN (' . $selfstudyact12 . ') and sub_institute_id = ' . session()->get('sub_institute_id') . ' and syear = ' . session()->get('syear'))
+    ->selectRaw('id, title, file_folder, filename')
+    ->get() !!};
     const newData = [
         [{
                 header: "Standard",
@@ -297,8 +364,12 @@
                                 <tr><td><b>Closure:</b> ` + lessonplan_data.lesson_days[0].closure + `</td></tr>
                                 <tr><td><b>Self-study & Homework:</b> ` + lessonplan_data.lesson_days[0]
                         .selfstudyhomework + `</td></tr>
-                                <tr><td><b>Self-study & Activity:</b> ` + lessonplan_data.lesson_days[0]
-                        .selfstudyactivity + `</td></tr>
+                                <tr><td><div  class="pb-2"><b>Self-study & Activity:</b></div>` +
+            (selfstudyact1.length > 0 ?
+            selfstudyact1.map(activity => `<div><a  style="color:black" target="_blank" href=${activity.file_folder}/${activity.filename}>${activity.title}</a></div>`).join('') :
+                'No activities'
+            ) +
+            `</div></div></td></tr>
                                 <tr><td><b>Assessment:</b> ` + lessonplan_data.lesson_days[0].assessment + `</td></tr>
                             </table>` : '',
                 },
@@ -350,8 +421,10 @@
                                 <tr><td><b>Closure:</b> ` + lessonplan_data.lesson_days[1].closure + `</td></tr>
                                 <tr><td><b>Self-study & Homework:</b> ` + lessonplan_data.lesson_days[1]
                         .selfstudyhomework + `</td></tr>
-                                <tr><td><b>Self-study & Activity:</b> ` + lessonplan_data.lesson_days[1]
-                        .selfstudyactivity + `</td></tr>
+                                <tr><td><b>Self-study & Activity:</b> ` +   (selfstudyact2.length > 0 ?
+            selfstudyact2.map(activity => `<div><a  style="color:black" target="_blank" href=${activity.file_folder}/${activity.filename}>${activity.title}</a></div>`).join('') :
+                'No activities'
+            )  + `</td></tr>
                                 <tr><td><b>Assessment:</b> ` + lessonplan_data.lesson_days[1].assessment + `</td></tr>
                             </table>` : '',
                 },
@@ -407,8 +480,10 @@
                                 <tr><td><b>Closure:</b> ` + lessonplan_data.lesson_days[2].closure + `</td></tr>
                                 <tr><td><b>Self-study & Homework:</b> ` + lessonplan_data.lesson_days[2]
                         .selfstudyhomework + `</td></tr>
-                                <tr><td><b>Self-study & Activity:</b> ` + lessonplan_data.lesson_days[2]
-                        .selfstudyactivity + `</td></tr>
+                                <tr><td><b>Self-study & Activity:</b> ` +   (selfstudyact3.length > 0 ?
+            selfstudyact3.map(activity => `<div><a  style="color:black" target="_blank" href=${activity.file_folder}/${activity.filename}>${activity.title}</a></div>`).join('') :
+                'No activities'
+            )  + `</td></tr>
                                 <tr><td><b>Assessment:</b> ` + lessonplan_data.lesson_days[2].assessment + `</td></tr>
                             </table>` : '',
                 },
@@ -435,7 +510,12 @@
                 elementType: "label",
                 elementProps: {
                     class: "custom-label",
-                    value: lessonplan_data.classroompresentation,
+                    value: `<div><div class="pb-4">` + lessonplan_data.classroompresentation + `</div><div>` +
+            (convertclassroomactivity.length > 0 ?`<h6><b>Classroom Activity</b></h6>`+
+                convertclassroomactivity.map(activity => `<div><a target="_blank" href=${activity.file_folder}/${activity.filename}>${activity.title}</a></div>`).join('') :
+                'No activities'
+            ) +
+            `</div></div>`,
                 },
             },
             {
@@ -464,8 +544,10 @@
                                 <tr><td><b>Closure:</b> ` + lessonplan_data.lesson_days[3].closure + `</td></tr>
                                 <tr><td><b>Self-study & Homework:</b> ` + lessonplan_data.lesson_days[3]
                         .selfstudyhomework + `</td></tr>
-                                <tr><td><b>Self-study & Activity:</b> ` + lessonplan_data.lesson_days[3]
-                        .selfstudyactivity + `</td></tr>
+                                <tr><td><b>Self-study & Activity:</b> ` +   (selfstudyact4.length > 0 ?
+            selfstudyact4.map(activity => `<div><a  style="color:black" target="_blank" href=${activity.file_folder}/${activity.filename}>${activity.title}</a></div>`).join('') :
+                'No activities'
+            )  + `</td></tr>
                                 <tr><td><b>Assessment:</b> ` + lessonplan_data.lesson_days[3].assessment + `</td></tr>
                             </table>` : '',
                 },
@@ -521,8 +603,10 @@
                                 <tr><td><b>Closure:</b> ` + lessonplan_data.lesson_days[4].closure + `</td></tr>
                                 <tr><td><b>Self-study & Homework:</b> ` + lessonplan_data.lesson_days[4]
                         .selfstudyhomework + `</td></tr>
-                                <tr><td><b>Self-study & Activity:</b> ` + lessonplan_data.lesson_days[4]
-                        .selfstudyactivity + `</td></tr>
+                                <tr><td><b>Self-study & Activity:</b> ` +   (selfstudyact5.length > 0 ?
+            selfstudyact5.map(activity => `<div><a  style="color:black" target="_blank" href=${activity.file_folder}/${activity.filename}>${activity.title}</a></div>`).join('') :
+                'No activities'
+            )  + `</td></tr>
                                 <tr><td><b>Assessment:</b> ` + lessonplan_data.lesson_days[4].assessment + `</td></tr>
                             </table>` : '',
                 },
@@ -571,8 +655,10 @@
                                 <tr><td><b>Closure:</b> ` + lessonplan_data.lesson_days[5].closure + `</td></tr>
                                 <tr><td><b>Self-study & Homework:</b> ` + lessonplan_data.lesson_days[5]
                         .selfstudyhomework + `</td></tr>
-                                <tr><td><b>Self-study & Activity:</b> ` + lessonplan_data.lesson_days[5]
-                        .selfstudyactivity + `</td></tr>
+                                <tr><td><b>Self-study & Activity:</b> ` +   (selfstudyact6.length > 0 ?
+            selfstudyact6.map(activity => `<div><a  style="color:black" target="_blank" href=${activity.file_folder}/${activity.filename}>${activity.title}</a></div>`).join('') :
+                'No activities'
+            )  + `</td></tr>
                                 <tr><td><b>Assessment:</b> ` + lessonplan_data.lesson_days[5].assessment + `</td></tr>
                             </table>` : '',
                 },
@@ -614,8 +700,10 @@
                                 <tr><td><b>Closure:</b> ` + lessonplan_data.lesson_days[6].closure + `</td></tr>
                                 <tr><td><b>Self-study & Homework:</b> ` + lessonplan_data.lesson_days[6]
                         .selfstudyhomework + `</td></tr>
-                                <tr><td><b>Self-study & Activity:</b> ` + lessonplan_data.lesson_days[6]
-                        .selfstudyactivity + `</td></tr>
+                                <tr><td><b>Self-study & Activity:</b> ` +   (selfstudyact7.length > 0 ?
+            selfstudyact7.map(activity => `<div><a  style="color:black" target="_blank" href=${activity.file_folder}/${activity.filename}>${activity.title}</a></div>`).join('') :
+                'No activities'
+            )  + `</td></tr>
                                 <tr><td><b>Assessment:</b> ` + lessonplan_data.lesson_days[6].assessment + `</td></tr>
                             </table>` : '',
                 },
@@ -657,8 +745,10 @@
                                 <tr><td><b>Closure:</b> ` + lessonplan_data.lesson_days[7].closure + `</td></tr>
                                 <tr><td><b>Self-study & Homework:</b> ` + lessonplan_data.lesson_days[7]
                         .selfstudyhomework + `</td></tr>
-                                <tr><td><b>Self-study & Activity:</b> ` + lessonplan_data.lesson_days[7]
-                        .selfstudyactivity + `</td></tr>
+                                <tr><td><b>Self-study & Activity:</b> ` +   (selfstudyact8.length > 0 ?
+            selfstudyact8.map(activity => `<div><a  style="color:black" target="_blank" href=${activity.file_folder}/${activity.filename}>${activity.title}</a></div>`).join('') :
+                'No activities'
+            )  + `</td></tr>
                                 <tr><td><b>Assessment:</b> ` + lessonplan_data.lesson_days[7].assessment + `</td></tr>
                             </table>` : '',
                 },
@@ -693,8 +783,10 @@
                                 <tr><td><b>Closure:</b> ` + lessonplan_data.lesson_days[8].closure + `</td></tr>
                                 <tr><td><b>Self-study & Homework:</b> ` + lessonplan_data.lesson_days[8]
                         .selfstudyhomework + `</td></tr>
-                                <tr><td><b>Self-study & Activity:</b> ` + lessonplan_data.lesson_days[8]
-                        .selfstudyactivity + `</td></tr>
+                                <tr><td><b>Self-study & Activity:</b> ` +  (selfstudyact9.length > 0 ?
+            selfstudyact9.map(activity => `<div><a  style="color:black" target="_blank" href=${activity.file_folder}/${activity.filename}>${activity.title}</a></div>`).join('') :
+                'No activities'
+            )  + `</td></tr>
                                 <tr><td><b>Assessment:</b> ` + lessonplan_data.lesson_days[8].assessment + `</td></tr>
                             </table>` : '',
                 },
@@ -729,8 +821,10 @@
                                 <tr><td><b>Closure:</b> ` + lessonplan_data.lesson_days[9].closure + `</td></tr>
                                 <tr><td><b>Self-study & Homework:</b> ` + lessonplan_data.lesson_days[9]
                         .selfstudyhomework + `</td></tr>
-                                <tr><td><b>Self-study & Activity:</b> ` + lessonplan_data.lesson_days[9]
-                        .selfstudyactivity + `</td></tr>
+                                <tr><td><b>Self-study & Activity:</b> ` +   (selfstudyact10.length > 0 ?
+            selfstudyact10.map(activity => `<div><a  style="color:black" target="_blank" href=${activity.file_folder}/${activity.filename}>${activity.title}</a></div>`).join('') :
+                'No activities'
+            )  + `</td></tr>
                                 <tr><td><b>Assessment:</b> ` + lessonplan_data.lesson_days[9].assessment + `</td></tr>
                             </table>` : '',
                 },
@@ -765,8 +859,10 @@
                                 <tr><td><b>Closure:</b> ` + lessonplan_data.lesson_days[10].closure + `</td></tr>
                                 <tr><td><b>Self-study & Homework:</b> ` + lessonplan_data.lesson_days[10]
                         .selfstudyhomework + `</td></tr>
-                                <tr><td><b>Self-study & Activity:</b> ` + lessonplan_data.lesson_days[10]
-                        .selfstudyactivity + `</td></tr>
+                                <tr><td><b>Self-study & Activity:</b> ` +   (selfstudyact11.length > 0 ?
+            selfstudyact11.map(activity => `<div><a  style="color:black" target="_blank" href=${activity.file_folder}/${activity.filename}>${activity.title}</a></div>`).join('') :
+                'No activities'
+            )  + `</td></tr>
                                 <tr><td><b>Assessment:</b> ` + lessonplan_data.lesson_days[10].assessment + `</td></tr>
                             </table>` : '',
                 },
@@ -801,8 +897,10 @@
                                 <tr><td><b>Closure:</b> ` + lessonplan_data.lesson_days[11].closure + `</td></tr>
                                 <tr><td><b>Self-study & Homework:</b> ` + lessonplan_data.lesson_days[11]
                         .selfstudyhomework + `</td></tr>
-                                <tr><td><b>Self-study & Activity:</b> ` + lessonplan_data.lesson_days[11]
-                        .selfstudyactivity + `</td></tr>
+                                <tr><td><b>Self-study & Activity:</b> ` +   (selfstudyact12.length > 0 ?
+            selfstudyact12.map(activity => `<div><a  style="color:black" target="_blank" href=${activity.file_folder}/${activity.filename}>${activity.title}</a></div>`).join('') :
+                'No activities'
+            )  + `</td></tr>
                                 <tr><td><b>Assessment:</b> ` + lessonplan_data.lesson_days[11].assessment + `</td></tr>
                             </table>` : '',
                 },
@@ -822,6 +920,7 @@
         let accordionContainer = document.querySelector("#accordion-container");
         let data = newData[row][col];
         accordionContainer.innerHTML = "";
+        // console.log(data);
         if (data.header) {
             createAccordion([data]);
         }
@@ -965,6 +1064,7 @@
                     topic_id: topic_id
                 },
                 success: function(result) {
+                    console.log(result);
                     var html = '<h2>' + type + '</h2>';
                     result.forEach(element => {
                         if (type == 'classroomactivity') {
