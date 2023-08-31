@@ -72,7 +72,7 @@ br {
 
                     <div class="addButtonCheckbox1">     
                         <div class="row align-items-center">
-                            <div class="col-md-4">
+                            <div class="col-md-3">
                                 <div class="form-group">
                                     <label for="topicType">Mapping Type</label>
                                     <select class="load_map_value cust-select form-control mb-0" name="mapping_type[]" data-new = "1" id="mapping_type">
@@ -85,7 +85,7 @@ br {
                                     </select>
                                 </div>
                             </div>
-                            <div class="col-md-4">
+                            <div class="col-md-3">
                                 <div class="form-group">
                                     <label for="topicType2">Mapping Value</label>
                                     <select class="cust-select form-control map-value mb-0" name="mapping_value[]" data-new="1" id="mapping_value">                                    
@@ -93,13 +93,26 @@ br {
                                     </select>
                                 </div>
                             </div>
+                            <div class="col-md-3">
+                                <div class="form-group">
+                                    <label for="topicType2">Reason</label>
+                                  <textarea name="reasons[]" class="form-control" data-reason="1" row="2"></textarea>
+                                </div>
+                            </div>
                             
-                            <div class="col-md-4">
+                            <div class="col-md-3">
                                 <a href="javascript:void(0);" onclick="addNewRow1();" class="btn btn-success btn-sm mr-2"><i class="mdi mdi-plus"></i></a>                            
                             </div>
                         </div>
-                    </div>
 
+                      
+                    </div>
+                    <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="topicType2">Learning Outcome</label>
+                                  <textarea name="learning_outcome" class="form-control" row="2"></textarea>
+                                </div>
+                            </div>
                     <div class="col-md-8 border"> 
                         <label for="title" class="mt-2 text-primary font-weight-bold">Pre Topic</label>                                       
                         {{ App\Helpers\LMSSearchChain('3','single','pre',$data['standard_id'],'std,sub,chapter,topic',"","","") }}
@@ -214,40 +227,38 @@ br {
             var question = $(this).val();
         }
 
-        
+        // if ( question.length > 2 ) {
+        //     $.ajax({
+        //         url: "/api/get-bloom-texonomy?question="+ question,
+        //         method: 'GET',
+        //         dataType: "json",
+        //         success: function(res) {
+        //             console.log(res.prediction);
+        //             if (res.prediction) {
+        //                 $('.load_map_value.cust-select').val(82);
+        //                 var path = "{{ route('ajax_LMS_MappingValue') }}";
+        //                 $.ajax({
+        //                     url:path,
+        //                     data:'mapping_type=82',
+        //                     success:function(result){                     
+        //                         var e = $('select[name="mapping_value[]"][data-new=1]');           
+        //                         $(e).find('option').remove().end();            
+        //                         for(var i=0;i < result.length ;i++)
+        //                         {
+        //                             console.log(res.prediction, result[i]['name']);
+        //                             $(e).append($("<option></option>").val(result[i]['id']).html(result[i]['name']));
+        //                         }
 
-        if ( question.length > 2 ) {
-            $.ajax({
-                url: "/api/get-bloom-texonomy?question="+ question,
-                method: 'GET',
-                dataType: "json",
-                success: function(res) {
-                    console.log(res.prediction);
-                    if (res.prediction) {
-                        $('.load_map_value.cust-select').val(82);
-                        var path = "{{ route('ajax_LMS_MappingValue') }}";
-                        $.ajax({
-                            url:path,
-                            data:'mapping_type=82',
-                            success:function(result){                     
-                                var e = $('select[name="mapping_value[]"][data-new=1]');           
-                                $(e).find('option').remove().end();            
-                                for(var i=0;i < result.length ;i++)
-                                {
-                                    console.log(res.prediction, result[i]['name']);
-                                    $(e).append($("<option></option>").val(result[i]['id']).html(result[i]['name']));
-                                }
-
-                                var prediction = res.prediction;
+        //                         var prediction = res.prediction;
                                
-                                $('.map-value option').filter(function () { return $(this).html() == `${prediction}`; }).attr('selected', true);
+        //                         $('.map-value option').filter(function () { return $(this).html() == `${prediction}`; }).attr('selected', true);
                               
-                            }
-                        });
-                    }
-                }
-            });
-        }
+        //                     }
+        //                 });
+        //             }
+        //         }
+        //     });
+        // }
     });
 </script>
 <!-- <script src="{{asset('/plugins/bower_components/summernote/dist/summernote.min.js')}}"></script> -->
@@ -278,7 +289,13 @@ br {
          filebrowserUploadUrl: "{{route('uploadimage',['_token' => csrf_token() ])}}",
          filebrowserUploadMethod: 'form'
     });
-   
+    var editor = CKEDITOR.instances['question_title'];
+
+ editor.on('blur', function() {
+        // Call the check_input function when the CKEditor loses focus
+        check_input(editor.getData());
+    });
+
 </script>
 
 
@@ -322,9 +339,10 @@ function addNewRow1(){
     var htmlcontent = '';    
     htmlcontent += '<div class="clearfix"></div><div class="addButtonCheckbox1"><div class="row align-items-center">';
 
-    htmlcontent += '<div class="col-md-4"><div class="form-group"><label for="topicType">Mapping Type</label><select class="load_map_value cust-select form-control mb-0" name="mapping_type[]" data-new='+data_new+'>'+mapping_type_data+'</select></div></div>';
-    htmlcontent += '<div class="col-md-4"><div class="form-group"><label for="topicType2">Mapping Value</label><select class="cust-select form-control mb-0" name="mapping_value[]" data-new='+data_new+'><option value="">Select Mapping Value</option></select></div></div>';
-    htmlcontent += '<div class="col-md-4"><a href="javascript:void(0);" onclick="removeNewRow1();" class="btn btn-danger btn-sm"><i class="mdi mdi-minus"></i></a></div></div></div>';
+    htmlcontent += '<div class="col-md-3"><div class="form-group"><label for="topicType">Mapping Type</label><select class="load_map_value cust-select form-control mb-0" name="mapping_type[]" data-new='+data_new+'>'+mapping_type_data+'</select></div></div>';
+    htmlcontent += '<div class="col-md-3"><div class="form-group"><label for="topicType2">Mapping Value</label><select class="cust-select form-control mb-0" name="mapping_value[]" data-new='+data_new+'><option value="">Select Mapping Value</option></select></div></div>';
+    htmlcontent += '<div class="col-md-3"><div class="form-group"><label for="topicType2">Reasons</label><input name="reasons[]" data-reason='+data_new+' type="text" class="form-control"></div></div>';
+    htmlcontent += '<div class="col-md-3"><a href="javascript:void(0);" onclick="removeNewRow1();" class="btn btn-danger btn-sm"><i class="mdi mdi-minus"></i></a></div></div></div>';
                              
     $('.addButtonCheckbox1:last').after(htmlcontent);
 }
@@ -504,13 +522,12 @@ $("#lomaster").change(function(){
 @php
 $std_name = DB::table('standard')->where(['id'=>$_REQUEST['standard_id'],'sub_institute_id'=>session()->get('sub_institute_id')])->first();
  @endphp
-<script>
+ <script>
 //map value
 
 // Define the load_map_value function
 function load_map_value(data_new, selectedValue,map_val) {
     var mapping_type = $('select[name="mapping_type[]"][data-new=' + data_new + ']').val();
-    console.log(map_val);
     var path = "{{ route('ajax_LMS_MappingValue') }}";
     $.ajax({
         url: path,
@@ -530,7 +547,12 @@ function load_map_value(data_new, selectedValue,map_val) {
 
 // map type
 function check_input(inputElement) {
-    var inputValue = inputElement.value;
+    // alert(inputElement);
+    // var inputValue = inputElement.value;
+    var editor = CKEDITOR.instances['question_title'];
+
+// Get the content from the CKEditor instance
+var inputValue = editor.getData() ?? inputElement.value;
     var std ={!!$std_name->name!!};
 
       var data = {
@@ -538,6 +560,7 @@ function check_input(inputElement) {
         "standard": std,
         "type_depth":9,
         "type_bloom":82, 
+        "type_learning":"learn",
     };
    
     var path = "{{ route('chat') }}";
@@ -556,36 +579,52 @@ function check_input(inputElement) {
             data_new = parseInt(data_new) + 1; 
          
            var parsedResult = JSON.parse(result);
+    
+        // Extract the values for answer_depth and answer_bloom
+        var answer_depth = parsedResult[0].question_depth;
+        var reason_depth = parsedResult[0].reason_depth;        
+        // console.log(reason_depth);
+        var answer_bloom = parsedResult[0].question_bloom;
+        var reason_bloom = parsedResult[0].reason_bloom;
+        
+        var answer_learning = parsedResult[0].question_learning;
+        
+        var SelectElement_type1 = $('select[name="mapping_type[]"][data-new=1]');
+        SelectElement_type1.val(9);
+        load_map_value(1,9,answer_depth);
+        $('textarea[name="reasons[]"][data-reason=1]').val(reason_depth);
+        $('textarea[name="learning_outcome"]').val(answer_learning);
+        
+        var mappingTypeValues = [9, 82];
+        var selbox = [2];
+                var mapping_type_data = html;
+                if(data_new <= 2){
+                var htmlcontent = '';   
+                    selbox.forEach(i => {
+                        
+                htmlcontent += '<div class="clearfix"></div><div class="addButtonCheckbox1"><div class="row align-items-center">';
+                htmlcontent += '<div class="col-md-3"><div class="form-group"><label for="topicType">Mapping Type</label><select class="load_map_value cust-select form-control mb-0" name="mapping_type[]" data-new=' + i + '>' + mapping_type_data + '</select></div></div>';
+                htmlcontent += '<div class="col-md-3"><div class="form-group"><label for="topicType2">Mapping Value</label><select class="cust-select form-control mb-0" name="mapping_value[]" data-new=' + i + '><option value="">Select Mapping Value</option></select></div></div>';
+                htmlcontent += '<div class="col-md-3"><div class="form-group"><label for="topicType2">Reasons</label> <textarea name="reasons[]" data-reason='+i+' id="" rows="2" class="form-control"></textarea></div></div>';
+       
+                htmlcontent += '<div class="col-md-3"><a href="javascript:void(0);" onclick="removeNewRow1();" class="btn btn-danger btn-sm"><i class="mdi mdi-minus"></i></a></div></div></div>';
+            });                      
+                $('.addButtonCheckbox1:last').after(htmlcontent);
 
-// Extract the values for answer_depth and answer_bloom
-var answer_depth = parsedResult[0];
-var answer_bloom = parsedResult[1];
+        var SelectElement_type2 = $('select[name="mapping_type[]"][data-new=2]');
+        SelectElement_type2.val(82);
+        load_map_value(2,82,answer_bloom);
+        
+        // $('textarea[name="reason_2"]').val(reason_bloom);
+        $('textarea[name="reasons[]"][data-reason=2]').val(reason_bloom);
 
-var mappingTypeValues = [9, 82];
-        var mapping_type_data = html;
-        if(data_new <= 2){
-        var htmlcontent = '';    
-        htmlcontent += '<div class="clearfix"></div><div class="addButtonCheckbox1"><div class="row align-items-center">';
-        htmlcontent += '<div class="col-md-4"><div class="form-group"><label for="topicType">Mapping Type</label><select class="load_map_value cust-select form-control mb-0" name="mapping_type[]" data-new=' + data_new + '>' + mapping_type_data + '</select></div></div>';
-        htmlcontent += '<div class="col-md-4"><div class="form-group"><label for="topicType2">Mapping Value</label><select class="cust-select form-control mb-0" name="mapping_value[]" data-new=' + data_new + '><option value="">Select Mapping Value</option></select></div></div>';
-        htmlcontent += '<div class="col-md-4"><a href="javascript:void(0);" onclick="removeNewRow1();" class="btn btn-danger btn-sm"><i class="mdi mdi-minus"></i></a></div></div></div>';
-                                
-        $('.addButtonCheckbox1:last').after(htmlcontent);
-}
-        var newSelectElement_type = $('select[name="mapping_type[]"][data-new=' + data_new + ']');
-        var SelectElement_type = $('select[name="mapping_type[]"][data-new=1]');
-   
-    for (var i = 0  ; i <= mappingTypeValues.length; i++) {
-        if(i==0){
-            SelectElement_type.val(9); 
-            load_map_value(1,9,answer_depth);
-        }        
-        if (data_new == i + 1) {            
-        newSelectElement_type.val(mappingTypeValues[i]);
-        load_map_value(data_new, mappingTypeValues[i],answer_bloom);
-        break;
-        }
-    }
+        $('textarea[name="learning"]').val(answer_learning);
+
+        // SelectElement_type3.val(1693);
+        // load_map_value(3,1693,answer_learning);
+        
+            }
+
         }
     });
 

@@ -173,7 +173,8 @@ class leaveApplicationController extends Controller
     public function store(Request $request)
     {
         foreach ($_REQUEST['reply'] as $leave_app_id => $reply) {
-            DB::table('leave_applications')
+            if ($reply!='') {
+                DB::table('leave_applications')
                 ->where('id', $leave_app_id)
                 ->where('sub_institute_id', session()->get('sub_institute_id'))
                 ->where('syear', session()->get('syear'))
@@ -182,96 +183,98 @@ class leaveApplicationController extends Controller
                     'reply_on' => date('Y-m-d H:i:s'),
                     'reply_by' => session()->get('user_id'),
                 ]);
+            }
         }
         foreach ($_REQUEST['status'] as $leave_app_id => $status_data) {
-            DB::table('leave_applications')
-                ->where('id', $leave_app_id)
-                ->where('sub_institute_id', session()->get('sub_institute_id'))
-                ->where('syear', session()->get('syear'))
-                ->update([
-                    'status' => $status_data, 'reply_on' => date('Y-m-d H:i:s'),
-                ]);
+            if ($status_data!='') {
+                DB::table('leave_applications')
+                    ->where('id', $leave_app_id)
+                    ->where('sub_institute_id', session()->get('sub_institute_id'))
+                    ->where('syear', session()->get('syear'))
+                    ->update([
+                        'status' => $status_data, 'reply_on' => date('Y-m-d H:i:s'),
+                    ]);
 
-            //START Send Notification Code
-            $get_student = DB::table("leave_applications")
-                ->where("id", "=", $leave_app_id)
-                ->where("syear", "=", session()->get('syear'))
-                ->where("sub_institute_id", "=", session()->get('sub_institute_id'))
-                ->get()->toarray();
-
-
-            $student_id = $get_student[0]->student_id;
-            $apply_date = date('d-m-Y', strtotime($get_student[0]->apply_date));
-            $reply_on_date = date('d-m-Y', strtotime($get_student[0]->reply_on));
-
-            $student_data = DB::table("tblstudent_enrollment as se")
-                ->join('tblstudent as s', function ($join) {
-                    $join->whereRaw("s.id = se.student_id AND s.sub_institute_id = se.sub_institute_id");
-                })
-                ->selectRaw("*,concat_ws(' ',s.first_name,s.middle_name,s.last_name) as student_name")
-                ->where("s.id", "=", $student_id)
-                ->where("se.syear", "=", session()->get('syear'))
-                ->whereNull("se.end_date")
-                ->where("se.sub_institute_id", "=", session()->get('sub_institute_id'))
-                ->get()->toArray();
-
-            $schoolData = SchoolModel::where(['id' => session()->get('sub_institute_id')])->get()->toArray();
-            $schoolName = $schoolData[0]['SchoolName'];
-            $schoolLogo = $_SERVER['APP_URL'].'/admin_dep/images/'.$schoolData[0]['Logo'];
-
-            if (count($student_data) > 0 && !empty($get_student[0]->reply)) {
-                $mobile_no = $student_data[0]->mobile;
-                $student_name = $student_data[0]->student_name;
-
-                $pushMessage = $student_name . " - Your message : ".$get_student[0]->message." on date : ".$apply_date." - Reply : ".$get_student[0]->reply." on date : ".$reply_on_date." & status of Leave Application is : ".$get_student[0]->status;
-
-                $app_notification_content = [
-                    'NOTIFICATION_TYPE'        => 'Leave Application',
-                    'NOTIFICATION_DATE'        => $get_student[0]->reply_on,
-                    'STUDENT_ID'               => $student_id,
-                    'NOTIFICATION_DESCRIPTION' => $pushMessage,
-                    'STATUS'                   => 0,
-                    'SUB_INSTITUTE_ID'         => session()->get('sub_institute_id'),
-                    'SYEAR'                    => session()->get('syear'),
-                    'SCREEN_NAME'              => 'leave_application',
-                    'CREATED_BY'               => session()->get('user_id'),
-                    'CREATED_IP'               => $_SERVER['REMOTE_ADDR'],
-                ];
-
-                $gcm_data = DB::table("gcm_users")
-                    ->where("mobile_no", "=", $mobile_no)
+                //START Send Notification Code
+                $get_student = DB::table("leave_applications")
+                    ->where("id", "=", $leave_app_id)
+                    ->where("syear", "=", session()->get('syear'))
                     ->where("sub_institute_id", "=", session()->get('sub_institute_id'))
-                    ->groupBy("gcm_regid")
+                    ->get()->toarray();
+
+
+                $student_id = $get_student[0]->student_id;
+                $apply_date = date('d-m-Y', strtotime($get_student[0]->apply_date));
+                $reply_on_date = date('d-m-Y', strtotime($get_student[0]->reply_on));
+
+                $student_data = DB::table("tblstudent_enrollment as se")
+                    ->join('tblstudent as s', function ($join) {
+                        $join->whereRaw("s.id = se.student_id AND s.sub_institute_id = se.sub_institute_id");
+                    })
+                    ->selectRaw("*,concat_ws(' ',s.first_name,s.middle_name,s.last_name) as student_name")
+                    ->where("s.id", "=", $student_id)
+                    ->where("se.syear", "=", session()->get('syear'))
+                    ->whereNull("se.end_date")
+                    ->where("se.sub_institute_id", "=", session()->get('sub_institute_id'))
                     ->get()->toArray();
 
-                $gcmRegIds = [];
-                if (count($gcm_data) > 0) {
-                    foreach ($gcm_data as $key1 => $val1) {
-                        $gcmRegIds[] = $val1->gcm_regid;
-                    }
-                }
+                $schoolData = SchoolModel::where(['id' => session()->get('sub_institute_id')])->get()->toArray();
+                $schoolName = $schoolData[0]['SchoolName'];
+                $schoolLogo = $_SERVER['APP_URL'].'/admin_dep/images/'.$schoolData[0]['Logo'];
 
-                $bunch_arr = array_chunk($gcmRegIds, 1000);
-                if (! empty($bunch_arr)) {
-                    foreach ($bunch_arr as $val) {
-                        if (isset($val)) {
-                            $type = 'Leave Application';
-                            $message = array(
-                                'body'  => $pushMessage,
-                                'TYPE' => $type,
-                                'USER_ID' => $student_id,
-                                'title' => $schoolName.' - '.$type,
-                                'image' => $schoolLogo,
-                            );
-                            $pushStatus = send_FCM_Notification($val, $message, session()->get('sub_institute_id'));
-                            sendNotification($app_notification_content);
+                if (count($student_data) > 0 && !empty($get_student[0]->reply)) {
+                    $mobile_no = $student_data[0]->mobile;
+                    $student_name = $student_data[0]->student_name;
+
+                    $pushMessage = $student_name . " - Your message : ".$get_student[0]->message." on date : ".$apply_date." - Reply : ".$get_student[0]->reply." on date : ".$reply_on_date." & status of Leave Application is : ".$get_student[0]->status;
+
+                    $app_notification_content = [
+                        'NOTIFICATION_TYPE'        => 'Leave Application',
+                        'NOTIFICATION_DATE'        => $get_student[0]->reply_on,
+                        'STUDENT_ID'               => $student_id,
+                        'NOTIFICATION_DESCRIPTION' => $pushMessage,
+                        'STATUS'                   => 0,
+                        'SUB_INSTITUTE_ID'         => session()->get('sub_institute_id'),
+                        'SYEAR'                    => session()->get('syear'),
+                        'SCREEN_NAME'              => 'leave_application',
+                        'CREATED_BY'               => session()->get('user_id'),
+                        'CREATED_IP'               => $_SERVER['REMOTE_ADDR'],
+                    ];
+
+                    $gcm_data = DB::table("gcm_users")
+                        ->where("mobile_no", "=", $mobile_no)
+                        ->where("sub_institute_id", "=", session()->get('sub_institute_id'))
+                        ->groupBy("gcm_regid")
+                        ->get()->toArray();
+
+                    $gcmRegIds = [];
+                    if (count($gcm_data) > 0) {
+                        foreach ($gcm_data as $key1 => $val1) {
+                            $gcmRegIds[] = $val1->gcm_regid;
                         }
                     }
+
+                    $bunch_arr = array_chunk($gcmRegIds, 1000);
+                    if (! empty($bunch_arr)) {
+                        foreach ($bunch_arr as $val) {
+                            if (isset($val)) {
+                                $type = 'Leave Application';
+                                $message = array(
+                                    'body'  => $pushMessage,
+                                    'TYPE' => $type,
+                                    'USER_ID' => $student_id,
+                                    'title' => $schoolName.' - '.$type,
+                                    'image' => $schoolLogo,
+                                );
+                                $pushStatus = send_FCM_Notification($val, $message, session()->get('sub_institute_id'));
+                                sendNotification($app_notification_content);
+                                }
+                            }
+                        }
+                    }
+                //END Send Notification Code
                 }
             }
-            //END Send Notification Code
-
-        }
         $res = [
             "status_code" => 1,
             "message"     => "Leave Application Update Successufully.",
