@@ -2,7 +2,6 @@
 @include('../includes.header')
 @include('../includes.sideNavigation')
 
-
 <div id="page-wrapper">
 
     <div class="container-fluid">
@@ -67,29 +66,8 @@
     </center>
 </div>
 
-{{-- <div id="printableArea" class="col-md-12"> --}}
-{{-- <page size="A4"> --}}
-
-
-
-
-{{-- </page> --}}
-{{-- </div> --}}
-<!-- <center> <input type="button" onclick="PrintDiv('printableArea')" value="Print Receipt" /></center> -->
-{{-- <page size="A4"></page>
-<page size="A4" layout="landscape"></page>
-<page size="A5"></page>
-<page size="A5" layout="landscape"></page>
-<page size="A3"></page>
-<page size="A3" layout="landscape"></page> --}}
-
 @include('includes.footerJs')
 <script>
-
- function send_mail(){
-     
- }
-
     if ( window.history.replaceState ) {
       window.history.replaceState( null, null, window.location.href );
     }

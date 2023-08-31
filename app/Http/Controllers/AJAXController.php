@@ -494,6 +494,7 @@ class AJAXController extends Controller
     {
         $months = $request->checkedMonths;
         $student_id = $request->student_id;
+        $last_syear = (session()->get('syear')-1);
 
         if (empty($months)) {
             return "";
@@ -505,7 +506,7 @@ class AJAXController extends Controller
             "0" => $student_id,
         );
 
-        $year_arr2 = FeeMonthIdlast();
+        $year_arr2 = FeeMonthId($last_syear);
 
         $currunt_month = date('m');
         $last_y_month_id = $currunt_month . (session()->get('syear') - 1);
