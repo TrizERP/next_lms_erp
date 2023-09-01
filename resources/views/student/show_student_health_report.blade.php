@@ -142,7 +142,14 @@
                     },
                     {extend: 'csv', text: ' CSV', title: 'Student Health Report'},
                     {extend: 'excel', text: ' EXCEL', title: 'Student Health Report'},
-                    {extend: 'print', text: ' PRINT', title: 'Student Health Report'},
+                    {
+                        extend: 'print',
+                        text: ' PRINT',
+                        title: 'Student Health Report',
+                        customize: function (win) {
+                            $(win.document.body).prepend(`{!! App\Helpers\get_school_details("$grade_id", "$standard_id", "$division_id") !!}`);
+                        }
+                    },
                     'pageLength'
                 ],
             });
