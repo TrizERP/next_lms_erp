@@ -774,7 +774,7 @@ if (!function_exists('SearchStudent')) {
 }
 if (!function_exists('FeeMonthId')) {
 
-    function FeeMonthId()
+    function FeeMonthId($syear='')
     {
         $data = map_year::where([
             'sub_institute_id' => session()->get('sub_institute_id'),
@@ -793,7 +793,11 @@ if (!function_exists('FeeMonthId')) {
             10 => 'Oct', 11 => 'Nov', 12 => 'Dec',
         ];
         $months_arr = [];
-        $syear = session()->get('syear');
+        if($syear !=''){
+            $syear= $syear;
+        }else{
+            $syear = session()->get('syear');
+        }
 
         for ($i = 1; $i <= 12; $i++) {
             $months_arr[$start_month . $syear] = $months[$start_month] . '/' . $syear;
@@ -807,43 +811,7 @@ if (!function_exists('FeeMonthId')) {
         return $months_arr;
     }
 }
-// last year
-if (!function_exists('FeeMonthIdlast')) {
 
-    function FeeMonthIdlast()
-    {
-        $data = map_year::where([
-            'sub_institute_id' => session()->get('sub_institute_id'),
-            'syear' => (session()->get('syear') - 1),
-        ])->get()->toArray();
-        if (count($data) == 0) {
-            return array();
-            exit;
-        }
-
-        $start_month = $data[0]['from_month'];
-        $end_month = $data[0]['to_month'];
-
-        $months = [
-            1 => 'Jan', 2 => 'Feb', 3 => 'Mar', 4 => 'Apr', 5 => 'May', 6 => 'Jun', 7 => 'Jul', 8 => 'Aug', 9 => 'Sep',
-            10 => 'Oct', 11 => 'Nov', 12 => 'Dec',
-        ];
-        $months_arr = [];
-        $syear = (session()->get('syear') - 1);
-
-        for ($i = 1; $i <= 12; $i++) {
-            $months_arr[$start_month . $syear] = $months[$start_month] . '/' . $syear;
-            if ($start_month == 12) {
-                $start_month = 0;
-                ++$syear;
-            }
-            ++$start_month;
-        }
-
-        return $months_arr;
-    }
-}
-// last year end
 if (!function_exists('FeeBreackoff')) {
 
     function FeeBreackoff($student_ids, $standard = null)

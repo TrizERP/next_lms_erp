@@ -2405,7 +2405,7 @@ class dashboardController extends Controller
             $join->on(function ($query) use ($sub_institute_id) {
                 $query->whereColumn('i.menu_id', '=', 'm.id')
                     ->orWhereColumn('g.menu_id', '=', 'm.id');
-            })->whereRaw("FIND_IN_SET(" . $sub_institute_id . ", m.sub_institute_id)");
+            })->whereIn($sub_institute_id, DB::raw("FIND_IN_SET(m.sub_institute_id, m.sub_institute_id)"));
         })
         ->selectRaw('GROUP_CONCAT(distinct m.id) AS MID')
         ->where('u.sub_institute_id', $sub_institute_id)
