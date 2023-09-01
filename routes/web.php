@@ -167,7 +167,9 @@ Route::group([ 'middleware' => ['session', 'menu', 'logRoute']], function () {
 });
 
 Route::get('/import-data',[ImportController::class,'getImport']);
+Route::get('/marks-import',[ImportController::class,'Import']);
 Route::post('/import_parse', [ImportController::class,'parseImport'])->name('import_parse');
+Route::post('/custom_import_parse', [ImportController::class,'customParseImport'])->name('custom_import_parse');
 Route::post('/import_parse_fields', [ImportController::class,'matchFields'])->name('update.match_fields');
 Route::post('/import_process', [ImportController::class,'processImport'])->name('import_process');
 
