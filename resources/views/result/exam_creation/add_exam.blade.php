@@ -22,17 +22,12 @@
                         {{ method_field("POST") }}
                         {{csrf_field()}}
                         <div class="row">
-                            
+                        <!-- Below function will get term name and id from helper.php  -->                            
                         {{ App\Helpers\TermDD() }}
 
-                            <div class="col-md-4 form-group">
-                                <label>Medium : </label>
-                                <select name="medium" class="form-control">
-                                    <option value="">Select</option>
-                                    <option value="CBSE">CBSE</option>
-                                    <option value="GSEB">GSEB</option>
-                                </select>
-                            </div>
+                            <input type="hidden" name="medium" value="CBSE" > 
+
+                            <!-- Below function will get grade,standard,division name and id from helper.php  -->                            
                             {{ App\Helpers\SearchChain('4','single','grade,std') }} 
                             
                             <div class="col-md-4 form-group">
@@ -49,17 +44,9 @@
                                 </select>
                             </div>
 
-                            <div class="col-md-4 form-group ml-0 mr-0">
-                                <label>Convert Marks: </label>
-                                <input type="text" name="con_point" class="form-control">
-                            </div>
-
-                            <div class="col-md-4 form-group ml-0">
-                                <label>App Status : </label>
-                                <input type="radio" name="app_disp_status" value="Y" checked> Yes
-                                <input type="radio" name="app_disp_status" value="N"> No
-                            </div>
-
+                                <input type="hidden" name="con_point" class="form-control" value="0">
+                         
+                                <input type="hidden" name="app_disp_status" value="Y" > 
 
                             <div class="col-md-12 form-group">
                             <div class="table-responsive">
@@ -68,11 +55,8 @@
                                         <tr>
                                             <th>Name</th>
                                             <th>Marks</th>
-                                            <th>Marks/Grade</th>
-                                            <th>Report Card Status</th>
                                             <th>Sort Order</th>
                                             <th>Exam Date</th>
-                                            <!--<td>Action</td>-->
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -83,36 +67,21 @@
                                             <td>
                                                 <input type="text" name="points" class="form-control" />
                                             </td>
-                                            <td>
-                                                <select name="marks_type" class="form-control">
-                                                    <option value="">Select</option>
-                                                    <option value="MARKS">MARKS</option>
-                                                    <option value="GRADE">GRADE</option>
-                                                </select>
-                                            </td>
-                                            <td>
-                                                <select name="report_card_status" class="form-control">
-                                                    <option value="">Select</option>
-                                                    <option value="Y">Yes</option>
-                                                    <option value="N">No</option>
-                                                </select>
-                                            </td>
+                                         
+                                <input type="hidden" name="marks_type" class="form-control" value="MARKS">
+                                <input type="hidden" name="report_card_status" class="form-control" value="Y">
+                                            
+                                          
                                             <td>
                                                 <input type="text" name="sort_order" class="form-control" />
                                             </td>
                                             <td>
                                                 <input type="text" name="exam_date" class="form-control mydatepicker" autocomplete="off" />
                                             </td>
-    <!--                                        <td class="col-sm-2"><a class="deleteRow"></a>
-                                                <input type="button" class="addRow btn btn-md btn-success "  value="+">
-                                            </td>-->
                                         </tr>
                                     </tbody>
                                     <tfoot>
                                         <tr>
-    <!--                                        <td colspan="5" style="text-align: left;">
-                                                <input type="button" class="addRow btn btn-lg btn-block " id="addrow" value="Add Row" />
-                                            </td>-->
                                         </tr>
                                         <tr>
                                         </tr>
@@ -199,12 +168,11 @@
         }
 
     });
-    $('#subject').on('change', function () {
+    $('#standard').on('change', function () {
         var standardID = $("#standard").val();
-        var subjectID = $("#subject").val();
         var termID = $("#term").val();
 
-        if (standardID && subjectID && termID) {
+        if (standardID && termID) {
             $.ajax({
                 type: "GET",
                 url: "/api/get-exam-master-list?standard_id=" + standardID +

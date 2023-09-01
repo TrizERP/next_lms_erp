@@ -18,24 +18,10 @@
                         {{ method_field("PUT") }}
                         {{csrf_field()}}
                         <div class="row">
+                            <!-- Below function will get term name and id from helper.php  -->
                             {{ App\Helpers\TermDD($data['term_id']) }}
                         
-                            <div class="col-md-4 form-group">
-                                <label>Medium : </label>
-                                <select name="medium" class="form-control">
-                                    <option value="">Select</option>
-                                    <option
-                                        @if ($data['medium'] == "CBSE")
-                                        selected="selected"
-                                        @endif
-                                        value="CBSE">CBSE</option>
-                                    <option
-                                        @if ($data['medium'] == "GSEB")
-                                        selected="selected"
-                                        @endif
-                                        value="GSEB">GSEB</option>
-                                </select>
-                            </div>
+                            <input type="hidden" value="{{$data['medium']}}" name="medium">
 
                             <div class="col-md-4 form-group">
                                 <label>Exam Type : </label>
@@ -53,19 +39,12 @@
                             </div>
                            
                             <div class="col-md-12 form-group">
+                            <!-- Below function will get grade,standard,division name and id from helper.php  -->
                                 {{ App\Helpers\SearchChainSubject('4','single','grade,std,sub',$data['grade'],$data['standard_id'],$data['subject_id']) }}
                             </div>
-                            
-                            <div class="col-md-4 form-group ml-0 mr-0">
-                                <label>Convert Marks: </label>
-                                <input type="text" name="con_point" value="{{$data['con_point']}}" class="form-control">
-                            </div>
-
-                            <div class="col-md-4 form-group ml-0">
-                                <label>App Status : </label>
-                                <input type="radio" name="app_disp_status" value="Y" {{ ($data['app_disp_status']=="Y")? "checked" : "" }}> Yes
-                                <input type="radio" name="app_disp_status" value="N" {{ ($data['app_disp_status']=="N")? "checked" : "" }}> No
-                            </div>
+                        
+                            <input type="hidden" value="{{$data['con_point']}}" name="con_point">
+                            <input type="hidden" value="{{$data['app_disp_status']}}" name="app_disp_status">
 
                                 <div class="col-md-12 form-group">
                                 <table id="myTable" class="table table-striped table-bordered">
@@ -73,11 +52,8 @@
                                     <tr>
                                         <th>Name</th>
                                         <th>Marks</th>
-                                        <th>Marks/Grade</th>
-                                        <th>Report Card Status</th>
                                         <th>Sort Order</th>
                                         <th>Exam Date</th>
-                                                <!--<td>Action</td>-->
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -88,53 +64,20 @@
                                         <td>
                                             <input type="text" name="points" value="{{ $data['points'] }}" class="form-control" />
                                         </td>
-                                        <td>
-                                            <select name="marks_type" class="form-control">
-                                                <option value="">Select</option>
-                                                <option 
-                                                    @if ($data['marks_type'] == "MARKS" )
-                                                    selected="selected"
-                                                    @endif
-                                                    value="MARKS">MARKS</option>
-                                                <option 
-                                                    @if ($data['marks_type'] == "GRADE" )
-                                                    selected="selected"
-                                                    @endif
-                                                    value="GRADE">GRADE</option>
-                                            </select>
-
-                                        </td>
-                                        <td>
-                                            <select name="report_card_status" class="form-control">
-                                                <option value="">Select</option>
-                                                <option 
-                                                    @if ($data['report_card_status'] == "Y" )
-                                                    selected="selected"
-                                                    @endif
-                                                    value="Y">Yes</option>
-                                                <option 
-                                                    @if ($data['report_card_status'] == "N" )
-                                                    selected="selected"
-                                                    @endif
-                                                    value="N">No</option>
-                                            </select>
-                                        </td>
+                                        
+                                        <input type="hidden" value="{{$data['report_card_status']}}" name="report_card_status">
+                                        <input type="hidden" value="{{$data['marks_type']}}" name="marks_type">
+                                        
                                         <td>
                                             <input type="text" name="sort_order" value="{{ $data['sort_order'] }}" class="form-control" />
                                         </td>
                                         <td>
                                             <input type="text" name="exam_date" value="{{ $data['exam_date'] }}" class="form-control mydatepicker" autocomplete="off" />
                                         </td>
-<!--                                        <td class="col-sm-2"><a class="deleteRow"></a>
-                                            <input type="button" class="addRow btn btn-md btn-success "  value="+">
-                                        </td>-->
                                     </tr>
                                 </tbody>
                                 <tfoot>
                                 <tr>
-<!--                                        <td colspan="5" style="text-align: left;">
-                                        <input type="button" class="addRow btn btn-lg btn-block " id="addrow" value="Add Row" />
-                                    </td>-->
                                 </tr>
                                 <tr>
                                 </tr>
