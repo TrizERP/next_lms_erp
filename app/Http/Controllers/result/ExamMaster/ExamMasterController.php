@@ -61,13 +61,14 @@ class ExamMasterController extends Controller
 
     public function store(Request $request)
     { 
+        $sort = $request->get('SortOrder');
         foreach ($request->get('all_standard') as $std) {
             foreach ($request->get('all_term') as $term) {
                 $val = [
                     'Code' => $request->get('Code'),
                     'ExamType' => 14,
                     'ExamTitle' => $request->get('ExamTitle'),
-                    'SortOrder' => $request->get('SortOrder'),
+                    'SortOrder' => $sort++,
                     'SubInstituteId' => session()->get('sub_institute_id'),
                     'created_at' => now(),
                     'standard_id' => $std,
@@ -99,14 +100,14 @@ class ExamMasterController extends Controller
         $exam = ExamMaster::select('result_exam_master.*',
             DB::raw('COUNT(result_create_exam.id) AS total_count'),'standard.name as std_name','academic_year.title as term')
             ->leftjoin('standard', 'standard.id', '=', 'result_exam_master.standard_id')
-            ->leftjoin('academic_year', 'academic_year.id', '=', 'result_exam_master.term_id')            
+            ->leftjoin('academic_year', 'academic_year.term_id', '=', 'result_exam_master.term_id')            
             ->leftjoin("result_create_exam", function ($join) {
                 $join->on("result_create_exam.exam_id", "=", "result_exam_master.Id")
                     ->on("result_create_exam.sub_institute_id", "=", "result_exam_master.SubInstituteId");
             })
             ->where(['result_exam_master.SubInstituteId' => $sub_institute_id])
             ->groupby('result_exam_master.Id')
-            ->orderByRaw('standard.name,academic_year.title')            
+            ->orderByRaw('result_exam_master.SortOrder,standard.name,academic_year.title')            
             ->get();
         $i = 1;
         foreach ($exam as $id => $arr) {

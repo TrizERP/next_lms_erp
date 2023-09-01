@@ -133,6 +133,7 @@ class exam_creation_controller extends Controller
                 }
         }
         if ($eroor == false) {
+            $sort = $request->get('sort_order');
             $error_co_point = false;
                 foreach ($request->get('subject') as $sub_id => $sub_val) {
                     if ($request->get('con_point') != '') {
@@ -158,7 +159,7 @@ class exam_creation_controller extends Controller
                             'con_point'          => $request->get('con_point'),
                             'marks_type'         => $request->get('marks_type'),
                             'report_card_status' => $request->get('report_card_status'),
-                            'sort_order'         => $request->get('sort_order'),
+                            'sort_order'         => $sort++,
                             'exam_date'          => date("Y-m-d", strtotime($request->get('exam_date'))),
                         ]);
                         $data->save();
