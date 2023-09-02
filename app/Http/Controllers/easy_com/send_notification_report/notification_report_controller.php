@@ -82,7 +82,9 @@ class notification_report_controller extends Controller
                 if ($to_date != '') {
                     $q->where('an.NOTIFICATION_DATE', '<=', $to_date);
                 }
-            })->get()->toArray();
+            })
+            ->groupBy(['an.STUDENT_ID','an.NOTIFICATION_TYPE','an.NOTIFICATION_DATE','an.NOTIFICATION_DESCRIPTION','gu.imei_no'])
+            ->get()->toArray();
 
         $data = array_map(function ($value) {
             return (array) $value;
