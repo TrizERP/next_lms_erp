@@ -10,21 +10,15 @@ use PHPMailer\PHPMailer;
 use function App\Helpers\FeeBreackoff;
 use function App\Helpers\FeeBreakoffHeadWise;
 use function App\Helpers\FeeMonthId;
-use function App\Helpers\FeeBreackofflast;
-use function App\Helpers\FeeBreakoffHeadWiselast;
-use function App\Helpers\FeeMonthIdlast;
 use function App\Helpers\htmlToPDF;
 use function App\Helpers\htmlToPDFLandscape;
 use function App\Helpers\htmlToPDFLandscapeCertificate;
 use function App\Helpers\htmlToPDFPortrait;
 use function App\Helpers\OtherBreackOff;
-use function App\Helpers\OtherBreackOfflast;
 
 use function App\Helpers\OtherBreackOffHead;
 // use function App\Helpers\OtherBreackOffHeadlast;
 use function App\Helpers\OtherBreackOfMonth;
-use function App\Helpers\OtherBreackOfMonthlast;
-
 use App\Models\school_setup\standardModel;
 use App\Models\school_setup\divisionModel;
 use App\Models\school_setup\academic_sectionModel;
@@ -506,7 +500,7 @@ class AJAXController extends Controller
             "0" => $student_id,
         );
 
-        $year_arr2 = FeeMonthId($last_syear);
+        $year_arr2 = FeeMonthId($last_syear); //for current year
 
         $currunt_month = date('m');
         $last_y_month_id = $currunt_month . (session()->get('syear') - 1);
@@ -519,20 +513,20 @@ class AJAXController extends Controller
                 $search_ids2[] = $id;
             }
         }
-        $other_bk_off_month_wise2 = OtherBreackOfMonthlast($stu_arr);
+        $other_bk_off_month_wise2 = OtherBreackOfMonth($stu_arr,$last_syear); //for previous year
 
         $search_ids = $months;
-        $reg_bk_off = FeeBreackoff($stu_arr);
-        $other_bk_off = OtherBreackOff($stu_arr, $search_ids);
-        $other_bk_off_month_wise = OtherBreackOfMonth($stu_arr);
-        $year_arr = FeeMonthId();
+        $reg_bk_off = FeeBreackoff($stu_arr); // for current year
+        $other_bk_off = OtherBreackOff($stu_arr, $search_ids); // for current year
+        $other_bk_off_month_wise = OtherBreackOfMonth($stu_arr);// for current year
+        $year_arr = FeeMonthId();// for current year
 
-        $reg_bk_off2 = FeeBreackofflast($stu_arr);
-        $other_bk_off2 = OtherBreackOfflast($stu_arr, $search_ids2);
+        $reg_bk_off2 = FeeBreackoff($stu_arr,'',$last_syear);
+        $other_bk_off2 = OtherBreackOff($stu_arr, $search_ids2,'','','',$last_syear);
 
 
-        $head_wise_fees = FeeBreakoffHeadWise($stu_arr);
-        $head_wise_fees2 = FeeBreakoffHeadWiselast($stu_arr);
+        $head_wise_fees = FeeBreakoffHeadWise($stu_arr); //for previous year
+        $head_wise_fees2 = FeeBreakoffHeadWise($stu_arr,'','','',$last_syear);//for previous year
 
         $till_now_breckoff = $till_now_breckoff2 = array();
         foreach ($search_ids as $id => $val) {
@@ -585,7 +579,6 @@ class AJAXController extends Controller
         $full_bk = array_merge($reg_bk_month_wise, $other_bk_off);
 
         $full_bk2 = array_merge($reg_bk_month_wise2, $other_bk_off2);
-
         
         $feeTitles = array_keys($full_bk);
         $feeTitlesIn = implode("','", $feeTitles);
@@ -613,7 +606,7 @@ class AJAXController extends Controller
             $total = $total + $val;
         }
 
-        $other_fee_title = OtherBreackOffHead();
+        $other_fee_title = OtherBreackOffHead(); //for current year
 
         foreach ($other_fee_title as $id => $arr) {
             foreach ($full_bk as $title => $val) {
@@ -626,7 +619,7 @@ class AJAXController extends Controller
         }
 
         $full_bk["Total"] = $total;
-
+        // fees collect table for collecting amount
         $response = "";
         $response .= ' <tr class="spaceUnder">
                         <th  align="center" style="width: 30%;align-content: center;">Particular</th>
@@ -636,6 +629,7 @@ class AJAXController extends Controller
                         <th style="width: 20%;padding-left: 15px;">Fine</th>
                     </tr>';
         foreach ($full_bk as $id => $val) {
+            if($val!=0){
             $response .= "
                  <tr>
                     <td style='width: 20%'>$id</td>
@@ -654,6 +648,7 @@ class AJAXController extends Controller
                 $response .= "<td style='width: 25%'><input id='totalFin' type='text' name='totalFin' value='0' class='form-control directfine'></td>";
             }
             $response .= "</tr>";
+        }   
         }
 
         return $response;
