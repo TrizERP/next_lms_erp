@@ -21,6 +21,67 @@ class ImportController extends Controller
         return view('import.import', ['result' => $getTables]);
     }
 
+    public function Import()
+    {
+        $getTables = ["result_personalize_marks"];
+        return view('import.custom-import', ['result' => $getTables]);
+    }
+    public function customParseImport(Request $request) {
+
+        $request->validate([
+            'csv_file' => 'required|file|mimes:csv',
+            'tablename' => 'required',
+        ]);
+
+        $sub_institute_id = session()->get('sub_institute_id');
+        $syear = session()->get('syear');
+
+        $fileUrl = $request->file('csv_file');
+        $file = fopen($fileUrl, "r");
+        $fileHeader = fgetcsv($file, 0, ',');
+
+        $filePath = 'import';
+        $generateFileName = $sub_institute_id . "_" . $syear . "_" . rand('11111', '99999') . "." . $fileUrl->getClientOriginalExtension();
+        $destinationFileUrl = $filePath . "/" . $generateFileName;
+        $filePath = $filePath . "/";
+        $fileUrl->move($filePath, $generateFileName);
+        $csv_header_fields = [];
+        foreach ($fileHeader as $header) {
+            $csv_header_fields[] = Str::slug($header, ",");
+        }
+        $fileDetails = [];
+        while (!feof($file)) {
+            $fileDetail = [];
+            if ($file != false) $fileDetails[] = fgetcsv($file, 0, ',');
+        }
+        array_pop($fileDetails);
+
+        if(is_array($fileDetails)) {
+            foreach ($fileDetails as $fileDetail) {
+                if ($request->tablename == 'result_personalize_marks') {
+                    $array1 = array_slice($fileDetail, 0, 5);
+                    $array2 = array_slice($fileDetail, 5, count($fileDetail));
+                    $exam_data = array_chunk($array2, 3);
+                    foreach ($exam_data as $exam) {
+                        DB::table('result_personalize_marks')->insert([
+                            "syear" => $array1[0],
+                            "sub_institute_id" => $sub_institute_id,
+                            "enrollment_no" => $array1[1],
+                            "student_name" => $array1[2],
+                            "standard" => $array1[3],
+                            "subject" => $array1[4],
+                            "exam" => $exam[0],
+                            "total" => $exam[1],
+                            "obtain" => $exam[2],
+                        ]);
+                    }
+                }
+            }
+
+            return view('import.custom_import_success', ['result' => 'Data Saved Successfully']);
+        }
+    }
+
     public function matchFields(Request $request)
     {
         if ($request->skip_val) {
@@ -246,7 +307,7 @@ class ImportController extends Controller
                             $prepareData['standard_id'] = $standard_id->standard_id;
                             $prepareData['student_id'] = $student_id->id;
                         }
-                        unset($prepareData['enrollment_no']);
+                        unset($prepareData['enrollment_no'],$condition['enrollment_no'],$condition['standard_id']);
                         $fees_receipt_data = [];
                         $fees_receipt_data['STANDARD'] = $prepareData['standard_id'] ?? null;
                         $fees_receipt_data['SYEAR'] = $prepareData['syear'] = session()->get('syear');
@@ -254,7 +315,7 @@ class ImportController extends Controller
                         $found = false;
                         if (isset($data->is_skip) && $data->is_skip !== null) {
                             if ($data->is_skip == 1) {
-                                $is_found = DB::table($request->table_name)->where([['student_id', $student_id->id], ['sub_institute_id', session()->get('sub_institute_id')]])->where('syear', $syear)->first();
+                                $is_found = DB::table($request->table_name)->where([['student_id', $student_id->id], ['sub_institute_id', session()->get('sub_institute_id')]])->where('syear', $syear)->where($condition)->first();
                                 if ($is_found) {
                                     $found = true;
                                     $totalSkipRecordCount = $totalSkipRecordCount + 1;
@@ -262,9 +323,9 @@ class ImportController extends Controller
                                 }
                             } else if ($data->is_skip == 2) {
                                 $found = true;
-                                $overwriteFound = DB::table($request->table_name)->where([['student_id', $student_id->id], ['sub_institute_id', session()->get('sub_institute_id')]])->where('syear', $syear)->first();
+                                $overwriteFound = DB::table($request->table_name)->where([['student_id', $student_id->id], ['sub_institute_id', session()->get('sub_institute_id')]])->where('syear', $syear)->where($condition)->first();
                                 if ($overwriteFound) {
-                                    DB::table($request->table_name)->where([['student_id', $student_id->id], ['sub_institute_id', session()->get('sub_institute_id')]])->where('syear', $syear)->update($prepareData);
+                                    DB::table($request->table_name)->where([['student_id', $student_id->id], ['sub_institute_id', session()->get('sub_institute_id')]])->where('syear', $syear)->where($condition)->update($prepareData);
                                     DB::table('fees_receipt')->where([['FEES_ID', $overwriteFound->id], ['sub_institute_id', session()->get('sub_institute_id')]])->update($fees_receipt_data);
                                     $totalOverwiteRecordCount = $totalOverwiteRecordCount + 1;
                                     $totalOverwiteRecordArray[] = $rowKey + 1;
