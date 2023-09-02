@@ -170,4 +170,116 @@ class lmsCounsellingController extends Controller
         }
     }
 
+    public function careersInIndustry(Request $request, $id)
+    {
+        $type = $request->input('type');
+        $allCareers = [];
+
+        try {
+            $username = 'trizinnovation';
+            $password = '4225aej';
+
+            $credentials = base64_encode($username . ':' . $password);
+           
+            $nextPage = 'https://services.onetcenter.org/ws/mnm/browse/' . $id;
+
+            while (!is_null($nextPage)) {
+                $response = Http::withHeaders([
+                    'Authorization' => 'Basic ' . $credentials,
+                    'Accept' => 'application/json',
+                ])->get($nextPage);
+    
+                if ($response->successful()) {
+                    $data = $response->json();
+    
+                    // Add the careers from this page to the array
+                    $allCareers = array_merge($allCareers, $data['career']);
+    
+                    // Check if there's a "next" link in the response
+                    $nextLink = collect($data['link'])->firstWhere('rel', 'next');
+                    $nextPage = $nextLink ? $nextLink['href'] : null;
+                } 
+                else 
+                {
+                    $statusCode = $response->status();
+                    $errorMessage = $response->body();
+                    break; // Exit the loop in case of an error
+                }
+            }
+            return view('lms/counselling/career_in_industry', compact('allCareers'));
+        } 
+        catch (RequestException $exception) 
+        {
+            $errorMessage = $exception->getMessage();
+        }
+    }
+
+    public function careerReport(Request $request, $id)
+    {
+        $type = $request->input('type');
+
+        try {
+            $username = 'trizinnovation';
+            $password = '4225aej';
+
+            $credentials = base64_encode($username . ':' . $password);
+           
+            $response = Http::withHeaders([
+                'Authorization' => 'Basic ' . $credentials,
+                'Accept' => 'application/json',
+            ])->get('https://services.onetcenter.org/ws/mnm/careers/' . $id);
+           
+            if ($response->successful()) 
+            {
+                $data = $response->json();
+                
+                return view('lms/counselling/career_report', compact('data', 'id'));
+                //return is_mobile($type, 'lms/counselling/demo_career_exam', ['data' => $data], "view");
+            } 
+            else 
+            {
+                $statusCode = $response->status();
+                $errorMessage = $response->body();
+            }
+        } 
+        catch (RequestException $exception) {
+            $errorMessage = $exception->getMessage();
+        }
+    }
+
+    public function resources(Request $request, $id, $title)
+    {
+        $type = $request->input('type');
+
+        try {
+            $username = 'trizinnovation';
+            $password = '4225aej';
+
+            $credentials = base64_encode($username . ':' . $password);
+
+            $url = 'https://services.onetcenter.org/ws/mnm/careers/' . urlencode($id) . '/' . strtolower($title);
+           
+            $response = Http::withHeaders([
+                'Authorization' => 'Basic ' . $credentials,
+                'Accept' => 'application/json',
+            ])->get($url);
+           
+            if ($response->successful()) 
+            {
+                $data = $response->json();
+            //    dd($data);
+                return view('lms/counselling/career_report_resource', compact('data', 'id', 'title'));
+                //return is_mobile($type, 'lms/counselling/demo_career_exam', ['data' => $data], "view");
+            } 
+            else 
+            {
+                $statusCode = $response->status();
+                $errorMessage = $response->body();
+            }
+        } 
+        catch (RequestException $exception) {
+            $errorMessage = $exception->getMessage();
+        }
+    }
+
 }
