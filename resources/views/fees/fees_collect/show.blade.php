@@ -1,5 +1,4 @@
 @include('includes.headcss')
-    <link rel="stylesheet" href="../../../tooltip/enjoyhint/jquery.enjoyhint.css">
 @include('includes.header')
 @include('includes.sideNavigation')
 
@@ -13,18 +12,17 @@
 
         <div class="card">
         @if(!empty($data['message']))
-                    @if(!empty($data['status_code']) && $data['status_code'] == 1)
-                        <div class="alert alert-success alert-block">
-                            @else
-                                <div class="alert alert-danger alert-block">
-                                    @endif
-                                    <button type="button" class="close" data-dismiss="alert">×</button>
-                                    <strong>{{ $data['message'] }}</strong>
-                                </div>
+            @if(!empty($data['status_code']) && $data['status_code'] == 1)
+                <div class="alert alert-success alert-block">
+                    @else
+                        <div class="alert alert-danger alert-block">
                             @endif
-            @php
+                            <button type="button" class="close" data-dismiss="alert">×</button>
+                            <strong>{{ $data['message'] }}</strong>
+                        </div>
+            @endif
+        @php
         $grade_id = $standard_id = $division_id = '';
-
             if(isset($data['grade_id'])){
                 $grade_id = $data['grade_id'];
                 $standard_id = $data['standard_id'];
@@ -44,20 +42,20 @@
                     </div>
                     
                     <div class="col-md-4 form-group">
-                        <label>{{App\Helpers\get_string('studentname','request')}}<i class="mdi mdi-lead-pencil"></i></label>
-                        <input type="text" id="stu_name" placeholder="{{App\Helpers\get_string('studentname','request')}}" name="stu_name" class="form-control" @if(isset($data['stu_name'])) value="{{$data['stu_name']}}" @endif>
+                        <label>{{App\Helpers\get_string('studentname')}}<i class="mdi mdi-lead-pencil"></i></label>
+                        <input type="text" id="stu_name" placeholder="{{App\Helpers\get_string('studentname')}}" name="stu_name" class="form-control" @if(isset($data['stu_name'])) value="{{$data['stu_name']}}" @endif>
                     </div>
                     <div class="col-md-4 form-group">
-                        <label>{{App\Helpers\get_string('uniqueid','request')}}<i class="mdi mdi-lead-pencil"></i></label>
-                        <input type="text" id="uniqueid" placeholder="{{App\Helpers\get_string('uniqueid','request')}}" name="uniqueid" class="form-control" @if(isset($data['uniqueid'])) value="{{$data['uniqueid']}}" @endif>
+                        <label>{{App\Helpers\get_string('uniqueid')}}<i class="mdi mdi-lead-pencil"></i></label>
+                        <input type="text" id="uniqueid" placeholder="{{App\Helpers\get_string('uniqueid')}}" name="uniqueid" class="form-control" @if(isset($data['uniqueid'])) value="{{$data['uniqueid']}}" @endif>
                     </div>
                     <div class="col-md-4 form-group">
                         <label>Mobile</label>
                         <input type="text" id="mobile" placeholder="Mobile" name="mobile" class="form-control" @if(isset($data['mobile'])) value="{{$data['mobile']}}" @endif>
                     </div>                        
                     <div class="col-md-4 form-group">
-                        <label>{{App\Helpers\get_string('grno','request')}}<i class="mdi mdi-lead-pencil"></i></label>
-                        <input type="text" id="grno" placeholder="{{App\Helpers\get_string('grno','request')}}" name="grno" class="form-control" @if(isset($data['grno'])) value="{{$data['grno']}}" @endif>
+                        <label>{{App\Helpers\get_string('grno')}}<i class="mdi mdi-lead-pencil"></i></label>
+                        <input type="text" id="grno" placeholder="{{App\Helpers\get_string('grno')}}" name="grno" class="form-control" @if(isset($data['grno'])) value="{{$data['grno']}}" @endif>
                         @if(app('request')->input('implementation') == 1)
                         <input type="hidden" name="implementation" value="1">
                         @endif
@@ -72,12 +70,11 @@
                     <div class="col-md-12 form-group">
                         <center>
                             <input type="submit" name="submit" value="Search Student" class="btn btn-success triz-btn" >
-                            <!-- <input onclick="location.reload();" type="button" value="Flust Trial" class="btn btn-success triz-btn" > -->
                         </center>
                     </div>
                 </div>
             </form>
-            
+
         </div>
 
        @if(isset($data['stu_data']))
@@ -89,19 +86,22 @@
                     {{ method_field("POST") }}
                     @csrf
                     <div class="table-responsive">
-                    <table class="table table-box table-bordered">
+                    <table id="example" class="table table-box table-bordered">
+                    <thead>
                         <tr>
                             <th>Sr No.</th>
-                            <th>{{ App\Helpers\get_string('studentname','request')}}</th>
-                            <th>{{ App\Helpers\get_string('grno','request')}}</th>
-                            <th>{{ App\Helpers\get_string('standard','request')}}</th>
-                            <th>{{ App\Helpers\get_string('division','request')}}</a></th>                            
-                            <th>{{ App\Helpers\get_string('studentquota','request')}}</th>
+                            <th>{{ App\Helpers\get_string('studentname')}}</th>
+                            <th>{{ App\Helpers\get_string('grno')}}</th>
+                            <th>{{ App\Helpers\get_string('standard')}}</th>
+                            <th>{{ App\Helpers\get_string('division')}}</a></th>                            
+                            <th>{{ App\Helpers\get_string('studentquota')}}</th>
                             <th>Mobile</th>
-                            <th>{{App\Helpers\get_string('uniqueid','request')}}</th>
+                            <th>{{App\Helpers\get_string('uniqueid')}}</th>
                             <th>Remaining Fees</th>
                             <th>Action</th>
                         </tr>
+                        </thead>
+                        <tbody>
                         @foreach ($data['stu_data'] as $id => $arr) 
                             <tr>
                                 <td>{{$id + 1 }}</td>
@@ -119,6 +119,8 @@
 
                             </tr>
                       @endforeach
+                      </tbody>
+
                     </table>
                 </div>
                 </form>
@@ -131,6 +133,8 @@
 
 @if (!isset($data['stu_data']))
 @if(isset(Session::get('erpTour')['fees_collect']) && Session::get('erpTour')['fees_collect'] == 0)
+<link rel="stylesheet" href="../../../tooltip/enjoyhint/jquery.enjoyhint.css">
+
         <script src="../../../tooltip/bower_components/todomvc-common/base.js"></script>
         <!-- <script src="../../../tooltip/bower_components/jquery/jquery.js"></script> -->
         <script src="../../../tooltip/bower_components/underscore/underscore.js"></script>
@@ -208,29 +212,49 @@
     </script>
 @endif
 @endif
-<script src="https://cdn.datatables.net/1.10.19/js/jquery.dataTables.min.js"></script>
-<script src="https://cdn.datatables.net/1.10.19/js/dataTables.bootstrap.min.js"></script>
-<script>
-$(document).ready(function () {
-    $('#example').DataTable({
-
-    });
-//    $("#grade").val("6");
-});
-
-</script>
 
 <script>
-    var menuId = localStorage.getItem('current_id');
-    var spans = document.querySelectorAll('span.menuId');
-    for (var i = 0; i < spans.length; i++) {
-        spans[i].textContent = menuId;
-    }
-    var url = '{{ route("norm-clature.create") }}?menu_id=' + menuId;
-    var links = document.querySelectorAll('a[href="{{ route("norm-clature.create") }}"]');
-    for (var j = 0; j < links.length; j++) {
-        links[j].href = url;
-    }
+	 $(document).ready(function () {
+        var table = $('#example').DataTable({
+            select: true,
+            lengthMenu: [
+                [100, 500, 1000, -1],
+                ['100', '500', '1000', 'Show All']
+            ],
+            dom: 'Bfrtip',
+            buttons: [
+                {
+                    extend: 'pdfHtml5',
+                    title: 'Fees Monthly Report',
+                    orientation: 'landscape',
+                    pageSize: 'LEGAL',
+                    pageSize: 'A0',
+                    exportOptions: {
+                        columns: ':visible'
+                    },
+                },
+                {extend: 'csv', text: ' CSV', title: 'Fees Monthly Report'},
+                {extend: 'excel', text: ' EXCEL', title: 'Fees Monthly Report'},
+                {extend: 'print', text: ' PRINT', title: 'Fees Monthly Report'},
+                'pageLength'
+            ],
+        });
+
+        $('#example thead tr').clone(true).appendTo('#example thead');
+        $('#example thead tr:eq(1) th').each(function (i) {
+            var title = $(this).text();
+            $(this).html('<input type="text" placeholder="Search ' + title + '" />');
+
+            $('input', this).on('keyup change', function () {
+                if (table.column(i).search() !== this.value) {
+                    table
+                        .column(i)
+                        .search( this.value )
+                        .draw();
+                }
+            } );
+        } );
+    } );
 </script>
 
 @if(app('request')->input('implementation') == 1)

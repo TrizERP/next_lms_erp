@@ -50,7 +50,7 @@ br {
                                 <label for="topicType">Question</label>
                                 <!-- <input type="text" class="form-control" id="question_title" name="question_title" placeholder="Enter Question"
                                 value="@if(isset($data['questionmaster_data']['question_title'])){{$data['questionmaster_data']['question_title']}}@endif"> -->
-                                 <textarea name="question_title" id="question_title" contenteditable="true">
+                                 <textarea name="question_title" id="question_title" contenteditable="true" onchange="check_input(this)">
                                      @if(isset($data['questionmaster_data']['question_title'])){{$data['questionmaster_data']['question_title']}}@endif       
                                  </textarea>
                                  <!-- <textarea class="summernote" id="question_title" name="question_title">
@@ -401,20 +401,14 @@ br {
          filebrowserUploadUrl: "{{route('uploadimage',['_token' => csrf_token() ])}}",
          filebrowserUploadMethod: 'form'
     });
-   
+    var editor = CKEDITOR.instances['question_title'];
+
+editor.on('blur', function() {
+       // Call the check_input function when the CKEditor loses focus
+       check_input(editor.getData());
+   });
 </script>
 <script>
-
-$( document ).ready(function() {   
-
-    // $('.summernote').summernote({
-    //     height: 200, // set editor height
-    //     minHeight: null, // set minimum height of editor
-    //     maxHeight: null, // set maximum height of editor
-    //     focus: false // set focus to editable area after initializing summernote
-    // });
-});
-
 
 $(document).on('change','.load_map_value', function(){
     var mapping_type = $(this).val();      
@@ -636,5 +630,102 @@ $("#lomaster").change(function(){
 })
 //END Bind LO Indicator
 
+</script>
+//END Bind LO Indicator
+</script>
+
+@php
+$std_name = DB::table('standard')->where(['id'=>$data['questionmaster_data']['standard_id'],'sub_institute_id'=>session()->get('sub_institute_id')])->first();
+ @endphp
+ <script>
+//map value
+
+// Define the load_map_value function
+function load_map_value(data_new, selectedValue,map_val) {
+    var mapping_type = $('select[name="mapping_type[]"][data-new=' + data_new + ']').val();
+    var path = "{{ route('ajax_LMS_MappingValue') }}";
+    $.ajax({
+        url: path,
+        data: 'mapping_type=' + mapping_type,
+        success: function(result) {
+            var e = $('select[name="mapping_value[]"][data-new=' + data_new + ']');
+            $(e).find('option').remove().end();
+            for (var i = 0; i < result.length; i++) {
+                $(e).append($("<option></option>").val(result[i]['id']).html(result[i]['name']));                 
+                if (result[i]['name'] === map_val) {
+                    $(e).find('option[value="' + result[i]['id'] + '"]').attr('selected', true);
+                }
+            }
+        }
+    });
+}
+
+// map type
+function check_input(inputElement) {
+    var inputValue = inputElement.value;
+    var editor = CKEDITOR.instances['question_title'];
+
+// Get the content from the CKEditor instance
+var inputValue = editor.getData() ?? inputElement.value;
+    var std ="{!!$std_name->name!!}";
+
+      var data = {
+        "question": inputValue,
+        "standard": std,
+        "type_depth":9,
+        "type_bloom":82, 
+        "type_learning":"learn",
+    };
+   
+    var path = "{{ route('chat') }}";
+    $.ajax({
+        url:path,
+        data: data,
+        success:function(result){  
+            console.log(result);
+            var selectElement_type = document.getElementById("mapping_type");
+         
+            $('select[name="mapping_type[]"]').each(function() {
+                data_new =  parseInt($(this).attr('data-new'));
+                html = $(this).html();
+            });
+         
+            data_new = parseInt(data_new) + 1; 
+         
+           var parsedResult = JSON.parse(result);
+    
+        // Extract the values for answer_depth and answer_bloom
+        var answer_depth = parsedResult[0].question_depth;
+        var reason_depth = parsedResult[0].reason_depth;        
+        // console.log(reason_depth);
+        var answer_bloom = parsedResult[0].question_bloom;
+        var reason_bloom = parsedResult[0].reason_bloom;
+        
+        var answer_learning = parsedResult[0].question_learning;
+        
+        var SelectElement_type1 = $('select[name="mapping_type[]"][data-new=1]');
+        SelectElement_type1.val(9);
+        load_map_value(1,9,answer_depth);
+        $('textarea[name="reasons[]"][data-reason=1]').val(reason_depth);
+        $('textarea[name="learning_outcome"]').val(answer_learning);
+        
+        var mappingTypeValues = [9, 82];
+        var selbox = [2];
+        
+        var SelectElement_type2 = $('select[name="mapping_type[]"][data-new=2]');
+        SelectElement_type2.val(82);
+        load_map_value(2,82,answer_bloom);
+        
+        // $('textarea[name="reason_2"]').val(reason_bloom);
+        $('textarea[name="reasons[]"][data-reason=2]').val(reason_bloom);
+
+        $('textarea[name="learning"]').val(answer_learning);
+
+            
+
+        }
+    });
+
+}
 </script>
 @include('includes.footer')

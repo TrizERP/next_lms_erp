@@ -245,7 +245,14 @@ $(document).ready(function(){
             }, 
             { extend: 'csv', text: ' CSV', title: 'Admission Enquiry Report' }, 
             { extend: 'excel', text: ' EXCEL', title: 'Admission Enquiry Report'}, 
-            { extend: 'print', text: ' PRINT', title: 'Admission Enquiry Report'}, 
+            {
+                extend: 'print',
+                text: ' PRINT',
+                title: 'Admission Enquiry Report',
+                customize: function (win) {
+                    $(win.document.body).prepend(`{!! App\Helpers\get_school_details("", "", "") !!}`);
+                }
+            },
             'pageLength' 
         ], 
         }); 

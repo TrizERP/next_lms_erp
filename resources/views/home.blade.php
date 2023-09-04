@@ -1,5 +1,5 @@
 @include('includes.headcss')
-<link rel="stylesheet" href="../../../tooltip/enjoyhint/jquery.enjoyhint.css">
+<link rel="stylesheet" href="../../../tooltip/enjoyhint/jquery.enjoyhint.css" rel="preload" as="style" onload="this.onload=null;this.rel='stylesheet'">
 @include('includes.header')
 @include('includes.sideNavigation')
 

@@ -258,12 +258,14 @@ br {
         //             }
         //         }
         //     });
-        // }
+        // 
     });
+
 </script>
 <!-- <script src="{{asset('/plugins/bower_components/summernote/dist/summernote.min.js')}}"></script> -->
 <script src="{{ asset("/ckeditor_wiris/ckeditor4/ckeditor.js") }}"></script>
 <script>
+  
     CKEDITOR.config.toolbar_Full =
         [
         { name: 'document', items : [ 'Source'] },
@@ -291,16 +293,14 @@ br {
     });
     var editor = CKEDITOR.instances['question_title'];
 
- editor.on('blur', function() {
-        // Call the check_input function when the CKEditor loses focus
-        check_input(editor.getData());
-    });
-
+editor.on('blur', function() {
+       // Call the check_input function when the CKEditor loses focus
+       check_input(editor.getData());
+   });
 </script>
 
 
 <script>
-
 
 $(document).on('change','.load_map_value', function(e){    
     e.stopPropagation();
@@ -547,13 +547,13 @@ function load_map_value(data_new, selectedValue,map_val) {
 
 // map type
 function check_input(inputElement) {
-    // alert(inputElement);
-    // var inputValue = inputElement.value;
+
+    var inputValue = inputElement.value;
     var editor = CKEDITOR.instances['question_title'];
 
 // Get the content from the CKEditor instance
 var inputValue = editor.getData() ?? inputElement.value;
-    var std ={!!$std_name->name!!};
+    var std = "{!!$std_name->name!!}";
 
       var data = {
         "question": inputValue,
