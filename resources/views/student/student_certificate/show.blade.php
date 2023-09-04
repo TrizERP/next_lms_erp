@@ -221,8 +221,15 @@
             }, 
             { extend: 'csv', text: ' CSV', title: 'Student Certificate Report' }, 
             { extend: 'excel', text: ' EXCEL', title: 'Student Certificate Report' }, 
-            { extend: 'print', text: ' PRINT', title: 'Student Certificate Report' }, 
-            'pageLength' 
+            {
+                extend: 'print',
+                text: ' PRINT',
+                title: 'Student Certificate Report',
+                customize: function (win) {
+                    $(win.document.body).prepend(`{!! App\Helpers\get_school_details("$grade_id", "$standard_id", "$division_id") !!}`);
+                }
+            },
+            'pageLength'
         ], 
         }); 
         $('#example thead tr').clone(true).appendTo( '#example thead' );

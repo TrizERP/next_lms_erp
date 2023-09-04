@@ -1250,8 +1250,8 @@ class fees_collect_controller extends Controller
 
             $fees_head_content = '<table class="particulars" width="100%" border="0">
                <tbody><tr>
-                  <td colspan="3"><b>Description</b></td>
-                  <td style="white-space:nowrap;"><b>Received (Rs.)</b></td>
+                  <td colspan="3" style="background-color:lightgray"><b>Particulars</b></td>
+                  <td style="background-color:lightgray;white-space:nowrap;"><b>Amount (Rs.)</b></td>
                </tr>';
 
             // 31/03/2021 START for Cumulative Fees Receipt
@@ -1303,7 +1303,7 @@ class fees_collect_controller extends Controller
                 $fees_head_content .= '</tr>';
             }
             $fees_head_content .= '<tr>
-                  <td align="left" colspan="3"><b>Total</b></td>
+                  <td align="right" colspan="3"><b>Total</b></td>
                   <td align="right"><b>&lt;&lt;grand_total&gt;&gt;</b></td>
                </tr>
             </tbody></table>';
