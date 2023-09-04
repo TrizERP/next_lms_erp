@@ -35,6 +35,8 @@
                             </select>
                         </div>
 
+                        {{ App\Helpers\TermDD() }}
+                        
                         {{ App\Helpers\SearchChain('4','single','grade,std,div') }}
 
                         <div class="col-md-4 form-group" style="display: none;" id="for_subject">
