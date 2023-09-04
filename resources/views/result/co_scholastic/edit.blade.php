@@ -20,7 +20,15 @@
                         <div class="row">
                         
                             {{ App\Helpers\TermDD($data['term_id']) }}                        
-
+                            <div class="col-md-4 form-group">
+                             
+                                <label>Standard: </label>                                
+                                <select name="standard" class="form-control" required>
+                                    @foreach ($data['standard'] as $id=>$arr)
+                                   <option value={{$arr->id}} @if($arr->id == $data['standard_id']) selected @endif>{{$arr->name}}</option>
+                                    @endforeach
+                                </select>
+                            </div>
                             <div class="col-md-4 form-group">
                                 <label>Co-Scholastic Title : </label>
                                 <input type="text" name="title" value="{{ $data['title'] }}" class="form-control" />

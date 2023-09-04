@@ -441,6 +441,7 @@ class AJAXController extends Controller
 
         $co_scholastic_parent = DB::table('result_co_scholastic as re')
             ->where($where)
+            ->where('re.standard_id',$request->standard_id)
             ->pluck('re.title', 're.id');
 
         return response()->json($co_scholastic_parent);
