@@ -17,6 +17,7 @@ class co_scholastic extends Model {
         'max_mark',
         'co_grade',
         'sub_institute_id',
+        'standard_id',        
         'created_at',
         'updated_at'
     ];
