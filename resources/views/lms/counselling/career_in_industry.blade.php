@@ -30,7 +30,7 @@ h2{
     <div class="container-fluid mb-5">
         <div class="course-grid-tab tab-pane fade show active" id="grid" role="tabpanel" aria-labelledby="grid-tab">
             
-            <h2>Industry Listing List</h2>
+            <h2>Career In Industry List</h2>
             
             <form id="online_exam" method="post" action="">
             {{ method_field('POST') }}
@@ -45,28 +45,27 @@ h2{
                                     <tbody>
                                         <tr><br>
                                             <td valign="top">
-                                            @if(isset($data['industry']))
-
-                                            @foreach ($data['industry'] as $industry)
-                                                <table align="center" width="95%" border="1" cellpadding="6" cellspacing="0">
-                                                    <tbody>
-                                                        <tr bgcolor="#ffffc6">
-                                                            <td colspan="2" valign="top" width="100%">
-                                                                <p> </p>
-                                                                <!-- <p class="directory4"><b>{{ $industry['title'] }}</b></p> -->
-                                                                <a class="directory4" href="{{ route('lmsIndustryListing.careersInIndustry',['id'=>$industry['code']])}}">
-                                                                {{ $industry['title'] }}
+                                            @if(isset($allCareers) && count($allCareers) > 0)
+                                                @foreach ($allCareers as $career)
+                                                    <table align="center" width="95%" border="1" cellpadding="6" cellspacing="0">
+                                                        <tbody>
+                                                            <tr bgcolor="#ffffc6">
+                                                                <td colspan="2" valign="top" width="100%">
+                                                                    <p> </p>
+                                                                    <!-- <p class="directory4"><b>{{ $career['title'] }}</b></p> -->
+                                                                    <a class="directory4" href="{{ route('lmsIndustryListing.careersInIndustry.careerReport',['id'=>$career['code']])}}">
+                                                                    {{ $career['title'] }}
                                                                 </a>
-                                                            </td>
-                                                        </tr>
-                                                    </tbody>
-                                                </table>
-                                                <br><br>
-                                            @endforeach
+                                                                </td>
+                                                            </tr>
+                                                        </tbody>
+                                                    </table>
+                                                    <br><br>
+                                                @endforeach
                                             @else
                                                 <p>No data available.</p>
                                             @endif
-                                           
+                                            </td>
                                         </tr>
                                     </tbody>
                                 </table>
