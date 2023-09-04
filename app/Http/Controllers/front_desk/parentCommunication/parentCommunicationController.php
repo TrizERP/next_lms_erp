@@ -446,6 +446,30 @@ class parentCommunicationController extends Controller
                 ->where('sub_institute_id', $sub_institute_id)
                 ->where('syear', $syear)
                 ->update(['reply' => $reply, 'reply_by' => $teacher_id, 'reply_on' => $reply_on]);
+            
+            $data = DB::table('parent_communication')
+                ->where('id', $parent_comm_id)
+                ->where('sub_institute_id', $sub_institute_id)
+                ->where('syear', $syear)
+                ->get()->toArray();    
+            //echo ("<pre>");print_r($data);die;
+            //START Send Notification Code
+
+            foreach ($data as $row) {
+                $app_notification_content = [
+                    'NOTIFICATION_TYPE'        => 'Parent Communication',
+                    'NOTIFICATION_DATE'        => date('Y-m-d'),
+                    'STUDENT_ID'               => $row->student_id,
+                    'NOTIFICATION_DESCRIPTION' => $reply,
+                    'STATUS'                   => 0,
+                    'SUB_INSTITUTE_ID'         => $sub_institute_id,
+                    'SYEAR'                    => $syear,
+                    'CREATED_BY'               => $teacher_id,
+                    'CREATED_IP'               => $_SERVER['REMOTE_ADDR'],
+                ];
+                sendNotification($app_notification_content);
+                //END Send Notification Code
+            }
 
             $res['status_code'] = 1;
             $res['message'] = "Success";

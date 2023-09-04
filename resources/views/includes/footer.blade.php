@@ -1,4 +1,9 @@
 <!--<script src="https://miraibot.ai/embed@latest.js" id="687e1c179bbf486788f11fa77d33f82f"></script>-->
+<div id="loading-overlay" style="display:none;">
+<center>
+  <img src="/admin_dep/images/loader-man.gif" id="loading-gif" alt="loading-gif" >
+  </center>
+    </div>
 <script>
 	// Accordian Menu
 	$(document).ready(function(){
@@ -13,7 +18,12 @@
 	});
 </script>
 </body>
-
+<!-- loading gif  -->
+<script>
+        window.addEventListener('beforeunload', function() {
+			$('#loading-overlay').show();
+        });
+</script>
 	<script>
 		function setSession(item,object)
 		{

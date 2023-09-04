@@ -160,7 +160,14 @@
             }, 
             { extend: 'csv', text: ' CSV', title: 'Enquiry Followup Report' }, 
             { extend: 'excel', text: ' EXCEL', title: 'Enquiry Followup Report'}, 
-            { extend: 'print', text: ' PRINT', title: 'Enquiry Followup Report'}, 
+            {
+                extend: 'print',
+                text: ' PRINT',
+                title: 'Enquiry Followup Report',
+                customize: function (win) {
+                    $(win.document.body).prepend(`{!! App\Helpers\get_school_details("", "", "") !!}`);
+                }
+            },
             'pageLength' 
         ], 
         }); 

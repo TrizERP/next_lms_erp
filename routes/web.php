@@ -394,6 +394,9 @@ Route::group(['middleware' => ['session', 'menu', 'logRoute']], function () {
     Route::get('books/{id}/reutrn', [BookController::class,'returnBook'])->name('books.return');
     Route::post('books/issue', [BookController::class,'issueBook'])->name('books.issue');
     Route::get('books.circulation', [BookController::class,'circulation'])->name('books.circulation');
+    Route::get('/livecomplaint',function(){
+   return view('frontdesk/livecomplaint');
+});
 });
 
 Route::get('privacyPolicy', [dashboardController::class, 'privacyPolicy'])->name('privacyPolicy');
