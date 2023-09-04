@@ -40,11 +40,11 @@
                             <table class="table-striped table" id="myTable" >
                                 <tr>
                                     <th>No</th>
-                                    <th>Student Name</th>
+                                    <th width="20%">Student Name</th>
                                     <th>Attendance</th>
                                     <th>Percentage</th>
-                                    <th>Remark</th>
-                                    <th>Teacher Remark</th>
+                                    <th width="20%">Remark</th>
+                                    <th width="40%">Teacher Remark</th>
                                 </tr>
                                 @php
                                 $arr = $data['stu_data'];
@@ -57,25 +57,21 @@
                                     <input type="hidden" name="values[{{ $col_arr['student_id'] }}][term_id]" value="{{$data['term_id']}}" />
                                     <td>@php echo $id+1; @endphp</td>
                                     <td>@php echo $col_arr['name']; @endphp</td>
-                                    <td><input type="text" class="att" name="values[{{ $col_arr['student_id'] }}][attendance]" style="width: 50px;" value="{{ $col_arr['att'] }}" /> Out Of <lable>{{$col_arr['att_out']}}</lable></td>
-                                    <td> <input type="text" class="at_per" name="values[{{ $col_arr['student_id'] }}][per]" readonly="readonly" style="width: 70px;"  value="{{ $col_arr['per'] }}%" /></td>
-                                    <td> 
-                                        <!--<input type="text" name="remark" value="{{ $col_arr['remark'] }}" />-->
-                                        <select name="values[{{ $col_arr['student_id'] }}][remark_id]" class="form-control">
+                                    <td><input type="text" class="att" name="values[{{ $col_arr['student_id'] }}][attendance]" style="width: 50%;" value="{{ $col_arr['att'] }}" /> Out Of <lable>{{$col_arr['att_out']}}</lable></td>
+                                    <td> <input type="text" class="at_per" name="values[{{ $col_arr['student_id'] }}][per]" readonly="readonly" style="width: 55%;"  value="{{ $col_arr['per'] }}%" /></td>
+                                    <td>
+                                        <select name="values[{{ $col_arr['student_id'] }}][remark_id]" class="form-control" onchange="set_comment(this, '{{ $col_arr['student_id'] }}');">
                                             <option value="">Select</option>
                                             @php
-                                            foreach ($data['remark_data'] as $id_dd=>$arr_dd){
-                                            $selected = "";
-                                            if($col_arr['remark'] == $id_dd){
-                                            $selected = 'selected=selected';
-                                            }
-                                            echo "<option $selected value=$id_dd>$arr_dd</option>";
+                                            foreach ($data['remark_data'] as $id_dd => $arr_dd) {
+                                                $selected = ($col_arr['remark'] == $id_dd) ? 'selected="selected"' : '';
+                                                echo "<option $selected value='$id_dd'>$arr_dd</option>";
                                             }
                                             @endphp
                                         </select>
                                     </td>
                                     <td>
-                                        <textarea name="values[{{ $col_arr['student_id'] }}][teacher_remark]" rows="2" cols="20" class="form-control">{{ $col_arr['teacher_remark'] }}</textarea>
+                                        <textarea name="values[{{ $col_arr['student_id'] }}][teacher_remark]" id="ta_comment_{{ $col_arr['student_id'] }}" rows="2" cols="20" class="form-control">{{ $col_arr['teacher_remark'] }}</textarea>
                                     </td>
                                 </tr>
                                 @php
@@ -123,5 +119,13 @@
         $row.find('.at_per').val($per + "%");
     });
 
+</script>
+<script>
+    function set_comment(selectElement, studentId) {
+        var dd_value = selectElement.value;
+        var dd_text = selectElement.options[selectElement.selectedIndex].text;
+        var ta_element = document.getElementById('ta_comment_' + studentId);
+        ta_element.value = dd_text;
+    }
 </script>
 @include('includes.footer')

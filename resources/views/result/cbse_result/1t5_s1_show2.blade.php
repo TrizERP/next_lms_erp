@@ -32,7 +32,7 @@
                     <?php
                     $header_data = $data['header_data'];
                     $footer_data = $data['footer_data'];
-                    $term_2_data = $data['term_2_data'];
+                    // $term_2_data = $data['term_2_data'];
                     $gradeScale = \App\Helpers\getGradeScale();
                     $grandTotal = 0;
                     //foreach ($data as $arr) {
@@ -103,11 +103,7 @@
                                                                         <th align="left" rowspan="2"><b>Subject Name</b></th>
                                                                         <!--<th class="main-th" align="left">Part 1-A-Scholastic Areas:</th>   -->
                                                                         <th  style="text-align: center;" colspan="<?php echo count($all_data['exam']) + 1; ?>" ><b><?php echo $all_data['term'] . " (" . $all_data['total_mark'] . " Marks)"; ?></b></th>
-                                                                        <th  style="text-align: center;" colspan="<?php echo count($term_2_data[$stuent_id]['exam']) + 1; ?>"><b><?php echo $term_2_data[$stuent_id]['term'] . " (" . $term_2_data[$stuent_id]['total_mark'] . " Marks)"; ?></b></th>
-                                                                        <th style="text-align: center;" rowspan="2"><b>Grand<br/>Total<br/> ({{ 
-                                                                            ($term_2_data[$stuent_id]['total_mark'] + $all_data['total_mark']) / 2
-                                                                        }})</b></th>
-                                                                        <th style="text-align: center;" rowspan="2"><b>Grade</b></th>
+                                                                       
                                                                     </tr>
                                                                     <tr>   
                                                                         
@@ -122,30 +118,10 @@
                                                                         }
                                                                         ?>
                                                                         <th style="text-align: center;"><b>Grade</b></th>
-                                                                        <?php
-                                                                        foreach ($term_2_data[$stuent_id]['exam'] as $temp_id => $exam_data) {
-                                                                            if(strtolower($exam_data['exam']) != 'marks obtained') {
-                                                                                $grandTotal += (float)$exam_data['mark'];
-                                                                            }
-                                                                        ?>
-                                                                        <th style="text-align: center;"><b><?php echo $exam_data['exam']; ?><br>(<?php echo $exam_data['mark']; ?>)</b></th>
-                                                                        <?php
-                                                                        }
-                                                                        ?>
-                                                                        <th style="text-align: center;"><b>Grade</b></th>
+                                                                        
                                                                     </tr>
                                                                     <?php
                                                                     foreach ($all_data['mark'] as $subject => $subject_data) {
-                                                                        if($subject_data['TOTAL_GAIN'] > 0){
-                                                                           $grandGainTotal = ((float)$subject_data['TOTAL_GAIN'] + (float) $term_2_data[$stuent_id]['mark'][$subject]['TOTAL_GAIN']) / 2;
-                                                                        }else{
-                                                                            $grandGainTotal = (float) $term_2_data[$stuent_id]['mark'][$subject]['TOTAL_GAIN'];
-                                                                        }
-                                                                        if($subject_data['TOTAL_MARKS'] > 0){
-                                                                            $grandSubTotal = ((float)$subject_data['TOTAL_MARKS'] + (float) $term_2_data[$stuent_id]['mark'][$subject]['TOTAL_MARKS']) / 2;
-                                                                        }else{
-                                                                            $grandSubTotal = (float) $term_2_data[$stuent_id]['mark'][$subject]['TOTAL_MARKS'];
-                                                                        }
                                                                         
                                                                         ?>
                                                                         <tr>   
@@ -154,12 +130,8 @@
                                                                                 if($exam_name != 'TOTAL_MARKS') { ?>
                                                                                 <td align="center"><?php echo $obtain_point; ?></td>   
                                                                             <?php }} ?>
-                                                                            <?php foreach ($term_2_data[$stuent_id]['mark'][$subject] as $exam_name => $obtain_point) { 
-                                                                                if($exam_name != 'TOTAL_MARKS') { ?>
-                                                                            <td align="center"><?php echo $obtain_point; ?></td>
-                                                                            <?php }} ?>
-                                                                            <td align="center"><b> {{ number_format($grandGainTotal, 2) }}</b></td>
-                                                                            <td align="center"><b>{{ \App\Helpers\getGrade($gradeScale, $grandSubTotal, $grandGainTotal) }}</b></td>
+                                                                            
+                                                                            
                                                                         </tr>
                                                                         <?php
                                                                     }
@@ -168,21 +140,7 @@
                                                                     <tr>
                                                                         <td colspan="<?php echo count($all_data['exam']); ?>"><b>Percentage</b></td>
                                                                         <td align="center"><b><?php echo number_format($all_data['per'],2); ?>%</b></td>
-                                                                        <td align="center"><b><?php echo ($all_data['per'] > 0) ? $all_data['final_grade'] : '-'; ?></b></td>
-                                                                        <td colspan="<?php echo count($term_2_data[$stuent_id]['exam']) - 1; ?>"></td>
-                                                                        <td align="center"><b><?php echo number_format($term_2_data[$stuent_id]['per'],2); ?>%</b></td>
-                                                                        <td align="center"><b><?php echo $term_2_data[$stuent_id]['final_grade']; ?></b></td>
-                                                                        <td align="center">
-                                                                         <?php if($all_data['per'] > 0){
-                                                                            $finalPer = number_format(($term_2_data[$stuent_id]['per'] + $all_data['per']) / 2, 2);
-                                                                        }else{
-                                                                            $finalPer = number_format($term_2_data[$stuent_id]['per'], 2);
-                                                                        }?>
-                                                                            <b>{{ $finalPer }}%</b>
-                                                                        </td>
-                                                                        <td align="center"><b>
-                                                                                {{ \App\Helpers\getGrade($gradeScale, 100, $finalPer) }}
-                                                                            </b></td>
+                                                                        
                                                                     </tr>
                                                                 </tbody>
                                                             </table>
@@ -194,16 +152,14 @@
                                                                 <?php
                                                                 $count = 0;
                                                                 if(isset($all_data['co_scholastic_area'])
-                                                                || isset($term_2_data[$stuent_id]['co_scholastic_area']))
+                                                                )
                                                                 {
                                                                 if (isset($all_data['co_scholastic_area'])) {
                                                                     $co_scholastic_area = $all_data['co_scholastic_area'];
-                                                                } else {
-                                                                    $co_scholastic_area = $term_2_data[$stuent_id]['co_scholastic_area'];
                                                                 }
                                                                 foreach ($co_scholastic_area as $co_area => $arr) {
                                                                 $term1co = $all_data['co_scholastic_area'][$co_area] ?? [];
-                                                                $term2co = $term_2_data[$stuent_id]['co_scholastic_area'][$co_area] ?? [];
+                                                                //$term2co = $term_2_data[$stuent_id]['co_scholastic_area'][$co_area] ?? [];
                                                                 foreach ($arr as $parent => $child_arr) {
                                                                 $term1arr = $term1co[$parent] ?? [];
                                                                 $term2arr = $term2co[$parent] ?? [];

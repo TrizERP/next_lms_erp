@@ -1,0 +1,344 @@
+<?php
+// main system configuration
+require '../../../sysconfig.inc.php';
+// start the session
+//require SENAYAN_BASE_DIR.'admin/default/session.inc.php';
+require SENAYAN_BASE_DIR.'admin/default/session_check.inc.php';
+require SIMBIO_BASE_DIR.'simbio_GUI/form_maker/simbio_form_table_AJAX.inc.php';
+require SIMBIO_BASE_DIR.'simbio_GUI/table/simbio_table.inc.php';
+require SIMBIO_BASE_DIR.'simbio_GUI/paging/simbio_paging.inc.php';
+require SIMBIO_BASE_DIR.'simbio_DB/datagrid/simbio_dbgrid.inc.php';
+require SIMBIO_BASE_DIR.'simbio_DB/simbio_dbop.inc.php';
+require SIMBIO_BASE_DIR.'simbio_UTILS/simbio_date.inc.php';
+
+// privileges checking
+$can_read = utility::havePrivilege('system', 'r');
+$can_write = utility::havePrivilege('system', 'w');
+
+if (!$can_read) {
+    die('<div class="errorBox">'.gettext('You don\'t have enough privileges to view this section').'</div>');
+}
+
+/* RECORD OPERATION */
+if (isset($_POST['saveData']) AND $can_read AND $can_write)
+ {
+    // check form validity
+    $holDesc = trim($dbs->escape_string(strip_tags($_POST['holDesc'])));
+    if (empty($holDesc)) 
+    {
+        utility::jsAlert('Holiday description can\'t be empty!');
+        exit();
+    }
+    else
+   {
+        $data['holiday_date'] = date('Y-m-d',strtotime(trim(preg_replace('@\s[0-9]{2}:[0-9]{2}:[0-9]{2}$@i', '', $_POST['holDate']))));
+        //utility::jsAlert($data['holiday_date']);
+        //exit();        
+        $holiday_start_date = $data['holiday_date'];
+        $data['holiday_dayname'] = date('D', strtotime($data['holiday_date']));
+        $data['description'] = $holDesc;
+
+        // create sql op object
+        $sql_op = new simbio_dbop($dbs);
+        if (isset($_POST['updateRecordID'])) {
+            /* UPDATE RECORD MODE */
+            // filter update record ID
+            $updateRecordID = (integer)$_POST['updateRecordID'];
+            if ($sql_op->update('holiday', $data, 'holiday_id='.$updateRecordID)) {
+                utility::jsAlert(gettext('Holiday Data Successfully updated'));
+                // update holiday_dayname session
+                $_SESSION['holiday_date'][$data['holiday_date']] = $data['holiday_date'];
+                echo '<script type="text/javascript">parent.setContent(\'mainContent\', parent.getPreviousAJAXurl(), \'post\');</script>';
+                exit();
+            } else {
+                utility::jsAlert(gettext('Holiday FAILED to update. Please Contact System Administrator')."\n".$sql_op->error);
+            }
+        } else {
+            /* INSERT RECORD MODE */
+            // insert the data
+            if ($sql_op->insert('holiday', $data)) {
+                utility::jsAlert(gettext('New Holiday Successfully Saved'));
+                // update holiday_dayname session
+                $_SESSION['holiday_date'][$data['holiday_date']] = $data['holiday_date'];
+                // date range insert
+//                if (isset($_POST['holDateEnd'])) {
+//                    $holiday_end_date = trim(preg_replace('@\s[0-9]{2}:[0-9]{2}:[0-9]{2}$@i', '', $_POST['holDateEnd']));
+//                    // check if holiday end date is more than holiday start date
+//                    if (simbio_date::compareDates($holiday_start_date, $holiday_end_date) == $holiday_end_date) {
+//                        $guard = 365;
+//                        $d = 1;
+//                        while ($holiday_start_date != $holiday_end_date) {
+//                            if ($d == $guard) {
+//                                break;
+//                            }
+//                            $holiday_start_date = simbio_date::getNextDate(1, $holiday_start_date);
+//                            list($date_year, $date_month, $date_date) = explode('-', $holiday_start_date);
+//                            $data['holiday_date'] = $holiday_start_date;
+//                            $data['holiday_dayname'] = date('D', mktime(0, 0, 0, $date_month, $date_date, $date_year));
+//                            @$sql_op->insert('holiday', $data);
+//                            $_SESSION['holiday_date'][$holiday_start_date] = $holiday_start_date;
+//                            $d++;
+//                        }
+//                    }
+//                }
+                echo '<script type="text/javascript">parent.setContent(\'mainContent\', \''.$_SERVER['PHP_SELF'].'?mode=special\', \'get\');</script>';
+                exit();
+            } else {
+                utility::jsAlert(gettext('Holiday FAILED to Save. Please Contact System Administrator')."\n".$sql_op->error);
+            }
+        }
+    }
+    exit();
+} else if (isset($_POST['itemID']) AND !empty($_POST['itemID']) AND isset($_POST['itemAction'])) {
+    if (!($can_read AND $can_write)) {
+        die();
+    }
+    /* DATA DELETION PROCESS */
+    $sql_op = new simbio_dbop($dbs);
+    $failed_array = array();
+    $error_num = 0;
+    if (!is_array($_POST['itemID'])) {
+        // make an array
+        $_POST['itemID'] = array((integer)$_POST['itemID']);
+    }
+    // loop array
+    foreach ($_POST['itemID'] as $itemID) {
+        $itemID = (integer)$itemID;
+        // get info about this holiday
+        $rec_q = $dbs->query('SELECT holiday_date FROM holiday WHERE holiday_id='.$itemID);
+        $rec_d = $rec_q->fetch_row();
+        if (!$sql_op->delete('holiday', 'holiday_id='.$itemID)) {
+            $error_num++;
+        } else {
+            // remove session for this holiday
+            unset($_SESSION['holiday_date'][$rec_d[0]]);
+        }
+    }
+
+    // error alerting
+    if ($error_num == 0) {
+        utility::jsAlert(gettext('All Data Successfully Deleted'));
+        echo '<script type="text/javascript">parent.setContent(\'mainContent\', \''.$_SERVER['PHP_SELF'].'?'.$_POST['lastQueryStr'].'\', \'post\');</script>';
+    } else {
+        utility::jsAlert(gettext('Some or All Data NOT deleted successfully!\nPlease contact system administrator'));
+        echo '<script type="text/javascript">parent.setContent(\'mainContent\', \''.$_SERVER['PHP_SELF'].'?'.$_POST['lastQueryStr'].'\', \'post\');</script>';
+    }
+    exit();
+}
+/* RECORD OPERATION */
+
+?>
+<table  align=center>
+<tr>
+	<td valign=top>
+	<?php
+	$bradecum = '';       
+        $basedir = basename(dirname(__FILE__));
+        $bradecum = "<a href=javascript:void(0); onclick=javascript:new_set_home(); >Home</a>->";
+//            <a class='' href=javascript:void(0); onclick=javascript:new_set('".$basedir."');>"; 
+//	$query = "select module_name from mst_module where module_path = '".$basedir."'";
+//	$set_query = $dbs->query($query);
+//	while($row=$set_query->fetch_assoc())
+//	{
+//                $_formated_module_name = ucwords(str_replace('_', ' ', $row['module_name']));
+//		$bradecum .= $_formated_module_name;
+//	}
+//$bradecum .= '</a>->';
+/*if(isset($_REQUEST['action']))
+{
+$bradecum .= '<a href='.MODULES_WEB_ROOT_DIR.'membership/index.php?action=detail class="headerText2">Add New Member</a>';
+}
+else
+{
+$bradecum .= '<a href='.MODULES_WEB_ROOT_DIR.'membership/index.php class="headerText2">View Member List</a>';
+}*/
+$bradecum .= '<a href='.MODULES_WEB_ROOT_DIR.'system/holiday.php class="headerText2">Holiday Setting</a>';
+echo $bradecum;
+        ?>	
+	</td>
+</tr>
+</table>
+<table>
+<tr>
+	<td class="tab_menu_top">
+                            <ul class="tabs"> 
+				<li>
+<a href="<?php echo MODULES_WEB_ROOT_DIR; ?>system/holiday.php" class="headerText2"><?php echo gettext('Set holiday'); ?></a>
+</li>
+<li> 
+<a href="<?php echo MODULES_WEB_ROOT_DIR; ?>system/holiday.php?mode=special" class="headerText2"><?php echo gettext('Special holiday'); ?></a></li>
+<li> 
+<a href="<?php echo MODULES_WEB_ROOT_DIR; ?>system/holiday.php?mode=special&action=detail" class="headerText2"><?php echo gettext('Add Special holiday'); ?></a>
+</li>
+</ul>
+	</td>
+</tr>
+</table>
+<!--<fieldset class="menuBox">
+<div class="menuBoxInner calendarIcon">
+   <?php echo strtoupper(gettext('Holiday Setting')); ?>
+    <p class="only_border">&nbsp;</p>
+    <a href="<?php echo MODULES_WEB_ROOT_DIR; ?>system/holiday.php" class="headerText2"><?php echo gettext('Set holiday'); ?></a>
+    &nbsp; <a href="<?php echo MODULES_WEB_ROOT_DIR; ?>system/holiday.php?mode=special" class="headerText2"><?php echo gettext('Special holiday'); ?></a>
+    &nbsp; <a href="<?php echo MODULES_WEB_ROOT_DIR; ?>system/holiday.php?mode=special&action=detail" class="headerText2"><?php echo gettext('Add Special holiday'); ?></a>
+</div>
+</fieldset>-->
+<?php
+if (isset($_GET['mode'])) {
+    if (isset($_POST['detail']) OR (isset($_GET['action']) AND $_GET['action'] == 'detail')) {
+        /* SPECIAL HOLIDAY RECORD FORM */
+        $itemID = (integer)isset($_POST['itemID'])?$_POST['itemID']:0;
+        $rec_q = $dbs->query('SELECT * FROM holiday WHERE holiday_id='.$itemID);
+        $rec_d = $rec_q->fetch_assoc();
+
+        // create new instance
+        $form = new simbio_form_table_AJAX('mainForm', $_SERVER['PHP_SELF'].'?'.$_SERVER['QUERY_STRING'], 'post');
+        $form->submit_button_attr = 'name="saveData" value="'.gettext('Save').'" class="button"';
+
+        // form table attributes
+        $form->table_attr = 'align="center" id="dataList" cellpadding="5" cellspacing="0"';
+        $form->table_header_attr = 'class="alterCell" style="font-weight: bold;"';
+        $form->table_content_attr = 'class="alterCell2"';
+
+        // edit mode flag set
+        if ($rec_q->num_rows > 0) {
+            $form->edit_mode = true;
+            // record ID for delete process
+            $form->record_id = $itemID;
+            // form record title
+            $form->record_title = $rec_d['description'];
+            // submit button attribute
+            $form->submit_button_attr = 'name="saveData" value="'.gettext('Update').'" class="button"';
+        }
+
+        /* Form Element(s) */
+        // holiday date start
+        $form->addDateField('holDate', gettext('Holiday Date Start'), $rec_d['holiday_date']);
+        // holiday date end
+        if (!$form->edit_mode) {
+            $form->addDateField('holDateEnd', gettext('Holiday Date End'), $rec_d['holiday_date']);
+        }
+        // holiday description
+       //commnet by iresh on 25-1-2011 $form->addTextField('text', 'holDesc', gettext('Holiday Description').'*', $rec_d['description'], 'style="width: 100%;"');
+       /*added by iresh on 25-1-2011*/ $form->addTextField('text', 'holDesc', gettext('Holiday Description').'*', $rec_d['description'], 'style="width: 140px;"');
+
+
+        // edit mode messagge
+        if ($form->edit_mode) {
+            echo '<div class="infoBox">'.gettext('You are going to edit holiday data').' : <b>'.$rec_d['description'].'</b></div>'; //mfc
+        }
+        // print out the form object
+        echo $form->printOut();
+    } else {
+        /* HOLIDAY LIST */
+        // table spec
+        $table_spec = 'holiday';
+
+        // create datagrid
+        $datagrid = new simbio_datagrid();
+        if ($can_read AND $can_write) {
+            $datagrid->setSQLColumn('holiday_id',
+                "holiday_dayname AS '".gettext('Day name')."'",
+                //DATE_FORMAT('holiday_date','%d%m%Y')." AS '".gettext('Holiday Date Start')."'",
+                "holiday_date '". ('Holiday Date Start')."'",  
+                "description AS '".gettext('Holiday Description')."'");
+        } else {
+            $datagrid->setSQLColumn("holiday_dayname AS '".gettext('Day name')."'",
+                "holiday_date AS '".gettext('Holiday Date Start')."'",
+                "description AS '".gettext('Holiday Description')."'");
+        }
+        $datagrid->setSQLorder('holiday_date DESC');
+
+        // is there any search
+        if (isset($_GET['keywords']) AND $_GET['keywords']) {
+           $keywords = $dbs->escape_string($_GET['keywords']);
+           $datagrid->setSQLCriteria("holiday_description LIKE '%$keywords%' OR holiday_date LIKE '%$keywords%'");
+        } else {
+            $datagrid->setSQLCriteria('holiday_date IS NOT NULL');
+        }
+
+        // set table and table header attributes
+        $datagrid->icon_edit = SENAYAN_WEB_ROOT_DIR.'admin/'.$sysconf['admin_template']['dir'].'/'.$sysconf['admin_template']['theme'].'/edit.gif';
+        $datagrid->table_attr = 'align="center" id="dataList" cellpadding="5" cellspacing="0"';
+        $datagrid->table_header_attr = 'class="dataListHeader" style="font-weight: bold;"';
+        // set delete proccess URL
+        $datagrid->chbox_form_URL = $_SERVER['PHP_SELF'];
+
+        // put the result into variables
+        $datagrid_result = $datagrid->createDataGrid($dbs, $table_spec, 20, ($can_read AND $can_write));
+        if (isset($_GET['keywords']) AND $_GET['keywords']) {
+            $msg = str_replace('{result->num_rows}', $datagrid->num_rows, gettext('Found <strong>{result->num_rows}</strong> from your keywords')); //mfc
+            echo '<div class="infoBox">'.$msg.' : "'.$_GET['keywords'].'"</div>';
+        }
+
+        echo $datagrid_result;
+    }
+} else {
+    // holiday setting saving proccess
+    if (isset($_POST['dayname'])) {
+        // make sure that not all day selected
+        if (count($_POST['dayname']) > 6) {
+            echo '<div class="errorBox">'.gettext('Maximum 6 day can be set as holiday!').'</div>';
+        } else {
+            // delete previous holiday dayname settings
+            $dbs->query('DELETE FROM holiday WHERE holiday_date IS NULL');
+            if ($_POST['dayname']) {
+                // emptying holiday dayname session first
+                $_SESSION['holiday_dayname'] = array();
+                foreach ($_POST['dayname'] as $dayname) {
+                    $dbs->query("INSERT INTO holiday VALUES(NULL, '$dayname', NULL, NULL)");
+                    // update holiday_dayname session
+                    $_SESSION['holiday_dayname'][] = $dayname;
+                }
+                // information box
+                echo '<div class="infoBox">'.gettext('Holiday settings saved').'</div>';
+            }
+        }
+    }
+
+    // get holiday data from database
+    $rec_q = $dbs->query('SELECT DISTINCT holiday_dayname FROM holiday WHERE holiday_date IS NULL');
+    // fetch holiday data
+    $hol_dayname = array();
+    if ($rec_q->num_rows > 0) {
+        while ($rec_d = $rec_q->fetch_row()) {
+            $hol_dayname[] = $rec_d[0];
+        }
+    }
+
+    // small function to check the checkbox
+    function isChecked($str_data)
+    {
+        global $hol_dayname;
+        if (in_array($str_data, $hol_dayname)) {
+            return 'checked';
+        }
+    }
+
+    // create table object
+    $table = new simbio_table();
+    $table->table_attr = 'align="center" class="border fullWidth" cellpadding="5" cellspacing="0"';
+
+    // dayname list
+    $table->appendTableRow(array('<input type="checkbox" name="dayname[]" value="mon" '.isChecked('mon').' /> '.gettext('Monday'),
+        '<input type="checkbox" name="dayname[]" value="tue" '.isChecked('tue').' /> '.gettext('Tuesday'),
+        '<input type="checkbox" name="dayname[]" value="wed" '.isChecked('wed').' /> '.gettext('Wednesday')));
+
+    $table->appendTableRow(array('<input type="checkbox" name="dayname[]" value="thu" '.isChecked('thu').' /> '.gettext('Thursday'),
+        '<input type="checkbox" name="dayname[]" value="fri" '.isChecked('fri').' /> '.gettext('Friday'),
+        '<input type="checkbox" name="dayname[]" value="sat" '.isChecked('sat').' /> '.gettext('Saturday')));
+
+    $table->appendTableRow(array('<input type="checkbox" name="dayname[]" value="sun" '.isChecked('sun').' /> '.gettext('Sunday')));
+    // set cell attribute
+    $table->setCellAttr(3, 0, 'colspan="3"');
+
+    // submit button
+    $table->appendTableRow(array('<input type="button" name="saveDaynameData" value="'.gettext('Save Settings').'" onclick="setContent(\'mainContent\', \''.$_SERVER['PHP_SELF'].'\', \'post\', $(\'holidayForm\').serialize())" />'));
+    // set cell attribute
+    $table->setCellAttr(4, 0, 'colspan="3" class="alterCell"');
+
+    echo '<form name="holidayForm" id="holidayForm">';
+    echo $table->printTable();
+    echo '</form>';
+}
+?>

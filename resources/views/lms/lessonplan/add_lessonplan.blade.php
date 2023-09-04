@@ -255,72 +255,73 @@
     }
     @php
 $classroomactivity = isset($data['lessonplan_data']['classroomactivity']) ? $data['lessonplan_data']['classroomactivity'] : 0;
-$selfstudyact1 = isset($data['lessonplan_data']['lessonDays'][0]['selfstudyactivity']) ? $data['lessonplan_data']['lessonDays'][0]['selfstudyactivity']: 0;
-$selfstudyact2 = isset($data['lessonplan_data']['lessonDays'][1]['selfstudyactivity']) ? $data['lessonplan_data']['lessonDays'][1]['selfstudyactivity']: 0;
-$selfstudyact3 = isset($data['lessonplan_data']['lessonDays'][2]['selfstudyactivity']) ? $data['lessonplan_data']['lessonDays'][2]['selfstudyactivity']: 0;
-$selfstudyact4 = isset($data['lessonplan_data']['lessonDays'][3]['selfstudyactivity']) ? $data['lessonplan_data']['lessonDays'][3]['selfstudyactivity']: 0;
-$selfstudyact5 = isset($data['lessonplan_data']['lessonDays'][4]['selfstudyactivity']) ? $data['lessonplan_data']['lessonDays'][4]['selfstudyactivity']: 0;
-$selfstudyact6 = isset($data['lessonplan_data']['lessonDays'][5]['selfstudyactivity']) ? $data['lessonplan_data']['lessonDays'][5]['selfstudyactivity']: 0;
-$selfstudyact7 = isset($data['lessonplan_data']['lessonDays'][6]['selfstudyactivity']) ? $data['lessonplan_data']['lessonDays'][6]['selfstudyactivity']: 0;
-$selfstudyact8 = isset($data['lessonplan_data']['lessonDays'][7]['selfstudyactivity']) ? $data['lessonplan_data']['lessonDays'][7]['selfstudyactivity']: 0;
-$selfstudyact9 = isset($data['lessonplan_data']['lessonDays'][8]['selfstudyactivity']) ? $data['lessonplan_data']['lessonDays'][8]['selfstudyactivity']: 0;
-$selfstudyact10 = isset($data['lessonplan_data']['lessonDays'][9]['selfstudyactivity']) ? $data['lessonplan_data']['lessonDays'][9]['selfstudyactivity']: 0;
-$selfstudyact11 = isset($data['lessonplan_data']['lessonDays'][10]['selfstudyactivity']) ? $data['lessonplan_data']['lessonDays'][10]['selfstudyactivity']: 0;
-$selfstudyact12 = isset($data['lessonplan_data']['lessonDays'][11]['selfstudyactivity']) ? $data['lessonplan_data']['lessonDays'][11]['selfstudyactivity']: 0;
+$selfstudyact1 = isset($data['lessonplan_data']['lessonDays'][0]['selfstudyactivity']) ? $data['lessonplan_data']['lessonDays'][0]['selfstudyactivity'] ?? 0 : 0;
+$selfstudyact2 = isset($data['lessonplan_data']['lessonDays'][1]['selfstudyactivity']) ? $data['lessonplan_data']['lessonDays'][1]['selfstudyactivity'] ?? 0 : 0;
+$selfstudyact3 = isset($data['lessonplan_data']['lessonDays'][2]['selfstudyactivity']) ? $data['lessonplan_data']['lessonDays'][2]['selfstudyactivity'] ?? 0 : 0;
+$selfstudyact4 = isset($data['lessonplan_data']['lessonDays'][3]['selfstudyactivity']) ? $data['lessonplan_data']['lessonDays'][3]['selfstudyactivity'] ?? 0 : 0;
+$selfstudyact5 = isset($data['lessonplan_data']['lessonDays'][4]['selfstudyactivity']) ? $data['lessonplan_data']['lessonDays'][4]['selfstudyactivity'] ?? 0 : 0;
+$selfstudyact6 = isset($data['lessonplan_data']['lessonDays'][5]['selfstudyactivity']) ? $data['lessonplan_data']['lessonDays'][5]['selfstudyactivity'] ?? 0 : 0;
+$selfstudyact7 = isset($data['lessonplan_data']['lessonDays'][6]['selfstudyactivity']) ? $data['lessonplan_data']['lessonDays'][6]['selfstudyactivity'] ?? 0 : 0;
+$selfstudyact8 = isset($data['lessonplan_data']['lessonDays'][7]['selfstudyactivity']) ? $data['lessonplan_data']['lessonDays'][7]['selfstudyactivity'] ?? 0 : 0;
+$selfstudyact9 = isset($data['lessonplan_data']['lessonDays'][8]['selfstudyactivity']) ? $data['lessonplan_data']['lessonDays'][8]['selfstudyactivity'] ?? 0 : 0;
+$selfstudyact10 = isset($data['lessonplan_data']['lessonDays'][9]['selfstudyactivity']) ? $data['lessonplan_data']['lessonDays'][9]['selfstudyactivity'] ?? 0 : 0;
+$selfstudyact11 = isset($data['lessonplan_data']['lessonDays'][10]['selfstudyactivity']) ? $data['lessonplan_data']['lessonDays'][10]['selfstudyactivity'] ?? 0 : 0;
+$selfstudyact12 = isset($data['lessonplan_data']['lessonDays'][11]['selfstudyactivity']) ? $data['lessonplan_data']['lessonDays'][11]['selfstudyactivity'] ?? 0 : 0;
 
 @endphp
-var convertclassroomactivity = {!! DB::table('content_master')
-    ->whereRaw('id IN (' . $classroomactivity . ') and sub_institute_id = ' . session()->get('sub_institute_id') . ' and syear = ' . session()->get('syear'))
+var convertclassroomactivity = {!! DB::table('content_master') ->whereIn('id', explode(',', $classroomactivity))
+    ->whereRaw('sub_institute_id = ' . session()->get('sub_institute_id') . ' and syear = ' . session()->get('syear'))
     ->selectRaw('id, title, file_folder, filename')
     ->get() !!};
 var selfstudyact1 = {!! DB::table('content_master')
-    ->whereRaw('id IN (' . $selfstudyact1 . ') and sub_institute_id = ' . session()->get('sub_institute_id') . ' and syear = ' . session()->get('syear'))
+    ->whereIn('id', explode(',', $selfstudyact1)) ->where('sub_institute_id', session()->get('sub_institute_id')) ->where('syear', session()->get('syear'))
     ->selectRaw('id, title, file_folder, filename')
     ->get() !!};
-    var selfstudyact2 = {!! DB::table('content_master')
-    ->whereRaw('id IN (' . $selfstudyact2 . ') and sub_institute_id = ' . session()->get('sub_institute_id') . ' and syear = ' . session()->get('syear'))
+var selfstudyact2 = {!! DB::table('content_master')
+        ->whereIn('id', explode(',', $selfstudyact2)) ->where('sub_institute_id', session()->get('sub_institute_id')) ->where('syear', session()->get('syear'))
     ->selectRaw('id, title, file_folder, filename')
     ->get() !!};
-    var selfstudyact3 = {!! DB::table('content_master')
-    ->whereRaw('id IN (' . $selfstudyact3 . ') and sub_institute_id = ' . session()->get('sub_institute_id') . ' and syear = ' . session()->get('syear'))
+var selfstudyact3 = {!! DB::table('content_master')
+        ->whereIn('id', explode(',', $selfstudyact3)) ->where('sub_institute_id', session()->get('sub_institute_id')) ->where('syear', session()->get('syear'))
     ->selectRaw('id, title, file_folder, filename')
     ->get() !!};
-    var selfstudyact4 = {!! DB::table('content_master')
-    ->whereRaw('id IN (' . $selfstudyact4 . ') and sub_institute_id = ' . session()->get('sub_institute_id') . ' and syear = ' . session()->get('syear'))
+var selfstudyact4 = {!! DB::table('content_master')
+        ->whereIn('id', explode(',', $selfstudyact4)) ->where('sub_institute_id', session()->get('sub_institute_id')) ->where('syear', session()->get('syear'))
+        ->selectRaw('id, title, file_folder, filename')
+        ->get() !!};
+var selfstudyact5 = {!! DB::table('content_master')
+        ->whereIn('id', explode(',', $selfstudyact5)) ->where('sub_institute_id', session()->get('sub_institute_id')) ->where('syear', session()->get('syear'))
     ->selectRaw('id, title, file_folder, filename')
     ->get() !!};
-    var selfstudyact5 = {!! DB::table('content_master')
-    ->whereRaw('id IN (' . $selfstudyact5 . ') and sub_institute_id = ' . session()->get('sub_institute_id') . ' and syear = ' . session()->get('syear'))
+var selfstudyact6 = {!! DB::table('content_master')
+        ->whereIn('id', explode(',', $selfstudyact6)) ->where('sub_institute_id', session()->get('sub_institute_id')) ->where('syear', session()->get('syear'))
     ->selectRaw('id, title, file_folder, filename')
     ->get() !!};
-    var selfstudyact6 = {!! DB::table('content_master')
-    ->whereRaw('id IN (' . $selfstudyact6 . ') and sub_institute_id = ' . session()->get('sub_institute_id') . ' and syear = ' . session()->get('syear'))
+var selfstudyact7 = {!! DB::table('content_master')
+        ->whereIn('id', explode(',', $selfstudyact7)) ->where('sub_institute_id', session()->get('sub_institute_id')) ->where('syear', session()->get('syear'))
     ->selectRaw('id, title, file_folder, filename')
     ->get() !!};
-    var selfstudyact7 = {!! DB::table('content_master')
-    ->whereRaw('id IN (' . $selfstudyact7 . ') and sub_institute_id = ' . session()->get('sub_institute_id') . ' and syear = ' . session()->get('syear'))
+var selfstudyact8 = {!! DB::table('content_master')
+        ->whereIn('id', explode(',', $selfstudyact8)) ->where('sub_institute_id', session()->get('sub_institute_id')) ->where('syear', session()->get('syear'))
     ->selectRaw('id, title, file_folder, filename')
     ->get() !!};
-    var selfstudyact8 = {!! DB::table('content_master')
-    ->whereRaw('id IN (' . $selfstudyact8 . ') and sub_institute_id = ' . session()->get('sub_institute_id') . ' and syear = ' . session()->get('syear'))
+var selfstudyact9 = {!! DB::table('content_master')
+        ->whereIn('id', explode(',', $selfstudyact9)) ->where('sub_institute_id', session()->get('sub_institute_id')) ->where('syear', session()->get('syear'))
     ->selectRaw('id, title, file_folder, filename')
     ->get() !!};
-    var selfstudyact9 = {!! DB::table('content_master')
-    ->whereRaw('id IN (' . $selfstudyact9 . ') and sub_institute_id = ' . session()->get('sub_institute_id') . ' and syear = ' . session()->get('syear'))
+var selfstudyact10 = {!! DB::table('content_master')
+        ->whereIn('id', explode(',', $selfstudyact10)) ->where('sub_institute_id', session()->get('sub_institute_id')) ->where('syear', session()->get('syear'))
     ->selectRaw('id, title, file_folder, filename')
     ->get() !!};
-    var selfstudyact10 = {!! DB::table('content_master')
-    ->whereRaw('id IN (' . $selfstudyact10 . ') and sub_institute_id = ' . session()->get('sub_institute_id') . ' and syear = ' . session()->get('syear'))
+var selfstudyact11 = {!! DB::table('content_master')
+        ->whereIn('id', explode(',', $selfstudyact11)) ->where('sub_institute_id', session()->get('sub_institute_id')) ->where('syear', session()->get('syear'))
     ->selectRaw('id, title, file_folder, filename')
     ->get() !!};
-    var selfstudyact11 = {!! DB::table('content_master')
-    ->whereRaw('id IN (' . $selfstudyact11 . ') and sub_institute_id = ' . session()->get('sub_institute_id') . ' and syear = ' . session()->get('syear'))
+var selfstudyact12 = {!! DB::table('content_master')
+        ->whereIn('id', explode(',', $selfstudyact12)) ->where('sub_institute_id', session()->get('sub_institute_id')) ->where('syear', session()->get('syear'))
     ->selectRaw('id, title, file_folder, filename')
     ->get() !!};
-    var selfstudyact12 = {!! DB::table('content_master')
-    ->whereRaw('id IN (' . $selfstudyact12 . ') and sub_institute_id = ' . session()->get('sub_institute_id') . ' and syear = ' . session()->get('syear'))
-    ->selectRaw('id, title, file_folder, filename')
-    ->get() !!};
+    
     const newData = [
         [{
                 header: "Standard",

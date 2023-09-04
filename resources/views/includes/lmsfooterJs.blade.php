@@ -175,8 +175,16 @@
       </div>
   </div>
 </div>
-
-
+<div id="loading-overlay" style="display:none;">
+<center>
+  <img src="/admin_dep/images/loader-man.gif" id="loading-gif" alt="loading-gif" >
+  </center>
+    </div>
+    <script>
+        window.addEventListener('beforeunload', function() {
+			$('#loading-overlay').show();
+        });
+</script>
 <!-- /#wrapper -->
 <!-- jQuery -->
 <script src="{{ asset("/admin_dep/js/jquery-3.5.1.min.js") }}"></script>

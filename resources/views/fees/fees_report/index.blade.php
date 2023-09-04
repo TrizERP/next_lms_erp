@@ -259,31 +259,45 @@
 	@include('includes.footerJs')
 
 	<script>
-	 $(document).ready(function () {
-        var table = $('#example').DataTable({
-            select: true,
-            lengthMenu: [
-                [100, 500, 1000, -1],
-                ['100', '500', '1000', 'Show All']
-            ],
-            dom: 'Bfrtip',
-            buttons: [
-                {
-                    extend: 'pdfHtml5',
-                    title: 'Fees Monthly Report',
-                    orientation: 'landscape',
-                    pageSize: 'LEGAL',
-                    pageSize: 'A0',
-                    exportOptions: {
-                        columns: ':visible'
+		$(document).ready(function() {
+			var table = $('#example').DataTable({
+				select: true,
+				lengthMenu: [
+					[100, 500, 1000, -1],
+					['100', '500', '1000', 'Show All']
+				],
+				dom: 'Bfrtip',
+				buttons: [{
+						extend: 'pdfHtml5',
+						title: 'Fees Collection Report',
+						orientation: 'landscape',
+						pageSize: 'LEGAL',
+						pageSize: 'A0',
+						exportOptions: {
+							columns: ':visible'
+						},
+					},
+					{
+						extend: 'csv',
+						text: ' CSV',
+						title: 'Fees Collection Report'
+					},
+					{
+						extend: 'excel',
+						text: ' EXCEL',
+						title: 'Fees Collection Report'
+					},
+					{
+                        extend: 'print',
+                        text: ' PRINT',
+                        title: 'Fees Collection Report',
+                        customize: function (win) {
+                            $(win.document.body).prepend(`{!! App\Helpers\get_school_details("", "", "") !!}`);
+                        }
                     },
-                },
-                {extend: 'csv', text: ' CSV', title: 'Fees Monthly Report'},
-                {extend: 'excel', text: ' EXCEL', title: 'Fees Monthly Report'},
-                {extend: 'print', text: ' PRINT', title: 'Fees Monthly Report'},
-                'pageLength'
-            ],
-        });
+                    'pageLength'
+				],
+			});
 
         $('#example thead tr').clone(true).appendTo('#example thead');
         $('#example thead tr:eq(1) th').each(function (i) {
