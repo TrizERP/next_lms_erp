@@ -161,13 +161,13 @@ class feesCancelController extends Controller
         }
 
         if ($from_date != '') {
-            $extraSearchArrayRaw .= "  AND date_format(fees_collect.created_date,'%Y-%m-%d') >= '" . $from_date . "'";
-            $other_extraSearchArrayRaw .= " AND date_format(fees_paid_other.created_date,'%Y-%m-%d') >= '" . $from_date . "'";
+            $extraSearchArrayRaw .= "  AND date_format(fees_collect.receiptdate,'%Y-%m-%d') >= '" . $from_date . "'";
+            $other_extraSearchArrayRaw .= " AND date_format(fees_paid_other.receiptdate,'%Y-%m-%d') >= '" . $from_date . "'";
         }
 
         if ($to_date != '') {
-            $extraSearchArrayRaw .= "  AND date_format(fees_collect.created_date,'%Y-%m-%d') <= '" . $to_date . "'";
-            $other_extraSearchArrayRaw .= "  AND date_format(fees_paid_other.created_date,'%Y-%m-%d') <= '" . $to_date . "'";
+            $extraSearchArrayRaw .= "  AND date_format(fees_collect.receiptdate,'%Y-%m-%d') <= '" . $to_date . "'";
+            $other_extraSearchArrayRaw .= "  AND date_format(fees_paid_other.receiptdate,'%Y-%m-%d') <= '" . $to_date . "'";
         }
 
         if ($sub_institute_id == 200) {

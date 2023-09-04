@@ -1,6 +1,6 @@
 <?php
 // error_reporting(0);
-error_reporting(E_ALL);
+error_reporting(0);
 
 ini_set('display_errors',1);
 // session_start();
@@ -32,7 +32,6 @@ if (!function_exists('encrypt_url')) {
         return $output;
     }
 }
-
 list($a,$b) = explode("?",$_SERVER['REQUEST_URI']);
 // echo $a;exit;
 $parts = explode('&', $b);
@@ -40,8 +39,8 @@ if (count($parts) == 14) {
     list($it, $NEW_ERP, $DUSER_ID, $USER_GROUP_ID, $DUSER_PWD, $db_host, $db_user, $db_password, $db_library, $solution_db, $school_name, $SUB_INSTITUTE_ID, $school_logo, $dyear) = $parts;
 } else {
 
-list($NEW_ERP, $DUSER_ID, $USER_GROUP_ID, $DUSER_PWD, $db_host, $db_user, $db_password, $db_library, $solution_db, $school_name, $SUB_INSTITUTE_ID, $school_logo, $dyear) = explode('&',$b);
-$it ="";
+    list($NEW_ERP, $DUSER_ID, $USER_GROUP_ID, $DUSER_PWD, $db_host, $db_user, $db_password, $db_library, $solution_db, $school_name, $SUB_INSTITUTE_ID, $school_logo, $dyear) = $parts;
+    $it ="";
     // handle the case where the array does not have the expected number of elements
 }
 // print_r(explode('&',$b));
@@ -168,7 +167,6 @@ $sysconf['baseurl'] = '';
 // print_r($_SESSION);
 // print_r($_REQUEST);
 // die;
-
 $_REQUEST['db_password'] = urldecode($_REQUEST['db_password']);
 
 if($it=="it"){
@@ -242,7 +240,7 @@ if ($connection) {
     $LIBRARY_PRODUCT_TYPE_CONST = 'LIBRARY';
     //For Central Admin Users
 
-    if ($_SESSION['USER_GROUP_ID'] == 1) {
+    if (isset($_SESSION['USER_GROUP_ID']) && $_SESSION['USER_GROUP_ID'] == 1) {
 
         if (isset($_REQUEST['is_library_prod_glob']) && $_REQUEST['is_library_prod_glob'] != "" && $_REQUEST['is_library_prod_glob'] == "YES") {
             $sql = "SELECT DISTINCT tcd.COLLEGE_ID,tcd.DATABASE_NAME,tcd.TITLE
@@ -289,7 +287,7 @@ if ($connection) {
             }
         }
 
-      if($_SESSION['USER_GROUP_ID'] != 1){
+      if(isset($_SESSION['USER_GROUP_ID']) && $_SESSION['USER_GROUP_ID'] != 1){
           $COLLEGE_DATABASE_NAME=$_SESSION['library_database'];
           $COLLEGE_TITLE=$_REQUEST['school_name'];
 
@@ -356,7 +354,9 @@ $sysconf['template']['theme'] = 'default';
 $sysconf['template']['css'] = $sysconf['template']['dir'].'/'.$sysconf['template']['theme'].'/style.css';
 
 if (!file_exists($sysconf['template']['dir'].'/'.$sysconf['template']['theme'].'/tinfo.inc.php')) {
-    $sysconf['template']['base'] = 'php'; /* html OR php */
+    $sysconf['template']['base'] = 'php';
+// echo $sysconf['template']['base'];
+    // exit; /* html OR php */
 } else {
     require $sysconf['template']['dir'].'/'.$sysconf['template']['theme'].'/tinfo.inc.php';
 }
@@ -366,6 +366,8 @@ if (!file_exists($sysconf['template']['dir'].'/'.$sysconf['template']['theme'].'
 $sysconf['admin_template']['dir'] = 'admin_template';
 $sysconf['admin_template']['theme'] = 'default';
 $sysconf['admin_template']['css'] = $sysconf['admin_template']['dir'].'/'.$sysconf['admin_template']['theme'].'/style.css';
+
+
 
 /* OPAC */
 $sysconf['opac_result_num'] = 10;
