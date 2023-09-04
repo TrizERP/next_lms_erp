@@ -1,17 +1,18 @@
-@include('../includes.headcss')
+{{--@include('../includes.headcss')
 @include('../includes.header')
-@include('../includes.sideNavigation')
+@include('../includes.sideNavigation')--}}
 
-
+@extends('layout')
+@section('container')
 <div id="page-wrapper">
     <div class="container-fluid">
-        <div class="row">            
-            <div class="col-lg-3 col-md-4 col-sm-4 col-xs-12">                
-                <h4 class="page-title">Fees Breakoff</h4>            
-            </div>                    
+        <div class="row">
+            <div class="col-lg-3 col-md-4 col-sm-4 col-xs-12">
+                <h4 class="page-title">Fees Breakoff</h4>
+            </div>
         </div>
         <div class="card">
-            <div class="row">                
+            <div class="row">
                 <div class="col-lg-3 col-sm-3 col-xs-3 mb-3">
                     <a href="{{ route('fees_breackoff.create') }}" class="btn btn-info add-new"><i class="fa fa-plus mr-1"></i> Reset</a>
                 </div>
@@ -25,7 +26,7 @@
                             </tr>
                         </thead>
                         <tbody>
-                            <tr>    
+                            <tr>
                                 <td>
                                     <!-- <ul class="list-icons"> -->
                                         <?php foreach ($data['data']['grade_arr'] as $id => $val) { ?>
@@ -153,7 +154,7 @@
                             </div>
                         </div>
                     </div>
-                    <div class="col-md-12">                        
+                    <div class="col-md-12">
                         <center>
                             <button type="submit" class="btn btn-info">Submit</button>
                         </center>
@@ -191,3 +192,4 @@
     }
 </script>
 @include('includes.footer')
+@endsection

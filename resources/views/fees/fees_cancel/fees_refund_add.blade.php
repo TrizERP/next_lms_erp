@@ -1,7 +1,8 @@
-@include('includes.headcss')
+{{--@include('includes.headcss')
 @include('includes.header')
-@include('includes.sideNavigation')
-
+@include('includes.sideNavigation')--}}
+@extends('layout')
+@section('container')
 <style>
     tr.spaceUnder > th {
         padding-bottom: 1em !important;
@@ -263,3 +264,4 @@
 
     </script>
 @include('includes.footer')
+@endsection

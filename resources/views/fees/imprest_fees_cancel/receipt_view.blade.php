@@ -1,13 +1,15 @@
-@include('includes.headcss')
+{{--@include('includes.headcss')
 @include('includes.header')
-@include('includes.sideNavigation')
+@include('includes.sideNavigation')--}}
+@extends('layout')
+@section('container')
 <style type="text/css">
     #overlay {
       position: fixed; /* Sit on top of the page content */
       display: none; /* Hidden by default */
       width: 100%; /* Full width (cover the whole page) */
       height: 100%; /* Full height (cover the whole page) */
-      top: 0; 
+      top: 0;
       left: 0;
       right: 0;
       bottom: 0;
@@ -23,9 +25,9 @@
                 <h4 class="page-title">Imprest Fees Cancel/Refund Receipt</h4>
             </div>
         </div>
-        <div id="printPage" class="card">            
-            
-          
+        <div id="printPage" class="card">
+
+
 
             	@if(isset($data['str']))
                 @php
@@ -33,15 +35,15 @@
                         $str = $data['str'];
                     }
                 @endphp
-                
+
                 {!!$str!!}
         </div>
         <div class="pagebreak"></div>
-        <div class="row">            
+        <div class="row">
             <div class="col-md-12 form-group">
                 <center>
                      <div id="overlay" style="display:none;"><center><p style="margin-top: 273px;color:red;font-weight: 700;">Please do not refresh the page, while the process is going on.</p><img src="http://dev.triz.co.in/admin_dep/images/loader.gif"></center></div>
-                    <button class="btn btn-success" id="ajax_PDFBulk">Print Receipt</button> 
+                    <button class="btn btn-success" id="ajax_PDFBulk">Print Receipt</button>
                     <input type="hidden" name="action" id="action" value="imprest_fees_cancel_refund_receipt">
                     <input type="hidden" name="last_inserted_ids" id="last_inserted_ids" value="{{$data['last_inserted_ids']}}">
                     <input type="button" value="Send Email" class="btn btn-success" id="ajax_sendBulkEmail" />
@@ -61,3 +63,4 @@
  	}
 </script>
 @include('includes.footer')
+@endsection

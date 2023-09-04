@@ -1,7 +1,8 @@
-@include('../includes.headcss')
+{{--@include('../includes.headcss')
 @include('../includes.header')
-@include('../includes.sideNavigation')
-
+@include('../includes.sideNavigation')--}}
+@extends('layout')
+@section('container')
 
 <div id="page-wrapper">
     <div class="container-fluid">
@@ -9,20 +10,20 @@
             <div class="col-lg-3 col-md-4 col-sm-4 col-xs-12">
                 <h4 class="page-title">Other Fees Mapping</h4>
             </div>
-        </div>  
+        </div>
         <div class="card">
-        <div class="row mb-2">  
+        <div class="row mb-2">
         <div class="col-lg-12 col-sm-12 col-xs-12">
         <span class="d-block p-2  alert-warning">Note: Please Select Checkbox while Adding Data</span>
-        </div>        
-        </div>        
+        </div>
+        </div>
             @if ($message = Session::get('success'))
             <div class="alert alert-success alert-block">
                 <button type="button" class="close" data-dismiss="alert">x</button>
                 <strong>{{ $message }}</strong>
             </div>
             @endif
-            <div class="row">                
+            <div class="row">
                 <div class="col-lg-12 col-sm-12 col-xs-12">
                     @php
                     if(isset($data['stu_data'])){
@@ -33,9 +34,9 @@
                         <input type="hidden" name="grade" value="<?php echo $data['grade']; ?>">
                         <input type="hidden" name="standard" value="<?php echo $data['standard']; ?>">
                         <input type="hidden" name="division" value="<?php echo $data['division']; ?>">
-                        <div class="table-responsive">                        
+                        <div class="table-responsive">
                             <table class="table table-striped" id="myTable">
-                                <thead>                                    
+                                <thead>
                                     <tr>
                                         <th><input type="checkbox" name="all" id="ckbCheckAll" class="ckbox">  </th>
                                         <th>Sr. No.</th>
@@ -64,7 +65,7 @@
                                         <td>@php echo $col_arr['mobile']; @endphp</td>
                                         @php
                                             $arr_title = $data['fees_title'];
-                                            foreach ($month as $key=>$month_id){   
+                                            foreach ($month as $key=>$month_id){
 
                                             foreach ($arr_title['data'] as $ids=>$tit_arr){
                                         @endphp
@@ -80,7 +81,7 @@
                                 </tbody>
                             </table>
                         </div>
-                        <div class="row">                            
+                        <div class="row">
                             <div class="col-md-12 form-group">
                                 <center>
                                     <input type="submit" name="submit" value="Save" class="btn btn-success" >
@@ -92,7 +93,7 @@
                     @php
                     }else{
                     @endphp
-                        <div class="row">                            
+                        <div class="row">
                             <div class="col-md-12 form-group">
                                 <center>No Data Found !</center>
                             </div>
@@ -102,7 +103,7 @@
                     @endphp
                 </div>
             </div>
-         
+
         </div>
     </div>
 </div>
@@ -124,3 +125,4 @@ $(document).ready(function () {
 
 </script>
 @include('includes.footer')
+@endsection
