@@ -166,7 +166,7 @@ $route = ['dashboard'];
 
 
 <script src="{{ asset("/admin_dep/js/popper.min.js") }}" defer></script>
-<script src="{{ asset("/admin_dep/js/custom.js") }}" defer></script>
+<script src="{{ asset("/admin_dep/js/custom.js") }}" ></script>
 <script src="https://cdn.jsdelivr.net/npm/apexcharts" defer></script>
 
 
