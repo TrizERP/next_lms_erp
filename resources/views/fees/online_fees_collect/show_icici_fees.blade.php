@@ -6,6 +6,7 @@
 
     #page-wrapper {
         margin: 0px;
+        padding: 20px;        
     }
 
     .footer {
@@ -150,11 +151,12 @@
                                             }
                                             $slected = "";
                                             if (in_array($id, $data['search_ids'])) {
-                                                $slected = "";
+                                                $slected = 'checked';
                                             }
                                             $disabled = '';
                                             if ( isset($feesDetails[$val]) && $feesDetails[$val] == 0 ) {
                                                 $disabled = 'disabled="disabled"';
+                                               
                                             }
 
                                             ?>
@@ -398,6 +400,7 @@
 
         calculateTotal();
         });
+        
 
         function sh_bankDetail(selectedVal) {
             if (selectedVal == 'Cash') {
@@ -483,7 +486,11 @@
                     fin = parseFloat($("#totalFin").val());
                     cheque_return_charges = $("#hidden_cheque_return_charges").val();
                     sum = fin + parseFloat(cheque_return_charges);
+                    if(isNaN(sum)){
+                    $("#cheque_return_charges").val(0);                        
+                    }else{
                     $("#cheque_return_charges").val(sum);
+                    }
                     calculateTotal();
 						// 26/08/2021 Start Added for The Millennium School for Advanced Imprest Collection payment
 						$('.allField1').each(function() {

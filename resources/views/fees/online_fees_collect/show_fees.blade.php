@@ -4,8 +4,9 @@
     tr.spaceUnder>th {
         padding-bottom: 1em !important;
     }
-    #page-wrapper{
-        margin:0px;
+    #page-wrapper {
+        margin: 0px;
+        padding: 20px;        
     }
     .footer {
         left:0;
@@ -417,7 +418,6 @@
                     $("#discount").val(0);
 
                     $("#grandTotal").val(tot);
-
 
 						// 26/08/2021 Start Added for The Millennium School for Advanced Imprest Collection payment
 						$('.allField1').each(function() {

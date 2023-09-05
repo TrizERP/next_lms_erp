@@ -87,6 +87,8 @@
 
     <!-- Global site tag (gtag.js) - Google Analytics -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=UA-153077517-1"></script>
+    <script src="https://code.jquery.com/jquery-1.10.2.js"></script>
+    
     <script>
         window.dataLayer = window.dataLayer || [];
 

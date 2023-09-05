@@ -3,11 +3,10 @@
     tr.spaceUnder>th {
         padding-bottom: 1em !important;
     }
-
     #page-wrapper {
         margin: 0px;
+        padding: 20px;        
     }
-
     .footer {
         left: 0;
     }
@@ -151,6 +150,7 @@
                                             $disabled = '';
                                             if ( isset($feesDetails[$val]) && $feesDetails[$val] == 0 ) {
                                                 $disabled = 'disabled="disabled"';
+                                                
                                             }
                                             ?>
                                             <td>
