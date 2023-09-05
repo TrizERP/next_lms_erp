@@ -202,7 +202,11 @@ class cbse_1t5_result_controller extends Controller {
         $result = DB::select(DB::raw($str));
         $result = json_decode(json_encode($result),true);
 
-        return $result[0];        
+        if (!empty($result)) {
+            return $result[0];
+        } else {
+            return null;
+        }       
     }
 
     public function getExamMasterSettigs($standard_id)
@@ -225,11 +229,15 @@ class cbse_1t5_result_controller extends Controller {
         return $responce;
     }
 
-    public function getAllExam($standard_id) {
+    public function getAllExam($standard_id, $term_id = '') {
+        if($term_id == '')
+        {
+            $term_id = session()->get('term_id');
+        }
         $str = 'SELECT em.ExamTitle,IF((e.con_point IS NULL) OR (e.con_point = ""),e.points,e.con_point) AS points ,em.Id
                 FROM result_create_exam e
                 INNER JOIN result_exam_master em on em.Id = e.exam_id
-                WHERE e.term_id = ' . session()->get('term_id') . ' 
+                WHERE e.term_id = ' . $term_id . ' 
                 AND e.sub_institute_id = ' . session()->get('sub_institute_id') . '
                 AND e.syear = ' . session()->get('syear') . '  
                 AND e.standard_id = ' . $standard_id . '
@@ -258,11 +266,16 @@ class cbse_1t5_result_controller extends Controller {
         return $responce;
     }
 
-    public function getTermName() 
+    public function getTermName($term_id = '') 
     {
+        if($term_id == '')
+        {
+            $term_id = session()->get('term_id');
+        }
+
         $str = 'select * 
                 from academic_year 
-                where term_id = ' . session()->get('term_id') . ' and sub_institute_id = ' . session()->get('sub_institute_id') . '';
+                where term_id = ' . $term_id . ' and sub_institute_id = ' . session()->get('sub_institute_id') . '';
                 
         $result = DB::select(DB::raw($str));
 
@@ -296,9 +309,12 @@ class cbse_1t5_result_controller extends Controller {
         return $responce;
     }
 
-    public function getAllMark($all_exam, $all_subject, $all_student) 
+    public function getAllMark($all_exam, $all_subject, $all_student, $term_id = '') 
     {
-
+        if($term_id == '')
+        {
+            $term_id = session()->get('term_id');
+        }
        // echo "<pre>";
        // print_r($all_exam);
        // print_r($all_subject);
@@ -328,7 +344,7 @@ else
                 INNER JOIN result_create_exam ex ON ex.id = rm.exam_id
                 INNER JOIN result_exam_master exm on exm.Id = ex.exam_id
                 INNER JOIN sub_std_map s ON s.subject_id = ex.subject_id and s.standard_id = ex.standard_id
-                WHERE exm.Id IN (' . $exam_id . ') AND rm.student_id IN (' . $student_id . ') AND ex.term_id = "'.session()->get('term_id').'" 
+                WHERE exm.Id IN (' . $exam_id . ') AND rm.student_id IN (' . $student_id . ') AND ex.term_id = "'.$term_id.'" 
                     AND ex.syear = '.session()->get('syear').' and ex.report_card_status ="Y"
                 GROUP BY rm.student_id,s.display_name,ex.points,exm.Id
                 ORDER BY rm.student_id,s.display_name,exm.Id
@@ -607,17 +623,20 @@ else
         return $grade;
     }
 
-    public function getCoArea($all_student) {
+    public function getCoArea($all_student, $term_id = '') {
 //        echo "<pre>";
 //        print_r($all_student);
 //        exit;
-
+        if($term_id == '')
+        {
+            $term_id = session()->get('term_id');
+        }
         $responce_arr = array();
 
         $sql_mark_grade = "select * 
                           from result_co_scholastic
                           where sub_institute_id = " . session()->get('sub_institute_id') . "
-                              and term_id = " . session()->get('term_id') . "
+                              and term_id = " . $term_id . "
                           ";
         $ret_mark_grade = DB::select(DB::raw($sql_mark_grade));
 
@@ -630,7 +649,7 @@ else
                                 inner join result_co_scholastic co on co.id = comark.co_scholastic_id
                                 inner join result_co_scholastic_parent cop on cop.id = co.parent_id
                                 where comark.syear = " . session()->get('syear') . " and 
-                                comark.term_id = " . session()->get('term_id') . " and 
+                                comark.term_id = " . $term_id . " and 
                                 comark.standard_id = " . $_REQUEST['standard'] . " and 
                                 comark.sub_institute_id = " . session()->get('sub_institute_id') . "
                                 order by comark.student_id,cop.sort_order,co.sort_order
@@ -656,16 +675,21 @@ else
         return $responce_arr;
     }
 
-    public function getAttendance($all_student) {
+    public function getAttendance($all_student, $term_id = '') {
 //        echo "<pre>";
 //        print_r($all_student);
 //        exit;
+        if($term_id == '')
+        {
+            $term_id = session()->get('term_id');
+        }
+
         $sql_data = "select atd.student_id,wrkd.total_working_day,atd.attendance,atd.teacher_remark
                 from result_student_attendance_master atd
                 inner join result_working_day_master wrkd on wrkd.standard = atd.standard and wrkd.sub_institute_id = atd.sub_institute_id
                 where atd.standard = " . $_REQUEST['standard'] . " and 
                     atd.sub_institute_id = " . session()->get('sub_institute_id') . " and 
-                    atd.syear = " . session()->get('syear') . " and atd.term_id = " . session()->get('term_id') . "
+                    atd.syear = " . session()->get('syear') . " and atd.term_id = " . $term_id . "
                 ";
         $ret_data = DB::select(DB::raw($sql_data));
         $data_arr = array();
