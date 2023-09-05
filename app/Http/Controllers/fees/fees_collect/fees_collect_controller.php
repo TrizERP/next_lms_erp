@@ -873,57 +873,71 @@ class fees_collect_controller extends Controller
     // function is used to get generate recepit number and to get fees_heads
     public function gunrate_receipt_number()
     {
-        $fc_syear = session()->get('sub_institute_id') != 47 ? " 1=1 AND fr.syear = '" . session()->get('syear') . "' " : '';
-    
-        $results = DB::table('fees_receipt_book_master')
-            ->selectRaw("fees_receipt_book_master.*, GROUP_CONCAT(fees_receipt_book_master.fees_head_id ORDER BY fees_title.sort_order) heads")
+        $fc_syear = "";
+        if (session()->get('sub_institute_id') != 47) {
+            $fc_syear = " AND fr.syear = '" . session()->get('syear') . "' ";
+        }
+
+        $result = DB::table('fees_receipt_book_master')
+            ->selectRaw("fees_receipt_book_master.*,GROUP_CONCAT(fees_receipt_book_master.fees_head_id ORDER BY fees_title.sort_order) heads")
             ->join('fees_title', 'fees_title.id', '=', 'fees_receipt_book_master.fees_head_id')
-            ->leftJoin('fees_receipt as fr', 'fr.SUB_INSTITUTE_ID', '=', DB::raw(session()->get('sub_institute_id')))
             ->where('fees_receipt_book_master.grade_id', $_REQUEST['grade_id'])
             ->where('fees_receipt_book_master.standard_id', $_REQUEST['standard_id'])
             ->where('fees_receipt_book_master.syear', session()->get('syear'))
             ->where('fees_receipt_book_master.sub_institute_id', session()->get('sub_institute_id'))
-            ->groupBy(
-                'fees_receipt_book_master.receipt_line_1',
-                'fees_receipt_book_master.receipt_line_2',
-                'fees_receipt_book_master.receipt_line_3',
-                'fees_receipt_book_master.receipt_line_4',
-                'fees_receipt_book_master.receipt_prefix',
-                'fees_receipt_book_master.receipt_logo',
-                'fees_receipt_book_master.last_receipt_number'
-            )
+            ->groupBy('fees_receipt_book_master.receipt_line_1', 'fees_receipt_book_master.receipt_line_2', 'fees_receipt_book_master.receipt_line_3', 'fees_receipt_book_master.receipt_line_4', 'fees_receipt_book_master.receipt_prefix', 'fees_receipt_book_master.receipt_logo', 'fees_receipt_book_master.last_receipt_number')
             ->orderBy('fees_title.sort_order')
             ->get()
             ->toArray();
-    
+
         $id_arr = [];
-    
-        foreach ($results as $result) {
-            $sub_string_count = 0; // Initialize $sub_string_count here
-    
-            if (isset($result->receipt_prefix) && $result->receipt_prefix != '') {
-                $sub_string_count = (strlen($result->receipt_prefix) + 1);
+        foreach ($result as $id => $arr) {
+
+            if (isset($arr->receipt_prefix) && $arr->receipt_prefix != '') {
+                $sub_string_count = (strlen($arr->receipt_prefix) + 1);
+
+                $result_id = DB::table('fees_receipt as fr')
+                    ->leftJoin('fees_collect as fc', function ($join) use ($arr) {
+                        $join->whereRaw("fc.receipt_no = fr.RECEIPT_ID_" . $arr->sort_order . "");
+                    })->leftJoin('fees_paid_other as fo', function ($join) use ($arr) {
+                        $join->whereRaw("fo.reciept_id = fr.RECEIPT_ID_" . $arr->sort_order . "");
+                    })->selectRaw("ifnull(max(cast(fr.RECEIPT_ID_" . $arr->sort_order . " as UNSIGNED))," . $arr->last_receipt_number . ") as rid1,
+                        MAX(CAST(SUBSTRING(fr.RECEIPT_ID_" . $arr->sort_order . "," . $sub_string_count . ") AS INT)) as rid")
+                    ->where('fr.SUB_INSTITUTE_ID', session()->get('sub_institute_id'))
+                    ->where(function ($q) {
+                        if (session()->get('sub_institute_id') != 47) {
+                            $q->where('fr.syear', session()->get('syear'));
+                        }
+                    })->get()->toArray();
+
+                $rid = $arr->receipt_prefix . ($result_id[0]->rid + 1);
+
+                $id_arr[$arr->sort_order]['heds'] = $arr->heads;
+                $id_arr[$arr->sort_order]['rid'] = $rid;
+            } else {
+                $result_id = DB::table('fees_receipt as fr')
+                    ->leftJoin('fees_collect as fc', function ($join) use ($arr) {
+                        $join->whereRaw("fc.receipt_no = fr.RECEIPT_ID_" . $arr->sort_order . "");
+                    })->leftJoin('fees_paid_other as fo', function ($join) use ($arr) {
+                        $join->whereRaw("fo.reciept_id = fr.RECEIPT_ID_" . $arr->sort_order . "");
+                    })->selectRaw("ifnull(max(cast(fr.RECEIPT_ID_" . $arr->sort_order . " as UNSIGNED))," . $arr->last_receipt_number . ") as rid")
+                    ->where('fr.SUB_INSTITUTE_ID', session()->get('sub_institute_id'))
+                    ->where(function ($q) {
+                        if (session()->get('sub_institute_id') != 47) {
+                            $q->where('fr.syear', session()->get('syear'));
+                        }
+                    })->get()->toArray();
+
+                $id_arr[$arr->sort_order]['heds'] = $arr->heads;
+                $id_arr[$arr->sort_order]['rid'] = $result_id[0]->rid + 1;
             }
-    
-            $rid = DB::table('fees_receipt as fr')
-                ->leftJoin('fees_collect as fc', "fc.receipt_no", "=", DB::raw("fr.RECEIPT_ID_{$result->sort_order}"))
-                ->leftJoin('fees_paid_other as fo', "fo.reciept_id", "=", DB::raw("fr.RECEIPT_ID_{$result->sort_order}"))
-                ->selectRaw("IFNULL(MAX(CAST(SUBSTRING(fr.RECEIPT_ID_{$result->sort_order},{$sub_string_count}) AS UNSIGNED)),{$result->last_receipt_number}) + 1 as rid")
-                ->where('fr.SUB_INSTITUTE_ID', session()->get('sub_institute_id'))
-                ->where(function ($query) use ($fc_syear) {
-                    $query->where('fr.syear', session()->get('syear'));
-                    $query->whereRaw($fc_syear);
-                })
-                ->get()
-                ->first();
-    
-            $id_arr[$result->sort_order]['heds'] = $result->heads;
-            $id_arr[$result->sort_order]['rid'] = $result->receipt_prefix . $rid->rid;
+
+
         }
-    
+
         return $id_arr;
     }
-    
+
     // function is used to genrate fees reciept html and insert into table return back to pay fees
     public function gunrate_receipt($receipt_id, $receipt_arr, $id_heads)
     {
