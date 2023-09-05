@@ -98,9 +98,10 @@ class exam_creation_controller extends Controller
      */
     public function store(Request $request)
     {
-        $eroor = false;
-        $con_points = "";
-        $error_reson = "";
+        $error = false;
+        $error_reason = "";
+        $existing_con_points = [];
+
         foreach ($request->get('standard') as $id => $val) {
             foreach ($request->get('subject') as $sub_id => $sub_val) {
                 $data = exam_creation::where([
@@ -114,8 +115,8 @@ class exam_creation_controller extends Controller
                 ])->get()->toArray();
 
                 if (count($data)) {
-                    $eroor = true;
-                    $error_reson = "Given Standard Have Exams.";
+                    $error = true;
+                    $error_reason = "Given Standard Have Exams.";
                 } else {
                     $data = exam_creation::where([
                         'syear'            => session()->get('syear'),
@@ -127,25 +128,32 @@ class exam_creation_controller extends Controller
                     ])->get()->toArray();
                     if (count($data)) {
                         foreach ($data as $arr) {
-                            $con_points = $arr['con_point'];
+                            $existing_con_points[] = $arr['con_point'];
                         }
                     }
                 }
             }
         }
-        if ($eroor == false) {
-            $error_co_point = false;
-            foreach ($request->get('standard') as $id => $val) {
-                foreach ($request->get('subject') as $sub_id => $sub_val) {
-                    if ($request->get('con_point') != '') {
-                        if ($con_points != "") {
-                            if ($con_points != $request->get('con_point')) {
-                                $error_reson = "Convert Point Is Not Matching With Other Exam.";
-                                $error_co_point = true;
-                            }
+
+        if (!$error) 
+        {
+            $error_con_point = false;
+
+            foreach ($request->get('standard') as $id => $val) 
+            {
+                foreach ($request->get('subject') as $sub_id => $sub_val) 
+                {
+                    if ($request->get('con_point') != '') 
+                    {
+                        if (!empty($existing_con_points) && !in_array($request->get('con_point'), $existing_con_points)) 
+                        {
+                            $error_reason = "Convert Point Is Not Matching With Other Exam.";
+                            $error_con_point = true;
                         }
                     }
-                    if ($error_co_point == false) {
+
+                    if (!$error_con_point) 
+                    {
                         $data = new exam_creation([
                             'syear'              => session()->get('syear'),
                             'sub_institute_id'   => session()->get('sub_institute_id'),
@@ -168,10 +176,11 @@ class exam_creation_controller extends Controller
                 }
             }
         }
-        if ($eroor || $error_co_point) {
+
+        if ($error || $error_con_point) {
             $res = [
                 "status_code" => 0,
-                "message"     => $error_reson,
+                "message"     => $error_reason,
             ];
         } else {
             $res = [
