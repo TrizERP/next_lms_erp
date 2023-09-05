@@ -228,7 +228,6 @@ $academicTerms = session()->get('academicTerms');
 
 
         <link href="https://code.jquery.com/ui/1.10.4/themes/ui-lightness/jquery-ui.css" rel="preload" as="style" onload="this.onload=null;this.rel='stylesheet'">
-        <script src="https://code.jquery.com/jquery-1.10.2.js"></script>
         <script src="{{ asset("/admin_dep/js/jquery-ui.js") }}"></script>
         <script>
             $(document).ready(function () {
