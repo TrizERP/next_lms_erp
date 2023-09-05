@@ -1419,7 +1419,7 @@ br {
                                                             <td>{{isset($value['actual_amountpaid']) ? $value['actual_amountpaid'] : ''}}</td>
                                                             <td>{{isset($value['action']) ? $value['action'] : ''}}</td>
                                                         </tr>
-                                                        @if ($value['action'] == "completed")
+                                                        @if (isset($value['action']) && $value['action'] == "completed")
                                                             @php
                                                                 $amount += isset($value['actual_amountpaid']) ? $value['actual_amountpaid'] : 0;
                                                                 $j++;
