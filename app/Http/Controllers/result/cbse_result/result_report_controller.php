@@ -36,8 +36,7 @@ class result_report_controller extends Controller
     {
         $syear = session()->get('syear');
         $sub_institute_id = session()->get('sub_institute_id');
-        // $term_id = session()->get('term_id');
-        $term_id = $request->input('term');
+        $term_id = session()->get('term_id');
         $type = $request->input('type');
         $report_of = $request->input('report_of');
         $grade_id = $request->input('grade');
@@ -57,33 +56,32 @@ class result_report_controller extends Controller
 
             $syear = session()->get('syear');
             $next_year = session()->get('syear') + 1;
-            // $academicTerms = session()->get('academicTerms');
-            // $academicTerms = $term_id;
+            $academicTerms = session()->get('academicTerms');
 
-            $result_year = $syear."-".$next_year;
-            // session()->put('term_id', $academicTerms[0]->term_id);
+            $result_year = $syear . "-" . $next_year;
+            session()->put('term_id', $academicTerms[0]->term_id);
             session()->put('standard', $_REQUEST['standard']);
             //getting year detail
             //getting all exam name with mark
-            $all_exam = $controller->getAllExam($_REQUEST['standard'], $term_id);
-            
+            $all_exam = $controller->getAllExam($_REQUEST['standard'], $academicTerms[0]->term_id);
+
             //getting all subject name
             $all_subject = $controller->getAllSubject($_REQUEST['standard']);
 
             //getting all mark
-            $all_subject_mark = $controller->getAllMark($all_exam, $all_subject, $all_student, $term_id);
-            
+            $all_subject_mark = $controller->getAllMark($all_exam, $all_subject, $all_student);
+
             //getting Co Scholastic
-            $all_co_data = $controller->getCoArea($all_student, $term_id);
+            $all_co_data = $controller->getCoArea($all_student);
 
             //getting attendance
-            $all_att_data = $controller->getAttendance($all_student, $term_id);
+            $all_att_data = $controller->getAttendance($all_student);
 
             //getting scholastic grade range
             $all_grd_data = $controller->getGradeRange();
 
             //getting currunt term name
-            $term_name = $controller->getTermName($term_id);
+            $term_name = $controller->getTermName();
 
             //getting result header
             $header_data = $controller->getHeader($_REQUEST['standard']);
@@ -98,7 +96,7 @@ class result_report_controller extends Controller
                 $responce_arr[$cur_student_id]['year'] = $result_year;
                 $responce_arr[$cur_student_id]['term'] = $term_name;
                 $responce_arr[$cur_student_id]['total_mark'] = $all_exam[count($all_exam) - 1]['mark'];
-                $responce_arr[$cur_student_id]['name'] = $arr['first_name']." ".$arr['middle_name']." ".$arr['last_name'];
+                $responce_arr[$cur_student_id]['name'] = $arr['first_name'] . " " . $arr['middle_name'] . " " . $arr['last_name'];
                 $responce_arr[$cur_student_id]['roll_no'] = $arr['roll_no'];
                 $responce_arr[$cur_student_id]['mother_name'] = $arr['mother_name'];
                 $responce_arr[$cur_student_id]['class'] = $arr['standard_name'];
@@ -108,8 +106,11 @@ class result_report_controller extends Controller
                 $responce_arr[$cur_student_id]['gr_no'] = $arr['enrollment_no'];
                 $responce_arr[$cur_student_id]['exam'] = $all_exam;
                 $responce_arr[$cur_student_id]['mark'] = $all_subject_mark[$cur_student_id];
-                $responce_arr[$cur_student_id]['per'] = $controller->getPer($responce_arr[$cur_student_id]['total_mark'],
-                    $all_subject_mark[$cur_student_id]);
+                
+                $responce_arr[$cur_student_id]['per'] = $controller->getPer(
+                    $responce_arr[$cur_student_id]['total_mark'],
+                    $all_subject_mark[$cur_student_id]
+                );
                 $responce_arr[$cur_student_id]['final_grade'] = $controller->getFinalGrade($responce_arr[$cur_student_id]['per']);
                 if (isset($all_co_data[$cur_student_id])) {
                     $responce_arr[$cur_student_id]['co_scholastic_area'] = $all_co_data[$cur_student_id];
@@ -121,28 +122,28 @@ class result_report_controller extends Controller
                 $responce_arr[$cur_student_id]['grade_range'] = $all_grd_data;
             }
 
-            // session()->put('term_id', $academicTerms[1]->term_id);
-            //getting year detail
+            session()->put('term_id', $academicTerms[1]->term_id);
+       
             //getting all exam name with mark
-            /* $all_exam = $controller->getAllExam($_REQUEST['standard'], $term_id);
-            
+            $all_exam = $controller->getAllExam($_REQUEST['standard'], $academicTerms[1]->term_id);
+
             //getting all subject name
             $all_subject = $controller->getAllSubject($_REQUEST['standard']);
 
             //getting all mark
-            $all_subject_mark = $controller->getAllMark($all_exam, $all_subject, $all_student, $term_id);
-            
+            $all_subject_mark = $controller->getAllMark($all_exam, $all_subject, $all_student);
+
             //getting Co Scholastic
-            $all_co_data = $controller->getCoArea($all_student, $term_id);
+            $all_co_data = $controller->getCoArea($all_student);
 
             //getting attendance
-            $all_att_data = $controller->getAttendance($all_student, $term_id);
+            $all_att_data = $controller->getAttendance($all_student);
 
             //getting scholastic grade range
             $all_grd_data = $controller->getGradeRange();
 
             //getting currunt term name
-            $term_name = $controller->getTermName($term_id);
+            $term_name = $controller->getTermName();
 
             $responce_arr_term2 = [];
             foreach ($all_student as $id => $arr) {
@@ -152,8 +153,10 @@ class result_report_controller extends Controller
                 $responce_arr_term2[$cur_student_id]['total_mark'] = $all_exam[count($all_exam) - 1]['mark'];
                 $responce_arr_term2[$cur_student_id]['exam'] = $all_exam;
                 $responce_arr_term2[$cur_student_id]['mark'] = $all_subject_mark[$cur_student_id];
-                $responce_arr_term2[$cur_student_id]['per'] = $controller->getPer($responce_arr_term2[$cur_student_id]['total_mark'],
-                    $all_subject_mark[$cur_student_id]);
+                $responce_arr_term2[$cur_student_id]['per'] = $controller->getPer(
+                    $responce_arr_term2[$cur_student_id]['total_mark'],
+                    $all_subject_mark[$cur_student_id]
+                );
                 $responce_arr_term2[$cur_student_id]['final_grade'] = $controller->getFinalGrade($responce_arr_term2[$cur_student_id]['per']);
                 if (isset($all_co_data[$cur_student_id])) {
                     $responce_arr_term2[$cur_student_id]['co_scholastic_area'] = $all_co_data[$cur_student_id];
@@ -163,84 +166,101 @@ class result_report_controller extends Controller
                     $responce_arr_term2[$cur_student_id]['att'] = $all_att_data[$cur_student_id];
                 }
                 $responce_arr_term2[$cur_student_id]['grade_range'] = $all_grd_data;
-            } */
+            }
 
 //FOR TERM-3
-            /* if(isset($term_id) && $term_id != null){
-            // session()->put('term_id', $academicTerms[2]->term_id);
-            //getting year detail
+            if (isset($academicTerms[2]->term_id) && $academicTerms[2]->term_id != null) {
+                session()->put('term_id', $academicTerms[2]->term_id);
             //getting all exam name with mark
-            $all_exam = $controller->getAllExam($_REQUEST['standard'], $term_id);
+                $all_exam = $controller->getAllExam($_REQUEST['standard'], $academicTerms[2]->term_id);
 
             //getting all mark
-            $all_subject_mark = $controller->getAllMark($all_exam, $all_subject, $all_student, $term_id);
+                $all_subject_mark = $controller->getAllMark($all_exam, $all_subject, $all_student);
 
             //getting scholastic grade range
-            $all_grd_data = $controller->getGradeRange();
+                $all_grd_data = $controller->getGradeRange();
 
             //getting currunt term name
-            $term_name = $controller->getTermName($term_id);
+                $term_name = $controller->getTermName();
 
-            $responce_arr_term3 = [];
-            foreach ($all_student as $id => $arr) {
-                $cur_student_id = $arr['student_id'];
-                $responce_arr_term3[$cur_student_id]['term'] = $term_name;
-                $responce_arr_term3[$cur_student_id]['total_mark'] = $all_exam[count($all_exam) - 1]['mark'];
-                $responce_arr_term3[$cur_student_id]['exam'] = $all_exam;
-                $responce_arr_term3[$cur_student_id]['mark'] = $all_subject_mark[$cur_student_id];
-                $responce_arr_term3[$cur_student_id]['per'] = $controller->getPer($responce_arr_term3[$cur_student_id]['total_mark'],
-                    $all_subject_mark[$cur_student_id]);
-                $responce_arr_term3[$cur_student_id]['final_grade'] = $controller->getFinalGrade($responce_arr_term3[$cur_student_id]['per']);
+                $responce_arr_term3 = [];
+                foreach ($all_student as $id => $arr) {
+                    $cur_student_id = $arr['student_id'];
+                    $responce_arr_term3[$cur_student_id]['term'] = $term_name;
+                    $responce_arr_term3[$cur_student_id]['total_mark'] = $all_exam[count($all_exam) - 1]['mark'];
+                    $responce_arr_term3[$cur_student_id]['exam'] = $all_exam;
+                    $responce_arr_term3[$cur_student_id]['mark'] = $all_subject_mark[$cur_student_id];
+                    $responce_arr_term3[$cur_student_id]['per'] = $controller->getPer(
+                        $responce_arr_term3[$cur_student_id]['total_mark'],
+                        $all_subject_mark[$cur_student_id]
+                    );
+                    $responce_arr_term3[$cur_student_id]['final_grade'] = $controller->getFinalGrade($responce_arr_term3[$cur_student_id]['per']);
+                }
             }
-} */
 //FOR TERM-4
-            /* if(isset($term_id) && $term_id != null){
+            if (isset($academicTerms[3]->term_id) && $academicTerms[3]->term_id != null) {
 
-            // session()->put('term_id', $academicTerms[3]->term_id);
+                session()->put('term_id', $academicTerms[3]->term_id);
             //getting year detail
             //getting all exam name with mark
-            $all_exam = $controller->getAllExam($_REQUEST['standard'], $term_id);
+                $all_exam = $controller->getAllExam($_REQUEST['standard'], $academicTerms[3]->term_id);
 
             //getting all mark
-            $all_subject_mark = $controller->getAllMark($all_exam, $all_subject, $all_student, $term_id);
-
+                $all_subject_mark = $controller->getAllMark($all_exam, $all_subject, $all_student);
             //getting scholastic grade range
-            $all_grd_data = $controller->getGradeRange();
+                $all_grd_data = $controller->getGradeRange();
 
             //getting currunt term name
-            $term_name = $controller->getTermName($term_id);
+                $term_name = $controller->getTermName();
 
-            $responce_arr_term4 = [];
-            foreach ($all_student as $id => $arr) {
-                $cur_student_id = $arr['student_id'];
-                $responce_arr_term4[$cur_student_id]['term'] = $term_name;
-                $responce_arr_term4[$cur_student_id]['total_mark'] = $all_exam[count($all_exam) - 1]['mark'];
-                $responce_arr_term4[$cur_student_id]['exam'] = $all_exam;
-                $responce_arr_term4[$cur_student_id]['mark'] = $all_subject_mark[$cur_student_id];
-                $responce_arr_term4[$cur_student_id]['per'] = $controller->getPer($responce_arr_term4[$cur_student_id]['total_mark'],
-                    $all_subject_mark[$cur_student_id]);
-                $responce_arr_term4[$cur_student_id]['final_grade'] = $controller->getFinalGrade($responce_arr_term4[$cur_student_id]['per']);
+                $responce_arr_term4 = [];
+                foreach ($all_student as $id => $arr) {
+                    $cur_student_id = $arr['student_id'];
+                    $responce_arr_term4[$cur_student_id]['term'] = $term_name;
+                    $responce_arr_term4[$cur_student_id]['total_mark'] = $all_exam[count($all_exam) - 1]['mark'];
+                    $responce_arr_term4[$cur_student_id]['exam'] = $all_exam;
+                    $responce_arr_term4[$cur_student_id]['mark'] = $all_subject_mark[$cur_student_id];
+                    $responce_arr_term4[$cur_student_id]['per'] = $controller->getPer(
+                        $responce_arr_term4[$cur_student_id]['total_mark'],
+                        $all_subject_mark[$cur_student_id]
+                    );
+                    $responce_arr_term4[$cur_student_id]['final_grade'] = $controller->getFinalGrade($responce_arr_term4[$cur_student_id]['per']);
+                }
             }
-} */
+
+            $std = DB::table('standard')->where(['sub_institute_id' => $sub_institute_id, 'id' => $_REQUEST['standard']])->first();
+            $div = DB::table('division')->where(['sub_institute_id' => $sub_institute_id, 'id' => $_REQUEST['division']])->first();
+        
             $data['data'] = $responce_arr;
-            /* $data['term_2_data'] = $responce_arr_term2;
+            $data['term_2_data'] = $responce_arr_term2;
             $data['term_3_data'] = $responce_arr_term3 ?? [];
-            $data['term_4_data'] = $responce_arr_term4 ?? []; */
+            $data['term_4_data'] = $responce_arr_term4 ?? [];
             $data['header_data'] = $header_data;
             $data['footer_data'] = $footer_data;
+            $data['all_subject'] = $all_subject;
+            $data['std_div'] = $std->name . "/" . $div->name;
             $data['standard_id'] = $_REQUEST['standard'];
             $data['grade_id'] = $_REQUEST['grade'];
             $data['division_id'] = $_REQUEST['division'];
             $data['syear'] = session()->get('syear');
-            $data['term'] = $term_id;
+            $data['term_id'] = session()->get('term_id');
 
             session()->put('over_all_data', $data);
 
+            // echo "<pre>";print_r($data);exit;
             return is_mobile($type, "result/result_report/overall_report_show", $data, "view");
         }
 
         if ($report_of == 'merit_report') {
-            $rank = $this->getRank($standard_id, $division_id, $passing_ratio = 35, $type, $top_students, $from_date, $to_date, $term_id);
+            $rank = $this->getRank(
+                $standard_id,
+                $division_id,
+                $passing_ratio = 35,
+                $type,
+                $top_students,
+                $from_date,
+                $to_date
+            );
 
             $data['students_data'] = $rank;
             $data['grade_id'] = $grade_id;
@@ -258,7 +278,15 @@ class result_report_controller extends Controller
             }
 
             //getting all exam marks
-            $all_WRT_data = $this->getWRTData($all_student, $standard_id, $subject, $type, $exam_type, $from_date, $to_date, $term_id);
+            $all_WRT_data = $this->getWRTData(
+                $all_student,
+                $standard_id,
+                $subject,
+                $type,
+                $exam_type,
+                $from_date,
+                $to_date
+            );
 
             $student_id_arr = [];
             foreach ($all_student as $id => $arr) {
@@ -288,7 +316,7 @@ class result_report_controller extends Controller
             }
 
             if ($from_date != '' && $to_date != '') {
-                $result = $result->whereRaw("DATE_FORMAT(e.exam_date, '%Y-%m-%d') BETWEEN '".$from_date."' AND '".$to_date."' ");
+                $result = $result->whereRaw("DATE_FORMAT(e.exam_date, '%Y-%m-%d') BETWEEN '" . $from_date . "' AND '" . $to_date . "' ");
             }
 
             $result = $result->orderBy('e.title')->get()->toArray();
@@ -298,7 +326,7 @@ class result_report_controller extends Controller
             $date_arr = [];
 
             foreach ($result as $id => $arr) {
-                $date_arr[$arr['exam_date'].'/'.$arr['ExamTitle']] = $arr['exam_date'].'('.$arr['total_points'].')';
+                $date_arr[$arr['exam_date'] . '/' . $arr['ExamTitle']] = $arr['exam_date'] . '(' . $arr['total_points'] . ')';
             }
 
             $data['grade_id'] = $grade_id;
@@ -319,7 +347,15 @@ class result_report_controller extends Controller
             }
 
             //getting all exam marks
-            $all_WRT_data = $this->getClasswise($all_student, $standard_id, $subject, $type, $exam_type, $from_date, $to_date, $term_id);
+            $all_WRT_data = $this->getClasswise(
+                $all_student,
+                $standard_id,
+                $subject,
+                $type,
+                $exam_type,
+                $from_date,
+                $to_date
+            );
 
             $student_id_arr = [];
             foreach ($all_student as $id => $arr) {
@@ -356,7 +392,7 @@ class result_report_controller extends Controller
             }
 
             if ($from_date != '' && $to_date != '') {
-                $result = $result->whereRaw("DATE_FORMAT(e.exam_date, '%Y-%m-%d') BETWEEN '".$from_date."' AND '".$to_date."' ");
+                $result = $result->whereRaw("DATE_FORMAT(e.exam_date, '%Y-%m-%d') BETWEEN '" . $from_date . "' AND '" . $to_date . "' ");
             }
 
             $result = $result->groupByRaw('rm.student_id,e.subject_id')
@@ -367,7 +403,7 @@ class result_report_controller extends Controller
             $date_arr = [];
 
             foreach ($result as $id => $arr) {
-                $date_arr[$arr['subject_name']] = $arr['subject_name'].'('.$arr['total_points'].')';
+                $date_arr[$arr['subject_name']] = $arr['subject_name'] . '(' . $arr['total_points'] . ')';
             }
 
             $data['grade_id'] = $grade_id;
@@ -389,8 +425,7 @@ class result_report_controller extends Controller
         $type,
         $exam_type = null,
         $from_date = null,
-        $to_date = null,
-        $term_id = null
+        $to_date = null
     ) {
         if ($type == 'API') {
             $syear = $_REQUEST['syear'];
@@ -401,11 +436,11 @@ class result_report_controller extends Controller
         } else {
             $syear = session()->get('syear');
             $sub_institute_id = session()->get('sub_institute_id');
-            $term_id = $term_id;
+            $term_id = session()->get('term_id');
             $standard_id = request()->input('standard');
             $division_id = request()->input('division');
         }
-        
+
         $student_id_arr = [];
         foreach ($all_student as $id => $arr) {
             $student_id_arr[] = $arr['student_id'];
@@ -431,7 +466,7 @@ class result_report_controller extends Controller
         }
 
         if ($from_date != '' && $to_date != '') {
-            $result = $result->whereRaw("DATE_FORMAT(e.exam_date, '%Y-%m-%d') BETWEEN '".$from_date."' AND '".$to_date."' ");
+            $result = $result->whereRaw("DATE_FORMAT(e.exam_date, '%Y-%m-%d') BETWEEN '" . $from_date . "' AND '" . $to_date . "' ");
         }
 
         $result = $result->groupByRaw('rm.student_id,e.subject_id')
@@ -447,30 +482,19 @@ class result_report_controller extends Controller
         $rank = $this->getRank($standard_id, $division_id, $passing_ratio = 35, $type);
 
         foreach ($result as $id => $arr) {
-            $grade_scale = $cbse_1t5_result_controller->getGrade($grade_arr, $arr['total_points'],
-                $arr['obtained_points']);
+            $grade_scale = $cbse_1t5_result_controller->getGrade(
+                $grade_arr,
+                $arr['total_points'],
+                $arr['obtained_points']
+            );
 
             $per = (($arr['obtained_points'] * 100) / $arr['total_points']);
             $per = number_format($per, 2);
-
-            if (isset($rank[$arr['student_id']])) 
-            {
-                $arr['percentage'] = $per;
-                $arr['grade'] = $grade_scale;
-                $marks_arr[$arr['student_id']][$arr['subject_name']] = $arr;
-                $marks_arr[$arr['student_id']][$arr['subject_name']]['student_name'] = $rank[$arr['student_id']]['student_name'];
-                $marks_arr[$arr['student_id']][$arr['subject_name']]['roll_no'] = $rank[$arr['student_id']]['roll_no'];
-            } 
-            else 
-            {
-                $defaultValues = [
-                    'student_name' => 'Unknown Student',
-                    'roll_no' => 'N/A',
-                ];
-        
-                // Assign the default values to the current array element
-                $marks_arr[$arr['student_id']][$arr['subject_name']] = array_merge($arr, $defaultValues);
-            }
+            $arr['percentage'] = $per;
+            $arr['grade'] = $grade_scale;
+            $marks_arr[$arr['student_id']][$arr['subject_name']] = $arr;
+            $marks_arr[$arr['student_id']][$arr['subject_name']]['student_name'] = $rank[$arr['student_id']]['student_name'];
+            $marks_arr[$arr['student_id']][$arr['subject_name']]['roll_no'] = $rank[$arr['student_id']]['roll_no'];
         }
         $marks_arr['total_student'] = count($marks_arr);
 
@@ -496,8 +520,7 @@ class result_report_controller extends Controller
         $type,
         $exam_type = null,
         $from_date = null,
-        $to_date = null,
-        $term_id = null
+        $to_date = null
     ) {
         if ($type == 'API') {
             $syear = $_REQUEST['syear'];
@@ -508,7 +531,7 @@ class result_report_controller extends Controller
         } else {
             $syear = session()->get('syear');
             $sub_institute_id = session()->get('sub_institute_id');
-            $term_id = $term_id;
+            $term_id = session()->get('term_id');
             $standard_id = request()->input('standard');
             $division_id = request()->input('division');
         }
@@ -542,7 +565,7 @@ class result_report_controller extends Controller
         }
 
         if ($from_date != '' && $to_date != '') {
-            $result = $result->whereRaw("DATE_FORMAT(e.exam_date, '%Y-%m-%d') BETWEEN '".$from_date."' AND '".$to_date."' ");
+            $result = $result->whereRaw("DATE_FORMAT(e.exam_date, '%Y-%m-%d') BETWEEN '" . $from_date . "' AND '" . $to_date . "' ");
         }
         $result = $result->orderBy('e.title')->get()->toarray();
 
@@ -556,30 +579,19 @@ class result_report_controller extends Controller
         $rank = $this->getRank($standard_id, $division_id, $passing_ratio = 35, $type);
 
         foreach ($result as $id => $arr) {
-            $grade_scale = $cbse_1t5_result_controller->getGrade($grade_arr, $arr['total_points'],
-                $arr['obtained_points']);
+            $grade_scale = $cbse_1t5_result_controller->getGrade(
+                $grade_arr,
+                $arr['total_points'],
+                $arr['obtained_points']
+            );
 
             $per = (($arr['obtained_points'] * 100) / $arr['total_points']);
             $per = number_format($per, 2);
-
-            if (isset($rank[$arr['student_id']])) 
-            {
-                $arr['percentage'] = $per;
-                $arr['grade'] = $grade_scale;
-                $marks_arr[$arr['student_id']][$arr['exam_date'].'/'.$arr['ExamTitle']] = $arr;
-                $marks_arr[$arr['student_id']][$arr['exam_date'].'/'.$arr['ExamTitle']]['student_name'] = $rank[$arr['student_id']]['student_name'];
-                $marks_arr[$arr['student_id']][$arr['exam_date'].'/'.$arr['ExamTitle']]['roll_no'] = $rank[$arr['student_id']]['roll_no'];
-            } 
-            else 
-            {
-                $defaultValues = [
-                    'student_name' => 'Unknown Student',
-                    'roll_no' => 'N/A',
-                ];
-        
-                // Assign the default values to the current array element
-                $marks_arr[$arr['student_id']][$arr['exam_date']] = array_merge($arr, $defaultValues);
-            }
+            $arr['percentage'] = $per;
+            $arr['grade'] = $grade_scale;
+            $marks_arr[$arr['student_id']][$arr['exam_date'] . '/' . $arr['ExamTitle']] = $arr;
+            $marks_arr[$arr['student_id']][$arr['exam_date'] . '/' . $arr['ExamTitle']]['student_name'] = $rank[$arr['student_id']]['student_name'];
+            $marks_arr[$arr['student_id']][$arr['exam_date'] . '/' . $arr['ExamTitle']]['roll_no'] = $rank[$arr['student_id']]['roll_no'];
         }
         $marks_arr['total_student'] = count($marks_arr);
 
@@ -593,8 +605,7 @@ class result_report_controller extends Controller
         $type,
         $top_students = null,
         $from_date = null,
-        $to_date = null,
-        $term_id = null
+        $to_date = null
     ) {
         if ($type == 'API') {
             $syear = $_REQUEST['syear'];
@@ -603,7 +614,7 @@ class result_report_controller extends Controller
         } else {
             $syear = session()->get('syear');
             $sub_institute_id = session()->get('sub_institute_id');
-            $term_id = $term_id;
+            $term_id = session()->get('term_id');
         }
 
 
@@ -621,7 +632,7 @@ class result_report_controller extends Controller
             ->selectRaw("s.id AS student_id,s.roll_no,concat_ws(' ',s.first_name,s.middle_name,s.last_name) as student_name,
     SUM(IFNULL(rm.points,0)) AS obtainedMarks,SUM(IFNULL(rc.points,0)) AS totalMarks,
     ((SUM(IFNULL(rm.points,0))/ SUM(IFNULL(rc.points,0)))*100) AS percentage,COUNT(if(((IFNULL(rm.points,0)/rc.points)*100)
-    < ".$passing_ratio.",1, NULL)) AS failed")
+    < " . $passing_ratio . ",1, NULL)) AS failed")
             ->where("se.syear", "=", $syear)
             ->where("se.standard_id", "=", $standard_id)
             ->where("se.section_id", "=", $division_id)
@@ -629,7 +640,7 @@ class result_report_controller extends Controller
             ->where('s.sub_institute_id', $sub_institute_id);
 
         if (isset($from_date) && $from_date != '' && isset($to_date) && $to_date != '') {
-            $rank_data = $rank_data->whereRaw("DATE_FORMAT(rc.exam_date, '%Y-%m-%d') BETWEEN '".$from_date."' AND '".$to_date."'");
+            $rank_data = $rank_data->whereRaw("DATE_FORMAT(rc.exam_date, '%Y-%m-%d') BETWEEN '" . $from_date . "' AND '" . $to_date . "'");
         }
 
         $rank_data = $rank_data->limit($top_students)->groupBy('s.id')
@@ -641,7 +652,7 @@ class result_report_controller extends Controller
         $percentageArr = [];
         $i = 1;
         foreach ($rank_data as $key => $val) {
-            if (! isset($percentageArr[$val['percentage']])) {
+            if (!isset($percentageArr[$val['percentage']])) {
                 $percentageArr[$val['percentage']] = $i;
                 $i++;
             }

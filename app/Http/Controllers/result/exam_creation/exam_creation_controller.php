@@ -98,69 +98,60 @@ class exam_creation_controller extends Controller
      */
     public function store(Request $request)
     {
-        $error = false;
-        $error_reason = "";
-        $existing_con_points = [];
+        $eroor = false;
+        $con_points = "";
+        $error_reson = "";
 
-        foreach ($request->get('standard') as $id => $val) {
             foreach ($request->get('subject') as $sub_id => $sub_val) {
                 $data = exam_creation::where([
                     'syear'            => session()->get('syear'),
                     'sub_institute_id' => session()->get('sub_institute_id'),
                     'term_id'          => $request->get('term'),
-                    'exam_id'          => $request->get('exam_id'),
-                    'standard_id'      => $val,
+                    'exam_id'          => $request->get('exam'),
+                    'standard_id'      => $request->get('standard'),
                     'subject_id'       => $sub_val,
                     'title'            => $request->get('title'),
                 ])->get()->toArray();
 
                 if (count($data)) {
-                    $error = true;
-                    $error_reason = "Given Standard Have Exams.";
+                    $eroor = true;
+                    $error_reson = "Given Standard Have Exams.";
                 } else {
                     $data = exam_creation::where([
                         'syear'            => session()->get('syear'),
                         'sub_institute_id' => session()->get('sub_institute_id'),
                         'term_id'          => $request->get('term'),
-                        'exam_id'          => $request->get('exam_id'),
-                        'standard_id'      => $val,
+                        'exam_id'          => $request->get('exam'),
+                        'standard_id'      => $request->get('standard'),
                         'subject_id'       => $sub_val,
                     ])->get()->toArray();
                     if (count($data)) {
                         foreach ($data as $arr) {
-                            $existing_con_points[] = $arr['con_point'];
+                            $con_points = $arr['con_point'];
                         }
                     }
                 }
-            }
         }
-
-        if (!$error) 
-        {
-            $error_con_point = false;
-
-            foreach ($request->get('standard') as $id => $val) 
-            {
-                foreach ($request->get('subject') as $sub_id => $sub_val) 
-                {
-                    if ($request->get('con_point') != '') 
-                    {
-                        if (!empty($existing_con_points) && !in_array($request->get('con_point'), $existing_con_points)) 
-                        {
-                            $error_reason = "Convert Point Is Not Matching With Other Exam.";
-                            $error_con_point = true;
+        if ($eroor == false) {
+            $sort = $request->get('sort_order');
+            $error_co_point = false;
+                foreach ($request->get('subject') as $sub_id => $sub_val) {
+                    if ($request->get('con_point') != '') {
+                        if ($con_points != "") {
+                            if ($con_points != $request->get('con_point')) {
+                                $error_reson = "Convert Point Is Not Matching With Other Exam.";
+                                $error_co_point = true;
+                            }
                         }
                     }
-
-                    if (!$error_con_point) 
-                    {
+                    if ($error_co_point == false) {
                         $data = new exam_creation([
                             'syear'              => session()->get('syear'),
                             'sub_institute_id'   => session()->get('sub_institute_id'),
                             'term_id'            => $request->get('term'),
                             'medium'             => $request->get('medium'),
-                            'exam_id'            => $request->get('exam_id'),
-                            'standard_id'        => $val,
+                            'exam_id'            => $request->get('exam'),
+                            'standard_id'        => $request->get('standard'),
                             'app_disp_status'    => $request->get('app_disp_status'),
                             'subject_id'         => $sub_val,
                             'title'              => $request->get('title'),
@@ -168,19 +159,17 @@ class exam_creation_controller extends Controller
                             'con_point'          => $request->get('con_point'),
                             'marks_type'         => $request->get('marks_type'),
                             'report_card_status' => $request->get('report_card_status'),
-                            'sort_order'         => $request->get('sort_order'),
+                            'sort_order'         => $sort++,
                             'exam_date'          => date("Y-m-d", strtotime($request->get('exam_date'))),
                         ]);
                         $data->save();
                     }
                 }
-            }
         }
-
-        if ($error || $error_con_point) {
+        if ($eroor || $error_co_point) {
             $res = [
                 "status_code" => 0,
-                "message"     => $error_reason,
+                "message"     => $error_reson,
             ];
         } else {
             $res = [
