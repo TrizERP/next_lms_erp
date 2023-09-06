@@ -1,7 +1,8 @@
-@include('includes.headcss')
+{{--@include('includes.headcss')
 @include('includes.header')
-@include('includes.sideNavigation')
-
+@include('includes.sideNavigation')--}}
+@extends('layout')
+@section('container')
 <div id="page-wrapper">
     <div class="container-fluid">
         <div class="row bg-title">
@@ -16,7 +17,7 @@
                 <strong>{{ $sessionData['message'] }}</strong>
             </div>
             @endif
-            <div class="row">                
+            <div class="row">
                 <div class="col-lg-6 col-sm-6 col-xs-6">
                     <a href="{{ route('fees_circular_master.create') }}" class="btn btn-info add-new"><i class="fa fa-plus"></i> Add New Fees Circular </a>
                 </div>
@@ -45,20 +46,20 @@
                             @endphp
                             @if(isset($data['data']))
                                 @foreach($data['data'] as $key => $data)
-                                <tr>    
+                                <tr>
                                     <td>{{$j}}</td>
                                     <td>{{$data->grade_name}}</td>
                                     <td>{{$data->standard_name}}</td>
-                                    <td>{{$data->bank_name}}</td>  
-                                    <td>{{$data->address_line1}}</td> 
-                                    <td>{{$data->address_line2}}</td> 
-                                    <td>{{$data->account_no}}</td> 
-                                    <td>{{$data->paid_collection}}</td> 
-                                    <td>{{$data->shift}}</td> 
-                                    <td>{{$data->form_no}}</td> 
-                                    <td>{{$data->branch}}</td> 
+                                    <td>{{$data->bank_name}}</td>
+                                    <td>{{$data->address_line1}}</td>
+                                    <td>{{$data->address_line2}}</td>
+                                    <td>{{$data->account_no}}</td>
+                                    <td>{{$data->paid_collection}}</td>
+                                    <td>{{$data->shift}}</td>
+                                    <td>{{$data->form_no}}</td>
+                                    <td>{{$data->branch}}</td>
                                     <td>
-                                        <div class="d-inline">                                            
+                                        <div class="d-inline">
                                             <a href="{{ route('fees_circular_master.edit',$data->id)}}" class="btn btn-info btn-outline">
                                                 <i class="ti-pencil-alt"></i>
                                             </a>
@@ -69,7 +70,7 @@
                                             <button type="submit" onclick="return confirmDelete();" class="btn btn-info btn-outline-danger">    <i class="ti-trash"></i>
                                             </button>
                                         </form>
-                                    </td>  
+                                    </td>
                                 </tr>
                             @php
                             $j++;
@@ -80,7 +81,7 @@
                         </table>
                     </div>
                 </div>
-            </div> 
+            </div>
         </div>
     </div>
 </div>
@@ -92,3 +93,4 @@ $(document).ready(function () {
 });
 </script>
 @include('includes.footer')
+@endsection

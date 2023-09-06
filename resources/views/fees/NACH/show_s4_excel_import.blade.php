@@ -1,6 +1,8 @@
-@include('includes.headcss')
+{{--@include('includes.headcss')
 @include('includes.header')
-@include('includes.sideNavigation')
+@include('includes.sideNavigation')--}}
+@extends('layout')
+@section('container')
 <style>
     br {
         display: block;
@@ -71,7 +73,7 @@
                         <a href="../SAMPLE_NACH_S4_Import.xlsx" download class="text-primary h5">Sample S4 NACH File</a>
                     </div>
                     <div class="col-sm-4 form-group ml-0 mt-4">
-                    
+
 								<div id="overlay-new" style="display:none;"><center><p style="margin-top: 273px;color:red;font-weight: 700;">Please do not refresh the page, while the process is going on.</p><img src="https://erp.triz.co.in/admin_dep/images/loader.gif"></center></div>
                         <center>
                             <input type="submit" name="submit" value="Search" class="btn btn-success" onclick="overlay_new();">
@@ -140,3 +142,4 @@ function overlay_new(){
     }
 </script>
 @include('includes.footer')
+@endsection

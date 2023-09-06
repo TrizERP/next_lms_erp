@@ -1,5 +1,9 @@
+{{--
 @include('includes.headcss') @include('includes.header') @include('includes.sideNavigation')
+--}}
 
+@extends('layout')
+@section('container')
 <div id="page-wrapper">
 	<div class="container-fluid">
 		<div class="row">
@@ -9,7 +13,7 @@
 		</div>
 		<div class="card">
         @php $fields = Session::get('data') @endphp
-			@if ($sessionData = Session::get('data')) 
+			@if ($sessionData = Session::get('data'))
             @if( $sessionData['status_code'] == 1)
 			<div class="alert alert-success alert-block">
 				@else
@@ -26,10 +30,10 @@
 							<label>Select Breakoff Month</label>
 							<select id='bk_month' name="bk_month" class="form-control">
 								<option>--Select BK Month--</option>
-								@if(isset($data['bk_month'])) 
+								@if(isset($data['bk_month']))
                                 @foreach($data['bk_month'] as $key => $value)
 								<option value="{{$key}}" @if(isset($fields['bk_months']) && $fields['bk_months']==$key) selected @endif>{{$value}}</option>
-								@endforeach 
+								@endforeach
                                 @endif
 							</select>
 						</div>
@@ -38,16 +42,16 @@
 							<label>Select Next Month</label>
 							<select id='next_bk' name="next_bk[]" class="form-control" multiple>
 								<option>--Select Next BK Month--</option>
-                                @if(isset($data['next_month'])) 
+                                @if(isset($data['next_month']))
                                 @foreach($data['next_month'] as $key => $value)
 								<option value="{{$key}}" @if(isset($fields['next_bk_months']) && in_array($key,$fields['next_bk_months'])) selected @endif>{{$value}}</option>
-								@endforeach 
+								@endforeach
                                 @endif
 							</select>
 						</div>
 
 					</div>
-                    
+
                     <div class="col-md-4 form-group">
                         <center>
                         <input type="submit" vlaue="Save" name="Submit" class="btn btn-success">
@@ -99,7 +103,7 @@
                 </div>
                 @endif
 			</div>
-           
+
 		</div>
 	</div>
 </div>
@@ -108,29 +112,29 @@
 <script>
     $(document).ready(function() {
      var table = $('#example').DataTable( {
-         select: true,          
-         lengthMenu: [ 
-                        [100, 500, 1000, -1], 
-                        ['100', '500', '1000', 'Show All'] 
+         select: true,
+         lengthMenu: [
+                        [100, 500, 1000, -1],
+                        ['100', '500', '1000', 'Show All']
         ],
-        dom: 'Bfrtip', 
-        buttons: [ 
-            { 
+        dom: 'Bfrtip',
+        buttons: [
+            {
                 extend: 'pdfHtml5',
                 title: 'Admission Confirmation Report',
                 orientation: 'landscape',
-                pageSize: 'LEGAL',                
+                pageSize: 'LEGAL',
                 pageSize: 'A0',
-                exportOptions: {                   
-                     columns: ':visible'                             
+                exportOptions: {
+                     columns: ':visible'
                 },
-            }, 
-            { extend: 'csv', text: ' CSV', title: 'Admission Confirmation Report' }, 
-            { extend: 'excel', text: ' EXCEL', title: 'Admission Confirmation Report'}, 
-            { extend: 'print', text: ' PRINT', title: 'Admission Confirmation Report'}, 
-            'pageLength' 
-        ], 
-        }); 
+            },
+            { extend: 'csv', text: ' CSV', title: 'Admission Confirmation Report' },
+            { extend: 'excel', text: ' EXCEL', title: 'Admission Confirmation Report'},
+            { extend: 'print', text: ' PRINT', title: 'Admission Confirmation Report'},
+            'pageLength'
+        ],
+        });
 
         $('#example thead tr').clone(true).appendTo( '#example thead' );
         $('#example thead tr:eq(1) th').each( function (i) {
@@ -149,3 +153,4 @@
     } );
 </script>
  @include('includes.footer')
+@endsection

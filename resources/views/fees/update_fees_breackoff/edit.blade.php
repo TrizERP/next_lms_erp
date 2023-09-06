@@ -1,14 +1,15 @@
-@include('../includes.headcss')
+{{--@include('../includes.headcss')
 @include('../includes.header')
-@include('../includes.sideNavigation')
-
+@include('../includes.sideNavigation')--}}
+@extends('layout')
+@section('container')
 
 <div id="page-wrapper">
     <div class="container-fluid">
-        <div class="row bg-title">            
-            <div class="col-lg-3 col-md-4 col-sm-4 col-xs-12">                
-                <h4 class="page-title">Update Fees Structure</h4>      
-            </div>     
+        <div class="row bg-title">
+            <div class="col-lg-3 col-md-4 col-sm-4 col-xs-12">
+                <h4 class="page-title">Update Fees Structure</h4>
+            </div>
         </div>
         <div class="card">
         <div class="col-md-12 form-group">
@@ -21,7 +22,7 @@
                             </tr>
                         </thead>
                         <tbody>
-                            <tr>    
+                            <tr>
                                 <td>
                                 <span class="badge badge-success mb-1">
                                     {{$data['grade']}}</span>
@@ -36,7 +37,7 @@
                             </tr>
                         </tbody>
                     </table>
-                </div>      
+                </div>
             <span class="d-inline-block mb-2" tabindex="0" data-toggle="tooltip" title="Pink color indicates records for which fees is already taken , so you are not allowed to edit that fees structure">
             <button class="btn btn-danger" style="pointer-events: none;" type="button" disabled="">Note</button>
             </span>
@@ -70,8 +71,8 @@
                                     }
                                     else
                                     {
-                                        $disable_new_edit = "";  
-                                        $disable_new_tr = "";  
+                                        $disable_new_edit = "";
+                                        $disable_new_tr = "";
                                     }
                                     //END If fees collected breakoff cant be edited
                                     ?>
@@ -99,7 +100,7 @@
                             </table>
                         </div>
                     </div>
-                    
+
                     <div class="col-md-12 form-group">
                         <div class="h4 mt-2 text-primary font-weight-bold">Old Student</div>
                         <div class="table-responsive">
@@ -131,8 +132,8 @@
                                     }
                                     else
                                     {
-                                        $disable_old_edit = "";  
-                                        $disable_old_tr = "";  
+                                        $disable_old_edit = "";
+                                        $disable_old_tr = "";
                                     }
                                     //END If fees collected breakoff cant be edited
                                     ?>
@@ -157,11 +158,11 @@
                                         </td>
                                     <?php } ?>
                                 </tr>
-                                       
+
                             </table>
                         </div>
                     </div>
-                    <div class="col-md-12 form-group">                        
+                    <div class="col-md-12 form-group">
                         <center>
                             <button type="submit" class="btn btn-info">Submit</button>
                         </center>
@@ -200,3 +201,4 @@
     }
 </script>
 @include('includes.footer')
+@endsection

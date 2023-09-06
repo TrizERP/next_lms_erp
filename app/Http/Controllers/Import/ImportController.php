@@ -23,7 +23,7 @@ class ImportController extends Controller
 
     public function Import()
     {
-        $getTables = ["result_personalize_marks"];
+        $getTables = ["result_personalize_marks -sheet 1","result_personalize_marks -sheet 2"];
         return view('import.custom-import', ['result' => $getTables]);
     }
     public function customParseImport(Request $request) {
@@ -46,9 +46,7 @@ class ImportController extends Controller
         $filePath = $filePath . "/";
         $fileUrl->move($filePath, $generateFileName);
         $csv_header_fields = [];
-        foreach ($fileHeader as $header) {
-            $csv_header_fields[] = Str::slug($header, ",");
-        }
+
         $fileDetails = [];
         while (!feof($file)) {
             $fileDetail = [];
@@ -58,7 +56,7 @@ class ImportController extends Controller
 
         if(is_array($fileDetails)) {
             foreach ($fileDetails as $fileDetail) {
-                if ($request->tablename == 'result_personalize_marks') {
+                if ($request->tablename == 'result_personalize_marks -sheet 1') {
                     $array1 = array_slice($fileDetail, 0, 5);
                     $array2 = array_slice($fileDetail, 5, count($fileDetail));
                     $exam_data = array_chunk($array2, 3);
@@ -73,6 +71,26 @@ class ImportController extends Controller
                             "exam" => $exam[0],
                             "total" => $exam[1],
                             "obtain" => $exam[2],
+                        ]);
+                    }
+                } else if ($request->tablename == 'result_personalize_marks -sheet 2') {
+                    $array1 = array_slice($fileDetail, 0, 6);
+                    $subjectNameWithTotal = array_slice($fileHeader, 6, count($fileDetail));
+                    $obtainData = array_slice($fileDetail, 6, count($fileDetail));
+                    foreach ($subjectNameWithTotal as $key => $subject) {
+                        $subjectName = preg_replace('/\s*\([^)]*\)/', '', $subject);
+                        preg_match('/\(([^)]+)\)$/', $subject, $matches);
+                        $total = isset($matches[1]) ? $matches[1] : '';
+                        DB::table('result_personalize_marks')->insert([
+                            "sub_institute_id" => $sub_institute_id,
+                            "enrollment_no" => $array1[2],
+                            "student_name" => $array1[3],
+                            "standard" => $array1[4],
+                            "syear" => $array1[5],
+                            "subject" =>  strtok($subjectName, " "),
+                            "exam" => $subjectName,
+                            "total" => $total,
+                            "obtain" => $obtainData[$key],
                         ]);
                     }
                 }

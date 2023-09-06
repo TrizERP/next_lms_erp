@@ -1,20 +1,21 @@
-@include('includes.headcss')
+{{--@include('includes.headcss')
 @include('includes.header')
-@include('includes.sideNavigation')
-
+@include('includes.sideNavigation')--}}
+@extends('layout')
+@section('container')
 <div id="page-wrapper">
     <div class="container-fluid">
         <div class="row bg-title">
             <div class="col-lg-3 col-md-4 col-sm-4 col-xs-12">
                 <h4 class="page-title">Other Fees Mapping</h4>
             </div>
-        </div>    
+        </div>
         <div class="card">
             @if(!empty($data['message']))
             @if($data['status_code']==1)
             <div class="alert alert-success alert-block">
             @else
-            <div class="alert alert-danger alert-block">            
+            <div class="alert alert-danger alert-block">
             @endif
                 <button type="button" class="close" data-dismiss="alert">x</button>
                 <strong>{{ $data['message'] }}</strong>
@@ -28,7 +29,7 @@
                         <div class="row">
                             {{ App\Helpers\SearchChain('4','single','grade,std,div') }}
                         </div>
-                        
+
                         {{-- <style>
                             .custom-select select {
                                 display: inline !important;
@@ -46,7 +47,7 @@
                     <div class="col-md-4 form-group">
                         <label>Mobile</label>
                         <input type="text" id="mobile" placeholder="Mobile" name="mobile" class="form-control">
-                    </div>                        
+                    </div>
                     <div class="col-md-4 form-group">
                         <label>{{App\Helpers\get_string('grno','request')}}</label>
                         <input type="text" id="grno" placeholder="Gr No." name="grno" class="form-control">
@@ -84,11 +85,11 @@
                                     <input type="submit" name="submit" value="Search" class="btn btn-success">
                                 </center>
                             </div>
-                        </div>    
+                        </div>
                     </form>
                 </div>
             </div>
-        </div>    
+        </div>
     </div>
 </div>
 
@@ -102,7 +103,7 @@ $(document).ready(function () {
     });
 });
 function validateData()
-{       
+{
     var c = $('#grade').val();
     // alert(c);
     if(c == '')
@@ -113,7 +114,8 @@ function validateData()
     else{
         return true;
     }
-    
+
 }
 </script>
 @include('includes.footer')
+@endsection

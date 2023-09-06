@@ -92,26 +92,26 @@
                         if (i == 1) {
                             if (value.bank_name == 'hdfc') {
                                 document.forms.changeAction.action =
-                                    "https://erp.triz.co.in/fees/hdfc/online_fees_collect";
+                                    "/fees/hdfc/online_fees_collect";
                             }
                             if (value.bank_name == 'axis') {
                                 document.forms.changeAction.action =
-                                    "https://erp.triz.co.in/fees/axis/online_fees_collect";
+                                    "/fees/axis/online_fees_collect";
                                 //console.log(key);
                             }
                             if (value.bank_name == 'aggre_pay') {
                                 document.forms.changeAction.action =
-                                    "https://erp.triz.co.in/fees/aggre_pay/online_fees_collect";
+                                    "/fees/aggre_pay/online_fees_collect";
                                 // console.log(key);
                             }
                             if (value.bank_name == 'icici') {
                                 document.forms.changeAction.action =
-                                    "https://erp.triz.co.in/fees/icici/online_fees_collect";
+                                    "/fees/icici/online_fees_collect";
                                 // console.log(key);
                             }
                             if (value.bank_name == 'razorpay') {
                                 document.forms.changeAction.action =
-                                    "https://erp.triz.co.in/fees/razorpay/online_fees_collect";
+                                    "/fees/razorpay/online_fees_collect";
                                 // console.log(key);
                             }
                         }
@@ -140,9 +140,13 @@
                 var result_arr = result.split("####");
                 var amount = result_arr[0];
                 var medium = result_arr[1];
-                if(amount == '' || amount == 0 || medium == '')
+                if(amount == '' || amount == 0)
                 {
-                    document.getElementById("errorMessage").innerHTML = "Please enter fees breakoff first OR Student Medium.";
+                    document.getElementById("errorMessage").innerHTML = "You are not mapped with institute amount.";
+                    submit_hide = 1;
+                }else if(medium == '')
+                {
+                    document.getElementById("errorMessage").innerHTML = "You are not mapped with institute medium.";
                     submit_hide = 1;
                 }else{
                     submit_hide = 0;  
@@ -153,23 +157,23 @@
         $.each(arr, function (key, value) {
             if (value.id == selectedVal) {
                 if (value.bank_name == 'hdfc') {
-                    document.forms.changeAction.action = "https://erp.triz.co.in/fees/hdfc/online_fees_collect";
+                    document.forms.changeAction.action = "/fees/hdfc/online_fees_collect";
                     // console.log(key);
                 }
                 if (value.bank_name == 'axis') {
-                    document.forms.changeAction.action = "https://erp.triz.co.in/fees/axis/online_fees_collect";
+                    document.forms.changeAction.action = "/fees/axis/online_fees_collect";
                     // console.log(key);
                 }
                 if (value.bank_name == 'aggre_pay') {
-                    document.forms.changeAction.action = "https://erp.triz.co.in/fees/aggre_pay/online_fees_collect";
+                    document.forms.changeAction.action = "/fees/aggre_pay/online_fees_collect";
                     // console.log(key);
                 }
                  if (value.bank_name == 'icici') {
-                    document.forms.changeAction.action = "https://erp.triz.co.in/fees/icici/online_fees_collect";
+                    document.forms.changeAction.action = "/fees/icici/online_fees_collect";
                     // console.log(key);
                 }
                  if (value.bank_name == 'razorpay') {
-                    document.forms.changeAction.action = "https://erp.triz.co.in/fees/razorpay/online_fees_collect";
+                    document.forms.changeAction.action = "/fees/razorpay/online_fees_collect";
                     // console.log(key);
                 }
             }

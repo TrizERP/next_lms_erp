@@ -321,7 +321,7 @@ class studentCertificateController extends Controller
         $html_content = str_replace(htmlspecialchars("<<student_father_name>>"),  strtoupper($value['father_name']) ,$html_content);
         
     $fees_data = DB::table('fees_collect')
-    ->where(['sub_institute_id' => $sub_institute_id, 'syear' => $syear, 'student_id' => $value['id']])
+    ->where(['sub_institute_id' => $sub_institute_id, 'syear' => $syear, 'student_id' => $value['id'], 'is_deleted' => 'N'])
     ->get();
 
 
@@ -330,7 +330,7 @@ class studentCertificateController extends Controller
     ->get();
 
     $fees_month = DB::table('fees_collect')
-    ->where(['sub_institute_id' => $sub_institute_id, 'syear' => $syear, 'student_id' => $value['id']])
+    ->where(['sub_institute_id' => $sub_institute_id, 'syear' => $syear, 'student_id' => $value['id'], 'is_deleted' => 'N'])
     ->groupBy('term_id')->get();
     
         $totalAmount = 0; 

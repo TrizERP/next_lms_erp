@@ -23,6 +23,7 @@
                                     <th>Term Name</th>
                                     <th>Parent Name</th>
                                     <th>Title</th>
+                                    <th>Standard</th>                                    
                                     <th>Sort Order</th>
                                     <th>Action</th>
                                 </tr>
@@ -34,6 +35,7 @@
                                     <td>{{$data->term_name}}</td>
                                     <td>{{$data->parent_name}}</td>
                                     <td>{{$data->title}}</td>
+                                    <td>{{$data->standard}}</td>                                    
                                     <td>{{$data->sort_order}}</td>
 
                                     <td>

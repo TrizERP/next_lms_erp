@@ -1,7 +1,8 @@
-@include('includes.headcss')
+{{--@include('includes.headcss')
 @include('includes.header')
-@include('includes.sideNavigation')
-
+@include('includes.sideNavigation')--}}
+@extends('layout')
+@section('container')
 <div id="page-wrapper">
     <div class="container-fluid">
         <div class="row bg-title">
@@ -17,13 +18,13 @@
                 <strong>{{ $message }}</strong>
             </div>
             @endif
-            <div class="row">            	
+            <div class="row">
                 <div class="col-lg-12 col-sm-12 col-xs-12">
                     <form action="{{ route('fees_circular_master.update', $data['id']) }}" method="post">
                         {{ method_field("PUT") }}
                         @csrf
-                        <div class="row">     
-                        	{{ App\Helpers\SearchChain('4','single','grade,std',$data['grade_id'],$data['standard_id']) }}	                   		                        
+                        <div class="row">
+                        	{{ App\Helpers\SearchChain('4','single','grade,std',$data['grade_id'],$data['standard_id']) }}
 	                        <div class="col-md-4 form-group">
 	                            <label>Bank Name </label>
 	                            <input type="text" id='bank_name' value="@if(isset($data['bank_name'])){{ $data['bank_name'] }}@endif" required name="bank_name" class="form-control">
@@ -57,7 +58,7 @@
 	                            <input type="text" id='branch' value="@if(isset($data['branch'])){{ $data['branch'] }}@endif" required name="branch" class="form-control">
 	                        </div>
 	                        <div class="col-md-12 form-group">
-	                        	<center>	                        		
+	                        	<center>
 	                                <input type="submit" name="submit" value="Update" class="btn btn-success" >
 	                        	</center>
 	                        </div>
@@ -77,3 +78,4 @@
 	});
 </script>
 @include('includes.footer')
+@endsection

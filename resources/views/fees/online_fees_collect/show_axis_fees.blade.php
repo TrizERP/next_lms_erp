@@ -7,6 +7,7 @@
 
     #page-wrapper {
         margin: 0px;
+        padding: 20px;        
     }
 
     .footer {
@@ -167,6 +168,7 @@
                                             $disabled = '';
                                             if ( isset($feesDetails[$val]) && $feesDetails[$val] == 0 ) {
                                                 $disabled = 'disabled="disabled"';
+                                                
                                             }
 
                                             ?>

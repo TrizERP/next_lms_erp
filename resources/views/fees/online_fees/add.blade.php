@@ -1,7 +1,8 @@
-@include('../includes.headcss')
+{{--@include('../includes.headcss')
 @include('../includes.header')
-@include('../includes.sideNavigation')
-
+@include('../includes.sideNavigation')--}}
+@extends('layout')
+@section('container')
 <div id="page-wrapper">
     <div class="container-fluid">
         <div class="row bg-title">
@@ -15,12 +16,12 @@
                     <form action="{{ route('online_fees.create') }}" enctype="multipart/form-data" method="get">
                     {{ method_field("GET") }}
                     @csrf
-                        <div class="row">                            
+                        <div class="row">
                             <div class="col-md-6 form-group">
                                 <label>
                                     {{-- <input type="radio" name="payment_gatway_name" value="hdfc" checked> --}}
                                     <a href="{{ route('hdfcpayment') }}">
-                                        <img style="height:50px;" 
+                                        <img style="height:50px;"
                                             src="{{url('/online_fees_logo/hdfcpayment.jpg')}}">
                                     </a>
                                 </label>
@@ -48,7 +49,7 @@
                                         <img style="height:40px;" src="{{url('/online_fees_logo/icici.png')}}">
                                     </a>
                                 </label>
-                            </div>                           
+                            </div>
                             <div class="col-md-6 form-group">
                                 <label>
                                     {{-- <input type="radio" name="payment_gatway_name" value="icici" checked> --}}
@@ -56,12 +57,12 @@
                                         <img style="height:80px;" src="{{url('/online_fees_logo/Razorpay.png')}}">
                                     </a>
                                 </label>
-                            </div>                           
+                            </div>
 
                             <div class="col-md-6 form-group">
-                            
 
-                            </div>                           
+
+                            </div>
                         </div>
                     </form>
                 </div>
@@ -73,3 +74,4 @@
 
 @include('includes.footerJs')
 @include('includes.footer')
+@endsection

@@ -18,10 +18,19 @@
                         <div class="row">
                         
                             {{ App\Helpers\TermDD() }}
-                            
+                           <div class="col-md-4 form-group">
+                          
+                                <label>Standard: </label>                                
+                                <select name="standard[]" class="form-control" multiple required>
+                                    <option value="">--Select Standard--</option>
+                                    @foreach ($data['standard'] as $id=>$arr)
+                                   <option value={{$arr->id}}>{{$arr->name}}</option>
+                                    @endforeach
+                                </select>
+                            </div>
                             <div class="col-md-4 form-group">
                                 <label>Co-Scholastic Title : </label>
-                                <input type="text" name="title" value="" class="form-control" />
+                                <input type="text" name="title" value="" class="form-control" required/>
                             </div>                            
                             <div class="col-md-4 form-group">
                                 <label>Sort Order: </label>
@@ -29,7 +38,7 @@
                             </div>
                             <div class="col-md-4 form-group">
                                 <label>Parent Co-Scholastic: </label>
-                                <select name="parent_id" class="form-control">
+                                <select name="parent_id" class="form-control" required>
                                     <option value="">--Select Parent--</option>
                                     @php
                                     foreach ($data['ddValue'] as $id=>$arr)

@@ -1,30 +1,12 @@
+{{--
 @include('includes.headcss') @include('includes.header') @include('includes.sideNavigation')
+--}}
 
-<style>
-	tr.spaceUnder>th {
-		padding-bottom: 1em !important;
-	}
-	#overlay-new {
-		position: fixed;
-		top: 0;
-		left: 0;
-		width: 100%;
-		height: 100%;
-		background-color: rgba(0, 0, 0, 0.5); /* Adjust the opacity as needed */
-		z-index: 9999;
-	}
-
-	#overlay-new center {
-	position: absolute;
-	top: 30%;
-	left: 50%;
-	transform: translate(-50%, -50%);
-	}
-
-</style>
+@extends('layout')
+@section('container')
 <div id="page-wrapper" style="color:#000;">
 	<div class="container-fluid">
-	
+
 		<div class="row bg-title">
 			<div class="col-lg-3 col-md-4 col-sm-4 col-xs-12">
 				<h4 class="page-title">Fees Collect</h4>
@@ -78,7 +60,7 @@
 								@php
                                     }
                                         $remainFees += $arr['remain'];
-                                        } 
+                                        }
 								@endphp
 								<tr>
 									<td>Total</td>
@@ -113,14 +95,14 @@
 								<div class="table-responsive">
 									<table class="table table-stripped">
 										<tr>
-											<td>{{ App\Helpers\get_string('uniqueid','request')}}<i class="mdi mdi-lead-pencil"></i></td>
+											<td>{{ App\Helpers\get_string('uniqueid')}}</td>
 											<td>
 												{{ $data['stu_data']['uniqueid']; }}
 											</td>
 										</tr>
 										<tr>
 										<tr>
-											<td>{{ App\Helpers\get_string('studentname','request')}}<i class="mdi mdi-lead-pencil"></i></td>
+											<td>{{ App\Helpers\get_string('studentname')}}</td>
 											<td>
 												{{ $data['stu_data']['name']; }}
 											</td>
@@ -132,13 +114,13 @@
 											</td>
 										</tr>
 										<tr>
-											<td>Parent Email</td>
+											<td>Father Name</td>
 											<td>
-												{{ $data['stu_data']['email']; }}
+												{{ $data['stu_data']['father_name']; }}
 											</td>
 										</tr>
 										<tr>
-											<td>{{ App\Helpers\get_string('studentquota','request')}}<i class="mdi mdi-lead-pencil"></i></td>
+											<td>{{ App\Helpers\get_string('studentquota')}}</td>
 											<td>
 												{{ $data['stu_data']['student_quota']; }}
 											</td>
@@ -150,13 +132,13 @@
 								<div class="table-responsive">
 									<table class="table table-stripped">
 										<tr>
-											<td>{{ App\Helpers\get_string('grno','request')}}<i class="mdi mdi-lead-pencil"></i></td>
+											<td>{{ App\Helpers\get_string('grno')}}</td>
 											<td>
 												{{ $data['stu_data']['enrollment']; }}
 											</td>
 										</tr>
 										<tr>
-											<td>{{ App\Helpers\get_string('std/div','request')}}<i class="mdi mdi-lead-pencil"></i></td>
+											<td>{{ App\Helpers\get_string('std/div')}}</td>
 											<td>
 												{{ $data['stu_data']['stddiv']; }}
 											</td>
@@ -167,9 +149,15 @@
 												{{ $data['stu_data']['mobile']; }}
 											</td>
 										</tr>
-										<tr style="color: red;">
-											<td>Pending Fees</td>
+										<tr>
+											<td>Parent Email</td>
 											<td>
+												{{ $data['stu_data']['email']; }}
+											</td>
+										</tr>
+										<tr>
+											<td style="color: red;">Pending Fees</td>
+											<td style="color: red;">
 												{{ $data['stu_data']['pending']; }}
 											</td>
 										</tr>
@@ -248,13 +236,6 @@
 							</div>
 							<div class="table-responsive col-md-12">
 								<table class="table table-stripped" border="0" width="100%">
-									<!-- <tr>
-                                                <th colspan="2" style="width: 40%">Particular</th>
-                                                <th style="width: 20%">Amount</th>
-                                                <th style="width: 20%">Collection Amount</th>
-                                                <th style="width: 20%">Discount</th>
-                                            </tr>-->
-									<!--<span id="fees_head">-->
 									<tr>
 										<td colspan="5">
 											<table width="100%" border="0" id="fees_head">
@@ -266,13 +247,12 @@
 													<th style="width: 10%;padding-left: 15px;">Amount</th>
 													<th style="width: 20%;padding-left: 15px;">Collection Amount
 													</th>
-													<th style="width: 20%;padding-left: 15px;">{{ App\Helpers\get_string('Discount','request') }}<i class="mdi mdi-lead-pencil"></i></th>
+													<th style="width: 20%;padding-left: 15px;">{{ App\Helpers\get_string('Discount') }}</th>
 													<th style="width: 20%;padding-left: 15px;">Fine</th>
 												</tr>
 												@php
                                                         $total = [];
                                                         foreach ($data['final_fee_new'] as $id => $val) {
-                                                      // if ($id != 'Total') {     print_r($data['final_fee_name'][$id]); }  
 												@endphp
 												<tr>
 													<td style="width: 10%">
@@ -310,8 +290,8 @@
                                                         }
                                                         if($data['previous_fees']=0 || $data['previous_fees']=null){
 
-                                                        if ($id != 'Total') {   
-                                                         
+                                                        if ($id != 'Total') {
+
                                                             echo "<td style='width: 20%'><input  $individual_enable $negative_disable type='number'  min=0 max=".($val['amount'] ?? 0)." value='" . ($val['amount'] ?? 0) ."' name='fees_data[" . $data['final_fee_name'][$id] . "]' class='form-control allField1 fees_data[" . $data['final_fee_name'][$id] . "]'>
                                                             <input type='hidden' value=" .($val['amount'] ?? 0) . " name='hid_fees_data[" . $data['final_fee_name'][$id] . "]' class='hid_allField1' $individual_enable id=". $data['final_fee_name'][$id] . ">
                                                             </td>";
@@ -329,21 +309,15 @@
 
                                                         $total[] =$val['amount'] ?? 0;
                                                       @endphp
-													<!--<td style="width: 25%"><input type="text" class="form-control"></td>-->
 												</tr>
 												@php }
-                                                       $total_amt= array_sum($total) 
+                                                       $total_amt= array_sum($total)
 												@endphp
 
 											</table>
 										</td>
 									</tr>
-									<!--<tr>
-                                                <td></td>
-                                                <td>Discount</td>
-                                                <td></td>
-                                                <td><input type="number" onchange="calculateTotal();" id="discount" name="discount" class="form-control"></td>
-                                            </tr>-->
+
 									<tr>
 										<td></td>
 										<td>Remarks</td>
@@ -362,9 +336,7 @@
 											@if(in_array(session()->get('sub_institute_id'),$sub_institute_id) )
 
 											<input type="text" name="fees_data[fine]" id="cheque_return_charges1" class="form-control cheque_return_charges1" value="@if(date('d') >= 5 && $total_amt!=0) {{$data['fees_config_data']['late_fees_amount']}} @else {{$cheque_return_charges0}} @endif" >
-											<!-- <input type="hidden" name="hidden_cheque_return_charges"
-                                                               id="hidden_cheque_return_charges" class="form-control"
-                                                               value="@if(isset($cheque_return_charges) && $cheque_return_charges>0){{ $cheque_return_charges}};@else {{$data['cheque_return_charges'][0]}} @endif"> -->
+
 											<input type="hidden" name="hidden_cheque_return_charges" id="hidden_cheque_return_charges" class="form-control cheque_return_charges1" value="{{$data['fees_config_data']['late_fees_amount']}}"> @else
 											<input type="text" name="fees_data[fine]" id="cheque_return_charges" class="form-control" value="@php if(isset($cheque_return_charges0)) echo $cheque_return_charges0; @endphp"
 											 readonly="readonly">
@@ -422,7 +394,6 @@
 										<td>
 											<input type="text" name="cheque_no" id="cheque_no" class="form-control">
 										</td>
-										<!-- pattern="\d{6}" maxlength="6" maxlength="6" -->
 									</tr>
 
 									<tr class="bnakDetail" style="border-bottom: 2px solid black;">
@@ -444,14 +415,10 @@
 							</div>
 							<div class="table-responsive col-md-12">
 								<div class="col-md-6 form-group">
-									<!-- <div class="checkbox checkbox-info">
-                                                <input id="sendsms" name="send_sms" type="checkbox">
-                                                <label for="sendsms"> SEND SMS </label>
-                                            </div>-->
+
 								</div>
 								<div class="col-md-6 form-group">
-								<div id="overlay-new" style="display:none;"><center><p style="margin-top: 273px;color:red;font-weight: 700;">Please do not refresh the page, while the process is going on.</p><img src="https://erp.triz.co.in/admin_dep/images/loader.gif"></center></div>
-    								<center> <input type="submit" name="submit" onclick="return checkForm();" value="Save" class="btn btn-success"  id="Load_gif"></center>
+    								<center> <input type="submit" name="submit" onclick="return checkForm();" value="Save" class="btn btn-success"></center>
 								</div>
 							</div>
 						</form>
@@ -466,19 +433,15 @@
 		<div class="modal fade right modal-scrolling" id="ChapterModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel"
 		 style="display: none;" aria-hidden="true">
 			<div class="modal-dialog modal-side modal-bottom-right modal-notify modal-info" role="document" style="min-width: 85%;">
-				<!--Content-->
 				<div class="modal-content">
-					<!--Header-->
 					<div class="modal-header">
 						<h5 class="modal-title" id="heading">Fees Payment History</h5>
 						<button type="button" class="close" id="refresh_data" data-dismiss="modal" aria-label="Close">
 							<span aria-hidden="true">x</span>
 						</button>
 					</div>
-					<!--Body-->
 					<div class="modal-body">
 						<div class="row">
-							<!-- TABLE START-->
 							<div class="card">
 								<div class="table-responsive">
 									<table id="example" class="table table-striped">
@@ -486,42 +449,28 @@
 											<tr>
 												<th>Sr No.</th>
 												<th>GR No.</th>
-												<th>{{App\Helpers\get_string('StudentName','request')}}<i class="mdi mdi-lead-pencil"></i></th>
+												<th>{{App\Helpers\get_string('StudentName')}}</th>
 												<th>Std-Div</th>
 												<th>Uniqueid</th>
 												<th>Month</th>
 												<th>Receipt No</th>
 												<th>Payment Mode</th>
 												<th>Bank Details</th>
-												<!--<th>Cheque Date</th>-->
 												<th>Receipt Date</th>
 												<th>Collected By</th>
-												<!--<th>Created On</th>-->
 												<th>Amount</th>
 											</tr>
 										</thead>
 										<tbody id="table_data">
-											<!-- //data -->
 										</tbody>
 									</table>
 								</div>
 							</div>
-							<!-- table end -->
 						</div>
 					</div>
-					<!--Footer-->
-					<!--  <div class="modal-footer" style="display: block !important;">
-                         <div id="overlay" style="display:none;"><center><p style="margin-top: 273px;color:red;font-weight: 700;">Please do not refresh the page, while the process is going on.</p><img src="http://dev.triz.co.in/admin_dep/images/loader.gif"></center></div>
-                         <center>
-                             <button id="ajax_PDF" type="button" class="btn btn-primary">Print Receipt</button>
-                         </center>
-                     </div>
-                 </div> -->
-					<!--/.Content-->
 				</div>
 			</div>
 		</div>
-		<!--Modal: Add ChapterModal-->
 
 		@include('includes.footerJs')
 		<script>
@@ -569,11 +518,6 @@
 				}
 			}
 
-			// Show the loading overlay
-			$('#overlay-new').show();
-
-			// Submit the form
-			// Replace 'formId' with the actual ID of your form
 			$('#formId').submit();
 
 			// Prevent the default form submission
@@ -680,7 +624,7 @@
 
 
 $('.months').click(function() {
-				var currentCheckedIndex = $('.months').index(this); 
+				var currentCheckedIndex = $('.months').index(this);
 
 				$('.months').each(function(index) {
 					if (index <= currentCheckedIndex) {
@@ -786,9 +730,9 @@ $('.months').click(function() {
 		@endif @include('includes.footer')
 
 		<!--fees payment history code  -->
-		<script src="https://cdn.jsdelivr.net/gh/gitbrent/bootstrap4-toggle@3.6.1/js/bootstrap4-toggle.min.js"></script>
 		<script>
 			function add_data(grno, student_id) {
+				$("#table_data").empty();
 				$(document).ready(function() {
 					$.ajax({
 						url: '/fees/feesDetails/getDetails/' + grno + "/" + student_id,
@@ -837,21 +781,6 @@ $('.months').click(function() {
 					});
 				});
 			}
-
-			$('body').on('hidden.bs.modal', '.modal', function() {
-				$("#table_data").empty();
-			});
 		</script>
 
-<script>
-    var menuId = localStorage.getItem('current_id');
-    var spans = document.querySelectorAll('span.menuId');
-    for (var i = 0; i < spans.length; i++) {
-        spans[i].textContent = menuId;
-    }
-    var url = '{{ route("norm-clature.create") }}?menu_id=' + menuId;
-    var links = document.querySelectorAll('a[href="{{ route("norm-clature.create") }}"]');
-    for (var j = 0; j < links.length; j++) {
-        links[j].href = url;
-    }
-</script>
+@endsection
