@@ -284,9 +284,10 @@ class feesCancelController extends Controller
 
             return is_mobile($type, "fees_cancel.index", $res);
         }
+
         foreach ($receipt_nos_a as $key => $value) 
         {
-            $parts = explode('/', $value);
+            $parts = explode('####', $value);
             $student_ids = $parts[1];
             $receipt_nos = $parts[0];
 
