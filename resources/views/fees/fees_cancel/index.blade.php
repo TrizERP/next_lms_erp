@@ -142,7 +142,7 @@
                                         @foreach($fees_data as $key => $value)
                                            
                                             <tr>
-                                                <td><input id="{{$value['id']}}" value="{{$value['receipt_no']}}/{{$value['student_id']}}"
+                                                <td><input id="{{$value['id']}}" value="{{$value['receipt_no']}}####{{$value['student_id']}}"
                                                                name="receipt_no[]" type="checkbox"></td>
                                              
                                                 <td>{{$value['enrollment_no']}}</td>
