@@ -147,11 +147,13 @@
                                             $no++;
                                             $slected = "";
                                             if (in_array($id, $data['search_ids'])) {
-                                                $slected = "checked";
+                                                $slected = '';
                                             }
                                             $disabled = '';
                                             if ( isset($feesDetails[$val]) && $feesDetails[$val] == 0 ) {
                                                 $disabled = 'disabled="disabled"';
+                                                $slected = 'checked';
+                                               
                                             }
 
                                             ?>
