@@ -16,6 +16,7 @@
         "laravel/framework": "^9.0",
         "laravel/sanctum": "^2.14",
         "laravel/tinker": "^2.7",
+        "league/flysystem-aws-s3-v3": "^3.15",
         "livewire/livewire": "^2.12",
         "maatwebsite/excel": "^3.1",
         "mews/captcha": "^3.3",
