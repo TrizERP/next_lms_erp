@@ -52,6 +52,7 @@ use App\Http\Controllers\leave\LeaveTypeController;
 use App\Http\Controllers\Payroll\PayrollController;
 use App\Http\Controllers\HRMS\HrmsController;
 use App\Http\Controllers\library\BookController;
+use App\Http\Controllers\sqaa\sqaa_controller;
 
 /*
 |--------------------------------------------------------------------------
@@ -163,6 +164,9 @@ Route::group([ 'middleware' => ['session', 'menu', 'logRoute']], function () {
 
     Route::get('early-going-hrms-attendance-report',[HrmsController::Class,'earlyGoingHrmsAttendanceReport'])->name('hrms_attendance_report.early_going_report');
     Route::post('/early-going-hrms-attendance-report', [HrmsController::class, 'earlyGoingHrmsAttendanceReport'])->name('hrms.show_early_going_hrms_attendance_report');
+    
+    Route::resource('sqaa_master', sqaa_controller::class);
+    Route::get('get-level', [sqaa_controller::class,'get_level'])->name('get-level');    
 
 });
 

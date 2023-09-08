@@ -1,0 +1,387 @@
+@include('includes.headcss')
+@include('includes.header')
+@include('includes.sideNavigation')
+
+    <div id="page-wrapper">
+        <div class="container-fluid">
+            <div class="row bg-title">
+                <div class="col-lg-3 col-md-4 col-sm-4 col-xs-12">
+                    <h4 class="page-title">SQAA Master</h4> 
+                </div>
+            </div>
+        </div>
+
+            <div class="card">
+            @if ($sessionData = Session::get('data'))
+                @if($sessionData['status_code'] == 1)
+                    <div class="alert alert-success alert-block">
+                        @else
+                            <div class="alert alert-danger alert-block">
+                                @endif
+                                <button type="button" class="close" data-dismiss="alert">×</button>
+                                <strong>{{ $sessionData['message'] }}</strong>
+                            </div>
+                        @endif
+                  
+                    <div class="row">
+                        <div class="col-lg-12 col-sm-12 col-xs-12">
+                            <div class="sttabs tabs-style-linemove triz-verTab bg-white style2">
+                                <ul class="nav nav-tabs tab-title mb-4">
+                                @php 
+                                $i=0;
+                                @endphp
+                                @if(isset($data['level_1']))                        
+                                @foreach($data['level_1'] as $key=>$value)
+                                    <li class="nav-item"><a href="#section-linemove-{{$value['id']}}" class="nav-link active-link" aria-selected="true" data-toggle="tab"><span>{{$value['title']}}</span><input type="hidden" value="{{$value['id']}}" name="level_1_id"></a></li>
+                                @endforeach
+                                @endif
+                                </ul>
+                        </div>
+
+                            <div class="tab-content">
+                            @if(isset($data['level_1']))
+                                @foreach($data['level_1'] as $key=>$value)
+                                <div class="tab-pane fade called-tab" id="section-linemove-{{$value['id']}}">
+                                    <!-- TABS FOR LEVEL 2 -->
+                                    <div class="row">
+                                        <!-- level 2 -->
+                                        <div class="col-md-4 sel_div_2_container" id="sel_div_2_container"></div>
+                                        <!-- level 3 -->
+                                        <div class="col-md-4 sel_div_3_container" id="sel_div_3_container"></div>
+                                        <!-- level 4 -->
+                                        <div class="col-md-4 sel_div_4_container" id="sel_div_4_container"></div>
+                                    </div>
+                                    <!-- END -->
+                                </div>
+                                @endforeach
+                            @endif
+                        </div>
+
+                    <form action="{{ route('sqaa_master.store') }}" enctype="multipart/form-data" method="post" id="check_form">
+                        {{ method_field("POST") }}
+                        @csrf
+
+                        <input type="hidden" id="lev_1" name="lev_1">
+                        <input type="hidden" id="text_1" name="text_1">
+
+                        <input type="hidden" id="lev_2" name="lev_2">
+                        <input type="hidden" id="text_2" name="text_2">
+                        
+                        <input type="hidden" id="lev_3" name="lev_3">
+                        <input type="hidden" id="text_3" name="text_3">
+                           
+                        <input type="hidden" id="lev_4" name="lev_4">
+                        <input type="hidden" id="text_4" name="text_4">
+                                                     
+
+                          <div class="col-md-3 form-group">
+                            <label>Enter Score</label>
+                            <input type="number" id="mark" name="mark" class="form-control" min="1" max="5" required>
+                        </div>
+                        <!-- add new row -->
+                        <div class="addButtonCheckbox1" data-new="1">     
+                        <div class="row align-items-center">
+                            <div class="col-md-3">
+                                <div class="form-group">
+                                    <label for="topicAvailability">Document</label>
+                                    <textarea name="document[]" id="document" rows="2" class="form-control" data-new="1" onchange="chat_gtp(this.value,1)" required></textarea>
+                                </div>
+                            </div>
+                            <div class="col-md-2">
+                                <div class="form-group">
+                                    <label for="topicAvailability2">Availability</label>
+                                    <select class="cust-select form-control map-value mb-0" name="availability[]" data-new="1"  onchange="toggleInput(1)" id="selectavail" required>
+                                        <option value="">Select Availability</option>  
+                                        <option value="yes">Yes</option>
+                                        <option value="no">No</option>
+                                        <option value="inprocess">In-Process</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-2">
+                                <div class="form-group">
+                                    <label for="topicAvailability2">Files</label>
+                                    <input type="file" class="form-control" name="files[]" data-new="1" accept=".pdf,.xlsx,.doc,.docx" id="fileInput">
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="form-group">
+                                    <label for="topicAvailability2">Files To be uploaded</label>
+                                    <textarea name="reasons[]" id="reasons" rows="3" class="form-control" data-new="1" ></textarea>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-2">
+                                <a href="javascript:void(0);" onclick="addNewRow1();" class="btn btn-success btn-sm mr-2"><i class="mdi mdi-plus"></i></a>                            
+                            </div>
+                        </div>
+                    </div>
+                       <!-- end row  -->
+
+                          <div class="col-md-12 form-group">
+                            <center>
+                                <input type="submit" name="submit" value="Save" class="btn btn-success" onclick="check_menu(event)">
+                            </center>
+                        </div>
+                </form>
+            </div>
+        </div>
+        </div>
+                        
+    </div>
+            
+@include('includes.footerJs')
+
+<script>
+    // function check_menu(){
+    //     var selected_menu = $('#lev_1').val();
+    //     if (selected_menu==='') {
+    //         alert('Please Select atleast 1 Menu');
+    //         event.preventDefault(); // Prevent the default form submission
+    //     }
+        
+    // }
+    $(document).ready(function () {
+
+        $('.active-link').on('click', function (e) {
+            //active tabs
+            e.preventDefault();
+            $('.active-link').removeClass('active');
+            $(this).addClass('active');
+            $('.called-tab').removeClass('show active');
+            // make empty all input
+            $('#lev_1').val('');   $('#lev_2').val('');   $('#lev_3').val('');   $('#lev_4').val('');
+            $('#text_1').val('');   $('#text_2').val('');   $('#text_3').val('');   $('#text_4').val(''); 
+            $('#mark').val('');
+            $('#document').val('');  
+            $('#selectavail').val(''); 
+            $('#fileInput').val(''); 
+            $('#reasons').val('');                                                                                                         
+             // Remove all <div> elements with class "my-div" where data-new is not equal to 1
+            $('div.addButtonCheckbox1').not('[data-new="1"]').empty();
+
+            var targetTab = $(this).attr('href');
+            $(targetTab).addClass('show active');
+
+            // get level 2 data 
+             var level_2 = $(this).find('input').val();
+             
+            var inputElement = document.getElementById("lev_1");
+            inputElement.value = level_2;
+
+             var text_1 = $('.active-link.active span').text();
+
+             var inputElement_txet = document.getElementById("text_1");
+             inputElement_txet.value = text_1;
+
+            $.ajax({
+                type: 'GET',
+                url: '/get-level', 
+                data: { level_2: level_2 }, 
+                success: function (data) {
+                    var sel_level_3_container = $('#sel_div_2_container'); 
+            var sel_level_3 = $('#sel_level_3'); 
+            if (sel_level_3_container.length === 0) {
+                sel_level_3_container = $('<div class="col-md-4 sel_div_2_container" id="sel_div_2_container"></div>'); 
+                $('#sel_div_2').after(sel_level_3_container);
+            }
+
+            sel_level_3_container.empty(); 
+
+            // Create a label for sel_level_3
+            var sel_level_3_label = $('<label for="sel_level_2">Select option </label>');
+
+            sel_level_3 = $('<select id="sel_level_2" class="form-control" name="sel_level_2"></select>'); 
+            var defaultOption = '<option value="">--Select--</option>';
+            sel_level_3.append(defaultOption);
+
+            if (Array.isArray(data)) {
+                data.forEach(function (value) {
+                    var option = '<option value="' + value.id + '">' + value.title + '</option>';
+                    sel_level_3.append(option);
+                });
+            } else {
+                console.error('data is not an array');
+            }
+
+            sel_level_3_container.append(sel_level_3_label);
+            sel_level_3_container.append(sel_level_3);
+        
+        },
+                error: function (error) {
+                    console.error(error);
+                }
+            });
+        });
+
+
+ // sel 2
+    $(document).on('change', '#sel_level_2', function () {
+        var selectedValue = $(this).val();
+        fetchDataForLevel3(selectedValue);
+        var inputElement = document.getElementById("lev_2");
+            inputElement.value = selectedValue;
+        var selectedText = $(this).find('option:selected').text();
+        $('#text_2').val(selectedText);
+
+    });
+    function fetchDataForLevel3(selectedValue) {
+    $.ajax({
+        type: 'GET',
+        url: '/get-level', 
+        data: { level_3: selectedValue }, 
+        success: function (data) {
+            var sel_level_3_container = $('#sel_div_3_container');
+            var sel_level_3 = $('#sel_level_3'); 
+
+            if (sel_level_3_container.length === 0) {
+                sel_level_3_container = $('<div class="col-md-4 sel_div_3_container" id="sel_div_3_container"></div>');
+                $('#sel_div_2').after(sel_level_3_container);
+            }
+
+            sel_level_3_container.empty(); 
+
+            var sel_level_3_label = $('<label for="sel_level_3">Select option </label>');
+
+            sel_level_3 = $('<select id="sel_level_3" class="form-control" name="sel_level_3"></select>'); // Create sel_level_3
+            var defaultOption = '<option value="">--Select--</option>';
+            sel_level_3.append(defaultOption);
+
+            if (Array.isArray(data)) {
+                data.forEach(function (value) {
+                    var option = '<option value="' + value.id + '">' + value.title + '</option>';
+                    sel_level_3.append(option);
+                });
+            } else {
+                console.error('data is not an array');
+            }
+
+            sel_level_3_container.append(sel_level_3_label);
+            sel_level_3_container.append(sel_level_3);
+        
+        },
+        error: function (error) {
+            console.error(error);
+        }
+    });
+}
+
+
+    // sel 3 
+    $(document).on('change', '#sel_level_3', function () {
+        var selectedValue = $(this).val();
+        fetchDataForLevel4(selectedValue);
+        var inputElement = document.getElementById("lev_3");
+            inputElement.value = selectedValue;
+
+            var selectedText = $(this).find('option:selected').text();
+        $('#text_3').val(selectedText);
+    });
+
+    function fetchDataForLevel4(selectedValue) {
+        $.ajax({
+            type: 'GET',
+            url: '/get-level', 
+            data: { level_4: selectedValue }, 
+            success: function (data) {
+                var sel_level_3_container = $('#sel_div_4_container'); 
+            var sel_level_3 = $('#sel_level_4'); 
+
+            if (sel_level_3_container.length === 0) {
+                sel_level_3_container = $('<div class="col-md-4 sel_div_4_container" id="sel_div_4_container"></div>'); 
+                $('#sel_div_3').after(sel_level_3_container);
+            }
+
+            sel_level_3_container.empty(); 
+
+            var sel_level_3_label = $('<label for="sel_level_4">Select option </label>');
+
+            sel_level_3 = $('<select id="sel_level_4" class="form-control" name="sel_level_4"></select>'); 
+            var defaultOption = '<option value="">--Select--</option>';
+            sel_level_3.append(defaultOption);
+
+            if (Array.isArray(data)) {
+                data.forEach(function (value) {
+                    var option = '<option value="' + value.id + '">' + value.title + '</option>';
+                    sel_level_3.append(option);
+                });
+            } else {
+                console.error('data is not an array');
+            }
+            sel_level_3_container.append(sel_level_3_label);
+            sel_level_3_container.append(sel_level_3);
+
+            },
+            error: function (error) {
+                console.error(error);
+            }
+        });
+    }
+ // sel 4 
+ $(document).on('change', '#sel_level_4', function () {
+    var selectedValue = $(this).val();
+    var inputElement = document.getElementById("lev_4");
+            inputElement.value = selectedValue;
+    var selectedText = $(this).find('option:selected').text();
+        $('#text_4').val(selectedText);
+    });
+   
+    });
+
+
+// add new row 
+var data_new = 1;
+function addNewRow1() {
+    data_new++;
+
+    var htmlcontent = '';
+    htmlcontent += '<div class="clearfix"></div><div class="addButtonCheckbox1"  data-new="'+data_new+'"><div class="row align-items-center">';
+    htmlcontent += '<div class="col-md-3"><div class="form-group"><label for="topicAvailability">Document</label><textarea name="document[]" id="document' + data_new + '" rows="2" class="form-control" data-new="' + data_new + '" onchange="chat_gtp(this.value,'+data_new+')"></textarea></div></div>';
+    htmlcontent += '<div class="col-md-2"><div class="form-group"><label for="topicAvailability2">Availability</label><select class="cust-select form-control mb-0" name="availability[]" data-new="' + data_new + '" onchange="toggleInput('+data_new +')"> <option value="">Select Availability</option>  <option value="yes">Yes</option><option value="no">No</option><option value="inprocess">In-Process</option></select></div></div>';
+    htmlcontent += '<div class="col-md-2"><div class="form-group"><label for="topicAvailability2">Files</label><input type="file" class="form-control" name="files[]" accept=".pdf,.xlsx,.doc,.docx" data-new="' + data_new + '"></div></div>';
+    htmlcontent += '<div class="col-md-3"><div class="form-group"><label for="topicAvailability2">Files To be uploaded</label><textarea name="reasons[]" id="reasons" rows="3" class="form-control" data-new="' + data_new + '"></textarea></div></div>';
+    
+    htmlcontent += '<div class="col-md-2"><a href="javascript:void(0);" onclick="removeNewRow1();" class="btn btn-danger btn-sm"><i class="mdi mdi-minus"></i></a></div></div></div>';
+
+    $('.addButtonCheckbox1:last').after(htmlcontent);
+}
+//make input field required if yes
+function toggleInput(val) {
+    var selectedValue = $("select[data-new='" + val + "']").val();
+        var fileInput = $("input[type='file'][data-new='" + val + "']");
+
+    if (selectedValue === "yes") {
+        fileInput.prop("required", true);
+    } else {
+        fileInput.prop("required", false);
+    }
+}
+
+// remove add row 
+function removeNewRow1() {     
+    $(".addButtonCheckbox1:last" ).remove();      
+}
+// get data from chat gtp
+function chat_gtp(val,data_new){
+    var lev1 = $('#text_1').val();
+    var lev2 = $('#text_2').val();
+    var lev3 = $('#text_3').val();
+    var lev4 = $('#text_4').val();
+    
+    // alert(lev1);
+    var data = {
+        "message": "What kind of document should be uploaded for this "+ lev1 + lev2 + lev3 + lev4 +val,
+    };
+    $('#reasons[data-new="'+data_new+'"]').val('please wait ! we are getting details !!');
+    var path = "{{ route('chat') }}";
+    $.ajax({
+        url:path,
+        data: data,
+        success:function(result){  
+            console.log(result);
+            $('#reasons[data-new="'+data_new+'"]').val(result);
+        }
+    });
+}
+</script>
+@include('includes.footer')
