@@ -441,6 +441,7 @@ class AJAXController extends Controller
 
         $co_scholastic_parent = DB::table('result_co_scholastic as re')
             ->where($where)
+            ->where('re.standard_id',$request->standard_id)
             ->pluck('re.title', 're.id');
 
         return response()->json($co_scholastic_parent);
@@ -967,8 +968,8 @@ class AJAXController extends Controller
                 $main_menu .= '<li class="nav-item" role="presentation" data-toggle="tooltip" data-placement="top"
                 title="' . $val['name'] . '"><a class="nav-link ' . $active . '" data-toggle="tab" href="#right-tab-' . $i . '"
                 role="tab" aria-controls="right-tab-' . $i . '" aria-selected="false"><img class="icon-nrml"
-                src="http://' . $_SERVER['HTTP_HOST'] . '/admin_dep/images/side-' . $val['icon'] . '.png" alt="">
-                <img class="icon-hvr" src="https://' . $_SERVER['HTTP_HOST'] . '/admin_dep/images/side-' . $val['icon'] . '-white.png"
+                src="'.env('APP_URL') . '/admin_dep/images/side-' . $val['icon'] . '.png" alt="">
+                <img class="icon-hvr" src="'.env('APP_URL') . '/admin_dep/images/side-' . $val['icon'] . '-white.png"
                 alt=""></a></li>';
 
                 $child_arr = $RS_ChildMenu[$val['id']];
@@ -1113,7 +1114,7 @@ class AJAXController extends Controller
 
             $html = '';
             $html .= $fees_receipt_html;
-            $path = 'src="http://' . $_SERVER['HTTP_HOST'];
+            $path = 'src="https://' . $_SERVER['HTTP_HOST'];
             $html = str_replace('src="', $path, $html);
             $html = str_replace('##HTML_SEC##', $html, $dom);
 
@@ -1212,7 +1213,7 @@ class AJAXController extends Controller
 
                 $html = '';
                 $html .= $fees_receipt_html;
-                $path = 'src="http://' . $_SERVER['HTTP_HOST'];
+                $path = 'src="https://' . $_SERVER['HTTP_HOST'];
                 $html = str_replace('src="', $path, $html);
                 $html = str_replace('##HTML_SEC##', $html, $dom);
 
@@ -1330,7 +1331,7 @@ class AJAXController extends Controller
             }
 
             if ($action != 'certificate_re_receipt') {
-                $path = 'src="http://' . $_SERVER['HTTP_HOST'];
+                $path = 'src="https://' . $_SERVER['HTTP_HOST'];
                 $html = str_replace('src="', $path, $html);
             }
 
@@ -1344,7 +1345,7 @@ class AJAXController extends Controller
 
             unlink($html_file_path);
 
-            $PDF_path_for_open = "http://" . $_SERVER['HTTP_HOST'] . '/storage/print_receipt_pdf/' . $pdf_filename;
+            $PDF_path_for_open = "https://" . $_SERVER['HTTP_HOST'] . '/storage/print_receipt_pdf/' . $pdf_filename;
 
             return $PDF_path_for_open;
         }
@@ -1419,7 +1420,7 @@ class AJAXController extends Controller
 
                 unlink($html_file_path);
 
-                $PDF_path_for_open = "http://" . $_SERVER['HTTP_HOST'] . '/storage/print_receipt_pdf/' . $pdf_filename;
+                $PDF_path_for_open = "https://" . $_SERVER['HTTP_HOST'] . '/storage/print_receipt_pdf/' . $pdf_filename;
             }
         }
         return $PDF_path_for_open;
@@ -1477,7 +1478,8 @@ class AJAXController extends Controller
                 ->where('fo.sub_institute_id', $sub_institute_id)
                 ->where('fo.syear', $syear)
                 ->where('fo.student_id', $student_id)
-                ->whereRaw("(fro.RECEIPT_ID_1 = '" . $receipt_id . "' OR fro.RECEIPT_ID_2 = '" . $receipt_id . "' OR fro.RECEIPT_ID_3 = '" . $receipt_id . "' OR fro.RECEIPT_ID_4 = '" . $receipt_id . "' OR fro.RECEIPT_ID_5 = '" . $receipt_id . "' OR fro.RECEIPT_ID_6 = '" . $receipt_id . "')")
+                ->whereRaw("(fro.RECEIPT_ID_1 = '" . $receipt_id . "' OR fro.RECEIPT_ID_2 = '" . $receipt_id . "' OR fro.RECEIPT_ID_3 = '" . $receipt_id . "' OR fro.RECEIPT_ID_4 = '" . $receipt_id . "' OR fro.RECEIPT_ID_5 = '" . $receipt_id . "' OR fro.RECEIPT_ID_6 = '" . $receipt_id . "' OR fro.RECEIPT_ID_7 = '" . $receipt_id . "' OR fro.RECEIPT_ID_8 = '" . $receipt_id . "'
+                    OR fro.RECEIPT_ID_9 = '" . $receipt_id . "' OR fro.RECEIPT_ID_10 = '" . $receipt_id . "')")
                 ->groupBy('fo.paid_fees_html');
 
             $get_data = DB::table('fees_collect as fc')
@@ -1489,7 +1491,8 @@ class AJAXController extends Controller
                 ->where('fc.syear', $syear)
                 ->where('fc.student_id', $student_id)
                 ->whereRaw("(fr.RECEIPT_ID_1 = '" . $receipt_id . "' OR fr.RECEIPT_ID_2 = '" . $receipt_id . "' OR fr.RECEIPT_ID_3 = '" . $receipt_id . "'
-                    OR fr.RECEIPT_ID_4 = '" . $receipt_id . "' OR fr.RECEIPT_ID_5 = '" . $receipt_id . "' OR fr.RECEIPT_ID_6 = '" . $receipt_id . "')")
+                    OR fr.RECEIPT_ID_4 = '" . $receipt_id . "' OR fr.RECEIPT_ID_5 = '" . $receipt_id . "' OR fr.RECEIPT_ID_6 = '" . $receipt_id . "' OR fr.RECEIPT_ID_7 = '" . $receipt_id . "' OR fr.RECEIPT_ID_8 = '" . $receipt_id . "'
+                    OR fr.RECEIPT_ID_9 = '" . $receipt_id . "' OR fr.RECEIPT_ID_10 = '" . $receipt_id . "')")
                 ->groupBy('fc.fees_html')
                 ->union($unionQuery)->get()->toArray();
 
