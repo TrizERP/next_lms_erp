@@ -22,6 +22,7 @@ use App\Http\Controllers\fees\fees_report\feesOverallHeadwiseReportController;
 use App\Http\Controllers\fees\fees_report\feesOverallReportController;
 use App\Http\Controllers\fees\fees_report\feesDefaulterReportController;
 use App\Http\Controllers\fees\fees_report\feesReportController;
+use App\Http\Controllers\fees\fees_report\feesPayoutController;
 use App\Http\Controllers\fees\fees_report\feesStatusController;
 use App\Http\Controllers\fees\fees_report\feesStructureReportController;
 use App\Http\Controllers\fees\fees_report\feesTypewiseReportController;
@@ -61,6 +62,7 @@ Route::group(['prefix' => 'fees', 'middleware' => ['session', 'menu', 'logRoute'
     Route::resource('fees_receipt_book_master', feesReceiptBookMasterController::class);
     Route::resource('fees_circular', feesCircularController::class);
     Route::resource('fees_collection_report', feesReportController::class);
+    Route::resource('fees_payout_report', feesPayoutController::class);
     Route::resource('other_fees_report', otherfeesReportController::class);
     Route::resource('otherNew_fees_report', otherNewfeesReportController::class);
     Route::resource('NACH_s1excel_export', s1excel_exportController::class);
@@ -156,6 +158,8 @@ Route::group(['prefix' => 'fees', 'middleware' => ['session', 'menu', 'logRoute'
     });
 
     Route::post('fees/fees_collection_report', [feesReportController::class, 'showFees'])->name('show_fees_collection_report');
+
+    Route::post('fees/fees_payout_report', [feesPayoutController::class, 'showFeesPayout'])->name('show_fees_payout_report');
 
     Route::post('fees/fees_overall_report', [feesOverallReportController::class, 'showFeesOverall'])->name('show_fees_overall_report');
 
