@@ -101,39 +101,83 @@
 							@endphp
 
 							@foreach($data['fees_data'] as $key => $value)
-								<tr>
-									<td rowspan="{{ count($data['fees_data'][$key]) + 1 }}">{{ $i++ }}</td>
-									<td rowspan="{{ count($data['fees_data'][$key]) + 1 }}">{{ $key }}</td>
-									
-									
-								</tr>
-
 								@foreach($data['fees_data'][$key] as $key1 => $value1)
-									@php
-										$total_students = $value1['cn_school'] + $value1['os_school'];
-									@endphp
-									<tr>
-										<td>{{ $value1['division_name'] }}</td>
-										<td>{{$value1['batch']}}</td>
-										<td>{{$value1['female_count']}}</td>
-                                        <td>{{$value1['male_count']}}</td>
-                                        <td>{{$value1['cn_school']}}</td>
-                                        <td>{{$value1['female_count']}}</td>
-                                        <td>{{$value1['male_count']}}</td>
-                                        <td>{{$value1['os_school']}}</td>
-                                        <td>{{$total_students}}</td>
-                                        <td>-</td>
-                                        <td>-</td>
-                                        <td>-</td>
-									</tr>
+									@foreach($data['fees_data'][$key][$key1] as $key2 => $value2)
+										@foreach($data['fees_data'][$key][$key1][$key2] as $key3 => $value3)
+												@php
+												
+												$otherSchoolMaleCount = 0;
+												$otherSchoolFemaleCount = 0;
+												$cnFemaleCount = 0;
+												$cnMaleCount = 0;
+												$other_total_amount = 0;
+												$cn_total_amount = 0;
+												$total_amount = 0;
+												$cn_total_girls = 0;
+												@endphp
+												@if($key3 == "Other School")
+													@php 
+													@endphp
+													@foreach($value3 as $entry)
+														@php 
+															$other_total_amount += $entry['tot'];
+														@endphp
+														@if($key2 == $entry['batch_name'])
+															@if ($entry['gender'] == 'M' || $entry['gender'] == 'Male')
+																@php
+																$otherSchoolMaleCount++;
+																@endphp
+															@elseif ($entry['gender'] == 'F' || $entry['gender'] == 'Female')
+																@php
+																$otherSchoolFemaleCount++;
+																@endphp
+															@endif
+														@endif
+													@endforeach
+												@elseif($key3 != "Other School")
+													@foreach($value3 as $entry)
+														@php 
+															$cn_total_amount += $entry['tot'];
+														@endphp
+														@if($key2 == $entry['batch_name'])
+															@if ($entry['gender'] == 'M' || $entry['gender'] == 'Male')
+																@php
+																$cnMaleCount++;
+																@endphp
+															@elseif ($entry['gender'] == 'F' || $entry['gender'] == 'Female')
+																@php
+																$cnFemaleCount++;
+																$cn_total_girls += $cnFemaleCount++;
+																@endphp
+															@endif
+														@endif
+													@endforeach
+												@endif
+											<tr>
+												<td>{{ $i++ }}</td>
+												<td>{{ $key }}</td>
+												<td>{{ $key1 }}</td>
+												<td>{{ $key2 }}</td>
+												<td>{{ $cnFemaleCount }}</td>
+												<td>{{ $cnMaleCount }}</td>
+												<td>{{ $cnFemaleCount + $cnMaleCount }}</td>
+												<td>{{ $otherSchoolFemaleCount }}</td>
+												<td>{{ $otherSchoolMaleCount }}</td>
+												<td>{{ $otherSchoolFemaleCount + $otherSchoolMaleCount }}</td>
+												<td>{{ ($otherSchoolFemaleCount + $otherSchoolMaleCount) + ($cnFemaleCount + $cnMaleCount) }}</td>
+												<td>{{ $cn_total_amount }}</td>
+												<td>{{ $other_total_amount }}</td>
+												<td>{{ $cn_total_amount + $other_total_amount }}</td>
+											</tr>
+										@endforeach
+									@endforeach
 								@endforeach
-
 							@endforeach
-
 							</tbody>
 							<tfoot>
 								<tr>
 									<th colspan="4">Total</th>
+									<th>{{ $cn_total_girls }}</th>
 									<th></th>
 									<th></th>
 									<th></th>
@@ -142,8 +186,7 @@
 									<th></th>
 									<th></th>
 									<th></th>
-									<th></th>
-									<th></th>
+									<th>{{ $total_amount }}</th>
 								</tr>
 							</tfoot>
 							@else
