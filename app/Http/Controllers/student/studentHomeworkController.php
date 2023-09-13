@@ -478,27 +478,8 @@ class studentHomeworkController extends Controller
                 ->get()->toArray();
             //echo("<pre>");print_r($data);die;
             
-            foreach($data as $datas)
-            {
-                //START Send Notification Code
-                $app_notification_content = [
-                    'NOTIFICATION_TYPE'        => 'Homework',
-                    'NOTIFICATION_DATE'        => date('Y-m-d'),
-                    'STUDENT_ID'               => $student_id,
-                    'NOTIFICATION_DESCRIPTION' => $datas->title,
-                    'STATUS'                   => 0,
-                    'SUB_INSTITUTE_ID'         => $sub_institute_id,
-                    'SYEAR'                    => $syear,
-                    'SCREEN_NAME'              => 'home_work',
-                    'CREATED_BY'               => $datas->created_by,
-                    'CREATED_IP'               => $_SERVER['REMOTE_ADDR'],
-                ];
-                sendNotification($app_notification_content);
-                //END Send Notification Code
-            }    
-
             $res['status'] = 1;
-            $res['message'] = "Success";;
+            $res['message'] = "Success";
             $res['data'] = $data;
         } else {
             $res['status'] = 0;

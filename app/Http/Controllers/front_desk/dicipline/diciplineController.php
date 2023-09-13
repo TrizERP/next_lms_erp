@@ -204,23 +204,6 @@ class diciplineController extends Controller
                 ->where("student_id", "=", $student_id)
                 ->get()->toArray();
                 
-            foreach($data as $datas)
-            {
-                //START Send Notification Code
-                $app_notification_content = [
-                    'NOTIFICATION_TYPE'        => 'Student Remarks',
-                    'NOTIFICATION_DATE'        => date('Y-m-d'),
-                    'STUDENT_ID'               => $student_id,
-                    'NOTIFICATION_DESCRIPTION' => $datas->message,
-                    'STATUS'                   => 0,
-                    'SUB_INSTITUTE_ID'         => $sub_institute_id,
-                    'SYEAR'                    => $syear,
-                    'CREATED_BY'               => session()->get('user_id'),
-                    'CREATED_IP'               => $_SERVER['REMOTE_ADDR'],
-                ];
-                sendNotification($app_notification_content);
-                //END Send Notification Code
-            }
             $res['status'] = 1;
             $res['message'] = "Success";
             $res['data'] = $data;
