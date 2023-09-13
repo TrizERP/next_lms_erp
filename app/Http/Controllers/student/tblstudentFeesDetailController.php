@@ -56,6 +56,9 @@ class tblstudentFeesDetailController extends Controller
             'ifsc_code'         => $request->get('ifsc_code'),
             'registration_date' => $request->get('registration_date'),
             'UMRN'              => $request->get('UMRN'),
+            'closure_date'      => $request->get('date_'),
+            'status'            => $request->get('status'),
+            'reason'            => $request->get('rejected_reason'),
             'sub_institute_id'  => $sub_institute_id,
             'created_by'        => $user_id,
         ];
@@ -72,10 +75,10 @@ class tblstudentFeesDetailController extends Controller
                 //BACKUP Old record and update new Account Number
                 $is_registered = 'N';
                 $insLogSql = "INSERT INTO tblstudent_bank_detail_log
-                (student_id, ac_holder_name, ac_number, bank_name, bank_branch, ifsc_code, is_registered, created_by, AC_TYPE,UMRN,
+                (student_id, ac_holder_name, ac_number, bank_name, bank_branch, ifsc_code, is_registered, created_by, AC_TYPE,UMRN,closure_date,status,reason,
                     created_on,registration_date)
                 SELECT student_id, ac_holder_name, ac_number, bank_name, bank_branch, ifsc_code, is_registered, '".$user_id."',
-                    AC_TYPE,UMRN, created_on ,
+                    AC_TYPE,UMRN,closure_date,status,reason, created_on ,
                 registration_date
                 FROM tblstudent_bank_detail WHERE student_id = '".$request->get('student_id')."'";
                 DB::select($insLogSql);
