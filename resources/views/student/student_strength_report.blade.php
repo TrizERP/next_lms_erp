@@ -41,7 +41,7 @@
                 <div class="row">  
                     <!-- Admisiion and Equiry Date                   -->
                     <div class="col-md-4 mt-3">
-					  <label class="label" for="">Select Any One </label>
+                      <label class="label" for="">Select Any One </label>
                       <div class=" form-group d-flex">
                       <div class="form-check mt-3">
                         <input class="form-check-input" type="radio" name="one_date" value="add" id="flexRadioDefault1" @if(!isset($data['one_date']) || $data['one_date'] == "add") checked @endif>
@@ -53,15 +53,15 @@
                         <label class="form-check-label label" for="flexRadioDefault2">Entry Date</label>
                     </div>
                     </div>
-				</div>
+                </div>
                     <!-- standard or division wise -->
-					<div class="col-md-4 form-group mt-3">
-					  <label  class="label"for="">{{ App\Helpers\get_string('standard','request')}}</label>
-						<select class="form-select form-control" multiple aria-label="multiple select" name="standard_wise[]" required>
-						  <option value="standard" @if(isset($data['standard']) && in_array("standard",$data['standard']) ) selected @endif>{{ App\Helpers\get_string('standard','request')}} Wise</option>
-						  <option value="division" @if(isset($data['standard']) && in_array("division",$data['standard']) ) selected @endif>{{ App\Helpers\get_string('division','request')}} Wise</option>
-						</select>
-					</div>
+                    <div class="col-md-4 form-group mt-3">
+                      <label  class="label"for="">{{ App\Helpers\get_string('standard','request')}}</label>
+                        <select class="form-select form-control" multiple aria-label="multiple select" name="standard_wise[]" required>
+                          <option value="standard" @if(isset($data['standard']) && in_array("standard",$data['standard']) ) selected @endif>{{ App\Helpers\get_string('standard','request')}} Wise</option>
+                          <option value="division" @if(isset($data['standard']) && in_array("division",$data['standard']) ) selected @endif>{{ App\Helpers\get_string('division','request')}} Wise</option>
+                        </select>
+                    </div>
                     <!-- From Date  -->
                     <div class="col-md-4 form-group mt-3">
                         <label class="label">From Date</label>
@@ -154,9 +154,9 @@
 
                     <thead>
                     <tr>
-                        <th rowspan="2">Date</th>
-                        <th rowspan="2">{{ App\Helpers\get_string('standard','request')}}</th>
-                        <th rowspan="2">Total</th>
+                        <th rowspan="3">Date</th>
+                        <th rowspan="3">{{ App\Helpers\get_string('standard','request')}}</th>
+                        <th rowspan="3">Total</th>
                         <!-- general -->
                         @if(isset($data['general']))
                             <th colspan="{{ count($data['general'])+1 }}"  class="text-center">General</th>
@@ -164,23 +164,23 @@
 
                         <!-- religion -->
                         @if(isset($data['religion']))
-                            <th colspan="{{ count($data['religion'])+1 }}"  class="text-center">Religion</th>
+                            <th colspan="{{ count($data['religion'])+4 }}"  class="text-center">Religion</th>
                         @endif
 
                         <!-- strength -->
                         @if(isset($data['strength']))
-                            <th colspan="{{ count($data['strength'])+1 }}" class="text-center">Strength</th>
+                            <th colspan="{{ count($data['strength'])+2 }}" class="text-center">Strength</th>
                         @endif
                         <!-- cast -->
                         @if(isset($data['cast']))
-                            <th colspan="{{ count($data['cast'])+1 }}" class="text-center">Strength</th>
+                            <th colspan="{{ count($data['cast'])+1 }}" class="text-center">Cast</th>
                         @endif
                         <!-- quota -->
                         @if(isset($data['quota']))
                             <th colspan="{{ count($data['quota'])+1 }}" class="text-center">Quota</th>
                         @endif
                     </tr>
-                    
+
                 <tr>
                     <!-- general -->
                     @if(isset($data['general']))
@@ -193,18 +193,18 @@
                         @if(isset($data['religion']))
                         @foreach($data['religion'] as $key => $religionId)
                                 @if($religionId == $rel[$key]->id)
-                                    <th>{{ $rel[$key]->religion_name }}</th>
+                                    <th colspan="2">{{ $rel[$key]->religion_name }}</th>
                                 @endif
                             @endforeach
-                            <th>Total</th>
+                            <th rowspan="2">Total</th>
                         @endif
                         <!-- strength -->
                         
                         @if(isset($data['strength']))
                             @foreach($data['strength'] as $strength)
-                                <th>{{ $strength }}</th>
+                                <th colspan="1">{{ $strength }}</th>
                             @endforeach
-                            <th>Total</th>
+                            <th rowspan="2">Total</th>
                         @endif
                         <!-- cast -->
                         @if(isset($data['cast']))
@@ -227,11 +227,23 @@
                         @endif
 
                     </tr>
+                   
+                    <tr>
+                    @if(isset($data['religion']))
+                        @foreach($data['religion'] as $key => $religionId)
+                                @if($religionId == $rel[$key]->id)
+                                    <td>M</td>
+                                    <td>F</td>
+                                @endif
+                            @endforeach
+                        @endif
+                   </tr> 
                     </thead>
                    <tbody>
                 @php
                     $generalTotal = 0;
-                    if(isset($data['religion'])){  $religionTotals =  array_fill(0, count($data['religion']), 0); }
+                    if(isset($data['religion'])){  $mreligionTotals =  array_fill(0, count($data['religion']), 0); }
+                    if(isset($data['religion'])){  $freligionTotals =  array_fill(0, count($data['religion']), 0); }
                     if(isset($data['strength'])){  $strengthTotals = array_fill(0, count($data['strength']), 0); }
                     if(isset($data['cast'])){ $castTotals = array_fill(0, count($data['cast']), 0); }
                     if(isset($data['quota'])){ $quotaTotals = array_fill(0, count($data['quota']), 0); }
@@ -260,11 +272,14 @@
                         @if(isset($data['religion']))
                             @foreach($data['religion'] as $religionId)
                                 @php
-                                    $religionTotals[$religionId-1] += $value->{'religion_'.$religionId};
+                                    $mreligionTotals[$religionId-1] += $value->{'m_religion_'.$religionId};
+                                    $freligionTotals[$religionId-1] += $value->{'f_religion_'.$religionId};
                                 @endphp
-                                <td>{{ $value->{'religion_'.$religionId} }}</td>
+                                <td>{{ $value->{'m_religion_'.$religionId} }}</td>
+                                <td>{{ $value->{'f_religion_'.$religionId} }}</td>
                             @endforeach
                             <td>{{$value->total_students}}</td>
+                            
                         @endif
 
                         <!-- strength -->
@@ -337,8 +352,11 @@
 
                         <!-- religion totals -->
                         @if(isset($data['religion']))
-                            @foreach($religionTotals as $religionTotal)
-                                <td>{{$religionTotal}}</td>
+                            @foreach($data['religion'] as $key => $religionId)
+                                @if($religionId == $rel[$key]->id)
+                                    <td>{{$mreligionTotals[$key]}}</td>
+                                    <td>{{$freligionTotals[$key]}}</td>
+                                @endif
                             @endforeach
                             <td>{{$totalStudents}}</td>
                         @endif

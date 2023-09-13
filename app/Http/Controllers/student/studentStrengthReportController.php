@@ -66,7 +66,11 @@ class studentStrengthReportController extends Controller
             $query->whereIn('tblstudent.religion', $request['religion']);
             foreach ($request['religion'] as $religionId) {
                 $query->addSelect(
-                    DB::raw("SUM(CASE WHEN religion.id = $religionId THEN 1 ELSE 0 END) as religion_$religionId")
+                    DB::raw("SUM(CASE WHEN religion.id = $religionId and tblstudent.gender = 'M' THEN 1 ELSE 0 END) as m_religion_$religionId")
+                );
+
+                $query->addSelect(
+                    DB::raw("SUM(CASE WHEN religion.id = $religionId and tblstudent.gender = 'F' THEN 1 ELSE 0 END) as f_religion_$religionId")
                 );
             }
         }
