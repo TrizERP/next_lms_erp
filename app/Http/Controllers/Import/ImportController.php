@@ -74,6 +74,7 @@ class ImportController extends Controller
                         ]);
                     }
                 } else if ($request->tablename == 'result_personalize_marks -sheet 2') {
+                    if ($array1[2] == '' || $array1[3] == '') continue; // added by rajesh as per watsapp from darshan 13-Sep-2023
                     $array1 = array_slice($fileDetail, 0, 6);
                     $subjectNameWithTotal = array_slice($fileHeader, 6, count($fileDetail));
                     $obtainData = array_slice($fileDetail, 6, count($fileDetail));
