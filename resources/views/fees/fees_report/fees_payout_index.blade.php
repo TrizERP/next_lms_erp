@@ -98,6 +98,16 @@
 							@php
 
 							$i = 1;
+							$cn_total_girls = 0;
+							$cn_total_boys = 0;
+							$cn_total_boys_and_girls = 0;
+							$other_total_girls = 0;
+							$other_total_boys = 0;
+							$other_total_boys_and_girls = 0;
+							$cn_and_other_totals = 0;
+							$cn__total_income = 0;
+							$other__total_income = 0;
+							$total_income = 0;
 							@endphp
 
 							@foreach($data['fees_data'] as $key => $value)
@@ -112,9 +122,8 @@
 												$cnMaleCount = 0;
 												$other_total_amount = 0;
 												$cn_total_amount = 0;
-												$total_amount = 0;
-												$cn_total_girls = 0;
 												@endphp
+
 												@if($key3 == "Other School")
 													@php 
 													@endphp
@@ -146,8 +155,8 @@
 																@endphp
 															@elseif ($entry['gender'] == 'F' || $entry['gender'] == 'Female')
 																@php
-																$cnFemaleCount++;
-																$cn_total_girls += $cnFemaleCount++;
+																	$cnFemaleCount++;
+																
 																@endphp
 															@endif
 														@endif
@@ -169,6 +178,18 @@
 												<td>{{ $other_total_amount }}</td>
 												<td>{{ $cn_total_amount + $other_total_amount }}</td>
 											</tr>
+											@php
+												$cn_total_girls += $cnFemaleCount; 
+												$cn_total_boys += $cnMaleCount;
+												$cn_total_boys_and_girls += $cnFemaleCount + $cnMaleCount;
+												$other_total_girls += $otherSchoolFemaleCount;
+												$other_total_boys += $otherSchoolMaleCount;
+												$other_total_boys_and_girls += $otherSchoolFemaleCount + $otherSchoolMaleCount;
+												$cn_and_other_totals += ($otherSchoolFemaleCount + $otherSchoolMaleCount) + ($cnFemaleCount + $cnMaleCount);
+												$cn__total_income += $cn_total_amount;
+												$other__total_income += $other_total_amount;
+												$total_income += $cn_total_amount + $other_total_amount;
+											@endphp
 										@endforeach
 									@endforeach
 								@endforeach
@@ -178,15 +199,15 @@
 								<tr>
 									<th colspan="4">Total</th>
 									<th>{{ $cn_total_girls }}</th>
-									<th></th>
-									<th></th>
-									<th></th>
-									<th></th>
-									<th></th>
-									<th></th>
-									<th></th>
-									<th></th>
-									<th>{{ $total_amount }}</th>
+									<th>{{ $cn_total_boys }}</th>
+									<th>{{ $cn_total_boys_and_girls }}</th>
+									<th>{{ $other_total_girls }}</th>
+									<th>{{ $other_total_boys }}</th>
+									<th>{{ $other_total_boys_and_girls }}</th>
+									<th>{{ $cn_and_other_totals }}</th>
+									<th>{{ $cn__total_income }}</th>
+									<th>{{ $other__total_income }}</th>
+									<th>{{ $total_income }}</th>
 								</tr>
 							</tfoot>
 							@else
