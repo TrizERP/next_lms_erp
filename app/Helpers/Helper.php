@@ -1342,6 +1342,7 @@ if (!function_exists('getStudents')) {
         foreach ($result as $key => $value) {
             $student_data[$value->id]['id'] = $value->id;
             $student_data[$value->id]['enrollment_no'] = $value->enrollment_no;
+            $student_data[$value->id]['roll_no'] = $value->roll_no;            
             $student_data[$value->id]['student_name'] = $value->first_name . " " . $value->last_name;
             $student_data[$value->id]['student_full_name'] = $value->first_name . " " . $value->middle_name . " " . $value->last_name;
             $student_data[$value->id]['gender'] = $value->gender;

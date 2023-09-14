@@ -46,6 +46,8 @@ use App\Http\Controllers\result\upload_result\upload_result_controller;
 use App\Http\Controllers\result\working_day_master\working_day_master_controller;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Import\ExcelDownloadController;
+use App\Http\Controllers\result\new_result\templateController;
+use App\Http\Controllers\result\new_result\studentResultController;
 
 Route::group(['prefix' => 'result', 'middleware' => ['session', 'menu', 'logRoute']], function () {
     Route::resource('exam_type_master', ExamTypeMasterController::class);
@@ -68,7 +70,10 @@ Route::group(['prefix' => 'result', 'middleware' => ['session', 'menu', 'logRout
     Route::resource('cbse_1t5_t2_result', cbse_1t5_t2_result_controller::class);
     Route::resource('overall_mark_report', overall_mark_report_controller::class);
     Route::resource('result-marks-excel', ExcelDownloadController::class);
-    
+    Route::resource('result-template', templateController::class);   
+    Route::resource('student-result', studentResultController::class);    
+    Route::get('view_all_result_tag', [templateController::class, 'viewAllTag'])->name('view_all_result_tag');
+
     Route::post('cbse_1t5_result/show_result', ['as' => 'cbse_1t5_result.show_result', 'uses' => 'result\cbse_result\cbse_1t5_result_controller@show_result']);
     Route::post('cbse_1t5_t2_result/show_result', ['as' => 'cbse_1t5_t2_result.show_result', 'uses' => 'result\cbse_result\cbse_1t5_t2_result_controller@show_result']);
     Route::resource('cbse_11_t2_result', cbse_11_t2_result_controller::class);
