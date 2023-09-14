@@ -164,7 +164,7 @@
             <div id="printableArea" class="row" style=" margin-top: 25px;">
                 <div class="panel-body white-box">
                     <div class="col-lg-12 col-sm-12 col-xs-12">
-                        <?php
+                        @php
                         $page = "";
                         if($data['paper'] == "A5"){
                             $page = '<page size="A5" layout="landscape">';
@@ -172,18 +172,18 @@
                         }
                         else if($data['paper'] == "A5DB"){
                             $page = '<page size="A5" layout="landscape">';
-                            ?>
+                            @endphp
                         <table width="100%">
                             <tr>
                                 <td style="width:50%">
-                                        <?php echo $data['data']; ?>
+                                    {{$data['data']}}
                                 </td>
                                 <td style="width:50%;">
-                                        <?php echo $data['data']; ?>
+                                    {{$data['data']}}
                                 </td>
                             </tr>
                         </table>
-                            <?php
+                            @php
                         }
                         else  if($data['paper'] == "A4"){
                             $page = '<page size="A4" layout="landscape">';
@@ -194,7 +194,7 @@
                             echo $data['data'];
                             echo $data['data'];
                         }
-                        ?>
+                       @endphp
 
                     </div>
                 </div>

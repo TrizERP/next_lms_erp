@@ -12,7 +12,7 @@
 		</div>
 		@php
 		$grade_id = $standard_id = $division_id = $enrollment_no = $receipt_no = $from_date = $to_date = $name = $mb_no ='';
-		
+
 		if(isset($data['from_date'])) { $from_date = $data['from_date']; }
 		if(isset($data['to_date'])) { $to_date = $data['to_date'];
 		} @endphp
@@ -48,10 +48,8 @@
 			@if(isset($data['fees_data']))
 				<div class="card">
 					<div class="table-responsive">
-						@php
-						echo App\Helpers\get_school_details("","","");
-						echo '<br><center><span style=" font-size: 14px;font-weight: 600;font-family: Arial, Helvetica, sans-serif !important">From Date : '.date('d-m-Y',strtotime($data['from_date'])) .' - </span><span style=" font-size: 14px;font-weight: 600;font-family: Arial, Helvetica, sans-serif !important">To Date : '.date('d-m-Y',strtotime($data['to_date'])) .'</span></center><br>';
-						@endphp
+                        {{App\Helpers\get_school_details("","","")}}
+                        <br><center><span style=" font-size: 14px;font-weight: 600;font-family: Arial, Helvetica, sans-serif !important">From Date :  {{date('d-m-Y',strtotime($data['from_date']))}} - </span><span style=" font-size: 14px;font-weight: 600;font-family: Arial, Helvetica, sans-serif !important">To Date : {{date('d-m-Y',strtotime($data['to_date']))}}</span></center><br>
 						<table id="example" class="table table-border text-center">
 							@if(count($data['fees_data']) > 0)
 							<thead>
@@ -115,7 +113,7 @@
 									@foreach($data['fees_data'][$key][$key1] as $key2 => $value2)
 										@foreach($data['fees_data'][$key][$key1][$key2] as $key3 => $value3)
 												@php
-												
+
 												$otherSchoolMaleCount = 0;
 												$otherSchoolFemaleCount = 0;
 												$cnFemaleCount = 0;
@@ -125,10 +123,10 @@
 												@endphp
 
 												@if($key3 == "Other School")
-													@php 
+													@php
 													@endphp
 													@foreach($value3 as $entry)
-														@php 
+														@php
 															$other_total_amount += $entry['tot'];
 														@endphp
 														@if($key2 == $entry['batch_name'])
@@ -145,7 +143,7 @@
 													@endforeach
 												@elseif($key3 != "Other School")
 													@foreach($value3 as $entry)
-														@php 
+														@php
 															$cn_total_amount += $entry['tot'];
 														@endphp
 														@if($key2 == $entry['batch_name'])
@@ -156,7 +154,7 @@
 															@elseif ($entry['gender'] == 'F' || $entry['gender'] == 'Female')
 																@php
 																	$cnFemaleCount++;
-																
+
 																@endphp
 															@endif
 														@endif
@@ -179,7 +177,7 @@
 												<td>{{ $cn_total_amount + $other_total_amount }}</td>
 											</tr>
 											@php
-												$cn_total_girls += $cnFemaleCount; 
+												$cn_total_girls += $cnFemaleCount;
 												$cn_total_boys += $cnMaleCount;
 												$cn_total_boys_and_girls += $cnFemaleCount + $cnMaleCount;
 												$other_total_girls += $otherSchoolFemaleCount;

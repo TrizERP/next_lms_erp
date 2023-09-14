@@ -50,7 +50,7 @@ class college_fees_collect_controller extends Controller
         $requestData = $_REQUEST;
         $marking_period_id = session()->get('term_id');
 
-        $result = DB::table('tblstudent as s')
+        /*$result = DB::table('tblstudent as s')
             ->join('tblstudent_enrollment as se', function ($join) {
                 $join->whereRaw('se.student_id = s.id');
             })->join('academic_section as g', function ($join) {
@@ -96,7 +96,56 @@ class college_fees_collect_controller extends Controller
                     });
                     $responce_arr['stu_name'] = $requestData['stu_name'];
                 }
-            })->groupBy('s.id')->get()->toArray();
+            })->groupBy('s.id')->get()->toArray();*/
+
+
+        $result = DB::table('tblstudent as s')
+            ->join('tblstudent_enrollment as se', 'se.student_id', '=', 's.id')
+            ->join('academic_section as g', 'g.id', '=', 'se.grade_id')
+            ->join('standard as st', function ($join) use ($marking_period_id) {
+                $join->on('st.id', '=', 'se.standard_id')
+                    ->when($marking_period_id, function ($query) use ($marking_period_id) {
+                        $query->where('st.marking_period_id', $marking_period_id);
+                    });
+            })
+            ->leftJoin('division as d', 'd.id', '=', 'se.section_id')
+            ->selectRaw("s.*, se.syear, se.student_id, se.grade_id, se.standard_id, se.section_id, se.student_quota, se.start_date,
+        se.end_date, se.enrollment_code, se.drop_code, se.drop_remarks, se.term_id, se.remarks, se.admission_fees,
+        se.house_id, se.lc_number, st.name standard_name, d.name as division_name")
+            ->where('s.sub_institute_id', session()->get('sub_institute_id'))
+            ->where('se.syear', session()->get('syear'))
+            ->when(isset($requestData['mobile']) && $requestData['mobile'] !== '', function ($query) use ($requestData,&$responce_arr) {
+                $query->where('s.mobile', $requestData['mobile']);
+                $responce_arr['mobile'] = $requestData['mobile'];
+            })
+            ->when(isset($requestData['grno']) && $requestData['grno'] !== '', function ($query) use ($requestData, &$responce_arr) {
+                $query->where('se.enrollment_code', $requestData['grno']);
+                $responce_arr['grno'] = $requestData['grno'];
+            })
+            ->when(isset($grade_val), function ($query) use ($requestData, &$grade_val) {
+                $query->where('se.grade_id', $grade_val);
+                $grade_val = $requestData['grade'];
+            })
+            ->when(isset($requestData['standard']) && $requestData['standard'] !== '', function ($query) use ($requestData, &$responce_arr) {
+                $query->where('se.standard_id', $requestData['standard']);
+                $responce_arr['standard'] = $requestData['standard'];
+            })
+            ->when(isset($requestData['division']) && $requestData['division'] !== '', function ($query) use ($requestData, &$responce_arr) {
+                $query->where('se.section_id', $requestData['division']);
+                $responce_arr['division'] = $requestData['division'];
+            })
+            ->when(isset($requestData['stu_name']) && $requestData['stu_name'] !== '', function ($query) use ($requestData, &$responce_arr) {
+                $query->where(function ($innerQuery) use ($requestData) {
+                    $innerQuery->where('s.first_name', 'like', '%' . $requestData['stu_name'] . '%')
+                        ->orWhere('s.middle_name', 'like', '%' . $requestData['stu_name'] . '%')
+                        ->orWhere('s.last_name', 'like', '%' . $requestData['stu_name'] . '%');
+                });
+                $responce_arr['stu_name'] = $requestData['stu_name'];
+            })
+            ->groupBy('s.id')
+            ->get()
+            ->toArray();
+
 
         $responce_arr['stu_data'] = $result;
 
@@ -191,9 +240,19 @@ class college_fees_collect_controller extends Controller
 
         $insert_id = DB::table('fees_receipt')->insertGetId($fees_receipt_insert);
 
-        $ret_heds_with_id = DB::table('fees_title')->selectRaw('id,fees_title')
+        /*$ret_heds_with_id = DB::table('fees_title')->selectRaw('id,fees_title')
             ->where('SUB_INSTITUTE_ID', session()->get('sub_institute_id'))
-            ->where('syear', session()->get('syear'))->orderBy('sort_order')->get()->toArray();
+            ->where('syear', session()->get('syear'))->orderBy('sort_order')->get()->toArray();*/
+
+        $ret_heds_with_id = DB::table('fees_title')
+            ->select('id', 'fees_title')
+            ->where([
+                'SUB_INSTITUTE_ID' => session()->get('sub_institute_id'),
+                'syear' => session()->get('syear')
+            ])
+            ->orderBy('sort_order')
+            ->get()
+            ->toArray();
 
         $heds_with_id = [];
         foreach ($ret_heds_with_id as $id => $arr) {
@@ -322,16 +381,26 @@ class college_fees_collect_controller extends Controller
         $id_arr = [];
 
         foreach ($result as $id => $arr) {
-            $result_id = DB::table('fees_receipt')->selectRaw('ifnull(max(cast(RECEIPT_ID_".$arr->sort_order." as UNSIGNED)),0) rid')
+            /*$result_id = DB::table('fees_receipt')->selectRaw('ifnull(max(cast(RECEIPT_ID_".$arr->sort_order." as UNSIGNED)),0) rid')
                 ->where('STANDARD', $arr->standard_id)
                 ->where('SUB_INSTITUTE_ID', session()->get('sub_institute_id'))
-                ->get()->toArray();
+                ->get()->toArray();*/
+
+            $result_id = DB::table('fees_receipt')
+                ->selectRaw('IFNULL(MAX(CAST(RECEIPT_ID_' . $arr->sort_order . ' AS UNSIGNED)), 0) AS rid')
+                ->where([
+                    'STANDARD' => $arr->standard_id,
+                    'SUB_INSTITUTE_ID' => session('sub_institute_id'),
+                ])
+                ->get()
+                ->pluck('rid')
+                ->first();
 
             $id_arr[$arr->sort_order]['heds'] = $arr->heads;
-            if ($result_id[0]->rid == 0) {
+            if ($result_id == 0) {
                 $id_arr[$arr->sort_order]['rid'] = $arr->last_receipt_number;
             } else {
-                $id_arr[$arr->sort_order]['rid'] = $result_id[0]->rid + 1;
+                $id_arr[$arr->sort_order]['rid'] = $result_id + 1;
             }
         }
 
@@ -348,6 +417,8 @@ class college_fees_collect_controller extends Controller
         $ret_heds_with_id = DB::table('fees_title')
             ->where('SUB_INSTITUTE_ID', session()->get('sub_institute_id'))
             ->where('syear', session()->get('syear'))->orderBy('sort_order')->get()->toArray();
+
+
 
         $other_fees_heads = [];
         $reg_fees_heads = [];
@@ -814,7 +885,7 @@ class college_fees_collect_controller extends Controller
                 // });
             })->leftJoin('division as d', function ($join) {
                 $join->whereRaw('d.id = se.section_id');
-            })->selectRaw("s.*,se.syear,se.student_id,se.grade_id,se.standard_id,se.section_id,se.student_quota,se.start_date, 
+            })->selectRaw("s.*,se.syear,se.student_id,se.grade_id,se.standard_id,se.section_id,se.student_quota,se.start_date,
                 se.drop_remarks,se.term_id,se.remarks,se.admission_fees,se.house_id,se.lc_number,st.name standard_name,
                 d.name as division_name")
             ->where('s.sub_institute_id', $sub_institute_id)
@@ -823,7 +894,7 @@ class college_fees_collect_controller extends Controller
 
         $head_result = DB::table('fees_title')
             ->where('sub_institute_id', $sub_institute_id)
-            ->whereRaw("id in (select fees_head_id from fees_receipt_book_master where sub_institute_id = $sub_institute_id 
+            ->whereRaw("id in (select fees_head_id from fees_receipt_book_master where sub_institute_id = $sub_institute_id
                 and grade_id = '".$stu_result[0]->grade_id."' and standard_id = '".$stu_result[0]->standard_id."')")
             ->orderBy('sort_order')->get()->toArray();
 

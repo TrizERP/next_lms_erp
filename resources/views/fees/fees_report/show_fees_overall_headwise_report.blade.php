@@ -155,8 +155,8 @@
                                 $count_colspan = $count_colspan + 1;
                                 $colspan = 'colspan="'.$count_colspan.'" ';
                             @endphp
-                                <th @php echo $colspan; @endphp class="text-center">Received</th>
-                                <th @php echo $colspan; @endphp class="text-center">Pending</th>
+                                <th {{$colspan}} class="text-center">Received</th>
+                                <th {{$colspan}} class="text-center">Pending</th>
                             @php
                             }
                             @endphp
@@ -171,7 +171,7 @@
                                             $count_colspan_inner = count($child_head);
                                             $colspan_inner = 'colspan="'.$count_colspan_inner.'" ';
                                         @endphp
-                                        <th @php echo $colspan_inner; @endphp class="text-center">@if($main_fees_title[0]=='') {{$main_fees_title[1]}} @else {{$main_fees_title[0]}} @endif</th>
+                                        <th {{$colspan_inner}} class="text-center">@if($main_fees_title[0]=='') {{$main_fees_title[1]}} @else {{$main_fees_title[0]}} @endif</th>
                                     @else
                                         <th rowspan=2>{{$main_fees_title[0]}}</th>
                                     @endif
@@ -185,7 +185,7 @@
                                             $count_colspan_inner = count($child_head);
                                             $colspan_inner = 'colspan="'.$count_colspan_inner.'" ';
                                         @endphp
-                                        <th @php echo $colspan_inner; @endphp class="text-center">{{$main_fees_title[0]}}</th>
+                                        <th {{$colspan_inner}} class="text-center">{{$main_fees_title[0]}}</th>
                                     @else
                                         <th rowspan=2>{{$main_fees_title[0]}}</th>
                                     @endif

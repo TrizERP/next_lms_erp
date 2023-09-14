@@ -42,20 +42,20 @@
                                             <table class="table table-stripped">
                                                 <tr>
                                                     <td>{{ App\Helpers\get_string('uniqueid','request')}}</td>
-                                                    <td><?php echo $data['stu_data']['student_id']; ?></td>
+                                                    <td>{{$data['stu_data']['student_id']}}</td>
                                                 </tr>
                                                 <tr>
                                                     <td>{{ App\Helpers\get_string('studentname','request')}}</td>
-                                                    <td><?php echo $data['stu_data']['name']; ?></td>
+                                                    <td>{{$data['stu_data']['name']}}</td>
                                                 </tr>
                                                 <tr>
                                                     <td>Admission Year</td>
-                                                    <td><?php echo $data['stu_data']['admission']; ?></td>
+                                                    <td>{{$data['stu_data']['admission']}}</td>
                                                 </tr>
 
                                                 <tr>
                                                     <td>Parent Email</td>
-                                                    <td><?php echo $data['stu_data']['email']; ?></td>
+                                                    <td>{{$data['stu_data']['email']}}</td>
                                                 </tr>
                                             </table>
                                         </div>
@@ -63,16 +63,16 @@
                                             <table class="table table-stripped">
                                                 <tr>
                                                     <td>{{ App\Helpers\get_string('grno','request')}}</td>
-                                                    <td><?php echo $data['stu_data']['enrollment']; ?></td>
+                                                    <td>{{$data['stu_data']['enrollment']}}</td>
                                                 </tr>
                                                 <tr>
                                                     <td>{{ App\Helpers\get_string('std/div','request')}}</td>
-                                                    <td><?php echo $data['stu_data']['stddiv']; ?></td>
+                                                    <td>{{$data['stu_data']['stddiv']}}</td>
                                                 </tr>
 
                                                 <tr>
                                                     <td>Contact No</td>
-                                                    <td><?php echo $data['stu_data']['mobile']; ?></td>
+                                                    <td>{{$data['stu_data']['mobile']}}</td>
                                                 </tr>
 
                                             </table>
@@ -81,14 +81,14 @@
                                               method="post">
                                             @csrf
                                             <input type="hidden" name="grade_id"
-                                                   value="<?php echo $data['stu_data']['grade_id']; ?>">
+                                                   value="{{$data['stu_data']['grade_id']}}">
                                             <input type="hidden" name="standard_id"
-                                                   value="<?php echo $data['stu_data']['std_id']; ?>">
-                                            <input type="hidden" name="div_id" value="<?php echo $data['stu_data']['div_id']; ?>">
+                                                   value="{{$data['stu_data']['std_id']}}">
+                                            <input type="hidden" name="div_id" value="{{$data['stu_data']['div_id']}}">
                                             <input type="hidden" name="student_id"
-                                                   value="<?php echo $data['stu_data']['student_id']; ?>">
-                                            <input type="hidden" name="std_div" value="<?php echo $data['stu_data']['stddiv']; ?>">
-                                            <input type="hidden" name="full_name" value="<?php echo $data['stu_data']['name']; ?>">
+                                                   value="{{$data['stu_data']['student_id']}}">
+                                            <input type="hidden" name="std_div" value="{{$data['stu_data']['stddiv']}}">
+                                            <input type="hidden" name="full_name" value="{{$data['stu_data']['name']}}">
 
 
                                             <div class="table-responsive col-md-12">
@@ -102,14 +102,12 @@
                                                                         Particular</th>
                                                                     <th style="width: 10%;padding-left: 15px;">Amount</th>
                                                                 </tr>
-                                                                <?php foreach ($data['all_head'] as $id => $val) { ?>
+                                                               @foreach ($data['all_head'] as $id => $val)
                                                                 <tr>
-                                                                    <td style="width: 20%"><?php echo $val; ?></td>
-                                                                        <?php
-                                                                        echo "<td style='width: 20%'><input type='number' min=0 value=0 name='fees_data[$id]' class='form-control allField1'></td>";
-                                                                        ?>
+                                                                    <td style="width: 20%">{{$val}}</td>
+                                                                    <td style='width: 20%'><input type='number' min=0 value=0 name='fees_data[{{$id}}]' class='form-control allField1'></td>
                                                                 </tr>
-                                                                <?php } ?>
+                                                                @endforeach
                                                             </table>
                                                         </td>
                                                     </tr>
