@@ -739,13 +739,17 @@ $('.months').click(function() {
 
 							$.each(data, function(index, value) {
 								index++;
-								const term_id = value['term_id'];
-								year = String(term_id).slice(-4);
-								month = String(term_id).substring(0, String(term_id).length - 4);
-								month--;
-								// const d = new Date(value['term_id']);
-								let monthyear = months[month] + "/" + year;
-								// console.log(monthyear);
+								const term_ids = value['term_ids'].split(','); // Split the term_ids string into an array
+								let monthyear = [];
+
+								term_ids.forEach(function(term_id) {
+									year = term_id.slice(-4);
+									month = term_id.substring(0, term_id.length - 4);
+									month--;
+									monthyear.push(months[month] + "/" + year);
+								});
+
+								monthyear = monthyear.join(', '); // Join the month names with a comma separator
 
 								if (value['uniqueid'] == 'null') {
 									valueuni = value['uniqueid'];
@@ -755,7 +759,7 @@ $('.months').click(function() {
 								// console.log(value['student_name']);
 								$('#table_data').append("<tr><td>" + index + "</td><td>" + value['enrollment_no'] + "</td><td>" + value[
 										'student_name'] + "</td><td>" + value['division_name'] + "</td><td>" + valueuni + "</td><td>" +
-									monthyear + "</td><td>" + value['receipt_no'] + "</td><td>" + value['payment_mode'] + "</td><td>" +
+										monthyear + "</td><td>" + value['receipt_no'] + "</td><td>" + value['payment_mode'] + "</td><td>" +
 									value['cheque_no'] + ' ' + value['cheque_bank_name'] + ' ' + value['bank_branch'] + "</td><td>" + value['receiptdate'] + "</td><td>" + value['user_name'] +
 									"</td><td id='total_amt'>" + value['actual_amountpaid'] + "</td></tr>");
 							});
