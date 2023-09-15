@@ -94,7 +94,7 @@ class studentResultController extends Controller
         $all_stud_html = array();
         foreach ($data as $key => $value) {
             $html_content =$tData[0]['html_content'];
-            $new_html_content = $this->create_html_content($syear, $sub_institute_id, $html_content, $value, $template,$receipt_book_arr,$format);
+            $new_html_content = '<div id="'.$value['id'].'">'.$this->create_html_content($syear, $sub_institute_id, $html_content, $value, $template,$receipt_book_arr,$format).'</div>';
             $new_html .= $new_html_content;   
             $all_stud_html[$value['id']] = $new_html_content;         
         }
