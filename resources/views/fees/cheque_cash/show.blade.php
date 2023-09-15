@@ -20,9 +20,9 @@
                         <div class="col-md-4 form-group">
                             <label>Fees Heads</label>
                             <select class="form-control" name="fees_heads[]" multiple="" required="required">
-                                 @foreach ($data['data']['fees_title'] as $id => $val)
-                                <option value="{{$id}}">{{$val}}</option>
-                                @endforeach
+                                <?php foreach ($data['data']['fees_title'] as $id => $val) {?>
+                                <option value="<?php echo $id; ?>"><?php echo $val; ?></option>
+                                <?php }?>
                             </select>
                         </div>
 

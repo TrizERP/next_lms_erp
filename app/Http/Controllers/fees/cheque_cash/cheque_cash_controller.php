@@ -25,8 +25,6 @@ class cheque_cash_controller extends Controller
      */
     public function index(Request $request)
     {
-        $school_data = [];
-
         if (session()->has('data')) { // check if it exists
             $data_arr = session('data'); // to retrieve value
             if (isset($data_arr['message'])) {

@@ -34,47 +34,45 @@
                                                         <th style="text-align: center;font-weight: inherit;">
                                                             {{ App\Helpers\get_string('studentquota','request')}}
                                                         </th>
-                                                       @foreach ($data['data']['title_arr'] as $id => $val)
+                                                        <?php foreach ($data['data']['title_arr'] as $id => $val) { ?>
                                                         <th style="text-align: center;font-weight: inherit;">
-                                                            {{$val}}
+                                                                <?php echo $val; ?>
                                                         </th>
-                                                        @endforeach
+                                                        <?php } ?>
                                                         <th style="text-align: center;font-weight: inherit;">
                                                             Total
                                                         </th>
                                                     </tr>
-
-                                                    @foreach ($data['data']['quota_arr'] as $quota_id => $quota_val)
-                                                        @php
+                                                    <?php
+                                                    foreach ($data['data']['quota_arr'] as $quota_id => $quota_val) {
                                                         $total = 0;
 //                                                    $amount_val = 0;
 //                                                    $amount_val = "";
-                                                    @endphp
+                                                        ?>
                                                     <tr>
                                                         <td style="text-align: center;font-weight: inherit;">
-                                                            {{$quota_val}}
+                                                                <?php echo $quota_val; ?>
                                                         </td>
-
-
-                                                        @foreach ($data['data']['title_arr'] as $id => $val)
-                                                            @php
+                                                            <?php
+                                                            // echo ('<pre>');print_r($data['data']['title_arr']);exit;
+                                                        foreach ($data['data']['title_arr'] as $id => $val) {
                                                             $amount_val = 0;
                                                             if (isset($data['data']['bk_arr']['new'][$quota_id][$id])) {
                                                                 $amount_val = $data['data']['bk_arr']['new'][$quota_id][$id];
                                                                 $total += $amount_val;
                                                             }
-                                                           @endphp
+                                                            ?>
                                                         <td style="text-align: center;font-weight: inherit;">
                                                             <input type="text" class="form-control"
-                                                                   value="{{$amount_val}}"
-                                                                   name="NewValues[{{$quota_id}}][{{$id}}]">
+                                                                   value="<?php echo $amount_val; ?>"
+                                                                   name="<?php echo 'NewValues[' . $quota_id . '][' . $id . ']'; ?>">
                                                         </td>
-                                                        @endforeach
+                                                        <?php } ?>
                                                         <td class="total" style="text-align: center;font-weight: inherit;">
                                                             <input type="text" class="form-control"
-                                                                   value="{{$total}}" name="total">
+                                                                   value="<?php echo $total; ?>" name="total">
                                                         </td>
-                                                        @endforeach
+                                                        <?php } ?>
                                                     </tr>
                                                 </table>
                                             </td>
@@ -97,44 +95,43 @@
                                                         <th style="text-align: center;font-weight: inherit;">
                                                             {{ App\Helpers\get_string('studentquota','request')}}
                                                         </th>
-                                                         @foreach ($data['data']['title_arr'] as $id => $val)
+                                                        <?php foreach ($data['data']['title_arr'] as $id => $val) { ?>
                                                         <th style="text-align: center;font-weight: inherit;">
-                                                            {{$val}}
+                                                                <?php echo $val; ?>
                                                         </th>
-                                                        @endforeach
+                                                        <?php } ?>
                                                         <th style="text-align: center;font-weight: inherit;">
                                                             Total
                                                         </th>
                                                     </tr>
-                                                    @foreach ($data['data']['quota_arr'] as $quota_id => $quota_val)
-                                                        @php
+                                                    <?php
+                                                    foreach ($data['data']['quota_arr'] as $quota_id => $quota_val) {
                                                         $total = 0;
 //                                                    $amount_val = 0;
-                                                      @endphp
+                                                        ?>
                                                     <tr>
                                                         <td style="text-align: center;font-weight: inherit;">
-                                                            {{$quota_val}}
+                                                                <?php echo $quota_val; ?>
                                                         </td>
-
-                                                        @foreach ($data['data']['title_arr'] as $id => $val)
-                                                            @php
+                                                            <?php
+                                                        foreach ($data['data']['title_arr'] as $id => $val) {
                                                             $amount_val = 0;
                                                             if (isset($data['data']['bk_arr']['old'][$quota_id][$id])) {
                                                                 $amount_val = $data['data']['bk_arr']['old'][$quota_id][$id];
                                                                 $total += $amount_val;
                                                             }
-                                                            @endphp
+                                                            ?>
                                                         <td style="text-align: center;font-weight: inherit;">
                                                             <input type="text" class="form-control"
-                                                                   value="{{$amount_val}}"
-                                                                   name="OldValues[{{$quota_id}}][{{$id}}]">
+                                                                   value="<?php echo $amount_val; ?>"
+                                                                   name="<?php echo 'OldValues[' . $quota_id . '][' . $id . ']'; ?>">
                                                         </td>
-                                                        @endforeach
+                                                        <?php } ?>
                                                         <td class="total" style="text-align: center;font-weight: inherit;">
                                                             <input type="text" class="form-control" name="total"
-                                                                   value="{{$total}}">
+                                                                   value="<?php echo $total; ?>">
                                                         </td>
-                                                        @endforeach
+                                                        <?php } ?>
                                                     </tr>
                                                 </table>
                                             </td>

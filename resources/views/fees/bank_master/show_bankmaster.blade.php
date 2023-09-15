@@ -36,9 +36,10 @@
                             </thead>
                             <tbody>
                             @if(count($data['bank_data']) > 0)
+                                @php $i = 1;@endphp
                                 @foreach($data['bank_data'] as $key => $chdata)
                                     <tr>
-                                        <td>{{$key + 1}}</td>
+                                        <td>@php echo $i++;@endphp</td>
                                         <td>{{$chdata['bank_name']}}</td>
                                         <td>
                                             <div class="d-inline">
@@ -65,8 +66,8 @@
     </div>
 
     @include('includes.footerJs')
-  {{--  <script src="https://cdn.datatables.net/1.10.19/js/jquery.dataTables.min.js"></script>
-    <script src="https://cdn.datatables.net/1.10.19/js/dataTables.bootstrap.min.js"></script>--}}
+    <script src="https://cdn.datatables.net/1.10.19/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.10.19/js/dataTables.bootstrap.min.js"></script>
     <script>
         $(document).ready(function () {
 
