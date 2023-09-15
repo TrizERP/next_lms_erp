@@ -245,6 +245,7 @@ $school_logo = session()->get('school_logo');
                 <div class="sub-drop-panel">
                     <div class="sub-drop-header d-flex align-items-center justify-content-between">
                         <li class="sub-drop-header d-flex align-items-center justify-content-between w-100">
+                        @if(Route::has($submenuValue['link']))
 
                             <a href="{{ route($submenuValue['link']) }}" onclick="sessionMenu({{ $submenuValue['id'] }});redirect_pages_soni('{{ route($submenuValue['link']) }}','{{ $submenuValue['id'] }}','{{ $i }}');" class="panel-click flex-fill">
                                 <i class="{{ $submenuValue['icon'] }} mr-1" data-icon="v"></i><span class="title">{{ $submenuValue['name'] }}</span>
@@ -268,6 +269,7 @@ $school_logo = session()->get('school_logo');
                             </div>
                     </div>
                     @endif --}}
+                    @endif
                     </li>
                 </div>
             </div>
