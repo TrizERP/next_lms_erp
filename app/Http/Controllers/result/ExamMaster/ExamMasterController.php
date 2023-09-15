@@ -26,7 +26,8 @@ class ExamMasterController extends Controller
         
         if ($type == "API") {
             $sub_institute_id = $request->input('sub_institute_id');
-            $school_data['data'] = $this->getData($sub_institute_id);
+            $standard_id = $request->input('standard_id') ?? '';
+            $school_data['data'] = $this->getData($sub_institute_id,$standard_id,$type);
         } else {
             $school_data['data'] = $this->getData();
 		}
@@ -90,7 +91,7 @@ class ExamMasterController extends Controller
         return is_mobile($type, "exam_master.index", $res, "redirect");
     }
 
-    public function getData($sub_institute_id = '')
+    public function getData($sub_institute_id = '', $standard_id = '', $type = '')
     {
         if($sub_institute_id == '')
         {
@@ -98,20 +99,27 @@ class ExamMasterController extends Controller
         }
 
         $exam = ExamMaster::select('result_exam_master.*',
-            DB::raw('COUNT(result_create_exam.id) AS total_count'),'standard.name as std_name','academic_year.title as term')
-            ->leftjoin('standard', 'standard.id', '=', 'result_exam_master.standard_id')
-            ->leftJoin('academic_year', function ($join) {
+                DB::raw('COUNT(result_create_exam.id) AS total_count'),'standard.name as std_name','academic_year.title as term')
+            ->leftJoin('standard', 'standard.id', '=', 'result_exam_master.standard_id')
+            ->leftJoin('academic_year', function ($join) use ($sub_institute_id) {
                 $join->on('academic_year.term_id', '=', 'result_exam_master.term_id')
                      ->on('academic_year.sub_institute_id', '=', 'result_exam_master.SubInstituteId');
             })
-            ->leftjoin("result_create_exam", function ($join) {
+            ->leftJoin("result_create_exam", function ($join) {
                 $join->on("result_create_exam.exam_id", "=", "result_exam_master.Id")
                     ->on("result_create_exam.sub_institute_id", "=", "result_exam_master.SubInstituteId");
-            })
-            ->where(['result_exam_master.SubInstituteId' => $sub_institute_id])
-            ->groupby('result_exam_master.Id')
-            ->orderByRaw('standard.sort_order,academic_year.sort_order,result_exam_master.SortOrder')            
+            });
+
+        if ($type == 'API' && !empty($standard_id)) {
+            $exam->where('result_exam_master.standard_id', $standard_id);
+        }
+
+        $exam = $exam
+            ->where('result_exam_master.SubInstituteId', $sub_institute_id)
+            ->groupBy('result_exam_master.Id')
+            ->orderByRaw('standard.sort_order, academic_year.sort_order, result_exam_master.SortOrder')
             ->get();
+
         $i = 1;
         foreach ($exam as $id => $arr) {
             $arr->SrNo = $i;

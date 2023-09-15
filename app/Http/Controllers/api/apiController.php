@@ -238,6 +238,8 @@ class apiController extends Controller
                 "school_setup.SchoolName",
                 "school_setup.Logo",
                 "tblstudent_enrollment.syear",
+                "tblstudent_enrollment.standard_id",
+                "tblstudent_enrollment.section_id as division_id",
                 "tbluserprofilemaster.name as user_profile_name",
                 "tbluserprofilemaster.id as user_profile_id",
             ];
@@ -336,6 +338,8 @@ class apiController extends Controller
                         'school_logo'       => $school_logo,
                         'school_name'       => $arr->SchoolName,
                         'syear'             => $arr->syear,
+                        'standard_id'       => $arr->standard_id,
+                        'division_id'       => $arr->division_id,
                         'user_profile_name' => $arr->user_profile_name,
                         'user_profile_id'   => $arr->user_profile_id,
                         'term_data'         => $term_data,

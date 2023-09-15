@@ -54,12 +54,11 @@
                                   </select>
                               </div>
                               <div class="col-md-6 form-group">
-                                  <label>Exam Title</label>
+                                  <label>Exam Type</label>
                                   <input type="text" id="ExamTitle" name="ExamTitle" value="{{ $data->ExamTitle ?? '' }}" class="form-control" required>
                               </div>
-
                               <div class="col-md-6 form-group">
-                                  <label>Exam Weightage</label>
+                                  <label>Weightage</label>
                                   <input type="number" id="weightage" name="weightage" value="{{ $weightage ?? '' }}" class="form-control">
                               </div>
                               <div class="col-md-6 form-group">
