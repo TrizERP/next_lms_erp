@@ -153,6 +153,21 @@
 							else{
 								$cheque_date = '';
 								}
+
+							// Split the term_ids string into an array of term IDs
+							$term_ids = explode(',', $value['term_ids']);
+							// Initialize an array to store month names
+							$monthNames = [];
+
+							// Look up month names based on term_id values
+							foreach ($term_ids as $term_id) {
+								if (isset($data['months'][$term_id])) {
+									$monthNames[] = $data['months'][$term_id];
+								}
+							}
+
+							// Join the month names with a comma separator
+							$monthNamesString = implode(', ', $monthNames);
 							@endphp
 							<tr>
 								<td>{{$j}}</td>
@@ -165,7 +180,7 @@
 								</td>
 								<td>{{$value['quota']}}</td>
 								<td>{{$value['uniqueid']}}</td>
-								<td>{{$data['months'][$value['term_id']]}}</td>
+								<td>{{ $monthNamesString }}</td>
 								<td>{{$value['receipt_no']}}</td>
 								<td>{{$value['payment_mode']}}</td>
 								<td>{{$value['cheque_no']}} {{$value['cheque_bank_name']}} {{$value['bank_branch']}}</td>
