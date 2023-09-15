@@ -1,8 +1,6 @@
-{{--@include('includes.headcss')
+@include('includes.headcss')
 @include('includes.header')
-@include('includes.sideNavigation')--}}
-@extends('layout')
-@section('container')
+@include('includes.sideNavigation')
 use DB;
 <style type="text/css">
     #overlay {
@@ -10,7 +8,7 @@ use DB;
       display: none; /* Hidden by default */
       width: 100%; /* Full width (cover the whole page) */
       height: 100%; /* Full height (cover the whole page) */
-      top: 0;
+      top: 0; 
       left: 0;
       right: 0;
       bottom: 0;
@@ -78,7 +76,7 @@ $str = str_replace(htmlspecialchars("<<division_name>>"), $value['division_name'
 $str = str_replace(htmlspecialchars("<<father_name>>"), $value['father_name'], $str);
 $str = str_replace(htmlspecialchars("<<fees_head>>"), $table, $str);
 $str = str_replace(htmlspecialchars("<<fees_amount_in_words>>"), $amountInWords, $str);
-if (isset($data['receiptbook']))
+if (isset($data['receiptbook'])) 
 {
     $institute_name_arr = str_split($data['receiptbook']['receipt_line_1']);
     $institute_name = '';
@@ -113,22 +111,22 @@ if (isset($data['feesconfig'])) {
 	$str = str_replace(htmlspecialchars("<<pan_no>>"), $data['feesconfig']['pan_no'], $str);
 }
 ?>
-
+            
                 <div class="card">
-                    <?php
-                        echo $str;
+                    <?php 
+                        echo $str; 
 
-                        $inserted_ids_arr = explode(',',$data['last_inserted_ids']);
+                        $inserted_ids_arr = explode(',',$data['last_inserted_ids']); 
 
-                        foreach ($inserted_ids_arr as $k => $v)
-                        {
+                        foreach ($inserted_ids_arr as $k => $v) 
+                        {   
                             $update_sql = "UPDATE fees_circular_log SET FEES_CIRCULAR_HTML = '".$str."' WHERE STUDENT_ID = '".$value['id']."'   AND id = '".$v."' ";
                             $sql_data = DB::select($update_sql);
                         }
                     ?>
 
                 </div>
-
+            
         @endforeach
         @php
             $inserted_ids = rtrim($all_inserted_id,',');
@@ -169,7 +167,7 @@ if (isset($data['feesconfig'])) {
 	}
 </script>
 <script>
-function PrintDiv(divName)
+function PrintDiv(divName) 
     {
         var divToPrint = document.getElementById(divName);
         var popupWin = window.open('', '_blank', 'width=300,height=300');
@@ -181,4 +179,3 @@ function PrintDiv(divName)
 
 </script>
 @include('includes.footer')
-@endsection

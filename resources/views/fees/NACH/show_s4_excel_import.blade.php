@@ -1,8 +1,6 @@
-{{--@include('includes.headcss')
+@include('includes.headcss')
 @include('includes.header')
-@include('includes.sideNavigation')--}}
-@extends('layout')
-@section('container')
+@include('includes.sideNavigation')
 <style>
     br {
         display: block;
@@ -10,26 +8,6 @@
 
     .table-bordered {
         border: 1px solid #dee2e6;
-    }
-
-        tr.spaceUnder>th {
-        padding-bottom: 1em !important;
-    }
-    #overlay-new {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background-color: rgba(0, 0, 0, 0.5); /* Adjust the opacity as needed */
-        z-index: 9999;
-    }
-
-    #overlay-new center {
-    position: absolute;
-    top: 30%;
-    left: 50%;
-    transform: translate(-50%, -50%);
     }
 </style>
 
@@ -73,7 +51,7 @@
                         <a href="../SAMPLE_NACH_S4_Import.xlsx" download class="text-primary h5">Sample S4 NACH File</a>
                     </div>
                     <div class="col-sm-4 form-group ml-0 mt-4">
-
+                    
 								<div id="overlay-new" style="display:none;"><center><p style="margin-top: 273px;color:red;font-weight: 700;">Please do not refresh the page, while the process is going on.</p><img src="https://erp.triz.co.in/admin_dep/images/loader.gif"></center></div>
                         <center>
                             <input type="submit" name="submit" value="Search" class="btn btn-success" onclick="overlay_new();">
@@ -142,4 +120,3 @@ function overlay_new(){
     }
 </script>
 @include('includes.footer')
-@endsection

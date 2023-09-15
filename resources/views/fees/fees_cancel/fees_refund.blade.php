@@ -1,10 +1,8 @@
-{{--@include('includes.headcss')
+@include('includes.headcss')
 @include('includes.header')
 @include('includes.sideNavigation')
 <link href="https://cdn.jsdelivr.net/gh/gitbrent/bootstrap4-toggle@3.6.1/css/bootstrap4-toggle.min.css"
-      rel="stylesheet">--}}
-@extends('layout')
-@section('container')
+      rel="stylesheet">
 <style>
     .toggle.btn.btn-danger {
         width: 200px !important;
@@ -182,4 +180,3 @@
             }
         }
     </style>
-@endsection

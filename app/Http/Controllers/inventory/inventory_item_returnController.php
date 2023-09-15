@@ -128,12 +128,12 @@ class inventory_item_returnController extends Controller
                         'SUB_INSTITUTE_ID'       => $sub_institute_id,
                         'ITEM_ID'                => $item_id,
                         'REQUISITION_DETAILS_ID' => $requisition_details_id[$item_id],
-                        'RETURN_DATE'            => date('Y-m-d H:i:s'),
+                        'RETURN_DATE'            => date('Y-m-d h:i:s'),
                         'REMARKS'                => $remarks[$item_id],
                         'RETURN_QTY'             => $return_qty[$item_id],
                         'REQUISITION_BY'         => $requisition_by[$item_id],
                         'CREATED_BY'             => $created_by,
-                        'CREATED_ON'             => date('Y-m-d H:i:s'),
+                        'CREATED_ON'             => date('Y-m-d h:i:s'),
                         'CREATED_IP_ADDRESS'     => $_SERVER['REMOTE_ADDR'],
                     ]);
                     $item_return->save();

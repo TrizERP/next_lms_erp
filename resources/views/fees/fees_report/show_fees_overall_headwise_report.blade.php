@@ -1,8 +1,7 @@
-{{--@include('includes.headcss')
+@include('includes.headcss')
 @include('includes.header')
-@include('includes.sideNavigation')--}}
-@extends('layout')
-@section('container')
+@include('includes.sideNavigation')
+
 <div id="page-wrapper">
     <div class="container-fluid">
             <div class="row bg-title">
@@ -75,7 +74,7 @@
                     <div class="col-md-4 form-group">
                         <label>Mobile No.</label>
                         <input type="text" id="mobile_no" value="{{$mobile_no}}" name="mobile_no" class="form-control">
-                    </div>
+                    </div>                    
                     <div class="col-md-4 form-group">
                         <label>{{ App\Helpers\get_string('grno','request')}}</label>
                         <input type="text" id="uniqueid" value="{{$uniqueid}}" name="uniqueid" class="form-control">
@@ -133,7 +132,7 @@
             if(isset($data['fees_data'])){
                 $fees_data = $data['fees_data'];
             }
-
+            
         @endphp
         <div class="card">
             <div class="table-responsive">
@@ -151,21 +150,28 @@
                             @php
                             if(isset($data['bk_title_months_array']))
                             {
-                                $count_colspan = $data['count_of_array'];
+                                $count_colspan = $data['count_of_array'];   
                                 $count_colspan = $count_colspan + 1;
                                 $colspan = 'colspan="'.$count_colspan.'" ';
+<<<<<<< HEAD
                             @endphp
                                 <th @php echo $colspan; @endphp class="text-center">Received</th>
                                 <th @php echo $colspan; @endphp class="text-center">Pending</th>
                             @php
+=======
+                            @endphp 
+                                <th @php echo $colspan; @endphp class="text-center">Received</th>
+                                <th @php echo $colspan; @endphp class="text-center">Pending</th>
+                            @php 
+>>>>>>> parent of 68f76babc (Merge branch 'development' into robertparker)
                             }
-                            @endphp
+                            @endphp                                                    
                         </tr>
-                        <tr>
+                        <tr>    
                             @if(isset($data['bk_title_months_array']))
 
                                 @foreach($data['bk_title_months_array'] as $main_head => $child_head)
-                                    @if(count($child_head) > 0)
+                                    @if(count($child_head) > 0)                                    
                                         @php
                                             $main_fees_title = explode('/',$main_head);
                                             $count_colspan_inner = count($child_head);
@@ -173,21 +179,25 @@
                                         @endphp
                                         <th @php echo $colspan_inner; @endphp class="text-center">@if($main_fees_title[0]=='') {{$main_fees_title[1]}} @else {{$main_fees_title[0]}} @endif</th>
                                     @else
-                                        <th rowspan=2>{{$main_fees_title[0]}}</th>
+                                        <th rowspan=2>{{$main_fees_title[0]}}</th>    
                                     @endif
                                 @endforeach
                                 <th rowspan=2 class="align-middle">Total Received</th>
 
                                 @foreach($data['bk_title_months_array'] as $main_head => $child_head)
-                                    @if(count($child_head) > 0)
+                                    @if(count($child_head) > 0)  
                                         @php
                                             $main_fees_title = explode('/',$main_head);
                                             $count_colspan_inner = count($child_head);
                                             $colspan_inner = 'colspan="'.$count_colspan_inner.'" ';
+<<<<<<< HEAD
                                         @endphp
+=======
+                                        @endphp                                  
+>>>>>>> parent of 68f76babc (Merge branch 'development' into robertparker)
                                         <th @php echo $colspan_inner; @endphp class="text-center">{{$main_fees_title[0]}}</th>
                                     @else
-                                        <th rowspan=2>{{$main_fees_title[0]}}</th>
+                                        <th rowspan=2>{{$main_fees_title[0]}}</th>    
                                     @endif
                                 @endforeach
                                 <th rowspan=2 class="align-middle">Total Pending</th>
@@ -199,7 +209,7 @@
                                 @foreach($data['bk_title_months_array'] as $main_head => $child_head)
                                     @if(is_array($child_head))
                                         @foreach($child_head as $child_key => $child_val)
-                                            <th>{{$child_val}}0</th>
+                                            <th>{{$child_val}}0</th>   
                                         @endforeach
                                     @endif
                                 @endforeach
@@ -207,7 +217,7 @@
 								@foreach($data['bk_title_months_array'] as $main_head => $child_head)
                                     @if(is_array($child_head))
                                         @foreach($child_head as $child_key => $child_val)
-                                            <th>{{$child_val}}</th>
+                                            <th>{{$child_val}}</th>   
                                         @endforeach
                                     @endif
                                 @endforeach
@@ -221,16 +231,16 @@
                     $total_breakoff = $total_paid = $total_unpaid = $total_discount =  $discount = $status = 0;
                     $total_array = array();
                     @endphp
-
+                                           
                     @if(isset($data['fees_data']))
-                        @foreach($fees_data as $key => $fees_value)
+                        @foreach($fees_data as $key => $fees_value) 
                             @php
-
+                            
 							if(isset($fees_value['-'])){
                             $total_paid += $fees_value['-']['paid'] ?? 0;
                             $total_breakoff += $fees_value['-']['bk'] ?? 0;
                             if(isset($fees_value['discount']))
-                            {
+                            {    
                                 $total_discount += $fees_value['discount'];
                                 $discount = $fees_value['discount'];
                             }else{
@@ -238,7 +248,7 @@
                             }
                             $status = $fees_value['-']['paid'] - $discount;
 							}
-                            @endphp
+                            @endphp                    
                         <tr>
                             <td>{{$j}}</td>
                             <td>{{$fees_value['enrollment']}}</td>
@@ -249,7 +259,7 @@
                             <td>{{$fees_value['student_status']}}</td>
                             <td>{{$fees_value['-']['bk'] ?? 0}}</td>
 
-
+                                            
                             <td>{{$discount}}</td>
 
                             @if(isset($data['bk_title_months_array']))
@@ -258,7 +268,7 @@
                                         $main_fees_title = explode('/',$main_head);
                                     @endphp
                                     @if(count($child_head) > 0)
-                                        @foreach($child_head as $month_id => $child_val)
+                                        @foreach($child_head as $month_id => $child_val) 
                                             @if(isset($fees_value['paid_fees'][$main_fees_title[1]][$month_id]))
                                                 @php
                                                     $temp = 0;
@@ -284,14 +294,14 @@
                                                     $total_array['PAID'][$main_fees_title[1]][$month_id] = $new_var;
 
                                                 @endphp
-                                                <td>0</td>
-                                            @endif
+                                                <td>0</td> 
+                                            @endif      
                                         @endforeach
-                                    @endif
+                                    @endif 
                                 @endforeach
-                            @endif
+                            @endif 
 
-
+                           
 
                            <td>{{ isset($fees_value['-']['paid']) ? ($fees_value['-']['paid'] - $discount) : 0 }}</td>
 
@@ -301,7 +311,7 @@
                                         $main_fees_title = explode('/',$main_head);
                                     @endphp
                                     @if(count($child_head) > 0)
-                                        @foreach($child_head as $month_id => $child_val)
+                                        @foreach($child_head as $month_id => $child_val) 
                                             @if(isset($fees_value['unpaid_fees'][$main_fees_title[1]][$month_id]))
                                                 @php
                                                     $temp_unpaid = 0;
@@ -312,7 +322,7 @@
                                                     $new_var_unpaid = $temp_unpaid + $fees_value['unpaid_fees'][$main_fees_title[1]][$month_id];
 
                                                     $total_array['UNPAID'][$main_fees_title[1]][$month_id] = $new_var_unpaid;
-
+                                                    
                                                 @endphp
                                                 <td>{{$fees_value['unpaid_fees'][$main_fees_title[1]][$month_id]}}</td>
                                             @else
@@ -325,27 +335,27 @@
                                                     $new_var_unpaid = $temp_unpaid + 0;
 
                                                     $total_array['UNPAID'][$main_fees_title[1]][$month_id] = $new_var_unpaid;
-
+                                                    
                                                 @endphp
-                                                <td>0</td>
-                                            @endif
+                                                <td>0</td> 
+                                            @endif      
                                         @endforeach
-                                    @endif
+                                    @endif 
                                 @endforeach
                             @endif
 
-
-                            <td>{{$fees_value['-']['remain'] ?? 0}}</td>
+                           
+                            <td>{{$fees_value['-']['remain'] ?? 0}}</td>  
                             @php
                             $total_unpaid += $fees_value['-']['remain'] ?? 0;
-                            @endphp
+                            @endphp                            
                         </tr>
                     @php
                     $j++;
                     @endphp
                     @endforeach
 
-
+                        
                         <tr class="font-weight-bold">
                             <td>{{$j++}}</td>
                             <td></td>
@@ -360,37 +370,37 @@
                                 @foreach($data['bk_title_months_array'] as $main_head => $child_head)
                                     @php
                                         $main_fees_title = explode('/',$main_head);
-                                    @endphp
+                                    @endphp                                   
                                     @if(count($child_head) > 0)
-                                        @foreach($child_head as $month_id => $child_val)
-                                            <td>{{$total_array['PAID'][$main_fees_title[1]][$month_id] ?? 0}}</td>
+                                        @foreach($child_head as $month_id => $child_val)                                           
+                                            <td>{{$total_array['PAID'][$main_fees_title[1]][$month_id] ?? 0}}</td>                                            
                                         @endforeach
-                                    @endif
+                                    @endif 
                                 @endforeach
                             @endif
 
                             <td>{{$total_paid}}</td>
 
                             @if(isset($data['bk_title_months_array']))
-                                @foreach($data['bk_title_months_array'] as $main_head => $child_head)
+                                @foreach($data['bk_title_months_array'] as $main_head => $child_head)  
                                     @php
                                         $main_fees_title = explode('/',$main_head);
-                                    @endphp
+                                    @endphp                                 
                                     @if(count($child_head) > 0)
-                                        @foreach($child_head as $month_id => $child_val)
-                                            <td>{{$total_array['UNPAID'][$main_fees_title[1]][$month_id] ?? 0}}</td>
+                                        @foreach($child_head as $month_id => $child_val)                                            
+                                            <td>{{$total_array['UNPAID'][$main_fees_title[1]][$month_id] ?? 0}}</td>                                            
                                         @endforeach
-                                    @endif
+                                    @endif 
                                 @endforeach
                             @endif
 
                             <td>{{$total_unpaid}}</td>
-                        </tr>
-
+                        </tr>                       
+                        
                     @endif
                     </tbody>
                 </table>
-                <center>
+                <center>                    
                     <button onclick="exportTableToExcel('overall_head', 'Fees Overall Headwise Report')" class="btn btn-success mt-2">Excel Export</button>
                 </center>
             </div>
@@ -401,22 +411,22 @@
 
 @include('includes.footerJs')
 <script type="text/javascript">
-
+    
     function exportTableToExcel(tableID, filename = '')
     {
         var downloadLink;
         var dataType = 'application/vnd.ms-excel';
         var tableSelect = document.getElementById(tableID);
         var tableHTML = tableSelect.outerHTML.replace(/ /g, '%20');
-
+        
         // Specify file name
         filename = filename?filename+'.xls':'excel_data.xls';
-
+        
         // Create download link element
         downloadLink = document.createElement("a");
-
+        
         document.body.appendChild(downloadLink);
-
+        
         if(navigator.msSaveOrOpenBlob){
             var blob = new Blob(['\ufeff', tableHTML], {
                 type: dataType
@@ -425,10 +435,10 @@
         }else{
             // Create a link to the file
             downloadLink.href = 'data:' + dataType + ', ' + tableHTML;
-
+        
             // Setting the file name
             downloadLink.download = filename;
-
+            
             //triggering the function
             downloadLink.click();
         }
@@ -459,4 +469,3 @@
     $('#standard').attr('required',false);
 </script>
 @include('includes.footer')
-@endsection

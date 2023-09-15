@@ -21,6 +21,7 @@ class ImportController extends Controller
         return view('import.import', ['result' => $getTables]);
     }
 
+<<<<<<< HEAD
     public function Import()
     {
         $getTables = ["result_personalize_marks -sheet 1","result_personalize_marks -sheet 2"];
@@ -101,6 +102,8 @@ class ImportController extends Controller
         }
     }
 
+=======
+>>>>>>> parent of 68f76babc (Merge branch 'development' into robertparker)
     public function matchFields(Request $request)
     {
         if ($request->skip_val) {
@@ -287,34 +290,6 @@ class ImportController extends Controller
 
                 }
 
-                if ($request->table_name == 'result_personalize_marks') {
-                    $prepareData['sub_institute_id'] = session()->get('sub_institute_id');
-                    $found = false;
-                    $tbluser = DB::table($request->table_name)->where($condition)->where('sub_institute_id', $sub_institute_id)->first();
-                    if (isset($daqta->is_skip) && $data->is_skip !== null) {
-                        if ($data->is_skip == 1) {
-                            if ($tbluser) {
-                                $found = true;
-                                $totalSkipRecordCount = $totalSkipRecordCount + 1;
-                                $totalSkipRecordArray[] = $rowKey + 1;
-                            }
-                        } else if ($data->is_skip == 2) {
-                            $found = true;
-                            $overwriteFound = DB::table($request->table_name)->where($condition)->where('sub_institute_id', $sub_institute_id)->first();
-                            if ($overwriteFound) {
-                                DB::table($request->table_name)->where($condition)->where('sub_institute_id', $sub_institute_id)->update($prepareData);
-                                $totalOverwiteRecordCount = $totalOverwiteRecordCount + 1;
-                                $totalOverwiteRecordArray[] = $rowKey + 1;
-                            }
-                        }
-                    }
-                    if (!$found) {
-                        DB::table($request->table_name)->insert($prepareData);
-                        $totalInsertRecordCount = $totalInsertRecordCount + 1;
-                    }
-
-                }
-
                 if ($request->table_name == 'fees_collect') {
                     $prepareData['sub_institute_id'] = session()->get('sub_institute_id');
                     $prepareData['created_by'] = session()->get('user_id');
@@ -326,7 +301,7 @@ class ImportController extends Controller
                             $prepareData['standard_id'] = $standard_id->standard_id;
                             $prepareData['student_id'] = $student_id->id;
                         }
-                        unset($prepareData['enrollment_no'],$condition['enrollment_no'],$condition['standard_id']);
+                        unset($prepareData['enrollment_no']);
                         $fees_receipt_data = [];
                         $fees_receipt_data['STANDARD'] = $prepareData['standard_id'] ?? null;
                         $fees_receipt_data['SYEAR'] = $prepareData['syear'] = session()->get('syear');
@@ -334,7 +309,7 @@ class ImportController extends Controller
                         $found = false;
                         if (isset($data->is_skip) && $data->is_skip !== null) {
                             if ($data->is_skip == 1) {
-                                $is_found = DB::table($request->table_name)->where([['student_id', $student_id->id], ['sub_institute_id', session()->get('sub_institute_id')]])->where('syear', $syear)->where($condition)->first();
+                                $is_found = DB::table($request->table_name)->where([['student_id', $student_id->id], ['sub_institute_id', session()->get('sub_institute_id')]])->where('syear', $syear)->first();
                                 if ($is_found) {
                                     $found = true;
                                     $totalSkipRecordCount = $totalSkipRecordCount + 1;
@@ -342,9 +317,9 @@ class ImportController extends Controller
                                 }
                             } else if ($data->is_skip == 2) {
                                 $found = true;
-                                $overwriteFound = DB::table($request->table_name)->where([['student_id', $student_id->id], ['sub_institute_id', session()->get('sub_institute_id')]])->where('syear', $syear)->where($condition)->first();
+                                $overwriteFound = DB::table($request->table_name)->where([['student_id', $student_id->id], ['sub_institute_id', session()->get('sub_institute_id')]])->where('syear', $syear)->first();
                                 if ($overwriteFound) {
-                                    DB::table($request->table_name)->where([['student_id', $student_id->id], ['sub_institute_id', session()->get('sub_institute_id')]])->where('syear', $syear)->where($condition)->update($prepareData);
+                                    DB::table($request->table_name)->where([['student_id', $student_id->id], ['sub_institute_id', session()->get('sub_institute_id')]])->where('syear', $syear)->update($prepareData);
                                     DB::table('fees_receipt')->where([['FEES_ID', $overwriteFound->id], ['sub_institute_id', session()->get('sub_institute_id')]])->update($fees_receipt_data);
                                     $totalOverwiteRecordCount = $totalOverwiteRecordCount + 1;
                                     $totalOverwiteRecordArray[] = $rowKey + 1;
@@ -431,13 +406,13 @@ class ImportController extends Controller
 
                 if ($request->table_name == 'result_marks') {
                     $prepareData['sub_institute_id'] = session()->get('sub_institute_id');
-                    $found = false;
+                    $found = false;       
 
                     $result_marks = DB::table("result_marks as rs")->join('result_create_exam as rce', 'rce.id', '=', 'rs.exam_id')->join('tblstudent as s', 's.id', '=', 'rs.student_id')->selectRaw('s.id as student_id,rce.id as exam_id,rs.points,rce.standard_id')->where(['rs.sub_institute_id' => $prepareData['sub_institute_id'], 'rce.title' => $prepareData['exam_id'], 'rce.standard_id' => $prepareData['standard_id'], 's.enrollment_no' => $prepareData['student_id']])->first();
 
                     if (!$result_marks) {
                         $new_record = DB::table('tblstudent as s')->join('result_create_exam as rce', 's.sub_institute_id', '=', 'rce.sub_institute_id')->selectRaw('s.id as student_id,rce.id as exam_id')->where(['s.sub_institute_id' => $prepareData['sub_institute_id'], 'rce.title' => $prepareData['exam_id'], 'rce.standard_id' => $prepareData['standard_id'], 's.enrollment_no' => $prepareData['student_id']])->groupBy('s.id')->first();
-
+                        
                         if ($new_record) {
                             DB::table($request->table_name)->insert([
                                 "student_id" => $new_record->student_id,
@@ -452,7 +427,7 @@ class ImportController extends Controller
                         $found = true;
 
                         if ($result_marks) {
-
+                            
                             DB::table($request->table_name)->where([
                                 "student_id" => $result_marks->student_id,
                                 "exam_id" => $result_marks->exam_id,

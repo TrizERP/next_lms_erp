@@ -139,14 +139,7 @@
                 },
                 {extend: 'csv', text: ' CSV', title: 'Student Homework Report'},
                 {extend: 'excel', text: ' EXCEL', title: 'Student Homework Report'},
-                {
-                    extend: 'print',
-                    text: ' PRINT',
-                    title: 'Student Homework Report',
-                    customize: function (win) {
-                        $(win.document.body).prepend(`{!! App\Helpers\get_school_details("$grade_id", "$standard_id", "$division_id") !!}`);
-                    }
-                },
+                {extend: 'print', text: ' PRINT', title: 'Student Homework Report'},
                 'pageLength'
             ],
         });

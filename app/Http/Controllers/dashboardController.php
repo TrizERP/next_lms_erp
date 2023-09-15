@@ -34,6 +34,7 @@ class dashboardController extends Controller
         $is_admin = session()->get('is_admin');
         $syear = $request->session()->get('syear');
         $user_profile_name = $request->session()->get("user_profile_name");
+        $profile_parent_id = $request->session()->get("profile_parent_id");
         $user_profile_id = $request->session()->get("user_profile_id");
         $user_id = $request->session()->get("user_id");
 
@@ -1212,26 +1213,7 @@ class dashboardController extends Controller
                 ->orderByRaw("DATE_FORMAT(s.birthdate, '%m-%d')")
                 ->get()->toArray();
 
-  $studentLeaves = DB::table("leave_applications as l")
-                    ->join("tblstudent as s", function ($join) {
-                        $join->whereRaw("l.student_id = s.id");
-                    })
-                    ->join("tblstudent_enrollment as se", function ($join) use ($syear) {
-                        $join->whereRaw("s.id = se.student_id AND se.syear = " . $syear);
-                    })
-                    ->join("standard as st", function ($join) {
-                        $join->whereRaw("st.id = se.standard_id");
-                    })
-                    ->join("division as dt", function ($join) {
-                        $join->whereRaw("dt.id = se.section_id");
-                    })
-                    ->selectRaw("l.*, CONCAT_WS(' ',s.first_name,s.middle_name,s.last_name) AS student_name,st.name AS standard_name,
-            dt.name AS division_name")
-                    ->where("l.sub_institute_id", "=", $sub_institute_id)
-                    ->where("l.apply_date", "=", $date)
-                    ->limit(10)
-                    ->get()->toArray();
-                    
+
             $calendarEvents = DB::table('calendar_events')->where('sub_institute_id', $sub_institute_id)
                 ->where('school_date', ">=", $date)->where('school_date', "<=", $date15)->get()->toArray();
 
@@ -1452,6 +1434,7 @@ class dashboardController extends Controller
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $syear = $request->session()->get('syear');
         $user_profile_name = $request->session()->get("user_profile_name");
+        $profile_parent_id = $request->session()->get("profile_parent_id");
 
         if ($user_profile_name == 'Admin' || $user_profile_name == 'ADMIN' || $user_profile_name == 'admin' || $user_profile_name == 'school admin'
             || $user_profile_name == 'SCHOOL ADMIN' || $user_profile_name == 'School Admin') {

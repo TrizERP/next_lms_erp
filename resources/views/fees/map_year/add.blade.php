@@ -1,11 +1,7 @@
-{{--
 @include('../includes.headcss')
---}}
-@extends('layout')
-@section('container')
     <link rel="stylesheet" href="../../../tooltip/enjoyhint/jquery.enjoyhint.css">
-{{--@include('../includes.header')
-@include('../includes.sideNavigation')--}}
+@include('../includes.header')
+@include('../includes.sideNavigation')
 
 
 <div id="page-wrapper">
@@ -46,14 +42,14 @@
                             </select>
                         </div>
 
-                        <div class="col-md-12 form-group ml-0">
-                            <input type="submit" name="submit" value="Save" class="btn btn-success" >
+                        <div class="col-md-12 form-group ml-0">                         
+                            <input type="submit" name="submit" value="Save" class="btn btn-success" >                          
                         </div>
                         </div>
 
                     </form>
                 </div>
-            </div>
+            </div>      
     </div>
 </div>
 
@@ -140,4 +136,3 @@
 </script>
 @endif
 @include('includes.footer')
-@endsection

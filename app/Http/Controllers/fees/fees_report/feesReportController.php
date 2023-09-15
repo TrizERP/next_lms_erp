@@ -213,8 +213,8 @@ class feesReportController extends Controller
                 });
         })
             ->selectRaw('student_id, enrollment_no, roll_no, uniqueid, place_of_birth, student_name, grade,standard_name, division_name,created_date, user_name, term_id, receiptdate, receipt_no,  payment_mode, cheque_bank_name, bank_branch, cheque_no, cheque_date, batch,  quota,   SUM(IFNULL(actual_amountpaid, 0)) AS actual_amountpaid')
-            ->groupBy(['student_id', 'receipt_no', 'receiptdate', 'payment_mode', 'cheque_no']);
-            
+            ->groupBy('receipt_no');
+
         $data = $data->get()->toArray();
         $feesData = json_decode(json_encode($data), true);
         

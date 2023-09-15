@@ -22,20 +22,6 @@
         </div>
         @php
             $gradeScale = \App\Helpers\getGradeScale();
-            $dataFirstExam = isset(collect($data['data'])->first()['exam']) ? collect($data['data'])->first()['exam'] : [];
-            $t1 = count($dataFirstExam) + 1;
-
-            $term2FirstExam = isset(collect($data['term_2_data'])->first()['exam']) ? collect($data['term_2_data'])->first()['exam'] : [];
-            $t2 = count($term2FirstExam) + 1;
-
-            $term3FirstExam = isset(collect($data['term_3_data'])->first()['exam']) ? collect($data['term_3_data'])->first()['exam'] : [];
-            $t3 = count($term3FirstExam) + 1;
-
-            $term4FirstExam = isset(collect($data['term_4_data'])->first()['exam']) ? collect($data['term_4_data'])->first()['exam'] : [];
-            $t4 = count($term4FirstExam) + 1;
-
-            $sub = $t1 + $t2 + $t3 + $t4;
-
         @endphp
         <div class="card">
             <div class="col-lg-12 col-sm-12 col-xs-12">
@@ -48,30 +34,9 @@
                     <table id="example" class="table table-striped">
                         <thead>
                         <tr>
-                            <td class="text-center fw-bold" rowspan="2" colspan="2">
-                            {{$data['std_div']}}
-                           </td>
-                        @if(isset(collect($data['data'])->first()['mark'] ))                            
-                            @foreach(collect($data['data'])->first()['mark'] as $subject => $value)
-                            <td class="text-center fw-bold" colspan="{{$sub}}">{{ $subject  }}
-                            @foreach($data['all_subject'] as $val)
-                            @php 
-                           $remove = str_replace('#','',$val);
-                           $remove_yes =strtoupper(str_replace('Yes','',$remove));
-                           @endphp
-                           @if($subject==$remove_yes)
-                            @if(substr($remove,-3)=="Yes")
-                            <span class="text-danger fs-3">*</span>
-                            @endif
-                            @endif                            
-                            @endforeach                            
-                            </td>
-                            @endforeach
-                        @endif
-                            <td class="text-center fw-bold" rowspan="2" colspan="3">FINAL RESULT</td>   
-                           
+                            <td class="text-center fw-bold" rowspan="2" colspan="2"></td>
+                            <td class="text-center fw-bold" rowspan="2" colspan="3">FINAL RESULT</td>
                         </tr>
-                        @if(isset(collect($data['data'])->first()['mark'] ))
                         <tr>
                             @foreach(collect($data['data'])->first()['mark'] as $subject => $value)
                             @if(isset($data))
@@ -96,16 +61,12 @@
                                 <td class="text-center fw-bold" colspan="2">MARKS & GRADES</td>
                             @endforeach
                         </tr>
-                        @endif
-                        
                         <tr>
                             <td class="fw-bold">ROLL NO</td>
                             <td class="fw-bold">STUDENT NAME</td>
                             @php
                                 $mainFinalTotal = 0;
                             @endphp
-                        @if(isset(collect($data['data'])->first()['mark'] ))
-                            
                             @foreach(collect($data['data'])->first()['mark'] as $subject => $value)
                                 @php
                                     $term1Total = $term2Total = $term3Total = $term4Total = 0;
@@ -117,7 +78,6 @@
                                     @php
                                         $term1Total += $exam['mark'];
                                     @endphp
-                                    
                                     <td class="fw-bold">{{ $exam['exam'] }} ({{ $exam['mark'] }})</td>
                                 @endforeach
                                 <td class="fw-bold">Total ({{ $term1Total }})</td>
@@ -178,17 +138,15 @@
                                 <td class="fw-bold">MARKS ({{ $term1Total + $term2Total + $term3Total + $term4Total }})</td>
                                 <td class="fw-bold">GRADES</td>
                                 @php
-                                    $mainFinalTotal += $term1Total ?? + $term2Total ?? + $term3Total ?? 0 + $term4Total ?? 0;
+                                    $mainFinalTotal += $term1Total + $term2Total + $term3Total ?? 0 + $term4Total ?? 0;
                                 @endphp
                             @endforeach
-                            @endif
                             <td>FINAL TOTAL ({{ $mainFinalTotal }})</td>
                             <td>GRADES</td>
                             <td>PERCENTAGE</td>
                         </tr>
                         </thead>
                         <tbody>
-
                         @foreach($data['data'] as $studendId => $sdata)
                             <tr>
                                 <td style="color:#212529; font-weight: 500">{{ $sdata['roll_no'] }}</td>
@@ -268,7 +226,7 @@
                                 @endforeach
                                 <td>{{ $finalTotal }}</td>
                                 <td>{{ \App\Helpers\getGrade($gradeScale, $mainFinalTotal, $finalTotal) }}</td>
-                                <td>@if($mainFinalTotal!=0){{ number_format(($finalTotal * 100) / $mainFinalTotal, 2)  }}@else - @endif </td>
+                                <td>{{ number_format(($finalTotal * 100) / $mainFinalTotal, 2) }}</td>
                             </tr>
                         @endforeach
                         </tbody>

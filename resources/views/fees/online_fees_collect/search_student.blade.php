@@ -140,13 +140,9 @@
                 var result_arr = result.split("####");
                 var amount = result_arr[0];
                 var medium = result_arr[1];
-                if(amount == '' || amount == 0)
+                if(amount == '' || amount == 0 || medium == '')
                 {
-                    document.getElementById("errorMessage").innerHTML = "You are not mapped with institute amount.";
-                    submit_hide = 1;
-                }else if(medium == '')
-                {
-                    document.getElementById("errorMessage").innerHTML = "You are not mapped with institute medium.";
+                    document.getElementById("errorMessage").innerHTML = "Please enter fees breakoff first OR Student Medium.";
                     submit_hide = 1;
                 }else{
                     submit_hide = 0;  

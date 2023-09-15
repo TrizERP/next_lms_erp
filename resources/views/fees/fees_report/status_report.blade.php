@@ -1,8 +1,7 @@
-{{--@include('includes.headcss')
+@include('includes.headcss')
 @include('includes.header')
-@include('includes.sideNavigation')--}}
-@extends('layout')
-@section('container')
+@include('includes.sideNavigation')
+
 <div id="page-wrapper">
     <div class="container-fluid">
             <div class="row bg-title">
@@ -34,8 +33,8 @@
                 $to_date = $data['to_date'];
             }
         @endphp
-
-
+       
+          
                 <div class="card">
                     @if ($sessionData = Session::get('data'))
                     @if($sessionData['status_code'] == 1)
@@ -58,7 +57,7 @@
                         @csrf
 
                         <div class="row">
-
+                            
                             {{ App\Helpers\SearchChain('4','single','grade,std,div',$grade_id,$standard_id,$division_id) }}
 
                             @if(isset($data['months']))
@@ -101,16 +100,16 @@
                     </form>
                 </div>
             </div>
-
+       
         @if(isset($data['fees_data']))
         @php
             if(isset($data['fees_data'])){
                 $fees_data = $data['fees_data'];
             }
         @endphp
-
+      
                 <div class="card">
-
+                
 	                    <div class="col-lg-12 col-sm-12 col-xs-12">
 		                    <div class="table-responsive">
 		                        <table id="example" class="table table-striped">
@@ -180,9 +179,9 @@
                             </div>
 	                    </div>
                 </div>
-
+            
         @endif
-
+   
 </div>
 
 @include('includes.footerJs')
@@ -207,39 +206,32 @@
 </script>
 <script>
     $(document).ready(function() {
-    // Setup - add a text input to each footer cell
+    // Setup - add a text input to each footer cell    
 
      var table = $('#example').DataTable( {
-         select: true,
-         lengthMenu: [
-                        [100, 500, 1000, -1],
-                        ['100', '500', '1000', 'Show All']
+         select: true,          
+         lengthMenu: [ 
+                        [100, 500, 1000, -1], 
+                        ['100', '500', '1000', 'Show All'] 
         ],
-        dom: 'Bfrtip',
-        buttons: [
-            {
+        dom: 'Bfrtip', 
+        buttons: [ 
+            { 
                 extend: 'pdfHtml5',
                 title: 'Fees Status Report',
                 orientation: 'landscape',
-                pageSize: 'LEGAL',
+                pageSize: 'LEGAL',                
                 pageSize: 'A0',
-                exportOptions: {
-                     columns: ':visible'
+                exportOptions: {                   
+                     columns: ':visible'                             
                 },
-            },
-            { extend: 'csv', text: ' CSV', title: 'Fees Status Report' },
-            { extend: 'excel', text: ' EXCEL',title: 'Fees Status Report' },
-            {
-                extend: 'print',
-                text: ' PRINT',
-                title: 'Fees Status Report',
-                customize: function (win) {
-                    $(win.document.body).prepend(`{!! App\Helpers\get_school_details("$grade_id", "$standard_id", "$division_id") !!}`);
-                }
-            },
-            'pageLength'
-        ],
-        });
+            }, 
+            { extend: 'csv', text: ' CSV', title: 'Fees Status Report' }, 
+            { extend: 'excel', text: ' EXCEL',title: 'Fees Status Report' }, 
+            { extend: 'print', text: ' PRINT',title: 'Fees Status Report' }, 
+            'pageLength' 
+        ], 
+        }); 
         //table.buttons().container().appendTo('#example_wrapper .col-md-6:eq(0)');
 
 
@@ -296,7 +288,7 @@
             });
         });
 
-        // check all
+        // check all 
         $('#fees_check_all').on('click', function(){
             var isChecked = $(this).is(':checked');
             if ( isChecked ) {
@@ -309,4 +301,3 @@
 </script>
 
 @include('includes.footer')
-@endsection

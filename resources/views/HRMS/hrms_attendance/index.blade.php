@@ -37,7 +37,7 @@
                     <strong>{{ $message }}</strong>
                 </div>
             @endif
-            @if($data['button'] == 'in')
+            @if($hrmsAttendanceInOutTime['button'] == 'in')
                 <form action="{{ route('hrms_attendance_in_time.store') }}" method="post">
                     @csrf
 
@@ -46,8 +46,8 @@
                             <label>Employee List</label>
                             <select id='employee_id' name="employee" class="form-control">
                                 <option value="">Select Employee</option>
-                                @foreach($data['employeeLists'] as $key => $employeeList)
-                                    @if( $data['employee_id'] == $employeeList->id)
+                                @foreach($employeeLists as $key => $employeeList)
+                                    @if( $hrmsAttendanceInOutTime['employee_id'] == $employeeList->id)
                                         <option
                                                 value="{{$employeeList->id}}" selected>{{$employeeList->first_name .' '. $employeeList->last_name }}</option>
                                     @else
@@ -62,7 +62,7 @@
                         </div>
                         <div class="col-md-4 form-group">
                             <label>Date</label>
-                            <input type="date" placeholder="{{date('d/m/Y',strtotime($data['date']))}}" value="{{ date('Y-m-d',strtotime($data['date'])) }}" id="indate" name="indate" class="form-control">
+                            <input type="date" placeholder="{{date('d/m/Y',strtotime($hrmsAttendanceInOutTime['date']))}}" value="{{ date('Y-m-d',strtotime($hrmsAttendanceInOutTime['date'])) }}" id="indate" name="indate" class="form-control">
                             @error('indate')
                             <span style="color: red">{{$message}}</span>
                             @enderror
@@ -70,15 +70,15 @@
                         <div class="col-md-4 form-group">
                             <label>Time</label>
                            {{-- <input type="text" id='' disabled name="" class="form-control"
-                                   value="{{$data['time']}}">--}}
+                                   value="{{$hrmsAttendanceInOutTime['time']}}">--}}
                             <input type="text" id='intime' name="intime" class="form-control"
-                                   value="{{$data['time']}}">
+                                   value="{{$hrmsAttendanceInOutTime['time']}}">
                         </div>
 
                         <div class="col-md-4 form-group">
                             <label>Note</label>
                             <select id='employee_id' name="note" class="form-control">
-                                @if($data['note'] ==1)
+                                @if($hrmsAttendanceInOutTime['note'] ==1)
                                     <option value="1" selected>Day Start</option>
                                     <option value="2">Day End</option>
                                 @else
@@ -89,7 +89,7 @@
                             </select>
                         </div>
 
-                        <input type="hidden" name="id" value="{{$data['id']}}">
+                        <input type="hidden" name="id" value="{{$hrmsAttendanceInOutTime['id']}}">
                         <div class="col-md-12 form-group">
                             <center>
                                 <input type="submit" name="submit" id="Submit" value="In" class="btn btn-success">
@@ -105,8 +105,8 @@
                             <label>Employee List</label>
                             <select id='employee_id' name="employee" class="form-control">
                                 <option value="">Select Employee</option>
-                                @foreach($data['employeeLists'] as $key => $employeeList)
-                                    @if( $data['employee_id'] == $employeeList->id)
+                                @foreach($employeeLists as $key => $employeeList)
+                                    @if( $hrmsAttendanceInOutTime['employee_id'] == $employeeList->id)
                                         <option
                                                 value="{{$employeeList->id}}" selected>{{$employeeList->first_name .' '. $employeeList->last_name }}</option>
                                     @else
@@ -121,7 +121,7 @@
                         </div>
                         <div class="col-md-4 form-group">
                             <label>Date </label>
-                            <input type="date" placeholder="{{date('d/m/Y',strtotime($data['date']))}}" value="{{ date('Y-m-d',strtotime($data['date'])) }}" id="indate" name="outdate" class="form-control">
+                            <input type="date" placeholder="{{date('d/m/Y',strtotime($hrmsAttendanceInOutTime['date']))}}" value="{{ date('Y-m-d',strtotime($hrmsAttendanceInOutTime['date'])) }}" id="indate" name="outdate" class="form-control">
                             @error('indate')
                             <span style="color: red">{{$message}}</span>
                             @enderror
@@ -129,15 +129,15 @@
                         <div class="col-md-4 form-group">
                             <label>Time</label>
                            {{-- <input type="text" id='' disabled name="" class="form-control"
-                                   value="{{$data['time']}}">--}}
+                                   value="{{$hrmsAttendanceInOutTime['time']}}">--}}
                             <input type="text" id='outtime' name="outtime" class="form-control"
-                                   value="{{$data['time']}}">
+                                   value="{{$hrmsAttendanceInOutTime['time']}}">
                         </div>
 
                         <div class="col-md-4 form-group">
                             <label>Note</label>
                             <select id='employee_id' name="note" class="form-control">
-                                @if($data['note'] ==1)
+                                @if($hrmsAttendanceInOutTime['note'] ==1)
                                     <option value="1" selected>Day Start</option>
                                     <option value="2">Day End</option>
                                 @else
@@ -148,7 +148,7 @@
                             </select>
                         </div>
 
-                        <input type="hidden" name="employee_id" value="{{$data['employee_id']}}">
+                        <input type="hidden" name="employee_id" value="{{$hrmsAttendanceInOutTime['employee_id']}}">
                         <div class="col-md-12 form-group">
                             <center>
                                 <input type="submit" name="submit" id="Submit" value="Out"

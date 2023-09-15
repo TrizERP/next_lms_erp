@@ -167,17 +167,21 @@
                                            
                     @if(isset($data['fees_data']))
                         @foreach($fees_data as $key => $fees_value)      
+<<<<<<< HEAD
+=======
+                        @if(isset($fees_value['-']['remain']) && $fees_value['-']['remain']!=0)            
+>>>>>>> parent of 68f76babc (Merge branch 'development' into robertparker)
                         <tr>
                             <td>{{$j}}</td>                            
                             <td>{{$fees_value['enrollment']}}</td>
                             <td>{{$fees_value['name']}}</td>
                             <td>{{$fees_value['stddiv']}}</td>
                             <td>{{$fees_value['stu_quota']}}</td>
-                            <td>{{$fees_value['-']['bk'] ?? 0}}</td>
+                            <td>{{$fees_value['-']['bk']}}</td>
 
                             @php
-                            $total_paid += $fees_value['-']['paid'] ?? 0;
-                            $total_breakoff += $fees_value['-']['bk'] ?? 0;
+                            $total_paid += $fees_value['-']['paid'];
+                            $total_breakoff += $fees_value['-']['bk'];
                             if(isset($fees_value['discount']))
                             {    
                                 $total_discount += $fees_value['discount'];
@@ -226,14 +230,24 @@
                                     @endif 
                                 @endforeach
                             @endif
+<<<<<<< HEAD
                             <td>{{$fees_value['-']['remain'] ?? 0}}</td>  
                             @php
                             $total_unpaid += $fees_value['-']['remain'] ?? 0;
+=======
+                            <td>{{$fees_value['-']['remain']}}</td>  
+                            @php
+                            $total_unpaid += $fees_value['-']['remain'];
+>>>>>>> parent of 68f76babc (Merge branch 'development' into robertparker)
                             @endphp                            
                         </tr>
                     @php
                     $j++;
                     @endphp
+<<<<<<< HEAD
+=======
+                    @endif
+>>>>>>> parent of 68f76babc (Merge branch 'development' into robertparker)
                     @endforeach                        
                         <tr class="font-weight-bold">
                             <td>{{$j++}}</td>

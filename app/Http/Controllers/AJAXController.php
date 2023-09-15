@@ -418,22 +418,6 @@ class AJAXController extends Controller
         return response()->json($std_sub_map);
     }
 
-    
-    public function getExamsMasterList(Request $request)
-    {
-        $where = array(
-            "re.SubInstituteId" => session()->get('sub_institute_id'),
-            "re.term_id" => $request->term_id,
-            "re.standard_id" => $request->standard_id,
-        );
-
-        $std_sub_map = DB::table('result_exam_master as re')
-            ->where($where)
-            ->pluck('re.ExamTitle', 're.id');
-
-        return response()->json($std_sub_map);
-    }
-
     public function getCoScholasticParentList(Request $request)
     {
         $where = array(

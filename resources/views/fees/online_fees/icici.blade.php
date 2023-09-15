@@ -1,14 +1,13 @@
-{{--@include('../includes.headcss')
+@include('../includes.headcss')
 @include('../includes.header')
-@include('../includes.sideNavigation')--}}
-@extends('layout')
-@section('container')
+@include('../includes.sideNavigation')
+
 <div id="page-wrapper">
     <div class="container-fluid">
-        <div class="row bg-title">
-            <div class="col-lg-3 col-md-4 col-sm-4 col-xs-12">
-                <h4 class="page-title">Payment Mapping</h4>
-            </div>
+        <div class="row bg-title">            
+            <div class="col-lg-3 col-md-4 col-sm-4 col-xs-12">                
+                <h4 class="page-title">Payment Mapping</h4>            
+            </div>                    
         </div>
         <div class="card">
             <div class="row">
@@ -17,7 +16,7 @@
                     {{ method_field("POST") }}
                     @csrf
                         <input type="hidden" name="map_company" value="icici">
-                        <div class="row">
+                        <div class="row">                            
                             <div class="col-md-4 form-group">
                                 <label>Merchant ID</label>
                                 <input type="text" id='merchant_id' required name="merchant_id" class="form-control">
@@ -39,9 +38,9 @@
                                     <input type="radio" name="fees_type" value="fix" checked><label for="Fix"> Fix </label>
                                     <input type="radio" name="fees_type" value="dynamic"><label for="Dynamic"> Dynamic </label>
                                 </div>
-                            </div>
+                            </div> 
                             <div class="col-md-12 form-group">
-                                <center>
+                                <center>                                    
                                     <input type="submit" name="submit" value="Save" class="btn btn-success" >
                                 </center>
                             </div>
@@ -56,4 +55,3 @@
 
 @include('includes.footerJs')
 @include('includes.footer')
-@endsection

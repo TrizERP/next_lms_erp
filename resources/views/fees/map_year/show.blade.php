@@ -1,11 +1,7 @@
-{{--
 @include('includes.headcss')
---}}
-@extends('layout')
-@section('container')
     <link rel="stylesheet" href="../../../tooltip/enjoyhint/jquery.enjoyhint.css">
-{{--@include('includes.header')
-@include('includes.sideNavigation')--}}
+@include('includes.header')
+@include('includes.sideNavigation')
 
 <div id="page-wrapper">
     <div class="container-fluid">
@@ -13,7 +9,7 @@
             <div class="col-lg-3 col-md-4 col-sm-4 col-xs-12">
                 <h4 class="page-title">Map Year</h4>
             </div>
-        </div>
+        </div>        
             <div class="card">
                 <div class="panel-body">
                     <div class="col-lg-3 col-sm-3 col-xs-3">
@@ -68,7 +64,7 @@
                     </div>
 
                 </div>
-            </div>
+            </div>    
     </div>
 </div>
 
@@ -132,4 +128,3 @@
 </script>
 @endif
 @include('includes.footer')
-@endsection

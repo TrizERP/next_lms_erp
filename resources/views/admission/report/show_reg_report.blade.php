@@ -185,14 +185,7 @@ function checkedAll()
             }, 
             { extend: 'csv', text: ' CSV', title: 'Admission Registration Report' }, 
             { extend: 'excel', text: ' EXCEL', title: 'Admission Registration Report'}, 
-            {
-                extend: 'print',
-                text: ' PRINT',
-                title: 'Admission Registration Report',
-                customize: function (win) {
-                    $(win.document.body).prepend(`{!! App\Helpers\get_school_details("", "", "") !!}`);
-                }
-            },
+            { extend: 'print', text: ' PRINT', title: 'Admission Registration Report'}, 
             'pageLength' 
         ], 
         }); 

@@ -147,14 +147,7 @@ $(document).ready(function() {
             }, 
             { extend: 'csv', text: ' CSV', title: 'Missing Document Report' }, 
             { extend: 'excel', text: ' EXCEL', title: 'Missing Document Report' }, 
-            {
-                extend: 'print',
-                text: ' PRINT',
-                title: 'Missing Document Report',
-                customize: function (win) {
-                    $(win.document.body).prepend(`{!! App\Helpers\get_school_details("$grade_id", "$standard_id", "$division_id") !!}`);
-                }
-            },
+            { extend: 'print', text: ' PRINT', title: 'Missing Document Report' }, 
             'pageLength' 
         ], 
         }); 

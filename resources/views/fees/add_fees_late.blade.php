@@ -1,11 +1,7 @@
-{{--
 @include('includes.headcss')
---}}
-@extends('layout')
-@section('container')
 <link rel="stylesheet" href="../../../plugins/bower_components/dropify/dist/css/dropify.min.css">
-{{--@include('includes.header')
-@include('includes.sideNavigation')--}}
+@include('includes.header')
+@include('includes.sideNavigation')
 
 <div id="page-wrapper">
     <div class="container-fluid">
@@ -26,12 +22,12 @@
                     <strong>{{ $sessionData['message'] }}</strong>
                 </div>
             @endif
-            <div class="row">
+            <div class="row">                
                 <div class="col-lg-12 col-sm-12 col-xs-12">
-                    <form action="{{ route('fees_late_master.store') }}" enctype="multipart/form-data" method="post">
+                    <form action="{{ route('fees_late_master.store') }}" enctype="multipart/form-data" method="post">    
                     {{ method_field("POST") }}
                     @csrf
-                        <div class="row">
+                        <div class="row">                            
                             <div class="col-md-4 form-group">
                                 <label>{{ App\Helpers\get_string('standard','request')}}</label>
                                 <select name="standard_id[]" id="standard_id" class="form-control" required multiple>
@@ -51,18 +47,18 @@
                                         <option value="{{$value['id']}}">{{$value['title']}}</option>
                                     @endforeach
                                 </select>
-                            </div>
+                            </div>                            
                             <div class="col-md-12 form-group">
-                                <center>
+                                <center>                                    
                                     <input type="submit" name="submit" value="Save" class="btn btn-success" >
                                 </center>
                             </div>
                         </div>
                     </form>
                 </div>
-            </div>
+            </div>    
         </div>
-    </div>
+    </div>    
 </div>
 
 @include('includes.footerJs')
@@ -104,4 +100,3 @@ $(document).ready(function() {
 });
 </script>
 @include('includes.footer')
-@endsection

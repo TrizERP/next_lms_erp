@@ -80,7 +80,6 @@ class diciplineController extends Controller
     {
         $stu_arr = [];
         $student_ids = $_REQUEST['values']['stud_id'] ?? [];
-        
         foreach ($student_ids as $student_id => $on) {
             $stu_arr[] = $student_id;
         }
@@ -89,9 +88,9 @@ class diciplineController extends Controller
             ->selectRaw("concat(first_name,' ',last_name) name")
             ->where("id", "=", $request->session()->get('user_id'))
             ->get()->toArray();
-            
+
         $name = $result[0]->name;
-        //echo("<pre>");print_r($stu_arr);exit;
+
         foreach ($stu_arr as $id => $stu_id) {
             DB::table('dicipline')->insert([
                 'syear'            => session()->get('syear'),
@@ -196,14 +195,14 @@ class diciplineController extends Controller
         $syear = $request->input("syear");
 
         if ($student_id != "" && $sub_institute_id != "" && $syear != "") {
-            
+
             $data = DB::table("dicipline")
                 ->selectRaw('dicipline as discipline,message,date_ AS discipline_date')
                 ->where("syear", "=", $syear)
                 ->where("sub_institute_id", "=", $sub_institute_id)
                 ->where("student_id", "=", $student_id)
                 ->get()->toArray();
-                
+
             $res['status'] = 1;
             $res['message'] = "Success";
             $res['data'] = $data;

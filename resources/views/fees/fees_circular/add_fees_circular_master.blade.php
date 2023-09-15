@@ -1,9 +1,7 @@
-{{--@include('includes.headcss')--}}
-@extends('layout')
-@section('container')
+@include('includes.headcss')
 <link rel="stylesheet" href="../../../plugins/bower_components/dropify/dist/css/dropify.min.css">
-{{--@include('includes.header')
-@include('includes.sideNavigation')--}}
+@include('includes.header')
+@include('includes.sideNavigation')
 
 <div id="page-wrapper">
     <div class="container-fluid">
@@ -19,13 +17,13 @@
                 <strong>{{ $message }}</strong>
             </div>
             @endif
-            <div class="row">
+            <div class="row">            	
                 <div class="col-lg-12 col-sm-12 col-xs-12">
                     <form action="{{ route('fees_circular_master.store') }}" method="post">
-                        {{ method_field("POST") }}
+                        {{ method_field("POST") }}                      
                         @csrf
                         <div class="row">
-                        	{{ App\Helpers\SearchChain('4','single','grade,std') }}
+                        	{{ App\Helpers\SearchChain('4','single','grade,std') }}	                   
 	                        <div class="col-md-4 form-group">
 	                            <label>Bank Name </label>
 	                            <input type="text" id='bank_name' required name="bank_name" class="form-control">
@@ -57,16 +55,16 @@
 	                        <div class="col-md-4 form-group">
 	                            <label>Branch </label>
 	                            <input type="text" id='branch' required name="branch" class="form-control">
-	                        </div>
+	                        </div>	                        
 	                        <div class="col-md-12 form-group">
-	                            <center>
+	                            <center>	                            	
 	                                <input type="submit" name="submit" value="Save" class="btn btn-success" >
-	                            </center>
+	                            </center>    
 	                        </div>
                         </div>
                     </form>
             	</div>
-            </div>
+            </div>	
         </div>
     </div>
 </div>
@@ -79,4 +77,3 @@
 	});
 </script>
 @include('includes.footer')
-@endsection

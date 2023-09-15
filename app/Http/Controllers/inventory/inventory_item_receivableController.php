@@ -150,9 +150,9 @@ class inventory_item_receivableController extends Controller
                     'CHALLAN_NO'            => $challan_no[$item_id],
                     'CHALLAN_DATE'          => $challan_date[$item_id],
                     'RECEIVED_BY'           => $created_by,
-                    'RECEIVED_DATE'         => date('Y-m-d H:i:s'),
+                    'RECEIVED_DATE'         => date('Y-m-d h:i:s'),
                     'CREATED_BY'            => $created_by,
-                    'CREATED_ON'            => date('Y-m-d H:i:s'),
+                    'CREATED_ON'            => date('Y-m-d h:i:s'),
                     'CREATED_IP_ADDRESS'    => $_SERVER['REMOTE_ADDR'],
                 ]);
                 $item_receivable->save();
@@ -171,9 +171,9 @@ class inventory_item_receivableController extends Controller
                     'CHALLAN_NO'            => $challan_no[$item_id],
                     'CHALLAN_DATE'          => $challan_date[$item_id],
                     'RECEIVED_BY'           => $created_by,
-                    'RECEIVED_DATE'         => date('Y-m-d H:i:s'),
+                    'RECEIVED_DATE'         => date('Y-m-d h:i:s'),
                     'CREATED_BY'            => $created_by,
-                    'CREATED_ON'            => date('Y-m-d H:i:s'),
+                    'CREATED_ON'            => date('Y-m-d h:i:s'),
                     'CREATED_IP_ADDRESS'    => $_SERVER['REMOTE_ADDR'],
                 ];
 

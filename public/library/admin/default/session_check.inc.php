@@ -41,7 +41,7 @@ if ($unauthorized) {
 //mysql_close();
 // include '../../connection.php';
 
-include_once '../sysconfig.inc.php';
+require_once '../sysconfig.inc.php';
 
 //$res=$dbs->query($sql);
 $table = "";

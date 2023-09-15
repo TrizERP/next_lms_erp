@@ -100,8 +100,7 @@ class HrmsController extends Controller
         }
         $hrmsInOutTime['date'] = Carbon::now()->format('d-m-Y');
         $hrmsInOutTime['id'] = 0;
-        //return is_mobile($type, "HRMS.hrms_inout_time.index", compact('hrmsInOutTime'), "view",'compact');
-        return is_mobile($type, "HRMS.hrms_inout_time.index", $hrmsInOutTime, "view");
+        return is_mobile($type, "HRMS.hrms_inout_time.index", compact('hrmsInOutTime'), "view",'compact');
 //        return view('HRMS.hrms_inout_time.index', compact('hrmsInOutTime'));
     }
 
@@ -129,7 +128,7 @@ class HrmsController extends Controller
             $hrmsInOutTime->sub_institute_id = $subInstituteId;
             $hrmsInOutTime->save();
         }
-        return is_mobile($type, "hrms_inout_time.index", null, "redirect");
+        return is_mobile($type, "hrms-inout-time", null, "redirect");
         //return redirect('hrms-inout-time')->with(['message' =>'check In successfully']);
     }
 
@@ -143,7 +142,7 @@ class HrmsController extends Controller
             $hrmsInOutTime->out_time = Carbon::now()->format('h:i:s');
             $hrmsInOutTime->save();
         }
-        return is_mobile($type, "hrms_inout_time.index", null, "redirect");
+        return is_mobile($type, "hrms-inout-time", null, "redirect");
         //return redirect('hrms-inout-time')->with(['message' =>'check Out successfully']);
     }
 
@@ -178,10 +177,8 @@ class HrmsController extends Controller
 
         $hrmsAttendanceInOutTime['id'] = 0;
         $hrmsAttendanceInOutTime['time'] = Carbon::now()->format('H:i:s');
-        $hrmsAttendanceInOutTime['employeeLists'] = $employeeLists;
 //return $hrmsAttendanceInOutTime;
-        //return is_mobile($type, "HRMS.hrms_attendance.index", compact('hrmsAttendanceInOutTime','employeeLists'), "view",'compact');
-        return is_mobile($type, "HRMS.hrms_attendance.index", $hrmsAttendanceInOutTime, "view");
+        return is_mobile($type, "HRMS.hrms_attendance.index", compact('hrmsAttendanceInOutTime','employeeLists'), "view",'compact');
         //return view('HRMS.hrms_attendance.index', compact('hrmsAttendanceInOutTime', 'employeeLists'));
     }
 
@@ -213,7 +210,7 @@ class HrmsController extends Controller
         $hrmsAttendanceInTime->sub_institute_id = $subInstituteId;
         $hrmsAttendanceInTime->save();
 
-        return is_mobile($type, "hrms_attendance.index", null, "redirect");
+        return is_mobile($type, "hrms-attendance", null, "redirect");
         //return redirect('hrms-attendance')->with(['message' =>'check In successfully']);
     }
 
@@ -239,7 +236,7 @@ class HrmsController extends Controller
             $hrmsAttendanceOutTime->timestamp_diff = $diff;
             $hrmsAttendanceOutTime->save();
         }
-        return is_mobile($type, "hrms_attendance.index", null, "redirect");
+        return is_mobile($type, "hrms-attendance", null, "redirect");
        // return redirect('hrms-attendance')->with(['message' =>'check Out successfully']);
     }
 
@@ -252,9 +249,7 @@ class HrmsController extends Controller
             $sub_institute_id = $request->session()->get('sub_institute_id');
         }
         $employees = $employeeLists = tbluserModel::where('sub_institute_id', $sub_institute_id)->get();
-        
         $hrmsList = HrmsAttendance::with('getUser');
-
         if ($request->from_date && $request->end_date) {
             $hrmsList = $hrmsList->where('punchin_time', '>=', $request->from_date . ' 00:00:00')->where('punchout_time', '<=', $request->end_date . ' 23:59:59');
             $from_date = $request->from_date;
@@ -270,8 +265,8 @@ class HrmsController extends Controller
         $hrmsList = $hrmsList->get();
 
         //return json_decode($employeeSalaryStructures[0]['employee_salary_data'], true);
-       return view('HRMS.hrms_attendance_report.index', compact('employees', 'employeeLists', 'from_date', 'end_date', 'hrmsList'));
-        //return is_mobile($type, "HRMS.hrms_attendance_report.index", compact('employees', 'employeeLists', 'from_date', 'end_date', 'hrmsList'), "view",'compact');
+//        return view('HRMS.hrms_attendance_report.index', compact('employees', 'employeeLists','from_date','end_date','hrmsList'));
+        return is_mobile($type, "HRMS.hrms_attendance_report.index", compact('employees','employeeLists','from_date','end_date','hrmsList'), "view",'compact');
 
     }
 
@@ -343,9 +338,8 @@ class HrmsController extends Controller
             }
             return $e;
         })->where('is_late',1);
+        return is_mobile($type, "HRMS.hrms_attendance_report.early_going_report", compact('employees','employee_id','employeeLists','date','hrmsList'), "view",'compact');
 
-        //return is_mobile($type, "HRMS.hrms_attendance_report.early_going_report", compact('employees','employee_id','employeeLists','date','hrmsList'), "view",'compact');
-
-       return view('HRMS.hrms_attendance_report.early_going_report', compact('employees', 'employee_id',  'employeeLists', 'date', 'hrmsList', 'type'));
+       // return view('HRMS.hrms_attendance_report.early_going_report', compact('employees','employee_id', 'employeeLists','date','hrmsList'));
     }
 }

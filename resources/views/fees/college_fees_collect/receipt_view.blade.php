@@ -1,166 +1,164 @@
-{{--@include('../includes.headcss')
+@include('../includes.headcss')
 @include('../includes.header')
-@include('../includes.sideNavigation')--}}
-@extends('layout')
-@section('container')
+@include('../includes.sideNavigation')
 
-    <style>
-        body {
-            background: rgb(204, 204, 204);
-        }
+<style>
+    body {
+        background: rgb(204, 204, 204);
+    }
 
+    page {
+        background: white;
+        display: block;
+        margin: 0 auto;
+        margin-bottom: 0.5cm;
+        /* box-shadow: 0 0 0.5cm rgba(0, 0, 0, 0.5); */
+    }
+
+    page[size="A4"] {
+        width: 21cm;
+        height: 29.7cm;
+    }
+
+    page[size="A4"][layout="landscape"] {
+        width: 29.7cm;
+        height: 21cm;
+    }
+
+    page[size="A3"] {
+        width: 29.7cm;
+        height: 42cm;
+    }
+
+    page[size="A3"][layout="landscape"] {
+        width: 42cm;
+        height: 29.7cm;
+    }
+
+    page[size="A5"] {
+        width: 14.8cm;
+        height: 21cm;
+    }
+
+    page[size="A5"][layout="landscape"] {
+        width: 21cm;
+        height: 14.8cm;
+    }
+
+    @media print {
+
+        body,
         page {
-            background: white;
-            display: block;
-            margin: 0 auto;
-            margin-bottom: 0.5cm;
-            /* box-shadow: 0 0 0.5cm rgba(0, 0, 0, 0.5); */
+            margin: 0;
+            box-shadow: 0;
         }
+    }
+</style>
+<style>
+    table.fees-receipt {
+        border-collapse: collapse
+    }
 
-        page[size="A4"] {
-            width: 21cm;
-            height: 29.7cm;
-        }
+    .fees-receipt {
+        border: 1px solid #888;
+        height: 510px;
+        overflow: hidden
+    }
 
-        page[size="A4"][layout="landscape"] {
-            width: 29.7cm;
-            height: 21cm;
-        }
+    .particulars {
+        border-collapse: collapse
+    }
 
-        page[size="A3"] {
-            width: 29.7cm;
-            height: 42cm;
-        }
+    .particulars td {
+        border: 1px solid #888;
+        border-collapse: collapse
+    }
 
-        page[size="A3"][layout="landscape"] {
-            width: 42cm;
-            height: 29.7cm;
-        }
+    .fees-receipt td {
+        font-family: Arial, Helvetica, sans-serif !important;
+        padding: 0 8px;
+        font-size: 13px
+    }
 
-        page[size="A5"] {
-            width: 14.8cm;
-            height: 21cm;
-        }
+    .fees-receipt img.logo {
+        width: 100px;
+        height: 90px;
+        margin: 0
+    }
 
-        page[size="A5"][layout="landscape"] {
-            width: 21cm;
-            height: 14.8cm;
-        }
+    .double-border {
+        border-bottom: 1px double #000;
+        border-width: 5px
+    }
 
-        @media print {
+    .particulars {
+        height: 180px;
+        overflow: hidden;
+        display: block;
+        vertical-align: top
+    }
 
-            body,
-            page {
-                margin: 0;
-                box-shadow: 0;
-            }
-        }
-    </style>
-    <style>
-        table.fees-receipt {
-            border-collapse: collapse
-        }
+    .particulars td {
+        width: 100%;
+        height: 20px;
+        font-size: 12px
+    }
 
-        .fees-receipt {
-            border: 1px solid #888;
-            height: 510px;
-            overflow: hidden
-        }
+    .mg-top {
+        top: 10px;
+        position: relative
+    }
 
-        .particulars {
-            border-collapse: collapse
-        }
+    .mg-top label {
+        border-radius: 3px;
+        font-weight: 700;
+        font-size: 14px;
+        top: 5px;
+        position: relative
+    }
 
-        .particulars td {
-            border: 1px solid #888;
-            border-collapse: collapse
-        }
+    .receipt-hd {
+        border: 1px solid #000;
+        padding: 5px 15px;
+        margin-top: 15px
+    }
 
-        .fees-receipt td {
-            font-family: Arial, Helvetica, sans-serif !important;
-            padding: 0 8px;
-            font-size: 13px
-        }
+    .sc-hd {
+        font-size: 26px;
+        font-weight: 700;
+        font-family: Arial, Helvetica, sans-serif !important
+    }
 
-        .fees-receipt img.logo {
-            width: 100px;
-            height: 90px;
-            margin: 0
-        }
+    .ma-hd {
+        font-size: 18px;
+        font-weight: 700;
+        font-family: Arial, Helvetica, sans-serif !important
+    }
 
-        .double-border {
-            border-bottom: 1px double #000;
-            border-width: 5px
-        }
+    .rg-hd {
+        font-size: 14px;
+        font-weight: 600;
+        font-family: Arial, Helvetica, sans-serif !important
+    }
 
-        .particulars {
-            height: 180px;
-            overflow: hidden;
-            display: block;
-            vertical-align: top
-        }
+    .padding {
+        padding-bottom: 20px !important
+    }
 
-        .particulars td {
-            width: 100%;
-            height: 20px;
-            font-size: 12px
-        }
+    .logo-width {
+        width: 165px;
+        text-align: center
+    }
+</style>
 
-        .mg-top {
-            top: 10px;
-            position: relative
-        }
+<div id="page-wrapper">
 
-        .mg-top label {
-            border-radius: 3px;
-            font-weight: 700;
-            font-size: 14px;
-            top: 5px;
-            position: relative
-        }
-
-        .receipt-hd {
-            border: 1px solid #000;
-            padding: 5px 15px;
-            margin-top: 15px
-        }
-
-        .sc-hd {
-            font-size: 26px;
-            font-weight: 700;
-            font-family: Arial, Helvetica, sans-serif !important
-        }
-
-        .ma-hd {
-            font-size: 18px;
-            font-weight: 700;
-            font-family: Arial, Helvetica, sans-serif !important
-        }
-
-        .rg-hd {
-            font-size: 14px;
-            font-weight: 600;
-            font-family: Arial, Helvetica, sans-serif !important
-        }
-
-        .padding {
-            padding-bottom: 20px !important
-        }
-
-        .logo-width {
-            width: 165px;
-            text-align: center
-        }
-    </style>
-
-    <div id="page-wrapper">
-
-        <div class="container-fluid">
-            <div class="row bg-title">
-                <div class="col-lg-3 col-md-4 col-sm-4 col-xs-12">
-                    <h4 class="page-title">Fees Receipt</h4>
-                </div>
+    <div class="container-fluid">
+        <div class="row bg-title">
+            <div class="col-lg-3 col-md-4 col-sm-4 col-xs-12">
+                <h4 class="page-title">Fees Receipt</h4>
             </div>
+<<<<<<< HEAD
             <div id="printableArea" class="row" style=" margin-top: 25px;">
                 <div class="panel-body white-box">
                     <div class="col-lg-12 col-sm-12 col-xs-12">
@@ -197,56 +195,94 @@
                         ?>
 
                     </div>
+=======
+        </div>
+        <div id="printableArea" class="row" style=" margin-top: 25px;">
+            <div class="panel-body white-box">
+                <div class="col-lg-12 col-sm-12 col-xs-12">
+                    <?php
+                        $page = "";
+                            if($data['paper'] == "A5"){    
+                                $page = '<page size="A5" layout="landscape">'; 
+                                    echo $data['data'];
+                            }
+                           else if($data['paper'] == "A5DB"){    
+                                $page = '<page size="A5" layout="landscape">'; 
+                                    ?>
+                    <table width="100%">
+                        <tr>
+                            <td style="width:50%">
+                                <?php echo $data['data']; ?>
+                            </td>
+                            <td style="width:50%;">
+                                <?php echo $data['data']; ?>
+                            </td>
+                        </tr>
+                    </table>
+                    <?php
+                                    }
+                                  else  if($data['paper'] == "A4"){    
+                                        $page = '<page size="A4" layout="landscape">'; 
+                                            echo $data['data']; 
+                                    }
+                                  else  if($data['paper'] == "A4DB"){    
+                                        $page = '<page size="A4">'; 
+                                        echo $data['data']; 
+                                        echo $data['data']; 
+                                    }
+                                ?>
+                    
+>>>>>>> parent of 68f76babc (Merge branch 'development' into robertparker)
                 </div>
             </div>
         </div>
-        <center> <input type="button" onclick="PrintDiv('printableArea')" value="Print Receipt" /></center>
     </div>
-
-    {{-- <div id="printableArea" class="col-md-12"> --}}
-    {{-- <page size="A4"> --}}
-
-
-
-
-    {{-- </page> --}}
-    {{-- </div> --}}
     <center> <input type="button" onclick="PrintDiv('printableArea')" value="Print Receipt" /></center>
-    {{-- <page size="A4"></page>
-    <page size="A4" layout="landscape"></page>
-    <page size="A5"></page>
-    <page size="A5" layout="landscape"></page>
-    <page size="A3"></page>
-    <page size="A3" layout="landscape"></page> --}}
+</div>
 
-    @include('includes.footerJs')
-    <script>
-        //    function printDiv(divName) {
-        //        var printContents = document.getElementById(divName).innerHTML;
-        //        var originalContents = document.body.innerHTML;
-        //
-        //        document.body.innerHTML = printContents;
-        //
-        //        window.print();
-        //
-        //        document.body.innerHTML = originalContents;
-        //    }
-        //    document.getElementsByTagName('button')[0].addEventListener('click', function () {
-        //
-        //    });
-        function PrintDiv(divName) {
-            var divToPrint = document.getElementById(divName);
-            var popupWin = window.open('', '_blank', 'width=300,height=300');
-            popupWin.document.open();
-            popupWin.document.write('<html>');
-            var mainCss = "page {background: white;display: block;margin: 0cm;margin-bottom: 0cm;}page[size='A4'] {width: 21cm;height: 29.7cm;}page[size='A4'][layout='landscape'] {width: 29.7cm;height: 21cm;}page[size='A3'] {width: 29.7cm;height: 42cm;}page[size='A3'][layout='landscape'] {width: 42cm;height: 29.7cm;}page[size='A5'] {width: 14.8cm;height: 21cm;}page[size='A5'][layout='landscape'] {width: 21cm;height: 14.8cm;}media print {body,page {margin: 0;box-shadow: 0;}}";
-            var css = "{{$data['css']}}";
-            var finalCss = mainCss +  css;
-            // popupWin.document.write("<style>" + css + "</style>");
-            popupWin.document.write("<style>" + finalCss + "</style>");
-            popupWin.document.write('<body onload="window.print()"><?php echo $page; ?>' + divToPrint.innerHTML + '</page></html>');
-            popupWin.document.close();
-        }
-    </script>
-    @include('includes.footer')
-@endsection
+{{-- <div id="printableArea" class="col-md-12"> --}}
+{{-- <page size="A4"> --}}
+
+
+
+
+{{-- </page> --}}
+{{-- </div> --}}
+<center> <input type="button" onclick="PrintDiv('printableArea')" value="Print Receipt" /></center>
+{{-- <page size="A4"></page>
+<page size="A4" layout="landscape"></page>
+<page size="A5"></page>
+<page size="A5" layout="landscape"></page>
+<page size="A3"></page>
+<page size="A3" layout="landscape"></page> --}}
+
+@include('includes.footerJs')
+<script>
+    //    function printDiv(divName) {
+//        var printContents = document.getElementById(divName).innerHTML;
+//        var originalContents = document.body.innerHTML;
+//
+//        document.body.innerHTML = printContents;
+//
+//        window.print();
+//
+//        document.body.innerHTML = originalContents;
+//    }
+//    document.getElementsByTagName('button')[0].addEventListener('click', function () {
+//        
+//    });
+    function PrintDiv(divName) {
+        var divToPrint = document.getElementById(divName);
+        var popupWin = window.open('', '_blank', 'width=300,height=300');
+        popupWin.document.open();
+        popupWin.document.write('<html>');
+        var mainCss = "page {background: white;display: block;margin: 0cm;margin-bottom: 0cm;}page[size='A4'] {width: 21cm;height: 29.7cm;}page[size='A4'][layout='landscape'] {width: 29.7cm;height: 21cm;}page[size='A3'] {width: 29.7cm;height: 42cm;}page[size='A3'][layout='landscape'] {width: 42cm;height: 29.7cm;}page[size='A5'] {width: 14.8cm;height: 21cm;}page[size='A5'][layout='landscape'] {width: 21cm;height: 14.8cm;}media print {body,page {margin: 0;box-shadow: 0;}}";
+        var css = "{{$data['css']}}";
+        var finalCss = mainCss +  css;
+        // popupWin.document.write("<style>" + css + "</style>");
+        popupWin.document.write("<style>" + finalCss + "</style>");
+        popupWin.document.write('<body onload="window.print()"><?php echo $page; ?>' + divToPrint.innerHTML + '</page></html>');
+        popupWin.document.close();
+    }
+</script>
+@include('includes.footer')

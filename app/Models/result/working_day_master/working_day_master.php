@@ -10,7 +10,6 @@ class working_day_master extends Model {
     protected $fillable = [
         'id',
         'term_id',
-        'syear',
         'sub_institute_id',
         'standard',
         'total_working_day',

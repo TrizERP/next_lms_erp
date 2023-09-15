@@ -10,12 +10,16 @@
             </div>
         </div>
         <div class="card">
-            @if ($sessionData = Session::get('data'))
-                    <div class="alert alert-success alert-block">
-                    <button type="button" class="close" data-dismiss="alert">×</button>
-                    <strong>{{ $sessionData['message'] }}</strong>
-                </div>
-            @endif  
+            @if(!empty($data['message']))
+            @if(isset($data['status']) && $data['status']==1)
+            <div class="alert alert-success alert-block">
+            @else
+            <div class="alert alert-danger alert-block">
+            @endif            
+                <button type="button" class="close" data-dismiss="alert">×</button>
+                <strong>{{ $data['message'] }}</strong>
+            </div>
+            @endif
             <div class="row">                
                 <div class="col-lg-12 col-sm-12 col-xs-12">
                     <form action="{{ route('send_notification_parents.create') }}" enctype="multipart/form-data" method="post">

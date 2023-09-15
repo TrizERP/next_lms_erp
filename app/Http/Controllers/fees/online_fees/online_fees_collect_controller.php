@@ -315,8 +315,10 @@ class online_fees_collect_controller extends Controller
 
     public function icici(Request $request)
     {
+        //dd($request);
         $data = $this->get_fees($request);
-       //dd($data);
+
+        //dd($data);
         $type = "web";
         return \App\Helpers\is_mobile($type, "fees/online_fees_collect/show_icici_fees", $data, "view");
     }

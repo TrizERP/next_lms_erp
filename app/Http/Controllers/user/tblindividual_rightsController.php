@@ -154,8 +154,8 @@ class tblindividual_rightsController extends Controller {
 
 $response = array(
             $data,
-            $finalSubMenu ?? [],
-            $finalSubSubMenu ?? [],
+            $finalSubMenu,
+            $finalSubSubMenu,
             $usersData,
             // $rights
         );

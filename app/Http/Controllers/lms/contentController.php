@@ -104,7 +104,7 @@ class contentController extends Controller
         $data['lms_mapping_type'] = $lms_mapping_type;
 
         //START Get Content Category
-        $data['content_category'] = lmsContentCategoryModel::where('status', '2')->get()->toArray(); //Rajesh = From topicwise - Add Content to display content category
+        $data['content_category'] = lmsContentCategoryModel::where('status', '1')->get()->toArray();
         //END Get Content Category
 
         $data['breadcrum_data'] = $this->getBreadcrum($sub_institute_id, $request->get('chapter_id'),
@@ -144,7 +144,7 @@ class contentController extends Controller
         $data['lms_mapping_type'] = $lms_mapping_type;
 
         //START Get Content Category
-        $data['content_category'] = lmsContentCategoryModel::where('status', '2')->get()->toArray(); //Rajesh = From chapterwise - Add Content to display content category
+        $data['content_category'] = lmsContentCategoryModel::where('status', '1')->get()->toArray();
         //END Get Content Category
 
         $data['breadcrum_data'] = $this->getBreadcrum($sub_institute_id, $request->get('chapter_id'));
@@ -453,7 +453,7 @@ class contentController extends Controller
         $data['content_mapping_type'] = $final_content_mapping_type;
 
         //START Get Content Category        
-        $data['content_category'] = lmsContentCategoryModel::where('status', '2')->get()->toArray(); //Rajesh = From topicwise - Add Content to display content category
+        $data['content_category'] = lmsContentCategoryModel::where('status', '2')->get()->toArray();
         //END Get Content Category 
 
         //START Get Pre Topic

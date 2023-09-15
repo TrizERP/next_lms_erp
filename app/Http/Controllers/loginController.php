@@ -324,9 +324,7 @@ class loginController extends Controller
 
                         $getAcademicTerms = DB::table('academic_year')
                             ->where('sub_institute_id', $user['sub_institute_id'])
-                            ->where('syear', $getTermId[0]['syear'])
-                            ->orderBy('sort_order')
-                            ->get()->toArray();
+                            ->where('syear', $getTermId[0]['syear'])->get()->toArray();
 
                         $getAcademicYear = DB::table('academic_year')
                             ->where('sub_institute_id', $user['sub_institute_id'])

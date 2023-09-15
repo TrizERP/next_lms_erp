@@ -8,7 +8,6 @@ use App\Models\school_setup\academic_yearModel;
 use App\Models\school_setup\divisionModel;
 use App\Models\school_setup\standardModel;
 use App\Models\school_setup\subjectModel;
-use App\Models\school_setup\std_div_mappingModel;
 use App\Models\school_setupModel;
 use App\Models\student\studentQuotaModel;
 use App\Models\tblclientModel;
@@ -869,29 +868,12 @@ class NewLMS_ApiController extends Controller
 
             divisionModel::insert($data);
         }
-
-        $get_standards = DB::table('standard')->where('sub_institute_id', $sub_institute_id)->get();
-
-        foreach($get_standards as $get_standard)
-        {
-            $get_division = DB::table('division')->where(['sub_institute_id' => $sub_institute_id, 'name' => 'A'])->first('id');
-
-            $data = [
-                'standard_id'      => $get_standard->id,
-                'division_id'      => $get_division->id,
-                'sub_institute_id' => $sub_institute_id,
-                'created_at'       => now(),
-                'updated_at'       => now(),
-            ];
-
-            std_div_mappingModel::insert($data);
         }
-    }
 
     public function INSERT_SUBJECT($sub_institute_id,$board)
     {
         if ($board !== '') {
-            $sub_array = ['Eng' => 'English', 'Math' => 'Math', 'Hindi' => 'Hindi', 'Sci' => 'Science', 'Guj' => 'Gujarati'];
+            $sub_array = ['Eng' => 'English', 'Math' => 'Math', 'Hindi' => 'Hindi', 'Sci' => 'Science'];
 
             $j = 1;
             foreach ($board as $medium) {
@@ -902,7 +884,7 @@ class NewLMS_ApiController extends Controller
                         'subject_name' => $val,
                         'subject_code' => $subject_code,
                         'subject_type' => 'Major',
-                        'short_name' => $key.'-'.$medium,
+                        'short_name' => $key,
                         'sub_institute_id' => $sub_institute_id,
                         'status' => '1',
                         'created_at' => now(),
@@ -957,14 +939,13 @@ class NewLMS_ApiController extends Controller
         $user_type = $data->user_type;
         $profileval['name'] = str_replace(' ', '', $user_type);
         $arr_name = strtolower(str_replace(' ', '', $profileval['name']))."_rights";
-        $arr_name = [$arr_name, "teacher_rights", "student_rights"];
-        
-        $user = ["Admin", "Teacher", "Student"];
 
         $userprofile_data = tbluserprofilemasterModel::select('*')->where([
-            'sub_institute_id' => $sub_institute_id
-        ])->whereIn('name', $user)->get()->toArray();
-        
+            'sub_institute_id' => $sub_institute_id, 'name' => $data->user_type,
+        ])->get()->toArray();
+
+        $userprofile_data = $userprofile_data[0];
+
         //START Give Admin Full rights        
 
         $adminresult = DB::table('tblmenumaster')
@@ -1028,80 +1009,28 @@ class NewLMS_ApiController extends Controller
             "Teacher Transfer Utility"           => 221,
         ];
 
-        $lmsstudent_rights = [
-            "Student Academics"                  => 3,
-            "LMS"                                => 230,
-            "Teach/Learn"                        => 269,
-            "All Courses"                        => 270,
-            "LMS Global Mapping"                 => 275,
-            "Test"                               => 276,
-            "Student Homework"                   => 90,
-            "Homework Submission"                => 218,
-            "Assignment"                         => 312,
-            "Assignment Submission"                => 313,
-            "Exam"                               => 242,
-            "Engagement"                         => 301,
-            "Social & Collabrotive"              => 279,
-            "Virtual Classroom"                  => 280,
-            "Portfolio"                          => 281,
-            "Counselling"                        => 282,
-            "Leader Board"                       => 290,
-            "LMS Communication"                  => 302,
-            "Activity Stream"                    => 277,
-            "Message"                            => 278,
-            "Student"                            => 259,
-            "Search/Edit Student"                => 80,
-            "Leader Board Master"                => 311,
-            "Report"                             => 309,
-            "Student Analysis Report"            => 310,
-            "Curriculum Planning"                => 327,
-            "Lesson Planning"                    => 96,
-            "Book List"                          => 153,
-            "Syllabus"                           => 154,
-            "Payroll Type"                       => 352,
-        ];
+        foreach ($$arr_name as $key => $val) {
 
-        $menuIdMapping = [
-            "admin_rights"   => $admin_rights,
-            "teacher_rights" =>  $lmsteacher_rights ,
-            "student_rights" => $lmsstudent_rights,
-        ];
+            $check_sql = DB::table('tblgroupwise_rights')
+                ->where('menu_id', $val)
+                ->where('profile_id', $userprofile_data['id'])
+                ->where('sub_institute_id', $sub_institute_id)->get()->toArray();
 
-        foreach ($userprofile_data as $profile) 
-        {    
-            $profileType = strtolower(str_replace(' ', '', $profile['name']))."_rights";
-
-            foreach ($menuIdMapping[$profileType] as $menuName => $val) 
-            {
-                $check_sql = DB::table('tblgroupwise_rights')
-                    ->where('menu_id', $val)
-                    ->where('profile_id', $profile['id'])
-                    ->where('sub_institute_id', $sub_institute_id)->get()->toArray();
-
-                $check_sql = json_decode(json_encode($check_sql), true); 
-          
-                if (count($check_sql) == 0) 
-                {
-                    $insertQuery = DB::table('tblgroupwise_rights')
-                        ->insert([
-                            'menu_id'          => $val,
-                            'profile_id'       => $profile['id'],
-                            'can_view'         => '1',
-                            'can_add'          => '1',
-                            'can_edit'         => '1',
-                            'can_delete'       => '1',
-                            'sub_institute_id' => $sub_institute_id,
-                        ]);
-
-                    $profileinsertQuery = DB::table('tblprofilewise_menu')
+            $check_sql = json_decode(json_encode($check_sql), true);
+            if (count($check_sql) == 0) {
+                $insertQuery = DB::table('tblgroupwise_rights')
                     ->insert([
                         'menu_id'          => $val,
-                        'user_profile_id'  => $profile['id'],
+                        'profile_id'       => $userprofile_data['id'],
+                        'can_view'         => '1',
+                        'can_add'          => '1',
+                        'can_edit'         => '1',
+                        'can_delete'       => '1',
                         'sub_institute_id' => $sub_institute_id,
                     ]);
-                }
             }
         }
+
     }
 
     public function Resend_otp(Request $request)

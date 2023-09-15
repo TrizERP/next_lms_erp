@@ -1,8 +1,7 @@
-{{--@include('includes.headcss')
+@include('includes.headcss')
 @include('includes.header')
-@include('includes.sideNavigation')--}}
-@extends('layout')
-@section('container')
+@include('includes.sideNavigation')
+
 <div id="page-wrapper">
     <div class="container-fluid">
         <div class="row bg-title">
@@ -26,7 +25,7 @@
                     <a href="{{ route('other_fees_title.create') }}" class="btn btn-info add-new"><i class="fa fa-plus"></i> Add New</a>
                 </div>
                 <div class="col-lg-12 col-sm-12 col-xs-12">
-                    <div class="table-responsive">
+                    <div class="table-responsive">                            
                         <table id="example" class="table table-striped">
                             <thead>
                                 <tr>
@@ -58,7 +57,7 @@
                                         <div class="d-inline">
                                            <a href="{{ route('other_fees_title.edit',$data->id)}}" class="btn btn-info btn-outline">
                                                <i class="ti-pencil-alt"></i>
-                                           </a>
+                                           </a>                                            
                                         </div>
                                         <form action="{{ route('other_fees_title.destroy', $data->id)}}" method="post" class="d-inline">
                                             @csrf
@@ -93,4 +92,3 @@ $(document).ready(function () {
 });
 </script>
 @include('includes.footer')
-@endsection

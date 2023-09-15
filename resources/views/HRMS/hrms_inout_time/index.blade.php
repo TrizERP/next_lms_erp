@@ -36,26 +36,26 @@
                     <strong>{{ $message }}</strong>
                 </div>
             @endif
-            @if($data['button'] == 'in')
+            @if($hrmsInOutTime['button'] == 'in')
                 <form action="{{ route('hrms_in_time.store') }}" method="post">
                     @csrf
                     <div class="row">
                         <div class="col-md-4 form-group">
                             <label>Date</label>
                             <input type="text" id='' disabled name="" class="form-control"
-                                   value="{{$data['date']}}">
+                                   value="{{$hrmsInOutTime['date']}}">
                             <input type="hidden" id='indate' name="indate" class="form-control"
-                                   value="{{$data['date']}}">
+                                   value="{{$hrmsInOutTime['date']}}">
                         </div>
                         <div class="col-md-4 form-group">
                             <label>Time</label>
                             <input type="text" id='' disabled name="" class="form-control"
-                                   value="{{$data['time']}}">
+                                   value="{{$hrmsInOutTime['time']}}">
                             <input type="hidden" id='intime' name="intime" class="form-control"
-                                   value="{{$data['time']}}">
+                                   value="{{$hrmsInOutTime['time']}}">
                         </div>
 
-                        <input type="hidden" name="id" value="{{$data['id']}}">
+                        <input type="hidden" name="id" value="{{$hrmsInOutTime['id']}}">
                         <div class="col-md-12 form-group">
                             <center>
                                 <input type="submit" name="submit" id="Submit" value="In" class="btn btn-success">
@@ -70,22 +70,22 @@
                         <div class="col-md-4 form-group">
                             <label>Date</label>
                             <input type="text" id='' disabled name="" class="form-control"
-                                   value="{{$data['date']}}">
+                                   value="{{$hrmsInOutTime['date']}}">
                             <input type="hidden" id='outdate' name="outdate" class="form-control"
-                                   value="{{$data['date']}}">
+                                   value="{{$hrmsInOutTime['date']}}">
                         </div>
                         <div class="col-md-4 form-group">
                             <label>Time</label>
                             <input type="text" id='' disabled name="" class="form-control"
-                                   value="{{$data['time']}}">
+                                   value="{{$hrmsInOutTime['time']}}">
                             <input type="hidden" id='outtime' name="outtime" class="form-control"
-                                   value="{{$data['time']}}">
+                                   value="{{$hrmsInOutTime['time']}}">
                         </div>
 
-                        <input type="hidden" name="id" value="{{$data['id']}}">
+                        <input type="hidden" name="id" value="{{$hrmsInOutTime['id']}}">
                         <div class="col-md-12 form-group">
                             <center>
-                                <input type="submit" name="submit" id="Submit" {{$data['button_disable'] ? 'disabled' : ''}} value="Out" class="btn btn-success">
+                                <input type="submit" name="submit" id="Submit" {{$hrmsInOutTime['button_disable'] ? 'disabled' : ''}} value="Out" class="btn btn-success">
                             </center>
                         </div>
                     </div>

@@ -294,8 +294,8 @@ class photo_video_gallaryController extends Controller
                                         }
 
 
-                                        $pushMessage = $_REQUEST['title']." has been added in Photo Video Gallary for date : ".date('d-m-Y',
-                                                strtotime($_REQUEST['date_']));//$student_name . " - ".
+                                        $pushMessage = $student_name . " - ".$_REQUEST['title']." has been added in Photo Video Gallary for date : ".date('d-m-Y',
+                                                strtotime($_REQUEST['date_']));
 
                                         $app_notification_content = [
                                             'NOTIFICATION_TYPE'        => $noti_type,
@@ -398,7 +398,8 @@ class photo_video_gallaryController extends Controller
                                     $noti_type = 'Video Gallery';
                                 }
 
-                                $pushMessage = $_REQUEST['title']." has been added in Photo Video Gallary for date : ".date('d-m-Y',strtotime($_REQUEST['date_']));//$student_name . " - ".
+
+                                $pushMessage = $student_name . " - ".$_REQUEST['title']." has been added in Photo Video Gallary for date : ".date('d-m-Y',strtotime($_REQUEST['date_']));
 
                                 $app_notification_content = [
                                     'NOTIFICATION_TYPE'        => $noti_type,

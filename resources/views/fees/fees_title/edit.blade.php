@@ -1,19 +1,15 @@
-{{--
 @include('../includes.headcss')
---}}
-@extends('layout')
-@section('container')
 <link rel="stylesheet" href="../../../plugins/bower_components/dropify/dist/css/dropify.min.css">
-{{--@include('../includes.header')
-@include('../includes.sideNavigation')--}}
+@include('../includes.header')
+@include('../includes.sideNavigation')
 
 
 <div id="page-wrapper">
     <div class="container-fluid">
-        <div class="row bg-title">
-            <div class="col-lg-3 col-md-4 col-sm-4 col-xs-12">
-                <h4 class="page-title">Edit Fees Tilte</h4>
-            </div>
+        <div class="row bg-title">            
+            <div class="col-lg-3 col-md-4 col-sm-4 col-xs-12">                
+                <h4 class="page-title">Edit Fees Tilte</h4>            
+            </div>                    
         </div>
         <div class="card">
             @if ($message = Session::get('success'))
@@ -22,12 +18,12 @@
                 <strong>{{ $message }}</strong>
             </div>
             @endif
-            <div class="row">
+            <div class="row">                
                 <div class="col-lg-12 col-sm-12 col-xs-12">
                     <form action="{{ route('fees_title.update', $data['id']) }}" enctype="multipart/form-data" method="post">
                     {{ method_field("PUT") }}
                     {{csrf_field()}}
-                        <div class="row">
+                        <div class="row">                            
                             <div class="col-md-3 form-group">
                                 <label>Fees Title</label>
                                 <select name="fees_title_id" id="title" class="form-control van">
@@ -72,7 +68,7 @@
                                 </div>
                             </div>
                             <div class="col-md-12 form-group">
-                                <center>
+                                <center>                                    
                                     <input type="submit" name="submit" value="Save" class="btn btn-success" >
                                 </center>
                             </div>
@@ -99,4 +95,3 @@
 
 
 @include('includes.footer')
-@endsection

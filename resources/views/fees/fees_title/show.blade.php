@@ -1,11 +1,7 @@
-{{--
 @include('includes.headcss')
---}}
-@extends('layout')
-@section('container')
     <link rel="stylesheet" href="../../../tooltip/enjoyhint/jquery.enjoyhint.css">
-{{--@include('includes.header')
-@include('includes.sideNavigation')--}}
+@include('includes.header')
+@include('includes.sideNavigation')
 
 <div id="page-wrapper">
     <div class="container-fluid">
@@ -33,7 +29,7 @@
                                     <th>Append Name</th>
                                     <th>Mandatory</th>
                                     <th>Syear</th>
-                                    <th>Fee Type</th>
+                                    <th>Fee Type</th>                                    
                                     <th>Action</th>
                                 </tr>
                             </thead>
@@ -46,14 +42,14 @@
                                 <tr>
                                     <td>{{$j}}</td>
                                     <td>{{$data['display_name']}}</td>
-                                    <td>{{$data['sort_order']}}</td>
+                                    <td>{{$data['sort_order']}}</td>                                    
                                     <td>{{$data['cumulative_name']}}</td>
                                     <td>{{$data['append_name']}}</td>
                                     <td>{{$data['mandatory']}}</td>
                                     <td>{{$data['syear']}}</td>
                                     <td>{{$data['other_fee_id']}}</td>
                                     <td>
-                                        <!-- <div class="d-inline">
+                                        <!-- <div class="d-inline">                                        
                                             <a href="{{ route('fees_title.edit',$data['id'])}}" class="btn btn-info btn-outline">
                                                 <i class="ti-pencil-alt"></i>
                                             </a>
@@ -142,4 +138,3 @@
 </script>
 
 @include('includes.footer')
-@endsection

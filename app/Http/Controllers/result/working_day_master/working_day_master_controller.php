@@ -47,11 +47,10 @@ class working_day_master_controller extends Controller
             ->join('academic_year', [
                 'academic_year.term_id'          => 'result_working_day_master.term_id',
                 'academic_year.sub_institute_id' => 'result_working_day_master.sub_institute_id',
-                'academic_year.syear' => 'result_working_day_master.syear',
             ])
             ->join('standard as s', 's.id', '=', 'result_working_day_master.standard')
             ->join('academic_section as acs', 'acs.id', '=', 's.grade_id')
-            ->where(['result_working_day_master.sub_institute_id' => session()->get('sub_institute_id'), 'result_working_day_master.syear' => session()->get('syear')])
+            ->where(['result_working_day_master.sub_institute_id' => session()->get('sub_institute_id')])
             ->get()->toArray();
     }
 
@@ -80,7 +79,6 @@ class working_day_master_controller extends Controller
                 'standard'          => $arr,
                 'term_id'           => $request->get('term'),
                 'total_working_day' => $request->get('total_working_day'),
-                'syear'             => session()->get('syear'),
                 'sub_institute_id'  => session()->get('sub_institute_id'),
             ]);
             $exam->save();
@@ -149,7 +147,6 @@ class working_day_master_controller extends Controller
             'term_id'           => $request->get('term'),
             'total_working_day' => $request->get('total_working_day'),
             'sub_institute_id'  => session()->get('sub_institute_id'),
-            'syear'             => session()->get('syear'),
         ];
 
         working_day_master::where(["id" => $id])->update($data);

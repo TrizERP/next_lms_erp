@@ -230,7 +230,7 @@ class cbse_1t5_result_controller extends Controller {
         return $responce;
     }
 
-    public function getAllExam($standard_id,$sub_id='') {
+    public function getAllExam($standard_id) {
         $str = 'SELECT em.ExamTitle, IF((e.con_point IS NULL) OR (e.con_point = ""), e.points, e.con_point) AS points, em.Id
         FROM result_create_exam e
         INNER JOIN result_exam_master em ON em.Id = e.exam_id
@@ -324,6 +324,7 @@ class cbse_1t5_result_controller extends Controller {
             $exam_id = "0";
         }
 
+
         $student_id_arr = array();
         foreach ($all_student as $id => $arr) {
             $student_id_arr[] = $arr['student_id'];
@@ -340,15 +341,14 @@ else
         INNER JOIN result_create_exam ex ON ex.id = rm.exam_id
         INNER JOIN result_exam_master exm ON exm.Id = ex.exam_id
         INNER JOIN sub_std_map s ON s.subject_id = ex.subject_id AND s.standard_id = ex.standard_id
-        WHERE exm.Id IN (' . $exam_id . ') ' . (is_int($student_id) ? 'AND rm.student_id IN (' . $student_id . ')' : '') . '
-         AND ex.term_id = "' . session()->get('term_id') . '" 
+        WHERE exm.Id IN (' . $exam_id . ') AND rm.student_id IN (' . $student_id . ') AND ex.term_id = "' . session()->get('term_id') . '" 
         AND ex.syear = ' . session()->get('syear') . ' AND ex.report_card_status ="Y"
         GROUP BY rm.student_id,s.display_name,ex.points,exm.Id
         ORDER BY rm.student_id,s.display_name,exm.Id
         ';
 //        echo $str;die();
         $result = DB::select(DB::raw($str));
-    //    echo "<pre>";print_r($result);
+
         // getting data and making readable format student wise
         $marks_arr = array();
         foreach ($result as $id => $arr) 
@@ -385,6 +385,15 @@ else
         $grade_arr = $this->getGradeScale();
 
 
+//        echo "<pre>";
+//        print_r($grade_arr);
+//        exit;
+//
+        //print_r($marks_arr);
+        // setting marks to student_id
+ //echo '<pre>';
+       // print_r($marks_arr);       
+ //die;
         $responce_arr = array();
         foreach ($all_student as $students => $arr_student) 
         {
@@ -501,7 +510,9 @@ else
                 }
 
             }
-           
+            // echo '<pre>';
+            // print_r($responce_arr);
+            // die;
         }
         //echo "<pre>";
         //print_r($responce_arr);

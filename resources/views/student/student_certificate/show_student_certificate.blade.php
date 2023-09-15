@@ -52,8 +52,6 @@
         <input type="hidden" name="action" id="action" value="{{$data['template']}}">
         <input type="hidden" name="insert_ids" id="insert_ids" value="{{$data['insert_ids']}}">
         <input type="hidden" name="template_name" id="template_name" value="{{$data['template']}}">
-        <input type="hidden" name="certificate_reason" id="certificate_reason" value="{{ isset($data['certificate_reason']) ? $data['certificate_reason'] : '' }}">
-
         <div class="row">            
             <div class="col-md-12 form-group">
                 <div id="overlay" style="display:none;">

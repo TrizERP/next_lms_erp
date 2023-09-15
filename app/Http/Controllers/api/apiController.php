@@ -687,22 +687,14 @@ class apiController extends Controller
 
             $check_record_count = DB::table('gcm_users')
                 ->where('sub_institute_id', $sub_institute_id)
-                ->where('mobile_no', $mobile_no)
-                ->get()->toArray();
+                ->where('gcm_regid', $gcm_regid)->get()->toArray();
 
             if (count($check_record_count) > 0) {
-                $updated_on = date("Y-m-d H:i:s"); // Get the current date and time in the specified format.
-
-                DB::table("gcm_users") // Specify the table "gcm_users" for the query.
-                    ->where([ // Specify the conditions for the update operation.
-                        "sub_institute_id" => $sub_institute_id, // Match the "sub_institute_id" column.
-                        "imei_no" => $imei_no, // Match the "imei_no" column.
-                        "mobile_no" => $mobile_no // Match the "mobile_no" column.
+                DB::table("gcm_users")
+                    ->where([
+                        "sub_institute_id" => $sub_institute_id, "curr_version" => $curr_version,"new_version" => $new_version, "imei_no" => $imei_no
                     ])
-                    ->update([ // Define the columns and values to update.
-                        "gcm_regid" => $gcm_regid, // Set the "gcm_regid" column to the new value.
-                        "updated_on" => $updated_on // Set the "updated_on" column to the current date and time.
-                    ]);
+                    ->update(["gcm_regid" => $gcm_regid]);
 
                 $res['status'] = 1;
                 $res['message'] = "Record Updated Successfully";

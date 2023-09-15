@@ -1,7 +1,6 @@
 <?php
 
 namespace App\Http\Controllers\school_setup;
-use App\Http\Controllers\school_setup\Exception;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;

@@ -110,7 +110,7 @@
                                 @endphp
                                 @foreach($student_data as $key => $data)
                                     <tr>
-                                        <td><input id="{{$data['stu_id']}}" value="{{$data['stu_id']}}" name="students[]" type="checkbox"></td>
+                                        <td><input id="{{$data['id']}}" value="{{$data['id']}}" name="students[]" type="checkbox"></td>
                                         <td>{{$data->first_name}} {{$data->middle_name}} {{$data->last_name}}</td>
                                         <td>{{$data->enrollment_no}}</td>
                                         <td>{{$data->uniqueid}}</td>

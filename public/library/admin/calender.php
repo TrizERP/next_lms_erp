@@ -200,15 +200,23 @@ $counter = 0;
 //run a selec statement to hi-light the days
 function hiLightEvt($eMonth,$eDay,$eYear){
 global $dbs;
+//$tDayName = date("l");
 $todaysDate = date("n/j/Y");
 $dateToCompare = $eMonth . '/' . $eDay . '/' . $eYear;
 if($todaysDate == $dateToCompare){
 //$aClass = '<span>' . $tDayName . '</span>';
 $aClass='class="today"';
 }else {
+//$dateToCompare = $eMonth . '/' . $eDay . '/' . $eYear;
+//echo $todaysDate;
+//return;
     $sql = $dbs->query("select count(calDate) as eCount from calTbl where calDate = '" . $eMonth . '/' . $eDay . '/' . $eYear . "'");
     $sql1 = $dbs->query("select count(holiday_date) as eCount1 from holiday where holiday_date = '" . $eYear . '/' . $eMonth . '/' . $eDay . "'");
-
+//$result1 = mysqli_query($sql1);
+//echo $sql;
+//return;
+//$result = mysqli_query($sql);
+//while($row= mysqli_fetch_array($result)){
     while ($row = $sql->fetch_assoc()) {
         if ($row['eCount'] >= 1) {
             $aClass = 'class="event"';
@@ -225,43 +233,6 @@ $aClass = 'class="event1"';
 }
 return $aClass;
 }
-// function hiLightEvt($eMonth, $eDay, $eYear) {
-//     global $dbs;
-//     $todaysDate = date("n/j/Y");
-//     $dateToCompare = $eMonth . '/' . $eDay . '/' . $eYear;
-//     if ($todaysDate == $dateToCompare) {
-//         //$aClass = '<span>' . $tDayName . '</span>';
-//         $aClass = 'class="today"';
-//     } else {
-//         $aClass = 'class="normal"';
-//         if (!$dbs) {
-//             echo "Error: Could not connect to the database.";
-//         } else {
-//             $sql = $dbs->query("SELECT COUNT(calDate) AS eCount FROM calTbl WHERE calDate = '" . $eMonth . '/' . $eDay . '/' . $eYear . "'");
-//             if (!$sql) {
-//                 echo "Error: " . $dbs->error;
-//             } else {
-//                 while ($row = $sql->fetch_assoc()) {
-//                     if ($row['eCount'] >= 1) {
-//                         $aClass = 'class="event"';
-//                     }
-//                 }
-//             }
-//             $sql1 = $dbs->query("SELECT COUNT(holiday_date) AS eCount1 FROM holiday WHERE holiday_date = '" . $eYear . '/' . $eMonth . '/' . $eDay . "'");
-//             if (!$sql1) {
-//                 echo "Error: " . $dbs->error;
-//             } else {
-//                 while ($row1 = $sql1->fetch_assoc()) {
-//                     if ($row1['eCount1'] >= 1) {
-//                         $aClass = 'class="event1"';
-//                     }
-//                 }
-//             }
-//         }
-//     }
-//     return $aClass;
-// }
-
 ?>
 <table width="100px" height="180px" cellpadding="0" cellspacing="0">
 <tr>

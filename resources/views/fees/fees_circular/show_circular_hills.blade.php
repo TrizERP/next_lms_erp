@@ -1,8 +1,6 @@
-{{--@include('includes.headcss')
+@include('includes.headcss')
 @include('includes.header')
-@include('includes.sideNavigation')--}}
-@extends('layout')
-@section('container')
+@include('includes.sideNavigation')
 use DB;
 <style type="text/css">
     #overlay {
@@ -10,7 +8,7 @@ use DB;
       display: none; /* Hidden by default */
       width: 100%; /* Full width (cover the whole page) */
       height: 100%; /* Full height (cover the whole page) */
-      top: 0;
+      top: 0; 
       left: 0;
       right: 0;
       bottom: 0;
@@ -48,7 +46,7 @@ use DB;
             if(isset($data['data'])){
                 $student_data = $data['data'];
             }
-
+            
         @endphp
         @foreach($student_data as $key => $value)
 
@@ -70,9 +68,9 @@ if (isset($data['breakoff'][$value['id']]))
         $total += $damount;
     }
 
-
+   
 }
- if(isset($data['fees_circular_amount'][$value['id']]) && $data['fees_circular_amount'][$value['id']] != ' ' )
+ if(isset($data['fees_circular_amount'][$value['id']]) && $data['fees_circular_amount'][$value['id']] != ' ' ) 
     {
         $total = $data['fees_circular_amount'][$value['id']];
     }
@@ -108,15 +106,15 @@ if (isset($data['feesCircularMaster']))
     $str = str_replace(htmlspecialchars("<<current_date>>"), date('d-m-Y'), $str);
 }
 ?>
-
+            
                 <div class="card">
-                    <?php
-                        echo $str;
+                    <?php 
+                        echo $str; 
 
-                        $inserted_ids_arr = explode(',',$data['last_inserted_ids']);
+                        $inserted_ids_arr = explode(',',$data['last_inserted_ids']); 
 
-                        foreach ($inserted_ids_arr as $k => $v)
-                        {
+                        foreach ($inserted_ids_arr as $k => $v) 
+                        {   
                             $new_str = str_replace("'", "", $str);
                             $update_sql = "UPDATE fees_circular_log SET FEES_CIRCULAR_HTML = '".$new_str."' WHERE STUDENT_ID = '".$value['id']."'   AND id = '".$v."' ";
                             $sql_data = DB::select($update_sql);
@@ -124,7 +122,7 @@ if (isset($data['feesCircularMaster']))
                     ?>
 
                 </div>
-
+            
         @endforeach
         @php
             $inserted_ids = rtrim($all_inserted_id,',');
@@ -165,7 +163,7 @@ if (isset($data['feesCircularMaster']))
     }
 </script>
 <script>
-function PrintDiv(divName)
+function PrintDiv(divName) 
     {
         var divToPrint = document.getElementById(divName);
         var popupWin = window.open('', '_blank', 'width=300,height=300');
@@ -177,4 +175,3 @@ function PrintDiv(divName)
 
 </script>
 @include('includes.footer')
-@endsection

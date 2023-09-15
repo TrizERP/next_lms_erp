@@ -132,11 +132,6 @@ Route::group(['prefix' => 'lms', 'middleware' => ['session', 'menu', 'logRoute']
         ->name('ajaxdestroycounsellinganswer_master');
     Route::resource('lmsCounsellingExam', counsellingExamController::class);
 
-    Route::get('lmsIndustryListing', [lmsCounsellingController::class, 'lmsIndustryListing'])->name('lmsIndustryListing');
-    Route::get('lmsIndustryListing/careersInIndustry/{id}', [lmsCounsellingController::class, 'careersInIndustry'])->name('lmsIndustryListing.careersInIndustry');
-    Route::get('lmsIndustryListing/careersInIndustry/careerReport/{id}', [lmsCounsellingController::class, 'careerReport'])->name('lmsIndustryListing.careersInIndustry.careerReport');
-    Route::get('lmsIndustryListing/careersInIndustry/careerReport/resources/{id}/{title}', [lmsCounsellingController::class, 'resources'])->name('lmsIndustryListing.careersInIndustry.careerReport.resources');
-
     Route::resource('lmsMBTIPaper', MBTIController::class);
 
     Route::get('ajax_getQuestionList', [onlineExamController::class, 'ajax_getQuestionList'])->name('ajax_getQuestionList');

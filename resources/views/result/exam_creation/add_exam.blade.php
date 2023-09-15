@@ -22,31 +22,45 @@
                         {{ method_field("POST") }}
                         {{csrf_field()}}
                         <div class="row">
-                        <!-- Below function will get term name and id from helper.php  -->                            
-                        {{ App\Helpers\TermDD() }}
-
-                            <input type="hidden" name="medium" value="CBSE" > 
-
-                            <!-- Below function will get grade,standard,division name and id from helper.php  -->                            
-                            {{ App\Helpers\SearchChain('4','single','grade,std') }} 
                             
+                            {{ App\Helpers\TermDD() }}
+                            
+
                             <div class="col-md-4 form-group">
-                                <label for="title" >Select Subject:</label>
-                                <select name="subject[]" id="subject" class="form-control" multiple>
+                                <label>Medium : </label>
+                                <select name="medium" class="form-control">
                                     <option value="">Select</option>
+                                    <option value="CBSE">CBSE</option>
+                                    <option value="GSEB">GSEB</option>
                                 </select>
                             </div>
 
                             <div class="col-md-4 form-group">
-                                <label for="title">Select Exam:</label>
-                                <select name="exam" id="exam" class="form-control">
+                                <label>Exam : </label>
+                                <select name="exam_id" class="form-control">
                                     <option value="">Select</option>
+                                    @foreach ($data as $key => $value)
+                                    <option value="{{ $key }}"
+                                            >{{ $value }}</option>
+                                    @endforeach
+
                                 </select>
                             </div>
+                            <div class="col-md-12 form-group">
+                                {{ App\Helpers\SearchChainSubject('4','multiple','grade,std,sub') }}
+                            </div>
 
-                                <input type="hidden" name="con_point" class="form-control" value="0">
-                         
-                                <input type="hidden" name="app_disp_status" value="Y" > 
+                            <div class="col-md-4 form-group ml-0 mr-0">
+                                <label>Convert Marks: </label>
+                                <input type="text" name="con_point" class="form-control">
+                            </div>
+
+                            <div class="col-md-4 form-group ml-0">
+                                <label>App Status : </label>
+                                <input type="radio" name="app_disp_status" value="Y" checked> Yes
+                                <input type="radio" name="app_disp_status" value="N"> No
+                            </div>
+
 
                             <div class="col-md-12 form-group">
                             <div class="table-responsive">
@@ -55,8 +69,11 @@
                                         <tr>
                                             <th>Name</th>
                                             <th>Marks</th>
+                                            <th>Marks/Grade</th>
+                                            <th>Report Card Status</th>
                                             <th>Sort Order</th>
                                             <th>Exam Date</th>
+                                            <!--<td>Action</td>-->
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -67,21 +84,36 @@
                                             <td>
                                                 <input type="text" name="points" class="form-control" />
                                             </td>
-                                         
-                                <input type="hidden" name="marks_type" class="form-control" value="MARKS">
-                                <input type="hidden" name="report_card_status" class="form-control" value="Y">
-                                            
-                                          
+                                            <td>
+                                                <select name="marks_type" class="form-control">
+                                                    <option value="">Select</option>
+                                                    <option value="MARKS">MARKS</option>
+                                                    <option value="GRADE">GRADE</option>
+                                                </select>
+                                            </td>
+                                            <td>
+                                                <select name="report_card_status" class="form-control">
+                                                    <option value="">Select</option>
+                                                    <option value="Y">Yes</option>
+                                                    <option value="N">No</option>
+                                                </select>
+                                            </td>
                                             <td>
                                                 <input type="text" name="sort_order" class="form-control" />
                                             </td>
                                             <td>
                                                 <input type="text" name="exam_date" class="form-control mydatepicker" autocomplete="off" />
                                             </td>
+    <!--                                        <td class="col-sm-2"><a class="deleteRow"></a>
+                                                <input type="button" class="addRow btn btn-md btn-success "  value="+">
+                                            </td>-->
                                         </tr>
                                     </tbody>
                                     <tfoot>
                                         <tr>
+    <!--                                        <td colspan="5" style="text-align: left;">
+                                                <input type="button" class="addRow btn btn-lg btn-block " id="addrow" value="Add Row" />
+                                            </td>-->
                                         </tr>
                                         <tr>
                                         </tr>
@@ -116,91 +148,6 @@
 
 
 @include('includes.footerJs')
-
-<script>
-    $("#grade").prop('required', true);
-    $("#standard").prop('required', true);
-    $("#division").prop('required', true);
-    $("#subject").prop('required', true);
-    $("#term").prop('required', true);
-    $("#exam").prop('required', true);
-    $('#term').change(function () {
-        $("#grade").val("");
-        $("#standard").empty();
-        $("#standard").append('<option value="">Select</option>');
-        $("#division").empty();
-        $("#division").append('<option value="">Select</option>');
-        $("#subject").empty();
-        $("#subject").append('<option value="">Select</option>');
-        $("#exam").empty();
-        $("#exam").append('<option value="">Select</option>');
-    });
-    $('#grade').change(function () {
-        $("#subject").empty();
-        $("#subject").append('<option value="">Select</option>');
-        $("#exam").empty();
-        $("#exam").append('<option value="">Select</option>');
-    });
-    $('#standard').change(function () {
-        $("#exam").empty();
-        $("#exam").append('<option value="">Select</option>');
-        var standardID = $("#standard").val();
-        var divisionID = $("#division").val();
-        if (standardID) {
-            $.ajax({
-                type: "GET",
-                url: "/api/get-subject-list?standard_id=" + standardID,
-                success: function (res) {
-                    if (res) {
-                        $("#subject").empty();
-                        $("#subject").append('<option value="">Select</option>');
-                        $.each(res, function (key, value) {
-                            $("#subject").append('<option value="' + key + '">' + value + '</option>');
-                        });
-
-                    } else {
-                        $("#subject").empty();
-                    }
-                }
-            });
-        } else {
-            $("#subject").empty();
-        }
-
-    });
-    $('#standard').on('change', function () {
-        var standardID = $("#standard").val();
-        var termID = $("#term").val();
-
-        if (standardID && termID) {
-            $.ajax({
-                type: "GET",
-                url: "/api/get-exam-master-list?standard_id=" + standardID +
-                        "&term_id=" + termID,
-                success: function (res) {
-                    if (res) {
-                        $("#exam").empty();
-                        $("#exam").append('<option value="">Select</option>');
-                        $.each(res, function (key, value) {
-                            $("#exam").append('<option value="' + key + '">' + value + '</option>');
-                        });
-
-                    } else {
-                        $("#exam").empty();
-                    }
-                }
-            });
-        } else {
-            $("#exam").empty();
-            $("#exam").append('<option value="">Select</option>');
-            if (termID == "") {
-                alert("Please Select Term.");
-            }
-        }
-
-    });
-
-</script>
 <script>
     $(document).ready(function () {
         var counter = 0;

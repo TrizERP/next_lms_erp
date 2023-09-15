@@ -189,14 +189,7 @@ function checkedAll()
             }, 
             { extend: 'csv', text: ' CSV', title: 'Admission Confirmation Report' }, 
             { extend: 'excel', text: ' EXCEL', title: 'Admission Confirmation Report'}, 
-            {
-                extend: 'print',
-                text: ' PRINT',
-                title: 'Admission Confirmation Report',
-                customize: function (win) {
-                    $(win.document.body).prepend(`{!! App\Helpers\get_school_details("", "", "") !!}`);
-                }
-            },
+            { extend: 'print', text: ' PRINT', title: 'Admission Confirmation Report'}, 
             'pageLength' 
         ], 
         }); 

@@ -54,7 +54,6 @@ class exam_scheduleController extends Controller
             ->selectRaw('c.*,s.name std_name, d.name division_name')
             ->where("c.syear", "=", session()->get('syear'))
             ->where("c.sub_institute_id", "=", session()->get('sub_institute_id'))
-            ->orderby("c.date_", 'desc')
             ->get()->toArray();
     }
 
@@ -193,9 +192,7 @@ class exam_scheduleController extends Controller
                     file_name)) as file_name")
                 ->where('e.syear', $syear)
                 ->where('e.sub_institute_id', $sub_institute_id)
-                ->where('student_id', $student_id)
-                ->orderby("e.date_", 'desc')
-                ->get()->toArray();
+                ->where('student_id', $student_id)->get()->toArray();
 
             $res['status'] = 1;
             $res['message'] = "Success";
