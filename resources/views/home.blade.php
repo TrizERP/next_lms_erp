@@ -105,7 +105,9 @@
         </div>
 
         <div class="card">
-            <a href="{{ route('used_storage_graph.index') }}" class="js-greeting card-title">{{$data['used_space_in_MB']}} of {{$data['occupied_space_in_MB']}} MB used</a>
+            <a href="{{ route('used_storage_graph.index') }}" class="js-greeting card-title">
+                {{ number_format($data['used_space_in_MB'], 2) }} MB of {{ number_format($data['occupied_space_in_MB'], 2) }} MB used
+            </a>
         </div>
         @endif
 
