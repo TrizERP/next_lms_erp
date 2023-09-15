@@ -20,8 +20,8 @@
                         <table id="example" class="table table-striped" >
                             <thead>
                                 <tr>
-                                    <th>Sr No.</th>
-                                    <th>Exam Title</th>  
+                                    <th>SrNo.</th>
+                                    <th>Exam Type</th>  
                                     <th>Standard</th>                                                                      
                                     <th>Term</th>
                                     <th>Weightage</th>                                    
@@ -69,10 +69,9 @@
 <script src="https://cdn.datatables.net/1.10.19/js/jquery.dataTables.min.js"></script>
 <script src="https://cdn.datatables.net/1.10.19/js/dataTables.bootstrap.min.js"></script>
 <script>
-                                                $(document).ready(function () {
-                                                    var table = $('#example').DataTable({
-                                                    });
-                                                });
-
+    $(document).ready(function () {
+        var table = $('#example').DataTable({
+        });
+    });
 </script>
 @include('includes.footer')
