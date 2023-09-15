@@ -12,7 +12,7 @@
 		</div>
 		@php
 		$grade_id = $standard_id = $division_id = $enrollment_no = $receipt_no = $from_date = $to_date = $name = $mb_no ='';
-
+		
 		if(isset($data['from_date'])) { $from_date = $data['from_date']; }
 		if(isset($data['to_date'])) { $to_date = $data['to_date'];
 		} @endphp
@@ -48,8 +48,10 @@
 			@if(isset($data['fees_data']))
 				<div class="card">
 					<div class="table-responsive">
-                        {{App\Helpers\get_school_details("","","")}}
-                        <br><center><span style=" font-size: 14px;font-weight: 600;font-family: Arial, Helvetica, sans-serif !important">From Date :  {{date('d-m-Y',strtotime($data['from_date']))}} - </span><span style=" font-size: 14px;font-weight: 600;font-family: Arial, Helvetica, sans-serif !important">To Date : {{date('d-m-Y',strtotime($data['to_date']))}}</span></center><br>
+						@php
+						echo App\Helpers\get_school_details("","","");
+						echo '<br><center><span style=" font-size: 14px;font-weight: 600;font-family: Arial, Helvetica, sans-serif !important">From Date : '.date('d-m-Y',strtotime($data['from_date'])) .' - </span><span style=" font-size: 14px;font-weight: 600;font-family: Arial, Helvetica, sans-serif !important">To Date : '.date('d-m-Y',strtotime($data['to_date'])) .'</span></center><br>';
+						@endphp
 						<table id="example" class="table table-border text-center">
 							@if(count($data['fees_data']) > 0)
 							<thead>
@@ -94,104 +96,48 @@
 							</thead>
 							<tbody>
 							@php
-
-							$i = 1;
-							$cn_total_girls = 0;
-							$cn_total_boys = 0;
-							$cn_total_boys_and_girls = 0;
-							$other_total_girls = 0;
-							$other_total_boys = 0;
-							$other_total_boys_and_girls = 0;
-							$cn_and_other_totals = 0;
-							$cn__total_income = 0;
-							$other__total_income = 0;
-							$total_income = 0;
+								$i = 1;
+								$cn_total_girls = 0;
+								$cn_total_boys = 0;
+								$cn_total_boys_and_girls = 0;
+								$other_total_girls = 0;
+								$other_total_boys = 0;
+								$other_total_boys_and_girls = 0;
+								$cn_and_other_totals = 0;
+								$cn_total_income = 0;
+								$other_total_income = 0;
+								$total_income = 0;
 							@endphp
-
-							@foreach($data['fees_data'] as $key => $value)
-								@foreach($data['fees_data'][$key] as $key1 => $value1)
-									@foreach($data['fees_data'][$key][$key1] as $key2 => $value2)
-										@foreach($data['fees_data'][$key][$key1][$key2] as $key3 => $value3)
-												@php
-
-												$otherSchoolMaleCount = 0;
-												$otherSchoolFemaleCount = 0;
-												$cnFemaleCount = 0;
-												$cnMaleCount = 0;
-												$other_total_amount = 0;
-												$cn_total_amount = 0;
-												@endphp
-
-												@if($key3 == "Other School")
-													@php
-													@endphp
-													@foreach($value3 as $entry)
-														@php
-															$other_total_amount += $entry['tot'];
-														@endphp
-														@if($key2 == $entry['batch_name'])
-															@if ($entry['gender'] == 'M' || $entry['gender'] == 'Male')
-																@php
-																$otherSchoolMaleCount++;
-																@endphp
-															@elseif ($entry['gender'] == 'F' || $entry['gender'] == 'Female')
-																@php
-																$otherSchoolFemaleCount++;
-																@endphp
-															@endif
-														@endif
-													@endforeach
-												@elseif($key3 != "Other School")
-													@foreach($value3 as $entry)
-														@php
-															$cn_total_amount += $entry['tot'];
-														@endphp
-														@if($key2 == $entry['batch_name'])
-															@if ($entry['gender'] == 'M' || $entry['gender'] == 'Male')
-																@php
-																$cnMaleCount++;
-																@endphp
-															@elseif ($entry['gender'] == 'F' || $entry['gender'] == 'Female')
-																@php
-																	$cnFemaleCount++;
-
-																@endphp
-															@endif
-														@endif
-													@endforeach
-												@endif
-											<tr>
-												<td>{{ $i++ }}</td>
-												<td>{{ $key }}</td>
-												<td>{{ $key1 }}</td>
-												<td>{{ $key2 }}</td>
-												<td>{{ $cnFemaleCount }}</td>
-												<td>{{ $cnMaleCount }}</td>
-												<td>{{ $cnFemaleCount + $cnMaleCount }}</td>
-												<td>{{ $otherSchoolFemaleCount }}</td>
-												<td>{{ $otherSchoolMaleCount }}</td>
-												<td>{{ $otherSchoolFemaleCount + $otherSchoolMaleCount }}</td>
-												<td>{{ ($otherSchoolFemaleCount + $otherSchoolMaleCount) + ($cnFemaleCount + $cnMaleCount) }}</td>
-												<td>{{ $cn_total_amount }}</td>
-												<td>{{ $other_total_amount }}</td>
-												<td>{{ $cn_total_amount + $other_total_amount }}</td>
-											</tr>
-											@php
-												$cn_total_girls += $cnFemaleCount;
-												$cn_total_boys += $cnMaleCount;
-												$cn_total_boys_and_girls += $cnFemaleCount + $cnMaleCount;
-												$other_total_girls += $otherSchoolFemaleCount;
-												$other_total_boys += $otherSchoolMaleCount;
-												$other_total_boys_and_girls += $otherSchoolFemaleCount + $otherSchoolMaleCount;
-												$cn_and_other_totals += ($otherSchoolFemaleCount + $otherSchoolMaleCount) + ($cnFemaleCount + $cnMaleCount);
-												$cn__total_income += $cn_total_amount;
-												$other__total_income += $other_total_amount;
-												$total_income += $cn_total_amount + $other_total_amount;
-											@endphp
-										@endforeach
-									@endforeach
-								@endforeach
-							@endforeach
+							@foreach($data['fees_data'] as $fees_data)
+								<tr>
+									<td>{{ $i++ }}</td>
+									<td>{{ $fees_data['standard_name'] }}</td>
+									<td>{{ $fees_data['coach_name'] }}</td>
+									<td>{{ $fees_data['batch_name'] ? $fees_data['batch_name'] : '-'  }}</td>
+									<td>{{ $fees_data['cn_male_count'] }}</td>
+									<td>{{ $fees_data['cn_female_count'] }}</td>
+									<td>{{ $fees_data['cn_male_count'] + $fees_data['cn_female_count'] }}</td>
+									<td>{{ $fees_data['other_male_count'] }}</td>
+									<td>{{ $fees_data['other_female_count'] }}</td>
+									<td>{{ $fees_data['other_male_count'] + $fees_data['other_female_count'] }}</td>
+									<td>{{ $fees_data['tot_count'] }}</td>
+									<td>{{ $fees_data['cn_tot'] }}</td>
+									<td>{{ $fees_data['other_tot'] }}</td>
+									<td>{{ $fees_data['tot'] }}</td>
+								</tr>
+								@php
+									$cn_total_girls += $fees_data['cn_female_count']; 
+									$cn_total_boys += $fees_data['cn_male_count'];
+									$cn_total_boys_and_girls += $fees_data['cn_female_count'] + $fees_data['cn_male_count'];
+									$other_total_girls += $fees_data['other_female_count'];
+									$other_total_boys += $fees_data['other_male_count'];
+									$other_total_boys_and_girls += $fees_data['other_female_count'] + $fees_data['other_male_count'];
+									$cn_and_other_totals += $fees_data['tot_count'];
+									$cn_total_income += $fees_data['cn_tot'];
+									$other_total_income += $fees_data['other_tot'];
+									$total_income += $fees_data['tot'];
+								@endphp
+							@endforeach			
 							</tbody>
 							<tfoot>
 								<tr>
@@ -203,8 +149,8 @@
 									<th>{{ $other_total_boys }}</th>
 									<th>{{ $other_total_boys_and_girls }}</th>
 									<th>{{ $cn_and_other_totals }}</th>
-									<th>{{ $cn__total_income }}</th>
-									<th>{{ $other__total_income }}</th>
+									<th>{{ $cn_total_income }}</th>
+									<th>{{ $other_total_income }}</th>
 									<th>{{ $total_income }}</th>
 								</tr>
 							</tfoot>

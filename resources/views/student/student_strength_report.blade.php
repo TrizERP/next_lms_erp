@@ -65,12 +65,12 @@
                     <!-- From Date  -->
                     <div class="col-md-4 form-group mt-3">
                         <label class="label">From Date</label>
-                        <input type="text" name="from_date" class="form-control mydatepicker" value="@if(isset($data['from_date'])){{$data['from_date']}} @endif" autocomplete="off" required>
+                        <input type="text" id="from_date_input" name="from_date" class="form-control mydatepicker" value="{{ isset($data['from_date']) ? $data['from_date'] : '' }}" autocomplete="off" required>
                     </div>
                      <!-- To Date  -->
                      <div class="col-md-4 form-group mt-3">
                         <label class="label">To Date</label>
-                        <input type="text" name="to_date" class="form-control mydatepicker" value="@if(isset($data['to_date'])){{$data['to_date']}} @endif" autocomplete="off" required>
+                        <input type="text" id="to_date_input" name="to_date" class="form-control mydatepicker" value="{{ isset($data['to_date']) ? $data['to_date'] : '' }}" autocomplete="off" required>
                     </div>
                     <!-- General New / LC  -->
                     <div class="col-md-4 form-group mt-3">
@@ -151,173 +151,189 @@
                 @endphp
                 <table id="example" class="table table-striped text-center">
                 @if(count($data['result'])>0)
-
                     <thead>
-                    <tr>
-                        <th rowspan="3">Date</th>
-                        <th rowspan="3">{{ App\Helpers\get_string('standard','request')}}</th>
-                        <th rowspan="3">Total</th>
-                        <!-- general -->
-                        @if(isset($data['general']))
-                            <th colspan="{{ count($data['general'])+1 }}"  class="text-center">General</th>
-                        @endif
-
-                        <!-- religion -->
-                        @if(isset($data['religion']))
-                            <th colspan="{{ count($data['religion'])+4 }}"  class="text-center">Religion</th>
-                        @endif
-
-                        <!-- strength -->
-                        @if(isset($data['strength']))
-                            <th colspan="{{ count($data['strength'])+2 }}" class="text-center">Strength</th>
-                        @endif
-                        <!-- cast -->
-                        @if(isset($data['cast']))
-                            <th colspan="{{ count($data['cast'])+1 }}" class="text-center">Cast</th>
-                        @endif
-                        <!-- quota -->
-                        @if(isset($data['quota']))
-                            <th colspan="{{ count($data['quota'])+1 }}" class="text-center">Quota</th>
-                        @endif
-                    </tr>
-
-                <tr>
-                    <!-- general -->
-                    @if(isset($data['general']))
-
-                            @if(in_array("new_add",$data['general']) ) <th> New Addmission </th> @endif
-                            @if(in_array("take_lc",$data['general']) ) <th> Take LC</th> @endif
-                            <th>Total</th>
-                        @endif
-                                <!-- religion -->
-                        @if(isset($data['religion']))
-                        @foreach($data['religion'] as $key => $religionId)
-                                @if($religionId == $rel[$key]->id)
-                                    <th colspan="2">{{ $rel[$key]->religion_name }}</th>
-                                @endif
-                            @endforeach
-                            <th rowspan="2">Total</th>
-                        @endif
-                        <!-- strength -->
-                        
-                        @if(isset($data['strength']))
-                            @foreach($data['strength'] as $strength)
-                                <th colspan="1">{{ $strength }}</th>
-                            @endforeach
-                            <th rowspan="2">Total</th>
-                        @endif
-                        <!-- cast -->
-                        @if(isset($data['cast']))
-                        @foreach($data['cast'] as $key => $castId)
-                                @if($castId == $cas[$key]->id)
-                                    <th>{{ $cas[$key]->caste_name }}</th>
-                                @endif
-                            @endforeach
-                            <th>Total</th>
-                        @endif
-                        <!-- quota -->
-
-                        @if(isset($data['quota']))
-                        @foreach($data['quota'] as $key => $quotaId)
-                            @if($quotaId == $quot[$key]->id)
-                                <th>{{ $quot[$key]->title }}</th>
+                        <tr>
+                            <th rowspan="3">Date</th>
+                            <th rowspan="3">{{ App\Helpers\get_string('standard','request')}}</th>
+                            <th rowspan="3">Total</th>
+                            <!-- general -->
+                            @if(isset($data['general']))
+                                <th colspan="{{ count($data['general'])+2 }}"  class="text-center">General</th>
                             @endif
-                        @endforeach
-                        <th>Total</th>
-                        @endif
 
-                    </tr>
-                   
-                    <tr>
-                    @if(isset($data['religion']))
-                        @foreach($data['religion'] as $key => $religionId)
-                                @if($religionId == $rel[$key]->id)
-                                    <td>M</td>
-                                    <td>F</td>
+                            <!-- religion -->
+                            @if(isset($data['religion']))
+                                <th colspan="{{ count($data['religion'])+2 }}"  class="text-center">Religion</th>
+                            @endif
+                            <!-- strength -->
+                            @if(isset($data['strength']))
+                                <th colspan="{{ count($data['strength'])+2 }}" class="text-center">Strength</th>
+                            @endif
+                            <!-- cast -->
+                            @if(isset($data['cast']))
+                                <th colspan="{{ count($data['cast'])+2 }}" class="text-center">Cast</th>
+                            @endif
+                            <!-- quota -->
+                            @if(isset($data['quota']))
+                                <th colspan="{{ count($data['quota'])+2 }}" class="text-center">Quota</th>
+                            @endif
+                        </tr>
+                        <tr>
+                            <!-- general -->
+                                @if(isset($data['general']))
+                                    @if(in_array("new_add",$data['general']) ) <th> New Addmission </th> @endif
+                                    @if(in_array("take_lc",$data['general']) ) <th> Take LC</th> @endif
+                                    <th>Total</th>
                                 @endif
-                            @endforeach
-                        @endif
-                   </tr> 
+                                <!-- religion -->
+                                @if(isset($data['religion']))
+                                    @foreach($data['religion'] as $key => $religionId)
+                                        @if($religionId == $rel[$key]->id)
+                                            <th colspan="2">{{ $rel[$key]->religion_name }}</th>
+                                        @endif
+                                    @endforeach
+                                    <th rowspan="2">Total</th>
+                                @endif
+                                <!-- strength -->
+                                @if(isset($data['strength']))
+                                    @foreach($data['strength'] as $strength)
+                                        <th colspan="2">{{ $strength }}</th>
+                                    @endforeach
+                                    <th rowspan="2">Total</th>
+                                @endif
+                                <!-- cast -->
+                                @if(isset($data['cast']))
+                                    @foreach($data['cast'] as $key => $castId)
+                                        @if($castId == $cas[$key]->id)
+                                            <th colspan="2">{{ $cas[$key]->caste_name }}</th>
+                                        @endif
+                                    @endforeach
+                                    <th rowspan="2">Total</th>
+                                @endif
+                                <!-- quota -->
+                                @if(isset($data['quota']))
+                                    @foreach($data['quota'] as $key => $quotaId)
+                                        @if($quotaId == $quot[$key]->id)
+                                            <th colspan="2">{{ $quot[$key]->title }}</th>
+                                        @endif
+                                    @endforeach
+                                    <th rowspan="2">Total</th>
+                                @endif
+                        </tr>
+                        <tr>
+                            @if(isset($data['religion']))
+                                @foreach($data['religion'] as $key => $religionId)
+                                    @if($religionId == $rel[$key]->id)
+                                        <th>M</th>
+                                        <th>F</th>
+                                    @endif
+                                @endforeach
+                            @endif
+
+                            @if(isset($data['cast']))
+                                @foreach($data['cast'] as $key => $castId)
+                                    @if($castId == $cas[$key]->id)
+                                        <th>M</th>
+                                        <th>F</th>
+                                    @endif
+                                @endforeach
+                            @endif
+
+                            @if(isset($data['quota']))
+                                @foreach($data['quota'] as $key => $quotaId)
+                                    @if($quotaId == $quot[$key]->id)
+                                        <th>M</th>
+                                        <th>F</th>
+                                    @endif
+                                @endforeach
+                            @endif
+                        </tr>
                     </thead>
-                   <tbody>
-                @php
-                    $generalTotal = 0;
-                    if(isset($data['religion'])){  $mreligionTotals =  array_fill(0, count($data['religion']), 0); }
-                    if(isset($data['religion'])){  $freligionTotals =  array_fill(0, count($data['religion']), 0); }
-                    if(isset($data['strength'])){  $strengthTotals = array_fill(0, count($data['strength']), 0); }
-                    if(isset($data['cast'])){ $castTotals = array_fill(0, count($data['cast']), 0); }
-                    if(isset($data['quota'])){ $quotaTotals = array_fill(0, count($data['quota']), 0); }
-                    $totalStudents = 0;
-                    $mainTotal=0;
-                @endphp
+                    <tbody>
+                    @php
+                        $generalTotal = 0;
+                        if(isset($data['religion'])){  $mreligionTotals =  array_fill(0, count($data['religion']), 0); }
+                        if(isset($data['religion'])){  $freligionTotals =  array_fill(0, count($data['religion']), 0); }
+                        if(isset($data['strength'])){  $strengthTotals = array_fill(0, count($data['strength']), 0); }
+                        if(isset($data['cast'])){ $mcastTotals = array_fill(0, count($data['cast']), 0); }
+                        if(isset($data['cast'])){ $fcastTotals = array_fill(0, count($data['cast']), 0); }
+                        if(isset($data['quota'])){ $mquotaTotals = array_fill(0, count($data['quota']), 0); }
+                        if(isset($data['quota'])){ $fquotaTotals = array_fill(0, count($data['quota']), 0); }
+                        $totalStudents = 0;
+                        $mainTotal=0;
+                    @endphp
 
-                @foreach($data['result'] as $key => $value)
-                    <tr>
-                        <td>{{$data['from_date'] .'  /  '. $data['to_date']}}</td>
-                        <td>{{$value->standard_name}}@if(in_array("division", $data['standard'])) / {{$value->division_name}} @endif</td>
-                        <td>{{$value->total_students}}</td>
-                        @php $mainTotal += $value->total_students; @endphp
-                        <!-- general -->
-                        @if(isset($data['general']))
-                            @foreach ($data['general'] as $general)
-                                @php
-                                    $generalTotal += $value->$general;
-                                @endphp
-                                <td>{{$value->$general}}</td>
-                            @endforeach
+                    @foreach($data['result'] as $key => $value)
+                        <tr>
+                            <td>{{$data['from_date'] .'  /  '. $data['to_date']}}</td>
+                            <td>{{$value->standard_name}}@if(in_array("division", $data['standard'])) / {{$value->division_name}} @endif</td>
                             <td>{{$value->total_students}}</td>
-                        @endif
+                            @php $mainTotal += $value->total_students; @endphp
+                            <!-- general -->
+                            @if(isset($data['general']))
+                                @foreach ($data['general'] as $general)
+                                    @php
+                                        $generalTotal += $value->$general;
+                                    @endphp
+                                    <td>{{$value->$general}}</td>
+                                @endforeach
+                                <td>{{$value->total_students}}</td>
+                            @endif
 
-                        <!-- religion  -->
-                        @if(isset($data['religion']))
-                            @foreach($data['religion'] as $religionId)
-                                @php
-                                    $mreligionTotals[$religionId-1] += $value->{'m_religion_'.$religionId};
-                                    $freligionTotals[$religionId-1] += $value->{'f_religion_'.$religionId};
-                                @endphp
-                                <td>{{ $value->{'m_religion_'.$religionId} }}</td>
-                                <td>{{ $value->{'f_religion_'.$religionId} }}</td>
-                            @endforeach
-                            <td>{{$value->total_students}}</td>
-                            
-                        @endif
+                            <!-- religion  -->
+                            @if(isset($data['religion']))
+                                @foreach($data['religion'] as $religionId)
+                                    @php
+                                        $mreligionTotals[$religionId-1] += $value->{'m_religion_'.$religionId};
+                                        $freligionTotals[$religionId-1] += $value->{'f_religion_'.$religionId};
+                                    @endphp
+                                    <td>{{ $value->{'m_religion_'.$religionId} }}</td>
+                                    <td>{{ $value->{'f_religion_'.$religionId} }}</td>
+                                @endforeach
+                                <td>{{$value->total_students}}</td>
+                                
+                            @endif
 
-                        <!-- strength -->
-                        @if(isset($data['strength']))
-                            @foreach ($data['strength'] as $gender)
-                                @php
-                                    $genderTotal = $value->$gender ?? 0;
-                                    $genderIndex = ($gender == 'M') ? 0 : 1;
-                                    $strengthTotals[$genderIndex] += $genderTotal;
-                                @endphp
-                                <td>{{$genderTotal}}</td>
-                            @endforeach
-                            <td>{{$value->total_students}}</td>
-                        @endif
+                            <!-- strength -->
+                            @if(isset($data['strength']))
+                                @foreach ($data['strength'] as $gender)
+                                    @php
+                                        $genderTotal = $value->$gender ?? 0;
+                                        $genderIndex = ($gender == 'M') ? 0 : 1;
+                                        $strengthTotals[$genderIndex] += $genderTotal;
+                                    @endphp
+                                    <td>{{$genderTotal}}</td>
+                                @endforeach
+                                <td>{{$value->total_students}}</td>
+                            @endif
 
 
                             <!-- cast -->
                             @if(isset($data['cast']))
                                 @foreach($data['cast'] as $kee=>$castId)
                                     @php
-                                        $castTotals[$kee] += $value->{'cast_'.$castId};
+                                        $mcastTotals[$kee] += $value->{'m_cast_'.$castId};
+                                        $fcastTotals[$kee] += $value->{'f_cast_'.$castId};
                                     @endphp
-                                    <td>{{ $value->{'cast_'.$castId} }}</td>
+                                    <td>{{ $value->{'m_cast_'.$castId} }}</td>
+                                    <td>{{ $value->{'f_cast_'.$castId} }}</td>
                                 @endforeach
                                 <td>{{$value->total_students}}</td>
                             @endif
 
                             <!-- quota -->
-                                @if(isset($data['quota']))
-                            @foreach($data['quota'] as $kee=> $quotaId)
-                                @php
-                                    $quotaTotals[$kee] += $value->{'quota_'.$quotaId};
-                                @endphp
-                                <td>{{ $value->{'quota_'.$quotaId} }}</td>
-                            @endforeach
-                            <td>{{$value->total_students}}</td>
-                        @endif
-
+                            @if(isset($data['quota']))
+                                @foreach($data['quota'] as $kee=> $quotaId)
+                                    @php
+                                        $mquotaTotals[$kee] += $value->{'m_quota_'.$quotaId};
+                                        $fquotaTotals[$kee] += $value->{'f_quota_'.$quotaId};
+                                    @endphp
+                                    <td>{{ $value->{'m_quota_'.$quotaId} }}</td>
+                                    <td>{{ $value->{'f_quota_'.$quotaId} }}</td>
+                                @endforeach
+                                <td>{{$value->total_students}}</td>
+                            @endif
+                            
                             @php
                                 $totalStudents += $value->total_students;
                             @endphp
@@ -328,7 +344,7 @@
                     <tr>
                         <td colspan="2">Total</td>
                         <td>{{$mainTotal}}</td>
-                    <!-- general totals -->
+                        <!-- general totals -->
                         @if (isset($data['general']))
                             @php
                                 $totalStudents = 0; // Initialize total students count
@@ -371,16 +387,22 @@
 
                         <!-- cast totals -->
                         @if(isset($data['cast']))
-                            @foreach($castTotals as $castTotal)
-                                <td>{{$castTotal}}</td>
+                            @foreach($data['cast'] as $key => $castId)
+                                @if($castId == $cas[$key]->id)
+                                    <td>{{$mcastTotals[$key]}}</td>
+                                    <td>{{$fcastTotals[$key]}}</td>
+                                @endif
                             @endforeach
                             <td>{{$totalStudents}}</td>
                         @endif
 
                         <!-- quota totals -->
                         @if(isset($data['quota']))
-                            @foreach($quotaTotals as $quotaTotal)
-                                <td>{{$quotaTotal}}</td>
+                            @foreach($data['quota'] as $key => $quotaId)
+                                @if($quotaId == $quot[$key]->id)
+                                    <td>{{$mquotaTotals[$key]}}</td>
+                                    <td>{{$fquotaTotals[$key]}}</td>
+                                @endif
                             @endforeach
                             <td>{{$totalStudents}}</td>
                         @endif
@@ -470,5 +492,6 @@
         } );
     } );
 </script>
+
 @include('includes.footer')
 

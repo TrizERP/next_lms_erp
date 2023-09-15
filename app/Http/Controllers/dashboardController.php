@@ -992,7 +992,11 @@ class dashboardController extends Controller
                 $total_used_size = $photo_video_data_size + $leave_applications_data_size + $exam_schedule_data_size + $inward_data_size
                     + $outward_data_size + $petty_cash_size + $homework_size + $homework_submission_size + $visitor_size
                     + $frontdesk_size + $task_size + $complaint_size + $student_size + $student_health_size;
-                $used_space_in_MB = $this->formatBytes($total_used_size);
+                
+                // Convert the total used space to MB
+                $used_space_in_MB = $total_used_size / (1024 * 1024);
+
+                //$used_space_in_MB = $this->formatBytes($total_used_size);
                 $explod_used_space = explode(' ', $used_space_in_MB);
                 $occupied_space_in_MB = $school_setup_data['given_space_mb'];
                 $available_space_in_MB = ($occupied_space_in_MB - $explod_used_space[0]);
@@ -2471,7 +2475,7 @@ class dashboardController extends Controller
 
             $subInstituteExists[$tableName] = $exists;
         }
-    // return $subInstituteExists;exit;
+        // return $subInstituteExists;exit;
         $master = tblmenumasterModel::whereRaw("find_in_set('$sub_institute_id',sub_institute_id)")->where('status',1) ->where('menu_type','=','MASTER')
             ->orderBy('sort_order')->get()->toArray();
         $i = 0;
