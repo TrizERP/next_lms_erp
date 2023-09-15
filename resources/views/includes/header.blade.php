@@ -66,7 +66,13 @@ $academicTerms = session()->get('academicTerms');
                     <input type="text" class="form-control" placeholder="Search...">
                     <button type="search" class="btn-search"></button>
                 </div>
-                <h4 class="h5 mb-0 py-2 border-left pl-3">Educational ERP</h4>
+                @php
+                    $schoolData = DB::table('school_setup')
+                    ->select('SchoolName')
+                    ->where('id', session()->get("sub_institute_id"))
+                    ->first();
+                @endphp
+                <h4 class="h5 mb-0 py-2 border-left pl-3">{{ $schoolData->SchoolName ?? 'School Name Not Found' }}</h4>
             </div>
             <div class="d-md-flex align-items-center justify-content-end header-right">
                 <div class="d-md-flex header-select">

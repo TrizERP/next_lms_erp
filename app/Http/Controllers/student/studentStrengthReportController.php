@@ -66,7 +66,11 @@ class studentStrengthReportController extends Controller
             $query->whereIn('tblstudent.religion', $request['religion']);
             foreach ($request['religion'] as $religionId) {
                 $query->addSelect(
-                    DB::raw("SUM(CASE WHEN religion.id = $religionId THEN 1 ELSE 0 END) as religion_$religionId")
+                    DB::raw("SUM(CASE WHEN religion.id = $religionId and tblstudent.gender = 'M' THEN 1 ELSE 0 END) as m_religion_$religionId")
+                );
+
+                $query->addSelect(
+                    DB::raw("SUM(CASE WHEN religion.id = $religionId and tblstudent.gender = 'F' THEN 1 ELSE 0 END) as f_religion_$religionId")
                 );
             }
         }
@@ -78,7 +82,11 @@ class studentStrengthReportController extends Controller
             $query->whereRaw('tblstudent.cast IN (' . $castId . ')');
             foreach ($request['cast'] as $castId) {
                 $query->addSelect(
-                    DB::raw("SUM(CASE WHEN caste.id = $castId THEN 1 ELSE 0 END) as cast_$castId")
+                    DB::raw("SUM(CASE WHEN caste.id = $castId and tblstudent.gender = 'M' THEN 1 ELSE 0 END) as m_cast_$castId")
+                );
+
+                $query->addSelect(
+                    DB::raw("SUM(CASE WHEN caste.id = $castId and tblstudent.gender = 'F' THEN 1 ELSE 0 END) as f_cast_$castId")
                 );
             }
         }
@@ -90,7 +98,11 @@ class studentStrengthReportController extends Controller
             $query->whereRaw('tblstudent_enrollment.student_quota IN (' . $quotaId . ')');
             foreach ($request['quota'] as $quotaId) {
                 $query->addSelect(
-                    DB::raw("SUM(CASE WHEN tblstudent_enrollment.student_quota = $quotaId THEN 1 ELSE 0 END) as quota_$quotaId")
+                    DB::raw("SUM(CASE WHEN tblstudent_enrollment.student_quota = $quotaId and tblstudent.gender = 'M' THEN 1 ELSE 0 END) as m_quota_$quotaId")
+                );
+
+                $query->addSelect(
+                    DB::raw("SUM(CASE WHEN tblstudent_enrollment.student_quota = $quotaId and tblstudent.gender = 'F' THEN 1 ELSE 0 END) as f_quota_$quotaId")
                 );
             }
         }

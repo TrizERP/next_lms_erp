@@ -1181,6 +1181,7 @@ br {
                                     {{ method_field("POST") }}
                                     @csrf
                                         <input type="hidden" name="student_id" id="student_id" value="{{$student_data['id']}}">
+                                        
                                             <div class="h4 text-primary">Fees Detail</div>
                                             <div class="row border rounded mb-3 mb-md-4 mt-3 p-4">                                                                                            
                                                 <div class="col-md-3 form-group">
@@ -1232,16 +1233,16 @@ br {
                                                     <input type="text" id='UMRN' name="UMRN" value="@if(isset($data['studentfeesdetails']['UMRN'])) {{$data['studentfeesdetails']['UMRN']}} @endif" class="form-control">
                                                 </div>
                                                 <div class="col-md-3 form-group ml-0 mr-0">
-                                                    <label>Date</label>                                                   
-                                                    <input type="text" id="date_" name="date_" class="form-control mydatepicker" autocomplete="off">
+                                                    <label>Date</label>  
+                                                    <input type="text" id="date_" name="date_" value="@if(isset($data['studentfeesdetails']['closure_date'])) {{ $data['studentfeesdetails']['closure_date'] }} @endif" class="form-control mydatepicker" autocomplete="off">
                                                 </div>
                                                 <div class="col-md-3 form-group ml-0 mr-0">
                                                     <label>Status </label>
-                                                    <input type="text" id='status' name="status" class="form-control">
+                                                    <input type="text" id='status' name="status" value ="@if(isset($data['studentfeesdetails']['status'])) {{$data['studentfeesdetails']['status']}} @endif" class="form-control">
                                                 </div>
                                                 <div class="col-md-3 form-group ml-0">
                                                     <label>Rejection Reason</label>
-                                                    <input type="text" id='rejected_reason' name="rejected_reason" class="form-control">
+                                                    <input type="text" id='rejected_reason' name="rejected_reason" value ="@if(isset($data['studentfeesdetails']['reason'])) {{$data['studentfeesdetails']['reason']}} @endif" class="form-control">
                                                 </div>                                     
                                             </div> 
 

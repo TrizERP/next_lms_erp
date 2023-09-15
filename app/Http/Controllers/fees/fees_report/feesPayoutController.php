@@ -32,88 +32,92 @@ class feesPayoutController extends Controller
 
     public function showFeesPayout(Request $request)
     {
-        
         $type = $request->input("type");
         $from_date = $request->input('from_date');
         $to_date = $request->input('to_date');
         $syear = $request->session()->get('syear');
         $sub_institute_id = $request->session()->get('sub_institute_id');
-        $client_id = $request->session()->get('client_id');
-        $marking_period_id = session()->get('term_id');
 
-        $where_arr = array(
-            $from_date,
-            $to_date,
-            'N',
-            $sub_institute_id,
-            $syear,
-            $from_date,
-            $to_date,
-            'N',
-            $sub_institute_id,
-            $syear,
-        );
-
-        $results = DB::select("
-            SELECT 
-                gender,
-                standard_name,
-                coach_name,
-                batch_name,
-                house_name,
-                SUM(total_reg_paid) + SUM(total_other_paid) AS tot
-            FROM (
-                SELECT 
-                    se.student_id,
-                    s.first_name,
-                    s.gender,
-                    sd.name AS standard_name,
-                    d.name AS coach_name,
-                    IFNULL(b.title, 'Not Set') AS batch_name,
-                    hm.house_name,
-                    SUM(fc.amount) AS total_reg_paid,
-                    0 AS total_other_paid 
-                FROM tblstudent_enrollment se
-                INNER JOIN tblstudent s ON s.id = se.student_id
-                INNER JOIN standard sd ON sd.id = se.standard_id
-                INNER JOIN division d ON d.id = se.section_id
-                LEFT JOIN batch b ON b.id = s.studentbatch
-                LEFT JOIN house_master hm ON hm.id = se.house_id
-                INNER JOIN fees_collect fc ON (fc.student_id = se.student_id AND fc.receiptdate BETWEEN ? AND ? AND fc.is_deleted = ?)
-                WHERE se.sub_institute_id = ? AND se.syear = ?
-                GROUP BY se.student_id
-                
-                UNION
-                
-                SELECT 
-                    se.student_id,
-                    s.first_name,
-                    s.gender,
-                    sd.name AS standard_name,
-                    d.name AS coach_name,
-                    IFNULL(b.title, 'Not Set') AS batch_name,
-                    hm.house_name,
-                    0 AS total_reg_paid, 
-                    SUM(fo.actual_amountpaid) AS total_other_paid
-                FROM tblstudent_enrollment se
-                INNER JOIN tblstudent s ON s.id = se.student_id
-                INNER JOIN standard sd ON sd.id = se.standard_id
-                INNER JOIN division d ON d.id = se.section_id
-                LEFT JOIN batch b ON b.id = s.studentbatch
-                LEFT JOIN house_master hm ON hm.id = se.house_id
-                INNER JOIN fees_paid_other fo ON (fo.student_id = se.student_id AND fo.receiptdate BETWEEN ? AND ? AND fo.is_deleted = ?)
-                WHERE se.sub_institute_id = ? AND se.syear = ?
-                GROUP BY se.student_id
-                ) AS temp_tbl
-                GROUP BY standard_name, coach_name, batch_name, gender;
-            ", $where_arr);
+        $results = DB::table(function ($query) use ($from_date, $to_date, $sub_institute_id, $syear){
+            $query->select(
+                'se.student_id',
+                's.first_name',
+                DB::raw("LEFT(s.gender, 1) AS gender"),
+                'sd.name AS standard_name',
+                'd.name AS coach_name',
+                'b.title AS batch_name',
+                'hm.house_name',
+                DB::raw("SUM(fc.amount) AS total_reg_paid"),
+                DB::raw("0 AS total_other_paid")
+            )
+            ->from('tblstudent_enrollment AS se')
+            ->join('tblstudent AS s', 's.id', '=', 'se.student_id')
+            ->join('standard AS sd', 'sd.id', '=', 'se.standard_id')
+            ->join('division AS d', 'd.id', '=', 'se.section_id')
+            ->leftJoin('batch AS b', 'b.id', '=', 's.studentbatch')
+            ->leftJoin('house_master AS hm', 'hm.id', '=', 'se.house_id')
+            ->join('fees_collect AS fc', function ($join) use ($from_date, $to_date){
+                $join->on('fc.student_id', '=', 'se.student_id')
+                    ->whereBetween('fc.receiptdate', [$from_date, $to_date])
+                    ->where('fc.is_deleted', 'N');
+            })
+            ->where('se.sub_institute_id', $sub_institute_id)
+            ->where('se.syear', $syear)
+            ->groupBy('se.student_id');
         
+            $query->unionAll(
+                DB::table(function ($query) use ($from_date, $to_date, $sub_institute_id, $syear){
+                    $query->select(
+                        'se.student_id',
+                        's.first_name',
+                        DB::raw("LEFT(s.gender, 1) AS gender"),
+                        'sd.name AS standard_name',
+                        'd.name AS coach_name',
+                        'b.title AS batch_name',
+                        'hm.house_name',
+                        DB::raw("0 AS total_reg_paid"),
+                        DB::raw("SUM(fo.actual_amountpaid) AS total_other_paid")
+                    )
+                    ->from('tblstudent_enrollment AS se')
+                    ->join('tblstudent AS s', 's.id', '=', 'se.student_id')
+                    ->join('standard AS sd', 'sd.id', '=', 'se.standard_id')
+                    ->join('division AS d', 'd.id', '=', 'se.section_id')
+                    ->leftJoin('batch AS b', 'b.id', '=', 's.studentbatch')
+                    ->leftJoin('house_master AS hm', 'hm.id', '=', 'se.house_id')
+                    ->join('fees_paid_other AS fo', function ($join) use ($from_date, $to_date){
+                        $join->on('fo.student_id', '=', 'se.student_id')
+                            ->whereBetween('fo.receiptdate', [$from_date, $to_date])
+                            ->where('fo.is_deleted', 'N');
+                    })
+                    ->where('se.sub_institute_id', $sub_institute_id)
+                    ->where('se.syear', $syear)
+                    ->groupBy('se.student_id');
+                })
+            );
+        }, 'temp_tbl')
+        ->select(
+            'standard_name',
+            'coach_name',
+            'batch_name',
+            DB::raw("SUM(CASE WHEN house_name = 'CN' AND gender = 'M' THEN 1 ELSE 0 END) AS cn_male_count"),
+            DB::raw("SUM(CASE WHEN house_name = 'CN' AND gender = 'F' THEN 1 ELSE 0 END) AS cn_female_count"),
+            DB::raw("SUM(CASE WHEN house_name = 'Other School' AND gender = 'M' THEN 1 ELSE 0 END) AS other_male_count"),
+            DB::raw("SUM(CASE WHEN house_name = 'Other School' AND gender = 'F' THEN 1 ELSE 0 END) AS other_female_count"),
+            DB::raw("COUNT(house_name) AS tot_count"),
+            DB::raw("SUM(CASE WHEN house_name = 'CN' THEN (total_reg_paid + total_other_paid) ELSE 0 END) AS cn_tot"),
+            DB::raw("SUM(CASE WHEN house_name = 'Other School' THEN (total_reg_paid + total_other_paid) ELSE 0 END) AS other_tot"),
+            DB::raw("SUM(total_reg_paid) + SUM(total_other_paid) AS tot")
+        )
+        ->groupBy('standard_name', 'coach_name', 'batch_name')
+        ->get();
+                
         $resultArray = [];
-        foreach ($results as $object) {
+        foreach ($results as $object) 
+        {
             $resultArray[] = (array)$object;
         }
 
-        $new_arr = array();
+        /* $new_arr = array();
         foreach ($resultArray as $id => $arr) {
             $standard_name = $arr["standard_name"];
             $coach_name = $arr["coach_name"];
@@ -143,7 +147,7 @@ class feesPayoutController extends Controller
 
             // Add the record to the gender-specific array
             $new_arr[$standard_name][$coach_name][$batch_name][$school][] = $arr;
-        }
+        } */
         /* echo "<pre>";
         print_r($new_arr);
         print_r($resultArray);
@@ -154,7 +158,7 @@ class feesPayoutController extends Controller
 
         $res['status_code'] = 1;
         $res['message'] = "Success";
-        $res['fees_data'] = $new_arr;
+        $res['fees_data'] = $resultArray;
         $res['from_date'] = $from_date;
         $res['to_date'] = $to_date;
         $res['months'] = FeeMonthId();
