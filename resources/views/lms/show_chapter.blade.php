@@ -49,9 +49,9 @@ use DB;
                 @foreach($data['data'] as $key => $chdata)
                     @php
                         $blur_block_style = "";
-                        // if($chdata->show_hide != 1){
-                        //     $blur_block_style = "background-color: #817979 !important;";
-                        // }
+                        if($chdata->show_hide != 1){
+                           $blur_block_style = "background-color: #817979 !important;color:#fff";
+                        }
                     @endphp
                     <div class="row card single-chp" style="{{$blur_block_style}}">
                         <div class="col-md-4 mb-2 chp-details" data-toggle="collapse"
