@@ -118,7 +118,7 @@ class templateController extends Controller
         $content = array(
             'module_name'      => $request->get('module_name'),
             'title'            => $request->get('title'),
-            'html_content'     => '<div id="&lt;&lt;student_id&gt;&gt;">'.$request->get('html_content').'</div>',
+            'html_content'     => $request->get('html_content'),
             'status'           => '1',
             'created_by'       => $user_id,
             'sub_institute_id' => $sub_institute_id,
