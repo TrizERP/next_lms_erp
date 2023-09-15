@@ -1874,18 +1874,28 @@ class teacherapiController extends Controller
         $syear = $request->input("syear");
 
         if ($teacher_id != "" && $sub_institute_id != "" && $syear != "") {
+
             $data = DB::table('exam_schedule as e')
                 ->join('timetable as t', function ($join) {
-                    $join->where("(t.standard_id = e.standard_id AND t.division_id = e.division_id AND 
-                        t.sub_institute_id = e.sub_institute_id AND t.syear = e.syear)");
-                })->join('standard as s', function ($join) {
-                    $join->whereRaw("(s.id=t.standard_id AND s.sub_institute_id = t.sub_institute_id AND s.grade_id=t.academic_section_id)");
-                })->selectRaw("concat_ws(' - ',s.name,e.title) as title,e.date_,
-                    if(e.file_name = '','',concat('https://".$_SERVER['SERVER_NAME']."/storage/exam_schedule/',file_name)) as file_name")
+                    $join->on('t.standard_id', '=', 'e.standard_id')
+                         ->on('t.division_id', '=', 'e.division_id')
+                         ->on('t.sub_institute_id', '=', 'e.sub_institute_id')
+                         ->on('t.syear', '=', 'e.syear');
+                })
+                ->join('standard as s', function ($join) {
+                    $join->on('s.id', '=', 't.standard_id')
+                         ->on('s.sub_institute_id', '=', 't.sub_institute_id')
+                         ->on('s.grade_id', '=', 't.academic_section_id');
+                })
+                ->selectRaw("CONCAT_WS(' - ', s.name, e.title) as title, e.date_,
+                    IF(e.file_name = '', '', concat('https://".$_SERVER['SERVER_NAME']."/storage/exam_schedule/', e.file_name)) as file_name")
                 ->where('e.syear', $syear)
                 ->where('e.sub_institute_id', $sub_institute_id)
                 ->where('t.teacher_id', $teacher_id)
-                ->groupBy('e.id')->get()->toArray();
+                ->groupBy('e.id')
+                ->orderBy('e.date_', 'desc')
+                ->get()
+                ->toArray();
 
             if (count($data) > 0) {
                 $response['status'] = 1;

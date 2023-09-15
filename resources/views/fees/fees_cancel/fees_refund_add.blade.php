@@ -1,7 +1,8 @@
-@include('includes.headcss')
+{{--@include('includes.headcss')
 @include('includes.header')
-@include('includes.sideNavigation')
-
+@include('includes.sideNavigation')--}}
+@extends('layout')
+@section('container')
 <style>
     tr.spaceUnder > th {
         padding-bottom: 1em !important;
@@ -35,23 +36,23 @@
                                             <table class="table table-stripped">
                                                 <tr>
                                                     <td>{{ App\Helpers\get_string('uniqueid','request')}}</td>
-                                                    <td><?php echo $data['stu_data']['uniqueid']; ?></td>
+                                                    <td>{{$data['stu_data']['uniqueid']}}</td>
                                                 </tr>
                                                 <tr>
                                                     <td>{{ App\Helpers\get_string('studentname','request')}}</td>
-                                                    <td><?php echo $data['stu_data']['name']; ?></td>
+                                                    <td>{{$data['stu_data']['name']}}</td>
                                                 </tr>
                                                 <tr>
                                                     <td>Admission Year</td>
-                                                    <td><?php echo $data['stu_data']['admission']; ?></td>
+                                                    <td>{{$data['stu_data']['admission']}}</td>
                                                 </tr>
                                                 <tr>
                                                     <td>Parent Email</td>
-                                                    <td><?php echo $data['stu_data']['email']; ?></td>
+                                                    <td>{{$data['stu_data']['email']}}</td>
                                                 </tr>
                                                 <tr>
                                                     <td>{{ App\Helpers\get_string('studentquota','request')}}</td>
-                                                    <td><?php echo $data['stu_data']['student_quota']; ?></td>
+                                                    <td>{{$data['stu_data']['student_quota']}}</td>
                                                 </tr>
                                             </table>
                                         </div>
@@ -61,19 +62,19 @@
                                             <table class="table table-stripped">
                                                 <tr>
                                                     <td>{{ App\Helpers\get_string('grno','request')}}</td>
-                                                    <td><?php echo $data['stu_data']['enrollment']; ?></td>
+                                                    <td>{{$data['stu_data']['enrollment']}}</td>
                                                 </tr>
                                                 <tr>
                                                     <td>{{ App\Helpers\get_string('std/div','request')}}</td>
-                                                    <td><?php echo $data['stu_data']['stddiv']; ?></td>
+                                                    <td>{{$data['stu_data']['stddiv']}}</td>
                                                 </tr>
                                                 <tr>
                                                     <td>Contact No</td>
-                                                    <td><?php echo $data['stu_data']['mobile']; ?></td>
+                                                    <td>{{$data['stu_data']['mobile']}}</td>
                                                 </tr>
                                                 <tr style="color: red;">
                                                     <td>Pending Fees</td>
-                                                    <td><?php echo $data['stu_data']['pending']; ?></td>
+                                                    <td>{{$data['stu_data']['pending']}}</td>
                                                 </tr>
                                             </table>
                                         </div>
@@ -83,23 +84,23 @@
                                 <form action="{{ route('save_fees_refund') }}" method="post">
                                     @csrf
                                     <input type="hidden" name="grade_id"
-                                           value="<?php echo $data['stu_data']['grade_id']; ?>">
+                                           value="{{$data['stu_data']['grade_id']}}">
                                     <input type="hidden" name="standard_id"
-                                           value="<?php echo $data['stu_data']['std_id']; ?>">
+                                           value="{{$data['stu_data']['std_id']}}">
                                     <input type="hidden" name="div_id"
-                                           value="<?php echo $data['stu_data']['div_id']; ?>">
+                                           value="{{$data['stu_data']['div_id']}}">
                                     <input type="hidden" name="student_id"
-                                           value="<?php echo $data['stu_data']['student_id']; ?>">
+                                           value="{{$data['stu_data']['student_id']}}">
                                     <input type="hidden" name="std_div"
-                                           value="<?php echo $data['stu_data']['stddiv']; ?>">
+                                           value="{{$data['stu_data']['stddiv']}}">
                                     <input type="hidden" name="full_name"
-                                           value="<?php echo $data['stu_data']['name']; ?>">
+                                           value="{{$data['stu_data']['name']}}">
                                     <input type="hidden" name="mobile"
-                                           value="<?php echo $data['stu_data']['mobile']; ?>">
+                                           value="{{$data['stu_data']['mobile']}}">
                                     <input type="hidden" name="uniqueid"
-                                           value="<?php echo $data['stu_data']['uniqueid']; ?>">
+                                           value="{{$data['stu_data']['uniqueid']}}">
                                     <input type="hidden" name="enrollment"
-                                           value="<?php echo $data['stu_data']['enrollment']; ?>">
+                                           value="{{$data['stu_data']['enrollment']}}">
 
                                     <div class="table-responsive col-md-12">
                                         <table class="table table-stripped" border="0" width="100%">
@@ -111,7 +112,7 @@
                                                             <th>Amount</th>
                                                             <th>Collection Amount</th>
                                                         </tr>
-                                                        <?php
+                                                        @php
                                                         $total_amount = 0;
                                                         if(isset($data['paid_data_title_wise']))
                                                         {
@@ -123,7 +124,7 @@
                                                         $fees_title = $explod_amt[1];
 
                                                         $total_amount = $total_amount + $paid_amt;
-                                                        ?>
+                                                       @endphp
                                                         <tr>
                                                             <td>{{$fees_title}}</td>
                                                             <td>{{$paid_amt}}</td>
@@ -135,10 +136,10 @@
                                                                        data-value='refund_amount[{{$fees_title_name}}]'>
                                                             </td>
                                                         </tr>
-                                                        <?php
+                                                        @php
                                                         }
                                                         }
-                                                        ?>
+                                                        @endphp
                                                         <tr>
                                                             <td>Total</td>
                                                             <td>{{$total_amount}}</td>
@@ -175,7 +176,7 @@
                                                 <td>Cheque/DD Date</td>
                                                 <td><input type="text" name="cheque_date" id="cheque_date"
                                                            class="form-control mydatepicker" autocomplete="off"
-                                                           value="<?php echo date('Y-m-d'); ?>"></td>
+                                                           value="{{date('Y-m-d')}}"></td>
                                                 <td>Cheque/DD No/Transaction No</td>
                                                 <td><input type="text" name="cheque_no" id="cheque_no"
                                                            class="form-control"></td>
@@ -263,3 +264,4 @@
 
     </script>
 @include('includes.footer')
+@endsection

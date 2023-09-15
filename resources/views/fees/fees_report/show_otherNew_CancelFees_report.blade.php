@@ -1,7 +1,8 @@
-@include('includes.headcss')
+{{--@include('includes.headcss')
 @include('includes.header')
-@include('includes.sideNavigation')
-
+@include('includes.sideNavigation')--}}
+@extends('layout')
+@section('container')
 <div id="page-wrapper">
     <div class="container-fluid">
             <div class="row bg-title">
@@ -18,10 +19,10 @@
                 $from_date = $data['from_date'];
                 $to_date = $data['to_date'];
             }
-            if(isset($data['from_date'])){                
+            if(isset($data['from_date'])){
                 $from_date = $data['from_date'];
                 $to_date = $data['to_date'];
-            }            
+            }
         @endphp
         <div class="card">
             @if ($sessionData = Session::get('data'))
@@ -34,8 +35,8 @@
                         <strong>{{ $sessionData['message'] }}</strong>
                 </div>
             @endif
-                <form action="{{ route('otherNew_cancel_fees_report.create') }}" enctype="multipart/form-data" class="row">                    
-                    @csrf                                    
+                <form action="{{ route('otherNew_cancel_fees_report.create') }}" enctype="multipart/form-data" class="row">
+                    @csrf
                     {{ App\Helpers\SearchChain('4','single','grade,std,div',$grade_id,$standard_id,$division_id) }}
 
                     <div class="col-md-4 form-group">
@@ -53,7 +54,7 @@
                             <option value="">Select</option>
                             @if(isset($data['feesOtherHead_data']))
                                 @foreach($data['feesOtherHead_data'] as $key => $val)
-                                    @php 
+                                    @php
                                     $selected = "";
                                     if(isset($data['otherfeeshead']) && $data['otherfeeshead'] == $val['id'])
                                     {
@@ -65,7 +66,7 @@
                             @endif
                         </select>
                     </div>
-                    
+
                     <div class="col-md-12 form-group">
                         <center>
                             <input type="submit" name="submit" value="Search" class="btn btn-success">
@@ -79,7 +80,7 @@
             if(isset($data['other_feesData'])){
                 $other_feesData = $data['other_feesData'];
             }
-            
+
         @endphp
         <div class="card">
             <div class="table-responsive">
@@ -91,18 +92,18 @@
                             <th>{{ App\Helpers\get_string('studentname','request')}}</th>
                             <th>{{ App\Helpers\get_string('standard','request')}}</th>
                             <th>{{ App\Helpers\get_string('division','request')}}</th>
-                            <th>Mobile No.</th>                                                               
-                            <th>Fees Head</th>                               
-                            <th>Receipt No.</th>                               
-                            <th>Remark</th>                                                           
-                            <th>Cancelled Date</th>                               
-                            <th>Cancelled By</th>                               
-                            <th>Amount</th>                                                               
+                            <th>Mobile No.</th>
+                            <th>Fees Head</th>
+                            <th>Receipt No.</th>
+                            <th>Remark</th>
+                            <th>Cancelled Date</th>
+                            <th>Cancelled By</th>
+                            <th>Amount</th>
                         </tr>
                     </thead>
                     <tbody>
                     @php
-                    $j=1; 
+                    $j=1;
                     $grand_total = 0;
                     if(isset($data['other_fee_title']))
                     {
@@ -110,11 +111,11 @@
                         {
                             $grand_total[$otherhead->fees_title] = 0;
                         }
-                    }                    
+                    }
                     @endphp
-                                           
+
                     @if(isset($data['other_feesData']))
-                        @foreach($other_feesData as $key => $fees_value)                  
+                        @foreach($other_feesData as $key => $fees_value)
                         @php $student_total = 0; @endphp
                         <tr>
                             <td>{{$j}}</td>
@@ -122,38 +123,38 @@
                             <td>{{$fees_value['student_name']}}</td>
                             <td>{{$fees_value['standard_name']}}</td>
                             <td>{{$fees_value['division_name']}}</td>
-                            <td>{{$fees_value['mobile']}}</td>                            
-                            <td>{{$fees_value['fees_head']}}</td>                                                                                
-                            <td>{{$fees_value['receipt_id']}}</td>                                                                                
+                            <td>{{$fees_value['mobile']}}</td>
+                            <td>{{$fees_value['fees_head']}}</td>
+                            <td>{{$fees_value['receipt_id']}}</td>
                             <td>
                                 @if($fees_value['cancellation_remarks'] != "")
                                 {{$fees_value['cancellation_remarks']}}
-                                @else - 
-                                @endif</td>                                                                                                                                                                                    
-                            <td>{{date('d-m-Y',strtotime($fees_value['cancellation_date']))}}</td>                                                                                
-                            <td>{{$fees_value['cancelled_by']}}</td>                                                                                                                                                                                    
-                            <td>{{$fees_value['cancellation_amount']}}</td>                                                                                                                                                                                    
+                                @else -
+                                @endif</td>
+                            <td>{{date('d-m-Y',strtotime($fees_value['cancellation_date']))}}</td>
+                            <td>{{$fees_value['cancelled_by']}}</td>
+                            <td>{{$fees_value['cancellation_amount']}}</td>
                         </tr>
                         @php
-                        $j++;                       
-                        $grand_total += $fees_value['cancellation_amount'];                       
+                        $j++;
+                        $grand_total += $fees_value['cancellation_amount'];
                         @endphp
                         @endforeach
                         <tr class="font-weight-bold">
                             <td>{{$j++}}</td>
                             <td></td>
                             <td></td>
-                            <td></td>                           
-                            <td></td>                           
-                            <td></td>                           
-                            <td></td>                                                                       
-                            <td></td>                           
-                            <td></td>                           
-                            <td></td>                           
-                            <td>Total</td>                                                        
-                            <td>{{$grand_total}}</td>                             
-                        </tr>                       
-                        
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td>Total</td>
+                            <td>{{$grand_total}}</td>
+                        </tr>
+
                     @endif
                     </tbody>
                 </table>
@@ -168,29 +169,29 @@
 <script>
     $(document).ready(function() {
      var table = $('#example').DataTable( {
-         select: true,          
-         lengthMenu: [ 
-                        [100, 500, 1000, -1], 
-                        ['100', '500', '1000', 'Show All'] 
+         select: true,
+         lengthMenu: [
+                        [100, 500, 1000, -1],
+                        ['100', '500', '1000', 'Show All']
         ],
-        dom: 'Bfrtip', 
-        buttons: [ 
-            { 
+        dom: 'Bfrtip',
+        buttons: [
+            {
                 extend: 'pdfHtml5',
                 title: 'Other Fees Report',
                 orientation: 'landscape',
-                pageSize: 'LEGAL',                
+                pageSize: 'LEGAL',
                 pageSize: 'A0',
-                exportOptions: {                   
-                     columns: ':visible'                             
+                exportOptions: {
+                     columns: ':visible'
                 },
-            }, 
-            { extend: 'csv', text: ' CSV', title: 'Other Fees Report' }, 
-            { extend: 'excel', text: ' EXCEL', title: 'Other Fees Report'}, 
-            { extend: 'print', text: ' PRINT', title: 'Other Fees Report'}, 
-            'pageLength' 
-        ], 
-        }); 
+            },
+            { extend: 'csv', text: ' CSV', title: 'Other Fees Report' },
+            { extend: 'excel', text: ' EXCEL', title: 'Other Fees Report'},
+            { extend: 'print', text: ' PRINT', title: 'Other Fees Report'},
+            'pageLength'
+        ],
+        });
 
         $('#example thead tr').clone(true).appendTo( '#example thead' );
         $('#example thead tr:eq(1) th').each( function (i) {
@@ -209,3 +210,4 @@
     } );
 </script>
 @include('includes.footer')
+@endsection

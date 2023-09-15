@@ -1,8 +1,12 @@
+{{--
 @include('includes.headcss') @include('includes.header') @include('includes.sideNavigation')
+--}}
 
+@extends('layout')
+@section('container')
 <div id="page-wrapper" style="color:#000;">
 	<div class="container-fluid">
-	
+
 		<div class="row bg-title">
 			<div class="col-lg-3 col-md-4 col-sm-4 col-xs-12">
 				<h4 class="page-title">Fees Collect</h4>
@@ -56,7 +60,7 @@
 								@php
                                     }
                                         $remainFees += $arr['remain'];
-                                        } 
+                                        }
 								@endphp
 								<tr>
 									<td>Total</td>
@@ -110,9 +114,9 @@
 											</td>
 										</tr>
 										<tr>
-											<td>Parent Email</td>
+											<td>Father Name</td>
 											<td>
-												{{ $data['stu_data']['email']; }}
+												{{ $data['stu_data']['father_name']; }}
 											</td>
 										</tr>
 										<tr>
@@ -145,9 +149,15 @@
 												{{ $data['stu_data']['mobile']; }}
 											</td>
 										</tr>
-										<tr style="color: red;">
-											<td>Pending Fees</td>
+										<tr>
+											<td>Parent Email</td>
 											<td>
+												{{ $data['stu_data']['email']; }}
+											</td>
+										</tr>
+										<tr>
+											<td style="color: red;">Pending Fees</td>
+											<td style="color: red;">
 												{{ $data['stu_data']['pending']; }}
 											</td>
 										</tr>
@@ -280,8 +290,8 @@
                                                         }
                                                         if($data['previous_fees']=0 || $data['previous_fees']=null){
 
-                                                        if ($id != 'Total') {   
-                                                         
+                                                        if ($id != 'Total') {
+
                                                             echo "<td style='width: 20%'><input  $individual_enable $negative_disable type='number'  min=0 max=".($val['amount'] ?? 0)." value='" . ($val['amount'] ?? 0) ."' name='fees_data[" . $data['final_fee_name'][$id] . "]' class='form-control allField1 fees_data[" . $data['final_fee_name'][$id] . "]'>
                                                             <input type='hidden' value=" .($val['amount'] ?? 0) . " name='hid_fees_data[" . $data['final_fee_name'][$id] . "]' class='hid_allField1' $individual_enable id=". $data['final_fee_name'][$id] . ">
                                                             </td>";
@@ -301,13 +311,13 @@
                                                       @endphp
 												</tr>
 												@php }
-                                                       $total_amt= array_sum($total) 
+                                                       $total_amt= array_sum($total)
 												@endphp
 
 											</table>
 										</td>
 									</tr>
-									
+
 									<tr>
 										<td></td>
 										<td>Remarks</td>
@@ -326,7 +336,7 @@
 											@if(in_array(session()->get('sub_institute_id'),$sub_institute_id) )
 
 											<input type="text" name="fees_data[fine]" id="cheque_return_charges1" class="form-control cheque_return_charges1" value="@if(date('d') >= 5 && $total_amt!=0) {{$data['fees_config_data']['late_fees_amount']}} @else {{$cheque_return_charges0}} @endif" >
-										
+
 											<input type="hidden" name="hidden_cheque_return_charges" id="hidden_cheque_return_charges" class="form-control cheque_return_charges1" value="{{$data['fees_config_data']['late_fees_amount']}}"> @else
 											<input type="text" name="fees_data[fine]" id="cheque_return_charges" class="form-control" value="@php if(isset($cheque_return_charges0)) echo $cheque_return_charges0; @endphp"
 											 readonly="readonly">
@@ -405,7 +415,7 @@
 							</div>
 							<div class="table-responsive col-md-12">
 								<div class="col-md-6 form-group">
-								
+
 								</div>
 								<div class="col-md-6 form-group">
     								<center> <input type="submit" name="submit" onclick="return checkForm();" value="Save" class="btn btn-success"></center>
@@ -614,7 +624,7 @@
 
 
 $('.months').click(function() {
-				var currentCheckedIndex = $('.months').index(this); 
+				var currentCheckedIndex = $('.months').index(this);
 
 				$('.months').each(function(index) {
 					if (index <= currentCheckedIndex) {
@@ -772,3 +782,5 @@ $('.months').click(function() {
 				});
 			}
 		</script>
+
+@endsection

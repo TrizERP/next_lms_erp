@@ -97,7 +97,7 @@ class tblcustomfieldsController extends Controller
                 'field_id'      => $fieldsId,
                 'display_text'  => $value,
                 'display_value' => $newRequest['f_value'][$key],
-                'created_on'    => date('Y-m-d h:i:s'),
+                'created_on'    => date('Y-m-d H:i:s'),
             ]);
             $fieldsData->save();
         }

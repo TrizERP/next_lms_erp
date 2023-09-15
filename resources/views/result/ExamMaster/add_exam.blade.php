@@ -28,56 +28,56 @@
 
                             {{csrf_field()}}
                             
+                            @php
+                            $std_id = $term_id= $weightage = '';
+                            if(isset($data['standard_id'])){
+                                $std_id = $data['standard_id'];
+                            }
+                            if(isset($data['term_id'])){
+                                $term_id = $data['term_id'];
+                            }
+                            if(isset($data['weightage'])){
+                                $weightage = $data['weightage'];
+                            }
+                            @endphp
                             <div class="row">
+                           
                               <div class="col-md-6 form-group">
-                                  <label>Code </label>
-                                  <input type="text" id='Code' required name="Code" 
-                                         value="@php
-                                         if(isset($data->Code)){
-                                          echo $data->Code;
-                                         }else{
-                                         echo $data['Code'];
-                                         }
-                                         @endphp
-                                         " 
-                                         class="form-control">
-                              </div>
-                              <div class="col-md-6 form-group">
-                                  <label>Exam Type</label>
-                                  <select class="form-control" name="ExamType">
-                                      <option value="">--Select Exam Type--</option>
-                                      @php
-                                      foreach ($data['ddValue'] as $id=>$arr){
-                                          if(isset($data->ExamType)){
-                                              if($data->ExamType == $arr['Id']){
-                                                  $SELECTED = "selected='selected'";
-                                              }else{
-                                                  $SELECTED = "";
-                                              }
-                                          }else{
-                                              $SELECTED = "";
-                                          }
-                                          echo "<option $SELECTED value=$arr[Id]>$arr[ExamType]</option>";
-                                      }
-                                      @endphp
+                                  <label>{{ App\Helpers\get_string('standard','request')}}</label>
+                                  <select class="form-control" name="all_standard[]" multiple required>
+                                      <option value="">--Select {{ App\Helpers\get_string('standard','request')}}--</option>
+                                        @if($data['all_standard'])
+                                                @foreach($data['all_standard'] as $id=>$std)
+                                                    <option value="{{$std->id}}" @if($std->id == $std_id) Selected @endif>{{$std->name}}</option>
+                                                @endforeach
+                                        @endif
                                   </select>
                               </div>
                               <div class="col-md-6 form-group">
                                   <label>Exam Title</label>
-                                  <input type="text" id='ExamTitle' name="ExamTitle" value="@if(isset($data->ExamTitle)) {{ $data->ExamTitle }} @endif" class="form-control">
+                                  <input type="text" id="ExamTitle" name="ExamTitle" value="{{ $data->ExamTitle ?? '' }}" class="form-control" required>
+                              </div>
+
+                              <div class="col-md-6 form-group">
+                                  <label>Exam Weightage</label>
+                                  <input type="number" id="weightage" name="weightage" value="{{ $weightage ?? '' }}" class="form-control">
                               </div>
                               <div class="col-md-6 form-group">
                                   <label>Sort Order</label>
-                                  <input type="text" id='SortOrder' required name="SortOrder" 
-                                      value="@php
-                                         if(isset($data->SortOrder)){
-                                          echo $data->SortOrder;
-                                         }else{
-                                         echo $data['SortOrder'];
-                                         }
-                                         @endphp
-                                         " 
-                                      class="form-control">
+                                  <input type="number" id="SortOrder" required name="SortOrder" value="{{ isset($data->SortOrder) ? $data->SortOrder : $data['SortOrder'] }}" class="form-control">
+                                  <input type="hidden" id="code" required name="Code" value="{{ isset($data->code) ? $data->code : $data['code'] }}" class="form-control">
+                              </div>
+
+                                <div class="col-md-6 form-group">
+                                  <label>Term</label>
+                                  <select class="form-control" name="all_term[]" multiple required>
+                                      <option value="">--Select Term--</option>
+                                        @if($data['all_term'])
+                                                @foreach($data['all_term'] as $id=>$term)
+                                                    <option value="{{$term->term_id}}"  @if($term->term_id == $term_id) Selected @endif>{{$term->title}}</option>
+                                                @endforeach
+                                        @endif
+                                  </select>
                               </div>
 
                               <div class="col-md-12 form-group">

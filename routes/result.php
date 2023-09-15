@@ -100,6 +100,8 @@ Route::get('api/get-division-list', [AJAXController::class, 'getDivisionList']);
 Route::get('api/get-subject-list', [AJAXController::class, 'getSubjectList']);
 /** get exam list */
 Route::get('api/get-exam-name-list', [AJAXController::class, 'getExamsList']);
+Route::get('api/get-exam-master-list', [AJAXController::class, 'getExamsMasterList']);
+
 /** get subjec by create exam list */
 Route::get('api/get-subject-by-create-exam', [AJAXController::class, 'getSubjectByCreateExam']);
 /** get Exam by create exam list */
@@ -188,3 +190,4 @@ Route::post('studentResultPDFAPI', [cbse_1t5_result_controller::class, 'studentR
 //});
 
 Route::get('cbse_1t5_result/download_overall_report', [result_report_controller::class, 'downloadOverAllReportExcel']);
+Route::resource('result-template', result_TemplateController::class);

@@ -1,7 +1,9 @@
-@include('../includes.headcss')
+{{--@include('../includes.headcss')
     <!-- <link rel="stylesheet" href="../../../tooltip/enjoyhint/jquery.enjoyhint.css"> -->
 @include('../includes.header')
-@include('../includes.sideNavigation')
+@include('../includes.sideNavigation')--}}
+@extends('layout')
+@section('container')
 
 <div id="page-wrapper">
     <div class="container-fluid">
@@ -16,24 +18,21 @@
                     <form action="{{ route('fees_breackoff.store') }}" enctype="multipart/form-data" method="post">
                     {{ method_field("POST") }}
                     @csrf
-                      <div class="row">                        
+                      <div class="row">
                         <div class="col-md-12 form-group">
-                            <div class="row">  
+                            <div class="row">
                               {{ App\Helpers\SearchChain('4','multiple','grade,std,div') }}
-                            </div>  
+                            </div>
                         </div>
-                        <?php
-                          foreach ($data['data']['ddMonth'] as $id => $val) {
-	                      ?>
+                          @foreach ($data['data']['ddMonth'] as $id => $val)
+
                         <div class="col-md-3 form-group">
-                            <input class="monthclass" name="<?php echo "month[" . $id . "]"; ?>" value="<?php echo $id; ?>" type="checkbox">
-                            <label><?php echo $val; ?></label>
+                            <input class="monthclass" name="month[{{$id}}]" value="{{$id}}" type="checkbox">
+                            <label>{{$val}}</label>
                         </div>
-                        <?php
-                          }
-                        ?>
+                          @endforeach
                         <div class="col-md-12 form-group">
-                          <center>                            
+                          <center>
                             <input type="submit" name="submit" value="Add Fees Structure" class="btn btn-success"><!--onclick="return check_validation();" -->
                           </center>
                         </div>
@@ -142,14 +141,14 @@
     // function check_validation()
     // {
     //     var grade = $("#grade").val();
-    //     var standard = $("#standard").val();                    
-    
+    //     var standard = $("#standard").val();
+
     //     var month_values_arr = new Array();
-    //     $('.monthclass:checkbox:checked').each(function() {            
-    //         month_values_arr.push($(this).val());          
+    //     $('.monthclass:checkbox:checked').each(function() {
+    //         month_values_arr.push($(this).val());
     //     });
 
-    //     var month_values = month_values_arr.join(",");        
+    //     var month_values = month_values_arr.join(",");
 
     //     var path = "{{ route('ajax_checkFeesStructure') }}";
 
@@ -160,21 +159,21 @@
     //         url:path,
     //         data:"grade="+grade+"&standard="+standard+"&month_values="+month_values,
     //         success:function(result)
-    //         {       
-    //             var existing_months = "";       
+    //         {
+    //             var existing_months = "";
     //             for(var i=0;i < result.length;i++)
-    //             { 
-    //                 existing_months = existing_months + result[i]['Month'];                    
+    //             {
+    //                 existing_months = existing_months + result[i]['Month'];
     //             }
-                
+
     //             existing_months = existing_months.slice(0, -1);
     //             status = "1";
-    //             alert("Fees Structure already exist for month - " + existing_months);                
+    //             alert("Fees Structure already exist for month - " + existing_months);
     //         }
     //     });
     //     return status;
     //     }();
-        
+
     //     if(return_first == "1")
     //     {
     //         return false;
@@ -182,7 +181,8 @@
     //     else
     //     {
     //         return true;
-    //     }       
+    //     }
     // }
 </script>
 @include('includes.footer')
+@endsection

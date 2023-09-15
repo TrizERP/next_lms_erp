@@ -286,11 +286,13 @@ class feesOverallHeadwisePendingReportController extends Controller
                 foreach ($bk_data as $stu_id => $total_fees) {
                     $total_fees_array[]=$total_fees;
                     foreach ($total_fees_array[0] as $key => $month_data) {
-                        if (isset($month_data['month_id']) && $month_data['month_id'] == '-') {
-                            $final_array[$value['id']][$month_data['month_id']]['paid'] = $total_paid_new;
-                            $final_array[$value['id']][$month_data['month_id']]['remain'] = $total_unpaid_new;
-                            $final_array[$value['id']][$month_data['month_id']]['bk'] = ($total_paid_new + $total_unpaid_new);
+                        if (isset($month_data['month_id'])) {
+                            $final_array[$value['id']]['-']['paid'] = $total_paid_new;
+                            $final_array[$value['id']]['-']['remain'] = $total_unpaid_new;
+                            $final_array[$value['id']]['-']['bk'] = ($total_paid_new + $total_unpaid_new);
                         }
+                //    echo "<pre>";print_r($final_array);
+                        
                     }
                 }
                 if(isset($fees_fine_discount_data[$value['id']])) {
@@ -299,6 +301,8 @@ class feesOverallHeadwisePendingReportController extends Controller
                 }
             }
         }
+        // exit;
+        
         foreach ($bk_title_months_array as &$value) {
             uksort( $value , function($a, $b) use($months){
                 $a = strtotime(substr($months[$a],-4) );

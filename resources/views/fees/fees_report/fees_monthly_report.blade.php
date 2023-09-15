@@ -1,7 +1,8 @@
-@include('includes.headcss')
+{{--@include('includes.headcss')
 @include('includes.header')
-@include('includes.sideNavigation')
-
+@include('includes.sideNavigation')--}}
+@extends('layout')
+@section('container')
 <div id="page-wrapper">
     <div class="container-fluid">
         <div class="row bg-title">
@@ -113,12 +114,9 @@
                             <tr>
                                 <td>{{$i++}}</td>
                                 <td align="right"><b>Total :</b></td>
-                                @php
-                                    foreach($data['heading_arr'] as $h1key => $h1val)
-                                    {
-                                        echo "<td><b>".$$h1key."</b></td>";
-                                    }
-                                @endphp
+                                @foreach($data['heading_arr'] as $h1key => $h1val)
+                                    <td><b>{{$h1key}}</b></td>
+                                @endforeach
                                 <td><b>{{$grand_total}}</b></td>
                             </tr>
 
@@ -200,3 +198,4 @@
     } );
 </script>
 @include('includes.footer')
+@endsection

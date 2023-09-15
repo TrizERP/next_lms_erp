@@ -1,16 +1,20 @@
+{{--
 @include('../includes.headcss')
+--}}
+@extends('layout')
+@section('container')
 <link rel="stylesheet" href="../../../plugins/bower_components/dropify/dist/css/dropify.min.css">
-@include('../includes.header')
-@include('../includes.sideNavigation')
+{{--@include('../includes.header')
+@include('../includes.sideNavigation')--}}
 
 
 <div id="page-wrapper">
     <div class="container-fluid">
-        <div class="row bg-title">            
-            <div class="col-lg-3 col-md-4 col-sm-4 col-xs-12">                
-                <h4 class="page-title">Map Year</h4>            
-            </div>                    
-        </div>       
+        <div class="row bg-title">
+            <div class="col-lg-3 col-md-4 col-sm-4 col-xs-12">
+                <h4 class="page-title">Map Year</h4>
+            </div>
+        </div>
             <div class="card">
                 @if ($message = Session::get('success'))
                 <div class="alert alert-success alert-block">
@@ -56,9 +60,9 @@
                                 ?>
                             </select>
                         </div>
-                        
-                        <div class="col-md-12 form-group ml-0">                            
-                            <input type="submit" name="submit" value="Save" class="btn btn-success" >                            
+
+                        <div class="col-md-12 form-group ml-0">
+                            <input type="submit" name="submit" value="Save" class="btn btn-success" >
                         </div>
                         </div>
 
@@ -84,3 +88,4 @@
 
 
 @include('includes.footer')
+@endsection

@@ -354,7 +354,7 @@ class lms_apiController extends Controller
                         $topicData = contentModel::where('content_master.sub_institute_id', $sub_institute_id)
                             ->where('content_master.chapter_id', $chapter_id)
                             ->where('content_master.show_hide', '1')
-                            ->select('content_master.sub_institute_id', 'content_master.chapter_id', 'content_master.content_category as topic_name' , 'content_master.syear', 'content_master.created_at')->groupBy('content_master.content_category')
+                            ->select('content_master.sub_institute_id', 'content_master.chapter_id', 'content_master.content_category as name' , 'content_master.syear', 'content_master.created_at')->groupBy('content_master.content_category')
                             ->get();
                         $topicData = json_decode(json_encode($topicData), true);
                         $finaldata[$chapter_id] = $val;
@@ -382,7 +382,7 @@ class lms_apiController extends Controller
                                         if(file_type = 'link', filename, concat('https://".$_SERVER['SERVER_NAME']."/storage', file_folder, '/', filename))) as full_path 
                                     FROM content_master 
                                     WHERE sub_institute_id = '".$sub_institute_id."' AND chapter_id = '".$chapter_id."'  
-                                    AND content_category = '".$tval['topic_name']."'  AND subject_id = '".$subject_id."' AND show_hide = '1'");
+                                    AND content_category = '".$tval['name']."'  AND subject_id = '".$subject_id."' AND show_hide = '1'");
                                 $contentData = json_decode(json_encode($contentData), true);
                                 $finaldata[$chapter_id]['topicData'][$tkey]['contentData'] = $contentData;
                             }
@@ -484,7 +484,7 @@ class lms_apiController extends Controller
                 ->where('student_id', $student_id)
                 ->where('question_paper_id', $question_paper_id)->get()->toArray();
 
-            if ($data['questionpaper_data']['open_date'] <= date('Y-m-d h:i:s') && $data['questionpaper_data']['close_date'] >= date('Y-m-d h:i:s') && ($attempted[0]->count_attempted <= $data['questionpaper_data']['attempt_allowed'] || $data['questionpaper_data']['attempt_allowed'] == 0)) {
+            if ($data['questionpaper_data']['open_date'] <= date('Y-m-d H:i:s') && $data['questionpaper_data']['close_date'] >= date('Y-m-d H:i:s') && ($attempted[0]->count_attempted <= $data['questionpaper_data']['attempt_allowed'] || $data['questionpaper_data']['attempt_allowed'] == 0)) {
 
                 $question_ids = explode(",", $data['questionpaper_data']['question_ids']);
 

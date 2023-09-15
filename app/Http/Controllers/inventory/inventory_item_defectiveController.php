@@ -91,7 +91,7 @@ class inventory_item_defectiveController extends Controller
             'ITEM_GIVEN_TO'           => $request->get('item_given_to'),
             'ESTIMATED_RECEIVED_DATE' => $request->get('estimated_received_date'),
             'CREATED_BY'              => $created_by,
-            'CREATED_ON'              => date('Y-m-d h:i:s'),
+            'CREATED_ON'              => date('Y-m-d H:i:s'),
             'CREATED_IP_ADDRESS'      => $created_ip_address,
         ]);
 
@@ -142,7 +142,7 @@ class inventory_item_defectiveController extends Controller
             'ITEM_GIVEN_TO'           => $request->get('item_given_to'),
             'ESTIMATED_RECEIVED_DATE' => $request->get('estimated_received_date'),
             'CREATED_BY'              => $created_by,
-            'CREATED_ON'              => date('Y-m-d h:i:s'),
+            'CREATED_ON'              => date('Y-m-d H:i:s'),
             'CREATED_IP_ADDRESS'      => $created_ip_address,
         );
 

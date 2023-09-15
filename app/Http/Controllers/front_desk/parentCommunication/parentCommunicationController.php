@@ -446,7 +446,7 @@ class parentCommunicationController extends Controller
                 ->where('sub_institute_id', $sub_institute_id)
                 ->where('syear', $syear)
                 ->update(['reply' => $reply, 'reply_by' => $teacher_id, 'reply_on' => $reply_on]);
-
+            
             $res['status_code'] = 1;
             $res['message'] = "Success";
         } else {

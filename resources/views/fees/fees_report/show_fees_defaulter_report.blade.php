@@ -1,8 +1,9 @@
-@include('includes.headcss')
+{{--@include('includes.headcss')
 @include('includes.header')
-@include('includes.sideNavigation')
-
-<div id="page-wrapper">
+@include('includes.sideNavigation')--}}
+@extends('layout')
+@section('container')
+    <div id="page-wrapper">
     <div class="container-fluid">
             <div class="row bg-title">
                 <div class="col-lg-3 col-md-4 col-sm-4 col-xs-12">
@@ -68,7 +69,7 @@
                     <div class="col-md-4 form-group">
                         <label>Mobile No.</label>
                         <input type="text" id="mobile_no" value="{{$mobile_no}}" name="mobile_no" class="form-control">
-                    </div>                    
+                    </div>
                     <div class="col-md-4 form-group">
                         <label>{{ App\Helpers\get_string('uniqueid','request')}}</label>
                         <input type="text" id="uniqueid" value="{{$uniqueid}}" name="uniqueid" class="form-control">
@@ -87,7 +88,7 @@
             if(isset($data['fees_data'])){
                 $fees_data = $data['fees_data'];
             }
-            
+
         @endphp
         <div class="card">
             <div class="table-responsive">
@@ -103,7 +104,7 @@
                             <th>Roll No.</th>
                             <th style="background-color:#7befef;">Total Breakoff</th>
                             <th style="background-color:#7befef;">Total Paid</th>
-                            <th style="background-color:#7befef;">Total Unpaid</th>     
+                            <th style="background-color:#7befef;">Total Unpaid</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -124,7 +125,7 @@
                                 <td>{{$fees_value['roll_no']}}</td>
                                 <td style="background-color:#7befef;">{{$fees_value['-']['bk'] ?? 0 }}</td>
                                 <td style="background-color:#7befef;">{{$fees_value['-']['paid'] ?? 0 }}</td>
-                                <td style="background-color:#7befef;">{{$fees_value['-']['remain'] ?? 0}}</td>  
+                                <td style="background-color:#7befef;">{{$fees_value['-']['remain'] ?? 0}}</td>
                             </tr>
                             @php
                             $j++;
@@ -161,7 +162,7 @@
        // $('#grade').attr('required', 'required');
 //$('#standard').attr('required', 'required');
     //});
-   
+
     function checkAll(ele) {
          var checkboxes = document.getElementsByTagName('input');
          if (ele.checked) {
@@ -182,32 +183,32 @@
 </script>
 <script>
     $(document).ready(function() {
-    // Setup - add a text input to each footer cell    
+    // Setup - add a text input to each footer cell
 
      var table = $('#example').DataTable( {
-         select: true,          
-         lengthMenu: [ 
-                        [100, 500, 1000, -1], 
-                        ['100', '500', '1000', 'Show All'] 
+         select: true,
+         lengthMenu: [
+                        [100, 500, 1000, -1],
+                        ['100', '500', '1000', 'Show All']
         ],
-        dom: 'Bfrtip', 
-        buttons: [ 
-            { 
+        dom: 'Bfrtip',
+        buttons: [
+            {
                 extend: 'pdfHtml5',
                 title: 'Fees Overall Report',
                 orientation: 'landscape',
-                pageSize: 'LEGAL',                
+                pageSize: 'LEGAL',
                 pageSize: 'A0',
-                exportOptions: {                   
-                     columns: ':visible'                             
+                exportOptions: {
+                     columns: ':visible'
                 },
-            }, 
-            { extend: 'csv', text: ' CSV', title: 'Fees Overall Report' }, 
-            { extend: 'excel', text: ' EXCEL', title: 'Fees Overall Report' }, 
-            { extend: 'print', text: ' PRINT', title: 'Fees Overall Report' },             
-            'pageLength' 
-        ], 
-        }); 
+            },
+            { extend: 'csv', text: ' CSV', title: 'Fees Overall Report' },
+            { extend: 'excel', text: ' EXCEL', title: 'Fees Overall Report' },
+            { extend: 'print', text: ' PRINT', title: 'Fees Overall Report' },
+            'pageLength'
+        ],
+        });
         //table.buttons().container().appendTo('#example_wrapper .col-md-6:eq(0)');
 
 
@@ -232,3 +233,4 @@
 } );
 </script>
 @include('includes.footer')
+@endsection

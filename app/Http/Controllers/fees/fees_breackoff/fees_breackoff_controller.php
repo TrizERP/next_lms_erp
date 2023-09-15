@@ -38,7 +38,7 @@ class fees_breackoff_controller extends Controller
     function getData()
     {
         $marking_period_id=session()->get('term_id');
-        $result = DB::table('fees_breackoff as fb')
+        /*$result = DB::table('fees_breackoff as fb')
             ->join('fees_title as ft', function ($join) {
                 $join->whereRaw('ft.id = fb.fee_type_id');
             })->join('student_quota as sq', function ($join) {
@@ -57,7 +57,27 @@ class fees_breackoff_controller extends Controller
             ->where('fb.sub_institute_id', session()->get('sub_institute_id'))
             ->where('fb.syear', session()->get('syear'))
             ->orderByRaw('ft.sort_order')
-            ->get()->toArray();
+            ->get()->toArray();*/
+
+        $result = DB::table('fees_breackoff as fb')
+            ->join('fees_title as ft', 'ft.id', '=', 'fb.fee_type_id')
+            ->join('student_quota as sq', 'sq.id', '=', 'fb.quota')
+            ->join('academic_section as acs', 'acs.id', '=', 'fb.grade_id')
+            ->join('standard as st', function ($join) use ($marking_period_id) {
+                $join->on('st.id', '=', 'fb.standard_id');
+                    /*->when($marking_period_id, function ($query) use ($marking_period_id) {
+                        $query->where('st.marking_period_id', $marking_period_id);
+                    });*/
+            })
+            ->leftJoin('division as d', 'd.id', '=', 'fb.section_id')
+            ->select('fb.syear', 'fb.admission_year', 'ft.display_name as fees_head', 'sq.title as quota', 'acs.title as grade_name',
+                'st.name as sta_name', 'd.name as div_name', 'fb.month_id', 'fb.amount')
+            ->where('fb.sub_institute_id', session()->get('sub_institute_id'))
+            ->where('fb.syear', session()->get('syear'))
+            ->orderBy('ft.sort_order')
+            ->get()
+            ->toArray();
+
 
         $months = [
             1  => 'Jan', 2 => 'Feb', 3 => 'Mar', 4 => 'Apr', 5 => 'May', 6 => 'Jun', 7 => 'Jul', 8 => 'Aug', 9 => 'Sep',

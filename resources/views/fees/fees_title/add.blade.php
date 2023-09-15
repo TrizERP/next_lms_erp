@@ -1,7 +1,11 @@
+{{--
 @include('../includes.headcss')
+--}}
+@extends('layout')
+@section('container')
     <link rel="stylesheet" href="../../../tooltip/enjoyhint/jquery.enjoyhint.css">
-@include('../includes.header')
-@include('../includes.sideNavigation')
+{{--@include('../includes.header')
+@include('../includes.sideNavigation')--}}
 
 <div id="page-wrapper">
     <div class="container-fluid">
@@ -16,7 +20,7 @@
                     <form action="{{ route('fees_title.store') }}" enctype="multipart/form-data" method="post">
                       {{ method_field("POST") }}
                       @csrf
-                        <div class="row">                          
+                        <div class="row">
                           <div class="col-md-3 form-group">
                               <label>Fees Title</label>
                               <select name="fees_title_id" id="title" class="form-control van">
@@ -50,9 +54,9 @@
                                   <input id="mandatory" name="mandatory" value="1" type="checkbox">
                                   <label for="mandatory"> Mandatory </label>
                               </div>
-                          </div>                          
+                          </div>
                           <div class="col-md-12 form-group">
-                              <center>                                
+                              <center>
                                 <input type="submit" name="submit" value="Save" class="btn btn-success" >
                               </center>
                           </div>
@@ -152,3 +156,4 @@
 @endif
 
 @include('includes.footer')
+@endsection

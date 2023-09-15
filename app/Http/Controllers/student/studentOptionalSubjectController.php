@@ -169,7 +169,7 @@ class studentOptionalSubjectController extends Controller
 
         //END Check for class teacher assigned standards
         // DB::enableQueryLog();		
-        $student_data = tblstudentModel::select('tblstudent.*', 'tblstudent_enrollment.*', 'standard.name as standard',
+        $student_data = tblstudentModel::select('tblstudent.*', 'tblstudent_enrollment.*', 'standard.name as standard', 'tblstudent.id as stu_id',
             'division.name as division',
             'academic_section.title as grade', DB::raw($inactive_colour))
             ->join('tblstudent_enrollment', 'tblstudent.id', '=', 'tblstudent_enrollment.student_id')

@@ -1,5 +1,8 @@
+{{--
 @include('includes.headcss') @include('includes.header') @include('includes.sideNavigation')
-
+--}}
+@extends('layout')
+@section('container')
 <div id="page-wrapper">
 	<div class="container-fluid">
 		<div class="row bg-title">
@@ -7,17 +10,17 @@
 				<h4 class="page-title">Fees Collection Report</h4>
 			</div>
 		</div>
-		@php 
+		@php
 		$grade_id = $standard_id = $division_id = $enrollment_no = $receipt_no = $from_date = $to_date = $name = $mb_no ='';
 		if(isset($data['grade_id'])){ $grade_id = $data['grade_id']; $standard_id = $data['standard_id']; $division_id = $data['division_id'];
-		} 
-		if(isset($data['enrollment_no'])) { $enrollment_no = $data['enrollment_no']; } 
+		}
+		if(isset($data['enrollment_no'])) { $enrollment_no = $data['enrollment_no']; }
 		if(isset($data['name'])) { $name = $data['name'];
-		} 
-		if(isset($data['mb_no'])) { $mb_no = $data['mb_no']; } 
+		}
+		if(isset($data['mb_no'])) { $mb_no = $data['mb_no']; }
 		if(isset($data['receipt_no'])) { $receipt_no = $data['receipt_no'];
-		} 
-		if(isset($data['from_date'])) { $from_date = $data['from_date']; } 
+		}
+		if(isset($data['from_date'])) { $from_date = $data['from_date']; }
 		if(isset($data['to_date'])) { $to_date = $data['to_date'];
 		} @endphp
 		<div class="card">
@@ -59,7 +62,7 @@
 					</div>
 					@php
 						$payment_mode = '';
-						if(isset($data['payment_mode'])){ 
+						if(isset($data['payment_mode'])){
 							$payment_mode = $data['payment_mode'];
 						}
 					@endphp
@@ -87,14 +90,14 @@
                                                     @endif value="Swipe3">Swipe3</option>
 						</select>
 					</div>
-					@php 
-						if(isset($data['get_users'])){ 
-							$get_users = $data['get_users']; 
-						} 
+					@php
+						if(isset($data['get_users'])){
+							$get_users = $data['get_users'];
+						}
 
 						$selected_user_name ='';
-						if(isset($data['selected_user_name'])){ 
-							$selected_user_name = $data['selected_user_name']; 
+						if(isset($data['selected_user_name'])){
+							$selected_user_name = $data['selected_user_name'];
 						}
 					@endphp
 					<div class="col-md-4 form-group">
@@ -115,9 +118,9 @@
 
 				</form>
 			</div>
-			@if(isset($data['fees_data'])) 
-			@php 
-			if(isset($data['fees_data'])){ $fees_data = $data['fees_data']; } 
+			@if(isset($data['fees_data']))
+			@php
+			if(isset($data['fees_data'])){ $fees_data = $data['fees_data']; }
 			@endphp
 			<div class="card">
 				<div class="table-responsive">
@@ -140,16 +143,16 @@
 							</tr>
 						</thead>
 						<tbody>
-							@php $j=1; $amount = 0; @endphp 
-							@if(isset($data['fees_data'])) 
-							@foreach($fees_data as $key => $value) 
+							@php $j=1; $amount = 0; @endphp
+							@if(isset($data['fees_data']))
+							@foreach($fees_data as $key => $value)
 							@php
 							if($value['cheque_date']
-								!= '' && $value['cheque_date'] != '0000-00-00') { $cheque_date = date('d-m-Y',strtotime($value['cheque_date'])); 
+								!= '' && $value['cheque_date'] != '0000-00-00') { $cheque_date = date('d-m-Y',strtotime($value['cheque_date']));
 							}
 							else{
-								$cheque_date = ''; 
-								} 
+								$cheque_date = '';
+								}
 							@endphp
 							<tr>
 								<td>{{$j}}</td>
@@ -179,7 +182,7 @@
 								<td></td>
 								<td></td>
 								<td></td>
-								<td></td>								
+								<td></td>
 								<td></td>
 								<!--<td></td>-->
 								<td></td>
@@ -197,25 +200,25 @@
                 <div class="mt-4" style="display:inline-grid;justify-content:center;width:100%">
 				<div class="table-responsive">
 						<table class="table table-striped">
-							@php 
-                            $printedModes = []; // Track the printed payment modes 
+							@php
+                            $printedModes = []; // Track the printed payment modes
                             $j=1;
                             $tot_amounts = 0;
-                            $tot_stu = 0;                                     
-                            
-                            @endphp 
+                            $tot_stu = 0;
+
+                            @endphp
                             <tr>
                             <th style="font-weight: 600;">Payment Modes</th>
                             <th style="font-weight: 600;">Total Student</th>
-                            <th style="font-weight: 600;">Amounts</th>                            
+                            <th style="font-weight: 600;">Amounts</th>
                             </tr>
                             @foreach($fees_data as $key => $value)
                             @php
                                 $tot_amounts += $value['actual_amountpaid'];
                                 if (!in_array($value['payment_mode'], $printedModes)) {
                                     $printedModes[] = $value['payment_mode'];
-                                    $amount = 0; 
-                                    $studentCount = 0; 
+                                    $amount = 0;
+                                    $studentCount = 0;
                                     $studentNames = [];
 
                                     foreach ($fees_data as $fee) {
@@ -233,18 +236,18 @@
                                 } else {
                                     continue;
                                 }
-                                $tot_stu+= $studentCount;                                                                                                                                    
+                                $tot_stu+= $studentCount;
                             @endphp
 
                             <tr>
                                 <td>{{ $value['payment_mode'] }}</td>
-                                <td>{{ $studentCount }}</td>        
+                                <td>{{ $studentCount }}</td>
                                 <td>{{ $amount }}</td>
                             </tr>
                         @endforeach
                         <tr>
                             <th style="font-weight: 600;">Total</th>
-                            <th style="font-weight: 600;">{{ $tot_stu }}</th>                                                                                                       
+                            <th style="font-weight: 600;">{{ $tot_stu }}</th>
                             <th style="font-weight: 600;">{{ $tot_amounts }}</th>
                         </tr>
 						</table>
@@ -259,31 +262,45 @@
 	@include('includes.footerJs')
 
 	<script>
-	 $(document).ready(function () {
-        var table = $('#example').DataTable({
-            select: true,
-            lengthMenu: [
-                [100, 500, 1000, -1],
-                ['100', '500', '1000', 'Show All']
-            ],
-            dom: 'Bfrtip',
-            buttons: [
-                {
-                    extend: 'pdfHtml5',
-                    title: 'Fees Monthly Report',
-                    orientation: 'landscape',
-                    pageSize: 'LEGAL',
-                    pageSize: 'A0',
-                    exportOptions: {
-                        columns: ':visible'
+		$(document).ready(function() {
+			var table = $('#example').DataTable({
+				select: true,
+				lengthMenu: [
+					[100, 500, 1000, -1],
+					['100', '500', '1000', 'Show All']
+				],
+				dom: 'Bfrtip',
+				buttons: [{
+						extend: 'pdfHtml5',
+						title: 'Fees Collection Report',
+						orientation: 'landscape',
+						pageSize: 'LEGAL',
+						pageSize: 'A0',
+						exportOptions: {
+							columns: ':visible'
+						},
+					},
+					{
+						extend: 'csv',
+						text: ' CSV',
+						title: 'Fees Collection Report'
+					},
+					{
+						extend: 'excel',
+						text: ' EXCEL',
+						title: 'Fees Collection Report'
+					},
+					{
+                        extend: 'print',
+                        text: ' PRINT',
+                        title: 'Fees Collection Report',
+                        customize: function (win) {
+                            $(win.document.body).prepend(`{!! App\Helpers\get_school_details("", "", "") !!}`);
+                        }
                     },
-                },
-                {extend: 'csv', text: ' CSV', title: 'Fees Monthly Report'},
-                {extend: 'excel', text: ' EXCEL', title: 'Fees Monthly Report'},
-                {extend: 'print', text: ' PRINT', title: 'Fees Monthly Report'},
-                'pageLength'
-            ],
-        });
+                    'pageLength'
+				],
+			});
 
         $('#example thead tr').clone(true).appendTo('#example thead');
         $('#example thead tr:eq(1) th').each(function (i) {
@@ -302,3 +319,4 @@
     } );
 	</script>
 	@include('includes.footer')
+@endsection

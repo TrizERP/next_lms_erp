@@ -1351,7 +1351,7 @@ br {
                                             </table>
                                         </div>
                                     </div>
-                                    <div class="h4 text-primary">Paid History</div>
+                                    <div class="h4 text-primary">Paid & Failed Paid History</div>
                                         <div class="row border rounded mb-3 mb-md-4 mt-3 p-4"> 
                                             <div class="table-responsive">
                                                 <table id="example" class="table table-striped">
@@ -1371,59 +1371,60 @@ br {
                                                             <th>Collected By</th>
                                                             <!--<th>Created On</th>-->
                                                             <th>Amount</th>
+                                                            <th>Action</th>
                                                         </tr>
                                                     </thead>
                                                     <tbody>    
                                                     @php
                                                     $j=1;
                                                     $amount = 0;
-
                                                     @endphp
                                                     @if(isset($data['fees_data']))
-                                                        @foreach($data['fees_data'] as $key => $value)
+                                                    @foreach($data['fees_data'] as $key => $value)
                                                         @php
-
                                                         $month_name = '';
 
                                                         $months = [
-                                                            1 => 'Jan', 2 => 'Feb', 3 => 'Mar', 4 => 'Apr', 5 => 'May', 6 => 'Jun', 7 => 'Jul', 8 => 'Aug', 9 => 'Sep',
-                                                            10 => 'Oct', 11 => 'Nov', 12 => 'Dec',
+                                                            1 => 'Jan', 2 => 'Feb', 3 => 'Mar', 4 => 'Apr', 5 => 'May', 6 => 'Jun',
+                                                            7 => 'Jul', 8 => 'Aug', 9 => 'Sep', 10 => 'Oct', 11 => 'Nov', 12 => 'Dec',
                                                         ];
 
                                                         $y = $value['term_id'] / 10000;
                                                         $month = (int)$y;
                                                         $year = substr($value['term_id'], -4);
                                                         $month_name .= $months[$month] . "/" . $year . ',';
-                                                        
-                                                        $month_name = substr($month_name, 0, -1);
 
-                                                            if($value['cheque_date'] != '' && $value['cheque_date'] != '0000-00-00')
-                                                            {
-                                                                $cheque_date = date('d-m-Y',strtotime($value['cheque_date']));
-                                                            }else{
-                                                                $cheque_date = '';
-                                                            }
+                                                        $month_name = substr($month_name, 0, -1) ?? 0;
+
+                                                        if(isset($value['cheque_date']) && $value['cheque_date'] != '0000-00-00') {
+                                                            $cheque_date = date('d-m-Y', strtotime($value['cheque_date']));
+                                                        } else {
+                                                            $cheque_date = '';
+                                                        }
                                                         @endphp
                                                         <tr>
                                                             <td>{{$j}}</td>
-                                                            <td>{{$value['enrollment_no']}}</td>
-                                                            <td>{{$value['student_name']}}</td>
-                                                            <td>{{$value['standard_name']}} - {{$value['division_name']}}</td>
-                                                            <td>{{$value['uniqueid']}}</td>
-                                                            <td>{{ $month_name }}</td>
-                                                            <td>{{$value['receipt_no']}}</td>
-                                                            <td>{{$value['payment_mode']}}</td>
-                                                            <td>{{$value['cheque_no']}} {{$value['cheque_bank_name']}} {{$value['bank_branch']}}</td>
+                                                            <td>{{isset($value['enrollment_no']) ? $value['enrollment_no'] : ''}}</td>
+                                                            <td>{{isset($value['student_name']) ? $value['student_name'] : ''}}</td>
+                                                            <td>{{isset($value['standard_name']) && isset($value['division_name']) ? $value['standard_name'] . ' - ' . $value['division_name'] : ''}}</td>
+                                                            <td>{{isset($value['uniqueid']) ? $value['uniqueid'] : ''}}</td>
+                                                            <td>{{$month_name}}</td>
+                                                            <td>{{isset($value['receipt_no']) ? $value['receipt_no'] : ''}}</td>
+                                                            <td>{{isset($value['payment_mode']) ? $value['payment_mode'] : ''}}</td>
+                                                            <td>{{isset($value['cheque_no']) && isset($value['cheque_bank_name']) && isset($value['bank_branch']) ? $value['cheque_no'] . ' ' . $value['cheque_bank_name'] . ' ' . $value['bank_branch'] : ''}}</td>
                                                             <!--<td>{{$cheque_date}}</td>-->
-                                                            <td>{{date('d-m-Y',strtotime($value['receiptdate']))}}</td>
-                                                            <td>{{$value['user_name']}}</td>
-                                                            <!--<td>{{date('d-m-Y h:i:s',strtotime($value['created_date']))}}</td>-->
-                                                            <td>{{$value['actual_amountpaid']}}</td>
+                                                            <td>{{isset($value['receiptdate']) ? date('d-m-Y', strtotime($value['receiptdate'])) : ''}}</td>
+                                                            <td>{{isset($value['user_name']) ? $value['user_name'] : ''}}</td>
+                                                            <!--<td>{{date('d-m-Y h:i:s', strtotime($value['created_date']))}}</td>-->
+                                                            <td>{{isset($value['actual_amountpaid']) ? $value['actual_amountpaid'] : ''}}</td>
+                                                            <td>{{isset($value['action']) ? $value['action'] : ''}}</td>
                                                         </tr>
-                                                    @php
-                                                    $amount += $value['actual_amountpaid'];
-                                                    $j++;
-                                                    @endphp
+                                                        @if (isset($value['action']) && $value['action'] == "completed")
+                                                            @php
+                                                                $amount += isset($value['actual_amountpaid']) ? $value['actual_amountpaid'] : 0;
+                                                                $j++;
+                                                            @endphp
+                                                        @endif
                                                         @endforeach
                                                         <tr>
                                                             <th>Total</th>
@@ -1438,8 +1439,9 @@ br {
                                                             <td></td>
                                                             <td></td>
                                                             <td></td>
-                                                            <!--<td></td>-->
                                                             <th>{{$amount}}</th>
+                                                            <td></td>
+                                                            <!--<td></td>-->
                                                         </tr>
                                                     @endif
                                                     </tbody>

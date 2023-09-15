@@ -70,11 +70,7 @@
                             <label>Exam Type</label>
                             <select name="exam_type" id="exam_type" class="form-control">
                                 <option value="">Select</option>
-                                @if(isset($data['exam_master']))
-                                    @foreach($data['exam_master'] as $k => $v)
-                                        <option value="{{$v['Id']}}">{{$v['ExamTitle']}}</option>
-                                    @endforeach
-                                @endif
+                              
                             </select>
                         </div>
 
@@ -119,6 +115,34 @@
                 }
             },
         });
+
+        var termID ={{session()->get('term_id')}};
+
+        if (std_id && termID) {
+            $.ajax({
+                type: "GET",
+                url: "/api/get-exam-master-list?standard_id=" + std_id +
+                        "&term_id=" + termID,
+                success: function (res) {
+                    if (res) {
+                        $("#exam_type").empty();
+                        $("#exam_type").append('<option value="">Select</option>');
+                        $.each(res, function (key, value) {
+                            $("#exam_type").append('<option value="' + key + '">' + value + '</option>');
+                        });
+
+                    } else {
+                        $("#exam_type").empty();
+                    }
+                }
+            });
+        } else {
+            $("#exam_type").empty();
+            $("#exam_type").append('<option value="">Select</option>');
+            if (termID == "") {
+                alert("Please Select Term.");
+            }
+        }
     })
 
     function check_report (report_val) {
@@ -172,5 +196,6 @@
         }
     }
 
+  
 </script>
 @include('includes.footer')

@@ -447,6 +447,7 @@ class studentHomeworkController extends Controller
         $syear = $request->input("syear");
         $action = $request->input("action");
         $marking_period_id = session()->get('term_id');
+        // echo("<pre>");print_r($sub_institute_id);die;
 
         if ($student_id != "" && $sub_institute_id != "" && $syear != "" && $action != "") {
             $data = DB::table('homework as h')
@@ -463,7 +464,7 @@ class studentHomeworkController extends Controller
                     $join->whereRaw('ss.id = h.subject_id AND ss.sub_institute_id = h.sub_institute_id');
                 })->leftJoin('tbluser as tu', function ($join) {
                     $join->whereRaw('tu.id = h.created_by');
-                })->selectRaw("h.id,h.title,h.description,DATE_FORMAT(h.date,'%d-%m-%Y') AS date, 
+                })->selectRaw("h.id,h.title,h.description,h.created_by,DATE_FORMAT(h.date,'%d-%m-%Y') AS date, 
                     if(h.image = '','',concat('https://".$_SERVER['SERVER_NAME']."/storage/student/',h.image)) as file_name,
                     s.name AS standard_name,d.name AS division_name,ss.subject_name, 
                     CONCAT_WS(' ',ts.first_name,ts.middle_name,ts.last_name) AS student_name,ts.enrollment_no,ts.mobile,
@@ -475,7 +476,8 @@ class studentHomeworkController extends Controller
                 ->where('h.type', $action)
                 ->orderBy('h.date', 'DESC')
                 ->get()->toArray();
-
+            //echo("<pre>");print_r($data);die;
+            
             $res['status'] = 1;
             $res['message'] = "Success";
             $res['data'] = $data;

@@ -1,8 +1,11 @@
-@include('includes.headcss')
+{{--@include('includes.headcss')
 @include('includes.header')
-@include('includes.sideNavigation')
-<link href="https://cdn.jsdelivr.net/gh/gitbrent/bootstrap4-toggle@3.6.1/css/bootstrap4-toggle.min.css"
-      rel="stylesheet">
+@include('includes.sideNavigation')--}}
+
+@extends('layout')
+@section('container')
+    <link href="https://cdn.jsdelivr.net/gh/gitbrent/bootstrap4-toggle@3.6.1/css/bootstrap4-toggle.min.css"
+          rel="stylesheet">
 <style>
     .toggle.btn.btn-danger {
         width: 200px !important;
@@ -140,11 +143,11 @@
                                     @endphp
                                     @if(isset($data['fees_data']))
                                         @foreach($fees_data as $key => $value)
-                                           
+
                                             <tr>
-                                                <td><input id="{{$value['id']}}" value="{{$value['receipt_no']}}/{{$value['student_id']}}"
+                                                <td><input id="{{$value['id']}}" value="{{$value['receipt_no']}}####{{$value['student_id']}}"
                                                                name="receipt_no[]" type="checkbox"></td>
-                                             
+
                                                 <td>{{$value['enrollment_no']}}</td>
                                                 <td>{{$value['student_name']}}</td>
                                                 <td>{{$value['standard_name']}}</td>
@@ -163,7 +166,7 @@
                                                            value="{{$value['total_amount']}}">
                                                     <input type="hidden" name="month_id"
                                                            value="{{$value['month_id']}}">{{$value['total_amount']}}</td>
-                                                           
+
                                                 <td>{{$value['receiptdate']}}</td>
                                                 <td>{{$value['created_on']}}</td>
                                                 <td>{{$value['payment_mode']}}</td>
@@ -337,3 +340,4 @@
             }
         }
     </style>
+@endsection

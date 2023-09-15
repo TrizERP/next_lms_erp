@@ -1,7 +1,8 @@
-@include('includes.headcss')
+{{--@include('includes.headcss')
 @include('includes.header')
-@include('includes.sideNavigation')
-
+@include('includes.sideNavigation')--}}
+@extends('layout')
+@section('container')
 <style type="text/css">
     #overlay {
         position: fixed; /* Sit on top of the page content */
@@ -344,3 +345,4 @@
     }
 </script>
 @include('includes.footer')
+@endsection
