@@ -337,6 +337,7 @@ class timetableController extends Controller
             // ->when($marking_period_id,function($query) use ($marking_period_id){
             //     $query->where('t.marking_period_id',$marking_period_id);
             // })
+            ->where('tbluser.status', 1)
            ->groupby("tbluser.id")
             ->orderby("tbluser.first_name")
             ->get();
@@ -450,7 +451,7 @@ class timetableController extends Controller
                                 AS teacher_name, (CASE WHEN total_lecture IS NULL THEN "Unlimited" ELSE tbluser.total_lecture
                                 - COUNT(t.id) END) AS remaining_lecture')
                             ->whereRaw('(tbluser.sub_institute_id = "' . $sub_institute_id . '" AND tbluserprofilemaster.name
-                                = "Teacher") ' . $extra_where)
+                                = "Teacher" AND tbluser.status = 1) ' . $extra_where)
                             // ->when($marking_period_id,function($query) use ($marking_period_id){
                             //         $query->where('t.marking_period_id',$marking_period_id);
                             //     })
@@ -562,7 +563,7 @@ class timetableController extends Controller
                                 AS teacher_name, (CASE WHEN total_lecture IS NULL THEN "Unlimited" ELSE tbluser.total_lecture
                                 - COUNT(t.id) END) AS remaining_lecture')
                         ->whereRaw('(tbluser.sub_institute_id = "' . $sub_institute_id . '" AND tbluserprofilemaster.name
-                                = "Teacher") ' . $extra_where)
+                                = "Teacher" AND tbluser.status = 1) ' . $extra_where)
                         // ->when($marking_period_id,function($query) use ($marking_period_id){
                         //             $query->where('t.marking_period_id',$marking_period_id);
                         //         })
@@ -661,7 +662,7 @@ class timetableController extends Controller
 
         $teacher_data = tbluserModel::select('tbluser.*')
             ->join('tbluserprofilemaster', 'tbluserprofilemaster.id', "=", 'tbluser.user_profile_id')
-            ->where(['tbluser.sub_institute_id' => $sub_institute_id, 'tbluserprofilemaster.name' => 'Teacher',])
+            ->where(['tbluser.sub_institute_id' => $sub_institute_id, 'tbluserprofilemaster.name' => 'Teacher', 'status' => 1])
             // ->when($marking_period_id,function($query) use ($marking_period_id){
             //     $query->where('marking_period_id',$marking_period_id);
             // })
@@ -769,7 +770,7 @@ class timetableController extends Controller
 
         $teacher_data = tbluserModel::select('tbluser.*')
             ->join('tbluserprofilemaster', 'tbluserprofilemaster.id', "=", 'tbluser.user_profile_id')
-            ->where(['tbluser.sub_institute_id' => $sub_institute_id, 'tbluserprofilemaster.name' => 'Teacher',])
+            ->where(['tbluser.sub_institute_id' => $sub_institute_id, 'tbluserprofilemaster.name' => 'Teacher', 'status' => 1])
             ->get();
 
         $standard_data = standardModel::where(['sub_institute_id' => $sub_institute_id])
@@ -882,7 +883,7 @@ class timetableController extends Controller
         ])->get(["subject_id", "display_name"])->toArray();
 
         $teacher_data = DB::table('tbluser')
-            ->where('sub_institute_id', $sub_institute_id)
+            ->where('sub_institute_id', $sub_institute_id, 'status', 1)
             ->whereRaw("FIND_IN_SET('".$subject_id."',subject_ids)")->get()->toArray();
 
         $teacher_data = json_decode(json_encode($teacher_data), true);

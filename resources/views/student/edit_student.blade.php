@@ -1383,19 +1383,25 @@ br {
                                                     @if(isset($data['fees_data']))
                                                     @foreach($data['fees_data'] as $key => $value)
                                                         @php
-                                                        $month_name = '';
+                                                        $month_names = [];
 
                                                         $months = [
                                                             1 => 'Jan', 2 => 'Feb', 3 => 'Mar', 4 => 'Apr', 5 => 'May', 6 => 'Jun',
                                                             7 => 'Jul', 8 => 'Aug', 9 => 'Sep', 10 => 'Oct', 11 => 'Nov', 12 => 'Dec',
                                                         ];
 
-                                                        $y = $value['term_id'] / 10000;
-                                                        $month = (int)$y;
-                                                        $year = substr($value['term_id'], -4);
-                                                        $month_name .= $months[$month] . "/" . $year . ',';
+                                                        // Split the term_ids string into an array of term IDs
+                                                        $term_ids = explode(',', $value['term_ids']);
 
-                                                        $month_name = substr($month_name, 0, -1) ?? 0;
+                                                        foreach ($term_ids as $term_id) {
+                                                            $y = $term_id / 10000;
+                                                            $month = (int)$y;
+                                                            $year = substr($term_id, -4);
+                                                            $month_names[] = $months[$month] . "/" . $year;
+                                                        }
+
+                                                        // Join the month names with a comma separator
+                                                        $month_names_string = implode(', ', $month_names);
 
                                                         if(isset($value['cheque_date']) && $value['cheque_date'] != '0000-00-00') {
                                                             $cheque_date = date('d-m-Y', strtotime($value['cheque_date']));
@@ -1409,7 +1415,7 @@ br {
                                                             <td>{{isset($value['student_name']) ? $value['student_name'] : ''}}</td>
                                                             <td>{{isset($value['standard_name']) && isset($value['division_name']) ? $value['standard_name'] . ' - ' . $value['division_name'] : ''}}</td>
                                                             <td>{{isset($value['uniqueid']) ? $value['uniqueid'] : ''}}</td>
-                                                            <td>{{$month_name}}</td>
+                                                            <td>{{$month_names_string}}</td>
                                                             <td>{{isset($value['receipt_no']) ? $value['receipt_no'] : ''}}</td>
                                                             <td>{{isset($value['payment_mode']) ? $value['payment_mode'] : ''}}</td>
                                                             <td>{{isset($value['cheque_no']) && isset($value['cheque_bank_name']) && isset($value['bank_branch']) ? $value['cheque_no'] . ' ' . $value['cheque_bank_name'] . ' ' . $value['bank_branch'] : ''}}</td>
