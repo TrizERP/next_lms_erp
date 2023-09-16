@@ -1,8 +1,7 @@
-{{--@include('includes.headcss')
+@include('includes.headcss')
 @include('includes.header')
-@include('includes.sideNavigation')--}}
-@extends('layout')
-@section('container')
+@include('includes.sideNavigation')
+
 <div id="page-wrapper">
     <div class="container-fluid">
             <div class="row bg-title">
@@ -124,7 +123,7 @@
                                 $count_colspan = $count_colspan + 1;
                                 $colspan = 'colspan="'.$count_colspan.'" ';
                             @endphp
-                                <th @php echo $colspan; @endphp class="text-center">Pending</th>
+                                <th {{$colspan}} class="text-center">Pending</th>
                             @php
                             }
                             @endphp
@@ -138,7 +137,7 @@
                                             $count_colspan_inner = count($child_head);
                                             $colspan_inner = 'colspan="'.$count_colspan_inner.'" ';
                                         @endphp
-                                        <th @php echo $colspan_inner; @endphp class="text-center">{{$main_fees_title[0]}}</th>
+                                        <th {{$colspan_inner}} class="text-center">{{$main_fees_title[0]}}</th>
                                     @else
                                         <th rowspan=2>{{$main_fees_title[0]}}</th>
                                     @endif
@@ -168,18 +167,17 @@
 
                     @if(isset($data['fees_data']))
                         @foreach($fees_data as $key => $fees_value)
-                        @if(isset($fees_value['-']['remain']) && $fees_value['-']['remain']!=0)
                         <tr>
                             <td>{{$j}}</td>
                             <td>{{$fees_value['enrollment']}}</td>
                             <td>{{$fees_value['name']}}</td>
                             <td>{{$fees_value['stddiv']}}</td>
                             <td>{{$fees_value['stu_quota']}}</td>
-                            <td>{{$fees_value['-']['bk']}}</td>
+                            <td>{{$fees_value['-']['bk'] ?? 0}}</td>
 
                             @php
-                            $total_paid += $fees_value['-']['paid'];
-                            $total_breakoff += $fees_value['-']['bk'];
+                            $total_paid += $fees_value['-']['paid'] ?? 0;
+                            $total_breakoff += $fees_value['-']['bk'] ?? 0;
                             if(isset($fees_value['discount']))
                             {
                                 $total_discount += $fees_value['discount'];
@@ -228,15 +226,14 @@
                                     @endif
                                 @endforeach
                             @endif
-                            <td>{{$fees_value['-']['remain']}}</td>
+                            <td>{{$fees_value['-']['remain'] ?? 0}}</td>
                             @php
-                            $total_unpaid += $fees_value['-']['remain'];
+                            $total_unpaid += $fees_value['-']['remain'] ?? 0;
                             @endphp
                         </tr>
                     @php
                     $j++;
                     @endphp
-                    @endif
                     @endforeach
                         <tr class="font-weight-bold">
                             <td>{{$j++}}</td>
@@ -332,4 +329,3 @@
     }
 </script>
 @include('includes.footer')
-@endsection

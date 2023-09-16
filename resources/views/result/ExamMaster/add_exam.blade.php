@@ -54,37 +54,17 @@
                                   </select>
                               </div>
                               <div class="col-md-6 form-group">
-                                  <label>Exam Title</label>
-                                  <input type="text" id='ExamTitle' name="ExamTitle" value="@if(isset($data->ExamTitle)) {{ $data->ExamTitle }} @endif" class="form-control" required>
+                                  <label>Exam Type</label>
+                                  <input type="text" id="ExamTitle" name="ExamTitle" value="{{ $data->ExamTitle ?? '' }}" class="form-control" required>
                               </div>
-
                               <div class="col-md-6 form-group">
-                                  <label>Exam Weightage</label>
-                                  <input type="number" id='weightage' name="weightage" value="@if($weightage!=''){{$weightage}}@endif" class="form-control">
+                                  <label>Weightage</label>
+                                  <input type="number" id="weightage" name="weightage" value="{{ $weightage ?? '' }}" class="form-control">
                               </div>
                               <div class="col-md-6 form-group">
                                   <label>Sort Order</label>
-                                  <input type="text" id='SortOrder' required name="SortOrder" 
-                                      value="@php
-                                         if(isset($data->SortOrder)){
-                                          echo $data->SortOrder;
-                                         }else{
-                                         echo $data['SortOrder'];
-                                         }
-                                         @endphp
-                                         " 
-                                      class="form-control">
-
-                                       <input type="hidden" id='code' required name="Code" 
-                                      value="@php
-                                         if(isset($data->code)){
-                                          echo $data->code;
-                                         }else{
-                                         echo $data['code'];
-                                         }
-                                         @endphp
-                                         " 
-                                      class="form-control">
+                                  <input type="number" id="SortOrder" required name="SortOrder" value="{{ isset($data->SortOrder) ? $data->SortOrder : $data['SortOrder'] }}" class="form-control">
+                                  <input type="hidden" id="code" required name="Code" value="{{ isset($data->code) ? $data->code : $data['code'] }}" class="form-control">
                               </div>
 
                                 <div class="col-md-6 form-group">

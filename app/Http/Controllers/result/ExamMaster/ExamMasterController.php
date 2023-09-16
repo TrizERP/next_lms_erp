@@ -26,7 +26,8 @@ class ExamMasterController extends Controller
         
         if ($type == "API") {
             $sub_institute_id = $request->input('sub_institute_id');
-            $school_data['data'] = $this->getData($sub_institute_id);
+            $standard_id = $request->input('standard_id') ?? '';
+            $school_data['data'] = $this->getData($sub_institute_id,$standard_id,$type);
         } else {
             $school_data['data'] = $this->getData();
 		}
@@ -68,7 +69,7 @@ class ExamMasterController extends Controller
                     'Code' => $request->get('Code'),
                     'ExamType' => 14,
                     'ExamTitle' => $request->get('ExamTitle'),
-                    'SortOrder' => $sort++,
+                    'SortOrder' => $request->get('SortOrder'),//$sort++,
                     'SubInstituteId' => session()->get('sub_institute_id'),
                     'created_at' => now(),
                     'standard_id' => $std,
@@ -90,7 +91,7 @@ class ExamMasterController extends Controller
         return is_mobile($type, "exam_master.index", $res, "redirect");
     }
 
-    public function getData($sub_institute_id = '')
+    public function getData($sub_institute_id = '', $standard_id = '', $type = '')
     {
         if($sub_institute_id == '')
         {
@@ -98,17 +99,27 @@ class ExamMasterController extends Controller
         }
 
         $exam = ExamMaster::select('result_exam_master.*',
-            DB::raw('COUNT(result_create_exam.id) AS total_count'),'standard.name as std_name','academic_year.title as term')
-            ->leftjoin('standard', 'standard.id', '=', 'result_exam_master.standard_id')
-            ->leftjoin('academic_year', 'academic_year.term_id', '=', 'result_exam_master.term_id')            
-            ->leftjoin("result_create_exam", function ($join) {
+                DB::raw('COUNT(result_create_exam.id) AS total_count'),'standard.name as std_name','academic_year.title as term')
+            ->leftJoin('standard', 'standard.id', '=', 'result_exam_master.standard_id')
+            ->leftJoin('academic_year', function ($join) use ($sub_institute_id) {
+                $join->on('academic_year.term_id', '=', 'result_exam_master.term_id')
+                     ->on('academic_year.sub_institute_id', '=', 'result_exam_master.SubInstituteId');
+            })
+            ->leftJoin("result_create_exam", function ($join) {
                 $join->on("result_create_exam.exam_id", "=", "result_exam_master.Id")
                     ->on("result_create_exam.sub_institute_id", "=", "result_exam_master.SubInstituteId");
-            })
-            ->where(['result_exam_master.SubInstituteId' => $sub_institute_id])
-            ->groupby('result_exam_master.Id')
-            ->orderByRaw('result_exam_master.SortOrder,standard.name,academic_year.title')            
+            });
+
+        if ($type == 'API' && !empty($standard_id)) {
+            $exam->where('result_exam_master.standard_id', $standard_id);
+        }
+
+        $exam = $exam
+            ->where('result_exam_master.SubInstituteId', $sub_institute_id)
+            ->groupBy('result_exam_master.Id')
+            ->orderByRaw('standard.sort_order, academic_year.sort_order, result_exam_master.SortOrder')
             ->get();
+
         $i = 1;
         foreach ($exam as $id => $arr) {
             $arr->SrNo = $i;
@@ -140,15 +151,14 @@ class ExamMasterController extends Controller
 
     public function update(Request $request, $id)
     {
+        //dd($request);
         $data = [
-            'Code' => $request->get('Code'),
-            'ExamType' => 14,
             'ExamTitle' => $request->get('ExamTitle'),
             'SortOrder' => $request->get('SortOrder'),
             'SubInstituteId' => session()->get('sub_institute_id'),
             'created_at' => now(),
-            'standard_id' => $std,
-            'term_id' => $term,
+            'standard_id' => $request->input('all_standard.0'),
+            'term_id' => $request->input('all_term.0'),
             'weightage' => $request->get('weightage') ?? '',
             'created_by' => session()->get('user_id'),
         ];

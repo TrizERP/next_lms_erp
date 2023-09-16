@@ -45,6 +45,8 @@ class dashboardController extends Controller
             ["user_id", $user_id],
             ["user_profile_id", $user_profile_id],
         ])->get()->toArray();
+      
+
         $userMenu = array_map(static function ($value) {
             return (array)$value;
         }, $userMenu);
@@ -59,7 +61,7 @@ class dashboardController extends Controller
         if ($user_profile_name == 'Super Admin' || $user_profile_name == 'Admin' || $user_profile_name == 'ADMIN' ||
             $user_profile_name == 'admin' || $user_profile_name == 'school admin' || $user_profile_name == 'SCHOOL ADMIN'
             || $user_profile_name == 'School Admin') {
-            if ($sub_institute_id != 0 && $is_admin == '') {
+            if ($sub_institute_id != 0 && $is_admin == '' || $is_admin == 1) {
 
                 $date = date('Y-m-d');
                 $date15 = date('Y-m-d', strtotime($date . ' +15 day'));
@@ -245,7 +247,7 @@ class dashboardController extends Controller
                         $join->whereRaw("dt.id = se.section_id");
                     })
                     ->selectRaw("l.*, CONCAT_WS(' ',s.first_name,s.middle_name,s.last_name) AS student_name,st.name AS standard_name,
-            dt.name AS division_name")
+                dt.name AS division_name")
                     ->where("l.sub_institute_id", "=", $sub_institute_id)
                     ->where("l.apply_date", "=", $date)
                     ->limit(10)
@@ -1216,7 +1218,26 @@ class dashboardController extends Controller
                 ->orderByRaw("DATE_FORMAT(s.birthdate, '%m-%d')")
                 ->get()->toArray();
 
-
+            $studentLeaves = DB::table("leave_applications as l")
+                    ->join("tblstudent as s", function ($join) {
+                        $join->whereRaw("l.student_id = s.id");
+                    })
+                    ->join("tblstudent_enrollment as se", function ($join) use ($syear) {
+                        $join->whereRaw("s.id = se.student_id AND se.syear = " . $syear);
+                    })
+                    ->join("standard as st", function ($join) {
+                        $join->whereRaw("st.id = se.standard_id");
+                    })
+                    ->join("division as dt", function ($join) {
+                        $join->whereRaw("dt.id = se.section_id");
+                    })
+                    ->selectRaw("l.*, CONCAT_WS(' ',s.first_name,s.middle_name,s.last_name) AS student_name,st.name AS standard_name,
+            dt.name AS division_name")
+                    ->where("l.sub_institute_id", "=", $sub_institute_id)
+                    ->where("l.apply_date", "=", $date)
+                    ->limit(10)
+                    ->get()->toArray();
+                    
             $calendarEvents = DB::table('calendar_events')->where('sub_institute_id', $sub_institute_id)
                 ->where('school_date', ">=", $date)->where('school_date', "<=", $date15)->get()->toArray();
 
