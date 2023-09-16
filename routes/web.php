@@ -45,6 +45,7 @@ use App\Models\general_dataModel;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Import\ImportController;
+use App\Http\Controllers\Import\questionExcelDownloadController;
 use App\Http\Controllers\leave\ApplyLeaveController;
 use App\Http\Controllers\leave\HolidayController;
 use App\Http\Controllers\leave\LeaveController;
@@ -65,7 +66,7 @@ use App\Http\Controllers\sqaa\sqaa_controller;
 |
 */
 
-if (isset($_REQUEST['sub_institute_id'])  && $_REQUEST['sub_institute_id'] != '') {
+if (isset($_REQUEST['sub_institute_id']) && $_REQUEST['sub_institute_id'] != '') {
     $sub_institute_id = $_REQUEST['sub_institute_id'];
 
     $get_general_data = general_dataModel::where(['sub_institute_id' => $sub_institute_id])->get()->toArray();
@@ -96,7 +97,7 @@ if (isset($_REQUEST['sub_institute_id'])  && $_REQUEST['sub_institute_id'] != ''
             }else{
                 return redirect()->route('setup-institute-details');
             }
-
+           
         } else {
             return view('login');
         }
@@ -117,7 +118,7 @@ Route::group([ 'middleware' => ['session', 'menu', 'logRoute']], function () {
     Route::get('/roll-over', [PayrollController::class, 'rollOver'])->name('employee_salary_structure.rollover');
     Route::post('/employee-salary-structure/store', [PayrollController::class, 'employeeSalaryStructureStore'])->name('employee_salary_structure.store');
     Route::post('/rollover-employee-salary-structure/store', [PayrollController::class, 'rolloverEmployeeSalaryStructure'])->name('rollover_employee_salary_structure.store');
-
+    
     Route::get('setup-institute-details', [dashboardController::class, 'setup_details'])->name('setup-institute-details');
 
     Route::get('/salary-structure-report', [PayrollController::class, 'salaryStructureReport'])->name('salary_structure_report.index');
@@ -166,14 +167,13 @@ Route::group([ 'middleware' => ['session', 'menu', 'logRoute']], function () {
     Route::post('/early-going-hrms-attendance-report', [HrmsController::class, 'earlyGoingHrmsAttendanceReport'])->name('hrms.show_early_going_hrms_attendance_report');
     
     Route::resource('sqaa_master', sqaa_controller::class);
-    Route::get('get-level', [sqaa_controller::class,'get_level'])->name('get-level');    
+    Route::get('get-level', [sqaa_controller::class,'get_level'])->name('get-level'); 
 
+    Route::resource('questionExcelDownload', questionExcelDownloadController::class);
 });
 
 Route::get('/import-data',[ImportController::class,'getImport']);
-Route::get('/marks-import',[ImportController::class,'Import']);
 Route::post('/import_parse', [ImportController::class,'parseImport'])->name('import_parse');
-Route::post('/custom_import_parse', [ImportController::class,'customParseImport'])->name('custom_import_parse');
 Route::post('/import_parse_fields', [ImportController::class,'matchFields'])->name('update.match_fields');
 Route::post('/import_process', [ImportController::class,'processImport'])->name('import_process');
 
@@ -182,7 +182,7 @@ Route::any('/knowledge-base', [dashboardController::class, 'knowledge_base'])->n
 Route::any('/knowledge-base-detail/{id}/{title}', [dashboardController::class, 'knowledge_base_detail'])->name('knowledge_base_detail')->middleware('session', 'menu');
 
 Route::get('dashboard', [dashboardController::class, 'index'])->name('dashboard')->middleware('session', 'menu', 'logRoute');
-// add by uma
+// add by uma 
 Route::resource('norm-clature', normClatureController::class);
 Route::resource('add-institute-details', institute_detail::class);
 
@@ -398,9 +398,7 @@ Route::group(['middleware' => ['session', 'menu', 'logRoute']], function () {
     Route::get('books/{id}/reutrn', [BookController::class,'returnBook'])->name('books.return');
     Route::post('books/issue', [BookController::class,'issueBook'])->name('books.issue');
     Route::get('books.circulation', [BookController::class,'circulation'])->name('books.circulation');
-    Route::get('/livecomplaint',function(){
-   return view('frontdesk/livecomplaint');
-});
+    
 });
 
 Route::get('privacyPolicy', [dashboardController::class, 'privacyPolicy'])->name('privacyPolicy');
