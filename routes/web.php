@@ -45,6 +45,7 @@ use App\Models\general_dataModel;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Import\ImportController;
+use App\Http\Controllers\Import\questionExcelDownloadController;
 use App\Http\Controllers\leave\ApplyLeaveController;
 use App\Http\Controllers\leave\HolidayController;
 use App\Http\Controllers\leave\LeaveController;
@@ -166,8 +167,9 @@ Route::group([ 'middleware' => ['session', 'menu', 'logRoute']], function () {
     Route::post('/early-going-hrms-attendance-report', [HrmsController::class, 'earlyGoingHrmsAttendanceReport'])->name('hrms.show_early_going_hrms_attendance_report');
     
     Route::resource('sqaa_master', sqaa_controller::class);
-    Route::get('get-level', [sqaa_controller::class,'get_level'])->name('get-level');    
+    Route::get('get-level', [sqaa_controller::class,'get_level'])->name('get-level'); 
 
+    Route::resource('questionExcelDownload', questionExcelDownloadController::class);
 });
 
 Route::get('/import-data',[ImportController::class,'getImport']);
@@ -396,6 +398,7 @@ Route::group(['middleware' => ['session', 'menu', 'logRoute']], function () {
     Route::get('books/{id}/reutrn', [BookController::class,'returnBook'])->name('books.return');
     Route::post('books/issue', [BookController::class,'issueBook'])->name('books.issue');
     Route::get('books.circulation', [BookController::class,'circulation'])->name('books.circulation');
+    
 });
 
 Route::get('privacyPolicy', [dashboardController::class, 'privacyPolicy'])->name('privacyPolicy');
