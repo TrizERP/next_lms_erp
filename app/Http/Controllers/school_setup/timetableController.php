@@ -24,6 +24,18 @@ class timetableController extends Controller
         $type = $request->input('type');
         $res['status_code'] = 1;
         $res['message'] = "SUCCESS";
+
+        if($request->has('standard_id') || $request->has('division_id') ){
+            $sub_institute_id = session()->get('sub_institute_id');
+            $syear = session()->get('syear');
+            $grade_id = $request->grade_id;
+            $division_id = $request->division_id;
+            $standard_id = $request->standard_id;
+            
+            $res = $this->getTimetable_data($request, $grade_id, $standard_id, $division_id, $sub_institute_id,
+            $syear);  
+        }
+       
         $res = array_merge($res, $data);
 
         return is_mobile($type, 'school_setup/show_timetable', $res, "view");
@@ -85,6 +97,7 @@ class timetableController extends Controller
         $hid_academic_section_id = $_REQUEST['hid_academic_section_id'];
         $hid_standard_id = $_REQUEST['hid_standard_id'];
         $hid_division_id = $_REQUEST['hid_division_id'];
+        $hid_academic_id = $_REQUEST['hid_academic_section_id'];        
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $syear = $request->session()->get('syear');
         $marking_period_id = session()->get('term_id');
@@ -831,6 +844,7 @@ class timetableController extends Controller
         $division_id = $request->input("division_id");
         $id = $request->input("id");
         $standard_id = $request->input("standard_id");
+        $grade_id = $request->input("grade_id");
         $sub_institute_id = session()->get('sub_institute_id');
         $syear = session()->get('syear');
         $marking_period_id=session()->get('term_id');
@@ -861,8 +875,14 @@ class timetableController extends Controller
                 ])->delete();
         }
 
-        echo $deleted_record;
-        exit;
+        // echo $deleted_record;
+        // exit;
+        $res['redirect'] = '/timetable';        
+        $type =$request->input('type');
+        // // Return a JSON response
+        return response()->json($res);
+        // return is_mobile($type, "timetable.index", $res, "redirect");
+
     }
 
     //Get Subject Mapped Tecahers -- Ajax Call
