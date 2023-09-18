@@ -42,31 +42,24 @@ class questionExcelDownloadController extends Controller  implements FromCollect
             s.name as Standard,
             sub.subject_name as Subject,
             lqm.question_title as Title,
-            GROUP_CONCAT(CONCAT_WS(" ", @row_number := @row_number + 1, am.answer)) as Options,
+            SUBSTRING_INDEX(GROUP_CONCAT(CONCAT_WS(" ", @row_number := @row_number + 1, am.answer)), ",", 1) as Options1,
+            SUBSTRING_INDEX(SUBSTRING_INDEX(GROUP_CONCAT(CONCAT_WS(" ", @row_number := @row_number + 1, am.answer)), ",", 2), ",", -1) as Options2,
+            SUBSTRING_INDEX(SUBSTRING_INDEX(GROUP_CONCAT(CONCAT_WS(" ", @row_number := @row_number + 1, am.answer)), ",", 3), ",", -1) as Options3,
+            SUBSTRING_INDEX(SUBSTRING_INDEX(GROUP_CONCAT(CONCAT_WS(" ", @row_number := @row_number + 1, am.answer)), ",", 4), ",", -1) as Options4,
             CASE WHEN am.correct_answer = 1 THEN am.answer END as Answer
         ')
         ->where('lqm.question_type_id', 1)
-        ->whereNotNull('lqm.question_title') 
-        ->where('lqm.status',1)         
+        ->whereNotNull('lqm.question_title')
+        ->where('lqm.status', 1)
         ->where('s.name', '!=', 'DEMO')
         ->where('lqm.sub_institute_id', session()->get('sub_institute_id'))
-        ->groupBy('lqm.question_title')
-        ->get();
-    
+        ->groupBy('lqm.question_title')->get();
+        
        $dataCollection = collect($data);
 
         // Format the Options column
         $formattedData = $dataCollection->map(function ($item) {
-            $options = $item->Options;
-            $optionsArray = explode(',', $options);
-            
-            $formattedOptions = [];
-            foreach ($optionsArray as $key => $option) {
-                $formattedOptions[] = '(' . ($key + 1) . ') ' . trim($option);
-            }
-            
-            $item->Options = implode(' ', $formattedOptions);
-            if (strpos($item->Title, '<img') !== false) {
+             if (strpos($item->Title, '<img') !== false) {
                 preg_match('/src="([^"]+)"/', $item->Title, $matches);
 
                 $item->Title .= " Image ".$matches[1];
@@ -75,8 +68,11 @@ class questionExcelDownloadController extends Controller  implements FromCollect
             else{
                 $item->Title = strip_tags(html_entity_decode($item->Title));
             }
-            $item->Options = strip_tags(html_entity_decode($item->Options));
             $item->Answer = strip_tags(html_entity_decode($item->Answer));
+            $item->Options1 = strip_tags(html_entity_decode($item->Options1));
+            $item->Options2 = strip_tags(html_entity_decode($item->Options2));
+            $item->Options3 = strip_tags(html_entity_decode($item->Options3));
+            $item->Options4 = strip_tags(html_entity_decode($item->Options4));
         
             return $item;
         });
@@ -87,8 +83,11 @@ class questionExcelDownloadController extends Controller  implements FromCollect
             'Standard',
             'Subject',
             'Title',
-            'Options',
-            'Answer',            
+            'Answer',                        
+            'Options1',
+            'Options2',
+            'Options3',            
+            'Options4',
         ];
 
         $this->data = $formattedDataArray;
@@ -121,8 +120,11 @@ class questionExcelDownloadController extends Controller  implements FromCollect
             $row->Standard,
             $row->Subject,
             $row->Title,
-            $row->Options,
-            $row->Answer,
+            $row->Answer,            
+            $row->Options1,
+            $row->Options2,
+            $row->Options3,
+            $row->Options4,            
         ];
     }
     
