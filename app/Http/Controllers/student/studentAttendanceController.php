@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\DB;
 use function App\Helpers\getCountDays;
 use function App\Helpers\is_mobile;
 use function App\Helpers\SearchStudent;
+use function Symfony\Component\HttpKernel\Profiler\read;
 
 class studentAttendanceController extends Controller
 {
@@ -448,8 +449,18 @@ class studentAttendanceController extends Controller
         $syear = $request->session()->get('syear');
         $term_id = $request->session()->get('term_id');
         $sub_institute_id = $request->session()->get('sub_institute_id');
+        $batch="";
+        if($request->has('batch_sel')){
+            $batchs = DB::table('batch')->where(['sub_institute_id'=>$sub_institute_id,'syear'=>$syear,'standard_id'=>$standard_id,'division_id'=>$division_id])->get()->toArray();
+            $res['batch_id'] = $request->batch_sel;    
+            $res['batchs']=$batchs;    
+            
+            $batch=$request->batch_sel;
+        }
 
-        $student_data = SearchStudent($grade_id, $standard_id, $division_id);
+        // get student list 
+        $student_data = SearchStudent($grade_id, $standard_id, $division_id,"","", "","","", "", "","",$batch);
+
         $from_date = $selected_year . "-" . $month . "-01";
         $to_date = date('Y-m-t', strtotime($selected_year . "-" . $month));
 
@@ -457,7 +468,7 @@ class studentAttendanceController extends Controller
 
         $whereAtt['syear'] = $syear;
         $whereAtt['sub_institute_id'] = $sub_institute_id;
-
+       
         $holidays = DB::table("calendar_events")
             ->selectRaw("DATE_FORMAT(school_date,'%d') AS DATE")
             ->where($whereAtt)
@@ -513,7 +524,7 @@ class studentAttendanceController extends Controller
         }
 
         unset($sundays['S']);
-
+        // echo "<pre>";print_r($student_data);exit;
         $res['status_code'] = 1;
         $res['message'] = "Success";
         $res['month'] = $month;

@@ -46,11 +46,11 @@
                                     {{ App\Helpers\ClassTeacherSearch($standard_division) }}
                                 </div>
                                 @if(isset($data['batch_id']) && !empty($data['batchs']))
-                                    <div class="col-md-4 form-group" id="std_div">
+                                    <div class="col-md-4 form-group" id="batch_div">
                                     <label>Select Batch</label>
                                     <select name="batch_sel" class="form-control" id="batch_sel" required="">
                                     @foreach($data['batchs'] as $batch)
-                                    <option @if($data['batch_id']==$batch->id) @endif>{{$batch->title}}</option>
+                                    <option value="{{$batch->id}}" @if($data['batch_id']==$batch->id) selected @endif>{{$batch->title}}</option>
                                     @endforeach                                    
                                     </select>
                                 </div>
@@ -154,39 +154,45 @@
     }
 </script>
 <script>
-  $(document).on('change', '#standard_division', function () {
+
+    $(document).on('change', '#standard_division', function () {
         var std_div_id = $(this).val();
         var parts = std_div_id.split("||");
         var standard_id = parts[0];
         var division_id = parts[1];
-        var path = "{{ route('get_batch') }}";
-        $.ajax({
-            url: path,
-            data: 'standard_id=' + standard_id+'&division_id='+division_id,
-            success: function (data) {  
-                var batch_select_container = $('#batch_div');
-                var batch_select = $('#batch_sel');
-                if (Array.isArray(data) && data.length > 0) {
+       var path = "{{ route('get_batch') }}";
+    // Clear existing batch options
+    $('#batch_div').remove();    
+
+    $.ajax({
+        url: path,
+        data: 'standard_id=' + standard_id + '&division_id=' + division_id,
+        success: function (data) {
+            var batch_select_container = $('#batch_div');
+            var batch_select = $('#batch_sel');
+
+            if (Array.isArray(data) && data.length > 0) {
                 if (batch_select_container.length === 0) {
                     batch_select_container = $('<div class="col-md-4 form-group" id="batch_div"></div>');
-
                     $('#std_div').after(batch_select_container);
-                var batch_select_label = $('<label for="batch_sel">Select Batch</label>');
-                batch_select = $('<select id="batch_sel" class="form-control" name="batch_sel"></select>');
-                var defaultOption = '<option value="">--Select--</option>';
-                batch_select.append(defaultOption);
+                    var batch_select_label = $('<label for="batch_sel">Select Batch</label>');
+                    batch_select = $('<select id="batch_sel" class="form-control" name="batch_sel"></select>');
+                    var defaultOption = '<option value="">--Select--</option>';
+                    batch_select.append(defaultOption);
 
                     batch_select_container.append(batch_select_label);
                     batch_select_container.append(batch_select);
-
-                        data.forEach(function (value) {
-                            var option = '<option value="' + value.id + '">' + value.title + '</option>';
-                            batch_select.append(option);
-                        });
-                    }
                 }
+
+                // Populate the batch options
+                data.forEach(function (value) {
+                    var option = '<option value="' + value.id + '">' + value.title + '</option>';
+                    batch_select.append(option);
+                });
             }
-        });
+        }
     });
+});
+
 </script>
 @include('includes.footer')
