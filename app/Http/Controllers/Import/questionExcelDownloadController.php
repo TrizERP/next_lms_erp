@@ -52,7 +52,7 @@ class questionExcelDownloadController extends Controller  implements FromCollect
             WHEN COUNT(am.id) >= 4 THEN SUBSTRING_INDEX(SUBSTRING_INDEX(GROUP_CONCAT(CONCAT_WS(" ", @row_number := @row_number + 1, am.answer)), ",", 4), ",", -1)
             ELSE NULL
         END as Options4,
-            CASE WHEN am.correct_answer = 1 THEN am.answer END as Answer
+        MAX(CASE WHEN am.correct_answer = 1 THEN am.answer ELSE NULL END) as Answer
         ')
         ->where('lqm.question_type_id', 1)
         ->whereNotNull('lqm.question_title')
@@ -61,7 +61,7 @@ class questionExcelDownloadController extends Controller  implements FromCollect
         ->where('lqm.sub_institute_id', session()->get('sub_institute_id'))
         ->groupBy('lqm.question_title')->get();
        $dataCollection = collect($data);
-
+    
         // Format the Options column
         $formattedData = $dataCollection->map(function ($item) {
              if (strpos($item->Title, '<img') !== false) {
@@ -97,7 +97,7 @@ class questionExcelDownloadController extends Controller  implements FromCollect
 
         $this->data = $formattedDataArray;
         $this->headers = $headers;
-        return Excel::download($this, 'Question-Dwonload.xlsx');        
+        return Excel::download($this, 'Question-Download.xlsx');        
     }
     
     public function registerEvents() : array
