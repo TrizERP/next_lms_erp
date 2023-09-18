@@ -44,8 +44,14 @@ class questionExcelDownloadController extends Controller  implements FromCollect
             lqm.question_title as Title,
             SUBSTRING_INDEX(GROUP_CONCAT(CONCAT_WS(" ", @row_number := @row_number + 1, am.answer)), ",", 1) as Options1,
             SUBSTRING_INDEX(SUBSTRING_INDEX(GROUP_CONCAT(CONCAT_WS(" ", @row_number := @row_number + 1, am.answer)), ",", 2), ",", -1) as Options2,
-            SUBSTRING_INDEX(SUBSTRING_INDEX(GROUP_CONCAT(CONCAT_WS(" ", @row_number := @row_number + 1, am.answer)), ",", 3), ",", -1) as Options3,
-            SUBSTRING_INDEX(SUBSTRING_INDEX(GROUP_CONCAT(CONCAT_WS(" ", @row_number := @row_number + 1, am.answer)), ",", 4), ",", -1) as Options4,
+            CASE
+            WHEN COUNT(am.id) >= 3 THEN SUBSTRING_INDEX(SUBSTRING_INDEX(GROUP_CONCAT(CONCAT_WS(" ", @row_number := @row_number + 1, am.answer)), ",", 3), ",", -1)
+            ELSE NULL
+        END as Options3,
+        CASE
+            WHEN COUNT(am.id) >= 4 THEN SUBSTRING_INDEX(SUBSTRING_INDEX(GROUP_CONCAT(CONCAT_WS(" ", @row_number := @row_number + 1, am.answer)), ",", 4), ",", -1)
+            ELSE NULL
+        END as Options4,
             CASE WHEN am.correct_answer = 1 THEN am.answer END as Answer
         ')
         ->where('lqm.question_type_id', 1)
@@ -54,7 +60,6 @@ class questionExcelDownloadController extends Controller  implements FromCollect
         ->where('s.name', '!=', 'DEMO')
         ->where('lqm.sub_institute_id', session()->get('sub_institute_id'))
         ->groupBy('lqm.question_title')->get();
-        
        $dataCollection = collect($data);
 
         // Format the Options column
