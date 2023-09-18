@@ -114,11 +114,11 @@
 									<td>{{ $fees_data['standard_name'] }}</td>
 									<td>{{ $fees_data['coach_name'] }}</td>
 									<td>{{ $fees_data['batch_name'] ? $fees_data['batch_name'] : '-'  }}</td>
-									<td>{{ $fees_data['cn_male_count'] }}</td>
 									<td>{{ $fees_data['cn_female_count'] }}</td>
+									<td>{{ $fees_data['cn_male_count'] }}</td>
 									<td>{{ $fees_data['cn_male_count'] + $fees_data['cn_female_count'] }}</td>
-									<td>{{ $fees_data['other_male_count'] }}</td>
 									<td>{{ $fees_data['other_female_count'] }}</td>
+									<td>{{ $fees_data['other_male_count'] }}</td>
 									<td>{{ $fees_data['other_male_count'] + $fees_data['other_female_count'] }}</td>
 									<td>{{ $fees_data['tot_count'] }}</td>
 									<td>{{ $fees_data['cn_tot'] }}</td>

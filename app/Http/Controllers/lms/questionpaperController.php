@@ -94,6 +94,7 @@ class questionpaperController extends Controller
                 ->join('subject', 'subject.id', '=', 'question_paper.subject_id')
                 ->where('question_paper.sub_institute_id', $sub_institute_id)
                 ->where('question_paper.syear', $syear)
+                ->orderBy('question_paper.id', 'desc')
                 ->get();
         }
 

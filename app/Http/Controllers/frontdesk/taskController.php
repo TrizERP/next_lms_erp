@@ -60,7 +60,7 @@ class taskController extends Controller
         if (strtoupper($user_profile_name) != 'ADMIN') {
             $data = $data->where('t.TASK_ALLOCATED_TO', $user_id);
         }
-        $data = $data->orderBy('t.CREATED_ON', 'desc');
+        $data = $data->orderBy('t.ID', 'desc');
         $data = $data->get()->toArray();
 
         $res['status_code'] = 1;
