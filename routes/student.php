@@ -215,6 +215,7 @@ Route::post('/studentParentcommunicationListAPI', [parentCommunicationController
 Route::get('ajax_checkEmailExist', [tblstudentController::Class, 'ajax_checkEmailExist'])->name('ajax_checkEmailExist');
 Route::get('ajax_checkDivisionCapacity', [tblstudentController::class, 'ajax_checkDivisionCapacity'])->name('ajax_checkDivisionCapacity');
 Route::get('ajax_StatewiseCity', [tblstudentController::class, 'ajax_StatewiseCity'])->name('ajax_StatewiseCity');
+Route::get('get_batch', [studentAttendanceController::class, 'get_batch'])->name('get_batch');
 // Route::post('front_desk/leave_application/add_leave_application', function(){
 //     echo "asds";
 // });
