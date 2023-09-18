@@ -38,7 +38,94 @@ class feesPayoutController extends Controller
         $syear = $request->session()->get('syear');
         $sub_institute_id = $request->session()->get('sub_institute_id');
 
-        $results = DB::table(function ($query) use ($from_date, $to_date, $sub_institute_id, $syear){
+        $all_varibale = [
+            "from_date" => $from_date,
+            "to_date" => $to_date,
+            "sub_institute_id" => $sub_institute_id,
+            "syear" => $syear,
+            "from_date2" => $from_date, // Rename this key to be unique
+            "to_date2" => $to_date,     // Rename this key to be unique
+            "sub_institute_id2" => $sub_institute_id, // Rename this key to be unique
+            "syear2" => $syear,         // Rename this key to be unique
+        ];
+
+        $results = DB::select(DB::raw('
+            SELECT 
+            standard_name,
+            coach_name,
+            batch_name, 
+            SUM(CASE WHEN house_name = "CN" AND gender = "M" THEN 1 ELSE 0 END) AS cn_male_count, 
+            SUM(CASE WHEN house_name = "CN" AND gender = "F" THEN 1 ELSE 0 END) AS cn_female_count, 
+            SUM(CASE WHEN house_name = "Other School" AND gender = "M" THEN 1 ELSE 0 END) AS other_male_count, 
+            SUM(CASE WHEN house_name = "Other School" AND gender = "F" THEN 1 ELSE 0 END) AS other_female_count, 
+            COUNT(house_name) AS tot_count, 
+            SUM(cn_tot) AS cn_tot, 
+            SUM(other_tot) AS other_tot, 
+            SUM(tot) AS tot
+        FROM (
+            SELECT 
+                *,
+                SUM(CASE WHEN house_name = "CN" THEN (total_reg_paid+total_other_paid) ELSE 0 END) AS cn_tot, 
+                SUM(CASE WHEN house_name = "Other School" THEN (total_reg_paid+total_other_paid) ELSE 0 END) AS other_tot, 
+                SUM(total_reg_paid) + SUM(total_other_paid) AS tot
+            FROM (
+                SELECT 
+                    se.student_id,
+                    s.first_name,
+                    LEFT(s.gender, 1) AS gender,
+                    sd.name AS standard_name,
+                    d.name AS coach_name,
+                    b.title AS batch_name,
+                    hm.house_name, 
+                    SUM(fc.amount) AS total_reg_paid,
+                    0 AS total_other_paid -- Initialize total_other_paid as 0 in this subquery
+                FROM tblstudent_enrollment se
+                INNER JOIN tblstudent s ON s.id = se.student_id
+                INNER JOIN standard sd ON sd.id = se.standard_id
+                INNER JOIN division d ON d.id = se.section_id
+                LEFT JOIN batch b ON b.id = s.studentbatch
+                LEFT JOIN house_master hm ON hm.id = se.house_id
+                INNER JOIN fees_collect fc ON (
+                    fc.student_id = se.student_id 
+                    AND fc.receiptdate BETWEEN :from_date AND :to_date 
+                    AND fc.is_deleted = "N"
+                )
+                WHERE se.sub_institute_id = :sub_institute_id AND se.syear = :syear
+                GROUP BY se.student_id 
+                
+                UNION
+                
+                SELECT 
+                    se.student_id,
+                    s.first_name,
+                    LEFT(s.gender, 1) AS gender,
+                    sd.name AS standard_name,
+                    d.name AS coach_name,
+                    b.title AS batch_name,
+                    hm.house_name,
+                    0 AS total_reg_paid, -- Initialize total_reg_paid as 0 in this subquery
+                    SUM(fo.actual_amountpaid) AS total_other_paid
+                FROM tblstudent_enrollment se
+                INNER JOIN tblstudent s ON s.id = se.student_id
+                INNER JOIN standard sd ON sd.id = se.standard_id
+                INNER JOIN division d ON d.id = se.section_id
+                LEFT JOIN batch b ON b.id = s.studentbatch
+                INNER JOIN fees_paid_other fo ON (
+                    fo.student_id = se.student_id 
+                    AND fo.receiptdate BETWEEN :from_date2 AND :to_date2 
+                    AND fo.is_deleted = "N"
+                )
+                LEFT JOIN house_master hm ON hm.id = se.house_id
+                WHERE se.sub_institute_id = :sub_institute_id2 AND se.syear = :syear2
+                GROUP BY se.student_id
+            ) AS temp_tbl
+            GROUP BY student_id
+        ) AS temp_tbl2
+        GROUP BY standard_name, coach_name, batch_name    
+        '), $all_varibale);
+    
+
+        /* $results = DB::table(function ($query) use ($from_date, $to_date, $sub_institute_id, $syear){
             $query->select(
                 'se.student_id',
                 's.first_name',
@@ -108,8 +195,8 @@ class feesPayoutController extends Controller
             DB::raw("SUM(CASE WHEN house_name = 'Other School' THEN (total_reg_paid + total_other_paid) ELSE 0 END) AS other_tot"),
             DB::raw("SUM(total_reg_paid) + SUM(total_other_paid) AS tot")
         )
-        ->groupBy('standard_name', 'coach_name', 'batch_name')
-        ->get();
+        ->groupBy('standard_name', 'coach_name', 'batch_name','student_id')
+        ->get(); */
                 
         $resultArray = [];
         foreach ($results as $object) 

@@ -15,6 +15,8 @@
     <!-- STYLE CSS -->
     <!-- <link href="{{ asset("/admin_dep/bootstrap/dist/css/bootstrap.min.css") }}" rel="stylesheet"> -->
     <link href="{{ asset("/online_payment/css/style.css") }}" rel="stylesheet">
+    <link href="{{ asset("/admin_dep/css/style.css") }}" rel="preload" as="style" onload="this.onload=null;this.rel='stylesheet'">
+    <noscript><link rel="stylesheet" href="{{ asset("/admin_dep/css/style.css") }}"></noscript>
 
     <!-- <link rel="stylesheet" href="css/style.css"> -->
     <style>
@@ -44,8 +46,15 @@
             background-color: #7fc6da;
             color: white;
         }
-    </style>
 
+        .bottom-right-container {
+            position: fixed;
+            bottom: 20px; /* Adjust the distance from the bottom as needed */
+            right: 20px; /* Adjust the distance from the right as needed */
+            /* Add any additional styling you want for the bottom-right container */
+        }
+    </style>
+    
 </head>
 <div class="wrapper container">
     <div class="inner" style="justify-content: center;">
@@ -70,9 +79,50 @@
             <button type="submit" name="submit">Submit<i class="zmdi zmdi-long-arrow-right"></i></button>
         </form>
     </div>
+
+    <div class="bottom-right-container">
+        <div class="help-guide">
+            <div class="help-guide">
+                <div class="help-head">
+                    <div class="guide-title">Help Guide</div>
+                    <div class="dropdown">
+                        <button class="dropdown-toggle" type="button" id="dropdownMenuButton" data-toggle="dropdown"
+                                aria-haspopup="true" aria-expanded="false">
+                        </button>
+
+                    </div>
+                    <div class="help-arraw">
+                        <i class="mdi mdi-chevron-down"></i>
+                    </div>
+                </div>
+                <div class="help-body" style="display:none;">
+                    <div class="w-auto gutter-10 main-nav justify-content-center">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="help-box">
+                                    <a id="pdf_link" target="_blank" class="nav-link pb-0">
+                                        <span class="menu-main-icon"><i class="mdi mdi-file-pdf md-36"></i></span> PDF
+                                    </a>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="help-box">
+                                    <a id="youtube_link" target="_blank" class="nav-link pb-0">
+                                        <span class="menu-main-icon"><i class="mdi mdi-youtube md-36"></i></span> Youtube
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
+
 <script src="https://code.jquery.com/jquery-3.5.1.min.js"
     integrity="sha256-9/aliU8dGd2tb6OSsuzixeV4y/faTqgFtohetphbbj0=" crossorigin="anonymous"></script>
+    
 <script type="text/javascript">
     var arr;
     var submit_hide = 0;
@@ -193,6 +243,26 @@ $(document).ready(function() {
         }
     });
 });
+
+    var path1 = "{{ route('ajax_load_helpguide') }}";
+
+    $.ajax({
+        url: path1,
+        data: 'menu_id=' + menu_id,
+        dataType: 'html',
+        defer: false,
+        success: function (links) {
+            // console.log(links);
+            if (links != "0") {
+                link_arr = links.split("####");
+                $("#youtube_link").attr("href", link_arr[0]);
+                $("#pdf_link").attr("href", "../../../storage/help_guide/" + link_arr[1]);
+            }
+        }
+    });
+
+    $("[aria-controls='menu-" + main_menu_id + "']").addClass('active');
+    $("#menu-" + main_menu_id).addClass('active');
 </script>
 
 </html>
