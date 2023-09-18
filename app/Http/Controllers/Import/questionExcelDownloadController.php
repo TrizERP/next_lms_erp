@@ -97,7 +97,7 @@ class questionExcelDownloadController extends Controller  implements FromCollect
 
         $this->data = $formattedDataArray;
         $this->headers = $headers;
-        return Excel::download($this, 'Question-Dwonload.xlsx');        
+        return Excel::download($this, 'Question-Download.xlsx');        
     }
     
     public function registerEvents() : array
