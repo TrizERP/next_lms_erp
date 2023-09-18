@@ -1056,7 +1056,7 @@ if (!function_exists('ClassTeacherSearch')) {
                 }
             })->get()->toArray();
 
-        $returnHtml = '<select name="standard_division" class="form-control" required>';
+        $returnHtml = '<select name="standard_division" class="form-control" id="standard_division" required>';
         $returnHtml .= '<option value=""> Select Standard Division </option>';
 
         foreach ($result as $key => $value) {
