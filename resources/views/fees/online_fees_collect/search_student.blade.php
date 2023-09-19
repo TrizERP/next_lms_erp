@@ -11,7 +11,8 @@
     <link rel="stylesheet"
         href="{{ asset("/online_payment/fonts/material-design-iconic-font/css/material-design-iconic-font.min.css") }}">
 
-
+        <link href="{{ asset("/admin_dep/css/materialdesignicons.min.css") }}" rel="preload" as="style" onload="this.onload=null;this.rel='stylesheet'">
+    <noscript><link rel="stylesheet" href="{{ asset("/admin_dep/css/materialdesignicons.min.css") }}"></noscript>
     <!-- STYLE CSS -->
     <!-- <link href="{{ asset("/admin_dep/bootstrap/dist/css/bootstrap.min.css") }}" rel="stylesheet"> -->
     <link href="{{ asset("/online_payment/css/style.css") }}" rel="stylesheet">
@@ -86,10 +87,7 @@
                 <div class="help-head">
                     <div class="guide-title">Help Guide</div>
                     <div class="dropdown">
-                        <button class="dropdown-toggle" type="button" id="dropdownMenuButton" data-toggle="dropdown"
-                                aria-haspopup="true" aria-expanded="false">
-                        </button>
-
+                        <button id="helpGuideButton" class="dropdown-toggle" type="button" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"></button>
                     </div>
                     <div class="help-arraw">
                         <i class="mdi mdi-chevron-down"></i>
@@ -120,9 +118,14 @@
     </div>
 </div>
 
+<script src="{{ asset("/admin_dep/js/popper.min.js") }}"></script>
+<script src="{{ asset("/admin_dep/js/custom.js") }}" ></script>
 <script src="https://code.jquery.com/jquery-3.5.1.min.js"
     integrity="sha256-9/aliU8dGd2tb6OSsuzixeV4y/faTqgFtohetphbbj0=" crossorigin="anonymous"></script>
-    
+  
+<script src="https://code.jquery.com/jquery-1.10.2.js"></script>
+<script src="{{ asset("/admin_dep/js/jquery-ui.js") }}"></script>
+
 <script type="text/javascript">
     var arr;
     var submit_hide = 0;
@@ -232,6 +235,7 @@
     }
 
 $(document).ready(function() {
+
     $("form").submit(function(e){
         if(submit_hide == 1)
         {
@@ -243,26 +247,52 @@ $(document).ready(function() {
         }
     });
 });
-
-    var path1 = "{{ route('ajax_load_helpguide') }}";
-
-    $.ajax({
-        url: path1,
-        data: 'menu_id=' + menu_id,
-        dataType: 'html',
-        defer: false,
-        success: function (links) {
-            // console.log(links);
-            if (links != "0") {
-                link_arr = links.split("####");
-                $("#youtube_link").attr("href", link_arr[0]);
-                $("#pdf_link").attr("href", "../../../storage/help_guide/" + link_arr[1]);
-            }
-        }
+</script>
+<script>
+     // Help Guide
+		$('.help-body').hide(100);
+		$('.guide-title').on('click', function(event) {
+		    $('.help-guide').toggleClass('active', 100);
+		    $('.help-body').slideToggle(100);
+		});
+</script>
+<script>
+    $(document).ready(function () {
+        // Help Guide toggle
+        $('#helpGuideButton').on('click', function () {
+            $('.help-body').slideToggle(100);
+        });
     });
+</script>
+<script>
+    $(document).ready(function() {
+       
+    load_rightside_menu(localStorage.getItem('menu_id'), localStorage.getItem('main_menu_id'));
 
-    $("[aria-controls='menu-" + main_menu_id + "']").addClass('active');
-    $("#menu-" + main_menu_id).addClass('active');
+    function load_rightside_menu(menu_id, main_menu_id) {
+      var path1 = "{{ route('ajax_load_helpguide') }}";
+
+      $.ajax({
+          url: path1,
+          data: 'menu_id=' + menu_id,
+          dataType: 'html',
+          defer: false,
+          success: function (links) {
+              // console.log(links);
+              if (links != "0") {
+                  link_arr = links.split("####");
+                  $("#youtube_link").attr("href", link_arr[0]);
+                  $("#pdf_link").attr("href", "../../../storage/help_guide/" + link_arr[1]);
+              }
+          }
+      });
+
+      $("[aria-controls='menu-" + main_menu_id + "']").addClass('active');
+      $("#menu-" + main_menu_id).addClass('active');
+
+      //var tab_pane_id = $('.main-menu-block').find('.active').attr("aria-controls");
+    }
+});
 </script>
 
 </html>

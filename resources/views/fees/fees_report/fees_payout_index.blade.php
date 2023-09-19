@@ -48,7 +48,7 @@
 						echo App\Helpers\get_school_details("","","");
 						echo '<br><center><span style=" font-size: 14px;font-weight: 600;font-family: Arial, Helvetica, sans-serif !important">From Date : '.date('d-m-Y',strtotime($data['from_date'])) .' - </span><span style=" font-size: 14px;font-weight: 600;font-family: Arial, Helvetica, sans-serif !important">To Date : '.date('d-m-Y',strtotime($data['to_date'])) .'</span></center><br>';
 						@endphp
-						<table id="example" class="table table-border text-center">
+						<table id="fees_payout_report" class="table table-border text-center table-striped">
 							@if(count($data['fees_data']) > 0)
 							<thead>
 								<tr>
@@ -151,19 +151,57 @@
 								</tr>
 							</tfoot>
 							@else
-							<tbody>
-								<tr>
-									<th class="text-center">No Data Found</th>
-								</tr>
-							</tbody>
-							@endif
-						</table>
-					</div>
+						<tbody>
+							<tr>
+								<th class="text-center">No Data Found</th>
+							</tr>
+						</tbody>
+						@endif
+					</table>
+					<center>
+						<button
+							onclick="exportTableToExcel('fees_payout_report', 'Fees Payout Report')"
+							class="btn btn-success mt-2">Excel Export
+						</button>
+					</center>
 				</div>
-			@endif
-		</div>
+			</div>
+		@endif
 	</div>
+</div>
 
 @include('includes.footerJs')
+<script>
+	function exportTableToExcel(tableID, filename = '')
+    {
+        var downloadLink;
+        var dataType = 'application/vnd.ms-excel';
+        var tableSelect = document.getElementById(tableID);
+        var tableHTML = tableSelect.outerHTML.replace(/ /g, '%20');
 
+        // Specify file name
+        filename = filename?filename+'.xls':'excel_data.xls';
+
+        // Create download link element
+        downloadLink = document.createElement("a");
+
+        document.body.appendChild(downloadLink);
+
+        if(navigator.msSaveOrOpenBlob){
+            var blob = new Blob(['\ufeff', tableHTML], {
+                type: dataType
+            });
+            navigator.msSaveOrOpenBlob( blob, filename);
+        }else{
+            // Create a link to the file
+            downloadLink.href = 'data:' + dataType + ', ' + tableHTML;
+
+            // Setting the file name
+            downloadLink.download = filename;
+
+            //triggering the function
+            downloadLink.click();
+        }
+    }
+</script>
 @include('includes.footer')
