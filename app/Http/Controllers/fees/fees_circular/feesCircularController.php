@@ -83,12 +83,12 @@ class feesCircularController extends Controller
                 })->leftJoin('division as d', function ($join) {
                     $join->whereRaw('d.id = se.section_id');
                 })->join('fees_breackoff as fb', function ($join) use ($syear, $sub_institute_id) {
-                    $join->whereRaw("(fb.syear = '".$syear."' AND fb.admission_year = s.admission_year 
-                        AND fb.quota = se.student_quota AND fb.grade_id = se.grade_id AND fb.standard_id = se.standard_id 
+                    $join->whereRaw("(fb.syear = '".$syear."' AND fb.admission_year = s.admission_year
+                        AND fb.quota = se.student_quota AND fb.grade_id = se.grade_id AND fb.standard_id = se.standard_id
                         AND fb.sub_institute_id = '".$sub_institute_id."')");
                 })->join('fees_title as ft', function ($join) {
                     $join->whereRaw('(fb.fee_type_id = ft.id)');
-                })->selectRaw("s.id,s.enrollment_no,s.first_name,s.last_name,st.name standard_name, 
+                })->selectRaw("s.id,s.enrollment_no,s.first_name,s.last_name,st.name standard_name,
                     d.name AS division_name,fb.amount,ft.display_name,ft.fees_title,SUM(fb.amount) AS total_breakoff")
                 ->where('s.sub_institute_id', $sub_institute_id)
                 ->where('se.syear', $syear)
@@ -105,10 +105,9 @@ class feesCircularController extends Controller
             $studentData = json_decode(json_encode($data), true);
             foreach($studentData as $key => $val){
                 $gb[] = $this->getBk($request, $val['id']);
-
             }
          }
-         
+
 
         $result = DB::table('fees_receipt_book_master')
             ->selectRaw('*,GROUP_CONCAT(fees_head_id) heads')
