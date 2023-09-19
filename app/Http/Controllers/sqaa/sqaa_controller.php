@@ -68,7 +68,7 @@ class sqaa_controller extends Controller
         if(!$check_data){
         $data = new sqaa_mark();
         $data->menu_id=$menu_id;
-        $data->mark=$request->mark;
+        $data->mark=$request->mark ?? 0;
         $data->created_by = $user_id;
         $data->sub_institute_id = $sub_institute_id;
         $data->created_at = now();
@@ -85,7 +85,7 @@ class sqaa_controller extends Controller
                 ];
                 $document =$request->input('document')[$i];
                 $reasons =$request->input('reasons')[$i];                
-                $availability =$request->input('availability')[$i];
+                $availability =$request->input('availability')[$i] ?? 'no';
 
                 // Check if a file is present for this row
                 if ($request->input('availability')[$i] =="yes" && $request->hasFile('files') && $request->file('files')[$i]->isValid()) {
