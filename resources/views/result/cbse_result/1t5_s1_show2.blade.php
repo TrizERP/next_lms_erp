@@ -121,12 +121,15 @@
                                                                         
                                                                     </tr>
                                                                     <?php
+                                                                    $term1_tot = $term1_obt = 0;
                                                                     foreach ($all_data['mark'] as $subject => $subject_data) {
-                                                                        
                                                                         ?>
                                                                         <tr>   
                                                                             <td><?php echo $subject; ?></td>   
-                                                                            <?php foreach ($subject_data as $exam_name => $obtain_point) { 
+                                                                            <?php 
+                                                                            foreach ($subject_data as $exam_name => $obtain_point) {
+if($exam_name == 'TOTAL_GAIN') {$term1_obt += $subject_data['TOTAL_GAIN'];}
+if($exam_name == 'TOTAL_MARKS') {$term1_tot += $subject_data['TOTAL_MARKS'];}
                                                                                 if($exam_name != 'TOTAL_MARKS') { ?>
                                                                                 <td align="center"><?php echo $obtain_point; ?></td>   
                                                                             <?php }} ?>
@@ -136,11 +139,14 @@
                                                                         <?php
                                                                     }
                                                                     ?>
-
                                                                     <tr>
-                                                                        <td colspan="<?php echo count($all_data['exam']); ?>"><b>Percentage</b></td>
+                                                                        <td align="right" colspan="<?php echo count($all_data['exam']); ?>"><b>Total</b></td>
+                                                                        <td align="center"><b><?php echo $term1_obt."/".$term1_tot; ?></b></td>
+                                                                        <td rowspan="2" align="center"><b><?php echo $all_data['final_grade']; ?></b></td>
+                                                                    </tr>
+                                                                    <tr>
+                                                                        <td align="right" colspan="<?php echo count($all_data['exam']); ?>"><b>Percentage</b></td>
                                                                         <td align="center"><b><?php echo number_format($all_data['per'],2); ?>%</b></td>
-                                                                        
                                                                     </tr>
                                                                 </tbody>
                                                             </table>

@@ -6,6 +6,7 @@
     font-weight:200;
 }
 </style>
+
 <div id="page-wrapper">
     <div class="container-fluid">
         <div class="row bg-title">
@@ -14,10 +15,18 @@
             </div>
         </div>
         <div class="card">
+   
             @if ($message = Session::get('data'))
             <div class="alert alert-success alert-block">
                 <button type="button" class="close" data-dismiss="alert">×</button>
                 <strong>{{ $message['message'] }}</strong>
+            </div>
+            @endif
+
+             @if (isset($_REQUEST['message']))
+            <div class="alert alert-success alert-block">
+                <button type="button" class="close" data-dismiss="alert">×</button>
+                <strong>{{ $_REQUEST['message'] }}</strong>
             </div>
             @endif
             <div class="row">
@@ -48,6 +57,7 @@
                                 </select>
                                 <!-- </div> -->
                             </div>
+                            <input type="hidden" name="hidden_ac" value="{{ $data['academic_section_id'] ?? '' }}" id="hidden_ac">
                             <div class="col-md-4 form-group">
                                 <!--<label>Standard</label> -->
                                 <label class="box-title after-none mb-0">Standard</label>
@@ -178,13 +188,15 @@ function getMappingTeachers(subject_id,id)
 function deleteTimetable(id) {
     var standard_id = $("#hid_standard_id").val();
     var division_id = $("#hid_division_id").val();
+    var grade_id = $('#hidden_ac').val();
     var path = "{{ route('ajax_Delete_Timetable') }}";
-    $.ajax({url: path,data:'standard_id='+standard_id+'&division_id='+division_id+'&id='+id,
+    $.ajax({url: path,data:'standard_id='+standard_id+'&division_id='+division_id+'&grade_id='+grade_id+'&id='+id,
     success: function(result){
-        if(result > 0)
-        {
-            location.reload(true);
-        }
+        var queryString = '?standard_id=' + standard_id +
+                      '&division_id=' + division_id +
+                      '&grade_id=' + grade_id + '&message=Record Deleted Sucessfully';
+
+        window.location.href ='/school_setup'+result.redirect+queryString;
     }
     });
 }
