@@ -181,7 +181,7 @@ $route = ['dashboard'];
 
 
 <script src="https://code.jquery.com/jquery-1.10.2.js" ></script>
-<script src="{{ asset("/admin_dep/js/jquery-ui.js") }}" ></script>
+<script src="{{ asset("/admin_dep/js/jquery-ui.js") }}" defer></script>
 
 <script src="{{ asset("/admin_dep/js/bootstrap.min.js") }}" ></script>
 <script src="{{ asset("/admin_dep/js/bootstrap-select.min.js") }}" ></script>

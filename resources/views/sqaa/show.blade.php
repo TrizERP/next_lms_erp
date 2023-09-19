@@ -100,12 +100,7 @@
                                     <textarea name="document[]" id="document" rows="3" class="form-control" data-new="1" onchange="chat_gtp(this.value,1)" required></textarea>
                                 </div>
                             </div>
-                            <div class="col-md-3">
-                                <div class="form-group">
-                                    <label for="topicAvailability2">Files To be uploaded</label>
-                                    <textarea name="reasons[]" id="reasons" rows="3" class="form-control" data-new="1" ></textarea>
-                                </div>
-                            </div>
+                            
                             <div class="col-md-2">
                                 <div class="form-group">
                                     <label for="topicAvailability2">Availability</label>
@@ -124,7 +119,12 @@
                                 </div>
                             </div>
                             
-                            
+                            <div class="col-md-3">
+                                <div class="form-group">
+                                    <label for="topicAvailability2">Files To be uploaded</label>
+                                    <textarea name="reasons[]" id="reasons" rows="3" class="form-control" data-new="1" readonly></textarea>
+                                </div>
+                            </div>
                             <div class="col-md-2">
                                 <a href="javascript:void(0);" onclick="addNewRow1();" class="btn btn-success btn-sm mr-2"><i class="mdi mdi-plus"></i></a>                            
                             </div>
@@ -417,7 +417,7 @@ function addNewRow1() {
     htmlcontent += '<div class="col-md-3"><div class="form-group"><label for="topicAvailability">Document</label><textarea name="document[]" id="document' + data_new + '" rows="3" class="form-control" data-new="' + data_new + '" onchange="chat_gtp(this.value,'+data_new+')"></textarea></div></div>';
     htmlcontent += '<div class="col-md-2"><div class="form-group"><label for="topicAvailability2">Availability</label><select class="cust-select form-control mb-0" name="availability[]" data-new="' + data_new + '" onchange="toggleInput('+data_new +')"> <option value="">Select Availability</option>  <option value="yes">Yes</option><option value="no">No</option><option value="inprocess">In-Process</option></select></div></div>';
     htmlcontent += '<div class="col-md-2"><div class="form-group"><label for="topicAvailability2">Files</label><input type="file" class="form-control" name="files[]" accept=".pdf,.xlsx,.doc,.docx" data-new="' + data_new + '"></div></div>';
-    htmlcontent += '<div class="col-md-3"><div class="form-group"><label for="topicAvailability2">Files To be uploaded</label><textarea name="reasons[]" id="reasons" rows="3" class="form-control" data-new="' + data_new + '"></textarea></div></div>';
+    htmlcontent += '<div class="col-md-3"><div class="form-group"><label for="topicAvailability2" readonly>Files To be uploaded</label><textarea name="reasons[]" id="reasons" rows="3" class="form-control" data-new="' + data_new + '"></textarea></div></div>';
     
     htmlcontent += '<div class="col-md-2"><a href="javascript:void(0);" onclick="removeNewRow1();" class="btn btn-danger btn-sm"><i class="mdi mdi-minus"></i></a></div></div></div>';
 
