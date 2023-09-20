@@ -325,7 +325,7 @@ $route = ['dashboard'];
           url: path,
           data: 'menu_id=' + menu_id + '&main_menu_id=' + main_menu_id,
           dataType: 'html',
-          : false,
+          defer: false,
           success: function (result) {
               // console.log(result);
               res = result.split("####");
