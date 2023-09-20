@@ -123,6 +123,7 @@
                                 <div class="form-group">
                                     <label for="topicAvailability2">Files To be uploaded</label>
                                     <textarea name="reasons[]" id="reasons" rows="3" class="form-control" data-new="1" readonly></textarea>
+                                    <button class="form-control btn btn-outline-secondary mt-2 w-50" style="font-size:0.8em" id="edit_gen_pdf" data-new="1"  onclick="genPdf(1);">Edit & Generate PDF</button>
                                 </div>
                             </div>
                             <div class="col-md-2">
@@ -417,7 +418,7 @@ function addNewRow1() {
     htmlcontent += '<div class="col-md-3"><div class="form-group"><label for="topicAvailability">Document</label><textarea name="document[]" id="document' + data_new + '" rows="3" class="form-control" data-new="' + data_new + '" onchange="chat_gtp(this.value,'+data_new+')"></textarea></div></div>';
     htmlcontent += '<div class="col-md-2"><div class="form-group"><label for="topicAvailability2">Availability</label><select class="cust-select form-control mb-0" name="availability[]" data-new="' + data_new + '" onchange="toggleInput('+data_new +')"> <option value="">Select Availability</option>  <option value="yes">Yes</option><option value="no">No</option><option value="inprocess">In-Process</option></select></div></div>';
     htmlcontent += '<div class="col-md-2"><div class="form-group"><label for="topicAvailability2">Files</label><input type="file" class="form-control" name="files[]" accept=".pdf,.xlsx,.doc,.docx" data-new="' + data_new + '"></div></div>';
-    htmlcontent += '<div class="col-md-3"><div class="form-group"><label for="topicAvailability2" readonly>Files To be uploaded</label><textarea name="reasons[]" id="reasons" rows="3" class="form-control" data-new="' + data_new + '"></textarea></div></div>';
+    htmlcontent += '<div class="col-md-3"><div class="form-group"><label for="topicAvailability2" readonly>Files To be uploaded</label><textarea name="reasons[]" id="reasons" rows="3" class="form-control" data-new="' + data_new + '"></textarea> <button class="form-control btn btn-outline-secondary mt-2 w-50" style="font-size:0.8em" id="edit_gen_pdf" data-new="' + data_new + '"  onclick="genPdf(' + data_new + ');">Edit & Generate PDF</button></div></div>';
     
     htmlcontent += '<div class="col-md-2"><a href="javascript:void(0);" onclick="removeNewRow1();" class="btn btn-danger btn-sm"><i class="mdi mdi-minus"></i></a></div></div></div>';
 
@@ -448,7 +449,7 @@ function chat_gtp(val,data_new){
     
     // alert(lev1);
     var data = {
-        "message": "What kind of document should be uploaded for this "+ lev1 + lev2 + lev3 + lev4 +val,
+        "message": "Create a demo document file for this "+ lev1 + lev2 + lev3 + lev4 + " Document title "+val,
     };
     $('#reasons[data-new="'+data_new+'"]').val('please wait ! we are getting details !!');
     var path = "{{ route('chat') }}";
@@ -461,5 +462,21 @@ function chat_gtp(val,data_new){
         }
     });
 }
+function genPdf(data_new) {
+    var val = encodeURIComponent(JSON.stringify($('#reasons[data-new="' + data_new + '"]').val()));
+    var bladeUrl = 'gen-pdf?text=' + val;
+    window.open(bladeUrl, '_blank');
+}
+
+
+// function genPdf(data_new) {
+//     var val = $('#reasons[data-new="' + data_new + '"]').val();
+//     var encodedVal = encodeURIComponent(val); // Encode the HTML content
+
+//     var bladeUrl = 'gen-pdf?text=' + encodedVal;
+
+//     window.open(bladeUrl, '_blank');
+// }
+
 </script>
 @include('includes.footer')
