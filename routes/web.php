@@ -55,6 +55,7 @@ use App\Http\Controllers\HRMS\HrmsController;
 use App\Http\Controllers\library\BookController;
 use App\Http\Controllers\sqaa\sqaa_controller;
 use App\Http\Controllers\sqaa\sqaaReportController;
+use App\Http\Controllers\sqaa\sqaaScoreReportController;
 
 /*
 |--------------------------------------------------------------------------
@@ -168,6 +169,7 @@ Route::group([ 'middleware' => ['session', 'menu', 'logRoute']], function () {
     Route::post('/early-going-hrms-attendance-report', [HrmsController::class, 'earlyGoingHrmsAttendanceReport'])->name('hrms.show_early_going_hrms_attendance_report');
     
     Route::resource('sqaa_master', sqaa_controller::class);
+    Route::resource('sqaa_score_report', sqaaScoreReportController::class);
     Route::resource('sqaa_report_master', sqaaReportController::class);
     Route::get('sqaa_report_master/{id}/edit', 'sqaaReportController@edit')->name('sqaa_report_master.edit');
     Route::put('sqaa_report_master/{id}', 'sqaaReportController@update')->name('sqaa_report_master.update');
