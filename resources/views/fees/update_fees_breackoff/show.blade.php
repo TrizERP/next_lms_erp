@@ -28,13 +28,11 @@
     					{{-- <div class="custom-select"> --}}
                         <select name="month_id" class="form-control" required>
                             <option value="">--Select--</option>
-                            <?php
-                            foreach ($data['data']['ddMonth'] as $id => $val) {
-                                ?>
-                                <option value="<?php echo $id ; ?>"><?php echo $val; ?></option>
-                                <?php
-                            }
-                            ?>
+
+                            @foreach ($data['data']['ddMonth'] as $id => $val)
+
+                                <option value="{{$id}}">{{$val}}</option>
+                            @endforeach
                         </select>
     					{{-- </div> --}}
                     </div>
