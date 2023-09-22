@@ -31,9 +31,9 @@
                     <form action="{{ route('other_fee_map.store') }}" enctype="multipart/form-data" method="post">
                         {{ method_field("POST") }}
                         {{csrf_field()}}
-                        <input type="hidden" name="grade" value="<?php echo $data['grade']; ?>">
-                        <input type="hidden" name="standard" value="<?php echo $data['standard']; ?>">
-                        <input type="hidden" name="division" value="<?php echo $data['division']; ?>">
+                        <input type="hidden" name="grade" value="{{$data['grade']}}">
+                        <input type="hidden" name="standard" value="{{$data['standard']}}">
+                        <input type="hidden" name="division" value="{{$data['division']}}">
                         <div class="table-responsive">
                             <table class="table table-striped" id="myTable">
                                 <thead>
@@ -45,39 +45,37 @@
                                         <th>Mobile</th>
                                         @php
                                         $arr_title = $data['month_head'];
-                                        foreach ($arr_title as $id=>$tit_arr){
-                                        echo '<th class="text-left">'. $tit_arr. '</th>';
-                                        }
                                         @endphp
+                                        @foreach ($arr_title as $id=>$tit_arr)
+                                        <th class="text-left">{{$tit_arr}} </th>
+                                        @endforeach
+
                                     </tr>
                                 </thead>
                                 <tbody>
                                 @php
                                     $arr = $data['stu_data'];
                                     $month = $data['months_id'];
-                                    foreach ($arr as $id => $col_arr) {
                                     @endphp
+                                @foreach ($arr as $id => $col_arr)
                                     <tr>
-                                        <td><input type="checkbox" name="@php echo 'student_id['.$col_arr['student_id'].']'; @endphp" class="ckbox1"></td>
-                                        <td>@php echo $id + 1; @endphp</td>
-                                        <td>@php echo $col_arr['name']; @endphp</td>
-                                        <td>@php echo $col_arr['std'] . ' / ' . $col_arr['div']; @endphp</td>
-                                        <td>@php echo $col_arr['mobile']; @endphp</td>
+                                        <td><input type="checkbox" name="student_id[{{$col_arr['student_id']}}]" class="ckbox1"></td>
+                                        <td>{{$id + 1}}</td>
+                                        <td>{{$col_arr['name']}}</td>
+                                        <td>{{$col_arr['std'] . ' / ' . $col_arr['div']}}</td>
+                                        <td>{{$col_arr['mobile']}}</td>
                                         @php
                                             $arr_title = $data['fees_title'];
-                                            foreach ($month as $key=>$month_id){
-
-                                            foreach ($arr_title['data'] as $ids=>$tit_arr){
                                         @endphp
+                                            @foreach ($month as $key=>$month_id)
+
+                                            @foreach ($arr_title['data'] as $ids=>$tit_arr)
+
                                             <th><input type="text" value="@if(isset($col_arr[$month_id][$tit_arr['display_name']]['amount'])){{ $col_arr[$month_id][$tit_arr['display_name']]['amount']}}@endif" name="values[{{$col_arr['student_id']}}][{{$month_id}}][{{$tit_arr['fees_title']}}]"></th>
-                                            @php
-                                            }
-                                            }
-                                            @endphp
+                                            @endforeach
+                                        @endforeach
                                     </tr>
-                                    @php
-                                    }
-                                    @endphp
+                                @endforeach
                                 </tbody>
                             </table>
                         </div>

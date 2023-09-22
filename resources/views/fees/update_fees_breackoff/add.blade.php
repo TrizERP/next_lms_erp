@@ -21,16 +21,14 @@
                             {{ App\Helpers\SearchChain('4','multiple','grade,std,div') }}
                         </div>
 
-                        <?php
-                        foreach ($data['data']['ddMonth'] as $id => $val) {
-                            ?>
+
+                        @foreach ($data['data']['ddMonth'] as $id => $val)
                             <div class="col-md-3 form-group">
-                                <input name="<?php echo "month[" . $id . "]"; ?>" type="checkbox">
-                                <label><?php echo $val; ?></label>
+                                <input name="month[{{$id}}]" type="checkbox">
+                                <label>{{$val}}</label>
                             </div>
-                            <?php
-                        }
-                        ?>
+
+                        @endforeach
 
                         <div class="col-md-12 form-group">
                             <input type="submit" name="submit" value="Add Structure" class="btn btn-success" >
