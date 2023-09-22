@@ -56,13 +56,10 @@
                                 <label>Fees Heads</label>
     							{{-- <div class="custom-select"> --}}
                                 <select name="fees_heads[]" class="form-control" required multiple>
-                                    <?php
-                                    foreach ($data['data']['heads'] as $id => $val) {
-                                        ?>
-                                        <option value="<?php echo $val->id ; ?>"><?php echo $val->display_name; ?></option>
-                                        <?php
-                                    }
-                                    ?>
+                                    @foreach ($data['data']['heads'] as $id => $val)
+
+                                        <option value="{{ $val->id}}">{{$val->display_name}}</option>
+                                    @endforeach
                                 </select>
     							{{-- </div> --}}
                             </div>
@@ -70,13 +67,11 @@
                                 <label>Month</label>
     							{{-- <div class="custom-select"> --}}
                                 <select name="month_id[]" class="form-control" required multiple>
-                                    <?php
-                                    foreach ($data['data']['ddMonth'] as $id => $val) {
-                                        ?>
-                                        <option value="<?php echo $id ; ?>"><?php echo $val; ?></option>
-                                        <?php
-                                    }
-                                    ?>
+
+                                    @foreach ($data['data']['ddMonth'] as $id => $val)
+
+                                        <option value="{{$id}}">{{$val}}</option>
+                                    @endforeach
                                 </select>
     							{{-- </div> --}}
                             </div>
