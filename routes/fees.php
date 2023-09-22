@@ -122,6 +122,9 @@ Route::group(['prefix' => 'fees', 'middleware' => ['session', 'menu', 'logRoute'
     Route::get('razorpay', function ($id = null) {
         return view('fees/online_fees/razorpay', ['name' => 'James']);
     })->name('razorpay');
+    Route::get('payphi', function ($id = null) {
+        return view('fees/online_fees/payphi', ['name' => 'James']);
+    })->name('payphi');
 
 
     Route::post('api/get-fees-list', [AJAXController::class, 'getFees'])->name('get-fees-list');
@@ -233,6 +236,9 @@ Route::controller(online_fees_collect_controller::class)->group(function () {
     Route::post('fees/razorpay/online_fees_razorpayRequestHandler', 'razorpay_request_handler')->name("razorpay_request_handler");
     Route::post('fees/razorpay/online_fees_razorpayResponseHandler', 'razorpay_response_handler')->name("razorpay_response_handler");
 
+    Route::post('fees/payphi/online_fees_collect', 'payphi')->name("payphi_fees_collect");
+    Route::post('fees/payphi/online_fees_payphiRequestHandler', 'payphi_request_handler')->name("payphi_request_handler");
+    Route::post('fees/online_fees_payphiresponsehandler', 'payphi_response_handler')->name("payphi_response_handler");
 });
 
 Route::controller(AJAXController::class)->group(function () {

@@ -58,6 +58,14 @@
                                     </a>
                                 </label>
                             </div>
+                            <div class="col-md-6 form-group">
+                                <label>
+                                    {{-- <input type="radio" name="payment_gatway_name" value="payphi" checked> --}}
+                                    <a href="{{ route('payphi') }}">
+                                        <img style="height:80px;" src="{{url('/online_fees_logo/PayPhi.jpg')}}">
+                                    </a>
+                                </label>
+                            </div>
 
                             <div class="col-md-6 form-group">
 
