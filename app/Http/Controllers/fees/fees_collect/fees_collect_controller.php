@@ -1775,6 +1775,7 @@ class fees_collect_controller extends Controller
                 ->where('s.sub_institute_id', '=', $sub_institute_id)
                 ->where('s.id', '=', $student_id)
                 ->where('fc.syear', '=', $syear)
+                ->where('fc.is_deleted', '=',"N")
                 ->groupBy('s.id', 'fc.term_id');
             if (!empty($fees_join)) {
                 $query->whereRaw($fees_join);
@@ -1789,6 +1790,7 @@ class fees_collect_controller extends Controller
                     ->where('s.sub_institute_id', '=', $sub_institute_id)
                     ->where('s.id', '=', $student_id)
                     ->where('fpo.syear', '=',$syear)
+                    ->where('fpo.is_deleted', '=',"N")
                     ->groupBy('s.id', 'fpo.month_id');
 
                 if (!empty($paid_other_join)) {

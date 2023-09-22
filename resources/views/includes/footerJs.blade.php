@@ -180,7 +180,7 @@ $route = ['dashboard'];
 <script src="{{ asset("plugins/bower_components/bootstrap-datepicker/bootstrap-datepicker.min.js") }}"></script>
 
 
-<script src="https://code.jquery.com/jquery-1.10.2.js" defer></script>
+<script src="https://code.jquery.com/jquery-1.10.2.js"></script>
 <script src="{{ asset("/admin_dep/js/jquery-ui.js") }}" defer></script>
 
 <script src="{{ asset("/admin_dep/js/bootstrap.min.js") }}" defer></script>

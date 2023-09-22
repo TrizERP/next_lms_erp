@@ -125,25 +125,25 @@ class exam_creation_controller extends Controller
                         'standard_id'      => $request->get('standard'),
                         'subject_id'       => $sub_val,
                     ])->get()->toArray();
-                    if (count($data)) {
-                        foreach ($data as $arr) {
-                            $con_points = $arr['con_point'];
-                        }
-                    }
+                    // if (count($data)) {
+                    //     foreach ($data as $arr) {
+                    //         $con_points = $arr['con_point'];
+                    //     }
+                    // }
                 }
         }
         if ($eroor == false) {
             $sort = $request->get('sort_order');
             $error_co_point = false;
                 foreach ($request->get('subject') as $sub_id => $sub_val) {
-                    if ($request->get('con_point') != '') {
-                        if ($con_points != "") {
-                            if ($con_points != $request->get('con_point')) {
-                                $error_reson = "Convert Point Is Not Matching With Other Exam.";
-                                $error_co_point = true;
-                            }
-                        }
-                    }
+                    // if ($request->get('con_point') != '') {
+                    //     if ($con_points != "") {
+                    //         if ($con_points != $request->get('con_point')) {
+                    //             $error_reson = "Convert Point Is Not Matching With Other Exam.";
+                    //             $error_co_point = true;
+                    //         }
+                    //     }
+                    // }
                     if ($error_co_point == false) {
                         $data = new exam_creation([
                             'syear'              => session()->get('syear'),
@@ -267,22 +267,22 @@ class exam_creation_controller extends Controller
                 'subject_id'       => $request->get('subject'),
             ])
                 ->get()->toArray();
-            if (count($data)) {
-                foreach ($data as $id1 => $arr) {
-                    $con_points = $arr['con_point'];
-                }
-            }
+            // if (count($data)) {
+            //     foreach ($data as $id1 => $arr) {
+            //         $con_points = $arr['con_point'];
+            //     }
+            // }
         }
         if ($eroor == false) {
             $error_co_point = false;
-            if ($request->get('con_point') != '') {
-                if ($con_points != "") {
-                    if ($con_points != $request->get('con_point')) {
-                        $error_reson = "Convert Point Is Not Matching With Other Exam.";
-                        $error_co_point = true;
-                    }
-                }
-            }
+            // if ($request->get('con_point') != '') {
+            //     if ($con_points != "") {
+            //         if ($con_points != $request->get('con_point')) {
+            //             $error_reson = "Convert Point Is Not Matching With Other Exam.";
+            //             $error_co_point = true;
+            //         }
+            //     }
+            // }
             $data = [
                 'syear'              => session()->get('syear'),
                 'sub_institute_id'   => session()->get('sub_institute_id'),
