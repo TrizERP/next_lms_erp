@@ -294,7 +294,7 @@ class marks_entry_controller extends Controller
 
                 $get_elective_subjects = json_decode(json_encode($get_elective_subjects), true);
                 // $check_map_student = 0;
-                if ($get_elective_subjects[0]['elective_subject'] == 'Yes') {
+                if (!empty($get_elective_subjects) && $get_elective_subjects[0]['elective_subject'] == 'Yes') {
                     $check_optional_subject_with_student = DB::table("student_optional_subject")
                         ->where("student_id", "=", $arr['student_id'])
                         ->where("subject_id", "=", $_REQUEST['subject'])

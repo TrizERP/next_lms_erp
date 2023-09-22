@@ -49,7 +49,7 @@ class s1excel_exportController extends Controller {
 		$from_date = $request->input('from_date');
 		$to_date = $request->input('to_date'); 
 
-        $extra = "";
+        $extra = "1=1";
         $sql_enroll = "SELECT GROUP_CONCAT(DISTINCT SCHEME_PLAN_REFERENCE_NO) ENR FROM S2_LOG";
         $ret_enroll = DB::select($sql_enroll);        
         $ret_enroll = $ret_enroll[0];
@@ -61,7 +61,7 @@ class s1excel_exportController extends Controller {
 		
 		if($from_date != null  && $to_date != null)
 		{
-			$extra .= "pm.payment_date between '".$from_date."' AND '".$to_date."'";
+			$extra .= " AND bd.registration_date between '".$from_date."' AND '".$to_date."'";
 		}
 
         // $studentData = DB::select("SELECT bd.*,pm.payment_method,CONCAT_WS(' ',s.first_name,s.middle_name,s.last_name) as student_name,s.id as student_id, 
@@ -77,8 +77,9 @@ class s1excel_exportController extends Controller {
         // $NachData = json_decode(json_encode($NachData),true);
         $marking_period_id = session()->get('term_id');
         $studentData = DB::table('tblstudent_payment_method_mapping as pm')
-        ->selectRaw('bd.*, pm.payment_method, CONCAT_WS(" ", s.first_name, s.middle_name, s.last_name) as student_name, s.id as student_id, s.enrollment_no, s.mobile')
+        ->selectRaw('bd.*, pm.payment_method, CONCAT_WS(" ", s.first_name, s.last_name) as student_name, s.id as student_id,ac.type_name AS ac_type, s.enrollment_no, s.mobile')
         ->join('tblstudent_bank_detail as bd', 'bd.student_id', '=', 'pm.student_id')
+        ->join('NACH_ac_type as ac', 'ac.type_id', '=', 'bd.ac_type')
         ->join('tblstudent as s',function($join) use($marking_period_id){
             $join->on('s.id', '=', 'pm.student_id');
             // ->when($marking_period_id,function($query) use ($marking_period_id){

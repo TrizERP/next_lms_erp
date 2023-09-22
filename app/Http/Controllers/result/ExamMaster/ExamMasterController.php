@@ -107,7 +107,8 @@ class ExamMasterController extends Controller
             })
             ->leftJoin("result_create_exam", function ($join) {
                 $join->on("result_create_exam.exam_id", "=", "result_exam_master.Id")
-                    ->on("result_create_exam.sub_institute_id", "=", "result_exam_master.SubInstituteId");
+                    ->on("result_create_exam.sub_institute_id", "=", "result_exam_master.SubInstituteId")
+                    ->on("result_create_exam.syear", "=", "academic_year.syear");
             });
 
         if ($type == 'API' && !empty($standard_id)) {

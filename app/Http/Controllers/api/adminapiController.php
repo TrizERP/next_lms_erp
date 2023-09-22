@@ -557,7 +557,9 @@ class adminapiController extends Controller
         } else {
 
             $data = DB::table('leave_applications as la')
-                ->join('tblstudent as s', function ($join) {
+                ->join('tblstudent_enrollment as se', function ($join) {
+                    $join->whereRaw("se.student_id = la.student_id AND la.sub_institute_id = se.sub_institute_id AND se.syear = la.syear AND se.end_date is NULL");
+                })->join('tblstudent as s', function ($join) {
                     $join->whereRaw("s.id = se.student_id and s.sub_institute_id = se.sub_institute_id");
                 })->join('standard as st', function ($join) {
                     $join->whereRaw("st.id = se.standard_id");

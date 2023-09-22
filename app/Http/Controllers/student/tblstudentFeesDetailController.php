@@ -105,7 +105,7 @@ class tblstudentFeesDetailController extends Controller
             foreach ($payment_method as $monthid => $method) {
                 $remark_value = $date_value = "";
                 if (isset ($month_remark[$monthid]) && $month_remark[$monthid] != "") {
-                    $remark_value = $month_remark[$monthid];
+                    $remark_value = $month_remark[$monthid] ?? '';
                 }
 
                 $pdata = [
@@ -119,7 +119,7 @@ class tblstudentFeesDetailController extends Controller
                 ];
 
                 if (isset ($month_date[$monthid]) && $month_date[$monthid] != "" && $month_date[$monthid] != null) {
-                    $pdata['payment_date'] = $month_date[$monthid];
+                    $pdata['payment_date'] = date("Y-m-d", strtotime($month_date[$monthid]));
                 }
 
                 tblstudentPaymentMethodMappingModel::where([
@@ -148,13 +148,12 @@ class tblstudentFeesDetailController extends Controller
                     'sub_institute_id' => $sub_institute_id,
                     'month_id'         => $monthid,
                     'payment_method'   => $method,
-                    'payment_date'     => $date_value,
                     'remarks'          => $remark_value,
                     'created_by'       => $user_id,
                 );
 
                 if (isset ($month_date[$monthid]) && $month_date[$monthid] != "" && $month_date[$monthid] != null) {
-                    $pdata['payment_date'] = $month_date[$monthid];
+                    $pdata['payment_date'] = date("Y-m-d", strtotime($month_date[$monthid]));
                 }
 
                 tblstudentPaymentMethodMappingModel::insert($pdata);

@@ -46,8 +46,12 @@ class cbse_1t5_result_controller extends Controller {
         $academicTerms = session()->get('academicTerms');
 
         $result_year = $syear . "-" . $next_year;
+        if(session()->get('sub_institute_id')!=72){
         session()->put('term_id', $academicTerms[0]->term_id);
         session()->put('standard', $_REQUEST['standard']);
+    }else{
+         session()->put('standard', $_REQUEST['standard']);
+    }
         //getting year detail
         //getting all exam name with mark
         $all_exam = $this->getAllExam($_REQUEST['standard']);
@@ -110,8 +114,9 @@ class cbse_1t5_result_controller extends Controller {
             }
             $responce_arr[$cur_student_id]['grade_range'] = $all_grd_data;            
         }
-
+        if(session()->get('sub_institute_id')!=72){
         session()->put('term_id', $academicTerms[1]->term_id);
+        }
         //getting year detail
         //getting all exam name with mark
         $all_exam = $this->getAllExam($_REQUEST['standard']);
