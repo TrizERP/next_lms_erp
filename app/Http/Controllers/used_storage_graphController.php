@@ -95,34 +95,54 @@ class used_storage_graphController extends Controller
             $chart_data .= "},";
 
             if ($table_name == 'inward') {
-                
-                $get_inward_data = inwardModel::selectRaw("SUM(IFNULL(attachment_size,0)) AS total_size")
-                    ->where('sub_institute_id', $sub_institute_id)->get()->toArray();
-                $inward_used_space_in_MB = $this->formatBytes($get_inward_data[0]->total_size);
-
-                $chart_data .= "{";
-                $chart_data .= "id: "."'2.".$j."',";
-                $chart_data .= "parent: "."'1.".$i."',";
-                $chart_data .= "name: "."'".$user_name."',";
-                $chart_data .= "value: ".$inward_used_space_in_MB;
-                $chart_data .= "},";
+                $get_inward_data = inwardModel::selectRaw("SUM(IFNULL(attachment_size, 0)) AS total_size")
+                    ->where('sub_institute_id', $sub_institute_id)->get();
+            
+                if ($get_inward_data->count() > 0) {
+                    $inward_used_space_in_MB = $this->formatBytes($get_inward_data[0]->total_size);
+            
+                    $chart_data .= "{";
+                    $chart_data .= "id: " . "'2." . $j . "',";
+                    $chart_data .= "parent: " . "'1." . $i . "',";
+                    $chart_data .= "name: " . "'" . $user_name . "',";
+                    $chart_data .= "value: " . $inward_used_space_in_MB;
+                    $chart_data .= "},";
+                } else {
+                    // Handle the case where no data was found for 'inward'
+                    $chart_data .= "{";
+                    $chart_data .= "id: " . "'2." . $j . "',";
+                    $chart_data .= "parent: " . "'1." . $i . "',";
+                    $chart_data .= "name: " . "'" . $user_name . "',";
+                    $chart_data .= "value: 0"; // Set a default value or handle as needed
+                    $chart_data .= "},";
+                }
             }
+            
 
             if ($table_name == 'outward') {
-                
-                $get_outward_data = outwardModel::selectRaw("SUM(IFNULL(attachment_size,0)) AS total_size")
-                    ->where('sub_institute_id', $sub_institute_id)->get()->toArray();
-                
-                $outward_used_space_in_MB = $this->formatBytes($get_outward_data[0]->total_size);
-
-
-                $chart_data .= "{";
-                $chart_data .= "id: "."'2.".$j."',";
-                $chart_data .= "parent: "."'1.".$i."',";
-                $chart_data .= "name: "."'".$user_name."',";
-                $chart_data .= "value: ".$outward_used_space_in_MB;
-                $chart_data .= "},";
+                $get_outward_data = outwardModel::selectRaw("SUM(IFNULL(attachment_size, 0)) AS total_size")
+                    ->where('sub_institute_id', $sub_institute_id)->first(); // Use first() to get a single result
+            
+                if ($get_outward_data) {
+                    $outward_used_space_in_MB = $this->formatBytes($get_outward_data->total_size);
+            
+                    $chart_data .= "{";
+                    $chart_data .= "id: " . "'2." . $j . "',";
+                    $chart_data .= "parent: " . "'1." . $i . "',";
+                    $chart_data .= "name: " . "'" . $user_name . "',";
+                    $chart_data .= "value: " . $outward_used_space_in_MB;
+                    $chart_data .= "},";
+                } else {
+                    // Handle the case where no data was found for 'outward'
+                    $chart_data .= "{";
+                    $chart_data .= "id: " . "'2." . $j . "',";
+                    $chart_data .= "parent: " . "'1." . $i . "',";
+                    $chart_data .= "name: " . "'" . $user_name . "',";
+                    $chart_data .= "value: 0"; // Set a default value or handle as needed
+                    $chart_data .= "},";
+                }
             }
+            
 
             if ($table_name == 'photo_video_gallary') {
                 if ($user_profile_name == 'Student') {
@@ -312,17 +332,29 @@ class used_storage_graphController extends Controller
             }
 
             if ($table_name == 'visitor_master') {
-                $get_visitor_data = visitor_masterModel::selectRaw('SUM(IFNULL(file_size,0)) AS total_size')
-                    ->where('sub_institute_id', $sub_institute_id)->get()->toArray();
-                $visitor_used_space_in_MB = $this->formatBytes($get_visitor_data[0]->total_size);
-
-                $chart_data .= "{";
-                $chart_data .= "id: "."'2.".$j."',";
-                $chart_data .= "parent: "."'1.".$i."',";
-                $chart_data .= "name: "."'".$user_name."',";
-                $chart_data .= "value: ".$visitor_used_space_in_MB;
-                $chart_data .= "},";
+                $get_visitor_data = visitor_masterModel::selectRaw('SUM(IFNULL(file_size, 0)) AS total_size')
+                    ->where('sub_institute_id', $sub_institute_id)->first(); // Use first() to get a single result
+            
+                if ($get_visitor_data) {
+                    $visitor_used_space_in_MB = $this->formatBytes($get_visitor_data->total_size);
+            
+                    $chart_data .= "{";
+                    $chart_data .= "id: " . "'2." . $j . "',";
+                    $chart_data .= "parent: " . "'1." . $i . "',";
+                    $chart_data .= "name: " . "'" . $user_name . "',";
+                    $chart_data .= "value: " . $visitor_used_space_in_MB;
+                    $chart_data .= "},";
+                } else {
+                    // Handle the case where no data was found for 'visitor_master'
+                    $chart_data .= "{";
+                    $chart_data .= "id: " . "'2." . $j . "',";
+                    $chart_data .= "parent: " . "'1." . $i . "',";
+                    $chart_data .= "name: " . "'" . $user_name . "',";
+                    $chart_data .= "value: 0"; // Set a default value or handle as needed
+                    $chart_data .= "},";
+                }
             }
+            
 
             if ($table_name == 'front_desk') {
                 $extra = "";
@@ -410,22 +442,38 @@ class used_storage_graphController extends Controller
 
             if ($table_name == 'student') {
                 if ($user_profile_name == 'Student') {
-                    $get_student_data = tblstudentModel::selectRaw("IFNULL(SUM(file_size),0) AS total_size")
-                        ->where('sub_institute_id', $sub_institute_id)->where('id', $user_id)->get()->toArray();
-                    $student_used_space_in_MB = $this->formatBytes($get_student_data[0]->total_size);
+                    $get_student_data = tblstudentModel::selectRaw("IFNULL(SUM(file_size), 0) AS total_size")
+                        ->where('sub_institute_id', $sub_institute_id)
+                        ->where('id', $user_id)
+                        ->first(); // Use first() to get a single result
+            
+                    if ($get_student_data) {
+                        $student_used_space_in_MB = $this->formatBytes($get_student_data->total_size);
+                    } else {
+                        // Handle the case where no data was found for the specific student
+                        $student_used_space_in_MB = 0; // Set a default value or handle as needed
+                    }
                 } else {
-                    $get_student_data = tblstudentModel::selectRaw("IFNULL(SUM(file_size),0) AS total_size")
-                        ->where('sub_institute_id', $sub_institute_id)->get()->toArray();
-                    $student_used_space_in_MB = $this->formatBytes($get_student_data[0]->total_size);
+                    $get_student_data = tblstudentModel::selectRaw("IFNULL(SUM(file_size), 0) AS total_size")
+                        ->where('sub_institute_id', $sub_institute_id)
+                        ->first(); // Use first() to get a single result
+            
+                    if ($get_student_data) {
+                        $student_used_space_in_MB = $this->formatBytes($get_student_data->total_size);
+                    } else {
+                        // Handle the case where no data was found for all students
+                        $student_used_space_in_MB = 0; // Set a default value or handle as needed
+                    }
                 }
-
+            
                 $chart_data .= "{";
-                $chart_data .= "id: "."'2.".$j."',";
-                $chart_data .= "parent: "."'1.".$i."',";
-                $chart_data .= "name: "."'".$user_name."',";
-                $chart_data .= "value: ".$student_used_space_in_MB;
+                $chart_data .= "id: " . "'2." . $j . "',";
+                $chart_data .= "parent: " . "'1." . $i . "',";
+                $chart_data .= "name: " . "'" . $user_name . "',";
+                $chart_data .= "value: " . $student_used_space_in_MB;
                 $chart_data .= "},";
             }
+            
 
             if ($table_name == 'student_health') {
                 $extra = "";

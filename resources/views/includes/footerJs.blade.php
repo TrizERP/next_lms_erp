@@ -515,6 +515,4 @@ $route = ['dashboard'];
 
     });
 
-
-    // for sidebar menu entirely but not cover treeview
 </script>

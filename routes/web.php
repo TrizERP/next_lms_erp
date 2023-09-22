@@ -54,6 +54,8 @@ use App\Http\Controllers\Payroll\PayrollController;
 use App\Http\Controllers\HRMS\HrmsController;
 use App\Http\Controllers\library\BookController;
 use App\Http\Controllers\sqaa\sqaa_controller;
+use App\Http\Controllers\sqaa\sqaaReportController;
+use App\Http\Controllers\sqaa\sqaaScoreReportController;
 
 /*
 |--------------------------------------------------------------------------
@@ -167,8 +169,17 @@ Route::group([ 'middleware' => ['session', 'menu', 'logRoute']], function () {
     Route::post('/early-going-hrms-attendance-report', [HrmsController::class, 'earlyGoingHrmsAttendanceReport'])->name('hrms.show_early_going_hrms_attendance_report');
     
     Route::resource('sqaa_master', sqaa_controller::class);
-    Route::get('get-level', [sqaa_controller::class,'get_level'])->name('get-level'); 
+    Route::resource('sqaa_score_report', sqaaScoreReportController::class);
+    Route::resource('sqaa_report_master', sqaaReportController::class);
+    Route::get('sqaa_report_master/{id}/edit', 'sqaaReportController@edit')->name('sqaa_report_master.edit');
+    Route::put('sqaa_report_master/{id}', 'sqaaReportController@update')->name('sqaa_report_master.update');
 
+    Route::get('get-level', [sqaa_controller::class,'get_level'])->name('get-level'); 
+    Route::get('gen-pdf', [sqaa_controller::class,'edit_gen_pdf'])->name('gen-pdf');
+    Route::post('unlink-file', [sqaa_controller::class,'unlink_file'])->name('unlink-file');
+    
+    Route::POST('download-pdf', [sqaa_controller::class,'generatePdf'])->name('download-pdf');     
+    
     Route::resource('questionExcelDownload', questionExcelDownloadController::class);
 });
 

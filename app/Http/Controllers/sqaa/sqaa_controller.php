@@ -9,7 +9,10 @@ use App\Models\sqaa\sqaa_master;
 use App\Models\sqaa\sqaa_mark;
 use App\Models\sqaa\sqaa_document;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\URL;
+use Illuminate\Http\Response;
 use DB;
+use PDF;
 
 class sqaa_controller extends Controller
 {
@@ -68,7 +71,7 @@ class sqaa_controller extends Controller
         if(!$check_data){
         $data = new sqaa_mark();
         $data->menu_id=$menu_id;
-        $data->mark=$request->mark;
+        $data->mark=$request->mark ?? 0;
         $data->created_by = $user_id;
         $data->sub_institute_id = $sub_institute_id;
         $data->created_at = now();
@@ -85,7 +88,7 @@ class sqaa_controller extends Controller
                 ];
                 $document =$request->input('document')[$i];
                 $reasons =$request->input('reasons')[$i];                
-                $availability =$request->input('availability')[$i];
+                $availability =$request->input('availability')[$i] ?? 'no';
 
                 // Check if a file is present for this row
                 if ($request->input('availability')[$i] =="yes" && $request->hasFile('files') && $request->file('files')[$i]->isValid()) {
@@ -132,4 +135,39 @@ class sqaa_controller extends Controller
         $check_table_data = DB::table($table)->where($request)->get()->toArray();
         return $check_table_data;
     }
+
+    public function edit_gen_pdf(Request $request) {
+        $type = $request->input('type');
+        $text = $request->input('text');
+        $decodedText = json_decode(urldecode($text), true);
+    
+        $res['text'] = $decodedText;
+        return is_mobile($type, "sqaa/generatePdf", $res, "view");
+    }
+
+    public function generatePdf(Request $request) {
+        $res['text'] = $request->input('hidden_input');
+        $htmlContent = $request->input('html_content');
+        $pdf = PDF::loadHTML($htmlContent);
+        $timestamp = now()->format('YmdHis');        
+        $filename = 'PDF'.$timestamp.'.pdf';
+        
+        $res['path'] = 'sqaa/' . $filename;
+        $pdf->save(public_path('sqaa/' . $filename));
+        
+        $fileUrl = asset('sqaa/' . $filename);
+
+        return redirect()->route('gen-pdf', ['text' => $res['text'], 'path' => $res['path']]);
+  }      
+  public function unlink_file(Request $request){
+    if (file_exists($request->file)) {
+        if (unlink($request->file)) {
+            echo 'File deleted successfully.';
+        } else {
+            echo 'Failed to delete the file.';
+        }
+    } else {
+        echo 'File not found.';
+    }
+  }
 }

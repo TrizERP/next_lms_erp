@@ -168,6 +168,7 @@ class taskController extends Controller
         $sub_institute_id = $request->session()->get("sub_institute_id");
         $user_id = $request->session()->get("user_id");
         $syear = $request->session()->get("syear");
+        $user_profile_name = $request->session()->get("user_profile_name");
 
         $result = DB::table("task as t")
             ->join('tbluser as u', function ($join) use ($sub_institute_id) {
@@ -187,8 +188,17 @@ class taskController extends Controller
 
         $editData = $result[0];
 
+        if($user_profile_name != "Teacher")
+        {
+            $extrawhere = "id != '".$user_id."'";
+        }
+        else
+        {
+            $extrawhere = "id = '".$user_id."'";
+        }
+
         $users = tbluserModel::where(["sub_institute_id" => $sub_institute_id])
-            ->whereRaw("id != '".$user_id."'")
+            ->whereRaw($extrawhere)
             ->get()
             ->toArray();
 
@@ -227,7 +237,6 @@ class taskController extends Controller
         $data['CREATED_ON'] = date('Y-m-d H:i:s');
         $data['approved_by'] = $user_id;
         $data['approved_on'] = date('Y-m-d H:i:s');
-
 
         $TASK_ALLOCATED_TO = $request->input("TASK_ALLOCATED_TO");
 
