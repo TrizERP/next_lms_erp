@@ -43,10 +43,10 @@ class feesPayoutController extends Controller
             "to_date" => $to_date,
             "sub_institute_id" => $sub_institute_id,
             "syear" => $syear,
-            "from_date2" => $from_date, // Rename this key to be unique
-            "to_date2" => $to_date,     // Rename this key to be unique
-            "sub_institute_id2" => $sub_institute_id, // Rename this key to be unique
-            "syear2" => $syear,         // Rename this key to be unique
+           // "from_date2" => $from_date, // Rename this key to be unique
+           // "to_date2" => $to_date,     // Rename this key to be unique
+           // "sub_institute_id2" => $sub_institute_id, // Rename this key to be unique
+           // "syear2" => $syear,         // Rename this key to be unique
         ];
 
         $results = DB::select(DB::raw('
@@ -65,9 +65,9 @@ class feesPayoutController extends Controller
         FROM (
             SELECT 
                 *,
-                SUM(CASE WHEN house_name = "CN" THEN (total_reg_paid+total_other_paid) ELSE 0 END) AS cn_tot, 
-                SUM(CASE WHEN house_name = "Other School" THEN (total_reg_paid+total_other_paid) ELSE 0 END) AS other_tot, 
-                SUM(total_reg_paid) + SUM(total_other_paid) AS tot
+                SUM(CASE WHEN house_name = "CN" THEN (total_reg_paid) ELSE 0 END) AS cn_tot, 
+                SUM(CASE WHEN house_name = "Other School" THEN (total_reg_paid) ELSE 0 END) AS other_tot, 
+                SUM(total_reg_paid) AS tot
             FROM (
                 SELECT 
                     se.student_id,
@@ -77,7 +77,7 @@ class feesPayoutController extends Controller
                     d.name AS coach_name,
                     b.title AS batch_name,
                     hm.house_name, 
-                    SUM(fc.amount) AS total_reg_paid,
+                    SUM(fc.tution_fee) AS total_reg_paid,
                     0 AS total_other_paid -- Initialize total_other_paid as 0 in this subquery
                 FROM tblstudent_enrollment se
                 INNER JOIN tblstudent s ON s.id = se.student_id
@@ -92,32 +92,6 @@ class feesPayoutController extends Controller
                 )
                 WHERE se.sub_institute_id = :sub_institute_id AND se.syear = :syear
                 GROUP BY se.student_id 
-                
-                UNION
-                
-                SELECT 
-                    se.student_id,
-                    s.first_name,
-                    LEFT(s.gender, 1) AS gender,
-                    sd.name AS standard_name,
-                    d.name AS coach_name,
-                    b.title AS batch_name,
-                    hm.house_name,
-                    0 AS total_reg_paid, -- Initialize total_reg_paid as 0 in this subquery
-                    SUM(fo.actual_amountpaid) AS total_other_paid
-                FROM tblstudent_enrollment se
-                INNER JOIN tblstudent s ON s.id = se.student_id
-                INNER JOIN standard sd ON sd.id = se.standard_id
-                INNER JOIN division d ON d.id = se.section_id
-                LEFT JOIN batch b ON b.id = s.studentbatch
-                INNER JOIN fees_paid_other fo ON (
-                    fo.student_id = se.student_id 
-                    AND fo.receiptdate BETWEEN :from_date2 AND :to_date2 
-                    AND fo.is_deleted = "N"
-                )
-                LEFT JOIN house_master hm ON hm.id = se.house_id
-                WHERE se.sub_institute_id = :sub_institute_id2 AND se.syear = :syear2
-                GROUP BY se.student_id
             ) AS temp_tbl
             GROUP BY student_id
         ) AS temp_tbl2
