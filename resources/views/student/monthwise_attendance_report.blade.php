@@ -36,7 +36,17 @@
                         @csrf
                             <div class="row">
                                 {{ App\Helpers\SearchChain('4','single','grade,std,div',$grade_id,$standard_id,$division_id) }}
-                                <div class="col-md-4 form-group">
+                                @if(isset($data['batch_id']) && !empty($data['batchs']))
+                                    <div class="col-md-4 form-group" id="batch_div">
+                                    <label>Select Batch</label>
+                                    <select name="batch_sel" class="form-control" id="batch_sel" required="">
+                                    @foreach($data['batchs'] as $batch)
+                                    <option value="{{$batch->id}}" @if($data['batch_id']==$batch->id) selected @endif>{{$batch->title}}</option>
+                                  @endforeach                                    
+                                    </select>
+                                </div>
+                                @endif
+                                <div class="col-md-4 form-group" id="std_div">
                                     <label>Year</label>
                                     <select class="form-control" name="year" id="year" required>
                                         <option value="">Select Year</option>
@@ -80,15 +90,16 @@
                         echo '<br><center><span style=" font-size: 14px;font-weight: 600;font-family: Arial, Helvetica, sans-serif !important">Month : '.$month_name[$data['month']].' / </span><span style=" font-size: 14px;font-weight: 600;font-family: Arial, Helvetica, sans-serif !important">Year : '.$data['year'].'</span></center><br>';
                     @endphp                        
                             <div class="table-responsive">
-                                <!--{!! App\Helpers\get_school_details("$grade_id","$standard_id","$division_id") !!}-->
                                 <table id="example" class="table display" style="border:none !important">
-                                    <!-- <h2 id="head-table"></h2> -->
                                     <thead>
                                     <tr id="head-table" style="border:none !important"></tr>
                                     <tr id="heads">
                                         <th>Sr No</th>
                                         <th>{{App\Helpers\get_string('grno','request')}}</th>
                                         <th>{{App\Helpers\get_string('studentname','request')}}</th>
+                                        @if(isset($data['batch_id']) && !empty($data['batchs']))
+                                        <th>Batch</th>
+                                        @endif
                                         @for($i=1;$i<=$data['to_date'];$i++)
                                             <th>{{$i}}</th>
                                         @endfor
@@ -108,6 +119,9 @@
                                             <td>{{$j++}}</td>
                                             <td>{{$value['enrollment_no']}}</td>
                                             <td>{{$value['first_name']." ".$value['middle_name']." ".$value['last_name']}}</td>
+                                            @if(isset($data['batch_id']) && !empty($data['batchs']))
+                                            <td>{{$value['batch_title']}}</td>
+                                            @endif
                                             @for($i=1;$i<=$data['to_date'];$i++)
                                                 <td>
                                                     @if(isset($data['attendance_data'][$value['id']][$i]))
@@ -215,4 +229,46 @@
 
         });
     </script>
+    
+<script>
+$(document).on('change', '#division', function () {
+    var standard_id = $('#standard').val();
+    var division_id = $(this).val();
+    var path = "{{ route('get_batch') }}";
+
+    // Clear existing batch options
+    $('#batch_div').remove();    
+
+    $.ajax({
+        url: path,
+        data: 'standard_id=' + standard_id + '&division_id=' + division_id,
+        success: function (data) {
+            var batch_select_container = $('#batch_div');
+            var batch_select = $('#batch_sel');
+
+            if (Array.isArray(data) && data.length > 0) {
+                if (batch_select_container.length === 0) {
+                    batch_select_container = $('<div class="col-md-4 form-group" id="batch_div"></div>');
+                    $('#std_div').before(batch_select_container);
+
+                    var batch_select_label = $('<label for="batch_sel">Select Batch</label>');
+                    batch_select = $('<select id="batch_sel" class="form-control" name="batch_sel"></select>');
+                    var defaultOption = '<option value="">--Select--</option>';
+                    batch_select.append(defaultOption);
+
+                    batch_select_container.append(batch_select_label);
+                    batch_select_container.append(batch_select);
+                }
+
+                // Populate the batch options
+                data.forEach(function (value) {
+                    var option = '<option value="' + value.id + '">' + value.title + '</option>';
+                    batch_select.append(option);
+                });
+            }
+        }
+    });
+});
+
+</script>
 @include('includes.footer')

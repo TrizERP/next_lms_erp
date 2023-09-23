@@ -629,7 +629,7 @@ if (!function_exists('TermDD')) {
 }
 if (!function_exists('SearchStudent')) {
 
-    function SearchStudent($grade="", $standard = "", $div = "", $sub_institute_id = "", $syear = "", $roll_no = "", $stu_name = "", $uniqueid = "", $mobile = "", $grno = "",$stud_id="")
+    function SearchStudent($grade="", $standard = "", $div = "", $sub_institute_id = "", $syear = "", $roll_no = "", $stu_name = "", $uniqueid = "", $mobile = "", $grno = "",$stud_id="",$batch="")
     {
         if ($sub_institute_id == '') {
             $sub_institute_id = session()->get('sub_institute_id');
@@ -658,7 +658,7 @@ if (!function_exists('SearchStudent')) {
         if($stud_id!=''){
             $stud_id = $stud_id;
         }
-
+        
         $enrollment_join = array(
             'se.student_id' => 'ts.id',
             'se.sub_institute_id' => 'ts.sub_institute_id',
@@ -675,6 +675,11 @@ if (!function_exists('SearchStudent')) {
             'd.id' => 'se.section_id',
             'd.sub_institute_id' => 'se.sub_institute_id',
         );
+        $batch_join = array(
+            'b.id' => 'ts.studentbatch',
+            'b.sub_institute_id' => 'se.sub_institute_id',
+        );
+        
 
         $select_fields = "ts.*,se.syear,se.student_id,se.grade_id,
                 se.standard_id,se.section_id,se.student_quota,se.start_date,
@@ -693,7 +698,10 @@ if (!function_exists('SearchStudent')) {
         // $query->when($marking_period_id, function ($join) use ($marking_period_id) {
         //     $join->where('ts.marking_period_id', $marking_period_id);
         // });
-
+        if($batch!=""){
+            $query->where('ts.studentbatch', $batch);                        
+        }
+        
         if ($mobile != '') {
             $query->where('ts.mobile', $mobile);
         }
@@ -723,6 +731,7 @@ if (!function_exists('SearchStudent')) {
         $columns[] = "s.name as standard_name";
         $columns[] = "s.medium as medium";
         $columns[] = "d.name as division_name";
+        $columns[] = "b.title as batch_title";        
 
         $query->join('tblstudent_enrollment as se', $enrollment_join);
         $query->where($where);
@@ -741,7 +750,8 @@ if (!function_exists('SearchStudent')) {
         if (count($div_arr)) {
             $query->WhereIn('d.id', $div_arr);
         }
-
+        $query->leftJoin('batch as b', $batch_join);
+  
         //START Check for class teacher assigned standards
         $extraRaw = " 1 = 1 ";
 
@@ -1056,7 +1066,7 @@ if (!function_exists('ClassTeacherSearch')) {
                 }
             })->get()->toArray();
 
-        $returnHtml = '<select name="standard_division" class="form-control" required>';
+        $returnHtml = '<select name="standard_division" class="form-control" id="standard_division" required>';
         $returnHtml .= '<option value=""> Select Standard Division </option>';
 
         foreach ($result as $key => $value) {
