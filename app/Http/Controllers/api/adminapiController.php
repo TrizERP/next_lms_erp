@@ -795,8 +795,8 @@ class adminapiController extends Controller
                 ->where('p.syear', $syear)
                 ->where('p.sub_institute_id', $sub_institute_id)
                 ->where('p.type', $type)
-                ->groupBy('p.album_title,file_name')
-                ->orderBy('standard_id')->get()->toArray();
+                ->groupBy('album_title', 'file_name')
+                ->orderBy('p.standard_id')->get()->toArray();
 
             foreach ($data as $key => $val) {
                 $new_data[$val->album_title][] = $val;
@@ -1000,8 +1000,8 @@ class adminapiController extends Controller
         if ($validator->fails()) {
             $response['response'] = $validator->messages();
         } else {
-            $from_date = date('y-m-d');
-            $to_date = date('y-m-d');
+            $from_date = date('Y-m-d');
+            $to_date = date('Y-m-d');
             $sub_institute_id = $request->input('sub_institute_id');
 
             $proxydata = [];
