@@ -1,5 +1,5 @@
 @include('includes.rightsideNavigation')
-@php
+@php 
 $link = url('/');
 $all_segments = request()->segments();
 $url = $all_segments[0] ?? $all_segments[1];
@@ -15,7 +15,7 @@ $route = ['dashboard'];
         <button class="dropdown-toggle" type="button" id="dropdownMenuButton" data-toggle="dropdown"
                 aria-haspopup="true" aria-expanded="false">
         </button>
-
+       
     </div>
       <div class="help-arraw">
           <i class="mdi mdi-chevron-down"></i>
@@ -38,7 +38,7 @@ $route = ['dashboard'];
             </a>
           </div>
         </div>
-
+    
         <div class="col-6 col-md-6">
           <div class="help-box">
             <a href="#" class="nav-link pb-0" data-toggle="modal" data-target="#emailModal">
@@ -180,14 +180,11 @@ $route = ['dashboard'];
 <script src="{{ asset("plugins/bower_components/bootstrap-datepicker/bootstrap-datepicker.min.js") }}"></script>
 
 
-<script src="https://code.jquery.com/jquery-1.10.2.js" defer></script>
+<script src="https://code.jquery.com/jquery-1.10.2.js"></script>
 <script src="{{ asset("/admin_dep/js/jquery-ui.js") }}" defer></script>
 
 <script src="{{ asset("/admin_dep/js/bootstrap.min.js") }}" defer></script>
 <script src="{{ asset("/admin_dep/js/bootstrap-select.min.js") }}" defer></script>
-
-<script src="https://cdn.datatables.net/1.10.19/js/jquery.dataTables.min.js"></script>
-<script src="https://cdn.datatables.net/1.10.19/js/dataTables.bootstrap.min.js"></script>
 
 <script>
     $(document).ready(function () {
@@ -291,7 +288,7 @@ $route = ['dashboard'];
   }
 
   function sessionMenu(x) {
-
+   
       var xhttp = new XMLHttpRequest();
       xhttp.onreadystatechange = function () {
           if (this.readyState == 4 && this.status == 200) {
@@ -300,7 +297,7 @@ $route = ['dashboard'];
     };
     xhttp.open("GET", "{{route('ajaxMenuSession')}}?type=API&menu_id="+x, true);
     xhttp.send();
-
+   
   }
   window.addEventListener("beforeunload", function () {
   // This code will be executed just before the page is unloaded (refreshed or navigated away)
@@ -311,13 +308,13 @@ $route = ['dashboard'];
 });
 
   function redirect_pages_soni(x, menu_id, main_menu_id,current_id) {
-
+      
       localStorage.setItem('menu_id', menu_id);
       localStorage.setItem('main_menu_id', main_menu_id);
-      localStorage.setItem('current_id', current_id);
-
+      localStorage.setItem('current_id', current_id);   
+    
       window.location.replace(x);
-
+   
   }
 
   function load_rightside_menu(menu_id, main_menu_id) {
@@ -518,6 +515,4 @@ $route = ['dashboard'];
 
     });
 
-
-    // for sidebar menu entirely but not cover treeview
 </script>
