@@ -59,7 +59,7 @@ class dashboardController extends Controller
         if ($user_profile_name == 'Super Admin' || $user_profile_name == 'Admin' || $user_profile_name == 'ADMIN' ||
             $user_profile_name == 'admin' || $user_profile_name == 'school admin' || $user_profile_name == 'SCHOOL ADMIN'
             || $user_profile_name == 'School Admin') {
-            if ($sub_institute_id != 0 && $is_admin == '') {
+            if ($sub_institute_id != 0 && $is_admin == '' || $is_admin == 1) {
 
                 $date = date('Y-m-d');
                 $date15 = date('Y-m-d', strtotime($date . ' +15 day'));
