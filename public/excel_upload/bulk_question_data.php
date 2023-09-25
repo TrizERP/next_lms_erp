@@ -120,12 +120,12 @@ if (isset($_REQUEST['submit'])) {
 
                     $questionCategoryArr = mysqli_query($cn, $questionCategory) or die(mysqli_error($cn));
                     $question_category_id = mysqli_fetch_assoc($questionCategoryArr);
-                    $question_category_id = $question_category_id['id'];
+                    $question_category_id = isset($question_category_id['id']) ? $question_category_id['id'] : '';
                     //END Get Question Category ID
 
                     $insertQuesQuery = "INSERT INTO lms_question_master(question_type_id,grade_id,standard_id,subject_id,chapter_id,topic_id,question_title,description,points,multiple_answer,sub_institute_id,status,created_by,created_on,hint_text)
 					VALUES('" . $question_type_id . "','" . $_REQUEST['grade'] . "','" . $_REQUEST['standard'] . "',
-					'" . $_REQUEST['subject'] . "','" . $_REQUEST['chapter'] . "','" . $topic_id . "','" . mysqli_real_escape_string($cn, $value['Question']) . "','" . mysqli_real_escape_string($cn, $value['Description']) . "','" . $value['Points'] . "','0','" . $_REQUEST['sub_institute_id'] . "','1','" . $_REQUEST['user_id'] . "',now(),'" . mysqli_real_escape_string($cn, $value['Hint']) . "')";
+					'" . $_REQUEST['subject'] . "','" . $_REQUEST['chapter'] . "','" . $topic_id . "','" . mysqli_real_escape_string($cn, $value['Question']) . "','" . mysqli_real_escape_string($cn, $value['Description']) . "','" . $value['Points'] . "','0','" . $_REQUEST['sub_institute_id'] . "','1','" . $_REQUEST['user_id'] . "',now(), '" . mysqli_real_escape_string($cn, $value['Hint'] ?? '') . "')";
                     $result = mysqli_query($cn, $insertQuesQuery) or die(mysqli_error($cn));
                     $question_id = mysqli_insert_id($cn);
 

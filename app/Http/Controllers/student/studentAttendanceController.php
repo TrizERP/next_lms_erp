@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\DB;
 use function App\Helpers\getCountDays;
 use function App\Helpers\is_mobile;
 use function App\Helpers\SearchStudent;
+use function Symfony\Component\HttpKernel\Profiler\read;
 
 class studentAttendanceController extends Controller
 {
@@ -126,6 +127,14 @@ class studentAttendanceController extends Controller
         }
 
         $extraRaw = " 1 = 1 AND tblstudent_enrollment.end_date IS NULL ";
+        // search by batch 
+        if($request->has('batch_sel')){
+            $batchs = DB::table('batch')->where(['sub_institute_id'=>$sub_institute_id,'syear'=>$syear,'standard_id'=>$standard,'division_id'=>$division])->get()->toArray();
+            $res['batch_id'] = $request->batch_sel;    
+            $res['batchs']=$batchs;    
+            
+            $extraRaw.=" AND batch.id='".$request->batch_sel."'";
+        }
         //START Check for class teacher assigned standards
 
         $classTeacherStdArr = session()->get('classTeacherStdArr');
@@ -147,7 +156,7 @@ class studentAttendanceController extends Controller
 
 
         $student_data = tblstudentModel::select('tblstudent_enrollment.*', 'tblstudent.*', 'standard.name as standard',
-            'division.name as division', 'academic_section.title as grade')
+            'division.name as division', 'academic_section.title as grade','batch.id as batch_id','batch.title as batch_title')
             ->join("tblstudent_enrollment", function ($join) {
                 $join->on("tblstudent_enrollment.student_id", "=", "tblstudent.id")
                     ->on("tblstudent_enrollment.sub_institute_id", "=", "tblstudent.sub_institute_id")
@@ -168,11 +177,11 @@ class studentAttendanceController extends Controller
                 $join->on("division.id", "=", "tblstudent_enrollment.section_id")
                     ->on("division.sub_institute_id", "=", "tblstudent_enrollment.sub_institute_id");
             })
+            ->leftJoin('batch','batch.id','=','tblstudent.studentbatch')
             ->where($extraSearchArray)
             ->whereRaw($extraRaw)
             ->orderby('tblstudent.roll_no')
             ->get()->toArray();
-
         if (count($student_data) == 0) {
             $res['status_code'] = 0;
             $res['message'] = "No Student Data Found";
@@ -359,6 +368,16 @@ class studentAttendanceController extends Controller
         return is_mobile($type, "student/daywise_attendance_report", $res, "view");
     }
 
+    public function get_batch(Request $request){
+        $syear = $request->session()->get('syear');
+        $sub_institute_id = $request->session()->get('sub_institute_id');
+        $standard_id = $request->standard_id;
+        $division_id = $request->division_id;
+        
+        $batch = DB::table('batch')->where(['sub_institute_id'=>$sub_institute_id,'syear'=>$syear,'standard_id'=>$standard_id,'division_id'=>$division_id])->get()->toArray();
+        return $batch;
+    }
+
     public function showDaywiseStudentAttendance(Request $request)
     {
         $type = $request->input('type');
@@ -430,8 +449,18 @@ class studentAttendanceController extends Controller
         $syear = $request->session()->get('syear');
         $term_id = $request->session()->get('term_id');
         $sub_institute_id = $request->session()->get('sub_institute_id');
+        $batch="";
+        if($request->has('batch_sel')){
+            $batchs = DB::table('batch')->where(['sub_institute_id'=>$sub_institute_id,'syear'=>$syear,'standard_id'=>$standard_id,'division_id'=>$division_id])->get()->toArray();
+            $res['batch_id'] = $request->batch_sel;    
+            $res['batchs']=$batchs;    
+            
+            $batch=$request->batch_sel;
+        }
 
-        $student_data = SearchStudent($grade_id, $standard_id, $division_id);
+        // get student list 
+        $student_data = SearchStudent($grade_id, $standard_id, $division_id,"","", "","","", "", "","",$batch);
+
         $from_date = $selected_year . "-" . $month . "-01";
         $to_date = date('Y-m-t', strtotime($selected_year . "-" . $month));
 
@@ -439,7 +468,7 @@ class studentAttendanceController extends Controller
 
         $whereAtt['syear'] = $syear;
         $whereAtt['sub_institute_id'] = $sub_institute_id;
-
+       
         $holidays = DB::table("calendar_events")
             ->selectRaw("DATE_FORMAT(school_date,'%d') AS DATE")
             ->where($whereAtt)
@@ -495,7 +524,7 @@ class studentAttendanceController extends Controller
         }
 
         unset($sundays['S']);
-
+        // echo "<pre>";print_r($student_data);exit;
         $res['status_code'] = 1;
         $res['message'] = "Success";
         $res['month'] = $month;
