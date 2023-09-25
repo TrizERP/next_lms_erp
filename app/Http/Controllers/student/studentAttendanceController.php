@@ -128,7 +128,7 @@ class studentAttendanceController extends Controller
 
         $extraRaw = " 1 = 1 AND tblstudent_enrollment.end_date IS NULL ";
         // search by batch 
-        if($request->has('batch_sel')){
+        if($request->has('batch_sel') && $request->input('batch_sel') != null){
             $batchs = DB::table('batch')->where(['sub_institute_id'=>$sub_institute_id,'syear'=>$syear,'standard_id'=>$standard,'division_id'=>$division])->get()->toArray();
             $res['batch_id'] = $request->batch_sel;    
             $res['batchs']=$batchs;    
