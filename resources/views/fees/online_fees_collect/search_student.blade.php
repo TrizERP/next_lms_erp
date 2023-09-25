@@ -203,11 +203,13 @@
                 {
                     document.getElementById("errorMessage").innerHTML = "You are not mapped with institute amount.";
                     submit_hide = 1;
-                }else if(medium == '')
+                }
+                else if(medium == '')
                 {
                     document.getElementById("errorMessage").innerHTML = "You are not mapped with institute medium.";
                     submit_hide = 1;
-                }else{
+                }
+                else{
                     submit_hide = 0;  
                 }
             }
