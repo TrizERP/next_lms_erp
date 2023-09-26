@@ -195,4 +195,4 @@ Route::post('studentResultPDFAPI', [cbse_1t5_result_controller::class, 'studentR
 //});
 
 Route::get('cbse_1t5_result/download_overall_report', [result_report_controller::class, 'downloadOverAllReportExcel']);
-Route::resource('result-template', result_TemplateController::class);
+//Route::resource('result-template', result_TemplateController::class);
