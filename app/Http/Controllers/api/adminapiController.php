@@ -1000,8 +1000,8 @@ class adminapiController extends Controller
         if ($validator->fails()) {
             $response['response'] = $validator->messages();
         } else {
-            $from_date = date('Y-m-d');
-            $to_date = date('Y-m-d');
+            $from_date = $request->input('from_date');//date('Y-m-d');
+            $to_date = $request->input('to_date');//date('Y-m-d');
             $sub_institute_id = $request->input('sub_institute_id');
 
             $proxydata = [];

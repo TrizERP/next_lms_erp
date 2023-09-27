@@ -19,7 +19,7 @@ return new class extends Migration
             $table->decimal('grade_max', 3, 1)->nullable()->index();
             $table->decimal('grade_min', 3, 1)->nullable()->index();  
             $table->integer('breakoff')->nullable()->index();      
-            $table->string('comment',255)->nullable()->index();                                        
+            $table->string('comment',50)->nullable()->index();                                        
             $table->bigInteger('syear')->index();            
             $table->bigInteger('sub_institute_id')->index();
             $table->timestamps();
