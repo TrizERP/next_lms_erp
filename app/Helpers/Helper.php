@@ -1336,7 +1336,7 @@ if (!function_exists('getStudents')) {
             })
             ->selectRaw("tc.*,s.*,se.syear,se.student_id,se.grade_id,se.standard_id,se.section_id,se.student_quota,
                 se.start_date,se.end_date,se.enrollment_code,se.drop_code,se.drop_remarks,se.drop_remarks,se.term_id,
-                se.remarks,se.admission_fees,se.house_id,se.lc_number,st.name standard_name,s.city,se.standard_id,se.section_id,
+                se.remarks,se.admission_fees,se.house_id,se.lc_number,st.name standard_name,st.short_name as short_standard_name,s.city,se.standard_id,se.section_id,
                 se.grade_id,d.name as division_name,s.father_name,s.mother_name,ss.SchoolName as school_name,ss.Mobile as school_mobile,
                 ss.Logo as school_image,ss.ReceiptAddress as school_address,(CASE WHEN s.gender = 'M' then 'male' else 'female' end) as gender,
                 r.religion_name,c.caste_name,s.subcast,s.affiliation_no,s.school_code,s.admission_date,td.first_name AS driver_name,
@@ -1361,6 +1361,7 @@ if (!function_exists('getStudents')) {
             $student_data[$value->id]['admission_year'] = $value->admission_year;
             $student_data[$value->id]['address'] = $value->address;
             $student_data[$value->id]['standard_name'] = $value->standard_name;
+            $student_data[$value->id]['short_standard_name'] = $value->short_standard_name;            
             $student_data[$value->id]['division_name'] = $value->division_name;
             $student_data[$value->id]['father_name'] = $value->father_name;
             $student_data[$value->id]['mother_name'] = $value->mother_name;
