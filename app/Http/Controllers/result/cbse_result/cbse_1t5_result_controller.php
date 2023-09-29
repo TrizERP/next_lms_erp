@@ -832,7 +832,7 @@ else
 
             $data = DB::select("SELECT * FROM result_html 
                         WHERE SUB_INSTITUTE_ID = '".$request->get('sub_institute_id')."' and student_id = '".$request->get('student_id')."'
-                        AND syear = '".$request->get('syear')."' AND term_id = '".$request->get('term_id')."' AND is_allowed='Y' "); 
+                        AND syear = '".$request->get('syear')."' AND term_id = '".$request->get('term_id')."'"); // AND is_allowed='Y' 
 
             $second_sql = DB::select("SELECT ur.id,ur.syear,ur.sub_institute_id,ur.student_id,ay.title as term_name,
                             if(ur.file_name = '','',concat('https://".$_SERVER['SERVER_NAME']."/storage/upload_result/',ur.file_name)) as file_name
