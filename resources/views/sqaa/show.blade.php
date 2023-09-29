@@ -40,7 +40,7 @@
                                 @endphp
                                 @if(isset($data['level_1']))                        
                                 @foreach($data['level_1'] as $key=>$value)
-                                    <li class="nav-item"><a href="#section-linemove-{{$value['id']}}" class="nav-link active-link" aria-selected="true" data-toggle="tab"   data-html="true" data-original-title="{!!$value['description']!!}" ><span>{{$value['title']}}</span><input type="hidden" value="{{$value['id']}}" name="level_1_id"></a></li>
+                                    <li class="nav-item"><a href="#section-linemove-{{$value['id']}}" class="nav-link active-link" aria-selected="true" data-toggle="tab"   data-html="true" data-original-title="{!!$value['description']!!}" ><span>{{$value['title']}}</span><input type="hidden" value="{{$value['id']}}" name="level_{{$value['id']}}_id"></a></li>
                                 @endforeach
                                 @endif
                                 </ul>
@@ -235,7 +235,7 @@
             sel_level_3_container.empty(); 
 
             // Create a label for sel_level_3
-            var sel_level_3_label = $('<label for="sel_level_2">Select option </label>');
+            var sel_level_3_label = $('<label for="sel_level_2">Select option1 </label>');
 
             sel_level_3 = $('<select id="sel_level_2" class="form-control" name="sel_level_2"></select>'); 
             var defaultOption = '<option value="">--Select--</option>';
@@ -299,7 +299,7 @@
 
             sel_level_3_container.empty(); 
 
-            var sel_level_3_label = $('<label for="sel_level_3">Select option </label>');
+            var sel_level_3_label = $('<label for="sel_level_3">Select option2 </label>');
 
             sel_level_3 = $('<select id="sel_level_3" class="form-control" name="sel_level_3"></select>'); // Create sel_level_3
             var defaultOption = '<option value="">--Select--</option>';
@@ -360,7 +360,7 @@
 
             sel_level_3_container.empty(); 
 
-            var sel_level_3_label = $('<label for="sel_level_4" class="sel_level_4">Select option </label>');
+            var sel_level_3_label = $('<label for="sel_level_4" class="sel_level_4">Select option3 </label>');
 
             sel_level_3 = $('<select id="sel_level_4" class="form-control sel_level_4" name="sel_level_4"></select>'); 
             var defaultOption = '<option value="">--Select--</option>';

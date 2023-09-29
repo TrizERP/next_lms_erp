@@ -228,7 +228,7 @@ class studentResultController extends Controller
         }else if(strpos($html_content, htmlspecialchars('<<scholastic_marks_hills_upper>>')) !== false){
             $main_result = $this->get_scholastic_hills($standard_id,$value['id'],$format,'upper');
             $html_content = str_replace(htmlspecialchars("<<scholastic_marks_hills_upper>>"),$main_result['scholastic'],$html_content);
-           $html_content = str_replace(htmlspecialchars("<<class_teacher_remark>>"), strtoupper($main_result['teacher_remark']),$html_content);   
+           $html_content = str_replace(htmlspecialchars("<<class_teacher_remark>>"), $main_result['teacher_remark'],$html_content);   
         }            
         if (strpos($html_content, htmlspecialchars('<<co_scholastic_marks_hills>>')) !== false) {
             $co_result = $this->get_co_scholastic_hills($standard_id,$value['id'],$format,"primary");    
@@ -752,7 +752,7 @@ class studentResultController extends Controller
         $cal_event = DB::table('calendar_events as ce')
         ->join('academic_year as ay', 'ce.syear', '=', 'ay.syear')
         ->where(['ce.sub_institute_id' => $sub_institute_id, 'ce.syear' => $syear])
-        ->WhereRaw("FIND_IN_SET('$standard_id', ce.standard) AND ce.event_type='holiday'")
+        ->WhereRaw("FIND_IN_SET('$standard_id', ce.standard) AND ce.event_type in ('holiday','vacation')")
         ->whereBetween('ce.school_date', [$post_start_date, $post_end_date])
         ->groupBy('ce.school_date')
         ->get()
@@ -789,7 +789,13 @@ class studentResultController extends Controller
         ->get();
     // Convert the result into an associative array
     $attarray = $attarray->pluck('present_day', 'id')->all();
-    $table = $attarray[$student_id].'/'.$attTotDays;
+
+        if (isset($attarray[$student_id])) {
+            $table = $attarray[$student_id].'/'.$attTotDays;
+        } else {
+            // Handle the case where $attarray[$student_id] is not set or not a string
+            $table = $table = '-/'.$attTotDays; // Replace with your desired handling
+        }
     //  echo "<pre>";print_r($format);exit;      
     }else{
         $table = '<table class="aca-year" style="width: 100%;height:fit-content;margin-top:8%;border-collapse:collapse; border:1px solid #e68023;" cellspacing="0" cellpadding="0" border="1">
@@ -833,7 +839,7 @@ class studentResultController extends Controller
             $extra_exam = "1=1";
         } else {
             $extra_term = "term_id = " . $format;
-            $att_term = "atd.term_id = " . $format;
+            $att_term = "atd.term_id = 1";//" . $format; added by rajesh 28-09-2023 for Term-1 only classteacher remarks display
             $extra_exam = "rce.term_id = " . $format;
         }
 
@@ -869,7 +875,7 @@ class studentResultController extends Controller
     
             //get exam name termwise
         $exam_title = DB::table('result_create_exam as rce')->join('result_exam_master as rem', 'rem.id', '=', 'rce.exam_id')->whereRaw($extra_exam)->where(['rce.sub_institute_id' => $sub_institute_id, 'rce.syear' => $syear, 'rce.standard_id' => $standard_id])
-            ->selectRaw('rce.id,rce.title,rce.term_id,rce.standard_id,rem.weightage,rem.ExamTitle,rce.subject_id,rce.points')->orderBy($sort_order, 'ASC')->get()->toArray();
+            ->selectRaw('rce.id,rce.title,rce.term_id,rce.standard_id,rem.weightage,rem.ExamTitle,rce.subject_id,rce.points,rce.con_point')->orderBy($sort_order, 'ASC')->get()->toArray();
 
         $exam_marks = DB::table('result_marks as rce')->where(['rce.sub_institute_id' => $sub_institute_id, 'rce.student_id' => $student_id])->get()->toArray();
             // dd($exam_marks);
@@ -917,7 +923,7 @@ class studentResultController extends Controller
                         $all_points = $title->weightage;
                     } else {
                         $main_title = $title->title;
-                        $all_points = $title->points;
+                        $all_points = $title->con_point; //update $title->points to $title->con_point by rajesh
                     }
                     if (!in_array($main_title, $printedExamTitles)) {
                         $table .= '<th class="data_center"><b>' . $main_title . '<br>(' . $all_points . ')</b></th>';
@@ -971,10 +977,11 @@ class studentResultController extends Controller
                                         $outof[$title->ExamTitle][] = $title->points;
                                     } else {
                                         $obtained_mark += $ob_mark;
+                                        $ob_mark = number_format((($ob_mark / $title->points) * $title->con_point),2); //added by rajesh
                                         $underline ="";
                                         $title_arr = ['P.T.-1','P.T.-2'];
                                         if(in_array($title->title,$title_arr)){
-                                            $pt_per = round((($ob_mark / $title->points) * 100),0);
+                                            $pt_per = round((($ob_mark / $title->con_point) * 100),0);//update $title->points to $title->con_point by rajesh
                                         if($pt_per < 33){
                                             $underline = 'style="text-decoration: underline red 2px;"';
                                         }
