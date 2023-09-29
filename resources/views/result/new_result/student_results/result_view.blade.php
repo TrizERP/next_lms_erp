@@ -5,7 +5,8 @@
 	<div class="container-fluid">
 		@php 
 		$other_sub = [61];
-		$sub_institute_id = session()->get('sub_institute_id');
+        $sub_institute_id = session()->get('sub_institute_id');
+        
 		@endphp
 		
 		<div class="row">
@@ -39,10 +40,11 @@
 	</div>
 </div>
 
-<form name="savehtml" id="savehtml" action="{{ route('save_result_html') }}" method="POST">
+<form name="savehtml" id="savehtml" action="{{ route('save_result_html_new') }}" method="POST">
 {{method_field('POST')}}
 @csrf
 @php 
+
 $student_id_arr = implode(",",array_values($data['students_ids']));
 @endphp
 <input type="hidden" id="grade_id" name="grade_id" value="{{$data['grade_id']}}">
@@ -55,24 +57,23 @@ $student_id_arr = implode(",",array_values($data['students_ids']));
 
 @include('includes.footerJs') 
 <script type="text/javascript">
+
    function printMob(divName) {
     var studentData = <?php echo json_encode($data['all_stud_html']); ?>;
-
     // Loop through each student ID and associated HTML
     for (var studentId in studentData) {
         if (studentData.hasOwnProperty(studentId)) {
             var html = studentData[studentId];
        		var stu_id = studentId;
-            var ele_id = "html_"+html;
-            result_html = document.getElementById(stu_id).innerHTML;
+            var ele_id = html;
+            result_html = document.getElementById(stu_id).innerHTML;            
             result_html = result_html.replaceAll("'","\"");
-            $("#savehtml").append("<input type='hidden' name='html_"+stu_id+"' id='"+ele_id+"' value='"+result_html+"'>");
+            $("#savehtml").append("<input type='hidden' name='html_"+stu_id+"' id='"+stu_id+"' value='"+result_html+"'>");
         }
     }
 
 	   var form = $("#savehtml");
         var url = form.attr('action');
-    
         $.ajax({
                type: "POST",
                url: url,
