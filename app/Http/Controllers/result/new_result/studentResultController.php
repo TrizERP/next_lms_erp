@@ -93,10 +93,11 @@ class studentResultController extends Controller
         $all_stud_html = array();
         foreach ($data as $key => $value) {
             $html_content = $tData[0]['html_content'];
-            $new_html_content = '<div id="' . $value['id'] . '" style="page-break-after:always !important">' . $this->create_html_content($syear, $sub_institute_id, $html_content, $value, $template, $result_trust, $format) . '</div>';
+            $new_html_content = '<div id="' . $value['id'] . '" class="report-card-bg" style="page-break-after:always !important">' . $this->create_html_content($syear, $sub_institute_id, $html_content, $value, $template, $result_trust, $format) . '</div>';
             $new_html .= $new_html_content;
             $all_stud_html[$value['id']] = $new_html_content;
         }
+        // echo "<pre>";print_r($all_stud_html);exit;
         $type = "";
         if ($format == "yearly") {
             $format = session()->get('term_id');
@@ -1198,7 +1199,7 @@ class studentResultController extends Controller
             {
                 $html = $request->get('html_'.$val);
                 $finalArray['html'] = $html;
-                $data = result_html_model::where(['student_id'=>$val,'term_id'=>$term_id,'grade_id'=>$grade_id,'standard_id'=>$standard_id,'division_id'=>$division_id,'syear'=>$syear])->update($finalArray);
+                $data = DB::table('result_html')->where(['student_id'=>$val,'term_id'=>$term_id,'grade_id'=>$grade_id,'standard_id'=>$standard_id,'division_id'=>$division_id,'syear'=>$syear])->update($finalArray);
             
             }
             else
