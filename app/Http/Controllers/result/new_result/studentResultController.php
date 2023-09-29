@@ -117,12 +117,12 @@ class studentResultController extends Controller
     public function create_html_content($syear,$sub_institute_id,$html_content,$value,$template,$result_trust,$format) {
         // echo "<pre>";print_r($value);exit;
         $display_year = $syear."-".($syear + 1);
-        $image_path1 = "http://".$_SERVER['HTTP_HOST']."/storage/fees/".$result_trust->left_logo;
-        $image_path2 = "http://".$_SERVER['HTTP_HOST']."/storage/fees/".$result_trust->right_logo;        
-        $image_path_1 = '<img src="'.$image_path1.'" alt="SCHOOL LEFT LOGO" style="width: 50px !important;height: 50px !important;">';
-        $image_path_2 = '<img src="'.$image_path2.'" alt="SCHOOL RIGHT LOGO" style="width: 50px !important;height: 50px !important;">';
+         $image_path1 = "/storage/result/left_logo/".$result_trust->left_logo;
+        $image_path2 = "/storage/result/right_logo/".$result_trust->right_logo;        
+         $image_path_1 = '<img src="'.$image_path1.'" alt="SCHOOL LEFT LOGO" style="height: 50px !important;">';
+        $image_path_2 = '<img src="'.$image_path2.'" alt="SCHOOL RIGHT LOGO" style="height: 50px !important;">';
 
-        $student_image_path1 = "http://".$_SERVER['HTTP_HOST']."/storage/student/".$value['image'];
+        $student_image_path1 = "/storage/student/".$value['image'];
         $student_image_path = '<img class="logo" src="'.$student_image_path1.'" alt="Student Logo" >';
 
         $html_content = str_replace(htmlspecialchars("<<result_left_logo>>"), $image_path_1, $html_content);
@@ -148,13 +148,14 @@ class studentResultController extends Controller
         // for teachers signature standard_wise
         $result_teacher =  $this->getExamMasterSettigs($standard_id);
         if(!empty($result_teacher)){
-            if(strpos($html_content, htmlspecialchars('<<scholastic_marks_hills>>')) !== false){
+            if(strpos($html_content, htmlspecialchars('<<scholastic_marks_hills>>')) !== false || strpos($html_content, htmlspecialchars('<<scholastic_marks_hills_upper>>')) !== false){
               $teacher_sign = $teacher_name->teacher_name;
             }else{
-                $teacher_sign = '<img src="/storage/result/teacher_sign/'.$result_teacher['teacher_sign'].'" alt="teacher_sign" style="width: 100px !important;height: 50px !important;">';
+                $teacher_sign = '<img src="/storage/result/teacher_sign/'.$result_teacher['teacher_sign'].'" alt="teacher_sign" style="height: 50px !important;">';
             }
-            $principal_sign = '<img src="/storage/result/teacher_sign/'.$result_teacher['principal_sign'].'" alt="principal_sign" style="width: 100px !important;height: 50px !important;">';
-            $director_signatiure = '<img src="/storage/result/teacher_sign/'.$result_teacher['director_signatiure'].'" alt="director_signatiure" style="width: 100px !important;height: 50px !important;">';
+            $principal_sign = '<img src="/storage/result/principle_sign/'.$result_teacher['principal_sign'].'" alt="principal_sign" style="height: 50px !important;">';
+            $director_signatiure = '<img src="/storage/result/director_sign/'.$result_teacher['director_signatiure'].'" alt="director_signatiure" style="height: 50px !important;">';
+
         $html_content = str_replace(htmlspecialchars("<<teacher_sign_value>>"), $teacher_sign, $html_content);
         $html_content = str_replace(htmlspecialchars("<<principle_sign_value>>"), $principal_sign, $html_content);
         $html_content = str_replace(htmlspecialchars("<<director_sign_value>>"), $director_signatiure, $html_content);
@@ -880,7 +881,7 @@ class studentResultController extends Controller
             // dd($exam_marks);
         $head = count($exam_title);
 
-        $table = '<style>.data_center{text-align:center}</style>
+        $table = '<style>.data_center{text-align:center !important}</style>
         <table class="aca-year" style="width: 100%;border-collapse:collapse; border:1px solid #e68023;" cellspacing="0"  border="1">
             <thead>
                 <tr>
@@ -1091,11 +1092,13 @@ class studentResultController extends Controller
 
         if ($academic_type == "upper") {
             $term_name = "Grade";
+            $flex ='';
         } else {
             $term_name = $term_name[0]->title ?? 'Grade';
+            $flex ='display:flex;flex-wrap:wrap';
         }
         // get other tag data
-        $co_scholastic = '<div style="display:flex;flex-wrap:wrap" class="co_scho_hills">
+        $co_scholastic = '<div style='.$flex.' class="co_scho_hills">
         <div style="width:50%;">
             <table class="aca-year" style="width: 100%;border-collapse:collapse; border:1px solid #e68023;" cellspacing="0" cellpadding="0" border="1">
                 <thead>
