@@ -961,6 +961,7 @@ class studentResultController extends Controller
                             if ($title->id == $marks->exam_id) {
                                 if ($marks->points == "0.00" || $marks->points == "") {
                                     $ab_ex_na = $marks->is_absent;
+                                    //echo $ab_ex_na;die();
                                     if ($marks->is_absent == '') {
                                         $ab_ex_na = number_format(0, 2);
                                     }
@@ -1007,7 +1008,7 @@ class studentResultController extends Controller
                         }
                     }
                 }
-                // echo "<pre>";print_r($student_id);
+                // echo "<pre>";print_r($maxMarks);
                 if ($academic_type == "primary") {
                     foreach ($maxMarks as $examTitle => $marksArray) {
                         $maxMark = max($marksArray);
