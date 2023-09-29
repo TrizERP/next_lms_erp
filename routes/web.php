@@ -238,6 +238,7 @@ Route::any('/profileAPI', [loginController::class, 'profileAPI']);
 Route::any('/tourUpdate', [tourController::class, 'index'])->name('tourUpdate');
 
 Route::get('/implementation', [tourController::class, 'implementation'])->name('implementation')->middleware('session', 'menu', 'logRoute');
+Route::get('/Onboarding', [tourController::class, 'Onboarding'])->name('Onboarding')->middleware('session', 'menu', 'logRoute');
 Route::get('/implementation_1', [tourController::class, 'implementation_1'])->name('implementation_1')->middleware('session', 'menu', 'logRoute');
 Route::get('/implementation_2', [tourController::class, 'implementation_2'])->name('implementation_2')->middleware('session', 'menu', 'logRoute');
 Route::get('/skip_implementation', [tourController::class, 'skipImplementation'])->name('skip_implementation')->middleware('session', 'menu', 'logRoute');
@@ -395,6 +396,7 @@ Route::get('upload_create_result', 'result\MarkUploadController@store')->name('u
 
 Route::get('fetch_payment_status', 'fees\online_fees\online_fees_collect_controller@razorpay_fetch_payment_status');
 Route::get('icici_fetch_payment_status', 'fees\online_fees\online_fees_collect_controller@icici_fetch_payment_status');
+Route::get('payphi_fetch_payment_status', 'fees\online_fees\online_fees_collect_controller@payphi_fetch_payment_status');
 
 Route::group(['middleware' => ['session', 'menu', 'logRoute']], function () {
     Route::resource('leave-type', LeaveTypeController::class);
