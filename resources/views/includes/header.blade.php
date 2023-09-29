@@ -161,6 +161,8 @@ $academicTerms = session()->get('academicTerms');
                                     class="mdi mdi-content-save-settings-outline"></i> ERP Status</a>
                             <a class="dropdown-item" href="{{route('implementation')}}"><i
                                     class="mdi mdi-checkerboard"></i> Implementation</a>
+                            <a class="dropdown-item" href="{{route('Onboarding')}}"><i
+                                    class="mdi mdi-checkerboard"></i> Onboarding</a>
                             @if(Session::get('user_profile_name') == 'Admin')
                                 <a class="dropdown-item" href="{{route('norm-clature.index')}}"><i
                                         class="mdi mdi-wallet-travel"></i> Language Setting</a>
