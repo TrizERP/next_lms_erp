@@ -97,6 +97,7 @@ class studentResultController extends Controller
             $new_html .= $new_html_content;
             $all_stud_html[$value['id']] = $new_html_content;
         }
+        // echo "<pre>";print_r($all_stud_html);exit;
         $type = "";
         if ($format == "yearly") {
             $format = session()->get('term_id');
@@ -1202,7 +1203,7 @@ class studentResultController extends Controller
             {
                 $html = $request->get('html_'.$val);
                 $finalArray['html'] = $html;
-                $data = result_html_model::where(['student_id'=>$val,'term_id'=>$term_id,'grade_id'=>$grade_id,'standard_id'=>$standard_id,'division_id'=>$division_id,'syear'=>$syear])->update($finalArray);
+                $data = DB::table('result_html')->where(['student_id'=>$val,'term_id'=>$term_id,'grade_id'=>$grade_id,'standard_id'=>$standard_id,'division_id'=>$division_id,'syear'=>$syear])->update($finalArray);
             
             }
             else
