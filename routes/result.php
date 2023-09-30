@@ -174,6 +174,7 @@ Route::group(['prefix' => 'report', 'middleware' => ['session', 'menu']], functi
 Route::get('api/get-sub_module-list', [AJAXController::class, 'getSubModuleList']);
 
 Route::post('save_result_html', [cbse_1t5_result_controller::class, 'save_result_html'])->name("save_result_html");
+Route::post('save_result_html_new', [studentResultController::class, 'save_result_html'])->name("save_result_html_new");
 Route::post('studentResultPDFAPI', [cbse_1t5_result_controller::class, 'studentResultPDFAPI'])->name("studentResultPDFAPI");
 //Route::group(['prefix' => 'calendar', 'middleware' => ['session', 'menu']], function() {
 //    Route::resource('calendar', 'calendar\calendar\calendar_controller');
