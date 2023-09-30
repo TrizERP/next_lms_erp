@@ -1082,8 +1082,10 @@ class studentResultController extends Controller
                 }
                 if ($value->parent_title != "CRITERIA" && $value->parent_title != "SKILL OBSERVATION") {
                     $per = $value->obtain_grade;
-                    if (!empty($get_grade)) {
+                    if (!empty($get_grade) && $per != 0 && $per != '') {
                         $value->obtain_grade = $this->getGrade($get_grade, $value->max_mark, $per, "co_scholastic");
+                    }else{
+                        $value->obtain_grade = '-';
                     }
                     $co_data[] = $value;
                 }
