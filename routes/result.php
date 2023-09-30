@@ -48,6 +48,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Import\ExcelDownloadController;
 use App\Http\Controllers\result\new_result\templateController;
 use App\Http\Controllers\result\new_result\studentResultController;
+use App\Http\Controllers\result\approve_mobile_result\approve_mobile_result_controller;
 
 Route::group(['prefix' => 'result', 'middleware' => ['session', 'menu', 'logRoute']], function () {
     Route::resource('exam_type_master', ExamTypeMasterController::class);
@@ -73,6 +74,7 @@ Route::group(['prefix' => 'result', 'middleware' => ['session', 'menu', 'logRout
     Route::resource('result-template', templateController::class);   
     Route::resource('student-result', studentResultController::class);    
     Route::get('view_all_result_tag', [templateController::class, 'viewAllTag'])->name('view_all_result_tag');
+    Route::resource('approve_mobile_result', approve_mobile_result_controller::class);
 
     Route::post('cbse_1t5_result/show_result', ['as' => 'cbse_1t5_result.show_result', 'uses' => 'result\cbse_result\cbse_1t5_result_controller@show_result']);
     Route::post('cbse_1t5_t2_result/show_result', ['as' => 'cbse_1t5_t2_result.show_result', 'uses' => 'result\cbse_result\cbse_1t5_t2_result_controller@show_result']);
@@ -88,7 +90,7 @@ Route::group(['prefix' => 'result', 'middleware' => ['session', 'menu', 'logRout
     Route::GET('ajax_StandardwiseSubject', [result_report_controller::class, 'ajax_StandardwiseSubject'])->name('ajax_StandardwiseSubject');
     Route::post('marks_entry/approve', [marks_entry_controller::class,'approve'])->name('approve');
     Route::post('marks_entry/getMarksApproval', [marks_entry_controller::class,'getMarksApproval'])->name('getMarksApproval');    
-    Route::post('co_scholastic_marks_entry/approve', [co_scholastic_marks_entry_controller::class,'approve'])->name('co_scholastic_marks_entry_approve');    
+    Route::post('co_scholastic_marks_entry/approve', [co_scholastic_marks_entry_controller::class,'approve'])->name('co_scholastic_marks_entry_approve');
 
     Route::resource('upload_result', upload_result_controller::class);
     // Route::GET('student_homework_submission_report_index', 'student\studentHomeworkSubmissionController@studentHomeworkSubmissionReportIndex')->name("student_homework_submission_report_index");

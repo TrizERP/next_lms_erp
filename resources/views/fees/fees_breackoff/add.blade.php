@@ -21,6 +21,16 @@
                       <div class="row">
                         <div class="col-md-12 form-group">
                             <div class="row">
+                                <div class="col-md-3 form-group">
+                                    <label for="fee_interval">Select Fee Interval:</label>
+                                    <select name="fee_interval" id="fee_interval" class="form-control">
+                                        <option selected>Select BreakOff</option>
+                                        <option value="yearly_fees">Yearly Fees</option>
+                                        <option value="half_year_fees">Half Year Fees</option>
+                                        <option value="quarterly_fees">Quarterly Fees</option>
+                                        <option value="monthly_fees">Monthly Fees</option>
+                                    </select>
+                                </div>
                               {{ App\Helpers\SearchChain('4','multiple','grade,std,div') }}
                             </div>
                         </div>
