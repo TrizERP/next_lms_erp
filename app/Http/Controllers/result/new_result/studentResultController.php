@@ -93,7 +93,7 @@ class studentResultController extends Controller
         $all_stud_html = array();
         foreach ($data as $key => $value) {
             $html_content = $tData[0]['html_content'];
-            $new_html_content = '<div id="' . $value['id'] . '" class="report-card-bg" style="page-break-after:always !important">' . $this->create_html_content($syear, $sub_institute_id, $html_content, $value, $template, $result_trust, $format) . '</div>';
+            $new_html_content = '<div id="' . $value['id'] . '" class="report-card-bg" style="page-break:always !important">' . $this->create_html_content($syear, $sub_institute_id, $html_content, $value, $template, $result_trust, $format) . '</div>';
             $new_html .= $new_html_content;
             $all_stud_html[$value['id']] = $new_html_content;
         }
@@ -1082,8 +1082,10 @@ class studentResultController extends Controller
                 }
                 if ($value->parent_title != "CRITERIA" && $value->parent_title != "SKILL OBSERVATION") {
                     $per = $value->obtain_grade;
-                    if (!empty($get_grade)) {
+                    if (!empty($get_grade) && $per != 0 && $per != '') {
                         $value->obtain_grade = $this->getGrade($get_grade, $value->max_mark, $per, "co_scholastic");
+                    }else{
+                        $value->obtain_grade = '-';
                     }
                     $co_data[] = $value;
                 }

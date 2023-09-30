@@ -225,7 +225,7 @@
                 url: '/get-level', 
                 data: { level_2: level_2 }, 
                 success: function (data) {
-                    var sel_level_3_container = $('#sel_div_2_container'); 
+            var sel_level_3_container = $('#sel_div_2_container'); 
             var sel_level_3 = $('#sel_level_3'); 
             if (sel_level_3_container.length === 0) {
                 sel_level_3_container = $('<div class="col-md-4 sel_div_2_container" id="sel_div_2_container"></div>'); 
@@ -246,6 +246,7 @@
 
                     var option = '<option value="' + value.id + '"  data-description="'+value.description+ '"  data-description="'+value.description+ '">' + value.title + '</option>';
                     sel_level_3.append(option);
+
                 });
             } else {
                 console.error('data is not an array');

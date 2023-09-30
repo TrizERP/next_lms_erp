@@ -1113,13 +1113,13 @@ END as color_code
                         AND se.sub_institute_id = ct.sub_institute_id AND se.end_date IS null");
                 })->join('tblstudent as ts', function ($join) {
                     $join->whereRaw("ts.id = se.student_id AND ts.sub_institute_id = ct.sub_institute_id");
-                })->selectRaw("ts.id,concat_ws(' ',ts.first_name,ts.middle_name,ts.last_name) as student_name,
+                })->selectRaw("ts.id,concat_ws(' ',ts.first_name,ts.last_name) as student_name,
                     ts.enrollment_no,ts.roll_no,ts.mobile,ts.email,ct.standard_id,ct.division_id,s.name AS standard_name,
                     d.name AS division_name")
                 ->where('ct.sub_institute_id', $sub_institute_id)
                 ->where('ct.syear', $syear)
                 ->where('se.syear', $syear)
-                ->where('ct.teacher_id', $teacher_id)->get()->toArray();
+                ->where('ct.teacher_id', $teacher_id)->get()->toArray();//ts.middle_name,
 
             $res['status'] = 1;
             $res['message'] = "Success";
@@ -1160,11 +1160,11 @@ END as color_code
                     $join->whereRaw("se.standard_id = s.id AND se.sub_institute_id = s.sub_institute_id AND s.grade_id=se.grade_id");
                 })->join('division as d', function ($join) {
                     $join->whereRaw("d.id = se.section_id AND d.sub_institute_id = se.sub_institute_id");
-                })->selectRaw("ts.id,concat_ws(' ',ts.first_name,ts.middle_name,ts.last_name) as student_name,
+                })->selectRaw("ts.id,concat_ws(' ',ts.first_name,ts.last_name) as student_name,
                     ts.enrollment_no,ts.roll_no,ts.dob,ts.address,ts.mobile,ts.email,if(ts.image = '','https://".$_SERVER['SERVER_NAME']."/storage/student/noimages.png',concat('https://".$_SERVER['SERVER_NAME']."/storage/student/',ts.image)) as student_image,se.standard_id,
                     se.section_id AS division_id,s.name AS standard_name,d.name AS division_name")
                 ->where('ts.sub_institute_id', $sub_institute_id)
-                ->where('se.syear', $syear);
+                ->where('se.syear', $syear);//ts.middle_name,
             if ($standard_id) {
                 $data = $data->where('se.standard_id', $standard_id);
             }

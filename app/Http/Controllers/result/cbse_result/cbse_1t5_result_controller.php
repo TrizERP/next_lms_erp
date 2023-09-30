@@ -850,7 +850,7 @@ else
 
                         $html = $data[0]->html;
 
-                        $css_name = "http://".$_SERVER['SERVER_NAME'];
+                        $css_name = "https://".$_SERVER['SERVER_NAME'];
                         $result_css = '<link rel="stylesheet" href="'.$css_name.'/css/result.css" />';
                         $dom = '<!DOCTYPE html>
                             <html>
@@ -870,7 +870,7 @@ else
                                 </body>
                             </html>';
 
-                        $path = 'src="http://' . $_SERVER['HTTP_HOST'];
+                        $path = 'src="https://' . $_SERVER['HTTP_HOST'];
                         $html = str_replace('src="', $path, $html);
                         $html = str_replace('display:flex;', 'display: -webkit-box; -webkit-box-pack: center;', $html);
                         $html = str_replace('##HTML_SEC##', $html, $dom);                
@@ -901,7 +901,7 @@ else
                         unlink($html_file_path);
 
                         $new_data['student_id'] = $request->get('student_id');
-                        $new_data['pdf_link'] = "http://".$_SERVER['SERVER_NAME']."/storage/result_pdf/".$pdf_filename;
+                        $new_data['pdf_link'] = "https://".$_SERVER['SERVER_NAME']."/storage/result_pdf/".$pdf_filename;
 
                         $response['status'] = 1;
                         $response['message'] = "Success";  
