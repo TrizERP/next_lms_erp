@@ -184,7 +184,7 @@ Route::group([ 'middleware' => ['session', 'menu', 'logRoute']], function () {
     Route::resource('questionExcelDownload', questionExcelDownloadController::class);
 });
 
-Route::get('/import-data',[ImportController::class,'getImport']);
+Route::get('/import-data',[ImportController::class,'getImport'])->name('import.data');
 Route::get('/marks-import',[ImportController::class,'Import']);
 Route::post('/custom_import_parse', [ImportController::class,'customParseImport'])->name('custom_import_parse');
 Route::post('/import_parse', [ImportController::class,'parseImport'])->name('import_parse');
