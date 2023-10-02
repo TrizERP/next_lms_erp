@@ -65,8 +65,6 @@ class approve_mobile_result_controller extends Controller
             ->where('rh.grade_id', $grade_id);
 
         $result = $result->groupBy('rh.id')->get()->toArray();
-
-        $res['terms'] = DB::table('academic_year')->where('sub_institute_id', $sub_institute_id)->where('syear', $syear)->get()->toArray();
         
         $res['status_code'] = 1;
         $res['message'] = "Success";
