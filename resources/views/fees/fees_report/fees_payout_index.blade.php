@@ -33,6 +33,17 @@
 						<label>To Date</label>
 						<input type="text" id="to_date" name="to_date" value="{{$to_date}}" class="form-control mydatepicker" autocomplete="off">
 					</div>
+					<div class="col-md-4 form-group">
+						<label>Select Month</label>
+						<select id="selected_month" name="selected_month" class="form-control" required>
+							<option value="">Select Month</option>
+							@foreach($data['months'] as $monthKey => $monthValue)
+								<option value="{{ $monthKey }}" {{ $data['selected_month'] == $monthKey ? 'selected' : '' }}>
+									{{ $monthValue }}
+								</option>
+							@endforeach
+						</select>
+					</div>
 					<div class="col-md-12 form-group">
 						<center>
 							<input type="submit" name="submit" value="Search" class="btn btn-success">
