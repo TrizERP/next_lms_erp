@@ -19,11 +19,15 @@ class approve_mobile_result_controller extends Controller
         $type = $request->input('type');
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $syear = $request->session()->get('syear');
+        $term_id = $request->input('term_id');
 
         $res['terms'] = DB::table('academic_year')->where('sub_institute_id', $sub_institute_id)->where('syear', $syear)->get()->toArray();
 
         $res['status_code'] = "1";
         $res['message'] = "Success";
+        $res['syear'] = $syear;
+        $res['sub_institute_id'] = $sub_institute_id;
+        $res['term_id'] = $term_id;
 
         return is_mobile($type, "result/approve_mobile_result/approve_mobile_result", $res, "view");
     }
@@ -71,6 +75,8 @@ class approve_mobile_result_controller extends Controller
         $res['standard_id'] = $standard_id;
         $res['division_id'] = $division_id;
         $res['term_id'] = $term_id;
+        $res['syear'] = $syear;
+        $res['sub_institute_id'] = $sub_institute_id;
 
         return is_mobile($type, "result/approve_mobile_result/approve_mobile_result", $res, "view");
     }
@@ -79,6 +85,7 @@ class approve_mobile_result_controller extends Controller
     {
         $type = $request->input('type');
         $student_ids = $request->input('students');
+        $student_id_uncheck = $request->input('student_id');
         $syear = $request->session()->get('syear');
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $grade_id = $request->input('grade_id');
@@ -98,47 +105,27 @@ class approve_mobile_result_controller extends Controller
                 'syear' => $syear,
                 'sub_institute_id' => $sub_institute_id,
             ])
-            ->update(['is_allowed' => 'Y']);
+            ->update(['is_allowed' => 'Y']);   
+        }
+
+        foreach($student_id_uncheck as $student_id)
+        {
+            DB::table('result_html')
+            ->where([
+                'student_id' => $student_id,
+                'grade_id' => $grade_id,
+                'standard_id' => $standard_id,
+                'division_id' => $division_id,
+                'term_id' => $term_id,
+                'syear' => $syear,
+                'sub_institute_id' => $sub_institute_id,
+            ])
+            ->update(['is_allowed' => 'N']);
         }
 
         $res['status_code'] = 1;
         $res['message'] = "Success";
 
         return is_mobile($type, "approve_mobile_result.index", $res);
-    }
-
-    public function studentCertificateAPI(Request $request)
-    {
-        try {
-            if (! $this->jwtToken()->validate()) {
-                $response = ['status' => '2', 'message' => 'Token Auth Failed', 'data' => []];
-
-                return response()->json($response, 401);
-            }
-        } catch (\Exception $e) {
-            $response = ['status' => '2', 'message' => $e->getMessage(), 'data' => []];
-
-            return response()->json($response, 401);
-        }
-
-        $student_id = $request->input("student_id");
-        $sub_institute_id = $request->input("sub_institute_id");
-        $syear = $request->input("syear");
-
-        if ($student_id != "" && $sub_institute_id != "" && $syear != "") {
-            $data = DB::table('certificate_history')
-                ->where('syear', $syear)
-                ->where('sub_institute_id', $sub_institute_id)
-                ->where('student_id', $student_id)->get()->toArray();
-
-            $res['status_code'] = 1;
-            $res['message'] = "Success";
-            $res['data'] = $data;
-        } else {
-            $res['status_code'] = 0;
-            $res['message'] = "Parameter Missing";
-        }
-
-        return json_encode($res);
     }
 }
