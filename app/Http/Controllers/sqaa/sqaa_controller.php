@@ -137,28 +137,35 @@ class sqaa_controller extends Controller
     }
 
     public function edit_gen_pdf(Request $request) {
-        $type = $request->input('type');
-        $text = $request->input('text');
-        $decodedText = json_decode(urldecode($text), true);
-    
-        $res['text'] = $decodedText;
-        return is_mobile($type, "sqaa/generatePdf", $res, "view");
+        $res='';
+        $this->generatePdf($request);
+        $type='';
+        // return is_mobile($type, "sqaa/generatePdf", $res, "view");
+        return redirect()->back();
     }
 
     public function generatePdf(Request $request) {
-        $res['text'] = $request->input('hidden_input');
+        $sub_institute_id = session()->get('sub_institute_id');
         $htmlContent = $request->input('html_content');
-        $pdf = PDF::loadHTML($htmlContent);
-        $timestamp = now()->format('YmdHis');        
-        $filename = 'PDF'.$timestamp.'.pdf';
+        $menu_id = $request->input('menu_id_pdf');
+        $doc_id = $request->input('doc_id_pdf');
         
-        $res['path'] = 'sqaa/' . $filename;
+        $pdf = PDF::loadHTML($htmlContent);
+        $filename = $sub_institute_id.'_pdf_menu'.$menu_id.'_doc'.$doc_id.'.pdf';
+        $filePath= 'sqaa/' . $filename;
         $pdf->save(public_path('sqaa/' . $filename));
         
         $fileUrl = asset('sqaa/' . $filename);
-
-        return redirect()->route('gen-pdf', ['text' => $res['text'], 'path' => $res['path']]);
-  }      
+        $headers = [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+        ];
+    
+        // Return the PDF file as a response
+        return response()->file($filePath, $headers);
+        // return redirect()->route('gen-pdf', ['text' => $res['text'], 'path' => $res['path']]);
+        // return $request;exit;
+    }      
   public function unlink_file(Request $request){
     if (file_exists($request->file)) {
         if (unlink($request->file)) {
