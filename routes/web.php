@@ -176,6 +176,7 @@ Route::group([ 'middleware' => ['session', 'menu', 'logRoute']], function () {
 
     Route::get('get-level', [sqaa_controller::class,'get_level'])->name('get-level'); 
     Route::get('gen-pdf', [sqaa_controller::class,'edit_gen_pdf'])->name('gen-pdf');
+    Route::post('gen-pdf-down', [sqaa_controller::class,'edit_gen_pdf'])->name('gen-pdf-down');    
     Route::post('unlink-file', [sqaa_controller::class,'unlink_file'])->name('unlink-file');
     
     Route::POST('download-pdf', [sqaa_controller::class,'generatePdf'])->name('download-pdf');     
