@@ -928,7 +928,6 @@ class AJAXController extends Controller
 
     public function ajax_load_rightSideMenu(Request $request)
     {
-
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $user_id = $request->session()->get('user_id');
         $main_menu_id = $request->menu_id;
@@ -996,9 +995,11 @@ class AJAXController extends Controller
                     if ($cval['name'] == 'Field Settings') {
                         $export_import_link = "window.open('" . env('APP_URL') . "/excel_upload/export_xlsx.php?sub_institute_iderp=" . $sub_institute_id . "','scrollbars=yes,resizable=no,status=no,location=no,toolbar=no,menubar=no','width=600,height=300,left=100,top=100')";
                         $child_li .= '<li><i class="fa fa-angle-right" style="margin-right: 8px;">
-                    </i><a href="javascript:void(0);" onclick="' . $export_import_link . '" class="waves-effect">Excel Import/Export</a></li>';
+                        </i><a href="javascript:void(0);" onclick="' . $export_import_link . '" class="waves-effect">Excel Import/Export</a></li>';
                         $child_li .= '<li><i class="fa fa-angle-right" style="margin-right: 8px;">
-                    </i><a href="' . route('workflow.index') . '">Workflow</a></li>';
+                        </i><a href="' . route('import.data') . '">Import Data</a></li>';
+                        $child_li .= '<li><i class="fa fa-angle-right" style="margin-right: 8px;">
+                        </i><a href="' . route('workflow.index') . '">Workflow</a></li>';
                     }
                 }
                 $child_menu .= '<div class="tab-pane show ' . $active . '" id="right-tab-' . $i . '"
