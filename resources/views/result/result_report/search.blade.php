@@ -35,7 +35,16 @@
                             </select>
                         </div>
 
+                        {{ App\Helpers\TermDD() }}
+                        
                         {{ App\Helpers\SearchChain('4','single','grade,std,div') }}
+
+                        <div class="col-md-4 form-group" style="display: none;" id="for_additional_subjects">
+                            <label for="additional_subjects">Select Subject</label>
+                            <select name="additional_subjects[]" id="additional_subjects" class="form-control mb-0" multiple>
+                                <option value="">Select Subject</option>
+                            </select>
+                        </div>
 
                         <div class="col-md-4 form-group" style="display: none;" id="for_subject">
                             <label for="subject">Select Subject</label>
@@ -116,6 +125,16 @@
             },
         });
 
+        $('#additional_subjects').find('option').remove().end().append('<option value="">Select Subject</option>').val('');
+        $.ajax({
+            url: path, data: 'std_id=' + std_id, success: function (result) {
+                for (var i = 0; i < result.length; i++) {
+                    $('#additional_subjects').
+                        append($('<option></option>').val(result[i]['subject_id']).html(result[i]['display_name']));
+                }
+            },
+        });
+
         var termID ={{session()->get('term_id')}};
 
         if (std_id && termID) {
@@ -181,9 +200,10 @@
             document.getElementById('for_subject').style.display = 'none';
             document.getElementById('for_roll_no').style.display = 'none';
             document.getElementById('for_exam_type').style.display = 'block';
-            document.getElementById('for_from_date').style.display = 'none';
-            document.getElementById('for_to_date').style.display = 'none';
-            $('#subject').prop('required', false);
+            document.getElementById('for_from_date').style.display = 'block';
+            document.getElementById('for_to_date').style.display = 'block';
+            document.getElementById('for_additional_subjects').style.display = 'block';
+            $('#additional_subjects').prop('required', true);
         }
         if (report_val == '') {
             document.getElementById('for_top_students').style.display = 'none';
@@ -192,6 +212,7 @@
             document.getElementById('for_exam_type').style.display = 'none';
             document.getElementById('for_from_date').style.display = 'none';
             document.getElementById('for_to_date').style.display = 'none';
+            document.getElementById('for_additional_subjects').style.display = 'none';
             $('#subject').prop('required', false);
         }
     }
