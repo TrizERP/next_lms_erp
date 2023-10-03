@@ -43,6 +43,7 @@ class result_report_controller extends Controller
         $standard_id = $request->input('standard');
         $division_id = $request->input('division');
         $subject = $request->input('subject');
+        $additional_subjects = $request->input('additional_subjects');
         $top_students = $request->input('top_students');
         $roll_no = $request->input('roll_no');
         $from_date = $request->input('from_date');
@@ -270,7 +271,8 @@ class result_report_controller extends Controller
             return is_mobile($type, "result/result_report/merit_report_show", $data, "view");
         }
 
-        if ($report_of == 'subject_progress_report') {
+        if ($report_of == 'subject_progress_report') 
+        {
             $all_student = SearchStudent($grade_id, $standard_id, $division_id, $sub_institute_id, $syear, $roll_no);
             $students_data = [];
             foreach ($all_student as $key => $value) {
@@ -338,8 +340,10 @@ class result_report_controller extends Controller
 
             return is_mobile($type, "result/result_report/subject_progress_report_show", $data, "view");
         }
-
-        if ($report_of == 'classwise_report') {
+       
+        if ($report_of == 'classwise_report') 
+        {
+            
             $all_student = SearchStudent($grade_id, $standard_id, $division_id, $sub_institute_id, $syear, $roll_no);
             $students_data = [];
             foreach ($all_student as $key => $value) {
@@ -354,7 +358,8 @@ class result_report_controller extends Controller
                 $type,
                 $exam_type,
                 $from_date,
-                $to_date
+                $to_date,
+                $additional_subjects
             );
 
             $student_id_arr = [];
@@ -371,7 +376,7 @@ class result_report_controller extends Controller
                 WHERE e.term_id = '".$term_id."' AND e.sub_institute_id = '".$sub_institute_id."' AND e.syear = '".$syear."'
                 AND e.standard_id = '".$standard_id."' AND e.subject_id = '".$subject."' AND student_id in (".$student_id.") $extra
                 ORDER BY e.title";*/
-//DB::enableQueryLog();
+                // DB::enableQueryLog();
             $result = DB::table("result_create_exam as e")
                 ->join('sub_std_map as s', function ($join) {
                     $join->whereRaw("s.subject_id = e.subject_id AND s.sub_institute_id = e.sub_institute_id AND s.standard_id = e.standard_id");
@@ -385,7 +390,8 @@ class result_report_controller extends Controller
                 ->where("e.sub_institute_id", "=", $sub_institute_id)
                 ->where("e.syear", "=", $syear)
                 ->where("e.standard_id", "=", $standard_id)
-                ->whereIn("student_id", $student_id_arr); //->where("e.subject_id", "=", $subject)
+                ->whereIn("e.subject_id", $additional_subjects)
+                ->whereIn("student_id", $student_id_arr);
 
             if ($exam_type != '') {
                 $result = $result->where('e.exam_id', $exam_type);
@@ -394,11 +400,12 @@ class result_report_controller extends Controller
             if ($from_date != '' && $to_date != '') {
                 $result = $result->whereRaw("DATE_FORMAT(e.exam_date, '%Y-%m-%d') BETWEEN '" . $from_date . "' AND '" . $to_date . "' ");
             }
+        
 
             $result = $result->groupByRaw('rm.student_id,e.subject_id')
                 ->orderBy('e.sort_order')->get()->toarray();
 
-//dd(DB::getQueryLog($result));
+            // dd(DB::getQueryLog($result));
             $result = json_decode(json_encode($result), true);
             $date_arr = [];
 
@@ -415,7 +422,6 @@ class result_report_controller extends Controller
 
             return is_mobile($type, "result/result_report/classwise_report_show", $data, "view");
         }
-
     }
 
     public function getClasswise(
@@ -425,7 +431,8 @@ class result_report_controller extends Controller
         $type,
         $exam_type = null,
         $from_date = null,
-        $to_date = null
+        $to_date = null,
+        $additional_subjects = null
     ) {
         if ($type == 'API') {
             $syear = $_REQUEST['syear'];
@@ -459,7 +466,8 @@ class result_report_controller extends Controller
             ->where("e.sub_institute_id", "=", $sub_institute_id)
             ->where("e.syear", "=", $syear)
             ->where("e.standard_id", "=", $standard_id)
-            ->whereIn("student_id", $student_id_arr); //->where("e.subject_id", "=", $subject)
+            ->whereIn("e.subject_id", $additional_subjects)
+            ->whereIn("student_id", $student_id_arr);
 
         if ($exam_type != '') {
             $result = $result->where('e.exam_id', $exam_type);
