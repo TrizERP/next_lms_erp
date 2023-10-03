@@ -338,8 +338,8 @@ class admissionReportController extends Controller
                     // });
                 })->join('std_div_map as sd', function ($join) {
                     $join->whereRaw('sd.standard_id = ai.admission_standard AND sd.sub_institute_id = ai.sub_institute_id');
-                })->join('division as d', function ($join) {
-                    $join->whereRaw('d.id = sd.division_id AND d.sub_institute_id = sd.sub_institute_id');
+                })->leftJoin('division as d', function ($join) {
+                    $join->whereRaw('d.id = ar.admission_division AND d.sub_institute_id = sd.sub_institute_id');
                 })->leftJoin('student_quota as sq', function ($join) {
                     $join->whereRaw('sq.id = ar.student_quota AND sq.sub_institute_id = ar.sub_institute_id');
                 })->leftJoin('blood_group as bg', function ($join) {
