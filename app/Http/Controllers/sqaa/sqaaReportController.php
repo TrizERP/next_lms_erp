@@ -50,6 +50,11 @@ class sqaaReportController extends Controller
         ->selectRaw('s.*,sm.title as menu_title,sm.description,sm.level,sd.id as document_id,sd.title as document_title,sd.availability,sd.file')
         ->where(['s.sub_institute_id'=>$sub_institute_id,'s.menu_id'=>$menu_id])
         ->get()->toArray();
+
+        if(empty($res['data'])){
+            $res['status_code']=0;
+            $res['message']='Data not found';
+        }
         $res['selected_1']=$request->input('level_1');
         $res['selected_2']=$request->input('level_2_sel');
         $res['selected_3']=$request->input('level_3_sel');

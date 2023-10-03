@@ -210,14 +210,13 @@
 		<script src="{{asset('/plugins/bower_components/summernote/dist/summernote.min.js')}}"></script>
 
 		<script>
-			// function check_menu(){
-			//     var selected_menu = $('#lev_1').val();
-			//     if (selected_menu==='') {
-			//         alert('Please Select atleast 1 Menu');
-			//         event.preventDefault(); // Prevent the default form submission
-			//     }
-
-			// }
+			function check_menu(){
+			    var selected_menu = $('#lev_1').val();
+			    if (selected_menu==='') {
+			        alert('Please Select Options');
+			        event.preventDefault(); // Prevent the default form submission
+			    }
+			}
 
 			$(document).ready(function() {
 
