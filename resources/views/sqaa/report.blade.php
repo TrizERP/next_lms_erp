@@ -86,9 +86,7 @@
 							<thead>
 								<tr>
 									<th>SR NO</th>
-									<th>Title</th>
-									<th>Description</th>
-                                    <th>Document</th>
+									<th>Document</th>
 									<th>Availability</th>
 									<th>File</th>
 									<th>Marks</th>  
@@ -102,8 +100,6 @@
 								@foreach ($data['data'] as $key=>$item)
 								<tr>
 									<td>{{ $i++ }}</td>
-									<td>{{ $item['menu_title'] }}</td>
-									<td>{!! $item['description'] !!}</td>                                    
 									<td>{!! $item['document_title'] !!}</td>
 									<td>{{ $item['availability'] ?? 'NO' }}</td>
 									<td>
