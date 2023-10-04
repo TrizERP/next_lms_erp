@@ -343,7 +343,6 @@ class result_report_controller extends Controller
        
         if ($report_of == 'classwise_report') 
         {
-            
             $all_student = SearchStudent($grade_id, $standard_id, $division_id, $sub_institute_id, $syear, $roll_no);
             $students_data = [];
             foreach ($all_student as $key => $value) {
@@ -352,6 +351,88 @@ class result_report_controller extends Controller
 
             //getting all exam marks
             $all_WRT_data = $this->getClasswise(
+                $all_student,
+                $standard_id,
+                $subject,
+                $type,
+                $exam_type,
+                $from_date,
+                $to_date,
+                //$additional_subjects
+            );
+
+            $student_id_arr = [];
+            foreach ($all_student as $id => $arr) {
+                $student_id_arr[] = $arr['student_id'];
+            }
+            $student_id = implode(',', $student_id_arr);
+
+            /*$str = "SELECT e.title as ExamTitle, IF((e.con_point IS NULL) OR (e.con_point = ''),e.points,e.con_point) AS total_points,
+                e.subject_id,s.display_name as subject_name,date_format(e.exam_date,'%d-%m-%Y') as exam_date,dayname(e.exam_date) as exam_day,rm.student_id,rm.points as obtained_points
+                FROM result_create_exam e
+                INNER JOIN sub_std_map s ON s.subject_id = e.subject_id AND s.sub_institute_id = e.sub_institute_id AND s.standard_id = e.standard_id
+                LEFT JOIN result_marks rm on rm.sub_institute_id = e.sub_institute_id AND rm.exam_id = e.id
+                WHERE e.term_id = '".$term_id."' AND e.sub_institute_id = '".$sub_institute_id."' AND e.syear = '".$syear."'
+                AND e.standard_id = '".$standard_id."' AND e.subject_id = '".$subject."' AND student_id in (".$student_id.") $extra
+                ORDER BY e.title";*/
+                // DB::enableQueryLog();
+            $result = DB::table("result_create_exam as e")
+                ->join('sub_std_map as s', function ($join) {
+                    $join->whereRaw("s.subject_id = e.subject_id AND s.sub_institute_id = e.sub_institute_id AND s.standard_id = e.standard_id");
+                })
+                ->leftJoin('result_marks as rm', function ($join) {
+                    $join->whereRaw("rm.sub_institute_id = e.sub_institute_id AND rm.exam_id = e.id");
+                })
+                ->selectRaw("e.title as ExamTitle, SUM(e.points) AS total_points,
+                    e.subject_id,s.display_name as subject_name,rm.student_id,SUM(rm.points) as obtained_points")
+                ->where("e.term_id", "=", $term_id)
+                ->where("e.sub_institute_id", "=", $sub_institute_id)
+                ->where("e.syear", "=", $syear)
+                ->where("e.standard_id", "=", $standard_id)
+                //->whereIn("e.subject_id", $additional_subjects)
+                ->whereIn("student_id", $student_id_arr);
+
+            if ($exam_type != '') {
+                $result = $result->where('e.exam_id', $exam_type);
+            }
+
+            if ($from_date != '' && $to_date != '') {
+                $result = $result->whereRaw("DATE_FORMAT(e.exam_date, '%Y-%m-%d') BETWEEN '" . $from_date . "' AND '" . $to_date . "' ");
+            }
+        
+
+            $result = $result->groupByRaw('rm.student_id,e.subject_id')
+                ->orderBy('e.sort_order')->get()->toarray();
+
+            // dd(DB::getQueryLog($result));
+            $result = json_decode(json_encode($result), true);
+            $date_arr = [];
+
+            foreach ($result as $id => $arr) {
+                $date_arr[$arr['subject_name']] = $arr['subject_name'] . '(' . $arr['total_points'] . ')';
+            }
+
+            $data['grade_id'] = $grade_id;
+            $data['standard_id'] = $standard_id;
+            $data['division_id'] = $division_id;
+            $data['date_arr'] = $date_arr;
+            $data['WRT_data'] = $all_WRT_data;
+            $data['all_student'] = $students_data;
+
+            return is_mobile($type, "result/result_report/classwise_report_show", $data, "view");
+        }
+
+        if ($report_of == 'marks_report') 
+        {
+            
+            $all_student = SearchStudent($grade_id, $standard_id, $division_id, $sub_institute_id, $syear, $roll_no);
+            $students_data = [];
+            foreach ($all_student as $key => $value) {
+                $students_data[$value['id']] = $value;
+            }
+
+            //getting all exam marks
+            $all_WRT_data = $this->getMarkwise(
                 $all_student,
                 $standard_id,
                 $subject,
@@ -424,7 +505,7 @@ class result_report_controller extends Controller
         }
     }
 
-    public function getClasswise(
+    public function getMarkwise(
         $all_student,
         $standard_id,
         $subject,
@@ -467,6 +548,91 @@ class result_report_controller extends Controller
             ->where("e.syear", "=", $syear)
             ->where("e.standard_id", "=", $standard_id)
             ->whereIn("e.subject_id", $additional_subjects)
+            ->whereIn("student_id", $student_id_arr);
+
+        if ($exam_type != '') {
+            $result = $result->where('e.exam_id', $exam_type);
+        }
+
+        if ($from_date != '' && $to_date != '') {
+            $result = $result->whereRaw("DATE_FORMAT(e.exam_date, '%Y-%m-%d') BETWEEN '" . $from_date . "' AND '" . $to_date . "' ");
+        }
+
+        $result = $result->groupByRaw('rm.student_id,e.subject_id')
+            ->orderBy('s.sort_order')->get()->toarray();
+
+        $result = json_decode(json_encode($result), true);
+        $cbse_1t5_result_controller = new cbse_1t5_result_controller;
+        $grade_arr = $cbse_1t5_result_controller->getGradeScale($standard_id, $type);
+
+        // getting data and making readable format student wise
+        $marks_arr = [];
+
+        $rank = $this->getRank($standard_id, $division_id, $passing_ratio = 35, $type);
+
+        foreach ($result as $id => $arr) {
+            $grade_scale = $cbse_1t5_result_controller->getGrade(
+                $grade_arr,
+                $arr['total_points'],
+                $arr['obtained_points']
+            );
+
+            $per = (($arr['obtained_points'] * 100) / $arr['total_points']);
+            $per = number_format($per, 2);
+            $arr['percentage'] = $per;
+            $arr['grade'] = $grade_scale;
+            $marks_arr[$arr['student_id']][$arr['subject_name']] = $arr;
+            $marks_arr[$arr['student_id']][$arr['subject_name']]['student_name'] = $rank[$arr['student_id']]['student_name'];
+            $marks_arr[$arr['student_id']][$arr['subject_name']]['roll_no'] = $rank[$arr['student_id']]['roll_no'];
+        }
+        $marks_arr['total_student'] = count($marks_arr);
+
+        return $marks_arr;
+    }
+
+    public function getClasswise(
+        $all_student,
+        $standard_id,
+        $subject,
+        $type,
+        $exam_type = null,
+        $from_date = null,
+        $to_date = null,
+        //$additional_subjects = null
+    ) {
+        if ($type == 'API') {
+            $syear = $_REQUEST['syear'];
+            $sub_institute_id = $_REQUEST['sub_institute_id'];
+            $term_id = 149;
+            $standard_id = $all_student[0]['standard_id'];
+            $division_id = $all_student[0]['division_id'];
+        } else {
+            $syear = session()->get('syear');
+            $sub_institute_id = session()->get('sub_institute_id');
+            $term_id = session()->get('term_id');
+            $standard_id = request()->input('standard');
+            $division_id = request()->input('division');
+        }
+
+        $student_id_arr = [];
+        foreach ($all_student as $id => $arr) {
+            $student_id_arr[] = $arr['student_id'];
+        }
+        $student_id = implode(',', $student_id_arr);
+
+        $result = DB::table("result_create_exam as e")
+            ->join('sub_std_map as s', function ($join) {
+                $join->whereRaw("s.subject_id = e.subject_id AND s.sub_institute_id = e.sub_institute_id AND s.standard_id = e.standard_id");
+            })
+            ->leftJoin('result_marks as rm', function ($join) {
+                $join->whereRaw("rm.sub_institute_id = e.sub_institute_id AND rm.exam_id = e.id");
+            })
+            ->selectRaw("e.title AS ExamTitle, sum(e.points) AS total_points, e.subject_id,s.display_name AS subject_name,rm.student_id,round(SUM(rm.points),0) AS obtained_points,rm.is_absent")
+            ->where("e.term_id", "=", $term_id)
+            ->where("e.sub_institute_id", "=", $sub_institute_id)
+            ->where("e.syear", "=", $syear)
+            ->where("e.standard_id", "=", $standard_id)
+            //->whereIn("e.subject_id", $additional_subjects)
             ->whereIn("student_id", $student_id_arr);
 
         if ($exam_type != '') {
