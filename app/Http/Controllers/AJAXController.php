@@ -1487,33 +1487,66 @@ class AJAXController extends Controller
             $fees_refund_data = $fees_refund_data[0];
             $fees_receipt_html = $fees_refund_data['fees_html'];
         } else {
-            $unionQuery = DB::table('fees_paid_other as fo')
+            // $unionQuery = DB::table('fees_paid_other as fo')
+            //     ->join('fees_receipt as fro', function ($join) {
+            //         $join->whereRaw('FIND_IN_SET(fo.id,fro.OTHER_FEES_ID) AND fro.SUB_INSTITUTE_ID = fo.sub_institute_id');
+            //     })
+            //     ->selectRaw('fo.id,fo.student_id,fo.reciept_id AS receipt_no,fo.paid_fees_html AS fees_html')
+            //     ->where('fo.sub_institute_id', $sub_institute_id)
+            //     ->where('fo.syear', $syear)
+            //     ->where('fo.student_id', $student_id)
+            //     ->whereRaw("(fro.RECEIPT_ID_1 = '" . $receipt_id . "' OR fro.RECEIPT_ID_2 = '" . $receipt_id . "' OR fro.RECEIPT_ID_3 = '" . $receipt_id . "' OR fro.RECEIPT_ID_4 = '" . $receipt_id . "' OR fro.RECEIPT_ID_5 = '" . $receipt_id . "' OR fro.RECEIPT_ID_6 = '" . $receipt_id . "' OR fro.RECEIPT_ID_7 = '" . $receipt_id . "' OR fro.RECEIPT_ID_8 = '" . $receipt_id . "'
+            //         OR fro.RECEIPT_ID_9 = '" . $receipt_id . "' OR fro.RECEIPT_ID_10 = '" . $receipt_id . "')")
+            //     ->groupBy('fo.paid_fees_html');
+
+            // $get_data = DB::table('fees_collect as fc')
+            //     ->join('fees_receipt as fr', function ($join) {
+            //         $join->whereRaw('FIND_IN_SET(fc.id,fr.FEES_ID) AND fr.SUB_INSTITUTE_ID = fc.sub_institute_id');
+            //     })
+            //     ->selectRaw('fc.id,fc.student_id,fc.receipt_no,fc.fees_html')
+            //     ->where('fc.sub_institute_id', $sub_institute_id)
+            //     ->where('fc.syear', $syear)
+            //     ->where('fc.student_id', $student_id)
+            //     ->whereRaw("(fr.RECEIPT_ID_1 = '" . $receipt_id . "' OR fr.RECEIPT_ID_2 = '" . $receipt_id . "' OR fr.RECEIPT_ID_3 = '" . $receipt_id . "'
+            //         OR fr.RECEIPT_ID_4 = '" . $receipt_id . "' OR fr.RECEIPT_ID_5 = '" . $receipt_id . "' OR fr.RECEIPT_ID_6 = '" . $receipt_id . "' OR fr.RECEIPT_ID_7 = '" . $receipt_id . "' OR fr.RECEIPT_ID_8 = '" . $receipt_id . "'
+            //         OR fr.RECEIPT_ID_9 = '" . $receipt_id . "' OR fr.RECEIPT_ID_10 = '" . $receipt_id . "')")
+            //     ->groupBy('fc.fees_html')
+            //     ->union($unionQuery)->groupBy('fees_html')->get()->toArray();
+
+    // 04-10-23 by uma lions double fees_recipt
+    $get_data = DB::table(function ($query) use ($sub_institute_id, $syear, $student_id, $receipt_id) {
+    $query->selectRaw('fc.id, fc.student_id, fc.receipt_no, fc.fees_html')
+        ->from('fees_collect as fc')
+        ->join('fees_receipt as fr', function ($join) {
+            $join->whereRaw('FIND_IN_SET(fc.id, fr.FEES_ID) AND fr.SUB_INSTITUTE_ID = fc.sub_institute_id');
+        })
+        ->where('fc.sub_institute_id', $sub_institute_id)
+        ->where('fc.syear', $syear)
+        ->where('fc.student_id', $student_id)
+        ->whereRaw("(fr.RECEIPT_ID_1 = '" . $receipt_id . "' OR fr.RECEIPT_ID_2 = '" . $receipt_id . "' OR fr.RECEIPT_ID_3 = '" . $receipt_id . "'
+            OR fr.RECEIPT_ID_4 = '" . $receipt_id . "' OR fr.RECEIPT_ID_5 = '" . $receipt_id . "' OR fr.RECEIPT_ID_6 = '" . $receipt_id . "' OR fr.RECEIPT_ID_7 = '" . $receipt_id . "' OR fr.RECEIPT_ID_8 = '" . $receipt_id . "'
+            OR fr.RECEIPT_ID_9 = '" . $receipt_id . "' OR fr.RECEIPT_ID_10 = '" . $receipt_id . "')")
+        ->groupBy('fc.fees_html')
+        ->unionAll(
+            DB::table('fees_paid_other as fo')
+                ->selectRaw('fo.id, fo.student_id, fo.reciept_id AS receipt_no, fo.paid_fees_html AS fees_html')
                 ->join('fees_receipt as fro', function ($join) {
-                    $join->whereRaw('FIND_IN_SET(fo.id,fro.OTHER_FEES_ID) AND fro.SUB_INSTITUTE_ID = fo.sub_institute_id');
+                    $join->whereRaw('FIND_IN_SET(fo.id, fro.OTHER_FEES_ID) AND fro.SUB_INSTITUTE_ID = fo.sub_institute_id');
                 })
-                ->selectRaw('fo.id,fo.student_id,fo.reciept_id AS receipt_no,fo.paid_fees_html AS fees_html')
                 ->where('fo.sub_institute_id', $sub_institute_id)
                 ->where('fo.syear', $syear)
                 ->where('fo.student_id', $student_id)
                 ->whereRaw("(fro.RECEIPT_ID_1 = '" . $receipt_id . "' OR fro.RECEIPT_ID_2 = '" . $receipt_id . "' OR fro.RECEIPT_ID_3 = '" . $receipt_id . "' OR fro.RECEIPT_ID_4 = '" . $receipt_id . "' OR fro.RECEIPT_ID_5 = '" . $receipt_id . "' OR fro.RECEIPT_ID_6 = '" . $receipt_id . "' OR fro.RECEIPT_ID_7 = '" . $receipt_id . "' OR fro.RECEIPT_ID_8 = '" . $receipt_id . "'
                     OR fro.RECEIPT_ID_9 = '" . $receipt_id . "' OR fro.RECEIPT_ID_10 = '" . $receipt_id . "')")
-                ->groupBy('fo.paid_fees_html');
+                ->groupBy('fo.paid_fees_html')
+        );
+})
+->selectRaw('student_id, receipt_no, fees_html')
+->groupBy('student_id')
+->get()
+->toArray();
 
-            $get_data = DB::table('fees_collect as fc')
-                ->join('fees_receipt as fr', function ($join) {
-                    $join->whereRaw('FIND_IN_SET(fc.id,fr.FEES_ID) AND fr.SUB_INSTITUTE_ID = fc.sub_institute_id');
-                })
-                ->selectRaw('fc.id,fc.student_id,fc.receipt_no,fc.fees_html')
-                ->where('fc.sub_institute_id', $sub_institute_id)
-                ->where('fc.syear', $syear)
-                ->where('fc.student_id', $student_id)
-                ->whereRaw("(fr.RECEIPT_ID_1 = '" . $receipt_id . "' OR fr.RECEIPT_ID_2 = '" . $receipt_id . "' OR fr.RECEIPT_ID_3 = '" . $receipt_id . "'
-                    OR fr.RECEIPT_ID_4 = '" . $receipt_id . "' OR fr.RECEIPT_ID_5 = '" . $receipt_id . "' OR fr.RECEIPT_ID_6 = '" . $receipt_id . "' OR fr.RECEIPT_ID_7 = '" . $receipt_id . "' OR fr.RECEIPT_ID_8 = '" . $receipt_id . "'
-                    OR fr.RECEIPT_ID_9 = '" . $receipt_id . "' OR fr.RECEIPT_ID_10 = '" . $receipt_id . "')")
-                ->groupBy('fc.fees_html')
-                ->union($unionQuery)->groupBy('fees_html')->get()->toArray();
-
-            $fees_collection_data = json_decode(json_encode($get_data), true);
+         $fees_collection_data = json_decode(json_encode($get_data), true);
             if (count($fees_collection_data) > 1) {
                 $fees_receipt_html = $fees_collection_data;
             } else {
