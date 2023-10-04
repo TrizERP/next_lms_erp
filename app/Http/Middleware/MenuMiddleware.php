@@ -92,10 +92,8 @@ class MenuMiddleware
                 //         }
                 //     })->get()->toArray();
                 //     // 03/10/2023 by uma
-                // if($sub_institute_id==61){
-
                  $rightsQuery = DB::table('tbluser as u')
-                ->leftJoin('tblindividual_rights as i', function ($join) {
+                ->Join('tblindividual_rights as i', function ($join) {
                     $join->whereRaw("u.id = i.user_id AND u.sub_institute_id = i.sub_institute_id");
                })->join('tblmenumaster as m', function ($join) use ($sub_institute_id) {
                     $join->whereRaw("(i.menu_id = m.id) AND FIND_IN_SET(?, m.sub_institute_id)", [$sub_institute_id]);
@@ -106,8 +104,7 @@ class MenuMiddleware
                         $q->where('u.id', $user_id);
                     }
                 })->get()->toArray();
-
-                    if(empty($rightsQuery)){
+                    if(!isset($rightsQuery['0']->MID)){
                         $rightsQuery = DB::table('tbluser as u')
                         ->leftJoin('tblindividual_rights as i', function ($join) {
                             $join->whereRaw("u.id = i.user_id AND u.sub_institute_id = i.sub_institute_id");
@@ -123,10 +120,6 @@ class MenuMiddleware
                             }
                         })->get()->toArray();
                     }
-                    
-                // }
-//dd(DB::getQueryLog($rightsQuery));
-
             }
 
         }
