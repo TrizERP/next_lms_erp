@@ -71,7 +71,7 @@ class inventory_item_direct_purchaseController extends Controller
         $item_setting_data = inventory_master_setupModel::where(['sub_institute_id' => $sub_institute_id])
             ->get()->toArray(); //,'syear' => $syear
 
-        $item_setting_data_value = $item_setting_data[0]['ITEM_SETTING_FOR_REQUISITION'];
+        $item_setting_data_value = $item_setting_data[0]['ITEM_SETTING_FOR_REQUISITION'] ?? [];
 
         $data['vendor_data'] = $vendor_data;
         $data['item_setting_data_value'] = $item_setting_data_value;

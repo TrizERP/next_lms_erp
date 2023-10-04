@@ -1511,7 +1511,7 @@ class AJAXController extends Controller
                     OR fr.RECEIPT_ID_4 = '" . $receipt_id . "' OR fr.RECEIPT_ID_5 = '" . $receipt_id . "' OR fr.RECEIPT_ID_6 = '" . $receipt_id . "' OR fr.RECEIPT_ID_7 = '" . $receipt_id . "' OR fr.RECEIPT_ID_8 = '" . $receipt_id . "'
                     OR fr.RECEIPT_ID_9 = '" . $receipt_id . "' OR fr.RECEIPT_ID_10 = '" . $receipt_id . "')")
                 ->groupBy('fc.fees_html')
-                ->union($unionQuery)->get()->toArray();
+                ->union($unionQuery)->groupBy('fees_html')->get()->toArray();
 
             $fees_collection_data = json_decode(json_encode($get_data), true);
             if (count($fees_collection_data) > 1) {

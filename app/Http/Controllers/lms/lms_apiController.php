@@ -553,7 +553,8 @@ class lms_apiController extends Controller
                 ->orderBy('start_time')->get()->toArray();
 
             $data['attempted_data'] = json_decode(json_encode($data['attempted_data']), true);
-
+//Rajesh = Hide PROGRESSBAR_DATA because API take too much time, and not required in mobile app....future perpective data display 
+/*
             foreach ($data['attempted_data'] as $key => $val) {
                 $pdata = DB::select("SELECT *,'100' as total_percentage,
                     round(((a.right_answer*100)/total_question),2) as obtained_percentage from (
@@ -579,7 +580,7 @@ class lms_apiController extends Controller
                     $data['attempted_data'][$key]['PROGRESSBAR_DATA'][$pval['parent_name']][] = $pval;
                 }
             }
-
+*/
             $res['status'] = 1;
             $res['message'] = "Success";
             $res['data'] = $data;
