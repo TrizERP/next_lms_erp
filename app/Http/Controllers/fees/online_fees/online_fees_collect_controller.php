@@ -1748,7 +1748,7 @@ exit; */
     public function payphi_fetch_payment_status(Request $request) 
     {
         $payment_data = DB::table('fees_payment AS fp')
-            ->select('fp.id', 'fp.student_id', 'fi.merchant_id', 'fp.payphi_order_id', 'tse.syear', 'fp.sub_institute_id', 'fp.amount', 'fp.fine','fp.payphi_response')
+            ->select('fp.id', 'fp.student_id', 'fi.key', 'fi.merchant_id', 'fp.payphi_order_id', 'tse.syear', 'fp.sub_institute_id', 'fp.amount', 'fp.fine','fp.payphi_response')
             ->join('tblstudent_enrollment AS tse', function ($join) {
                 $join->on('tse.student_id', '=', 'fp.student_id')
                     ->on('tse.syear', '=', 'fp.syear')
@@ -1776,6 +1776,7 @@ exit; */
             {
                 $id = $data->id;
                 $key_id = $data->merchant_id;
+                $key = $data->key;
                 $payment_id = $data->payphi_order_id;
                 $student_id = $data->student_id;
                 $amount = number_format($data->amount, 2, '.', '');
@@ -1804,7 +1805,7 @@ exit; */
         
                 // calculate the hmac 256 signature
                 // use the secret key corresponding to your merchantid
-                $sig = hash_hmac('sha256', $hash_input, 'abc');
+                $sig = hash_hmac('sha256', $hash_input, $key);
                 $secureHash = $sig;
             
                 // initial payphi status api
@@ -1843,6 +1844,7 @@ exit; */
                 if (!empty($response)) 
                 {
                     $status = $fetchResponseArray['txnStatus'];
+                    $txnResponseCode = $fetchResponseArray['txnResponseCode'];
                    
                     $update_arr = array(
                         "payphi_payment_status" => $status,
@@ -1863,7 +1865,7 @@ exit; */
                         'sub_institute_id' => $data->sub_institute_id
                     ]);
 
-                    if($status == 'Success')
+                    if($status == 'SUC' && $txnResponseCode == "0000")
                     {
                         $check = DB::table('fees_collect')->whereRaw('cheque_no='.$payment_id.' AND student_id='.$student_id.' AND syear='.$data->syear.' AND sub_institute_id='.$data->sub_institute_id)->get()->toArray();
 
