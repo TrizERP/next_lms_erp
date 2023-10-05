@@ -29,6 +29,7 @@ use function App\Helpers\OtherBreackOfMonth;
 use function App\Helpers\OtherBreackOfMonthHead;
 use function Illuminate\Session\expired;
 use App\Models\fees\fees_breackoff\fees_breackoff;
+use App\Http\Controllers\easy_com\send_sms_parents\send_sms_parents_controller;
 
 class fees_collect_controller extends Controller
 {
@@ -49,7 +50,6 @@ class fees_collect_controller extends Controller
                 $school_data['message'] = $data_arr['message'];
             }
         }
-
         $school_data['data'] = [];
         $type = $request->input('type');
         return is_mobile($type, "fees/fees_collect/show", $school_data, "view");
@@ -86,7 +86,7 @@ class fees_collect_controller extends Controller
         $fees_join = "";
         $paid_other_join = "";
 
-        // below foreach is for where condition 
+        // below foreach is for where condition to search month_id wise
         foreach ($search_ids as $id => $val) {
             if ($id == 0) {
                 $breackoff_join .= " AND (";
@@ -713,7 +713,10 @@ class fees_collect_controller extends Controller
         $res = $this->pay_fees($request);
         $res['standard_id'] = $request->standard_id;
         $type = $request->input('type');
-
+        if(!empty($res) && isset($res['data']) && isset($request->send_sms)){
+        // send sms to parent after fees paid 
+         $res['sms_sent'] = $this->send_sms_to_parents($res);
+        }
         return is_mobile($type, "fees/fees_collect/receipt_view", $res, "view");
     }
 
@@ -1903,12 +1906,15 @@ class fees_collect_controller extends Controller
         $new_month_arr = [];
         $new_month_arr2 = [];
         foreach ($reg_bk_month_wise as $month_id => $val) {
-            $new_month_arr[$month_id] = $month_arr[$month_id];
+            if(isset($month_arr[$month_id])){            
+                $new_month_arr[$month_id] = $month_arr[$month_id];
+            }
         }
-
         foreach ($other_bk_off_month_wise as $month_id => $val) {
-            $new_month_arr[$month_id] = $month_arr[$month_id];
-        }
+            if(isset($month_arr[$month_id])){                        
+                $new_month_arr[$month_id] = $month_arr[$month_id];
+            }
+        }        
 
         $merge_bk_month_wise = [];
         foreach ($reg_bk_month_wise as $month_id => $amount) {
@@ -1928,6 +1934,7 @@ class fees_collect_controller extends Controller
         $remain_total = $remain_total_last = 0;
         // this foreach will create fees structure of student paid unpaid fees
         foreach ($merge_bk_month_wise as $id => $val) {
+            if(isset($year_arr[$id])){
             $left_bk_table[$i]['month'] = $year_arr[$id];
             $left_bk_table[$i]['month_this'] = substr($year_arr[$id], 0, 3);
             $this_month[] = $left_bk_table[$i]['month_this'];
@@ -1948,7 +1955,7 @@ class fees_collect_controller extends Controller
             $paid_total = $paid_total + $left_bk_table[$i]['paid'];
             $remain_total = $remain_total + $left_bk_table[$i]['remain'];
             $i = $i + 1;
-
+        }
         }
         $pending_fees = 0;
 
@@ -2453,4 +2460,81 @@ class fees_collect_controller extends Controller
         return $feesData;
     }
 
+    // send sms to parent after fees successfully paid
+    function send_sms_to_parents($request){
+           
+        $sub_institute_id = session()->get('sub_institute_id');
+        $syear = session()->get('syear');
+        $receipt_id = $request['receipt_id_html'];
+        $student_id= $request['student_id'];
+
+        // get student fees details 
+        $get_data = DB::table(function ($query) use ($sub_institute_id, $syear, $student_id, $receipt_id) {
+            $query->selectRaw('fc.id, fc.student_id, GROUP_CONCAT(fc.term_id) as months,sum(fc.amount) as amount,fc.receiptdate as receipt_date,concat(" ",s.first_name,s.middle_name,s.father_name) as student_name,s.mobile')
+                ->from('fees_collect as fc')
+                ->join('fees_receipt as fr', function ($join) {
+                    $join->whereRaw('FIND_IN_SET(fc.id, fr.FEES_ID) AND fr.SUB_INSTITUTE_ID = fc.sub_institute_id');
+                })
+                ->join('tblstudent as s','s.id','=','fc.student_id')
+                ->where('fc.sub_institute_id', $sub_institute_id)
+                ->where('fc.syear', $syear)
+                ->where('fc.student_id', $student_id)
+                ->whereRaw("(fr.RECEIPT_ID_1 = '" . $receipt_id . "' OR fr.RECEIPT_ID_2 = '" . $receipt_id . "' OR fr.RECEIPT_ID_3 = '" . $receipt_id . "'
+                    OR fr.RECEIPT_ID_4 = '" . $receipt_id . "' OR fr.RECEIPT_ID_5 = '" . $receipt_id . "' OR fr.RECEIPT_ID_6 = '" . $receipt_id . "' OR fr.RECEIPT_ID_7 = '" . $receipt_id . "' OR fr.RECEIPT_ID_8 = '" . $receipt_id . "'
+                    OR fr.RECEIPT_ID_9 = '" . $receipt_id . "' OR fr.RECEIPT_ID_10 = '" . $receipt_id . "')")
+                ->groupBy('fc.fees_html')
+                ->unionAll(
+                    DB::table('fees_paid_other as fo')
+                        ->selectRaw('fo.id, fo.student_id,GROUP_CONCAT(fo.month_id) as months,sum(fo.actual_amountpaid) as amount,fo.receiptdate as receipt_date,concat(" ",s.first_name,s.middle_name,s.father_name) as student_name,s.mobile')
+                        ->join('fees_receipt as fro', function ($join) {
+                            $join->whereRaw('FIND_IN_SET(fo.id, fro.OTHER_FEES_ID) AND fro.SUB_INSTITUTE_ID = fo.sub_institute_id');
+                        })
+                        ->join('tblstudent as s','s.id','=','fo.student_id')                        
+                        ->where('fo.sub_institute_id', $sub_institute_id)
+                        ->where('fo.syear', $syear)
+                        ->where('fo.student_id', $student_id)
+                        ->whereRaw("(fro.RECEIPT_ID_1 = '" . $receipt_id . "' OR fro.RECEIPT_ID_2 = '" . $receipt_id . "' OR fro.RECEIPT_ID_3 = '" . $receipt_id . "' OR fro.RECEIPT_ID_4 = '" . $receipt_id . "' OR fro.RECEIPT_ID_5 = '" . $receipt_id . "' OR fro.RECEIPT_ID_6 = '" . $receipt_id . "' OR fro.RECEIPT_ID_7 = '" . $receipt_id . "' OR fro.RECEIPT_ID_8 = '" . $receipt_id . "'
+                            OR fro.RECEIPT_ID_9 = '" . $receipt_id . "' OR fro.RECEIPT_ID_10 = '" . $receipt_id . "')")
+                        ->groupBy('fo.paid_fees_html')
+                );
+        })
+        ->selectRaw('student_id, months, sum(amount) as amount,receipt_date,student_name,mobile')
+        ->groupBy('student_id')
+        ->first();
+
+        $mobile = $get_data->mobile;
+        $student_name = $get_data->student_name;  
+        $amount = $get_data->amount;                      
+        $receipt_date = $get_data->receipt_date;  
+        $months = $get_data->months;        
+        $temp_id = '';
+        $months = $get_data->months;
+        // get month names with ids  
+        $month_arr= FeeMonthId();
+        $month_values = explode(',', $months);
+        $month_names = [];
+            foreach ($month_values as $value) {
+                if (isset($month_arr[$value])) {
+                    $month_names[] = $month_arr[$value];
+                }
+            }
+            $month_name = implode(', ', $month_names);
+            $text = "Dear, ".$student_name." your ".$amount." for ".$month_name." are received successfully on ". $receipt_date;
+            // only for cn school 
+            if($sub_institute_id==1){
+                $text .=". CNSA";
+                $temp_id ="&template_id=1407169571014046264";
+            }
+            // get function from controller easy_com/send_sms_parents/send_sms_parents_controller
+                $sms_controller = new send_sms_parents_controller;
+                $get_sms_status = $sms_controller->sendSMS($mobile, $text, $sub_institute_id,$temp_id);
+            if($get_sms_status['error'] != 1){
+                $store_status = $sms_controller->saveParentLog($student_id, $text, $mobile, $sub_institute_id, $syear); 
+                $res = "1";
+            }else{
+                $res = "0";                
+            }
+        // 9874632014
+        return $res;
+    }
 }

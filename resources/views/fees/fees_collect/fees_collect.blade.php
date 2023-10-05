@@ -352,8 +352,8 @@
                                             } else {
                                                 $grand_total_with_cheque_charges = $data['final_fee']['Total'];
                                             }
-                                            // END 30-12-2021 Added for include cheque return charges in grand total
-
+                                            // for send sms to parent
+   											$fees_config =App\Helpers\fees_config();											
                                     @endphp
 									<tr style="border-bottom: 2px solid black;">
 										<td></td>
@@ -411,6 +411,10 @@
 											<input type="text" name="bank_branch" id="bank_branch" class="form-control" value="N/A">
 										</td>
 									</tr>
+									@if(isset($fees_config->send_sms) && $fees_config->send_sms == 1)
+									<td>Send SMS</td>
+									<td colspan="3"><input type="checkbox" name="send_sms" id="send_sms"></td>
+									@endif
 								</table>
 							</div>
 							<div class="table-responsive col-md-12">
