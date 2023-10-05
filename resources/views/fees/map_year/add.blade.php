@@ -1,7 +1,11 @@
+{{--
 @include('../includes.headcss')
+--}}
+@extends('layout')
+@section('container')
     <link rel="stylesheet" href="../../../tooltip/enjoyhint/jquery.enjoyhint.css">
-@include('../includes.header')
-@include('../includes.sideNavigation')
+{{--@include('../includes.header')
+@include('../includes.sideNavigation')--}}
 
 
 <div id="page-wrapper">
@@ -19,37 +23,47 @@
                         @csrf
 
                         <div class="row">
-                        <div class="col-md-4 form-group ml-0 mr-0">
-                             <label>Starting Month</label>
-                            <select name="start_month" id="start_month" class="form-control">
-                                <option value="">--Select--</option>
-                                <?php
-                                foreach ($data['data']['ddMonth'] as $id => $arr) {
-                                	echo "<option value='$id'>$arr</option>";
-                                }
-                                ?>
-                            </select>
-                        </div>
-                        <div class="col-md-4 form-group ml-0">
-                             <label>Ending Month</label>
-                            <select name="end_month" id="end_month" class="form-control">
-                                <option value="">--Select--</option>
-                                <?php
-                                foreach ($data['data']['ddMonth'] as $id => $arr) {
-                                	echo "<option value='$id'>$arr</option>";
-                                }
-                                ?>
-                            </select>
-                        </div>
+                            <div class="col-md-4 form-group">
+                                <label for="fee_interval">Select Fee Type:</label>
+                                <select name="fee_type" id="fee_type" class="form-control">
+                                    <option selected>Select Type</option>
+                                    <option value="yearly_fees">Yearly Fees</option>
+                                    <option value="half_year_fees">Half Year Fees</option>
+                                    <option value="quarterly_fees">Quarterly Fees</option>
+                                    <option value="monthly_fees">Monthly Fees</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4 form-group ml-0 mr-0">
+                                <label>Starting Month</label>
+                                <select name="start_month" id="start_month" class="form-control">
+                                    <option value="">--Select--</option>
+                                    <?php
+                                    foreach ($data['data']['ddMonth'] as $id => $arr) {
+                                        echo "<option value='$id'>$arr</option>";
+                                    }
+                                    ?>
+                                </select>
+                            </div>
+                            <div class="col-md-4 form-group ml-0">
+                                <label>Ending Month</label>
+                                <select name="end_month" id="end_month" class="form-control">
+                                    <option value="">--Select--</option>
+                                    <?php
+                                    foreach ($data['data']['ddMonth'] as $id => $arr) {
+                                        echo "<option value='$id'>$arr</option>";
+                                    }
+                                    ?>
+                                </select>
+                            </div>
 
-                        <div class="col-md-12 form-group ml-0">                         
-                            <input type="submit" name="submit" value="Save" class="btn btn-success" >                          
-                        </div>
+                            <div class="col-md-12 form-group ml-0">
+                                <input type="submit" name="submit" value="Save" class="btn btn-success" >
+                            </div>
                         </div>
 
                     </form>
                 </div>
-            </div>      
+            </div>
     </div>
 </div>
 
@@ -136,3 +150,4 @@
 </script>
 @endif
 @include('includes.footer')
+@endsection

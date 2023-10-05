@@ -13,6 +13,7 @@ class map_year extends Model {
         'to_month',
         'syear',
         'sub_institute_id',
+        'type',
         'created_at',
         'updated_at'
     ];
