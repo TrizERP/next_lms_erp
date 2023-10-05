@@ -29,14 +29,14 @@
 	                            <input type="number" id='late_fees_amount' required name="late_fees_amount" class="form-control">
 	                        </div>
 
-	                        <!-- <div class="col-md-4 form-group">
+	                        <div class="col-md-4 form-group">
 	                            <label>Fees Paid Send SMS</label>
 	                            <select name="send_sms" id="send_sms" class="form-control" required>
 	                                <option value=""> Select Send Sms </option>
 	                                <option value="1"> Yes </option>
 	                                <option value="0"> No. </option>
 	                            </select>
-	                        </div> -->
+	                        </div>
 	                        <div class="col-md-4 form-group">
 	                            <label>Fees Paid Send Email</label>
 	                            <select name="send_email" id="send_email" class="form-control" required>

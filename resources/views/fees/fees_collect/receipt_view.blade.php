@@ -1,8 +1,10 @@
-@include('../includes.headcss')
+{{--@include('../includes.headcss')
 @include('../includes.header')
-@include('../includes.sideNavigation')
+@include('../includes.sideNavigation')--}}
+@extends('layout')
+@section('container')
 <style>
-		
+
     .cls_tr_frm_branch_field_line{
         line-height:9px;
     }
@@ -44,10 +46,10 @@
     }
     .cls_frm_amount_in_word_field_line{
         border-bottom:1px solid;width:74%;margin-left:24%;margin-top:-3%;text-align:center;
-    }    
+    }
     .cls_frm_drawn_on_bank_field_line{
         border-bottom:1px solid;width:74%;margin-left:24%;margin-top:-3%;
-    }    
+    }
     .cls_frm_cheque_dd_no_field_line{
         border-bottom:1px solid;width:74%;margin-left:24%;margin-top:-3%;
     }
@@ -59,7 +61,7 @@
     }
     .cls_frm_class_div_field_line{
         border-bottom:1px solid;width:57%;margin-left:36%;margin-top:-7%;text-align:center;font-size:13px;
-    }    
+    }
     .cls_frm_gr_no_field_line{
         border-bottom:1px solid;width:70%;margin-left:29%;margin-top:-6%;text-align:center;font-size:13px;
     }
@@ -93,7 +95,7 @@
 		font-size:12px;
 		letter-space:1px;
 		padding-right:10px;
-		/*padding-top:12px;*/			
+		/*padding-top:12px;*/
                     text-align: center !important;
                     width: 50%;
                     padding-left: 10px;
@@ -102,7 +104,7 @@
             .head_tit b{
 		font-size:12px;
 		letter-space:1px;
-		padding-right:10px;			
+		padding-right:10px;
 		font-weight:bolder;
                     text-align: center !important;
                     width: 50%;
@@ -120,7 +122,7 @@
 		font-weight:normal;
 		padding:0px !important;
 	}
-	
+
 	.head_tit3{
 		font-size:12px;
 	}
@@ -188,15 +190,15 @@
                 margin-right:7%;
                 /*margin-left:2%;*/
                 margin-left:0%;
-            }                
+            }
             .cls_ledger_main_div {margin-top:1%;}
             @media print {
                     /*.cls_ledger_main_div {page-break-after: always;}*/
                     div+.cls_ledger_main_div {page-break-before: always;}
-            }        
+            }
     td b, td, p, div{
             font-family:Arial, Helvetica, sans-serif !important;
-    }        
+    }
 
 </style>
 
@@ -208,18 +210,31 @@
                 <h4 class="page-title">Fees Receipt</h4>
             </div>
         </div>
+        @if(isset($data['sms_sent']))
+            @if($data['sms_sent'] == 1)
+                <div class="alert alert-success alert-block">
+                    <button type="button" class="close" data-dismiss="alert">×</button>
+                    <strong>SMS SENT SUCCESSFULLY</strong>
+                </div>
+                @else
+                <div class="alert alert-danger alert-block">
+                    <button type="button" class="close" data-dismiss="alert">×</button>
+                    <strong>SMS FAILED TO SENT</strong>
+                </div>
+            @endif
+            @endif            
         <div id="printableArea" class="card">
             <div class="row">
                 <div class="col-lg-12 col-sm-12 col-xs-12">
                     @php
                         $page = "";
-                        if($data['paper'] == "A5"){    
-                            $page = '<page size="A5" layout="landscape">'; 
+                        if($data['paper'] == "A5"){
+                            $page = '<page size="A5" layout="landscape">';
                                 echo $data['data'];
                         }
                         else if($data['paper'] == "A5DB")
-                        {    
-                            $page = '<page size="A5" layout="landscape">'; 
+                        {
+                            $page = '<page size="A5" layout="landscape">';
                     @endphp
                             <table width="100%">
                                 <tr>
@@ -234,15 +249,15 @@
                 @php
                         }
                         else  if($data['paper'] == "A4")
-                        {    
-                            $page = '<page size="A4" layout="landscape">'; 
-                            echo $data['data']; 
+                        {
+                            $page = '<page size="A4" layout="landscape">';
+                            echo $data['data'];
                         }
                         else  if($data['paper'] == "A4DB")
-                        {    
-                            $page = '<page size="A4">'; 
-                            echo $data['data']; 
-                            echo $data['data']; 
+                        {
+                            $page = '<page size="A4">';
+                            echo $data['data'];
+                            echo $data['data'];
                         }
                 @endphp
                     <input type="hidden" name="action" id="action" value="fees_collect_receipt">
@@ -255,10 +270,10 @@
     </div>
     <div id="overlay" style="display:none;"><center><p style="margin-top: 273px;color:red;font-weight: 700;">Please do not refresh the page, while the process is going on.</p><img src="https://erp.triz.co.in/admin_dep/images/loader.gif"></center></div>
     <center> <input type="button" value="Print Receipt" class="btn btn-success mb-2" id="ajax_PDF"/> {{--onclick="PrintDiv('printableArea')"--}}
-    @php 
-    $send_email =  DB::table('fees_config_master')->where(['sub_institute_id'=>session()->get('sub_institute_id'),'syear'=>session()->get('syear')])->pluck('send_email');    
+    @php
+    $fees_config =App\Helpers\fees_config();
     @endphp
-    @if($send_email[0] == 1)
+    @if(isset($fees_config->send_email) && $fees_config->send_email == 1)
     <input type="button" value="Send Email" class="btn btn-success mb-2" id="ajax_sendEmail"/>
     @endif
     </center>
@@ -266,10 +281,6 @@
 
 {{-- <div id="printableArea" class="col-md-12"> --}}
 {{-- <page size="A4"> --}}
-
-
-
-
 {{-- </page> --}}
 {{-- </div> --}}
 <!-- <center> <input type="button" onclick="PrintDiv('printableArea')" value="Print Receipt" /></center> -->
@@ -282,14 +293,10 @@
 
 @include('includes.footerJs')
 <script>
-
- function send_mail(){
-     
- }
-
     if ( window.history.replaceState ) {
       window.history.replaceState( null, null, window.location.href );
     }
 
 </script>
 @include('includes.footer')
+@endsection

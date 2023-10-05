@@ -1,7 +1,11 @@
+{{--
 @include('includes.headcss')
+--}}
+@extends('layout')
+@section('container')
 <link rel="stylesheet" href="../../../plugins/bower_components/dropify/dist/css/dropify.min.css">
-@include('includes.header')
-@include('includes.sideNavigation')
+{{--@include('includes.header')
+@include('includes.sideNavigation')--}}
 
 <div id="page-wrapper">
     <div class="container-fluid">
@@ -18,17 +22,17 @@
                 <strong>{{ $message }}</strong>
             </div>
             @endif
-            <div class="row">            	
+            <div class="row">
                 <div class="col-lg-12 col-sm-12 col-xs-12">
                     <form action="{{ route('fees_config_master.update', $data['id']) }}" enctype="multipart/form-data" method="post">
                         {{ method_field("PUT") }}
                         @csrf
-                        <div class="row">                        	
+                        <div class="row">
 	                        <div class="col-md-4 form-group">
 	                            <label>Late Fees Amount </label>
 	                            <input type="number" id='late_fees_amount' value="@if(isset($data['late_fees_amount'])){{ $data['late_fees_amount'] }}@endif" required name="late_fees_amount" class="form-control">
 	                        </div>
-<!--							
+
 	                        <div class="col-md-4 form-group">
 	                            <label>Fees Paid Send SMS</label>
 	                            <select name="send_sms" id="send_sms" class="form-control" required>
@@ -36,7 +40,7 @@
 	                                <option value="1" @if(isset($data))@if("1" == $data['send_sms']) selected @endif  @endif> Yes </option>
 	                                <option value="0" @if(isset($data))@if("0" == $data['send_sms']) selected @endif  @endif> No. </option>
 	                            </select>
-	                        </div>-->	
+	                        </div>
 	                        <div class="col-md-4 form-group">
 	                            <label>Fees Paid Send Email</label>
 	                            <select name="send_email" id="send_email" class="form-control" required>
@@ -45,7 +49,7 @@
 	                                <option value="0" @if(isset($data))@if("0" == $data['send_email']) selected @endif  @endif> No. </option>
 	                            </select>
 	                        </div>
-						
+
 	                        <div class="col-md-4 form-group">
 	                            <label>Fees Receipt Template</label>
 	                            <select name="fees_receipt_template" id="fees_receipt_template" class="form-control" required>
@@ -91,10 +95,10 @@
 	                            @php
                                     $checked = '';
                                     if(isset ($data['auto_head_counting']) && $data['auto_head_counting'] == 1 )
-                                    {                                                                                
-                                       	$checked = 'checked';                                     
+                                    {
+                                       	$checked = 'checked';
                                     }
-                                @endphp	                            
+                                @endphp
 	                            <input {{$checked}} type="checkbox" id='auto_head_counting' value="1" name="auto_head_counting">
 	                        </div>
 							<div class="col-md-4 form-group">
@@ -102,10 +106,10 @@
 	                            @php
                                     $checked = '';
                                     if(isset ($data['show_month']) && $data['show_month'] == 1 )
-                                    {                                                                                
-                                       	$checked = 'checked';                                     
+                                    {
+                                       	$checked = 'checked';
                                     }
-                                @endphp	                            
+                                @endphp
 	                            <input {{$checked}} type="checkbox" id='show_month' value="1" name="show_month">
 	                        </div>
 	                        <div class="col-md-4 form-group">
@@ -134,7 +138,7 @@
 	                            <input type="file" accept="image/*" @if(isset($data))data-default-file="/storage/fees/{{ $data['bank_logo'] }}" @else required @endif name="fees_bank_logo" id="input-file-now" class="dropify" />
 	                        </div>
 	                        <div class="col-md-12 form-group">
-	                        	<center>	                        		
+	                        	<center>
 	                                <input type="submit" name="submit" value="Update" class="btn btn-success" >
 	                        	</center>
 	                        </div>
@@ -185,3 +189,4 @@ $(document).ready(function() {
 });
 </script>
 @include('includes.footer')
+@endsection
