@@ -6,7 +6,23 @@
     <link rel="stylesheet" href="../../../tooltip/enjoyhint/jquery.enjoyhint.css">
 {{--@include('includes.header')
 @include('includes.sideNavigation')--}}
-
+@php
+// Define the getDisplayText function here
+function getDisplayText($type) {
+    switch ($type) {
+        case 'yearly_fees':
+            return 'Yearly Fees';
+        case 'half_year_fees':
+            return 'Half Year Fees';
+        case 'quarterly_fees':
+            return 'Quarterly Fees';
+        case 'monthly_fees':
+            return 'Monthly Fees';
+        default:
+            return $type; // Return the original value if no match is found
+    }
+}
+@endphp
 <div id="page-wrapper">
     <div class="container-fluid">
         <div class="row bg-title">
@@ -29,6 +45,7 @@
                                         <th>Syear</th>
                                         <th>From Month</th>
                                         <th>To Month</th>
+                                        <th>Fees Type</th>
                                         <th>Action</th>
                                     </tr>
                                 </thead>
@@ -43,6 +60,7 @@
                                         <td>{{$data['syear']}}</td>
                                         <td>{{$data['from_month']}}</td>
                                         <td>{{$data['to_month']}}</td>
+                                        <td>{{getDisplayText($data['type'])}}</td>
                                         <td>
                                             <div class="d-inline">
                                                 <a href="{{ route('map_year.edit',$data['id'])}}" class="btn btn-info btn-outline"><i class="ti-pencil-alt"></i></a>
