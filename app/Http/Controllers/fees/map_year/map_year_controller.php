@@ -82,6 +82,7 @@ class map_year_controller extends Controller
         $exam = new map_year([
             'from_month' => $request->get('start_month'),
             'to_month' => $request->get('end_month'),
+            'type' => $request->get('fee_type'),
             'syear' => session()->get('syear'),
             'sub_institute_id' => session()->get('sub_institute_id'),
         ]);
@@ -118,6 +119,7 @@ class map_year_controller extends Controller
     {
         $type = $request->input('type');
         $data = map_year::find($id)->toArray();
+
         $months = array(1 => 'Jan', 2 => 'Feb', 3 => 'Mar', 4 => 'Apr', 5 => 'May', 6 => 'Jun', 7 => 'Jul', 8 => 'Aug', 9 => 'Sep', 10 => 'Oct', 11 => 'Nov', 12 => 'Dec');
         $data['data']['ddMonth'] = $months;
         return is_mobile($type, "fees/map_year/edit", $data, "view");
@@ -136,6 +138,7 @@ class map_year_controller extends Controller
         $exam = new map_year([
             'from_month' => $request->get('start_month'),
             'to_month' => $request->get('end_month'),
+            'type' => $request->get('fee_type'),
             'syear' => session()->get('syear'),
             'sub_institute_id' => session()->get('sub_institute_id'),
         ]);
