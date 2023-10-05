@@ -108,7 +108,7 @@ class send_sms_parents_controller extends Controller
         return is_mobile($type, "send_sms_parents.index", $res, "redirect");
     }
 
-    public function sendSMS($mobile, $text, $sub_institute_id)
+    public function sendSMS($mobile, $text, $sub_institute_id,$template_id='')
     {
         $data = manage_sms_api::where(['sub_institute_id' => $sub_institute_id])
             ->get()->first();
@@ -120,9 +120,11 @@ class send_sms_parents_controller extends Controller
 
             $text = urlencode($text);
             $data['last_var'] = urlencode($data['last_var']);
+            if($template_id !=''){
+                $data['last_var'] = $template_id;
+            }
 
             $url = $data['url'].$data['pram'].$data['mobile_var'].$mobile.$data['text_var'].$text.$data['last_var'];
-
             $ch = curl_init();
 
             // Ignore SSL certificate verification
@@ -135,7 +137,7 @@ class send_sms_parents_controller extends Controller
             //Print error if any
             if (curl_errno($ch)) {
                 $isError = true;
-                $errorMessage = curl_error($ch);
+                $errorMessage = curl_error($ch).'-'.curl_errno($ch);
             }
             curl_close($ch);
         } else {
@@ -164,50 +166,6 @@ class send_sms_parents_controller extends Controller
         ]);
     }
 
-    /**
-     * Display the specified resource.
-     *
-     * @param  int  $id
-     * @return void
-     */
-    public function show($id)
-    {
-        //
-    }
-
-    /**
-     * Show the form for editing the specified resource.
-     *
-     * @param  int  $id
-     * @return void
-     */
-    public function edit($id)
-    {
-        //
-    }
-
-    /**
-     * Update the specified resource in storage.
-     *
-     * @param  Request  $request
-     * @param  int  $id
-     * @return void
-     */
-    public function update(Request $request, $id)
-    {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     *
-     * @param  int  $id
-     * @return void
-     */
-    public function destroy($id)
-    {
-        //
-    }
 
     public function teacherSendSmsParentsAPI(Request $request)
     {

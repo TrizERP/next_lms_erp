@@ -210,6 +210,19 @@
                 <h4 class="page-title">Fees Receipt</h4>
             </div>
         </div>
+        @if(isset($data['sms_sent']))
+            @if($data['sms_sent'] == 1)
+                <div class="alert alert-success alert-block">
+                    <button type="button" class="close" data-dismiss="alert">×</button>
+                    <strong>SMS SENT SUCCESSFULLY</strong>
+                </div>
+                @else
+                <div class="alert alert-danger alert-block">
+                    <button type="button" class="close" data-dismiss="alert">×</button>
+                    <strong>SMS FAILED TO SENT</strong>
+                </div>
+            @endif
+            @endif            
         <div id="printableArea" class="card">
             <div class="row">
                 <div class="col-lg-12 col-sm-12 col-xs-12">
@@ -258,9 +271,9 @@
     <div id="overlay" style="display:none;"><center><p style="margin-top: 273px;color:red;font-weight: 700;">Please do not refresh the page, while the process is going on.</p><img src="https://erp.triz.co.in/admin_dep/images/loader.gif"></center></div>
     <center> <input type="button" value="Print Receipt" class="btn btn-success mb-2" id="ajax_PDF"/> {{--onclick="PrintDiv('printableArea')"--}}
     @php
-    $send_email =  DB::table('fees_config_master')->where(['sub_institute_id'=>session()->get('sub_institute_id'),'syear'=>session()->get('syear')])->pluck('send_email');
+    $fees_config =App\Helpers\fees_config();
     @endphp
-    @if($send_email[0] == 1)
+    @if(isset($fees_config->send_email) && $fees_config->send_email == 1)
     <input type="button" value="Send Email" class="btn btn-success mb-2" id="ajax_sendEmail"/>
     @endif
     </center>
@@ -268,10 +281,6 @@
 
 {{-- <div id="printableArea" class="col-md-12"> --}}
 {{-- <page size="A4"> --}}
-
-
-
-
 {{-- </page> --}}
 {{-- </div> --}}
 <!-- <center> <input type="button" onclick="PrintDiv('printableArea')" value="Print Receipt" /></center> -->
@@ -284,11 +293,6 @@
 
 @include('includes.footerJs')
 <script>
-
- function send_mail(){
-
- }
-
     if ( window.history.replaceState ) {
       window.history.replaceState( null, null, window.location.href );
     }

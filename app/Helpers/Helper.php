@@ -1960,4 +1960,11 @@ if (!function_exists('get_string')) {
     }
         return $html;
     }
+
+     function fees_config(){
+        $sub_institute_id = session()->get('sub_institute_id') ;
+        $syear = session()->get('syear');
+        $fees_config = DB::table('fees_config_master')->where(['sub_institute_id'=>$sub_institute_id,'syear'=>$syear])->first();
+        return $fees_config;
+    }
 }
