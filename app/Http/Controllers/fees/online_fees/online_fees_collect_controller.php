@@ -1646,6 +1646,7 @@ exit; */
         $mobile_number = $get_mobile[0]->mobile;
         $orderId = $student_id . (mt_rand(100000, 10000000000));
         $merchantId = $get_map_bank_detail[0]->merchant_id;
+        $key = $get_map_bank_detail[0]->key;
         $merchantTxnNo = Str::random(15);
         $currencyCode = "356";
         $payType = '0'; // 1 for Direct
@@ -1681,7 +1682,7 @@ exit; */
 
         // calculate the hmac 256 signature
         // use the secret key corresponding to your merchantid
-        $sig = hash_hmac('sha256', $hash_input, 'abc');
+        $sig = hash_hmac('sha256', $hash_input, $key);
         
         $secureHash = $sig;
 
