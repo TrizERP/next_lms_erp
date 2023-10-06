@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\DB;
 use Razorpay\Api\Api;
 use Illuminate\Support\Facades\Http;
 use App\Models\fees\tblfeesConfigModel;
+use Illuminate\Support\Str;
 
 class online_fees_collect_controller extends Controller
 {
@@ -1588,6 +1589,355 @@ exit; */
 
             // echo "<pre>"; print_r(json_encode($data)); exit;
             return json_encode($data);
+        }
+    }
+
+    public function payphi(Request $request)
+    {
+        $data = $this->get_fees($request);
+        $type = "web";
+
+        return \App\Helpers\is_mobile($type, "fees/online_fees_collect/show_payphi_fees", $data, "view");
+    }
+
+    public function payphi_request_handler(Request $request)
+    {
+        $student_id = $_REQUEST["student_id"];
+        $fine = isset($_REQUEST["fees_data"]["fine"]) ? $_REQUEST["fees_data"]["fine"] : 0;
+        $medium_data = DB::select("SELECT a.*,e.grade_id,s.name AS standard, d.name AS division,CONCAT_WS('_',t.first_name,t.middle_name,t.last_name) AS student_name, t.mobile, t.enrollment_no, t.email,ifnull(b.title,0) AS batch FROM tblstudent_enrollment e
+            inner join academic_section a on e.grade_id = a.id
+            inner join standard s on e.standard_id = s.id
+            inner join division d on e.section_id = d.id
+            INNER JOIN tblstudent t ON t.id=e.student_id
+            LEFT JOIN batch b ON b.id=t.studentbatch
+            INNER JOIN fees_online_maping fom ON fom.syear=e.syear AND fom.sub_institute_id=e.sub_institute_id
+            WHERE e.student_id = '" . $student_id . "' ORDER BY e.syear DESC LIMIT 1");
+
+        $get_map_bank_data = DB::table("fees_online_maping")
+            ->where(["sub_institute_id" => session()->get("sub_institute_id")])
+            ->get();
+
+        $payment_acsept_type = null;
+        if (!empty($get_map_bank_data[0])) {
+            $payment_acsept_type = $get_map_bank_data[0]->fees_type;
+        }
+
+        $get_map_bank_detail = DB::table("fees_payphi")
+            ->where(["sub_institute_id" => session()->get("sub_institute_id")])
+            ->get();
+            
+        $amount = 0;
+        if ($payment_acsept_type == "fix") {
+            $amount = number_format(floatval($_REQUEST["total"]), 0, '.', '');
+        } else {
+            $amount = number_format(floatval($_REQUEST["pay_amount"]), 0, '.', '');
+        }
+
+        $where_arr = array(
+            "sub_institute_id" => session()->get("sub_institute_id"),
+            "id" => $student_id
+        );
+        
+        $get_mobile = DB::table("tblstudent")
+            ->where($where_arr)
+            ->get();
+        
+        $data = '';
+        $mobile_number = $get_mobile[0]->mobile;
+        $orderId = $student_id . (mt_rand(100000, 10000000000));
+        $merchantId = $get_map_bank_detail[0]->merchant_id;
+        $key = $get_map_bank_detail[0]->key;
+        $merchantTxnNo = Str::random(15);
+        $currencyCode = "356";
+        $payType = '0'; // 1 for Direct
+        $transactionType = "SALE";
+        $txnDate = date('YmdHis');
+        $PgRefNo = $orderId;
+        $returnURL = $this->site_name() . "/fees/payphi/online_fees_payphiResponseHandler";
+        $amount = number_format($amount, 2, '.', '');
+        $customerEmailID = $student_id.'@gmail.com';
+
+        // Step 1: Concatenate the parameter values in ascending order of parameter names
+        $fields = array(
+            'amount' => $amount,
+            'currencyCode' => $currencyCode,
+            'customerEmailID' => $customerEmailID,
+            'merchantID' => $merchantId,
+            'merchantTxnNo' => $merchantTxnNo,
+            'payType' =>  $payType,
+            'returnURL' => $returnURL,
+            'transactionType' => $transactionType,
+            'txnDate' => $txnDate,
+        );
+
+        // form the string for hash input
+        ksort($fields);
+
+        $hash_input = '';
+        foreach($fields as $key=>$value) {
+            if (strlen($value) > 0) { 
+                $hash_input .= $value; 
+            }
+        }
+
+        // calculate the hmac 256 signature
+        // use the secret key corresponding to your merchantid
+        $sig = hash_hmac('sha256', $hash_input, $key);
+        
+        $secureHash = $sig;
+
+        $str = $medium_data[0]->student_name .'|'. $medium_data[0]->mobile .'|'. $student_id.'@gmail.com|' . $medium_data[0]->enrollment_no .'|'. $medium_data[0]->standard .'|'. $medium_data[0]->division .'|'. $medium_data[0]->batch .'|'. $student_id .'|'. $merchantId .'|'. $merchantTxnNo .'|'. $currencyCode .'|'. $amount .'|'.$payType .'|'. $transactionType .'|'. $txnDate .'|'. $returnURL .'|'. $secureHash;
+
+        $curl = curl_init();
+
+        curl_setopt_array($curl, array(
+            CURLOPT_URL => 'https://qa.phicommerce.com/pg/api/v2/initiateSale',
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_ENCODING => '',
+            CURLOPT_MAXREDIRS => 10,
+            CURLOPT_TIMEOUT => 0,
+            CURLOPT_FOLLOWLOCATION => true,
+            CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+            CURLOPT_CUSTOMREQUEST => 'POST',
+            CURLOPT_POSTFIELDS => '{
+                "merchantId": "' . $merchantId . '",
+                "merchantTxnNo": "' . $merchantTxnNo . '",
+                "amount": "' . $amount . '",
+                "currencyCode": "' . $currencyCode . '",
+                "payType": "' . $payType . '",
+                "customerEmailID": "' . $student_id . '@gmail.com",
+                "transactionType": "' . $transactionType . '",
+                "txnDate": "' . $txnDate . '",
+                "returnURL": "' . $returnURL . '",
+                "secureHash": "' . $secureHash . '"
+            }',
+            CURLOPT_HTTPHEADER => array(
+                'Content-Type: application/json'
+            ),
+        ));
+
+        $response = curl_exec($curl);
+        curl_close($curl);
+
+        $responseArray = json_decode($response, true);
+
+        $in_arr = array(
+            "student_id" => $_REQUEST["student_id"],
+            "syear" => session()->get("syear"),
+            "amount" => ($amount - $fine),
+            "fine" => $fine,
+            "payphi_order_id" => $merchantTxnNo,
+            "payphi_request" => $str,
+            "payphi_payment_status" => "PR",
+            "payphi_payment_date" => now(),
+            "sub_institute_id" => session()->get("sub_institute_id"),
+            "created_at" => now(),
+            "updated_at" => now()
+        );
+
+        DB::table("fees_payment")
+            ->insert($in_arr);
+        $type = "web";
+
+        $data = array(
+            "send_response" => $responseArray,
+        );
+
+        return \App\Helpers\is_mobile($type, "fees/online_fees_collect/payphi_RequestHandler", $data, "view");
+    }
+
+    public function payphi_fetch_payment_status(Request $request) 
+    {
+        $payment_data = DB::table('fees_payment AS fp')
+            ->select('fp.id', 'fp.student_id', 'fi.key', 'fi.merchant_id', 'fp.payphi_order_id', 'tse.syear', 'fp.sub_institute_id', 'fp.amount', 'fp.fine','fp.payphi_response')
+            ->join('tblstudent_enrollment AS tse', function ($join) {
+                $join->on('tse.student_id', '=', 'fp.student_id')
+                    ->on('tse.syear', '=', 'fp.syear')
+                    ->on('tse.sub_institute_id', '=', 'fp.sub_institute_id');
+            })
+            ->join('academic_section AS a', 'a.id', '=', 'tse.grade_id')
+            ->join('fees_payphi AS fi', function ($join) {
+                $join->on('fi.sub_institute_id', '=', 'tse.sub_institute_id');
+            })
+            ->where(function ($query) {
+                $query->where('fp.payphi_payment_status', '!=', 'PS')
+                    ->where(function ($query) {
+                        $query->whereNotIn('fp.payphi_payment_status', ['NotInitiated', 'REJ', 'SUC'])
+                            ->orWhereNull('fp.payphi_payment_status');
+                    });
+            })
+            ->whereNotNull('fp.payphi_order_id')
+            ->groupBy('fp.id')
+            ->get();
+            
+        $check = [];
+        if ( !empty($payment_data) ) 
+        {
+            foreach ( $payment_data as $data ) 
+            {
+                $id = $data->id;
+                $key_id = $data->merchant_id;
+                $key = $data->key;
+                $payment_id = $data->payphi_order_id;
+                $student_id = $data->student_id;
+                $amount = number_format($data->amount, 2, '.', '');
+                $fine = $data->fine;
+                $merchantTxnNo = $payment_id;
+                $originalTxnNo = $merchantTxnNo;
+                $transactionType = 'STATUS';
+
+                $fields = array(
+                    'amount' => $amount,
+                    'merchantID' => $key_id,
+                    'merchantTxnNo' => $merchantTxnNo,
+                    'originalTxnNo' => $originalTxnNo,
+                    'transactionType' =>  $transactionType,
+                );
+                
+                // form the string for hash input
+                ksort($fields);
+        
+                $hash_input = '';
+                foreach($fields as $key=>$value) {
+                    if (strlen($value) > 0) { 
+                        $hash_input .= $value; 
+                    }
+                }
+        
+                // calculate the hmac 256 signature
+                // use the secret key corresponding to your merchantid
+                $sig = hash_hmac('sha256', $hash_input, $key);
+                $secureHash = $sig;
+            
+                // initial payphi status api
+                $curl = curl_init();
+
+                $postFields = http_build_query(array(
+                    'merchantId' => $key_id,
+                    'merchantTxnNo' => $merchantTxnNo,
+                    'originalTxnNo' => $originalTxnNo,
+                    'amount' => $amount,
+                    'transactionType' => $transactionType,
+                    'secureHash' => $secureHash,
+                ));
+
+                curl_setopt_array($curl, array(
+                    CURLOPT_URL => 'https://qa.phicommerce.com/pg/api/command',
+                    CURLOPT_RETURNTRANSFER => true,
+                    CURLOPT_ENCODING => '',
+                    CURLOPT_MAXREDIRS => 10,
+                    CURLOPT_TIMEOUT => 0,
+                    CURLOPT_FOLLOWLOCATION => true,
+                    CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+                    CURLOPT_CUSTOMREQUEST => 'POST',
+                    CURLOPT_POSTFIELDS => $postFields,
+                    CURLOPT_HTTPHEADER => array(
+                        'Content-Type: application/x-www-form-urlencoded'
+                    ),
+                ));
+
+                $response = curl_exec($curl);
+              
+                curl_close($curl);
+            
+                $fetchResponseArray = json_decode($response, true);
+                
+                if (!empty($response)) 
+                {
+                    $status = $fetchResponseArray['txnStatus'];
+                    $txnResponseCode = $fetchResponseArray['txnResponseCode'];
+                   
+                    $update_arr = array(
+                        "payphi_payment_status" => $status,
+                        "payphi_response" => $fetchResponseArray,
+                        "updated_at" => now()
+                    );
+
+                    DB::table("fees_payment")
+                    ->where('id', $id)
+                    ->update($update_arr);
+                
+                    $request->merge([
+                        '_key' => csrf_token(),
+                        'student_id' => $student_id,
+                        'inserted_id' => $id,
+                        'payphi_payment_id' => $payment_id,
+                        'syear' => $data->syear,
+                        'sub_institute_id' => $data->sub_institute_id
+                    ]);
+
+                    if($status == 'SUC' && $txnResponseCode == "0000")
+                    {
+                        $check = DB::table('fees_collect')->whereRaw('cheque_no='.$payment_id.' AND student_id='.$student_id.' AND syear='.$data->syear.' AND sub_institute_id='.$data->sub_institute_id)->get()->toArray();
+
+                        if(count($check) == 0)
+                        {
+                            $schooldata = $this->pay_fees($request, $data->student_id, $data->syear, $data->sub_institute_id, $amount, $payment_id,$fine);
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+    public function payphi_response_handler(Request $request)
+    {
+        $get_map_bank_detail = DB::table("fees_payphi")
+            ->where(["sub_institute_id" => session()->get("sub_institute_id")])
+            ->get();
+
+        $response = $_REQUEST;
+       
+        $res_josn = json_encode($response);
+
+        $get_all_data = DB::table("fees_payment")
+            ->where(["payphi_order_id" => $response["merchantTxnNo"]])
+            ->get();
+
+        $payment_status = "PF";
+        if ($response["responseCode"] == "0000") {
+            $payment_status = "PS";
+        }
+
+        $update_arr = array(
+            "payphi_payment_status" => $payment_status,
+            "payphi_response" => $res_josn,
+            "updated_at" => now()
+        );
+        
+        $where_arr = array(
+            "sub_institute_id" => $get_all_data[0]->sub_institute_id,
+            "syear" => $get_all_data[0]->syear,
+            "payphi_order_id" => $response["merchantTxnNo"]
+        );
+
+        //START RAJESH 27-05-2023 = prevent second time success
+            if($get_all_data[0]->payphi_payment_status == 'PS'){
+                $school_data = array();
+                $school_data["website"] = $this->site_name();
+                $type = "web";
+                return \App\Helpers\is_mobile($type, "fees/online_fees_collect/search_student", $school_data, "view");
+            }
+        //END RAJESH 27-05-2023
+
+        // echo '<pre>'; print_r($where_arr); exit;
+        DB::table("fees_payment")
+            ->where($where_arr)
+            ->update($update_arr);
+            
+        if ($payment_status == "PS") 
+        {
+            $data = $this->pay_fees($request, $get_all_data[0]->student_id, $get_all_data[0]->syear, $get_all_data[0]->sub_institute_id, $get_all_data[0]->amount,$response["merchantTxnNo"],$get_all_data[0]->fine);
+            $type = $request->input('type');
+
+            return \App\Helpers\is_mobile($type, "fees/online_fees_collect/receipt_view", $data, "view");
+        } 
+        else 
+        {
+            $type = $request->input('type');
+            $school_data = array();
+
+            return \App\Helpers\is_mobile($type, "fees/online_fees_collect/show_error", $school_data, "view");
         }
     }
 }

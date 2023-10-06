@@ -21,26 +21,15 @@
                       <div class="row">
                         <div class="col-md-12 form-group">
                             <div class="row">
-                                <div class="col-md-3 form-group">
-                                    <label for="fee_interval">Select Fee Interval:</label>
-                                    <select name="fee_interval" id="fee_interval" class="form-control">
-                                        <option selected>Select BreakOff</option>
-                                        <option value="yearly_fees">Yearly Fees</option>
-                                        <option value="half_year_fees">Half Year Fees</option>
-                                        <option value="quarterly_fees">Quarterly Fees</option>
-                                        <option value="monthly_fees">Monthly Fees</option>
-                                    </select>
-                                </div>
                               {{ App\Helpers\SearchChain('4','multiple','grade,std,div') }}
                             </div>
                         </div>
-                          @foreach ($data['data']['ddMonth'] as $id => $val)
-
-                        <div class="col-md-3 form-group">
-                            <input class="monthclass" name="month[{{$id}}]" value="{{$id}}" type="checkbox">
-                            <label>{{$val}}</label>
-                        </div>
-                          @endforeach
+                        @foreach ($data['data']['ddMonth'] as $id => $val)
+                          <div class="col-md-3 form-group month-option">
+                              <input class="monthclass" name="month[{{$id}}]" value="{{$id}}" type="checkbox">
+                              <label>{{$val}}</label>
+                          </div>
+                        @endforeach
                         <div class="col-md-12 form-group">
                           <center>
                             <input type="submit" name="submit" value="Add Fees Structure" class="btn btn-success"><!--onclick="return check_validation();" -->
@@ -134,7 +123,7 @@
         xhttp.send();
     </script>
 @endif
-
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
     $("#division").parent('.form-group').hide();
     $("#grade").attr('required', true);

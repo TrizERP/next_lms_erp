@@ -167,6 +167,12 @@
                                     "/fees/razorpay/online_fees_collect";
                                 // console.log(key);
                             }
+
+                            if (value.bank_name == 'payphi') {
+                                document.forms.changeAction.action =
+                                    "/fees/payphi/online_fees_collect";
+                                // console.log(key);
+                            }
                         }
                         $("#student_id").append('<option value=' + value.id + '>' + value.name +
                             '</option>');
@@ -225,8 +231,13 @@
                     document.forms.changeAction.action = "/fees/icici/online_fees_collect";
                     // console.log(key);
                 }
-                 if (value.bank_name == 'razorpay') {
+                if (value.bank_name == 'razorpay') {
                     document.forms.changeAction.action = "/fees/razorpay/online_fees_collect";
+                    // console.log(key);
+                }
+
+                if (value.bank_name == 'payphi') {
+                    document.forms.changeAction.action = "/fees/payphi/online_fees_collect";
                     // console.log(key);
                 }
             }

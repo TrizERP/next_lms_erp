@@ -164,12 +164,22 @@ class AJAXController extends Controller
     public function getStandardList(Request $request)
     {
         $path = $_SERVER['HTTP_REFERER'];
-        $path = str_ends_with($path, '/') ? substr($path, 0, strlen($path) - 1) : $path;
-        preg_match("/[^\/]+$/", $path, $matches);
-        $module_name = $matches[0];
+
+        if ($path) {
+            $parsedUrl = parse_url($path);
+            
+            if (isset($parsedUrl['path'])) {
+                $pathParts = pathinfo($parsedUrl['path']);
+                
+                if (isset($pathParts['filename'])) {
+                    $module_name = $pathParts['filename'];
+                }
+            }
+        }
 
         $module_array = [
             '1' => 'student_homework',
+            '2' => 'marks_entry',
         ];
 
         $explode = explode(',', $request->grade_id);
@@ -232,12 +242,22 @@ class AJAXController extends Controller
     public function getDivisionList(Request $request)
     {
         $path = $_SERVER['HTTP_REFERER'];
-        $path = str_ends_with($path, '/') ? substr($path, 0, strlen($path) - 1) : $path;
-        preg_match("/[^\/]+$/", $path, $matches);
-        $module_name = $matches[0];
+
+        if ($path) {
+            $parsedUrl = parse_url($path);
+            
+            if (isset($parsedUrl['path'])) {
+                $pathParts = pathinfo($parsedUrl['path']);
+                
+                if (isset($pathParts['filename'])) {
+                    $module_name = $pathParts['filename'];
+                }
+            }
+        }
 
         $module_array = [
             '1' => 'student_homework',
+            '2' => 'marks_entry',
         ];
 
         $standard_id = $request->standard_id;

@@ -233,6 +233,11 @@ Route::controller(online_fees_collect_controller::class)->group(function () {
     Route::post('fees/razorpay/online_fees_razorpayRequestHandler', 'razorpay_request_handler')->name("razorpay_request_handler");
     Route::post('fees/razorpay/online_fees_razorpayResponseHandler', 'razorpay_response_handler')->name("razorpay_response_handler");
 
+    Route::post('fees/payphi/online_fees_collect', 'payphi')->name("payphi_fees_collect");
+    Route::post('fees/payphi/online_fees_payphiRequestHandler', 'payphi_request_handler')->name("payphi_request_handler");
+    Route::post('fees/payphi/online_fees_handleInitiateSaleResponse', 'handle_initiatesale_response')->name("handle_initiatesale_response");
+    Route::post('fees/payphi/online_fees_payphiResponseHandler', 'payphi_response_handler')->name("payphi_response_handler");
+
 });
 
 Route::controller(AJAXController::class)->group(function () {
