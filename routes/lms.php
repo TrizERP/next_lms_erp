@@ -40,6 +40,7 @@ use App\Http\Controllers\lms\subtopicController;
 use App\Http\Controllers\lms\teacher_resource\lms_teacherResourceController;
 use App\Http\Controllers\lms\topicController;
 use App\Http\Controllers\lms\questionWiseReportController;
+use App\Http\Controllers\bazar\bulkUploadSheetController;
 
 use App\Http\Controllers\lms\virtualclassroomController;
 use App\Http\Controllers\school_setup\sub_std_mapController;
@@ -94,6 +95,7 @@ Route::group(['prefix' => 'lms', 'middleware' => ['session', 'menu', 'logRoute']
     Route::post('question_paper/search', [questionpaperController::class,'search']);
     Route::resource('bulk_chapter_upload', bulk_chapter_uploadController::class);
     Route::get('ajax_SubjectwiseQuestion', [questionpaperController::class, 'ajax_SubjectwiseQuestion'])->name('ajax_SubjectwiseQuestion');
+
 
     Route::get('ajax_LMS_MappingValue', [contentController::class, 'ajax_LMS_MappingValue'])->name('ajax_LMS_MappingValue');
 
@@ -203,5 +205,12 @@ Route::controller(lms_apiController::class)->group(function () {
     Route::post('/studentAssessmentDetailAPI', 'studentAssessmentDetailAPI');
     Route::post('/lmsCategorywiseSubjectAPI', 'lmsCategorywiseSubjectAPI');
     Route::post('/trizStandardAPI', 'trizStandardAPI');
+});
+
+Route::group(['prefix' => 'bazar', 'middleware' => ['session', 'menu', 'logRoute']], function () {
+    Route::resource('bulk_upload_sheet', bulkUploadSheetController::class);
+    Route::get('bulk_position_data', [bulkUploadSheetController::class, 'bulk_position_data'])->name('bulk_position_data');
+    Route::post('store_position_data', [bulkUploadSheetController::class, 'store_position_data'])->name('store_position_data');
+
 });
 
