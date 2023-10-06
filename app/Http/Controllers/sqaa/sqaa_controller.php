@@ -21,8 +21,61 @@ class sqaa_controller extends Controller
     {
         $type="";
         $res['level_1'] = sqaa_master::where(['parent_id'=>0,"level"=>1])->orderBy('sort_order')->get()->toArray();
-        // echo "<pre>";print_r($level_1);exit;
+        // echo "<pre>";print_r($tabs);exit;
         return is_mobile($type, "sqaa/show", $res, "view");
+    }
+
+    public function create(Request $request){
+
+        if($request->has('sel_level_3') && $request->input('sel_level_3')!=null){
+            $menu_id = $request->input('sel_level_3');
+        }else if($request->has('sel_level_2')  && $request->input('sel_level_2')!=null){
+            $menu_id = $request->input('sel_level_2');
+        }else if($request->has('sel_tabs') && $request->input('sel_tabs') !== null){
+            $menu_id = $request->input('sel_tabs');
+        }        
+        else if($request->has('tabs_id') && $request->input('tabs_id') !== null){
+            $menu_id = $request->input('tabs_id');
+        }
+        else{
+            $menu_id = 0;
+        }
+        $type="";
+        $sub_institute_id = session()->get('sub_institute_id');
+         
+        $res['level_1'] = sqaa_master::where(['level'=>1])->get()->toArray();
+        $res['level_2_val']=sqaa_master::where(['level'=>2,'parent_id'=>$request->input('tabs_id')])->get()->toArray();
+        $res['level_3_val']=sqaa_master::where(['level'=>3,'parent_id'=>$request->input('sel_level_1')])->get()->toArray();
+        $res['level_4_val']=sqaa_master::where(['level'=>4,'parent_id'=>$request->input('sel_level_2')])->get()->toArray();
+      
+        $res['selected_1']=$request->input('tabs_id');
+        $res['selected_2']=$request->input('sel_level_1');
+        $res['selected_3']=$request->input('sel_level_2');
+        $res['selected_4']=$request->input('sel_level_3');     
+        $res['mark']=$request->input('mark');      
+        // DB::enableQueryLog();
+        $res['document'] = DB::table('sqaa_documant_master AS sdm')
+        ->select('sdm.id as document_id', 'sdm.menu_id', 'sdm.title', 'sd.availability', 'sd.file')
+        ->leftJoin('sqaa_documents AS sd', function ($join) use($menu_id,$sub_institute_id) {
+            $join->on('sd.document_id', '=', 'sdm.id')
+                ->where('sdm.menu_id', '=', $menu_id)
+                ->where('sd.sub_institute_id', '=', $sub_institute_id);
+        })
+        ->where('sdm.menu_id', '=', $menu_id)
+        ->get();
+        $res['level_1_1']=$request->input('level_1');
+        $res['level_2']=$request->input('level_2');
+        $res['level_3']=$request->input('level_3');
+        $res['level_4']=$request->input('level_4');
+        $res['text_1']=$request->input('text_1');
+        $res['text_2']=$request->input('text_2');
+        $res['text_3']=$request->input('text_3');
+        $res['text_4']=$request->input('text_4');
+        // dd(DB::getQueryLog($res['document']));
+        // echo "<pre>";print_r($res['document']);exit;
+        // return $request;exit;
+        return is_mobile($type, "sqaa/show", $res, "view");
+    
     }
     public function get_level(Request $request)
     {
@@ -79,39 +132,40 @@ class sqaa_controller extends Controller
         }
             $res['status_code']=1;
             $res['message']="Data inserted";
-         
-        if (!empty($request->input('document'))) {
-
-            for ($i = 0; $i < count($request->input('document')); $i++) {
-                $documentData = [
-                    'document' => $request->input('document')[$i],
-                ];
-                $document =$request->input('document')[$i];
-                $reasons =$request->input('reasons')[$i];                
-                $availability =$request->input('availability')[$i] ?? 'no';
-
-                // Check if a file is present for this row
-                if ($request->input('availability')[$i] =="yes" && $request->hasFile('files') && $request->file('files')[$i]->isValid()) {
-                    $file = $request->file('files')[$i];
-                    $filename = $file->getClientOriginalName();
-                    $path = Storage::disk('digitalocean')->putFileAs('public/sqaa/', $file, $filename, 'public');
-
-                }else{
-                   $filename = "";        
-                }
+            if (!empty($request->input('document'))) {
+                for ($i = 0; $i < count($request->input('document')); $i++) {
+                    $documentData = [
+                        'document' => $request->input('document')[$i],
+                    ];
+                    $document = $request->input('document')[$i];
+                    $doc_id = $request->input('doc_id')[$i];
+                    $reasons = $request->input('reasons')[$i];
+                    $availability = $request->input('availability')[$i] ?? 'no';
+                    $file_have = '1=1';
+                    $filename= $request->input('files')[$i];
+                    // Check if a file is present for this row
+                    if ($request->input('availability')[$i] =="yes" && $request->hasFile('files') && $request->file('files')[$i]->isValid()) {
+                        $file = $request->file('files')[$i];
+                        $filename = $file->getClientOriginalName();
+                        $path = Storage::disk('digitalocean')->putFileAs('public/sqaa/', $file, $filename, 'public');
+                    }else{
+                        if(isset($request->input('update_file')[$i])){
+                            $filename=$request->input('update_file')[$i];
+                        }
+                    }
                 $doc_arr=[
                     "menu_id"=>$menu_id,
-                    "title"=>$document,
-                    "availability"=>$availability,
-                    "file"=>$filename,    
+                    "document_id"=>$doc_id,
                     "created_by" => $user_id,
                     "sub_institute_id" => $sub_institute_id,                    
                 ];
                 $check_doc_data=$this->check_data($doc_arr,"sqaa_documents");
+                // echo "<pre>";print_r($check_doc_data);
                 if(!$check_doc_data){
                 $data_doc = new sqaa_document();
                 $data_doc->menu_id=$menu_id;
                 $data_doc->title=$document;
+                $data_doc->document_id=$doc_id;
                 $data_doc->reasons=$reasons;                
                 $data_doc->availability=$availability;
                 $data_doc->file=$filename;        
@@ -119,9 +173,21 @@ class sqaa_controller extends Controller
                 $data_doc->sub_institute_id = $sub_institute_id;
                 $data_doc->created_at = now();
                 $data_doc->save();
+                }else{
+             
+                $data_doc = sqaa_document::where($doc_arr)->update([
+                    "title"=>$document,
+                    "document_id"=>$doc_id,
+                    "reasons"=>$reasons,               
+                    "availability"=>$availability,
+                    "file"=>$filename,    
+                    "created_by"=> $user_id,
+                    "sub_institute_id"=> $sub_institute_id,
+                    "updated_at"=> now(),
+                ]);
                 }
             }
-           
+            // exit;
         }else{
                 $res['status_code']=0;
                 $res['message']="Document not inserted";
