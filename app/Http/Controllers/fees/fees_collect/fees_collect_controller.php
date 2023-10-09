@@ -2520,8 +2520,8 @@ class fees_collect_controller extends Controller
             }
             $month_name = implode(', ', $month_names);
             $text = "Dear, ".$student_name." your ".$amount." for ".$month_name." are received successfully on ". $receipt_date;
-            // only for cn school 
-            if($sub_institute_id==1){
+            // Uma - only for CN school
+            if($sub_institute_id==257){
                 $text .=". CNSA";
                 $temp_id ="&template_id=1407169571014046264";
             }

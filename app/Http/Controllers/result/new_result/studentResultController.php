@@ -1121,7 +1121,12 @@ class studentResultController extends Controller
                                         $underline ="";
                                         $title_arr = ['P.T.-1','P.T.-2'];
                                         if(in_array($title->title,$title_arr)){
-                                            $pt_per = round((($ob_mark / $title->con_point) * 100),0);//update $title->points to $title->con_point by rajesh
+                                            if($ob_mark !=='0.00'){
+                                                $pt_per = round((($ob_mark / $title->con_point) * 100),0);
+                                            }else{
+                                                $pt_per = $ob_mark;
+                                            }//update $title->points to $title->con_point by rajesh
+                                            // $pt_per = $ob_mark;
                                         if($pt_per < 33){
                                             $underline = 'style="text-decoration: underline red 2px;"';
                                         }

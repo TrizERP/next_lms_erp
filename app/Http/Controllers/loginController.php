@@ -241,7 +241,7 @@ class loginController extends Controller
                         $getInstitutes = DB::table('school_setup')->where('client_id',
                             $user['client_id'])->get()->toArray();
 
-                        $request->session()->put('sub_institute_id', '');
+                        $request->session()->put('sub_institute_id', 0);
                         $request->session()->put('syear', $getTermId[0]['syear']);
                         // if($schools[0]['institute_type']=="college"){
                             $request->session()->put('term_id', $getTermId[0]['term_id']);

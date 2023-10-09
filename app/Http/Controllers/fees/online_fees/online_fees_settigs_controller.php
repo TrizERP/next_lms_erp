@@ -164,6 +164,18 @@ class online_fees_settigs_controller extends Controller
                 )
             );
         }
+        elseif ($request->get('map_company') == 'payphi') {
+            DB::table('fees_payphi')->insert(
+                array(
+                    'syear' => session()->get('syear'),
+                    'merchant_id' => $request->get('merchant_id'),
+                    'key' => $request->get('key'),
+                    'sub_institute_id' => session()->get('sub_institute_id'),
+                    'created_at' => now(),
+                    'updated_at' => now()
+                )
+            );
+        }
 
         $res = array(
             "status_code" => 1,
@@ -238,6 +250,10 @@ class online_fees_settigs_controller extends Controller
             ->delete();
 
         DB::table('fees_aggre_pay')
+            ->where(["sub_institute_id" => session()->get('sub_institute_id')])
+            ->delete();
+
+        DB::table('fees_payphi')
             ->where(["sub_institute_id" => session()->get('sub_institute_id')])
             ->delete();
 
