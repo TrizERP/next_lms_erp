@@ -15,6 +15,14 @@ return new class extends Migration
     {
         Schema::create('sharebazar_pnl', function (Blueprint $table) {
             $table->id();
+            $table->string('code', 15)->nullable();
+            $table->string('name', 50)->nullable();
+            $table->text('gross', 15)->nullable();
+            $table->text('exp', 15)->nullable();
+            $table->text('other_exp', 15)->nullable();
+            $table->text('gross_total', 15)->nullable();
+            $table->text('intrest', 15)->nullable();
+            $table->text('net_total', 15)->nullable();
             $table->timestamps();
         });
     }

@@ -6,17 +6,18 @@
     <div class="container-fluid">
         <div class="row">
             <div class="col-lg-3 col-md-4 col-sm-4 col-xs-12">
-                <h4 class="page-title">Bulk Position Upload</h4>
+                <h4 class="page-title">Bulk PNL Upload</h4>
             </div>
         </div>
         <div class="card">
             <div class="col-lg-12 col-sm-12 col-xs-12">
-                <form action="{{ route('store_position_data') }}" method="POST" enctype="multipart/form-data">
+                <form action="{{ route('store_pnl_data') }}" method="POST" enctype="multipart/form-data">
                     {{csrf_field()}}
                     <div class="row">
                         <div class="col-md-4 form-group">
                             <label>Date</label>
-                            <input type="text" id="upload_date" name="upload_date" class="form-control mydatepicker" autocomplete="off" required>
+                            <input type="text" id="upload_date" name="upload_date" class="form-control mydatepicker"
+                                   autocomplete="off" required>
                         </div>
                         <div class="col-md-4 form-group">
                             <label>Upload file</label>
