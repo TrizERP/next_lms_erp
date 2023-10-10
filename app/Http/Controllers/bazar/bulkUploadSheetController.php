@@ -55,8 +55,11 @@ class bulkUploadSheetController extends Controller
             return "Invalid file format. Only Excel files (xlsx or xls) are allowed.";
         }
 
-        // Generate a unique file name
-        $fileName = 'bazar_' . time() . '.' . $ext;
+        // Generate a timestamp
+        $timestamp = time();
+
+        // Construct the final file name
+        $fileName = 'bazar_position_' . $timestamp . '.' . $ext;
 
         // Store the file in the 'public/bazar' directory
         $path = $file->storeAs('public/bazar', $fileName);
@@ -163,8 +166,11 @@ class bulkUploadSheetController extends Controller
             return "Invalid file format. Only Excel files (xlsx or xls) are allowed.";
         }
 
-        // Generate a unique file name
-        $fileName = 'bazar_' . time() . '.' . $ext;
+        // Generate a timestamp
+        $timestamp = time();
+        
+        // Construct the final file name
+        $fileName = 'bazar_margin_' . $timestamp . '.' . $ext;
 
         // Store the file in the 'public/bazar' directory
         $path = $file->storeAs('public/bazar', $fileName);
@@ -261,8 +267,11 @@ class bulkUploadSheetController extends Controller
             return "Invalid file format. Only Excel files (xlsx or xls) are allowed.";
         }
 
-        // Generate a unique file name
-        $fileName = 'bazar_' . time() . '.' . $ext;
+        // Generate a timestamp
+        $timestamp = time();
+        
+        // Construct the final file name
+        $fileName = 'bazar_PNL_' . $timestamp . '.' . $ext;
 
         // Store the file in the 'public/bazar' directory
         $path = $file->storeAs('public/bazar', $fileName);
