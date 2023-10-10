@@ -118,16 +118,19 @@ class inventory_item_direct_purchaseController extends Controller
 
             $get_item_data = inventory_item_masterModel::where([
                 "id" => $request->get('item_id')[$key], 'sub_institute_id' => $sub_institute_id, 'syear' => $syear,
-            ])->get()->toArray();
+            ])->first();
 
-            $opening_stock = ($get_item_data[0]['opening_stock'] + $request->get('item_qty')[$key]);
+            if (!empty($get_item_data)) 
+            {
+                $opening_stock = ($get_item_data[0]['opening_stock'] + $request->get('item_qty')[$key]);
 
-            $item_stock = [
-                'opening_stock'         => $opening_stock,
-                'direct_purchase_stock' => $request->get('item_qty')[$key],
-            ];
+                $item_stock = [
+                    'opening_stock'         => $opening_stock,
+                    'direct_purchase_stock' => $request->get('item_qty')[$key],
+                ];
 
-            inventory_item_masterModel::where(["id" => $request->get('item_id')[$key]])->update($item_stock);
+                inventory_item_masterModel::where(["id" => $request->get('item_id')[$key]])->update($item_stock);
+            }
         }
 
         $message['status_code'] = "1";
@@ -205,19 +208,26 @@ class inventory_item_direct_purchaseController extends Controller
 
             inventory_item_direct_purchaseModel::where(["id" => $id])->update($data);
 
+            /* $get_item_data = inventory_item_masterModel::where([
+                "id" => $request->get('item_id')[$key], 'sub_institute_id' => $sub_institute_id, 'syear' => $syear,
+            ])->get()->toArray(); */
+
             $get_item_data = inventory_item_masterModel::where([
                 "id" => $request->get('item_id')[$key], 'sub_institute_id' => $sub_institute_id, 'syear' => $syear,
-            ])->get()->toArray();
+            ])->first();
 
-            $opening_stock = ($get_item_data[0]['opening_stock'] - $get_item_data[0]['direct_purchase_stock'] +
-                $request->get('item_qty')[$key]);
+            if (!empty($get_item_data)) 
+            {
+                $opening_stock = ($get_item_data[0]['opening_stock'] - $get_item_data[0]['direct_purchase_stock'] +
+                    $request->get('item_qty')[$key]);
 
-            $item_stock = [
-                'opening_stock'         => $opening_stock,
-                'direct_purchase_stock' => $request->get('item_qty')[$key],
-            ];
+                $item_stock = [
+                    'opening_stock'         => $opening_stock,
+                    'direct_purchase_stock' => $request->get('item_qty')[$key],
+                ];
 
-            inventory_item_masterModel::where(["id" => $request->get('item_id')[$key]])->update($item_stock);
+                inventory_item_masterModel::where(["id" => $request->get('item_id')[$key]])->update($item_stock);
+            }
         }
 
         $message['status_code'] = "1";
