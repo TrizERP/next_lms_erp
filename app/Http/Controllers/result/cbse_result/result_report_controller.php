@@ -311,6 +311,7 @@ class result_report_controller extends Controller
                 ->where("e.syear", "=", $syear)
                 ->where("e.standard_id", "=", $standard_id)
                 ->where("e.subject_id", "=", $subject)
+                ->where("e.report_card_status", "=", 'Y')
                 ->whereIn("student_id", $student_id_arr);
 
             if ($exam_type != '') {
@@ -389,6 +390,7 @@ class result_report_controller extends Controller
                 ->where("e.sub_institute_id", "=", $sub_institute_id)
                 ->where("e.syear", "=", $syear)
                 ->where("e.standard_id", "=", $standard_id)
+                ->where("e.report_card_status", "=", 'Y')
                 //->whereIn("e.subject_id", $additional_subjects)
                 ->whereIn("student_id", $student_id_arr);
 
@@ -471,6 +473,7 @@ class result_report_controller extends Controller
                 ->where("e.sub_institute_id", "=", $sub_institute_id)
                 ->where("e.syear", "=", $syear)
                 ->where("e.standard_id", "=", $standard_id)
+                ->where("e.report_card_status", "=", 'Y')
                 ->whereIn("e.subject_id", $additional_subjects)
                 ->whereIn("student_id", $student_id_arr);
 
@@ -547,6 +550,7 @@ class result_report_controller extends Controller
             ->where("e.sub_institute_id", "=", $sub_institute_id)
             ->where("e.syear", "=", $syear)
             ->where("e.standard_id", "=", $standard_id)
+            ->where("e.report_card_status", "=", 'Y')
             ->whereIn("e.subject_id", $additional_subjects)
             ->whereIn("student_id", $student_id_arr);
 
@@ -632,6 +636,7 @@ class result_report_controller extends Controller
             ->where("e.sub_institute_id", "=", $sub_institute_id)
             ->where("e.syear", "=", $syear)
             ->where("e.standard_id", "=", $standard_id)
+            ->where("e.report_card_status", "=", 'Y')
             //->whereIn("e.subject_id", $additional_subjects)
             ->whereIn("student_id", $student_id_arr);
 
@@ -732,6 +737,7 @@ class result_report_controller extends Controller
             ->where("e.syear", "=", $syear)
             ->where("e.standard_id", "=", $standard_id)
             ->where("e.subject_id", "=", $subject)
+            ->where("e.report_card_status", "=", 'Y')
             ->whereIn("student_id", $student_id_arr);
 
         if ($exam_type != '') {
@@ -810,6 +816,7 @@ class result_report_controller extends Controller
             ->where("se.syear", "=", $syear)
             ->where("se.standard_id", "=", $standard_id)
             ->where("se.section_id", "=", $division_id)
+            ->where("rc.report_card_status", "=", 'Y')
             ->whereNull("se.end_date")
             ->where('s.sub_institute_id', $sub_institute_id);
 

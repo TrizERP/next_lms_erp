@@ -122,7 +122,9 @@ Route::group(['prefix' => 'fees', 'middleware' => ['session', 'menu', 'logRoute'
     Route::get('razorpay', function ($id = null) {
         return view('fees/online_fees/razorpay', ['name' => 'James']);
     })->name('razorpay');
-    
+Route::get('payphi', function ($id = null) {
+        return view('fees/online_fees/payphi', ['name' => 'James']);
+    })->name('payphi');
 
     Route::post('api/get-fees-list', [AJAXController::class, 'getFees'])->name('get-fees-list');
     Route::resource('update_fees_breackoff', update_fees_breackoff_controller::class);
