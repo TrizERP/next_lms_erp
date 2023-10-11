@@ -289,10 +289,10 @@ class studentResultController extends Controller
            $html_content = str_replace(htmlspecialchars("<<class_teacher_remark_anual>>"),$atten['anual'],$html_content);                                                                           
        if (strpos($html_content, htmlspecialchars('<<total_attendance_manual>>')) !== false) {
             $atten = $this->get_attendance($standard_id,$value['id'],$format,"total_attendance_manual");
-           $html_content = str_replace(htmlspecialchars("<<total_attendance_manual>>"),$atten,$html_content);             
+           $html_content = str_replace(htmlspecialchars("<<total_attendance_manual>>"),$atten['table'],$html_content);             
        }else if(strpos($html_content, htmlspecialchars('<<attendance_hills>>')) !== false){
         $atten = $this->get_attendance($standard_id,$value['id'],$format,"attendance_hills");
-           $html_content = str_replace(htmlspecialchars("<<attendance_hills>>"),$atten,$html_content);                         
+           $html_content = str_replace(htmlspecialchars("<<attendance_hills>>"),$atten['table'],$html_content);                         
        }
        
         $html_content = str_replace(htmlspecialchars("<<result>>"), strtoupper($main_result['result']),$html_content);
@@ -885,7 +885,7 @@ class studentResultController extends Controller
     $res['anual'] = $remark[1] ?? '';     
     
     if($type=="attendance_hills"){
-        $get_term = DB::table('academic_year')->where(['sub_institute_id'=>$sub_institute_id,'syear'=>$syear,'term_id'=>session()->get('term_id')])->first();
+        $get_term = DB::table('academic_year')->where(['sub_institute_id'=>$sub_institute_id,'syear'=>$syear,'sort_order'=>'1'])->first();
         $post_start_date = $get_term->post_start_date;
         $post_end_date = $get_term->post_end_date;
         $post_start_date_final = $get_term->post_start_date;
@@ -936,9 +936,9 @@ class studentResultController extends Controller
             $table = $attarray[$student_id].'/'.$attTotDays;
         } else {
             // Handle the case where $attarray[$student_id] is not set or not a string
-            $table = $table = '-/'.$attTotDays; // Replace with your desired handling
+            $table = '-/'.$attTotDays; // Replace with your desired handling
         }
-    //  echo "<pre>";print_r($format);exit;      
+    //  echo "<pre>";print_r($format);exit;
     }else{
         $table = '<table class="aca-year" style="width: 100%;height:fit-content;margin-top:8%;border-collapse:collapse; border:1px solid #e68023;" cellspacing="0" cellpadding="0" border="1">
         <tbody>

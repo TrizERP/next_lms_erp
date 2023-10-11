@@ -42,7 +42,8 @@ class online_fees_settigs_controller extends Controller
             ->get();
 
         $res_arr = array();
-        foreach ($data as $key => $value) {
+        foreach ($data as $key => $value) 
+        {
             $res_arr[$key]['syear'] = $value->syear;
             $res_arr[$key]['id'] = $value->id;
             if ($value->bank_name == 'hdfc') {
@@ -55,6 +56,9 @@ class online_fees_settigs_controller extends Controller
                 $res_arr[$key]['bank_name'] = 'Aggre Pay';
             } elseif ($value->bank_name == 'razorpay') {
                 $res_arr[$key]['bank_name'] = 'Razor pay';
+            }
+            elseif ($value->bank_name == 'payphi') {
+                $res_arr[$key]['bank_name'] = 'Pay Phi';
             }
         }
 
