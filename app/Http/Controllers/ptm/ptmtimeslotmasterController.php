@@ -54,6 +54,7 @@ class ptmtimeslotmasterController extends Controller
         $created_by = $request->session()->get('user_id');
         $created_on = date('Y-m-d');
         $created_ip = $_SERVER['REMOTE_ADDR'];
+        $ptm_date = date('Y-m-d', strtotime($request->get('ptm_date')));
 
         $from_time = $request->get('from_time');
 
@@ -61,7 +62,7 @@ class ptmtimeslotmasterController extends Controller
             $from_time_Arr[] = [
                 'from_time'        => $val,
                 'to_time'          => $request->get('to_time')[$key],
-                'ptm_date'         => $request->get('ptm_date'),
+                'ptm_date'         => $ptm_date,
                 'title'            => $request->get('title'),
                 'standard_id'      => $request->get('standard_id'),
                 'division_id'      => $request->get('division_id'),
@@ -71,7 +72,7 @@ class ptmtimeslotmasterController extends Controller
                 'created_ip'       => $created_ip,
             ];
         }
-
+        
         ptmtimeslotmasterModel::insert($from_time_Arr);
 
         $res = [
@@ -103,10 +104,12 @@ class ptmtimeslotmasterController extends Controller
 
     public function update(Request $request, $id)
     {
+        $ptm_date = date('Y-m-d', strtotime($request->get('ptm_date')));
+
         $data = [
             'from_time'   => $request->get('from_time')[0],
             'to_time'     => $request->get('to_time')[0],
-            'ptm_date'    => $request->get('ptm_date'),
+            'ptm_date'    => $ptm_date,
             'title'       => $request->get('title'),
             'standard_id' => $request->get('standard_id'),
             'division_id' => $request->get('division_id'),

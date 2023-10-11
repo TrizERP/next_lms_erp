@@ -1,5 +1,5 @@
 @include('includes.headcss')
-<link href="/plugins/bower_components/clockpicker/dist/jquery-clockpicker.min.css" rel="stylesheet">
+<link rel="stylesheet" href="/plugins/bower_components/clockpicker/dist/jquery-clockpicker.min.css">
 @include('includes.header')
 @include('includes.sideNavigation')
 
@@ -77,15 +77,15 @@
                             <div class="row align-items-center">
                                 <div class="col-md-5 form-group">
                                     <label>From Time</label>
-                                    <div class="input-group clockpicker " data-placement="bottom" data-align="top" data-autoclose="true">
-                                        <input type="text" id='from_time[]' required name="from_time[]" class="form-control batchname" value="@if(isset($data->from_time)){{$data->from_time}}@endif">
+                                    <div class="input-group" data-placement="bottom" data-align="top" data-autoclose="true">
+                                        <input type="text" id='from_time[]' required name="from_time[]" class="form-control batchname clockpicker" value="@if(isset($data->from_time)){{$data->from_time}}@endif">
                                         <span class="input-group-addon"><span class="glyphicon glyphicon-time"></span></span>
                                     </div>
                                 </div>
                                 <div class="col-md-5 form-group">
                                     <label>To Time</label>
-                                    <div class="input-group clockpicker " data-placement="bottom" data-align="top" data-autoclose="true">
-                                        <input type="text" id='to_time[]' required name="to_time[]" class="form-control batchname" value="@if(isset($data->to_time)){{$data->to_time}}@endif">
+                                    <div class="input-group" data-placement="bottom" data-align="top" data-autoclose="true">
+                                        <input type="text" id='to_time[]' required name="to_time[]" class="form-control batchname clockpicker" value="@if(isset($data->to_time)){{$data->to_time}}@endif">
                                         <span class="input-group-addon"><span class="glyphicon glyphicon-time"></span></span>
                                     </div>
                                 </div>
@@ -112,13 +112,15 @@
 </div>
 
 @include('includes.footerJs')
+<script src="/plugins/bower_components/clockpicker/dist/jquery-clockpicker.min.js"></script>
+
 <script>
 function addNewRow(){
     var html = '';    
     html += '<div class="clearfix"></div><div class="col-md-8 addButtonCheckbox"><div class="row align-items-center">';
 
-    html += '<div class="col-md-5 form-group"><div class="input-group clockpicker " data-placement="bottom" data-align="top" data-autoclose="true"><input type="text" id="from_time[]" required name="from_time[]" class="form-control batchname" value=""><span class="input-group-addon"><span class="glyphicon glyphicon-time"></span></span></div></div>';    
-    html += '<div class="col-md-5 form-group"><div class="input-group clockpicker " data-placement="bottom" data-align="top" data-autoclose="true"><input type="text" id="to_time[]" required name="to_time[]" class="form-control batchname" value=""><span class="input-group-addon"><span class="glyphicon glyphicon-time"></span></span></div></div>';    
+    html += '<div class="col-md-5 form-group"><div class="input-group" data-placement="bottom" data-align="top" data-autoclose="true"><input type="text" id="from_time[]" required name="from_time[]" class="form-control batchname clockpicker" value=""><span class="input-group-addon"><span class="glyphicon glyphicon-time"></span></span></div></div>';    
+    html += '<div class="col-md-5 form-group"><div class="input-group" data-placement="bottom" data-align="top" data-autoclose="true"><input type="text" id="to_time[]" required name="to_time[]" class="form-control batchname clockpicker" value=""><span class="input-group-addon"><span class="glyphicon glyphicon-time"></span></span></div></div>';    
     html += '<div class="col-md-1 form-group mt-4"><a href="javascript:void(0);" onclick="removeNewRow();" class="btn btn-danger"><i class="fa fa-minus"></i></a></div></div></div>';
     $('.addButtonCheckbox:last').after(html);
 }
@@ -150,5 +152,23 @@ function getStandardwiseDivision(std_id){
     }
     });
 }
+</script>
+<script>
+    $('#single-input').clockpicker({
+    placement: 'bottom',
+    align: 'left',
+    autoclose: true,
+    'default': 'now'
+  });
+  $('.clockpicker').clockpicker({
+    donetext: 'Done',
+  }).find('input').change(function() {
+    console.log(this.value);
+  });
+  $('#check-minutes').click(function(e) {
+    // Have to stop propagation here
+    e.stopPropagation();
+    input.clockpicker('show').clockpicker('toggleView', 'minutes');
+  });
 </script>
 @include('includes.footer')
