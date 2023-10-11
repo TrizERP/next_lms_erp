@@ -21,10 +21,12 @@ class inventory_item_wise_reportController extends Controller
         $type = $request->input('type');
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $syear = $request->session()->get('syear');
-        $items = inventory_item_masterModel::select('id', 'title')
-            ->where([
-                'sub_institute_id' => $sub_institute_id, 'syear' => $syear, 'item_status' => 'Active',
-            ])->get()->toArray();
+
+        $items = inventory_item_masterModel::select('id', 'title')->where([
+            'sub_institute_id' => $sub_institute_id, 'item_status' => 'Active',
+        ])->get()->toArray();
+
+        //'syear' => $syear, above items query error item now show front side because of syear there are no any data syear that why remove syear in query.
 
         $res['status_code'] = 1;
         $res['message'] = "Success";
@@ -49,8 +51,8 @@ class inventory_item_wise_reportController extends Controller
         $extra_query = '';
 
         if ($from_date != '' && $to_date != '') {
-            $extra_query .= " AND date_format(IRD.REQUISITION_APPROVED_DATE,'%Y-%m-%d') BETWEEN '".$from_date."' AND '".$to_date."' ";
-        }
+            $extra_query .= " AND date_format(IRD.REQUISITION_APPROVED_DATE, '%Y-%m-%d') BETWEEN '".$from_date."' AND '".$to_date."' ";
+        }        
 
         if ($item_id != '') {
             $extra_query .= " AND IRD.ITEM_ID = '".$item_id."' ";
@@ -74,8 +76,10 @@ class inventory_item_wise_reportController extends Controller
             ->get()->toArray();
 
         $items = inventory_item_masterModel::select('id', 'title')->where([
-            'sub_institute_id' => $sub_institute_id, 'syear' => $syear, 'item_status' => 'Active',
+            'sub_institute_id' => $sub_institute_id, 'item_status' => 'Active',
         ])->get()->toArray();
+
+        //'syear' => $syear, above items query error item now show front side because of syear there are no any data syear that why remove syear in query.
 
         $res['status_code'] = 1;
         $res['message'] = "Success";
