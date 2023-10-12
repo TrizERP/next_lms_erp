@@ -2905,7 +2905,14 @@ class adminapiController extends Controller
             $text = urlencode($text);
             $data['last_var'] = urlencode($data['last_var']);
 
-            $url = $data['url'].$data['pram'].$data['mobile_var'].$mobile.$data['text_var'].$text.$data['last_var'];
+//Start added by rajesh OTP for CN all institute
+$cn_templateid = '';
+$cn = array(244,245,246,247,248,253,257,264,265);
+if(in_array($sub_institute_id, $cn))
+    $cn_templateid = '&template_id=1507166607307092495';
+//END added by rajesh OTP for CN all institute
+
+            $url = $data['url'].$data['pram'].$cn_templateid.$data['mobile_var'].$mobile.$data['text_var'].$text.$data['last_var'];
 
             $ch = curl_init();
 
