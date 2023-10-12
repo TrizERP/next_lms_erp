@@ -117,12 +117,12 @@
                             @foreach($fees_data as $key => $fees_value)
                             <tr>
                                 <td>{{$j}}</td>
-                                <td>{{$fees_value['enrollment']}}</td>
-                                <td>{{$fees_value['name']}}</td>
-                                <td>{{$fees_value['stddiv']}}</td>
-                                <td>{{$fees_value['mobile']}}</td>
-                                <td>{{$fees_value['uniqueid']}}</td>
-                                <td>{{$fees_value['roll_no']}}</td>
+                                <td>{{isset($fees_value['enrollment']) ? $fees_value['enrollment'] : ''}}</td>
+                                <td>{{isset($fees_value['name']) ? $fees_value['name'] : ''}}</td>
+                                <td>{{isset($fees_value['stddiv']) ? $fees_value['stddiv'] : ''}}</td>
+                                <td>{{isset($fees_value['mobile']) ? $fees_value['mobile'] : ''}}</td>
+                                <td>{{isset($fees_value['uniqueid']) ? $fees_value['uniqueid'] : ''}}</td>
+                                <td>{{isset($fees_value['roll_no']) ? $fees_value['roll_no'] : ''}}</td>
                                 <td style="background-color:#7befef;">{{$fees_value['-']['bk'] ?? 0 }}</td>
                                 <td style="background-color:#7befef;">{{$fees_value['-']['paid'] ?? 0 }}</td>
                                 <td style="background-color:#7befef;">{{$fees_value['-']['remain'] ?? 0}}</td>

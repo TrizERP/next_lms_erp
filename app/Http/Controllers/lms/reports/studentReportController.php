@@ -88,6 +88,7 @@ class studentReportController extends Controller
                 sum(e.obtain_marks) as obtained_marks,sum(q.total_marks) as total_marks,group_concat(e.obtain_marks) as all_marks,
                 group_concat(e.id) as online_exam_ids")
             ->where('q.sub_institute_id', $sub_institute_id)
+            ->where('q.syear', $syear)
             ->where('q.subject_id', $current_subject)
             ->groupBy('q.id')->get()->toArray();
 
@@ -158,7 +159,7 @@ class studentReportController extends Controller
         $data['grand_obtained'] = $grand_obtained;
         $data['linechart_data'] = $linechart_data;
         $data['current_subject'] = $current_subject;
-        $data['lo_arr'] = $lo_arr;
+        $data['lo_arr'] = [];//$lo_arr;
 
         $type = $request->input('type');
 

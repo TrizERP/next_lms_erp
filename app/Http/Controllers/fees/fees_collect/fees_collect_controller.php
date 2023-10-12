@@ -2470,7 +2470,7 @@ class fees_collect_controller extends Controller
 
         // get student fees details 
         $get_data = DB::table(function ($query) use ($sub_institute_id, $syear, $student_id, $receipt_id) {
-            $query->selectRaw('fc.id, fc.student_id, GROUP_CONCAT(fc.term_id) as months,sum(fc.amount) as amount,fc.receiptdate as receipt_date,concat(" ",s.first_name,s.middle_name,s.father_name) as student_name,s.mobile')
+            $query->selectRaw('fc.id, fc.student_id, GROUP_CONCAT(fc.term_id) as months,sum(fc.amount) as amount,fc.receiptdate as receipt_date,CONCAT_WS(" ",s.first_name,s.last_name) as student_name,s.mobile')
                 ->from('fees_collect as fc')
                 ->join('fees_receipt as fr', function ($join) {
                     $join->whereRaw('FIND_IN_SET(fc.id, fr.FEES_ID) AND fr.SUB_INSTITUTE_ID = fc.sub_institute_id');
@@ -2485,7 +2485,7 @@ class fees_collect_controller extends Controller
                 ->groupBy('fc.fees_html')
                 ->unionAll(
                     DB::table('fees_paid_other as fo')
-                        ->selectRaw('fo.id, fo.student_id,GROUP_CONCAT(fo.month_id) as months,sum(fo.actual_amountpaid) as amount,fo.receiptdate as receipt_date,concat(" ",s.first_name,s.middle_name,s.father_name) as student_name,s.mobile')
+                        ->selectRaw('fo.id, fo.student_id,GROUP_CONCAT(fo.month_id) as months,sum(fo.actual_amountpaid) as amount,fo.receiptdate as receipt_date,CONCAT_WS(" ",s.first_name,s.last_name) as student_name,s.mobile')
                         ->join('fees_receipt as fro', function ($join) {
                             $join->whereRaw('FIND_IN_SET(fo.id, fro.OTHER_FEES_ID) AND fro.SUB_INSTITUTE_ID = fo.sub_institute_id');
                         })

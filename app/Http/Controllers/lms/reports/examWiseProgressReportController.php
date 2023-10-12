@@ -49,7 +49,7 @@ class examWiseProgressReportController extends Controller
         $student_data = SearchStudent($grade, $standard, $division, $sub_institute_id, $syear);
 
         $examData = questionpaperModel::where([
-            'sub_institute_id' => $sub_institute_id, 'standard_id' => $standard, 'subject_id' => $subject,
+            'sub_institute_id' => $sub_institute_id, 'standard_id' => $standard, 'subject_id' => $subject, 'syear' => $syear,
         ])
             ->whereIn('id', $exams)
             ->orderby('id')
@@ -136,9 +136,10 @@ class examWiseProgressReportController extends Controller
         $std_id = $request->input("std_id");
         $sub_id = $request->input("sub_id");
         $sub_institute_id = session()->get("sub_institute_id");
+        $syear = session()->get("syear");
 
         return questionpaperModel::where([
-            'sub_institute_id' => $sub_institute_id, 'standard_id' => $std_id, 'subject_id' => $sub_id,
+            'sub_institute_id' => $sub_institute_id, 'standard_id' => $std_id, 'subject_id' => $sub_id, 'syear' => $syear,
         ])->get()->toArray();
     }
 
