@@ -1119,7 +1119,7 @@ END as color_code
                 ->where('ct.sub_institute_id', $sub_institute_id)
                 ->where('ct.syear', $syear)
                 ->where('se.syear', $syear)
-                ->where('ct.teacher_id', $teacher_id)->get()->toArray();//ts.middle_name,
+                ->where('ct.teacher_id', $teacher_id)->orderBy('ts.roll_no', 'ASC')->get()->toArray();//ts.middle_name,
 
             $res['status'] = 1;
             $res['message'] = "Success";
@@ -1172,7 +1172,7 @@ END as color_code
                 $data = $data->where('se.section_id', $division_id);
             }
 
-            $data = $data->get()->toArray();
+            $data = $data->orderBy('ts.roll_no', 'ASC')->get()->toArray();
 
             if (count($data) > 0) {
                 $res['status'] = 1;

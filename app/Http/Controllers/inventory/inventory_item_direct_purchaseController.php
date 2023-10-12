@@ -93,15 +93,21 @@ class inventory_item_direct_purchaseController extends Controller
         $items = $request->get('item_id');
 
         foreach ($items as $key => $val) {
+            $category_id = isset($category_ids[$key]) ? $category_ids[$key] : null;
+            $sub_category_id = isset($sub_category_id[$key]) ? $sub_category_id[$key] : null;
+            $item_id = isset($item_id[$key]) ? $item_id[$key] : null;
+            $item_qty = isset($item_qty[$key]) ? $item_qty[$key] : null;
+            $price = isset($price[$key]) ? $price[$key] : null;
+            $amount = isset($amount[$key]) ? $amount[$key] : null;
 
             $item_direct_purchase = new inventory_item_direct_purchaseModel([
                 'vendor_id'        => $request->get('vendor_id'),
-                'category_id'      => $request->get('category_id')[$key],
-                'sub_category_id'  => $request->get('sub_category_id')[$key],
-                'item_id'          => $request->get('item_id')[$key],
-                'item_qty'         => $request->get('item_qty')[$key],
-                'price'            => $request->get('price')[$key],
-                'amount'           => $request->get('amount')[$key],
+                'category_id'      => $category_id,
+                'sub_category_id'  => $sub_category_id,
+                'item_id'          => $item_id,
+                'item_qty'         => $item_qty,
+                'price'            => $price,
+                'amount'           => $amount,
                 'challan_no'       => $request->get('challan_no'),
                 'challan_date'     => $request->get('challan_date'),
                 'bill_no'          => $request->get('bill_no'),
@@ -120,9 +126,8 @@ class inventory_item_direct_purchaseController extends Controller
                 "id" => $request->get('item_id')[$key], 'sub_institute_id' => $sub_institute_id, 'syear' => $syear,
             ])->first();
 
-            if (!empty($get_item_data)) 
-            {
-                $opening_stock = ($get_item_data[0]['opening_stock'] + $request->get('item_qty')[$key]);
+            if (!empty($get_item_data)) {
+                $opening_stock = ($get_item_data->opening_stock + $request->get('item_qty')[$key]);
 
                 $item_stock = [
                     'opening_stock'         => $opening_stock,
@@ -191,14 +196,22 @@ class inventory_item_direct_purchaseController extends Controller
         $items = $request->get('item_id');
 
         foreach ($items as $key => $val) {
+
+            $category_id = isset($category_ids[$key]) ? $category_ids[$key] : null;
+            $sub_category_id = isset($sub_category_id[$key]) ? $sub_category_id[$key] : null;
+            $item_id = isset($item_id[$key]) ? $item_id[$key] : null;
+            $item_qty = isset($item_qty[$key]) ? $item_qty[$key] : null;
+            $price = isset($price[$key]) ? $price[$key] : null;
+            $amount = isset($amount[$key]) ? $amount[$key] : null;
+            
             $data = [
                 'vendor_id'       => $request->get('vendor_id'),
-                'category_id'     => $request->get('category_id')[$key],
-                'sub_category_id' => $request->get('sub_category_id')[$key],
-                'item_id'         => $request->get('item_id')[$key],
-                'item_qty'        => $request->get('item_qty')[$key],
-                'price'           => $request->get('price')[$key],
-                'amount'          => $request->get('amount')[$key],
+                'category_id'      => $category_id,
+                'sub_category_id'  => $sub_category_id,
+                'item_id'          => $item_id,
+                'item_qty'         => $item_qty,
+                'price'            => $price,
+                'amount'           => $amount,
                 'challan_no'      => $request->get('challan_no'),
                 'challan_date'    => $request->get('challan_date'),
                 'bill_no'         => $request->get('bill_no'),

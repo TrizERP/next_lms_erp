@@ -172,7 +172,6 @@ class photo_video_gallaryController extends Controller
             $standard_id = $_REQUEST['standard_id'];
 
             $server = "https://".$_SERVER['HTTP_HOST'];
-            
             $result_data = DB::table("photo_video_gallary as pvg")
                 ->selectRaw("pvg.id,pvg.syear,pvg.standard_id,pvg.album_title,pvg.title,pvg.`type`,pvg.ai,
                     if(pvg.file_name IS NULL OR pvg.file_name = '','-',if(pvg.`type` = 'Video', pvg.file_name, 
@@ -187,14 +186,19 @@ class photo_video_gallaryController extends Controller
                     }
                 })
                 ->get()->toArray();
-
+            
+            $new_data = []; // Define the $new_data array
             foreach ($result_data as $key => $val) {
                 $new_data[$val->album_title][] = $val;
             }
-
-            $response['data'] = $new_data;
-            $response['status'] = '1';
-            $response['message'] = 'Sucsses';
+            if(!empty($new_data)){
+                $response['status'] = 1;
+                $response['message'] = "Success";
+                $response['data'] = $new_data;
+            }else{
+                $response['status'] = 0;
+                $response['message'] = "No Data Found";
+            }
         }
 
         return json_encode($response);

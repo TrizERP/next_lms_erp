@@ -1013,7 +1013,7 @@ class AJAXController extends Controller
                     $child_li .= '<li class="d-flex align-items-center"><i class="fa fa-angle-right" style="margin-right: 8px;">
                     </i><a href="' . route($cval['link']) . '" onclick="sessionMenu(' . $cval['tblmenu_master_id'] . ');" >' . $cval['name'] . '</a></li>';
                     if ($cval['name'] == 'Field Settings') {
-                        $export_import_link = "window.open('" . env('APP_URL') . "/excel_upload/export_xlsx.php?sub_institute_iderp=" . $sub_institute_id . "','scrollbars=yes,resizable=no,status=no,location=no,toolbar=no,menubar=no','width=600,height=300,left=100,top=100')";
+                        $export_import_link = "window.open('" . env('APP_URL') . "excel_upload/export_xlsx.php?sub_institute_iderp=" . $sub_institute_id . "','scrollbars=yes,resizable=no,status=no,location=no,toolbar=no,menubar=no','width=600,height=300,left=100,top=100')";
                         $child_li .= '<li><i class="fa fa-angle-right" style="margin-right: 8px;">
                         </i><a href="javascript:void(0);" onclick="' . $export_import_link . '" class="waves-effect">Excel Import/Export</a></li>';
                         $child_li .= '<li><i class="fa fa-angle-right" style="margin-right: 8px;">
