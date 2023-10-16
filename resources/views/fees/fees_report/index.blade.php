@@ -137,6 +137,7 @@
 								<th>Receipt No</th>
 								<th>Payment Mode</th>
 								<th>Bank Details</th>
+								<th>Remarks</th>
 								<th>Receipt Date</th>
 								<th>Collected By</th>
 								<th>Amount</th>
@@ -185,6 +186,7 @@
 								<td>{{$value['payment_mode']}}</td>
 								<td>{{$value['cheque_no']}} {{$value['cheque_bank_name']}} {{$value['bank_branch']}}</td>
 								<!--<td>{{$cheque_date}}</td>-->
+								<td>{{$value['remarks']}}</td>
 								<td>{{date('d-m-Y',strtotime($value['receiptdate']))}}</td>
 								<td>{{$value['user_name']}}</td>
 								<!--<td>{{date('d-m-Y h:i:s',strtotime($value['created_date']))}}</td>-->
@@ -199,7 +201,7 @@
 								<td></td>
 								<td></td>
 								<td></td>
-								<!--<td></td>-->
+								<td></td>
 								<td></td>
 								<td></td>
 								<td></td>
