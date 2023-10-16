@@ -721,7 +721,7 @@ public function search_question($all_data){
         $user_id = session()->get('user_id');
 
         $extra = "";
-        $outer_extra = "1 = 1";
+        $outer_extra = "";//"1 = 1";
         if (isset($all_data["search_chapter"])) {
             $search_chapter = $all_data["search_chapter"];
             $extra .= "qm.chapter_id IN (" . implode(",", $search_chapter) . ")";
@@ -737,7 +737,7 @@ public function search_question($all_data){
             $mapping_types =  $search_mapping_type;
             $outer_extra_type = " AND (";
             foreach ($mapping_types as $key => $mapping_type_val) {
-                $outer_extra_type .= " find_in_set('".$mapping_type_val."',a.mapping_type) OR";
+                $outer_extra_type .= " find_in_set('".$mapping_type_val."',lqm.mapping_type_id) OR";
             }
             $outer_extra_type .= ")";
             $outer_extra .= str_replace(') OR)', '))', $outer_extra_type);
@@ -747,12 +747,13 @@ public function search_question($all_data){
             $mapping_values = $search_mapping_value;
             $outer_extra_mapping = " AND (";
             foreach ($mapping_values as $key1 => $mapping_val) {
-                $outer_extra_mapping .= " find_in_set('".$mapping_val."',a.mapping_value) OR";
+                $outer_extra_mapping .= " find_in_set('".$mapping_val."',lqm.mapping_value_id) OR";
             }
             $outer_extra_mapping .= ")";
             $outer_extra .= str_replace(') OR)', '))', $outer_extra_mapping);
+            $extra .=  $outer_extra;
         }
-
+       
         // $sql = "
         //     SELECT * FROM 
         //     (SELECT qm.id,question_title,points,t.question_type,
@@ -779,6 +780,7 @@ public function search_question($all_data){
             ->join('chapter_master as c', 'c.id', '=', 'qm.chapter_id')
             ->leftJoin('topic_master as tm', 'tm.id', '=', 'qm.topic_id')
             ->leftJoin('lms_question_mapping as lqm', 'lqm.questionmaster_id', '=', 'qm.id')
+            ->join('lms_mapping_type as lmt', 'lmt.id', '=', 'lqm.mapping_value_id')
             ->leftJoin('answer_master as am', function($join) {
                 $join->on('am.question_id', '=', 'qm.id')
                      ->where('correct_answer', '=', 1);
@@ -792,7 +794,6 @@ public function search_question($all_data){
             ->orderBy('chapter_name');
     }, 'a')
     ->select('*')
-    ->orderByRaw($outer_extra)
     ->get();
     // dd(DB::getQueryLog($questionData));
         // $questionData = DB::select($sql);
