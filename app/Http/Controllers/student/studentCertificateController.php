@@ -338,10 +338,11 @@ class studentCertificateController extends Controller
             1 => 'Jan', 2 => 'Feb', 3 => 'Mar', 4 => 'Apr', 5 => 'May', 6 => 'Jun', 7 => 'Jul', 8 => 'Aug', 9 => 'Sep',
             10 => 'Oct', 11 => 'Nov', 12 => 'Dec',
         ];
-        $fees_details = "<h4 style='font-weigth:bold'>Apr-".$syear." To Mar-".($syear+1)."</h4>
-        <div class='table-responsive mb-2' style='display:inline-table;margin-top:10px;width:60%'>
-            <table class='table table-striped'>";
+        $fees_details = "<h4 style='text-align:center;'>Apr-".$syear." To Mar-".($syear+1)."</h4>
+        <div style='width:100%'>
+            <table align='center'>";
         foreach ($fees_heads as $title) {
+            if($fees_data->sum($title->fees_title) > 0){
             $fees_details .= "<tr><td style='font-weight:600'>" . $title->display_name . "</td>";
             $termIds = [];
             $month_name=[];
@@ -388,9 +389,10 @@ class studentCertificateController extends Controller
             
             $totalAmount += $fees_data->sum($title->fees_title); 
         }
+        }
         $fees_details .="<tr>
-        <td>Total</td>
-        <td>".$totalAmount."/- </td>
+        <td style='font-weight:600'>Total</td>
+        <td style='font-weight:600'>".$totalAmount."/- </td>
         </tr>";
         $fees_details .= "
             </table></div>
@@ -398,7 +400,7 @@ class studentCertificateController extends Controller
         // Output the total amount
         // $fees_details .= "<p>Total Amount: $totalAmount</p>";
         $html_content = str_replace(htmlspecialchars("<<fees_details>>"), $fees_details ,$html_content);
-        $html_content = str_replace(htmlspecialchars("<<total_amount_in_words>>"), $this->convert_number_to_words($totalAmount) ,$html_content);
+        $html_content = str_replace(htmlspecialchars("<<total_amount_in_words>>"), ucwords($this->convert_number_to_words($totalAmount)) ,$html_content);
         return $html_content;
     }
 
