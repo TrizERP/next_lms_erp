@@ -93,12 +93,12 @@ class inventory_item_direct_purchaseController extends Controller
         $items = $request->get('item_id');
 
         foreach ($items as $key => $val) {
-            $category_id = isset($category_ids[$key]) ? $category_ids[$key] : null;
-            $sub_category_id = isset($sub_category_id[$key]) ? $sub_category_id[$key] : null;
-            $item_id = isset($item_id[$key]) ? $item_id[$key] : null;
-            $item_qty = isset($item_qty[$key]) ? $item_qty[$key] : null;
-            $price = isset($price[$key]) ? $price[$key] : null;
-            $amount = isset($amount[$key]) ? $amount[$key] : null;
+            $category_id = $request->input("category_id.$key", null);
+            $sub_category_id = $request->input("sub_category_id.$key", null);
+            $item_id = $request->input("item_id.$key", null);
+            $item_qty = $request->input("item_qty.$key", null);
+            $price = $request->input("price.$key", null);
+            $amount = $request->input("amount.$key", null);
 
             $item_direct_purchase = new inventory_item_direct_purchaseModel([
                 'vendor_id'        => $request->get('vendor_id'),
