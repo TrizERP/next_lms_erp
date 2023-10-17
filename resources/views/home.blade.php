@@ -596,7 +596,7 @@ $(document).ready(function(){
         text: 'Student Attendance'
     },
     xAxis: {
-        categories: {{$data['standardsJson']}} //['CBSE-1', 'CBSE-2']
+        categories: <?php echo $data['presantsJson']; ?>//{{$data['standardsJson']}} //['CBSE-1', 'CBSE-2']
     },
     yAxis: {
         title: {
@@ -614,11 +614,11 @@ $(document).ready(function(){
     series: [{
         name: 'Present',
         color : '#0facf3',
-        data: {{$data['presantsJson']}}//[5, 2]
+        data: <?php echo $data['presantsJson']; ?>//{{$data['presantsJson']}}//[5, 2]
     }, {
         name: 'Absent',
         color : '#e6346294',
-        data: {{$data['absentsJson']}}//[2, 3]
+        data: <?php echo $data['absentsJson']; ?>//{{$data['absentsJson']}}//[2, 3]
     }]
 });
 </script>
