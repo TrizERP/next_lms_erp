@@ -82,7 +82,7 @@
         buttons: [ 
             { 
                 extend: 'pdfHtml5',
-                title: 'Inward Report',
+                title: 'PNL Report',
                 orientation: 'landscape',
                 pageSize: 'LEGAL',                
                 pageSize: 'A0',

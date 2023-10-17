@@ -28,18 +28,26 @@ class bulkUploadedReportController extends Controller
 
     public function show_bazar_report(Request $request)
     {
+
         $type = $request->input('type');
         $report_of = $request->input('report_of');
         $from_date = $request->input('from_date');
         $to_date = $request->input('to_date');
+        $user_name = session()->get('user_name');
+
+        $extra = '';
 
         if ($report_of == 'position_report') 
         {
+
+            if(session()->get('user_profile_name') == 'Student')
+                $extra .= " AND client_id = '". $user_name ."' ";
+
             $position_bazar_report = DB::table("sharebazar_position")
                 ->selectRaw("sharebazar_position.*");
 
                 if ($from_date != '' && $to_date != '') {
-                    $position_bazar_report = $position_bazar_report->whereRaw("DATE_FORMAT(upload_date, '%Y-%m-%d') BETWEEN '" . $from_date . "' AND '" . $to_date . "' ");
+                    $position_bazar_report = $position_bazar_report->whereRaw("DATE_FORMAT(upload_date, '%Y-%m-%d') BETWEEN '" . $from_date . "' AND '" . $to_date . "' $extra ");
                 }
 
                 $position_bazar_report = $position_bazar_report->get()->toarray();
@@ -54,12 +62,16 @@ class bulkUploadedReportController extends Controller
 
         if ($report_of == 'margin_report') 
         {
+
+            if(session()->get('user_profile_name') == 'Student')
+                $extra .= " AND Code = '". $user_name ."' ";
+
             $margin_bazar_report = DB::table("sharebazar_margin")
                 ->selectRaw("sharebazar_margin.*");
 
                 if ($from_date != '' && $to_date != '') 
                 {
-                    $margin_bazar_report = $margin_bazar_report->whereRaw("DATE_FORMAT(upload_date, '%Y-%m-%d') BETWEEN '" . $from_date . "' AND '" . $to_date . "' ");
+                    $margin_bazar_report = $margin_bazar_report->whereRaw("DATE_FORMAT(upload_date, '%Y-%m-%d') BETWEEN '" . $from_date . "' AND '" . $to_date . "' $extra ");
                 }
 
                 $margin_bazar_report = $margin_bazar_report->get()->toarray();
@@ -74,12 +86,15 @@ class bulkUploadedReportController extends Controller
 
         if ($report_of == 'pnl_report') 
         {
+            if(session()->get('user_profile_name') == 'Student')
+                $extra .= " AND code = '". $user_name ."' ";
+
             $pnl_bazar_report = DB::table("sharebazar_pnl")
                 ->selectRaw("sharebazar_pnl.*");
 
                 if ($from_date != '' && $to_date != '') 
                 {
-                    $pnl_bazar_report = $pnl_bazar_report->whereRaw("DATE_FORMAT(upload_date, '%Y-%m-%d') BETWEEN '" . $from_date . "' AND '" . $to_date . "' ");
+                    $pnl_bazar_report = $pnl_bazar_report->whereRaw("DATE_FORMAT(upload_date, '%Y-%m-%d') BETWEEN '" . $from_date . "' AND '" . $to_date . "' $extra ");
                 }
 
                 $pnl_bazar_report = $pnl_bazar_report->get()->toarray();
