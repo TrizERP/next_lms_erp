@@ -1301,8 +1301,10 @@ class fees_collect_controller extends Controller
             $payMethod = $_REQUEST['PAYMENT_MODE'];
             if ($payMethod == '') {
                 $payment_mode = $payMethod;
+            }else if ($payMethod == 'Cash') {
+                $payment_mode = $payMethod;
             } else {
-                $payment_mode = $payMethod . ' ' . strtoupper($_REQUEST['bank_name']) . ' - ' . $_REQUEST['cheque_no'];
+                $payment_mode = $payMethod . ' ' . strtoupper($_REQUEST['bank_name']) . ' - ' . strtoupper($_REQUEST['bank_branch']) . ' - ' . strtoupper($_REQUEST['cheque_date']) . ' - ' . $_REQUEST['cheque_no'];
             }
 
             if (isset($_REQUEST['remarks']) && $_REQUEST['remarks'] != '' && $_REQUEST['remarks'] != '-') {
