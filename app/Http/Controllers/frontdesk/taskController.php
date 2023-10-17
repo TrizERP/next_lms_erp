@@ -60,6 +60,10 @@ class taskController extends Controller
         if (strtoupper($user_profile_name) != 'ADMIN') {
             $data = $data->where('t.TASK_ALLOCATED_TO', $user_id);
         }
+
+        /* if (strtoupper($user_profile_name) != 'ICT') {
+            $data = $data->where('t.TASK_ALLOCATED_TO', $user_id);
+        } */
         $data = $data->orderBy('t.ID', 'desc');
         $data = $data->get()->toArray();
 
@@ -189,6 +193,15 @@ class taskController extends Controller
         $editData = $result[0];
 
         if($user_profile_name != "Teacher")
+        {
+            $extrawhere = "id != '".$user_id."'";
+        }
+        else
+        {
+            $extrawhere = "id = '".$user_id."'";
+        }
+
+        if($user_profile_name != "ICT")
         {
             $extrawhere = "id != '".$user_id."'";
         }
