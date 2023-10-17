@@ -31,13 +31,13 @@
                         <div class="col-md-4 form-group" id="for_from_date">
                             <label>From Date</label>
                             <input type="text" id="from_date" name="from_date" class="form-control mydatepicker"
-                                   autocomplete="off">
+                                   autocomplete="off" value="{{date('Y-m-d'); }}">
                         </div>
 
                         <div class="col-md-4 form-group" id="for_to_date">
                             <label>To Date</label>
                             <input type="text" id="to_date" name="to_date" class="form-control mydatepicker"
-                                   autocomplete="off">
+                                   autocomplete="off" value="{{date('Y-m-d'); }}">
                         </div>
 
                         <div class="col-md-12 form-group">

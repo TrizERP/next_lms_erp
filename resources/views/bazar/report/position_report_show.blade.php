@@ -106,7 +106,7 @@
         buttons: [ 
             { 
                 extend: 'pdfHtml5',
-                title: 'Inward Report',
+                title: 'Position Report',
                 orientation: 'landscape',
                 pageSize: 'LEGAL',                
                 pageSize: 'A0',

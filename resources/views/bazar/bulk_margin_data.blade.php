@@ -17,7 +17,7 @@
                         <div class="col-md-4 form-group">
                             <label>Date</label>
                             <input type="text" id="upload_date" name="upload_date" class="form-control mydatepicker"
-                                   autocomplete="off" required>
+                                   autocomplete="off" value="{{date('Y-m-d'); }}" required>
                         </div>
                         <div class="col-md-4 form-group">
                             <label>Upload file</label>
