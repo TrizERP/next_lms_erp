@@ -31,7 +31,7 @@
                     <td>{{ $item->book->title ?? '' }}</td>
                     <td>{{ $item->issued_date ?? '' }}</td>
                     <td>{{ $item->return_date ?? '' }}</td>
-                    <td><button class="btn btn-danger return-book" data-id="{{ $item->id }}">Return</button></td>
+                    <td><button type="button" class="btn btn-danger return-book" data-id="{{ $item->id }}">Return</button></td>
                 </tr>
             @endforeach
         </tbody>

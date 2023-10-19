@@ -414,6 +414,8 @@ Route::group(['middleware' => ['session', 'menu', 'logRoute']], function () {
     Route::get('books/{id}/reutrn', [BookController::class,'returnBook'])->name('books.return');
     Route::post('books/issue', [BookController::class,'issueBook'])->name('books.issue');
     Route::get('books.circulation', [BookController::class,'circulation'])->name('books.circulation');
+    Route::get('books/{id}/item', [BookController::class,'item'])->name('books.item');
+    Route::delete('books/{id}/item/delete', [BookController::class,'deleteItem'])->name('books.items.destroy');
     
 });
 
