@@ -44,6 +44,8 @@ class questionpaperController extends Controller
         $syear = $request->session()->get('syear');
         $data['questionpaper_data'] = array();
         $marking_period_id = session()->get('term_id');
+        $teacher = session()->get('user_profile_name');
+        $user_id = session()->get('user_id');
 
         if (strtoupper(session()->get('user_profile_name')) == "STUDENT") {
             $student_id = session()->get('user_id');
@@ -79,7 +81,29 @@ class questionpaperController extends Controller
                     ->groupby("question_paper.id")
                     ->get();
             }
-        } else {
+        } 
+        else if ($teacher == "Teacher") 
+        {
+            $data['questionpaper_data'] = questionpaperModel::select('question_paper.*',
+                'standard.name as standard_name',
+                'academic_section.title as grade_name', 'subject_name', DB::raw('date_format(open_date,"%Y-%m-%d") as open_date,
+                date_format(close_date,"%Y-%m-%d") as close_date,if(now() between open_date and close_date,"yes","no") as active_exam'))
+                ->join('standard', function($join) use($marking_period_id){
+                    $join->on('standard.id', '=', 'question_paper.standard_id');
+                    // ->when($marking_period_id,function($query) use($marking_period_id){
+                    //     $query->where('standard.marking_period_id',$marking_period_id);
+                    // });
+                })
+                ->join('academic_section', 'academic_section.id', '=', 'question_paper.grade_id')
+                ->join('subject', 'subject.id', '=', 'question_paper.subject_id')
+                ->where('question_paper.sub_institute_id', $sub_institute_id)
+                ->where('question_paper.syear', $syear)
+                ->where('question_paper.created_by', $user_id)
+                ->orderBy('question_paper.id', 'desc')
+                ->get();
+        }
+        else
+        {
             $data['questionpaper_data'] = questionpaperModel::select('question_paper.*',
                 'standard.name as standard_name',
                 'academic_section.title as grade_name', 'subject_name', DB::raw('date_format(open_date,"%Y-%m-%d") as open_date,
@@ -721,7 +745,7 @@ public function search_question($all_data){
         $user_id = session()->get('user_id');
 
         $extra = "";
-        $outer_extra = "";//"1 = 1";
+        $outer_extra = "1 = 1";
         if (isset($all_data["search_chapter"])) {
             $search_chapter = $all_data["search_chapter"];
             $extra .= "qm.chapter_id IN (" . implode(",", $search_chapter) . ")";
@@ -737,7 +761,7 @@ public function search_question($all_data){
             $mapping_types =  $search_mapping_type;
             $outer_extra_type = " AND (";
             foreach ($mapping_types as $key => $mapping_type_val) {
-                $outer_extra_type .= " find_in_set('".$mapping_type_val."',lqm.mapping_type_id) OR";
+                $outer_extra_type .= " find_in_set('".$mapping_type_val."',a.mapping_type) OR";
             }
             $outer_extra_type .= ")";
             $outer_extra .= str_replace(') OR)', '))', $outer_extra_type);
@@ -747,13 +771,12 @@ public function search_question($all_data){
             $mapping_values = $search_mapping_value;
             $outer_extra_mapping = " AND (";
             foreach ($mapping_values as $key1 => $mapping_val) {
-                $outer_extra_mapping .= " find_in_set('".$mapping_val."',lqm.mapping_value_id) OR";
+                $outer_extra_mapping .= " find_in_set('".$mapping_val."',a.mapping_value) OR";
             }
             $outer_extra_mapping .= ")";
             $outer_extra .= str_replace(') OR)', '))', $outer_extra_mapping);
-            $extra .=  $outer_extra;
         }
-       
+
         // $sql = "
         //     SELECT * FROM 
         //     (SELECT qm.id,question_title,points,t.question_type,
@@ -794,6 +817,7 @@ public function search_question($all_data){
             ->orderBy('chapter_name');
     }, 'a')
     ->select('*')
+    ->orderByRaw($outer_extra)
     ->get();
     // dd(DB::getQueryLog($questionData));
         // $questionData = DB::select($sql);
