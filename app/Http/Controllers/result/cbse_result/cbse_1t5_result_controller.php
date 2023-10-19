@@ -621,10 +621,10 @@ else
 
         $responce_arr = array();
 
-        $sql_mark_grade = "select * 
-                          from result_co_scholastic
+        $sql_mark_grade = "select * from result_co_scholastic
                           where sub_institute_id = " . session()->get('sub_institute_id') . "
                               and term_id = " . session()->get('term_id') . "
+                              and standard_id = " . $_REQUEST['standard'] . "
                           ";
         $ret_mark_grade = DB::select(DB::raw($sql_mark_grade));
 

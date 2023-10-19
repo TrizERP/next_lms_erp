@@ -85,6 +85,7 @@ class bulkStudentController extends Controller
         $tblcustom_fields['roll_no']['name'] = 'Roll Number';
         $tblcustom_fields['image']['name'] = 'Image';
         $tblcustom_fields['uniqueid']['name'] = 'Unique ID';
+        $tblcustom_fields['dise_uid']['name'] = 'Dise U_ID';
 
         $tblcustom_fields['enrollment_no']['type'] = 'textbox';
         $tblcustom_fields['first_name']['type'] = 'textbox';
@@ -121,7 +122,8 @@ class bulkStudentController extends Controller
         $tblcustom_fields['anuualincome']['type'] = 'textbox';
         $tblcustom_fields['roll_no']['type'] = 'textbox';
         $tblcustom_fields['image']['type'] = 'file';
-        $tblcustom_fields['uniqueid']['type'] = 'textbox'; 
+        $tblcustom_fields['uniqueid']['type'] = 'textbox';
+        $tblcustom_fields['dise_uid']['type'] = 'textbox';
 
         $tblcustoms = tblcustomfieldsModel::select(['field_name', 'field_label', 'field_type'])
             ->where(["status" => "1", "table_name" => "tblstudent"])
