@@ -96,6 +96,8 @@ class cbse_1t5_result_controller extends Controller {
             $responce_arr[$cur_student_id]['date_of_birth'] = date("d-m-Y", strtotime($arr['dob']));
             $responce_arr[$cur_student_id]['gr_no'] = $arr['enrollment_no'];
             $responce_arr[$cur_student_id]['image'] = $arr['image'];
+            $responce_arr[$cur_student_id]['height'] = $arr['height'];
+            $responce_arr[$cur_student_id]['weight'] = $arr['weight'];
             $responce_arr[$cur_student_id]['exam'] = $all_exam;
             $responce_arr[$cur_student_id]['mark'] = $all_subject_mark[$cur_student_id];
             $responce_arr[$cur_student_id]['per'] = $this->getPer($all_subject_mark[$cur_student_id]);
@@ -112,7 +114,7 @@ class cbse_1t5_result_controller extends Controller {
                 $responce_arr[$cur_student_id]['total_working_day'] = $all_att_data[$cur_student_id]['total_working_day'];
                 $responce_arr[$cur_student_id]['teacher_remark'] = $all_att_data[$cur_student_id]['teacher_remark'];
             }
-            $responce_arr[$cur_student_id]['grade_range'] = $all_grd_data;            
+            $responce_arr[$cur_student_id]['grade_range'] = $all_grd_data;
         }
         if(session()->get('sub_institute_id')!=72){
         session()->put('term_id', $academicTerms[1]->term_id);
@@ -160,6 +162,8 @@ class cbse_1t5_result_controller extends Controller {
             $responce_arr_term2[$cur_student_id]['date_of_birth'] = date("d-m-Y", strtotime($arr['dob']));
             $responce_arr_term2[$cur_student_id]['gr_no'] = $arr['enrollment_no'];
             $responce_arr_term2[$cur_student_id]['image'] = $arr['image'];
+            $responce_arr_term2[$cur_student_id]['height'] = $arr['height'];
+            $responce_arr_term2[$cur_student_id]['weight'] = $arr['weight'];
             $responce_arr_term2[$cur_student_id]['exam'] = $all_exam;
             $responce_arr_term2[$cur_student_id]['mark'] = $all_subject_mark[$cur_student_id];
             $responce_arr_term2[$cur_student_id]['per'] = $this->getPer($all_subject_mark[$cur_student_id]);
@@ -193,6 +197,8 @@ class cbse_1t5_result_controller extends Controller {
         // return session()->get('sub_institute_id');exit;
         if(session()->get('sub_institute_id')==61){
             return \App\Helpers\is_mobile($type, "result/cbse_result/1t5_s1_show", $data, "view");
+        }elseif(session()->get('sub_institute_id')==195){
+            return \App\Helpers\is_mobile($type, "result/cbse_result/1t5_s1_altius", $data, "view");
         }else{
             return \App\Helpers\is_mobile($type, "result/cbse_result/1t5_s1_show2", $data, "view");
         }
@@ -626,6 +632,7 @@ else
                               and term_id = " . session()->get('term_id') . "
                               and standard_id = " . $_REQUEST['standard'] . "
                           ";
+
         $ret_mark_grade = DB::select(DB::raw($sql_mark_grade));
 
         if (count($ret_mark_grade) > 0) {
@@ -642,6 +649,7 @@ else
                                 comark.sub_institute_id = " . session()->get('sub_institute_id') . "
                                 order by comark.student_id,cop.sort_order,co.sort_order
                           ";
+                         // dd($sql_data);
                 $ret_data = DB::select(DB::raw($sql_data));
                 // converting data in array
                 $data_arr = array();
