@@ -1344,13 +1344,8 @@ class AJAXController extends Controller
                            <title></title>
                            <meta charset="UTF-8">
                            <meta name="viewport" content="width=erpice-width, initial-scale=1.0">
-                           <style>@font-face {
-            font-family: "Aakar";
-             src: url("' . asset("fonts/Aakar.ttf") . '") format("truetype");
-        }
-        body {
-            font-family: "Aakar", sans-serif; // Use the defined font-family
-        }</style>';
+                           <style>@font-face {font-family: "Aakar";src: url("' . asset("fonts/Aakar.ttf") . '") format("truetype");}
+                            body {font-family: "Aakar", sans-serif; // Use the defined font-family}</style>';
             $dom .= $fees_receipt_css;
             $dom .= '</head>
                         <body>';

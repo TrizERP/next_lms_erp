@@ -44,7 +44,7 @@
                             </div>
                             <div class="col-md-4 form-group">
                                 <label>Right Logo :</label>
-                                <input type="file" name="right_logo" class="dropify" data-default-file="/storage/result/left_logo/{{ $data['right_logo'] }}" accept="image/*">
+                                <input type="file" name="right_logo" class="dropify" data-default-file="/storage/result/right_logo/{{ $data['right_logo'] }}" accept="image/*">
                             </div>
                             <div class="col-md-4 form-group" style="margin-top: 25px">
                                 <label>Status : </label>

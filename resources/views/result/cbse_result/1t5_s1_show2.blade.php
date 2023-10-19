@@ -152,6 +152,7 @@ if($exam_name == 'TOTAL_MARKS') {$term1_tot += $subject_data['TOTAL_MARKS'];}
                                                             </table>
                                                         </td>
                                                     </tr>
+<!--                                                    
                                                     <tr>
                                                         <td class="p-t-10" width="100%" valign="top">
                                                             <div style='display:flex;'>
@@ -223,7 +224,7 @@ if($exam_name == 'TOTAL_MARKS') {$term1_tot += $subject_data['TOTAL_MARKS'];}
 
                                                         </td>
                                                     </tr>
-
+-->
                                                     @if(count($footer_data) > 0)
                                                     <tr>
                                                             <table style="border:hidden;" width="100%" cellspacing="0" cellpadding="0">
