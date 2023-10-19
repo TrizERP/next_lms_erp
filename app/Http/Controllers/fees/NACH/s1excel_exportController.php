@@ -164,7 +164,7 @@ class s1excel_exportController extends Controller {
     $objPHPExcel->setActiveSheetIndex(0);
     $rowCount = 1;
     foreach ($excel_header as $id => $val) {
-        $objPHPExcel->getActiveSheet()->SetCellValue($id . $rowCount, $val);
+        $objPHPExcel->getActiveSheet()->SetCellValue($id . $rowCount, $val,'s');
     }
 
     foreach ($studentRet as $cnt => $arr) {
@@ -232,7 +232,8 @@ class s1excel_exportController extends Controller {
                 default:
                     $set_value = "";
             }
-            $objPHPExcel->getActiveSheet()->SetCellValue($id . $rowCount, $set_value);
+            //$objPHPExcel->getActiveSheet()->SetCellValue($id . $rowCount, $set_value);
+            $objPHPExcel->getActiveSheet()->setCellValueExplicit($id . $rowCount, $set_value,'s');
         }
     }
     $objWriter = new PHPExcel_Writer_Excel2007($objPHPExcel);
