@@ -24,10 +24,38 @@ class BookController extends Controller
      */
     public function index(Request $request)
     {
+        $subjects = LibraryBook::groupBy('subject')->pluck('subject', 'id');
+        $publisher_names = LibraryBook::groupBy('publisher_name')->pluck('publisher_name', 'id');
+        $author_names = LibraryBook::groupBy('author_name')->pluck('author_name', 'id');
         if ($request->ajax()) {
             $sub_institute_id = session()->get('sub_institute_id');
             
-            $data = LibraryBook::where('sub_institute_id', $sub_institute_id)->latest()->get();
+            $data = LibraryBook::where('sub_institute_id', $sub_institute_id)
+            ->when(request('subject'),function($q){
+                $q->where('subject',request('subject'));
+            })
+            ->when(request('publisher_name'),function($q){
+                $q->where('publisher_name',request('publisher_name'));
+            })
+            ->when(request('author_name'),function($q){
+                $q->where('author_name',request('author_name'));
+            })
+            ->when(request('type'),function($q){
+                $q->whereHas('book_circulations', function ($q) {
+                    switch (request('type')) {
+                        case 'issued':
+                            $q->whereNotNull('issued_date')->whereNull('return_date');
+                            break;
+                        case 'due':
+                            $q->whereDate('due_date', now())->whereNull('return_date');
+                            break;
+                        case 'overdue':
+                            $q->whereDate('due_date', '<', now())->whereNull('return_date');
+                            break;
+                    }
+                });
+            })
+            ->latest()->get();
 
             return DataTables::of($data)
                 ->addColumn('checkbox', function ($row) {
@@ -38,13 +66,13 @@ class BookController extends Controller
                 })
                 ->addIndexColumn()
                 ->addColumn('action', function ($row) {
-                    $actionBtn = '<a href="javascript:void(0)" class="delete m-2 btn btn-danger btn-delete" title="Delete Book" data-id="' . $row->id . '"><i class="fa fa-trash"></i></a><a href="javascript:void(0)" class="m-2 btn btn-warning btn-edit ml-1" title="Edit Book" data-id="' . $row->id . '"><i class="fa fa-pencil"></i></a><a href="javascript:void(0)" class="m-2 btn btn-primary print-barcode ml-1" title="Print Barcode" data-id="' . $row->id . '"><i class="fa fa-barcode"></i></a><a href="javascript:void(0)" class="m-2 btn btn-info circulation ml-1" title="Issue/Return Book" data-id="' . $row->id . '"><i class="fa fa-retweet"></i></a>';
+                    $actionBtn = '<a href="javascript:void(0)" class="show m-2 btn btn-success btn-library-item" title="Show Book" data-id="' . $row->id . '"><i class="fa fa-eye"></i></a><a href="javascript:void(0)" class="delete m-2 btn btn-danger btn-delete" title="Delete Book" data-id="' . $row->id . '"><i class="fa fa-trash"></i></a><a href="javascript:void(0)" class="m-2 btn btn-warning btn-edit ml-1" title="Edit Book" data-id="' . $row->id . '"><i class="fa fa-pencil"></i></a><a href="javascript:void(0)" class="m-2 btn btn-primary print-barcode ml-1" title="Print Barcode" data-id="' . $row->id . '"><i class="fa fa-barcode"></i></a><a href="javascript:void(0)" class="m-2 btn btn-info circulation ml-1" title="Issue/Return Book" data-id="' . $row->id . '"><i class="fa fa-retweet"></i></a>';
                     return $actionBtn;
                 })
                 ->rawColumns(['checkbox', 'image', 'action'])
                 ->make(true);
         }
-        return view('library.books');
+        return view('library.books',compact('subjects','publisher_names','author_names'));
     }
 
     public function generateBarcode(Request $request, $id)
@@ -150,10 +178,21 @@ class BookController extends Controller
                     LibraryItem::where(['book_id' => $createBook->id, 'sub_institute_id' => $sub_institute_id])->where('item_code', '<', $request->no_of_items)->delete();
                 }
                 for ($i = 1; $i <= $request->no_of_items; $i++) {
+                    $lastItem = LibraryItem::orderBy('id', 'desc')->where('item_code','like','%L%')->first();
+                    if ($lastItem) {
+                        // Extract the numeric part of the item_code and increment it
+                        $lastItemCode = substr($lastItem->item_code, 1); // Remove the 'L' prefix
+                        $nextItemCode = (int)$lastItemCode + 1;
+                        $nextItemCode = str_pad($nextItemCode, 5, '0', STR_PAD_LEFT); // Ensure it's 5 digits
+                        $nextItemCode = 'L' . $nextItemCode;
+                    } else {
+                        // If no previous items exist, start with L00001
+                        $nextItemCode = 'L00001';
+                    }
                     $objItem = LibraryItem::updateOrCreate([
                         'book_id' => $createBook->id,
                         'call_number' => $createBook->call_number,
-                        'item_code' => $i,
+                        'item_code' => $nextItemCode,
                     ]);
                 }
                 if ($objItem) {
@@ -217,6 +256,16 @@ class BookController extends Controller
         $del = LibraryBook::whereIn('id', $ids)->delete();
         return response()->json(['message'=>'Book Deleted Successfully !'],200);
     }
+    public function deleteItem($id)
+    {
+        $del = LibraryItem::find($id);
+        $book_id = $del->book_id;
+        if($del){
+            $del->delete();
+        }
+        return response()->json(['message'=>'Book Item Deleted Successfully !','book_id'=>$book_id],200);
+    }
+    
     /**
      * Remove the specified resource from storage.
      *
@@ -231,6 +280,14 @@ class BookController extends Controller
         $view = View::make('library.user_detail', compact('details'))->render();
         return response()->json(['data' => $view], 200);
     }
+
+    public function item($id)
+    {
+        $book = LibraryBook::with('items')->findOrFail($id);
+        $view = View::make('library.item_detail', compact('book'))->render();
+        return response()->json(['data' => $view], 200);
+    }
+    
     /**
      * Remove the specified resource from storage.
      *
