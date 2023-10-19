@@ -32,15 +32,53 @@
                         <div class="row">
                             <div class="col-lg-12 col-sm-3 col-xs-3 row">
                                 <div class="col-md-3 pull-right">
-                                    <select id="cmbyear" class="form-control" name="cmbyear"
-                                        onchange="getyearwise_holiday(this.value);">
-                                        <option value="">Select Year</option>
-                                        <option value="2023">2023-2024</option>
-                                        <option value="2022">2022-2023</option>
-                                        <option value="2021">2021-2022</option>
+                                    <label for="">Status</label>
+                                    <select id="bookFilter" class="form-control" name="bookFilter"
+                                        onchange="getBooks(this.value);">
+                                        <option value="">All</option>
+                                        <option value="issued">Issued Books</option>
+                                        <option value="due">Due Books</option>
+                                        <option value="overdue">Over Due</option>
                                     </select>
                                 </div>
-                                <div class="col-md-2">
+                                <div class="col-md-3 pull-right">
+                                    <label for="">Subject</label>
+                                    <select id="subjectFilter" class="form-control" name="subjectFilter"
+                                        onchange="getSubjects(this.value);">
+                                        <option value="">All</option>
+                                        @foreach ($subjects as $key => $value)
+                                            @if (!empty($value))
+                                                <option value="{{ $value }}">{{ $value }}</option>
+                                            @endif
+                                        @endforeach
+                                    </select>
+                                </div>
+                                <div class="col-md-3 pull-right">
+                                    <label for="">Publisher Name</label>
+                                    <select id="publisherFilter" class="form-control" name="publisherFilter"
+                                        onchange="getPublishers(this.value);">
+                                        <option value="">All</option>
+                                        @foreach ($publisher_names as $key => $value)
+                                            @if (!empty($value))
+                                                <option value="{{ $value }}">{{ $value }}</option>
+                                            @endif
+                                        @endforeach
+                                    </select>
+                                </div>
+                                <div class="col-md-3 pull-right">
+                                    <label for="">Author Name</label>
+                                    <select id="authorFilter" class="form-control" name="authorFilter"
+                                        onchange="getAuthors(this.value);">
+                                        <option value="">All</option>
+                                        @foreach ($author_names as $key => $value)
+                                            @if (!empty($value))
+                                                <option value="{{ $value }}">{{ $value }}</option>
+                                            @endif
+                                        @endforeach
+                                    </select>
+                                </div>
+
+                                <div class="col-md-4 mt-2">
                                     <a class="btn btn-danger delete-all"><i class="fa fa-trash"></i>
                                         Delete </a>
                                     <a class="btn btn-info print-barcode"><i class="fa fa-barcode"></i>
@@ -298,6 +336,34 @@
             </div>
         </div>
     </div>
+    <div class="modal fade" id="mdlViewBarcode" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel"
+        aria-hidden="true">
+        <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalTitle"> Barcode of Book</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="mdlViewBarcode"></div>
+            </div>
+        </div>
+    </div>
+    <div class="modal fade" id="mdlItemBook" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel"
+        aria-hidden="true">
+        <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalItemTitle"> Items of Book</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="mdlItemBook"></div>
+            </div>
+        </div>
+    </div>
 </div>
 
 @include('includes.footerJs')
@@ -451,6 +517,81 @@
             });
         });
 
+        $(document).on("click", ".btn-edit", function(e) {
+            $('#navLinkList').removeClass('active')
+            $('#navLinkCreate').addClass('active')
+            $('#right-tab-2').removeClass('active')
+            $('#right-tab-1').addClass('active')
+            var id = $(this).data('id')
+            var url = "{{ route('books.edit', ':id') }}";
+            var url = url.replace(':id', id);
+            $.ajax({
+                type: "get",
+                url: url,
+                cache: false,
+                contentType: false,
+                processData: false,
+                success: function(data) {
+                    $('#title').val(data.data.title);
+                    $('#sub_title').val(data.data.sub_title);
+                    $('#material_resource_type').val(data.data.material_resource_type);
+                    $('#edition').val(data.data.edition);
+                    $('#tags').val(data.data.tags);
+                    $('#no_of_items').val(data.data.no_of_items);
+                    $('#author_name').val(data.data.author_name);
+                    $('#isbn_issn').val(data.data.isbn_issn);
+                    $('#classification').val(data.data.classification);
+                    $('#publisher_name').val(data.data.publisher_name);
+                    $('#publish_year').val(data.data.publish_year);
+                    $('#publish_place').val(data.data.publish_place);
+                    $('#collation').val(data.data.collation);
+                    $('#series_title').val(data.data.series_title);
+                    $('#call_number').val(data.data.call_number);
+                    $('#language').val(data.data.language);
+                    $('#source').val(data.data.source);
+                    $('#subject').val(data.data.subject);
+                    $('#price').val(data.data.price);
+                    $('#price_currency').val(data.data.price_currency);
+                    $('#notes').val(data.data.notes);
+                    $('#review').val(data.data.review);
+                    $('#image').val(data.data.image);
+                    $('#file_att').val(data.data.file_att);
+                    console.log(data);
+                },
+                error: function(xhr) {
+                    console.log(xhr);
+                }
+            });
+        });
+
+        function deleteItem(id) {
+            if (confirm('Are you sure to delete item')) {
+                var url = "{{ route('books.items.destroy', ':id') }}";
+                url = url.replace(':id', id);
+                $.ajax({
+                    type: "delete",
+                    url: url,
+                    data: {
+                        id: id
+                    },
+                    success: function(data) {
+                        console.log(data.book_id);
+                        $('#mdlItemBook').modal('toggle');
+                        showItemByBook(data.book_id)
+                    },
+                    error: function(xhr) {
+                        if (xhr.status == 422) {
+                            var errors = JSON.parse(xhr.responseText);
+                            $.each(errors.errors, function(i, error) {
+                                $('#' + i).after(
+                                    '<span class="text-strong text-danger">' +
+                                    error + '</span>')
+                            })
+                        }
+                    }
+                });
+            }
+        }
         $(document).on("click", ".return-book", function(e) {
             $('.error').remove()
             var url = "{{ route('books.return', ':id') }}";
@@ -512,6 +653,21 @@
             });
             deleteBook(ids)
         });
+
+        $(document).on("click", ".delete-item", function(e) {
+            e.preventDefault();
+            var id = $(this).data('id');
+            deleteItem(id);
+        });
+        $(document).on("click", ".printBarcode", function(e) {
+            var ids = []
+            $(".checkSingle").each(function() {
+                if (this.checked) {
+                    ids.push($(this).attr('id'));
+                }
+            });
+            printBarcode(ids)
+        });
         $(document).on("click", ".circulation", function(e) {
             e.preventDefault();
             var id = $(this).data('id');
@@ -527,6 +683,11 @@
             ids.push(id);
             deleteBook(ids)
         });
+        $(document).on("click", ".btn-library-item", function(e) {
+            e.preventDefault();
+            var id = $(this).data('id');
+            showItemByBook(id)
+        });
         $(document).on("click", ".print-barcode", function(e) {
             e.preventDefault();
             var ids = [];
@@ -534,6 +695,33 @@
             ids.push(id);
             printBarcode(ids)
         });
+
+        function showItemByBook(id) {
+            var url = "{{ route('books.item', ':id') }}";
+            url = url.replace(':id', id);
+            $.ajax({
+                type: "get",
+                url: url,
+                data: {
+                    id: id
+                },
+                success: function(data) {
+                    console.log(data.data);
+                    $('.mdlItemBook').html(data.data);
+                    $('#mdlItemBook').modal('toggle');
+                },
+                error: function(xhr) {
+                    if (xhr.status == 422) {
+                        var errors = JSON.parse(xhr.responseText);
+                        $.each(errors.errors, function(i, error) {
+                            $('#' + i).after(
+                                '<span class="text-strong text-danger">' +
+                                error + '</span>')
+                        })
+                    }
+                }
+            });
+        }
 
         function printBarcode(ids) {
             var url = "{{ route('books.barcode', ':id') }}";
@@ -590,6 +778,18 @@
 
     function getyearwise_holiday(year) {
         $('#tblBooks').DataTable().ajax.url("?year=" + year).load();;
+    }
+
+    function getSubjects(subject) {
+        $('#tblBooks').DataTable().ajax.url("?subject=" + subject).load();;
+    }
+
+    function getPublishers(publisher) {
+        $('#tblBooks').DataTable().ajax.url("?publisher_name=" + publisher).load();;
+    }
+
+    function getAuthors(author) {
+        $('#tblBooks').DataTable().ajax.url("?author_name=" + author).load();;
     }
 </script>
 @include('includes.footer')
