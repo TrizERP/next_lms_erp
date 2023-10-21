@@ -46,24 +46,24 @@
                                             <table class="report-card" style="border-collapse:collapse;" width="100%" cellspacing="0" cellpadding="0">
                                                 <tbody>
                                                     <tr>
-                                                         <td style="text-align: center;" align="left">
+                                                         <td style="text-align: center;" align="left" width="15%">
                                                             <img style="height: 90px;margin: 0;" src="/storage/result/left_logo/{{$header_data['left_logo']}}" alt="SCHOOL LOGO">
                                                          </td>
-                                                         <td style="text-align:center !important;" align="center" colspan="2"> 
+                                                         <td style="text-align:center !important;" align="center" colspan="2" width="70%"> 
                                                             <span class="sc-hd">{{$header_data['line1']}}</span><br>   
                                                             <span class="ma-hd">{{$header_data['line2']}}</span><br>  
                                                             <span class="rg-hd">{{$header_data['line3']}}</span><br> 
-                                                            <span class="rg-hd" style="color:#313e84 !important">{{$header_data['line4']}}</span><br>
+                                                            <span class="rg-hd" style="color:#313e84 !important">2nd KM STONE, Opp. Swami Vivekananda Marble Factory,<br/>Near Patel Wadi Piplag, Piplag-Nadiad Crossing, Piplag,Ta.Nadiad, Gujarat-387355.</span><br>
                                                          </td>
-                                                         <td style="text-align: center;" align="left">
-                                                            <img style="height: 90px;margin: 0;" src="/storage/result/right_logo/{{$header_data['right_logo']}}" alt="SCHOOL LOGO">                                                            
+                                                         <td style="text-align: center;" align="left" width="15%">
+                                                            <img style="height: 90px;margin: 0;" src="/storage/result/right_logo/{{$header_data['right_logo']}}" alt="SCHOOL LOGO">
                                                          </td>
                                                     </tr>
                                                     <tr>
-                                                        <td colspan="2">
+                                                        <td colspan="2" width="50%">
                                                             <span class="rg-hd">Phone No. : +91 937 716 0777 | +91 942 793 7777</span>
                                                         </td>
-                                                        <td colspan="2" align="right">
+                                                        <td colspan="2" align="right" width="50%">
                                                             <span class="rg-hd">Website : www.altiusfortius.in</span>
                                                         </td>
                                                     </tr>
