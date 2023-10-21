@@ -1,8 +1,9 @@
-@include('includes.headcss')
+{{--@include('includes.headcss')
 @include('includes.header')
-@include('includes.sideNavigation')
-
-<div id="page-wrapper">
+@include('includes.sideNavigation')--}}
+@extends('layout')
+@section('container')
+    <div id="page-wrapper">
     <div class="container-fluid">
             <div class="row bg-title">
                 <div class="col-lg-3 col-md-4 col-sm-4 col-xs-12">
@@ -68,7 +69,7 @@
                     <div class="col-md-4 form-group">
                         <label>Mobile No.</label>
                         <input type="text" id="mobile_no" value="{{$mobile_no}}" name="mobile_no" class="form-control">
-                    </div>                    
+                    </div>
                     <div class="col-md-4 form-group">
                         <label>{{ App\Helpers\get_string('uniqueid','request')}}</label>
                         <input type="text" id="uniqueid" value="{{$uniqueid}}" name="uniqueid" class="form-control">
@@ -87,7 +88,7 @@
             if(isset($data['fees_data'])){
                 $fees_data = $data['fees_data'];
             }
-            
+            $displayedNames = [];
         @endphp
         <div class="card">
             <div class="table-responsive">
@@ -101,8 +102,16 @@
                             <th>Mobile No.</th>
                             <th>{{ App\Helpers\get_string('uniqueid','request')}}</th>
                             <th>Roll No.</th>
-                            <th style="background-color:#7befef;">Total Breakoff</th>
-                            <th style="background-color:#7befef;">Total Paid</th>
+                            <th style="background-color:#7befef;">Transport Fees</th>
+                            <th style="background-color:#7befef;">Regular</th>
+                            <th style="background-color:#7befef;">Reg+Bus</th>
+                            @foreach($data['fees_titles'] as $values)
+                                @if ($values->display_name !== 'Transport Fees')
+                                    <th style="background-color:#7befef;">{{ $values->display_name }}</th>
+                                @endif
+                            @endforeach
+                            <th style="background-color:#7befef;">Total</th>
+                            <th style="background-color:#7befef;">Total Paid</th> 
                             <th style="background-color:#7befef;">Total Unpaid</th>
                         </tr>
                     </thead>
@@ -110,6 +119,9 @@
                         @php
                         $j=1;
                         $total_breakoff = $total_paid = $total_unpaid = 0;
+                        $totalSum = 0;
+                        $toSum = 0;
+                        $displayNamesToExclude = ['Transport Fees', '2017-2018', '2018-2019', '2019-2020', '2020-2021', '2021-2022', '2022-2023'];
                         @endphp
 
                         @if(isset($data['fees_data']))
@@ -122,19 +134,81 @@
                                 <td>{{isset($fees_value['mobile']) ? $fees_value['mobile'] : ''}}</td>
                                 <td>{{isset($fees_value['uniqueid']) ? $fees_value['uniqueid'] : ''}}</td>
                                 <td>{{isset($fees_value['roll_no']) ? $fees_value['roll_no'] : ''}}</td>
+                                <td style="background-color:#7befef;">{{ $fees_value['final_fee']['Transport Fees'] ?? 0 }}</td>
+                                @php
+                                    $regBk = $fees_value['-']['bk'] ?? 0;
+                                    $excFees = ['Transport Fees', '2017-2018', '2018-2019', '2019-2020', '2020-2021', '2021-2022', '2022-2023'];
+                                    $excSum = 0;
+
+                                    foreach ($excFees as $excFee) 
+                                    {
+                                        if (isset($fees_value['final_fee'][$excFee])) 
+                                        {
+                                            $excSum += $fees_value['final_fee'][$excFee];
+                                        }
+                                    }
+                                    $toSum = $regBk - $excSum;
+
+                                    $regbus = ($fees_value['final_fee']['Transport Fees'] ?? 0) + $toSum;
+                                @endphp
+                                <td style="background-color:#7befef;">{{ $toSum ?? 0 }}</td>
+                                <td style="background-color:#7befef;">{{ $regbus }}</td>
+                                @foreach($data['fees_titles'] as $values)
+                                    @php
+                                        $found = false;
+                                        $fee = 0; // Default value if not found
+                                    @endphp
+                                    @if(isset($fees_value['final_fee'][$values->display_name]))
+                                        @php
+                                            $found = true;
+                                            $fee = $fees_value['final_fee'][$values->display_name];
+                                        @endphp
+                                    @endif
+                                    @if ($values->display_name !== 'Transport Fees')
+                                        <td style="background-color:#7befef;">{{ $fee }}</td>
+                                        @php
+                                            $totalSum += $fee;
+                                        @endphp
+                                    @endif
+                                @endforeach
+
+                                @php
+                                    $regularBk = $fees_value['-']['bk'] ?? 0;
+                                    $excludeFees = ['Transport Fees', '2017-2018', '2018-2019', '2019-2020', '2020-2021', '2021-2022', '2022-2023'];
+                                    $excludeSum = 0;
+
+                                    foreach ($excludeFees as $excludeFee) 
+                                    {
+                                        if (isset($fees_value['final_fee'][$excludeFee])) 
+                                        {
+                                            $excludeSum += $fees_value['final_fee'][$excludeFee];
+                                        }
+                                    }
+                                    $totalSum = $regularBk - $excludeSum;
+                                @endphp
+
                                 <td style="background-color:#7befef;">{{$fees_value['-']['bk'] ?? 0 }}</td>
-                                <td style="background-color:#7befef;">{{$fees_value['-']['paid'] ?? 0 }}</td>
-                                <td style="background-color:#7befef;">{{$fees_value['-']['remain'] ?? 0}}</td>  
+                                <td style="background-color:#7befef;">{{$fees_value['-']['paid'] ?? 0 }}</td> 
+                                <td style="background-color:#7befef;">{{$fees_value['-']['remain'] ?? 0 }}</td>
                             </tr>
                             @php
                             $j++;
-                            $total_paid += $fees_value['-']['paid'] ?? 0;
                             $total_breakoff += $fees_value['-']['bk'] ?? 0;
+                            $total_paid += $fees_value['-']['paid'] ?? 0;
                             $total_unpaid += $fees_value['-']['remain'] ?? 0;
                             @endphp
                             @endforeach
                             <tr class="font-weight-bold">
                                 <td>{{$j++}}</td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
                                 <td></td>
                                 <td></td>
                                 <td></td>
@@ -161,7 +235,7 @@
        // $('#grade').attr('required', 'required');
 //$('#standard').attr('required', 'required');
     //});
-   
+
     function checkAll(ele) {
          var checkboxes = document.getElementsByTagName('input');
          if (ele.checked) {
@@ -182,32 +256,32 @@
 </script>
 <script>
     $(document).ready(function() {
-    // Setup - add a text input to each footer cell    
+    // Setup - add a text input to each footer cell
 
      var table = $('#example').DataTable( {
-         select: true,          
-         lengthMenu: [ 
-                        [100, 500, 1000, -1], 
-                        ['100', '500', '1000', 'Show All'] 
+         select: true,
+         lengthMenu: [
+                        [100, 500, 1000, -1],
+                        ['100', '500', '1000', 'Show All']
         ],
-        dom: 'Bfrtip', 
-        buttons: [ 
-            { 
+        dom: 'Bfrtip',
+        buttons: [
+            {
                 extend: 'pdfHtml5',
                 title: 'Fees Overall Report',
                 orientation: 'landscape',
-                pageSize: 'LEGAL',                
+                pageSize: 'LEGAL',
                 pageSize: 'A0',
-                exportOptions: {                   
-                     columns: ':visible'                             
+                exportOptions: {
+                     columns: ':visible'
                 },
-            }, 
-            { extend: 'csv', text: ' CSV', title: 'Fees Overall Report' }, 
-            { extend: 'excel', text: ' EXCEL', title: 'Fees Overall Report' }, 
-            { extend: 'print', text: ' PRINT', title: 'Fees Overall Report' },             
-            'pageLength' 
-        ], 
-        }); 
+            },
+            { extend: 'csv', text: ' CSV', title: 'Fees Overall Report' },
+            { extend: 'excel', text: ' EXCEL', title: 'Fees Overall Report' },
+            { extend: 'print', text: ' PRINT', title: 'Fees Overall Report' },
+            'pageLength'
+        ],
+        });
         //table.buttons().container().appendTo('#example_wrapper .col-md-6:eq(0)');
 
 
@@ -232,3 +306,4 @@
 } );
 </script>
 @include('includes.footer')
+@endsection
