@@ -57,13 +57,12 @@ class taskController extends Controller
             $res['to_date'] = $to_date;
         }
 
-        if (strtoupper($user_profile_name) != 'ADMIN') {
-            $data = $data->where('t.TASK_ALLOCATED_TO', $user_id);
-        }
+        // Filter for tasks assigned to Melvin
+        $data = $data->where(function ($query) use ($user_id) {
+            $query->where('t.TASK_ALLOCATED_TO', $user_id)
+                ->orWhere('t.TASK_ALLOCATED', $user_id);
+        });
 
-        /* if (strtoupper($user_profile_name) != 'ICT') {
-            $data = $data->where('t.TASK_ALLOCATED_TO', $user_id);
-        } */
         $data = $data->orderBy('t.ID', 'desc');
         $data = $data->get()->toArray();
 
