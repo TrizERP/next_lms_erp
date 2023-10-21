@@ -124,6 +124,7 @@ class feesDefaulterReportController extends Controller
 
         foreach ($feesData as $key => $value) {
             $bk_data = $controller->getBk($request, $value['id']);
+            // echo "<pre>";print_r($bk_data);exit;
             if (count($bk_data) > 0) {
                 $final_array[$value['id']]['enrollment'] = $bk_data['stu_data']['enrollment'];
                 $final_array[$value['id']]['name'] = $bk_data['stu_data']['name'];
@@ -151,22 +152,34 @@ class feesDefaulterReportController extends Controller
                 $final_array[$value['id']]['discount'] = $fees_fine_discount_data[$value['id']]['total_disc'];
             } 
 
-        if (isset($final_array[$value['id']])) {
-            $student_data = $final_array[$value['id']];
-            $total_paid_student =  $total_remain_student =  $total_bk_student = 0;
-
-            foreach ($student_data as $key => $data) {
-                if ($key !== 'total_bk' && is_array($data) && isset($data['bk']) ||  isset($data['paid']) ||  isset($data['remain']) ) {
-                    $total_paid_student += $data['paid'];
-                    $total_remain_student += $data['remain'];
-                    $total_bk_student += $data['bk'];            
-                    $final_array[$value['id']]['-']['paid'] = $total_paid_student;
-                    $final_array[$value['id']]['-']['remain'] = $total_remain_student; 
-                    $final_array[$value['id']]['-']['bk'] = $total_bk_student; 
-                }
+            if (isset($bk_data['final_fee'])) {
+                $final_array[$value['id']]['final_fee'] = $bk_data['final_fee'];
             }
-        } 
+
+            if (isset($final_array[$value['id']])) {
+                $student_data = $final_array[$value['id']];
+                $total_paid_student =  $total_remain_student =  $total_bk_student = 0;
+
+                foreach ($student_data as $key => $data) {
+                    if ($key !== 'total_bk' && is_array($data) && isset($data['bk']) ||  isset($data['paid']) ||  isset($data['remain']) ) {
+                        $total_paid_student += $data['paid'];
+                        $total_remain_student += $data['remain'];
+                        $total_bk_student += $data['bk'];            
+                        $final_array[$value['id']]['-']['paid'] = $total_paid_student;
+                        $final_array[$value['id']]['-']['remain'] = $total_remain_student; 
+                        $final_array[$value['id']]['-']['bk'] = $total_bk_student; 
+                    }
+                }
+            } 
         }
+
+        $get_fees_titles = DB::table('fees_title')
+            ->select('display_name', 'fees_title')
+            ->where('sub_institute_id', session()->get('sub_institute_id'))
+            ->where('syear', session()->get('syear'))
+            ->where('other_fee_id', '>', 0)
+            ->orderBy('other_fee_id')
+            ->get()->toArray();
 
         $res['status_code'] = 1;
         $res['message'] = "Success";
@@ -180,7 +193,8 @@ class feesDefaulterReportController extends Controller
         $res['last_name'] = $last_name;
         $res['mobile_no'] = $mobile_no;
         $res['uniqueid'] = $uniqueid;
-        // echo "<pre>";print_r($final_array);exit;
+        $res['fees_titles'] = $get_fees_titles;
+        //  echo "<pre>";print_r($final_array);exit;
         return is_mobile($type, "fees/fees_report/show_fees_defaulter_report", $res, "view");
     }
 }
