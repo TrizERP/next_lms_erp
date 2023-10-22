@@ -1,6 +1,8 @@
-@include('includes.lmsheadcss')
+{{--@include('includes.lmsheadcss')
 @include('includes.header')
-@include('includes.sideNavigation')
+@include('includes.sideNavigation')--}}
+@extends('lmslayout')
+@section('container')
 <style>
     br {
         display: block !important;
@@ -318,3 +320,4 @@
     }
 </script>
 @include('includes.footer')
+@endsection

@@ -1,11 +1,13 @@
-@include('includes.headcss')
+{{--@include('includes.headcss')
 @include('includes.header')
-@include('includes.sideNavigation')
+@include('includes.sideNavigation')--}}
+@extends('layout')
+@section('container')
 <!-- Content main Section -->
                 <div class="content-main flex-fill">
                     <h1 class="h4 mb-3">LMS</h1>
                     <nav aria-label="breadcrumb">
-                        
+
                     </nav>
 
                     <div class="container-fluid mb-5">
@@ -32,7 +34,7 @@
                                         </div> -->
                                     </div>
                                 </div>
-                            </div>                          
+                            </div>
                             <!-- <div class="col-md-3 mb-3 mb-md-4">
                                 <div class="h4 mb-3">Related videos</div>
                                 <div class="related-video">
@@ -92,3 +94,4 @@
                 </div>
 @include('includes.footerJs')
 @include('includes.footer')
+@endsection

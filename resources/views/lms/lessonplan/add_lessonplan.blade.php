@@ -1,4 +1,6 @@
-@include('includes.lmsheadcss')
+{{--@include('includes.lmsheadcss')--}}
+@extends('lmslayout')
+@section('container')
 <link href="/plugins/bower_components/clockpicker/dist/jquery-clockpicker.min.css" rel="stylesheet">
 <style>
     .tooltip-inner {
@@ -16,10 +18,10 @@
     .content-main {
         padding-bottom: 0px !important;
     }
-   
+
 </style>
-@include('includes.header')
-@include('includes.sideNavigation')
+{{--@include('includes.header')
+@include('includes.sideNavigation')--}}
 <link href="{{ asset('css/style.css') }}" rel="stylesheet" />
 <div class="content-main flex-fill">
     <div class="row justify-content-between">
@@ -321,7 +323,7 @@ var selfstudyact12 = {!! DB::table('content_master')
         ->whereIn('id', explode(',', $selfstudyact12)) ->where('sub_institute_id', session()->get('sub_institute_id')) ->where('syear', session()->get('syear'))
     ->selectRaw('id, title, file_folder, filename')
     ->get() !!};
-    
+
     const newData = [
         [{
                 header: "Standard",
@@ -1117,3 +1119,4 @@ var selfstudyact12 = {!! DB::table('content_master')
 </script>
 
 @include('includes.footer')
+@endsection

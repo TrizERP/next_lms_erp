@@ -24,7 +24,7 @@ class lessonplanningReportController extends Controller
     public function getData($request)
     {
         $sub_institute_id = $request->session()->get('sub_institute_id');
-        $marking_period_id = session()->get('term_id');
+        /*$marking_period_id = session()->get('term_id');
         return lessonplanningModel::from("lessonplan as l")
             ->select('l.id', 'l.title', 'l.description', 'l.school_date',
                 's.name as standard_name', 'd.name as division_name', 'ss.subject_code', 'ss.subject_name',
@@ -42,6 +42,30 @@ class lessonplanningReportController extends Controller
             ->leftjoin('lessonplan_execution as le', 'le.lessonplan_id', '=', 'l.id')
             ->where(['l.sub_institute_id' => $sub_institute_id])
             ->orderBy('l.school_date', 'asc')
+            ->get();*/
+
+
+        return LessonplanningModel::from("lessonplan as l")
+            ->select(
+                'l.id',
+                'l.title',
+                'l.description',
+                'l.school_date',
+                's.name as standard_name',
+                'd.name as division_name',
+                'ss.subject_code',
+                'ss.subject_name',
+                DB::raw('ifnull(le.lessonplan_status, "-") as lessonplan_status'),
+                DB::raw('ifnull(le.lessonplan_reason, "-") as lessonplan_reason'),
+                DB::raw('ifnull(le.school_date, "-") as lessonplan_date')
+            )
+            ->join('standard as s', 's.id', '=', 'l.standard_id')
+            ->join('division as d', 'd.id', '=', 'l.division_id')
+            ->join('subject as ss', 'ss.id', '=', 'l.subject_id')
+            ->leftjoin('lessonplan_execution as le', 'le.lessonplan_id', '=', 'l.id')
+            ->where(['l.sub_institute_id' => $sub_institute_id])
+            ->orderBy('l.school_date', 'asc')
             ->get();
+
     }
 }

@@ -1,7 +1,8 @@
-@include('includes.headcss')
+{{--@include('includes.headcss')
 @include('includes.header')
-@include('includes.sideNavigation')
-
+@include('includes.sideNavigation')--}}
+@extends('layout')
+@section('container')
 <!-- Content main Section -->
 
 <div class="content-main flex-fill">
@@ -11,7 +12,7 @@
                 <form action="{{ route('lmsVirtualClassroom.update',['id'=>$data['virtualclassroom_data']['id']])}}" method="post">
                     {{ method_field("PUT") }}
                     @csrf
-                    
+
                     <div class="row">
                         <div class="col-md-4">
                             <div class="form-group">
@@ -33,14 +34,14 @@
                                     <option value="Yes" @if(isset($data['virtualclassroom_data']['recurring'])) @if( $data['virtualclassroom_data']['recurring'] == "Yes" ) selected='selected' @endif @endif>Yes</option>
                                     <option value="No" @if(isset($data['virtualclassroom_data']['recurring'])) @if( $data['virtualclassroom_data']['recurring'] == "No" ) selected='selected' @endif @endif>No</option>
                                 </select>
-                            </div>    
+                            </div>
                         </div>
                         <div class="col-md-4">
                             <div class="form-group" id="event_date_div">
                                 <label for="event_date">Event Date</label>
                                 <input type="text" class="form-control mydatepicker" placeholder="dd/mm/yyyy" value="@if(isset($data['virtualclassroom_data']['event_date'])){{$data['virtualclassroom_data']['event_date']}}@endif" name="event_date" autocomplete="off">
-                                <span class="input-group-addon"><i class="icon-calender"></i></span> 
-                            </div>                            
+                                <span class="input-group-addon"><i class="icon-calender"></i></span>
+                            </div>
                         </div>
                         <div class="col-md-4">
                             <div class="form-group" id="from_time_div">
@@ -49,7 +50,7 @@
                                     <input type="text" id='from_time' name="from_time" class="form-control" value="@if(isset($data['virtualclassroom_data']['from_time'])){{$data['virtualclassroom_data']['from_time']}}@endif" >
                                     <span class="input-group-addon"><span class="glyphicon glyphicon-time"></span></span>
                                 </div>
-                            </div>    
+                            </div>
                         </div>
                         <div class="col-md-4">
                             <div class="form-group" id="to_time_div">
@@ -58,7 +59,7 @@
                                     <input type="text" id='to_time' name="to_time" class="form-control" value="@if(isset($data['virtualclassroom_data']['to_time'])){{$data['virtualclassroom_data']['to_time']}}@endif" >
                                     <span class="input-group-addon"><span class="glyphicon glyphicon-time"></span></span>
                                 </div>
-                            </div>    
+                            </div>
                         </div>
                         <div class="col-md-4">
                             <div class="form-group">
@@ -80,7 +81,7 @@
                                     <option value="Yes" @if(isset($data['virtualclassroom_data']['status'])) @if( $data['virtualclassroom_data']['status'] == "Yes" ) selected='selected' @endif @endif>Yes</option>
                                     <option value="No" @if(isset($data['virtualclassroom_data']['status'])) @if( $data['virtualclassroom_data']['status'] == "No" ) selected='selected' @endif @endif>No</option>
                                 </select>
-                            </div>    
+                            </div>
                         </div>
                         <div class="col-md-4">
                             <div class="form-group">
@@ -90,7 +91,7 @@
                                     <option value="Yes" @if(isset($data['virtualclassroom_data']['notification'])) @if( $data['virtualclassroom_data']['notification'] == "Yes" ) selected='selected' @endif @endif>Want to send notification to students?</option>
                                     <option value="No" @if(isset($data['virtualclassroom_data']['notification'])) @if( $data['virtualclassroom_data']['notification'] == "No" ) selected='selected' @endif @endif>Don't want to send notification to students.</option>
                                 </select>
-                            </div>    
+                            </div>
                         </div>
                         <div class="col-md-4">
                             <div class="form-group">
@@ -98,7 +99,7 @@
                                 <input type="number" class="form-control" id="sort_order" name="sort_order" value="@if(isset($data['virtualclassroom_data']['sort_order'])){{$data['virtualclassroom_data']['sort_order']}}@endif" required>
                             </div>
                         </div>
-                    </div> 
+                    </div>
                     <button class="btn btn-primary" type="submit">Save</button>
                     <!-- <button class="btn btn-outline-primary" type="submit">Reset</button> -->
                 </form>
@@ -111,11 +112,11 @@
 <script>
 
 $( document ).ready(function() {
-   
-    $('#datetimepicker').datetimepicker({           
-        //format: 'DD/MM/YYYY hh:SS A'                     
+
+    $('#datetimepicker').datetimepicker({
+        //format: 'DD/MM/YYYY hh:SS A'
     });
-        
+
 });
 
 
@@ -124,8 +125,8 @@ $( document ).ready(function() {
 // $(this).change(function () {
 //$(".load_map_value").change(function(){
 $(document).on('change','.load_map_value', function(){
-    var mapping_type = $(this).val();      
-    var data_new = $(this).attr('data-new');  
+    var mapping_type = $(this).val();
+    var data_new = $(this).attr('data-new');
        // alert(mapping_type);
        // alert(data_new);
 
@@ -134,7 +135,7 @@ $(document).on('change','.load_map_value', function(){
     $.ajax({
         url:path,
         data:'mapping_type='+mapping_type,
-        success:function(result){                     
+        success:function(result){
             //var e = $('#mapping_value[data-new='+data_new+']');
             var e = $('select[name="mapping_value[]"][data-new='+data_new+']');
             $(e).find('option').remove().end();
@@ -157,29 +158,29 @@ function addNewRow(){
         data_new =  parseInt($(this).attr('data-new'));
         html = $(this).html();
     });
-    data_new = parseInt(data_new) + 1; 
+    data_new = parseInt(data_new) + 1;
 
     var mapping_type_data = html;//$('#mapping_type:first').html();
-    var htmlcontent = '';    
+    var htmlcontent = '';
     htmlcontent += '<div class="clearfix"></div><div class="addButtonCheckbox" style="display: flex; margin-right: -15px; margin-left: -15px; flex-wrap: wrap;">';
 
     htmlcontent += '<div class="col-md-4"><div class="form-group"><label for="topicType">Mapping Type</label><select class="load_map_value form-control cust-select" name="mapping_type[]" data-new='+data_new+'>'+mapping_type_data+'</select></div></div>';
     htmlcontent += '<div class="col-md-4"><div class="form-group"><label for="topicType2">Mapping Value</label><select class="form-control cust-select" name="mapping_value[]" data-new='+data_new+'><option>Select Mapping Value</option></select></div></div>';
     htmlcontent += '<div class="col-md-4" style="margin-top: 32px;"><a href="javascript:void(0);" onclick="removeNewRow();" class="d-inline btn btn-danger btn-sm"><i class="mdi mdi-minus"></i></a></div></div>';
-                             
+
     $('.addButtonCheckbox:last').after(htmlcontent);
 }
-function removeNewRow() {     
-    $(".addButtonCheckbox:last" ).remove();      
+function removeNewRow() {
+    $(".addButtonCheckbox:last" ).remove();
 }
 
-function removeOldRow(j) {     
-    $("#old_data_"+j ).remove();      
+function removeOldRow(j) {
+    $("#old_data_"+j ).remove();
 }
 
 function restrict_filetype(filetype)
 {
-    $("#filename" ).attr('accept',filetype); 
+    $("#filename" ).attr('accept',filetype);
 }
 
 function getFileNameWithExt(event) {
@@ -207,8 +208,9 @@ function getFileNameWithExt(event) {
     return false;
   }
   // outputfile.value = fileName;
-  // extension.value = ext;  
+  // extension.value = ext;
 }
 
 </script>
 @include('includes.footer')
+@endsection

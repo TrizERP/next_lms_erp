@@ -19,7 +19,6 @@ class counsellingExamController extends Controller
 
     public function index(Request $request)
     {
-
         $data = $this->getData($request);
         $type = $request->input('type');
         $res['status_code'] = 1;
@@ -38,7 +37,7 @@ class counsellingExamController extends Controller
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $course_id = $request->get('course_id');
 
-        //Get all questions counselling course wise                
+        //Get all questions counselling course wise
         $data['question_arr'] = counsellingQuestionModel::select('counselling_question_master.*',
             'c.title as course_title')
             ->join('counselling_course as c', 'c.id', 'counselling_question_master.counselling_course_id')
@@ -158,14 +157,14 @@ class counsellingExamController extends Controller
         // {
         //     foreach($answer_ids as $key => $val)
         //     {
-        //         $online_exam_answer['answer_id'] = $key; 
-        //         lmsOnlineExamAnswerModel::insert($online_exam_answer);        
-        //     }                
+        //         $online_exam_answer['answer_id'] = $key;
+        //         lmsOnlineExamAnswerModel::insert($online_exam_answer);
+        //     }
         // }
         // else //Insert Narrative Answers
-        // { 
-        //     $online_exam_answer['narrative_answer'] = $answer_ids; 
-        //     lmsOnlineExamAnswerModel::insert($online_exam_answer);        
+        // {
+        //     $online_exam_answer['narrative_answer'] = $answer_ids;
+        //     lmsOnlineExamAnswerModel::insert($online_exam_answer);
         // }
         //END Insert into lms_online_exam_answer table
 
@@ -297,31 +296,31 @@ class counsellingExamController extends Controller
         // $type = $request->input('type');
         // $sub_institute_id = $request->session()->get('sub_institute_id');
         // $questionpaper_id = $request->get('questionpaper_id');
-        // $data['questionpaper_data'] = questionpaperModel::find($id)->toArray(); 
+        // $data['questionpaper_data'] = questionpaperModel::find($id)->toArray();
 
-        // //Get all questions subject wise        
+        // //Get all questions subject wise
         // $question_ids = explode(",",$data['questionpaper_data']['question_ids']);
-        // $data['question_arr'] = lmsQuestionMasterModel::whereIn("id",$question_ids)->get()->toArray(); 
+        // $data['question_arr'] = lmsQuestionMasterModel::whereIn("id",$question_ids)->get()->toArray();
 
         // foreach($data['question_arr'] as $key => $val)
-        // {            
-        //     $answer_arr = answermasterModel::where("question_id",$val['id'])->get()->toArray(); 
+        // {
+        //     $answer_arr = answermasterModel::where("question_id",$val['id'])->get()->toArray();
         //     if(count($answer_arr) > 0)
         //     {
         //         foreach($answer_arr as $anskey => $ansval)
         //         {
         //             $answer[$val['id']][] = $ansval;
-        //         }                       
+        //         }
         //     }
         // }
 
         // $type = $request->input('type');
         // $res['status_code'] = 1;
-        // $res['message'] = "SUCCESS";    
-        // $res['answer_arr'] = $answer; 
-        // $res['questionpaper_data'] = $data['questionpaper_data']; 
-        // $res['question_arr'] = $data['question_arr']; 
-        // return is_mobile($type,'lms/online_exam_div',$res,"view");  
+        // $res['message'] = "SUCCESS";
+        // $res['answer_arr'] = $answer;
+        // $res['questionpaper_data'] = $data['questionpaper_data'];
+        // $res['question_arr'] = $data['question_arr'];
+        // return is_mobile($type,'lms/online_exam_div',$res,"view");
 
     }
 
@@ -345,9 +344,9 @@ class counsellingExamController extends Controller
         $user_id = $request->session()->get('user_id');
         $online_exam_id = $request->get('online_exam_id');
 
-        //$data['questionpaper_data'] = questionpaperModel::find($questionpaper_id)->toArray(); 
+        //$data['questionpaper_data'] = questionpaperModel::find($questionpaper_id)->toArray();
 
-        //Get all questions subject wise        
+        //Get all questions subject wise
         //$question_ids = explode(",",$data['questionpaper_data']['question_ids']);
         $data['question_arr'] = counsellingQuestionModel::select('counselling_question_master.*',
             'c.title as course_title')
@@ -383,17 +382,17 @@ class counsellingExamController extends Controller
         // $online_answer_data = lmsOnlineExamAnswerModel::where(['online_exam_id'=>$online_exam_id,'student_id'=>$user_id])->get()->toArray();
         // foreach($online_answer_data as $key => $val)
         // {
-        //     $data['online_answer_data'][$val['question_id']][] = $val; 
+        //     $data['online_answer_data'][$val['question_id']][] = $val;
         // }
 
         $online_answer_data = DB::select("SELECT a.*, GROUP_CONCAT(am.id) AS actual_answer,q.question_type_id,q.multiple_answer,
                 (
-                CASE 
-                WHEN question_type_id = 2 THEN IF(given_answer is null,'wrong','right') 
-                WHEN question_type_id = 1 AND multiple_answer = 0 THEN IF(given_answer=GROUP_CONCAT(am.id),'right','wrong') 
-                WHEN question_type_id = 1 AND multiple_answer = 1 THEN IF(given_answer=GROUP_CONCAT(am.id),'right','wrong') 
+                CASE
+                WHEN question_type_id = 2 THEN IF(given_answer is null,'wrong','right')
+                WHEN question_type_id = 1 AND multiple_answer = 0 THEN IF(given_answer=GROUP_CONCAT(am.id),'right','wrong')
+                WHEN question_type_id = 1 AND multiple_answer = 1 THEN IF(given_answer=GROUP_CONCAT(am.id),'right','wrong')
                 END
-                ) AS right_wrong 
+                ) AS right_wrong
                 FROM (
                 SELECT question_id,ans_status, IFNULL(narrative_answer, GROUP_CONCAT(answer_id)) AS given_answer
                 FROM counselling_online_exam_answer

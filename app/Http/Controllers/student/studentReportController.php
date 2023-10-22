@@ -85,7 +85,7 @@ class studentReportController extends Controller
         $tblcustom_fields['studentbatch'] = 'Batch';
         $tblcustom_fields['email'] = 'Email';
         $tblcustom_fields['username'] = 'Username';
-        $tblcustom_fields['uniqueid'] = get_string('uniqueid','request');        
+        $tblcustom_fields['uniqueid'] = get_string('uniqueid','request');
         $tblcustom_fields['admission_year'] = 'Admission Year';
         $tblcustom_fields['admission_date'] = 'Admission Date';
         $tblcustom_fields['religion'] = 'Religion';
@@ -192,7 +192,7 @@ class studentReportController extends Controller
 
                 $header[$value] = ucfirst($value2);
             }
-            
+
             $array[] = 'religion.religion_name as religion';
             $array[] = 'house_master.house_name as house';
             $array[] = 'student_quota.title as student_quota';
@@ -202,7 +202,7 @@ class studentReportController extends Controller
             $array[] = 'tblstudent.place_of_birth as place_of_birth';
             $array[] = 'tblstudent.student_mobile as studentmobile';
             $array[] = 'GROUP_CONCAT(IFNULL(subject.subject_name, "-")) as optional_subjects';
-            $array[] = 'batch.title as studentbatch';            
+            $array[] = 'batch.title as studentbatch';
         }
         $array[] = 'concat_ws(" ",tblstudent.first_name,tblstudent.middle_name,tblstudent.last_name) AS student_name';
 
@@ -230,8 +230,8 @@ class studentReportController extends Controller
                      ->where('transport_vehicle.sub_institute_id', '=', DB::raw('tblstudent_enrollment.sub_institute_id'));
             })
             ->leftjoin('student_optional_subject',function($join){
-                $join->on('student_optional_subject.student_id', '=', 'tblstudent.id')->where('student_optional_subject.syear',session()->get('syear')); 
-            })            
+                $join->on('student_optional_subject.student_id', '=', 'tblstudent.id')->where('student_optional_subject.syear',session()->get('syear'));
+            })
             ->leftjoin('subject', 'student_optional_subject.subject_id', '=', 'subject.id')
             ->leftJoin('transport_school_shift', 'transport_vehicle.school_shift', '=', 'transport_school_shift.id')
             ->where($extraSearchArray)
@@ -245,7 +245,7 @@ class studentReportController extends Controller
         $res['student_data'] = $student_data;
         $res['grade_id'] = $grade_id;
         $res['standard_id'] = $standard_id;
-        $res['division_id'] = $division_id; 
+        $res['division_id'] = $division_id;
         $res['data'] = $this->customFields($request);
         $res['headers'] = $header;
 

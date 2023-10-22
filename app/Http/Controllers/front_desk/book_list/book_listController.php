@@ -38,6 +38,7 @@ class book_listController extends Controller
 
     function getData()
     {
+
         $sub_institute_id = session()->get('sub_institute_id');
         $syear = session()->get('syear');
         $user_profile_id = session()->get('user_profile_id');
@@ -46,7 +47,7 @@ class book_listController extends Controller
 
         if (strtoupper($user_profile_name) == 'TEACHER') {
 
-            $result = DB::table("book_list as c")
+            /*$result = DB::table("book_list as c")
                 ->leftJoin('chapter_master as cm', function ($join) {
                     $join->whereRaw("cm.id = c.chapter_id AND cm.sub_institute_id = c.sub_institute_id");
                 })
@@ -68,7 +69,36 @@ class book_listController extends Controller
                 ->where("c.syear", "=", $syear)
                 ->where("c.sub_institute_id", "=", $sub_institute_id)
                 ->where("t.teacher_id", "=", $user_id)
-                ->get()->toarray();
+                ->get()->toarray();*/
+
+            $result = DB::table("book_list as c")
+                ->leftJoin('chapter_master as cm', function ($join) {
+                    $join->on('cm.id', '=', 'c.chapter_id')
+                        ->where('cm.sub_institute_id', '=', 'c.sub_institute_id');
+                })
+                ->leftJoin('topic_master as tm', function ($join) {
+                    $join->on('tm.id', '=', 'c.topic_id')
+                        ->where('tm.chapter_id', '=', 'c.chapter_id')
+                        ->where('tm.sub_institute_id', '=', 'c.sub_institute_id');
+                })
+                ->join('standard as s', function ($join) {
+                    $join->on('s.id', '=', 'c.standard_id');
+                })
+                ->join('sub_std_map as su', function ($join) {
+                    $join->on('su.subject_id', '=', 'c.subject_id')
+                        ->on('su.standard_id', '=', 'c.standard_id');
+                })
+                ->join('timetable as t', function ($join) {
+                    $join->on('t.standard_id', '=', 's.id')
+                        ->on('t.subject_id', '=', 'su.subject_id')
+                        ->on('t.sub_institute_id', '=', 'su.sub_institute_id');
+                })
+                ->selectRaw("c.*, s.name as std_name, IF(file_name = '', '', CONCAT('http://".$_SERVER['SERVER_NAME']."/storage/book_list/', file_name)) as file_name_path,
+                cm.chapter_name, tm.name AS topic_name, su.display_name AS subject_name")
+                ->where("c.syear", "=", $syear)
+                ->where("c.sub_institute_id", "=", $sub_institute_id)
+                ->where("t.teacher_id", "=", $user_id)
+                ->get()->toArray();
         } else {
             $result = DB::table("book_list as c")
                 ->leftJoin('chapter_master as cm', function ($join) {

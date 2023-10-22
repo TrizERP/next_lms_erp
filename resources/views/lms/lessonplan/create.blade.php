@@ -1,4 +1,6 @@
-@include('includes.lmsheadcss')
+{{--@include('includes.lmsheadcss')--}}
+@extends('lmslayout')
+@section('container')
 <link href="/plugins/bower_components/clockpicker/dist/jquery-clockpicker.min.css" rel="stylesheet">
 <style>
     .tooltip-inner {
@@ -18,8 +20,8 @@
         overflow-y: scroll;
     }
 </style>
-@include('includes.header')
-@include('includes.sideNavigation')
+{{--@include('includes.header')
+@include('includes.sideNavigation')--}}
 <!-- Content main Section -->
 <div class="content-main flex-fill">
     <div class="row justify-content-between">
@@ -537,3 +539,4 @@ if(isset($_REQUEST['preload_lms'])){
 </script>
 
 @include('includes.footer')
+@endsection

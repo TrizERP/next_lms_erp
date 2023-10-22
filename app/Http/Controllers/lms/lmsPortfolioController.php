@@ -34,6 +34,7 @@ class lmsPortfolioController extends Controller
         $res['status_code'] = 1;
         $res['message'] = "SUCCESS";
         $res['data'] = $data['portfolio_data'];
+
         if (strtoupper(session()->get('user_profile_name')) == "STUDENT") {
             return is_mobile($type, 'lms/show_student_lmsPortfolio', $res, "view");
         } else {
@@ -107,12 +108,25 @@ class lmsPortfolioController extends Controller
         if (strtoupper(session()->get('user_profile_name')) == "STUDENT") {
             $student_id = session()->get('user_id');
 
-            $res = DB::select("SELECT * FROM sub_std_map s WHERE s.standard_id = 
+            /*$res = DB::select("SELECT * FROM sub_std_map s WHERE s.standard_id =
             (
-                SELECT standard_id FROM tblstudent_enrollment WHERE student_id = '".$student_id."' AND 
+                SELECT standard_id FROM tblstudent_enrollment WHERE student_id = '".$student_id."' AND
                 sub_institute_id = '".$sub_institute_id."' AND syear = '".$syear."'
             )
-            and sub_institute_id = '".$sub_institute_id."'");
+            and sub_institute_id = '".$sub_institute_id."'");*/
+
+            $res = DB::table('sub_std_map as s')
+                ->where('s.standard_id', function ($query) use ($student_id, $sub_institute_id, $syear) {
+                    $query->select('standard_id')
+                        ->from('tblstudent_enrollment')
+                        ->where('student_id', $student_id)
+                        ->where('sub_institute_id', $sub_institute_id)
+                        ->where('syear', $syear);
+                })
+                ->where('s.sub_institute_id', $sub_institute_id)
+                ->get();
+
+
             $subject_arr = json_decode(json_encode($res), true);
             $data['subject_arr'] = $subject_arr;
         }

@@ -180,7 +180,7 @@ class chapterController extends Controller
         return redirect()->route('chapter_master.index',
             [
                 'standard_id' => $request->get('standard'), 'subject_id' => $request->get('subject'),
-            ]);//->with(['data' => $res]);        
+            ]);//->with(['data' => $res]);
     }
 
     public function edit(Request $request, $id)
@@ -348,12 +348,12 @@ class chapterController extends Controller
         {
             $standard_id = $request->get('standard_id');
 
-            //START Get subject name          
+            //START Get subject name
             $subject = DB::table('sub_std_map')->where('subject_id', $subject_id)
                 ->where('standard_id', $standard_id)->get()->toArray();
 
             $subject_name = str_replace($this->searchArr, $this->replaceArr, $subject[0]->display_name);
-            //END Get subject name 
+            //END Get subject name
 
             $graph_data .= $this->get_chapter_data($request, $subject_id, $standard_id, $subject_name);
 
@@ -396,7 +396,7 @@ class chapterController extends Controller
         $sub_institute_id = $request->session()->get("sub_institute_id");
         $syear = $request->session()->get("syear");
 
-        //START Get all Chapter data 
+        //START Get all Chapter data
         $chapters = DB::table('chapter_master as c')
             ->where('c.sub_institute_id', $sub_institute_id)
             ->where('c.standard_id', $standard_id)
@@ -414,12 +414,12 @@ class chapterController extends Controller
             $chapter_data .= "'".$subject_name."','".$chapter_name."'";
             $chapter_data .= ",'red',4,'dot'],";
 
-            //START Get topic data         
+            //START Get topic data
             $chapter_data .= $this->get_topic_data($request, $chapter_name, $cval['id']);
-            //END Get topic data 
+            //END Get topic data
         }
 
-        //END Get all Chapter data 
+        //END Get all Chapter data
 
         return $chapter_data;
     }
@@ -444,13 +444,13 @@ class chapterController extends Controller
             $topic_data .= "[";
             $topic_data .= "'".$chapter_name."','".$topic_name."'";
             $topic_data .= "],";
-            //START Get content data         
+            //START Get content data
             $topic_data .= $this->get_content_data($request, $topic_name, $tval['id']);
-            //END Get content data  
+            //END Get content data
 
-            //START Get Question & Answer data         
+            //START Get Question & Answer data
             $topic_data .= $this->get_question_data($request, $topic_name, $tval['id']);
-            //END Get Question & Answer data          
+            //END Get Question & Answer data
 
         }
 
@@ -485,9 +485,9 @@ class chapterController extends Controller
             $content_data .= "[";
             $content_data .= "'".$topic_content_label."','".$content_title."'";
             $content_data .= ",'green',4,'LongDashDotDot'],";
-            //START Get content mapping data         
+            //START Get content mapping data
             $content_data .= $this->get_content_mapping_data($request, $content_title, $tval['id']);
-            //END Get content mapping data         
+            //END Get content mapping data
         }
 
         return $content_data;
@@ -549,9 +549,9 @@ class chapterController extends Controller
             $question_data .= "[";
             $question_data .= "'".$topic_question_label."','".$ques_title."'";
             $question_data .= "],";
-            //START Get Question mapping data         
+            //START Get Question mapping data
             $question_data .= $this->get_question_mapping_data($request, $ques_title, $tval['id']);
-            //END Get Question mapping data         
+            //END Get Question mapping data
         }
 
         return $question_data;

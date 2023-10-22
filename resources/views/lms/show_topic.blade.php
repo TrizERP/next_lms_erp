@@ -1,7 +1,8 @@
-@include('includes.lmsheadcss')
+{{--@include('includes.lmsheadcss')
 @include('includes.header')
-@include('includes.sideNavigation')
-
+@include('includes.sideNavigation')--}}
+@extends('lmslayout')
+@section('container')
 <!-- Content main Section -->
 <div class="content-main flex-fill">
     <div class="row">
@@ -694,14 +695,14 @@
                                     <input type="hidden" id='hidchapter_id' name='hidchapter_id'
                                            value="{{$_REQUEST['id']}}" class="form-control">
                                        <input type="hidden" name="standard_id" value="{{$_REQUEST['standard_id']}}">
-                                           
+
                                     <div class="addButtonCheckbox">
                                         <div class="col-md-12 form-group">
                                             <label>Topic Name</label>
                                             <input type="text" id='topic_name' required name="topic_name[]"
                                                    class="form-control">
                                         </div>
-                                        
+
                                         <div class="col-md-12 form-group">
                                             <label>Description</label>
                                             <textarea id="topic_desc" name="topic_desc[]"
@@ -743,7 +744,7 @@
 <script src="https://cdn.datatables.net/1.10.19/js/jquery.dataTables.min.js"></script>
 <script src="https://cdn.datatables.net/1.10.19/js/dataTables.bootstrap.min.js"></script>
 <script>
- 
+
     function edit_data(url, topic_id, topic_name, topic_desc, topic_sort_order, topic_show_hide) {
         $("#topic_name").val(topic_name);
         $("#topic_desc").val(topic_desc);
@@ -751,7 +752,7 @@
         if (topic_show_hide == 1) {
             $('#topic_show_hide').prop('checked', true);
         }
-        
+
         $('#submit').val('Update');
         $('#heading').html('Update Topic');
         $('#topic_form').attr('action', url);
@@ -813,3 +814,4 @@
 </script>
 
 @include('includes.footer')
+@endsection

@@ -1,7 +1,8 @@
-@include('includes.lmsheadcss')
+{{--@include('includes.lmsheadcss')
 @include('includes.header')
-@include('includes.sideNavigation')
-
+@include('includes.sideNavigation')--}}
+@extends('layout')
+@section('container')
 <div class="content-main flex-fill">
 	<!-- <h1 class="h4 mb-3">LMS</h1> -->
 	<!-- <nav aria-label="breadcrumb">
@@ -57,3 +58,4 @@
 
 @include('includes.lmsfooterJs')
 @include('includes.footer')
+@endsection

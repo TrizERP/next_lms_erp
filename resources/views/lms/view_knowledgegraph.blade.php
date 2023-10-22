@@ -1,6 +1,8 @@
-@include('includes.headcss')
+{{--@include('includes.headcss')
 @include('includes.header')
-@include('includes.sideNavigation')
+@include('includes.sideNavigation')--}}
+@extends('layout')
+@section('container')
 <style>
 .highcharts-figure,
 .highcharts-data-table table {
@@ -49,10 +51,10 @@
   /*border-top:5px dotted #f00; */
   color: red;
   background-color:#fff;
-  height:5px;  
+  height:5px;
   font-weight: bold;
   font-size: 50px;
-} 
+}
 .dashline {
   /*border:none;*/
   /*border-top:5px dashed blue;*/
@@ -71,22 +73,22 @@
   font-weight: bold;
   font-size: 50px;
 }
-</style> 
+</style>
 
-<div class="content-main flex-fill">    
+<div class="content-main flex-fill">
     <!-- <p class="highcharts-description">
-        
+
 
     </p> -->
     <figure class="highcharts-figure">
-        <div id="container"></div>       
+        <div id="container"></div>
     </figure>
 
     <center>
     <table border="1" cellspacing="10" cellpadding="10" width="50%">
         <tr>
             <td width="30%" class="dotline">
-                . . . . . . . . .               
+                . . . . . . . . .
             </td>
             <td width="70%">
                 Red dot line indicated chapters
@@ -102,7 +104,7 @@
         </tr>
         <tr>
             <td width="30%" class="dashdotline">
-                —.—.—.—.— 
+                —.—.—.—.—
             </td>
             <td width="70%">
                 Green long dash & dot line indicated contents
@@ -138,7 +140,7 @@ Highcharts.addEvent(
                     nodes['<?php echo $data['subject_name']; ?>'] = {
                         id: '<?php echo $data['subject_name']; ?>',
                         marker: {
-                            radius: 50                            
+                            radius: 50
                         }
                     };
                     nodes[link[1]] = {
@@ -229,3 +231,4 @@ Highcharts.chart('container', {
 
 @include('includes.lmsfooterJs')
 @include('includes.footer')
+@endsection

@@ -1,7 +1,8 @@
-@include('includes.headcss')
+{{--@include('includes.headcss')
 @include('includes.header')
-@include('includes.sideNavigation')
-
+@include('includes.sideNavigation')--}}
+@extends('layout')
+@section('container')
 <div id="page-wrapper">
     <div class="container-fluid">
             <div class="row bg-title">
@@ -56,7 +57,7 @@
                             </div>
                             <div class="col-md-3 form-group">
                                 <label for="exam">Select Exam</label>
-                                <select class="cust-select form-control mb-0" name="exam" 
+                                <select class="cust-select form-control mb-0" name="exam"
                                         required="required">
                                     @if(!empty($data['exams_data']))
                                         @foreach($data['exams_data'] as $k => $v)
@@ -265,7 +266,7 @@
                                         <td class="" style="{{ ($ans === '0' ) ? 'background-color:#FFC7CE' : '' }}">{{ $ans }}</td>
                                         @php $row++; @endphp
                                     @endforeach
-                                    
+
                                                 <td class="font-weight-bold" style="background-color: #ffe699;">{{ $totalRightAns }}</td>
                                                 <td class="font-weight-bold" style="background-color: #ffe699;">{{ $countQuestion }}</td>
 
@@ -464,3 +465,4 @@ function checkedAll() {
 </script>
 
 @include('includes.footer')
+@endsection

@@ -57,7 +57,7 @@ class lmsCounsellingController extends Controller
                 'counselling_online_exam.course_id')
             ->where([
                 'counselling_online_exam.sub_institute_id' => $sub_institute_id,
-                'counselling_online_exam.user_id'          => $user_id,
+                'counselling_online_exam.user_id' => $user_id,
             ])
             ->groupby('counselling_online_exam.id')
             ->get()
@@ -84,7 +84,7 @@ class lmsCounsellingController extends Controller
     /**
      * Store a newly created resource in storage.
      *
-     * @param  Request  $request
+     * @param Request $request
      * @return void
      */
     public function store(Request $request)
@@ -95,7 +95,7 @@ class lmsCounsellingController extends Controller
     /**
      * Display the specified resource.
      *
-     * @param  int  $id
+     * @param int $id
      * @return void
      */
     public function show($id)
@@ -106,7 +106,7 @@ class lmsCounsellingController extends Controller
     /**
      * Show the form for editing the specified resource.
      *
-     * @param  int  $id
+     * @param int $id
      * @return void
      */
     public function edit(Request $request, $id)
@@ -117,8 +117,8 @@ class lmsCounsellingController extends Controller
     /**
      * Update the specified resource in storage.
      *
-     * @param  Request  $request
-     * @param  int  $id
+     * @param Request $request
+     * @param int $id
      * @return void
      */
     public function update(Request $request, $id)
@@ -129,7 +129,7 @@ class lmsCounsellingController extends Controller
     /**
      * Remove the specified resource from storage.
      *
-     * @param  int  $id
+     * @param int $id
      * @return void
      */
     public function destroy(Request $request, $id)
@@ -146,26 +146,21 @@ class lmsCounsellingController extends Controller
             $password = '4225aej';
 
             $credentials = base64_encode($username . ':' . $password);
-           
+
             $response = Http::withHeaders([
                 'Authorization' => 'Basic ' . $credentials,
                 'Accept' => 'application/json',
             ])->get('https://services.onetcenter.org/ws/mnm/browse/');
-           
-            if ($response->successful()) 
-            {
+
+            if ($response->successful()) {
                 $data = $response->json();
-                
                 return view('lms/counselling/industry_listing', compact('data'));
                 //return is_mobile($type, 'lms/counselling/demo_career_exam', ['data' => $data], "view");
-            } 
-            else 
-            {
+            } else {
                 $statusCode = $response->status();
                 $errorMessage = $response->body();
             }
-        } 
-        catch (RequestException $exception) {
+        } catch (RequestException $exception) {
             $errorMessage = $exception->getMessage();
         }
     }
@@ -180,7 +175,7 @@ class lmsCounsellingController extends Controller
             $password = '4225aej';
 
             $credentials = base64_encode($username . ':' . $password);
-           
+
             $nextPage = 'https://services.onetcenter.org/ws/mnm/browse/' . $id;
 
             while (!is_null($nextPage)) {
@@ -188,28 +183,24 @@ class lmsCounsellingController extends Controller
                     'Authorization' => 'Basic ' . $credentials,
                     'Accept' => 'application/json',
                 ])->get($nextPage);
-    
+
                 if ($response->successful()) {
                     $data = $response->json();
-    
+
                     // Add the careers from this page to the array
                     $allCareers = array_merge($allCareers, $data['career']);
-    
+
                     // Check if there's a "next" link in the response
                     $nextLink = collect($data['link'])->firstWhere('rel', 'next');
                     $nextPage = $nextLink ? $nextLink['href'] : null;
-                } 
-                else 
-                {
+                } else {
                     $statusCode = $response->status();
                     $errorMessage = $response->body();
                     break; // Exit the loop in case of an error
                 }
             }
             return view('lms/counselling/career_in_industry', compact('allCareers'));
-        } 
-        catch (RequestException $exception) 
-        {
+        } catch (RequestException $exception) {
             $errorMessage = $exception->getMessage();
         }
     }
@@ -223,26 +214,22 @@ class lmsCounsellingController extends Controller
             $password = '4225aej';
 
             $credentials = base64_encode($username . ':' . $password);
-           
+
             $response = Http::withHeaders([
                 'Authorization' => 'Basic ' . $credentials,
                 'Accept' => 'application/json',
             ])->get('https://services.onetcenter.org/ws/mnm/careers/' . $id);
-           
-            if ($response->successful()) 
-            {
+
+            if ($response->successful()) {
                 $data = $response->json();
-                
+
                 return view('lms/counselling/career_report', compact('data', 'id'));
                 //return is_mobile($type, 'lms/counselling/demo_career_exam', ['data' => $data], "view");
-            } 
-            else 
-            {
+            } else {
                 $statusCode = $response->status();
                 $errorMessage = $response->body();
             }
-        } 
-        catch (RequestException $exception) {
+        } catch (RequestException $exception) {
             $errorMessage = $exception->getMessage();
         }
     }
@@ -258,26 +245,22 @@ class lmsCounsellingController extends Controller
             $credentials = base64_encode($username . ':' . $password);
 
             $url = 'https://services.onetcenter.org/ws/mnm/careers/' . urlencode($id) . '/' . strtolower($title);
-           
+
             $response = Http::withHeaders([
                 'Authorization' => 'Basic ' . $credentials,
                 'Accept' => 'application/json',
             ])->get($url);
-           
-            if ($response->successful()) 
-            {
+
+            if ($response->successful()) {
                 $data = $response->json();
-            //    dd($data);
+                //    dd($data);
                 return view('lms/counselling/career_report_resource', compact('data', 'id', 'title'));
                 //return is_mobile($type, 'lms/counselling/demo_career_exam', ['data' => $data], "view");
-            } 
-            else 
-            {
+            } else {
                 $statusCode = $response->status();
                 $errorMessage = $response->body();
             }
-        } 
-        catch (RequestException $exception) {
+        } catch (RequestException $exception) {
             $errorMessage = $exception->getMessage();
         }
     }

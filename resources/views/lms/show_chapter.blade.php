@@ -1,6 +1,8 @@
-@include('includes.lmsheadcss')
+{{--@include('includes.lmsheadcss')
 @include('includes.header')
-@include('includes.sideNavigation')
+@include('includes.sideNavigation')--}}
+@extends('lmslayout')
+@section('container')
 use DB;
 <!-- Content main Section -->
 <div class="content-main flex-fill">
@@ -25,7 +27,7 @@ use DB;
         if(isset($_REQUEST['preload_lms'])) {
             $readonly="pointer-events: none";
             $preload_lms = "preload_lms=preload_lms";
-        } 
+        }
 
     @endphp
 
@@ -237,7 +239,7 @@ use DB;
                             echo "<pre>"; print_r($content); exit;
                         @endphp --}}
                     <div class="chapter-content-list-cola mb-4 collapse" id="chapter-content-tar-list-{{ $chdata->id }}-{{ $subColapse }}" data-parent="#cource-chap-list" style="">
-                         @php 
+                         @php
                         $no = 1;
                         @endphp
                         @foreach( $content as $single_content )
@@ -271,7 +273,7 @@ use DB;
 
                                 <div class="chapter-des">{{ $single_content['description'] }}</div>
                             </div>
-                           
+
                             <div class="col-md-2 time text-secondary d-flex justify-content-end"
                                  style="font-size: 20px;" >
                                 <a href="{{ route('lms_flashcard.index',['content_id' => $single_content['id'],$preload_lms ?? '' ])}}"
@@ -468,3 +470,4 @@ use DB;
 </script>
 @include('includes.lmsfooterJs')
 @include('includes.footer')
+@endsection

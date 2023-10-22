@@ -1,40 +1,41 @@
-@include('includes.headcss')
+{{--@include('includes.headcss')
 @include('includes.header')
-@include('includes.sideNavigation')
-
+@include('includes.sideNavigation')--}}
+@extends('layout')
+@section('container')
 <div id="page-wrapper">
     <div class="container-fluid">
-        <div class="row bg-title">            
-            <div class="col-lg-3 col-md-4 col-sm-4 col-xs-12">                
-                <h4 class="page-title">Book List</h4>            
-            </div>                    
-        </div>                  
+        <div class="row bg-title">
+            <div class="col-lg-3 col-md-4 col-sm-4 col-xs-12">
+                <h4 class="page-title">Book List</h4>
+            </div>
+        </div>
                 <div class="card">
                     <form action="{{ route('book_list.store') }}" enctype="multipart/form-data" method="post">
                         {{ method_field("POST") }}
                         {{csrf_field()}}
                         <div class="row">
-                        
+
                             {{ App\Helpers\SearchChain('4','single','grade,std') }}
 
                             <div class="col-md-4 form-group">
                                 <label for="subject">Select Subject:</label>
                                 <select name="subject" id="subject" class="form-control mb-0" required>
-                                    <option value="">Select Subject</option>       
+                                    <option value="">Select Subject</option>
                                 </select>
-                            </div> 
+                            </div>
                             <div class="col-md-4 form-group">
                                 <label for="chapter">Select Chapter</label>
                                 <select id="chapter" name="chapter"  class="cust-select form-control">
                                     <option value="">Select Chapter</option>
                                 </select>
-                            </div> 
+                            </div>
                             <div class="col-md-4 form-group">
                                 <label for="topic">Select Topic</label>
                                 <select id="topic" name="topic" class="cust-select form-control">
                                     <option value="">Select Topic</option>
                                 </select>
-                            </div>      
+                            </div>
                             <div class="col-md-4 form-group">
                                 <label>Date</label>
                                 <input type="text" name="date_" class="form-control mydatepicker" autocomplete="off">
@@ -48,7 +49,7 @@
                                     <option value="Practice Worksheet">Practice Worksheet</option>
                                 </select>
                             </div>
-                        
+
                             <div class="col-md-4 form-group">
                                 <label>Message</label>
                                 <textarea name="message" class="form-control"></textarea>
@@ -68,9 +69,9 @@
                             </div>
 
                         </div>
-                        
+
                     </form>
-                
+
                     <div class="col-lg-12 col-sm-12 col-xs-12">
                         <div class="table-responsive">
                             <table id="example" class="table table-bordered table-striped">
@@ -87,8 +88,8 @@
                                         <th>File Name</th>
                                         <th>Link</th>
                                         <th>Date</th>
-                                        
-                                        
+
+
                                         <th>Action</th>
                                     </tr>
                                 </thead>
@@ -98,20 +99,20 @@
                                     @endphp
                                     @if(isset($data['data']))
                                     @foreach($data['data'] as $key => $data)
-                                    <tr>    
+                                    <tr>
                                         <td>{{$j}}</td>
                                         <!-- <td>{{$data->syear}}</td>   -->
 
-                                        <td>{{$data->std_name}}</td> 
-                                        <td>{{$data->subject_name}}</td> 
-                                        <td>{{$data->chapter_name}}</td> 
-                                        <td>{{$data->topic_name}}</td>  
-                                        <td>{{$data->title}}</td>  
-                                        <td>{{$data->message}}</td>  
-                                        <td><a target="_blank" href="{{$data->file_name_path}}">{{$data->file_name}}</a></td>  
-                                        <td><a target="_blank" href="{{$data->link}}">{{$data->link}}<a/></td>  
-                                        <td>{{$data->date_}}</td>  
-                                       
+                                        <td>{{$data->std_name}}</td>
+                                        <td>{{$data->subject_name}}</td>
+                                        <td>{{$data->chapter_name}}</td>
+                                        <td>{{$data->topic_name}}</td>
+                                        <td>{{$data->title}}</td>
+                                        <td>{{$data->message}}</td>
+                                        <td><a target="_blank" href="{{$data->file_name_path}}">{{$data->file_name}}</a></td>
+                                        <td><a target="_blank" href="{{$data->link}}">{{$data->link}}<a/></td>
+                                        <td>{{$data->date_}}</td>
+
                                         <td>
                                             <form action="{{ route('book_list.destroy', $data->id)}}" method="post">
                                                 @csrf
@@ -131,7 +132,7 @@
                             </table>
                         </div>
                     </div>
-                </div>            
+                </div>
     </div>
 </div>
 
@@ -174,14 +175,15 @@
         });
         title_val = $("#title").val() + ' / ' + $("#chapter option:selected").text();
         $("#title").val(title_val);
-    })  
+    })
 
     $("#topic").change(function(){
         title_val = $("#title").val() + ' / ' + $("#topic option:selected").text();
         $("#title").val(title_val);
-    })  
+    })
 
 </script>
 
 
 @include('includes.footer')
+@endsection

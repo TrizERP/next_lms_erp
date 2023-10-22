@@ -58,9 +58,9 @@ class examWiseProgressReportController extends Controller
         $exam_ids = implode(',', $exams);
 
         $marks_array = $grade_array = $all_marks = array();
-        $data = DB::table('tblstudent as s')
+        /*$data = DB::table('tblstudent as s')
             ->join('tblstudent_enrollment as se', function ($join) use ($syear) {
-                $join->whereRaw("se.student_id = s.id AND se.sub_institute_id = s.sub_institute_id AND se.syear 
+                $join->whereRaw("se.student_id = s.id AND se.sub_institute_id = s.sub_institute_id AND se.syear
                     = '".$syear."' AND se.end_date IS NULL");
             })->join('academic_section as ac', function ($join) {
                 $join->whereRaw('ac.id = se.grade_id AND ac.sub_institute_id = se.sub_institute_id');
@@ -83,8 +83,43 @@ class examWiseProgressReportController extends Controller
             ->where('se.standard_id', $standard)
             ->where('qp.id', $exams)
             ->groupByRaw('s.id,qp.id')
-            ->orderByRaw('s.roll_no ASC')->get()->toArray();
+            ->orderByRaw('s.roll_no ASC')->get()->toArray();*/
             // echo "<pre>";print_r($data);exit;
+
+        $data = DB::table('tblstudent as s')
+            ->join('tblstudent_enrollment as se', function ($join) use ($syear) {
+                $join->on('se.student_id', '=', 's.id')
+                    ->where('se.sub_institute_id', '=', 's.sub_institute_id')
+                    ->where('se.syear', '=', $syear)
+                    ->whereNull('se.end_date');
+            })
+            ->join('academic_section as ac', 'ac.id', '=', 'se.grade_id')
+            ->join('standard as st', function ($join) use ($marking_period_id) {
+                $join->on('st.id', '=', 'se.standard_id')
+                    ->where('st.sub_institute_id', '=', 'se.sub_institute_id');
+                // You can add the 'when' condition here if needed
+            })
+            ->leftJoin('division as d', 'd.id', '=', 'se.section_id')
+            ->join('question_paper as qp', function ($join) {
+                $join->on('qp.standard_id', '=', 'se.standard_id')
+                    ->on('qp.grade_id', '=', 'se.grade_id')
+                    ->where('qp.sub_institute_id', '=', 's.sub_institute_id');
+            })
+            ->leftJoin('lms_online_exam as le', function ($join) {
+                $join->on('le.question_paper_id', '=', 'qp.id')
+                    ->on('le.student_id', '=', 's.id');
+            })
+            ->selectRaw("s.id, s.enrollment_no, CONCAT_WS(' ', s.first_name, s.middle_name, s.last_name) AS student_name,
+                st.name AS std_name, d.name AS div_name, se.standard_id, se.grade_id, qp.id AS question_paper_id, qp.paper_name,
+                qp.total_marks, ifnull(MAX(le.total_right), '-') AS obtain_marks, GROUP_CONCAT(IFNULL(le.total_right, '-')) as all_marks")
+            ->where('s.sub_institute_id', $sub_institute_id)
+            ->where('se.grade_id', $grade)
+            ->where('se.standard_id', $standard)
+            ->where('qp.id', $exams)
+            ->groupBy('s.id', 'qp.id')
+            ->orderBy('s.roll_no', 'ASC')
+            ->get()->toArray();
+
 
         $data = json_decode(json_encode($data), true);
         foreach ($data as $k => $v) {
@@ -100,7 +135,7 @@ class examWiseProgressReportController extends Controller
                 $maxCount = max($maxCount, $count);
             }
         }
-        
+
         $grade_data = DB::table('result_std_grd_maping as rgm')
             ->join('grade_master_data as gm', function ($join) {
                 $join->whereRaw('gm.grade_id = rgm.grade_scale AND gm.sub_institute_id = rgm.sub_institute_id');
@@ -117,7 +152,7 @@ class examWiseProgressReportController extends Controller
         $res['message'] = "Success";
         $res['student_data'] = $student_data;
         $res['marks_data'] = $marks_array;
-        $res['all_marks_col']= $maxCount;        
+        $res['all_marks_col']= $maxCount;
         $res['all_marks'] = $all_marks;
         $res['grade_data'] = $grade_data;
         $res['grade_id'] = $grade;
@@ -127,7 +162,7 @@ class examWiseProgressReportController extends Controller
         $res['exam_id'] = $exams;
         $res['exams_data'] = $examData;
         $res['subject_data'] = $subject_data;
-            
+
         return is_mobile($type, "lms/reports/show_examwise_progress_report", $res, "view");
     }
 

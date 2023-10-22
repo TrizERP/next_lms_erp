@@ -1,36 +1,39 @@
-@include('includes.headcss')
+{{--@include('includes.headcss')
 @include('includes.header')
-@include('includes.sideNavigation')
+@include('includes.sideNavigation')--}}
+
+@extends('layout')
+@section('container')
 
 <div id="page-wrapper">
     <div class="container-fluid">
-        <div class="row bg-title">            
-            <div class="col-lg-3 col-md-4 col-sm-4 col-xs-12">                
-                <h4 class="page-title">Syllabus</h4>            
-            </div>                    
-        </div>        
+        <div class="row bg-title">
+            <div class="col-lg-3 col-md-4 col-sm-4 col-xs-12">
+                <h4 class="page-title">Syllabus</h4>
+            </div>
+        </div>
                 <div class="card">
                     <form action="{{ route('syllabus.store') }}" enctype="multipart/form-data" method="post">
                         {{ method_field("POST") }}
                         {{csrf_field()}}
                         <div class="row">
-                            
+
                             {{ App\Helpers\SearchChain('4','single','grade,std') }}
                             <!-- App\Helpers\SearchChain('4','multiple','grade,std,div') -->
 
-                            <div class="col-md-4 form-group">                        
+                            <div class="col-md-4 form-group">
                                 <label for="subject">Select Subject:</label>
                                 <select name="subject" id="subject" class="form-control mb-0" required>
-                                    <option value="">Select Subject</option> 
-                                    @if(isset($data['questionpaper_data'])) 
+                                    <option value="">Select Subject</option>
+                                    @if(isset($data['questionpaper_data']))
                                     @foreach($data['subjects'] as $key => $value)
                                     <option value="{{$value['subject_id']}}" @if(isset($data['questionpaper_data']['subject_id'])) @if($data['questionpaper_data']['subject_id']==$value['subject_id']) selected='selected' @endif @endif>{{$value['display_name']}}</option>
-                                    @endforeach                      
-                                @endif                                                        
-                                </select>                        
-                            </div> 
-                            
-                        
+                                    @endforeach
+                                @endif
+                                </select>
+                            </div>
+
+
                             <div class="col-md-4 form-group">
                                 <label>Date</label>
                                 <input type="text" name="date_" class="form-control mydatepicker" autocomplete="off">
@@ -39,8 +42,8 @@
                                 <label>Title</label>
                                 <input type="text" name="title" class="form-control" >
                             </div>
-                            
-                       
+
+
                             <div class="col-md-4 form-group">
                                 <label>Message</label>
                                 <textarea name="message" class="form-control"></textarea>
@@ -52,14 +55,14 @@
                         </div>
 
 
-                       <div class="col-md-4 form-group">                           
+                       <div class="col-md-4 form-group">
                             <center>
                                 <input type="submit" name="submit" value="Submit" class="btn btn-success" >
                             </center>
                         </div>
 
                     </form>
-                </div>                      
+                </div>
                 <div class="card">
                     <div class="col-lg-12 col-sm-12 col-xs-12">
                         <div class="table-responsive">
@@ -83,15 +86,15 @@
                                     @endphp
                                     @if(isset($data['data']))
                                     @foreach($data['data'] as $key => $data)
-                                    <tr>    
+                                    <tr>
                                         <td>{{$j}}</td>
-                                        <td>{{$data->syear}}</td>  
-                                        <td>{{$data->title}}</td>  
-                                        <td>{{$data->message}}</td>  
-                                        <td>{{$data->date_}}</td>  
-                                        <td>{{$data->std_name}}</td>  
-                                        <td>{{$data->display_name}}</td>  
-                                        <td><a href="../../storage/syllabus/{{$data->file_name}}" target="_blank">{{$data->file_name}}</a></td>  
+                                        <td>{{$data->syear}}</td>
+                                        <td>{{$data->title}}</td>
+                                        <td>{{$data->message}}</td>
+                                        <td>{{$data->date_}}</td>
+                                        <td>{{$data->std_name}}</td>
+                                        <td>{{$data->display_name}}</td>
+                                        <td><a href="../../storage/syllabus/{{$data->file_name}}" target="_blank">{{$data->file_name}}</a></td>
                                         <td>
                                             <form action="{{ route('syllabus.destroy', $data->id)}}" method="post">
                                                 @csrf
@@ -134,3 +137,4 @@
     })
 </script>
 @include('includes.footer')
+@endsection
