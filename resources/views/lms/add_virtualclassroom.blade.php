@@ -1,7 +1,9 @@
-@include('includes.lmsheadcss')
+{{--@include('includes.lmsheadcss')--}}
+@extends('lmslayout')
+@section('container')
 <link href="/plugins/bower_components/clockpicker/dist/jquery-clockpicker.min.css" rel="stylesheet">
-@include('includes.header')
-@include('includes.sideNavigation')
+{{--@include('includes.header')
+@include('includes.sideNavigation')--}}
 <style>
     #overlay {
         position: fixed; /* Sit on top of the page content */
@@ -204,3 +206,4 @@
     }
 </script>
 @include('includes.footer')
+@endsection

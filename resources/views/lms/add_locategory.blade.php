@@ -1,20 +1,24 @@
+{{--
 @include('includes.headcss')
+--}}
+@extends('layout')
+@section('container')
 <link href="/plugins/bower_components/clockpicker/dist/jquery-clockpicker.min.css" rel="stylesheet">
-@include('includes.header')
-@include('includes.sideNavigation')
+{{--@include('includes.header')
+@include('includes.sideNavigation')--}}
 
 <div id="page-wrapper">
     <div class="container-fluid">
         <div class="row bg-title">
             <div class="col-lg-3 col-md-4 col-sm-4 col-xs-12">
-                <h4 class="page-title">               
+                <h4 class="page-title">
                     @if(!isset($data['locategory_data']))
                     Add LO Category
                     @else
                     Edit LO Category
-                    @endif 
+                    @endif
                 </h4>
-            </div>            
+            </div>
         </div>
         <div class="row" style=" margin-top: 25px;">
             <div class="white-box">
@@ -30,49 +34,49 @@
                     {{ route('lo_category.update',['div_id'=>$data['locategory_data']['id']])}}
                     @else
                     {{ route('lo_category.store') }}
-                    @endif" method="post" enctype='multipart/form-data'>                          
+                    @endif" method="post" enctype='multipart/form-data'>
                         @if(!isset($data['locategory_data']))
                         {{ method_field("POST") }}
                         @else
                         {{ method_field("PUT") }}
                         @endif
                         @csrf
-                         
+
                         @if(isset($data['locategory_data']))
 						{{ App\Helpers\SearchChain('4','','grade,std',$data['locategory_data']['grade_id'],$data['locategory_data']['standard_id']) }}
 						@else
 						{{ App\Helpers\SearchChain('4','','grade,std') }}
-                        @endif  
-                                                                                                                                                                                                             
+                        @endif
+
                         <div class="col-md-3 form-group">
                             <label for="subject">Select Subject:</label>
                             <select name="subject" id="subject" class="form-control" required>
-                                <option value="">Select Subject</option> 
-                                @if(isset($data['locategory_data'])) 
+                                <option value="">Select Subject</option>
+                                @if(isset($data['locategory_data']))
                                 @foreach($data['subjects'] as $key => $value)
                                 <option value="{{$value['subject_id']}}" @if(isset($data['locategory_data']['subject_id'])) @if($data['locategory_data']['subject_id']==$value['subject_id']) selected='selected' @endif @endif>{{$value['display_name']}}</option>
-                                @endforeach                      
-                            @endif                                                        
+                                @endforeach
+                            @endif
                             </select>
-                        </div>                                                
-                        
+                        </div>
+
                         <div class="col-md-4 form-group">
                             <label>Category Title</label>
                             <input type="text" id='title' name="title" value="@if(isset($data['locategory_data']['title'])){{$data['locategory_data']['title']}}@endif" class="form-control" required>
-                        </div>   
-                        
+                        </div>
+
                         <div class="col-md-4 form-group">
                             <label>Sort Order</label>
                             <input type="text" id='sort_order' name="sort_order" value="@if(isset($data['locategory_data']['sort_order'])){{$data['locategory_data']['sort_order']}}@endif" class="form-control">
-                        </div> 
+                        </div>
 
                         <div class="col-md-2 form-group">
                             <label>Availability</label>
                             <br><input type="checkbox" id="availability" name="availability" value="1"
-                            @if( isset($data['locategory_data']['availability']) && $data['locategory_data']['availability'] == 1) 
-                            checked 
+                            @if( isset($data['locategory_data']['availability']) && $data['locategory_data']['availability'] == 1)
+                            checked
                             @elseif(!isset($data['locategory_data']))
-                            checked 
+                            checked
                             @endif
                             >
                         </div>
@@ -80,14 +84,14 @@
                         <div class="col-md-2 form-group">
                             <label>Show</label>
                             <br><input type="checkbox" id="show_hide" name="show_hide" value="1"
-                            @if( isset($data['locategory_data']['show_hide']) && $data['locategory_data']['show_hide'] == 1) 
-                            checked 
+                            @if( isset($data['locategory_data']['show_hide']) && $data['locategory_data']['show_hide'] == 1)
+                            checked
                             @elseif(!isset($data['locategory_data']))
-                            checked 
+                            checked
                             @endif
                             >
-                        </div>                                                
-                                                                                                   
+                        </div>
+
                         <div class="col-md-12 form-group">
                             <center>
                                 <input type="submit" name="submit" value="Save" class="btn btn-success" >
@@ -104,13 +108,13 @@
 
 @include('includes.footerJs')
 <script>
-function getStandardwiseDivision(std_id){   
+function getStandardwiseDivision(std_id){
     var path = "{{ route('ajax_StandardwiseDivision') }}";
     $('#division_id').find('option').remove().end().append('<option value="">Select Division</option>').val('');
     $.ajax({url: path,data:'standard_id='+std_id, success: function(result){
-        for(var i=0;i < result.length;i++){                   
-            $("#division_id").append($("<option></option>").val(result[i]['division_id']).html(result[i]['name']));  
-        } 
+        for(var i=0;i < result.length;i++){
+            $("#division_id").append($("<option></option>").val(result[i]['division_id']).html(result[i]['name']));
+        }
     }
     });
 }
@@ -131,3 +135,4 @@ $( document ).ready(function() {
 
 </script>
 @include('includes.footer')
+@endsection

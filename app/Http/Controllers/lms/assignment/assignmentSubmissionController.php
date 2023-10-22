@@ -139,14 +139,14 @@ class assignmentSubmissionController extends Controller
             sum((case when e.ans_status = 'right' then '1' end)) as right_answer
             FROM lms_question_mapping l
             INNER JOIN lms_mapping_type lt ON lt.id = l.mapping_value_id
-            LEFT JOIN lms_offline_exam_answer e on e.question_id = l.questionmaster_id and e.question_paper_id = '".$questionpaper_id."' AND 
+            LEFT JOIN lms_offline_exam_answer e on e.question_id = l.questionmaster_id and e.question_paper_id = '".$questionpaper_id."' AND
             e.student_id = '".$student_id."' and e.offline_exam_id = '".$offline_exam_id."'
             WHERE questionmaster_id IN (
                     SELECT question_id
                     FROM lms_offline_exam_answer
-                    WHERE question_paper_id = '".$questionpaper_id."' AND student_id = '".$student_id."' 
+                    WHERE question_paper_id = '".$questionpaper_id."' AND student_id = '".$student_id."'
                     AND offline_exam_id = '".$offline_exam_id."'
-                ) 
+                )
             GROUP BY mapping_value_id
             ORDER BY mapping_type_id,mapping_value_id) as a
         ");

@@ -1,15 +1,16 @@
-@include('includes.lmsheadcss')
+{{--@include('includes.lmsheadcss')
 @include('includes.header')
-@include('includes.sideNavigation')
-
+@include('includes.sideNavigation')--}}
+@extends('lmslayout')
+@section('container')
 <div class="content-main flex-fill">
-	
+
 	<div class="container-fluid mb-5">
 		<div class="card border-0">
 			<div class="card-body">
 				<div class="dt-buttons mt-5">
 					<button type="button" class="btn btn-danger mr-2"><i class="mdi mdi-delete-alert-outline"></i> Delete</button>
-					<button type="button" class="btn btn-success mr-2"><i class="mdi mdi-eye-check-outline"></i> Show All</a>	
+					<button type="button" class="btn btn-success mr-2"><i class="mdi mdi-eye-check-outline"></i> Show All</a>
 					<button type="button" class="btn btn-warning mr-2"><i class="mdi mdi-pencil-box-outline"></i> Edit Pending</a>
 				</div>
 				<div class="table-responsive">
@@ -214,3 +215,4 @@
 
 @include('includes.lmsfooterJs')
 @include('includes.footer')
+@endsection

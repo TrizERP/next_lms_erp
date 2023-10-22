@@ -1,10 +1,12 @@
-@include('includes.lmsheadcss')
+{{--@include('includes.lmsheadcss')
 @include('includes.header')
-@include('includes.sideNavigation')
+@include('includes.sideNavigation')--}}
+@extends('lmslayout')
+@section('container')
 <!-- Content main Section -->
 <div class="content-main flex-fill">
     <div class="row">
-        <div class="col-md-6">                       
+        <div class="col-md-6">
             <nav aria-label="breadcrumb">
                 <ol class="breadcrumb bg-transparent p-0">
                     <li class="breadcrumb-item">LMS</li>
@@ -12,7 +14,7 @@
                     <li class="breadcrumb-item active" aria-current="page">Attempted Exam Result</li>
                 </ol>
             </nav>
-        </div>        
+        </div>
     </div>
 
     <div class="container-fluid mb-5">
@@ -20,8 +22,8 @@
             @if(isset($data['attempted_data']) && count($data['attempted_data']) > 0)
             @php $k=1; @endphp
             @foreach($data['attempted_data'] as $key => $val)
-            @php 
-            $attempt_id = $val['id']; 
+            @php
+            $attempt_id = $val['id'];
             @endphp
             <div class="accordion-card">
                 <div class="card-header" id="heading-{{$key}}">
@@ -48,8 +50,8 @@
                         <p><span class="h4">Date : </span>{{$val['start_time']}}</p>
                         <div class="h4">Duration - {{$data['questionpaper_data']['time_allowed']}} mins</div>
                     </a> -->
-                </div>                        
-                <div id="attempt{{$key}}" class="collapse show" aria-labelledby="heading-{{$key}}" data-parent="#accordion">                   
+                </div>
+                <div id="attempt{{$key}}" class="collapse show" aria-labelledby="heading-{{$key}}" data-parent="#accordion">
                     <div class="card-body">
                         <div class="row justify-content-center py-3">
                             <div class="col-md-3 text-center my-2">
@@ -73,22 +75,22 @@
                                 @php
                                     $css_array = array("bg-success","bg-danger","bg-dark","bg-info","bg-warning");
                                     $i = 0;
-                                @endphp                                                                                
+                                @endphp
 
                                 <div id="accordion-{{$key}}" class="accordion">
                                     <div class="accordion-card">
                                         <div class="card-header row" id="headingTwo">
-                                            
+
                                             @if(isset($data['parent_mapping_arr'][$attempt_id]) && count($data['parent_mapping_arr'][$attempt_id]) > 0)
                                                 @php $s = 1; @endphp
                                                 @php $m = 1; $j=9999; @endphp
-                                                @foreach($data['parent_mapping_arr'][$attempt_id] as $skey => $sval)       
-                                                    <div class="col-12">                                    
+                                                @foreach($data['parent_mapping_arr'][$attempt_id] as $skey => $sval)
+                                                    <div class="col-12">
                                                         <div class="btn btn-success my-1" data-toggle="collapse" data-target="#parent_mapping_{{$key}}_{{$s}}" aria-expanded="false" aria-controls="parent_mapping_{{$key}}_{{$s}}">{{$skey}} ( {{$sval}} )</div>
-                                                    </div>                              
-                                                    <div class="col-12">                                    
-                                                        <div id="parent_mapping_{{$key}}_{{$m}}" class="collapse" aria-labelledby="headingTwo" data-parent="#accordion-{{$key}}"> 
-                                                
+                                                    </div>
+                                                    <div class="col-12">
+                                                        <div id="parent_mapping_{{$key}}_{{$m}}" class="collapse" aria-labelledby="headingTwo" data-parent="#accordion-{{$key}}">
+
                                                             <div id="accordion{{$j}}_{{$key}}" class="accordion">
                                                                 <div class="accordion-card">
                                                                     <div class="card-header" id="headingThree">
@@ -96,25 +98,25 @@
 
                                                                             <span class="font-weight-bold">{{$pval['parent_name']}} - {{$pval['name']}} ( Total Questions : {{$pval['total_question']}})</span>
                                                                             <div class="progress mb-4" data-toggle="collapse" data-target="#show_questions_{{$pval['id']}}{{$val['id']}}" aria-expanded="false" aria-controls="show_questions_{{$pval['id']}}{{$val['id']}}">
-                                                                                
+
                                                                                 @if($pval['obtained_percentage'] == 0)
-                                                                                <div class="progress-bar progress-bar-striped {{$css_array[$i]}}" role="progressbar" 
+                                                                                <div class="progress-bar progress-bar-striped {{$css_array[$i]}}" role="progressbar"
                                                                                     style="width:{{$pval['obtained_percentage']}}%" aria-valuenow="10" aria-valuemin="0" aria-valuemax="100" onclick="show_question_block('{{$pval['ques_list']}}','{{$pval['id']}}{{$val['id']}}','{{$val['id']}}');">
                                                                                     ( 0% )
                                                                                 </div>
-                                                                                @else 
-                                                                                 
-                                                                                <div class="progress-bar progress-bar-striped {{$css_array[$i]}}" role="progressbar" 
+                                                                                @else
+
+                                                                                <div class="progress-bar progress-bar-striped {{$css_array[$i]}}" role="progressbar"
                                                                                     style="width:{{$pval['obtained_percentage']}}%" aria-valuenow="10" aria-valuemin="0" aria-valuemax="100" onclick="show_question_block('{{$pval['ques_list']}}','{{$pval['id']}}{{$val['id']}}','{{$val['id']}}');">
                                                                                     ( {{$pval['obtained_percentage']}}% )
                                                                                 </div>
                                                                                 @endif
-                                                                                
+
                                                                             </div>
 
                                                                             <!-- START Show Questions -->
-                                                                            <div id="show_questions_{{$pval['id']}}{{$val['id']}}" class="collapse border border-success mb-4 d-none" aria-labelledby="headingTwo" data-parent="#accordion{{$j}}_{{$key}}">                                                                    
-                                                                            </div> 
+                                                                            <div id="show_questions_{{$pval['id']}}{{$val['id']}}" class="collapse border border-success mb-4 d-none" aria-labelledby="headingTwo" data-parent="#accordion{{$j}}_{{$key}}">
+                                                                            </div>
                                                                             <!-- END Show Questions -->
                                                                             @php
                                                                                if($i == 4){$i = 0;}
@@ -123,31 +125,31 @@
                                                                         @endforeach
 
                                                                          @php $j--; @endphp
-                                                                    </div> 
-                                                                </div> 
-                                                            </div> 
+                                                                    </div>
+                                                                </div>
+                                                            </div>
                                                         </div>
                                                     </div>
                                                 @php $s++; @endphp
-                                                @php $m++; @endphp                                        
+                                                @php $m++; @endphp
                                                 @endforeach
                                             @endif
                                         </div>
 
-                                        
-                                         
-                                    </div> 
-                                </div>                                      
-                                
-                      
+
+
+                                    </div>
+                                </div>
+
+
                             </div>
                         </div>
                         <!-- END Progress Report -->
-                       
+
                     </div>
                 </div>
-            </div> 
-            @php $k++; @endphp           
+            </div>
+            @php $k++; @endphp
             @endforeach
             @else
             <div class="card">
@@ -162,7 +164,7 @@
 <script type="text/javascript">
 
 function show_question_block(ques_list,divid,online_exam_id)
-{         
+{
     var path = "{{ route('ajax_getQuestionList') }}";
     var question_list = "";
     $.ajax({url:path,data:'ques_list='+ques_list+'&online_exam_id='+online_exam_id,
@@ -182,15 +184,16 @@ function show_question_block(ques_list,divid,online_exam_id)
                 question_list += "<td style='width:70% !important;'>"+result[i]['question_title']+"</td>";
                 question_list += "<td style='width:5% !important;'>"+status+"</td>";
                 question_list += "</tr>";
-            }           
+            }
             question_list += "</table>";
-            $("#show_questions_"+divid).html(question_list);    
+            $("#show_questions_"+divid).html(question_list);
             $("#show_questions_"+divid).removeClass("d-none");
-        
+
         }
     });
-    
+
 }
 
 </script>
 @include('includes.footer')
+@endsection

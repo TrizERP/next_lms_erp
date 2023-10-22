@@ -1,6 +1,8 @@
-@include('includes.headcss')
+{{--@include('includes.headcss')
 @include('includes.header')
-@include('includes.sideNavigation') 
+@include('includes.sideNavigation') --}}
+@extends('layout')
+@section('container')
 <!-- Content main Section -->
 <div class="content-main flex-fill">
     <div id="pdf-viewer"></div>
@@ -9,7 +11,7 @@
 <!-- <div class="content-main flex-fill">
     <h1 class="h4 mb-3">LMS</h1>
     <nav aria-label="breadcrumb">
-        
+
     </nav>
 
     <div class="container-fluid mb-5">
@@ -17,19 +19,19 @@
             <div class="col-md-12 mb-3 mb-md-4">
                 <div class="video-box mb-4">
                     <div class="embed-responsive embed-responsive-16by9">
-                        <iframe id="main_div" autoplay="false" class="embed-responsive-item" 
-                        src="../../../storage{{$data['content_data']['file_folder']}}/{{$data['content_data']['filename']}}#toolbar=0&navpanes=0" 
+                        <iframe id="main_div" autoplay="false" class="embed-responsive-item"
+                        src="../../../storage{{$data['content_data']['file_folder']}}/{{$data['content_data']['filename']}}#toolbar=0&navpanes=0"
                         allowfullscreen onload="disableContextMenu();" onMyLoad="disableContextMenu();"></iframe>
-                       
-                        
+
+
                     </div>
                 </div>
                 <div class="video-title h4 mb-3">{{$data['content_data']['description']}}</div>
                 <div class="course-box p-0">
-                    <div class="course-bottom course-bottom justify-content-start p-0">                                       
+                    <div class="course-bottom course-bottom justify-content-start p-0">
                     </div>
                 </div>
-            </div>                                                     
+            </div>
         </div>
     </div>
 </div>
@@ -40,14 +42,14 @@
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
 <script>
 $(document).ready(function() {
-document.onmousedown = function (e) {                     
+document.onmousedown = function (e) {
         //Check the Mouse Button which is clicked.
         if (e.which == 3) {
             // alert(e.which);
             //If the Button is middle or right then disable.
             return false;
         }
-    
+
 };
 
 document.onkeydown = function (e) {
@@ -56,7 +58,7 @@ document.onkeydown = function (e) {
             //If the Button is middle or right then disable.
             return false;
         // }
-    // return false;    
+    // return false;
 }
 window.onload = function() {
     document.addEventListener("contextmenu", function(e){
@@ -65,7 +67,7 @@ window.onload = function() {
             disableEvent(e);
         }
     }, false);
-    function disableEvent(e) 
+    function disableEvent(e)
     {
         if(e.stopPropagation) {
             e.stopPropagation();
@@ -76,7 +78,7 @@ window.onload = function() {
 
     $(document).contextmenu(function() { return false;});
 
-    var url = $("#hid_url").val(); 
+    var url = $("#hid_url").val();
     var thePdf = null;
     var scale = 2;
 
@@ -90,7 +92,7 @@ window.onload = function() {
             renderPage(page, canvas);
           }
       });
-      function renderPage(pageNumber, canvas) 
+      function renderPage(pageNumber, canvas)
       {
           thePdf.getPage(pageNumber).then(function(page) {
             viewport = page.getViewport(scale);
@@ -103,3 +105,4 @@ window.onload = function() {
 });
 </script>
 @include('includes.footer')
+@endsection

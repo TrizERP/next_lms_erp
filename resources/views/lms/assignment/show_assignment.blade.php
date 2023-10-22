@@ -1,7 +1,8 @@
-@include('includes.lmsheadcss')
+{{--@include('includes.lmsheadcss')
 @include('includes.header')
-@include('includes.sideNavigation')
-
+@include('includes.sideNavigation')--}}
+@extends('lmslayout')
+@section('container')
 <div id="page-wrapper">
     <div class="container-fluid">
         <div class="row bg-title align-items-center justify-content-between">
@@ -212,3 +213,4 @@
 </script>
 
 @include('includes.footer')
+@endsection

@@ -1,6 +1,8 @@
-@include('includes.lmsheadcss')
+{{--@include('includes.lmsheadcss')
 @include('includes.header')
-@include('includes.sideNavigation')
+@include('includes.sideNavigation')--}}
+@extends('lmslayout')
+@section('container')
 
 <div id="page-wrapper">
     <div class="container-fluid">
@@ -288,3 +290,4 @@
 </script>
 
 @include('includes.footer')
+@endsection

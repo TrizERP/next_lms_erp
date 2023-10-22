@@ -1,6 +1,8 @@
-@include('includes.lmsheadcss')
+{{--@include('includes.lmsheadcss')
 @include('includes.header')
-@include('includes.sideNavigation')
+@include('includes.sideNavigation')--}}
+@extends('lmslayout')
+@section('container')
 use DB;
 <style type="text/css">
     #grade {
@@ -160,8 +162,8 @@ use DB;
                                                 @endif
                                                 @php
                                                 if(isset($_REQUEST['preload_lms'])){
-                                                    $pre_load = "preload_lms=preload_lms"; 
-                                                } 
+                                                    $pre_load = "preload_lms=preload_lms";
+                                                }
                                                 @endphp
                                                 <a target="_blank"
                                                    href="{{ route('subjectwise_graph.show',['subjectwise_graph'=>$val['subject_id'],'standard_id'=>$val['standard_id'],'action'=>'subjectwise']) }}"
@@ -265,3 +267,4 @@ use DB;
                 </div>
 @include('includes.lmsfooterJs')
 @include('includes.footer')
+@endsection

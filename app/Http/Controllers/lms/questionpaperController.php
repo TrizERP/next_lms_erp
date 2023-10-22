@@ -156,11 +156,11 @@ class questionpaperController extends Controller
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $data['questiontype_data'] = questiontypeModel::select('*')->get();
 
-        // $data['question_level_data'] = questionlevelModel::select('*')->get();        
+        // $data['question_level_data'] = questionlevelModel::select('*')->get();
 
-        // $data['question_category_data'] = questioncategoryModel::select('*')->get(); 
+        // $data['question_category_data'] = questioncategoryModel::select('*')->get();
 
-        // $category_text = questioncategoryModel::select('*')->get()->toArray(); 
+        // $category_text = questioncategoryModel::select('*')->get()->toArray();
         // $question_category_text = "";
         // foreach($category_text as $key => $val)
         // {
@@ -274,7 +274,7 @@ class questionpaperController extends Controller
         //Get Question Paper Data
         $data['questionpaper_data'] = questionpaperModel::find($questionpaper_id)->toArray();
 
-        //Get all questions subject wise        
+        //Get all questions subject wise
         $question_ids = explode(",", $data['questionpaper_data']['question_ids']);
         $data['question_arr'] = lmsQuestionMasterModel::whereIn("id", $question_ids)->get()->toArray();
 
@@ -311,7 +311,7 @@ class questionpaperController extends Controller
 
     public function htmlToPDF($htmlPath, $pdfPath)
     {
-        $command = '/usr/local/bin/wkhtmltopdf '; // --page-height 297mm //-L 0 -R 0 -B 0 -T 0 -s A4 
+        $command = '/usr/local/bin/wkhtmltopdf '; // --page-height 297mm //-L 0 -R 0 -B 0 -T 0 -s A4
         $command .= " $htmlPath ";
         $command .= " $pdfPath ";
 
@@ -341,7 +341,7 @@ public function edit(Request $request, $id)
             $data['questionpaper_data']['close_date'] = "";
 
         }
-           
+
         $std_id = $data['questionpaper_data']['standard_id'];
         $grade_id = $data['questionpaper_data']['grade_id'];
 
@@ -359,7 +359,7 @@ public function edit(Request $request, $id)
     //             $join->whereRaw('c.id = qm.chapter_id');
     //         })->leftJoin('answer_master as am', function ($join) {
     //             $join->whereRaw('am.question_id = qm.id AND correct_answer=1');
-    //         })    
+    //         })
     //         ->join('question_paper as qp', function ($join) use ($odate, $cdate) {
     //     $join->on('qm.id', '=', 'qp.question_ids')
     //          ->where('qp.open_date', '=', $odate)
@@ -393,8 +393,8 @@ $chapters = DB::table('lms_question_master')
 // dd($chapters);
 // echo "<pre>";print_r($questionIds);exit;
 $questionData = DB::table('lms_question_master as qm')
-    ->select('qm.id', 'question_title', 'points', 'question_type_master.question_type', 
-        DB::raw('IFNULL(answer_master.answer, "-") as correct_answer'), 'chapter_master.chapter_name', 'chapter_master.sort_order', 
+    ->select('qm.id', 'question_title', 'points', 'question_type_master.question_type',
+        DB::raw('IFNULL(answer_master.answer, "-") as correct_answer'), 'chapter_master.chapter_name', 'chapter_master.sort_order',
         'qm.standard_id', 'qm.chapter_id')
     ->join('question_type_master', 'question_type_master.id', '=', 'qm.question_type_id')
     ->join('chapter_master', 'chapter_master.id', '=', 'qm.chapter_id')
@@ -438,7 +438,7 @@ foreach ($questionData as $key => $val) {
         $data['grade_id'] = $grade_id;
         $data['standard_id'] = $std_id;
         $data['edit_id'] = $id;
-        
+
         // $data['chapter_id'] = $chapters;
 
         // $data['questionData'] = $questionData;
@@ -461,7 +461,7 @@ foreach ($questionData as $key => $val) {
         $user_id = $request->session()->get('user_id');
         $question_ids = $request->hidden_question_ids;
         $id =  $request->edit_id;
-        
+
         $show_hide = $request->get('show_hide');
         $show_hide_val = $show_hide ?? '';
 
@@ -536,12 +536,12 @@ foreach ($questionData as $key => $val) {
 
     public function show(Request $request, $id)
     {
-        
+
         $type = $request->input('type');
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $data['questionpaper_data'] = questionpaperModel::find($id)->toArray();
 
-        //Get all questions subject wise        
+        //Get all questions subject wise
         $question_ids = explode(",", $data['questionpaper_data']['question_ids']);
         $data['question_arr'] = lmsQuestionMasterModel::whereIn("id", $question_ids)->get()->toArray();
         $answer = [];
@@ -567,7 +567,7 @@ foreach ($questionData as $key => $val) {
     public function destroy(Request $request, $id)
     {
         $type = $request->input('type');
-        $query = questionpaperModel::where(["id" => $id])->delete();        
+        $query = questionpaperModel::where(["id" => $id])->delete();
             if($query == true){
                 $res['status_code'] = "1";
                 $res['message'] = "Question-Paper Deleted Successfully";
@@ -615,18 +615,18 @@ foreach ($questionData as $key => $val) {
             $outer_extra .= str_replace(') OR)', '))', $outer_extra_mapping);
         }
 
-        $sql = "
-            SELECT * FROM 
+        /*$sql = "
+            SELECT * FROM
             (SELECT qm.id,question_title,points,t.question_type,
             ifnull(GROUP_CONCAT(DISTINCT(am.answer)),'-') AS correct_answer,c.chapter_name,c.sort_order,
             tm.name as topic_name,GROUP_CONCAT(lqm.mapping_type_id) as mapping_type,GROUP_CONCAT(lqm.mapping_value_id) as mapping_value
             FROM lms_question_master qm
-            INNER JOIN question_type_master t ON t.id = qm.question_type_id 
+            INNER JOIN question_type_master t ON t.id = qm.question_type_id
             INNER JOIN chapter_master c ON c.id = qm.chapter_id
             LEFT JOIN topic_master tm ON tm.id = qm.topic_id
             LEFT JOIN lms_question_mapping lqm ON lqm.questionmaster_id = qm.id
             LEFT JOIN answer_master am ON am.question_id = qm.id AND correct_answer=1
-            WHERE qm.standard_id =  '".$std_id."' AND qm.subject_id = '".$sub_id."' AND qm.status = 1 
+            WHERE qm.standard_id =  '".$std_id."' AND qm.subject_id = '".$sub_id."' AND qm.status = 1
             AND qm.sub_institute_id = '".$sub_institute_id."'  ".$extra."
             GROUP BY qm.id
             ORDER BY chapter_name)
@@ -635,7 +635,29 @@ foreach ($questionData as $key => $val) {
             ";
         $questionData = DB::select($sql);
 
-        $questionData = json_decode(json_encode($questionData), true);
+        $questionData = json_decode(json_encode($questionData), true);*/
+
+        $questionData = DB::table(DB::raw('
+        (SELECT qm.id,question_title,points,t.question_type,
+        ifnull(GROUP_CONCAT(DISTINCT(am.answer)),"-") AS correct_answer,c.chapter_name,c.sort_order,
+        tm.name as topic_name,GROUP_CONCAT(lqm.mapping_type_id) as mapping_type,GROUP_CONCAT(lqm.mapping_value_id) as mapping_value
+        FROM lms_question_master qm
+        INNER JOIN question_type_master t ON t.id = qm.question_type_id
+        INNER JOIN chapter_master c ON c.id = qm.chapter_id
+        LEFT JOIN topic_master tm ON tm.id = qm.topic_id
+        LEFT JOIN lms_question_mapping lqm ON lqm.questionmaster_id = qm.id
+        LEFT JOIN answer_master am ON am.question_id = qm.id AND correct_answer=1
+        WHERE qm.standard_id = ? AND qm.subject_id = ? AND qm.status = 1
+        AND qm.sub_institute_id = ?  '.$extra.'
+        GROUP BY qm.id
+        ORDER BY chapter_name) AS a'.$outer_extra
+        ))
+            ->select('a.id', 'a.question_title', 'a.points', 'a.question_type', 'a.correct_answer', 'a.chapter_name', 'a.sort_order', 'a.topic_name', 'a.mapping_type', 'a.mapping_value')
+            ->setBindings([$std_id, $sub_id, $sub_institute_id])
+            ->get();
+
+        $questionData = $questionData->toArray();
+
 
         foreach ($questionData as $key => $val) {
             $lmsquestionmapping_arr = lmsQuestionMappingModel::select('lms_question_mapping.questionmaster_id',
@@ -672,15 +694,15 @@ $validate = Validator::make($request->all(), [
     $syear = $request->session()->get("syear");
     $user_id = $request->session()->get('user_id');
 
-    $grade = $request->grade;  
-    $subject = $request->subject;     
-    $standard = $request->standard; 
-    $search_chapter = $request->search_chapter; 
-      
+    $grade = $request->grade;
+    $subject = $request->subject;
+    $standard = $request->standard;
+    $search_chapter = $request->search_chapter;
+
     // print_r($search_chapter);exit;
-    $search_topic = $request->input('search_topic'); 
-    $search_mapping_type = $request->search_mapping_type; 
-    $search_mapping_value = $request->search_mapping_value; 
+    $search_topic = $request->input('search_topic');
+    $search_mapping_type = $request->search_mapping_type;
+    $search_mapping_value = $request->search_mapping_value;
 
     $type = $request->input('type');
 
@@ -712,13 +734,13 @@ if(!isset($request->paper_name) && !isset($request->attempt_allowed) && !isset($
                 "search_mapping_value"=>$search_mapping_value,
                 "sub_institute_id"=> $sub_institute_id,
             );
-           
-        return $this->search_question($all_data);    
-       
+
+        return $this->search_question($all_data);
+
     }else{
         return back()->with("failed","Please Select Required Fileds !");
         }
-} 
+}
 if(isset($request->paper_name) && isset($request->attempt_allowed) && isset($request->time_allowed) || $request->action=="Save"){
             // return $request;exit;
         if($validate->fails()){
@@ -798,17 +820,17 @@ public function search_question($all_data){
         }
 
         // $sql = "
-        //     SELECT * FROM 
+        //     SELECT * FROM
         //     (SELECT qm.id,question_title,points,t.question_type,
         //     ifnull(GROUP_CONCAT(DISTINCT(am.answer)),'-') AS correct_answer,c.chapter_name,c.sort_order,
         //     tm.name as topic_name,GROUP_CONCAT(lqm.mapping_type_id) as mapping_type,GROUP_CONCAT(lqm.mapping_value_id) as mapping_value
         //     FROM lms_question_master qm
-        //     INNER JOIN question_type_master t ON t.id = qm.question_type_id 
+        //     INNER JOIN question_type_master t ON t.id = qm.question_type_id
         //     INNER JOIN chapter_master c ON c.id = qm.chapter_id
         //     LEFT JOIN topic_master tm ON tm.id = qm.topic_id
         //     LEFT JOIN lms_question_mapping lqm ON lqm.questionmaster_id = qm.id
         //     LEFT JOIN answer_master am ON am.question_id = qm.id AND correct_answer=1
-        //     WHERE qm.standard_id =  '".$std_id."' AND qm.subject_id = '".$sub_id."' 
+        //     WHERE qm.standard_id =  '".$std_id."' AND qm.subject_id = '".$sub_id."'
         //     AND qm.sub_institute_id = '".$sub_institute_id."'  ".$extra."
         //     GROUP BY qm.id
         //     ORDER BY chapter_name)

@@ -1,7 +1,8 @@
-@include('includes.lmsheadcss')
+{{--@include('includes.lmsheadcss')
 @include('includes.header')
-@include('includes.sideNavigation')
-
+@include('includes.sideNavigation')--}}
+@extends('lmslayout')
+@section('container')
 <div class="content-main flex-fill">
     <div class="container-fluid mb-5">
         <div class="row">
@@ -101,3 +102,4 @@
 
 @include('includes.lmsfooterJs')
 @include('includes.footer')
+@endsection

@@ -1,7 +1,8 @@
-@include('includes.headcss')
+{{--@include('includes.headcss')
 @include('includes.header')
-@include('includes.sideNavigation')
-
+@include('includes.sideNavigation')--}}
+@extends('layout')
+@section('container')
 <!-- Content main Section -->
                 <div class="content-main flex-fill">
                     <div class="row">
@@ -233,3 +234,4 @@
 
 @include('includes.footerJs')
 @include('includes.footer')
+@endsection

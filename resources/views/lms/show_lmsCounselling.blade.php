@@ -1,8 +1,9 @@
-@include('includes.headcss')
+{{--@include('includes.headcss')
 @include('includes.header')
-@include('includes.sideNavigation')
+@include('includes.sideNavigation')--}}
 
-
+@extends('layout')
+@section('container')
 <!-- Content main Section -->
 <div class="content-main flex-fill">
 	<div class="container-fluid mb-5 mt-4">
@@ -14,7 +15,7 @@
 						<div class="row justify-content-center text-center">
 							<div class="col-lg-6">
 								<div class="h3 mb-3">Take a Free Personality Test!</div>
-								<p>Today, the art of talking therapies such as counselling, are used to help people come to terms with many problems they are facing, with an ultimate aim of overcoming them.</p>	
+								<p>Today, the art of talking therapies such as counselling, are used to help people come to terms with many problems they are facing, with an ultimate aim of overcoming them.</p>
 								<a href="#" class="btn btn-primary">Take the Test</a>
 							</div>
 						</div>
@@ -87,3 +88,4 @@
 
 @include('includes.footerJs')
 @include('includes.footer')
+@endsection

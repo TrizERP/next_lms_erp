@@ -1,30 +1,31 @@
-@include('includes.headcss')
+{{--@include('includes.headcss')
 @include('includes.header')
-@include('includes.sideNavigation')
-
+@include('includes.sideNavigation')--}}
+@extends('layout')
+@section('container')
 <div id="page-wrapper">
     <div class="container-fluid">
         <div class="row bg-title">
             <div class="col-lg-3 col-md-4 col-sm-4 col-xs-12">
                 <h4 class="page-title">Create LO Category</h4>
-            </div>            
+            </div>
         </div>
-        
+
     <div class="row" style=" margin-top: 25px;">
-        <div class="white-box">    
+        <div class="white-box">
             <div class="panel-body">
                 @if ($sessionData = Session::get('data'))
-                <div class="@if($sessionData['status_code']==1) alert alert-success alert-block @else alert alert-danger alert-block @endif ">				
+                <div class="@if($sessionData['status_code']==1) alert alert-success alert-block @else alert alert-danger alert-block @endif ">
                     <button type="button" class="close" data-dismiss="alert">×</button>
                     <strong>{{ $sessionData['message'] }}</strong>
                 </div>
                 @endif
 
-                <div class="col-lg-12 col-sm-3 col-xs-3">                                        
+                <div class="col-lg-12 col-sm-3 col-xs-3">
                     <a href="{{ route('lo_category.create') }}" class="btn btn-info add-new"><i class="fa fa-plus"></i> Add LO Category</a>
-                </div> 
+                </div>
                 <br><br>
-                               
+
                 <div class="col-lg-12 col-sm-12 col-xs-12" style="overflow:auto;">
                     <table id="subject_list" class="table table-striped table-bordered" style="width:100%">
                         <thead>
@@ -32,10 +33,10 @@
                                 <th>Sr. No.</th>
                                 <th>Academic Section</th>
                                 <th>Standard</th>
-                                <th>Subject</th>                                
-                                <th>Title</th>                                
-                                <th>Availability</th>                                
-                                <th>Sort Order</th>                                
+                                <th>Subject</th>
+                                <th>Title</th>
+                                <th>Availability</th>
+                                <th>Sort Order</th>
                                 <th>Show/Hide</th>
                                 <th>Action</th>
                             </tr>
@@ -44,45 +45,45 @@
                             @if(count($data['data']) > 0)
                             @php $i = 1;@endphp
                             @foreach($data['data'] as $key => $lodata)
-                            <tr>    
+                            <tr>
                                 <td>@php echo $i++;@endphp</td>
                                 <td>{{$lodata->grade_name}}</td>
-                                <td>{{$lodata->standard_name}}</td> 
-                                <td>{{$lodata->subject_name}}</td>   								                                
-                                <td>{{$lodata->title}}</td>                                                                                                     
-                                <td>                                    
+                                <td>{{$lodata->standard_name}}</td>
+                                <td>{{$lodata->subject_name}}</td>
+                                <td>{{$lodata->title}}</td>
+                                <td>
                                     @if($lodata->availability == 1)
                                     Available
                                     @else
                                     Unavailable
                                     @endif
-                                </td>                                   
-                                <td>{{$lodata->sort_order}}</td>                                                                                                          
-                                <td>                                    
+                                </td>
+                                <td>{{$lodata->sort_order}}</td>
+                                <td>
                                     @if($lodata->show_hide == 1)
                                     Show
                                     @else
                                     Hide
                                     @endif
-                                </td>     
+                                </td>
                                 <td style="display: inline-flex;">
-                                    <a href="{{ route('lo_category.edit',['id'=>$lodata->id])}}"><button type="button" class="btn btn-info btn-outline btn-circle btn m-r-5"><i class="ti-pencil-alt"></i></button></a>                                                                        
-                                    
+                                    <a href="{{ route('lo_category.edit',['id'=>$lodata->id])}}"><button type="button" class="btn btn-info btn-outline btn-circle btn m-r-5"><i class="ti-pencil-alt"></i></button></a>
+
                                     <form action="{{ route('lo_category.destroy', $lodata->id)}}" method="post">
                                     @csrf
                                     @method('DELETE')
-                                    <button onclick="return confirmDelete();" type="submit" class="btn btn-info btn-outline btn-circle btn m-r-5"><i class="ti-trash"></i></button>																		                                                                     
-                                    </form>                                    
-                                </td>                               
+                                    <button onclick="return confirmDelete();" type="submit" class="btn btn-info btn-outline btn-circle btn m-r-5"><i class="ti-trash"></i></button>
+                                    </form>
+                                </td>
                             </tr>
                             @endforeach
                             @else
                                 <tr><td colspan="10"><center>No records</center></td></tr>
-                            @endif                           
+                            @endif
                         </tbody>
                     </table>
                 </div>
-                
+
             </div>
         </div>
 </div>
@@ -99,7 +100,7 @@
 //     $('#subject_list thead tr:eq(1) th').each( function (i) {
 //         var title = $(this).text();
 //         $(this).html( '<input type="text" size="4" placeholder="Search '+title+'" />' );
- 
+
 //         $( 'input', this ).on( 'keyup change', function () {
 //             if ( table.column(i).search() !== this.value ) {
 //                 table
@@ -109,7 +110,7 @@
 //             }
 //         });
 //     });
-	    
+
 //     $('#subject_list').DataTable({});
 // });
 
@@ -128,5 +129,6 @@
             });
         })
     });
-    </script>    
+    </script>
 @include('includes.footer')
+@endsection
