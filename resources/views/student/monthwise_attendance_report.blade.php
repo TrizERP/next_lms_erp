@@ -95,7 +95,7 @@
                                     <tr id="head-table" style="border:none !important"></tr>
                                     <tr id="heads">
                                         <th>Sr No</th>
-                                        <th>{{App\Helpers\get_string('grno','request')}}</th>
+                                        <th>{{App\Helpers\get_string('standard','request')}}/{{App\Helpers\get_string('division','request')}}<th>{{App\Helpers\get_string('grno','request')}}</th>
                                         <th>{{App\Helpers\get_string('studentname','request')}}</th>
                                         @if(isset($data['batch_id']) && !empty($data['batchs']))
                                         <th>Batch</th>
@@ -117,6 +117,7 @@
                                             $totalA = 0;
                                             @endphp
                                             <td>{{$j++}}</td>
+                                            <td>{{ $value['standard_name'] . ' / ' . $value['division_name'] }}</td>
                                             <td>{{$value['enrollment_no']}}</td>
                                             <td>{{$value['first_name']." ".$value['middle_name']." ".$value['last_name']}}</td>
                                             @if(isset($data['batch_id']) && !empty($data['batchs']))
