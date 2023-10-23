@@ -944,22 +944,40 @@ class fees_collect_controller extends Controller
     // function is used to genrate fees reciept html and insert into table return back to pay fees
     public function gunrate_receipt($receipt_id, $receipt_arr, $id_heads)
     {
-
         $months = [
             1 => 'Jan', 2 => 'Feb', 3 => 'Mar', 4 => 'Apr', 5 => 'May', 6 => 'Jun', 7 => 'Jul', 8 => 'Aug', 9 => 'Sep',
             10 => 'Oct', 11 => 'Nov', 12 => 'Dec',
         ];
-
-        $month_name = '';
-        $month_name2 = '';
-        $all_months = '';
-        foreach ($_REQUEST['months'] as $id => $arr) {
-            $y = $arr / 10000;
+        
+        $month_header_name = [];
+        $month_name = [];
+        
+        foreach ($_REQUEST['months'] as $monthId) {
+            $month_header = DB::table('fees_month_header')
+                ->where('sub_institute_id', session()->get('sub_institute_id'))
+                ->where('month_id', $monthId)
+                ->first();
+        
+            if ($month_header) {
+                $month_header_name[] = $month_header->header;
+            } else {
+                $month_header_name[] = 'No Header Available';
+            }
+        
+            $y = $monthId / 10000;
             $month = (int)$y;
-            $year = substr($arr, -4);
-            $month_name .= $months[$month] . "/" . $year . ',';
-            $all_months .= $month . $year . ',';
+            $year = substr($monthId, -4);
+            $month_name[] = $months[$month] . "/" . $year;
         }
+        
+        $month_header_name = implode(', ', $month_header_name);
+        $month_name = implode(', ', $month_name);
+        /* echo("<pre>");
+print_r($month_header_name);
+print_r($month_name);
+echo("</pre>");
+die; */
+
         $fees_paid_name = [];
         $month_name = substr($month_name, 0, -1);
 
@@ -1390,6 +1408,8 @@ class fees_collect_controller extends Controller
             );
 
             $html_content = str_replace(htmlspecialchars("<<fees_months_display>>"), $month_name, $html_content);
+
+            $html_content = str_replace(htmlspecialchars("<<fees_month_header>>"), $month_header_name, $html_content);
 
             $html_content = str_replace(htmlspecialchars("<<fees_head_content>>"), $fees_head_content, $html_content);
             $html_content = str_replace(htmlspecialchars("<<grand_total>>"), $recTotal, $html_content);
