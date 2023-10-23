@@ -1,14 +1,15 @@
-@include('../includes.headcss')
+{{--@include('../includes.headcss')
 @include('../includes.header')
-@include('../includes.sideNavigation')
-
+@include('../includes.sideNavigation')--}}
+@extends('layout')
+@section('container')
 
 <div id="page-wrapper">
     <div class="container-fluid">
-        <div class="row">            
-            <div class="col-lg-3 col-md-4 col-sm-4 col-xs-12">                
-                <h4 class="page-title">Update Fees Structure</h4>            
-            </div>                    
+        <div class="row">
+            <div class="col-lg-3 col-md-4 col-sm-4 col-xs-12">
+                <h4 class="page-title">Update Fees Structurefdasf</h4>
+            </div>
         </div>
         <div class="row" style=" margin-top: 25px;">
             <div class="panel-body white-box">
@@ -20,16 +21,14 @@
                             {{ App\Helpers\SearchChain('4','multiple','grade,std,div') }}
                         </div>
 
-                        <?php
-                        foreach ($data['data']['ddMonth'] as $id => $val) {
-                            ?>
+
+                        @foreach ($data['data']['ddMonth'] as $id => $val)
                             <div class="col-md-3 form-group">
-                                <input name="<?php echo "month[" . $id . "]"; ?>" type="checkbox">
-                                <label><?php echo $val; ?></label>
+                                <input name="month[{{$id}}]" type="checkbox">
+                                <label>{{$val}}</label>
                             </div>
-                            <?php
-                        }
-                        ?>
+
+                        @endforeach
 
                         <div class="col-md-12 form-group">
                             <input type="submit" name="submit" value="Add Structure" class="btn btn-success" >
@@ -45,3 +44,4 @@
 
 @include('includes.footerJs')
 @include('includes.footer')
+@endsection
