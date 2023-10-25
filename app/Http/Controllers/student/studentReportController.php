@@ -65,28 +65,29 @@ class studentReportController extends Controller
     public function customFields(Request $request)
     {
         $sub_institute_id = $request->session()->get('sub_institute_id');
-        $tblcustom_fields['enrollment_no'] = get_string('grno','request');
-        // $tblcustom_fields['student_name'] = 'Student Name';
+        //$tblcustom_fields['enrollment_no'] = get_string('grno','request');
+        //$tblcustom_fields['student_name'] = 'Student Name';
+        $tblcustom_fields['roll_no'] = 'Roll No';
         $tblcustom_fields['first_name'] = 'First Name';
         $tblcustom_fields['middle_name'] = 'Middle Name';
         $tblcustom_fields['last_name'] = 'Surname';
+        $tblcustom_fields['dob'] = 'Birthdate';
         $tblcustom_fields['mobile'] = 'Mobile';
+        $tblcustom_fields['address'] = 'Address';
+        $tblcustom_fields['city'] = 'City';
+        $tblcustom_fields['state'] = 'State';
+        $tblcustom_fields['pincode'] = 'Pincode';        
         $tblcustom_fields['student_mobile'] = get_string('studentmobile','request');
         $tblcustom_fields['mother_mobile'] = 'Mother Mobile';
         $tblcustom_fields['father_name'] = 'Father Name';
         $tblcustom_fields['mother_name'] = 'Mother Name';
         $tblcustom_fields['gender'] = 'Gender';
         $tblcustom_fields['studentbatch'] = 'Batch';
-        $tblcustom_fields['dob'] = 'Birthdate';
         $tblcustom_fields['email'] = 'Email';
         $tblcustom_fields['username'] = 'Username';
         $tblcustom_fields['uniqueid'] = get_string('uniqueid','request');        
         $tblcustom_fields['admission_year'] = 'Admission Year';
         $tblcustom_fields['admission_date'] = 'Admission Date';
-        $tblcustom_fields['address'] = 'Address';
-        $tblcustom_fields['city'] = 'City';
-        $tblcustom_fields['state'] = 'State';
-        $tblcustom_fields['pincode'] = 'Pincode';
         $tblcustom_fields['religion'] = 'Religion';
         $tblcustom_fields['student_quota'] = 'Student Quota';
         $tblcustom_fields['cast'] = 'Caste';
@@ -94,12 +95,11 @@ class studentReportController extends Controller
         $tblcustom_fields['bloodgroup'] = 'Blood Group';
         $tblcustom_fields['adharnumber'] = 'Adhar Number';
         $tblcustom_fields['anuualincome'] = get_string('anuualincome','request');
-        $tblcustom_fields['roll_no'] = 'Roll No';
         $tblcustom_fields['image'] = 'Image';
         $tblcustom_fields['house'] = get_string('house','request');
+        $tblcustom_fields['amount'] = 'Amount';
         $tblcustom_fields['van'] = 'Van(Shift Wise)';
         $tblcustom_fields['distance'] = 'Distance';
-        $tblcustom_fields['amount'] = 'Amount';
         $tblcustom_fields['optional_subjects'] = 'Optional Subjects';        
         $tblcustom_fields['nationality'] = get_string('nationality','request');
         $tblcustom_fields['place_of_birth'] = get_string('birthplace','request');
@@ -158,12 +158,11 @@ class studentReportController extends Controller
 
 
         $array = [
-            'standard.name as standard', 'division.name as division', 'academic_section.title as grade',
-            'tblstudent.id as id',
+            'tblstudent.enrollment_no as enrollment_no', 'tblstudent.id as id', 'standard.name as standard', 'division.name as division',// 'academic_section.title as grade',
         ];
         $header = [
-            'standard'     => get_string('standard','request'), 'division' => get_string('division','request'), 'grade' => get_string('academicsection','request'),
-            'student_name' => 'Student Name',
+            'enrollment_no' => get_string('grno','request'), 'student_name' => 'Student Name', 'standard' => get_string('standard','request'), 'division' => get_string('division','request'),// 'grade' => get_string('academicsection','request'),
+            
         ];//,'id' => 'Stu_ID'
 
         $searchArr = ['_'];
@@ -171,19 +170,18 @@ class studentReportController extends Controller
 
         if ($request->input('dynamicFields') == '') {
             $array = [
-                'standard.name as standard', 'division.name as division', 'academic_section.title as grade',
-                'tblstudent.id as id',
+                'tblstudent.enrollment_no as enrollment_no', 'tblstudent.id as id', 'standard.name as standard', 'division.name as division',// 'academic_section.title as grade',
             ];
             $header = [
-                'standard'     => get_string('standard','request'), 'division' => get_string('division','request'), 'grade' => get_string('academicsection','request'),
-                'student_name' => 'Student Name',
+                'enrollment_no' => get_string('grno','request'), 'student_name' => 'Student Name', 'standard' => get_string('standard','request'), 'division' => get_string('division','request'),// 'grade' => get_string('academicsection','request'),
+                
             ];//'id' => 'Stu_ID',
             // $res['status_code'] = 0;
             // $res['message'] = "Please select one checkbox atlease to view report";
             // return is_mobile($type, "student_report.index", $res);
         } else {
-            $searchArr1 = ['enrollment_no', 'first_name', 'last_name', 'place_of_birth', 'student_mobile','optional_subjects'];
-            $replaceArr1 = [get_string('grno','request'), 'First Name', 'Surname', get_string('birthplace','request'), get_string('studentmobile','request'),'Optional Subjects'];
+            $searchArr1 = ['first_name', 'last_name', 'place_of_birth', 'student_mobile','optional_subjects'];
+            $replaceArr1 = ['First Name', 'Surname', get_string('birthplace','request'), get_string('studentmobile','request'),'Optional Subjects'];
 
             foreach ($request->input('dynamicFields') as $key => $value) {
                 if ($value != "bloodgroup" && $value != "van" && $value != "optional_subjects") {

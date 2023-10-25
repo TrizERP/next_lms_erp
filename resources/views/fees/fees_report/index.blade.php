@@ -215,7 +215,7 @@
 					</table>
 				</div>
                 <div class="mt-4" style="display:inline-grid;justify-content:center;width:100%">
-				<div class="table-responsive">
+					<div class="table-responsive">
 						<table class="table table-striped">
 							@php
                             $printedModes = []; // Track the printed payment modes
@@ -268,9 +268,8 @@
                             <th style="font-weight: 600;">{{ $tot_amounts }}</th>
                         </tr>
 						</table>
-				</div>
+					</div>
                 </div>
-
 			</div>
 			@endif
 		</div>
@@ -313,6 +312,65 @@
                         title: 'Fees Collection Report',
                         customize: function (win) {
                             $(win.document.body).prepend(`{!! App\Helpers\get_school_details("", "", "") !!}`);
+
+							$(win.document.body).append(`
+							<div class="mt-4" style="display:inline-grid;justify-content:center;width:100%">
+								<div class="table-responsive">
+									<table class="table table-striped">
+										@php
+										$printedModes = []; // Track the printed payment modes
+										$j=1;
+										$tot_amounts = 0;
+										$tot_stu = 0;
+
+										@endphp
+										<tr>
+										<th style="font-weight: 600;">Payment Modes</th>
+										<th style="font-weight: 600;">Total Student</th>
+										<th style="font-weight: 600;">Amounts</th>
+										</tr>
+										@foreach($fees_data as $key => $value)
+										@php
+											$tot_amounts += $value['actual_amountpaid'];
+											if (!in_array($value['payment_mode'], $printedModes)) {
+												$printedModes[] = $value['payment_mode'];
+												$amount = 0;
+												$studentCount = 0;
+												$studentNames = [];
+
+												foreach ($fees_data as $fee) {
+													if ($fee['payment_mode'] === $value['payment_mode']) {
+														$amount += $fee['actual_amountpaid'];
+
+														if (!in_array($fee['student_name'], $studentNames)) {
+															$studentNames[] = $fee['student_name'];
+															if (count(array_keys($studentNames, $fee['student_name'])) < 2) {
+																$studentCount++;
+															}
+														}
+													}
+												}
+											} else {
+												continue;
+											}
+											$tot_stu+= $studentCount;
+										@endphp
+
+										<tr>
+											<td>{{ $value['payment_mode'] }}</td>
+											<td>{{ $studentCount }}</td>
+											<td>{{ $amount }}</td>
+										</tr>
+									@endforeach
+									<tr>
+										<th style="font-weight: 600;">Total</th>
+										<th style="font-weight: 600;">{{ $tot_stu }}</th>
+										<th style="font-weight: 600;">{{ $tot_amounts }}</th>
+									</tr>
+									</table>
+								</div>
+							</div>
+						`);
                         }
                     },
                     'pageLength'
