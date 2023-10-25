@@ -44,7 +44,7 @@ class ptmattenedstatusController extends Controller
             ->join('tbluserprofilemaster', 'tbluserprofilemaster.id', "=", 'tbluser.user_profile_id')
             ->where(['tbluser.sub_institute_id' => $sub_institute_id, 'tbluserprofilemaster.name' => 'Teacher', 'tbluser.status' => 1])
             ->get();
-
+        
         $res['standards'] = $standard;
         $res['users'] = $user_data;
 
@@ -58,63 +58,43 @@ class ptmattenedstatusController extends Controller
      */
     public function create(Request $request)
     {
-        $standard = $request->input('standard_id');
+        $grade = $_REQUEST['grade'];
+        $standard = $_REQUEST['standard'];
+        $division_id = $_REQUEST['division'];
         $date = $request->input('date');
-        $teacher_id = $request->get('teacher_id');
         $type = $request->input('type');
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $syear = $request->session()->get('syear');
         $marking_period_id = session()->get('term_id');
 
-        $result = DB::table("ptm_booking_master as PBM")
-            ->join('ptm_time_slots_master as PTS', function ($join) {
-                $join->whereRaw("PTS.id = PBM.TIME_SLOT_ID");
+        $result = DB::table('ptm_time_slots_master as PTS')
+            ->selectRaw("s.id AS CHECKBOX, CONCAT_WS(' ', s.first_name, s.middle_name, s.last_name) AS STUDENT,
+                        CONCAT_WS(' - ', cs.name, ss.name) AS std_div, s.mobile, PTS.title, 
+                        DATE_FORMAT(PTS.ptm_date, '%d-%m-%Y') AS PTM_DATE, 
+                        CONCAT_WS('-', PTS.from_time, PTS.to_time) AS TIME_SLOT, PTS.id as ptm_time_slot_id")
+            ->join('tblstudent_enrollment as se', function ($join) {
+                $join->on('PTS.standard_id', '=', 'se.standard_id')
+                     ->on('PTS.division_id', '=', 'se.section_id')
+                     ->on('PTS.sub_institute_id', '=', 'se.sub_institute_id')
+                     ->on('PTS.syear', '=', 'se.syear');
             })
-            ->join('tblstudent as s', function ($join) {
-                $join->whereRaw("(s.id = PBM.STUDENT_ID AND s.sub_institute_id = PBM.SUB_INSTITUTE_ID)");
-            })
-            ->join('tblstudent_enrollment as se', function ($join) use ($syear) {
-                $join->whereRaw("se.student_id = s.id AND se.syear = '".$syear."'");
-            })
-            ->join('standard as cs', function ($join) use($marking_period_id) {
-                $join->whereRaw("cs.id = se.standard_id");
-                // ->when($marking_period_id,function($query) use ($marking_period_id){
-                //     $query->where('cs.marking_period_id',$marking_period_id);
-                // });
-            })
-            ->join('division as ss', function ($join) {
-                $join->whereRaw("ss.id = se.section_id");
-            })
-            ->join('tbluser as ts', function ($join) {
-                $join->whereRaw("ts.id = PBM.TEACHER_ID");
-            })
-            ->join('tbluserprofilemaster as tup', function ($join) use ($sub_institute_id) {
-                $join->whereRaw("tup.id = ts.user_profile_id AND tup.name = 'Teacher' AND ts.sub_institute_id = '".$sub_institute_id."'");
-            })
-            ->selectRaw("PBM.ID AS CHECKBOX,PBM.ID,PBM.STUDENT_ID,CONCAT_WS(' ',s.first_name,s.middle_name,s.last_name) AS STUDENT,
-                CONCAT_WS(' - ',cs.name,ss.name) AS std_div,s.mobile,CONCAT_WS(' ',ts.first_name,ts.middle_name,ts.last_name) AS TEACHER,
-                PTS.title, DATE_FORMAT(PTS.ptm_date,'%d-%m-%Y') AS PTM_DATE, 
-                CONCAT_WS('-',PTS.from_time,PTS.to_time) AS TIME_SLOT,PBM.PTM_ATTENDED_STATUS,PBM.PTM_ATTENDED_REMARKS")
-            ->whereRaw("DATE_FORMAT(PTS.ptm_date,'%Y-%m-%d') = '".$date."'")
-            ->where("PBM.sub_institute_id", "=", $sub_institute_id)
-            ->where(function ($q) use ($teacher_id, $standard) {
-                if ($teacher_id != '') {
-                    $q->where('PBM.TEACHER_ID', $teacher_id);
-                }
-                if ($standard != '') {
-                    $q->where('PTS.standard_id', $standard);
-                }
-            })
-            ->get()->toArray();
-
-        $standards = standardModel::select('id', 'name')
-            ->where(['sub_institute_id' => $sub_institute_id])->get()->toArray();
-
+            ->join('standard as cs', 'cs.id', '=', 'se.standard_id')
+            ->join('division as ss', 'ss.id', '=', 'se.section_id')
+            ->join('tblstudent as s', 's.id', '=', 'se.student_id')
+            ->where('PTS.standard_id', '=', $standard)
+            ->where('PTS.division_id', '=', $division_id)
+            ->where('PTS.sub_institute_id', '=', $sub_institute_id)
+            ->where('PTS.syear', '=', $syear)
+            ->whereRaw("DATE_FORMAT(PTS.ptm_date, '%Y-%m-%d') = ?", [$date])
+            ->get()
+            ->toArray();
+        
         $res['status_code'] = 1;
         $res['message'] = "Success";
         $res['student_data'] = $result;
-        $res['standards'] = $standards;
+        $res['grade_id'] = $grade;
         $res['standard_id'] = $standard;
+        $res['division_id'] = $division_id;
         $res['date'] = $date;
 
         return is_mobile($type, "ptm/show_ptm_attened_status", $res, "view");
@@ -134,28 +114,40 @@ class ptmattenedstatusController extends Controller
         $standard_id = $request->get('standard_id');
         $attened_remarks = $request->input('attened_remarks');
         $attened_status = $request->input('attened_status');
-
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $syear = $request->session()->get('syear');
         $created_by = $request->session()->get('user_id');
         $created_ip = $_SERVER['REMOTE_ADDR'];
-
-        foreach ($students as $key => $student_id) {
-            $PTMArray = [];
-
-            $PTMArray['PTM_ATTENDED_REMARKS'] = $attened_remarks[$student_id];
-            $PTMArray['PTM_ATTENDED_STATUS'] = $attened_status[$student_id];
-            $PTMArray['PTM_ATTENDED_BY'] = $created_by;
-            $PTMArray['PTM_ATTENDED_ENTRY_DATE'] = date('Y-m-d');
-            $PTMArray['PTM_ATTENDED_CREATED_IP'] = $created_ip;
-
-            ptmattenedstatusModel::where([
-                "ID" => $student_id, 'SUB_INSTITUTE_ID' => $sub_institute_id,
-            ])->update($PTMArray);
-        }
+        $stdDivs = $request->input('std_div');
+        $mobiles = $request->input('mobile');
+        $titles = $request->input('title');
+        $ptmDates = $request->input('PTM_DATE');
+        $timeSlots = $request->input('TIME_SLOT');
+        $ptm_time_slot_id = $request->input('ptm_time_slot_id');
+        $selectedStudents = array_keys($request->input('attened_status'));  // Get the IDs of selected students
+      
+        foreach ($students as $student_id) {
+            // Check if the current student is in the selected students array
+            if (in_array($student_id, $selectedStudents)) {
+                $formattedDate = \Carbon\Carbon::createFromFormat('d-m-Y', $ptmDates[$student_id])->format('Y-m-d');
+                DB::table('ptm_booking_master')->insert([
+                    'DATE' => $formattedDate,
+                    'TIME_SLOT_ID' => $ptm_time_slot_id[$student_id],
+                    'CONFIRM_STATUS' => "CONFIRM",
+                    'CREATED_ON' => now(),
+                    'STUDENT_ID' => $student_id,
+                    'SUB_INSTITUTE_ID' => $sub_institute_id,
+                    'PTM_ATTENDED_REMARKS' => $request->input('attened_remarks')[$student_id],
+                    'PTM_ATTENDED_STATUS' => $request->input('attened_status')[$student_id],
+                    'PTM_ATTENDED_BY' => $created_by,
+                    'PTM_ATTENDED_ENTRY_DATE' => date('Y-m-d'),
+                    'PTM_ATTENDED_CREATED_IP' => $created_ip,
+                ]);
+            }
+        }      
 
         $res['status_code'] = "1";
-        $res['message'] = "Record Updated Successfully";
+        $res['message'] = "Record Added Successfully";
 
         return is_mobile($type, "add_ptm_attened_status.index", $res);
     }
