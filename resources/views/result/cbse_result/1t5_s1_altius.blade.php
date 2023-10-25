@@ -53,7 +53,7 @@
                                                             <span class="sc-hd">{{$header_data['line1']}}</span><br>   
                                                             <span class="ma-hd">{{$header_data['line2']}}</span><br>  
                                                             <span class="rg-hd">{{$header_data['line3']}}</span><br> 
-                                                            <span class="rg-hd" style="color:#313e84 !important">2nd KM STONE, Opp. Swami Vivekananda Marble Factory,<br/>Near Patel Wadi Piplag, Piplag-Nadiad Crossing, Piplag,Ta.Nadiad, Gujarat-387355.</span><br>
+                                                            <span class="rg-hd" style="font-size:11px !important;color:#313e84 !important">{{$header_data['line4']}}</span><br>
                                                          </td>
                                                          <td style="text-align: center;" align="left" width="15%">
                                                             <img style="height: 90px;margin: 0;" src="/storage/result/right_logo/{{$header_data['right_logo']}}" alt="SCHOOL LOGO">
@@ -110,8 +110,7 @@
                                                                     <tr>   
                                                                         <th align="left" rowspan="2"><b>Subject Name</b></th>
                                                                         <!--<th class="main-th" align="left">Part 1-A-Scholastic Areas:</th>   -->
-                                                                        <th align="left" colspan="<?php echo (count($all_data['exam']) + 1)/2; ?>" ><b>Scholastic Area</b></th>
-                                                                        <th align="left" style="border-left-style:hidden !important" colspan="<?php echo (count($all_data['exam']) + 1)/2; ?>" ><b><?php echo $all_data['term'] . " (" . $all_data['total_mark'] . " Marks)"; ?></b></th>
+                                                                        <th align="left" colspan="<?php echo count($all_data['exam']) + 1; ?>" ><b>Scholastic Area</b></th>
                                                                     </tr>
                                                                     <tr>
                                                                         <?php
