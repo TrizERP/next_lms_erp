@@ -139,7 +139,7 @@
                         <table id="example" class="table table-striped">
                             <thead>
                             <tr>
-                            <th>Sr no</th>
+                            <!--<th>Sr no</th>-->
                                 @foreach($data['headers'] as $hkey => $header)
                                 <th class="text-left"> {{$header}} </th>
                             @endforeach
@@ -148,7 +148,7 @@
                             <tbody>
                             @foreach($student_data as $key => $value)
                                 <tr>
-                                <td>{{$j++}}</td>
+                                <!--<td>{{$j++}}</td>-->
                                     @foreach($data['headers'] as $hkey => $header)
 
                                         @if($hkey == 'image')
