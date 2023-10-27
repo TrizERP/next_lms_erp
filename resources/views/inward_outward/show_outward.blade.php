@@ -32,7 +32,7 @@
                                     <th>Description</th>
                                     <th>File Name</th>
                                     <th>File Location</th>
-                                    <th>Academic Year</th>
+                                    <!--<th>Academic Year</th>-->
                                     <th>Outward Date</th>
                                     <th>Attachment</th>  
                                     <th>Action</th>                                  
@@ -51,7 +51,7 @@
                                     <td>{{$data->description}}</td> 
                                     <td>{{$data->file_name}}</td> 
                                     <td>{{$data->file_location_id}}</td> 
-                                    <td>{{$data->acedemic_year}}</td> 
+                                    <!--<td>{{$data->acedemic_year}}</td> -->
                                     <td>{{date('d-m-Y',strtotime($data->outward_date))}}</td> 
                                     <td>
                                         <a target="blank" href="/storage/outward/{{$data->attachment}}">{{$data->attachment}}</a> 

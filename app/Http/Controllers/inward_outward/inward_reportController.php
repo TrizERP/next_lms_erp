@@ -18,6 +18,7 @@ class inward_reportController extends Controller
             }
         }
         $sub_institute_id = $request->session()->get('sub_institute_id');
+        $syear = $request->session()->get('syear');
 
         $inward = DB::table("inward")
             ->join('place_master', function ($join) {
@@ -30,6 +31,7 @@ class inward_reportController extends Controller
                 physical_file_location.file_location AS file_location_id, 
                 date_format(inward.inward_date,"%d-%m-%Y") AS inward_date')
             ->where("inward.sub_institute_id", "=", $sub_institute_id)
+            ->where("inward.syear", "=", $syear)
             ->get()->toArray();
 
         $inward_data['status_code'] = 1;

@@ -111,10 +111,10 @@ class studentInfirmaryController extends Controller
                 $mobile_no = $val->mobile;
                 $student_name = $val->student_name;
 
-                $pushMessage = "Dear Parents, ".$student_name." Infirmary details has been added for date : ".
+                $pushMessage = "Dear ".$student_name.", Infirmary details has been added for date : ".
                     date('d-m-Y',
-                        strtotime($_REQUEST['date']))." . Details are Medical Case No.: ".$_REQUEST['medical_case_no']." ,
-                    Doctore Name : ".$_REQUEST['doctor_name']." ,Doctore Concat No.: ".$_REQUEST['doctor_contact'];
+                        strtotime($_REQUEST['date']))." . Case No.: ".$_REQUEST['medical_case_no']." ,
+                    Name : ".$_REQUEST['doctor_name']." , Contact: ".$_REQUEST['doctor_contact'];
 
                 $app_notification_content = [
                     'NOTIFICATION_TYPE'        => 'Infirmary',
@@ -190,7 +190,7 @@ class studentInfirmaryController extends Controller
         $result = DB::table('student_infirmary as si')
             ->join('tblstudent as s', function ($join) {
                 $join->whereRaw('si.student_id = s.id');
-            })->whereRaw("si.*, CONCAT_WS(' ',s.first_name,s.middle_name,s.last_name) AS student_name")
+            })->selectRaw("si.*, CONCAT_WS(' ',s.first_name,s.middle_name,s.last_name) AS student_name")
             ->where('si.sub_institute_id', $sub_institute_id)
             ->where('si.id', $id)
             ->orderBy('si.id', 'DESC')->get()->toArray();

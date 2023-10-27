@@ -44,7 +44,7 @@
                                     @endif
                                 </select>
                             </div>
-
+<!--
                             <div class="col-md-4 form-group">
                                 <label>Academic Year</label>
                                 <select name="acedemic_year" id="acedemic_year" class="form-control" required>
@@ -92,13 +92,13 @@
                                     </option>
                                 </select>
                             </div>
-
+-->
                             <div class="col-md-4 form-group">
                                 <label>Inward Date</label>
                                 <div class="input-daterange input-group" id="date-range">
                                     <input type="text" required class="form-control mydatepicker"
                                            placeholder="dd/mm/yyyy"
-                                           value="@if(isset($data->inward_date)){{$data->inward_date}}@endif"
+                                           value="@if(isset($data->inward_date)) {{$data->inward_date}} @else {{ date('Y-m-d') }} @endif"
                                            name="inward_date" autocomplete="off">
                                     <span class="input-group-addon"><i class="icon-calender"></i></span>
                                 </div>
