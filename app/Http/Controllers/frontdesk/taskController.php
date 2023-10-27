@@ -57,12 +57,9 @@ class taskController extends Controller
             $res['to_date'] = $to_date;
         }
 
-        // Filter for tasks assigned to Melvin
-        $data = $data->where(function ($query) use ($user_id) {
-            $query->where('t.TASK_ALLOCATED_TO', $user_id)
-                ->orWhere('t.TASK_ALLOCATED', $user_id);
-        });
-
+        if (strtoupper($user_profile_name) != 'ADMIN') {
+            $data = $data->where('t.TASK_ALLOCATED_TO', $user_id);
+        }
         $data = $data->orderBy('t.ID', 'desc');
         $data = $data->get()->toArray();
 
@@ -190,30 +187,7 @@ class taskController extends Controller
         }, $result);
 
         $editData = $result[0];
-
-        if($user_profile_name != "Teacher")
-        {
-            $extrawhere = "id != '".$user_id."'";
-        }
-        else
-        {
-            $extrawhere = "id = '".$user_id."'";
-        }
-
-        if($user_profile_name != "ICT")
-        {
-            $extrawhere = "id != '".$user_id."'";
-        }
-        else
-        {
-            $extrawhere = "id = '".$user_id."'";
-        }
-
-        $users = tbluserModel::where(["sub_institute_id" => $sub_institute_id])
-            ->whereRaw($extrawhere)
-            ->get()
-            ->toArray();
-
+       
         $dataResult = DB::table("complaint_status")
             ->where("TYPE", "=", 'TASK')
             ->get()->toarray();
@@ -224,7 +198,7 @@ class taskController extends Controller
 
         $taskStatus = $dataResult;
 
-        return view('frontdesk/edit_task', ['data' => $editData, 'userList' => $users, 'taskStatus' => $taskStatus]);
+        return view('frontdesk/edit_task', ['data' => $editData, 'taskStatus' => $taskStatus]);
     }
 
     /**

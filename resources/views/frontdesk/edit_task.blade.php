@@ -47,19 +47,19 @@
                             </div>
 
                             <div class="col-md-4 form-group">
-                                <label>User </label>                                
-                                <select id="TASK_ALLOCATED_TO" name="TASK_ALLOCATED_TO" class="form-control">
-                                    @if(isset($userList))
-                                        @foreach($userList as $key => $value)
-                                            @php 
-                                            $selected = '';
-                                            if($data['TASK_ALLOCATED_TO'] == $value['id'])
-                                            {
-                                                $selected = 'selected=selected';
-                                            }
-                                            @endphp
-                                            <option value="{{$value['id']}}" {{$selected}}> {{$value['first_name']." ".$value['last_name']}} </option>
-                                        @endforeach
+                                <label>TASK ALLOCATED </label>                                
+                                <select id="TASK_ALLOCATED" name="TASK_ALLOCATED" class="form-control" readonly>
+                                    @if(isset($data))
+                                        <option value="{{$data['TASK_ALLOCATED']}}"> {{$data['ALLOCATOR']}} </option>
+                                    @endif
+                                </select>
+                            </div>
+
+                            <div class="col-md-4 form-group">
+                                <label>TASK ALLOCATED TO </label>                                
+                                <select id="TASK_ALLOCATED_TO" name="TASK_ALLOCATED_TO" class="form-control" readonly>
+                                    @if(isset($data))
+                                        <option value="{{$data['TASK_ALLOCATED_TO']}}"> {{$data['ALLOCATED_TO']}} </option>
                                     @endif
                                 </select>
                             </div> 
