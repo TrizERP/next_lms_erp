@@ -803,7 +803,10 @@ public function search_question($all_data){
             ->join('chapter_master as c', 'c.id', '=', 'qm.chapter_id')
             ->leftJoin('topic_master as tm', 'tm.id', '=', 'qm.topic_id')
             ->leftJoin('lms_question_mapping as lqm', 'lqm.questionmaster_id', '=', 'qm.id')
+<<<<<<< HEAD
+=======
             ->leftJoin('lms_mapping_type as lmt', 'lmt.id', '=', 'lqm.mapping_value_id')
+>>>>>>> ca8813aafc0a381f4a5401757db1e62cb3c9c0d4
             ->leftJoin('answer_master as am', function($join) {
                 $join->on('am.question_id', '=', 'qm.id')
                      ->where('correct_answer', '=', 1);
