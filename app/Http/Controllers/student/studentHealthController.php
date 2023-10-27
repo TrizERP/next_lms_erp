@@ -33,7 +33,7 @@ class studentHealthController extends Controller
             ->join('tblstudent as s', function ($join) {
                 $join->whereRaw('si.student_id = s.id');
             })
-            ->selectRaw("si.*, CONCAT_WS(' ',s.first_name,s.middle_name,s.last_name) AS '".get_string('studentname','request')."'")
+            ->selectRaw("si.*, CONCAT_WS(' ',s.first_name,s.middle_name,s.last_name) AS student_name")
             ->where('si.sub_institute_id', $sub_institute_id)
             ->orderBy('si.id', 'DESC')->get()->toArray();
 

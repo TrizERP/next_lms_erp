@@ -133,6 +133,7 @@ class feesDefaulterReportController extends Controller
                 $final_array[$value['id']]['email'] = $bk_data['stu_data']['email'];
                 $final_array[$value['id']]['pending'] = $bk_data['stu_data']['pending'];
                 $final_array[$value['id']]['mobile'] = $bk_data['stu_data']['mobile'];
+                $final_array[$value['id']]['student_quota'] = $bk_data['stu_data']['student_quota'];
                 $final_array[$value['id']]['uniqueid'] = $bk_data['stu_data']['uniqueid'];
                 $final_array[$value['id']]['roll_no'] = $bk_data['stu_data']['roll_no'];
                 $total_fees_array = array();

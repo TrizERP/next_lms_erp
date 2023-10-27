@@ -92,7 +92,7 @@
                             <div class="table-responsive">
                                 <table id="example" class="table display" style="border:none !important">
                                     <thead>
-                                    <tr id="head-table" style="border:none !important"></tr>
+                                    <!--<tr id="head-table" style="border:none !important"></tr>-->
                                     <tr id="heads">
                                         <th>Sr No</th>
                                         <th>{{App\Helpers\get_string('standard','request')}}/{{App\Helpers\get_string('division','request')}}<th>{{App\Helpers\get_string('grno','request')}}</th>
@@ -207,7 +207,7 @@
 
             var d = document.getElementById("division");
             var division = d.options[d.selectedIndex].text;
-            $('#example thead #head-table').html('<th style="border:none !important;text-align:center;font-weight:700 !important" colspan="18"><h4>Academic Section : ' + grade + ' | Standard : ' + standard + ' | Division : ' + division + '</h4></th>');
+            //$('#example thead #head-table').html('<th style="border:none !important;text-align:center;font-weight:700 !important" colspan="18"><h4>Academic Section : ' + grade + ' | Standard : ' + standard + ' | Division : ' + division + '</h4></th>');
             $('#example thead #heads').clone(true).appendTo('#example thead');
             $('#example thead #heads:eq(1) th').each(function (i) {
                 var title = $(this).text();

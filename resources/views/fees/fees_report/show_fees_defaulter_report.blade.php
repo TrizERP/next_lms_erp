@@ -96,12 +96,13 @@
                     <thead>
                         <tr>
                             <th>Sr No.</th>
+                            <th>Roll No.</th>
+                            <th>{{ App\Helpers\get_string('uniqueid','request')}}</th>                            
                             <th>{{ App\Helpers\get_string('grno','request')}}</th>
                             <th>{{ App\Helpers\get_string('studentname','request')}}</th>
                             <th>{{ App\Helpers\get_string('std/div','request')}}</th>
+                            <th>Quota</th>
                             <th>Mobile No.</th>
-                            <th>{{ App\Helpers\get_string('uniqueid','request')}}</th>
-                            <th>Roll No.</th>
                             <th style="background-color:#7befef;">Transport Fees</th>
                             <th style="background-color:#7befef;">Regular</th>
                             <th style="background-color:#7befef;">Reg+Bus</th>
@@ -128,12 +129,13 @@
                             @foreach($fees_data as $key => $fees_value)
                             <tr>
                                 <td>{{$j}}</td>
+                                <td>{{isset($fees_value['roll_no']) ? $fees_value['roll_no'] : ''}}</td>                                
+                                <td>{{isset($fees_value['uniqueid']) ? $fees_value['uniqueid'] : ''}}</td>                                
                                 <td>{{isset($fees_value['enrollment']) ? $fees_value['enrollment'] : ''}}</td>
                                 <td>{{isset($fees_value['name']) ? $fees_value['name'] : ''}}</td>
                                 <td>{{isset($fees_value['stddiv']) ? $fees_value['stddiv'] : ''}}</td>
+                                <td>{{isset($fees_value['student_quota']) ? $fees_value['student_quota'] : ''}}</td>
                                 <td>{{isset($fees_value['mobile']) ? $fees_value['mobile'] : ''}}</td>
-                                <td>{{isset($fees_value['uniqueid']) ? $fees_value['uniqueid'] : ''}}</td>
-                                <td>{{isset($fees_value['roll_no']) ? $fees_value['roll_no'] : ''}}</td>
                                 <td style="background-color:#7befef;">{{ $fees_value['final_fee']['Transport Fees'] ?? 0 }}</td>
                                 @php
                                     $regBk = $fees_value['-']['bk'] ?? 0;
@@ -200,6 +202,7 @@
                             @endforeach
                             <tr class="font-weight-bold">
                                 <td>{{$j++}}</td>
+                                <td></td>
                                 <td></td>
                                 <td></td>
                                 <td></td>
