@@ -19,6 +19,7 @@ class outward_reportController extends Controller
         }
 
         $sub_institute_id = $request->session()->get('sub_institute_id');
+        $syear = $request->session()->get('syear');
 
         $outward = DB::table("outward")
             ->join('place_master', function ($join) {
@@ -31,6 +32,7 @@ class outward_reportController extends Controller
             physical_file_location.file_location AS file_location_id, 
             date_format(outward.outward_date,"%d-%m-%Y") AS outward_date')
             ->where("outward.sub_institute_id", "=", $sub_institute_id)
+            ->where("outward.syear", "=", $syear)
             ->get()->toArray();
 
         $outward_data['status_code'] = 1;

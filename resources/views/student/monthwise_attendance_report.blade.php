@@ -92,10 +92,12 @@
                             <div class="table-responsive">
                                 <table id="example" class="table display" style="border:none !important">
                                     <thead>
-                                    <tr id="head-table" style="border:none !important"></tr>
+                                    <!--<tr id="head-table" style="border:none !important"></tr>-->
                                     <tr id="heads">
-                                        <th>Sr No</th>
-                                        <th>{{App\Helpers\get_string('standard','request')}}/{{App\Helpers\get_string('division','request')}}<th>{{App\Helpers\get_string('grno','request')}}</th>
+                                        <th>Sr.No</th>
+                                        <th>Month/Year</th>
+                                        <th>{{App\Helpers\get_string('standard','request')}}/{{App\Helpers\get_string('division','request')}}</th>
+                                        <th>{{App\Helpers\get_string('grno','request')}}</th>
                                         <th>{{App\Helpers\get_string('studentname','request')}}</th>
                                         @if(isset($data['batch_id']) && !empty($data['batchs']))
                                         <th>Batch</th>
@@ -117,6 +119,7 @@
                                             $totalA = 0;
                                             @endphp
                                             <td>{{$j++}}</td>
+                                            <td>@php echo $month_name[$data['month']] .'/'. $data['year']; @endphp</td>
                                             <td>{{ $value['standard_name'] . ' / ' . $value['division_name'] }}</td>
                                             <td>{{$value['enrollment_no']}}</td>
                                             <td>{{$value['first_name']." ".$value['middle_name']." ".$value['last_name']}}</td>
@@ -180,8 +183,7 @@
                         extend: 'pdfHtml5',
                         title: 'Monthwise Attendance Report',
                         orientation: 'landscape',
-                        pageSize: 'LEGAL',
-                        pageSize: 'A0',
+                        pageSize: 'Legal',
                         exportOptions: {
                             columns: ':visible'
                         },
@@ -207,7 +209,7 @@
 
             var d = document.getElementById("division");
             var division = d.options[d.selectedIndex].text;
-            $('#example thead #head-table').html('<th style="border:none !important;text-align:center;font-weight:700 !important" colspan="18"><h4>Academic Section : ' + grade + ' | Standard : ' + standard + ' | Division : ' + division + '</h4></th>');
+            //$('#example thead #head-table').html('<th style="border:none !important;text-align:center;font-weight:700 !important" colspan="18"><h4>Academic Section : ' + grade + ' | Standard : ' + standard + ' | Division : ' + division + '</h4></th>');
             $('#example thead #heads').clone(true).appendTo('#example thead');
             $('#example thead #heads:eq(1) th').each(function (i) {
                 var title = $(this).text();

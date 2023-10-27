@@ -29,7 +29,7 @@
                                     @csrf
                                     <div class="row">
                                         <div class="col-md-4 form-group">
-                                            <label>Student </label>
+                                            <label>{{ App\Helpers\get_string('studentname','request')}}</label>
                                             <input type="text" id='student' list="studentSearchList" name="student_id"
                                                    onkeyup="getStudents(this.value);" required="required"
                                                    class="form-control" placeholder="Type Student Name OR GR No.">
@@ -37,21 +37,21 @@
                                             </datalist>
                                         </div>
                                         <div class="col-md-4 form-group">
-                                            <label>Medical Case No.</label>
+                                            <label>{{ App\Helpers\get_string('caseno','request')}}</label>
                                             <input type="text" id='medical_case_no' name="medical_case_no"
                                                    class="form-control">
                                         </div>
                                         <div class="col-md-4 form-group">
-                                            <label>Doctor Name </label>
+                                            <label>{{ App\Helpers\get_string('doctorname','request')}}</label>
                                             <input type="text" id='doctor_name' name="doctor_name" class="form-control">
                                         </div>
                                         <div class="col-md-4 form-group">
-                                            <label>Doctor Contact </label>
-                                <input type="text" id='doctor_contact' name="doctor_contact" class="form-control">
+                                            <label>{{ App\Helpers\get_string('doctorcontact','request')}}</label>
+                                <input type="number" id='doctor_contact' name="doctor_contact" class="form-control">
                             </div>
                             <div class="col-md-4 form-group">
-                                <label>Open Date</label>
-                                <input type="text" id='date' name="date" class="form-control mydatepicker" autocomplete="off">
+                                <label>{{ App\Helpers\get_string('opendate','request')}}</label>
+                                <input type="text" id='date' name="date" class="form-control mydatepicker" autocomplete="off" value="{{ date('Y-m-d') }}">
                             </div>
                             <div class="col-md-4 form-group">
                                 <label>Complaint </label>
@@ -59,7 +59,7 @@
                             </div>
                             <div class="col-md-4 form-group">
                                 <label>Symptoms </label>
-                                <input type="text" id='symptoms'  name="symptoms" class="form-control">
+                                <input type="text" id='symptoms'  name="symptoms" class="form-control"">
                             </div>
                             <div class="col-md-4 form-group">
                                 <label>Disease </label>
