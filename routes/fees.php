@@ -52,6 +52,7 @@ use App\Http\Controllers\fees\tblfeesLateController;
 use App\Http\Controllers\fees\update_fees_breackoff\update_fees_breackoff_controller;
 use App\Http\Controllers\fees\fees_breackoff\monthlyBreakoffController;
 use App\Http\Controllers\fees\fees_month_header\feesMonthHeadercontroller;
+use App\Http\Controllers\fees\fees_report\studentBreakoffReportController;
 
 use Illuminate\Support\Facades\Route;
 
@@ -73,6 +74,7 @@ Route::group(['prefix' => 'fees', 'middleware' => ['session', 'menu', 'logRoute'
     Route::resource('daily_voucher', daily_voucherController::class);
     Route::resource('monthly_breakoff', monthlyBreakoffController::class);    
     Route::resource('fees_month_header', feesMonthHeadercontroller::class);    
+    Route::resource('student_breakoff_report', studentBreakoffReportController::class);    
 
     Route::get('ajax_ledgerData', [otherNewfeesReportController::class, 'ajax_ledgerData'])->name('ajax_ledgerData');
 
@@ -168,6 +170,8 @@ Route::get('payphi', function ($id = null) {
     Route::post('fees/fees_overall_report', [feesOverallReportController::class, 'showFeesOverall'])->name('show_fees_overall_report');
 
     Route::post('fees/fees_defaulter_report', [feesDefaulterReportController::class, 'showFeesDefaulter'])->name('show_fees_defaulter_report');
+
+    Route::post('fees/student_breakoff_report', [studentBreakoffReportController::class, 'showStudentBreakoff'])->name('show_stduent_breakoff_report');
 
     Route::post('fees/fees_status_report', [feesStatusController::class, 'feesStatusReport'])->name('show_fees_status_report');
 
