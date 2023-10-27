@@ -29,13 +29,13 @@
                         <div class="row">                            
                             <div class="col-md-4 form-group">
                                 <label>{{ App\Helpers\get_string('studentname','request')}} </label>
-                                <input type="text" id='student' value="@if(isset($data['student_name'])){{ $data['student_name'] . ' - '. $data['student_id'] }}@endif" list="studentSearchList" name="student_id" onkeyup="getStudents(this.value);" required="required" class="form-control">
+                                <input type="text" id='student' value="@if(isset($data['student_name'])){{ $data['student_name'] . ' - '. $data['student_id'] }}@endif" list="studentSearchList" name="student_id" onkeyup="getStudents(this.value);" required="required" class="form-control" readonly="readonly">
                                 <datalist id="studentSearchList">
                                 </datalist>
                             </div>                            
                             <div class="col-md-4 form-group">
                                 <label>{{ App\Helpers\get_string('caseno','request')}}</label>
-                                <input type="text" id='medical_case_no' value="@if(isset($data['medical_case_no'])){{ $data['medical_case_no'] }}@endif" name="medical_case_no" class="form-control">
+                                <input type="text" id='medical_case_no' value="@if(isset($data['medical_case_no'])){{ $data['medical_case_no'] }}@endif" name="medical_case_no" class="form-control" readonly="readonly">
                             </div>
                             <div class="col-md-4 form-group">
                                 <label>{{ App\Helpers\get_string('doctorname','request')}}</label>
@@ -43,7 +43,7 @@
                             </div>
                             <div class="col-md-4 form-group">
                                 <label>{{ App\Helpers\get_string('doctorcontact','request')}}</label>
-                                <input type="text" id='doctor_contact' value="@if(isset($data['doctor_contact'])){{ $data['doctor_contact'] }}@endif" name="doctor_contact" class="form-control">
+                                <input type="number" id='doctor_contact' value="@if(isset($data['doctor_contact'])){{ $data['doctor_contact'] }}@endif" name="doctor_contact" class="form-control">
                             </div>
                             <div class="col-md-4 form-group">
                                 <label>{{ App\Helpers\get_string('opendate','request')}}</label>

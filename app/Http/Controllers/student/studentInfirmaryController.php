@@ -54,8 +54,18 @@ class studentInfirmaryController extends Controller
      *
      * @return Application|Factory|View
      */
-    public function create()
+    public function create(Request $request)
     {
+        $sub_institute_id = $request->session()->get('sub_institute_id');
+        $syear = $request->session()->get('syear');
+        
+        $medical_case_no = DB::table("student_infirmary")
+            ->selectRaw('(IFNULL(MAX(CAST(medical_case_no AS INT)),0) + 1) AS medical_case_no')
+            ->where("sub_institute_id", "=", $sub_institute_id)
+            ->where("syear", "=", $syear)
+            ->get()->toArray();
+
+        view()->share('medical_case_no', $medical_case_no[0]->medical_case_no);
         return view('student/infirmary/add_student_infirmary');
     }
 
