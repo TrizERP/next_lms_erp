@@ -159,33 +159,8 @@
                         </tr>
                         @endforeach
                         <tr class="font-weight-bold">
-                            <td></td>
-                            <td></td>
-                            <td></td>
-                            <td></td>
-                            <td></td>
-                            <td></td>
-                            <td></td>
-                            <td></td>
-                            <td></td>
-                            <td></td>
-                            <td></td>
-                            <td></td>
-                            <td></td>
-                            <td></td>
-                            <td></td>
-                            <td></td>
-                            <td></td>
-                            <td></td>
-                            <td></td>
-                            <td></td>
-                            <td></td>
-                            <td></td>
-                            <td></td>
-                            <td></td>
-                            <td></td>
-                            <td>Total</td>
-                            <td>{{ $final_total_amount }}</td>
+                            <td style="text-align:right;" colspan="{{ count($data['fees_titles']) + 6}}">Total</td>
+                            <td style="text-align:right;">{{ $final_total_amount }}</td>
                         </tr>
                     @endif
                     </tbody>
