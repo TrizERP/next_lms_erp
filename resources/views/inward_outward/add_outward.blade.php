@@ -42,7 +42,7 @@
                                 @endif
                                 </select>
                             </div>
-                                
+<!--                                
                             <div class="col-md-4 form-group">
                                 <label>Academic Year</label>
                                 <select name="acedemic_year" id="acedemic_year" class="form-control" required>
@@ -59,11 +59,11 @@
                                     <option value="2020-2021" selected="selected" @if(isset($data->acedemic_year))@if("2022-2023" == $data->acedemic_year) selected @endif  @endif> 2022-2023 </option>    
                                 </select>
                             </div>    
-                             
+-->                             
                             <div class="col-md-4 form-group">
                                 <label>Outward Date</label>
                                 <div class="input-daterange input-group" id="date-range">
-                                    <input type="text" required class="form-control mydatepicker" placeholder="dd/mm/yyyy" value="@if(isset($data->outward_date)){{$data->outward_date}}@endif" name="outward_date" autocomplete="off">
+                                    <input type="text" required class="form-control mydatepicker" placeholder="dd/mm/yyyy" value="@if(isset($data->outward_date)) {{$data->outward_date}} @else {{ date('Y-m-d') }} @endif" name="outward_date" autocomplete="off">
                                     <span class="input-group-addon"><i class="icon-calender"></i></span> 
                                 </div>
                             </div>

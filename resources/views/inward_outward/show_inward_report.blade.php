@@ -33,13 +33,14 @@
                            
                              <thead>
                                 <tr>
+                                    <th>Year</th>
                                     <th>From Place</th>
                                     <th>Inward No.</th>
                                     <th>Subject</th>
                                     <th>Description</th>
                                     <th>File Name</th>
                                     <th>File Location</th>
-                                    <th>Academic Year</th>
+                                    <!--<th>Academic Year</th>-->
                                     <th>Inward Date</th>
                                     <th>Attachment</th>
                                 </tr>
@@ -47,13 +48,14 @@
                             <tbody>
                                 @foreach($data['data'] as $key => $data)
                                 <tr>    
+                                    <td>{{$data->syear}}</td>
                                     <td>{{$data->place_id}}</td>
                                     <td>{{$data->inward_number}}</td>
                                     <td>{{$data->title}}</td>  
                                     <td>{{$data->description}}</td> 
                                     <td>{{$data->file_name}}</td> 
                                     <td>{{$data->file_location_id}}</td> 
-                                    <td>{{$data->acedemic_year}}</td> 
+                                    <!--<td>{{$data->acedemic_year}}</td> -->
                                     <td>{{date('d-m-Y',strtotime($data->inward_date))}}</td> 
                                     <td><a target="blank" href="/storage/inward/{{$data->attachment}}">{{$data->attachment}}</a> </td> 
                                 </tr>
@@ -81,9 +83,8 @@
             { 
                 extend: 'pdfHtml5',
                 title: 'Inward Report',
-                orientation: 'landscape',
-                pageSize: 'LEGAL',                
-                pageSize: 'A0',
+                orientation: 'portrait',
+                pageSize: 'A4',
                 exportOptions: {                   
                      columns: ':visible'                             
                 },
