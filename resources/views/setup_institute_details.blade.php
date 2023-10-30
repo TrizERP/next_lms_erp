@@ -18,6 +18,18 @@
         integrity="sha384-ENjdO4Dr2bkBIFxQpeoTz1HIcje39Wm4jDKdf19U8gI4ddQ3GYNS7NTKfAdVQSZe" crossorigin="anonymous">
     </script>
     <title>Institute Data | TRIZ INNOVATION PVT LTD</title>
+    <style>
+        .icon-right {
+            float: right; /* Or use other positioning styles like margin or absolute positioning */
+            margin-left: 5px; /* Adjust the margin as needed */
+            color: #333; /* Set the default color */
+            transition: color 0.3s; /* Add a smooth transition effect */
+        }
+
+        .icon-right:hover {
+            color: #FF5733; /* Change the color when hovering */
+        }
+    </style>
 </head>
 
 <body>
@@ -122,6 +134,9 @@
                                              @else
                                              <img src="{{asset('/Images/close-square-icon.svg')}}">
                                             @endif
+                                            @if (!empty($master['text']))
+                                                <i class="fas fa-info-circle icon-right" data-toggle="tooltip" data-placement="top" title="{{$master['text']}}"></i>
+                                            @endif
                                     </div>
                                 </div>
 
@@ -172,6 +187,9 @@
                                          @else
                                          <img src="{{asset('/Images/close-square-icon.svg')}}">
                                         @endif
+                                        @if (!empty($entry['text']))
+                                            <i class="fas fa-info-circle icon-right" data-toggle="tooltip" data-placement="top" title="{{$entry['text']}}"></i>
+                                        @endif
                                     </div>
                                 </div>
                             </a>
@@ -220,7 +238,11 @@
                                  <img src="{{asset('/Images/square-check.svg')}}">
                                  @else
                                  <img src="{{asset('/Images/close-square-icon.svg')}}">
-                                @endif</div>
+                                @endif
+                                @if (!empty($report['text']))
+                                    <i class="fas fa-info-circle icon-right" data-toggle="tooltip" data-placement="top" title="{{$report['text']}}"></i>
+                                @endif
+                            </div>
                                 </div>
                             </a>
                         </div>
@@ -267,13 +289,19 @@
 
     <!-- Bootstrap JavaScript files (required for Bootstrap components and features) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/js/bootstrap.bundle.min.js"
+    integrity="sha384-ENjdO4Dr2bkBIFxQpeoTz1HIcje39Wm4jDKdf19U8gI4ddQ3GYNS7NTKfAdVQSZe" crossorigin="anonymous">
+</script>
+<script>
+    $(function () {
+        $('[data-toggle="tooltip"]').tooltip();
+    });
+</script>
 </body>
 <style>
 .img-width {
     width: 20px;
 }
-
-
 
 .number {
     background: #5C4AC7;
