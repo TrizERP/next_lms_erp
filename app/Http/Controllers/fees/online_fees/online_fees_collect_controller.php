@@ -529,6 +529,7 @@ class online_fees_collect_controller extends Controller
                 if ( !empty( $payment ) ) {
                     $status = $payment['status'];
                     $paydate = strtotime($payment['trandate']);
+                    $PaymentMode = $payment['PaymentMode'];
                     $trandate = date("Y-m-d", $paydate);
                    
                     $json_response = $this->icici_payment_response_data_to_array($payment);
@@ -538,6 +539,7 @@ class online_fees_collect_controller extends Controller
                         "razorpay_bank_res" => $trandate,
                         "aggre_pay_bank_res" => "cron",
                         "icici_bank_res" => $payment_status,
+                        "razorpay_dashboard_ps" => $PaymentMode,
                         "updated_at" => now()
                     );
 /* echo "<pre>"; print_r($update_arr);
@@ -559,7 +561,7 @@ exit; */
                     if($status == 'Success'){
                         $check = DB::table('fees_collect')->whereRaw('cheque_no='.$payment_id.' AND student_id='.$student_id.' AND syear='.$data->syear.' AND sub_institute_id='.$data->sub_institute_id)->get()->toArray();
                         if(count($check) == 0){
-                            $schooldata = $this->pay_fees($request, $data->student_id, $data->syear, $data->sub_institute_id, $amount, $payment_id,$fine);
+                            $schooldata = $this->pay_fees($request, $data->student_id, $data->syear, $data->sub_institute_id, $amount, $payment_id,$fine,$PaymentMode);
                         }
                     }
                 }
@@ -607,7 +609,7 @@ exit; */
             ->where($where_arr)
             ->update($update_arr);
         if ($payment_status == "PS") {
-            $data = $this->pay_fees($request, $get_all_data[0]->student_id, $get_all_data[0]->syear, $get_all_data[0]->sub_institute_id, $get_all_data[0]->amount,$response["ReferenceNo"],$get_all_data[0]->fine);
+            $data = $this->pay_fees($request, $get_all_data[0]->student_id, $get_all_data[0]->syear, $get_all_data[0]->sub_institute_id, $get_all_data[0]->amount,$response["ReferenceNo"],$get_all_data[0]->fine,$response["Payment_Mode"]);
             $type = $request->input('type');
             return \App\Helpers\is_mobile($type, "fees/online_fees_collect/receipt_view", $data, "view");
         } else {
@@ -965,7 +967,7 @@ exit; */
         // echo '<pre>'; print_r($data); exit;
     }
 
-    public function pay_fees(Request $request, $student_id, $syear, $sub_institute_id, $amount, $cheque_no = "",$fine="")
+    public function pay_fees(Request $request, $student_id, $syear, $sub_institute_id, $amount, $cheque_no = "",$fine="",$payment_mode = "")
     {
         //echo "<pre>"; print_r($request->all()); exit;
         $get_map_bank_data = DB::table("fees_online_maping")
@@ -1052,7 +1054,7 @@ exit; */
                 "receiptdate" => date("Y-m-d"),
                 "cheque_date" => "",
                 "cheque_no" => $cheque_no,
-                "bank_name" => "",
+                "bank_name" => $payment_mode,
                 "bank_branch" => "",
                 "submit" => "Save",
             );
@@ -1157,7 +1159,7 @@ exit; */
                 "receiptdate" => date("Y-m-d"),
                 "cheque_date" => "",
                 "cheque_no" => $cheque_no,
-                "bank_name" => "",
+                "bank_name" => $payment_mode,
                 "bank_branch" => "",
                 "submit" => "Save",
             );
