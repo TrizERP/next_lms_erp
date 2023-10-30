@@ -1,6 +1,7 @@
 @include('includes.headcss')
 <link rel="stylesheet" href="../../../plugins/bower_components/dropify/dist/css/dropify.min.css">
 <link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.3/css/select2.min.css" rel="stylesheet"/>
+<link rel="stylesheet" href="/plugins/bower_components/clockpicker/dist/jquery-clockpicker.min.css">
 @include('includes.header')
 @include('includes.sideNavigation')
 <style>
@@ -99,6 +100,7 @@ br {
                             <li class="nav-item"><a href="#section-linemove-14" class="nav-link" aria-selected="false" data-toggle="tab"><span>Parent Communication</span></a></li>
                             <li class="nav-item"><a href="#section-linemove-15" class="nav-link" aria-selected="false" data-toggle="tab"><span>Leave Application</span></a></li>
                             <li class="nav-item"><a href="#section-linemove-16" class="nav-link" aria-selected="false" data-toggle="tab"><span>Transport Details</span></a></li>
+                            <li class="nav-item"><a href="#section-linemove-17" class="nav-link" aria-selected="false" data-toggle="tab"><span>Anacdotal</span></a></li>
                         </ul>
                             
                             @if(isset($data['data']))
@@ -819,31 +821,31 @@ br {
                                             <div style="height:60px; width:100%; clear:both;"></div>
                                         </div>
                                     </div>
-                                @endforeach
+                                    @endforeach
                                     <input type="hidden" name="student_id" value="{{$student_data['id']}}">
                                     <div id="parent_og">
-                                            <div class="row">
-                                                <div class="col-md-4 form-group">
-                                                    <label>Name of person on phone</label>
-                                                    <input type="text" required id='person_name' name="person_names[]" class="form-control">
-                                                </div>
-                                                <div class="col-md-4 form-group">
-                                                    <label>Purpose of phone </label>
-                                                    <input type="text" id='purpose' name="purposes[]" class="form-control">
-                                                </div>
-                                                <div class="col-md-4 form-group">
-                                                    <label>Response </label>
-                                                    <input type="text" id='response' name="responses[]" class="form-control">
-                                                </div>
-                                                <div class="col-md-4 form-group ml-0 mr-0">
-                                                    <label>Comments</label>
-                                                    <input type="text" id='comments' name="commentss[]" class="form-control">
-                                                </div>
-                                                <div class="col-md-4 form-group ml-0">
-                                                    <label>Date </label>
-                                                    <input type="text" id='date' name="dates[]" class="form-control mydatepicker" autocomplete="off">
-                                                </div>
+                                        <div class="row">
+                                            <div class="col-md-4 form-group">
+                                                <label>Name of person on phone</label>
+                                                <input type="text" required id='person_name' name="person_names[]" class="form-control">
                                             </div>
+                                            <div class="col-md-4 form-group">
+                                                <label>Purpose of phone </label>
+                                                <input type="text" id='purpose' name="purposes[]" class="form-control">
+                                            </div>
+                                            <div class="col-md-4 form-group">
+                                                <label>Response </label>
+                                                <input type="text" id='response' name="responses[]" class="form-control">
+                                            </div>
+                                            <div class="col-md-4 form-group ml-0 mr-0">
+                                                <label>Comments</label>
+                                                <input type="text" id='comments' name="commentss[]" class="form-control">
+                                            </div>
+                                            <div class="col-md-4 form-group ml-0">
+                                                <label>Date </label>
+                                                <input type="text" id='date' name="dates[]" class="form-control mydatepicker" autocomplete="off">
+                                            </div>
+                                        </div>
                                     </div>
                                     <div class="col-md-12 form-group">
                                             <label>Add </label>
@@ -1806,6 +1808,114 @@ br {
                                     </div>
                                 </div>
                                 <!-- END LEAVE APPLICATION --> 
+
+                                <!-- START Anacdotal -->
+                                <div class="tab-pane p-3" id="section-linemove-17" role="tabpanel">                          
+                                    <form action="{{ route('anacdotal.store') }}" enctype="multipart/form-data" method="post">
+                                        {{ method_field("POST") }}
+                                    @csrf
+                                    @php
+                                        if(isset($data['get_anacdotals']))
+                                        {
+                                            $get_anacdotals = $data['get_anacdotals'];
+                                        }
+                                        else
+                                        {
+                                            $get_anacdotals = array();
+                                        }
+                                    @endphp
+                                    @foreach($get_anacdotals as $get_anacdotal)
+                                    <div id="entered_og_anacdotal">
+                                        <div class="row">
+                                            <div class="col-md-4 form-group">
+                                                <label>Place</label>
+                                                <input type="text" required id="place" value="{{ $get_anacdotal['place'] }}" name="place[]" name="place[]" class="form-control">
+                                            </div>
+                                            <div class="col-md-4 form-group">
+                                                <label for="observation">Observation</label>
+                                                <textarea id="observation" name="observation[]" class="form-control">
+                                                {{ $get_anacdotal['observation'] }}
+                                                </textarea>
+                                            </div>
+                                            <div class="col-md-4 form-group ml-0">
+                                                <label>Date </label>
+                                                <input type="text" id='anacdotal_date' value="{{ $get_anacdotal['date'] }}" name="date[]" class="form-control mydatepicker">
+                                            </div>
+                                            <div class="col-md-4 form-group">
+                                                <label>Time </label>
+                                                <input type="text" id='time' required name="time[]" value="{{ $get_anacdotal['time'] }}" class="form-control batchname clockpicker">
+                                                <span class="input-group-addon"><span class="glyphicon glyphicon-time"></span></span>
+                                            </div>
+                                            <div class="col-md-4 form-group ml-0 mr-0">
+                                                <label for="life_skills">Life Skills</label>
+                                                <select id="life_skills" name="life_skills[]" class="form-control">
+                                                    <option value="1" @if ($get_anacdotal['life_skills'] == 1) selected @endif>1</option>
+                                                    <option value="2" @if ($get_anacdotal['life_skills'] == 2) selected @endif>2</option>
+                                                </select>
+                                            </div>
+                                            <div class="col-md-4 form-group ml-0 mr-0">
+                                                <label for="life_values">Life Values</label>
+                                                <select id="life_values" name="life_values[]" class="form-control">
+                                                    <option value="1" @if ($get_anacdotal['life_values'] == 1) selected @endif>1</option>
+                                                    <option value="2" @if ($get_anacdotal['life_values'] == 2) selected @endif>2</option>
+                                                </select>
+                                            </div>
+                                            <div style="height:60px; width:100%; clear:both;"></div>
+                                        </div>
+                                    </div>
+                                    @endforeach
+                                    <input type="hidden" name="student_id" value="{{$student_data['id']}}">
+                                    <div id="anacdotal_og">
+                                        <div class="row">
+                                            <div class="col-md-4 form-group">
+                                                <label>Place</label>
+                                                <input type="text" required id='place' name="place[]" class="form-control">
+                                            </div>
+                                            <div class="col-md-4 form-group">
+                                                <label for="observation">Observation</label>
+                                                <textarea id="observation" name="observation[]" class="form-control"></textarea>
+                                            </div>
+                                            <div class="col-md-4 form-group ml-0">
+                                                <label>Date </label>
+                                                <input type="text" id='add_anacdotal_date' name="date[]" class="form-control mydatepicker">
+                                            </div>
+                                            <div class="col-md-4 form-group">
+                                                <label>Time </label>
+                                                <input type="text" id='time' required name="time[]" class="form-control batchname clockpicker">
+                                                <span class="input-group-addon"><span class="glyphicon glyphicon-time"></span></span>
+                                            </div>
+                                            <div class="col-md-4 form-group ml-0 mr-0">
+                                                <label for="life_skills">Life Skills</label>
+                                                <select id="life_skills" name="life_skills[]" class="form-control">
+                                                    <option value="1">1</option>
+                                                    <option value="2">2</option>
+                                                </select>
+                                            </div>
+                                            <div class="col-md-4 form-group ml-0 mr-0">
+                                                <label for="life_values">Life Values</label>
+                                                <select id="life_values" name="life_values[]" class="form-control">
+                                                    <option value="1">1</option>
+                                                    <option value="2">2</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-12 form-group">
+                                            <label>Add </label>
+                                            <a href="javascript:void(0);" class="triz-add-btn" onclick="addNewRow('anacdotal_og','anacdotal_add');">
+                                                <span class="btn btn-outline-success"><i class="fa fa-plus"></i></span>
+                                            </a>
+                                        </div>
+                                    <div id="anacdotal_add">
+                                    </div>
+                                    @if(Session::get('user_profile_name') != 'Student')
+                                        <div class="col-md-12 form-group">
+                                            <input type="submit" name="submit" value="Save" class="btn btn-success triz-btn" >
+                                        </div>
+                                    @endif    
+                                    </form>
+                                </div>
+                                <!-- END Anacdotal -->
                                 
                                 <div id="overlay" style="display:none;"><img id="loading" src="https://i1.wp.com/cdnjs.cloudflare.com/ajax/libs/galleriffic/2.0.1/css/loader.gif">
                                 </div>
@@ -1884,6 +1994,7 @@ br {
 <!--Modal: Add ChapterModal-->
 
 @include('includes.footerJs')
+<script src="/plugins/bower_components/clockpicker/dist/jquery-clockpicker.min.js"></script>
 <script src="../../../admin_dep/js/cbpFWTabs.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.3/js/select2.min.js"></script>
 <script type="text/javascript">
@@ -1893,6 +2004,24 @@ br {
         });
     })();
 
+</script>
+<script>
+    $('#single-input').clockpicker({
+    placement: 'bottom',
+    align: 'left',
+    autoclose: true,
+    'default': 'now'
+  });
+  $('.clockpicker').clockpicker({
+    donetext: 'Done',
+  }).find('input').change(function() {
+    console.log(this.value);
+  });
+  $('#check-minutes').click(function(e) {
+    // Have to stop propagation here
+    e.stopPropagation();
+    input.clockpicker('show').clockpicker('toggleView', 'minutes');
+  });
 </script>
 <script>
    $( document ).ready(function() {

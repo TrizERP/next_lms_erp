@@ -31,6 +31,7 @@ use App\Models\student\tblstudentParentFeedbackModel;
 use App\Models\student\tblstudentPastEducationModel;
 use App\Models\student\tblstudentPaymentMethodMappingModel;
 use App\Models\student\tblstudentTcModel;
+use App\Models\student\Anacdotal;
 use App\Models\transportation\add_vehicle\add_transport_kilometer_rate;
 use App\Models\user\tbluserprofilemasterModel;
 use GenTux\Jwt\GetsJwtToken;
@@ -616,7 +617,12 @@ class tblstudentController extends Controller
 			->toArray();
 
 		$studentfeesdetails = tblstudentFeesDetailModel::where(['sub_institute_id' => $sub_institute_id, 'student_id' => $id])->get()->toArray();
-
+        
+        $getAnacdotals = Anacdotal::where(['sub_institute_id' => $sub_institute_id, 'student_id' => $id, 'syear' => $syear])->get()->toArray();
+        /* echo "<pre>";
+print_r($get_anacdotals);
+echo "</pre>";
+die; */
 		$studentTcdetails = tblstudentTcModel::where(['sub_institute_id' => $sub_institute_id, 'student_id' => $id, 'syear' => $syear])->get()->toArray();
 
 		$stateData = tblstateModel::get()->toArray();
@@ -791,6 +797,9 @@ class tblstudentController extends Controller
 		}
 		if (count($studentTcdetails) > 0) {
 			$res['studentTcdetails'] = $studentTcdetails[0];
+        }
+        if (count($getAnacdotals) > 0) {
+			$res['get_anacdotals'] = $getAnacdotals;
         }
         $admission_year = DB::table(DB::raw("(SELECT ".$syear." AS year
         UNION ALL SELECT ".$syear - 1 ."
