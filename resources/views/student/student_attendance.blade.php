@@ -108,8 +108,11 @@
                                             @if(isset($data['batch_id']) && !empty($data['batchs']))
                                             <td>{{$value['batch_title']}}</td>
                                             @endif
-                                            <td> <input type="radio" value="P" @if(isset($data['attendance_data'][$value['id']])) @if($data['attendance_data'][$value['id']] == 'P') checked @endif  @endif class="Present" name="student[{{$value['id']}}]"> </td>
-                                            <td> <input type="radio" value="A" @if(isset($data['attendance_data'][$value['id']])) @if($data['attendance_data'][$value['id']] == 'A') checked @endif  @endif class="Absent" name="student[{{$value['id']}}]"> </td>
+                                            <!-- <td> <input type="radio" value="P" @if(isset($data['attendance_data'][$value['id']])) @if($data['attendance_data'][$value['id']] == 'P') checked @endif  @endif class="Present" name="student[{{$value['id']}}]"> </td>
+                                            <td> <input type="radio" value="A" @if(isset($data['attendance_data'][$value['id']])) @if($data['attendance_data'][$value['id']] == 'A') checked @endif  @endif class="Absent" name="student[{{$value['id']}}]"> </td> -->
+
+                                            <td> <input type="radio" value="P" @if(!isset($data['attendance_data'][$value['id']]) || $data['attendance_data'][$value['id']] == 'P') checked @endif class="Present" name="student[{{$value['id']}}]"> </td>
+                                            <td> <input type="radio" value="A" @if(isset($data['attendance_data'][$value['id']]) && $data['attendance_data'][$value['id']] == 'A') checked @endif class="Absent" name="student[{{$value['id']}}]"> </td>
                                         </tr>
                                     @endforeach
                                 </tbody>
