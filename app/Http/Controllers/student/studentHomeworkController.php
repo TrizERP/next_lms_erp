@@ -477,10 +477,14 @@ class studentHomeworkController extends Controller
                 ->orderBy('h.date', 'DESC')
                 ->get()->toArray();
             //echo("<pre>");print_r($data);die;
-            
-            $res['status'] = 1;
-            $res['message'] = "Success";
-            $res['data'] = $data;
+            if (count($data) > 0) {
+                $res['status'] = 1;
+                $res['message'] = "Success";
+                $res['data'] = $data;
+            } else {
+                $res['status'] = 0;
+                $res['message'] = "No homework found";
+            }
         } else {
             $res['status'] = 0;
             $res['message'] = "Parameter Missing";
