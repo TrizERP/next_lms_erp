@@ -62,14 +62,22 @@
                                             <a href="{{ route('period_master.edit',$data->id)}}" class="btn btn-info btn-outline">
                                                 <i class="ti-pencil-alt"></i>
                                             </a>
-                                        </div>                                                          
+                                        </div>                                                    @php
+                                        $timetable = DB::table("timetable")
+                                            ->where("period_id", $data->id)
+                                            ->get()
+                                            ->toArray();
+                                        @endphp
+
+                                        @if(empty($timetable))
                                         <form action="{{ route('period_master.destroy', $data->id)}}" method="post" class="d-inline">
-                                        @csrf
-                                        @method('DELETE')
+                                            @csrf
+                                            @method('DELETE')
                                             <button onclick="return confirmDelete();" type="submit" class="btn btn-info btn-outline-danger">
                                                 <i class="ti-trash"></i>
                                             </button>
-                                        </form>                                    
+                                        </form>
+                                        @endif                                     
                                     </td> 
                                 </tr>
                                 @endforeach
