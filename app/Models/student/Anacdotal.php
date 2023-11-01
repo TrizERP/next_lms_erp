@@ -9,7 +9,7 @@ class Anacdotal extends Model
 {
     use HasFactory;
 
-    protected $table = 'anacdotal';
+    protected $table = 'student_anacdotal';
 
     public $timestamps = false;
 
