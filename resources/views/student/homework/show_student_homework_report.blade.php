@@ -74,8 +74,14 @@
                         <div class="table-responsive">
                             {!! App\Helpers\get_school_details("$grade_id","$standard_id","$division_id") !!}
                             <table id="example" class="table table-striped">
+                                <form action="{{ route('delete_selected_students') }}" method="POST" id="delete-form">
+                                @csrf
+                                <input type="hidden" name="selected_students" value="">
+                                <button type="submit" name="delete_action" class="btn btn-danger" id="delete-button">Delete</button>
+
                                 <thead>
                                 <tr>
+                                    <th><input id="checkall" onchange="checkAll(this);" type="checkbox"></th>
                                     <th>Sr.No.</th>
                                     <th>{{App\Helpers\get_string('studentname','request')}}</th>
                                     <th>Title</th>
@@ -92,6 +98,7 @@
                                     @endphp
                                 @foreach($report_data as $key => $data)
                                 <tr>
+                                    <td><input id="{{$data['id']}}" value="{{$data['id']}}" name="students[]" type="checkbox"></td>
                                     <td>{{$j}}</td>
                                     <td>{{$data['student_name']}}</td>
                                     <td>{{$data['title']}}</td>
@@ -107,6 +114,7 @@
                                 @endforeach
                             </tbody>
                         </table>
+                        </form>
                     </div>
                 </div>
             </div>
@@ -116,6 +124,39 @@
 </div>
 
 @include('includes.footerJs')
+
+<script>
+    function checkAll(ele) {
+        var checkboxes = document.querySelectorAll('input[type="checkbox"]');
+        for (var i = 0; i < checkboxes.length; i++) {
+            checkboxes[i].checked = ele.checked;
+        }
+    }
+
+    $(document).ready(function () {
+        // Handle the "Delete" button click
+        $("#delete-button").click(function (e) {
+            e.preventDefault();
+
+            var selectedStudents = [];
+
+            // Find all selected checkboxes and add their values (student IDs) to the array
+            $('input[name="students[]"]:checked').each(function () {
+                selectedStudents.push($(this).val());
+            });
+
+            if (selectedStudents.length === 0) {
+                alert("Please select at least one student to delete.");
+            } else {
+                // Set the selected student IDs as a comma-separated string in a hidden field
+                $('input[name="selected_students"]').val(selectedStudents.join(','));
+
+                // Submit the form for deletion
+                $('#delete-form').submit();
+            }
+        });
+    });
+</script>
 
 <script>
     $(document).ready(function () {

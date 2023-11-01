@@ -97,6 +97,8 @@ Route::group(['prefix' => 'student', 'middleware' => ['session', 'menu', 'logRou
     Route::post('ajax_toDivisions', [studentTransferController::class, 'ajax_toDivisions'])->name('ajax_toDivisions');
 
     Route::get('student_homework_report_index', [studentHomeworkController::class, 'studentHomeworkReportIndex'])->name("student_homework_report_index");
+    Route::post('delete-selected-students', [studentHomeworkController::class, 'multipleDelete'])->name('delete_selected_students');
+
     Route::post('student_homework_report', [studentHomeworkController::class, 'studentHomeworkReport'])->name("student_homework_report");
     Route::get('student_homework_submission_report_index', [studentHomeworkSubmissionController::class, 'studentHomeworkSubmissionReportIndex'])->name("student_homework_submission_report_index");
 
