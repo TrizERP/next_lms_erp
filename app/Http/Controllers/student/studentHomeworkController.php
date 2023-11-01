@@ -325,7 +325,7 @@ class studentHomeworkController extends Controller
             })->join('subject as ss', function ($join) {
                 $join->whereRaw('ss.id = h.subject_id AND ss.sub_institute_id = h.sub_institute_id');
             })->selectRaw("h.*,s.name as standard_name,d.name as division_name,ss.subject_name,
-                CONCAT_WS(' ',ts.first_name,ts.last_name) as student_name")
+                CONCAT_WS(' ',ts.first_name,ts.last_name) as student_name, ts.id as student_id")
             ->where('h.sub_institute_id', $sub_institute_id)
             ->where('h.syear', $syear);
 
@@ -598,4 +598,19 @@ class studentHomeworkController extends Controller
         return json_decode(json_encode($subject_teacher_subjects_data), true);
     }
 
+    public function multipleDelete(Request $request) 
+    {
+        $type = $request->get('type');
+
+        $selectedStudents = $request->input('selected_students');
+    
+        $selectedStudents = explode(',', $selectedStudents);
+        
+        DB::table('homework')->whereIn('id', $selectedStudents)->delete();
+        
+        $res['status_code'] = "1";
+        $res['message'] = "Student Homework Deleted Successfully";
+    
+        return is_mobile($type, "student_homework_report_index", $res, "redirect");
+    }
 }
