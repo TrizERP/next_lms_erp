@@ -91,7 +91,7 @@ class fees_breackoff_controller extends Controller
             'sub_institute_id' => session()->get('sub_institute_id'),
             'syear'            => session()->get('syear'),
         ])->get()->toArray();
-        
+
         $start_month = $data[0]['from_month'];
         $end_month = $data[0]['to_month'];
 
@@ -115,9 +115,9 @@ class fees_breackoff_controller extends Controller
         }
         else if($data[0]['type'] == "quarterly_fees")
         {
-            for ($i = $start_month; $i <= 12; $i++) 
+            for ($i = $start_month; $i <= 12; $i++)
             {
-                if ($start_month <= 12) 
+                if ($start_month <= 12)
                 {
                     $months_arr[$start_month.$syear] = $months[$start_month].'/'.$syear;
                     $start_month = ($start_month+3);
@@ -167,7 +167,7 @@ class fees_breackoff_controller extends Controller
      */
     public function store(Request $request)
     {
-        if (isset($_REQUEST['action']) && $_REQUEST['action'] == 'insert') 
+        if (isset($_REQUEST['action']) && $_REQUEST['action'] == 'insert')
         {
             $all_data = $_REQUEST['NewValues'];
 
@@ -293,8 +293,8 @@ class fees_breackoff_controller extends Controller
             $type = $request->input('type');
 
             return is_mobile($type, "fees_breackoff.index", $res, "redirect");
-        } 
-        else 
+        }
+        else
         {
 
             $grade = DB::table('academic_section')
@@ -316,7 +316,7 @@ class fees_breackoff_controller extends Controller
                 1 => 'Jan', 2 => 'Feb', 3 => 'Mar', 4 => 'Apr', 5 => 'May', 6 => 'Jun', 7 => 'Jul', 8 => 'Aug',
                 9 => 'Sep', 10 => 'Oct', 11 => 'Nov', 12 => 'Dec',
             ];
-            $ReqMonths = $_REQUEST["month"];
+            $ReqMonths = $_REQUEST["month"] ?? [];
             $months_arr = [];
 
             foreach ($ReqMonths as $id => $on) {

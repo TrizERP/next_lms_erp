@@ -155,7 +155,7 @@ class fees_title_controller extends Controller
                     SELECT fee_paid_title
                     FROM fees_title_master
                     WHERE id = '$fees_title_id'"));
-            $fees_title = $fees_title[0]->fee_paid_title;
+            $fees_title = isset($fees_title[0]) ? $fees_title[0]->fee_paid_title : '';
 
             $mandatory = $request->get('mandatory');
             $mandatory_val = isset($mandatory) ? $mandatory : 0;
@@ -163,7 +163,7 @@ class fees_title_controller extends Controller
                 'fees_title_id' => $request->get('fees_title_id'),
                 'fees_title' => $fees_title,
                 'display_name' => $request->get('display_name'),
-                'sort_order'  => $request->get('sort_order'),                
+                'sort_order'  => $request->get('sort_order'),
                 'cumulative_name' => $request->get('cumulative_name'),
                 'append_name' => $request->get('append_name'),
                 'mandatory' => $mandatory_val,
@@ -231,7 +231,7 @@ class fees_title_controller extends Controller
                 'fees_title_id' => $request->get('fees_title_id'),
                 'fees_title' => $id,
                 'display_name' => $request->get('display_name'),
-                'sort_order'  => $request->get('sort_order'),                
+                'sort_order'  => $request->get('sort_order'),
                 'cumulative_name' => $request->get('cumulative_name'),
                 'append_name' => $request->get('append_name'),
                 'mandatory' => $mandatory_val,
@@ -255,7 +255,7 @@ class fees_title_controller extends Controller
                 'fees_title_id' => $request->get('fees_title_id'),
                 'fees_title' => $fees_title,
                 'display_name' => $request->get('display_name'),
-                'sort_order'  => $request->get('sort_order'),                
+                'sort_order'  => $request->get('sort_order'),
                 'cumulative_name' => $request->get('cumulative_name'),
                 'append_name' => $request->get('append_name'),
                 'mandatory' => $mandatory_val,
