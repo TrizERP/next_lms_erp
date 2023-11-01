@@ -30,7 +30,7 @@
                         <div class="row">
                             <div class="col-md-4 form-group">
                                 <label for="fee_interval">Select Fee Type:</label>
-                                <select name="fee_type" id="fee_type" class="form-control">
+                                <select name="fee_type" id="fee_type" class="form-control" required>
                                     <option selected>Select Type</option>
                                     <option value="yearly_fees" @if($data['type'] == 'yearly_fees') selected @endif>Yearly Fees</option>
                                     <option value="half_year_fees" @if($data['type'] == 'half_year_fees') selected @endif>Half Year Fees</option>
@@ -40,7 +40,7 @@
                             </div>
                             <div class="col-md-3 form-group ml-0 mr-0">
                                 <label>From Month</label>
-                                <select name="start_month" id="title" class="form-control van">
+                                <select name="start_month" id="title" class="form-control van" required>
                                     <option value="">--Select--</option>
                                     <?php
                                     foreach ($data['data']['ddMonth'] as $id => $arr) {
@@ -56,7 +56,7 @@
                             </div>
                             <div class="col-md-3 form-group ml-0">
                                 <label>To Month</label>
-                                <select name="end_month" id="title" class="form-control van">
+                                <select name="end_month" id="title" class="form-control van" required>
                                     <option value="">--Select--</option>
                                     <?php
                                     foreach ($data['data']['ddMonth'] as $id => $arr) {
