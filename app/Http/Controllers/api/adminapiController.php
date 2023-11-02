@@ -830,6 +830,12 @@ class adminapiController extends Controller
         }
 
         $response = [];
+        $types_req = "";
+        if($request->type=="Photo"){
+            $types_req="attachment";
+        }else if($request->type=="Video"){
+            $types_req="youtube_link";
+        }
         $validator = Validator::make($request->all(), [
             'sub_institute_id' => 'required|numeric',
             'syear'            => 'required|numeric',
@@ -840,7 +846,7 @@ class adminapiController extends Controller
             'title'            => 'required',
             'album_title'      => 'required',
             'type'             => 'required|in:Photo,Video',
-            'attachment'       => 'required',
+            $types_req       => 'required',
         ]);
 
         if ($validator->fails()) {
@@ -855,8 +861,8 @@ class adminapiController extends Controller
             $_REQUEST['action'] = "API";
 
             $ph_object = new photo_video_gallaryController;
-            $result = $ph_object->store($request);
-
+            $result = $ph_object->store($request);  
+            
             if ($result == 1) {
                 $response['status'] = 1;
                 $response['message'] = "Record Added";
