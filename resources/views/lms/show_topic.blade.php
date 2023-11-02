@@ -473,6 +473,9 @@
                                         <div class="video-sec-title mb-0">
                                             <div class="icon-box"><i class="mdi mdi-video-check-outline"></i></div>
                                             <div class="h4 mb-0 d-flex">{{$list_topicvalue->name}}</div>
+                                            <div class="help-arraw ml-auto">
+                                                <i class="mdi mdi-chevron-down"></i>
+                                            </div>
                                         </div>
                                     </div>
                                     <div class="col-md-8 mb-2 d-md-flex align-items-center justify-content-end">
@@ -503,8 +506,7 @@
                                                             }
                                                         @endphp
                                                         <li>
-                                                            <a target="_blank" href="{{$file_name}}"
-                                                               class="text-dark">{{$book_data['title']}}</a>
+
                                                         </li>
                                                     @endforeach
                                                 </ul>
@@ -569,81 +571,66 @@
                                         </div> -->
                             </div>
                         @endif
-
                         <div class="video-list mb-4 collapse" id="collapseExample{{$k}}" data-parent="#list">
+                        <div class="video-list mb-4" id="accordion">
                             @if(isset($data['content_data'][$list_topicvalue->id]))
-                                @foreach($data['content_data'][$list_topicvalue->id] as $ckey => $cval)
-                                    @php
-                                        $blur_content_style = "";
-                                        if($cval['show_hide'] != 1){
-                                            $blur_content_style = "background-color: #817979 !important;";
-                                        }
-                                    @endphp
-                                    <div class="video-box mb-2" style="{{$blur_content_style}}">
-                                        @if($cval['file_type'] == "link")
-                                            <a target="_blank" href="{{$cval['filename']}}"><img
-                                                    src="../admin_dep/images/clickhere.jpg" width="100px"/></a>
-                                        @else
-                                            <div class="video-img-box">
-                                                <div class="video-img">
-                                                    <!-- <img src="assets/images/slide1.jpg" alt=""> -->
-                                                <!-- <iframe width="560" height="315" src="../../../storage{{$cval['file_folder']}}/{{$cval['filename']}}" frameborder="0" allowfullscreen></iframe> -->
-                                                <!--
-                                                    @if($cval['file_type'] == "pptx")
-                                                    <iframe width="560" height="315" src="../../../storage{{$cval['file_folder']}}/{{$cval['filename']}}" frameborder="0" allowfullscreen></iframe>
-                                                    @else
+                                @php
+                                    $categories = collect($data['content_data'][$list_topicvalue->id])->groupBy('content_category');
+                                @endphp
 
-                                                @endif -->
-                                                    <video controls="true" width="220" height="140"
-                                                           controlsList="nodownload">
-                                                        <source
-                                                            src="../../../storage{{$cval['file_folder']}}/{{$cval['filename']}}"
-                                                            type="video/mp4"/>
-                                                    </video>
-
-                                                </div>
-
-                                                <a href="{{route('topic_master.show',$cval['id'])}}" target="_blank"
-                                                   class="view-box">
-                                                    <i class="mdi mdi-eye-outline"></i>
-                                                </a>
-
-                                            <!-- <a href="../../../storage{{$cval['file_folder']}}/{{$cval['filename']}}#toolbar=0" target="_blank" class="view-box">
-                                                    <i class="mdi mdi-eye-outline"></i>
-                                                </a> -->
+                                @foreach($categories as $category => $contentItems)
+                                    <div class="card ml-5 mt-">
+                                        <div class="mb-2  mt-2 chapter-content-single p-3 d-flex align-items-center" data-toggle="collapse" id="heading{{$category}}" aria-controls="collapse{{$category}}" data-target="#collapse{{$category}}">
+                                            <div class="content-category">{{ $category }}</div>
+                                            <div class="help-arraw">
+                                                <i class="mdi mdi-chevron-down"></i>
                                             </div>
-                                        @endif
-                                        <div class="video-details">
-                                        <!-- <a href="{{route('topic_master.show',$cval['id'])}}" class="video-title">{{$cval['title']}}</a> -->
-                                            <a class="video-title">{{$cval['title']}}</a>
-                                            <div class="video-des">{{$cval['description']}}</div>
                                         </div>
-                                        @if(strtoupper($user_profile) == 'LMS TEACHER' || strtoupper($user_profile) == 'TEACHER')
-                                            <div class="time text-secondary d-flex" style="font-size: 20px;">
-                                                <a href="{{ route('lms_flashcard.index',['content_id'=>$cval['id']])}}"
-                                                   target="_blank" class="btn btn-outline-warning btn-sm mx-1"
-                                                   data-toggle="tooltip" title="Add Flash Card"><i
-                                                        class="mdi mdi-cards-playing-outline"></i></a>
-                                                <a href="{{ route('content_master.edit',[$cval['id'],$cval['standard_id']])}}"
-                                                   class="btn btn-outline-success btn-sm mx-1"><i
-                                                        class="mdi mdi-pencil-outline"></i></a>
-                                                <form action="{{ route('content_master.destroy', $cval['id'] )}}"
-                                                      method="post">
-                                                    @csrf
-                                                    @method('DELETE')
-                                                    <input type="hidden" name="standard_id" value="{{$_REQUEST['standard_id']}}">
 
-                                                    <button onclick="return confirmDelete();" type="submit"
-                                                            class="btn btn-outline-danger btn-sm mx-1">
-                                                        <i class="mdi mdi-delete-outline"></i></button>
-                                                </form>
-                                            </div>
-                                        @endif
+                                        <div id="collapse{{$category}}" class="collapse" aria-labelledby="heading{{$category}}" data-parent="#accordion">
+                                            @foreach($contentItems as $cval)
+                                                <div class="video-box mb-2">
+
+                                                    @if($cval['file_type'] == "link")
+                                                        <a target="_blank" href="{{$cval['filename']}}"><img src="../admin_dep/images/clickhere.jpg" width="100px"/></a>
+                                                    @else
+                                                        <div class="video-img-box">
+                                                            <div class="video-img">
+                                                                <video controls="true" width="10" height="10" controlsList="nodownload">
+                                                                    <source src="../../../storage{{$cval['file_folder']}}/{{$cval['filename']}}" type="video/mp4"/>
+                                                                </video>
+                                                            </div>
+                                                            <a href="{{route('topic_master.show',$cval['id'])}}" target="_blank" class="view-box">
+                                                                <i class="mdi mdi-eye-outline"></i>
+                                                            </a>
+                                                        </div>
+                                                    @endif
+                                                    <div class="video-details">
+                                                        <a class="video-title">{{$cval['title']}}</a>
+                                                        <div class="video-des">{{$cval['description']}}</div>
+                                                    </div>
+                                                    @if(strtoupper($user_profile) == 'LMS TEACHER' || strtoupper($user_profile) == 'TEACHER')
+                                                        <div class="time text-secondary d-flex" style="font-size: 20px;">
+                                                            <a href="{{ route('lms_flashcard.index',['content_id'=>$cval['id']])}}" target="_blank" class="btn btn-outline-warning btn-sm mx-1" data-toggle="tooltip" title="Add Flash Card"><i class="mdi mdi-cards-playing-outline"></i></a>
+                                                            <a href="{{ route('content_master.edit',[$cval['id'],$cval['standard_id']])}}" class="btn btn-outline-success btn-sm mx-1"><i class="mdi mdi-pencil-outline"></i></a>
+                                                            <form action="{{ route('content_master.destroy', $cval['id'] )}}" method="post">
+                                                                @csrf
+                                                                @method('DELETE')
+                                                                <input type="hidden" name="standard_id" value="{{$_REQUEST['standard_id']}}">
+                                                                <button onclick="return confirmDelete();" type="submit" class="btn btn-outline-danger btn-sm mx-1"><i class="mdi mdi-delete-outline"></i></button>
+                                                            </form>
+                                                        </div>
+                                                    @endif
+                                                </div>
+                                            @endforeach
+                                        </div>
                                     </div>
-
                                 @endforeach
                             @endif
                         </div>
+                        </div>
+
+
                         @php
                             $k++;
                         @endphp
