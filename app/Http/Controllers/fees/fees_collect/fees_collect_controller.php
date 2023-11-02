@@ -961,7 +961,7 @@ class fees_collect_controller extends Controller
             if ($month_header) {
                 $month_header_name[] = $month_header->header;
             } else {
-                $month_header_name[] = 'No Header Available';
+                $month_header_name[] = 'N/A';
             }
         
             $y = $monthId / 10000;
@@ -972,14 +972,14 @@ class fees_collect_controller extends Controller
         
         $month_header_name = implode(', ', $month_header_name);
         $month_name = implode(', ', $month_name);
-        /* echo("<pre>");
+        /*echo("<pre>");
 print_r($month_header_name);
 print_r($month_name);
 echo("</pre>");
-die; */
+die;*/
 
         $fees_paid_name = [];
-        $month_name = substr($month_name, 0, -1);
+        //$month_name = substr($month_name, 0, -1); //Rajesh: Jul/2023, Aug/202 
 
         // config master is added to add month beside fees title if show_month has value 1
         $config_master = DB::table('fees_config_master')->whereRaw('sub_institute_id=' . session()->get('sub_institute_id') . ' and syear=' . session()->get('syear') . ' and show_month !=0')->get()->toArray();
