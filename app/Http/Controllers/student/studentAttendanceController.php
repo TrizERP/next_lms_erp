@@ -86,9 +86,10 @@ class studentAttendanceController extends Controller
        
         $holidays = DB::table("calendar_events")
             ->where('school_date', '=', $date)
-            ->whereIn('event_type',['holiday','event'])
+            ->whereIn('event_type',['holiday','vacation'])
             ->where('sub_institute_id', '=', session()->get('sub_institute_id'))
             ->where('syear', '=', session()->get('syear'))
+            ->whereRaw('FIND_IN_SET(?, standard)', [$standard])
             ->get()
             ->toArray();
 
