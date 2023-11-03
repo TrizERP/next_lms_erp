@@ -580,14 +580,14 @@
 
                                 @foreach($categories as $category => $contentItems)
                                     <div class="card ml-5 mt-">
-                                        <div class="mb-2  mt-2 chapter-content-single p-3 d-flex align-items-center" data-toggle="collapse" id="heading{{$category}}" aria-controls="collapse{{$category}}" data-target="#collapse{{$category}}">
+                                        <div class="mb-2  mt-2 chapter-content-single p-3 d-flex align-items-center" data-toggle="collapse" id="heading{{$category}}" aria-controls="collapse{{$category}}" data-target="#collapse{{str_replace(' ', '', $category)}}">
                                             <div class="content-category">{{ $category }}</div>
                                             <div class="help-arraw">
                                                 <i class="mdi mdi-chevron-down"></i>
                                             </div>
                                         </div>
 
-                                        <div id="collapse{{$category}}" class="collapse" aria-labelledby="heading{{$category}}" data-parent="#accordion">
+                                        <div id="collapse{{str_replace(' ', '', $category)}}" class="collapse" aria-labelledby="heading{{$category}}" data-parent="#accordion">
                                             @foreach($contentItems as $cval)
                                                 <div class="video-box mb-2">
 
