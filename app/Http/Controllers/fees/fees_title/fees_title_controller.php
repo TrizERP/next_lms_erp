@@ -155,7 +155,7 @@ class fees_title_controller extends Controller
                     SELECT fee_paid_title
                     FROM fees_title_master
                     WHERE id = '$fees_title_id'"));
-            $fees_title = isset($fees_title[0]) ? $fees_title[0]->fee_paid_title : '';
+            $fees_title = $fees_title[0]->fee_paid_title;
 
             $mandatory = $request->get('mandatory');
             $mandatory_val = isset($mandatory) ? $mandatory : 0;

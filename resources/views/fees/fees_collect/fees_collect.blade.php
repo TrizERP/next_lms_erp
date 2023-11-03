@@ -349,7 +349,7 @@
                                                 $grand_total_with_cheque_charges = $data['final_fee']['Total'];
                                             }
                                             // for send sms to parent
-   											$fees_config =App\Helpers\fees_config();											
+   											$fees_config =App\Helpers\fees_config();
                                     @endphp
 									<tr style="border-bottom: 2px solid black;">
 										<td></td>
@@ -529,8 +529,12 @@
 
 				$('.allField1').each(function() {
 					var amount;
-					amount = parseFloat($(this).val());
-					sum += amount; // Or this.innerHTML, this.innerText
+                    console.log($(this).val())
+                    if (!isNaN($(this).val()) && $(this).val() !== '') {
+                        amount = !isNaN($(this).val()) ? parseFloat($(this).val()) : 0;
+                        console.log(amount)
+                        sum += amount;
+                    }
 				});
 				$("#totalVal").val(sum);
 				calculateTotal();
