@@ -50,8 +50,7 @@
                             <strong>{{ $sessionData['message'] }}</strong>
                     </div>
                 @endif
-                <form action="{{ route('show_stduent_breakoff_report') }}" enctype="multipart/form-data" class="row" method="post">
-                {{ method_field("POST") }}
+                <form action="{{ route('student_breakoff_report.create') }}" enctype="multipart/form-data" class="row">
                 @csrf
                     <div class="col-md-4 form-group">
                         <label>First Name</label>
@@ -75,20 +74,21 @@
                     </div>
                     {{ App\Helpers\SearchChain('4','single','grade,std,div',$grade_id,$standard_id,$division_id) }}
 
-                    <!-- @if(isset($data['months']))
                         <div class="col-md-4 form-group">
                             <label>Months:</label>
                             <select name="month[]" class="form-control" multiple="multiple">
-                                @foreach($data['months'] as $id => $value)
+                            @if(isset($data['months_arr']))
+                                @foreach($data['months_arr'] as $id => $value)
                                     <option value="{{$id}}" 
                                     @if(isset($data['month']) && in_array($id, $data['month']))
                                         SELECTED
                                     @endif
                                 >{{$value}}</option>
                                 @endforeach
+                                @endif
                             </select>
                         </div>
-                    @endif -->
+
                     <div class="col-md-12 form-group">
                         <center>
                             <input type="submit" name="submit" value="Search" class="btn btn-success">
@@ -127,37 +127,56 @@
                     $total_breakoff = 0;
                     $total_array = array();
                     $final_total_amount = 0;
+                    $amount = 0;
                     @endphp
 
                     @if(isset($data['fees_data']))
-                        @foreach($fees_data as $key => $fees_value)
+                        @foreach($fees_data as $key => $fees_data_val)
+                        @foreach($fees_data_val as $key => $fees_value)                        
                         <tr>
                             <td>{{$i++}}</td>
-                            <td>{{$fees_value['enrollment']}}</td>
-                            <td>{{$fees_value['name']}}</td>
-                            <td>{{$fees_value['stddiv']}}</td>
-                            <td>{{$fees_value['stu_quota']}}</td>
+                            <td>{{$fees_value['enrollment_no']}}</td>
+                            <td>{{$fees_value['student_name'].' '.$fees_value['surname']}}</td>
+                            <td>{{$fees_value['standard_name'].'/'.$fees_value['division_name']}}</td>
+                            <td>{{$fees_value['quota']}}</td>
                             <td>{{$fees_value['uniqueid']}}</td>
-                            @php
+                             @php
                                 $totalAmount = 0; // Initialize the total amount variable
                             @endphp
                             @foreach ($data['fees_titles'] as $value)
-                                @php
-                                    $fees_title = $value->fees_title;
-                                    $display_name = $value->display_name;
-                                    $amount = $fees_value['final_fee'][$display_name] ?? 0;
+    @php
+        $fees_title = $value->fees_title;
+        $display_name = $value->display_name;
+        $amount = 0; // Initialize amount to 0
 
-                                    // Add the current amount to the total amount
-                                    $totalAmount += $amount;
-                                @endphp
-                                <td>{{$amount}}</td>
-                            @endforeach
+        foreach($fees_value['breakoff'] as $k => $v) {
+            if (isset($v[$fees_title])) {
+                if($v[$fees_title]['amount']!=0){
+                    $amount +=$v[$fees_title]['amount'];
+                }else{
+                    $amount += $v[$fees_title]['paid_amount'];
+                }
+            }
+        }
+        foreach($fees_value['otherfees'] as $k => $v) {
+            if ($k==$display_name ) {
+                $amount+=$v;
+            }
+        }
+        // Add the current amount to the total amount
+        $totalAmount += $amount;
+    @endphp
+    <td>{{ $amount }}</td>
+@endforeach
+
                             <td> {{ $totalAmount }}</td>
                             @php
                                 $final_total_amount += $totalAmount; // Add the total for the current row to the final total
                             @endphp
                         </tr>
                         @endforeach
+                        @endforeach
+                        
                         <tr class="font-weight-bold">
                             <td style="text-align:right;" colspan="{{ count($data['fees_titles']) + 6}}">Total</td>
                             <td style="text-align:right;">{{ $final_total_amount }}</td>
