@@ -194,7 +194,7 @@
 
                 $this.$modal.find('form').on('submit', function() {
                     var hid_id = form.find("input[id='hid_id']").val();
-                    var hostname = "https://" + window.location.host;
+                    var hostname = "http://" + window.location.host;
                     var path = hostname + "/calendar/calendar/" + hid_id;
                     //                    if (title == null || title == "") {
                     //                        alert("Please Fill Proper Values");
@@ -208,7 +208,8 @@
                         type: "PUT",
                         url: path,
                         data: $("#update_item_form").serialize(),
-                        success: function(data) {
+                        success: function(result) {
+                            console.log(result);
                             window.location.href = "{{ route('calendar.index') }}";
                             // return false;
                         }

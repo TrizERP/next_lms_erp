@@ -69,6 +69,23 @@
         .ui-datepicker-inline {
             display: none !important;
         }
+        #loading-overlay {
+		position: fixed;
+		top: 0;
+		left: 0;
+		width: 100%;
+		height: 100%;
+		background-color: rgb(251 251 252); /*rgba(0, 0, 0, 0.5); /* Adjust the opacity as needed */
+		z-index: 9999;
+	}
+
+	#loading-overlay center {
+	position: absolute;
+	top: 50%;
+	left: 50%;
+	transform: translate(-50%, -50%);
+	}
+
     </style>
 
     <!-- Global site tag (gtag.js) - Google Analytics -->

@@ -629,7 +629,7 @@ if (!function_exists('TermDD')) {
 }
 if (!function_exists('SearchStudent')) {
 
-    function SearchStudent($grade="", $standard = "", $div = "", $sub_institute_id = "", $syear = "", $roll_no = "", $stu_name = "", $uniqueid = "", $mobile = "", $grno = "",$stud_id="",$batch="")
+    function SearchStudent($grade = "", $standard = "", $div = "", $sub_institute_id = "", $syear = "", $roll_no = "", $stu_name = "", $uniqueid = "", $mobile = "", $grno = "", $stud_id = "", $batch = "")
     {
         if ($sub_institute_id == '') {
             $sub_institute_id = session()->get('sub_institute_id');
@@ -655,10 +655,10 @@ if (!function_exists('SearchStudent')) {
         if ($div != '') {
             $div_arr = (array)$div;
         }
-        if($stud_id!=''){
+        if ($stud_id != '') {
             $stud_id = $stud_id;
         }
-        
+
         $enrollment_join = array(
             'se.student_id' => 'ts.id',
             'se.sub_institute_id' => 'ts.sub_institute_id',
@@ -679,7 +679,7 @@ if (!function_exists('SearchStudent')) {
             'b.id' => 'ts.studentbatch',
             'b.sub_institute_id' => 'se.sub_institute_id',
         );
-        
+
 
         $select_fields = "ts.*,se.syear,se.student_id,se.grade_id,
                 se.standard_id,se.section_id,se.student_quota,se.start_date,
@@ -698,10 +698,10 @@ if (!function_exists('SearchStudent')) {
         // $query->when($marking_period_id, function ($join) use ($marking_period_id) {
         //     $join->where('ts.marking_period_id', $marking_period_id);
         // });
-        if($batch!=""){
-            $query->where('ts.studentbatch', $batch);                        
+        if ($batch != "") {
+            $query->where('ts.studentbatch', $batch);
         }
-        
+
         if ($mobile != '') {
             $query->where('ts.mobile', $mobile);
         }
@@ -731,7 +731,7 @@ if (!function_exists('SearchStudent')) {
         $columns[] = "s.name as standard_name";
         $columns[] = "s.medium as medium";
         $columns[] = "d.name as division_name";
-        $columns[] = "b.title as batch_title";        
+        $columns[] = "b.title as batch_title";
 
         $query->join('tblstudent_enrollment as se', $enrollment_join);
         $query->where($where);
@@ -777,14 +777,14 @@ if (!function_exists('SearchStudent')) {
 
         $query->whereraw($extraRaw);
 
-        $query->orderBy('ts.roll_no');
+        $query->orderByRaw('s.sort_order, d.id, ts.roll_no');
 
         return $query->get($columns)->toArray();
     }
 }
 if (!function_exists('FeeMonthId')) {
 
-    function FeeMonthId($syear='')
+    function FeeMonthId($syear = '')
     {
         $data = map_year::where([
             'sub_institute_id' => session()->get('sub_institute_id'),
@@ -803,7 +803,7 @@ if (!function_exists('FeeMonthId')) {
             10 => 'Oct', 11 => 'Nov', 12 => 'Dec',
         ];
         $months_arr = [];
-        if($syear ==''){
+        if ($syear == '') {
             $syear = session()->get('syear');
         }
 
@@ -822,14 +822,14 @@ if (!function_exists('FeeMonthId')) {
 // function is used in fees_collect_controller and online_fees_collect_controller and all fee_reports
 if (!function_exists('FeeBreackoff')) {
 
-    function FeeBreackoff($student_ids, $standard = null,$syear='')
+    function FeeBreackoff($student_ids, $standard = null, $syear = '')
     {
         $sub_institute_id = session()->get('sub_institute_id');
 
         if ($sub_institute_id != '') {
             $sub_institute_id = $sub_institute_id;
-            if($syear == ''){
-             $syear = session()->get('syear');
+            if ($syear == '') {
+                $syear = session()->get('syear');
             }
         } else {
             $sub_institute_id = request()->get('sub_institute_id');
@@ -837,41 +837,41 @@ if (!function_exists('FeeBreackoff')) {
         }
 
         $data = DB::table('tblstudent as s')
-        ->join('tblstudent_enrollment as se', 'se.student_id', '=', 's.id')
-        ->join('academic_section as g', 'g.id', '=', 'se.grade_id')
-        ->join('standard as st', function ($join) use ($standard) {
-            $join->on('st.id', '=', 'se.standard_id');
-            if (!$standard) {
-                $join->whereRaw('st.id = se.standard_id');
-            }
-        })
-        ->leftJoin('division as d', 'd.id', '=', 'se.section_id')
-        ->leftJoin('student_quota as sq', 'sq.id', '=', 'se.student_quota')
-        ->join('fees_breackoff as fb', function ($join) use ($syear, $sub_institute_id, $standard) {
-            $join->on('fb.syear', '=', DB::raw("'" . $syear . "'"))
-                ->on('fb.admission_year', '=', 's.admission_year')
-                ->on('fb.quota', '=', 'se.student_quota')
-                ->on('fb.grade_id', '=', 'se.grade_id')
-                ->on('fb.sub_institute_id', '=', DB::raw("'" . $sub_institute_id . "'"));
-    
-            if (!$standard) {
-                $join->on('fb.standard_id', '=', 'se.standard_id');
-            } else {
-                $join->on('fb.standard_id', '=', DB::raw("'" . $standard . "'"));
-            }
-        })
-        ->selectRaw("s.*, se.syear, se.student_id, se.grade_id, se.standard_id, se.section_id, se.student_quota, g.medium, sq.title AS stu_quota,
+            ->join('tblstudent_enrollment as se', 'se.student_id', '=', 's.id')
+            ->join('academic_section as g', 'g.id', '=', 'se.grade_id')
+            ->join('standard as st', function ($join) use ($standard) {
+                $join->on('st.id', '=', 'se.standard_id');
+                if (!$standard) {
+                    $join->whereRaw('st.id = se.standard_id');
+                }
+            })
+            ->leftJoin('division as d', 'd.id', '=', 'se.section_id')
+            ->leftJoin('student_quota as sq', 'sq.id', '=', 'se.student_quota')
+            ->join('fees_breackoff as fb', function ($join) use ($syear, $sub_institute_id, $standard) {
+                $join->on('fb.syear', '=', DB::raw("'" . $syear . "'"))
+                    ->on('fb.admission_year', '=', 's.admission_year')
+                    ->on('fb.quota', '=', 'se.student_quota')
+                    ->on('fb.grade_id', '=', 'se.grade_id')
+                    ->on('fb.sub_institute_id', '=', DB::raw("'" . $sub_institute_id . "'"));
+
+                if (!$standard) {
+                    $join->on('fb.standard_id', '=', 'se.standard_id');
+                } else {
+                    $join->on('fb.standard_id', '=', DB::raw("'" . $standard . "'"));
+                }
+            })
+            ->selectRaw("s.*, se.syear, se.student_id, se.grade_id, se.standard_id, se.section_id, se.student_quota, g.medium, sq.title AS stu_quota,
                     se.start_date, se.end_date, se.enrollment_code, se.drop_code, se.drop_remarks, se.drop_remarks,
                     se.term_id, se.remarks, se.admission_fees, se.house_id, se.lc_number, sum(fb.amount) as bkoff,
                     st.name as standard_name, d.name as division_name, fb.month_id,
                     RIGHT(fb.month_id, 4) as sort_year,
                     CAST(SUBSTRING(fb.month_id, 1, CHAR_LENGTH(fb.month_id) - 4) as signed) as sort_month")
-        ->where('s.sub_institute_id', $sub_institute_id)
-        ->where('se.syear', $syear)
-        ->whereIn('s.id', $student_ids)
-        ->groupBy('s.id', 'fb.month_id')
-        ->orderByRaw('sort_year, sort_month')
-        ->get()->toArray();
+            ->where('s.sub_institute_id', $sub_institute_id)
+            ->where('se.syear', $syear)
+            ->whereIn('s.id', $student_ids)
+            ->groupBy('s.id', 'fb.month_id')
+            ->orderByRaw('sort_year, sort_month')
+            ->get()->toArray();
 
         return $data;
     }
@@ -881,54 +881,61 @@ if (!function_exists('FeeBreackoff')) {
 
 if (!function_exists('FeeBreakoffHeadWise')) {
 
-    function FeeBreakoffHeadWise($student_ids, $from_date = null, $to_date = null, $fees_head = null,$syear='')
+    function FeeBreakoffHeadWise($student_ids, $from_date = null, $to_date = null, $fees_head = null, $syear = '',$months='')
     {
         $sub_institute_id = session()->get('sub_institute_id');
-        if($syear!=''){
+        if ($syear != '') {
             $syear = $syear;
-        }else{
+        } else {
             $syear = session()->get('syear');
         }
+        $extra_where = "1=1";
 
         $stud_arr = implode(',', $student_ids);
-        $extra_where = " AND s.id in (" . $stud_arr . ")";
+        // $extra_where = " AND s.id in (" . $stud_arr . ")";
+
+        if($months!=""){
+            $month_arr = implode(',', $months);
+            $extra_where .= " AND fb.month_id in (" . $month_arr . ")";
+        }
 
         $result = DB::table('tblstudent as s')
-        ->join('tblstudent_enrollment as se', 'se.student_id', '=', 's.id')
-        ->join('academic_section as g', 'g.id', '=', 'se.grade_id')
-        ->join('standard as st', 'st.id', '=', 'se.standard_id')
-        ->leftJoin('division as d', 'd.id', '=', 'se.section_id')
-        ->join('fees_breackoff as fb', function ($join) use ($syear, $sub_institute_id) {
-            $join->on('fb.syear', '=', DB::raw("'" . $syear . "'"))
-                ->on('fb.admission_year', '=', 's.admission_year')
-                ->on('fb.quota', '=', 'se.student_quota')
-                ->on('fb.grade_id', '=', 'se.grade_id')
-                ->on('fb.standard_id', '=', 'se.standard_id')
-                ->on('fb.sub_institute_id', '=', DB::raw("'" . $sub_institute_id . "'"));
-        })
-        ->join('fees_title as ft', 'fb.fee_type_id', '=', 'ft.id')
-        ->leftJoin('admission_registration as ar', function ($join) {
-            $join->on('ar.enrollment_no', '=', 's.enrollment_no')
-                ->on('ar.sub_institute_id', '=', 's.sub_institute_id');
-        })
-        ->leftJoin('admission_enquiry as ae', function ($join) {
-            $join->on('ae.id', '=', 'ar.enquiry_id')
-                ->on('ar.sub_institute_id', '=', 'ae.sub_institute_id');
-        })
-        ->selectRaw("s.*, se.syear, se.student_id, se.grade_id, se.standard_id, se.section_id, se.student_quota,
+            ->join('tblstudent_enrollment as se', 'se.student_id', '=', 's.id')
+            ->join('academic_section as g', 'g.id', '=', 'se.grade_id')
+            ->join('standard as st', 'st.id', '=', 'se.standard_id')
+            ->leftJoin('division as d', 'd.id', '=', 'se.section_id')
+            ->join('fees_breackoff as fb', function ($join) use ($syear, $sub_institute_id) {
+                $join->on('fb.syear', '=', DB::raw("'" . $syear . "'"))
+                    ->on('fb.admission_year', '=', 's.admission_year')
+                    ->on('fb.quota', '=', 'se.student_quota')
+                    ->on('fb.grade_id', '=', 'se.grade_id')
+                    ->on('fb.standard_id', '=', 'se.standard_id')
+                    ->on('fb.sub_institute_id', '=', DB::raw("'" . $sub_institute_id . "'"));
+            })
+            ->join('fees_title as ft', 'fb.fee_type_id', '=', 'ft.id')
+            ->leftJoin('admission_registration as ar', function ($join) {
+                $join->on('ar.enrollment_no', '=', 's.enrollment_no')
+                    ->on('ar.sub_institute_id', '=', 's.sub_institute_id');
+            })
+            ->leftJoin('admission_enquiry as ae', function ($join) {
+                $join->on('ae.id', '=', 'ar.enquiry_id')
+                    ->on('ar.sub_institute_id', '=', 'ae.sub_institute_id');
+            })
+            ->selectRaw("s.*, se.syear, se.student_id, se.grade_id, se.standard_id, se.section_id, se.student_quota,
                     se.start_date, se.end_date, se.enrollment_code, se.drop_code, se.drop_remarks, se.drop_remarks, se.term_id,
                     se.remarks, se.admission_fees, se.house_id, se.lc_number, fb.amount, st.name as standard_name, d.name as division_name,
                     fb.month_id, ft.display_name, ft.fees_title, ft.mandatory, '' as breakoff, s.father_name, s.mother_name,
                     RIGHT(fb.month_id, 4) as sort_year, CAST(SUBSTRING(fb.month_id, 1, CHAR_LENGTH(fb.month_id) - 4) as signed) as sort_month,
                     ae.fees_circular_form_no")
-        ->havingRaw("sum(fb.amount) != 0")
-        ->where('s.sub_institute_id', $sub_institute_id)
-        ->where('se.syear', $syear)
-        ->whereIn('s.id', $student_ids)
-        ->groupBy('s.id', 'fb.month_id', 'fb.fee_type_id')
-        ->orderByRaw('sort_year, sort_month, ft.sort_order ASC')
-        ->get()->toArray();
-    
+            ->havingRaw("sum(fb.amount) != 0")
+            ->where('s.sub_institute_id', $sub_institute_id)
+            ->where('se.syear', $syear)
+            ->whereRaw($extra_where)            
+            ->whereIn('s.id', $student_ids)
+            ->groupBy('s.id', 'fb.month_id', 'fb.fee_type_id')
+            ->orderByRaw('sort_year, sort_month, ft.sort_order ASC')
+            ->get()->toArray();
+
         $data = array();
         $student_data = array();
         foreach ($result as $key => $value) {
@@ -1088,14 +1095,14 @@ if (!function_exists('ClassTeacherSearch')) {
 
 if (!function_exists('OtherBreackOff')) {
 
-    function OtherBreackOff($student_id_arr, $month_arr, $other_bf_amount = '', $from_date = null, $to_date = null,$syear='')
+    function OtherBreackOff($student_id_arr, $month_arr, $other_bf_amount = '', $from_date = null, $to_date = null, $syear = '')
     {
 
         $student_id = $student_id_arr[0];
         $moth_ids = implode(',', $month_arr);
 
         $sub_institute_id = session()->get('sub_institute_id');
-        if($syear == ''){
+        if ($syear == '') {
             $syear = session()->get('syear');
         }
 
@@ -1110,8 +1117,8 @@ if (!function_exists('OtherBreackOff')) {
         $extra_condition = '';
 
         if (isset($_REQUEST['from_date']) && isset($_REQUEST['to_date'])) {
-            $extra_condition .= " AND receiptdate <= '" . $_REQUEST['to_date'] . "' "; 
-         }
+            $extra_condition .= " AND receiptdate <= '" . $_REQUEST['to_date'] . "' ";
+        }
         //END for fees over all headwise report
 
         $final_bk = $other_fees_final_bk = array();
@@ -1188,12 +1195,12 @@ if (!function_exists('OtherBreackOffHead')) {
 
 if (!function_exists('OtherBreackOfMonth')) {
 
-    function OtherBreackOfMonth($student_id_arr,$syear='')
+    function OtherBreackOfMonth($student_id_arr, $syear = '')
     {
 
         $student_id = $student_id_arr[0];
         $sub_institute_id = session()->get('sub_institute_id');
-        if($syear ==''){
+        if ($syear == '') {
             $syear = session()->get('syear');
         }
         $fees_title = DB::table('fees_breakoff_other')
@@ -1215,12 +1222,12 @@ if (!function_exists('OtherBreackOfMonth')) {
 
 if (!function_exists('OtherBreackOfMonthHead')) {
 
-    function OtherBreackOfMonthHead($student_id_arr, $month_arr,$syear='')
+    function OtherBreackOfMonthHead($student_id_arr, $month_arr, $syear = '')
     {
         $student_id = $student_id_arr[0];
 
         $sub_institute_id = session()->get('sub_institute_id');
-        if($syear==''){
+        if ($syear == '') {
             $syear = session()->get('syear');
         }
 
@@ -1352,7 +1359,7 @@ if (!function_exists('getStudents')) {
         foreach ($result as $key => $value) {
             $student_data[$value->id]['id'] = $value->id;
             $student_data[$value->id]['enrollment_no'] = $value->enrollment_no;
-            $student_data[$value->id]['roll_no'] = $value->roll_no;            
+            $student_data[$value->id]['roll_no'] = $value->roll_no;
             $student_data[$value->id]['student_name'] = $value->first_name . " " . $value->last_name;
             $student_data[$value->id]['student_full_name'] = $value->first_name . " " . $value->middle_name . " " . $value->last_name;
             $student_data[$value->id]['gender'] = $value->gender;
@@ -1361,7 +1368,7 @@ if (!function_exists('getStudents')) {
             $student_data[$value->id]['admission_year'] = $value->admission_year;
             $student_data[$value->id]['address'] = $value->address;
             $student_data[$value->id]['standard_name'] = $value->standard_name;
-            $student_data[$value->id]['short_standard_name'] = $value->short_standard_name;            
+            $student_data[$value->id]['short_standard_name'] = $value->short_standard_name;
             $student_data[$value->id]['division_name'] = $value->division_name;
             $student_data[$value->id]['father_name'] = $value->father_name;
             $student_data[$value->id]['mother_name'] = $value->mother_name;
@@ -1434,12 +1441,12 @@ if (!function_exists('send_FCM_Notification')) {
                 'notification' => $message,
             ];
 
-            if($sub_institute_id == 254){
+            if ($sub_institute_id == 254) {
                 $headers = array(
                     'Authorization: key=' . "AAAAIbBYYCQ:APA91bElNhyJBqYr7hVMqFyH5kT3hO7EtiOQIoEN656ZzabihtIQ64PA72mpCuKv59XuMoq1-EDq-oiel1J9zvazDm4Mb2eKdA6k23_IC9cVAfuE5lQDx1jn4wkhst5Heyw0vVVlvN3J",
                     'Content-Type: application/json',
                 );
-            }else{
+            } else {
                 $headers = array(
                     'Authorization: key=' . "AAAApM0aBq0:APA91bEMbTNrawzSIm6Ra-IedYR4PmLZjznNGqmjep6-Opk7mSBha3UssNij8k7AhU4q1m2Y0fIh8bhFHgn3yfsGhS6GWFnKbiBQnICF9lYISJfX9t6cdYskBUyOeJVYW38aRKgg7VkK",
                     'Content-Type: application/json',
@@ -1904,67 +1911,143 @@ if (!function_exists('get_string')) {
             ->get()->toArray();
 
         $receipt_book_arr = [];
-        $html ='';
+        $html = '';
         foreach ($result as $temp_id => $receipt_detail) {
             $receipt_book_arr = $receipt_detail;
         }
 
         // $image_path = "http://" . $_SERVER['HTTP_HOST'] . "/storage/fees/" . $receipt_book_arr->receipt_logo;
-        if(count($result)>0){
-        $html .= '<table style="margin:0 auto;" width="80%">
+        if (count($result) > 0) {
+            $html .= '<table style="margin:0 auto;" width="80%">
         <tbody>
             <tr>';
                 // <td style=" width: 165px;text-align: center;" align="left">';
 
         // $html .= '    <img style="width: 100px;height: 90px;margin: 0;" src="' . $image_path . '" alt="SCHOOL LOGO">';
         // $html .= '</td>';
-        $html .= '<td colspan="3" style="text-align:center !important;" align="center"> ';
-        if ($receipt_book_arr->receipt_line_1 != '') {
-            $html .= '<span style=" font-size: 26px;font-weight: 700;font-family: Arial, Helvetica, sans-serif !important;">' . $receipt_book_arr->receipt_line_1 . '</span><br>';
-        }
-        if ($receipt_book_arr->receipt_line_2 != '') {
-            $html .= '<span style=" font-size: 18px;font-weight: 700;font-family: Arial, Helvetica, sans-serif !important">' . $receipt_book_arr->receipt_line_2 . '</span><br>';
-        }
-        if ($receipt_book_arr->receipt_line_3 != '') {
-            $html .= '<span style=" font-size: 14px;font-weight: 600;font-family: Arial, Helvetica, sans-serif !important">' . $receipt_book_arr->receipt_line_3 . '</span><br>';
-        }
-        if ($receipt_book_arr->receipt_line_4 != '') {
-            $html .= '<span style=" font-size: 14px;font-weight: 600;font-family: Arial, Helvetica, sans-serif !important;">' . $receipt_book_arr->receipt_line_4 . '</span><br>';
-        }
-        $html .= '</td>';
-        $html .= '</tr>';
-        $html .= '<tr>
-    <td>&nbsp;</td>
-  </tr>';
-        $html .= '<tr>';
-        if (isset($get_name_data) && !$std == '') {
-
-            if (isset($get_name_data[0]->academic_name)) {
-                $html .= '
-         <td colspan="3" style="text-align:center !important;" align="center">
-        <span style=" font-size: 18px;font-weight: 700;font-family: Arial, Helvetica, sans-serif !important;">Academic Section : ' . $get_name_data[0]->academic_name . '</span>';
+            $html .= '<td colspan="3" style="text-align:center !important;" align="center"> ';
+            if ($receipt_book_arr->receipt_line_1 != '') {
+                $html .= '<span style=" font-size: 26px;font-weight: 700;font-family: Arial, Helvetica, sans-serif !important;">' . $receipt_book_arr->receipt_line_1 . '</span><br>';
             }
-
-            if (isset($get_name_data[0]->std_name)) {
-                $html .= ' | <span style=" font-size: 18px;font-weight: 700;font-family: Arial, Helvetica, sans-serif !important">Standard : ' . $get_name_data[0]->std_name . '</span>';
+            if ($receipt_book_arr->receipt_line_2 != '') {
+                $html .= '<span style=" font-size: 18px;font-weight: 700;font-family: Arial, Helvetica, sans-serif !important">' . $receipt_book_arr->receipt_line_2 . '</span><br>';
             }
-
-            if (isset($get_name_data[0]->div_name)) {
-                $html .= ' | <span style=" font-size: 18px;font-weight: 700;font-family: Arial, Helvetica, sans-serif !important">Division : ' . $get_name_data[0]->div_name . '</span>';
+            if ($receipt_book_arr->receipt_line_3 != '') {
+                $html .= '<span style=" font-size: 14px;font-weight: 600;font-family: Arial, Helvetica, sans-serif !important">' . $receipt_book_arr->receipt_line_3 . '</span><br>';
+            }
+            if ($receipt_book_arr->receipt_line_4 != '') {
+                $html .= '<span style=" font-size: 14px;font-weight: 600;font-family: Arial, Helvetica, sans-serif !important;">' . $receipt_book_arr->receipt_line_4 . '</span><br>';
             }
             $html .= '</td>';
+            $html .= '</tr>';
+            $html .= '<tr>
+    <td>&nbsp;</td>
+  </tr>';
+            $html .= '<tr>';
+            if (isset($get_name_data) && !$std == '') {
+
+                if (isset($get_name_data[0]->academic_name)) {
+                    $html .= '
+         <td colspan="3" style="text-align:center !important;" align="center">
+        <span style=" font-size: 18px;font-weight: 700;font-family: Arial, Helvetica, sans-serif !important;">Academic Section : ' . $get_name_data[0]->academic_name . '</span>';
+                }
+
+                if (isset($get_name_data[0]->std_name)) {
+                    $html .= ' | <span style=" font-size: 18px;font-weight: 700;font-family: Arial, Helvetica, sans-serif !important">Standard : ' . $get_name_data[0]->std_name . '</span>';
+                }
+
+                if (isset($get_name_data[0]->div_name)) {
+                    $html .= ' | <span style=" font-size: 18px;font-weight: 700;font-family: Arial, Helvetica, sans-serif !important">Division : ' . $get_name_data[0]->div_name . '</span>';
+                }
+                $html .= '</td>';
+            }
+            $html .= '</tr>';
+            $html .= '</tbody>';
+            $html .= '</table>';
         }
-        $html .= '</tr>';
-        $html .= '</tbody>';
-        $html .= '</table>';
-    }
         return $html;
     }
 
-     function fees_config(){
-        $sub_institute_id = session()->get('sub_institute_id') ;
+    function fees_config()
+    {
+        $sub_institute_id = session()->get('sub_institute_id');
         $syear = session()->get('syear');
-        $fees_config = DB::table('fees_config_master')->where(['sub_institute_id'=>$sub_institute_id,'syear'=>$syear])->first();
+        $fees_config = DB::table('fees_config_master')->where(['sub_institute_id' => $sub_institute_id, 'syear' => $syear])->first();
         return $fees_config;
+    }
+
+    function get_map_month()
+    {
+        $sub_institute_id = session()->get('sub_institute_id');
+        $syear = session()->get('syear');
+
+        $data = map_year::where([
+            'sub_institute_id' => $sub_institute_id,
+            'syear' => $syear,
+        ])->get()->toArray();
+
+        $start_month = $data[0]['from_month'];
+        $end_month = $data[0]['to_month'];
+
+        $months = [
+            1 => 'Jan', 2 => 'Feb', 3 => 'Mar', 4 => 'Apr', 5 => 'May', 6 => 'Jun', 7 => 'Jul', 8 => 'Aug', 9 => 'Sep',
+            10 => 'Oct', 11 => 'Nov', 12 => 'Dec',
+        ];
+        $months_arr = [];
+
+        if ($data[0]['type'] == "yearly_fees") {
+            $months_arr[$start_month . $syear] = $months[$start_month] . '/' . $syear;
+        } else if ($data[0]['type'] == "half_year_fees") {
+            $months_arr[$start_month . $syear] = $months[$start_month] . '/' . $syear;
+            $sixmonths = ($start_month + 6);
+            $months_arr[$sixmonths . $syear] = $months[$sixmonths] . '/' . $syear;
+
+        } else if ($data[0]['type'] == "quarterly_fees") {
+            for ($i = $start_month; $i <= 12; $i++) {
+                if ($start_month <= 12) {
+                    $months_arr[$start_month . $syear] = $months[$start_month] . '/' . $syear;
+                    $start_month = ($start_month + 3);
+                } else {
+                    $start_month = 1;
+                    ++$syear;
+                    $months_arr[$start_month . $syear] = $months[$start_month] . '/' . $syear;
+                    break;
+                }
+            }
+        } else {
+            for ($i = 1; $i <= 12; $i++) {
+                $months_arr[$start_month . $syear] = $months[$start_month] . '/' . $syear;
+                if ($start_month == 12) {
+                    $start_month = 0;
+                    ++$syear;
+                }
+                ++$start_month;
+            }
+        }
+        $get_month_head = [];
+        if (!empty($months_arr)) {
+            foreach ($months_arr as $key => $val) {
+                $get_month = DB::table('fees_month_header')->where(['sub_institute_id' => $sub_institute_id, 'month_id' => $key])->first();
+                $get_month_head[$key] = $get_month->header;
+                $numericValues = $alphabeticValues = [];
+
+                foreach ($get_month_head as $key => $value) {
+                    if (is_numeric($value)) {
+                        $numericValues[$key] = $value;
+                    } else {
+                        $alphabeticValues[$key] = $value;
+                    }
+                }
+
+                asort($numericValues, SORT_NUMERIC);
+                asort($alphabeticValues, SORT_NATURAL);
+
+                $get_month_head = $numericValues + $alphabeticValues;
+
+            }
+        } else {
+            $get_month_head = $months_arr;
+        }
+        return $get_month_head;
     }
 }
