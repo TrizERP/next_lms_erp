@@ -777,7 +777,7 @@ if (!function_exists('SearchStudent')) {
 
         $query->whereraw($extraRaw);
 
-        $query->orderBy('ts.roll_no');
+        $query->orderByRaw('s.sort_order, d.id, ts.roll_no');
 
         return $query->get($columns)->toArray();
     }
