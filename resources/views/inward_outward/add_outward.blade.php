@@ -35,8 +35,8 @@
                                 <label class="control-label">To Place</label>
                                 <select class="form-control" required name="place_id">
                                     <option value="">Select To Place</option>
-                                @if(!empty($menu))  
-                                @foreach($menu as $key => $value)
+                                @if(!empty($data['menu']))  
+                                @foreach($data['menu'] as $key => $value)
                                     <option value="{{$value['id']}}" @if(isset($data->place_id)){{$data->place_id == $value['id'] ? 'selected' : '' }} @endif>{{$value['title']}}</option>
                                 @endforeach
                                 @endif
@@ -87,8 +87,8 @@
                                 <label class="control-label">File Name</label>
                                 <select class="form-control" required name="file_location_id">
                                     <option value="">Select File Name</option>
-                                @if(!empty($menu1))  
-                                @foreach($menu1 as $key => $value)
+                                @if(!empty($data['menu1']))  
+                                @foreach($data['menu1'] as $key => $value)
                                     <option value="{{$value['id']}}" @if(isset($data->file_location_id)){{$data->file_location_id == $value['id'] ? 'selected' : '' }}@endif>{{$value['title']}} </option>
                                 @endforeach
                                 @endif

@@ -23,6 +23,7 @@ class VerifyCsrfToken extends Middleware
         'api/*',
         'fees/*',
         'https://erp.triz.co.in/*',
-        'http://dev.triz.co.in/*'
+        'http://dev.triz.co.in/*',
+        'http://127.0.0.1:8000/*'        
     ];
 }
