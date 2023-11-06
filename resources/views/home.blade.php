@@ -596,7 +596,7 @@ $(document).ready(function(){
         text: 'Student Attendance'
     },
     xAxis: {
-        categories: <?php echo $data['presantsJson']; ?>//{{$data['standardsJson']}} //['CBSE-1', 'CBSE-2']
+        categories: <?php echo $data['standardsJson']; ?>//{{$data['standardsJson']}} //['CBSE-1', 'CBSE-2']
     },
     yAxis: {
         title: {
