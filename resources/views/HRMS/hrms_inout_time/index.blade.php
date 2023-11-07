@@ -30,10 +30,14 @@
         </div>
         <div class="card">
             <!-- @TODO: Create a saperate tmplate for messages and include in all tempate -->
-            @if ($message = Session::get('message'))
+            @if ($message = session()->get('data'))
+            @if($message['status_code']==1)
                 <div class="alert alert-success alert-block">
+                @else
+                <div class="alert alert-danger alert-block">
+            @endif                
                     <button type="button" class="close" data-dismiss="alert">×</button>
-                    <strong>{{ $message }}</strong>
+                    <strong>{{ $message['message'] }}</strong>
                 </div>
             @endif
             @if($data['button'] == 'in')

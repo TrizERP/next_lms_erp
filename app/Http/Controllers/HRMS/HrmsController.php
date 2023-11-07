@@ -79,6 +79,7 @@ class HrmsController extends Controller
     public function hrmsInOutTime(Request $request)
     {
         $type = $request->input('type');
+        // echo "<pre>";print_r(session()->get('data'));exit;
         if ($type == 'API') $userId = $request->input('user_id');
         else $userId = $request->session()->get('user_id');
         $hrmsInOutTimeDetails = HrmsInOutTime::where([['user_id', $userId], ['day', Carbon::now()->format('Y-m-d')]])->get();
@@ -101,6 +102,7 @@ class HrmsController extends Controller
         $hrmsInOutTime['date'] = Carbon::now()->format('d-m-Y');
         $hrmsInOutTime['id'] = 0;
         //return is_mobile($type, "HRMS.hrms_inout_time.index", compact('hrmsInOutTime'), "view",'compact');
+       
         return is_mobile($type, "HRMS.hrms_inout_time.index", $hrmsInOutTime, "view");
 //        return view('HRMS.hrms_inout_time.index', compact('hrmsInOutTime'));
     }
@@ -118,7 +120,8 @@ class HrmsController extends Controller
             $clientId = $request->session()->get('client_id');
             $subInstituteId = $request->session()->get('sub_institute_id');
         }
-
+        $res['status_code']=0;
+        $res['message']="Failed to time in";
         //return $request->all();
         if ($request->indate && $request->intime) {
             $hrmsInOutTime = new HrmsInOutTime();
@@ -128,8 +131,11 @@ class HrmsController extends Controller
             $hrmsInOutTime->client_id = $clientId;
             $hrmsInOutTime->sub_institute_id = $subInstituteId;
             $hrmsInOutTime->save();
+            $res['status_code']=1;
+            $res['message']="Success to time in";
         }
-        return is_mobile($type, "hrms_inout_time.index", null, "redirect");
+        
+        return is_mobile($type, "hrms_inout_time.index", $res, "redirect");
         //return redirect('hrms-inout-time')->with(['message' =>'check In successfully']);
     }
 
@@ -139,11 +145,16 @@ class HrmsController extends Controller
         if ($type == 'API') $userId = $request->input('user_id');
         else $userId = $request->session()->get('user_id');
         $hrmsInOutTime = HrmsInOutTime::where([['user_id', $userId], ['day', Carbon::now()->format('Y-m-d')], ['out_time', null]])->first();
+        
+        $res['status_code']=0;
+        $res['message']="Failed to time out";
         if ($hrmsInOutTime) {
             $hrmsInOutTime->out_time = Carbon::now()->format('h:i:s');
             $hrmsInOutTime->save();
+            $res['status_code']=1;
+            $res['message']="Success to time out";
         }
-        return is_mobile($type, "hrms_inout_time.index", null, "redirect");
+        return is_mobile($type, "hrms_inout_time.index", $res, "redirect");
         //return redirect('hrms-inout-time')->with(['message' =>'check Out successfully']);
     }
 
