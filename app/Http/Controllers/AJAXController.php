@@ -180,6 +180,8 @@ class AJAXController extends Controller
         $module_array = [
             '1' => 'student_homework',
             '2' => 'marks_entry',
+            '3' => 'dicipline',
+            '4' => 'lmsExamwise_progress_report',
         ];
 
         $explode = explode(',', $request->grade_id);
@@ -258,6 +260,8 @@ class AJAXController extends Controller
         $module_array = [
             '1' => 'student_homework',
             '2' => 'marks_entry',
+            '3' => 'dicipline',
+            '4' => 'lmsExamwise_progress_report',
         ];
 
         $standard_id = $request->standard_id;

@@ -124,6 +124,9 @@ if (!function_exists('SearchChain')) {
 
         $module_array = array(
             '1' => 'student_homework',
+            '2' => 'marks_entry',
+            '3' => 'dicipline',
+            '4' => 'lmsExamwise_progress_report',
         );
 
         // START 07/09/2021 code for getting standard , grade , division according to timetable wise for homework module
