@@ -127,6 +127,7 @@ if (!function_exists('SearchChain')) {
             '2' => 'marks_entry',
             '3' => 'dicipline',
             '4' => 'lmsExamwise_progress_report',
+            '5' => 'questionReport',
         );
 
         // START 07/09/2021 code for getting standard , grade , division according to timetable wise for homework module
