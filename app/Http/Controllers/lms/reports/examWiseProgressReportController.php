@@ -85,25 +85,24 @@ class examWiseProgressReportController extends Controller
             ->groupByRaw('s.id,qp.id')
             ->orderByRaw('s.roll_no ASC')->get()->toArray();*/
             // echo "<pre>";print_r($data);exit;
-
+//DB::enableQueryLog();
         $data = DB::table('tblstudent as s')
-            ->join('tblstudent_enrollment as se', function ($join) use ($syear) {
+            ->join('tblstudent_enrollment as se', function ($join) use ($syear,$sub_institute_id) {
                 $join->on('se.student_id', '=', 's.id')
-                    ->where('se.sub_institute_id', '=', 's.sub_institute_id')
+                    ->where('se.sub_institute_id', '=', $sub_institute_id)
                     ->where('se.syear', '=', $syear)
                     ->whereNull('se.end_date');
             })
             ->join('academic_section as ac', 'ac.id', '=', 'se.grade_id')
-            ->join('standard as st', function ($join) use ($marking_period_id) {
+            ->join('standard as st', function ($join) use ($marking_period_id,$sub_institute_id) {
                 $join->on('st.id', '=', 'se.standard_id')
-                    ->where('st.sub_institute_id', '=', 'se.sub_institute_id');
-                // You can add the 'when' condition here if needed
+                    ->where('st.sub_institute_id', '=', $sub_institute_id);
             })
             ->leftJoin('division as d', 'd.id', '=', 'se.section_id')
-            ->join('question_paper as qp', function ($join) {
+            ->join('question_paper as qp', function ($join) use ($sub_institute_id) {
                 $join->on('qp.standard_id', '=', 'se.standard_id')
                     ->on('qp.grade_id', '=', 'se.grade_id')
-                    ->where('qp.sub_institute_id', '=', 's.sub_institute_id');
+                    ->where('qp.sub_institute_id', '=', $sub_institute_id);
             })
             ->leftJoin('lms_online_exam as le', function ($join) {
                 $join->on('le.question_paper_id', '=', 'qp.id')
@@ -119,7 +118,7 @@ class examWiseProgressReportController extends Controller
             ->groupBy('s.id', 'qp.id')
             ->orderBy('s.roll_no', 'ASC')
             ->get()->toArray();
-
+//dd(DB::getQueryLog());
 
         $data = json_decode(json_encode($data), true);
         foreach ($data as $k => $v) {
