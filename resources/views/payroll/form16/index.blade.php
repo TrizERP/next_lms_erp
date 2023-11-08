@@ -265,9 +265,12 @@
                                         <label>Employee List</label>
                                         <select id='employee_id' name="employee_id" class="form-control">
                                             <option value="0">Select Employee</option>
-                                            @foreach($employees as $employee)
+                                            @foreach($data['employeeDetails'] as $employee)
                                                 <option
-                                                    value="{{$employee->employee_id}}">{{$employee->getUser->first_name .' '. $employee->getUser->last_name }}</option>
+                                                    value="{{$employee->employee_id}}">{{ $employee->getUser->first_name ?? '' }}
+                                                    {{ ' ' }}
+                                                    {{ $employee->getUser->last_name ?? '' }}
+                                                    </option>
                                             @endforeach
                                         </select>
                                     </div>
@@ -284,14 +287,14 @@
                                 <div class="row">
                                     <div class="col-md-3 form-group">
                                         <h4>Allowance</h4>
-                                        @foreach($payrollTypes['allowance'] as $payrollType)
+                                        @foreach($data['allowance'] as $payrollType)
                                             <input type="checkbox" name="allowance[]" value="{{$payrollType->id}}"> {{$payrollType->payroll_name}}
                                         @endforeach
 
                                     </div>
                                     <div class="col-md-3 form-group">
                                         <h4>Deduction</h4>
-                                        @foreach($payrollTypes['deduction'] as $payrollType)
+                                        @foreach($data['deduction'] as $payrollType)
                                             <input type="checkbox" name="deduction[]" value="{{$payrollType->id}}"> {{$payrollType->payroll_name}}
                                         @endforeach
                                     </div>
