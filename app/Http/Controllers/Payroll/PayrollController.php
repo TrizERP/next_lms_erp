@@ -240,11 +240,29 @@ class PayrollController extends Controller
 
     public function form16(Request $request)
     {
-        $employeeDetails = EmployeeSalaryStructure::with('getUser')->get();
-        $payrollTypes = PayrollType::where('status', 1)->get();
-        $result['allowance'] = $payrollTypes->where('payroll_type', 1);
-        $result['deduction'] = $payrollTypes->where('payroll_type', 2);
-        return view('payroll.form16.index', ['employees' => $employeeDetails, 'payrollTypes' => $result]);
+        $type = $request->input('type');
+        if($type=="API"){
+            try {
+                if (!$this->jwtToken()->validate()) {
+                    $response = ['status' => '2', 'message' => 'Token Auth Failed', 'data' => []];
+    
+                    return response()->json($response, 401);
+                }
+            } catch (\Exception $e) {
+                $response = ['status' => '2', 'message' => $e->getMessage(), 'data' => []];
+    
+                return response()->json($response, 401);
+            }
+            $sub_institute_id = $request->get('sub_institute_id');
+        }
+        $res['employeeDetails'] = EmployeeSalaryStructure::with('getUser')->get();
+        $res['payrollTypes'] = PayrollType::where('status', 1)->get();
+        $res['allowance'] = $res['payrollTypes']->where('payroll_type', 1);
+        $res['deduction'] = $res['payrollTypes']->where('payroll_type', 2);
+        
+        // echo "<pre>";print_r($res['employeeDetails']);exit;
+        return is_mobile($type, "payroll.form16.index", $res, "view");        
+        // return view('payroll.form16.index', ['employees' => $employeeDetails, 'payrollTypes' => $result]);
     }
 
     public function form16Report(Request $request)
