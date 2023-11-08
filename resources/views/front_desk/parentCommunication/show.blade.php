@@ -28,10 +28,10 @@
                                 <input type="submit" name="submit" value="Search" class="btn btn-success triz-btn" >
                             </center>
                         </div>
-
-                        <div class="col-md-12 form-group">
-                        </div>
 						</div>
+                        <div class="row" style="visibility:hidden !important">
+                        {{ App\Helpers\SearchChain('4','single','grade,std,div') }}
+                        </div>
                     </form>
                 </div>          
         
