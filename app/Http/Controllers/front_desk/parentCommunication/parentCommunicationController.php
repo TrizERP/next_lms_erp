@@ -99,13 +99,12 @@ class parentCommunicationController extends Controller
                     $q->where("pc.date_", "<=", $_REQUEST['to_date']);
                 }
             })
+            /* Rajesh 08_11_2023 ClassTeacher also map with Subject so display Own class too.
             ->where(function ($q) {
                 $classTeacherStdArr = session()->get('classTeacherStdArr');
                 if (isset($classTeacherStdArr)) {
                     if (count($classTeacherStdArr) > 0) {
                         $q->whereRaw("se.standard_id IN (".implode(",", $classTeacherStdArr).")");
-                    } else {
-                        $q->whereRaw("se.standard_id IN (' ')");
                     }
                 }
 
@@ -113,7 +112,23 @@ class parentCommunicationController extends Controller
                 if (isset($classTeacherStdArr) && count($classTeacherDivArr) > 0) {
                     $q->whereRaw("se.section_id IN (".implode(",", $classTeacherDivArr).")");
                 }
+            })*/
+            ->where(function ($q) {
+                $subjectTeacherStdArr = session()->get('subjectTeacherStdArr');
+                if (isset($subjectTeacherStdArr)) {
+                    if (count($subjectTeacherStdArr) > 0) {
+                        $q->whereRaw("se.standard_id IN (".implode(",", $subjectTeacherStdArr).")");
+                    }/* else {
+                        $q->whereRaw("se.standard_id IN (' ')");
+                    }*/
+                }
+
+                $subjectTeacherDivArr = session()->get('subjectTeacherDivArr');
+                if (isset($subjectTeacherStdArr) && count($subjectTeacherDivArr) > 0) {
+                    $q->whereRaw("se.section_id IN (".implode(",", $subjectTeacherDivArr).")");
+                }
             })
+            ->orderBy('pc.id', 'desc')
             ->get()->toarray();
 
         $responce_arr = [];
