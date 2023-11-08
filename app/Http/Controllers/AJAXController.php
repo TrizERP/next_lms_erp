@@ -183,6 +183,7 @@ class AJAXController extends Controller
             '3' => 'dicipline',
             '4' => 'lmsExamwise_progress_report',
             '5' => 'questionReport',
+            '6' => 'parent_communication',
         ];
 
         $explode = explode(',', $request->grade_id);
@@ -264,6 +265,7 @@ class AJAXController extends Controller
             '3' => 'dicipline',
             '4' => 'lmsExamwise_progress_report',
             '5' => 'questionReport',
+            '6' => 'parent_communication',
         ];
 
         $standard_id = $request->standard_id;
