@@ -16,10 +16,12 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
 use function App\Helpers\is_mobile;
-
+use GenTux\Jwt\GetsJwtToken;
 
 class admissionRegistrationController extends Controller
 {
+    use GetsJwtToken;
+    
     /**
      * Display a listing of the resource.
      *
@@ -31,6 +33,22 @@ class admissionRegistrationController extends Controller
         $sub_institute_id = $request->session()->get("sub_institute_id");
         $syear = session()->get("syear");
         $marking_period_id = session()->get('term_id');
+        if($type=="API"){
+            try {
+                if (!$this->jwtToken()->validate()) {
+                    $response = ['status' => '2', 'message' => 'Token Auth Failed', 'data' => []];
+    
+                    return response()->json($response, 401);
+                }
+            } catch (\Exception $e) {
+                $response = ['status' => '2', 'message' => $e->getMessage(), 'data' => []];
+    
+                return response()->json($response, 401);
+            }
+            $sub_institute_id = $request->get('sub_institute_id');
+            $syear = $request->get('syear');            
+        }
+
         $data = DB::table('admission_enquiry as ae')
             ->join('admission_form as af', function ($join) {
                 $join->whereRaw('ae.id = af.enquiry_id');
@@ -68,6 +86,21 @@ class admissionRegistrationController extends Controller
         $type = $request->input('type');
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $marking_period_id = session()->get('term_id');
+        if($type=="API"){
+            try {
+                if (!$this->jwtToken()->validate()) {
+                    $response = ['status' => '2', 'message' => 'Token Auth Failed', 'data' => []];
+    
+                    return response()->json($response, 401);
+                }
+            } catch (\Exception $e) {
+                $response = ['status' => '2', 'message' => $e->getMessage(), 'data' => []];
+    
+                return response()->json($response, 401);
+            }
+            $sub_institute_id = $request->get('sub_institute_id');
+            $syear = $request->get('syear');            
+        }
         if ($sub_institute_id == 198) // For Mahaeshvari school
         {
             $data = DB::table('admission_enquiry as ae')
@@ -175,7 +208,22 @@ class admissionRegistrationController extends Controller
         $type = $request->input("type");
         $sub_institute_id = $request->session()->get("sub_institute_id");
         $user_id = $request->session()->get("user_id");
-
+        if($type=="API"){
+            try {
+                if (!$this->jwtToken()->validate()) {
+                    $response = ['status' => '2', 'message' => 'Token Auth Failed', 'data' => []];
+    
+                    return response()->json($response, 401);
+                }
+            } catch (\Exception $e) {
+                $response = ['status' => '2', 'message' => $e->getMessage(), 'data' => []];
+    
+                return response()->json($response, 401);
+            }
+            $sub_institute_id = $request->get('sub_institute_id');
+            $syear = $request->get('syear');   
+            $user_id = $request->get('user_id');                                 
+        }
         $editdata['first_name'] = $request->input("first_name");
         $editdata['middle_name'] = $request->input("middle_name");
         $editdata['last_name'] = $request->input("last_name");
@@ -190,7 +238,7 @@ class admissionRegistrationController extends Controller
         admissionEnquiryModel::where(['id' => $id, 'sub_institute_id' => $sub_institute_id])->update($editdata);
 
         $data = $request->except([
-            '_method', '_token', 'submit', 'type', 'first_name', 'middle_name', 'last_name', 'mobile', 'email',
+            '_method', '_token','token','syear','sub_institute_id','user_id', 'submit', 'type', 'first_name', 'middle_name', 'last_name', 'mobile', 'email',
             'date_of_birth', 'age', 'address', 'previous_school_name', 'previous_standard', 'source_of_enquiry',
             'admission_standard',
         ]); //,'remarks','followup_date'
