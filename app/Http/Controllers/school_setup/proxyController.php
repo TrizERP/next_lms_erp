@@ -37,6 +37,21 @@ class proxyController extends Controller
     {
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $marking_period_id = session()->get('term_id');
+        if($request->type=="API"){
+            try {
+                if (!$this->jwtToken()->validate()) {
+                    $response = ['status' => '2', 'message' => 'Token Auth Failed', 'data' => []];
+    
+                    return response()->json($response, 401);
+                }
+            } catch (\Exception $e) {
+                $response = ['status' => '2', 'message' => $e->getMessage(), 'data' => []];
+    
+                return response()->json($response, 401);
+            }
+            $sub_institute_id = $request->get('sub_institute_id');
+            $syear = $request->get('syear');            
+        }
         return proxyModel::select(
             'proxy_master.*',
             's.name as standard_name',
@@ -130,7 +145,21 @@ class proxyController extends Controller
     {
         $type = $request->input('type');
         $sub_institute_id = $request->session()->get('sub_institute_id');
-
+        if($request->type=="API"){
+            try {
+                if (!$this->jwtToken()->validate()) {
+                    $response = ['status' => '2', 'message' => 'Token Auth Failed', 'data' => []];
+    
+                    return response()->json($response, 401);
+                }
+            } catch (\Exception $e) {
+                $response = ['status' => '2', 'message' => $e->getMessage(), 'data' => []];
+    
+                return response()->json($response, 401);
+            }
+            $sub_institute_id = $request->get('sub_institute_id');
+            $syear = $request->get('syear');            
+        }
         $user_data = tbluserModel::select(
             'tbluser.*',
             DB::raw('concat(tbluser.first_name," ",tbluser.middle_name," ",tbluser.last_name) as teacher_name')
@@ -152,6 +181,21 @@ class proxyController extends Controller
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $syear = $request->session()->get('syear');
         $marking_period_id= session()->get('term_id');
+        if($request->type=="API"){
+            try {
+                if (!$this->jwtToken()->validate()) {
+                    $response = ['status' => '2', 'message' => 'Token Auth Failed', 'data' => []];
+    
+                    return response()->json($response, 401);
+                }
+            } catch (\Exception $e) {
+                $response = ['status' => '2', 'message' => $e->getMessage(), 'data' => []];
+    
+                return response()->json($response, 401);
+            }
+            $sub_institute_id = $request->get('sub_institute_id');
+            $syear = $request->get('syear');            
+        }
         $days_arr = $this->getcountdays($from_date, $to_date);
         $days = array_keys($days_arr);
         $timetable_data = timetableModel::select(
@@ -269,6 +313,7 @@ class proxyController extends Controller
         $type = $request->input('type');
         $data['proxydata'] = $proxydata;
         $data['teacher'] = $proxy_teacher_id;
+        // echo "<pre>";print_r($data['teacher_data']);exit;
         $data['from_date'] = $from_date;
         $data['to_date'] = $to_date;
 // exit;
@@ -303,10 +348,25 @@ class proxyController extends Controller
      */
     public function store(Request $request)
     {
+        // return $request;exit;
         $selected_data = $request->get('proxy_id');
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $syear = $request->session()->get('syear');
-
+        if($request->type=="API"){
+            try {
+                if (!$this->jwtToken()->validate()) {
+                    $response = ['status' => '2', 'message' => 'Token Auth Failed', 'data' => []];
+    
+                    return response()->json($response, 401);
+                }
+            } catch (\Exception $e) {
+                $response = ['status' => '2', 'message' => $e->getMessage(), 'data' => []];
+    
+                return response()->json($response, 401);
+            }
+            $sub_institute_id = $request->get('sub_institute_id');
+            $syear = $request->get('syear');            
+        }
         foreach ($selected_data as $key => $val) {
             $arr = explode("/", str_replace("'", "", $key));
             $date = $arr[0];
@@ -328,7 +388,7 @@ class proxyController extends Controller
                 "subject_id"       => $t_data['subject_id'],
                 "week_day"         => $t_data['week_day'],
                 "teacher_id"       => $t_data['teacher_id'],
-                "proxy_teacher_id" => $_REQUEST['teacher_id'][$key],
+                "proxy_teacher_id" => $request->teacher_id[$key],
                 "timetable_id"     => $timetable_id,
             ];
         }
@@ -344,17 +404,6 @@ class proxyController extends Controller
     }
 
     /**
-     * Display the specified resource.
-     *
-     * @param  int  $id
-     * @return void
-     */
-    public function show($id)
-    {
-        //
-    }
-
-    /**
      * Show the form for editing the specified resource.
      *
      * @param  int  $id
@@ -364,7 +413,21 @@ class proxyController extends Controller
     {
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $marking_period_id = session()->get('term_id');
-
+        if($request->type=="API"){
+            try {
+                if (!$this->jwtToken()->validate()) {
+                    $response = ['status' => '2', 'message' => 'Token Auth Failed', 'data' => []];
+    
+                    return response()->json($response, 401);
+                }
+            } catch (\Exception $e) {
+                $response = ['status' => '2', 'message' => $e->getMessage(), 'data' => []];
+    
+                return response()->json($response, 401);
+            }
+            $sub_institute_id = $request->get('sub_institute_id');
+            $syear = $request->get('syear');            
+        }
         $timetable_data = proxyModel::select(
             'proxy_master.*',
             's.name as standard_name',
@@ -401,27 +464,26 @@ class proxyController extends Controller
             ->get()->toArray();
 
         //Get free teacher according to period and day
-        $user_data = timetableModel::select(
-            'timetable.teacher_id as id',
-            DB::raw('concat(tbluser.first_name," ",tbluser.middle_name," ",tbluser.last_name) as teacher_name')
-        )
-            ->join('tbluser', 'tbluser.id', "=", 'timetable.teacher_id')
-            ->where([
-                'timetable.sub_institute_id' => $sub_institute_id,
-                'timetable.week_day'         => $timetable_data[0]['week_day'],
-            ])
-            ->where('timetable.teacher_id', '<>', $timetable_data[0]['teacher_id'])
-            ->where('timetable.period_id', '<>', $timetable_data[0]['period_id'])
-            ->groupBy('timetable.teacher_id')
-            ->orderBy('tbluser.first_name')
-            ->get();
-
-        // $user_data = tbluserModel::select('tbluser.*',
-        // DB::raw('concat(tbluser.first_name," ",tbluser.middle_name," ",tbluser.last_name) as teacher_name'))
-        // ->join('tbluserprofilemaster','tbluserprofilemaster.id' ,"=", 'tbluser.user_profile_id')
-        // ->where(['tbluser.sub_institute_id'=>$sub_institute_id,'tbluserprofilemaster.name' => 'Teacher'])
-        // ->whereNotIn('tbluser.id',array($timetable_data[0]['teacher_id']))
-        // ->get();
+        // $user_data = timetableModel::select(
+        //     'timetable.teacher_id as id',
+        //     DB::raw('concat(tbluser.first_name," ",tbluser.middle_name," ",tbluser.last_name) as teacher_name')
+        // )
+        //     ->join('tbluser', 'tbluser.id', "=", 'timetable.teacher_id')
+        //     ->where([
+        //         'timetable.sub_institute_id' => $sub_institute_id,
+        //         'timetable.week_day'         => $timetable_data[0]['week_day'],
+        //     ])
+        //     ->where('timetable.teacher_id', '<>', $timetable_data[0]['teacher_id'])
+        //     ->where('timetable.period_id', '<>', $timetable_data[0]['period_id'])
+        //     ->groupBy('timetable.teacher_id')
+        //     ->orderBy('tbluser.first_name')
+        //     ->get();
+        $user_data = tbluserModel::select('tbluser.*',
+        DB::raw('concat(tbluser.first_name," ",tbluser.middle_name," ",tbluser.last_name) as teacher_name'))
+        ->join('tbluserprofilemaster','tbluserprofilemaster.id' ,"=", 'tbluser.user_profile_id')
+        ->where(['tbluser.sub_institute_id'=>$sub_institute_id,'tbluserprofilemaster.name' => 'Teacher'])
+        ->whereNotIn('tbluser.id',array($timetable_data[0]['teacher_id']))
+        ->get();
 
         $data['teacher_data'] = $user_data;
 
@@ -441,6 +503,21 @@ class proxyController extends Controller
     public function update(Request $request, $id)
     {
         $sub_institute_id = $request->session()->get('sub_institute_id');
+        if($request->type=="API"){
+            try {
+                if (!$this->jwtToken()->validate()) {
+                    $response = ['status' => '2', 'message' => 'Token Auth Failed', 'data' => []];
+    
+                    return response()->json($response, 401);
+                }
+            } catch (\Exception $e) {
+                $response = ['status' => '2', 'message' => $e->getMessage(), 'data' => []];
+    
+                return response()->json($response, 401);
+            }
+            $sub_institute_id = $request->get('sub_institute_id');
+            $syear = $request->get('syear');            
+        }
         $data = [
             'proxy_teacher_id' => $request->get('proxy_teacher_id'),
         ];
