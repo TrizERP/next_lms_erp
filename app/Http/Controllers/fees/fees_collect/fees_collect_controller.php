@@ -2323,8 +2323,23 @@ die;*/
             if (count($fees_online_link) > 0) {
                 $online_link = env('APP_URL') . "fees/online_fees_collect";
             }
+            $array = [1,72];
+            if(in_array($sub_institute_id, $array)){
+                $pay_link = DB::table('tblstudent_enrollment as se')
+                    ->selectRaw('ac.payment_link')
+                    ->join('academic_section as ac','ac.id','=','se.grade_id')
+                    ->where('se.student_id', $student_id)
+                    ->where('se.syear', $syear)
+                    ->where('se.sub_institute_id', $sub_institute_id)
+                    ->get();
+                
+                    $online_link = "";
+                    if (count($pay_link) > 0) {
+                        $online_link = $pay_link[0]->payment_link;
+                    }
+            }
 
-                $fees_data = $this->getBk($request, $student_id);
+            $fees_data = $this->getBk($request, $student_id);
             if (isset($fees_data['total_fees'])) {
                 foreach ($fees_data['total_fees'] as $key => $val) {
                     unset($val['bk']);
@@ -2348,7 +2363,8 @@ die;*/
                     c.cheque_date,c.cheque_no,c.cheque_bank_name,SUM(amount) as paid_amount')
                 ->where('c.student_id', $student_id)
                 ->where('c.syear', $syear)
-                ->where('sub_institute_id', $sub_institute_id)
+                ->where('c.is_deleted', 'N')
+                ->where('c.sub_institute_id', $sub_institute_id)
                 ->groupBy('receipt_no')->get()->toArray();
 
             $data['PAID'] = $paid_data;
