@@ -12,9 +12,12 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
 use function App\Helpers\is_mobile;
+use GenTux\Jwt\GetsJwtToken;
 
 class admissionFormController extends Controller
 {
+    use GetsJwtToken;
+    
     /**
      * Display a listing of the resource.
      *
@@ -26,6 +29,21 @@ class admissionFormController extends Controller
         $sub_institute_id = $request->session()->get("sub_institute_id");
         $syear = session()->get("syear");
         $marking_period_id = session()->get('term_id');
+        if($type=="API"){
+            try {
+                if (!$this->jwtToken()->validate()) {
+                    $response = ['status' => '2', 'message' => 'Token Auth Failed', 'data' => []];
+    
+                    return response()->json($response, 401);
+                }
+            } catch (\Exception $e) {
+                $response = ['status' => '2', 'message' => $e->getMessage(), 'data' => []];
+    
+                return response()->json($response, 401);
+            }
+            $sub_institute_id = $request->get('sub_institute_id');
+            $syear = $request->get('syear');            
+        }
 
         $data = DB::table('admission_enquiry as ae')
             ->leftJoin('admission_form as af', function ($join) {
@@ -66,6 +84,23 @@ class admissionFormController extends Controller
         $sub_institute_id = $request->session()->get("sub_institute_id");
         $syear = $request->session()->get("syear");
         $marking_period_id = session()->get('term_id');
+
+        if($type=="API"){
+            try {
+                if (!$this->jwtToken()->validate()) {
+                    $response = ['status' => '2', 'message' => 'Token Auth Failed', 'data' => []];
+    
+                    return response()->json($response, 401);
+                }
+            } catch (\Exception $e) {
+                $response = ['status' => '2', 'message' => $e->getMessage(), 'data' => []];
+    
+                return response()->json($response, 401);
+            }
+            $sub_institute_id = $request->get('sub_institute_id');
+            $syear = $request->get('syear');            
+        }
+
         if ($sub_institute_id == 46) //for Mountlitera Zee School
         {
             $extra_fileds = ",ae.counciler_name";
@@ -161,6 +196,23 @@ class admissionFormController extends Controller
         $sub_institute_id = $request->session()->get("sub_institute_id");
         $user_id = $request->session()->get("user_id");
         $marking_period_id = session()->get('term_id');
+
+         if($type=="API"){
+            try {
+                if (!$this->jwtToken()->validate()) {
+                    $response = ['status' => '2', 'message' => 'Token Auth Failed', 'data' => []];
+    
+                    return response()->json($response, 401);
+                }
+            } catch (\Exception $e) {
+                $response = ['status' => '2', 'message' => $e->getMessage(), 'data' => []];
+    
+                return response()->json($response, 401);
+            }
+            $sub_institute_id = $request->get('sub_institute_id');
+            $syear = $request->get('syear');  
+            $user_id = $request->get('user_id');                                  
+        }
         $editdata['first_name'] = $request->input("first_name");
         $editdata['middle_name'] = $request->input("middle_name");
         $editdata['last_name'] = $request->input("last_name");
@@ -178,7 +230,7 @@ class admissionFormController extends Controller
         admissionEnquiryModel::where(['id' => $id, 'sub_institute_id' => $sub_institute_id])->update($editdata);
 
         $data = $request->except([
-            '_method', '_token', 'submit', 'type', 'first_name', 'middle_name', 'last_name', 'mobile', 'email',
+            '_method', '_token','token','user_id', 'submit', 'type', 'first_name', 'middle_name', 'last_name', 'mobile', 'email','syear',
             'date_of_birth', 'age', 'address', 'previous_school_name', 'previous_standard', 'source_of_enquiry',
         ]); //,'remarks','followup_date'
 
@@ -307,8 +359,8 @@ class admissionFormController extends Controller
 
             $result = DB::table('fees_receipt_book_master')
                 ->selectRaw('*,GROUP_CONCAT(fees_head_id) heads')
-                ->where('syear', session()->get('syear'))
-                ->where('sub_institute_id', session()->get('sub_institute_id'))
+                ->where('syear', $syear)
+                ->where('sub_institute_id', $sub_institute_id)
                 ->groupByRaw('receipt_line_1,receipt_line_2,receipt_line_3,receipt_line_4,receipt_prefix,receipt_logo,last_receipt_number')
                 ->get()->toArray();
 
@@ -368,7 +420,7 @@ class admissionFormController extends Controller
             $recHtml .= '</td>';
             $recHtml .= '</tr>';
 
-            $syear1 = session()->get('syear');
+            $syear1 = $syear;
             $syear2 = $syear1 + 1;
             $edu_year = "$syear1-$syear2";
 
@@ -516,17 +568,6 @@ class admissionFormController extends Controller
             return is_mobile($type, "admission/form/receipt_view", $res, "view");
         }
 
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     *
-     * @param  int  $id
-     * @return void
-     */
-    public function destroy($id)
-    {
-        //
     }
 
     public function get_form_no($sub_institute_id, $syear, $grade_name)
