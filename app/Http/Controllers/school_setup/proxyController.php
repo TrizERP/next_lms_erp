@@ -540,6 +540,21 @@ class proxyController extends Controller
     public function destroy(Request $request, $id)
     {
         $type = $request->input('type');
+        if($request->type=="API"){
+            try {
+                if (!$this->jwtToken()->validate()) {
+                    $response = ['status' => '2', 'message' => 'Token Auth Failed', 'data' => []];
+    
+                    return response()->json($response, 401);
+                }
+            } catch (\Exception $e) {
+                $response = ['status' => '2', 'message' => $e->getMessage(), 'data' => []];
+    
+                return response()->json($response, 401);
+            }
+            $sub_institute_id = $request->get('sub_institute_id');
+            $syear = $request->get('syear');            
+        }
         proxyModel::where(["id" => $id])->delete();
         $res['status_code'] = "1";
         $res['message'] = "Proxy Deleted Successfully";
