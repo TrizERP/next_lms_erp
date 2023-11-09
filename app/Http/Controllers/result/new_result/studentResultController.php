@@ -497,11 +497,12 @@ class studentResultController extends Controller
                                         $ab_ex_na = 0;
                                     }
                                     $obtained_marks[$title->exam_id][] = $ab_ex_na;
+                                     $to_marks[$title->exam_id][] = $title->points;
+                                    $to_weight[$title->exam_id] = $title->weightage;
+
                                 } else {
-                                        $ob_mark = $marks->points;
-                                        // Convert marks from weightage
-                                        $ob_mark = number_format((($ob_mark / $title->points) * $title->weightage), 2);
-                                        // store marks in array to get best of 2 
+                                    $ob_mark = $marks->points;
+                                          // store marks in array to get best of 2 
                                     $obtained_marks[$title->exam_id][] = $ob_mark;
                                     $to_marks[$title->exam_id][] = $title->points;
                                     $to_weight[$title->exam_id] = $title->weightage;
@@ -515,6 +516,7 @@ class studentResultController extends Controller
                 }
 
                 $ob_main_mark = 0;
+                // echo "<pre>";print_r($obtained_marks);
                 // for best of 2 exam wise 
                 if (!empty($obtained_marks)) {
                     foreach ($obtained_marks as $exam_id => $marksArray) {
@@ -532,7 +534,8 @@ class studentResultController extends Controller
                         } else {
                             $ob_main_mark += 0;
                         }
-                        $table .= '<td class="data_center ' . $exam_id . '">' . number_format($ob_main_mark,2) . '</td>';
+                        $convert_mark = (($obtained_mark_sum / $t_m) * $w_m);
+                        $table .= '<td class="data_center ' . $exam_id . '">' . number_format($convert_mark,2) . '</td>';
                     }
                 } else {
                     // if marks not found 
@@ -542,13 +545,8 @@ class studentResultController extends Controller
 
                 }
 
-                if ($digit == "no_zero") {
-                    $obtained_mark_formatted = number_format($ob_main_mark, 2);
-                } else if ($digit == "single_zero") {
-                    $obtained_mark_formatted = number_format($ob_main_mark, 1);
-                } else {
-                    $obtained_mark_formatted = number_format($ob_main_mark, 2);
-                }
+                   $obtained_mark_formatted = number_format($ob_main_mark, 2);
+                
                 $table .= '<td  class="data_center all_mark">' . $obtained_mark_formatted . '</td>';
                 $both_term_ob_mark += $obtained_mark_formatted;
             // Update the total marks for the current term
