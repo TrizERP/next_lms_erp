@@ -118,10 +118,11 @@
 
 				</form>
 			</div>
-			@if(isset($data['fees_data']))
 			@php
-			if(isset($data['fees_data'])){ $fees_data = $data['fees_data']; }
+				$fees_data = $data['fees_data'] ?? []; 
 			@endphp
+			
+			@if(isset($data['fees_data']))
 			<div class="card">
 				<div class="table-responsive">
 					<table id="example" class="table table-striped">

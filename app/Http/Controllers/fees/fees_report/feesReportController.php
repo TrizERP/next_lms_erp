@@ -11,9 +11,12 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use function App\Helpers\FeeMonthId;
 use function App\Helpers\is_mobile;
+use GenTux\Jwt\GetsJwtToken;
 
 class feesReportController extends Controller
 {
+    use GetsJwtToken;
+    
     /**
      * Display a listing of the resource.
      *
@@ -26,6 +29,22 @@ class feesReportController extends Controller
 
         $syear = session()->get('syear');
         $sub_institute_id = session()->get('sub_institute_id');
+
+        if($type=="API"){
+            try {
+                if (!$this->jwtToken()->validate()) {
+                    $response = ['status' => '2', 'message' => 'Token Auth Failed', 'data' => []];
+    
+                    return response()->json($response, 401);
+                }
+            } catch (\Exception $e) {
+                $response = ['status' => '2', 'message' => $e->getMessage(), 'data' => []];
+    
+                return response()->json($response, 401);
+            }
+            $sub_institute_id = $request->get('sub_institute_id');
+            $syear = $request->get('syear');            
+        }
 
         $get_users = DB::table('fees_collect as fc')
         ->join('tbluser as u', 'fc.created_by', '=', 'u.id')
@@ -57,12 +76,27 @@ class feesReportController extends Controller
         $receipt_no = $request->input('receipt_no');
         $payment_mode = $request->input('payment_mode');
         $selected_user_name = $request->input('user_name');
-        //echo "<pre>";print_r($selected_user_name);exit;
+        // echo "<pre>";print_r($request->all());exit;
         $syear = $request->session()->get('syear');
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $client_id = $request->session()->get('client_id');
         $marking_period_id = session()->get('term_id');
-
+        if($type=="API"){
+            try {
+                if (!$this->jwtToken()->validate()) {
+                    $response = ['status' => '2', 'message' => 'Token Auth Failed', 'data' => []];
+    
+                    return response()->json($response, 401);
+                }
+            } catch (\Exception $e) {
+                $response = ['status' => '2', 'message' => $e->getMessage(), 'data' => []];
+    
+                return response()->json($response, 401);
+            }
+            $sub_institute_id = $request->get('sub_institute_id');
+            $syear = $request->get('syear');            
+        }
+        
         $extra_fp = "  AND fp.syear = '" . $syear . "' AND  fp.sub_institute_id = '" . $sub_institute_id . "' AND fp.is_deleted = 'N' ";
         $extra_fo = "  AND fo.syear = '" . $syear . "' AND fo.sub_institute_id = '" . $sub_institute_id . "' AND fo.is_deleted = 'N' ";
       
@@ -177,7 +211,6 @@ class feesReportController extends Controller
         ->selectRaw('u.id, u.user_name')
         ->groupBy('fc.created_by')
         ->get()->toArray();
-
         //echo "<pre>";print_r($collected_by);exit;
 
         $res['status_code'] = 1;
@@ -195,8 +228,9 @@ class feesReportController extends Controller
         $res['payment_mode'] = $payment_mode;
         $res['selected_user_name'] = $selected_user_name;
         $res['get_users'] = $get_users;
-        $res['months'] = FeeMonthId();
-
+        $res['months'] = FeeMonthId($syear,$sub_institute_id);
+        // echo "<pre>";print_r($res['fees_data']);exit;
         return is_mobile($type, "fees/fees_report/index", $res, "view");
     }
+    
 }
