@@ -784,11 +784,17 @@ if (!function_exists('SearchStudent')) {
 }
 if (!function_exists('FeeMonthId')) {
 
-    function FeeMonthId($syear = '')
+    function FeeMonthId($syear = '',$sub_institute_id='')
     {
+        if($sub_institute_id==''){
+            $sub_institute_id=session()->get('sub_institute_id');
+        }
+        if($syear==''){
+            $syear = session()->get('syear');
+        }
         $data = map_year::where([
-            'sub_institute_id' => session()->get('sub_institute_id'),
-            'syear' => session()->get('syear'),
+            'sub_institute_id' => $sub_institute_id,
+            'syear' => $syear,
         ])->get()->toArray();
         if (count($data) == 0) {
             return array();
