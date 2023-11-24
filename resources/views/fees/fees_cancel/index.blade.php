@@ -68,8 +68,7 @@
                                 <strong>{{ $sessionData['message'] }}</strong>
                             </div>
                         @endif
-                        <form action="{{ route('show_cancel_fees') }}" enctype="multipart/form-data" method="post">
-                            {{ method_field("POST") }}
+                        <form action="{{ route('fees_cancel.create') }}" enctype="multipart/form-data" >
                             @csrf
                             <div class="row">
 
@@ -113,7 +112,7 @@
                 }
             @endphp
             <div class="card">
-                <form method="POST" action="cancel_fees">
+                <form method="POST" action="{{ route('fees_cancel.store') }}">
                     <div class="row">
                         <div class="col-lg-12 col-sm-12 col-xs-12 p-0">
                             <div class="table-responsive">
