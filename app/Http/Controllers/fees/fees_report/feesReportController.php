@@ -62,7 +62,7 @@ class feesReportController extends Controller
         return is_mobile($type, "fees/fees_report/index", $res, "view");
     }
 
-    public function showFees(Request $request)
+    public function create(Request $request)
     {
         $type = $request->input("type");
         $grade = $request->input('grade');
