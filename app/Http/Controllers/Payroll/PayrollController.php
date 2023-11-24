@@ -12,15 +12,18 @@ use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use function App\Helpers\is_mobile;
+use GenTux\Jwt\GetsJwtToken;
 use DB;
 use PDF;
 
 class PayrollController extends Controller
 {
+    use GetsJwtToken;
+    
     public function payrollType(Request $request)
     {
         $data['data'] = PayrollType::all();
-        return view('payroll.payroll_type.index', ["data" => $data]);
+        // return view('payroll.payroll_type.index', ["data" => $data]);
         $type = $request->input('type');
         return is_mobile($type, "payroll.payroll_type.index", $data, "view");
     }
@@ -75,56 +78,128 @@ class PayrollController extends Controller
     public function employeeSalaryStructure(Request $request)
     {
         $sub_institute_id = $request->session()->get('sub_institute_id');
+        $type=$request->input('type');
+        if($type=="API"){
+            try {
+                if (!$this->jwtToken()->validate()) {
+                    $response = ['status' => '2', 'message' => 'Token Auth Failed', 'data' => []];
+    
+                    return response()->json($response, 401);
+                }
+            } catch (\Exception $e) {
+                $response = ['status' => '2', 'message' => $e->getMessage(), 'data' => []];
+    
+                return response()->json($response, 401);
+            }
+            $sub_institute_id = $request->get('sub_institute_id');
+        }
         $employees = $employeeLists = tbluserModel::where('sub_institute_id', $sub_institute_id)->get();
         if ($request->employee_id) {
             $employees = $employees->where('id', $request->employee_id);
         }
         $payrollTypes = PayrollType::where('status', 1)->get();
+        
         $employeeSalaryStructures = EmployeeSalaryStructure::get();
+        // $employeeSalaryStructures = $employeeSalaryStructures->map(function ($employee) {
+        //     return json_decode($employee->employee_salary_data, true);
+        // });
         $employeeSalaryStructures = $employeeSalaryStructures->map(function ($employee) {
-            return json_decode($employee->employee_salary_data, true);
-        });
+            $employee['employee_salary_data'] = json_decode($employee['employee_salary_data'], true);
+            return $employee;
+        })->pluck('employee_salary_data', 'employee_id');        
 
+        $res['employees']=$employees;
+        $res['payrollTypes']=$payrollTypes;
+        $res['employeeSalaryStructures']=$employeeSalaryStructures;
+        $res['employeeLists']=$employeeLists;
+        $res['selected_emp']=$request->employee_id;
+        // echo "<pre>";print_r($employeeSalaryStructures[7011]);exit;
         //return json_decode($employeeSalaryStructures[0]['employee_salary_data'], true);
-        return view('payroll.employee_salary_structure.index', compact('employees', 'payrollTypes', 'employeeSalaryStructures', 'employeeLists'));
+        return is_mobile($type, "payroll.employee_salary_structure.index", $res, "view");
+        
+        // return view('payroll.employee_salary_structure.index', compact('employees', 'payrollTypes', 'employeeSalaryStructures', 'employeeLists'));
     }
 
     public function employeeSalaryStructureStore(Request $request)
     {
-        // return $request->all();
+        // return $request->all();exit;
         $year = Carbon::now()->format('Y');
-        // return $year;
+        $sub_institute_id =$request->session()->get('sub_institute_id');
+        $type=$request->input('type');
+        if($type=="API"){
+            try {
+                if (!$this->jwtToken()->validate()) {
+                    $response = ['status' => '2', 'message' => 'Token Auth Failed', 'data' => []];
+    
+                    return response()->json($response, 401);
+                }
+            } catch (\Exception $e) {
+                $response = ['status' => '2', 'message' => $e->getMessage(), 'data' => []];
+    
+                return response()->json($response, 401);
+            }
+            $sub_institute_id = $request->get('sub_institute_id');
+        }
+        
+        $res['status_code']=0;
+        $res['message']="Failed to Save";   
         if ($request->emp) {
-
             foreach ($request->emp as $employee) {
                 $totalAllowance = 0;
                 $employeeDetails = [];
                 foreach ($employee as $key => $data) {
                     if ($key == 0) $employeeDetails['id'] = $data;
                     if ($key > 0) {
-                        $employeeDetails['data'][$data[0]] = $data[1];
-                        if ($data[3] == 1) {
+                        $employeeDetails['data'][$data[0]] = $data[1] ?? [];
+                        $emp_data = $data['3'] ?? '';
+                        if ($emp_data == 1) {
                             $totalAllowance = $totalAllowance + $data[1];
                         }
                     }
                 }
-                foreach ($employee as $key => $data) {
-                    if ($key > 0 && $data[2] == 'PF') {
+                 foreach ($employee as $key => $data) {
+                    $check_pf = $data['2'] ?? '';
+                    if ($check_pf == 'PF') {
                         $employeeDetails['data'][$data[0]] = $totalAllowance > 0 ? (($totalAllowance * 12)/100 > 1800) ? 1800 :  round((($totalAllowance * 12)/100)) : 0;
                     }
-                    if ($key > 0 && $data[2] == 'Pro.Tax') {
+                    if ($check_pf == 'Pro.Tax') {
                         $employeeDetails['data'][$data[0]] = ($totalAllowance > 10000) ? 200 :0;
                     }
                 }
-                //return $employeeDetails;
-                EmployeeSalaryStructure::updateOrCreate(['employee_id' => $employeeDetails['id'], 'year' => $year], [
-                    'employee_salary_data' => json_encode($employeeDetails['data']),
+                if(isset($employeeDetails['id'])){
+                $find = EmployeeSalaryStructure::where(['employee_id' => $employeeDetails['id'], 'year' => $year], [
                     'year' => $year,
-                    'sub_institute_id' => $request->session()->get('sub_institute_id')
-                ]);
+                    'sub_institute_id' => $sub_institute_id
+                ])->get()->toArray();
+                if(!empty($find)){
+                    EmployeeSalaryStructure::where(['employee_id' => $employeeDetails['id'],'year' => $year,'sub_institute_id' => $sub_institute_id
+                    ])->update([
+                        'employee_id' => $employeeDetails['id'], 
+                        'employee_salary_data' => $employeeDetails['data'],
+                        'year' => $year,
+                        'sub_institute_id' => $sub_institute_id
+                    ]);
+                    $res['message']="Updated Successfully";
+                }
+                else{
+                    EmployeeSalaryStructure::where(['employee_id' => $employeeDetails['id'], 'year' => $year], [
+                        'year' => $year,
+                        'sub_institute_id' => $sub_institute_id
+                    ])->insert([
+                        'employee_id' => $employeeDetails['id'],
+                        'employee_salary_data' => json_encode($employeeDetails['data']),
+                        'year' => $year,
+                        'sub_institute_id' => $sub_institute_id
+                    ]);
+                    $res['message']="Added Successfully";                    
+                }
+                $res['status_code']=1;
             }
-        }
-        return redirect('employee-salary-structure');
+            }
+        }     
+        // return redirect('employee-salary-structure');
+        return is_mobile($type, "employee_salary_structure.index", $res, "redirect");
+        
     }
 
     public function salaryStructureReport(Request $request)
@@ -165,11 +240,29 @@ class PayrollController extends Controller
 
     public function form16(Request $request)
     {
-        $employeeDetails = EmployeeSalaryStructure::with('getUser')->get();
-        $payrollTypes = PayrollType::where('status', 1)->get();
-        $result['allowance'] = $payrollTypes->where('payroll_type', 1);
-        $result['deduction'] = $payrollTypes->where('payroll_type', 2);
-        return view('payroll.form16.index', ['employees' => $employeeDetails, 'payrollTypes' => $result]);
+        $type = $request->input('type');
+        if($type=="API"){
+            try {
+                if (!$this->jwtToken()->validate()) {
+                    $response = ['status' => '2', 'message' => 'Token Auth Failed', 'data' => []];
+    
+                    return response()->json($response, 401);
+                }
+            } catch (\Exception $e) {
+                $response = ['status' => '2', 'message' => $e->getMessage(), 'data' => []];
+    
+                return response()->json($response, 401);
+            }
+            $sub_institute_id = $request->get('sub_institute_id');
+        }
+        $res['employeeDetails'] = EmployeeSalaryStructure::with('getUser')->get();
+        $res['payrollTypes'] = PayrollType::where('status', 1)->get();
+        $res['allowance'] = $res['payrollTypes']->where('payroll_type', 1);
+        $res['deduction'] = $res['payrollTypes']->where('payroll_type', 2);
+        
+        // echo "<pre>";print_r($res['employeeDetails']);exit;
+        return is_mobile($type, "payroll.form16.index", $res, "view");        
+        // return view('payroll.form16.index', ['employees' => $employeeDetails, 'payrollTypes' => $result]);
     }
 
     public function form16Report(Request $request)

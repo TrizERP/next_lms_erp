@@ -55,31 +55,51 @@ class questionpaperController extends Controller
 
             if (count($stu_data) > 0) {
 
-                $where_array['question_paper.sub_institute_id'] = $sub_institute_id;
-                $where_array['question_paper.syear'] = $syear;
-                $where_array['standard.id'] = $stu_data[0]['standard_id'];
-                $where_array['question_paper.exam_type'] = "online";
-
-                $data['questionpaper_data'] = questionpaperModel::select('question_paper.*',
+                $data['questionpaper_data'] = questionpaperModel::select(
+                    'question_paper.*',
                     'standard.name as standard_name',
-                    'academic_section.title as grade_name', 'subject_name', DB::raw('count(lms_online_exam.id) as total_attempt,
-                    date_format(open_date,"%Y-%m-%d") as open_date,date_format(close_date,"%Y-%m-%d") as close_date,
-                    if(now() between open_date and close_date,"yes","no") as active_exam'))
-                    ->join('standard', function($join) use($marking_period_id){
-                        $join->on('standard.id', '=', 'question_paper.standard_id');
-                        // ->when($marking_period_id,function($query) use($marking_period_id){
-                        //     $query->where('standard.marking_period_id',$marking_period_id);
-                        // });
-                    })
-                    ->join('academic_section', 'academic_section.id', '=', 'question_paper.grade_id')
-                    ->join('subject', 'subject.id', '=', 'question_paper.subject_id')
-                    ->leftjoin('lms_online_exam', [
-                        'lms_online_exam.question_paper_id' => 'question_paper.id',
-                        'lms_online_exam.student_id'        => DB::raw($student_id),
-                    ])
-                    ->where($where_array)
-                    ->groupby("question_paper.id")
-                    ->get();
+                    'academic_section.title as grade_name',
+                    'ssm.display_name as subject_name',
+                    DB::raw('count(lms_online_exam.id) as total_attempt'),
+                    DB::raw('date_format(open_date, "%Y-%m-%d") as open_date'),
+                    DB::raw('date_format(close_date, "%Y-%m-%d") as close_date'),
+                    DB::raw('if(now() between open_date and close_date, "yes", "no") as active_exam')
+                )
+                ->join('standard', 'standard.id', '=', 'question_paper.standard_id')
+                ->join('tblstudent_enrollment as se', function ($join) use ($student_id, $syear, $sub_institute_id) {
+                    $join->on('se.student_id', '=', DB::raw($student_id))
+                        ->on('se.syear', '=', DB::raw($syear))  // Remove quotes from $syear
+                        ->on('se.sub_institute_id', '=', DB::raw($sub_institute_id));
+                })                
+                ->join('academic_section', 'academic_section.id', '=', 'question_paper.grade_id')
+                ->join('sub_std_map as ssm', function ($join) use ($sub_institute_id) {
+                    $join->on('ssm.subject_id', '=', 'question_paper.subject_id')
+                        ->on('ssm.standard_id', '=', 'se.standard_id');
+                })
+                ->leftJoin('lms_online_exam', function ($join) use ($student_id) {
+                    $join->on('lms_online_exam.question_paper_id', '=', 'question_paper.id')
+                        ->on('lms_online_exam.student_id', '=', DB::raw($student_id));
+                })
+                ->where('question_paper.sub_institute_id', $sub_institute_id)
+                ->where('question_paper.syear', $syear)
+                ->where('standard.id', $stu_data[0]['standard_id'])
+                ->where('question_paper.exam_type', 'online')
+            //Rajesh - Student Display optional subject map created exam
+                ->where(function ($query) use ($sub_institute_id, $syear, $student_id) {
+                    $query->where('ssm.elective_subject', '!=', 'Yes')
+                        ->orWhere(function ($subquery) use ($sub_institute_id, $syear, $student_id) {
+                            $subquery->whereIn('ssm.subject_id', function ($inQuery) use ($sub_institute_id, $syear, $student_id) {
+                                $inQuery->select('sos.subject_id')
+                                    ->from('student_optional_subject as sos')
+                                    ->where('sos.sub_institute_id', $sub_institute_id)
+                                    ->where('sos.syear', $syear)
+                                    ->where('sos.student_id', $student_id);
+                            });
+                        });
+                })                
+                ->groupBy('question_paper.id')
+                ->get();
+                
             }
         } 
         else if ($teacher == "Teacher") 

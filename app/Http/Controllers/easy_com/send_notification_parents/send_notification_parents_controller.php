@@ -48,20 +48,21 @@ class send_notification_parents_controller extends Controller
      */
     public function create(Request $request)
     {
-
         $type = $request->input('type');
         $student_data = SearchStudent($_REQUEST['grade'], $_REQUEST['standard'], $_REQUEST['division']);
         $responce_arr['grade'] = $_REQUEST['grade'];
         $responce_arr['standard'] = $_REQUEST['standard'];
         $responce_arr['division'] = $_REQUEST['division'];
 
-        foreach ($student_data as $id => $arr) {
-
+        foreach ($student_data as $id => $arr) 
+        {
             $responce_arr['stu_data'][$id]['sr.no'] = $id + 1;
             $responce_arr['stu_data'][$id]['enrollment_no'] = $arr['enrollment_no'];
             $responce_arr['stu_data'][$id]['name'] = $arr['first_name'].' '.$arr['middle_name'].' '.$arr['last_name'];
             $responce_arr['stu_data'][$id]['student_id'] = $arr['student_id'];
             $responce_arr['stu_data'][$id]['mobile'] = $arr['mobile'];
+            $responce_arr['stu_data'][$id]['standard_name'] = $arr['standard_name'];
+            $responce_arr['stu_data'][$id]['division_name'] = $arr['division_name'];
         }
 
         return is_mobile($type, "easy_comm/send_notification_parents/add", $responce_arr, "view");

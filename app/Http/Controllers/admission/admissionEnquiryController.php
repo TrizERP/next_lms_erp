@@ -15,6 +15,7 @@ use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
 use function App\Helpers\is_mobile;
 use function App\Helpers\sendSMS;
+use GenTux\Jwt\GetsJwtToken;
 
 class admissionEnquiryController extends Controller
 {
@@ -23,11 +24,29 @@ class admissionEnquiryController extends Controller
      *
      * @return Response
      */
+    use GetsJwtToken;
+    
     public function index(Request $request)
     {
         $type = $request->input('type');
-        $sub_institute_id = $request->session()->get('sub_institute_id');
-        $syear = $request->session()->get('syear');
+        $sub_institute_id = session()->get('sub_institute_id');
+        $syear = session()->get('syear');
+
+        if($type=="API"){
+            try {
+                if (!$this->jwtToken()->validate()) {
+                    $response = ['status' => '2', 'message' => 'Token Auth Failed', 'data' => []];
+    
+                    return response()->json($response, 401);
+                }
+            } catch (\Exception $e) {
+                $response = ['status' => '2', 'message' => $e->getMessage(), 'data' => []];
+    
+                return response()->json($response, 401);
+            }
+            $sub_institute_id = $request->get('sub_institute_id');
+            $syear = $request->get('syear');            
+        }
         $marking_period_id=session()->get('marking_period_id');
 
         $data = DB::table('admission_enquiry')
@@ -79,7 +98,21 @@ class admissionEnquiryController extends Controller
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $syear = $request->session()->get('syear');
         $marking_period_id = session()->get('term_id');
-
+        if($type=="API"){
+            try {
+                if (!$this->jwtToken()->validate()) {
+                    $response = ['status' => '2', 'message' => 'Token Auth Failed', 'data' => []];
+    
+                    return response()->json($response, 401);
+                }
+            } catch (\Exception $e) {
+                $response = ['status' => '2', 'message' => $e->getMessage(), 'data' => []];
+    
+                return response()->json($response, 401);
+            }
+            $sub_institute_id = $request->get('sub_institute_id');
+            $syear = $request->get('syear');            
+        }
         $category = castModel::get()->toArray();
 
         $dataCustomFields = tblcustomfieldsModel::where(['status' => "1", 'table_name' => "admission_enquiry"])
@@ -241,8 +274,27 @@ class admissionEnquiryController extends Controller
         $sub_institute_id = $request->session()->get("sub_institute_id");
         $user_id = $request->session()->get("user_id");
         $syear = $request->session()->get("syear");
+
+        if($type=="API"){
+            try {
+                if (!$this->jwtToken()->validate()) {
+                    $response = ['status' => '2', 'message' => 'Token Auth Failed', 'data' => []];
+    
+                    return response()->json($response, 401);
+                }
+            } catch (\Exception $e) {
+                $response = ['status' => '2', 'message' => $e->getMessage(), 'data' => []];
+    
+                return response()->json($response, 401);
+            }
+            $sub_institute_id = $request->get('sub_institute_id');
+            $syear = $request->get('syear');   
+            $user_id = $request->input("user_id");
+                     
+        }
+
         $data = $request->except([
-            '_method', '_token', 'submit', 'type', 'receipt_id', 'receipt_html', 'hidden_std_id', 'original_fees_bf',
+            '_method', '_token','token','submit', 'type', 'receipt_id', 'receipt_html', 'hidden_std_id', 'original_fees_bf','user_id'
         ]);
 
         $data['syear'] = $syear;
@@ -524,7 +576,21 @@ class admissionEnquiryController extends Controller
     {
         $type = $request->input('type');
         $sub_institute_id = $request->session()->get('sub_institute_id');
-
+        if($type=="API"){
+            try {
+                if (!$this->jwtToken()->validate()) {
+                    $response = ['status' => '2', 'message' => 'Token Auth Failed', 'data' => []];
+    
+                    return response()->json($response, 401);
+                }
+            } catch (\Exception $e) {
+                $response = ['status' => '2', 'message' => $e->getMessage(), 'data' => []];
+    
+                return response()->json($response, 401);
+            }
+            $sub_institute_id = $request->get('sub_institute_id');
+            $syear = $request->get('syear');            
+        }
         $editData = admissionEnquiryModel::where(['id' => $id])->get()->toArray();
 
         $category = castModel::get()->toArray();
@@ -568,11 +634,27 @@ class admissionEnquiryController extends Controller
      */
     public function update(Request $request, $id)
     {
-        $type = $request->input("type");
+        $type = $request->get("type");
         $sub_institute_id = $request->session()->get("sub_institute_id");
         $user_id = $request->session()->get("user_id");
         $syear = $request->session()->get("syear");
-        $data = $request->except(['_method', '_token', 'submit']);
+        if($type=="API"){
+            try {
+                if (!$this->jwtToken()->validate()) {
+                    $response = ['status' => '2', 'message' => 'Token Auth Failed', 'data' => []];
+    
+                    return response()->json($response, 401);
+                }
+            } catch (\Exception $e) {
+                $response = ['status' => '2', 'message' => $e->getMessage(), 'data' => []];
+    
+                return response()->json($response, 401);
+            }
+            $sub_institute_id = $request->get('sub_institute_id');
+            $syear = $request->get('syear');           
+            $user_id = $request->get('user_id'); 
+        }
+        $data = $request->except(['_method', '_token', 'submit','token','user_id','type']);
 
         $data['syear'] = $syear;
         $data['created_by'] = $user_id;
@@ -596,6 +678,21 @@ class admissionEnquiryController extends Controller
     public function destroy(Request $request, $id)
     {
         $type = $request->input('type');
+        if($type=="API"){
+            try {
+                if (!$this->jwtToken()->validate()) {
+                    $response = ['status' => '2', 'message' => 'Token Auth Failed', 'data' => []];
+    
+                    return response()->json($response, 401);
+                }
+            } catch (\Exception $e) {
+                $response = ['status' => '2', 'message' => $e->getMessage(), 'data' => []];
+    
+                return response()->json($response, 401);
+            }
+            $sub_institute_id = $request->get('sub_institute_id');
+            $syear = $request->get('syear');            
+        }
         admissionEnquiryModel::where(["id" => $id])->delete();
         $res['status_code'] = "1";
         $res['message'] = "Deleted successfully";

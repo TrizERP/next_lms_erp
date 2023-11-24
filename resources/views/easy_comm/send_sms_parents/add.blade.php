@@ -40,6 +40,8 @@
                                     <th><input type="checkbox" name="all" id="ckbCheckAll" class="ckbox">  </th>
                                     <th>No</th>
                                     <th>Student Name</th>
+                                    <th>Standard</th>
+                                    <th>Division</th>
                                     <th>Mobile</th>
                                 </tr>
                                 @php
@@ -52,6 +54,8 @@
                                     <td><input type="checkbox" name="@php echo 'sendsms['.$col_arr['mobile'].']'; @endphp" class="ckbox1">  </td>
                                     <td>@php echo $id+1; @endphp</td>
                                     <td>@php echo $col_arr['name']; @endphp</td>
+                                    <td>@php echo $col_arr['standard_name']; @endphp</td>
+                                    <td>@php echo $col_arr['division_name']; @endphp</td>
                                     <td>@php echo $col_arr['mobile']; @endphp</td>
 
                                 </tr>

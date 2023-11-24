@@ -31,15 +31,14 @@
 
                                         <select id='employee_id' name="employee_id" class="form-control">
                                             <option value="0">Select Employee</option>
-                                            @foreach($employeeLists as $key => $employeeList)
-
-                                                @if(is_array($employees) && count($employees) == 1 && $employees[0]['id'] == $employeeList->id)
+                                            @foreach($data['employeeLists'] as $key => $employeeList)
+                                                @if(is_array($data['employees']) && count($data['employees']) == 1 || $data['selected_emp'] == $employeeList->id)
                                                     <option
                                                         value="{{$employeeList->id}}"
-                                                        selected>{{$employeeList->first_name .' '. $employeeList->last_name }}</option>
+                                                        @if(isset($data['selected_emp'])==$employeeList->id) selected @endif>{{$employeeList->first_name .' '. $employeeList->last_name }}</option>
                                                 @else
                                                     <option
-                                                        value="{{$employeeList->id}}">{{$employeeList->first_name .' '. $employeeList->last_name }}</option>
+                                                        value="{{$employeeList->id}}" >{{$employeeList->first_name .' '. $employeeList->last_name }}</option>
                                                 @endif
                                             @endforeach
 
@@ -79,7 +78,7 @@
                                     <th>Emp Id</th>
                                     <th>Emp Name</th>
                                     <th>Gender</th>
-                                    @foreach ($payrollTypes as $payrollType)
+                                    @foreach ($data['payrollTypes'] as $payrollType)
                                         <th>{{$payrollType->payroll_name}}</th>
                                     @endforeach
                                 </tr>
@@ -88,32 +87,32 @@
                                 @php
                                     $j=1;
                                 @endphp
-                                @foreach($employees as $key => $data)
+                                @foreach($data['employees'] as $key => $value)
                                     <tr>
-                                        <td>{{$data->id}}</td>
-                                        <td>{{$data->first_name .' '. $data->middle_name .' '.$data->last_name}}</td>
-                                        <td>{{$data->gender}}</td>
-                                        <input type="hidden" name="emp[{{$key}}][]" value="{{$data->id}}">
-                                        @foreach ($payrollTypes as $payrollType)
+                                        <td>{{$value->id}}</td>
+                                        <td>{{$value->first_name .' '. $value->middle_name .' '.$value->last_name}}</td>
+                                        <td>{{$value->gender}}</td>
+                                        <input type="hidden" name="emp[{{$value->id}}][]" value="{{$value->id}}"> 
+                                        @foreach ($data['payrollTypes'] as $payrollType)
                                             @if($payrollType->payroll_name == 'PF' || $payrollType->payroll_name == 'Pro.Tax')
-                                                <input type="hidden" name="emp[{{$key}}][{{$payrollType->id}}][]"
+                                                <input type="hidden" name="emp[{{$value->id}}][{{$payrollType->id}}][]"
                                                        value="{{$payrollType->id}}">
                                                 <td><input type="text" disabled
-                                                           value="{{$employeeSalaryStructures[$key][$payrollType->id] ?? 0}}">
-                                                    <input type="hidden" name="emp[{{$key}}][{{$payrollType->id}}][]"
-                                                           value="{{$employeeSalaryStructures[$key][$payrollType->id] ?? 0}}">
-                                                    <input type="hidden" name="emp[{{$key}}][{{$payrollType->id}}][]"
+                                                           value="{{$data['employeeSalaryStructures'][$value->id][$payrollType->id] ?? 0}}">
+                                                    <input type="hidden" name="emp[{{$value->id}}][{{$payrollType->id}}][]"
+                                                           value="{{$data['employeeSalaryStructures'][$value->id][$payrollType->id] ?? 0}}">
+                                                    <input type="hidden" name="emp[{{$value->id}}][{{$payrollType->id}}][]"
                                                            value="{{$payrollType->payroll_name}}">
-                                                    <input type="hidden" name="emp[{{$key}}][{{$payrollType->id}}][]"
+                                                    <input type="hidden" name="emp[{{$value->id}}][{{$payrollType->id}}][]"
                                                            value="{{$payrollType->payroll_type}}">
                                                 </td>
                                             @else
-                                                <input type="hidden" name="emp[{{$key}}][{{$payrollType->id}}][]"
+                                                <input type="hidden" name="emp[{{$value->id}}][{{$payrollType->id}}][]"
                                                        value="{{$payrollType->id}}">
-                                                <td><input type="text" name="emp[{{$key}}][{{$payrollType->id}}][]"
-                                                           value="{{$employeeSalaryStructures[$key][$payrollType->id] ?? 0}}">
-                                                    <input type="hidden" name="emp[{{$key}}][{{$payrollType->id}}][]"
-                                                           value="{{$payrollType->payroll_name}}"> <input type="hidden" name="emp[{{$key}}][{{$payrollType->id}}][]"
+                                                <td><input type="text" name="emp[{{$value->id}}][{{$payrollType->id}}][]"
+                                                           value="{{$data['employeeSalaryStructures'][$value->id][$payrollType->id] ?? 0}}">
+                                                    <input type="hidden" name="emp[{{$value->id}}][{{$payrollType->id}}][]"
+                                                           value="{{$payrollType->payroll_name}}"> <input type="hidden" name="emp[{{$value->id}}][{{$payrollType->id}}][]"
                                                            value="{{$payrollType->payroll_type}}">
                                                 </td>
                                             @endif

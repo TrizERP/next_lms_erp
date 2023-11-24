@@ -10,13 +10,16 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 use function App\Helpers\is_mobile;
+use GenTux\Jwt\GetsJwtToken;
 
 class outwardController extends Controller
 {
+    use GetsJwtToken;
+
     public function index(Request $request)
     {
-        if (session()->has('data')) { // check if it exists
-            $data_arr = session('data'); // to retrieve value
+        if (session()->has('data')) {
+            $data_arr = session('data'); 
             if (isset($data_arr['message'])) {
                 $outward_data['message'] = $data_arr['message'];
             }
@@ -24,7 +27,23 @@ class outwardController extends Controller
 
         $sub_institute_id = session()->get('sub_institute_id');
         $syear = session()->get('syear');
-
+        $type = $request->input('type');
+        
+        if($type=="API"){
+            try {
+                if (!$this->jwtToken()->validate()) {
+                    $response = ['status' => '2', 'message' => 'Token Auth Failed', 'data' => []];
+    
+                    return response()->json($response, 401);
+                }
+            } catch (\Exception $e) {
+                $response = ['status' => '2', 'message' => $e->getMessage(), 'data' => []];
+    
+                return response()->json($response, 401);
+            }
+            $sub_institute_id = $request->input('sub_institute_id');
+            $syear = $request->input('syear');            
+        }
         $outward = DB::table('outward')
             ->join('place_master', 'outward.place_id', '=', 'place_master.id')
             ->join('physical_file_location', 'outward.file_location_id', '=', 'physical_file_location.id')
@@ -35,7 +54,6 @@ class outwardController extends Controller
 
         $outward_data['status_code'] = 1;
         $outward_data['data'] = $outward;
-        $type = $request->input('type');
 
         return is_mobile($type, "inward_outward/show_outward", $outward_data, "view");
     }
@@ -44,9 +62,26 @@ class outwardController extends Controller
     {
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $syear = $request->session()->get('syear');
+        $type = $request->input('type');
+        
+        if($type=="API"){
+            try {
+                if (!$this->jwtToken()->validate()) {
+                    $response = ['status' => '2', 'message' => 'Token Auth Failed', 'data' => []];
+    
+                    return response()->json($response, 401);
+                }
+            } catch (\Exception $e) {
+                $response = ['status' => '2', 'message' => $e->getMessage(), 'data' => []];
+    
+                return response()->json($response, 401);
+            }
+            $sub_institute_id = $request->input('sub_institute_id');
+            $syear = $request->input('syear');            
+        }
         $data = place_masterModel::where(['sub_institute_id' => $sub_institute_id])->get()->toArray();
         $data1 = physical_file_locationModel::where(['sub_institute_id' => $sub_institute_id])->get()->toArray();
-
+       
         $get_outward_no = DB::table("outward")
             ->selectRaw('(IFNULL(MAX(CAST(outward_number AS INT)),0) + 1) AS outward_no')
             ->where("sub_institute_id", "=", $sub_institute_id)
@@ -54,15 +89,34 @@ class outwardController extends Controller
             ->get()->toArray();
 
         view()->share('outward_no', $get_outward_no[0]->outward_no);
+        $res['menu'] = $data;
+        $res['menu1']=$data1;
+        return is_mobile($type, "inward_outward/add_outward", $res, "view");
 
-        return view('inward_outward/add_outward', ['menu' => $data], ['menu1' => $data1]);
+        // return view('inward_outward/add_outward', ['menu' => $data], ['menu1' => $data1]);
     }
 
     public function store(Request $request)
     {
         $sub_institute_id = session()->get('sub_institute_id');
         $syear = session()->get('syear');
+        $type = $request->input('type');
 
+        if($type=="API"){
+            try {
+                if (!$this->jwtToken()->validate()) {
+                    $response = ['status' => '2', 'message' => 'Token Auth Failed', 'data' => []];
+    
+                    return response()->json($response, 401);
+                }
+            } catch (\Exception $e) {
+                $response = ['status' => '2', 'message' => $e->getMessage(), 'data' => []];
+    
+                return response()->json($response, 401);
+            }
+            $sub_institute_id = $request->input('sub_institute_id');
+            $syear = $request->input('syear');            
+        }
         $file_name = $file_size = $ext = "";
         if ($request->hasFile('attachment')) {
             $file = $request->file('attachment');
@@ -95,7 +149,6 @@ class outwardController extends Controller
 //            "message" => "Outward Added Succesfully",
 //        ];
         $message = outwardModel::where(['sub_institute_id' => $sub_institute_id])->get();
-        $type = $request->input('type');
 
         return is_mobile($type, "add_outward.index", $message, "redirect");
     }
@@ -104,7 +157,23 @@ class outwardController extends Controller
     {
         $type = $request->input('type');
         $syear = $request->session()->get('syear');
+        $type = $request->input('type');
 
+        if($type=="API"){
+            try {
+                if (!$this->jwtToken()->validate()) {
+                    $response = ['status' => '2', 'message' => 'Token Auth Failed', 'data' => []];
+    
+                    return response()->json($response, 401);
+                }
+            } catch (\Exception $e) {
+                $response = ['status' => '2', 'message' => $e->getMessage(), 'data' => []];
+    
+                return response()->json($response, 401);
+            }
+            $sub_institute_id = $request->input('sub_institute_id');
+            $syear = $request->input('syear');            
+        }
         $data = outwardModel::find($id);
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $editdata = place_masterModel::where(['sub_institute_id' => $sub_institute_id])->get();
@@ -113,8 +182,11 @@ class outwardController extends Controller
         view()->share('outward_no', $data->outward_number);
         view()->share('menu', $editdata);
         view()->share('menu1', $editdata1);
-
-        return view('inward_outward/add_outward', ['data' => $data]);
+        $data['menu'] = place_masterModel::where(['sub_institute_id' => $sub_institute_id])->get()->toArray();
+        $data['menu1'] = physical_file_locationModel::where(['sub_institute_id' => $sub_institute_id])->get()->toArray();
+        return is_mobile($type, "inward_outward/add_outward", $data, "view");
+      
+        // return view('inward_outward/add_outward', ['data' => $data]);
     }
 
     public function update(Request $request, $id)
@@ -128,7 +200,22 @@ class outwardController extends Controller
             'acedemic_year'    => $request->get('acedemic_year'),
             'outward_date'     => $request->get('outward_date'),
         ];
+        $type = $request->input('type');
 
+        if($type=="API"){
+            try {
+                if (!$this->jwtToken()->validate()) {
+                    $response = ['status' => '2', 'message' => 'Token Auth Failed', 'data' => []];
+    
+                    return response()->json($response, 401);
+                }
+            } catch (\Exception $e) {
+                $response = ['status' => '2', 'message' => $e->getMessage(), 'data' => []];
+    
+                return response()->json($response, 401);
+            }
+                      
+        }
         $file_name = $file_size = $ext = "";
         if ($request->hasFile('attachment')) {
             $file = $request->file('attachment');
@@ -150,7 +237,7 @@ class outwardController extends Controller
         $message = [
             "message" => "Outward Updated Successfully",
         ];
-        $type = $request->input('type');
+        // $type = $request->input('type');
 
         return is_mobile($type, "add_outward.index", $message, "redirect");
     }
@@ -158,6 +245,21 @@ class outwardController extends Controller
     public function destroy(Request $request, $id)
     {
         $type = $request->input('type');
+
+        if($type=="API"){
+            try {
+                if (!$this->jwtToken()->validate()) {
+                    $response = ['status' => '2', 'message' => 'Token Auth Failed', 'data' => []];
+    
+                    return response()->json($response, 401);
+                }
+            } catch (\Exception $e) {
+                $response = ['status' => '2', 'message' => $e->getMessage(), 'data' => []];
+    
+                return response()->json($response, 401);
+            }
+                      
+        }
         outwardModel::where(["id" => $id])->delete();
         $message['status_code'] = "1";
         $message = [

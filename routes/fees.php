@@ -171,8 +171,6 @@ Route::get('payphi', function ($id = null) {
 
     Route::post('fees/fees_defaulter_report', [feesDefaulterReportController::class, 'showFeesDefaulter'])->name('show_fees_defaulter_report');
 
-    Route::post('fees/student_breakoff_report', [studentBreakoffReportController::class, 'showStudentBreakoff'])->name('show_stduent_breakoff_report');
-
     Route::post('fees/fees_status_report', [feesStatusController::class, 'feesStatusReport'])->name('show_fees_status_report');
 
     Route::get('pdfview', array('as' => 'pdfview', 'uses' => 'ItemController@pdfview'));

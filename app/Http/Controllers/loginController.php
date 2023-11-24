@@ -205,7 +205,7 @@ class loginController extends Controller
                     $user = $user[0];
 
                     $userprofiledetails = tbluserprofilemasterModel::where(['id' => $user['user_profile_id']])->get()->toArray();
-
+                    $request->session()->put('user_profile_id', $user['user_profile_id']);
                 //START FOR MULTI-INSTITUTE
                     if ($user['is_admin'] == 1) {
                         $schoolData = DB::table('tblclient')->where(['id' => $user['client_id']])->get()->toArray();
@@ -296,7 +296,8 @@ class loginController extends Controller
                         $user_group_id = DB::table('tbluserprofilemaster')->where('NAME', 'Teacher')
                             ->where('sub_institute_id', $user['sub_institute_id'])->get()->toArray();
                         $user_group_id = $user_group_id[0]->id ?? '';
-                        if ($user_group_id == session()->get('user_profile_id')) {
+                        
+                        if ($user_group_id==session()->get('user_profile_id')) {
 
                             $class_teacher = DB::table('class_teacher')->where('teacher_id', $user['id'])
                                 ->where('sub_institute_id', $user['sub_institute_id'])

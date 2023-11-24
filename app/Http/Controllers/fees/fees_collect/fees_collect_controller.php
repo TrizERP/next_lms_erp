@@ -44,8 +44,8 @@ class fees_collect_controller extends Controller
     public function index(Request $request)
     {
         //get message for success or failed from any function in controller which call index function in return
-        if (session()->has('data')) { 
-            $data_arr = session('data'); 
+        if (session()->has('data')) {
+            $data_arr = session('data');
             if (isset($data_arr['message'])) {
                 $school_data['message'] = $data_arr['message'];
             }
@@ -187,7 +187,7 @@ class fees_collect_controller extends Controller
                 }
                 if (isset($request['including_inactive']) && $request['including_inactive'] != '') {
                     if ($request['including_inactive'] == 'Yes') {
-                        $q->whereNotNull('se.end_date');
+                        //$q->whereNotNull('se.end_date');
                     }
                 } else {
                     $q->whereNull('se.end_date');
@@ -195,7 +195,7 @@ class fees_collect_controller extends Controller
             })->groupBy('s.id')->havingNotNull('bkoff')->get()->toArray();
 
         $request = Request::capture();
-        
+
         foreach ($result as $id => $arr) {
             $bk_stu_id = $arr->id;
             // get paid and unpiad history of student by his/her id
@@ -204,7 +204,7 @@ class fees_collect_controller extends Controller
             $remain = $paid_result['final_fee']['Total'];
             $previous = isset($paid_result['final_fee']['Previous Fees']) ? $paid_result['final_fee']['Previous Fees'] : 0;
             if ($bk_stu_id == $pd_stu_id) {
-              
+
                 if ($previous < 0) {
                     $arr->bkoff = ($remain - $previous);
                 } else {
@@ -216,7 +216,7 @@ class fees_collect_controller extends Controller
                 }
             }
         }
-                
+
         if (empty($result)) {
 
             // if student details are missing then this code will give missing detail in message
@@ -267,7 +267,7 @@ class fees_collect_controller extends Controller
                     }
 
                 })->groupBy('s.id')->get()->toArray();
- 
+
             if (!empty($check)) {
                 if ($check[0]->section_id == null || $check[0]->section_id == 0) {
                     $responce_arr['status_code'] = 0;
@@ -348,13 +348,13 @@ class fees_collect_controller extends Controller
         // OtherBreackOff is for additional fee from helper.php
         $other_bk_off = OtherBreackOff($stu_arr, $search_ids);
 
-        //  OtherBreackOfMonth get additional fees monthwise from helper.php        
+        //  OtherBreackOfMonth get additional fees monthwise from helper.php
         $other_bk_off_month_wise = OtherBreackOfMonth($stu_arr);
 
-        //  OtherBreackOfMonthHead additional fees_title from helper.php                
+        //  OtherBreackOfMonthHead additional fees_title from helper.php
         $other_bk_off_month_head_wise = OtherBreackOfMonthHead($stu_arr, $search_ids);
 
-        //  FeeBreakoffHeadWise get fees_title from helper.php                        
+        //  FeeBreakoffHeadWise get fees_title from helper.php
         $head_wise_fees = FeeBreakoffHeadWise($stu_arr);
         $reg_fee_heads = [];
         $reg_fee_bk = [];
@@ -431,7 +431,7 @@ class fees_collect_controller extends Controller
                     }
                 }
             }
-       
+
         //getting reg fee month_id that we need to pay
             $syear = session()->get('syear');
             $last_y_month_id = $currunt_month . ($syear - 1);
@@ -496,7 +496,7 @@ class fees_collect_controller extends Controller
             if (in_array($month, $oth_months_pay)) {
 
                 foreach ($bk_off as $title => $amount) {
-              
+
                     if (array_key_exists($title, $_REQUEST['fees_data'])) {
                         $insert_amount = 0;
                         if ($_REQUEST['fees_data'][$title] > $amount) {
@@ -511,11 +511,11 @@ class fees_collect_controller extends Controller
                 }
             }
         }
-        
+
         $new_insert_other_arr = [];
         foreach ($oth_insert_arr as $month_id => $arr) {
             foreach ($arr as $id => $val) {
-                $head_id = $heds_with_id[$id]; 
+                $head_id = $heds_with_id[$id];
                 foreach ($receipt_number as $temp_id => $arr_head_rid) {
                     $heds = explode(',', $arr_head_rid['heds']);
 
@@ -530,9 +530,9 @@ class fees_collect_controller extends Controller
         $new_insert_arr = $this->add_discount($new_insert_arr, 'fees_collect');
         // get discount add while collecting fees in array for aditional fees
         $new_insert_other_arr = $this->add_discount($new_insert_other_arr, 'fees_paid_other');
-        // get fine add while collecting fees in array for fees        
+        // get fine add while collecting fees in array for fees
         $new_insert_arr = $this->add_fine($new_insert_arr);
-        // get fine add while collecting fees in array for aditional fees        
+        // get fine add while collecting fees in array for aditional fees
         $new_insert_other_arr = $this->add_fine($new_insert_other_arr);
 
         $standard_ids = $syears = [];
@@ -548,7 +548,7 @@ class fees_collect_controller extends Controller
             }
         }
 
-        // insert into fees_collect 
+        // insert into fees_collect
         $regular_insert_arr=[];
         foreach ($new_insert_arr as $month_id => $arr) {
             foreach ($arr as $r_id => $vals) {
@@ -604,20 +604,20 @@ class fees_collect_controller extends Controller
 
         $other_insert_arr = array();
         // insert into fees_paid_other table aditional fees
-        foreach ($new_insert_other_arr as $month_id => $arr) 
+        foreach ($new_insert_other_arr as $month_id => $arr)
         {
-            foreach ($arr as $r_id => $vals) 
+            foreach ($arr as $r_id => $vals)
             {
                 if(isset($_REQUEST['cheque_date']) && $_REQUEST['cheque_date'] != ''){
                     $cheque_date = $_REQUEST['cheque_date'];
                 }else{
-                    $cheque_date = $_REQUEST['receiptdate'];                    
+                    $cheque_date = $_REQUEST['receiptdate'];
                 }
 
                 if(isset($_REQUEST['remarks']) && $_REQUEST['remarks'] != ''){
                     $remarks = $_REQUEST['remarks'];
                 }else{
-                    $remarks = '';                    
+                    $remarks = '';
                 }
 
                 $receipt_id_arr = explode('_', $r_id);
@@ -677,7 +677,7 @@ class fees_collect_controller extends Controller
 
         $res = [];
 
-        // send recipt to view page 
+        // send recipt to view page
         if (count($fees_config)) {
 
             $receipt_html_with_css = '<style>' . $fees_config[0]->css . '</style>' . $receipt_html;
@@ -714,7 +714,7 @@ class fees_collect_controller extends Controller
         $res['standard_id'] = $request->standard_id;
         $type = $request->input('type');
         if(!empty($res) && isset($res['data']) && isset($request->send_sms)){
-        // send sms to parent after fees paid 
+        // send sms to parent after fees paid
          $res['sms_sent'] = $this->send_sms_to_parents($res);
         }
         return is_mobile($type, "fees/fees_collect/receipt_view", $res, "view");
@@ -774,7 +774,7 @@ class fees_collect_controller extends Controller
                                 $_REQUEST['discount_data'][$title] = $_REQUEST['discount_data'][$title] - $val;
                             }
                             // 26/08/2021 END Added for The Millennium School for Advanced Imprest Collection payment
-                        
+
                         }
                         $fees_arr[$month_id][$receipt_id][$discount_field] = $fees_arr[$month_id][$receipt_id][$discount_field] + $dis;
                     }
@@ -905,7 +905,7 @@ class fees_collect_controller extends Controller
                     })->leftJoin('fees_paid_other as fo', function ($join) use ($arr) {
                         $join->whereRaw("fo.reciept_id = fr.RECEIPT_ID_" . $arr->sort_order . "");
                     })->selectRaw("ifnull(max(cast(fr.RECEIPT_ID_" . $arr->sort_order . " as UNSIGNED))," . $arr->last_receipt_number . ") as rid1,
-                        MAX(CAST(SUBSTRING(fr.RECEIPT_ID_" . $arr->sort_order . "," . $sub_string_count . ") AS INT)) as rid")
+                        MAX(CAST(SUBSTRING(fr.RECEIPT_ID_" . $arr->sort_order . "," . $sub_string_count . ") AS UNSIGNED)) as rid")
                     ->where('fr.SUB_INSTITUTE_ID', session()->get('sub_institute_id'))
                     ->where(function ($q) {
                         if (session()->get('sub_institute_id') != 47) {
@@ -1124,7 +1124,7 @@ die;*/
                 $fees_arr[$arr['rid'] . "_" . $sort_order][$diplay_name] = $total;
             }
         }
-      
+
         //adding discount in array
         foreach ($insert_html_ids as $sort_order => $arr) {
             $total_discount = 0;
@@ -1179,14 +1179,14 @@ die;*/
                 }
             }
         }
-              
+
         foreach ($new_fees_arr as $id => $arr) {
             if (count($arr) == 0) {
                 unset($new_fees_arr[$id]);
             }
         }
         $fees_arr = $new_fees_arr;
-        
+
         // 31/03/2021 - START FOR making cumulative fees recepit array
         $get_cumulative_result = DB::table('fees_title')
             ->selectRaw('id,display_name,cumulative_name,append_name')
@@ -1216,7 +1216,7 @@ die;*/
 
         $sub_institute_id = session()->get('sub_institute_id');
 
-        // create fees receipt html to display and insert into fees_collect or fee_paid_other table 
+        // create fees receipt html to display and insert into fees_collect or fee_paid_other table
         $final_html = "";
 
         foreach ($fees_arr as $id => $arr) {
@@ -1832,7 +1832,7 @@ die;*/
             return $paid_result;
     }
 
-    // function is used to get fees BREAKOFF of particular student students 
+    // function is used to get fees BREAKOFF of particular student students
     public function getBk(Request $request, $id)
     {
         $sub_institute_id = session()->get('sub_institute_id');
@@ -1849,7 +1849,7 @@ die;*/
         // get current syear month_id with name and month_id
         $month_arr = FeeMonthId();
 
-        // get last syear month_id with name and month_id        
+        // get last syear month_id with name and month_id
         $month_arr2 = FeeMonthId($last_syear);
         $currunt_month = date('m');
         $currunt_year = date('Y');
@@ -1892,10 +1892,10 @@ die;*/
             }
         }
 
-        // get student data according to syear and conditions 
+        // get student data according to syear and conditions
        $paid_result = $this->get_syear_data($syear,$sub_institute_id,$student_id, $fees_join, $paid_other_join);
        $paid_result2 = $this->get_syear_data($last_syear,$sub_institute_id,$student_id, $fees_join, $paid_other_join);
-    
+
         $fees_paid_arr = [];
         foreach ($paid_result as $id => $arr) {
             $fees_paid_arr[$arr->term_id] = $arr->amount;
@@ -1905,7 +1905,7 @@ die;*/
         foreach ($paid_result2 as $id => $arr) {
             $fees_paid_arr2[$arr->term_id] = $arr->amount;
         }
-        // get fees breakoff of all years 
+        // get fees breakoff of all years
         $reg_bk_off = FeeBreackoff($stu_arr, $request->standard); //for current year
         $reg_bk_off2 = FeeBreackoff($stu_arr, $request->standard,$last_syear); // for previous year
 
@@ -1914,7 +1914,7 @@ die;*/
         if (count($reg_bk_off) == 0) {
             return [];
         }
-        // get aditional fees breakoff of all years         
+        // get aditional fees breakoff of all years
         $other_bk_off = OtherBreackOff($stu_arr, $search_ids);//for current year
         $other_bk_off_month_wise = OtherBreackOfMonth($stu_arr);//for current year
 
@@ -1928,15 +1928,15 @@ die;*/
         $new_month_arr = [];
         $new_month_arr2 = [];
         foreach ($reg_bk_month_wise as $month_id => $val) {
-            if(isset($month_arr[$month_id])){            
+            if(isset($month_arr[$month_id])){
                 $new_month_arr[$month_id] = $month_arr[$month_id];
             }
         }
         foreach ($other_bk_off_month_wise as $month_id => $val) {
-            if(isset($month_arr[$month_id])){                        
+            if(isset($month_arr[$month_id])){
                 $new_month_arr[$month_id] = $month_arr[$month_id];
             }
-        }        
+        }
 
         $merge_bk_month_wise = [];
         foreach ($reg_bk_month_wise as $month_id => $amount) {
@@ -2178,7 +2178,7 @@ die;*/
         $check_paid_cheque_return_charge = DB::table('fees_collect as f')
             ->whereRaw("f.receipt_no > CAST((SELECT fc.reciept_id FROM fees_cancel fc WHERE fc.syear = '" . $syear . "' AND
                 fc.sub_institute_id = '" . $sub_institute_id . "' AND fc.student_id = '" . $stu_detail['student_id'] . "' AND
-                fc.cancel_type = 'Cheque Return' ORDER BY id DESC LIMIT 0,1) AS INT)")
+                fc.cancel_type = 'Cheque Return' ORDER BY id DESC LIMIT 0,1) AS UNSIGNED)")
             ->where('f.syear', $syear)
             ->where('f.sub_institute_id', $sub_institute_id)
             ->where('f.student_id', $stu_detail['student_id'])
@@ -2196,7 +2196,7 @@ die;*/
         foreach ($full_bk as $id => $val) {
             $total += $val;
         }
-        // get breakoff with aditional fees title 
+        // get breakoff with aditional fees title
         $other_fee_title = OtherBreackOffHead(); //for current year
         foreach ($other_fee_title as $id => $arr) {
             foreach ($full_bk as $title => $val) {
@@ -2214,7 +2214,7 @@ die;*/
         }
 
 
-        
+
         $full_bk["Total"] = $total;
         $full_bk_new["Total"] = $total;
 
@@ -2283,10 +2283,10 @@ die;*/
         }
     }
 
-    // function is used to get data of collected fees for perticular student 
+    // function is used to get data of collected fees for perticular student
     public function studentFeesDetailAPI(Request $request)
     {
-        // for api token is required 
+        // for api token is required
         try {
             if (!$this->jwtToken()->validate()) {
                 $response = ['status' => '2', 'message' => 'Token Auth Failed', 'data' => []];
@@ -2323,9 +2323,24 @@ die;*/
             if (count($fees_online_link) > 0) {
                 $online_link = env('APP_URL') . "fees/online_fees_collect";
             }
+            $array = [1,72];
+            if(in_array($sub_institute_id, $array)){
+                $pay_link = DB::table('tblstudent_enrollment as se')
+                    ->selectRaw('ac.payment_link')
+                    ->join('academic_section as ac','ac.id','=','se.grade_id')
+                    ->where('se.student_id', $student_id)
+                    ->where('se.syear', $syear)
+                    ->where('se.sub_institute_id', $sub_institute_id)
+                    ->get();
+                
+                    $online_link = "";
+                    if (count($pay_link) > 0) {
+                        $online_link = $pay_link[0]->payment_link;
+                    }
+            }
 
-                $fees_data = $this->getBk($request, $student_id);
-            if (isset($fees_data['total_fees'])) {                
+            $fees_data = $this->getBk($request, $student_id);
+            if (isset($fees_data['total_fees'])) {
                 foreach ($fees_data['total_fees'] as $key => $val) {
                     unset($val['bk']);
                     unset($val['paid']);
@@ -2348,7 +2363,8 @@ die;*/
                     c.cheque_date,c.cheque_no,c.cheque_bank_name,SUM(amount) as paid_amount')
                 ->where('c.student_id', $student_id)
                 ->where('c.syear', $syear)
-                ->where('sub_institute_id', $sub_institute_id)
+                ->where('c.is_deleted', 'N')
+                ->where('c.sub_institute_id', $sub_institute_id)
                 ->groupBy('receipt_no')->get()->toArray();
 
             $data['PAID'] = $paid_data;
@@ -2365,7 +2381,7 @@ die;*/
         return json_encode($res);
     }
 
-    // function is used to get data of collected fees for perticular student 
+    // function is used to get data of collected fees for perticular student
     public function retrieveDataByUserId(Request $request, $user_id, $stud_id)
     {
         $division = $request->input('division');
@@ -2484,13 +2500,13 @@ die;*/
 
     // send sms to parent after fees successfully paid
     function send_sms_to_parents($request){
-           
+
         $sub_institute_id = session()->get('sub_institute_id');
         $syear = session()->get('syear');
         $receipt_id = $request['receipt_id_html'];
         $student_id= $request['student_id'];
 
-        // get student fees details 
+        // get student fees details
         $get_data = DB::table(function ($query) use ($sub_institute_id, $syear, $student_id, $receipt_id) {
             $query->selectRaw('fc.id, fc.student_id, GROUP_CONCAT(fc.term_id) as months,sum(fc.amount) as amount,fc.receiptdate as receipt_date,CONCAT_WS(" ",s.first_name,s.last_name) as student_name,s.mobile')
                 ->from('fees_collect as fc')
@@ -2511,7 +2527,7 @@ die;*/
                         ->join('fees_receipt as fro', function ($join) {
                             $join->whereRaw('FIND_IN_SET(fo.id, fro.OTHER_FEES_ID) AND fro.SUB_INSTITUTE_ID = fo.sub_institute_id');
                         })
-                        ->join('tblstudent as s','s.id','=','fo.student_id')                        
+                        ->join('tblstudent as s','s.id','=','fo.student_id')
                         ->where('fo.sub_institute_id', $sub_institute_id)
                         ->where('fo.syear', $syear)
                         ->where('fo.student_id', $student_id)
@@ -2525,13 +2541,13 @@ die;*/
         ->first();
 
         $mobile = $get_data->mobile;
-        $student_name = $get_data->student_name;  
-        $amount = $get_data->amount;                      
-        $receipt_date = $get_data->receipt_date;  
-        $months = $get_data->months;        
+        $student_name = $get_data->student_name;
+        $amount = $get_data->amount;
+        $receipt_date = $get_data->receipt_date;
+        $months = $get_data->months;
         $temp_id = '';
         $months = $get_data->months;
-        // get month names with ids  
+        // get month names with ids
         $month_arr= FeeMonthId();
         $month_values = explode(',', $months);
         $month_names = [];
@@ -2551,10 +2567,10 @@ die;*/
                 $sms_controller = new send_sms_parents_controller;
                 $get_sms_status = $sms_controller->sendSMS($mobile, $text, $sub_institute_id,$temp_id);
             if($get_sms_status['error'] != 1){
-                $store_status = $sms_controller->saveParentLog($student_id, $text, $mobile, $sub_institute_id, $syear); 
+                $store_status = $sms_controller->saveParentLog($student_id, $text, $mobile, $sub_institute_id, $syear);
                 $res = "1";
             }else{
-                $res = "0";                
+                $res = "0";
             }
         // 9874632014
         return $res;

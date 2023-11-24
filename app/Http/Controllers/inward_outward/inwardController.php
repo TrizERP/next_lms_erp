@@ -10,9 +10,12 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 use function App\Helpers\is_mobile;
+use GenTux\Jwt\GetsJwtToken;
 
 class inwardController extends Controller
 {
+    use GetsJwtToken;
+
     public function index(Request $request)
     {
         if (session()->has('data')) { // check if it exists
@@ -22,9 +25,26 @@ class inwardController extends Controller
             }
         }
 
+        $type = $request->input('type');
         $sub_institute_id = session()->get('sub_institute_id');
         $syear = session()->get('syear');
 
+        if($type=="API"){
+            try {
+                if (!$this->jwtToken()->validate()) {
+                    $response = ['status' => '2', 'message' => 'Token Auth Failed', 'data' => []];
+    
+                    return response()->json($response, 401);
+                }
+            } catch (\Exception $e) {
+                $response = ['status' => '2', 'message' => $e->getMessage(), 'data' => []];
+    
+                return response()->json($response, 401);
+            }
+            $sub_institute_id = $request->get('sub_institute_id');
+            $syear = $request->get('syear');            
+        }
+        
         $inward = DB::table('inward')
             ->join('place_master', 'inward.place_id', '=', 'place_master.id')
             ->join('physical_file_location', 'inward.file_location_id', '=', 'physical_file_location.id')
@@ -34,7 +54,6 @@ class inwardController extends Controller
 
         $inward_data['status_code'] = 1;
         $inward_data['data'] = $inward;
-        $type = $request->input('type');
 
         return is_mobile($type, "inward_outward/show_inward", $inward_data, "view");
 
@@ -44,6 +63,23 @@ class inwardController extends Controller
     {
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $syear = $request->session()->get('syear');
+        $type = $request->input('type');
+        
+        if($type=="API"){
+            try {
+                if (!$this->jwtToken()->validate()) {
+                    $response = ['status' => '2', 'message' => 'Token Auth Failed', 'data' => []];
+    
+                    return response()->json($response, 401);
+                }
+            } catch (\Exception $e) {
+                $response = ['status' => '2', 'message' => $e->getMessage(), 'data' => []];
+    
+                return response()->json($response, 401);
+            }
+            $sub_institute_id = $request->get('sub_institute_id');
+            $syear = $request->get('syear');            
+        }
         $data = place_masterModel::where(['sub_institute_id' => $sub_institute_id])->get()->toArray();
         $data1 = physical_file_locationModel::where(['sub_institute_id' => $sub_institute_id])->get()->toArray();
 
@@ -54,16 +90,34 @@ class inwardController extends Controller
             ->get()->toArray();
 
         view()->share('inward_no', $get_inward_no[0]->inward_no);
+        $res['menu'] = $data;
+        $res['menu1']=$data1;
+        return is_mobile($type, "inward_outward/add_inward", $res, "view");
 
-        return view('inward_outward/add_inward', ['menu' => $data], ['menu1' => $data1]);
+        // return view('inward_outward/add_inward', ['menu' => $data], ['menu1' => $data1]);
     }
 
     public function store(Request $request)
     {
-
         $sub_institute_id = session()->get('sub_institute_id');
         $syear = session()->get('syear');
+        $type = $request->input('type');
 
+        if($type=="API"){
+            try {
+                if (!$this->jwtToken()->validate()) {
+                    $response = ['status' => '2', 'message' => 'Token Auth Failed', 'data' => []];
+    
+                    return response()->json($response, 401);
+                }
+            } catch (\Exception $e) {
+                $response = ['status' => '2', 'message' => $e->getMessage(), 'data' => []];
+    
+                return response()->json($response, 401);
+            }
+            $sub_institute_id = $request->input('sub_institute_id');
+            $syear = $request->input('syear');            
+        }
         $file_name = $file_size = $ext = "";
         if ($request->hasFile('attachment')) {
             $file = $request->file('attachment');
@@ -76,27 +130,30 @@ class inwardController extends Controller
         }
 
         $inward = new inwardModel([
-            'place_id'         => $request->get('place_id'),
-            'file_location_id' => $request->get('file_location_id'),
-            'inward_number'    => $request->get('inward_number'),
-            'title'            => $request->get('title'),
-            'description'      => $request->get('description'),
+            'place_id'         => $request->input('place_id'),
+            'file_location_id' => $request->input('file_location_id'),
+            'inward_number'    => $request->input('inward_number'),
+            'title'            => $request->input('title'),
+            'description'      => $request->input('description'),
             'attachment'       => $file_name,
             'attachment_size'  => $file_size,
             'attachment_type'  => $ext,
-            'acedemic_year'    => $request->get('acedemic_year'),
-            'inward_date'      => $request->get('inward_date'),
+            'acedemic_year'    => $request->input('acedemic_year'),
+            'inward_date'      => $request->input('inward_date'),
             'sub_institute_id' => $sub_institute_id,
             'syear'            => $syear,
         ]);
 
         $inward->save();
-        $message['status_code'] = "1";
+        if($inward->save()){
+            $message['status_code'] = "1";
+        }else{
+            $message['status_code'] = "0";
+        }
 //        $message = [
 //            "message" => "Inward Added Succesfully",
 //        ];
         $message = inwardModel::where(['sub_institute_id' => $sub_institute_id])->get();
-        $type = $request->input('type');
 
         return is_mobile($type, "add_inward.index", $message, "redirect");
     }
@@ -105,7 +162,23 @@ class inwardController extends Controller
     {
         $type = $request->input('type');
         $syear = $request->session()->get('syear');
+        $type = $request->input('type');
 
+        if($type=="API"){
+            try {
+                if (!$this->jwtToken()->validate()) {
+                    $response = ['status' => '2', 'message' => 'Token Auth Failed', 'data' => []];
+    
+                    return response()->json($response, 401);
+                }
+            } catch (\Exception $e) {
+                $response = ['status' => '2', 'message' => $e->getMessage(), 'data' => []];
+    
+                return response()->json($response, 401);
+            }
+            $sub_institute_id = $request->input('sub_institute_id');
+            $syear = $request->input('syear');            
+        }
         $data = inwardModel::find($id);
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $editdata = place_masterModel::where(['sub_institute_id' => $sub_institute_id])->get();
@@ -114,22 +187,43 @@ class inwardController extends Controller
         view()->share('menu', $editdata);
         view()->share('menu1', $editdata1);
         view()->share('inward_no', $data->inward_number);
+        // $res['data']=$data;
+        $data['menu'] = place_masterModel::where(['sub_institute_id' => $sub_institute_id])->get()->toArray();
+        $data['menu1'] = physical_file_locationModel::where(['sub_institute_id' => $sub_institute_id])->get()->toArray();
+        
+        return is_mobile($type, "inward_outward/add_inward", $data, "view");
 
-        return view('inward_outward/add_inward', ['data' => $data]);
+        // return view('inward_outward/add_inward', ['data' => $data]);
     }
 
     public function update(Request $request, $id)
     {
         $data = [
-            'place_id'         => $request->get('place_id'),
-            'file_location_id' => $request->get('file_location_id'),
-            'inward_number'    => $request->get('inward_number'),
-            'title'            => $request->get('title'),
-            'description'      => $request->get('description'),
-            'acedemic_year'    => $request->get('acedemic_year'),
-            'inward_date'      => $request->get('inward_date'),
+            'place_id'         => $request->input('place_id'),
+            'file_location_id' => $request->input('file_location_id'),
+            'inward_number'    => $request->input('inward_number'),
+            'title'            => $request->input('title'),
+            'description'      => $request->input('description'),
+            'acedemic_year'    => $request->input('acedemic_year'),
+            'inward_date'      => $request->input('inward_date'),
         ];
+        $type = $request->input('type');  
 
+        if($type=="API"){
+            try {
+                if (!$this->jwtToken()->validate()) {
+                    $response = ['status' => '2', 'message' => 'Token Auth Failed', 'data' => []];
+    
+                    return response()->json($response, 401);
+                }
+            } catch (\Exception $e) {
+                $response = ['status' => '2', 'message' => $e->getMessage(), 'data' => []];
+    
+                return response()->json($response, 401);
+            }
+            $sub_institute_id = $request->input('sub_institute_id');
+            $syear = $request->input('syear');        
+        }
         $file_name = $file_size = $ext = "";
         if ($request->hasFile('attachment')) {
             $file = $request->file('attachment');
@@ -153,7 +247,6 @@ class inwardController extends Controller
             "message" => "Data Updated Successfully",
         ];
 
-        $type = $request->input('type');
 
         return is_mobile($type, "add_inward.index", $message, "redirect");
     }
@@ -161,6 +254,21 @@ class inwardController extends Controller
     public function destroy(Request $request, $id)
     {
         $type = $request->input('type');
+
+        if($type=="API"){
+            try {
+                if (!$this->jwtToken()->validate()) {
+                    $response = ['status' => '2', 'message' => 'Token Auth Failed', 'data' => []];
+    
+                    return response()->json($response, 401);
+                }
+            } catch (\Exception $e) {
+                $response = ['status' => '2', 'message' => $e->getMessage(), 'data' => []];
+    
+                return response()->json($response, 401);
+            }
+                      
+        }
         inwardModel::where(["id" => $id])->delete();
         $message['status_code'] = "1";
         $message = [

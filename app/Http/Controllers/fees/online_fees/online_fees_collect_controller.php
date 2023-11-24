@@ -486,11 +486,12 @@ class online_fees_collect_controller extends Controller
             ->where(function ($query) {
                 $query->where('fp.icici_payment_status', '!=', 'PS')
                       ->where(function ($query) {
-                            $query->whereNotIn('fp.razorpay_payment_status', ['NotInitiated', 'FAILED', 'Success'])
+                            $query->whereNotIn('fp.razorpay_payment_status', ['Success']) //'NotInitiated', 'FAILED', 
                                   ->orWhereNull('fp.razorpay_payment_status');
                       });
             })
             ->whereNotNull('fp.icici_order_id')
+            ->where('fp.created_at', '>=', now()->subDays(3))
 //            ->whereIn('fp.sub_institute_id', $ids)
 //            ->whereIn('fp.student_id', [199428,199461,195283,195156,195227])
             ->groupBy('fp.id')

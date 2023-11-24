@@ -38,6 +38,7 @@
                                 <th>Message</th>
                                 <th>Reply</th>
                                 <th>Reply By</th>
+                                <th>Reply On</th>
                             </tr>
                             </thead>
                             @php
@@ -61,6 +62,7 @@
                                 <td><textarea class="form-control" name="reply[<?php echo $col_arr['parent_communication_id']; ?>]" >@php echo $col_arr['reply']; @endphp</textarea></td>
                                 @php } @endphp
                                 <td>@php echo $col_arr['reply_by']; @endphp</td>
+                                <td>@php echo $col_arr['reply_on']; @endphp</td>
                             </tr>
                             @php
                             }

@@ -55,7 +55,10 @@ class courseController extends Controller
 	                FROM academic_section
 	                WHERE sub_institute_id = '" . $sub_institute_id . "' AND title = 'Other')
 	                )
-	            )";
+				)";
+			// Rajesh = Below $extra added for optional subject displaying of mapping  particualr student...
+			$extra .= " AND (s.elective_subject != 'Yes' OR s.subject_id IN (SELECT sos.subject_id FROM student_optional_subject sos 
+			WHERE sos.sub_institute_id = '" . $sub_institute_id . "' AND sos.syear = '" . $syear . "' AND sos.student_id = '" . $student_id . "'))";
 	    }
 
 	    $getIsLms = DB::table('school_setup')

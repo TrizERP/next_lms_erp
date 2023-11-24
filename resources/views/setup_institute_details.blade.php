@@ -5,18 +5,10 @@
     <!-- Required meta tags -->
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-
-    <!-- Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-
-    <!-- Bootstrap CSS -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css">
-    <link rel="stylesheet" type="text/css" href="{{asset('/css/style2.css')}}">
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/js/bootstrap.bundle.min.js"
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/js/bootstrap.bundle.min.js"
         integrity="sha384-ENjdO4Dr2bkBIFxQpeoTz1HIcje39Wm4jDKdf19U8gI4ddQ3GYNS7NTKfAdVQSZe" crossorigin="anonymous">
     </script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>    
     <title>Institute Data | TRIZ INNOVATION PVT LTD</title>
     <style>
         .icon-right {
@@ -29,6 +21,52 @@
         .icon-right:hover {
             color: #FF5733; /* Change the color when hovering */
         }
+    .img-width {
+    width: 20px;
+}
+.collapse{
+    margin-bottom:10px;
+}
+.number {
+    background: #5C4AC7;
+    /*  opacity: 0.2;*/
+    border: 1px solid rgba(0, 0, 0, 0.2);
+    border-radius: 8px;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 26px;
+    line-height: 10px;
+    text-align: center;
+    color: #FFFFFF;
+    margin:10px;
+}
+
+.text {
+    padding: 14px 15px;
+    font-weight: 300;
+    font-size: 16px;
+    font-weight: 500;
+    line-height: 18px;
+    color: black;
+    /*  opacity: 0.4;*/
+    width: 100%;
+    column-gap: 10px;
+}
+
+.text:hover {
+    color: #5C4AC7;
+}
+.fcolor{
+    color:#5C4AC7
+}
+.collapse, .main-head{
+    box-shadow:5px 5px 5px 5px #8888 !important;
+    font-size:1rem;
+}
     </style>
 </head>
 
@@ -36,14 +74,10 @@
 @include('includes.headcss')
 @include('includes.header')
     <!-- Setup Your Details -->
-    <!-- Add jQuery library -->
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-
-    <!-- Setup Your Details -->
     <section class="content-main" style="width:100% !important;padding:100px 140px 0px 140px !important">
         <div class="container-fluid">
             <div class="page-title">
-                <h1 class="text-center  mt-4">Menu plan</h1>
+                <h1 class="text-center  mt-4 fcolor">Menu plan</h1>
             </div>
           
             <div class="row">
@@ -69,7 +103,7 @@
                         <a style="color:#black;font-size:1rem;width:100% !important" data-bs-toggle="collapse"
                             href="#collapseExample-{{str_replace(' ', '_', $value['menu_title'])}}"
                             aria-expanded="false" aria-controls="collapseExample"
-                            class="btn btn-outline-dark collapse-btn">{{$value['menu_title']}}</a>
+                            class="btn btn-outline-dark collapse-btn" data-id="{{$value['parent_menu_id']}}">{{$value['menu_title']}}</a>
                         <!-- </thead> -->
                     </div>
                 </div>
@@ -105,12 +139,13 @@
             <div class="m-4 collapse-main panel-collapse collapse" role="tabpanel" aria-labelledby="headingOne"
                 id="collapseExample-{{str_replace(' ', '_', $value['menu_title'])}}"  >
                 <div class="collapse-hide">
-                    <h4 class="text-center fw-bolder" style="color:#5C4AC7;">{{$value['menu_title']}}</h4>
+                    <h4 class="text-center fw-bolder" style="color:#5C4AC7;font-size:1.5rem">{{$value['menu_title']}}</h4>
+                    
                     <div class="card card-body need-card mt-2" style="padding:0px !important;" style="border :1px solid #ddd !important;">
                         <a data-bs-toggle="collapse"
                             href="#collapseExample-Master-{{str_replace(' ', '_', $value['menu_title'])}}"
                             aria-expanded="false" aria-controls="collapseExample-Master">
-                            <div class="main" style=" display:flex;">
+                            <div class="main main-head" style="display:flex;">
                                 <div class="number">1</div>
                                 <div class="text">
                                     {{$value['menu_title']}} Master
@@ -160,7 +195,7 @@
                         <a data-bs-toggle="collapse"
                             href="#collapseExample-Entry-{{str_replace(' ', '_', $value['menu_title'])}}"
                             aria-expanded="false" aria-controls="collapseExample-Entry">
-                            <div class="main" style=" display:flex;">
+                            <div class="main main-head" style=" display:flex;">
                                 <div class="number">2</div>
                                 <div class="text">
                                     {{$value['menu_title']}} Entry
@@ -213,7 +248,7 @@
                         <a data-bs-toggle="collapse"
                             href="#collapseExample-Report-{{str_replace(' ', '_', $value['menu_title'])}}"
                             aria-expanded="false" aria-controls="collapseExample-Report">
-                            <div class="main" style=" display:flex;">
+                            <div class="main main-head" style=" display:flex;">
                                 <div class="number">3</div>
                                 <div class="text">
                                     {{$value['menu_title']}} Report
@@ -269,72 +304,61 @@
         </div>
         </div>
     </section>
-
-    <script>
-    $(document).ready(function() {
-        // Collapse toggle
-        $('.collapse-btn').click(function() {
-            var target = $(this).attr('href');
-            $('.collapse-main').not(target).collapse('hide'); // Collapse other sections
-            $(target).collapse('toggle');
-            // $(this).toggleClass('active');
-        });
-    });
-    </script>
+<!-- fees pop up Modal -->
+<div class="modal fade" id="exampleModal_fees" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header" style="align-items:center;padding:8px !important">
+        <h3 class="modal-title fs-5 fcolor" id="exampleModalLabel"><b>STEPS :</b></h3>
+        <button type="button" class="btn-close border-0" data-bs-dismiss="modal" aria-label="Close">X</button>
+      </div>
+      <div class="modal-body">
+      @php 
+      $titles = ["Fees Map Year","Fees Title","Fees Config Master","Fees Month Header","Fees Receipt Book Master","Fees Breakoff"];
+      $links = ["fees/map_year","fees/fees_title","fees/fees_config_master","fees/fees_month_header","fees/fees_receipt_book_master","fees/fees_breackoff"];
+      $i = 1;
+      @endphp 
+      
+      @foreach($titles as $key => $title)
+      <h5 class="fcolor"><b>Step : {{$i++}}</b></h5>   
+      <div class="d-flex justify-content-between mb-2">
+      <h6 class="text-left">{{$title}}</h6>
+      <h6 class="text-blue"><a class="text-primary" href="{{env('APP_URL').$links[$key]}}" target="_blank">Click Here</a></h6>      
+      </div>
+      @endforeach
+      </div>
+    </div>
+  </div>
+</div>
+@include('includes.footer')
+@include('includes.footerJs')
 
     <!-- Option 1: jQuery and Bootstrap Bundle (includes Popper) -->
     <script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.slim.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"></script>
-    <!-- jQuery library -->
+   <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
 
-    <!-- Bootstrap JavaScript files (required for Bootstrap components and features) -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/js/bootstrap.bundle.min.js"
-    integrity="sha384-ENjdO4Dr2bkBIFxQpeoTz1HIcje39Wm4jDKdf19U8gI4ddQ3GYNS7NTKfAdVQSZe" crossorigin="anonymous">
-</script>
 <script>
+ $(document).ready(function() {
+        // Collapse toggle
+        $('.collapse-btn').click(function() {
+            var target = $(this).attr('href');
+            var menu_id = $(this).attr('data-id'); 
+
+            // alert(menu_id);
+            $('.collapse-main').not(target).collapse('hide'); // Collapse other sections
+            $(".collapse-main").addClass('card');
+
+            $(target).collapse('toggle');
+            if(menu_id==6){
+                // alert('clicked');
+                $('#exampleModal_fees').modal('show');  
+            }
+            // $(this).toggleClass('active');
+        });
+    });
     $(function () {
         $('[data-toggle="tooltip"]').tooltip();
     });
 </script>
 </body>
-<style>
-.img-width {
-    width: 20px;
-}
-
-.number {
-    background: #5C4AC7;
-    /*  opacity: 0.2;*/
-    border: 1px solid rgba(0, 0, 0, 0.2);
-    border-radius: 8px;
-    width: 40px;
-    height: 40px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: 600;
-    font-size: 26px;
-    line-height: 31px;
-    text-align: center;
-    color: #FFFFFF;
-}
-
-.text {
-    padding: 10px 15px;
-    font-weight: 300;
-    font-size: 18px;
-    line-height: 18px;
-    color: black;
-    /*  opacity: 0.4;*/
-    width: 100%;
-    column-gap: 10px;
-}
-
-.text:hover {
-    color: #5C4AC7;
-}
-
-</style>
-
 </html>
