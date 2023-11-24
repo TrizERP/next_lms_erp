@@ -35,7 +35,7 @@
                                     <option value="yearly_fees" @if($data['type'] == 'yearly_fees') selected @endif>Yearly Fees</option>
                                     <option value="half_year_fees" @if($data['type'] == 'half_year_fees') selected @endif>Half Year Fees</option>
                                     <option value="quarterly_fees" @if($data['type'] == 'quarterly_fees') selected @endif>Quarterly Fees</option>
-                                    <option value="monthly_fees" @if($data['type'] == 'half_year_fees') selected @endif>Monthly Fees</option>
+                                    <option value="monthly_fees" @if($data['type'] == 'monthly_fees') selected @endif>Monthly Fees</option>
                                 </select>
                             </div>
                             <div class="col-md-3 form-group ml-0 mr-0">
