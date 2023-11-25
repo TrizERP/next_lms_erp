@@ -33,8 +33,8 @@
 					<strong>{{ $sessionData['message'] }}</strong>
 				</div>
 				@endif
-				<form action="{{ route('show_fees_collection_report') }}" enctype="multipart/form-data" class="row" method="post">
-					{{ method_field("POST") }} @csrf
+				<form action="{{ route('fees_collection_report.create') }}" enctype="multipart/form-data" class="row">
+					@csrf
 					<div class="col-md-4 form-group">
 						<label>{{App\Helpers\get_string('grno','request')}}</label>
 						<input type="text" id="enrollment_no" name="enrollment_no" value="{{$enrollment_no}}" class="form-control" placeholder="Gr No">
