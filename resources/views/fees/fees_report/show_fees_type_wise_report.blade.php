@@ -83,17 +83,7 @@
                         <label>{{App\Helpers\get_string('uniqueid','request')}}</label>
                         <input type="text" id="uniqueid" value="{{$uniqueid}}" name="uniqueid" class="form-control">
                     </div>
-                    <!--<div class="col-md-4 form-group">
-                        <label>Admission Year</label>
-                        <select id='admission_year' name="admission_year" class="form-control">
-                            <option>--Select Admission Year--</option>
-                            <option value="2017" @if($admission_year == 2017) selected="selected" @endif>2017</option>
-                            <option value="2018" @if($admission_year == 2018) selected="selected" @endif>2018</option>
-                            <option value="2019" @if($admission_year == 2019) selected="selected" @endif>2019</option>
-                            <option value="2020" @if($admission_year == 2020) selected="selected" @endif>2020</option>
-                            <option value="2021" @if($admission_year == 2021) selected="selected" @endif>2021</option>
-                        </select>
-                    </div>-->
+                    
                     {{ App\Helpers\SearchChain('4','single','grade,std,div',$grade_id,$standard_id,$division_id) }}
                     <div class="col-md-4 form-group">
                         <label>From Date</label>
@@ -130,6 +120,11 @@
                             <th>{{App\Helpers\get_string('division','request')}}</th>
                             <th>Batch</th>
                             <th>{{App\Helpers\get_string('studentquota','request')}}</th>
+                            <th>Payment Mode</th>
+                            <th>Bank Name</th>
+                            <th>Bank Branch</th>
+                            <th>Cheque No</th>
+                            <th>Cheque Date</th>
                             <th>Receipt No.</th>
                             <th>Receipt Date</th>
                             @if(isset($data['fees_heads']))
@@ -168,6 +163,11 @@
                             <td>{{$fees_value['div_name']}}</td>
                             <td>{{$fees_value['student_batch_name']}}</td>
                             <td>{{$fees_value['stu_qouta']}}</td>
+                            <td>{{$fees_value['payment_mode']}}</td>
+                            <td>{{$fees_value['bank_name']}}</td>
+                            <td>{{$fees_value['bank_branch']}}</td>
+                            <td>{{$fees_value['cheque_no']}}</td>
+                            <td>{{$fees_value['cheque_date']}}</td>
                             <td>{{$fees_value['receipt_no']}}</td>
                             <td>{{$fees_value['receipt_date']}}</td>
                             @if(isset($data['fees_heads']))
@@ -210,6 +210,11 @@
                             <td></td>                           
                             <td></td>                           
                             <td></td>                           
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
                             <td></td>
                             <td>Total</td>
                             @if(isset($data['fees_heads']))
