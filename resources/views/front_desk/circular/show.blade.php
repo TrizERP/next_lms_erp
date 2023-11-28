@@ -15,6 +15,7 @@
                 {{csrf_field()}}
 
                 <div class="row">
+               
                     {{ App\Helpers\SearchChain('4','multiple','grade,std,div') }}
                     <div class="col-md-4 form-group">
                         <label>Date</label>
@@ -44,7 +45,13 @@
                         <input type="file" name="attachment[]" id="attachment[]" class="form-control" accept="image/*,application/pdf">
                         <span class="text-danger font-weight-bold">Note: Select single file from here.</span>
                     </div>
+
+                     <div class="col-md-4 form-group">
+					<label>Send To All Standard</label><br>			
+					<input name="allstd" type="checkbox" @if(isset($data['allstd'])) checked @endif>
+				</div>
                 </div>
+                
 				<div class="col-md-12 form-group">
 					<label></label><br>
 					<center>
@@ -181,15 +188,6 @@
                 }
             } );
         } );
-
-
-   /*  $('#grade').attr('required',true);
-    $('#standard').attr('required',true);
-    $('#division').attr('required',true); */
-
-
-
-
 
 </script>
 @include('includes.footer')

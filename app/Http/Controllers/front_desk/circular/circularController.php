@@ -243,6 +243,12 @@ class circularController extends Controller
             $sub_institute_id = session()->get('sub_institute_id');
             $user_id = session()->get('user_id');
         }
+        $stds = $_REQUEST['standard'] ?? '';
+        $divs = $_REQUEST['division'] ?? '';        
+        if(isset($_REQUEST['allstd'])){
+            $stds = DB::table('standard')->where('sub_institute_id',$sub_institute_id)->pluck('id');
+            $divs = DB::table('division')->where('sub_institute_id',$sub_institute_id)->pluck('id');
+        }
 
         if ($request->hasFile('attachment')) {
             foreach ($request->file('attachment') as $key => $file_data) {
@@ -253,9 +259,9 @@ class circularController extends Controller
                 $file_name = $name.'.'.$ext;
                 $path = $file_data->storeAs('public/circular/', $file_name);
 
-                if (isset($_REQUEST['standard'])) {
-                    foreach ($_REQUEST['standard'] as $id => $std) {
-                        foreach ($_REQUEST['division'] as $ids => $div_id) {
+                if (isset($stds)) {
+                    foreach ($stds as $id => $std) {
+                        foreach ($divs as $ids => $div_id) {
 
                             $values = [
                                 'syear'            => $syear,
@@ -349,9 +355,9 @@ class circularController extends Controller
                 }
             }
         } else {
-            if (isset($_REQUEST['standard'])) {
-                foreach ($_REQUEST['standard'] as $id => $std) {
-                    foreach ($_REQUEST['division'] as $ids => $div_id) {
+            if (isset($stds)) {
+                foreach ($stds as $id => $std) {
+                    foreach ($divs as $ids => $div_id) {
                         $values = [
                             'syear'            => $syear,
                             'standard_id'      => $std,
