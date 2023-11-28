@@ -216,6 +216,11 @@
                             <td></td>
                             <td></td>
                             <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
                             <td>Total</td>
                             @if(isset($data['fees_heads']))
                                  @foreach($data['fees_heads'] as $key => $val)                                    
