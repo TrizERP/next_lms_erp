@@ -76,6 +76,7 @@ class feesReportController extends Controller
         $receipt_no = $request->input('receipt_no');
         $payment_mode = $request->input('payment_mode');
         $selected_user_name = $request->input('user_name');
+        $groupby=$request->input('groupby');
         // echo "<pre>";print_r($request->all());exit;
         $syear = $request->session()->get('syear');
         $sub_institute_id = $request->session()->get('sub_institute_id');
@@ -228,6 +229,7 @@ class feesReportController extends Controller
         $res['payment_mode'] = $payment_mode;
         $res['selected_user_name'] = $selected_user_name;
         $res['get_users'] = $get_users;
+        $res['groupby'] = $groupby;        
         $res['months'] = FeeMonthId($syear,$sub_institute_id);
         // echo "<pre>";print_r($res['fees_data']);exit;
         return is_mobile($type, "fees/fees_report/index", $res, "view");
