@@ -6,6 +6,7 @@ use App\Http\Controllers\fees\fees_report\otherNewfeesReportController;
 use App\Models\tblmenumasterModel;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\URL;
 use PHPMailer\PHPMailer;
 use function App\Helpers\FeeBreackoff;
 use function App\Helpers\FeeBreakoffHeadWise;
@@ -15,7 +16,6 @@ use function App\Helpers\htmlToPDFLandscape;
 use function App\Helpers\htmlToPDFLandscapeCertificate;
 use function App\Helpers\htmlToPDFPortrait;
 use function App\Helpers\OtherBreackOff;
-
 use function App\Helpers\OtherBreackOffHead;
 // use function App\Helpers\OtherBreackOffHeadlast;
 use function App\Helpers\OtherBreackOfMonth;
@@ -174,6 +174,8 @@ class AJAXController extends Controller
                 if (isset($pathParts['filename'])) {
                     $module_name = $pathParts['filename'];
                 }
+                if($parsedUrl['path'] == '/lms/question_paper/create')
+                    $module_name = 'question_paper';
             }
         }
 
@@ -184,6 +186,7 @@ class AJAXController extends Controller
             '4' => 'lmsExamwise_progress_report',
             '5' => 'questionReport',
             '6' => 'parent_communication',
+            '7' => 'question_paper',
         ];
 
         $explode = explode(',', $request->grade_id);
@@ -256,6 +259,8 @@ class AJAXController extends Controller
                 if (isset($pathParts['filename'])) {
                     $module_name = $pathParts['filename'];
                 }
+                if($parsedUrl['path'] == '/lms/question_paper/create')
+                    $module_name = 'question_paper';
             }
         }
 
@@ -266,6 +271,7 @@ class AJAXController extends Controller
             '4' => 'lmsExamwise_progress_report',
             '5' => 'questionReport',
             '6' => 'parent_communication',
+            '7' => 'question_paper',
         ];
 
         $standard_id = $request->standard_id;
