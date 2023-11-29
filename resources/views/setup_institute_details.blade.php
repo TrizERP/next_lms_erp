@@ -12,24 +12,21 @@
     <title>Institute Data | TRIZ INNOVATION PVT LTD</title>
     <style>
         .icon-right {
-            float: right; /* Or use other positioning styles like margin or absolute positioning */
-            margin-left: 5px; /* Adjust the margin as needed */
-            color: #333; /* Set the default color */
-            transition: color 0.3s; /* Add a smooth transition effect */
+            float: right;
+            margin-left: 5px; 
+            color: #333; 
+            transition: color 0.3s;
         }
 
         .icon-right:hover {
-            color: #FF5733; /* Change the color when hovering */
+            color: #FF5733;
         }
-    .img-width {
-    width: 20px;
-}
+   
 .collapse{
     margin-bottom:10px;
 }
 .number {
     background: #5C4AC7;
-    /*  opacity: 0.2;*/
     border: 1px solid rgba(0, 0, 0, 0.2);
     border-radius: 8px;
     width: 40px;
@@ -50,9 +47,8 @@
     font-weight: 300;
     font-size: 16px;
     font-weight: 500;
-    line-height: 18px;
+    line-height: 40px;
     color: black;
-    /*  opacity: 0.4;*/
     width: 100%;
     column-gap: 10px;
 }
@@ -98,7 +94,7 @@
                 @endphp
                 @foreach ($data['head'] as $key => $value)
                 @if ($value['menu_title'] != '')
-                <div class="col-md-4">
+                <div class="col-md-4 col-sm-12">
                     <div class="card" style="margin:2px !important;padding:0px !important  ">
                         <a style="color:#black;font-size:1rem;width:100% !important" data-bs-toggle="collapse"
                             href="#collapseExample-{{str_replace(' ', '_', $value['menu_title'])}}"
@@ -122,16 +118,7 @@
                 @endforeach
 
             </div>
-          <!--   <div class="row mt-4">
-                 <div class="col-md-6">
-                    
-                </div>
-                <div class="col-md-6 align-items-md-center d-flex">
-                    <h6 class="text-primary mr-2">Welcome Admin! Do You Want To Continue ?</h6>
-                    <button class="btn mr-2 purple-outline-btn" style="border:1px solid #5C4AC7;color:#5C4AC7">Continue</buttn>
-                    <button class="btn btn-outline-success" >Order</buttn>
-                </div>
-            </div> -->
+
 
             @if (!empty($data['head']))
             @foreach ($data['head'] as $key => $value)
@@ -212,7 +199,7 @@
 
                         @if ($entry['link'] == 'javascript:void(0);' || $entry['link'] == '')
 
-                        @else
+                        @elseif (Route::has($entry['link']))
                         <div class="card card-body need-card border-0"  style="padding:4px !important;margin:0px !important;border-radius:0px !important;box-shadow:0 0 0 rgb(0 0 0 / 0%) !important;" >
                             <a href="{{route($entry['link'])}}" target="_blank">
                                 <div class="main" style=" display:flex;">
@@ -304,32 +291,8 @@
         </div>
         </div>
     </section>
-<!-- fees pop up Modal -->
-<div class="modal fade" id="exampleModal_fees" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
-  <div class="modal-dialog">
-    <div class="modal-content">
-      <div class="modal-header" style="align-items:center;padding:8px !important">
-        <h3 class="modal-title fs-5 fcolor" id="exampleModalLabel"><b>STEPS :</b></h3>
-        <button type="button" class="btn-close border-0" data-bs-dismiss="modal" aria-label="Close">X</button>
-      </div>
-      <div class="modal-body">
-      @php 
-      $titles = ["Fees Map Year","Fees Title","Fees Config Master","Fees Month Header","Fees Receipt Book Master","Fees Breakoff"];
-      $links = ["fees/map_year","fees/fees_title","fees/fees_config_master","fees/fees_month_header","fees/fees_receipt_book_master","fees/fees_breackoff"];
-      $i = 1;
-      @endphp 
-      
-      @foreach($titles as $key => $title)
-      <h5 class="fcolor"><b>Step : {{$i++}}</b></h5>   
-      <div class="d-flex justify-content-between mb-2">
-      <h6 class="text-left">{{$title}}</h6>
-      <h6 class="text-blue"><a class="text-primary" href="{{env('APP_URL').$links[$key]}}" target="_blank">Click Here</a></h6>      
-      </div>
-      @endforeach
-      </div>
-    </div>
-  </div>
-</div>
+    @include('onboarding_model')
+
 @include('includes.footer')
 @include('includes.footerJs')
 
