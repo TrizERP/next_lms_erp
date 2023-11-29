@@ -210,4 +210,112 @@ class feesMonthlyReportController extends Controller
 
         return is_mobile($type, "fees/fees_report/fees_monthly_report", $res, "view");
     }
+
+    // for dashboard cn 
+    public function getfeesMonthlyReportCN(Request $request)
+    {
+        $type = $request->input('type');
+        $sub_institute_id = session()->get('sub_institute_id');
+        $syear = session()->get('syear');
+    
+        $fees_title_result = DB::table('fees_title')
+            ->where('sub_institute_id', session()->get('sub_institute_id'))->where('syear',session()->get('syear'))->orderBy('sort_order')->get()->toArray();
+        $fees_title_result = json_decode(json_encode($fees_title_result), true);
+
+        $fees_columns = "";
+        $other_columns = "";
+        $columns = "";        
+        
+        $heading_arr = $report_data = array();
+        
+            $discountAdded = false;
+            $fineAdded = false;
+
+            foreach ($fees_title_result as $key => $val) {
+               
+               $feesTitleColumnExistsInCollect = Schema::hasColumn('fees_collect', $val['fees_title']);
+               $feesTitleColumnExistsInPaidOther = Schema::hasColumn('fees_paid_other', $val['fees_title']);
+           
+                $columnAlias = is_numeric($val['fees_title']) ? $val['fees_title'] : $val['fees_title'];
+
+                if ($feesTitleColumnExistsInCollect) {
+                    $fees_columns .= "fees_collect.`". $val['fees_title'] . "` as total_" . $val['fees_title'] . ",";
+                    if($val['fees_title'] == "tution_fee"){
+                        $columns .= "IFNULL(SUM(total_" . $val['fees_title'] . "),0),";
+                    }else{
+                        $columns .= "IFNULL(SUM(total_" . $val['fees_title'] . "),0),";
+                    }
+                } else {
+                    $fees_columns .= "NULL as total_" . $columnAlias . ",";
+                }
+
+                if ($feesTitleColumnExistsInPaidOther) {
+                    $other_columns .="fees_paid_other.`". $val['fees_title'] . "` as total_" . $val['fees_title'] . ",";
+                    $columns .="IFNULL(SUM(total_" . $val['fees_title'] . "),0) ,";                    
+                } else {
+                    $other_columns .= "NULL as total_" . $columnAlias . ",";
+                }
+                $heading_arr[$val['fees_title']] = $val['display_name'];
+                
+                if (!$discountAdded) {
+                    $fees_columns .="fees_collect.fees_discount as total_discount,";
+                    $other_columns .="fees_paid_other.fees_discount as total_discount,";
+                    $heading_arr['discount'] = "Discount";
+                    $discountAdded = true;
+                }
+                if (!$fineAdded) {
+                    $heading_arr['fine'] = "Fine";
+                    $fees_columns .="fees_collect.fine as total_fine,";
+                    $other_columns .="fees_paid_other.fine as total_fine,";
+                    $fineAdded = true;
+                }
+
+                $columns .= "IFNULL(SUM(total_discount),0) AS total_discount,";
+                $columns .= "IFNULL(SUM(total_fine),0) AS total_fine,"; 
+            }
+
+        $final_data = array();
+       
+            $fees_columns .= "fees_collect.receiptdate as fees_date";
+            $other_columns .= "fees_paid_other.receiptdate as fees_date";
+            $std = $_REQUEST['standard'] ?? '';
+
+        $data = DB::table(function ($query) use($columns,$fees_columns,$other_columns,$sub_institute_id,$syear) {
+            $query->selectRaw($fees_columns.',term_id as month_id')
+                ->from('fees_collect')
+                ->where('sub_institute_id', $sub_institute_id)
+                ->where('syear', $syear)
+                ->where('is_deleted', 'N')
+                ->unionAll(function ($query)  use($columns,$fees_columns,$other_columns,$sub_institute_id,$syear){
+                    $query->selectRaw($other_columns.',month_id')
+                        ->from('fees_paid_other')
+                        ->where('sub_institute_id', $sub_institute_id)
+                        ->where('syear', $syear)
+                        ->where('is_deleted', 'N');
+                });
+        })
+        ->selectRaw( $columns .' fees_date,month_id')
+        ->groupBy('month_id');
+        
+        $data = $data->get()->toArray();
+        $data = json_decode(json_encode($data), true);
+        $processed_data = [];
+        foreach ($data as $key => $val) {
+            $processed_val = [];
+            foreach ($val as $column_key => $column_value) {
+                $column_key = str_replace(['IFNULL(SUM(', '),0)'], '', $column_key);
+                $processed_val[$column_key] = $column_value;
+            }
+            $processed_data[$val['month_id']] = $processed_val;
+        }
+        
+        $final_data = $processed_data;
+    
+        $res['status_code'] = 1;
+        $res['message'] = "Success";
+        $res['heading_arr'] = $heading_arr;
+        $res['report_data'] = $final_data;
+
+        return is_mobile($type, "fees/fees_report/fees_monthly_report", $res, "view");
+    }
 }
