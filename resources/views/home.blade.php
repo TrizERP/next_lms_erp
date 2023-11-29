@@ -68,8 +68,10 @@
 .progress-bar {
   background-color: #ffc107;
 }
+.modal-dialog {
+		max-width: 1050px !important;
+	}
 </style>
-
 
 <div class="content-main flex-fill">
     <div class="container-fluid">        
@@ -269,6 +271,171 @@
                 </div>
                 @endif
 
+                <!-- cn dashboard monthwise active student  -->
+                @if(session()->get('sub_institute_id')==257 && isset($data['cn_monthwise_active']))
+                <div class="col-md-6 mb-4">
+                    <div class="card h-100">
+                        <h3 class="card-title">Monthwise Active Students</h3>
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>No.</th>
+                                        <th>Month</th>
+                                        <th class="text-left">Total</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                @php 
+                                $i=1;
+                                $all_student=0;
+                                @endphp 
+                                @foreach($data['cn_monthwise_active'] as $key => $value)
+                                <tr>
+                                <td>{{$i++}}</td>
+                                <td>{{$data['months_name'][$value->term_id]}}</td>                              <td>   <a href="#" class="get-details-link" data-details="{{ json_encode($data['cn_monthwise_active'][$key]) }}">{{$value->student_count}}</a></td>
+                                </tr>
+                                @php 
+                                $all_student+=$value->student_count;
+                                @endphp
+                                @endforeach
+                                <tr>
+                                <td colspan="2">Total</td>
+                                <td>{{$all_student}}</td>
+                                </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                @endif
+
+   <!-- cn dashboard Payout  -->
+   @if(session()->get('sub_institute_id')==257 && isset($data['cn_payout']))
+                <div class="col-md-6 mb-4" style="height:600px;overflow-y:scroll !important">
+                    <div class="card">
+                        <h3 class="card-title">Coach & Batch Wise Data of Students</h3>
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                <tr>
+                                <th colspan="5" class="text-center"><b>{{$data['months_name'][$data['month_payout']]}}</b></th>
+                                </tr>
+                                    <tr>
+                                        <th>No.</th>
+                                        <th>Sport</th>
+                                        <th>Coach Name</th>
+                                        <th>Batch</th>                                        
+                                        <th class="text-left">Total</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                @php 
+                                $i=1;
+                                $all_student = 0;
+                                @endphp 
+                                @foreach($data['cn_payout'] as $key => $value)
+                                @php $all_student+=$value->tot_stu;@endphp
+                                <tr>
+                                <td>{{$i++}}</td>
+                                <td>{{$value->standard_name}}</td>   
+                                <td>{{$value->coach_name}}</td>   
+                                <td>{{$value->batch_name}}</td>                                   
+                               <td><a href="#" class="get-details-link" data-details="{{ json_encode($data['cn_payout'][$key]) }}">{{$value->tot_stu}}</a></td>
+                                </tr>
+                                @endforeach
+                                <tr>
+                                <td colspan="4">Total</td>
+                                <td>{{$all_student}}</td>
+                                </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                @endif
+                
+                <!-- cn dashboard monthwise fees collectoion  -->
+                @if(session()->get('sub_institute_id')==257 && isset($data['cn_monthwise_collect']))
+                <div class="col-md-6 mb-4">
+                    <div class="card h-100">
+                        <h3 class="card-title">Monthly Fees Collection</h3>
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                               <tr>        
+                               <th>Month</th>                        
+                                @foreach($data['cn_monthwise_collect']['heading_arr'] as $key => $value)
+                               <th class="text-left">{{$value}}</th>
+                               @endforeach
+                               <th>Total</th>
+                               </tr>                               
+                                </thead>
+                                <tbody>
+                                @php 
+                                $i=1;
+                                $total_tut=$total_dis=$total_fine=$total_1=$total_2=$all_total=0;
+                                @endphp 
+                                @foreach($data['cn_monthwise_collect']['report_data'] as $key => $value)
+                                @php 
+                                $total_tut += $value['total_tution_fee'];
+                                $total_dis += $value['total_discount'];
+                                $total_fine += $value['total_fine'];
+                                $total_1 += $value['total_1'];
+                                $total_2 += $value['total_2'];
+                                @endphp 
+                               <tr>
+                               <td>{{$data['months_name'][$key]}}</td>
+                               <td>{{$value['total_tution_fee']}}</td>
+                               <td>{{$value['total_discount']}}</td>
+                               <td>{{$value['total_fine']}}</td>
+                               <td>{{$value['total_1']}}</td>
+                               <td>{{$value['total_2']}}</td>       
+                               <td>{{$value['total_tution_fee'] + $value['total_discount']+$value['total_fine']+$value['total_1']+$value['total_2']}}</td>
+                               </tr>
+                                @endforeach
+                                <tr>
+                                <td>Total</td>
+                                <td>{{$total_tut}}</td>
+                                <td>{{$total_dis}}</td>
+                                <td>{{$total_fine}}</td>
+                                <td>{{$total_1}}</td>
+                                <td>{{$total_2}}</td> 
+                                <td>{{$total_tut + $total_dis + $total_fine + $total_1 + $total_2}}</td>                               
+                                </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                @endif
+                <!-- modal  -->
+            <div class="modal fade" id="studentDetailModal" tabindex="-1" aria-labelledby="studentDetailModalLabel" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="studentDetailModalLabel">Student Details</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                <th>Sr No.</th>
+                                    <th>Student Name</th>
+                                    <th>Sport</th>
+                                    <th>Coach</th>
+                                    <th>Batch</th>
+                                    <th>Mobile</th>
+                                </tr>
+                            </thead>
+                            <tbody id="studentDetailsBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            </div>
+            <!-- cn dashboard end  -->
                 @if(isset($data['smsNotificationBlock']))
                 <div class="col-md-6 mb-4">
                     <div class="card h-100">
@@ -578,7 +745,26 @@
 
 <script type="text/javascript">
 $(document).ready(function(){
-    $('[data-toggle="tooltip"]').tooltip();   
+    $('[data-toggle="tooltip"]').tooltip();  
+
+ $('.get-details-link').on('click', function() {
+        var details = JSON.parse($(this).attr('data-details'));
+        // Clear previous data
+        $('#studentDetailsBody').empty();
+        var j = 1;
+        // Populate the table with student details
+        for (var i = 0; i < details.students.split(',').length; i++) {
+            var studentName = details.name.split(',')[i];
+            var sport = details.standard_name.split(',')[i];            
+            var coach = details.coach_name.split(',')[i];
+            var batch = details.batch_name.split(',')[i];
+            var mobile = details.mobile.split(',')[i];
+            $('#studentDetailsBody').append('<tr><td>'+(j++)+'<td>' + studentName + '</td><td>'+sport+'</td><td>' + coach + '</td><td>' + batch + '</td><td>' + mobile + '</td></tr>');
+        }
+
+        // Show the modal
+        $('#studentDetailModal').modal('show');
+    });
 });
 </script>
 
