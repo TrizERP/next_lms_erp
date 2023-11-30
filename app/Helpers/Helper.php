@@ -118,18 +118,43 @@ if (!function_exists('SearchChain')) {
     function SearchChain($col, $multiple, $listed_drop, $grade_val = "", $std_val = "", $div_val = "")
     {
 
-        $path = URL::current();
-        preg_match("/[^\/]+$/", $path, $matches);
-        $module_name = $matches[0];
+        // $path = URL::current();
+        // preg_match("/[^\/]+$/", $path, $matches);
+        // $module_name = $matches[0];
 
-        $module_array = array(
+        // $module_array = array(
+        //     '1' => 'student_homework',
+        //     '2' => 'marks_entry',
+        //     '3' => 'dicipline',
+        //     '4' => 'lmsExamwise_progress_report',
+        //     '5' => 'questionReport',
+        //     '6' => 'parent_communication',
+        // );
+
+        $path = $_SERVER['HTTP_REFERER'] ?? URL::current();
+
+        if ($path) {
+            $parsedUrl = parse_url($path);
+            
+            if (isset($parsedUrl['path'])) {
+                $pathParts = pathinfo($parsedUrl['path']);
+                
+                if (isset($pathParts['filename'])) {
+                    $module_name = $pathParts['filename'];
+                }
+                if($parsedUrl['path'] == '/lms/question_paper/create' || $parsedUrl['path'] == '/lms/question_paper/search')
+                    $module_name = 'question_paper';
+            }
+        }
+        $module_array = [
             '1' => 'student_homework',
             '2' => 'marks_entry',
             '3' => 'dicipline',
             '4' => 'lmsExamwise_progress_report',
             '5' => 'questionReport',
             '6' => 'parent_communication',
-        );
+            '7' => 'question_paper',
+        ];
 
         // START 07/09/2021 code for getting standard , grade , division according to timetable wise for homework module
         if (session()->get('user_profile_name') == 'Teacher') {

@@ -174,7 +174,7 @@ class AJAXController extends Controller
                 if (isset($pathParts['filename'])) {
                     $module_name = $pathParts['filename'];
                 }
-                if($parsedUrl['path'] == '/lms/question_paper/create')
+                if($parsedUrl['path'] == '/lms/question_paper/create' || $parsedUrl['path'] == '/lms/question_paper/search')
                     $module_name = 'question_paper';
             }
         }
