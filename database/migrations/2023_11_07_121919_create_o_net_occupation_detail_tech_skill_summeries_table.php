@@ -19,7 +19,7 @@ return new class extends Migration
             $table->unsignedBigInteger('title_id');
             $table->string('name');
             $table->text('related');
-            $table->json('example');
+            $table->text('example');
             $table->timestamps();
         });
     }
