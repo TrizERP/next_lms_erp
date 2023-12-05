@@ -49,6 +49,8 @@ use Illuminate\Support\Facades\Route;
 
 Route::group(['prefix' => 'lms', 'middleware' => ['session', 'menu', 'logRoute']], function () {
     Route::get('o-net-data-category',[\App\Http\Controllers\lms\ONetOnlineDataController::class,'index']);
+    Route::get('o-net-data-list',[\App\Http\Controllers\lms\ONetOnlineDataController::class,'ONetDataTable'])->name('o-net-data-table.show-list');
+    Route::get('o-net-data-list-details',[\App\Http\Controllers\lms\ONetOnlineDataController::class,'ONetDataTableListDetails'])->name('o-net-data-table.show-list-details');
     Route::get('o-net-data-category/show',[\App\Http\Controllers\lms\ONetOnlineDataController::class,'showCategoryWiseData'])->name('o-net-data.show-category');
     Route::get('o-net-data-category/show-occupation-detail',[\App\Http\Controllers\lms\ONetOnlineDataController::class,'showCategoryWiseOccupationData'])->name('o-net-data.show-occupation-detail');
     Route::get('o-net-data-category/show-occupation-detail-list',[\App\Http\Controllers\lms\ONetOnlineDataController::class,'showCategoryWiseOccupationDataList'])->name('o-net-data.show-occupation-detail-list');
