@@ -205,15 +205,10 @@
                         <tr class="font-weight-bold">
                             <td>{{$j++}}</td>
                             <td></td>
-                            <td></td>
                             <td></td>                           
                             <td></td>                           
                             <td></td>                           
                             <td></td>                           
-                            <td></td>
-                            <td></td>
-                            <td></td>
-                            <td></td>
                             <td></td>
                             <td></td>
                             <td></td>

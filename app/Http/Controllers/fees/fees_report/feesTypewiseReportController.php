@@ -165,7 +165,7 @@ class feesTypewiseReportController extends Controller
             ->selectRaw("fc.id,fc.student_id,CONCAT_WS(' ',ts.first_name,ts.middle_name,ts.last_name) AS student_name,
                 ts.enrollment_no,ts.admission_year,ts.mobile,ts.email,date_format(ts.dob,'%d-%m-%Y') AS dob,a.title AS section,
                 s.name AS std_name,d.name AS div_name,sq.title AS stu_qouta, $fees_columns
-                fc.fine AS total_fine,fc.fees_discount AS tot_disc,fc.receipt_no,sum(fc.amount) as total_amt,b.title as student_batch_name,date_format(fc.receiptdate,'%d-%m-%Y') AS receipt_date,fc.payment_mode,fc.bank_name,fc.bank_branch,fc.cheque_no,fc.cheque_date")
+                fc.fine AS total_fine,fc.fees_discount AS tot_disc,fc.receipt_no,sum(fc.amount) as total_amt,b.title as student_batch_name,date_format(fc.receiptdate,'%d-%m-%Y') AS receipt_date,fc.payment_mode,fc.cheque_bank_name as bank_name,fc.bank_branch,fc.cheque_no,fc.cheque_date")
             ->whereRaw($extraSearchArrayRaw)
             ->where('se.syear', $syear)
             ->where('fc.syear', $syear)

@@ -1721,7 +1721,6 @@ class studentResultController extends Controller
         $width='';
 
         if (isset($ret_data)) {
-            $width = "100%";
             foreach ($ret_data as $item) {
                 $obtainGrade = $item->obtain_grade;
             // Check if the obtain_grade contains digits
@@ -1737,8 +1736,6 @@ class studentResultController extends Controller
         }
         // dicipline 
          if (isset($ret_data_disipline)) {
-            $width = "50%";
-
             foreach ($ret_data_disipline as $item) {
                 $obtainGradeDis = $item->obtain_grade;
             // Check if the obtain_grade contains digits
@@ -1752,7 +1749,7 @@ class studentResultController extends Controller
                 $dis_data[] = $item;
             }
         }
-        $co_scholastic = '<div style="display:flex"><div style="width: '.$width.'">
+        $co_scholastic = '<div style="display:block !important;margin:0px 0px 0px 20px"><div style="width:100%">
             <table class="aca-year" style="width: 100%;border-collapse:collapse; border:1px solid #e68023;" cellspacing="0" cellpadding="0" border="1">
                 <thead>
                     <tr>
@@ -1791,7 +1788,7 @@ class studentResultController extends Controller
 
         // for disipline 
         if($standard_id<103 && isset($dis_data)){
-        $co_scholastic .= '<div style="width: '.$width.';margin:0px 0px 0px 20px">
+        $co_scholastic .= '<div style="width:100%;margin:20px 0px 0px 0px">
             <table class="aca-year" style="width:100%;border-collapse:collapse; border:1px solid #e68023;" cellspacing="0" cellpadding="0" border="1">
                 <thead>
                     <tr>

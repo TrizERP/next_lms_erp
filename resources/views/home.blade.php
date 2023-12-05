@@ -293,19 +293,21 @@
                                 @foreach($data['cn_monthwise_active'] as $key => $value)
                                 <tr>
                                 <td>{{$i++}}</td>
-                                <td>{{$data['months_name'][$value->term_id]}}</td>                              <td>   <a href="#" class="get-details-link" data-details="{{ json_encode($data['cn_monthwise_active'][$key]) }}">{{$value->student_count}}</a></td>
+                                <td>{{$data['months_name'][$value->term_id]}}</td>
+                                <td><a href="#" class="get-details-link" data-details="{{ json_encode($data['cn_monthwise_active'][$key]) }}">{{$value->student_count}}</a></td>
                                 </tr>
                                 @php 
                                 $all_student+=$value->student_count;
                                 @endphp
                                 @endforeach
-                                <tr>
+                                <!--<tr>
                                 <td colspan="2">Total</td>
                                 <td>{{$all_student}}</td>
-                                </tr>
+                                </tr>-->
                                 </tbody>
                             </table>
                         </div>
+                        <p style="color:red">*Note: Number of students based on fees paid in a specific month.</p>
                     </div>
                 </div>
                 @endif
@@ -315,6 +317,7 @@
                 <div class="col-md-6 mb-4" style="height:600px;overflow-y:scroll !important">
                     <div class="card">
                         <h3 class="card-title">Coach & Batch Wise Data of Students</h3>
+                        <p style="color:red">*Note: Number of students determined by fees paid in the month of {{ now()->format('F') }}.</p>
                         <div class="table-responsive">
                             <table class="table table-hover">
                                 <thead>
@@ -338,9 +341,9 @@
                                 @php $all_student+=$value->tot_stu;@endphp
                                 <tr>
                                 <td>{{$i++}}</td>
-                                <td>{{$value->standard_name}}</td>   
-                                <td>{{$value->coach_name}}</td>   
-                                <td>{{$value->batch_name}}</td>                                   
+                                <td>{{$value->sport}}</td>   
+                                <td>{{$value->coach}}</td>   
+                                <td>{{$value->batch}}</td>                                   
                                <td><a href="#" class="get-details-link" data-details="{{ json_encode($data['cn_payout'][$key]) }}">{{$value->tot_stu}}</a></td>
                                 </tr>
                                 @endforeach
@@ -391,21 +394,22 @@
                                <td>{{$value['total_fine']}}</td>
                                <td>{{$value['total_1']}}</td>
                                <td>{{$value['total_2']}}</td>       
-                               <td>{{$value['total_tution_fee'] + $value['total_discount']+$value['total_fine']+$value['total_1']+$value['total_2']}}</td>
+                               <td>{{$value['total_tution_fee'] - $value['total_discount']+$value['total_fine']+$value['total_1']+$value['total_2']}}</td>
                                </tr>
                                 @endforeach
                                 <tr>
-                                <td>Total</td>
-                                <td>{{$total_tut}}</td>
-                                <td>{{$total_dis}}</td>
-                                <td>{{$total_fine}}</td>
-                                <td>{{$total_1}}</td>
-                                <td>{{$total_2}}</td> 
-                                <td>{{$total_tut + $total_dis + $total_fine + $total_1 + $total_2}}</td>                               
+                                <td><b>Total</b></td>
+                                <td><b>{{$total_tut}}</b></td>
+                                <td><b>{{$total_dis}}</b></td>
+                                <td><b>{{$total_fine}}</b></td>
+                                <td><b>{{$total_1}}</b></td>
+                                <td><b>{{$total_2}}</b></td> 
+                                <td><b>{{$total_tut - $total_dis + $total_fine + $total_1 + $total_2}}</b></td>
                                 </tr>
                                 </tbody>
                             </table>
                         </div>
+                        <p style="color:red">*Note: Deduct the discount from the total amount.</p>
                     </div>
                 </div>
                 @endif
@@ -746,25 +750,88 @@
 <script type="text/javascript">
 $(document).ready(function(){
     $('[data-toggle="tooltip"]').tooltip();  
+// for modal box 
+//     $('.get-details-link').on('click', function() {
+//     var details = JSON.parse($(this).attr('data-details'));
 
- $('.get-details-link').on('click', function() {
-        var details = JSON.parse($(this).attr('data-details'));
-        // Clear previous data
-        $('#studentDetailsBody').empty();
-        var j = 1;
-        // Populate the table with student details
-        for (var i = 0; i < details.students.split(',').length; i++) {
-            var studentName = details.name.split(',')[i];
-            var sport = details.standard_name.split(',')[i];            
-            var coach = details.coach_name.split(',')[i];
-            var batch = details.batch_name.split(',')[i];
-            var mobile = details.mobile.split(',')[i];
-            $('#studentDetailsBody').append('<tr><td>'+(j++)+'<td>' + studentName + '</td><td>'+sport+'</td><td>' + coach + '</td><td>' + batch + '</td><td>' + mobile + '</td></tr>');
+//     $('#studentDetailsBody').empty();
+
+//     var students = details.students.split(',').map(function(student, index) {
+//         return {
+//             name: details.name.split(',')[index],
+//             sport: details.standard_name.split(',')[index],
+//             coach: details.coach_name.split(',')[index],
+//             batch: details.batch_name.split(',')[index],
+//             mobile: details.mobile.split(',')[index]
+//         };
+//     });
+
+//     students.sort(function(a, b) {
+//         var standardComparison = a.sport.localeCompare(b.sport);
+//         return standardComparison === 0 ? a.coach.localeCompare(b.coach) : standardComparison;
+//     });
+
+//     var j = 1;
+//     students.forEach(function(student) {
+//         $('#studentDetailsBody').append('<tr><td>' + (j++) + '<td>' + student.name + '</td><td>' + student.sport + '</td><td>' + student.coach + '</td><td>' + student.batch + '</td><td>' + student.mobile + '</td></tr>');
+//     });
+
+//     $('#studentDetailModal').modal('show');
+// });
+
+    $('.get-details-link').on('click', function() {
+    var details = JSON.parse($(this).attr('data-details'));
+
+    $('#studentDetailsBody').empty();
+
+    var students = details.students.split(',').map(function(student, index) {
+        return {
+            name: details.name.split(',')[index],
+            sport: details.standard_name.split(',')[index],
+            coach: details.coach_name.split(',')[index],
+            batch: details.batch_name.split(',')[index],
+            mobile: details.mobile.split(',')[index]
+        };
+    });
+
+    students.sort(function(a, b) {
+        function compareValues(aValue, bValue) {
+            if (aValue === bValue) {
+                return 0;
+            }
+            if (aValue === undefined) {
+                return 1; 
+            }
+            if (bValue === undefined) {
+                return -1; 
+            }
+            return aValue.localeCompare(bValue);
         }
 
-        // Show the modal
-        $('#studentDetailModal').modal('show');
+        var standardComparison = compareValues(a.sport, b.sport);
+        var coachComparison = compareValues(a.coach, b.coach);
+        var batchComparison = compareValues(a.batch, b.batch);
+
+        if (standardComparison !== 0) {
+            return standardComparison;
+        }
+
+        if (coachComparison !== 0) {
+            return coachComparison;
+        }
+
+        return batchComparison;
     });
+
+    var j = 1;
+    students.forEach(function(student) {
+        $('#studentDetailsBody').append('<tr><td>' + (j++) + '<td>' + student.name + '</td><td>' + student.sport + '</td><td>' + student.coach + '</td><td>' + student.batch + '</td><td>' + student.mobile + '</td></tr>');
+    });
+
+    $('#studentDetailModal').modal('show');
+});
+
+
 });
 </script>
 
