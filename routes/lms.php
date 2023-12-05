@@ -42,12 +42,18 @@ use App\Http\Controllers\lms\topicController;
 use App\Http\Controllers\lms\questionWiseReportController;
 use App\Http\Controllers\bazar\bulkUploadSheetController;
 use App\Http\Controllers\bazar\bulkUploadedReportController;
-
+use App\Http\Controllers\lms\ONetOnlineDataController;
 use App\Http\Controllers\lms\virtualclassroomController;
 use App\Http\Controllers\school_setup\sub_std_mapController;
 use Illuminate\Support\Facades\Route;
 
 Route::group(['prefix' => 'lms', 'middleware' => ['session', 'menu', 'logRoute']], function () {
+    Route::resource('o-net-data-category', ONetOnlineDataController::class);
+    Route::get('o-net-data-category/show',[ONetOnlineDataController::class,'showCategoryWiseData'])->name('o-net-data.show-category');
+    Route::get('o-net-data-category/show-occupation-detail',[ONetOnlineDataController::class,'showCategoryWiseOccupationData'])->name('o-net-data.show-occupation-detail');
+    Route::get('o-net-data-category/show-occupation-detail-list',[ONetOnlineDataController::class,'showCategoryWiseOccupationDataList'])->name('o-net-data.show-occupation-detail-list');
+    Route::get('o-net-data-category/show-occupation-detail-list-summary',[ONetOnlineDataController::class,'showCategoryWiseOccupationDataListSummary'])->name('o-net-data.show-occupation-detail-list-summary');
+
     Route::resource('chapter_master', chapterController::class);
     Route::resource('course_master', courseController::class);
     Route::resource('topic_master', topicController::class);
@@ -87,7 +93,7 @@ Route::group(['prefix' => 'lms', 'middleware' => ['session', 'menu', 'logRoute']
     Route::get('ajax_LoMasterwiseLoIndicator', [loindicatorController::class, 'ajax_LoMasterwiseLoIndicator'])
         ->name('ajax_LoMasterwiseLoIndicator');
 
-    
+
     Route::resource('question_master', questionmasterController::class);
     Route::post('ajaxdestroyanswer_master', [questionmasterController::class, 'ajaxdestroyanswer_master'])->name('ajaxdestroyanswer_master');
     Route::get('question_chapter_master', [questionmasterController::class, 'indexChapter'])->name('question_chapter_master');
@@ -166,7 +172,7 @@ Route::group(['prefix' => 'lms', 'middleware' => ['session', 'menu', 'logRoute']
     Route::GET('ajax_contentmasterdata', 'lms\lessonplan\lms_lessonplanController@ajax_contentMasterData')->name('ajax_contentmasterdata');
     Route::GET('ajax_questionpaperdata', 'lms\lessonplan\lms_lessonplanController@ajax_questionPaperData')->name('ajax_questionpaperdata');
     Route::GET('ajax_daywisedata', 'lms\lessonplan\lms_lessonplanController@ajax_DayWiseData')->name('ajax_daywisedata');
-   
+
     Route::get('ajax_getTeacher', [lms_lessonplanController::class, 'ajax_getTeacher'])->name('ajax_getTeacher');
 
 Route::get('questionReport', [questionWiseReportController::class, 'index'])->name('question_wise_report');

@@ -165,9 +165,17 @@
                
 //START MATHEMATICS ONLY
 if($subject == "MATHEMATICS"){
-	$i = round(10 * (is_numeric($unit_1) ? $unit_1 : 0) / $total_unit_1,0);
-	$j = round(10 * (is_numeric($unit_2) ? $unit_2 : 0) / $total_unit_2,0);
-	$k = round(10 * (is_numeric($half) ? $half : 0) / $total_half,0);
+	   $i = $j=$k=0;
+if ($total_unit_1 != 0) {
+    $i = round(10 * (is_numeric($unit_1) ? $unit_1 : 0) / $total_unit_1, 0);
+} 
+if ($total_unit_2 != 0) {
+    $j = round(10 * (is_numeric($unit_2) ? $unit_2 : 0) / $total_unit_2,0);
+} 
+if ($total_half != 0) {
+    $k = round(10 * (is_numeric($half) ? $half : 0) / $total_half,0);
+} 
+
 	$marksArr = array(
 		$i,$j,$k		
 	);

@@ -317,7 +317,10 @@
                             $main = DB::table('tblmenumaster')->where('id',$bread[0]->parent_menu_id)->get();
                         @endphp
                         <li class="breadcrumb-item"><a href="{{ route('home') }}">{{$main[0]->name ?? ''}}</a></li>
+                        @if (Route::has($bread[0]->link))
+
                         <li class="breadcrumb-item "><a href="{{ route($bread[0]->link) }}" class="text-dark">{{$bread[0]->name ?? ''}}</a></li>
+                        @endif
                     @else
                         @foreach($all_segments as $segment)
                             @php
