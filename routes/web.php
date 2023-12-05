@@ -53,6 +53,7 @@ use App\Http\Controllers\leave\LeaveTypeController;
 use App\Http\Controllers\Payroll\PayrollController;
 use App\Http\Controllers\HRMS\HrmsController;
 use App\Http\Controllers\library\BookController;
+use App\Http\Controllers\library\LibraryReportController;
 use App\Http\Controllers\sqaa\sqaa_controller;
 use App\Http\Controllers\sqaa\sqaaReportController;
 use App\Http\Controllers\sqaa\sqaaScoreReportController;
@@ -416,6 +417,9 @@ Route::group(['middleware' => ['session', 'menu', 'logRoute']], function () {
     Route::get('books.circulation', [BookController::class,'circulation'])->name('books.circulation');
     Route::get('books/{id}/item', [BookController::class,'item'])->name('books.item');
     Route::delete('books/{id}/item/delete', [BookController::class,'deleteItem'])->name('books.items.destroy');
+
+    Route::resource('library_report', LibraryReportController::class);
+    Route::post('show_library_report', [LibraryReportController::class, 'show_library_report'])->name('show_library_report');
     
 });
 
