@@ -169,7 +169,7 @@ class result_report_controller extends Controller
                 $responce_arr_term2[$cur_student_id]['grade_range'] = $all_grd_data;
             }
 
-//FOR TERM-3
+            //FOR TERM-3
             if (isset($academicTerms[2]->term_id) && $academicTerms[2]->term_id != null) {
                 session()->put('term_id', $academicTerms[2]->term_id);
             //getting all exam name with mark
@@ -198,7 +198,7 @@ class result_report_controller extends Controller
                     $responce_arr_term3[$cur_student_id]['final_grade'] = $controller->getFinalGrade($responce_arr_term3[$cur_student_id]['per']);
                 }
             }
-//FOR TERM-4
+            //FOR TERM-4
             if (isset($academicTerms[3]->term_id) && $academicTerms[3]->term_id != null) {
 
                 session()->put('term_id', $academicTerms[3]->term_id);
