@@ -39,7 +39,7 @@ class SyncONetOccupationDetailAbilitiesSummary extends Command
                 $response = Http::withHeaders([
                     'Authorization' => 'Basic ' . base64_encode('trizinnovation:4225aej'),
                     'Accept' => 'application/json'
-                ])->get($occupationDetailList['href'] . '?display=long');
+                ])->get("https://services.onetcenter.org/ws/online/occupations/49-9043.00/summary/tasks?display=long");
 
                 $data = $response->json();
 
