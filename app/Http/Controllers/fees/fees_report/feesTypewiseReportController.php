@@ -145,61 +145,6 @@ class feesTypewiseReportController extends Controller
             // $fees_head_sum .= " SUM(fc." . $value['fees_title'] . ") AS " . $value['fees_title'] . ",";
         }
 
-        // $data = DB::table(function ($query) use ($sub_institute_id, $syear, $extraSearchArrayRaw, $extraSearchArrayRawfp,$columns) {
-        //     $query->selectRaw('t.id as student_id, t.enrollment_no, t.roll_no, t.uniqueid, t.place_of_birth, '
-        //         . DB::raw("CONCAT_WS(' ', t.first_name, t.middle_name, t.last_name) as student_name") . ', g.title as grade, s.name as standard_name, d.name as division_name, fc.created_date, '
-        //         . DB::raw('CONCAT_WS(" ", u.first_name, u.last_name) AS user_name, fc.term_id, fc.receiptdate, fc.receipt_no, fc.payment_mode, '
-        //         . 'fc.cheque_bank_name, fc.bank_branch, fc.cheque_no, fc.cheque_date, b.title as batch, sq.title as quota, '
-        //         . $columns))
-        //         ->from('tblstudent as t')
-        //         ->join('tblstudent_enrollment as te', function ($join) use($syear){
-        //             $join->on('te.student_id', '=', 't.id')->where('te.syear',$syear);
-        //         })
-        //         ->leftJoin('academic_section as g', 'g.id', '=', 'te.grade_id')
-        //         ->leftJoin('standard as s', 's.id', '=', 'te.standard_id')
-        //         ->leftJoin('division as d', 'd.id', '=', 'te.section_id')
-        //         ->leftJoin('student_quota as sq', 'sq.id', '=', 'te.student_quota')
-        //         ->leftjoin('batch as b', function ($join) {
-        //             $join->on('b.standard_id', '=', 'te.standard_id')
-        //                 ->whereRaw('b.division_id = te.section_id')
-        //                 ->whereRaw('b.id = t.studentbatch')
-        //                 ->whereRaw('b.syear = te.syear');
-        //         })
-        //         ->Join('fees_collect as fc', 'fc.student_id', '=', 'te.student_id')
-        //         ->leftJoin('tbluser as u', 'fc.created_by', '=', 'u.id')
-        //         ->whereRaw($extraSearchArrayRaw)
-
-        //         ->unionAll(function ($query) use ($sub_institute_id, $syear, $extraSearchArrayRaw, $extraSearchArrayRawfp,$columns) {
-        //             $query->selectRaw('t.id as student_id, t.enrollment_no, t.roll_no, t.uniqueid, t.place_of_birth, '
-        //                 . DB::raw("CONCAT_WS(' ', t.first_name, t.middle_name, t.last_name) as student_name") . ', g.title as grade, s.name as standard_name, d.name as division_name, NULL AS created_date, '
-        //                 . DB::raw('CONCAT_WS(" ", u.first_name, u.last_name) AS user_name, fp.month_id AS term_id, fp.receiptdate AS receiptdate, fp.reciept_id AS receipt_no, fp.payment_mode AS payment_mode, '
-        //                 . 'fp.bank_name as cheque_bank_name, fp.bank_branch, fp.cheque_dd_no as cheque_no, fp.cheque_dd_date AS cheque_date, b.title as batch, sq.title as quota, '
-        //                 . $columns))->from('tblstudent as t')
-        //                 ->join('tblstudent_enrollment as te', function ($join) use($syear){
-        //                     $join->on('te.student_id', '=', 't.id')->where('te.syear',$syear);
-        //                 })
-        //                 ->leftJoin('academic_section as g', 'g.id', '=', 'te.grade_id')
-        //                 ->leftJoin('standard as s', 's.id', '=', 'te.standard_id')
-        //                 ->leftJoin('division as d', 'd.id', '=', 'te.section_id')
-        //                 ->leftJoin('student_quota as sq', 'sq.id', '=', 'te.student_quota')
-        //                 ->leftjoin('batch as b', function ($join) {
-        //                     $join->on('b.standard_id', '=', 'te.standard_id')
-        //                         ->whereRaw('b.division_id = te.section_id')
-        //                         ->whereRaw('b.id = t.studentbatch')
-        //                         ->whereRaw('b.syear = te.syear');
-        //                 })
-        //                 ->leftJoin('fees_paid_other as fp', 'fp.student_id', '=', 'te.student_id')
-        //                 ->leftJoin('tbluser as u', 'fp.created_by', '=', 'u.id')
-        //                 ->whereRaw( $extraSearchArrayRawfp);
-        //         });
-        // })
-        //     ->selectRaw('student_id, enrollment_no, roll_no, uniqueid, place_of_birth, student_name, grade,standard_name, division_name,created_date, user_name, term_id, receiptdate, receipt_no,  payment_mode, cheque_bank_name, bank_branch, cheque_no, cheque_date, batch,  quota')
-        //     ->groupBy('receipt_no');
-
-            // $data = $data->get()->toArray();
-
-       
-
         $fees_data = DB::table(function ($query)  use($extraSearchArrayRaw,$extraSearchArrayRawfp,$fees_columns,$other_columns,$sub_institute_id,$syear) {
             $query->from('fees_collect as fc')
             ->join('tblstudent as ts', function ($join) {
@@ -220,7 +165,7 @@ class feesTypewiseReportController extends Controller
             ->selectRaw("fc.id,fc.student_id,CONCAT_WS(' ',ts.first_name,ts.middle_name,ts.last_name) AS student_name,
                 ts.enrollment_no,ts.admission_year,ts.mobile,ts.email,date_format(ts.dob,'%d-%m-%Y') AS dob,a.title AS section,
                 s.name AS std_name,d.name AS div_name,sq.title AS stu_qouta, $fees_columns
-                fc.fine AS total_fine,fc.fees_discount AS tot_disc,fc.receipt_no,sum(fc.amount) as total_amt,b.title as student_batch_name,date_format(fc.receiptdate,'%d-%m-%Y') AS receipt_date")
+                fc.fine AS total_fine,fc.fees_discount AS tot_disc,fc.receipt_no,sum(fc.amount) as total_amt,b.title as student_batch_name,date_format(fc.receiptdate,'%d-%m-%Y') AS receipt_date,fc.payment_mode,fc.cheque_bank_name as bank_name,fc.bank_branch,fc.cheque_no,fc.cheque_date")
             ->whereRaw($extraSearchArrayRaw)
             ->where('se.syear', $syear)
             ->where('fc.syear', $syear)
@@ -230,7 +175,7 @@ class feesTypewiseReportController extends Controller
                 $query->selectRaw("fp.id,fp.student_id,CONCAT_WS(' ',ts.first_name,ts.middle_name,ts.last_name) AS student_name,
                 ts.enrollment_no,ts.admission_year,ts.mobile,ts.email,date_format(ts.dob,'%d-%m-%Y') AS dob,a.title AS section,
                 s.name AS std_name,d.name AS div_name,sq.title AS stu_qouta, $other_columns
-                fp.fine AS total_fine,fp.fees_discount AS tot_disc,fp.reciept_id as receipt_no,sum(fp.actual_amountpaid) as total_amt,b.title as student_batch_name,date_format(fp.receiptdate,'%d-%m-%Y') AS receipt_date")
+                fp.fine AS total_fine,fp.fees_discount AS tot_disc,fp.reciept_id as receipt_no,sum(fp.actual_amountpaid) as total_amt,b.title as student_batch_name,date_format(fp.receiptdate,'%d-%m-%Y') AS receipt_date,fp.payment_mode,fp.bank_name,fp.bank_branch,fp.cheque_dd_no as cheque_no,fp.cheque_dd_date as cheque_date")
                     ->from('fees_paid_other as fp')
                     ->join('tblstudent as ts', function ($join) {
                         $join->whereRaw('ts.id = fp.student_id AND ts.sub_institute_id = fp.sub_institute_id');
@@ -257,7 +202,7 @@ class feesTypewiseReportController extends Controller
         ->selectRaw("id,student_id,student_name,
         enrollment_no,admission_year,mobile,email,dob,section,
        std_name,div_name,stu_qouta, ".$columns."
-       total_fine,tot_disc,receipt_no,sum(total_amt) as amount,student_batch_name,receipt_date")
+       total_fine,tot_disc,receipt_no,sum(total_amt) as amount,student_batch_name,receipt_date,payment_mode,bank_name,bank_branch,cheque_no,cheque_date")
             ->groupBy(['student_id', 'receipt_no'])->get()->toArray();
             // 7050
             // echo "<pre>";print_r($fees_data);exit;

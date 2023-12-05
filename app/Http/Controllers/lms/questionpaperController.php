@@ -304,9 +304,11 @@ class questionpaperController extends Controller
 
         $html_file_path = $pdf_folder.'/'.$html_filename;
         $pdf_file_path = $pdf_folder.'/'.$pdf_filename;
+        if(file_exists($html_file_path)){
         file_put_contents($html_file_path, $html);
         $this->htmlToPDF($html_file_path, $pdf_file_path);
         unlink($html_file_path);
+        }
     }
 
     public function htmlToPDF($htmlPath, $pdfPath)

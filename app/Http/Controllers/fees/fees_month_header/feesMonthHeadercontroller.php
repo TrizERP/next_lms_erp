@@ -29,7 +29,9 @@ class feesMonthHeadercontroller extends Controller
         
         $start_month = $data[0]['from_month'];
         $end_month = $data[0]['to_month'];
-
+if($start_month==6){
+    $plus_month=3;
+}
         $months = [
             1  => 'Jan', 2 => 'Feb', 3 => 'Mar', 4 => 'Apr', 5 => 'May', 6 => 'Jun', 7 => 'Jul', 8 => 'Aug', 9 => 'Sep',
             10 => 'Oct', 11 => 'Nov', 12 => 'Dec',
@@ -60,6 +62,9 @@ class feesMonthHeadercontroller extends Controller
                 else
                 {
                     $start_month = 1;
+                    if(isset($plus_month)){
+                        $start_month=3;
+                    }
                     ++$syear;
                     $months_arr[$start_month.$syear] = $months[$start_month].'/'.$syear;
                     break;

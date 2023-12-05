@@ -118,18 +118,43 @@ if (!function_exists('SearchChain')) {
     function SearchChain($col, $multiple, $listed_drop, $grade_val = "", $std_val = "", $div_val = "")
     {
 
-        $path = URL::current();
-        preg_match("/[^\/]+$/", $path, $matches);
-        $module_name = $matches[0];
+        // $path = URL::current();
+        // preg_match("/[^\/]+$/", $path, $matches);
+        // $module_name = $matches[0];
 
-        $module_array = array(
+        // $module_array = array(
+        //     '1' => 'student_homework',
+        //     '2' => 'marks_entry',
+        //     '3' => 'dicipline',
+        //     '4' => 'lmsExamwise_progress_report',
+        //     '5' => 'questionReport',
+        //     '6' => 'parent_communication',
+        // );
+
+        $path = $_SERVER['HTTP_REFERER'] ?? URL::current();
+
+        if ($path) {
+            $parsedUrl = parse_url($path);
+            
+            if (isset($parsedUrl['path'])) {
+                $pathParts = pathinfo($parsedUrl['path']);
+                
+                if (isset($pathParts['filename'])) {
+                    $module_name = $pathParts['filename'];
+                }
+                if($parsedUrl['path'] == '/lms/question_paper/create' || $parsedUrl['path'] == '/lms/question_paper/search')
+                    $module_name = 'question_paper';
+            }
+        }
+        $module_array = [
             '1' => 'student_homework',
             '2' => 'marks_entry',
             '3' => 'dicipline',
             '4' => 'lmsExamwise_progress_report',
             '5' => 'questionReport',
             '6' => 'parent_communication',
-        );
+            '7' => 'question_paper',
+        ];
 
         // START 07/09/2021 code for getting standard , grade , division according to timetable wise for homework module
         if (session()->get('user_profile_name') == 'Teacher') {
@@ -833,18 +858,14 @@ if (!function_exists('FeeMonthId')) {
 // function is used in fees_collect_controller and online_fees_collect_controller and all fee_reports
 if (!function_exists('FeeBreackoff')) {
 
-    function FeeBreackoff($student_ids, $standard = null, $syear = '')
+    function FeeBreackoff($student_ids, $standard = null, $syear = '',$sub_institute_id='')
     {
-        $sub_institute_id = session()->get('sub_institute_id');
 
-        if ($sub_institute_id != '') {
-            $sub_institute_id = $sub_institute_id;
-            if ($syear == '') {
-                $syear = session()->get('syear');
-            }
-        } else {
-            $sub_institute_id = request()->get('sub_institute_id');
-            $syear = request()->get('syear');
+        if ($sub_institute_id == '') {
+            $sub_institute_id = session()->get('sub_institute_id');
+        } 
+        if($syear == '') {
+            $syear = session()->get('syear');
         }
 
         $data = DB::table('tblstudent as s')
@@ -892,12 +913,12 @@ if (!function_exists('FeeBreackoff')) {
 
 if (!function_exists('FeeBreakoffHeadWise')) {
 
-    function FeeBreakoffHeadWise($student_ids, $from_date = null, $to_date = null, $fees_head = null, $syear = '',$months='')
+    function FeeBreakoffHeadWise($student_ids, $from_date = null, $to_date = null, $fees_head = null, $syear = '',$months='',$sub_institute_id='')
     {
+        if($sub_institute_id==''){
         $sub_institute_id = session()->get('sub_institute_id');
-        if ($syear != '') {
-            $syear = $syear;
-        } else {
+        }
+        if ($syear == '') {
             $syear = session()->get('syear');
         }
         $extra_where = "1=1";
@@ -1106,13 +1127,14 @@ if (!function_exists('ClassTeacherSearch')) {
 
 if (!function_exists('OtherBreackOff')) {
 
-    function OtherBreackOff($student_id_arr, $month_arr, $other_bf_amount = '', $from_date = null, $to_date = null, $syear = '')
+    function OtherBreackOff($student_id_arr, $month_arr, $other_bf_amount = '', $from_date = null, $to_date = null, $syear = '',$sub_institute_id='')
     {
 
         $student_id = $student_id_arr[0];
         $moth_ids = implode(',', $month_arr);
-
+        if ($sub_institute_id == '') {        
         $sub_institute_id = session()->get('sub_institute_id');
+        }
         if ($syear == '') {
             $syear = session()->get('syear');
         }
@@ -1190,12 +1212,16 @@ if (!function_exists('OtherBreackOff')) {
 
 if (!function_exists('OtherBreackOffHead')) {
 
-    function OtherBreackOffHead()
-    {
+    function OtherBreackOffHead($sub_institute_id='',$syear='')
+    { 
 
+        if($sub_institute_id==''){
         $sub_institute_id = session()->get('sub_institute_id');
+        }
+        if($syear==''){
         $syear = session()->get('syear');
-
+        }
+       
         return DB::table('fees_title')
             ->where('sub_institute_id', $sub_institute_id)
             ->where('syear', $syear)
@@ -1206,11 +1232,13 @@ if (!function_exists('OtherBreackOffHead')) {
 
 if (!function_exists('OtherBreackOfMonth')) {
 
-    function OtherBreackOfMonth($student_id_arr, $syear = '')
+    function OtherBreackOfMonth($student_id_arr, $syear = '',$sub_institute_id='')
     {
 
         $student_id = $student_id_arr[0];
+        if($sub_institute_id==''){        
         $sub_institute_id = session()->get('sub_institute_id');
+        }
         if ($syear == '') {
             $syear = session()->get('syear');
         }
@@ -1233,11 +1261,12 @@ if (!function_exists('OtherBreackOfMonth')) {
 
 if (!function_exists('OtherBreackOfMonthHead')) {
 
-    function OtherBreackOfMonthHead($student_id_arr, $month_arr, $syear = '')
+    function OtherBreackOfMonthHead($student_id_arr, $month_arr, $syear = '',$sub_institute_id='')
     {
         $student_id = $student_id_arr[0];
-
+        if ($sub_institute_id == '') {
         $sub_institute_id = session()->get('sub_institute_id');
+        }
         if ($syear == '') {
             $syear = session()->get('syear');
         }
@@ -1849,13 +1878,14 @@ if (!function_exists('getBestOf')) {
 
 if (!function_exists('get_string')) {
 
-    function get_string($arg, $type = '')
+    function get_string($arg,$type='', $sub_institute_id = '')
     {
+        if($sub_institute_id==''){
         $sub_institute_id = session()->get('sub_institute_id');
+        }
         $strings = DB::table('app_language')->whereRaw('sub_institute_id = 0 and string = "' . $arg . '"')->value('value');
         $strings_id = DB::table('app_language')->whereRaw('sub_institute_id = 0 and string = "' . $arg . '"')->groupBy('menu_id')->value('menu_id');        
-        // return $arg;exit;
-        
+       
         // dd($strings);
         if ($type === 'menu_id') {
             $menu_id = $arg;
@@ -1868,7 +1898,6 @@ if (!function_exists('get_string')) {
                 ->where('string', $requestValue)
                 ->first();
         }
-
 
         if ($normClature) {
             if (!empty($normClature->value)) {
@@ -1883,7 +1912,6 @@ if (!function_exists('get_string')) {
 
     function get_school_details($grade = '', $std = '', $div = '')
     {
-
         $marking_period_id = session()->get('term_id');
         $get_name_data = DB::table('academic_section as ac')
             ->join('standard as s', function ($join) use ($marking_period_id) {

@@ -223,7 +223,16 @@ class tourController extends Controller
             $i++;
         }
         $database_table = tblmenumasterModel::select('database_table')->whereRaw("find_in_set('$sub_institute_id',sub_institute_id)")->where('status',1)->get();
+        $getSchoolData = SchoolModel::where(['id' => $sub_institute_id])->get()->toArray();
 
+        $getUserData = tbluserModel::where(['sub_institute_id' => $sub_institute_id])->get()->toArray();
+
+        if (isset($getSchoolData)) {
+            $res['schooldata'] = $getSchoolData[0];
+        }
+        if (isset($getUserData)) {
+            $res['userdata'] = $getUserData[0];
+        }
         $res['status_code'] = 1;
         $res['message'] = "Success";
         $res['head'] = $data;
@@ -231,7 +240,7 @@ class tourController extends Controller
         $res['groupwisemenuMaster'] = $mastermenu;
         $res['groupwisesubmenuMaster'] = $finalSubMenu ?? [];
         $res['groupwiseSubsubmenuMaster'] = $finalSubChildMenu ?? [];
-        $rr = [];
+        // echo "<pre>";print_r($res);exit;
 
         return is_mobile($type, "setup_institute_details", $res, 'view');
     }

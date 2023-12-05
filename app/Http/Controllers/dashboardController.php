@@ -15,7 +15,10 @@ use Illuminate\Support\Facades\DB;
 use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\NotFoundExceptionInterface;
 use function App\Helpers\is_mobile;
+use function App\Helpers\FeeMonthId;
 use Illuminate\Support\Facades\Schema;
+use App\Http\Controllers\fees\fees_report\feesMonthlyReportController;
+use Carbon\Carbon;
 
 class dashboardController extends Controller
 {
@@ -826,14 +829,84 @@ class dashboardController extends Controller
                 $chart = rtrim($chart, ",");
 
                 $chart .= "]";
-
+                // for cn 
+                if($sub_institute_id==257){
+                $cn_active_students  = DB::table('fees_collect as a')
+                ->select(
+                    DB::raw('COUNT(DISTINCT a.student_id) as student_count'),
+                    'a.term_id',
+                    DB::raw("GROUP_CONCAT(CONCAT_WS(' ', s.first_name, s.middle_name, s.last_name)) as name"),
+                    DB::raw("GROUP_CONCAT(DISTINCT a.student_id) as students"),
+                    DB::raw("GROUP_CONCAT(s.mobile) as mobile"),
+                    DB::raw("GROUP_CONCAT(std.name) as standard_name"),
+                    DB::raw("GROUP_CONCAT(d.name) as coach_name"),
+                    DB::raw("GROUP_CONCAT(IFNULL(b.title, '-')) as batch_name")                    
+                )
+                ->join('tblstudent_enrollment as se', 'se.student_id', '=', 'a.student_id')
+                ->join('tblstudent as s', 's.id', '=', 'se.student_id')
+                ->join('standard as std', 'std.id', '=', 'a.standard_id')
+                ->join('division as d', 'd.id', '=', 'se.section_id')
+                ->leftJoin('batch as b','b.id','=','s.studentbatch')
+                ->where('a.syear', '=', $syear)
+                ->where('a.sub_institute_id', '=', $sub_institute_id)
+                ->where('a.is_deleted','N')
+                ->groupBy('a.term_id')
+                ->orderBy('standard_name')
+                ->get();
+             
+                $res['month_payout']= Carbon::now()->month.Carbon::now()->year;
+                $all_varibale = [
+                    "sub_institute_id" => $sub_institute_id,
+                    "syear" => $syear,
+                    "selected_month" => $res['month_payout'],
+                ];
+                $cn_payout  = DB::select(DB::raw('
+                SELECT sum(CASE WHEN (house_name = "CN" OR house_name = "Other School") AND ( gender = "F" OR gender = "M") THEN 1 ELSE 0 END) as tot_stu,standard_name as sport,coach_name as coach,batch_name as batch,group_concat(standard_name) as standard_name,group_concat(coach_name) as coach_name,group_concat(batch_name) as batch_name, SUM(tot) AS tot,group_concat(first_name) as name,group_concat(mobile) as mobile,group_concat(student_id) as students
+            FROM (
+                SELECT *,SUM(total_reg_paid) AS tot
+                FROM (
+                    SELECT hm.house_name,se.student_id,s.gender,s.first_name,s.mobile,sd.name AS standard_name,d.name AS coach_name,ifnull(b.title,"-") AS batch_name,SUM(fc.tution_fee) AS total_reg_paid,0 AS total_other_paid -- Initialize total_other_paid as 0 in this subquery
+                    FROM tblstudent_enrollment se
+                    INNER JOIN tblstudent s ON s.id = se.student_id
+                    INNER JOIN standard sd ON sd.id = se.standard_id
+                    INNER JOIN division d ON d.id = se.section_id
+                    LEFT JOIN batch b ON b.id = s.studentbatch
+                    LEFT JOIN house_master hm ON hm.id = se.house_id                    
+                    INNER JOIN fees_collect fc ON (
+                        fc.student_id = se.student_id 
+                        AND fc.is_deleted = "N"
+                    )
+                    WHERE se.sub_institute_id = :sub_institute_id AND se.syear = :syear
+                    AND fc.term_id = :selected_month
+                    GROUP BY se.student_id 
+                ) AS temp_tbl
+                GROUP BY student_id
+            ) AS temp_tbl2
+            GROUP BY standard_name, coach_name, batch_name  
+            '), $all_varibale);
+            $dates = DB::table('fees_map_years')->where(['sub_institute_id'=>$sub_institute_id,'syear'=>$syear])->get()->toArray();
+            // echo "<pre>";print_r($cn_payout);exit;
+            $req = [
+                'from_date' => $syear."-".$dates[0]->from_month."-01",
+                'to_date' => $syear."-".$dates[0]->to_month."-01",
+                'type' => 'API'
+            ];
+            $req = new Request($req);  // Assuming $req is your array
+            $monthlyFeesController = new feesMonthlyReportController();
+            $monthlyFeesCollection = $monthlyFeesController->getfeesMonthlyReportCN($req);
+            $res['cn_monthwise_active'] = $cn_active_students; 
+            $res['cn_payout'] = $cn_payout;                                                                                                               
+            $res['cn_monthwise_collect'] = json_decode($monthlyFeesCollection, true);
+        }
+        //    echo "<pre>";print_r($res['cn_monthwise_collect']['report_data']);exit;
                 $res['status_code'] = 1;
                 $res['message'] = "Success";
+                $res['months_name'] = FeeMonthId();
+               
                 $res['totalUser'] = $users[0]['users'];
                 $res['totalStudent'] = $students[0]->students;
                 $res['totalFees'] = ($fees_collects[0]['fees'] + $other_fees_collects[0]['fees']);
                 $res['totalAdmission'] = $total_admission;
-
 
                 $res['studentBirthdays'] = $studentBirthdays;
                 $res['teacherBirthdays'] = $teacherBirthdays;

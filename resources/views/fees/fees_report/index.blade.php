@@ -33,8 +33,8 @@
 					<strong>{{ $sessionData['message'] }}</strong>
 				</div>
 				@endif
-				<form action="{{ route('show_fees_collection_report') }}" enctype="multipart/form-data" class="row" method="post">
-					{{ method_field("POST") }} @csrf
+				<form action="{{ route('fees_collection_report.create') }}" enctype="multipart/form-data" class="row">
+					@csrf
 					<div class="col-md-4 form-group">
 						<label>{{App\Helpers\get_string('grno','request')}}</label>
 						<input type="text" id="enrollment_no" name="enrollment_no" value="{{$enrollment_no}}" class="form-control" placeholder="Gr No">
@@ -110,6 +110,10 @@
 							@endforeach
 						</select>
 					</div>
+					<div class="col-md-4 form-group">
+					<label>Seprate Bank Details</label>					
+					<input name="groupby" type="checkbox" @if(isset($data['groupby'])) checked @endif>
+					</div>
 					<div class="col-md-12 form-group">
 						<center>
 							<input type="submit" name="submit" value="Search" class="btn btn-success">
@@ -137,7 +141,14 @@
 								<th>Month</th>
 								<th>Receipt No</th>
 								<th>Payment Mode</th>
-								<th>Bank Details</th>
+								@if(isset($data['groupby']))
+								<th>Cheque No</th>									
+								<th>Bank Name</th>
+								<th>Bank Branch</th>
+								<th>Cheque Date</th>									
+								@else
+									<th>Bank Details</th>
+								@endif
 								<th>Remarks</th>
 								<th>Receipt Date</th>
 								<th>Collected By</th>
@@ -185,7 +196,14 @@
 								<td>{{ $monthNamesString }}</td>
 								<td>{{$value['receipt_no']}}</td>
 								<td>{{$value['payment_mode']}}</td>
+								@if(isset($data['groupby']))
+								<td>{{$value['cheque_no']}}</td>
+								<td>{{$value['cheque_bank_name']}}</td>
+								<td>{{$value['bank_branch']}}</td>
+								<td>{{$cheque_date}}</td>
+								@else
 								<td>{{$value['cheque_no']}} {{$value['cheque_bank_name']}} {{$value['bank_branch']}}</td>
+								@endif
 								<!--<td>{{$cheque_date}}</td>-->
 								<td>{{$value['remarks']}}</td>
 								<td>{{date('d-m-Y',strtotime($value['receiptdate']))}}</td>
@@ -201,7 +219,14 @@
 								<td></td>
 								<td></td>
 								<td></td>
+								@if(isset($data['groupby']))
+								<td></td>								
 								<td></td>
+								<td></td>
+								<td></td>									
+								@else
+								<td></td>
+								@endif
 								<td></td>
 								<td></td>
 								<td></td>

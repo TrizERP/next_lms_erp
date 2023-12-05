@@ -86,7 +86,7 @@
                         </div>
                         <div class="col-md-6 form-group">
                             <label>Conductor</label>
-                            <select name="conductor" class="form-control" required>
+                            <select name="conductor" class="form-control">
                                 <option value="">--Select--</option>
                                 <?php
                                 foreach ($data['Conductordd'] as $id => $arr) {
@@ -100,7 +100,7 @@
                         </div>
                         <div class="col-md-6 form-group">
                             <label>Vehicle Identity Number</label>
-                            <input type="text" required name="vehicle_identity_number" value="{{ $data['vehicle_identity_number'] }}" class="form-control">
+                            <input type="text" name="vehicle_identity_number" value="{{ $data['vehicle_identity_number'] }}" class="form-control">
                         </div>
 
 

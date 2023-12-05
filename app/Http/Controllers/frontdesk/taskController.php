@@ -58,7 +58,7 @@ class taskController extends Controller
         }
 
         if (strtoupper($user_profile_name) != 'ADMIN') {
-            $data = $data->where('t.TASK_ALLOCATED_TO', $user_id);
+            $data = $data->whereRaw("(t.TASK_ALLOCATED_TO = '".$user_id."' OR t.TASK_ALLOCATED = '".$user_id."')");
         }
         $data = $data->orderBy('t.ID', 'desc');
         $data = $data->get()->toArray();

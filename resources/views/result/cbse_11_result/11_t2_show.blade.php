@@ -157,7 +157,7 @@
                 $half = $stud_data['Half Yearly'];
                 $year = $stud_data['Yearly'];
 
-                $total_unit_1 = $subject_data['total_points'][$stud_id]['UT1'];
+                $total_unit_1 = $subject_data['total_points'][$stud_id]['UT1'] ?? 0;
                 $total_unit_2 = $subject_data['total_points'][$stud_id]['UT2'];
                 $total_practical=$subject_data['total_points'][$stud_id]['Practical/ASL/Project'];
                 $total_half=$subject_data['total_points'][$stud_id]['Half Yearly'];
@@ -165,7 +165,7 @@
                
 //START MATHEMATICS ONLY
 if($subject == "MATHEMATICS"){
-	   $i = $j=$k=0;
+    $i = $j=$k=0;
 if ($total_unit_1 != 0) {
     $i = round(10 * (is_numeric($unit_1) ? $unit_1 : 0) / $total_unit_1, 0);
 } 
@@ -175,7 +175,6 @@ if ($total_unit_2 != 0) {
 if ($total_half != 0) {
     $k = round(10 * (is_numeric($half) ? $half : 0) / $total_half,0);
 } 
-
 	$marksArr = array(
 		$i,$j,$k		
 	);
