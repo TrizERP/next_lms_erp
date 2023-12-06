@@ -48,7 +48,7 @@ use App\Http\Controllers\school_setup\sub_std_mapController;
 use Illuminate\Support\Facades\Route;
 
 Route::group(['prefix' => 'lms', 'middleware' => ['session', 'menu', 'logRoute']], function () {
-    Route::get('o-net-data-category',[\App\Http\Controllers\lms\ONetOnlineDataController::class,'index']);
+    Route::get('o-net-data-category',[\App\Http\Controllers\lms\ONetOnlineDataController::class,'index'])->name('o-net-data-category.index');
     Route::get('o-net-data-list',[\App\Http\Controllers\lms\ONetOnlineDataController::class,'ONetDataTable'])->name('o-net-data-table.show-list');
     Route::get('o-net-data-list-details',[\App\Http\Controllers\lms\ONetOnlineDataController::class,'ONetDataTableListDetails'])->name('o-net-data-table.show-list-details');
     Route::get('o-net-data-category/show',[\App\Http\Controllers\lms\ONetOnlineDataController::class,'showCategoryWiseData'])->name('o-net-data.show-category');
