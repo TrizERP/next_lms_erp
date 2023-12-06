@@ -577,12 +577,179 @@ class dynamic_report_controller extends Controller
                                 }
                             }
                         }
+                    else{
+                        if ($main_module_name == "Student Infirmary") {
+                            $this->query = DB::table('tblstudent as s');
+                            $main_table_initial = "s";
+                            foreach ($sub_module_name as $id => $arr) {
+                                if ($arr->sub_module == "Student") {
+                                    $tblstudent_join = [
+                                        'stm.student_id'       => 's.id',
+                                        'stm.sub_institute_id' => 's.sub_institute_id',
+                                    ];
+                                    $this->query->join('tblstudent_enrollment as se', $enrollment_join);
+                                    $this->query->join('academic_section as acs', $grade_join);
+                                    $this->query->join('standard as st', $std_join);
+                                    $this->query->join('division as di', $div_join);
+                                    $this->query->join('student_infirmary as stm', $tblstudent_join);
+                                }
+                            }
+                        }
+                    else{
+                        if ($main_module_name == "Student Vaccination") {
+                            $this->query = DB::table('tblstudent as s');
+                            $main_table_initial = "s";
+                            foreach ($sub_module_name as $id => $arr) {
+                                if ($arr->sub_module == "Student") {
+                                    $tblstudent_join = [
+                                        'sv.student_id'       => 's.id',
+                                        'sv.sub_institute_id' => 's.sub_institute_id',
+                                    ];
+                                    $this->query->join('tblstudent_enrollment as se', $enrollment_join);
+                                    $this->query->join('academic_section as acs', $grade_join);
+                                    $this->query->join('standard as st', $std_join);
+                                    $this->query->join('division as di', $div_join);
+                                    $this->query->join('student_vaccination as sv', $tblstudent_join);
+                                }
+                            }
+                        }
+                    else{
+                        if ($main_module_name == "Student Height Weight") {
+                            $this->query = DB::table('tblstudent as s');
+                            $main_table_initial = "s";
+                            foreach ($sub_module_name as $id => $arr) {
+                                if ($arr->sub_module == "Student") {
+                                    $tblstudent_join = [
+                                        'shw.student_id'       => 's.id',
+                                        'shw.sub_institute_id' => 's.sub_institute_id',
+                                    ];
+                                    $this->query->join('tblstudent_enrollment as se', $enrollment_join);
+                                    $this->query->join('academic_section as acs', $grade_join);
+                                    $this->query->join('standard as st', $std_join);
+                                    $this->query->join('division as di', $div_join);
+                                    $this->query->join('student_height_weight as shw', $tblstudent_join);
+                                }
+                            }
+                        }
+                    else{
+                        if ($main_module_name == "Student Health") {
+                            $this->query = DB::table('tblstudent as s');
+                            $main_table_initial = "s";
+                            foreach ($sub_module_name as $id => $arr) {
+                                if ($arr->sub_module == "Student") {
+                                    $tblstudent_join = [
+                                        'sh.student_id'       => 's.id',
+                                        'sh.sub_institute_id' => 's.sub_institute_id',
+                                    ];
+                                    $this->query->join('tblstudent_enrollment as se', $enrollment_join);
+                                    $this->query->join('academic_section as acs', $grade_join);
+                                    $this->query->join('standard as st', $std_join);
+                                    $this->query->join('division as di', $div_join);
+                                    $this->query->join('student_health as sh', $tblstudent_join);
+                                }
+                            }
+                        }
+                    else{
+                        if ($main_module_name == "Anacdotal") {
+                            $this->query = DB::table('tblstudent as s');
+                            $main_table_initial = "s";
+                            foreach ($sub_module_name as $id => $arr) {
+                                if ($arr->sub_module == "Student") {
+                                    $tblstudent_join = [
+                                        'a.student_id'       => 's.id',
+                                        'a.sub_institute_id' => 's.sub_institute_id',
+                                    ];
+                                    $this->query->join('tblstudent_enrollment as se', $enrollment_join);
+                                    $this->query->join('academic_section as acs', $grade_join);
+                                    $this->query->join('standard as st', $std_join);
+                                    $this->query->join('division as di', $div_join);
+                                    $this->query->join('student_anacdotal as a', $tblstudent_join);
+                                }
+                            }
+                        }
+                    else{
+                        if ($main_module_name == "Past Education") {
+                            $this->query = DB::table('tblstudent as s');
+                            $main_table_initial = "s";
+                            foreach ($sub_module_name as $id => $arr) {
+                                if ($arr->sub_module == "Student") {
+                                    $tblstudent_join = [
+                                        'tpe.student_id'       => 's.id',
+                                        'tpe.sub_institute_id' => 's.sub_institute_id',
+                                    ];
+                                    $this->query->join('tblstudent_enrollment as se', $enrollment_join);
+                                    $this->query->join('academic_section as acs', $grade_join);
+                                    $this->query->join('standard as st', $std_join);
+                                    $this->query->join('division as di', $div_join);
+                                    $this->query->join('tblstudent_past_education as tpe', $tblstudent_join);
+                                }
+                            }
+                        }
+                    else{
+                        if ($main_module_name == "Family History") {
+                            $this->query = DB::table('tblstudent as s');
+                            $main_table_initial = "s";
+                            foreach ($sub_module_name as $id => $arr) {
+                                if ($arr->sub_module == "Student") {
+                                    $tblstudent_join = [
+                                        'tfh.student_id'       => 's.id',
+                                        'tfh.sub_institute_id' => 's.sub_institute_id',
+                                    ];
+                                    $this->query->join('tblstudent_enrollment as se', $enrollment_join);
+                                    $this->query->join('academic_section as acs', $grade_join);
+                                    $this->query->join('standard as st', $std_join);
+                                    $this->query->join('division as di', $div_join);
+                                    $this->query->join('tblstudent_family_history as tfh', $tblstudent_join);
+                                }
+                            }
+                        }
+                    else{
+                        if ($main_module_name == "Parent Feedback") {
+                            $this->query = DB::table('tblstudent as s');
+                            $main_table_initial = "s";
+                            foreach ($sub_module_name as $id => $arr) {
+                                if ($arr->sub_module == "Student") {
+                                    $tblstudent_join = [
+                                        'tpf.student_id'       => 's.id',
+                                        'tpf.sub_institute_id' => 's.sub_institute_id',
+                                    ];
+                                    $this->query->join('tblstudent_enrollment as se', $enrollment_join);
+                                    $this->query->join('academic_section as acs', $grade_join);
+                                    $this->query->join('standard as st', $std_join);
+                                    $this->query->join('division as di', $div_join);
+                                    $this->query->join('tblstudent_parent_feedback as tpf', $tblstudent_join);
+                                }
+                            }
+                        }
+                    else{
+                        if ($main_module_name == "Siblings Details") {
+                            $this->query = DB::table('tblstudent as s');
+                            $main_table_initial = "s";
+                            foreach ($sub_module_name as $id => $arr) {
+                                if ($arr->sub_module == "Student") {
+                                    $this->query->join('tblstudent_enrollment as se', $enrollment_join);
+                                    $this->query->join('academic_section as acs', $grade_join);
+                                    $this->query->join('tblstudent_siblings as ts', function ($join) {
+                                        $join->whereRaw('FIND_IN_SET(s.id,ts.siblings_id) >0 and s.sub_institute_id = ts.sub_institute_id');
+                                    });
+                                }
+                            }
+                        }
                     }
                 }
             }
         }
     }
     }
+}
+                    }
+                }
+            }
+}
+}
+                    }
+                }
+}
                 }
             }
         }
@@ -596,7 +763,12 @@ class dynamic_report_controller extends Controller
         foreach ($all_detail["selected_fields"] as $id => $val) {
             if ($main_module_name !="Transport" && $all_fields_name[$val] == "Full Name") {
                 $col[] = DB::raw("concat_ws(' ',s.first_name,s.middle_name,s.last_name) as full_name");
-            }elseif($main_module_name =="Transport" && $all_fields_name[$val] == " Full Name")
+            }
+            elseif($main_module_name =="Siblings Details" && $all_fields_name[$val] == "Sibling Name")
+            {
+                $col[] = DB::raw("GROUP_CONCAT(concat_ws(' ',s.first_name,s.middle_name,s.last_name)) as full_name");
+            }
+            elseif($main_module_name =="Transport" && $all_fields_name[$val] == " Full Name")
             {
                 if($sub_module_name[0] == "vehicle" ){
                     $col[] = DB::raw("concat_ws(' ',tdd.first_name,tdd.last_name) as full_name");

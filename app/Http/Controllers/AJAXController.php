@@ -163,7 +163,7 @@ class AJAXController extends Controller
 
     public function getStandardList(Request $request)
     {
-        $path = $_SERVER['HTTP_REFERER'];
+        $path = $_SERVER['HTTP_REFERER'] ?? URL::current();
 
         if ($path) {
             $parsedUrl = parse_url($path);
@@ -174,8 +174,16 @@ class AJAXController extends Controller
                 if (isset($pathParts['filename'])) {
                     $module_name = $pathParts['filename'];
                 }
-                if($parsedUrl['path'] == '/lms/question_paper/create' || $parsedUrl['path'] == '/lms/question_paper/search')
+                if($parsedUrl['path'] == '/lms/question_paper/create' || $parsedUrl['path'] == '/lms/question_paper/search'){
                     $module_name = 'question_paper';
+                }
+               
+                $path2 = "/student/student_homework/create";
+                $keyword2 = "create";
+              
+                if (strpos($path2, $keyword2) !== false) {
+                    $module_name = "student_homework";
+                }
             }
         }
 

@@ -142,8 +142,16 @@ if (!function_exists('SearchChain')) {
                 if (isset($pathParts['filename'])) {
                     $module_name = $pathParts['filename'];
                 }
-                if($parsedUrl['path'] == '/lms/question_paper/create' || $parsedUrl['path'] == '/lms/question_paper/search')
+                if($parsedUrl['path'] == '/lms/question_paper/create' || $parsedUrl['path'] == '/lms/question_paper/search'){
                     $module_name = 'question_paper';
+                }
+                
+                $path = "/student/student_homework/create";
+                $keyword = "student_homework";
+                
+                if (strpos($path, $keyword) !== false) {
+                    $module_name = "student_homework";
+                }
             }
         }
         $module_array = [
@@ -186,7 +194,6 @@ if (!function_exists('SearchChain')) {
         }
         // END 07/09/2021 code for getting standard , grade , division according to timetable wise for homework module
 
-
         $explod_list = explode(',', $listed_drop);
         $grade_name = 'grade';
         $std_name = 'standard';
@@ -220,7 +227,7 @@ if (!function_exists('SearchChain')) {
                 $query->oRwhere('id', null);
             }
         }
-        //  END Check for class teacher assigned standards      //
+        //  END Check for class teacher assigned standards      
 
         //START Check for subject teacher assigned
         $subjectTeacherGrdArr = session()->get('subjectTeacherGrdArr');
@@ -236,14 +243,12 @@ if (!function_exists('SearchChain')) {
 
         $academic_section = $query->pluck("title", "id");
 
-        // $academic_section = DB::table("academic_section")
-        // ->where("sub_institute_id", session()->get('sub_institute_id'))
-        // ->pluck("title", "id");
-
+        $g_id=[];
         foreach ($academic_section as $id => $val) {
             $selected = '';
             if (is_array($grade_val)) {
                 if (in_array($id, $grade_val)) {
+                    $g_id[]=$id;                    
                     $selected = 'selected="selected"';
                 }
             } else {
@@ -257,16 +262,19 @@ if (!function_exists('SearchChain')) {
         $std_option = "<option value=''>Select</option>";
         if ($grade_val != "") {
             if (is_array($grade_val)) {
-                $query = DB::table('standard');
-                $query->whereIn("grade_id", $grade_val);
 
-                //START Check for class teacher assigned standards
+                $query = DB::table('standard');
                 $classTeacherStdArr = session()->get('classTeacherStdArr');
+                if($std_val!='' && is_array($std_val) && !empty($classTeacherStdArr)){
+                    $query->whereIn("id", $std_val)->whereIn('grade_id',$g_id);                    
+                }else{
+                    $query->whereIn("grade_id", $grade_val);
+                }
+                
+                //START Check for class teacher assigned standards
                 if (isset($classTeacherStdArr) && !in_array($module_name, $module_array)) {
-                    if (count($classTeacherStdArr) > 0) {
+                    if (count($classTeacherStdArr) > 0 && $std_val=='') {
                         $query->whereIn('id', $classTeacherStdArr);
-                    } else {
-                        $query->oRwhere('id', null);
                     }
                 }
                 //END Check for class teacher assigned standards
@@ -274,19 +282,14 @@ if (!function_exists('SearchChain')) {
                 //START Check for subject teacher assigned
                 $subjectTeacherStdArr = session()->get('subjectTeacherStdArr');
                 if (isset($subjectTeacherStdArr) && (!isset($classTeacherStdArr) || in_array($module_name, $module_array))) {
-                    if (count($subjectTeacherStdArr) > 0) {
+                    if (count($subjectTeacherStdArr) > 0 && $std_val=='') {
                         $query->orwhereIn('id', $subjectTeacherStdArr);
                     } else {
                         $query->oRwhere('id', null);
                     }
                 }
-                //END Check for subject teacher assigned
-
                 $standard = $query->pluck("name", "id");
 
-                // $standard = DB::table("standard")
-                // ->whereIn("grade_id", $grade_val)
-                // ->pluck("name", "id");
             } else {
                 $query = DB::table('standard');
                 $query->where("grade_id", $grade_val);
@@ -316,10 +319,6 @@ if (!function_exists('SearchChain')) {
                 //END Check for subject teacher assigned
 
                 $standard = $query->pluck("name", "id");
-
-                // $standard = DB::table("standard")
-                // ->where("grade_id", $grade_val)
-                // ->pluck("name", "id");
             }
 
             foreach ($standard as $id => $val) {
@@ -926,10 +925,10 @@ if (!function_exists('FeeBreakoffHeadWise')) {
         $stud_arr = implode(',', $student_ids);
         // $extra_where = " AND s.id in (" . $stud_arr . ")";
 
-        if($months!=""){
+       if (!empty($months) && is_array($months)) {
             $month_arr = implode(',', $months);
             $extra_where .= " AND fb.month_id in (" . $month_arr . ")";
-        }
+        } 
 
         $result = DB::table('tblstudent as s')
             ->join('tblstudent_enrollment as se', 'se.student_id', '=', 's.id')
