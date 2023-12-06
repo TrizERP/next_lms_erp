@@ -1465,7 +1465,7 @@ class AJAXController extends Controller
                 $pdf_file_path = $save_path . '/' . $pdf_filename;
                 file_put_contents($html_file_path, $html);
 
-                if ($action == 'Bonafide' || $action == 'Character Certificate' || $action == 'other_fees_collect_receipt' || $action == 'imprest_fees_cancel_refund_receipt') {
+                if (($action == 'Bonafide' || $action == 'Character Certificate' || $action == 'other_fees_collect_receipt' || $action == 'imprest_fees_cancel_refund_receipt') && $sub_institute_id != 254) {
                     htmlToPDFLandscapeCertificate($html_file_path, $pdf_file_path);
                 } else {
                     htmlToPDF($html_file_path, $pdf_file_path);

@@ -23,36 +23,36 @@
                                 <div class="count">@php echo $i++;@endphp</div>
                                 <div>
 
-                                    <h4>{{$chdata->resource_title}}</h4>
-                                    @if ($chdata->resource_title == 'Tasks')
-                                        @foreach($chdata->summary as $summary)
+                                    <h4>{{$chdata['resource_title']}}</h4>
+                                    @if ($chdata['resource_title'] == 'Tasks')
+                                        @foreach($chdata['summary'] as $summary)
                                             <li class="text-dark"><b>+ {{$summary}}</b></li>
                                         @endforeach
                                     @endif
-                                    @if ($chdata->resource_title == 'Technology Skills')
-                                        @foreach($chdata->summary as $summary)
+                                    @if ($chdata['resource_title'] == 'Technology Skills')
+                                        @foreach($chdata['summary'] as $summary)
                                             <li class="text-dark"> <b>+{{$summary['name']}}</b> - <span>@foreach($summary['example'] as $example)
                                                         {{$example['name']}};
                                                     @endforeach</span></li>
                                         @endforeach
                                     @endif
-                                    @if ($chdata->resource_title == 'Knowledge' || $chdata->resource_title == 'Skills'|| $chdata->resource_title == 'Abilities' || $chdata->resource_title == 'Work Activities'|| $chdata->resource_title == 'Work Styles'|| $chdata->resource_title == 'Interests'|| $chdata->resource_title == 'Work Values')
-                                        @foreach($chdata->summary as $summary)
+                                    @if ($chdata['resource_title'] == 'Knowledge' ||$chdata['resource_title'] == 'Skills'|| $chdata['resource_title'] == 'Abilities' || $chdata['resource_title'] == 'Work Activities'|| $chdata['resource_title']== 'Work Styles'|| $chdata['resource_title'] == 'Interests'|| $chdata['resource_title'] == 'Work Values')
+                                        @foreach($chdata['summary'] as $summary)
                                             <li class="text-dark"> <b>+{{$summary['name']}}</b> - {{$summary['description'] }}</li>
                                         @endforeach
                                     @endif
 
-                                    @if ($chdata->resource_title == 'Job Zone')
-                                            <li class="text-dark"> <b>Title</b> -<span>{{$chdata->summary[0]['title']}}</span></li>
-                                            <li class="text-dark"> <b>Education</b> -<span>{{$chdata->summary[0]['education']}}</span></li>
-                                            <li class="text-dark"> <b>Related Experience</b> -<span>{{$chdata->summary[0]['related_experience']}}</span></li>
-                                            <li class="text-dark"> <b>Job Training</b> -<span>{{$chdata->summary[0]['job_training']}}</span></li>
-                                            <li class="text-dark"> <b>Job Zone Examples</b> -<span>{{$chdata->summary[0]['job_zone_examples']}}</span></li>
-                                            <li class="text-dark"> <b>SVP Range</b> -<span>{{$chdata->summary[0]['svp_range']}}</span></li>
+                                    @if ($chdata['resource_title']== 'Job Zone')
+                                            <li class="text-dark"> <b>Title</b> -<span>{{$chdata['summary'][0]['title']}}</span></li>
+                                            <li class="text-dark"> <b>Education</b> -<span>{{$chdata['summary'][0]['education']}}</span></li>
+                                            <li class="text-dark"> <b>Related Experience</b> -<span>{{$chdata['summary'][0]['related_experience']}}</span></li>
+                                            <li class="text-dark"> <b>Job Training</b> -<span>{{$chdata['summary'][0]['job_training']}}</span></li>
+                                            <li class="text-dark"> <b>Job Zone Examples</b> -<span>{{$chdata['summary'][0]['job_zone_examples']}}</span></li>
+                                            <li class="text-dark"> <b>SVP Range</b> -<span>{{$chdata['summary'][0]['svp_range']}}</span></li>
                                     @endif
 
-                                    @if ($chdata->resource_title == 'Education')
-                                        @foreach($chdata->summary as $summary)
+                                    @if ($chdata['resource_title']== 'Education')
+                                        @foreach($chdata['summary'] as $summary)
                                             <li class="text-dark">  - <span><b>{{$summary['name']}} ({{$summary['score_value']}} / 100%) </b>- {{$summary['description']}}</span></li>
                                         @endforeach
                                     @endif

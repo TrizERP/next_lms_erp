@@ -906,7 +906,7 @@ class fees_collect_controller extends Controller
                     })->selectRaw("ifnull(max(cast(fr.RECEIPT_ID_" . $arr->sort_order . " as UNSIGNED))," . $arr->last_receipt_number . ") as rid1,
                         MAX(CAST(SUBSTRING(fr.RECEIPT_ID_" . $arr->sort_order . "," . $sub_string_count . ") AS UNSIGNED)) as rid")
                     ->where('fr.SUB_INSTITUTE_ID', $sub_institute_id)
-                    ->where(function ($q) {
+                    ->where(function ($q) use ($sub_institute_id,$syear){
                         if ($sub_institute_id != 47) {
                             $q->where('fr.syear', $syear);
                         }
@@ -2025,13 +2025,13 @@ class fees_collect_controller extends Controller
         $prviouse_syear = ($syear - 1);
 
         $get_imprest_sql = DB::table('fees_breakoff_other as fb')
-            ->join('fees_title as ft', function ($join) {
+            ->join('fees_title as ft', function ($join) use($syear) {
                 $join->whereRaw("ft.fees_title = fb.fee_type_id AND ft.sub_institute_id = fb.sub_institute_id
-                    AND ft.syear = '" . session()->get('syear') . "'");
+                    AND ft.syear = '" .$syear . "'");
             })
             ->selectRaw("fb.id,fb.student_id,fb.sub_institute_id,IFNULL(fb.amount,0) as previous_imprest_amt,fb.syear,
                 ft.fees_title,ft.display_name ")
-            ->where('fb.sub_institute_id', session()->get('sub_institute_id'))
+            ->where('fb.sub_institute_id', $sub_institute_id)
             ->where('fb.syear', $prviouse_syear)
             ->where('ft.display_name', 'LIKE', '%Imprest%')
             ->where('fb.student_id', $reg_bk_off[0]->student_id)

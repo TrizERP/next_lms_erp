@@ -13,13 +13,14 @@ return new class extends Migration
      */
     public function up()
     {
-        Schema::create('o_net_occupation_detail_tech_skill_summeries', function (Blueprint $table) {
+        Schema::create('o_net_data_tables', function (Blueprint $table) {
             $table->id();
-            $table->unsignedBigInteger('o_net_occupation_detail_list_id');
-            $table->unsignedBigInteger('title_id');
-            $table->string('name');
-            $table->text('related');
-            $table->text('example');
+            $table->integer('importance')->nullable();
+            $table->integer('level')->nullable();
+            $table->integer('job_zone')->nullable();
+            $table->string('code')->nullable();
+            $table->text('occupation')->nullable();
+            $table->integer('o_net_sub_category_id')->nullable();
             $table->timestamps();
         });
     }
@@ -31,6 +32,6 @@ return new class extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('o_net_occupation_detail_tech_skill_summeries');
+        Schema::dropIfExists('o_net_data_tables');
     }
 };

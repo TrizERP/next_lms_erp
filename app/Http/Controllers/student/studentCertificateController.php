@@ -178,7 +178,10 @@ class studentCertificateController extends Controller
 
     public function create_html_content($syear,$sub_institute_id,$html_content,$value,$receipt_book_arr,$template,$certificate_no,$certificate_reason) {
         
-        $display_year = $syear."-".($syear + 1);
+        if($sub_institute_id == 61)
+            $display_year = "Apr-".$syear." to Mar-".($syear + 1);
+        else
+            $display_year = $syear."-".($syear + 1);
 
         $image_path1 = "http://".$_SERVER['HTTP_HOST']."/storage/fees/".$receipt_book_arr->receipt_logo;
         $image_path = '<img src="'.$image_path1.'" alt="SCHOOL LOGO" style="width: 100px !important;height: 100px !important;">';
@@ -338,12 +341,12 @@ class studentCertificateController extends Controller
             1 => 'Jan', 2 => 'Feb', 3 => 'Mar', 4 => 'Apr', 5 => 'May', 6 => 'Jun', 7 => 'Jul', 8 => 'Aug', 9 => 'Sep',
             10 => 'Oct', 11 => 'Nov', 12 => 'Dec',
         ];
-        $fees_details = "<h4 style='text-align:center;'>Apr-".$syear." To Mar-".($syear+1)."</h4>
+        $fees_details = "<h4 style='text-align:center;line-height: 170%;'><u>Apr-".$syear." To Mar-".($syear+1)."</u></h4>
         <div style='width:100%'>
             <table align='center'>";
         foreach ($fees_heads as $title) {
             if($fees_data->sum($title->fees_title) > 0){
-            $fees_details .= "<tr><td style='font-weight:600'>" . $title->display_name . "</td>";
+            $fees_details .= "<tr><td style='font-weight:600;line-height: 170%;text-align:left'>" . $title->display_name . "</td>";
             $termIds = [];
             $month_name=[];
             foreach ($fees_month as $fees) {
@@ -367,7 +370,7 @@ class studentCertificateController extends Controller
             });
 
         }     
-            $fees_details .= "<td>" . $fees_data->sum($title->fees_title) ?? 0 . "  ";
+            $fees_details .= "<td style='font-size:14px;text-align:left'>" . $fees_data->sum($title->fees_title) ?? 0 . "  ";
             $fees_details.="/- ";
 
             if (!empty($month_name)) {
@@ -391,8 +394,8 @@ class studentCertificateController extends Controller
         }
         }
         $fees_details .="<tr>
-        <td style='font-weight:600'>Total</td>
-        <td style='font-weight:600'>".$totalAmount."/- </td>
+        <td style='font-weight:600;line-height: 170%;text-align:left;font-size:16px'>Total</td>
+        <td style='font-weight:600;line-height: 170%;text-align:left;font-size:16px'>".$totalAmount."/- </td>
         </tr>";
         $fees_details .= "
             </table></div>
