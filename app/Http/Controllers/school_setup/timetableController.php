@@ -675,7 +675,7 @@ class timetableController extends Controller
 
         $teacher_data = tbluserModel::select('tbluser.*')
             ->join('tbluserprofilemaster', 'tbluserprofilemaster.id', "=", 'tbluser.user_profile_id')
-            ->where(['tbluser.sub_institute_id' => $sub_institute_id, 'tbluserprofilemaster.name' => 'Teacher', 'status' => 1])
+            ->where(['tbluser.sub_institute_id' => $sub_institute_id, 'tbluserprofilemaster.name' => 'Teacher', 'tbluser.status' => 1])
             // ->when($marking_period_id,function($query) use ($marking_period_id){
             //     $query->where('marking_period_id',$marking_period_id);
             // })
