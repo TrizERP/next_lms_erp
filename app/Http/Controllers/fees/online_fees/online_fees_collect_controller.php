@@ -491,7 +491,8 @@ class online_fees_collect_controller extends Controller
                       });
             })
             ->whereNotNull('fp.icici_order_id')
-            ->where('fp.created_at', '>=', now()->subDays(3))
+            //->where('fp.created_at', '>=', now()->subDays(3))
+            ->whereBetween('fp.created_at', [now()->subDays(3), now()->subMinutes(30)])
 //            ->whereIn('fp.sub_institute_id', $ids)
 //            ->whereIn('fp.student_id', [199428,199461,195283,195156,195227])
             ->groupBy('fp.id')

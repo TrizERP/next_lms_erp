@@ -926,10 +926,10 @@ if (!function_exists('FeeBreakoffHeadWise')) {
         $stud_arr = implode(',', $student_ids);
         // $extra_where = " AND s.id in (" . $stud_arr . ")";
 
-        if($months!=""){
+       if (!empty($months) && is_array($months)) {
             $month_arr = implode(',', $months);
             $extra_where .= " AND fb.month_id in (" . $month_arr . ")";
-        }
+        } 
 
         $result = DB::table('tblstudent as s')
             ->join('tblstudent_enrollment as se', 'se.student_id', '=', 's.id')
