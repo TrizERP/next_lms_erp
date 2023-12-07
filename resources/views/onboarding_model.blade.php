@@ -80,8 +80,8 @@
 						<div class="col-md-4">
 							<h4><b>Status</b></h4>	
 						</div>										
-					@foreach($step2_titles as $index=>$title)
-					<div class="col-md-4">
+						@foreach($step2_titles as $index=>$title)
+						<div class="col-md-4">
 							<label>
 								<a class="text-primary" onclick="window.open('{{route($step2_links[$index])}}','scrollbars=yes,resizable=no,status=no,location=no,toolbar=no,menubar=no','width=1200,height=1200,left=100,top=100');"
 								 href="javascript:void(0);"><b>{{$i++.") ".$title}}</b></a>
@@ -104,13 +104,35 @@
                                  <img src="{{asset('/Images/close-square-icon.svg')}}" title="complete">
                                 @endif
 						</div>
-					@endforeach
+						@endforeach
+					</div>
+					
+					<div class="col-md-12 form-group mb-0">
+						<center>
+							<button class="btn btn-primary fees-modulde-3">Continue</button>
+							<button class="btn btn-warning fees_back">Back</button>							
+						</center>
+					</div>
+				</div>
+				<!-- end of steps  -->
+
+				<!-- step 3 start  -->
+
+				<div id="fees_step_3">
+					
+					<div class="row">
+						<div class="col-md-4">
+							<label>
+								<a class="text-primary" onclick="window.open('{{route('import.data')}}','scrollbars=yes,resizable=no,status=no,location=no,toolbar=no,menubar=no','width=1200,height=1200,left=100,top=100');"
+								 href="javascript:void(0);"><b>Import Data</b></a>
+							</label>
+						</div>
 					</div>
 					
 					<div class="col-md-12 form-group mb-0">
 						<center>
 							<button class="btn btn-primary finish">Finish</button>
-							<button class="btn btn-warning fees_back">Back</button>							
+							<button class="btn btn-warning fees_back2">Back</button>							
 						</center>
 					</div>
 				</div>
@@ -121,6 +143,44 @@
 	</div>
 </div>
 
+<!-- Modal -->
+<div class="modal fade" id="exampleModal_all" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+
+                <h3 class="modal-title fs-5 fcolor" id="allTitle"></h3>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+				<span id = "url_link"></span>
+				<div class="row">
+					<div class="col-md-4">
+						<h4><b>Modules</b></h4>
+					</div>
+					<div class="col-md-4">
+						<h4><b>Deatils</b></h4>	
+					</div>
+					<div class="col-md-4">
+						<h4><b>Status</b></h4>	
+					</div>
+				</div>
+				<div class="row" id="all_model">
+				
+				</div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary">Save changes</button>
+				<!-- <button class="btn btn-primary">Continue</button>
+				<button class="btn btn-warning">Back</button> -->
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<!-- endofmodal -->
 <style>
 	.modal-dialog {
 		max-width: 1050px !important;
@@ -129,6 +189,7 @@
 <script>
 	$(document).ready(function() {
 		$('#fees_step_2').hide();
+		$('#fees_step_3').hide();
 		$('.fees_step_title').append('<b>Step 1 : Check Account Details</b>');
 		// Collapse toggle
 		$('.fees-modulde-2').click(function() {
@@ -138,11 +199,26 @@
 			$('.fees_step_title').append('<b>Step 2 : Fees Setup </b>');			
 		});
 
+		$('.fees-modulde-3').click(function() {
+			$('.fees_step_title').empty();
+			$('#fees_step_3').show();
+			$('#fees_step_2').hide();
+			$('#fees_step_1').hide();
+			$('.fees_step_title').append('<b>Step 3 : Import Data </b>');			
+		});
+
 		$('.fees_back').click(function() {
 			$('#fees_step_2').hide();
 			$('#fees_step_1').show();
 			$('.fees_step_title').empty();
 			$('.fees_step_title').append('<b>Step 1 : Check Account Details</b>');
+		});
+
+		$('.fees_back2').click(function() {
+			$('#fees_step_3').hide();
+			$('#fees_step_2').show();
+			$('.fees_step_title').empty();
+			$('.fees_step_title').append('<b>Step 2 : Fees Setup</b>');
 		});
 
 		$('.finish').click(function() {
