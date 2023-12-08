@@ -22,7 +22,7 @@ class inventory_staff_wise_reportController extends Controller
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $syear = $request->session()->get('syear');
         $users = tbluserModel::select('id', 'user_name', 'first_name', 'middle_name', 'last_name')
-            ->where(['sub_institute_id' => $sub_institute_id])->get()->toArray();
+            ->where(['sub_institute_id' => $sub_institute_id, 'status' => 1])->get()->toArray();
 
         $res['status_code'] = 1;
         $res['message'] = "Success";
@@ -70,7 +70,7 @@ class inventory_staff_wise_reportController extends Controller
 
 
         $users = tbluserModel::select('id', 'user_name', 'first_name', 'middle_name', 'last_name')
-            ->where(['sub_institute_id' => $sub_institute_id])->get()->toArray();
+            ->where(['sub_institute_id' => $sub_institute_id, 'status' => 1])->get()->toArray();
 
         $res['status_code'] = 1;
         $res['message'] = "Success";

@@ -93,7 +93,7 @@ class PayrollController extends Controller
             }
             $sub_institute_id = $request->get('sub_institute_id');
         }
-        $employees = $employeeLists = tbluserModel::where('sub_institute_id', $sub_institute_id)->get();
+        $employees = $employeeLists = tbluserModel::where('sub_institute_id', $sub_institute_id)->where('status', 1)->get();
         if ($request->employee_id) {
             $employees = $employees->where('id', $request->employee_id);
         }
@@ -285,7 +285,7 @@ class PayrollController extends Controller
     {
         $sub_institute_id = session()->get('sub_institute_id');
 
-        $employees = tbluserModel::where('sub_institute_id', $sub_institute_id)->get();
+        $employees = tbluserModel::where('sub_institute_id', $sub_institute_id)->where('status', 1)->get();
         
         $payrollTypes = PayrollType::where('status', 1)->get();
 
@@ -591,7 +591,7 @@ class PayrollController extends Controller
     {
         //return $request->all();
         $sub_institute_id = $request->session()->get('sub_institute_id');
-        $employeeLists = tbluserModel::where('sub_institute_id', $sub_institute_id)->get();
+        $employeeLists = tbluserModel::where('sub_institute_id', $sub_institute_id)->where('status', 1)->get();
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $payrollTypes = PayrollType::where('status', 1)->get();
         $currentYearemployeeDetails = [];

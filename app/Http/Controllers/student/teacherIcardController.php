@@ -47,6 +47,7 @@ class teacherIcardController extends Controller
             ->select(DB::raw("CONCAT(first_name,' ',last_name) AS name"), 'id')
             ->where("sub_institute_id", $request->session()->get('sub_institute_id'))
             ->where('user_profile_id', $teacher_type)
+            ->where('status', 1)
             ->pluck("name", "id");
 
         // $studentData = SearchStudent($grade, $standard, $division);

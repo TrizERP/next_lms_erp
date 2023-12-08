@@ -98,7 +98,7 @@ class visitor_masterController extends Controller
         $data['to_meet_array'] = tbluserModel::select(
             'id', DB::raw('concat(first_name," ",middle_name," ",last_name) as staff_name')
         )
-            ->where(['sub_institute_id' => $sub_institute_id])->get();
+            ->where(['sub_institute_id' => $sub_institute_id, 'status' => 1])->get();
 
         return is_mobile($type, 'visitor_management/add_visitor_master', $data, "view");
     }
@@ -201,7 +201,7 @@ class visitor_masterController extends Controller
         $data['visitor_type_data'] = visitor_typeModel::where(['sub_institute_id' => $sub_institute_id])->get();
         $data['to_meet_array'] = tbluserModel::select(
             'id', DB::raw('concat(first_name," ",middle_name," ",last_name) as staff_name'))
-            ->where(['sub_institute_id' => $sub_institute_id])->get();
+            ->where(['sub_institute_id' => $sub_institute_id, 'status' => 1])->get();
 
         return is_mobile($type, "visitor_management/add_visitor_master", $data, "view");
     }

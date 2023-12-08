@@ -82,7 +82,7 @@ class taskController extends Controller
         $syear = $request->session()->get("syear");
         $user_id = $request->session()->get("user_id");
 
-        $users = tbluserModel::where(["sub_institute_id" => $sub_institute_id])
+        $users = tbluserModel::where(["sub_institute_id" => $sub_institute_id, 'status' => 1])
             ->whereRaw("id != '".$user_id."'")
             ->get()
             ->toArray();
