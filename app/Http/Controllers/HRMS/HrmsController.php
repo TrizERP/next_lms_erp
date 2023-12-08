@@ -185,7 +185,7 @@ class HrmsController extends Controller
             $hrmsAttendanceInOutTime['date'] = Carbon::now();
         }
 
-        $employeeLists = tbluserModel::where('sub_institute_id', $subInstituteId)->get();
+        $employeeLists = tbluserModel::where('sub_institute_id', $subInstituteId)->where('status', 1)->get();
 
         $hrmsAttendanceInOutTime['id'] = 0;
         $hrmsAttendanceInOutTime['time'] = Carbon::now()->format('H:i:s');
@@ -262,7 +262,7 @@ class HrmsController extends Controller
         } else {
             $sub_institute_id = $request->session()->get('sub_institute_id');
         }
-        $employees = $employeeLists = tbluserModel::where('sub_institute_id', $sub_institute_id)->get();
+        $employees = $employeeLists = tbluserModel::where('sub_institute_id', $sub_institute_id)->where('status', 1)->get();
         
         $hrmsList = HrmsAttendance::with('getUser');
 
@@ -294,7 +294,7 @@ class HrmsController extends Controller
         } else {
             $sub_institute_id = $request->session()->get('sub_institute_id');
         }
-        $employees = $employeeLists = tbluserModel::where('sub_institute_id', $sub_institute_id)->get();
+        $employees = $employeeLists = tbluserModel::where('sub_institute_id', $sub_institute_id)->where('status', 1)->get();
         $hrmsList = HrmsAttendance::with('getUser');
         $date = $request->date ?? Carbon::now();
         $timestamp = strtotime($date);

@@ -29,7 +29,7 @@ class send_email_report_controller extends Controller
         $sub_institute_id = session()->get('sub_institute_id');
 
         $users = tbluserModel::select(DB::raw("CONCAT(first_name,' ',last_name) AS name"), 'id')
-            ->where('sub_institute_id', $sub_institute_id)->get()
+            ->where('sub_institute_id', $sub_institute_id)->where('status', 1)->get()
             ->pluck("name", "id");
 
         $data['data'] = array();

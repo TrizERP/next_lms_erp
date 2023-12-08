@@ -165,7 +165,7 @@ class proxyController extends Controller
             DB::raw('concat(tbluser.first_name," ",tbluser.middle_name," ",tbluser.last_name) as teacher_name')
         )
             ->join('tbluserprofilemaster', 'tbluserprofilemaster.id', "=", 'tbluser.user_profile_id')
-            ->where(['tbluser.sub_institute_id' => $sub_institute_id, 'tbluserprofilemaster.name' => 'Teacher'])
+            ->where(['tbluser.sub_institute_id' => $sub_institute_id, 'tbluserprofilemaster.name' => 'Teacher', 'tbluser.status' => 1])
             ->orderBy('tbluser.first_name')
             ->get();
         $data['teacher_data'] = $user_data;
@@ -304,7 +304,7 @@ class proxyController extends Controller
             DB::raw('concat(tbluser.first_name," ",tbluser.middle_name," ",tbluser.last_name) as teacher_name')
         )
             ->join('tbluserprofilemaster', 'tbluserprofilemaster.id', "=", 'tbluser.user_profile_id')
-            ->where(['tbluser.sub_institute_id' => $sub_institute_id, 'tbluserprofilemaster.name' => 'Teacher'])
+            ->where(['tbluser.sub_institute_id' => $sub_institute_id, 'tbluserprofilemaster.name' => 'Teacher', 'tbluser.status' => 1])
             ->orderBy('tbluser.first_name')
             ->get();
 
@@ -481,7 +481,7 @@ class proxyController extends Controller
         $user_data = tbluserModel::select('tbluser.*',
         DB::raw('concat(tbluser.first_name," ",tbluser.middle_name," ",tbluser.last_name) as teacher_name'))
         ->join('tbluserprofilemaster','tbluserprofilemaster.id' ,"=", 'tbluser.user_profile_id')
-        ->where(['tbluser.sub_institute_id'=>$sub_institute_id,'tbluserprofilemaster.name' => 'Teacher'])
+        ->where(['tbluser.sub_institute_id'=>$sub_institute_id,'tbluserprofilemaster.name' => 'Teacher', 'tbluser.status' => 1])
         ->whereNotIn('tbluser.id',array($timetable_data[0]['teacher_id']))
         ->get();
 

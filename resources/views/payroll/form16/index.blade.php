@@ -266,11 +266,13 @@
                                         <select id='employee_id' name="employee_id" class="form-control">
                                             <option value="0">Select Employee</option>
                                             @foreach($data['employeeDetails'] as $employee)
-                                                <option
+                                                @if(isset($employee->getUser->first_name))
+                                                    <option
                                                     value="{{$employee->employee_id}}">{{ $employee->getUser->first_name ?? '' }}
                                                     {{ ' ' }}
                                                     {{ $employee->getUser->last_name ?? '' }}
                                                     </option>
+                                                @endif
                                             @endforeach
                                         </select>
                                     </div>

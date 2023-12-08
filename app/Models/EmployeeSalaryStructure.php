@@ -12,6 +12,6 @@ class EmployeeSalaryStructure extends Model
     public $fillable =['employee_id','employee_salary_data','year','sub_institute_id'];
 
     public function getUser(){
-        return $this->hasOne(tbluserModel::class,'id','employee_id');
+        return $this->hasOne(tbluserModel::class,'id','employee_id')->where('status', '=', 1);
     }
 }
