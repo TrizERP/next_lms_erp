@@ -231,8 +231,8 @@
                             </div> 
 
                             <div class="col-md-4 form-group">
-                                <label>{{ App\Helpers\get_string('house','request')}}</label>
-                                <select id='house' name="house" class="form-control">
+                                <label>{{ App\Helpers\get_string('house','request')}} @if(session()->get('sub_institute_id')==257) <span style="color: red;">*</span>@endif</label>
+                                <select id='house' name="house" class="form-control" @if(session()->get('sub_institute_id')==257) required @endif>
                                     <option value="">--Select--</option>  
                                     @if(isset($data['house_data']))
                                         @foreach($data['house_data'] as $key => $value)

@@ -402,19 +402,26 @@ class studentResultController extends Controller
         // get subject
         $get_subject = DB::table("sub_std_map as ssm")->join('subject as sub', 'ssm.subject_id', '=', 'sub.id')->selectRaw('ssm.id as map_id,sub.id as subject_id,ssm.display_name as subject_name,ssm.elective_subject,ssm.allow_grades')->where(['ssm.sub_institute_id' => $sub_institute_id, 'ssm.standard_id' => $standard_id, 'allow_grades' => "Yes"])->orderBy('ssm.sort_order')->get()->toArray();
        // Filter the elective subjects based on the condition
-        $get_subject = array_filter($get_subject, function ($value) use ($student_id, $syear) {
-            if ($value->elective_subject == 'Yes') {
-                $check_optional_subject_with_student = DB::table('student_optional_subject')
-                    ->where('student_id', $student_id)
-                    ->where('subject_id', $value->subject_id)
-                    ->where('syear', $syear)
-                    ->count();
+        
+                $get_subject = array_filter($get_subject, function ($value) use ($student_id, $syear) {
+                    if ($value->elective_subject == 'Yes' && $value->allow_grades == 'Yes') {
+                        $check_optional_subject_with_student = DB::table('student_optional_subject as sos')
+                            ->join('result_marks as rm', 'sos.student_id', '=', 'rm.student_id')
+                            ->join('result_create_exam as rc', function ($join) {
+                                $join->on('rc.subject_id', '=', 'sos.subject_id')
+                                    ->on('rc.id', '=', 'rm.exam_id');
+                            })
+                            ->where('sos.student_id', $student_id)
+                            ->where('sos.subject_id', $value->subject_id)
+                            ->where('sos.syear', $syear)
+                            ->count();
 
-                return $check_optional_subject_with_student < 0;
-            }
-            return true;
-        });
-         
+                        return $check_optional_subject_with_student > 0;
+                    }
+
+                    return true;
+                });
+
         // get exam master name
         $exam_name = DB::table('result_create_exam as rce')->join('result_exam_master as rem', 'rem.id', '=', 'rce.exam_id')->whereRaw($extra_exam)->where(['rce.sub_institute_id' => $sub_institute_id, 'rce.syear' => $syear, 'rce.standard_id' => $standard_id])
             ->selectRaw('rce.id,rce.title,rce.term_id,rce.standard_id,rem.weightage,rem.ExamTitle,rce.subject_id,rce.points,rce.con_point,rem.Id as ExamId,rce.exam_id')->orderBy('rem.SortOrder')->get()->toArray();
@@ -1561,7 +1568,7 @@ class studentResultController extends Controller
 
         if ($academic_type == "upper") {
             $term_name = "Grade";
-            $flex = '';
+            $flex = 'display:flex;flex-wrap:wrap';
         } else {
             $term_name = $term_name[0]->title ?? 'Grade';
             $flex = 'display:flex;flex-wrap:wrap';
@@ -1840,7 +1847,7 @@ class studentResultController extends Controller
             ->where('sos.syear', $syear)
             ->whereRaw($extra_os)
             ->where('ssm.elective_subject', 'Yes')
-            ->where('ssm.allow_grades', 'Yes')
+            ->where('ssm.allow_grades', '!=','Yes')
             ->groupByRaw('rem.Id,sos.subject_id')
             ->get()->toArray();
             // echo "<pre>";print_r($check_optional_subject_with_student);exit;
