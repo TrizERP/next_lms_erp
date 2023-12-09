@@ -240,7 +240,7 @@ class tourController extends Controller
         $res['groupwisemenuMaster'] = $mastermenu;
         $res['groupwisesubmenuMaster'] = $finalSubMenu ?? [];
         $res['groupwiseSubsubmenuMaster'] = $finalSubChildMenu ?? [];
-        // echo "<pre>";print_r($res);exit;
+        // echo "<pre>";print_r($res['groupwisemenuMaster']);exit;
 
         return is_mobile($type, "setup_institute_details", $res, 'view');
     }

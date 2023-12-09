@@ -23,6 +23,10 @@
         window.addEventListener('beforeunload', function() {
 			$('#loading-overlay').show();
         });
+
+		window.addEventListener('afterunload', function() {
+			$('#loading-overlay').hide();
+        });
 </script>
 	<script>
 		function setSession(item,object)

@@ -99,7 +99,7 @@
                         <a style="color:#black;font-size:1rem;width:100% !important" data-bs-toggle="collapse"
                             href="#collapseExample-{{str_replace(' ', '_', $value['menu_title'])}}"
                             aria-expanded="false" aria-controls="collapseExample"
-                            class="btn btn-outline-dark collapse-btn" data-id="{{$value['parent_menu_id']}}">{{$value['menu_title']}}</a>
+                            class="btn btn-outline-dark collapse-btn" data-id="{{$value['parent_menu_id']}}" data-title="{{$value['menu_title']}}">{{$value['menu_title']}}</a>
                         <!-- </thead> -->
                     </div>
                 </div>
@@ -306,7 +306,8 @@
         $('.collapse-btn').click(function() {
             var target = $(this).attr('href');
             var menu_id = $(this).attr('data-id'); 
-
+            var menu_title = $(this).attr('data-title'); 
+            var table_name = @json($data['table_name']);
             // alert(menu_id);
             $('.collapse-main').not(target).collapse('hide'); // Collapse other sections
             $(".collapse-main").addClass('card');
@@ -315,6 +316,70 @@
             if(menu_id==6){
                 // alert('clicked');
                 $('#exampleModal_fees').modal('show');  
+            }
+            else
+            {
+                $('#all_model').empty(); 
+                $('#allTitle').empty(); 
+		        $('#allTitle').append('<b>'+menu_title+'</b>');
+                var master = @json($data['groupwisemenuMaster']) ;
+                // console.log(master);
+                var menu_data = '';
+                var exists = 0;
+                if (typeof master[menu_title] === 'object' && master[menu_title] !== null) {
+                    exists = 1;
+                    for (let key in master[menu_title]) {
+                        if (master[menu_title].hasOwnProperty(key)) {
+                // console.log(table_name[master[menu_title][key]['database_table']]);
+
+                menu_data += `<div class="col-md-4">
+                        <label>
+                            <a class="text-primary" onclick="window.open('${master[menu_title][key]['link']}/create', 'scrollbars=yes,resizable=no,status=no,location=no,toolbar=no,menubar=no', 'width=1200,height=1200,left=100,top=100');" href="javascript:void(0);">
+                                <b>${master[menu_title][key]['name']}</b>
+                            </a>
+                        </label>
+                    </div>
+                    <div class="col-md-4">`;
+
+                    if (table_name[master[menu_title][key]['database_table']] && table_name[master[menu_title][key]['database_table']] == 1) 
+                    {
+                        // var urls =master[menu_title][key]["link"] ? master[menu_title][key]["link"] : 0;
+                        
+                        // $('#url_link').html('<a href="{{url('master[menu_title][key]["link"]')}}">'+master[menu_title][key]["link"]+'</a>');
+
+                        menu_data += `<a class="text-primary" onclick="window.open('${master[menu_title][key]['link']}', 'scrollbars=yes,resizable=no,status=no,location=no,toolbar=no,menubar=no', 'width=1200,height=1200,left=100,top=100');" href="javascript:void(0);">View Details</a>`;
+                    } 
+                    else 
+                    {
+                        menu_data += `<label class="text-danger">Incomplete Setup</label>`;
+                    }
+
+                    menu_data += `</div>
+                    <div class="col-md-4">`;
+
+                    if (table_name[master[menu_title][key]['database_table']] && table_name[master[menu_title][key]['database_table']] == 1) {
+                        menu_data += `<img src="{{asset('/Images/square-check.svg')}}" title="complete">`;
+                    } else {
+                        menu_data += `<img src="{{asset('/Images/close-square-icon.svg')}}" title="complete">`;
+                    }
+
+                    menu_data += `</div>`;
+                        }
+                    }
+                } else {
+                    console.error("master[menu_title] is not an object");
+                }
+                console.log(table_name);
+                // $('#all_model').append(menu_data);
+                // Set modal body content
+                $('#all_model').html(menu_data);
+
+                // Show the modal
+                if(exists == 1)
+                {
+                $('#exampleModal_all').modal('show');
+                }
+                
             }
             // $(this).toggleClass('active');
         });
