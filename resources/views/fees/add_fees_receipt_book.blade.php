@@ -59,7 +59,7 @@
                             </div>
                             <div class="col-md-4 form-group">
                                 <label>Sort Order </label>
-                                <input type="text" id='sort_order' name="sort_order" class="form-control">
+                                <input type="text" id='sort_order' name="sort_order" class="form-control" required>
                             </div>
                             <div class="col-md-4 form-group">
                                 <label>Last Receipt Number </label>
