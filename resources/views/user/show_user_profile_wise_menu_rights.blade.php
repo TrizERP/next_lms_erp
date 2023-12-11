@@ -30,33 +30,28 @@
                                     <th>Id</th>
                                     <th>User Profile Name</th>
                                     <th>Menu Name</th>
-                                    <th><center>Can View</center></th>
+                                    <th><center>Rights</center></th>
                                 </tr>
                             </thead>
                             <tbody>
-                            @php
-                            $j=1;
-                            @endphp
-                                @foreach($data['data'] as $key => $data)
-                                <tr>    
-                                    <td>{{$j}}</td>
-                                    <td>{{$data->profile_name}}</td>
-                                    <td>{{$data->menu_name}}</td>
-                                    <td>
-                                    <center>
-                                    @if ($data->can_view == 1) 
-                                    <i class="fa fa-check text-success"></i>
-                                    @else 
-                                    <i class="fa fa-times text-danger"></i>
-                                    @endif
-                                    </center>
-                                    </td> 
-                                </tr>
                                 @php
-                            $j++;
-                            @endphp
+                                $j=1;
+                                @endphp
+                                @foreach($data['data'] as $key => $data)
+                                    <tr>    
+                                        <td>{{$j}}</td>
+                                        <td>{{$data->profile_name}}</td>
+                                        <td>{{$data->menu_name}}</td>
+                                        <td>
+                                        <center>
+                                        <i class="fa fa-check text-success"></i>
+                                        </center>
+                                        </td> 
+                                    </tr>
+                                    @php
+                                    $j++;
+                                    @endphp
                                 @endforeach
-
                             </tbody>
                         </table>
                     </div>
@@ -70,9 +65,8 @@
 
 <script src="{{ asset("/plugins/bower_components/datatables/datatables.min.js") }}"></script>
 <script>
-$(document).ready(function () {
-    $('#example').DataTable({});
-});
-
+    $(document).ready(function () {
+        $('#example').DataTable({});
+    });
 </script>
 @include('includes.footer')

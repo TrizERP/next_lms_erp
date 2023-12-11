@@ -16,14 +16,12 @@
                 <strong>{{ $message }}</strong>
             </div>
             @endif
-
-           
             <div class="row">                
                 <div class="col-lg-12 col-sm-12 col-xs-12">
                     <form action="@if (isset($data))
-                      {{ route('user_profile_wise_menu_rights.update', $data['id']) }}
+                        {{ route('user_profile_wise_menu_rights.update', $data['id']) }}
                       @else
-                      {{ route('user_profile_wise_menu_rights.store') }}
+                        {{ route('user_profile_wise_menu_rights.store') }}
                       @endif" enctype="multipart/form-data" method="post">
                         @if(!isset($data))
                         {{ method_field("POST") }}
@@ -31,13 +29,11 @@
                         {{ method_field("PUT") }}
                         @endif
                         @csrf
-
                         <div class="row">                        
                             <div class="col-md-6 form-group">
                                 <label>User Profiles</label>
                                 <select name="profile_id" onchange="getUserProfilewiseRightsData(this.value);" required id="profile_id" class="form-control">
                                     <option value=""> Select User Profiles </option>
-
                                     @if(!empty($user_profiles))
                                     @foreach($user_profiles as $key => $value)
                                         <option value="{{ $value['id'] }}"> {{ $value['name'] }} </option>
@@ -54,7 +50,6 @@
                                                 <th style="text-align: center;"> Rights <input id="checkall" onchange="checkAll(this,'rights');" type="checkbox"></th>
                                             </tr>
                                         </thead>
-
                                         <tbody id="main-data">
                                         </tbody>
                                     </table>
@@ -72,7 +67,7 @@
         </div>
     </div>
 </div>
-<!-- @if(isset($data)) @if($value['id'] == $data['parent_id']) selected @endif  @endif -->
+
 @include('includes.footerJs')
 <script>
     function getUserProfilewiseRightsData(x)
@@ -84,7 +79,7 @@
         $("#main-data").empty(); 
         
         var path = "{{ route('ajax_user_profile_wise_rights') }}";
-            // console.log(path);
+        // console.log(path);
 
         $.ajax({url: path,data:'profile_id='+x, success: function(result)
         {
@@ -116,19 +111,18 @@
                     }
 
                     $('table #main-data').append(`
-                        <tr style="${level1};">
-                            <td style="text-align: center;font-weigth:bold;${level2};">${item['name']}</td>
+                    <tr style="${level1};">
+                        <td style="text-align: center;font-weigth:bold;${level2};">${item['name']}</td>
                             <td style="text-align: center;font-weigth:bold;">
                                 <div class="checkbox checkbox-success checkbox-circle">
-                                    <input name="rights[${item['id']}][]" id="rights_${item['id']}" value="1" type="checkbox" platform="rights">
+                                    <input name="rights[${item['id']}][]" id="rights_${item['id']}" type="checkbox" platform="rights">
                                     <label for="rights_${item['id']}"> Rights </label>
-                                    <input type="hidden" name="initial_rights${item['id']}" value="{{ isset($rights) && in_array($item['id'], $rights['rights']) ? 1 : 0 }}">
                                 </div>
                             </td>
-                            </tr>
-                        `);
-                    })
-                }
+                        </tr>
+                    `);
+                })
+            }
 
             if ("rights" in rights)
             {
