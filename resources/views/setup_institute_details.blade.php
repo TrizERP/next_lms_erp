@@ -331,10 +331,19 @@
                     for (let key in master[menu_title]) {
                         if (master[menu_title].hasOwnProperty(key)) {
                 // console.log(table_name[master[menu_title][key]['database_table']]);
+                var prefix1 = {"Transportation": "transportation/","Hostel": "hostel_management/","Inventory": "inventory/","Transport": "","LMS": "lms/","Communication": "easy_com/","Result": "result/","Petty Cash": "frontdesk/","Inward-Outward": "inward_outward/","PTM": "ptm/","School": "school_setup/","Student": "student/","Utility": "student/"
+                        };
 
+                        if (master[menu_title][key]['title'] == "HRMS") {
+                            menu_link1 = master[menu_title][key]['link'];
+                        } else {
+                            var linkValue1 = master[menu_title][key]['link'];
+                            var newLinkValue1 = linkValue1.replace('.index', '/create');
+                            var menu_link1 = prefix1[menu_title]  + newLinkValue1;
+                        }
                 menu_data += `<div class="col-md-4">
                         <label>
-                            <a class="text-primary" onclick="window.open('${master[menu_title][key]['link']}/create', 'scrollbars=yes,resizable=no,status=no,location=no,toolbar=no,menubar=no', 'width=1200,height=1200,left=100,top=100');" href="javascript:void(0);">
+                            <a class="text-primary" onclick="window.open('/${menu_link1}', 'scrollbars=yes,resizable=no,status=no,location=no,toolbar=no,menubar=no', 'width=1200,height=1200,left=100,top=100');" href="javascript:void(0);">
                                 <b>${master[menu_title][key]['name']}</b>
                             </a>
                         </label>
@@ -343,11 +352,18 @@
 
                     if (table_name[master[menu_title][key]['database_table']] && table_name[master[menu_title][key]['database_table']] == 1) 
                     {
-                        // var urls =master[menu_title][key]["link"] ? master[menu_title][key]["link"] : 0;
-                        
-                        // $('#url_link').html('<a href="{{url('master[menu_title][key]["link"]')}}">'+master[menu_title][key]["link"]+'</a>');
+                        var prefix = {"Transportation": "transportation/","Hostel": "hostel_management/","Inventory": "inventory/","Transport": "","LMS": "lms/","Communication": "easy_com/","Result": "result/","Petty Cash": "frontdesk/","Inward-Outward": "inward_outward/","PTM": "ptm/","School": "school_setup/","Student": "student/","Utility": "student/"
+                        };
 
-                        menu_data += `<a class="text-primary" onclick="window.open('${master[menu_title][key]['link']}', 'scrollbars=yes,resizable=no,status=no,location=no,toolbar=no,menubar=no', 'width=1200,height=1200,left=100,top=100');" href="javascript:void(0);">View Details</a>`;
+                        if (master[menu_title][key]['title'] == "HRMS") {
+                            menu_data += `<a class="text-primary" onclick="window.open('/${master[menu_title][key]['link']}', 'scrollbars=yes,resizable=no,status=no,location=no,toolbar=no,menubar=no', 'width=1200,height=1200,left=100,top=100');" href="javascript:void(0);">View Details</a>`;
+                        } else {
+                            var linkValue = master[menu_title][key]['link'];
+                            var newLinkValue = linkValue.replace('.index', '');
+                            var menu_link = prefix[menu_title]  + newLinkValue;
+                            menu_data += `<a class="text-primary" onclick="window.open('/${menu_link}', 'scrollbars=yes,resizable=no,status=no,location=no,toolbar=no,menubar=no', 'width=1200,height=1200,left=100,top=100');" href="javascript:void(0);">View Details</a>`;
+                        }
+
                     } 
                     else 
                     {
