@@ -47,6 +47,10 @@ class TestFunction extends Command implements ToCollection
      */
     public function handle()
     {
+        /*ONetDataCategory::insert([
+           'category' => 'Industry'
+        ]);
+        dd('done');*/
         //$this->insertSubCategory();
         //$this->insertRecord();
         //dd('done');
@@ -56,7 +60,7 @@ class TestFunction extends Command implements ToCollection
 
         //dd('Command executed with argument: ' . $argumentValue . ' and option: ' . $optionValue);
 
-        $path = storage_path('app/public/Conventional.csv');
+        $path = storage_path('app/public/All_Industries.csv');
 
         // Read the CSV file
         Excel::import(new TestFunction, $path);
@@ -67,6 +71,48 @@ class TestFunction extends Command implements ToCollection
 
     public function insertSubCategory()
     {
+        // Industry
+         /*ONetDataSubCategory::insert([
+             ['o_net_data_category_id' => 12, 'sub_category_name' => 'Accommodation and Food Services', 'parent_id' => 0, 'sub_parent_id' => 0, 'child_id' => 0, 'description' => ''],
+             ['o_net_data_category_id' => 12, 'sub_category_name' => 'Administrative and Support Services', 'parent_id' => 0, 'sub_parent_id' => 0, 'child_id' => 0, 'description' => ''],
+             ['o_net_data_category_id' => 12, 'sub_category_name' => 'Agriculture, Forestry, Fishing, and Hunting', 'parent_id' => 0, 'sub_parent_id' => 0, 'child_id' => 0, 'description' => ''],
+             ['o_net_data_category_id' => 12, 'sub_category_name' => 'Arts, Entertainment, and Recreation', 'parent_id' => 0, 'sub_parent_id' => 0, 'child_id' => 0, 'description' => ''],
+             ['o_net_data_category_id' => 12, 'sub_category_name' => 'Construction', 'parent_id' => 0, 'sub_parent_id' => 0, 'child_id' => 0, 'description' => ''],
+             ['o_net_data_category_id' => 12, 'sub_category_name' => 'Educational Services', 'parent_id' => 0, 'sub_parent_id' => 0, 'child_id' => 0, 'description' => ''],
+             ['o_net_data_category_id' => 12, 'sub_category_name' => 'Finance and Insurance', 'parent_id' => 0, 'sub_parent_id' => 0, 'child_id' => 0, 'description' => ''],
+             ['o_net_data_category_id' => 12, 'sub_category_name' => 'Government', 'parent_id' => 0, 'sub_parent_id' => 0, 'child_id' => 0, 'description' => ''],
+             ['o_net_data_category_id' => 12, 'sub_category_name' => 'Health Care and Social Assistance', 'parent_id' => 0, 'sub_parent_id' => 0, 'child_id' => 0, 'description' => ''],
+             ['o_net_data_category_id' => 12, 'sub_category_name' => 'Information', 'parent_id' => 0, 'sub_parent_id' => 0, 'child_id' => 0, 'description' => ''],
+             ['o_net_data_category_id' => 12, 'sub_category_name' => 'Management of Companies and Enterprises', 'parent_id' => 0, 'sub_parent_id' => 0, 'child_id' => 0, 'description' => ''],
+             ['o_net_data_category_id' => 12, 'sub_category_name' => 'Manufacturing', 'parent_id' => 0, 'sub_parent_id' => 0, 'child_id' => 0, 'description' => ''],
+             ['o_net_data_category_id' => 12, 'sub_category_name' => 'Mining, Quarrying, and Oil and Gas Extraction', 'parent_id' => 0, 'sub_parent_id' => 0, 'child_id' => 0, 'description' => ''],
+             ['o_net_data_category_id' => 12, 'sub_category_name' => 'Other Services (Except Public Administration)', 'parent_id' => 0, 'sub_parent_id' => 0, 'child_id' => 0, 'description' => ''],
+             ['o_net_data_category_id' => 12, 'sub_category_name' => 'Professional, Scientific, and Technical Services', 'parent_id' => 0, 'sub_parent_id' => 0, 'child_id' => 0, 'description' => ''],
+             ['o_net_data_category_id' => 12, 'sub_category_name' => 'Real Estate and Rental and Leasing', 'parent_id' => 0, 'sub_parent_id' => 0, 'child_id' => 0, 'description' => ''],
+             ['o_net_data_category_id' => 12, 'sub_category_name' => 'Retail Trade', 'parent_id' => 0, 'sub_parent_id' => 0, 'child_id' => 0, 'description' => ''],
+             ['o_net_data_category_id' => 12, 'sub_category_name' => 'Transportation and Warehousing', 'parent_id' => 0, 'sub_parent_id' => 0, 'child_id' => 0, 'description' => ''],
+             ['o_net_data_category_id' => 12, 'sub_category_name' => 'Utilities', 'parent_id' => 0, 'sub_parent_id' => 0, 'child_id' => 0, 'description' => ''],
+             ['o_net_data_category_id' => 12, 'sub_category_name' => 'Wholesale Trade', 'parent_id' => 0, 'sub_parent_id' => 0, 'child_id' => 0, 'description' => ''],
+             ['o_net_data_category_id' => 12, 'sub_category_name' => 'All Industries', 'parent_id' => 0, 'sub_parent_id' => 0, 'child_id' => 0, 'description' => ''],
+
+         ]);*/
+       //STEM
+       /* ONetDataSubCategory::insert([
+           ['o_net_data_category_id' => 11, 'sub_category_name' => 'Managerial', 'parent_id' => 0, 'sub_parent_id' => 0, 'child_id' => 0, 'description' => ''],
+           ['o_net_data_category_id' => 11, 'sub_category_name' => 'Postsecondary Teaching', 'parent_id' => 0, 'sub_parent_id' => 0, 'child_id' => 0, 'description' => ''],
+           ['o_net_data_category_id' => 11, 'sub_category_name' => 'Research, Development, Design, and Practitioners', 'parent_id' => 0, 'sub_parent_id' => 0, 'child_id' => 0, 'description' => ''],
+           ['o_net_data_category_id' => 11, 'sub_category_name' => 'Sales', 'parent_id' => 0, 'sub_parent_id' => 0, 'child_id' => 0, 'description' => ''],
+           ['o_net_data_category_id' => 11, 'sub_category_name' => 'Technologists and Technicians', 'parent_id' => 0, 'sub_parent_id' => 0, 'child_id' => 0, 'description' => ''],
+           ['o_net_data_category_id' => 11, 'sub_category_name' => 'All STEM Occupations', 'parent_id' => 0, 'sub_parent_id' => 0, 'child_id' => 0, 'description' => ''],
+           ['o_net_data_category_id' => 11, 'sub_category_name' => '— Architecture and Engineering', 'parent_id' => 326, 'sub_parent_id' => 0, 'child_id' => 0, 'description' => ''],
+           ['o_net_data_category_id' => 11, 'sub_category_name' => '— Computer and Mathematical', 'parent_id' => 326, 'sub_parent_id' => 0, 'child_id' => 0, 'description' => ''],
+           ['o_net_data_category_id' => 11, 'sub_category_name' => '— Healthcare Practitioners and Technical', 'parent_id' => 326, 'sub_parent_id' => 0, 'child_id' => 0, 'description' => ''],
+           ['o_net_data_category_id' => 11, 'sub_category_name' => '— Life, Physical, and Social Science', 'parent_id' => 326, 'sub_parent_id' => 0, 'child_id' => 0, 'description' => ''],
+           ['o_net_data_category_id' => 11, 'sub_category_name' => '— Architecture and Engineering', 'parent_id' => 328, 'sub_parent_id' => 0, 'child_id' => 0, 'description' => ''],
+           ['o_net_data_category_id' => 11, 'sub_category_name' => '— Computer and Mathematical', 'parent_id' => 328, 'sub_parent_id' => 0, 'child_id' => 0, 'description' => ''],
+           ['o_net_data_category_id' => 11, 'sub_category_name' => '— Healthcare Practitioners and Technical', 'parent_id' => 328, 'sub_parent_id' => 0, 'child_id' => 0, 'description' => ''],
+           ['o_net_data_category_id' => 11, 'sub_category_name' => '— Life, Physical, and Social Science', 'parent_id' => 328, 'sub_parent_id' => 0, 'child_id' => 0, 'description' => ''],
+       ]);*/
 
         // interests
 
@@ -772,15 +818,20 @@ class TestFunction extends Command implements ToCollection
         foreach ($rows as $key => $row) {
 
             if ($key == 0) continue;
-            ONetDataTable::insert([
-                'importance' => 0,
-                'values' => $row[0],
-                'level' => 0,
-                'job_zone' => $row[1],
-                'code' => $row[2],
-                'occupation' => $row[3],
-                'o_net_sub_category_id' => 323,
-            ]);
+
+                ONetDataTable::insert([
+                    'importance' => 0,
+                    'values' => 0,
+                    'level' => 0,
+                    'job_zone' => '',
+                    'code' => $row[0],
+                    'occupation' => $row[1],
+                    'occupation_type' => '',
+                    'employee_by_this_industry' => $row[4],
+                    'projected_growth' => $row[2],
+                    'projected_growth_openings' => $row[3],
+                    'o_net_sub_category_id' => 358,
+                ]);
             /*ONetDataTableList::insert([
                 'list_name' => $row[4],
             ]);*/
