@@ -18,11 +18,11 @@ class tbluserProfileWiseMenuController extends Controller
     {
         $sub_institute_id = $request->session()->get('sub_institute_id');
 
-        $user_data = tblgroupwise_rightsModel::select('tblgroupwise_rights.*', 'tbluserprofilemaster.name as profile_name', 'tblmenumaster.name as menu_name')
-            ->join('tbluserprofilemaster', 'tblgroupwise_rights.profile_id', '=', 'tbluserprofilemaster.id')
-            ->join('tblmenumaster', 'tblgroupwise_rights.menu_id', '=', 'tblmenumaster.id')
-            ->where(['tblgroupwise_rights.sub_institute_id' => $sub_institute_id])
-            ->get();
+        $user_data = DB::table('tblprofilewise_menu')->select('tblprofilewise_menu.*', 'tbluserprofilemaster.name as profile_name', 'tblmenumaster.name as menu_name')
+            ->join('tbluserprofilemaster', 'tblprofilewise_menu.user_profile_id', '=', 'tbluserprofilemaster.id')
+            ->join('tblmenumaster', 'tblprofilewise_menu.menu_id', '=', 'tblmenumaster.id')
+            ->where(['tblprofilewise_menu.sub_institute_id' => $sub_institute_id])
+            ->get()->toArray();
 
         $res['status_code'] = 1;
         $res['message'] = "Success";
@@ -44,7 +44,6 @@ class tbluserProfileWiseMenuController extends Controller
     public function store(Request $request) 
     {
         $rights = $request->input('rights');
-        $initialRights = $request->input('initial_rights');
        
         if (!isset($rights)) 
         {
@@ -53,7 +52,16 @@ class tbluserProfileWiseMenuController extends Controller
 
         $arrayKeys = array_replace($rights);
         $sub_institute_id = $request->session()->get('sub_institute_id');
-                
+        $res = array();
+        $res['status_code'] = "1";
+
+        $finalArray2 = array(
+            'user_profile_id' => $request->input('profile_id'),
+            'sub_institute_id' => $sub_institute_id,
+        );
+
+        $check2 = DB::table('tblprofilewise_menu')->where($finalArray2)->pluck('id','menu_id')->toArray();
+              
         foreach ($arrayKeys as $key => $value) 
         {
             $finalArray = array(
@@ -62,29 +70,58 @@ class tbluserProfileWiseMenuController extends Controller
                 'sub_institute_id' => $sub_institute_id,
             );
 
-            // Check if the checkbox was initially selected and is now unselected
-            if (isset($initialRights[$key]) && $initialRights[$key] == 1 && !in_array($key, $value)) 
+            $check = DB::table('tblprofilewise_menu')->where($finalArray)->get()->toArray();
+           
+            if(!empty($check))
             {
-                // Checkbox was unselected, delete the record
-                
-                DB::table('tblprofilewise_menu')->where(['menu_id' => $key, 'user_profile_id' => $request->input('profile_id')])->delete();
+                foreach ($check2 as $key2 => $value2) 
+                {
+                    if($key2 != $key)
+                    {
+                        DB::table('tblprofilewise_menu')->where(['menu_id' => $key2, 'user_profile_id' => $request->input('profile_id'), 'sub_institute_id' => $sub_institute_id])->delete();
 
-                $res['status_code'] = "1";
-                $res['message'] = "User Profile wise Rights Deleted Successfully";
-            } 
-            else 
-            {
-                DB::table('tblprofilewise_menu')
-                ->updateOrInsert(
-                    ['menu_id' => $key, 'user_profile_id' => $request->input('profile_id'), 'sub_institute_id' => $sub_institute_id],
-                    $finalArray
-                );
-
-                $res['status_code'] = "1";
-                $res['message'] = "User Profile wise Rights Added Successfully";
+                        $res['message'] = "User Profile Wise Rights Deleted Successfully";
+                    }
+                }
             }
-        }
-    
+            else
+            {
+                $existingRecord = DB::table('tblprofilewise_menu')
+                ->where([
+                    'menu_id' => $key,
+                    'user_profile_id' => $request->input('profile_id'),
+                    'sub_institute_id' => $sub_institute_id,
+                ])
+                ->first();
+               
+                if ($existingRecord) 
+                {
+                    DB::table('tblprofilewise_menu')
+                        ->where([
+                            'menu_id' => $key,
+                            'user_profile_id' => $request->input('profile_id'),
+                            'sub_institute_id' => $sub_institute_id,
+                        ])
+                        ->update(['updated_at' => now()]);
+
+                        $res['message'] = "User Profile Wise Rights Updated Successfully";
+                } 
+                else 
+                {
+                    // Record doesn't exist, insert a new one
+                    DB::table('tblprofilewise_menu')
+                        ->insert([
+                            'menu_id' => $key,
+                            'user_profile_id' => $request->input('profile_id'),
+                            'sub_institute_id' => $sub_institute_id,
+                            'created_at' => now(),
+                        ]);
+                        
+                        $res['message'] = "User Profile Wise Rights Added Successfully";
+                }          
+            }
+        } 
+
         $type = $request->input('type');
 
         return is_mobile($type, "user_profile_wise_menu_rights.index", $res);
