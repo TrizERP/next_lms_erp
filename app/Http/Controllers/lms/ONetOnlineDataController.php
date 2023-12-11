@@ -35,7 +35,10 @@ class ONetOnlineDataController extends Controller
 
     public function showCategoryWiseData(Request $request)
     {
-        if ($request->id) {
+
+        if ($request['category-name'] == 'All Occupation') {
+           return  $this->ONetDataTable($request);
+        } else if ($request->id) {
             $type = $request->input('type');
             $ONetDataCategory = ONetDataCategory::with('sub_categories')->where('id', $request->id)->get();
 
@@ -60,15 +63,20 @@ class ONetOnlineDataController extends Controller
 
     public function ONetDataTable(Request $request)
     {
-        if ($request->id) {
+        $type = $request->input('type');
+        if ($request->id  && $request['category-name'] != '') {
+            $res['data'] = ONetDataTable::where('o_net_sub_category_id', 0)->get();
+            $res['sub_category_name'] = '';
+            $res['category_name'] = "All Occupation";
+
+        } else if ($request->id) {
             $sub_category_name = ONetDataSubCategory::where('id', $request->id)->first();
             $category_name = ONetDataCategory::where('id', $sub_category_name->o_net_data_category_id)->value('category');
-            $type = $request->input('type');
             $res['data'] = ONetDataTable::where('o_net_sub_category_id', $request->id)->get();
             $res['sub_category_name'] = $sub_category_name->sub_category_name;
             $res['category_name'] = $category_name;
-            return is_mobile($type, 'lms/o-net-data/show_list_table', $res, "view");
         }
+        return is_mobile($type, 'lms/o-net-data/show_list_table', $res, "view");
     }
 
     public function ONetDataTableListDetails(Request $request)
@@ -165,6 +173,7 @@ class ONetOnlineDataController extends Controller
                 }
                 return $res;
             });
+
 
             /*$ONetOccupationDetail = ONetOccupationDetail::where('code', $request->code)->first();
             if ($ONetOccupationDetail->id) {

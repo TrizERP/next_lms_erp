@@ -43,12 +43,14 @@
                                     @endif
 
                                     @if ($chdata['resource_title']== 'Job Zone')
+                                        @if(count($chdata['summary']) > 0)
                                             <li class="text-dark"> <b>Title</b> -<span>{{$chdata['summary'][0]['title']}}</span></li>
                                             <li class="text-dark"> <b>Education</b> -<span>{{$chdata['summary'][0]['education']}}</span></li>
                                             <li class="text-dark"> <b>Related Experience</b> -<span>{{$chdata['summary'][0]['related_experience']}}</span></li>
                                             <li class="text-dark"> <b>Job Training</b> -<span>{{$chdata['summary'][0]['job_training']}}</span></li>
                                             <li class="text-dark"> <b>Job Zone Examples</b> -<span>{{$chdata['summary'][0]['job_zone_examples']}}</span></li>
                                             <li class="text-dark"> <b>SVP Range</b> -<span>{{$chdata['summary'][0]['svp_range']}}</span></li>
+                                        @endif
                                     @endif
 
                                     @if ($chdata['resource_title']== 'Education')
