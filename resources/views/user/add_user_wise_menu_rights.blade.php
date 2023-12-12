@@ -84,49 +84,93 @@
         $.ajax({url: path,data:'profile_id='+x, success: function(result)
         {
             var main_data = result[0];
-            var rights = result[1];
-            var level1 = '';
-            var level2 = '';
+            var subdata = result[1];
+            var lastdata = result[2];
+            var rights = result[3];
 
-            if(typeof(main_data) != "undefined" && main_data !== null) 
+            if(main_data !=0 && subdata != 0 && lastdata != 0 )
             {
-                $.each(main_data, function (i, item) 
+                if(typeof(main_data) != "undefined" && main_data !== null) 
                 {
-                    if(item['level'] == "1")
+                    $.each(main_data, function (i, item) 
                     {
-                        level1 = "background:#25bdea;";
-                    }
-                    else
-                    {
-                        level1 = "";
-                    }
-                    
-                    if(item['level'] == "2")
-                    {
-                        level2 = "color:#06d81f;";
-                    }
-                    else
-                    {
-                        level2 = "";
-                    }
-
-                    $('table #main-data').append(`
-                    <tr style="${level1};">
-                        <td style="text-align: center;font-weigth:bold;${level2};">${item['name']}</td>
-                            <td style="text-align: center;font-weigth:bold;">
-                                <div class="checkbox checkbox-success checkbox-circle">
-                                    <input name="rights[${item['id']}][]" id="rights_${item['id']}" type="checkbox" platform="rights">
+                        // console.log(item['name']);
+                        // #0707e8
+                        $('table #main-data').append(`
+                            <tr style="background:#25bdea;">
+                                <td style="text-align: center;font-weigth:bold;">${item['name']}</td>
+                                <td style="text-align: center;font-weigth:bold;">
+                                    <div class="checkbox checkbox-success checkbox-circle">
+                                        <input name="rights[${item['id']}][]" id="rights_${item['id']}" type="checkbox" platform="rights">
                                     <label for="rights_${item['id']}"> Rights </label>
-                                </div>
-                            </td>
-                        </tr>
-                    `);
-                })
+                                    </div>
+                                </td>
+                            </tr>
+                        `);
+                        // console.log(subdata[item['menu_id']]);
+                        if(typeof(subdata[item['id']]) != "undefined" && subdata[item['id']] !== null) {
+
+                        $.each(subdata[item['id']], function (si, sitem) 
+                        {
+                            if(item['menu_type'] == "MASTER")
+                            {
+                                font_color = "color:#06d81f;";
+                            }
+                            else
+                            {
+                                font_color = "";
+                            }
+
+                            if(item['level'] == "1" && item['menu_type'] != "MASTER")
+                            {
+                                level2 = "<font style='color:#0707e8;'><i class='mdi mdi-chevron-double-right fa-lg'></i></font>";
+                                font_weight = "font-weight:bold;color:#0707e8;";
+                            }
+                            else
+                            {
+                                level2 = "";
+                                font_weight = "";
+                            }
+                            
+                            // console.log(sitem['name']);
+                            $('table #main-data').append(`
+                                <tr>
+                                    <td style="text-align: center;${font_color};${font_weight}">${level2}${sitem['name']}</td>
+                                    <td style="text-align: center;font-weigth:bold;">
+                                        <div class="checkbox checkbox-success checkbox-circle">
+                                            <input name="rights[${sitem['id']}][]" id="rights_${sitem['id']}" type="checkbox" platform="rights">
+                                            <label for="rights_${sitem['id']}"> Rights </label>
+                                        </div>
+                                    </td>
+                                </tr>
+                            `);
+
+                            if(typeof(lastdata[sitem['id']]) != "undefined" && lastdata[sitem['id']] !== null) 
+                            {
+                                $.each(lastdata[sitem['id']], function (li, litem) 
+                                {
+                                    $('table #main-data').append(`
+                                    <tr>
+                                        <td style="text-align: center;font-weigth:bold;">${litem['name']}</td>
+                                        <td style="text-align: center;font-weigth:bold;">
+                                            <div class="checkbox checkbox-success checkbox-circle">
+                                                <input name="rights[${litem['id']}][]" id="rights_${litem['id']}" type="checkbox" platform="rights">
+                                                <label for="rights_${litem['id']}"> Rights </label>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    `);
+                                });
+                            }
+                        });
+                    }
+                });
             }
 
             if ("rights" in rights)
             {
-                for (i = 0; i < rights.rights.length; i++) {
+                for (i = 0; i < rights.rights.length; i++) 
+                {
                     var menuView = rights.rights[i];
                     var finalViewId = "rights_"+menuView;
                     console.log(finalViewId);
@@ -136,6 +180,10 @@
                     }
                 }
             }
+        }
+        else{
+            $('table #main-data').append(`<tr><td colspan=5  style="text-align:center">No Rights Given</td></tr>`);
+        }
         }});
         // table.draw();
     }

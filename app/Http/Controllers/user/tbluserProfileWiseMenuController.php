@@ -132,24 +132,54 @@ class tbluserProfileWiseMenuController extends Controller
         $profile_id = $request->input("profile_id");
         $sub_institute_id = $request->session()->get('sub_institute_id');
 
-        $get_menus = tblmenumasterModel::where(['status' => 1])->get()->toArray();
+        //$get_menus = tblmenumasterModel::where(['status' => 1])->get()->toArray();
 
-        $rightsData = DB::table('tblmenumaster')->leftJoin('tblprofilewise_menu','tblprofilewise_menu.menu_id','=','tblmenumaster.id')->selectRaw('tblmenumaster.id,tblmenumaster.name as menu_name,tblmenumaster.level,tblprofilewise_menu.id as pid,tblprofilewise_menu.menu_id,tblprofilewise_menu.user_profile_id')->where(['tblprofilewise_menu.user_profile_id' => $profile_id])->get()->toArray();
+        /* $rightsData = DB::table('tblmenumaster')->leftJoin('tblprofilewise_menu','tblprofilewise_menu.menu_id','=','tblmenumaster.id')->selectRaw('tblmenumaster.id,tblmenumaster.name as menu_name,tblmenumaster.level,tblprofilewise_menu.id as pid,tblprofilewise_menu.menu_id,tblprofilewise_menu.user_profile_id')->where(['tblprofilewise_menu.user_profile_id' => $profile_id])->orderBy('tblmenumaster.sort_order','ASC')->get()->toArray(); */
+
+        $data = tblmenumasterModel::where(['LEVEL' => 1,'status' => 1])->groupBy('id')->orderBy('sort_order','ASC')->get()->toArray();
+
+        $subMenuData = tblmenumasterModel::where(['LEVEL' => 2,'status' => 1])->orderBy('sort_order','ASC')->get()->toArray();
+       
+        $SubsubMenuData = tblmenumasterModel::where(['LEVEL' => 3,'status' => 1])->orderBy('sort_order','ASC')->get()->toArray();
+
+        $i = 0;
+        foreach ($subMenuData as $key => $value) {
+            $finalSubMenu[$value['parent_menu_id']][$i] = $subMenuData[$key];
+            $i++;
+        }
+
+        $i = 0;
+        foreach ($SubsubMenuData as $key => $value) {
+            $finalSubSubMenu[$value['parent_menu_id']][$i] = $SubsubMenuData[$key];
+            $i++;
+        }
+
+        view()->share('groupwisemenuMaster', $data);
+        if (isset($finalSubMenu)) {
+            view()->share('groupwisesubmenuMaster', $finalSubMenu);
+        }else{
+            $finalSubMenu = array();
+        }
+
+        if (isset($finalSubSubMenu)) {
+            view()->share('groupwiseSubsubmenuMaster', $finalSubSubMenu);
+        }
+
+        $rightsData = DB::table('tblprofilewise_menu')->join('tblmenumaster','tblprofilewise_menu.menu_id','=','tblmenumaster.id')->where(['tblprofilewise_menu.user_profile_id' => $profile_id])->get()->toArray();
        
         $rights = array();
         if (count($rightsData) > 0) 
         {
             foreach ($rightsData as $key => $value) 
             {
-                if ($value->id == $value->menu_id) 
-                {
-                    $rights['rights'][] = $value->menu_id;
-                }
+                $rights['rights'][] = $value->menu_id;
             }
         }
 
         $response = array(
-            $get_menus,
+            $data,
+            $finalSubMenu ?? [],
+            $finalSubSubMenu ?? [],
             $rights
         );
         return $response;

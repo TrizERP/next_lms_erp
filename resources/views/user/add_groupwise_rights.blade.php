@@ -190,46 +190,46 @@
                         </td>
                         </tr>
                      `);
-                if(typeof(lastdata[sitem['menu_id']]) != "undefined" && lastdata[sitem['menu_id']] !== null) {
+                    if(typeof(lastdata[sitem['menu_id']]) != "undefined" && lastdata[sitem['menu_id']] !== null) {
 
-                      $.each(lastdata[sitem['menu_id']], function (li, litem) {
-                    // console.log(sitem['name']);
-                        $('table #main-data').append(`
-                        <tr>
-                        <td style="text-align: center;font-weigth:bold;">${litem['name']}</td>
-                        <td style="text-align: center;font-weigth:bold;">
-                            <div class="checkbox checkbox-success checkbox-circle">
-                                <input name="view[${litem['menu_id']}][]" id="view_${litem['menu_id']}" value="1" type="checkbox" platform="view">
-                                <label for="view_${litem['menu_id']}"> View </label>
-                            </div>
-                        </td>
-                        <td style="text-align: center;font-weigth:bold;">
-                            <div class="checkbox checkbox-success checkbox-circle">
-                                <input name="add[${litem['menu_id']}][]" id="add_${litem['menu_id']}" value="1" platform="add" type="checkbox" >
-                                <label for="add_${litem['menu_id']}"> Add </label>
-                            </div>
-                        </td>
-                        <td style="text-align: center;font-weigth:bold;">
-                            <div class="checkbox checkbox-success checkbox-circle">
-                                <input name="edit[${litem['menu_id']}][]" id="edit_${litem['menu_id']}" value="1" platform="edit" type="checkbox" >
-                                <label for="edit_${litem['menu_id']}"> Edit </label>
-                            </div>
-                        </td>
-                        <td style="text-align: center;font-weigth:bold;">
-                            <div class="checkbox checkbox-success checkbox-circle">
-                                <input name="delete[${litem['menu_id']}][]" id="delete_${litem['menu_id']}" platform="delete" value="1" type="checkbox" >
-                                <label for="delete_${litem['menu_id']}"> Delete </label>
-                            </div>
-                        </td>
-                        </tr>
-                     `);
+                            $.each(lastdata[sitem['menu_id']], function (li, litem) {
+                        // console.log(sitem['name']);
+                            $('table #main-data').append(`
+                            <tr>
+                            <td style="text-align: center;font-weigth:bold;">${litem['name']}</td>
+                            <td style="text-align: center;font-weigth:bold;">
+                                <div class="checkbox checkbox-success checkbox-circle">
+                                    <input name="view[${litem['menu_id']}][]" id="view_${litem['menu_id']}" value="1" type="checkbox" platform="view">
+                                    <label for="view_${litem['menu_id']}"> View </label>
+                                </div>
+                            </td>
+                            <td style="text-align: center;font-weigth:bold;">
+                                <div class="checkbox checkbox-success checkbox-circle">
+                                    <input name="add[${litem['menu_id']}][]" id="add_${litem['menu_id']}" value="1" platform="add" type="checkbox" >
+                                    <label for="add_${litem['menu_id']}"> Add </label>
+                                </div>
+                            </td>
+                            <td style="text-align: center;font-weigth:bold;">
+                                <div class="checkbox checkbox-success checkbox-circle">
+                                    <input name="edit[${litem['menu_id']}][]" id="edit_${litem['menu_id']}" value="1" platform="edit" type="checkbox" >
+                                    <label for="edit_${litem['menu_id']}"> Edit </label>
+                                </div>
+                            </td>
+                            <td style="text-align: center;font-weigth:bold;">
+                                <div class="checkbox checkbox-success checkbox-circle">
+                                    <input name="delete[${litem['menu_id']}][]" id="delete_${litem['menu_id']}" platform="delete" value="1" type="checkbox" >
+                                    <label for="delete_${litem['menu_id']}"> Delete </label>
+                                </div>
+                            </td>
+                            </tr>
+                            `);
 
-                        });
-                  }
-              });
-            }
-        });
-    }
+                            });
+                        }
+                    });
+                }
+            });
+        }
 
             if ("add" in rights)
             {
