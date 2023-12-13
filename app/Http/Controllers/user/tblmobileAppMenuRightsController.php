@@ -14,8 +14,8 @@ use DB;
 
 class tblmobileAppMenuRightsController extends Controller 
 {
-    public function create(Request $request) {
-
+    public function create(Request $request) 
+    {
         $sub_institute_id = $request->session()->get('sub_institute_id');
         
         $user_profiles = tbluserprofilemasterModel::where(['sub_institute_id' => $sub_institute_id, 'status' => '1'])->orderBy('sort_order')->get()->toArray();
@@ -25,7 +25,6 @@ class tblmobileAppMenuRightsController extends Controller
 
     public function store(Request $request) 
     {
-
         $rights = $request->input('rights');
         
         if (!isset($rights)) 
@@ -268,13 +267,9 @@ class tblmobileAppMenuRightsController extends Controller
             }
         }
 
-        $all_data = array();
-        $all_data = $all_rights;
-
         $response = array(
             $all_rights,
-            $rights,
-            $all_data
+            $rights
         );
         return $response;
     }
