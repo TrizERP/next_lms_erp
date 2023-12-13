@@ -113,17 +113,17 @@
                                         <input name="rights[${item['screen_name']}][]" id="rights_${item['screen_name']}" value="1" type="checkbox" platform="rights">
                                         <label for="rights_${item['screen_name']}"> Rights </label>
                                         
-                                        <input name="main_title[${item['main_title']}][]" id="rights_${item['main_title']}" value="[${item['main_title']}][]" type="hidden">
-                                        <input name="menu_type[${item['menu_type']}][]" id="rights_${item['menu_type']}" value="1" type="hidden">
-                                        <input name="main_title_color_code[${item['main_title_color_code']}][]" id="rights_${item['main_title_color_code']}" value="1" type="hidden">
-                                        <input name="main_title_background_image[${item['main_title_background_image']}][]" id="rights_${item['main_title_background_image']}" value="1" type="hidden">
-                                        <input name="sub_title_of_main[${item['sub_title_of_main']}][]" id="rights_${item['sub_title_of_main']}" value="1" type="hidden">
-                                        <input name="sub_title_icon[${item['sub_title_icon']}][]" id="rights_${item['sub_title_icon']}" value="1" type="hidden">
-                                        <input name="sub_title_api[${item['sub_title_api']}][]" id="rights_${item['sub_title_api']}" value="1" type="hidden">
-                                        <input name="sub_title_api_param[${item['sub_title_api_param']}][]" id="rights_${item['sub_title_api_param']}" value="1" type="hidden">
-                                        <input name="main_sort_order[${item['main_sort_order']}][]" id="rights_${item['main_sort_order']}" value="1" type="hidden">
-                                        <input name="sub_title_sort_order[${item['sub_title_sort_order']}][]" id="rights_${item['sub_title_sort_order']}" value="1" type="hidden">
-                                        <input name="status[${item['status']}][]" id="rights_${item['status']}" value="1" type="hidden">
+                                        <input name="main_title[${item['screen_name']}][]" id="rights_${item['main_title']}" value="${item['main_title']}" type="hidden">
+                                        <input name="menu_type[${item['screen_name']}][]" id="rights_${item['menu_type']}" value="${item['menu_type']}" type="hidden">
+                                        <input name="main_title_color_code[${item['screen_name']}][]" id="rights_${item['main_title_color_code']}" value="${item['main_title_color_code']}" type="hidden">
+                                        <input name="main_title_background_image[${item['screen_name']}][]" id="rights_${item['main_title_background_image']}" value="${item['main_title_background_image']}" type="hidden">
+                                        <input name="sub_title_of_main[${item['screen_name']}][]" id="rights_${item['sub_title_of_main']}" value="${item['sub_title_of_main']}" type="hidden">
+                                        <input name="sub_title_icon[${item['screen_name']}][]" id="rights_${item['sub_title_icon']}" value="${item['main_title_background_image']}" type="hidden">
+                                        <input name="sub_title_api[${item['screen_name']}][]" id="rights_${item['sub_title_api']}" value="${item['sub_title_api']}" type="hidden">
+                                        <input name="sub_title_api_param[${item['screen_name']}][]" id="rights_${item['sub_title_api_param']}" value="${item['sub_title_api_param']}" type="hidden">
+                                        <input name="main_sort_order[${item['screen_name']}][]" id="rights_${item['main_sort_order']}" value="${item['main_sort_order']}" type="hidden">
+                                        <input name="sub_title_sort_order[${item['screen_name']}][]" id="rights_${item['sub_title_sort_order']}" value="${item['sub_title_sort_order']}" type="hidden">
+                                        <input name="status[${item['screen_name']}][]" id="rights_${item['status']}" value="${item['status']}" type="hidden">
                                     </div>
                                 </td>
                                 </td>

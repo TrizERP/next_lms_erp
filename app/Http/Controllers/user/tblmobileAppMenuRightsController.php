@@ -25,10 +25,7 @@ class tblmobileAppMenuRightsController extends Controller
 
     public function store(Request $request) 
     {
-        /* echo("<pre>");
-print_r($request->all());
-echo("</pre>");
-die; */
+
         $rights = $request->input('rights');
         
         if (!isset($rights)) 
@@ -65,7 +62,7 @@ die; */
                     'screen_name' => $key,
                     'sub_institute_id' => $sub_institute_id,
                 );
-
+                
                 $check = DB::table('mobile_homescreen')->where($finalArray)->get()->toArray();
                 
                 if(!empty($check))
@@ -110,17 +107,17 @@ die; */
                             'user_profile_name' => $get_user_profile_master->name,
                             'user_profile_id' => $request->input('profile_id'),
                             'sub_institute_id' => $sub_institute_id,
-                            /* 'main_title' => $request->input('main_title') ?? '',
-                            'menu_type' => $request->input('menu_type') ?? '',
-                            'main_title_color_code' => $request->input('main_title_color_code') ?? '',
-                            'main_title_background_image' => $request->input('main_title_background_image') ?? '',
-                            'sub_title_of_main' => $request->input('sub_title_of_main') ?? '',
-                            'sub_title_icon' => $request->input('sub_title_icon') ?? '',
-                            'sub_title_api' => $request->input('sub_title_api') ?? '',
-                            'sub_title_api_param' => $request->input('sub_title_api_param') ?? '',
-                            'main_sort_order' => $request->input('main_sort_order') ?? '',
-                            'sub_title_sort_order' => $request->input('sub_title_sort_order') ?? '',
-                            'status' => $request->input('status') ?? '', */
+                            'main_title' => $request->main_title[$key][0] ?? '',
+                            'menu_type' => $request->menu_type[$key][0] ?? '',
+                            'main_title_color_code' => $request->main_title_color_code[$key][0] ?? '',
+                            'main_title_background_image' => $request->main_title_background_image[$key][0] ?? '',
+                            'sub_title_of_main' => $request->sub_title_of_main[$key][0] ?? '',
+                            'sub_title_icon' => $request->sub_title_icon[$key][0] ?? '',
+                            'sub_title_api' => $request->sub_title_api[$key][0] ?? '',
+                            'sub_title_api_param' => $request->sub_title_api_param[$key][0] ?? '',
+                            'main_sort_order' => $request->main_sort_order[$key][0] ?? '',
+                            'sub_title_sort_order' => $request->sub_title_sort_order[$key][0] ?? '',
+                            'status' => $request->status[$key][0] ?? '',
                             'screen_name' => $key ?? '',
                             'created_on' => now(),
                         ]);
@@ -184,23 +181,23 @@ die; */
                         // Record doesn't exist, insert a new one
                         DB::table('teacher_mobile_homescreen')
                         ->insert([
-                            'user_profile_name' => $get_user_profile_master->name,
-                            'user_profile_id' => $request->input('profile_id'),
-                            'sub_institute_id' => $sub_institute_id,
-                            /* 'main_title' => $existingRecord->main_title ?? '',
-                            'menu_type' => $existingRecord->menu_type ?? '',
-                            'main_title_color_code' => $existingRecord->main_title_color_code ?? '',
-                            'main_title_background_image' => $existingRecord->main_title_background_image ?? '',
-                            'sub_title_of_main' => $existingRecord->sub_title_of_main ?? '',
-                            'sub_title_icon' => $existingRecord->sub_title_icon ?? '',
-                            'sub_title_api' => $existingRecord->sub_title_api ?? '',
-                            'sub_title_api_param' => $existingRecord->sub_title_api_param ?? '',
-                            'main_sort_order' => $existingRecord->main_sort_order ?? '',
-                            'sub_title_sort_order' => $existingRecord->sub_title_sort_order ?? '',
-                            'status' => $existingRecord->status ?? '', */
-                            'screen_name' => $key ?? '',
-                            'created_on' => now(),
-                        ]);
+                        'user_profile_name' => $get_user_profile_master->name,
+                        'user_profile_id' => $request->input('profile_id'),
+                        'sub_institute_id' => $sub_institute_id,
+                        'main_title' => $request->main_title[$key][0] ?? '',
+                        'menu_type' => $request->menu_type[$key][0] ?? '',
+                        'main_title_color_code' => $request->main_title_color_code[$key][0] ?? '',
+                        'main_title_background_image' => $request->main_title_background_image[$key][0] ?? '',
+                        'sub_title_of_main' => $request->sub_title_of_main[$key][0] ?? '',
+                        'sub_title_icon' => $request->sub_title_icon[$key][0] ?? '',
+                        'sub_title_api' => $request->sub_title_api[$key][0] ?? '',
+                        'sub_title_api_param' => $request->sub_title_api_param[$key][0] ?? '',
+                        'main_sort_order' => $request->main_sort_order[$key][0] ?? '',
+                        'sub_title_sort_order' => $request->sub_title_sort_order[$key][0] ?? '',
+                        'status' => $request->status[$key][0] ?? '',
+                        'screen_name' => $key ?? '',
+                        'created_on' => now(),
+                      ]);
                         
                         $res['message'] = "Mobile App Menu Rights Added Successfully";
                     }          
@@ -267,24 +264,17 @@ die; */
         {
             foreach ($mobileapp_menu_data as $key => $value) 
             {
-                $rights['rights'][] = $value->main_title;
-                $rights['rights'][] = $value->menu_type;
-                $rights['rights'][] = $value->main_title_color_code;
-                $rights['rights'][] = $value->main_title_background_image;
-                $rights['rights'][] = $value->sub_title_of_main;
-                $rights['rights'][] = $value->sub_title_icon;
-                $rights['rights'][] = $value->sub_title_api;
-                $rights['rights'][] = $value->sub_title_api_param;
-                $rights['rights'][] = $value->main_sort_order;
-                $rights['rights'][] = $value->sub_title_sort_order;
                 $rights['rights'][] = $value->screen_name;
-                $rights['rights'][] = $value->status;
             }
         }
 
+        $all_data = array();
+        $all_data = $all_rights;
+
         $response = array(
             $all_rights,
-            $rights
+            $rights,
+            $all_data
         );
         return $response;
     }
