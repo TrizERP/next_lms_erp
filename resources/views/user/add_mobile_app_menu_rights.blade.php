@@ -56,7 +56,6 @@
                                                 <th style="text-align: center;"> Rights <input id="checkall" onchange="checkAll(this,'rights');" type="checkbox"></th>
                                             </tr>
                                         </thead>
-
                                         <tbody id="main-data">
                                         </tbody>
                                     </table>
@@ -80,7 +79,6 @@
 
     function getMobileAppMenuRightsData(x)
     {
-
         $('input[type="checkbox"]').each(function() {
             this.checked = false;
         });
