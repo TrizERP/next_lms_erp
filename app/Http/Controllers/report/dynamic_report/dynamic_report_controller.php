@@ -735,12 +735,20 @@ class dynamic_report_controller extends Controller
                                 }
                             }
                         }
+                    else {
+                        if ($main_module_name == "S2 Log") {
+                            $all_detail['table_name'] = 'S2_LOG';
+                            $this->query = DB::table('S2_LOG as sl');
+                            $main_table_initial = "sl";
+                            // $main_table_initial_capital = true;
+                        }
                     }
                 }
             }
         }
     }
     }
+}
 }
                     }
                 }
@@ -799,12 +807,17 @@ echo("<pre>");print_r($val); */
              $col[] = $all_fields_index[$val];
             }
         }
-        // echo "<pre>";print_r($col);
-        // exit;
+       /*  echo "<pre>";print_r($all_detail);
+        exit; */
         $result = "";
         $sub_institute_id = session()->get('sub_institute_id');
         foreach ($all_detail["condition"] as $must_any => $arr) {
-            if ($main_table_initial_capital) {
+            if(isset($all_detail["table_name"]) && $all_detail["table_name"] == 'S2_LOG')
+            {
+                $this->query->whereRaw("1 = 1");
+
+            }
+            else if ($main_table_initial_capital) {
                 $this->query->whereRaw("$main_table_initial.SUB_INSTITUTE_ID = $sub_institute_id");
             } else {
                 $this->query->whereRaw("$main_table_initial.sub_institute_id = $sub_institute_id");
