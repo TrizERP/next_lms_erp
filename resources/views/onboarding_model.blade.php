@@ -57,60 +57,61 @@
 						</div>
 					</div>
 				</div>
-				
+
 				<!-- step 2 start  -->
-				@php 
-					$step2_titles = ["Fees Map Year","Fees Title","Fees Config Master","Fees Month Header","Fees Receipt Book Master","Fees Breakoff"];
-
-					$step2_links=["map_year.create","fees_title.create","fees_config_master.create","fees_month_header.create","fees_receipt_book_master.create","fees_breackoff.create"];
-
-					$step2_lists=["map_year.index","fees_title.index","fees_config_master.index","fees_month_header.index","fees_receipt_book_master.index","fees_breackoff.index"];
-
-					$step2_tables=["fees_map_years","fees_title","fees_config_master","fees_month_header","fees_receipt_book_master","fees_breackoff"];
-					$i=1;
-					@endphp
+				@php $step2_titles = ["Fees Map Year","Fees Title","Fees Config Master","Fees Month Header","Fees Receipt Book Master","Fees
+				Breakoff"]; $step2_links=["map_year.create","fees_title.create","fees_config_master.create","fees_month_header.create","fees_receipt_book_master.create","fees_breackoff.create"];
+				$step2_lists=["map_year.index","fees_title.index","fees_config_master.index","fees_month_header.index","fees_receipt_book_master.index","fees_breackoff.index"];
+				$step2_tables=["fees_map_years","fees_title","fees_config_master","fees_month_header","fees_receipt_book_master","fees_breackoff"];
+				$i=1; @endphp
 				<div id="fees_step_2">
 					<div class="row">
 						<div class="col-md-4">
-							<h4><b>Modules</b></h4>
+							<h4>
+								<b>Modules</b>
+							</h4>
 						</div>
 						<div class="col-md-4">
-							<h4><b>Deatils</b></h4>	
+							<h4>
+								<b>Deatils</b>
+							</h4>
 						</div>
 						<div class="col-md-4">
-							<h4><b>Status</b></h4>	
-						</div>										
+							<h4>
+								<b>Status</b>
+							</h4>
+						</div>
 						@foreach($step2_titles as $index=>$title)
 						<div class="col-md-4">
 							<label>
 								<a class="text-primary" onclick="window.open('{{route($step2_links[$index])}}','scrollbars=yes,resizable=no,status=no,location=no,toolbar=no,menubar=no','width=1200,height=1200,left=100,top=100');"
-								 href="javascript:void(0);"><b>{{$i++.") ".$title}}</b></a>
+								 href="javascript:void(0);">
+									<b>{{$i++.") ".$title}}</b>
+								</a>
 							</label>
 						</div>
 
 						<div class="col-md-4">
 							@if(isset($data['table_name'][$step2_tables[$index]]) && $data['table_name'][$step2_tables[$index]] == 1)
 							<a class="text-primary" onclick="window.open('{{route($step2_lists[$index])}}','scrollbars=yes,resizable=no,status=no,location=no,toolbar=no,menubar=no','width=1200,height=1200,left=100,top=100');"
-								 href="javascript:void(0);">View Details</a>
-                            @else
-                                 <label class="text-danger">Incomplete Setup</label>
+							 href="javascript:void(0);">View Details</a>
+							@else
+							<label class="text-danger">Incomplete Setup</label>
 							@endif
 						</div>
 
 						<div class="col-md-4">
 							@if(isset($data['table_name'][$step2_tables[$index]]) && $data['table_name'][$step2_tables[$index]] == 1)
-                                 <img src="{{asset('/Images/square-check.svg')}}" title="complete">
-                                 @else
-                                 <img src="{{asset('/Images/close-square-icon.svg')}}" title="complete">
-                                @endif
+							<img src="{{asset('/Images/square-check.svg')}}" title="complete"> @else
+							<img src="{{asset('/Images/close-square-icon.svg')}}" title="complete"> @endif
 						</div>
 						@endforeach
 					</div>
-					
+
 					<div class="col-md-12 form-group mb-0">
 						<center>
 							<button class="btn btn-primary fees-modulde-3">Continue</button>
-							<button class="btn btn-warning fees_back">Back</button>							
+							<button class="btn btn-warning fees_back">Back</button>
 						</center>
 					</div>
 				</div>
@@ -119,20 +120,62 @@
 				<!-- step 3 start  -->
 
 				<div id="fees_step_3">
-					
 					<div class="row">
 						<div class="col-md-4">
 							<label>
 								<a class="text-primary" onclick="window.open('{{route('import.data')}}','scrollbars=yes,resizable=no,status=no,location=no,toolbar=no,menubar=no','width=1200,height=1200,left=100,top=100');"
-								 href="javascript:void(0);"><b>Import Data</b></a>
+								 href="javascript:void(0);">
+									<b>Import Data</b>
+								</a>
 							</label>
 						</div>
+						<div class="col-md-12 form-group mb-0">
+							<center>
+								<button class="btn btn-primary fees-modulde-4">Continue</button>
+								<button class="btn btn-warning fees_back2">Back</button>
+							</center>
+						</div>
 					</div>
-					
+				</div>
+
+				<div id="fees_step_4">
+					<div class="col-md-12">
+						<div class="row">
+							<div class="col-md-4">
+								<h6><b><a class="fcolor" onclick="get_roles_respo_fees('Admin','Fees');">Admin</a></b></h6>
+								<br>
+								<h6><b><a class="fcolor" onclick="get_roles_respo_fees('Teacher','Fees');">Teacher</a></b></h6>
+								<br>
+								<h6><b><a class="fcolor" onclick="get_roles_respo_fees('Student','Fees');">Student</a></b></h6><br>
+								<h6><b><a class="fcolor" onclick="get_roles_respo_fees('Student','Fees');">Parent</a></b></h6>
+								<br>
+								<h6><b><a class="fcolor" onclick="get_roles_respo_fees('Student','Fees');">Principal</a></b></h6>
+								<br>
+								<h6><b><a class="fcolor" onclick="get_roles_respo_fees('Student','Fees');">Clerk</a></b></h6>
+								<br>
+								<h6><b><a class="fcolor" onclick="get_roles_respo_fees('Student','Fees');">Counseller</a></b></h6>
+								<br>
+								<h6><b><a class="fcolor" onclick="get_roles_respo_fees('Lms Teacher','Fees');">LMS Teacher</a></b></h6>
+								<br>
+								<h6><b><a class="fcolor" onclick="get_roles_respo_fees('Student','Fees');">Trustee</a></b></h6>
+								<br>
+								<h6><b><a class="fcolor" onclick="get_roles_respo_fees('Student','Fees');">Librarian</a></b></h6>
+								<br>
+								<h6><b><a class="fcolor" onclick="get_roles_respo_fees('Student','Fees');">Peon</a></b></h6>
+								<br>
+								<h6><b><a class="fcolor" onclick="get_roles_respo_fees('Student','Fees');">Exam Department</a></b></h6>
+								<br>
+								<h6><b><a class="fcolor" onclick="get_roles_respo_fees('Student','Fees');">Academic Dept.</a></b></h6>
+							</div>
+							<div class="col-md-8" id="roles_respo">
+							</div>
+						</div>
+					</div>
+
 					<div class="col-md-12 form-group mb-0">
 						<center>
 							<button class="btn btn-primary finish">Finish</button>
-							<button class="btn btn-warning fees_back2">Back</button>							
+							<button class="btn btn-warning fees_back3">Back</button>
 						</center>
 					</div>
 				</div>
@@ -145,38 +188,63 @@
 
 <!-- Modal -->
 <div class="modal fade" id="exampleModal_all" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
+	<div class="modal-dialog">
+		<div class="modal-content">
+			<div class="modal-header" style="align-items:center;padding:8px !important">
+				<h3 class="modal-title fs-5 fcolor fees_step_title fcolor" id="allTitle"></h3>
+				<button type="button" class="btn-close border-0" data-bs-dismiss="modal" aria-label="Close">X</button>
+			</div>
 
-                <h3 class="modal-title fs-5 fcolor" id="allTitle"></h3>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-				<span id = "url_link"></span>
-				<div class="row">
-					<div class="col-md-4">
-						<h4><b>Modules</b></h4>
+			<div class="modal-body">
+				<div id="step_1">
+
+					<div class="row">
+						<div class="col-md-4">
+							<h4>
+								<b>Modules</b>
+							</h4>
+						</div>
+						<div class="col-md-4">
+							<h4>
+								<b>Deatils</b>
+							</h4>
+						</div>
+						<div class="col-md-4">
+							<h4>
+								<b>Status</b>
+							</h4>
+						</div>
 					</div>
-					<div class="col-md-4">
-						<h4><b>Deatils</b></h4>	
+					<div class="row" id="all_model">
+
 					</div>
-					<div class="col-md-4">
-						<h4><b>Status</b></h4>	
+					<div class="col-md-12 form-group mb-0">
+						<center>
+							<button class="btn btn-primary move_step_2">Continue</button>
+						</center>
 					</div>
 				</div>
-				<div class="row" id="all_model">
-				
+			</div>
+			<div id="step_2">
+				<div class="col-md-12">
+					<div class="row" id="roles">
+
+
+					</div>
 				</div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                <button type="button" class="btn btn-primary">Save changes</button>
-				<!-- <button class="btn btn-primary">Continue</button>
-				<button class="btn btn-warning">Back</button> -->
-            </div>
-        </div>
-    </div>
+
+				<div class="col-md-12 form-group mb-0">
+					<center>
+						<button class="btn btn-primary finish">Finish</button>
+						<button class="btn btn-warning back_1">Back</button>
+					</center>
+				</div>
+
+			</div>
+		</div>
+	</div>
+
+</div>
 </div>
 
 
@@ -190,13 +258,16 @@
 	$(document).ready(function() {
 		$('#fees_step_2').hide();
 		$('#fees_step_3').hide();
+		$('#fees_step_4').hide();
+		$('#step_2').hide();
+
 		$('.fees_step_title').append('<b>Step 1 : Check Account Details</b>');
 		// Collapse toggle
 		$('.fees-modulde-2').click(function() {
 			$('.fees_step_title').empty();
 			$('#fees_step_2').show();
 			$('#fees_step_1').hide();
-			$('.fees_step_title').append('<b>Step 2 : Fees Setup </b>');			
+			$('.fees_step_title').append('<b>Step 2 : Fees Setup </b>');
 		});
 
 		$('.fees-modulde-3').click(function() {
@@ -204,7 +275,16 @@
 			$('#fees_step_3').show();
 			$('#fees_step_2').hide();
 			$('#fees_step_1').hide();
-			$('.fees_step_title').append('<b>Step 3 : Import Data </b>');			
+			$('.fees_step_title').append('<b>Step 3 : Import Data </b>');
+		});
+
+		$('.fees-modulde-4').click(function() {
+			$('.fees_step_title').empty();
+			$('#fees_step_4').show();
+			$('#fees_step_3').hide();
+			$('#fees_step_2').hide();
+			$('#fees_step_1').hide();
+			$('.fees_step_title').append('<b>Step 4 : Roles & Responsibilites </b>');
 		});
 
 		$('.fees_back').click(function() {
@@ -220,9 +300,39 @@
 			$('.fees_step_title').empty();
 			$('.fees_step_title').append('<b>Step 2 : Fees Setup</b>');
 		});
+		$('.fees_back3').click(function() {
+			$('#fees_step_4').hide();
+			$('#fees_step_3').show();
+			$('.fees_step_title').empty();
+			$('.fees_step_title').append('<b>Step 3 : Import Data </b>');
+		});
 
 		$('.finish').click(function() {
 			window.location.reload();
 		});
 	});
+
+	function get_roles_respo_fees(profile_name, modules) {
+		$('#roles_respo').empty();
+		var getRoles = @json($data['roles']);
+
+		var html = '';
+		html +=
+			`<h5>${profile_name} Roles and Responsibility</h5>
+					${getRoles[modules][profile_name]['text']}
+					`;
+
+		$('#roles_respo').html(html);
+	}
+
+	function get_roles_respo(profile_name, modules) {
+		$('#roles_respo2').empty();
+		var html = '';
+		var getRoles = @json($data['roles']);
+		html +=
+			`<h5>${profile_name} Roles and Responsibility</h5>
+					${getRoles[modules][profile_name]['text']}
+					`;
+		$('#roles_respo2').html(html);
+	}
 </script>
