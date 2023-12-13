@@ -197,7 +197,7 @@ class tourController extends Controller
         $master = tblmenumasterModel::whereRaw("find_in_set('$sub_institute_id',sub_institute_id)")->where('status',1) ->where('menu_type','=','MASTER')
             ->orderBy('sort_order')->get()->toArray();
         $i = 0;
-
+        
         foreach ($master as $key => $value) {
                 // print_r($value);
             $mastermenu[$value['menu_title']][$i] = $master[$key];
@@ -233,6 +233,17 @@ class tourController extends Controller
         if (isset($getUserData)) {
             $res['userdata'] = $getUserData[0];
         }
+
+        //get roles 
+        $roles = DB::table('role_responsibility')->get()->toArray();
+
+$rolesRes = [];
+
+foreach ($roles as $key => $value) {
+    $rolesRes[$value->module_name][$value->profile_name] = $value;
+}
+
+
         $res['status_code'] = 1;
         $res['message'] = "Success";
         $res['head'] = $data;
@@ -240,8 +251,7 @@ class tourController extends Controller
         $res['groupwisemenuMaster'] = $mastermenu;
         $res['groupwisesubmenuMaster'] = $finalSubMenu ?? [];
         $res['groupwiseSubsubmenuMaster'] = $finalSubChildMenu ?? [];
-        // echo "<pre>";print_r($res['groupwisemenuMaster']);exit;
-
+        $res['roles'] = $rolesRes ?? [];        
         return is_mobile($type, "setup_institute_details", $res, 'view');
     }
 
