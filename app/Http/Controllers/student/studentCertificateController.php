@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use function App\Helpers\getStudents;
 use function App\Helpers\is_mobile;
+use function App\Helpers\FeeMonthId;
 use function App\Helpers\SearchStudent;
 
 class studentCertificateController extends Controller
@@ -110,7 +111,8 @@ class studentCertificateController extends Controller
             $new_html_content = $this->create_html_content($syear, $sub_institute_id, $html_content, $value,
                 $receipt_book_arr, $template, $certificate_no1, $certificate_reason);
 
-            if ($template == 'Transfer Certificate') {
+            if ($template == 'Transfer Certificate') 
+            {
                 $new_html .= '<div class="row" style="margin-right: 2% !important;margin-left: 2% !important;">'.$new_html_content.'</div>
                               <div class="pagebreak"></div>';
             }
@@ -177,7 +179,10 @@ class studentCertificateController extends Controller
     }
 
     public function create_html_content($syear,$sub_institute_id,$html_content,$value,$receipt_book_arr,$template,$certificate_no,$certificate_reason) {
-        
+        /* echo("<pre>");
+print_r($value);
+echo("</pre>");
+die; */
         if($sub_institute_id == 61)
             $display_year = "Apr-".$syear." to Mar-".($syear + 1);
         else
@@ -226,9 +231,21 @@ class studentCertificateController extends Controller
             $he_she = 'she';
         }
 
+        $get_standard_subjects = DB::table('sub_std_map as ssm')
+        ->select(DB::raw('GROUP_CONCAT(ssm.display_name) as subject_name'))
+        ->join('standard as s', 's.id', '=', 'ssm.standard_id')
+        ->where('ssm.sub_institute_id', session()->get('sub_institute_id'))
+        ->where('ssm.standard_id', $value['standard_id'])
+        ->where('ssm.allow_grades', 'Yes')
+        ->groupBy('ssm.standard_id')
+        ->orderBy('ssm.sort_order')
+        ->first();
+        
         //Start Bonafide certificate Tags
         $html_content = str_replace(htmlspecialchars("<<student_image_value>>"), $student_image_path, $html_content);
         $html_content = str_replace(htmlspecialchars("<<student_name_value>>"), strtoupper($value['student_full_name']),
+            $html_content);
+        $html_content = str_replace(htmlspecialchars("<<student_last_name_value>>"), strtoupper($value['student_last_name']),
             $html_content);
         $html_content = str_replace(htmlspecialchars("<<student_enrollment_value>>"), $value['enrollment_no'],
             $html_content);
@@ -249,7 +266,7 @@ class studentCertificateController extends Controller
         $html_content = str_replace(htmlspecialchars("<<he_she_value>>"), $he_she, $html_content);
         $html_content = str_replace(htmlspecialchars("<<certificate_reason>>"), $certificate_reason, $html_content);
         //END Bonafide certificate Tags
-
+        
         //Start Transfer certificate Tags
         $html_content = str_replace(htmlspecialchars("<<affiliation_no_value>>"), strtoupper($value['affiliation_no']),
             $html_content);
@@ -269,6 +286,15 @@ class studentCertificateController extends Controller
             $html_content);
         $html_content = str_replace(htmlspecialchars("<<subcast_value>>"), strtoupper($value['subcast']),
             $html_content);
+        $html_content = str_replace(htmlspecialchars("<<admission_date_value>>"), strtoupper($value['admission_date']),
+            $html_content);
+        $html_content = str_replace(htmlspecialchars("<<short_standard_name_value>>"), strtoupper($value['short_standard_name']),
+            $html_content);
+        $standard_array = ['I' => 1,'II' => 2,'III' => 3,'IV' => 4,'V' => 5,'VI' => 6,'VII' => 7,'VIII' => 8,'IX' => 9,'X' => 10,'XI' => 11,'XII' => 12];
+        $std = $standard_array[$value['short_standard_name']] ?? 0;
+        $html_content = str_replace(htmlspecialchars("<<short_standard_name_in_word_value>>"), ucwords($this->convert_number_to_words($std)), $html_content);
+        $html_content = str_replace(htmlspecialchars("<<subjects_studied_value>>"), strtoupper($get_standard_subjects->subject_name),
+            $html_content);
         $html_content = str_replace(htmlspecialchars("<<candidate_belongs_to_value>>"),
             strtoupper($value['candidate_belongs_to']), $html_content);
         $html_content = str_replace(htmlspecialchars("<<date_of_first_admission_value>>"),
@@ -279,12 +305,18 @@ class studentCertificateController extends Controller
             strtoupper($value['last_school_board']), $html_content);
         $html_content = str_replace(htmlspecialchars("<<whether_failed_value>>"), strtoupper($value['whether_failed']),
             $html_content);
-        $html_content = str_replace(htmlspecialchars("<<subjects_studied_value>>"),
-            strtoupper($value['subjects_studied']), $html_content);
+        /* $html_content = str_replace(htmlspecialchars("<<subjects_studied_value>>"),
+            strtoupper($value['subjects_studied']), $html_content); */
         $html_content = str_replace(htmlspecialchars("<<whether_qualified_value>>"),
             strtoupper($value['whether_qualified']), $html_content);
+        $html_content = str_replace(htmlspecialchars("<<teacher_remark_value>>"),
+            strtoupper($value['teacher_remark']), $html_content);
         $html_content = str_replace(htmlspecialchars("<<if_to_which_class_value>>"),
             strtoupper($value['if_to_which_class']), $html_content);
+        $months = FeeMonthId();
+        $month = $months[$value['month_name']];
+        $html_content = str_replace(htmlspecialchars("<<month_name_value>>"),
+            strtoupper($month), $html_content);
         $html_content = str_replace(htmlspecialchars("<<month_up_paid_school_dues_value>>"),
             strtoupper($value['month_up_paid_school_dues']), $html_content);
         $html_content = str_replace(htmlspecialchars("<<admission_under_value>>"),
@@ -297,13 +329,21 @@ class studentCertificateController extends Controller
             $html_content);
         $html_content = str_replace(htmlspecialchars("<<general_conduct_value>>"),
             strtoupper($value['general_conduct']), $html_content);
+        $date_application_for_certificate = now();
+        $date_on_which_pupil_name = now();
+        $date_of_issue_of_certificate_new = now();
+        $html_content = str_replace(htmlspecialchars("<<date_application_for_certificate_value>>"),
+            date('d-m-Y', strtotime($date_application_for_certificate)), $html_content);
+        $html_content = str_replace(htmlspecialchars("<<date_on_which_pupil_name_value>>"),
+            date('d-m-Y', strtotime($date_on_which_pupil_name)), $html_content);
+        $html_content = str_replace(htmlspecialchars("<<date_of_issue_of_certificate_new_value>>"),
+            date('d-m-Y', strtotime($date_of_issue_of_certificate_new)), $html_content);
         $html_content = str_replace(htmlspecialchars("<<date_of_application_for_certificate_value>>"),
             date('d-m-Y', strtotime($value['date_of_application_for_certificate'])), $html_content);
         $html_content = str_replace(htmlspecialchars("<<date_of_issue_of_certificate_value>>"),
             date('d-m-Y', strtotime($value['date_of_issue_of_certificate'])), $html_content);
         $html_content = str_replace(htmlspecialchars("<<reason_leaving_school_value>>"),
             strtoupper($value['reason_leaving_school']), $html_content);
-
         $html_content = str_replace(htmlspecialchars("<<proof_for_dob_value>>"), strtoupper($value['proof_for_dob']),
             $html_content);
         $html_content = str_replace(htmlspecialchars("<<whether_school_is_under_goverment_value>>"),
