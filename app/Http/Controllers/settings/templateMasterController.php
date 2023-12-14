@@ -113,6 +113,15 @@ class templateMasterController extends Controller
         <li><b><< student_father_name >></b> : Father name</li>
         <li><b><< fees_details >></b> : Fees Details</li>
         <li><b><< total_amount_in_words >></b> : Total Amount in words</li>
+        <li><b><< student_last_name_value >></b> : Last Name</li>
+        <li><b><< admission_date_value >></b> : Admission</li>
+        <li><b><< short_standard_name_value >></b> : Last Standard Name</li>
+        <li><b><< short_standard_name_in_word_value >></b> : Last Standard Name in Word</li>
+        <li><b><< teacher_remark_value >></b> : Teacher Remark</li>
+        <li><b><< month_name >></b> : Month Name</li>
+        <li><b><< date_on_which_pupil_name_value >></b> : Date of application for certificate</li>
+        <li><b><< date_of_application_for_certificate_value >></b> : Date on which pupil's name was struck off the rolls of the school</li>
+        <li><b><< date_of_issue_of_certificate_new_value >></b> : Date of issue of certificate</li>
         </ul>";
 
         return is_mobile($type, 'settings/view_all_tag', $data, "view");
