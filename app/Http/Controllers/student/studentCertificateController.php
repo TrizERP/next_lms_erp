@@ -17,10 +17,14 @@ class studentCertificateController extends Controller
     public function index(Request $request)
     {
         $type = $request->input('type');
-
-        $res['status_code'] = "1";
-        $res['message'] = "Success";
-
+        $res="";
+        if (session()->has('data')) { 
+            $data_arr = session('data'); 
+            if (isset($data_arr['message'])) {
+                $res['message'] = $data_arr['message'];
+                $res['status_code'] = $data_arr['status_code'] ;                
+            }
+        }
         return is_mobile($type, "student/student_certificate/show_student", $res, "view");
     }
 
@@ -212,35 +216,35 @@ class studentCertificateController extends Controller
             date('F', strtotime($value['dob']))." ".
             $this->convert_number_to_words(date('Y', strtotime($value['dob']))));
 
-        $his_her = '';
-        if ($value['gender'] == 'male') {
+        $males = ["male","Male","MALE","M"];
+        $females =["female","Female","FEMALE","F"];
+
+        $his_her =  $he_she = $mr_miss = $daughter_son = '';
+        if(in_array($value['gender'],$males)){
             $his_her = 'His';
-        } elseif ($value['gender'] == 'female') {
-            $his_her = 'Her';
-        }
-        $he_she = '';
-
-        if ($value['gender'] == 'male') {
             $he_she = 'he';
-        } elseif ($value['gender'] == 'female') {
+            $mr_miss = 'Mr.';
+            $daughter_son = 'son';
+        } else if(in_array($value['gender'],$females)){
+            $his_her = 'Her';
             $he_she = 'she';
-        }
-
+            $mr_miss = 'Miss.';
+            $daughter_son = 'daughter';            
+        }        
+        // for mr/miss and daughter/son 
+        $html_content = str_replace(htmlspecialchars("<<mr_miss>>"), $mr_miss, $html_content); 
+        $html_content = str_replace(htmlspecialchars("<<daughter_or_son>>"), $daughter_son, $html_content);
         //Start Bonafide certificate Tags
         $html_content = str_replace(htmlspecialchars("<<student_image_value>>"), $student_image_path, $html_content);
         $html_content = str_replace(htmlspecialchars("<<student_name_value>>"), strtoupper($value['student_full_name']),
             $html_content);
-        $html_content = str_replace(htmlspecialchars("<<student_enrollment_value>>"), $value['enrollment_no'],
-            $html_content);
-        $html_content = str_replace(htmlspecialchars("<<student_standard_value>>"), $value['standard_name'],
-            $html_content);
-        $html_content = str_replace(htmlspecialchars("<<student_division_value>>"), $value['division_name'],
-            $html_content);
+        $html_content = str_replace(htmlspecialchars("<<student_enrollment_value>>"), $value['enrollment_no'],$html_content);
+        $html_content = str_replace(htmlspecialchars("<<student_standard_value>>"), $value['standard_name'],$html_content);
+        $html_content = str_replace(htmlspecialchars("<<student_division_value>>"), $value['division_name'],$html_content);
 
         $html_content = str_replace(htmlspecialchars("<<student_year_value>>"), $display_year, $html_content);
-        $html_content = str_replace(htmlspecialchars("<<student_mobile_value>>"), $value['mobile'], $html_content);
-        $html_content = str_replace(htmlspecialchars("<<student_dob_value>>"), date('d-m-Y', strtotime($value['dob'])),
-            $html_content);
+        $html_content = str_replace(htmlspecialchars("<<student_mobile_value>>"), $value['mobile'],$html_content);
+        $html_content = str_replace(htmlspecialchars("<<student_dob_value>>"), date('d-m-Y', strtotime($value['dob'])),$html_content);
         $html_content = str_replace(htmlspecialchars("<<current_date>>"), date('d-M-Y'), $html_content);
         $html_content = str_replace(htmlspecialchars("<<student_dob_word_value>>"), $date_in_word, $html_content);
         $html_content = str_replace(htmlspecialchars("<<student_dise_uid_value>>"), $value['dise_uid'], $html_content);
@@ -341,12 +345,12 @@ class studentCertificateController extends Controller
             1 => 'Jan', 2 => 'Feb', 3 => 'Mar', 4 => 'Apr', 5 => 'May', 6 => 'Jun', 7 => 'Jul', 8 => 'Aug', 9 => 'Sep',
             10 => 'Oct', 11 => 'Nov', 12 => 'Dec',
         ];
-        $fees_details = "<h4 style='text-align:center;line-height: 170%;'><u>Apr-".$syear." To Mar-".($syear+1)."</u></h4>
+        $fees_details = "<h4 style='text-align:center;line-height: 150%;'><u>Apr-".$syear." To Mar-".($syear+1)."</u></h4>
         <div style='width:100%'>
             <table align='center'>";
         foreach ($fees_heads as $title) {
             if($fees_data->sum($title->fees_title) > 0){
-            $fees_details .= "<tr><td style='font-weight:600;line-height: 170%;text-align:left'>" . $title->display_name . "</td>";
+            $fees_details .= "<tr><td style='font-weight:600;line-height: 150%;text-align:left'>" . $title->display_name . "</td>";
             $termIds = [];
             $month_name=[];
             foreach ($fees_month as $fees) {
