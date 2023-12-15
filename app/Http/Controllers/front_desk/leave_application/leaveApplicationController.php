@@ -111,7 +111,7 @@ class leaveApplicationController extends Controller
             ->selectRaw("s.*,se.syear,se.student_id,se.grade_id,se.standard_id,se.section_id,se.student_quota,
                     se.start_date,se.end_date,se.enrollment_code,se.drop_code,se.drop_remarks,se.drop_remarks,se.term_id,se.remarks,
                     se.admission_fees,se.house_id,se.lc_number,st.name standard_name,d.name as division_name,pc.id AS leave_app_id,
-                    pc.syear,pc.student_id,pc.message,pc.reply,pc.apply_date,ifnull(pc.status,'') status,pc.from_date,
+                    pc.syear,pc.student_id,pc.title,pc.message,pc.reply,pc.apply_date,ifnull(pc.status,'') status,pc.from_date,
                     pc.to_date,pc.files,CONCAT_WS(' ',u.first_name,u.middle_name,u.last_name) as reply_by")
             ->where("s.sub_institute_id", "=", session()->get('sub_institute_id'))
             ->where("se.syear", "=", session()->get('syear'))
@@ -148,6 +148,7 @@ class leaveApplicationController extends Controller
             $responce_arr['stu_data'][$id]['leave_app_id'] = $arr->leave_app_id;
             $responce_arr['stu_data'][$id]['stddiv'] = $arr->standard_name."/".$arr->division_name;
             $responce_arr['stu_data'][$id]['mobile'] = $arr->mobile;
+            $responce_arr['stu_data'][$id]['title'] = $arr->title;
             $responce_arr['stu_data'][$id]['message'] = $arr->message;
             $responce_arr['stu_data'][$id]['files'] = $arr->files;
             $responce_arr['stu_data'][$id]['status'] = $arr->status;

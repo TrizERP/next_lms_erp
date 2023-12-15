@@ -98,7 +98,7 @@ class studentReportController extends Controller
         $tblcustom_fields['image'] = 'Image';
         $tblcustom_fields['house'] = get_string('house','request');
         $tblcustom_fields['amount'] = 'Amount';
-        $tblcustom_fields['van'] = 'Van(Shift Wise)';
+        $tblcustom_fields['van'] = 'Van';
         $tblcustom_fields['distance'] = 'Distance';
         $tblcustom_fields['optional_subjects'] = 'Optional Subjects';        
         $tblcustom_fields['nationality'] = get_string('nationality','request');
@@ -198,7 +198,8 @@ class studentReportController extends Controller
             $array[] = 'student_quota.title as student_quota';
             $array[] = 'caste.caste_name as cast';
             $array[] = 'blood_group.bloodgroup as bloodgroup';
-            $array[] = 'CONCAT(transport_vehicle.vehicle_number, " (", transport_school_shift.shift_title, ")") as van';
+            //$array[] = 'CONCAT(transport_vehicle.vehicle_number, " (", transport_school_shift.shift_title, ")") as van';
+            $array[] = 'transport_vehicle.vehicle_number as van';
             $array[] = 'tblstudent.place_of_birth as place_of_birth';
             $array[] = 'tblstudent.student_mobile as studentmobile';
             $array[] = 'GROUP_CONCAT(IFNULL(subject.subject_name, "-")) as optional_subjects';

@@ -341,12 +341,12 @@ class studentCertificateController extends Controller
             1 => 'Jan', 2 => 'Feb', 3 => 'Mar', 4 => 'Apr', 5 => 'May', 6 => 'Jun', 7 => 'Jul', 8 => 'Aug', 9 => 'Sep',
             10 => 'Oct', 11 => 'Nov', 12 => 'Dec',
         ];
-        $fees_details = "<h4 style='text-align:center;line-height: 170%;'><u>Apr-".$syear." To Mar-".($syear+1)."</u></h4>
+        $fees_details = "<h4 style='text-align:center;line-height: 150%;'><u>Apr-".$syear." To Mar-".($syear+1)."</u></h4>
         <div style='width:100%'>
             <table align='center'>";
         foreach ($fees_heads as $title) {
             if($fees_data->sum($title->fees_title) > 0){
-            $fees_details .= "<tr><td style='font-weight:600;line-height: 170%;text-align:left'>" . $title->display_name . "</td>";
+            $fees_details .= "<tr><td style='font-weight:600;line-height: 150%;text-align:left'>" . $title->display_name . "</td>";
             $termIds = [];
             $month_name=[];
             foreach ($fees_month as $fees) {

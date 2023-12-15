@@ -1793,7 +1793,7 @@ br {
                                             $distance=$val['distance'] ?? 0;
                                             $shift_rate=$val['shift_rate'] ?? 0;
                                             $km_amount=$val['km_amount'] ?? 0;
-                                            $total_amt = ($shift_rate + ($distance * $km_amount));
+                                            $total_amt = ($distance == 0) ? 0 : $shift_rate + ($distance * $km_amount);
                                             @endphp
                                             <input type="text" id='amount' name="amount"  class="form-control" value="{{ $total_amt}}" readonly>
                                         </div>
@@ -2053,7 +2053,10 @@ br {
             const distance = parseFloat($('#distance').val());
             const shiftRate = parseFloat("{{ $val['shift_rate'] ?? 0 }}");
             const kmAmount = parseFloat("{{ $val['km_amount'] ?? 0 }}");
-            const totalAmt = shiftRate + (distance * kmAmount);
+            
+            // Check if distance is zero
+            const totalAmt = (distance === 0) ? 0 : shiftRate + (distance * kmAmount);
+
             $('#amount').val(totalAmt.toFixed(2));
         }
 
