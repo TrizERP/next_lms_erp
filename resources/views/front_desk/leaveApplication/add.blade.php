@@ -36,6 +36,7 @@
                                         <th>Apply Date</th>
                                         <th>From Date</th>
                                         <th>To Date</th>
+                                        <th>Title</th>
                                         <th>Message</th>
                                         <th>File</th>
                                         <th>Reply</th>
@@ -57,6 +58,7 @@
                                         <td>{{ $col_arr['apply_date'] }}</td>
                                         <td>{{ $col_arr['from_date'] }}</td>
                                         <td>{{ $col_arr['to_date'] }}</td>
+                                        <td>{{ $col_arr['title'] }}</td>
                                         <td>{{ $col_arr['message'] }}</td>
                                         <td>
                                         @if(!empty($col_arr['files']))
