@@ -109,6 +109,8 @@ class templateMasterController extends Controller
         <li><b><< student_uniqueid_value >></b> : Student unique ID</li>
         <li><b><< he_she_value >></b> : he/she</li>
         <li><b><< his_her_value >></b> : His/Her</li>
+        <li><b><< mr_miss >></b> : Mr./Miss.</li>
+        <li><b><< daughter_or_son >></b> : daughter/son</li>        
         <li><b><< certificate_reason >></b> : certificate reason</li>
         <li><b><< student_father_name >></b> : Father name</li>
         <li><b><< fees_details >></b> : Fees Details</li>
