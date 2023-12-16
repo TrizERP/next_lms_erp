@@ -133,21 +133,21 @@
                     <table class="table table-striped">
                         <tr>
                             <th style="font-weight: 600;">Total Records</th>
-                            <th style="font-weight: 600;">Success Reconsilation</th>
+                            <th style="font-weight: 600;">Success Reconciliation</th>
                             <th style="font-weight: 600;">Not found in ERP</th>
                         </tr>
                         @php 
                             $total_records = count($get_fees_reconciliations);
                             
-                            $get_success_reconsilations = DB::table('fees_collect')->where(['sub_institute_id' => session()->get('sub_institute_id'), 'syear' => session()->get('syear'), 'conciliation' => '1'])->get()->toArray();
-                            $success_reconsilations = count($get_success_reconsilations);
+                            $get_success_reconciliations = DB::table('fees_collect')->where(['sub_institute_id' => session()->get('sub_institute_id'), 'syear' => session()->get('syear'), 'conciliation' => '1'])->get()->toArray();
+                            $success_reconciliations = count($get_success_reconciliations);
 
-                            $not_found_success_reconsilations = ($total_records) - ($success_reconsilations);
+                            $not_found_success_reconciliations = ($total_records) - ($success_reconciliations);
                         @endphp
                         <tr>
                             <td style="text-align: center;">{{ $total_records }}</td>
-                            <td style="text-align: center;">{{ $success_reconsilations }}</td>
-                            <td style="text-align: center;">{{ $not_found_success_reconsilations }}</td>
+                            <td style="text-align: center;">{{ $success_reconciliations }}</td>
+                            <td style="text-align: center;">{{ $not_found_success_reconciliations }}</td>
                         </tr>
                     </table>
                 </div>
