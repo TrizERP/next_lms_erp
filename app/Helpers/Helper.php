@@ -1352,7 +1352,8 @@ if (!function_exists('getStudents')) {
         //END 23-11-2021 Added FOR Add Homework API
 
         $stud_arr = implode(',', $student_ids);
-        $extra_where = " AND s.id in (" . $stud_arr . ")";
+
+        $extra_where = "s.id in (" . $stud_arr . ")";
 
         $result = DB::table('tblstudent as s')
             ->join('tblstudent_enrollment as se', function ($join) {
@@ -1372,24 +1373,23 @@ if (!function_exists('getStudents')) {
             })->leftJoin('caste as c', function ($join) {
                 $join->whereRaw('c.id = s.cast');
             })->leftJoin('transport_map_student as tms', function ($join) {
-                $join->whereRaw('tms.student_id = s.id AND tms.sub_institute_id = s.sub_institute_id');
+                $join->whereRaw('tms.student_id = s.id');
             })->leftJoin('transport_vehicle as tv', function ($join) {
-                $join->whereRaw('tv.id = tms.from_bus_id AND tms.sub_institute_id = tv.sub_institute_id');
+                $join->whereRaw('tv.id = tms.from_bus_id');
             })->leftJoin('transport_driver_detail as td', function ($join) {
-                $join->whereRaw('td.id = tv.driver AND td.sub_institute_id = tms.sub_institute_id');
+                $join->whereRaw('td.id = tv.driver');
             })->leftJoin('transport_kilometer_rate as tkr', function ($join) {
-                $join->whereRaw('tkr.id = s.distance_from_school AND tkr.sub_institute_id = s.sub_institute_id');
+                $join->whereRaw('tkr.id = s.distance_from_school');
             })->leftJoin('result_student_attendance_master as rsam', function ($join) {
-                $join->whereRaw('rsam.student_id = s.id AND rsam.sub_institute_id = s.sub_institute_id');
+                $join->whereRaw('rsam.student_id = s.id');
             })->leftJoin('attendance_student as ats', function ($join) {
-                $join->whereRaw('ats.student_id = s.id AND ats.sub_institute_id = s.sub_institute_id');
+                $join->whereRaw('ats.student_id = s.id');
             })->leftJoin('fees_collect as fc', function ($join) {
-                $join->whereRaw('fc.student_id = s.id AND fc.sub_institute_id = s.sub_institute_id');
+                $join->whereRaw('fc.student_id = s.id and fc.is_deleted = "N"');
             })
-            
             ->selectRaw("tc.*,s.*,se.syear,se.student_id,se.grade_id,se.standard_id,se.section_id,se.student_quota,
                 se.start_date,se.end_date,se.enrollment_code,se.drop_code,se.drop_remarks,se.drop_remarks,se.term_id,
-                se.remarks,se.admission_fees,se.house_id,se.lc_number,st.name standard_name,st.short_name as short_standard_name,s.city,se.standard_id,se.section_id,
+                se.remarks,se.admission_fees,se.house_id,se.lc_number,st.name standard_name,st.short_name as short_standard_name,st.school_stream,s.city,se.standard_id,se.section_id,
                 se.grade_id,d.name as division_name,s.father_name,s.mother_name,ss.SchoolName as school_name,ss.Mobile as school_mobile,
                 ss.Logo as school_image,ss.ReceiptAddress as school_address,(CASE WHEN s.gender = 'M' then 'male' else 'female' end) as gender,
                 r.religion_name,c.caste_name,s.subcast,s.affiliation_no,s.school_code,s.admission_date,td.first_name AS driver_name,
@@ -1398,12 +1398,10 @@ if (!function_exists('getStudents')) {
                 tkr.from_distance,IF(tv.vehicle_type = 'Van',tkr.van_new,tkr.rick_new) AS distance_rate,s.last_name as student_last_name,rsam.teacher_remark,COUNT(ats.id) as total_att_days,sum(CASE WHEN ats.attendance_code = 'P' THEN 1 ELSE 0 END) as present_att_days, fc.term_id as month_name")
             ->where('s.sub_institute_id', $sub_institute_id)
             ->where('se.syear', $syear)
-            ->where('fc.is_deleted', 'N')
-            ->groupBy('fc.id')
-            ->orderBy('fc.id', 'desc')->limit(1)
-            ->whereIn('s.id', $student_ids)
+            ->whereRaw($extra_where)
+            // ->whereIn('s.id', $student_ids)
             ->groupBy('s.id')->get()->toArray();
-
+  
         $student_data = array();
         foreach ($result as $key => $value) {
             $student_data[$value->id]['id'] = $value->id;
@@ -1420,6 +1418,7 @@ if (!function_exists('getStudents')) {
             $student_data[$value->id]['address'] = $value->address;
             $student_data[$value->id]['standard_name'] = $value->standard_name;
             $student_data[$value->id]['short_standard_name'] = $value->short_standard_name;
+            $student_data[$value->id]['school_stream'] = $value->school_stream;
             $student_data[$value->id]['division_name'] = $value->division_name;
             $student_data[$value->id]['father_name'] = $value->father_name;
             $student_data[$value->id]['mother_name'] = $value->mother_name;

@@ -81,6 +81,9 @@ class studentResultController extends Controller
 
         // get selectd students 
         $data = getStudents($student_ids);
+    //     if($sub_institute_id==47){
+    //     echo "<pre>";print_r($data);exit;
+    // }
         $tData = result_template::where('id', $template)
             ->whereRaw('sub_institute_id = IFNULL(
                 (SELECT sub_institute_id FROM result_template_master WHERE id ="' . $template . '" AND 
