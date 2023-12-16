@@ -250,6 +250,7 @@ die; */
         // for mr/miss and daughter/son 
         $html_content = str_replace(htmlspecialchars("<<mr_miss>>"), $mr_miss, $html_content); 
         $html_content = str_replace(htmlspecialchars("<<daughter_or_son>>"), $daughter_son, $html_content);
+
         //Start Bonafide certificate Tags
         $html_content = str_replace(htmlspecialchars("<<student_image_value>>"), $student_image_path, $html_content);
         $html_content = str_replace(htmlspecialchars("<<student_name_value>>"), strtoupper($value['student_full_name']),
