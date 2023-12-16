@@ -53,6 +53,7 @@ use App\Http\Controllers\fees\update_fees_breackoff\update_fees_breackoff_contro
 use App\Http\Controllers\fees\fees_breackoff\monthlyBreakoffController;
 use App\Http\Controllers\fees\fees_month_header\feesMonthHeadercontroller;
 use App\Http\Controllers\fees\fees_report\studentBreakoffReportController;
+use App\Http\Controllers\fees\fees_reconciliation\fees_reconciliation_upload_sheet_controller;
 
 use Illuminate\Support\Facades\Route;
 
@@ -110,6 +111,10 @@ Route::group(['prefix' => 'fees', 'middleware' => ['session', 'menu', 'logRoute'
     // Route::get('online_fees\show_online_type', 'fees\online_fees\online_fees_collect_controller@showTypes')->name('online_show_type');
     Route::get('show_details', [ChequeReconciliationController::class, 'show_details'])->name('show_details');
     Route::get('search_details', [ChequeReconciliationController::class, 'search_details'])->name('search_details');
+
+    //Fees Reconciliation
+    Route::get('fees_reconciliation_upload_sheet', [fees_reconciliation_upload_sheet_controller::class, 'fees_reconciliation'])->name('fees_reconciliation_upload_sheet');
+    Route::post('store_fees_reconciliation_sheet_data', [fees_reconciliation_upload_sheet_controller::class, 'store_fees_reconciliation_data'])->name('store_fees_reconciliation_sheet_data');
 
     Route::get('hdfcpayment', function ($id = null) {
         return view('fees/online_fees/hdfcpayment', ['name' => 'James']);
