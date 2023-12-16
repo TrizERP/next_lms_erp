@@ -180,10 +180,13 @@
   <img src="/admin_dep/images/loader-man.gif" id="loading-gif" alt="loading-gif" >
   </center>
     </div>
-    <script>
+<script>
         window.addEventListener('beforeunload', function() {
-			$('#loading-overlay').show();
-        });
+            $('#loading-overlay').show();
+            setTimeout(() => {
+                $('#loading-overlay').hide();
+            },3000)
+        });
 </script>
 <!-- /#wrapper -->
 <!-- jQuery -->
