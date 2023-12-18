@@ -79,8 +79,8 @@ class fees_reconciliation_upload_sheet_controller extends Controller
             { // Exclude the last row
                 $row = $data[$i];
 
-                $check = DB::table('fees_reconciliation')->where(['reference_no' => $row[1], 'payer_opted_mode' => $row[18], 'sub_institute_id' => session()->get('sub_institute_id')])->get()->toArray();
-
+                $check = DB::table('fees_reconciliation')->where(['reference_no' => $row[1], 'payer_opted_mode' => $row[18]])->get()->toArray();
+                
                 if(empty($check))
                 {
                     $last_insert_ids = DB::table('fees_reconciliation')->insertGetId([
