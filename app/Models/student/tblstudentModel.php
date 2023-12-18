@@ -115,6 +115,7 @@ class tblstudentModel extends Model
 
     public function issuedBook()
     {
-        return $this->hasMany(LibraryBookCirculation::class, 'student_id', 'id');
+        // return $this->hasMany(LibraryBookCirculation::class, 'student_id', 'id');
+        return $this->hasMany(LibraryBookCirculation::class, 'student_id', 'id')->orderBy('id', 'desc');
     }
 }
