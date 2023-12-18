@@ -189,6 +189,9 @@
 							<input type="hidden" name="medium" value="{{ $data['stu_data']['medium']; }}">
 							<input type="hidden" name="father_name" value="{{ $data['stu_data']['father_name']; }}">
 							<input type="hidden" name="mother_name" value="{{ $data['stu_data']['mother_name']; }}">
+							<input type="hidden" name="first_name" value="{{ $data['stu_data']['first_name']; }}">
+							<input type="hidden" name="middle_name" value="{{ $data['stu_data']['middle_name']; }}">
+							<input type="hidden" name="last_name" value="{{ $data['stu_data']['last_name']; }}">
 
 							<div class="table-responsive col-md-12" style="border-top: 2px solid black;">
 								<table class="table table-stripped">
