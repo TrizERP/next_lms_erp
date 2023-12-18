@@ -20,9 +20,7 @@
                 <form action="{{ route('show_library_report') }}" method="post">
                     {{ method_field("POST") }}
                     {{csrf_field()}}
-
                     <div class="row">
-
                         <div class="col-md-4 form-group">
                             <label for="report_of">Select Report</label>
                             <select name="report_of" id="report_of" class="form-control" required
@@ -38,39 +36,76 @@
                         </div>
 
                         <div class="col-md-4 form-group" style="display: none;" id="for_material_resource">
-                            <label>Material Resource</label>
-                            <input type="text" id="material_resource" name="material_resource" class="form-control"
-                                   autocomplete="off">
+                            <label for="">Material Resource</label>
+                            <select id="material_resource" class="form-control" name="material_resource">
+                                <option value="">All</option>
+                                @foreach ($data['get_material_resource_type'] as $key => $value)
+                                    @if (!empty($value->material_resource_type))
+                                        <option value="{{ htmlspecialchars(strval($value->material_resource_type)) }}">{{ htmlspecialchars(strval($value->material_resource_type)) }}</option>
+                                    @endif
+                                @endforeach
+                            </select>
                         </div>
 
                         <div class="col-md-4 form-group" style="display: none;" id="for_author">
-                            <label>Author</label>
-                            <input type="text" id="author" name="author" class="form-control"
-                                   autocomplete="off">
+                            <label for="">Author</label>
+                            <select id="author" class="form-control" name="author">
+                                <option value="">All</option>
+                                @foreach ($data['get_author_name'] as $key => $value)
+                                    @if (!empty($value->author_name))
+                                        <option value="{{ htmlspecialchars(strval($value->author_name)) }}">{{ htmlspecialchars(strval($value->author_name)) }}</option>
+                                    @endif
+                                @endforeach
+                            </select>
                         </div>
 
                         <div class="col-md-4 form-group" style="display: none;" id="for_publisher_name">
-                            <label>Publisher Name</label>
-                            <input type="text" id="publisher_name" name="publisher_name" class="form-control"
-                                   autocomplete="off">
+                            <label for="">Publisher Name</label>
+                            <select id="publisher_name" class="form-control" name="publisher_name">
+                                <option value="">All</option>
+                                @foreach ($data['get_publisher_name'] as $key => $value)
+                                    @if (!empty($value->publisher_name))
+                                        <option value="{{ htmlspecialchars(strval($value->publisher_name)) }}">{{ htmlspecialchars(strval($value->publisher_name)) }}</option>
+                                    @endif
+                                @endforeach
+                            </select>
                         </div>
 
                         <div class="col-md-4 form-group" style="display: none;" id="for_publishing_place">
-                            <label>Publishing Place</label>
-                            <input type="text" id="publishing_place" name="publishing_place" class="form-control"
-                                   autocomplete="off">
+                            <label for="">Publishing Place</label>
+                            <select id="publishing_place" class="form-control" name="publishing_place">
+                                <option value="">All</option>
+                                @foreach ($data['get_publish_place'] as $key => $value)
+                                    @if (!empty($value->publish_place))
+                                        <option value="{{ htmlspecialchars(strval($value->publish_place)) }}">{{ htmlspecialchars(strval($value->publish_place)) }}</option>
+                                    @endif
+                                @endforeach
+                            </select>
                         </div>
 
                         <div class="col-md-4 form-group" style="display: none;" id="for_language">
-                            <label>Language</label>
-                            <input type="text" id="language" name="language" class="form-control"
-                                   autocomplete="off">
+                            <label for="">Language</label>
+                            <select id="language" class="form-control" name="language">
+                                <option value="">All</option>
+                                @foreach ($data['get_language'] as $key => $value)
+                                    @if (!empty($value->language))
+                                        <option value="{{ htmlspecialchars(strval($value->language)) }}">{{ htmlspecialchars(strval($value->language)) }}</option>
+                                    @endif
+                                @endforeach
+                            </select>
                         </div>
 
                         <div class="col-md-4 form-group" style="display: none;" id="for_subject">
-                            <label>Subject</label>
-                            <input type="text" id="subject" name="subject" class="form-control"
-                                   autocomplete="off">
+                            <label for="">Subject</label>
+                            <select id="subject" class="form-control" name="subject">
+                                <option value="">All</option>
+                                @foreach ($data['get_subject'] as $key => $value)
+                                    @if (!empty($value->subject))
+                                        <option value="{{ htmlspecialchars(strval($value->subject)) }}">{{ htmlspecialchars(strval($value->subject
+                                            )) }}</option>
+                                    @endif
+                                @endforeach
+                            </select>
                         </div>
 
                         <div class="col-md-12 form-group">
@@ -153,7 +188,5 @@
             document.getElementById('for_subject').style.display = 'block';
         }
     }
-
-  
 </script>
 @include('includes.footer')

@@ -1,5 +1,4 @@
 <?php
-
 namespace App\Http\Controllers\library;
 
 use App\Http\Controllers\Controller;
@@ -14,14 +13,26 @@ use Illuminate\Support\Facades\DB;
 use function App\Helpers\is_mobile;
 use function App\Helpers\SearchStudent;
 
-
 class LibraryReportController extends Controller
 {
     use GetsJwtToken;
 
     public function index(Request $request)
     {
-        $data['data'] = [];
+        $sub_institute_id = session()->get('sub_institute_id');
+
+        $data['get_material_resource_type'] = DB::table('library_books')->select('id','material_resource_type')->where(['sub_institute_id' => $sub_institute_id])->groupBy('material_resource_type')->get()->toArray();
+
+        $data['get_author_name'] = DB::table('library_books')->select('id','author_name')->where(['sub_institute_id' => $sub_institute_id])->groupBy('author_name')->get()->toArray();
+
+        $data['get_publisher_name'] = DB::table('library_books')->select('id','publisher_name')->where(['sub_institute_id' => $sub_institute_id])->groupBy('publisher_name')->get()->toArray();
+
+        $data['get_publish_place'] = DB::table('library_books')->select('id','publish_place')->where(['sub_institute_id' => $sub_institute_id])->groupBy('publish_place')->get()->toArray();
+
+        $data['get_language'] = DB::table('library_books')->select('id','language')->where(['sub_institute_id' => $sub_institute_id])->groupBy('language')->get()->toArray();
+
+        $data['get_subject'] = DB::table('library_books')->select('id','subject')->where(['sub_institute_id' => $sub_institute_id])->groupBy('subject')->get()->toArray();
+
         $type = $request->input('type');
 
         return is_mobile($type, "library/library_report", $data, "view");
@@ -37,7 +48,7 @@ class LibraryReportController extends Controller
         $material_resource = $request->input('material_resource');
         $author = $request->input('author');
         $publisher_name = $request->input('publisher_name');
-        $publishing_place = $request->input('to_dapublishing_placete');
+        $publishing_place = $request->input('publishing_place');
         $language = $request->input('language');
         $subject = $request->input('subject');
 
