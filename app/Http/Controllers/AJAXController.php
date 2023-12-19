@@ -452,10 +452,22 @@ class AJAXController extends Controller
             "re.standard_id" => $request->standard_id,
             "re.subject_id" => $request->subject_id,
         );
+        if(isset($request->exam_id) && $request->exam_id != ''){
+            $where = [
+                "re.sub_institute_id" => session()->get('sub_institute_id'),
+                "re.syear" => session()->get('syear'),
+                "re.standard_id"=>$request->standard_id,
+                "re.exam_id"=>$request->exam_id
+            ];
+            $group = "re.title";
+        }
 
         $std_sub_map = DB::table('result_create_exam as re')
-            ->where($where)
-            ->pluck('re.title', 're.id');
+            ->where($where);
+            if(isset($group)){
+                $std_sub_map->groupBy($group);
+            }
+          $std_sub_map = $std_sub_map->pluck('re.title', 're.id');
 
         return response()->json($std_sub_map);
     }
