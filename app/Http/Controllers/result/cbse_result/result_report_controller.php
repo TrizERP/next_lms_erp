@@ -348,7 +348,7 @@ class result_report_controller extends Controller
             foreach ($all_student as $key => $value) {
                 $students_data[$value['id']] = $value;
             }
-
+            $exam_create = $request->exam_create;
             //getting all exam marks
             $all_WRT_data = $this->getClasswise(
                 $all_student,
@@ -356,6 +356,7 @@ class result_report_controller extends Controller
                 $subject,
                 $type,
                 $exam_type,
+                $exam_create,                
                 $from_date,
                 $to_date,
                 //$additional_subjects
@@ -393,7 +394,9 @@ class result_report_controller extends Controller
                 //->whereIn("e.subject_id", $additional_subjects)
                 ->whereIn("student_id", $student_id_arr);
 
-            if ($exam_type != '') {
+                if ($exam_create != '') {
+                    $result = $result->where('e.title', $exam_create);
+                }else if ($exam_type != '') {
                 $result = $result->where('e.exam_id', $exam_type);
             }
 
@@ -599,6 +602,7 @@ class result_report_controller extends Controller
         $subject,
         $type,
         $exam_type = null,
+        $exam_create = null,        
         $from_date = null,
         $to_date = null,
         //$additional_subjects = null
@@ -639,7 +643,10 @@ class result_report_controller extends Controller
             //->whereIn("e.subject_id", $additional_subjects)
             ->whereIn("student_id", $student_id_arr);
 
-        if ($exam_type != '') {
+            if ($exam_create != '') {
+                $result = $result->where('e.title', $exam_create);
+            }
+            else if ($exam_type != '') {
             $result = $result->where('e.exam_id', $exam_type);
         }
 
