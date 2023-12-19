@@ -295,7 +295,6 @@ class result_report_controller extends Controller
                 $student_id_arr[] = $arr['student_id'];
             }
 
-
             $result = DB::table("result_create_exam as e")
                 ->join('sub_std_map as s', function ($join) {
                     $join->whereRaw("s.subject_id = e.subject_id AND s.sub_institute_id = e.sub_institute_id AND s.standard_id = e.standard_id");
@@ -303,8 +302,7 @@ class result_report_controller extends Controller
                 ->leftJoin('result_marks as rm', function ($join) {
                     $join->whereRaw("rm.sub_institute_id = e.sub_institute_id AND rm.exam_id = e.id");
                 })
-                ->selectRaw("e.title as ExamTitle, IF((e.con_point IS NULL) OR (e.con_point = ''),e.points,e.con_point) AS
-                    total_points,e.subject_id,s.display_name as subject_name,date_format(e.exam_date,'%d-%m-%Y') as exam_date,
+                ->selectRaw("e.title as ExamTitle, e.points AS total_points,e.subject_id,s.display_name as subject_name,date_format(e.exam_date,'%d-%m-%Y') as exam_date,
                     dayname(e.exam_date) as exam_day,rm.student_id,rm.points as obtained_points")
                 ->where("e.term_id", "=", $term_id)
                 ->where("e.sub_institute_id", "=", $sub_institute_id)
@@ -313,6 +311,7 @@ class result_report_controller extends Controller
                 ->where("e.subject_id", "=", $subject)
                 ->where("e.report_card_status", "=", 'Y')
                 ->whereIn("student_id", $student_id_arr);
+                //Rajesh = 18_12_2023 IF((e.con_point IS NULL) OR (e.con_point = ''),e.points,e.con_point) AS total_points
 
             if ($exam_type != '') {
                 $result = $result->where('e.exam_id', $exam_type);
