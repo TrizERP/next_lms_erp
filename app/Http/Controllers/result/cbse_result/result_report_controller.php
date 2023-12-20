@@ -579,16 +579,14 @@ class result_report_controller extends Controller
 
                 if (count($marksArray) > 0) 
                 {
-                    // Calculate the weighted average
-                    $weightedSum = 0;
-                    $totalWeight = 0;
-                    
-                    $topWeightages = array();
                     foreach ($marksArray as $key => $mark) 
                     {
                         $obtained_marks[$arr['student_id']][$ExamIdArray[$key]][] = (float)$mark ;
                         $to_marks[$arr['student_id']][$ExamIdArray[$key]][] = $totalPointArray[$key];
                         $to_weight[$arr['student_id']][$ExamIdArray[$key]] = (float)$totalweightageArray[$key];
+                       /*  echo("<pre>");
+                        print_r($obtained_marks);
+                        echo("</pre>"); */
                     }
                 } 
                 else 
@@ -596,7 +594,7 @@ class result_report_controller extends Controller
                     $date_arr['final_weightage'] = 0;
                 }
             } 
-
+      
             $ob_main_mark = 0;
             $convert_mark=[];
 
@@ -610,8 +608,7 @@ class result_report_controller extends Controller
                     foreach ($marksArray as $index => $value) 
                     {
                         $w_m = isset($to_weight[$student_id][$index]) ? $to_weight[$student_id][$index] : 0; 
-                        // Check if the key exists
-
+                        
                         foreach ($value as $key => $val) 
                         {
                             if (isset($to_marks[$student_id][$index][$key]))
@@ -621,14 +618,17 @@ class result_report_controller extends Controller
                         }
 
                         $obtained_mark_sum = array_sum($value);
-
-                        if ($t_m !== 0) {
-                            $ob_main_mark += (($obtained_mark_sum / $t_m) * $w_m);
-                        } else {
+                        
+                        if ($t_m !== 0) 
+                        {
+                            $ob_main_mark += (($obtained_mark_sum / $t_m) * $w_m); 
+                        } 
+                        else 
+                        {
                             $ob_main_mark += 0;
                         }
 
-                        $convert_mark[$student_id][$index][] = number_format(($obtained_mark_sum / $t_m) * $w_m, 2);
+                        $convert_mark[$student_id][$index][] = round(($obtained_mark_sum / $t_m) * $w_m);
                     }
                 }
             }
