@@ -1,13 +1,15 @@
-@include('includes.headcss')
-<link rel="stylesheet" href="../../../plugins/bower_components/dropify/dist/css/dropify.min.css">
+{{--@include('includes.headcss')
 @include('includes.header')
-@include('includes.sideNavigation')
+@include('includes.sideNavigation')--}}
+<link rel="stylesheet" href="../../../plugins/bower_components/dropify/dist/css/dropify.min.css">
 
+@extends('layout')
+@section('container')
 <div id="page-wrapper">
     <div class="container-fluid">
         <div class="row bg-title">
             <div class="col-lg-3 col-md-4 col-sm-4 col-xs-12">
-                <h4 class="page-title">Edit Student Health</h4> 
+                <h4 class="page-title">Edit Student Health</h4>
             </div>
         </div>
         <div class="card">
@@ -22,12 +24,12 @@
                     <strong>{{ $sessionData['message'] }}</strong>
                 </div>
             @endif
-            <div class="row">                
+            <div class="row">
                 <div class="col-lg-12 col-sm-12 col-xs-12">
                     <form action="{{ route('student_health.update',$data['id']) }}" enctype="multipart/form-data" method="post">
                     {{ method_field("PUT") }}
                     @csrf
-                        <div class="row">                            
+                        <div class="row">
                             <div class="col-md-4 form-group">
                                 <label>Student </label>
                                 <input type="text" id='student' value="@if(isset($data['student_name'])){{ $data['student_name'] . ' - '. $data['student_id'] }}@endif" list="studentSearchList" name="student_id" onkeyup="getStudents(this.value);" required="required" class="form-control">
@@ -51,7 +53,7 @@
     							<input type="file" data-default-file="/storage/frontdesk/{{ $data['file'] }}" name="file" id="input-file-now" class="dropify" />
                             </div>
                             <div class="col-md-12 form-group">
-                                <center>                                    
+                                <center>
                                     <input type="submit" name="submit" value="Update" class="btn btn-success" >
                                 </center>
                             </div>
@@ -60,7 +62,7 @@
                 </div>
             </div>
         </div>
-    </div>    
+    </div>
 </div>
 
 @include('includes.footerJs')
@@ -126,3 +128,4 @@
     });
     </script>
 @include('includes.footer')
+@endsection

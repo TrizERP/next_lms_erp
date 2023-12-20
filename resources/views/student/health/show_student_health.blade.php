@@ -1,7 +1,8 @@
-@include('includes.headcss')
+{{--@include('includes.headcss')
 @include('includes.header')
-@include('includes.sideNavigation')
-
+@include('includes.sideNavigation')--}}
+@extends('layout')
+@section('container')
 <div id="page-wrapper">
     <div class="container-fluid">
         <div class="row bg-title">
@@ -23,9 +24,9 @@
             <div class="row">
                 <div class="col-lg-3 col-sm-3 col-xs-3">
                     <a href="{{ route('student_health.create') }}" class="btn btn-info add-new">
-                        <i class="fa fa-plus"></i> Add New Student Health 
+                        <i class="fa fa-plus"></i> Add New Student Health
                     </a>
-                </div>                
+                </div>
                 <div class="col-lg-12 col-sm-12 col-xs-12">
                     <div class="table-responsive">
                         <table id="example" class="table table-striped">
@@ -48,13 +49,13 @@
                                 @foreach($data['data'] as $pkey => $pvalue)
                                 <tr>
                                     <td>{{$j}}</td>
-                                    <td>{{$pvalue['student_name']}}</td>
+                                    <td>{{$pvalue['student_name'] ?? ''}}</td>
                                     <td>{{$pvalue['doctor_name']}}</td>
                                     <td>{{$pvalue['doctor_contact']}}</td>
                                     <td>{{$pvalue['date']}}</td>
                                     <td><a target="_blank" href="../storage/frontdesk/{{$pvalue['file']}}">{{$pvalue['file']}}</a></td>
                                     <td>
-                                        <div class="d-inline">                                            
+                                        <div class="d-inline">
                                             <a href="{{ route('student_health.edit',$pvalue['id'])}}" class="btn btn-info btn-outline">
                                                 <i class="ti-pencil-alt"></i>
                                             </a>
@@ -77,7 +78,7 @@
                     </div>
                 </div>
             </div>
-        </div>                
+        </div>
     </div>
 </div>
 
@@ -91,3 +92,4 @@ $(document).ready(function () {
 
 </script>
 @include('includes.footer')
+@endsection

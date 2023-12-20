@@ -1,7 +1,8 @@
-@include('includes.headcss')
+{{--@include('includes.headcss')
 @include('includes.header')
-@include('includes.sideNavigation')
-
+@include('includes.sideNavigation')--}}
+@extends('layout')
+@section('container')
 <div id="page-wrapper">
     <div class="container-fluid">
         <div class="row bg-title">
@@ -21,18 +22,18 @@
                 <strong>{{ $sessionData['message'] }}</strong>
             </div>
             @endif
-            <div class="row">                
+            <div class="row">
                 <div class="col-lg-12 col-sm-12 col-xs-12">
                     <form action="{{ route('student_vaccination.store') }}" enctype="multipart/form-data" method="post">
-                    {{ method_field("POST") }}                        
+                    {{ method_field("POST") }}
                     @csrf
-                        <div class="row">                            
+                        <div class="row">
                             <div class="col-md-4 form-group">
                                 <label>Student </label>
                                 <input type="text" id='student' list="studentSearchList" name="student_id" onkeyup="getStudents(this.value);" required="required" class="form-control" placeholder="Type Student Name OR GR No.">
                                 <datalist id="studentSearchList">
                                 </datalist>
-                            </div>                            
+                            </div>
                             <div class="col-md-4 form-group">
                                 <label>Doctor Name </label>
                                 <input type="text" id='doctor_name' name="doctor_name" class="form-control">
@@ -54,16 +55,16 @@
                                 <textarea type="text" rows="6" id='note'  name="note" class="form-control"></textarea>
                             </div>
                             <div class="col-md-12 form-group">
-                                <center>                                    
+                                <center>
                                     <input type="submit" name="submit" value="Save" class="btn btn-success">
                                 </center>
                             </div>
                         </div>
                     </form>
                 </div>
-            </div>    
+            </div>
         </div>
-    </div>    
+    </div>
 </div>
 
 @include('includes.footerJs')
@@ -94,3 +95,4 @@
 
 </script>
 @include('includes.footer')
+@endsection

@@ -1,7 +1,8 @@
-@include('includes.headcss')
+{{--@include('includes.headcss')
 @include('includes.header')
-@include('includes.sideNavigation')
-
+@include('includes.sideNavigation')--}}
+@extends('layout')
+@section('container')
 <div id="page-wrapper">
     <div class="container-fluid">
             <div class="row bg-title">
@@ -16,8 +17,8 @@
                     $string = fread($fin, filesize($file_name));
                     fclose($fin);
                 ?>
-               
-                <div class="card">       
+
+                <div class="card">
                     <div class="row">
                         <div class="col-md-12 form-group">
                             <p>Template 1</p>
@@ -26,20 +27,20 @@
                             <?php echo $string; ?>
                         </div>
                     </div>
-                    
+
                     <div class="pagebreak"> </div>
-                
+
                 </div>
-                   
+
             </div>
 
             <div class="pagebreak"> </div>
-            
+
             <div class="col-md-12 form-group">
                 <center>
                     <button class="btn btn-success" onclick="printdiv('printPage');">Print</button>
                 </center>
-            </div>        
+            </div>
     </div>
 </div>
 
@@ -75,3 +76,4 @@ $(document).ready(function () {
 
 </script> -->
 @include('includes.footer')
+@endsection

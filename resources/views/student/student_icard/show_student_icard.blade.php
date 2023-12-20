@@ -1,15 +1,16 @@
-@include('includes.headcss')
+{{--@include('includes.headcss')
 @include('includes.header')
-@include('includes.sideNavigation')
-
+@include('includes.sideNavigation')--}}
+@extends('layout')
+@section('container')
 <style type="text/css">
     * {
         -webkit-print-color-adjust: exact !important;   /* Chrome, Safari, Edge */
         color-adjust: exact !important;                 /*Firefox*/
-    } 
-    .page-break-clear { 
+    }
+    .page-break-clear {
       clear: both;
-    }  
+    }
     .row-4-column-1{
         display: grid;
         grid-template-columns: 1fr;
@@ -39,7 +40,7 @@
         width: 48vh;
         margin-right: auto;
         margin-left: auto;
-    } 
+    }
     .row-3-column-3 {
         display: grid;
         grid-template-columns: repeat(3, 1fr);
@@ -128,7 +129,7 @@
             $pageBreakCount = $data['column'] * $data['row'];
             $j=1;
         @endphp
-        <div class="row-{{$data['row']}}-column-{{$data['column']}}">            
+        <div class="row-{{$data['row']}}-column-{{$data['column']}}">
         @foreach($student_data as $key => $value)
         <?php
             $icard_icon = '';
@@ -169,7 +170,7 @@
             $str = str_replace(htmlspecialchars("<<icard_icon>>"), $icard_icon, $str);
             $str = str_replace(htmlspecialchars("<<distance_from_school>>"), $value['distance_from_school'], $str);
             $str = str_replace(htmlspecialchars("<<from_distance>>"), $from_distance, $str);
-            $str = str_replace(htmlspecialchars("<<distance_rate>>"), $distance_rate, $str);            
+            $str = str_replace(htmlspecialchars("<<distance_rate>>"), $distance_rate, $str);
             $str = str_replace(htmlspecialchars("<<school_name>>"), $value['school_name'], $str);
             $str = str_replace(htmlspecialchars("<<school_mobile>>"), $value['school_mobile'], $str);
             $str = str_replace(htmlspecialchars("<<school_image>>"), "/storage/school/" . $value['school_image'], $str);
@@ -194,7 +195,7 @@
             </div>
         </div>
         <div class="page-break"> </div>
-        <div class="row">            
+        <div class="row">
             <div class="col-md-12 form-group">
                 <center>
                     <button class="btn btn-success" onclick="printdiv('printPage');">Print</button>
@@ -212,3 +213,4 @@
     }
 </script>
 @include('includes.footer')
+@endsection
