@@ -21,7 +21,7 @@ class studentCertificateController extends Controller
         $res="";
         if (session()->has('data')) { 
             $data_arr = session('data'); 
-            if (isset($data_arr['message'])) {
+            if (isset($data_arr['message']) && is_array($data_arr['message'])) {
                 $res['message'] = $data_arr['message'];
                 $res['status_code'] = $data_arr['status_code'] ;                
             }
@@ -250,6 +250,7 @@ die; */
         // for mr/miss and daughter/son 
         $html_content = str_replace(htmlspecialchars("<<mr_miss>>"), $mr_miss, $html_content); 
         $html_content = str_replace(htmlspecialchars("<<daughter_or_son>>"), $daughter_son, $html_content);
+
         //Start Bonafide certificate Tags
         $html_content = str_replace(htmlspecialchars("<<student_image_value>>"), $student_image_path, $html_content);
         $html_content = str_replace(htmlspecialchars("<<student_name_value>>"), strtoupper($value['student_full_name']),
@@ -298,9 +299,9 @@ die; */
             $html_content);
         $html_content = str_replace(htmlspecialchars("<<short_standard_name_value>>"), strtoupper($value['short_standard_name']),
             $html_content);
-        $standard_array = ['I' => 1,'II' => 2,'III' => 3,'IV' => 4,'V' => 5,'VI' => 6,'VII' => 7,'VIII' => 8,'IX' => 9,'X' => 10,'XI' => 11,'XII' => 12];
-        $std = $standard_array[$value['short_standard_name']] ?? 0;
-        $html_content = str_replace(htmlspecialchars("<<short_standard_name_in_word_value>>"), ucwords($this->convert_number_to_words($std)), $html_content);
+        //$standard_array = ['I' => 1,'II' => 2,'III' => 3,'IV' => 4,'V' => 5,'VI' => 6,'VII' => 7,'VIII' => 8,'IX' => 9,'X' => 10,'XI' => 11,'XII' => 12];
+        //$std = $standard_array[$value['short_standard_name']] ?? 0;
+        $html_content = str_replace(htmlspecialchars("<<short_standard_name_in_word_value>>"), strtoupper($value['school_stream']), $html_content);
         $html_content = str_replace(htmlspecialchars("<<subjects_studied_value>>"), strtoupper($get_standard_subjects->subject_name),
             $html_content);
         $html_content = str_replace(htmlspecialchars("<<candidate_belongs_to_value>>"),
@@ -322,7 +323,10 @@ die; */
         $html_content = str_replace(htmlspecialchars("<<if_to_which_class_value>>"),
             strtoupper($value['if_to_which_class']), $html_content);
         $months = FeeMonthId();
+        $month = '';
+        if($value['month_name']!=''){
         $month = $months[$value['month_name']];
+    }
         $html_content = str_replace(htmlspecialchars("<<month_name_value>>"),
             strtoupper($month), $html_content);
         $html_content = str_replace(htmlspecialchars("<<month_up_paid_school_dues_value>>"),
@@ -391,10 +395,10 @@ die; */
         ];
         $fees_details = "<h4 style='text-align:center;line-height: 150%;'><u>Apr-".$syear." To Mar-".($syear+1)."</u></h4>
         <div style='width:100%'>
-            <table align='center'>";
+            <table align='center' width='60%'>";
         foreach ($fees_heads as $title) {
             if($fees_data->sum($title->fees_title) > 0){
-            $fees_details .= "<tr><td style='font-weight:600;line-height: 150%;text-align:left'>" . $title->display_name . "</td>";
+            $fees_details .= "<tr><td width='50%' style='font-weight:600;line-height: 150%;text-align:left'>" . $title->display_name . "</td>";
             $termIds = [];
             $month_name=[];
             foreach ($fees_month as $fees) {
@@ -418,7 +422,7 @@ die; */
             });
 
         }     
-            $fees_details .= "<td style='font-size:14px;text-align:left'>" . $fees_data->sum($title->fees_title) ?? 0 . "  ";
+            $fees_details .= "<td width='50%' style='font-size:14px;text-align:left'>" . $fees_data->sum($title->fees_title) ?? 0 . "  ";
             $fees_details.="/- ";
 
             if (!empty($month_name)) {
