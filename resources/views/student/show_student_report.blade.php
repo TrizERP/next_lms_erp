@@ -1,15 +1,17 @@
-@include('includes.headcss')
+{{--@include('includes.headcss')
 
 @include('includes.header')
-@include('includes.sideNavigation')
+@include('includes.sideNavigation')--}}
 
+@extends('layout')
+@section('container')
 <div id="page-wrapper">
     <div class="container-fluid">
             <div class="row bg-title">
                 <div class="col-lg-3 col-md-4 col-sm-4 col-xs-12">
                 <h4 class="page-title">Student Report <span id="menuId" style="display:none"></span><a href="{{route('norm-clature.create')}}"><i class="mdi mdi-lead-pencil"></i></a></h4>
                 </div>
-            </div>			
+            </div>
         @php
         $grade_id = $standard_id = $division_id = $order_by = '';
 
@@ -273,3 +275,4 @@ function checkedAll() {
 </script>
 
 @include('includes.footer')
+@endsection

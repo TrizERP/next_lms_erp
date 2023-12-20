@@ -1,14 +1,15 @@
-@include('includes.headcss')
+{{--@include('includes.headcss')
 @include('includes.header')
-@include('includes.sideNavigation')
-
+@include('includes.sideNavigation')--}}
+@extends('layout')
+@section('container')
 <style type="text/css">
     #overlay {
       position: fixed; /* Sit on top of the page content */
       display: none; /* Hidden by default */
       width: 100%; /* Full width (cover the whole page) */
       height: 100%; /* Full height (cover the whole page) */
-      top: 0; 
+      top: 0;
       left: 0;
       right: 0;
       bottom: 0;
@@ -37,15 +38,15 @@
                 <h4 class="page-title">Student Certificate</h4>
             </div>
         </div>
-        <div id="printPage" class="card">            
-            
+        <div id="printPage" class="card">
+
             	@if(isset($data['str']))
                 @php
                     if(isset($data['str'])){
                         $str = $data['str'];
                     }
                 @endphp
-                
+
                 {!!$str!!}
         </div>
         <div class="pagebreak"></div>
@@ -54,7 +55,7 @@
         <input type="hidden" name="template_name" id="template_name" value="{{$data['template']}}">
         <input type="hidden" name="certificate_reason" id="certificate_reason" value="{{ isset($data['certificate_reason']) ? $data['certificate_reason'] : '' }}">
 
-        <div class="row">            
+        <div class="row">
             <div class="col-md-12 form-group">
                 <div id="overlay" style="display:none;">
                     <center>
@@ -97,9 +98,9 @@
     //     var path = "{{ route('ajax_saveData') }}";
     //     $.ajax({
     //             url: path,
-    //             data:'insert_student_ids='+insert_ids+'&template='+template_name, 
+    //             data:'insert_student_ids='+insert_ids+'&template='+template_name,
     //             success: function(result){
-    //                 $("#last_inserted_ids").val(result);    
+    //                 $("#last_inserted_ids").val(result);
     //             }
     //     });
     // }
@@ -111,3 +112,4 @@
 
 </script>
 @include('includes.footer')
+@endsection

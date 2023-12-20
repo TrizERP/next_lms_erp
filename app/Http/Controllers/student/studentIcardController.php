@@ -95,10 +95,10 @@ class studentIcardController extends Controller
         $row = $request->input('row');
         $column = $request->input('column');
         $student_ids = $request->input('students');
-        $syear = $request->session()->get('syear');
+        /*$syear = $request->session()->get('syear');
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $grade_id = $request->input('grade_id');
-        $standard_id = $request->input('standard_id');
+        $standard_id = $request->input('standard_id');*/
 
         $data = getStudents($student_ids);
         $res['status_code'] = 1;

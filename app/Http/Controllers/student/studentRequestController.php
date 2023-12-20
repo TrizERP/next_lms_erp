@@ -20,8 +20,8 @@ class studentRequestController extends Controller
     public function index(Request $request)
     {
         $type = $request->input('type');
-        $sub_institute_id = $request->session()->get('sub_institute_id');
-        $syear = $request->session()->get('syear');
+        /*$sub_institute_id = $request->session()->get('sub_institute_id');
+        $syear = $request->session()->get('syear');*/
 
         $res['status_code'] = 1;
         $res['message'] = "Success";

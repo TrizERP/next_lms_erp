@@ -1,19 +1,21 @@
-@include('includes.headcss')
+{{--@include('includes.headcss')
 @include('includes.header')
-@include('includes.sideNavigation')
+@include('includes.sideNavigation')--}}
+@extends('layout')
+@section('container')
 <style type="text/css">
     #overlay {
-        position: fixed; /* Sit on top of the page content */ 
-        display: none; /* Hidden by default */ 
-        width: 100%; /* Full width (cover the whole page) */ 
-        height: 100%; /* Full height (cover the whole page) */ 
-        top: 0; 
-        left: 0; 
-        right: 0; 
-        bottom: 0; 
-        background-color: rgba(0,0,0,0.5); /* Black background with opacity */ 
-        z-index: 2; /* Specify a stack order in case you're using a different order for other elements */ 
-        cursor: pointer; /* Add a pointer on hover */ 
+        position: fixed; /* Sit on top of the page content */
+        display: none; /* Hidden by default */
+        width: 100%; /* Full width (cover the whole page) */
+        height: 100%; /* Full height (cover the whole page) */
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: rgba(0,0,0,0.5); /* Black background with opacity */
+        z-index: 2; /* Specify a stack order in case you're using a different order for other elements */
+        cursor: pointer; /* Add a pointer on hover */
     }
 </style>
 <div id="page-wrapper">
@@ -45,7 +47,7 @@
             @endif
             <form action="{{ route('student_certificate_report.create') }}" enctype="multipart/form-data">
                 @csrf
-                <div class="row">                    
+                <div class="row">
                     <div class="col-md-4 form-group">
                         <label>From Date</label>
                         <input type="text" name="from_date" class="form-control mydatepicker"
@@ -56,7 +58,7 @@
                         <input type="text" name="to_date" class="form-control mydatepicker"
                             placeholder="Please select to date." autocomplete="off" value="{{$to_date}}">
                     </div>
-                    <div class="col-md-4 form-group mt-4">                       
+                    <div class="col-md-4 form-group mt-4">
                         <input type="submit" name="submit" value="Search" class="btn btn-success">
                     </div>
                 </div>
@@ -69,7 +71,7 @@
         $result_report = $data['result_report'];
         }
         @endphp
-        <div class="card">            
+        <div class="card">
             <div class="table-responsive">
                 @php
                     echo App\Helpers\get_school_details("","","");
@@ -97,7 +99,7 @@
                             <td>{{$value->division}}</td>
                             <td>
                                 <button type="button" class="btn btn-info float-right" data-toggle="modal" onclick="javascript:add_data({{$value->id}},{{$value->student_id}},{{$value->certificate_number}});">{{$value->certificate_number}}</button>
-                                <input type="hidden" name="certificate_html_{{$value->id}}" id="certificate_html_{{$value->id}}" value="{{$value->certificate_html}}">    
+                                <input type="hidden" name="certificate_html_{{$value->id}}" id="certificate_html_{{$value->id}}" value="{{$value->certificate_html}}">
 
                             </td>
                             <td>{{$value->REQUEST}}</td>
@@ -136,7 +138,7 @@
                                 <div id="reprint_certificate_html">
                                 </div>
                             </div>
-                        </div>                            
+                        </div>
                     </div>
                 </div>
                 <!--Footer-->
@@ -145,13 +147,13 @@
                      </center></div>
                     <center>
                         <button id="ajax_PDF" type="button" class="btn btn-primary">Print Certificate</button>
-                    </center>                            
+                    </center>
                 </div>
             </div>
             <!--/.Content-->
         </div>
     </div>
-</div>    
+</div>
 <!--Modal: Add ChapterModal-->
 
     <script>
@@ -202,25 +204,25 @@
 <script>
     $(document).ready(function() {
      var table = $('#example').DataTable( {
-         select: true,          
-         lengthMenu: [ 
-                        [100, 500, 1000, -1], 
-                        ['100', '500', '1000', 'Show All'] 
+         select: true,
+         lengthMenu: [
+                        [100, 500, 1000, -1],
+                        ['100', '500', '1000', 'Show All']
         ],
-        dom: 'Bfrtip', 
-        buttons: [ 
-            { 
+        dom: 'Bfrtip',
+        buttons: [
+            {
                 extend: 'pdfHtml5',
                 title: 'Student Certificate Report',
                 orientation: 'landscape',
-                pageSize: 'LEGAL',                
+                pageSize: 'LEGAL',
                 pageSize: 'A0',
-                exportOptions: {                   
-                     columns: ':visible'                             
+                exportOptions: {
+                     columns: ':visible'
                 },
-            }, 
-            { extend: 'csv', text: ' CSV', title: 'Student Certificate Report' }, 
-            { extend: 'excel', text: ' EXCEL', title: 'Student Certificate Report' }, 
+            },
+            { extend: 'csv', text: ' CSV', title: 'Student Certificate Report' },
+            { extend: 'excel', text: ' EXCEL', title: 'Student Certificate Report' },
             {
                 extend: 'print',
                 text: ' PRINT',
@@ -230,8 +232,8 @@
                 }
             },
             'pageLength'
-        ], 
-        }); 
+        ],
+        });
         $('#example thead tr').clone(true).appendTo( '#example thead' );
         $('#example thead tr:eq(1) th').each( function (i) {
             var title = $(this).text();
@@ -249,3 +251,4 @@
     } );
 </script>
 @include('includes.footer')
+@endsection

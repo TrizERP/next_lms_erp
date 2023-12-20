@@ -1,10 +1,13 @@
+{{--
 @include('includes.headcss')
 
 @include('includes.header')
 @include('includes.sideNavigation')
-
+--}}
+@extends('layout')
+@section('container')
 <style>
-    .filter-button 
+    .filter-button
     {
         margin: 0;
     }
@@ -13,12 +16,12 @@
     <div class="container-fluid">
             <div class="row bg-title">
                 <div class="col-lg-3 col-md-4 col-sm-4 col-xs-12">
-                    <h4 class="page-title">Bulk Student Update</h4> 
+                    <h4 class="page-title">Bulk Student Update</h4>
                 </div>
             </div>
         @php
         $grade_id = $standard_id = $division_id = $order_by = '';
-        
+
             if(isset($data['grade_id'])){
                 $grade_id = $data['grade_id'];
                 $standard_id = $data['standard_id'];
@@ -27,7 +30,7 @@
              if(isset($data['order_by'])){
                 $order_by = $data['order_by'];
             }
-        @endphp       
+        @endphp
             <div class="card">
                 <div class="panel-body">
                     @if ($sessionData = Session::get('data'))
@@ -56,7 +59,7 @@
                             </select>
 						</div>
                         <div class="col-md-3 col-sm-offset-4 text-center form-group">
-                            <input type="submit" name="submit" value="Search" class="btn btn-success triz-btn" >    
+                            <input type="submit" name="submit" value="Search" class="btn btn-success triz-btn" >
                             <div class="btn btn-outline-primary btn-sm ml-2 py-2 px-3 cursor-pointer" data-toggle="modal" data-target="#modalCenter"><span class="mdi mdi-tune"></span></div>
                         </div>
 
@@ -85,7 +88,7 @@
                                                 $i = 1;
                                                 @endphp
                                                 @if(isset($data['data']))
-                                                @foreach($data['data'] as $key => $value)                                                
+                                                @foreach($data['data'] as $key => $value)
                                                 <div class="col-md-4 form-group mt-1">
                                                     <div class="custom-control custom-checkbox">
                                                         @php
@@ -111,17 +114,17 @@
                                 </div>
 
                             </div>
-                        </div>                    
-                            
-                    </form>       
+                        </div>
+
+                    </form>
                 </div>
-            </div>        
+            </div>
 
         @if(isset($data['student_data']))
         @php
             if(isset($data['student_data'])){
                 $student_data = $data['student_data'];
-            }                
+            }
         @endphp
         <div class="white-box card">
             <h5 class="box-title">Student Fieldwise Report </h3>
@@ -136,11 +139,11 @@
                                 @endforeach
                                 <th data-toggle="tooltip" title="Updated On"> Updated On </th>
                             </tr>
-                        </thead> 
+                        </thead>
                         <tbody>
-                            
+
                             @foreach($student_data as $key => $value)
-                                <tr>    
+                                <tr>
                                     @foreach($data['headers'] as $hkey => $header)
                                         @if($hkey == "student_name")
                                         <td>{{$value->$hkey}}</td>
@@ -152,9 +155,9 @@
                                                 <td>{{$value->$hkey}}</td>
                                                 @else
                                                 <td><input type="text" name="values[{{$value->id}}][{{$hkey}}]" value="{{$value->$hkey}}"></td>
-                                                @endif                                                    
+                                                @endif
                                             @elseif($header['type'] == "dropdown")
-                                            <td>													
+                                            <td>
                                                 <!-- @php
                                                     $disable = "";
                                                     if(session()->get('sub_institute_id') == 257)
@@ -188,12 +191,12 @@
                                             @elseif($header['type'] == "file")
                                                 <td><input type="file" name="values[{{$value->id}}][{{$hkey}}]">
                                                     @if($value->$hkey != '')
-                                                    <image height="50px" width="50px" src="/storage/student/{{$value->$hkey}}"> 
+                                                    <image height="50px" width="50px" src="/storage/student/{{$value->$hkey}}">
                                                     @endif
                                                 </td>
                                             @endif
                                         @endif
-                                    @endforeach 
+                                    @endforeach
                                     <td>@if ($value['updated_on'])
                                             {{ date('d-m-Y H:i:s', strtotime($value['updated_on'])) }}
                                         @else
@@ -201,7 +204,7 @@
                                         @endif
                                     </td>
                                 </tr>
-                            @endforeach 
+                            @endforeach
                         </tbody>
                     </table>
                 </div>
@@ -232,20 +235,20 @@ function checkedAll()
     {
         document.getElementsByName('dynamicFields[]')[i].checked = checked;
     }
-}    
+}
 </script>
     <script>
     $('#grade').attr('required',true);
-    $('#standard').attr('required',true);    
+    $('#standard').attr('required',true);
 
    $(document).ready(function() {
      var table = $('#example').DataTable( {
-         select: true,          
-         lengthMenu: [ 
-                        [100, 500, 1000, -1], 
-                        ['100', '500', '1000', 'Show All'] 
-        ] 
-        }); 
+         select: true,
+         lengthMenu: [
+                        [100, 500, 1000, -1],
+                        ['100', '500', '1000', 'Show All']
+        ]
+        });
 
         $('#example thead tr').clone(true).appendTo( '#example thead' );
         $('#example thead tr:eq(1) th').each( function (i) {
@@ -264,3 +267,4 @@ function checkedAll()
     } );
 </script>
 @include('includes.footer')
+@endsection
