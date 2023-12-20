@@ -295,7 +295,7 @@ die; */
             $html_content);
         $html_content = str_replace(htmlspecialchars("<<subcast_value>>"), strtoupper($value['subcast']),
             $html_content);
-        $html_content = str_replace(htmlspecialchars("<<admission_date_value>>"), strtoupper($value['admission_date']),
+        $html_content = str_replace(htmlspecialchars("<<admission_date_value>>"), date('d-m-Y', strtotime($value['admission_date'])),
             $html_content);
         $html_content = str_replace(htmlspecialchars("<<short_standard_name_value>>"), strtoupper($value['short_standard_name']),
             $html_content);
@@ -319,7 +319,7 @@ die; */
         $html_content = str_replace(htmlspecialchars("<<whether_qualified_value>>"),
             strtoupper($value['whether_qualified']), $html_content);
         $html_content = str_replace(htmlspecialchars("<<teacher_remark_value>>"),
-            strtoupper($value['teacher_remark']), $html_content);
+            $value['teacher_remark'], $html_content);
         $html_content = str_replace(htmlspecialchars("<<if_to_which_class_value>>"),
             strtoupper($value['if_to_which_class']), $html_content);
         $months = FeeMonthId();

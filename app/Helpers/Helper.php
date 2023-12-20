@@ -1383,7 +1383,7 @@ if (!function_exists('getStudents')) {
             })->leftJoin('result_student_attendance_master as rsam', function ($join) {
                 $join->whereRaw('rsam.student_id = s.id');
             })->leftJoin('attendance_student as ats', function ($join) {
-                $join->whereRaw('ats.student_id = s.id');
+                $join->whereRaw('ats.student_id = s.id AND ats.syear = se.syear');
             })->leftJoin('fees_collect as fc', function ($join) {
                 $join->whereRaw('fc.student_id = s.id and fc.is_deleted = "N"');
             })
