@@ -26,7 +26,7 @@ class studentSearchController extends Controller
     public function index(Request $request)
     {
         $type = $request->input('type');
-        
+
         $res['status_code'] = 1;
         $res['message'] = "Success";
 
@@ -60,7 +60,7 @@ class studentSearchController extends Controller
         $including_inactive = $request->input('including_inactive');
         $unique_id = $request->input('unique_id');
         $marking_period_id = session()->get('term_id');
-    
+
         $extraSearchArray = [];
         $extraSearchArray['tblstudent_enrollment.sub_institute_id'] = $sub_institute_id;
         $extraSearchArray['tblstudent_enrollment.syear'] = $syear;
@@ -111,7 +111,7 @@ class studentSearchController extends Controller
         if (isset($classTeacherStdArr)) {
             if (count($classTeacherStdArr) > 0) {
                 $extraRaw = "standard.id IN (".implode(",", $classTeacherStdArr).")";
-            } 
+            }
         }
 
         $classTeacherDivArr = session()->get('classTeacherDivArr');
@@ -122,8 +122,33 @@ class studentSearchController extends Controller
         }
 
         //END Check for class teacher assigned standards
-        // DB::enableQueryLog();		
-        $student_data = tblstudentModel::select('tblstudent.*', 'tblstudent_enrollment.*', 'standard.name as standard','division.name as division', 'academic_section.title as grade', 'student_quota.title as student_quota', DB::raw($inactive_colour))
+        // DB::enableQueryLog();
+
+        $student_data = tblstudentModel::select(
+            'tblstudent.*',
+            'tblstudent_enrollment.*',
+            'standard.name as standard',
+            'division.name as division',
+            'academic_section.title as grade',
+            'student_quota.title as student_quota',
+            DB::raw($inactive_colour)
+        )
+            ->join('tblstudent_enrollment', 'tblstudent.id', '=', 'tblstudent_enrollment.student_id')
+            ->join('academic_section', 'academic_section.id', '=', 'tblstudent_enrollment.grade_id')
+            ->join('standard', function ($join) use ($marking_period_id) {
+                $join->on('standard.id', '=', 'tblstudent_enrollment.standard_id');
+                // Uncomment the next line if needed
+                // ->when($marking_period_id, function ($query) use ($marking_period_id) {
+                //     $query->where('standard.marking_period_id', $marking_period_id);
+                // });
+            })
+            ->join('division', 'division.id', '=', 'tblstudent_enrollment.section_id')
+            ->join('student_quota', 'student_quota.id', '=', 'tblstudent_enrollment.student_quota')
+            ->where($extraSearchArray)
+            ->whereRaw($extraRaw)
+            ->get();
+
+       /* $student_data = tblstudentModel::select('tblstudent.*', 'tblstudent_enrollment.*', 'standard.name as standard','division.name as division', 'academic_section.title as grade', 'student_quota.title as student_quota', DB::raw($inactive_colour))
             ->join('tblstudent_enrollment', 'tblstudent.id', '=', 'tblstudent_enrollment.student_id')
             ->join('academic_section', 'academic_section.id', '=', 'tblstudent_enrollment.grade_id')
             ->join('standard',function($join) use($marking_period_id){
@@ -136,7 +161,7 @@ class studentSearchController extends Controller
             ->join('student_quota', 'student_quota.id', '=', 'tblstudent_enrollment.student_quota')
             ->where($extraSearchArray)
             ->whereRaw($extraRaw)
-            ->get();
+            ->get();*/
             // dd(DB::getQueryLog($student_data));
 
         $res['status_code'] = 1;
@@ -218,10 +243,10 @@ class studentSearchController extends Controller
         $extraSearchArray['tblstudent_enrollment.sub_institute_id'] = $sub_institute_id;
         $extraSearchArray['tblstudent.status'] = 1;
         $marking_period_id=session()->get('term_id');
-        
+
         return tblstudentModel::select('standard.name as standard', 'division.name as division',
             'academic_section.title as grade')
-            ->selectRaw('tblstudent.enrollment_no,CONCAT_WS(" ",tblstudent.first_name,tblstudent.middle_name,tblstudent.last_name) 
+            ->selectRaw('tblstudent.enrollment_no,CONCAT_WS(" ",tblstudent.first_name,tblstudent.middle_name,tblstudent.last_name)
             as student_name,tblstudent.id')
             ->join('tblstudent_enrollment', 'tblstudent.id', '=', 'tblstudent_enrollment.student_id')
             ->join('academic_section', 'academic_section.id', '=', 'tblstudent_enrollment.grade_id')
@@ -269,7 +294,7 @@ class studentSearchController extends Controller
                 $finalInsert['siblings_id'] = implode(",", $explodeSiblings);
             }
 
-            $checkStudentSiblings = DB::table('tblstudent_siblings')
+             DB::table('tblstudent_siblings')
                 ->where(['sub_institute_id' => $sub_institute_id])
                 ->whereRaw("FIND_IN_SET(".$student_id.",siblings_id)")
                 ->update(['siblings_id' => $finalInsert['siblings_id']]);

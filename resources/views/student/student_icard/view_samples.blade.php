@@ -1,12 +1,15 @@
+{{--
 @include('includes.headcss')
 @include('includes.header')
 @include('includes.sideNavigation')
-
+--}}
+@extends('layout')
+@section('container')
 <div id="page-wrapper">
     <div class="container-fluid">
         <div class="row bg-title">
             <div class="col-lg-3 col-md-4 col-sm-4 col-xs-12">
-                <h4 class="page-title">Student I-Card Samples</h4> 
+                <h4 class="page-title">Student I-Card Samples</h4>
             </div>
         </div>
         <div id="printPage" class="card">
@@ -29,7 +32,7 @@
             fclose($fin);
         ?>
                 <div class="col-md-12 form-group">
-                    <p>Template 2</p>                
+                    <p>Template 2</p>
                     <?php echo $string; ?>
                 </div>
                 <div class="pagebreak"></div>
@@ -56,17 +59,17 @@
                     <p>Template 4</p>
                     <?php echo $string; ?>
                 </div>
-                <div class="pagebreak"> </div>                    
-            </div>    
+                <div class="pagebreak"> </div>
+            </div>
         </div>
         <div class="pagebreak"></div>
-        <div class="row">            
+        <div class="row">
             <div class="col-md-12 form-group">
                 <center>
                     <button class="btn btn-success" onclick="printdiv('printPage');">Print</button>
                 </center>
             </div>
-        </div>        
+        </div>
     </div>
 </div>
 
@@ -77,3 +80,4 @@
     }
 </script>
 @include('includes.footer')
+@endsection

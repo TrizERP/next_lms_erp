@@ -1,7 +1,8 @@
-@include('includes.headcss')
+{{--@include('includes.headcss')
 @include('includes.header')
-@include('includes.sideNavigation')
-
+@include('includes.sideNavigation')--}}
+@extends('layout')
+@section('container')
 <div id="page-wrapper">
     <div class="container-fluid">
         <div class="row bg-title">
@@ -60,7 +61,7 @@
                                             <option value="Bonafide">Bonafide Certificate</option>
                                             <option value="Character Certificate">Character Certificate</option>
                                             <option value="Transfer Certificate">Transfer Certificate</option>
-                                            <option value="Fees Statement">Fees Statement</option>                                            
+                                            <option value="Fees Statement">Fees Statement</option>
                                         </select>
                                     </div>
                                     <div class="col-md-4 form-group">
@@ -136,11 +137,11 @@
 	     }
 	}
     function check_validation()
-    {    
+    {
         var checked_questions = err = 0;
 
         $("input[name='students[]']:checked").each(function ()
-        {             
+        {
             checked_questions = checked_questions + 1;
         });
         if(checked_questions == 0)
@@ -161,3 +162,4 @@ $(document).ready(function () {
 
 </script> -->
 @include('includes.footer')
+@endsection

@@ -223,11 +223,11 @@ class studentInfirmaryController extends Controller
      */
     public function update(Request $request, $id)
     {
-        $sub_institute_id = $request->session()->get('sub_institute_id');
+        /*$sub_institute_id = $request->session()->get('sub_institute_id');
         $term_id = $request->session()->get('term_id');
-        $syear = $request->session()->get('syear');
+        $syear = $request->session()->get('syear');*/
         $type = $request->input('type');
-        $user_id = $request->session()->get('user_id');
+        /*$user_id = $request->session()->get('user_id');*/
 
         $finalArray = $request->except('_method', '_token', 'submit');
 
@@ -369,7 +369,7 @@ class studentInfirmaryController extends Controller
             return response()->json($response, 401);
         }
 
-        $type = $request->input("type");
+        /*$type = $request->input("type");*/
         $student_id = $request->input("student_id");
         $sub_institute_id = $request->input("sub_institute_id");
         $syear = $request->input("syear");

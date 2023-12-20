@@ -1,7 +1,8 @@
-@include('includes.headcss')
+{{--@include('includes.headcss')
 @include('includes.header')
-@include('includes.sideNavigation')
-
+@include('includes.sideNavigation')--}}
+@extends('layout')
+@section('container')
 <div id="page-wrapper">
     <div class="container-fluid">
         <div class="row bg-title">
@@ -9,7 +10,7 @@
                 <h4 class="page-title">Student Vaccination</h4>
             </div>
         </div>
-        <div class="card">          
+        <div class="card">
             @if ($sessionData = Session::get('data'))
                 @if($sessionData['status_code'] == 1)
                 <div class="alert alert-success alert-block">
@@ -23,9 +24,9 @@
             <div class="row">
                 <div class="col-lg-3 col-sm-3 col-xs-3">
                     <a href="{{ route('student_vaccination.create') }}" class="btn btn-info add-new">
-                        <i class="fa fa-plus"></i> Add New Student Vaccination 
+                        <i class="fa fa-plus"></i> Add New Student Vaccination
                     </a>
-                </div>                
+                </div>
                 <div class="col-lg-12 col-sm-12 col-xs-12">
                     <div class="table-responsive">
                         <table id="example" class="table table-striped">
@@ -47,16 +48,16 @@
                             @endphp
                             @if(isset($data['data']))
                                 @foreach($data['data'] as $pkey => $pvalue)
-                                <tr>    
+                                <tr>
                                     <td>{{$j}}</td>
                                     <td>{{$pvalue['student_name']}}</td>
-                                    <td>{{$pvalue['doctor_name']}}</td>  
-                                    <td>{{$pvalue['doctor_contact']}}</td> 
-                                    <td>{{$pvalue['date']}}</td> 
-                                    <td>{{$pvalue['vaccination_type']}}</td> 
-                                    <td>{{$pvalue['note']}}</td> 
+                                    <td>{{$pvalue['doctor_name']}}</td>
+                                    <td>{{$pvalue['doctor_contact']}}</td>
+                                    <td>{{$pvalue['date']}}</td>
+                                    <td>{{$pvalue['vaccination_type']}}</td>
+                                    <td>{{$pvalue['note']}}</td>
                                     <td>
-                                        <div class="d-inline">                                            
+                                        <div class="d-inline">
                                             <a href="{{ route('student_vaccination.edit',$pvalue['id'])}}" class="btn btn-info btn-outline">
                                                 <i class="ti-pencil-alt"></i>
                                             </a>
@@ -66,7 +67,7 @@
                                         @method('DELETE')
                                             <button type="submit" onclick="return confirmDelete();" class="btn btn-info btn-outline-danger"><i class="ti-trash"></i></button>
                                         </form>
-                                    </td>  
+                                    </td>
                                 </tr>
                             @php
                             $j++;
@@ -78,7 +79,7 @@
                     </div>
                 </div>
             </div>
-        </div>                           
+        </div>
     </div>
 </div>
 
@@ -92,3 +93,4 @@ $(document).ready(function () {
 
 </script>
 @include('includes.footer')
+@endsection

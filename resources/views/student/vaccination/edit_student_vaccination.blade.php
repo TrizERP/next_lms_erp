@@ -1,7 +1,10 @@
+{{--
 @include('includes.headcss')
 @include('includes.header')
 @include('includes.sideNavigation')
-
+--}}
+@extends('layout')
+@section('container')
 <div id="page-wrapper">
     <div class="container-fluid">
         <div class="row bg-title">
@@ -21,12 +24,12 @@
                     <strong>{{ $sessionData['message'] }}</strong>
                 </div>
             @endif
-            <div class="row">                
+            <div class="row">
                 <div class="col-lg-12 col-sm-12 col-xs-12">
                     <form action="{{ route('student_vaccination.update',$data['id']) }}" enctype="multipart/form-data" method="post">
                     {{ method_field("PUT") }}
                     @csrf
-                        <div class="row">                            
+                        <div class="row">
                             <div class="col-md-4 form-group">
                                 <label>Student </label>
                                 <input type="text" id='student' value="@if(isset($data['student_name'])){{ $data['student_name'] . ' - '. $data['student_id'] }}@endif" list="studentSearchList" name="student_id" onkeyup="getStudents(this.value);" required="required" class="form-control">
@@ -54,18 +57,18 @@
                                 <textarea type="text" id='note' rows="6" name="note" class="form-control">
                                     @if(isset($data['note'])){{ $data['note'] }}@endif
                                 </textarea>
-                            </div>                            
+                            </div>
                             <div class="col-md-12 form-group">
-                                <center>                                    
+                                <center>
                                     <input type="submit" name="submit" value="Update" class="btn btn-success" >
                                 </center>
                             </div>
                         </div>
                     </form>
                 </div>
-            </div>    
+            </div>
         </div>
-    </div>    
+    </div>
 </div>
 
 @include('includes.footerJs')
@@ -95,3 +98,4 @@
 </script>
 
 @include('includes.footer')
+@endsection

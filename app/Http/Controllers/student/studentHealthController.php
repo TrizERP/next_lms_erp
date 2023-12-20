@@ -110,7 +110,7 @@ class studentHealthController extends Controller
         return is_mobile($type, "student_health.index", $res);
     }
 
-  
+
     /**
      * Show the form for editing the specified resource.
      *
@@ -148,9 +148,9 @@ class studentHealthController extends Controller
      */
     public function update(Request $request, $id)
     {
-        $sub_institute_id = $request->session()->get('sub_institute_id');
+        /*$sub_institute_id = $request->session()->get('sub_institute_id');
         $term_id = $request->session()->get('term_id');
-        $syear = $request->session()->get('syear');
+        $syear = $request->session()->get('syear');*/
         $type = $request->input('type');
         $user_id = $request->session()->get('user_id');
 
@@ -214,7 +214,7 @@ class studentHealthController extends Controller
             return response()->json($response, 401);
         }
 
-        $type = $request->input("type");
+        /*$type = $request->input("type");*/
         $student_id = $request->input("student_id");
         $sub_institute_id = $request->input("sub_institute_id");
         $syear = $request->input("syear");
@@ -222,7 +222,7 @@ class studentHealthController extends Controller
         if ($student_id != "" && $sub_institute_id != "" && $syear != "") {
             $data = DB::select("SELECT doctor_name,doctor_contact,DATE_FORMAT(date,'%d-%m-%Y') AS date, if(file = '','',concat('https://".$_SERVER['SERVER_NAME']."/storage/frontdesk/',file)) as file
             FROM student_health
-            WHERE syear = '".$syear."' AND sub_institute_id = '".$sub_institute_id."' 
+            WHERE syear = '".$syear."' AND sub_institute_id = '".$sub_institute_id."'
             AND student_id = '".$student_id."'
             ORDER BY date");
 
@@ -235,7 +235,7 @@ class studentHealthController extends Controller
             $res['message'] = "Parameter Missing";
         }
 
-        //return is_mobile($type, "implementation", $res);  
+        //return is_mobile($type, "implementation", $res);
         return json_encode($res);
     }
 }
