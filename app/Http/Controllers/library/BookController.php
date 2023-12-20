@@ -14,6 +14,8 @@ use Illuminate\Support\Facades\View;
 use League\CommonMark\Extension\CommonMark\Renderer\Inline\ImageRenderer;
 use Yajra\DataTables\DataTables;
 use Picqer\Barcode\BarcodeGeneratorPNG;
+use function App\Helpers\is_mobile;
+use DB;
 
 class BookController extends Controller
 {
@@ -296,6 +298,7 @@ class BookController extends Controller
      */
     public function issueBook(Request $request)
     {
+        // echo "<pre>";print_r($request->all());exit;
         $request->validate([
             'student_id' => 'required|exists:tblstudent,id',
             'bookId' => 'required|exists:library_books,id',
@@ -307,11 +310,63 @@ class BookController extends Controller
             'student_id'=> $request->student_id,
             'book_id'=> $request->bookId,
         ],[
-            'issue_date'=> $request->issue_date,
-            'return_date'=> $request->return_date
+            'issued_date'=> $request->issue_date,
+            'due_date'=> $request->return_date
         ]);
         $details = tblstudentModel::where('enrollment_no', $request->enroll_no)->with('issuedBook')->first();
         $view = View::make('library.user_detail', compact('details'))->render();
         return response()->json(['data' => $view], 200);
+    }
+
+    public function QuickReturn(Request $request){
+        $type = $request->type;
+        $res=[];
+        if (session()->has('data')) {
+            $data_arr = session('data');
+            if (isset($data_arr['message']) && isset($data_arr['status_code'])) {
+                $res['message'] = $data_arr['message'];
+                $res['status_code'] = $data_arr['status_code'];                
+            }
+        }
+        return is_mobile($type, 'library/quick_return', $res, 'view');
+
+    }
+
+    public function QuickReturnSearch(Request $request){
+        $sub_institute_id = session()->get('sub_institute_id');
+        $syear = session()->get('syear');
+        $item_code = $request->item_code;
+        $type= $request->type;
+
+        $res['message'] = "This is item already returned or not exists in loan database";
+        $res['status_code']=0;
+
+        $libraryCirculations = DB::table('library_book_circulations as lbc')
+        ->selectRaw('CONCAT_WS(" ", s.first_name, s.middle_name, s.last_name) as student_name,s.enrollment_no,s.mobile,std.name as standard,d.name as division, lbc.id as circulation_id, lbc.student_id, lbc.issued_date, lbc.due_date, lbc.return_date, li.item_code, li.received_date, li.order_date, li.order_no, li.item_status, lb.id as book_id, lb.title as book_name, lb.publisher_name, lb.author_name, lb.edition')
+        ->join('library_books as lb', 'lb.id', '=', 'lbc.book_id')
+        ->join('library_items as li', 'lbc.book_id', '=', 'li.book_id')
+        ->join('tblstudent as s', 's.id', '=', 'lbc.student_id')
+        ->join('tblstudent_enrollment as se', 'se.student_id', '=', 's.id')
+        ->join('standard as std', 'std.id', '=', 'se.standard_id')
+        ->join('division as d', 'd.id', '=', 'se.section_id')
+        ->where('lb.sub_institute_id', $sub_institute_id)
+        ->where('se.syear', $syear)
+        ->where('li.item_code', $item_code)
+        ->whereNull('se.end_date')
+        ->whereNull('lbc.return_date')        
+        ->get();
+
+        // echo "<pre>";print_r($libraryCirculations); exit;
+        if(!empty($libraryCirculations) && isset($libraryCirculations[0])){
+            $return_date = DB::table('library_book_circulations')->where(['book_id'=>$libraryCirculations[0]->book_id,'student_id'=>$libraryCirculations[0]->student_id,'id'=>$libraryCirculations[0]->circulation_id])->update([
+                'return_date'=>now()
+            ]);
+
+            $res['message'] = "Book Return Successfully";
+            $res['status_code']=1;
+        }
+        $res['item_code'] = $request->item_code;
+        $res['circulation_data'] = $libraryCirculations;
+        return is_mobile($type, 'library/quick_return', $res, 'view');    
     }
 }

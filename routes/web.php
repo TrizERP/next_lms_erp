@@ -417,6 +417,8 @@ Route::group(['middleware' => ['session', 'menu', 'logRoute']], function () {
     Route::get('books.circulation', [BookController::class,'circulation'])->name('books.circulation');
     Route::get('books/{id}/item', [BookController::class,'item'])->name('books.item');
     Route::delete('books/{id}/item/delete', [BookController::class,'deleteItem'])->name('books.items.destroy');
+    Route::get('quick_return', [BookController::class,'QuickReturn'])->name('quick_return.index');
+    Route::post('quick_return', [BookController::class,'QuickReturnSearch'])->name('quick_return.create');    
 
     Route::resource('library_report', LibraryReportController::class);
     Route::post('show_library_report', [LibraryReportController::class, 'show_library_report'])->name('show_library_report');
