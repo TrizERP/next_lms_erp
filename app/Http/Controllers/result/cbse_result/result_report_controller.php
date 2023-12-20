@@ -36,7 +36,7 @@ class result_report_controller extends Controller
     {
         $syear = session()->get('syear');
         $sub_institute_id = session()->get('sub_institute_id');
-        $term_id = session()->get('term_id');
+        $term_id = $request->get('term');
         $type = $request->input('type');
         $report_of = $request->input('report_of');
         $grade_id = $request->input('grade');
@@ -428,7 +428,6 @@ class result_report_controller extends Controller
 
         if ($report_of == 'marks_report') 
         {
-            
             $all_student = SearchStudent($grade_id, $standard_id, $division_id, $sub_institute_id, $syear, $roll_no);
             $students_data = [];
             foreach ($all_student as $key => $value) {
@@ -507,6 +506,143 @@ class result_report_controller extends Controller
             $data['all_student'] = $students_data;
 
             return is_mobile($type, "result/result_report/classwise_report_show", $data, "view");
+        }
+
+        if ($report_of == 'weightage_conversion_report') 
+        {
+            $all_student = SearchStudent($grade_id, $standard_id, $division_id, $sub_institute_id, $syear, $roll_no);
+            $students_data = [];
+            foreach ($all_student as $key => $value) {
+                $students_data[$value['id']] = $value;
+            }
+            
+            $get_exam_master_heading = DB::table("result_exam_master")
+            ->where("SubInstituteId", "=", $sub_institute_id)
+            ->where("standard_id", "=", $standard_id)
+            ->where("term_id", "=", $term_id)
+            ->get()->toArray();
+            
+            $get_exam_masters = DB::table("result_exam_master")
+            ->selectRaw('group_concat(id) as exam_id')
+            ->selectRaw('GROUP_CONCAT(weightage) as total_weightage')
+            ->where("SubInstituteId", "=", $sub_institute_id)
+            ->where("standard_id", "=", $standard_id)
+            ->where("term_id", "=", $term_id)
+            ->groupBy('standard_id')->first();
+
+            $student_id_arr = [];
+            foreach ($all_student as $id => $arr) {
+                $student_id_arr[] = $arr['student_id'];
+            }
+            $student_id = implode(',', $student_id_arr);
+
+            // db::enableQueryLog();
+            $result = DB::table('result_create_exam as e')
+                ->select('rem.ExamTitle', DB::raw('SUM(e.points) as total_points'),
+                    'e.subject_id', 's.display_name as subject_name',
+                    'rm.student_id', DB::raw('SUM(rm.points) as obtained_points'), DB::raw('GROUP_CONCAT(rm.points) as marks_point'), DB::raw('GROUP_CONCAT(e.points) as total_point'), DB::raw('GROUP_CONCAT(e.title) as exam_create'),DB::raw('GROUP_CONCAT(e.exam_id) as exam_id'),  DB::raw('GROUP_CONCAT(rem.weightage) as total_weightage'))
+                ->join('sub_std_map as s', function ($join) {
+                    $join->whereRaw("s.subject_id = e.subject_id AND s.standard_id = e.standard_id");
+                })
+                ->join('result_exam_master as rem', 'rem.Id', '=', 'e.exam_id')
+                ->leftJoin('result_marks as rm', function ($join) use ($student_id){
+                    $join->on('rm.exam_id', '=', 'e.id');
+                })
+                ->where('e.term_id', $term_id)
+                ->where('e.sub_institute_id', $sub_institute_id)
+                ->where('e.syear', $syear)
+                ->where('e.standard_id', $standard_id)
+                ->where('e.report_card_status', 'Y')
+                ->where('e.subject_id', $subject)
+                ->whereRaw('rm.student_id IN ('.$student_id.')')
+                ->whereRaw("e.exam_id IN (".$get_exam_masters->exam_id.")");
+
+            $result = $result->groupByRaw('rm.student_id,e.subject_id')
+                ->orderBy('e.sort_order')->get()->toArray();
+
+            // dd(DB::getQueryLog($result));
+            $result = json_decode(json_encode($result), true);
+          
+            $date_arr = [];
+            $to_marks=[];
+            $to_weight=[];
+            $obtained_marks=[];
+
+            foreach ($result as $id => $arr) 
+            {
+                $marksArray = explode(',', $arr['marks_point']);
+                $totalPointArray = explode(',', $arr['total_point']);
+                $totalweightageArray = explode(',', $arr['total_weightage']);
+                $ExamIdArray = explode(',', $arr['exam_id']);
+                
+                $date_arr[$arr['subject_name']] = $arr['subject_name'] . '(' . $arr['total_points'] . ')';
+
+                if (count($marksArray) > 0) 
+                {
+                    // Calculate the weighted average
+                    $weightedSum = 0;
+                    $totalWeight = 0;
+                    
+                    $topWeightages = array();
+                    foreach ($marksArray as $key => $mark) 
+                    {
+                        $obtained_marks[$arr['student_id']][$ExamIdArray[$key]][] = (float)$mark ;
+                        $to_marks[$arr['student_id']][$ExamIdArray[$key]][] = $totalPointArray[$key];
+                        $to_weight[$arr['student_id']][$ExamIdArray[$key]] = (float)$totalweightageArray[$key];
+                    }
+                } 
+                else 
+                {
+                    $date_arr['final_weightage'] = 0;
+                }
+            } 
+
+            $ob_main_mark = 0;
+            $convert_mark=[];
+
+            if (!empty($obtained_marks)) 
+            {
+                foreach ($obtained_marks as $student_id => $marksArray) 
+                {
+                    $t_m = 0;
+                    $tt = "";
+
+                    foreach ($marksArray as $index => $value) 
+                    {
+                        $w_m = isset($to_weight[$student_id][$index]) ? $to_weight[$student_id][$index] : 0; 
+                        // Check if the key exists
+
+                        foreach ($value as $key => $val) 
+                        {
+                            if (isset($to_marks[$student_id][$index][$key]))
+                            {
+                                $t_m += $to_marks[$student_id][$index][$key];
+                            }
+                        }
+
+                        $obtained_mark_sum = array_sum($value);
+
+                        if ($t_m !== 0) {
+                            $ob_main_mark += (($obtained_mark_sum / $t_m) * $w_m);
+                        } else {
+                            $ob_main_mark += 0;
+                        }
+
+                        $convert_mark[$student_id][$index][] = number_format(($obtained_mark_sum / $t_m) * $w_m, 2);
+                    }
+                }
+            }
+           
+            $data['grade_id'] = $grade_id;
+            $data['standard_id'] = $standard_id;
+            $data['division_id'] = $division_id;
+            $data['date_arr'] = $date_arr;
+            $data['mark_arr'] = $convert_mark;
+            $data['all_student'] = $students_data;
+            $data['get_exam_masters'] = $get_exam_masters;
+            $data['get_exam_master_heading'] = $get_exam_master_heading;
+
+            return is_mobile($type, "result/result_report/weightage_conversion_report_show", $data, "view");
         }
     }
 
