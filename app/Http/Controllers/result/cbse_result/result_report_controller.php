@@ -562,7 +562,7 @@ class result_report_controller extends Controller
 
             // dd(DB::getQueryLog($result));
             $result = json_decode(json_encode($result), true);
-          
+            
             $date_arr = [];
             $to_marks=[];
             $to_weight=[];
@@ -581,12 +581,19 @@ class result_report_controller extends Controller
                 {
                     foreach ($marksArray as $key => $mark) 
                     {
-                        $obtained_marks[$arr['student_id']][$ExamIdArray[$key]][] = (float)$mark ;
-                        $to_marks[$arr['student_id']][$ExamIdArray[$key]][] = $totalPointArray[$key];
-                        $to_weight[$arr['student_id']][$ExamIdArray[$key]] = (float)$totalweightageArray[$key];
-                       /*  echo("<pre>");
-                        print_r($obtained_marks);
-                        echo("</pre>"); */
+                        if((float)$mark != $totalweightageArray)
+                        {
+                            $convert_five = ($totalweightageArray[$key] * (float)$mark) / $totalPointArray[$key];
+                            $to_marks[$arr['student_id']][$ExamIdArray[$key]] = $totalweightageArray[0];
+                        }
+                        else
+                        {
+                            $convert_five = (float)$mark;
+                            $to_marks[$arr['student_id']][$ExamIdArray[$key]] = $totalweightageArray;
+                        }
+
+                        $obtained_marks[$arr['student_id']][$ExamIdArray[$key]][] = round($convert_five);
+                        $to_weight[$arr['student_id']][$ExamIdArray[$key]][] = (float)$totalweightageArray[$key];
                     }
                 } 
                 else 
@@ -594,7 +601,7 @@ class result_report_controller extends Controller
                     $date_arr['final_weightage'] = 0;
                 }
             } 
-      
+            
             $ob_main_mark = 0;
             $convert_mark=[];
 
@@ -603,32 +610,27 @@ class result_report_controller extends Controller
                 foreach ($obtained_marks as $student_id => $marksArray) 
                 {
                     $t_m = 0;
-                    $tt = "";
+                    $t_w = 0;
 
                     foreach ($marksArray as $index => $value) 
                     {
-                        $w_m = isset($to_weight[$student_id][$index]) ? $to_weight[$student_id][$index] : 0; 
+                        $w_m = isset($to_marks[$student_id][$index]) ? $to_marks[$student_id][$index] : 0; 
                         
-                        foreach ($value as $key => $val) 
-                        {
-                            if (isset($to_marks[$student_id][$index][$key]))
-                            {
-                                $t_m += $to_marks[$student_id][$index][$key];
-                            }
-                        }
+                        // Sort 'best_two_sum' array and take the best two values
+                        $bestTwoSum = $value;
+                        rsort($bestTwoSum);
+                        $bestTwoValues = array_slice($bestTwoSum, 0, 2);
+                        // Sum the two best values
+                        $sumOfBestTwoValues = array_sum($bestTwoValues);
 
-                        $obtained_mark_sum = array_sum($value);
+                        $bestTwoSumW = $to_weight[$student_id][$index];
+                        rsort($bestTwoSumW);
+                        // Take the two best values
+                        $bestTwoW = array_slice($bestTwoSumW, 0, 2);
+                        // Sum the two best values
+                        $sumOfBestTwoW = array_sum($bestTwoW);
                         
-                        if ($t_m !== 0) 
-                        {
-                            $ob_main_mark += (($obtained_mark_sum / $t_m) * $w_m); 
-                        } 
-                        else 
-                        {
-                            $ob_main_mark += 0;
-                        }
-
-                        $convert_mark[$student_id][$index][] = round(($obtained_mark_sum / $t_m) * $w_m);
+                        $convert_mark[$student_id][$index][] = round(($w_m * $sumOfBestTwoValues) / $sumOfBestTwoW);
                     }
                 }
             }
