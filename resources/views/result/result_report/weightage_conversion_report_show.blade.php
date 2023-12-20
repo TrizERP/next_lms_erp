@@ -61,16 +61,15 @@
                                         <td>{{$all_data['roll_no']}}</td>    
                                         <td>{{$all_data['first_name']}} {{$all_data['middle_name']}} {{$all_data['last_name']}}</td>
                                         @php
-                                            $total = 0.0;
+                                            $total = 0;
                                         @endphp
                                         @foreach($data['get_exam_master_heading'] as $exam)
                                             @php
                                                 $exam_id = $exam->Id;
-                                                $mark = $data['mark_arr'][$student_id][$exam_id] ?? [0]; // Default to [0] if not set
+                                                $mark = $data['mark_arr'][$student_id][$exam_id] ?? [0];
 
-                                                // Convert each element in $mark to a float before summing
                                                 foreach ($mark as $value) {
-                                                    $total += number_format($value, 2);
+                                                    $total += round($value);
                                                 }
                                             @endphp
                                             <td style="text-align:center;">
