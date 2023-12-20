@@ -373,78 +373,77 @@ die; */
        
         // student fees cetificate
 
-        $html_content = str_replace(htmlspecialchars("<<student_father_name>>"),  strtoupper($value['father_name']) ,$html_content);
+    $html_content = str_replace(htmlspecialchars("<<student_father_name>>"),  strtoupper($value['father_name']) ,$html_content);
         
     $fees_data = DB::table('fees_collect')
-    ->where(['sub_institute_id' => $sub_institute_id, 'syear' => $syear, 'student_id' => $value['id'], 'is_deleted' => 'N'])
-    ->get();
+    ->where(['sub_institute_id' => $sub_institute_id, 'syear' => $syear, 'student_id' => $value['id'], 'is_deleted' => 'N']);
 
+    $fees_data_other = DB::table('fees_paid_other')
+        ->where(['sub_institute_id' => $sub_institute_id, 'syear' => $syear, 'student_id' => $value['id'], 'is_deleted' => 'N'])
+        ->get();
 
     $fees_heads = DB::table('fees_title')
-    ->where(['sub_institute_id' => $sub_institute_id, 'mandatory' => 1,'syear'=>$syear])->orderBy('sort_order','ASC')
-    ->get();
+        ->where(['sub_institute_id' => $sub_institute_id, 'syear' => $syear])
+        ->orderBy('sort_order')
+        ->get();
 
-    $fees_month = DB::table('fees_collect')
-    ->where(['sub_institute_id' => $sub_institute_id, 'syear' => $syear, 'student_id' => $value['id'], 'is_deleted' => 'N'])
-    ->groupBy('term_id')->get();
-    
-        $totalAmount = 0; 
-        $months = [
-            1 => 'Jan', 2 => 'Feb', 3 => 'Mar', 4 => 'Apr', 5 => 'May', 6 => 'Jun', 7 => 'Jul', 8 => 'Aug', 9 => 'Sep',
-            10 => 'Oct', 11 => 'Nov', 12 => 'Dec',
-        ];
-        $fees_details = "<h4 style='text-align:center;line-height: 150%;'><u>Apr-".$syear." To Mar-".($syear+1)."</u></h4>
-        <div style='width:100%'>
-            <table align='center' width='60%'>";
+    $fees_month = $fees_data->groupBy('term_id')->get();
+    $fees_data =  $fees_data->get();
+
+    $totalAmount = 0;
+    $months = [
+        1 => 'Jan', 2 => 'Feb', 3 => 'Mar', 4 => 'Apr', 5 => 'May', 6 => 'Jun', 7 => 'Jul', 8 => 'Aug', 9 => 'Sep',
+        10 => 'Oct', 11 => 'Nov', 12 => 'Dec',
+    ];
+
+        $fees_details = "<h4 style='text-align:center;line-height: 150%;'><u>Apr-" . $syear . " To Mar-" . ($syear + 1) . "</u></h4>
+                <div style='width:100%'>
+                    <table align='center' width='60%'>";
+
         foreach ($fees_heads as $title) {
-            if($fees_data->sum($title->fees_title) > 0){
-            $fees_details .= "<tr><td width='50%' style='font-weight:600;line-height: 150%;text-align:left'>" . $title->display_name . "</td>";
-            $termIds = [];
-            $month_name=[];
-            foreach ($fees_month as $fees) {
-                if (isset($fees->{$title->fees_title})) {
-                    $termIds[] = $fees->term_id;
+            $fees_data_sum = $fees_data->sum($title->fees_title);
+            $fees_data_other_sum = $fees_data_other->sum($title->fees_title);
+
+            if ($fees_data_sum > 0 || $fees_data_other_sum > 0) {
+                $fees_details .= "<tr><td width='50%' style='font-weight:600;line-height: 150%;text-align:left'>" . $title->display_name . "</td>";
+
+                $termIds = $fees_month->filter(function ($fees) use ($title) {
+                    return isset($fees->{$title->fees_title});
+                })->pluck('term_id')->toArray();
+
+                $month_name = [];
+
+                foreach ($termIds as $arr) {
+                    $y = $arr / 10000;
+                    $month = (int)$y;
+                    $year = substr($arr, -4);
+                    $month_name[$year . '-' . str_pad($month, 2, '0', STR_PAD_LEFT)] = $months[$month] . '-' . $year;
                 }
-            }
 
-        $month_name = [];
+                if (!empty($month_name)) {
+                    uksort($month_name, function ($a, $b) {
+                        return strtotime($a . '-01') <=> strtotime($b . '-01');
+                    });
+                }
 
-        foreach ($termIds as $arr) {
-            $y = $arr / 10000;
-            $month = (int)$y;
-            $year = substr($arr, -4);
-            $month_name[$year . '-' . str_pad($month, 2, '0', STR_PAD_LEFT)] = $months[$month] . '-' . $year;
-        }
+                $fees_details .= "<td width='50%' style='font-size:14px;text-align:left'>" . ($fees_data_sum + $fees_data_other_sum) . "/- ";
 
-        if (!empty($month_name)) {
-            uksort($month_name, function ($a, $b) {
-                return strtotime($a . '-01') <=> strtotime($b . '-01');
-            });
+                if (!empty($month_name)) {
+                    $firstMonth = reset($month_name);
+                    $lastMonth = end($month_name);
+                    $print_month = ["Tuition Fees", "Computer Fees", "Security Charges", "Smart Class"];
 
-        }     
-            $fees_details .= "<td width='50%' style='font-size:14px;text-align:left'>" . $fees_data->sum($title->fees_title) ?? 0 . "  ";
-            $fees_details.="/- ";
-
-            if (!empty($month_name)) {
-                $firstMonth = reset($month_name);
-                $lastMonth = end($month_name);
-                $print_month =["Tuition Fees","Computer Fees","Security Charges","Smart Class"];
-                if(in_array($title->display_name,$print_month)){        
-                $fees_details .= "(".$firstMonth;
-                    if ($firstMonth !== $lastMonth) {
-                        $fees_details .= " To " . $lastMonth.")";
-                    }else{
-                        $fees_details.= ")";
+                    if (in_array($title->display_name, $print_month)) {
+                        $fees_details .= "(" . $firstMonth;
+                        $fees_details .= ($firstMonth !== $lastMonth) ? " To " . $lastMonth . ")" : ")";
                     }
                 }
-            
+
+                $fees_details .= "</td></tr>";
+                $totalAmount += $fees_data_sum + $fees_data_other_sum;
             }
-            
-            $fees_details .= "</td></tr>";
-            
-            $totalAmount += $fees_data->sum($title->fees_title); 
         }
-        }
+
         $fees_details .="<tr>
         <td style='font-weight:600;line-height: 170%;text-align:left;font-size:16px'>Total</td>
         <td style='font-weight:600;line-height: 170%;text-align:left;font-size:16px'>".$totalAmount."/- </td>
