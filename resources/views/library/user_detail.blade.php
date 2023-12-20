@@ -22,6 +22,7 @@
         <thead>
             <th>Book</th>
             <th>Issue Date</th>
+            <th>Due Date</th>            
             <th>Return Date</th>
             <th>Action</th>
         </thead>
@@ -29,8 +30,9 @@
             @foreach ($details->issuedBook as $item)
                 <tr>
                     <td>{{ $item->book->title ?? '' }}</td>
-                    <td>{{ $item->issued_date ?? '' }}</td>
-                    <td>{{ $item->return_date ?? '' }}</td>
+                    <td>{{ \Carbon\Carbon::parse($item->issued_date)->format('d-m-Y') ?? '' }}</td>
+                    <td>{{ \Carbon\Carbon::parse($item->due_date)->format('d-m-Y') ?? '' }}</td>
+                    <td>{{ \Carbon\Carbon::parse($item->return_date)->format('d-m-Y') ?? '' }}</td>
                     <td><button type="button" class="btn btn-danger return-book" data-id="{{ $item->id }}">Return</button></td>
                 </tr>
             @endforeach
