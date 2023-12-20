@@ -33,6 +33,7 @@
                                 <option value="classwise_report">Classwise Report</option>
                                 <option value="overall_report">Overall Report</option>
                                 <option value="marks_report">Marks Report</option>
+                                <option value="weightage_conversion_report">Weightage Conversion Report</option>
                             </select>
                         </div>
 
@@ -248,6 +249,17 @@
             document.getElementById('for_to_date').style.display = 'block';
             document.getElementById('for_additional_subjects').style.display = 'block';
             $('#additional_subjects').prop('required', true);
+        }
+
+        if (report_val == 'weightage_conversion_report') {
+            document.getElementById('for_top_students').style.display = 'none';
+            document.getElementById('for_subject').style.display = 'block';
+            document.getElementById('for_roll_no').style.display = 'none';
+            document.getElementById('for_exam_type').style.display = 'none';
+            document.getElementById('for_from_date').style.display = 'none';
+            document.getElementById('for_to_date').style.display = 'none';
+            document.getElementById('for_additional_subjects').style.display = 'none';
+            $('#subject').prop('required', true);
         }
 
         if (report_val == '') {
