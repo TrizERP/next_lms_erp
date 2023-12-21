@@ -322,6 +322,7 @@ die; */
             $value['teacher_remark'], $html_content);
         $html_content = str_replace(htmlspecialchars("<<if_to_which_class_value>>"),
             strtoupper($value['if_to_which_class']), $html_content);
+
 $months = FeeMonthId();
 $month = '';
 
