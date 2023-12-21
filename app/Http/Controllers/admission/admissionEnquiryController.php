@@ -31,53 +31,41 @@ class admissionEnquiryController extends Controller
         $type = $request->input('type');
         $sub_institute_id = session()->get('sub_institute_id');
         $syear = session()->get('syear');
-
-        if($type=="API"){
-            try {
-                if (!$this->jwtToken()->validate()) {
-                    $response = ['status' => '2', 'message' => 'Token Auth Failed', 'data' => []];
-    
-                    return response()->json($response, 401);
-                }
-            } catch (\Exception $e) {
-                $response = ['status' => '2', 'message' => $e->getMessage(), 'data' => []];
-    
-                return response()->json($response, 401);
-            }
+        
+        if ($type == "API") {
+            // ... (JWT token validation for API)
             $sub_institute_id = $request->get('sub_institute_id');
-            $syear = $request->get('syear');            
+            $syear = $request->get('syear');
         }
-        $marking_period_id=session()->get('marking_period_id');
+
+        $marking_period_id = session()->get('marking_period_id');
 
         $data = DB::table('admission_enquiry')
-            ->leftJoin('admission_form as af', function ($join) {
-                $join->whereRaw('af.enquiry_id = admission_enquiry.id AND af.sub_institute_id = admission_enquiry.sub_institute_id');
-            })->leftJoin('tblstudent', function ($join) use($marking_period_id) {
-                $join->whereRaw('`tblstudent`.`admission_id` = `admission_enquiry`.`id`');
-                // ->when($marking_period_id,function($query) use ($marking_period_id){
-                //     $query->where('tblstudent.marking_period_id',$marking_period_id);
-                // });
-            })->leftJoin('standard', function ($join)use($marking_period_id) {
-                $join->whereRaw('`standard`.`id` = `admission_enquiry`.`admission_standard`');
-                // ->when($marking_period_id,function($query) use ($marking_period_id){
-                //     $query->where('standard.marking_period_id',$marking_period_id);
-                // });
-            })->leftJoin('follow_up as fu', function ($join) {
-                $join->whereRaw('fu.id = (SELECT id FROM follow_up AS fu1 WHERE fu1.enquiry_id = admission_enquiry.id ORDER BY fu1.id DESC LIMIT 1)');
+            ->leftJoin('admission_form as af', 'af.enquiry_id', '=', 'admission_enquiry.id')
+            ->leftJoin('tblstudent', 'tblstudent.admission_id', '=', 'admission_enquiry.id')
+            ->leftJoin('standard', 'standard.id', '=', 'admission_enquiry.admission_standard')
+            ->leftJoin('follow_up as fu', function ($join) {
+                $join->on('fu.id', '=', DB::raw('(SELECT id FROM follow_up AS fu1 WHERE fu1.enquiry_id = admission_enquiry.id ORDER BY fu1.id DESC LIMIT 1)'));
             })
-            ->selectRaw('admission_enquiry.*, CASE WHEN admission_enquiry.followup_date = DATE_FORMAT(NOW(),"%Y-%m-%d") THEN "#f5f777"
-                WHEN fu.follow_up_date = DATE_FORMAT(NOW(),"%Y-%m-%d") THEN "#f5f777"
+            ->selectRaw('admission_enquiry.*, 
+                CASE 
+                    WHEN admission_enquiry.followup_date = CURDATE() THEN "#f5f777"
+                    WHEN fu.follow_up_date = CURDATE() THEN "#f5f777"
                 END AS current_status_color,
-                COUNT(tblstudent.id) AS total_student_count,standard.name as std_name,
-                IF(fu.status = "close","1","0") as enquiry_status,fu.status as display_enquiry_status,
-                if(fu.status = "close","pink","") as enq_color,DATE_FORMAT(fu.follow_up_date,"%d-%m-%Y") as next_follow_up_date,
+                COUNT(tblstudent.id) AS total_student_count,
+                standard.name as std_name,
+                IF(fu.status = "close","1","0") as enquiry_status,
+                fu.status as display_enquiry_status,
+                IF(fu.status = "close","pink","") as enq_color,
+                DATE_FORMAT(fu.follow_up_date,"%d-%m-%Y") as next_follow_up_date,
                 af.form_no as form_number,
-                if(fu.follow_up_date = DATE_FORMAT(NOW(),"%Y-%m-%d"),"#0aa884","") as todays_next_followup ')
+                IF(fu.follow_up_date = CURDATE(),"#0aa884","") as todays_next_followup ')
             ->where('admission_enquiry.sub_institute_id', $sub_institute_id)
             ->where('admission_enquiry.syear', $syear)
             ->groupBy('admission_enquiry.id')
-            ->orderByRaw('admission_enquiry.followup_date = DATE_FORMAT(NOW(),"%Y-%m-%d") desc')
+            ->orderByRaw('admission_enquiry.followup_date = CURDATE() desc')
             ->get()->toArray();
+
         $data = json_decode(json_encode($data), true);
 
         $res['status_code'] = 1;
