@@ -32,13 +32,22 @@ class admissionEnquiryController extends Controller
         $sub_institute_id = session()->get('sub_institute_id');
         $syear = session()->get('syear');
         
-        if ($type == "API") {
-            // ... (JWT token validation for API)
+        if($type=="API"){
+            try {
+                if (!$this->jwtToken()->validate()) {
+                    $response = ['status' => '2', 'message' => 'Token Auth Failed', 'data' => []];
+    
+                    return response()->json($response, 401);
+                }
+            } catch (\Exception $e) {
+                $response = ['status' => '2', 'message' => $e->getMessage(), 'data' => []];
+    
+                return response()->json($response, 401);
+            }
             $sub_institute_id = $request->get('sub_institute_id');
-            $syear = $request->get('syear');
+            $syear = $request->get('syear');            
         }
-
-        $marking_period_id = session()->get('marking_period_id');
+        $marking_period_id=session()->get('marking_period_id');
 
         $data = DB::table('admission_enquiry')
             ->leftJoin('admission_form as af', 'af.enquiry_id', '=', 'admission_enquiry.id')
