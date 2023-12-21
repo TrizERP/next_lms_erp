@@ -584,6 +584,7 @@ class result_report_controller extends Controller
                         if((float)$mark != $totalweightageArray)
                         {
                             $convert_five = ($totalweightageArray[$key] * (float)$mark) / $totalPointArray[$key];
+                            
                             $to_marks[$arr['student_id']][$ExamIdArray[$key]] = $totalweightageArray[0];
                         }
                         else
