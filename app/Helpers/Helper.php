@@ -1381,11 +1381,11 @@ if (!function_exists('getStudents')) {
             })->leftJoin('transport_kilometer_rate as tkr', function ($join) {
                 $join->whereRaw('tkr.id = s.distance_from_school');
             })->leftJoin('result_student_attendance_master as rsam', function ($join) {
-                $join->whereRaw('rsam.student_id = s.id');
+                $join->whereRaw('rsam.student_id = s.id AND rsam.sub_institute_id = s.sub_institute_id');
             })->leftJoin('attendance_student as ats', function ($join) {
-                $join->whereRaw('ats.student_id = s.id AND ats.syear = se.syear');
+                $join->whereRaw('ats.student_id = s.id AND ats.sub_institute_id = s.sub_institute_id');
             })->leftJoin('fees_collect as fc', function ($join) {
-                $join->whereRaw('fc.student_id = s.id and fc.is_deleted = "N"');
+                $join->whereRaw('fc.student_id = s.id AND fc.sub_institute_id = s.sub_institute_id');
             })
             ->selectRaw("tc.*,s.*,se.syear,se.student_id,se.grade_id,se.standard_id,se.section_id,se.student_quota,
                 se.start_date,se.end_date,se.enrollment_code,se.drop_code,se.drop_remarks,se.drop_remarks,se.term_id,
@@ -1395,12 +1395,14 @@ if (!function_exists('getStudents')) {
                 r.religion_name,c.caste_name,s.subcast,s.affiliation_no,s.school_code,s.admission_date,td.first_name AS driver_name,
                 td.mobile AS driver_mobile,td.icard_icon,s.mother_mobile,CONCAT_WS(' ',s.first_name,CONCAT(SUBSTRING(s.father_name,1,1),'.'),
                 s.last_name) as short_student_name,tv.vehicle_type,tkr.id as distance_from_school_id,tkr.distance_from_school,
-                tkr.from_distance,IF(tv.vehicle_type = 'Van',tkr.van_new,tkr.rick_new) AS distance_rate,s.last_name as student_last_name,rsam.teacher_remark,COUNT(ats.id) as total_att_days,sum(CASE WHEN ats.attendance_code = 'P' THEN 1 ELSE 0 END) as present_att_days, fc.term_id as month_name")
-            ->where('s.sub_institute_id', $sub_institute_id)
-            ->where('se.syear', $syear)
-            ->whereRaw($extra_where)
-            // ->whereIn('s.id', $student_ids)
-            ->groupBy('s.id')->get()->toArray();
+                tkr.from_distance,IF(tv.vehicle_type = 'Van',tkr.van_new,tkr.rick_new) AS distance_rate,s.first_name as student_first_name,s.middle_name as student_middle_name,s.last_name as student_last_name,rsam.teacher_remark,COUNT(ats.id) as total_att_days,sum(CASE WHEN ats.attendance_code = 'P' THEN 1 ELSE 0 END) as present_att_days, fc.term_id as month_name")
+                ->where('s.sub_institute_id', $sub_institute_id)
+                ->where('se.syear', $syear)
+                ->where('fc.is_deleted', 'N')
+                ->groupBy('fc.id')
+                ->orderBy('fc.id', 'desc')->limit(1)
+                ->whereIn('s.id', $student_ids)
+                ->groupBy('s.id')->get()->toArray();
   
         $student_data = array();
         foreach ($result as $key => $value) {
@@ -1408,6 +1410,8 @@ if (!function_exists('getStudents')) {
             $student_data[$value->id]['enrollment_no'] = $value->enrollment_no;
             $student_data[$value->id]['roll_no'] = $value->roll_no;
             $student_data[$value->id]['student_name'] = $value->first_name . " " . $value->last_name;
+            $student_data[$value->id]['student_first_name'] = $value->first_name;
+            $student_data[$value->id]['student_middle_name'] = $value->middle_name;
             $student_data[$value->id]['student_last_name'] = $value->last_name;
             $student_data[$value->id]['student_full_name'] = $value->first_name . " " . $value->middle_name . " " . $value->last_name;
             $student_data[$value->id]['gender'] = $value->gender;
