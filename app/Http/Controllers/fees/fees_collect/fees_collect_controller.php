@@ -1379,21 +1379,6 @@ class fees_collect_controller extends Controller
                 $_REQUEST['full_name'],
                 $html_content
             );
-            $html_content = str_replace(
-                htmlspecialchars("<<student_first_name_value>>"),
-                $_REQUEST['first_name'],
-                $html_content
-            );
-            $html_content = str_replace(
-                htmlspecialchars("<<student_middle_name_value>>"),
-                $_REQUEST['middle_name'],
-                $html_content
-            );
-            $html_content = str_replace(
-                htmlspecialchars("<<student_last_name_value>>"),
-                $_REQUEST['last_name'],
-                $html_content
-            );
             $html_content = str_replace(htmlspecialchars("<<student_enrollment_value>>"), $enrollment, $html_content);
             $html_content = str_replace(htmlspecialchars("<<student_roll_value>>"), $roll_no, $html_content);
             $html_content = str_replace(htmlspecialchars("<<student_father_name>>"), $father_name, $html_content);
@@ -2081,9 +2066,6 @@ class fees_collect_controller extends Controller
             "div_id" => $reg_bk_off[0]->section_id,
             "student_quota" => $reg_bk_off[0]->stu_quota,
             "previous_year_imprest_balance" => $previous_year_imprest_balance,
-            "first_name" => $reg_bk_off[0]->first_name,
-            "middle_name" => $reg_bk_off[0]->middle_name,
-            "last_name" => $reg_bk_off[0]->last_name,
         ];
 
         // get fees breakoff according to fees titile from hrlper.php

@@ -322,11 +322,15 @@ die; */
             $value['teacher_remark'], $html_content);
         $html_content = str_replace(htmlspecialchars("<<if_to_which_class_value>>"),
             strtoupper($value['if_to_which_class']), $html_content);
-        $months = FeeMonthId();
-        $month = '';
-        if($value['month_name']!=''){
-        $month = $months[$value['month_name']];
-    }
+$months = FeeMonthId();
+$month = '';
+
+if ($value['month_name'] != '' && isset($months[$value['month_name']])) {
+    $month = $months[$value['month_name']];
+} else {
+    //Handle the case where the key does not exist, for example:
+    $month = 'No';
+}
         $html_content = str_replace(htmlspecialchars("<<month_name_value>>"),
             strtoupper($month), $html_content);
         $html_content = str_replace(htmlspecialchars("<<month_up_paid_school_dues_value>>"),
