@@ -301,10 +301,10 @@ die; */
             $html_content);
         $html_content = str_replace(htmlspecialchars("<<admission_date_value>>"), date('d-m-Y', strtotime($value['admission_date'])),
             $html_content);
-        $html_content = str_replace(htmlspecialchars("<<short_standard_name_value>>"), strtoupper($value['short_standard_name']), $html_content);
-        $standard_array = ['I' => 1,'II' => 2,'III' => 3,'IV' => 4,'V' => 5,'VI' => 6,'VII' => 7,'VIII' => 8,'IX' => 9,'X' => 10,'XI' => 11,'XII' => 12];
-        $std = $standard_array[$value['short_standard_name']] ?? 0;
-        $html_content = str_replace(htmlspecialchars("<<short_standard_name_in_word_value>>"), ucwords($this->convert_number_to_words($std)), $html_content);
+		$html_content = str_replace(htmlspecialchars("<<short_standard_name_value>>"), strtoupper($value['short_standard_name']), $html_content);
+        //$standard_array = ['I' => 1,'II' => 2,'III' => 3,'IV' => 4,'V' => 5,'VI' => 6,'VII' => 7,'VIII' => 8,'IX' => 9,'X' => 10,'XI' => 11,'XII' => 12];
+        //$std = $standard_array[$value['short_standard_name']] ?? 0;
+        $html_content = str_replace(htmlspecialchars("<<short_standard_name_in_word_value>>"), strtoupper($value['school_stream']), $html_content);
         $html_content = str_replace(htmlspecialchars("<<subjects_studied_value>>"), strtoupper($get_standard_subjects->subject_name),
             $html_content);
         $html_content = str_replace(htmlspecialchars("<<candidate_belongs_to_value>>"),
