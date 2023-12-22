@@ -11,11 +11,13 @@ use App\Models\student\tblstudentEnrollmentModel;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
+use PhpOffice\PhpSpreadsheet\IOFactory;
 use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\NotFoundExceptionInterface;
 use function App\Helpers\is_mobile;
 use function App\Helpers\SearchStudent;
 use function App\Helpers\FeeMonthId;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 class studentBulkUpdateController extends Controller
@@ -110,15 +112,170 @@ class studentBulkUpdateController extends Controller
                 $res['status'] = "0";
                 $res['message'] = "No Breakoff Found.";
             }
-        }else{
+        }
+        elseif($request->has('student_active_inactive_excel') && $request->has('attachment'))
+        {
+            $get_active_inactive = $request->get('student_active_inactive_excel');
+            $file = $request->file('attachment');
+            
+            // Check if a file was uploaded
+            if (!$file) 
+            {
+                return "No file uploaded.";
+            }
+
+            // Get the file extension
+            $ext = $file->getClientOriginalExtension();
+
+            // Check if the file is an Excel file
+            if (!in_array($ext, ['xlsx', 'xls'])) {
+                return "Invalid file format. Only Excel files (xlsx or xls) are allowed.";
+            }
+
+            // Generate a timestamp
+            $timestamp = time();
+
+            // Construct the final file name
+            $fileName = 'student_active_inactive_list_' . $timestamp . '.' . $ext;
+
+            // Store the file in the 'public/bazar' directory
+            $path = $file->storeAs('public/student_active_inactive_list', $fileName);
+
+            // Read data from the Excel file
+            $spreadsheet = IOFactory::load(storage_path("app/$path"));
+            $worksheet = $spreadsheet->getActiveSheet();
+            $data = $worksheet->toArray();
+            
+            // Assuming the Excel file has headers, skip the first row
+            $headers = array_shift($data);
+
+            // Get the total number of rows
+            $rowCount = count($data);
+          
+            $now = now();
+            $success = true;
+
+            if($rowCount!=0) 
+            {
+                $already_active_student = $already_inactive_student = $not_found_student = $style = "";
+                $alreadyActive = [];
+                $alreadyInactive = [];
+                $notInDatabase = [];
+
+                for ($i = 0; $i < $rowCount; $i++) 
+                { 
+                    $row = $data[$i];
+                    
+                    if($get_active_inactive == "Active")
+                    {
+                        $get_student_details = DB::table('tblstudent_enrollment as te')
+                            ->selectRaw("te.*, CONCAT(s.first_name,' ',s.middle_name,' ',s.last_name) as full_name")
+                            ->join('tblstudent as s', 's.id', '=', 'te.student_id')
+                            ->where([
+                                'te.sub_institute_id' => $sub_institute_id,
+                                'te.syear' => $syear,
+                                'te.id' => $row[0]
+                            ])
+                            ->get()->toArray();
+                        
+                        if (!$get_student_details) {
+                            $notInDatabase[] = $row;
+                        }
+
+                        foreach($get_student_details as $get_student_detail)
+                        {
+                            if ($get_student_detail && $get_student_detail->end_date === null) 
+                            {
+                                $alreadyActive[] = $get_student_detail;
+                            }
+
+                            if ($get_student_detail && $get_student_detail->end_date !== null) 
+                            {
+                                $alreadyInactive[] = $get_student_detail;
+                            }
+
+                            if(isset($get_student_detail->id)) 
+                            {
+                                DB::table('tblstudent_enrollment')->where('id', $get_student_detail->id)->update([
+                                    'end_date' => null,
+                                    'updated_on' => $now,
+                                ]); 
+
+                                // Delete Excel sheet
+                                $filePath = 'public/student_active_inactive_list/student_active_inactive_list_' . $timestamp . '.' . $ext;
+                                Storage::delete($filePath);
+                            }
+                        }
+                    }
+                    elseif($get_active_inactive == "Inactive")
+                    {
+                        $get_student_details = DB::table('tblstudent_enrollment as te')
+                        ->selectRaw("te.*, CONCAT(s.first_name,' ',s.middle_name,' ',s.last_name) as full_name")
+                        ->join('tblstudent as s', 's.id', '=', 'te.student_id')
+                        ->where([
+                            'te.sub_institute_id' => $sub_institute_id,
+                            'te.syear' => $syear,
+                            'te.id' => $row[0]
+                        ])
+                        ->get()->toArray();
+                    
+                        if (!$get_student_details) {
+                            $notInDatabase[] = $row;
+                        }
+
+                        foreach($get_student_details as $get_student_detail)
+                        {
+                            if ($get_student_detail && $get_student_detail->end_date === null) 
+                            {
+                                $alreadyActive[] = $get_student_detail;
+                            }
+
+                            if ($get_student_detail && $get_student_detail->end_date !== null) 
+                            {
+                                $alreadyInactive[] = $get_student_detail;
+                            }
+
+                            if(isset($get_student_detail->id)) 
+                            {
+                                DB::table('tblstudent_enrollment')->where('id', $get_student_detail->id)->update([
+                                    'end_date' => $now,
+                                    'updated_on' => $now,
+                                ]); 
+
+                                // Delete Excel sheet
+                                $filePath = 'public/student_active_inactive_list/student_active_inactive_list_' . $timestamp . '.' . $ext;
+                                Storage::delete($filePath);
+                            }
+                        }
+                    }
+                }
+
+                $rowCountNotInDatabase = count($notInDatabase);
+                $rowCountAlreadyActive = count($alreadyActive);
+                $rowCountAlreadyInactive = count($alreadyInactive);
+
+                $mess = 'Student '.$get_active_inactive.' Successfully.' . PHP_EOL
+                    . 'Total Records : ' . $rowCount . PHP_EOL
+                    . 'Not In Database : ' . $rowCountNotInDatabase . PHP_EOL
+                    . 'Already Active : ' . $rowCountAlreadyActive . PHP_EOL
+                    . 'Already Inactive : ' . $rowCountAlreadyInactive;
+
+                if (!empty($mess)) 
+                {					
+                }
+
+                $res['status'] = 1;
+				$res['message'] = nl2br($mess);
+            } 
+        }
+        else
+        {
             $res['status'] = "0";
             $res['message'] = "No Changes Made.";
         }
 
         $res['sel_bk_month'] = $bk_months;
-        // return $request;exit;
 
         return is_mobile($type, "student_bulk_update.index", $res, "redirect");
     }
-
 }
