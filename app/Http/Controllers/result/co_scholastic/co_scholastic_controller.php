@@ -45,15 +45,20 @@ class co_scholastic_controller extends Controller
             "csp.id"               => "cs.parent_id",
         ];
         return co_scholastic::from('result_co_scholastic as cs')
-        ->leftjoin('standard as s','s.id','=','cs.standard_id')
+            ->leftJoin('standard as s', 's.id', '=', 'cs.standard_id')
             ->join("result_co_scholastic_parent as csp", $join)
             ->join('academic_year', [
-                'academic_year.term_id'          => 'cs.term_id',
+                'academic_year.term_id' => 'cs.term_id',
                 'academic_year.sub_institute_id' => 'cs.sub_institute_id',
-            ])->select('cs.*', "csp.title as parent_name", 'academic_year.title as term_name','s.name as standard')
+            ])
+            ->select('cs.*', "csp.title as parent_name", 'academic_year.title as term_name', 's.name as standard')
             ->where([
                 'cs.sub_institute_id' => session()->get('sub_institute_id'),
-            ])->orderBy('cs.sort_order')->groupBy('cs.title','cs.standard_id')->get();
+            ])
+            ->orderByRaw('s.sort_order, academic_year.sort_order, cs.sort_order')
+            ->groupBy('cs.id')
+            ->get();
+
     }
 
     /**
