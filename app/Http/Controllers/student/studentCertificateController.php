@@ -396,8 +396,10 @@ if ($value['month_name'] != '' && isset($months[$value['month_name']])) {
         ->orderBy('sort_order')
         ->get();
 
-    $fees_month = $fees_data->groupBy('term_id')->get();
+    $fees_data_month =  $fees_data;
     $fees_data =  $fees_data->get();
+
+    $fees_month = $fees_data_month->groupBy('term_id')->get();
 
     $totalAmount = 0;
     $months = [
