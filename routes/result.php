@@ -49,6 +49,9 @@ use App\Http\Controllers\Import\ExcelDownloadController;
 use App\Http\Controllers\result\new_result\templateController;
 use App\Http\Controllers\result\new_result\studentResultController;
 use App\Http\Controllers\result\approve_mobile_result\approve_mobile_result_controller;
+use App\Http\Controllers\result\result_skillset\resultSkillsetController;
+use App\Http\Controllers\result\result_activity_master\resultActivityMasterController;
+use App\Http\Controllers\result\result_activity_marks\resultActivityMarksController;
 
 Route::group(['prefix' => 'result', 'middleware' => ['session', 'menu', 'logRoute']], function () {
     Route::resource('exam_type_master', ExamTypeMasterController::class);
@@ -75,6 +78,9 @@ Route::group(['prefix' => 'result', 'middleware' => ['session', 'menu', 'logRout
     Route::resource('student-result', studentResultController::class);    
     Route::get('view_all_result_tag', [templateController::class, 'viewAllTag'])->name('view_all_result_tag');
     Route::resource('approve_mobile_result', approve_mobile_result_controller::class);
+    Route::resource('result_skillset', resultSkillsetController::class);
+    Route::resource('result_activity_master', resultActivityMasterController::class);
+    Route::resource('result_activity_marks', resultActivityMarksController::class);
 
     Route::post('cbse_1t5_result/show_result', ['as' => 'cbse_1t5_result.show_result', 'uses' => 'result\cbse_result\cbse_1t5_result_controller@show_result']);
     Route::post('cbse_1t5_t2_result/show_result', ['as' => 'cbse_1t5_t2_result.show_result', 'uses' => 'result\cbse_result\cbse_1t5_t2_result_controller@show_result']);
@@ -118,6 +124,7 @@ Route::get('api/get-topic-list', [AJAXController::class, 'getTopicList']);
 Route::get('api/get-exam-list', [AJAXController::class, 'getExamList']);
 Route::get('api/get-co-scholastic-parent-list', [AJAXController::class, 'getCoScholasticParentList']);
 Route::get('api/get-co-scholastic-list', [AJAXController::class, 'getCoScholasticList']);
+Route::get('api/get-activity-master-list', [AJAXController::class, 'getActivityMasterList']);
 
 Route::GET('ajax_sendEmailFeesReceipt', [AJAXController::class, 'ajax_sendEmailFeesReceipt'])->name('ajax_sendEmailFeesReceipt');
 Route::GET('ajax_sendBulkEmailFeesReceipt', [AJAXController::class, 'ajax_sendBulkEmailFeesReceipt'])->name('ajax_sendBulkEmailFeesReceipt');
