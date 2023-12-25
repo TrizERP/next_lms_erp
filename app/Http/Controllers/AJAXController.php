@@ -2023,4 +2023,20 @@ class AJAXController extends Controller
         }
        return $res['answer'];
     }
+
+    public function getActivityMasterList(Request $request)
+    {
+        // echo("hi");die;
+        $where = array(
+            "ram.sub_institute_id" => session()->get('sub_institute_id'),
+            "ram.skill_id" => $request->skillset_id,
+        );
+        
+        $std_sub_map = DB::table('result_activity_master as ram')
+            ->where($where);
+        
+        $std_sub_map = $std_sub_map->pluck('ram.title', 'ram.id');
+
+        return response()->json($std_sub_map);
+    }
 }
