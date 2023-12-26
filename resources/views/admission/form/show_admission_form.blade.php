@@ -1,7 +1,8 @@
-@include('includes.headcss')
+{{--@include('includes.headcss')
 @include('includes.header')
-@include('includes.sideNavigation')
-
+@include('includes.sideNavigation')--}}
+@extends('layout')
+@section('container')
 <div id="page-wrapper">
     <div class="container-fluid">
         <div class="row">
@@ -16,13 +17,13 @@
                 <strong>{{ $sessionData['message'] }}</strong>
             </div>
             @endif
-            
-            <div class="row"> 
-                <div class="col-lg-3 col-sm-3 col-xs-3">                
+
+            <div class="row">
+                <div class="col-lg-3 col-sm-3 col-xs-3">
                     <span class="d-inline-block mb-2" tabindex="0" data-toggle="tooltip" title="Once student is enrolled in System it cannot be edited & deleted. ">
                       <button class="btn btn-danger" style="pointer-events: none;" type="button" disabled="">Note</button>
                     </span>
-                </div>               
+                </div>
                 <div class="col-lg-12 col-sm-12 col-xs-12">
                     <div class="table-responsive">
                         <table id="example" class="table table-striped">
@@ -55,8 +56,8 @@
                                     <th>Age</th>
                                     <th>Previous School Name</th>
                                     <th>Previous Standard</th>
-                                    <th>Admission Standard</th> 
-                                    <th>Enquiry Remarks</th>                                   
+                                    <th>Admission Standard</th>
+                                    <th>Enquiry Remarks</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -64,10 +65,10 @@
                             $j=1;
                             @endphp
                                 @foreach($data['data'] as $key => $data)
-                                <tr> 
+                                <tr>
                                     @if($data['total_student_count'] == 0)
                                         <td>
-                                            <div class="d-inline">                                        
+                                            <div class="d-inline">
                                                 <a href="{{ route('admission_registration.edit',$data['id'])}}" class="btn btn-outline-success">
                                                     <i class="mdi mdi-grease-pencil"></i>
                                                 </a>
@@ -97,10 +98,10 @@
                                     <td>
                                         @if($data['receipt_id'] != '')
                                             <button type="button" class="btn btn-info float-right" data-toggle="modal" onclick="javascript:add_data({{$data['form_id']}});">{{$data['receipt_id']}}</button>
-                                            <input type="hidden" name="fees_html_{{$data['form_id']}}" id="fees_html_{{$data['form_id']}}" value="{{$data['receipt_html']}}">  
+                                            <input type="hidden" name="fees_html_{{$data['form_id']}}" id="fees_html_{{$data['form_id']}}" value="{{$data['receipt_html']}}">
                                         @else
                                             -
-                                        @endif      
+                                        @endif
                                     </td>
                                     @endif
                                     <td>{{$data['mobile']}}</td>
@@ -109,8 +110,8 @@
                                     <td>{{$data['age']}}</td>
                                     <td>{{$data['previous_school_name']}}</td>
                                     <td>{{$data['previous_standard']}}</td>
-                                    <td>{{$data['std_name']}}</td> 
-                                    <td>{{$data['enquiry_remark']}}</td>                                     
+                                    <td>{{$data['std_name']}}</td>
+                                    <td>{{$data['enquiry_remark']}}</td>
                                 </tr>
                                 @php
                             $j++;
@@ -120,7 +121,7 @@
                         </table>
                     </div>
                 </div>
-            </div>    
+            </div>
         </div>
     </div>
 </div>
@@ -146,7 +147,7 @@
                                 <div id="reprint_receipt_html">
                                 </div>
                             </div>
-                        </div>                       
+                        </div>
                     </div>
                 </div>
                 <!--Footer-->
@@ -154,23 +155,23 @@
                     <!-- <button class="btn" data-dismiss="modal" aria-hidden="true">Close</button> -->
                     <center>
                         <button id="btnPrint" type="button" class="btn btn-primary">Print</button>
-                    </center>                            
+                    </center>
                 </div>
             </div>
             <!--/.Content-->
         </div>
     </div>
-</div>    
+</div>
 <!--Modal: Add ChapterModal-->
 
 @include('includes.footerJs')
 <script>
-    document.getElementById("btnPrint").onclick = function () 
+    document.getElementById("btnPrint").onclick = function ()
     {
         PrintDiv("reprint_receipt_html");
     }
 
-    function PrintDiv(divName) 
+    function PrintDiv(divName)
     {
         var divToPrint = document.getElementById(divName);
         var popupWin = window.open('', '_blank', 'width=300,height=300');
@@ -192,3 +193,4 @@
     });
 </script>
 @include('includes.footer')
+@endsection

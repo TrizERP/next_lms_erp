@@ -1,6 +1,8 @@
-@include('includes.headcss')
+{{--@include('includes.headcss')
 @include('includes.header')
-@include('includes.sideNavigation')
+@include('includes.sideNavigation')--}}
+@extends('layout')
+@section('container')
 use DB;
 <div id="page-wrapper">
     <div class="container-fluid">
@@ -8,7 +10,7 @@ use DB;
             <div class="col-lg-3 col-md-4 col-sm-4 col-xs-12">
                 <h4 class="page-title">Fees Circular</h4>
             </div>
-        </div>    
+        </div>
         <div id="printPage" class="card">
             @php
                 $file_name = "fees_circular/templates/challan_admission.html";
@@ -50,7 +52,7 @@ use DB;
                 $str = str_replace(htmlspecialchars("<<fees_total>>"), $student_data['fees_amount'], $str);
                 $str = str_replace(htmlspecialchars("<<fees_amount_in_words>>"), $amountInWords, $str);
                 $str = str_replace(htmlspecialchars("<<fees_months>>"), $data['get_term_name'], $str);
-               
+
                 if (isset($data['feesCircularMaster']))
                 {
                     $str = str_replace(htmlspecialchars("<<bank_name>>"), $data['feesCircularMaster']['bank_name'], $str);
@@ -58,7 +60,7 @@ use DB;
                     $str = str_replace(htmlspecialchars("<<address_line_2>>"), $data['feesCircularMaster']['address_line2'], $str);
                     $str = str_replace(htmlspecialchars("<<account_number>>"), $data['feesCircularMaster']['account_no'], $str);
                     $str = str_replace(htmlspecialchars("<<paid_collection>>"), $data['feesCircularMaster']['paid_collection'], $str);
-                    $str = str_replace(htmlspecialchars("<<shift>>"), $data['feesCircularMaster']['shift'], $str);                    
+                    $str = str_replace(htmlspecialchars("<<shift>>"), $data['feesCircularMaster']['shift'], $str);
                     $str = str_replace(htmlspecialchars("<<branch>>"), $data['feesCircularMaster']['branch'], $str);
                     $str = str_replace(htmlspecialchars("<<current_date>>"), date('d-m-Y'), $str);
                 }
@@ -83,7 +85,7 @@ use DB;
 
 @include('includes.footerJs')
 <script>
-    function PrintDiv(divName) 
+    function PrintDiv(divName)
     {
         var divToPrint = document.getElementById(divName);
         var popupWin = window.open('', '_blank', 'width=300,height=300');
@@ -94,3 +96,4 @@ use DB;
     }
 </script>
 @include('includes.footer')
+@endsection

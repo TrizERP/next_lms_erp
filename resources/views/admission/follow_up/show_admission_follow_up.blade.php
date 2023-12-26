@@ -1,7 +1,8 @@
-@include('includes.headcss')
+{{--@include('includes.headcss')
 @include('includes.header')
-@include('includes.sideNavigation')
-
+@include('includes.sideNavigation')--}}
+@extends('layout')
+@section('container')
 <div id="page-wrapper">
     <div class="container-fluid">
         <div class="row">
@@ -23,12 +24,12 @@
                 $edata = $data['data'];
             }
             @endphp
-            <div class="row">                
+            <div class="row">
                 <div class="col-lg-12 col-sm-12 col-xs-12">
                     <form action="{{ route('admission_follow_up.store') }}" enctype="multipart/form-data" method="post">
                         {{ method_field("POST") }}
                         @csrf
-                        <div class="row">            
+                        <div class="row">
                             <div class="col-md-3 form-group">
                                 <label>Next Followup Date</label>
                                 <input type="text" id='follow_up_date' required name="follow_up_date" class="form-control mydatepicker">
@@ -63,10 +64,10 @@
                     </form>
                 </div>
             </div>
-        </div>   
+        </div>
         @if(isset($data['followUpData']))
             <div class="card">
-                <div class="row">                
+                <div class="row">
                     <div class="col-lg-12 col-sm-12 col-xs-12">
                         <div class="table-responsive">
                             {!! App\Helpers\get_school_details("","","") !!}
@@ -119,3 +120,4 @@
 @include('includes.footerJs')
 
 @include('includes.footer')
+@endsection

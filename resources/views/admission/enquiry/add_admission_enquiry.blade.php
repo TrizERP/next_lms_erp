@@ -1,10 +1,12 @@
-@include('includes.headcss')
+{{--@include('includes.headcss')
 @include('includes.header')
-@include('includes.sideNavigation')
+@include('includes.sideNavigation')--}}
+@extends('layout')
+@section('container')
 <style type="text/css">
 .followup_data {
     width: 80%;
-    height: 35px;    
+    height: 35px;
     font-size: 1.1em;
     color: green;
     font-weight: bold;
@@ -14,30 +16,30 @@
     <div class="container-fluid">
         <div class="row">
             <div class="col-lg-3 col-md-4 col-sm-4 col-xs-12">
-                <h4 class="page-title">Admission Enquiry</h4> 
-            </div>                
+                <h4 class="page-title">Admission Enquiry</h4>
+            </div>
         </div>
-        <div class="card">            
+        <div class="card">
             @if ($message = Session::get('success'))
             <div class="alert alert-success alert-block">
                 <button type="button" class="close" data-dismiss="alert">×</button>
                 <strong>{{ $message }}</strong>
             </div>
-            @endif           
-            <div class="row">                
+            @endif
+            <div class="row">
                 <div class="col-lg-12 col-sm-12 col-xs-12">
                     <form action="{{ route('admission_enquiry.store') }}" enctype="multipart/form-data" method="post">
                     {{ method_field("POST") }}
                     @csrf
-                    <div class="row"> 
+                    <div class="row">
                         @php
                         if (Session::get('sub_institute_id') != '198') // maheshvari ladavi
                         {
                             $readonly = ' readonly="readonly" ';
                         }else{
                             $readonly = '';
-                        }                         
-                        @endphp                     
+                        }
+                        @endphp
                         <div class="col-md-3 form-group">
                             <label>Enquiry Number </label>
                             <input type="text" id='enquiry_id'  id='enquiry_id' @if(isset($data['enquiry_no'])) value="{{$data['enquiry_no']}}" @endif name="enquiry_no" class="form-control" @php echo $readonly; @endphp>
@@ -112,7 +114,7 @@
                                 <option value="12SCI"> 12 SCI </option> -->
                             </select>
                         </div>
-                        <!-- <div class="col-md-3 form-group">                                                   
+                        <!-- <div class="col-md-3 form-group">
                             <label>Admission Standard </label>
                             <select id='admission_standard' name="admission_standard" class="form-control">
                             <option value=""> Select Standard </option>
@@ -141,7 +143,7 @@
                             <label>Followup Date </label>
                             <input type="text" required id='followup_date' name="followup_date" class="form-control mydatepicker" autocomplete="off">
                             <span id="followup_date_span"></span>
-                        </div>                      
+                        </div>
                         <div class="col-md-3 form-group">
                             <label>Remarks </label>
                             <input type="text" id='remarks'  name="remarks" class="form-control">
@@ -171,7 +173,7 @@
                                 <input type="radio" id='female' name="gender" value="F">
                                 <label for="female"> Female </label>
                             </div>
-                        </div>                        
+                        </div>
                         <div class="col-md-3 form-group">
                             <label>Send Sms </label>
                             <select id='send_sms' name="send_sms" onchange="showMessageBox(this.value);" class="form-control">
@@ -224,20 +226,20 @@
                         </div>
                         @endforeach
                         @endif
-                        @if (Session::get('sub_institute_id') == '198' || 
-                            Session::get('sub_institute_id') == '201' || 
-                            Session::get('sub_institute_id') == '202' || 
-                            Session::get('sub_institute_id') == '203' || 
-                            Session::get('sub_institute_id') == '204')                    
+                        @if (Session::get('sub_institute_id') == '198' ||
+                            Session::get('sub_institute_id') == '201' ||
+                            Session::get('sub_institute_id') == '202' ||
+                            Session::get('sub_institute_id') == '203' ||
+                            Session::get('sub_institute_id') == '204')
                         <div class="col-md-3 form-group">
                             <label>Admission Form Charges </label>
                             <input type="number" id='admission_fees' name="admission_fees" class="form-control">
-                        </div> 
+                        </div>
                         <div class="col-md-3 form-group">
                             <label>Fees Circular Form No </label>
                             <input type="text" id='fees_circular_form_no' name="fees_circular_form_no" class="form-control">
                         </div>
-                        @endif 
+                        @endif
 
                         <div class="col-md-3 form-group">
                             <label>Admission Standard </label>
@@ -248,12 +250,12 @@
                                 @endforeach
                             </select>
                             <input type="hidden" name="hidden_std_id" id="hidden_std_id" value="">
-                        </div> 
+                        </div>
 
-                        @if(Session::get('sub_institute_id') == '201' || 
-                            Session::get('sub_institute_id') == '202' || 
-                            Session::get('sub_institute_id') == '203' || 
-                            Session::get('sub_institute_id') == '204')                        
+                        @if(Session::get('sub_institute_id') == '201' ||
+                            Session::get('sub_institute_id') == '202' ||
+                            Session::get('sub_institute_id') == '203' ||
+                            Session::get('sub_institute_id') == '204')
                         <div class="col-md-3 form-group">
                             <label style="display: none;" id="label_for_fees_amount">Fees Amount </label>
                             <input type="number" id='fees_amount' name="fees_amount" class="form-control" style="display: none;">
@@ -264,7 +266,7 @@
                             <textarea id='fees_remark' name="fees_remark" class="form-control" style="display: none;"></textarea>
                         </div>
                         @endif
-                        
+
                         <div class="col-md-12 form-group">
                             <center>
                                 <input type="submit" name="submit" id="submit" value="Save" class="btn btn-success" >
@@ -280,28 +282,28 @@
 
 @include('includes.footerJs')
 <script type="text/javascript">
-    //10-01-2022 START display holiday,vacation & event in Followup date      
-    $('document').ready(function(){      
+    //10-01-2022 START display holiday,vacation & event in Followup date
+    $('document').ready(function(){
         $("#followup_date").on( "change", function( event ) {
-            followup_date_val = this.value;            
+            followup_date_val = this.value;
             var path = "{{ route('ajax_listCalendarData') }}";
             $.ajax({
                 url:path,
                 data:'followup_date='+followup_date_val,
                 success:function(result){
                     if(result != 0)
-                    {                                                
-                        $("#followup_date_span").removeClass().addClass("followup_data").text('You may have Holiday, Event or Vacation on this date.');                        
+                    {
+                        $("#followup_date_span").removeClass().addClass("followup_data").text('You may have Holiday, Event or Vacation on this date.');
                     }else{
-                        $("#followup_date_span").removeClass().addClass("followup_data").text(''); 
+                        $("#followup_date_span").removeClass().addClass("followup_data").text('');
                     }
                 }
             });
         });
     });
-    //10-01-2022 END display holiday,vacation & event in Followup date       
+    //10-01-2022 END display holiday,vacation & event in Followup date
 
-    function calculate_age(dateString) 
+    function calculate_age(dateString)
     {
         value = dateString;
         today = new Date();
@@ -338,13 +340,13 @@
         var path = "{{ route('ajax_getFeesBreakoff') }}";
         $.ajax({
                 url: path,
-                data:'standard_id='+standard_id, 
-                success: function(result){ 
+                data:'standard_id='+standard_id,
+                success: function(result){
                     $('#fees_amount').val(result);
                     $('#original_fees_bf').val(result);
                 }
         });
-       
+
     }
 
     function display_link(val)
@@ -379,5 +381,6 @@
 
         });
 
-</script> 
+</script>
 @include('includes.footer')
+@endsection
