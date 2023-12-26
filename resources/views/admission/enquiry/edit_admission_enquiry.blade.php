@@ -1,7 +1,8 @@
-@include('includes.headcss')
+{{--@include('includes.headcss')
 @include('includes.header')
-@include('includes.sideNavigation')
-
+@include('includes.sideNavigation')--}}
+@extends('layout')
+@section('container')
 @php
 $editData = array();
 $student_data = array();
@@ -21,16 +22,16 @@ if(isset($data['editData']))
         <div class="card">
             <div class="row">
                 <div class="col-lg-9 col-sm-8 col-md-8 col-xs-12">
-                    <a href="{{route('admission_follow_up.index')}}?enquiry_id={{$editData['id']}}&module=enquiry" class="btn btn-success mb-5">Admission Follow Up</a> 
-                </div>            
-            </div>            
+                    <a href="{{route('admission_follow_up.index')}}?enquiry_id={{$editData['id']}}&module=enquiry" class="btn btn-success mb-5">Admission Follow Up</a>
+                </div>
+            </div>
             @if ($message = Session::get('success'))
             <div class="alert alert-success alert-block">
                 <button type="button" class="close" data-dismiss="alert">×</button>
                 <strong>{{ $message }}</strong>
             </div>
             @endif
-            <div class="row">                
+            <div class="row">
                 <div class="col-lg-12 col-sm-12 col-xs-12">
                     <form action="{{ route('admission_enquiry.update', $editData['id']) }}" enctype="multipart/form-data" method="post">
                         {{ method_field("PUT") }}
@@ -42,8 +43,8 @@ if(isset($data['editData']))
                                 $readonly = ' readonly="readonly" ';
                             }else{
                                 $readonly = '';
-                            }                         
-                            @endphp 
+                            }
+                            @endphp
                             <div class="col-md-3 form-group">
                                 <label>Enquiry Number </label>
                                 <input type="text" id='enquiry_no' @if(isset($editData['enquiry_no'])) value="{{$editData['enquiry_no']}}" @endif required name="enquiry_no" class="form-control" @php echo $readonly; @endphp>
@@ -244,7 +245,7 @@ if(isset($data['editData']))
                                                         @endif
                                                     </div>
                                                     @elseif($value['field_type'] == 'dropdown')
-                
+
                                                             <!-- <div class="custom-select"> -->
                                                             <select name="{{ $value['field_name'] }}" class="form-control" @if($value['required'] == 1) required @endif id="{{ $value['field_name'] }}">
                                                                 <option value=""> SELECT {{ strtoupper($value['field_label']) }} </option>
@@ -264,7 +265,7 @@ if(isset($data['editData']))
                                                             @endif
                                                             </select>
                                                             <!-- </div> -->
-                                                            
+
                                                     @elseif($value['field_type'] == 'textarea')
                                                     <textarea id="{{ $value['field_name'] }}" class="form-control" @if($value['required'] == 1) required @endif name="{{ $value['field_name'] }}">
                                                     {{ $student_data[$value['field_name']] }}
@@ -275,20 +276,20 @@ if(isset($data['editData']))
                                                 </div>
                                                 @endforeach
                                                 @endif
-                            @if (Session::get('sub_institute_id') == '198' || 
-                                Session::get('sub_institute_id') == '201' || 
-                                Session::get('sub_institute_id') == '202' || 
-                                Session::get('sub_institute_id') == '203' || 
-                                Session::get('sub_institute_id') == '204') 
+                            @if (Session::get('sub_institute_id') == '198' ||
+                                Session::get('sub_institute_id') == '201' ||
+                                Session::get('sub_institute_id') == '202' ||
+                                Session::get('sub_institute_id') == '203' ||
+                                Session::get('sub_institute_id') == '204')
                             <div class="col-md-3 form-group">
                                 <label>Admission Form Charges </label>
                                 <input type="number" id='admission_fees' @if(isset($editData['admission_fees'])) value="{{$editData['admission_fees']}}" @endif required name="admission_fees" class="form-control">
-                            </div> 
+                            </div>
                             <div class="col-md-3 form-group">
                                 <label>Fees Circular Form No </label>
                                 <input type="text" id='fees_circular_form_no' @if(isset($editData['fees_circular_form_no'])) value="{{$editData['fees_circular_form_no']}}" @endif name="fees_circular_form_no" class="form-control" readonly="readonly">
-                            </div> 
-                            @endif                   
+                            </div>
+                            @endif
                             <div class="col-md-12 form-group">
                                 <center>
                                     <input type="submit" name="submit" value="Update" class="btn btn-success" >
@@ -304,7 +305,7 @@ if(isset($data['editData']))
 
 @include('includes.footerJs')
 <script type="text/javascript">
-    function calculate_age(dateString) 
+    function calculate_age(dateString)
     {
         value = dateString;
         today = new Date();
@@ -335,3 +336,4 @@ if(isset($data['editData']))
     }
 </script>
 @include('includes.footer')
+@endsection

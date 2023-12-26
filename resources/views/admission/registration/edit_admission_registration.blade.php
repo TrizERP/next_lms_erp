@@ -1,7 +1,8 @@
-@include('includes.headcss')
+{{--@include('includes.headcss')
 @include('includes.header')
-@include('includes.sideNavigation')
-
+@include('includes.sideNavigation')--}}
+@extends('layout')
+@section('container')
 @php
 $editData = array();
     if(isset($data['editData']))
@@ -13,14 +14,14 @@ $editData = array();
 <style type="text/css">
 .division_error {
   width: 80%;
-  height: 35px; 
+  height: 35px;
   font-size: 1.1em;
   color: red;
   font-weight: bold;
 }
 .division_success {
     width: 80%;
-    height: 35px;    
+    height: 35px;
     font-size: 1.1em;
     color: green;
     font-weight: bold;
@@ -33,9 +34,9 @@ $editData = array();
                 <h4 class="page-title">Admission Confirmation</h4> </div>
         </div>
         <div class="card">
-            <div class="row">                
+            <div class="row">
                 <div class="col-lg-9 col-sm-8 col-md-8 col-xs-12">
-                    <a href="{{route('admission_follow_up.index')}}?enquiry_id={{$editData['id']}}&module=registration">Admission Follow Up</a> 
+                    <a href="{{route('admission_follow_up.index')}}?enquiry_id={{$editData['id']}}&module=registration">Admission Follow Up</a>
                 </div>
             </div>
             @if ($message = Session::get('success'))
@@ -59,7 +60,7 @@ $editData = array();
                                 <label>Student Name </label>
                                 <input type="text" id='first_name' name='first_name' @if(isset($editData['first_name'])) value="{{$editData['first_name']}}" @endif required class="form-control">
                             </div>
-                            @if (Session::get('sub_institute_id') != '198') 
+                            @if (Session::get('sub_institute_id') != '198')
                             <div class="col-md-3 form-group">
                                 <label>Father Name </label>
                                 <input type="text" id='middle_name' name='middle_name' @if(isset($editData['middle_name'])) value="{{$editData['middle_name']}}" @endif required class="form-control">
@@ -156,7 +157,7 @@ $editData = array();
                             <div class="col-md-3 form-group">
                                 <label>Register Number/Application Number</label>
                                 <input type="text" id='register_number' @if(isset($editData['register_number'])) value="{{$editData['register_number']}}" @endif required name="register_number" class="form-control">
-                            </div>                    
+                            </div>
                             <div class="col-md-3">
                                 <label>Mother Name </label>
                                 <input type="text" id='mother_name' @if(isset($editData['mother_name'])) value="{{$editData['mother_name']}}" @endif required name="mother_name" class="form-control">
@@ -172,7 +173,7 @@ $editData = array();
                                     <input type="text" id='mother_mobile_number' @if(isset($editData['mother_mobile_number'])) value="{{$editData['mother_mobile_number']}}" @endif name="mother_mobile_number" class="form-control">
                                 </div>
                             @endif
-                          
+
                             <div class="col-md-3 form-group">
                                 <label>Aadhar Number </label>
                                 <input type="text"  id='aadhar_number' @if(isset($editData['aadhar_number'])) value="{{$editData['aadhar_number']}}" @endif  name="aadhar_number" class="form-control">
@@ -217,22 +218,22 @@ $editData = array();
                             </div>
                             <span id="division_error_span" style="text-align: right;margin-left: 18%;"></span>
                             @php
-                            if (Session::get('sub_institute_id') == '47') 
+                            if (Session::get('sub_institute_id') == '47')
                             {
                                 $display = 'readonly';
                                 $value = $data['new_enrollment_no'];
                             }
                             else{
-                                $display = '';   
-                                $value = $data['new_enrollment_no']; 
+                                $display = '';
+                                $value = $data['new_enrollment_no'];
                             }
                             @endphp
                             <div class="col-md-3 form-group">
                                 <label>Enrollment No/GR No</label>
-                                <input type="text" id='enrollment_no' 
+                                <input type="text" id='enrollment_no'
                                 @if(isset($value))
-                                value="{{$value}}" 
-                                @endif required name="enrollment_no" class="form-control" @php echo $display; @endphp>
+                                value="{{$value}}"
+                                @endif required name="enrollment_no" class="form-control" {{$display}}>
                             </div>
                             <div class="col-md-3 form-group">
                                 <label>Amount </label>
@@ -242,12 +243,12 @@ $editData = array();
                             <div class="col-md-3 form-group">
                                 <label>Blood Group</label>
                                 <select id='blood_group' name="blood_group" class="form-control">
-                                    <option value="">Select</option>  
+                                    <option value="">Select</option>
                                     @if(isset($data['bloodgroup_data']))
                                         @foreach($data['bloodgroup_data'] as $key => $value)
                                             <option @if($editData['blood_group'] == $value['id'] ) selected="selected" @endif value="{{ $value['id'] }}">{{ $value['bloodgroup'] }}</option>
                                         @endforeach
-                                    @endif                                                  
+                                    @endif
                                 </select>
                             </div>
 
@@ -261,7 +262,7 @@ $editData = array();
                                 </select>
                             </div>
                             <div id="bankdetails" class="col-md-12" style="display: none;">
-                                <div class="row">                                        
+                                <div class="row">
                                     <div class="col-md-3 form-group">
                                         <label>Bank Name </label>
                                         <input type="text" id='bank_name' @if(isset($editData['bank_name'])) value="{{$editData['bank_name']}}" @endif name="bank_name" class="form-control">
@@ -281,7 +282,7 @@ $editData = array();
                                         <label>Cheque Date </label>
                                         <input type="text" id='cheque_date' @if(isset($editData['cheque_date'])) value="{{$editData['cheque_date']}}" @endif name="cheque_date" class="form-control mydatepicker" autocomplete="off">
                                     </div>
-                                </div> 
+                                </div>
                             </div>
 
                             <!--<div class="col-md-3 form-group">
@@ -359,7 +360,7 @@ $editData = array();
                                         @endif
                                         </select>
                                         <!-- </div> -->
-                                        
+
                                 @elseif($value['field_type'] == 'textarea')
                                 <textarea id="{{ $value['field_name'] }}" class="form-control" @if($value['required'] == 1) required @endif name="{{ $value['field_name'] }}">
                                 {{ $student_data[$value['field_name']] }}
@@ -369,7 +370,7 @@ $editData = array();
                                 @endif
                             </div>
                             @endforeach
-                            @endif                                
+                            @endif
                             <div class="col-md-12 form-group">
                                 <center>
                                     <input type="submit" name="submit" value="Update" class="btn btn-success division_alert" >
@@ -381,7 +382,7 @@ $editData = array();
                     <form action="{{ route('admission_student') }}" enctype="multipart/form-data" method="post">
                         {{ method_field("POST") }}
                         @csrf
-                        <div class="row">                        
+                        <div class="row">
                             <div class="col-md-12 form-group">
                                 <center>
                                     <input type="hidden" name="id" value="{{$editData['id']}}">
@@ -389,8 +390,8 @@ $editData = array();
 
                                         @if($data['display_save_student'] == 1 && $editData['registration_enquiry_id'] != '')
                                             <input type="submit" name="submit" value="Add Student" class="btn btn-success">
-                                            
-                                            @if (Session::get('sub_institute_id') == '47')                         
+
+                                            @if (Session::get('sub_institute_id') == '47')
                                             <span class="d-inline-block mb-2" tabindex="0" data-toggle="tooltip" title="Enrollment Numbers will be assigned automatically while saving new students. It may differ from the current displayed Enrollment Number.">
                                                 <button class="btn btn-danger" style="pointer-events: none;" type="button" disabled="">Note</button>
                                             </span>
@@ -437,7 +438,7 @@ $editData = array();
         document.getElementById('admission_division').addEventListener('change', function(){
             var selected_division_id = $("#admission_division").val();
             var selected_std_id = $("#admission_standard").val();
-            
+
             var path = "{{ route('ajax_checkDivisionCapacity') }}";
             $.ajax({
                 url:path,
@@ -445,8 +446,8 @@ $editData = array();
                 success:function(result){
                     var capacity = result.split("/");
                     if(capacity[1] != 0)
-                    {                                                
-                        
+                    {
+
                         $("#division_error_span").removeClass().addClass("division_success").text('Total Capacity : '+capacity[0]+' / Remaining Capacity : '+capacity[1]);
                         division_check = true;
                     }
@@ -461,14 +462,14 @@ $editData = array();
                     }
                 }
             });
-            
+
         });
         //END Check Division Capacity Validation - 18/11/2021
 
         $('.division_alert').on('click', function(){
 
             if(division_check == true)
-            { 
+            {
                 return true;
             }else
                 alert('Please select other division.');
@@ -484,7 +485,7 @@ $editData = array();
         $.ajax({
             url:path,
             data:'standard_id='+standard_id,
-            success:function(result){               
+            success:function(result){
                 for(var i=0;i < result.length ;i++)
                 {
                     $("#admission_division").append($("<option></option>").val(result[i]['id']).html(result[i]['name']));
@@ -495,3 +496,4 @@ $editData = array();
 
 </script>
 @include('includes.footer')
+@endsection

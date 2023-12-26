@@ -1,7 +1,8 @@
-@include('includes.headcss')
+{{--@include('includes.headcss')
 @include('includes.header')
-@include('includes.sideNavigation')
-
+@include('includes.sideNavigation')--}}
+@extends('layout')
+@section('container')
 @php
 $editData = array();
     if(isset($data['editData']))
@@ -17,7 +18,7 @@ $editData = array();
                 <h4 class="page-title">Admission Registration</h4>
             </div>
         </div>
-        <div class="card">        
+        <div class="card">
             @if ($message = Session::get('success'))
             <div class="alert alert-success alert-block">
                 <button type="button" class="close" data-dismiss="alert">×</button>
@@ -28,10 +29,10 @@ $editData = array();
                 <div class="col-lg-12 col-sm-12 col-xs-12">
                     <form action="{{ route('admission_registration.update', $editData['id']) }}" enctype="multipart/form-data" method="post">
                         {{ method_field("PUT") }}
-                        @csrf 
+                        @csrf
 
                         <div class="row">
-                            
+
                         <div class="col-md-3 form-group">
                             <label>Enquiry Number</label>
                             <input type="hidden" readonly="readonly" id='enquiry_id' @if(isset($editData['enquiry_id'])) value="{{$editData['enquiry_id']}}" @endif required name="enquiry_id" class="form-control">
@@ -50,7 +51,7 @@ $editData = array();
                             <input type="text" id='first_name' name='first_name' @if(isset($editData['first_name'])) value="{{$editData['first_name']}}" @endif required class="form-control">
                         </div>
                         {{--  For Maheshvari School --}}
-                        @if (Session::get('sub_institute_id') != '198') 
+                        @if (Session::get('sub_institute_id') != '198')
                         <div class="col-md-3 form-group">
                             <label>Middle Name </label>
                             <input type="text" id='middle_name' name='middle_name' @if(isset($editData['middle_name'])) value="{{$editData['middle_name']}}" @endif required class="form-control">
@@ -187,7 +188,7 @@ $editData = array();
                         <div class="col-md-3 form-group">
                             <label>Registration No.</label>
                             <input type="text" id='registration_no' @if(isset($editData['registration_no'])) value="{{$editData['registration_no']}}" @endif  name="registration_no" class="form-control">
-                        </div>				
+                        </div>
 						<div class="col-md-3 form-group">
                             <label>Send Sms </label>
                             <select id='send_sms' name="send_sms" onchange="showMessageBox(this.value);" class="form-control">
@@ -244,7 +245,7 @@ $editData = array();
                                         @endif
                                         </select>
                                         <!-- </div> -->
-                                        
+
                                 @elseif($value['field_type'] == 'textarea')
                                 <textarea id="{{ $value['field_name'] }}" class="form-control" @if($value['required'] == 1) required @endif name="{{ $value['field_name'] }}">
                                 {{ $student_data[$value['field_name']] }}
@@ -268,14 +269,14 @@ $editData = array();
                                     <input type="submit" name="submit" value="Update" class="btn btn-success" >
                                 </center>
                             </div>
-                        </div>                   
+                        </div>
                     </form>
                 </div>
             </div>
         </div>
-        <div class="row">            
+        <div class="row">
             <div class="col-lg-9 col-sm-8 col-md-8 col-xs-12">
-                <a href="{{route('admission_follow_up.index')}}?enquiry_id={{$editData['id']}}&module=form">Admission Follow Up</a> 
+                <a href="{{route('admission_follow_up.index')}}?enquiry_id={{$editData['id']}}&module=form">Admission Follow Up</a>
             </div>
         </div>
     </div>
@@ -307,3 +308,4 @@ $editData = array();
     }
 </script>
 @include('includes.footer')
+@endsection
