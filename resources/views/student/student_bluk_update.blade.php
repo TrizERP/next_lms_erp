@@ -6,7 +6,7 @@
     <div class="container-fluid">
         <div class="row bg-title">
             <div class="col-lg-3 col-md-4 col-sm-4 col-xs-12">
-                <h4 class="page-title">Inactive Student Bulk Update</h4>
+                <h4 class="page-title">Student Bulk Update</h4>
             </div>
         </div>
         <div class="card">
@@ -60,19 +60,20 @@
                                 <th>Students active/inactive excel</th>
                                 <td>
                                     <div class="row">
-                                        <div class="col-md-4" style="margin-left: 0px !important">
+                                        <div class="col-md-3" style="margin-left: 0px !important">
                                             <select id='student_active_inactive_excel' name="student_active_inactive_excel" class="form-control">
                                                 <option>-- Select --</option>
                                                 <option value="Active" name="active">Active</option>
                                                 <option value="Inactive" name="inactive">Inactive</option>
                                             </select>
                                         </div>
-                                        <div class="col-md-4" style="margin-left: 0px !important">
+                                        <div class="col-md-3" style="margin-left: 0px !important">
                                             <div class="custom-file">
-                                                <input type="file" class="form-control" name="attachment" id="attachment" required>
+                                                <input type="file" class="form-control" name="attachment" id="attachment">
                                             </div>
                                         </div>
                                     </div>
+                                    <p style="color:red;"><br/>NOTE: The first column of Excel should have mandatory "enrollment_no"</p>
                                 </td>
                             </tr>
                         </tbody>

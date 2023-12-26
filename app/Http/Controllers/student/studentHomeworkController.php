@@ -159,6 +159,7 @@ class studentHomeworkController extends Controller
 
     public function store(Request $request)
     {
+
         $type = $request->get('type');
         if ($type == "API") {
             $sub_institute_id = $request->input('sub_institute_id');
@@ -168,8 +169,10 @@ class studentHomeworkController extends Controller
             $syear = session()->get('syear');
         }
 
+       
         $students = $request->get('students');
         $student_details = getStudents($students, $sub_institute_id, $syear);
+
         $title = $request->get('title');
         $description = $request->get('description');
         $submission_date = $request->get('submission_date');
@@ -190,6 +193,7 @@ class studentHomeworkController extends Controller
         }
 
         foreach ($student_details as $id => $arr) {
+             
             $student_id = $arr['id'];
             $standard_id = $arr['standard_id'];
             $division_id = $arr['section_id'];
