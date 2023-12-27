@@ -165,19 +165,19 @@ class studentBulkUpdateController extends Controller
                 for ($i = 0; $i < $rowCount; $i++) 
                 { 
                     $row = $data[$i];
+
+                    $get_student_details = DB::table('tblstudent as s')
+                        ->selectRaw("te.*, CONCAT(s.first_name,' ',s.middle_name,' ',s.last_name) as full_name")
+                        ->join('tblstudent_enrollment as te', 'te.student_id', '=', 's.id')
+                        ->where([
+                            's.sub_institute_id' => $sub_institute_id,
+                            'te.syear' => $syear,
+                            's.enrollment_no' => $row[0]
+                        ])
+                        ->get()->toArray();
                     
                     if($get_active_inactive == "Active")
-                    {
-                        $get_student_details = DB::table('tblstudent_enrollment as te')
-                            ->selectRaw("te.*, CONCAT(s.first_name,' ',s.middle_name,' ',s.last_name) as full_name")
-                            ->join('tblstudent as s', 's.id', '=', 'te.student_id')
-                            ->where([
-                                'te.sub_institute_id' => $sub_institute_id,
-                                'te.syear' => $syear,
-                                'te.id' => $row[0]
-                            ])
-                            ->get()->toArray();
-                        
+                    { 
                         if (!$get_student_details) {
                             $notInDatabase[] = $row;
                         }
@@ -196,7 +196,7 @@ class studentBulkUpdateController extends Controller
 
                             if(isset($get_student_detail->id)) 
                             {
-                                DB::table('tblstudent_enrollment')->where('id', $get_student_detail->id)->update([
+                                DB::table('tblstudent_enrollment')->where('id', $get_student_detail->id)->where('sub_institute_id', $sub_institute_id)->update([
                                     'end_date' => null,
                                     'updated_on' => $now,
                                 ]); 
@@ -209,16 +209,6 @@ class studentBulkUpdateController extends Controller
                     }
                     elseif($get_active_inactive == "Inactive")
                     {
-                        $get_student_details = DB::table('tblstudent_enrollment as te')
-                        ->selectRaw("te.*, CONCAT(s.first_name,' ',s.middle_name,' ',s.last_name) as full_name")
-                        ->join('tblstudent as s', 's.id', '=', 'te.student_id')
-                        ->where([
-                            'te.sub_institute_id' => $sub_institute_id,
-                            'te.syear' => $syear,
-                            'te.id' => $row[0]
-                        ])
-                        ->get()->toArray();
-                    
                         if (!$get_student_details) {
                             $notInDatabase[] = $row;
                         }
@@ -237,7 +227,7 @@ class studentBulkUpdateController extends Controller
 
                             if(isset($get_student_detail->id)) 
                             {
-                                DB::table('tblstudent_enrollment')->where('id', $get_student_detail->id)->update([
+                                DB::table('tblstudent_enrollment')->where('id', $get_student_detail->id)->where('sub_institute_id', $sub_institute_id)->update([
                                     'end_date' => $now,
                                     'updated_on' => $now,
                                 ]); 
@@ -249,7 +239,7 @@ class studentBulkUpdateController extends Controller
                         }
                     }
                 }
-
+                
                 $rowCountNotInDatabase = count($notInDatabase);
                 $rowCountAlreadyActive = count($alreadyActive);
                 $rowCountAlreadyInactive = count($alreadyInactive);
