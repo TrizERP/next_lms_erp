@@ -61,23 +61,28 @@
                         <tr>
                             <th>Roll No</th>
                             <th>Student Name</th>
-                            <th>Activity Group</th>
+                            <th colspan="{{ count($data['result_activity_groups']) }}" style="text-align:center;">Activity Group</th>
+                        </tr>
+                        <tr style="text-align:center;">
+                            <th></th>
+                            <th></th>
+                            @foreach($data['result_activity_groups'] as $result_activity_group)
+                                <th >{{ $result_activity_group->title }}</th>
+                            @endforeach
                         </tr>
                         @foreach($data['student_datas'] as $student_data)
                         <tr>
                             <td>{{ $student_data['roll_no'] }}</td>
                             <td>{{ $student_data['first_name'] }} {{ $student_data['middle_name'] }} {{ $student_data['last_name'] }}</td>
-                            <td>
                             @foreach($data['result_activity_groups'] as $result_activity_group)
-                                <label>
-                                    <input type="radio" name="activity_group[{{ $student_data['id'] }}]" value="{{ $result_activity_group->id }}">
-                                    {{ $result_activity_group->title }}
-                                </label>
-                                <input type="hidden" name="student_id" value="{{ $student_data['id'] }}">
-                                <input type="hidden" name="activity_id" value="{{ $data['activity_value'] }}">
-                                <input type="hidden" name="activity_id" value="{{ $data['activity_value'] }}">
+                                <td style="text-align:center;">
+                                    <label>
+                                        <input type="radio" name="activity_group[{{ $student_data['id'] }}]" value="{{ $result_activity_group->id }}">
+                                    </label>
+                                    <input type="hidden" name="student_id" value="{{ $student_data['id'] }}">
+                                    <input type="hidden" name="activity_id" value="{{ $data['activity_value'] }}">
+                                </td>
                             @endforeach
-                            </td>
                         </tr>
                         @endforeach
                     </table>
