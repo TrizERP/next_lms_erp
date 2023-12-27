@@ -45,7 +45,7 @@ class studentResultController extends Controller
         $syear = session()->get('syear');
         // get students
         $studentData = SearchStudent($grade, $standard, $division);
-    
+        
 
         $res['data'] = result_template::where('sub_institute_id', $sub_institute_id)->orderBy('sort_order')->get()->toArray();
         if (empty($res['data'])) {
@@ -81,6 +81,7 @@ class studentResultController extends Controller
 
         // get selectd students 
         $data = getStudents($student_ids);
+        
     //     if($sub_institute_id==47){
     //     echo "<pre>";print_r($data);exit;
     // }
@@ -377,6 +378,11 @@ class studentResultController extends Controller
 
         $html_content = str_replace(htmlspecialchars("<<result>>"), strtoupper($main_result['result']), $html_content);
         $html_content = str_replace(htmlspecialchars("<<school_open_date>>"), $reopen_date, $html_content);
+
+        if (strpos($html_content, htmlspecialchars('<<activity_tag_marks>>')) !== false) {
+            $main_result = $this->get_activity_marks($standard_id, $value['id'], $format, "no_zero");
+            $html_content = str_replace(htmlspecialchars("<<activity_tag_marks>>"), $main_result['table'], $html_content);
+        }
 
         return $html_content;
         //  return $main_result;         
@@ -772,7 +778,7 @@ class studentResultController extends Controller
                     }
                 }
                
-// echo $table;exit;
+                // echo $table;exit;
                 if ($digit == "no_zero") {
                     $obtained_mark_formatted = $obtained_mark;
                 } else if ($digit == "single_zero") {
@@ -819,7 +825,7 @@ class studentResultController extends Controller
             }
         }
         
-    // Calculate the total marks for each term
+        // Calculate the total marks for each term
         if ($sub_institute_id != 47) {
             foreach ($term_name as $keys => $terms) {
                 $term_exam_titles = array_filter($exam_title, function ($title) use ($terms) {
@@ -870,7 +876,7 @@ class studentResultController extends Controller
                 $table .= '<td rowspan="3" class="data_center">' . $all_per . '</td><td rowspan="3" class="data_center">' . $all_grade . '</td>';
             }
     
-    // exit;
+        // exit;
             $table_all = str_replace(htmlspecialchars("<<per>>"), $all_per, $table_all);
             $table_all = str_replace(htmlspecialchars("<<grade>>"), $all_grade, $table_all);
             $table .= '<tr>' . $table_per . '</tr>';
@@ -1586,7 +1592,7 @@ $overall_total = $overall_total / 2;
 
     public function get_scholastic_hills($standard_id, $student_id, $format, $academic_type)
     {
-    // dd($student_id);
+        // dd($student_id);
         $syear = session()->get('syear');
         $sub_institute_id = session()->get('sub_institute_id');
 
@@ -1616,7 +1622,7 @@ $overall_total = $overall_total / 2;
             ->get()
             ->toArray();
     
-    // Filter the elective subjects based on the condition
+        // Filter the elective subjects based on the condition
         $get_subject = array_filter($get_subject, function ($value) use ($student_id, $syear) {
             if ($value->elective_subject == 'Yes') {
                 $check_optional_subject_with_student = DB::table('student_optional_subject')
@@ -2286,4 +2292,117 @@ $overall_total = $overall_total / 2;
         return 1;
     }
 
+    public function get_activity_marks($standard_id, $student_id, $format, $digit)
+    {
+        $syear = session()->get('syear');
+        $sub_institute_id = session()->get('sub_institute_id');
+        $format_sub_different = [61, 195];
+
+        if ($format == "yearly") {
+            $extra_term = "1=1";
+            $extra_exam = "1=1";
+        } else {
+            $extra_term = "term_id = " . $format;
+            $extra_exam = "rce.term_id = " . $format;
+        }
+
+        // get term_name 
+        $term_name = DB::table('academic_year')->whereRaw($extra_term)->where(['sub_institute_id' => $sub_institute_id, 'syear' => $syear])->get()->toArray();
+
+        $get_result_skillsets = DB::table('result_skillset')->selectRaw('*,group_concat(title  order by sort_order) as all_title,group_concat(id) as all_id,group_concat(`group`) as all_group')
+            ->where(['sub_institute_id' => $sub_institute_id])
+            ->groupBy('main_title')
+            ->orderByRaw('main_sort_order')
+            ->get()->toArray();
+           
+        $table = '<style>.data_center{text-align:center !important;}</style><table class="aca-year"  style="width: 100%;border-collapse:collapse; border:1px solid #e68023;" cellspacing="0"  border="1">
+        <thead>
+        <tr>';
+
+        foreach($get_result_skillsets as $get_result_skillset)
+        {
+            $style = '';
+            $heading = $get_result_skillset->main_title;
+            $sub_title_heading = $get_result_skillset->all_title;
+            $skillset_ids = $get_result_skillset->all_id;
+            $all_group = $get_result_skillset->all_group;
+
+            $sub_title = explode(',', $sub_title_heading);
+            $skill_ids = explode(',', $skillset_ids);
+            $all_group = explode(',', $all_group);
+
+            $table .= '<th style="text-align:left;" colspan="5"><b>' . $heading . '</b></th>';
+
+            foreach($sub_title as $key => $value)
+            {
+                $sub_sub_title = DB::table('result_activity_group as rag')->where(['rag.sub_institute_id' => $sub_institute_id])->where('rag.group', $all_group[$key])
+                ->get()->toArray();
+
+                $table .= '<tr><th style="text-align:left; background:none !important"><b>' . $value . '</b></th>';
+                $get_result_activity_marks = $sub_sub_id = [];  
+
+                foreach($sub_sub_title as $key1 => $value1)
+                {
+                    $table .= '<th style="text-align:left; background:#ddd !important;color:black;"><b>' . $value1->title . '</b></th>';
+
+                    $get_result_activity_masters = DB::table('result_activity_master')
+                    ->selectRaw('*, group_concat(title) as activity_master_title,group_concat(id) as ids')
+                    ->where(['sub_institute_id' => $sub_institute_id])
+                    ->where('skill_id', $skill_ids[$key])
+                    ->get()->toArray();
+
+                    foreach($get_result_activity_masters as $get_result_activity_master)
+                    {
+                        $activity_master_id = explode(',', $get_result_activity_master->ids);
+                        $activity_master_title = explode(',', $get_result_activity_master->activity_master_title);
+
+                        foreach($activity_master_id as $key2 => $activity_id)
+                        {
+                            $get_result_activity_marks[$activity_master_title[$key2]][] = DB::table('result_activity_marks')
+                            ->where(['sub_institute_id' => $sub_institute_id])
+                            ->where('activity_id', $activity_id)
+                            ->where('group_id', $value1->id)
+                            ->where('student_id', $student_id)
+                            ->get()->toArray();
+                        }
+                    }
+                }
+                $table .= '</tr>';
+                if(isset($get_result_activity_masters) && !empty($get_result_activity_masters))
+                {
+                    foreach($get_result_activity_masters as $get_result_activity_master)
+                    {
+                        $activity_master_title = explode(',', $get_result_activity_master->activity_master_title);
+                        $activity_master_id = explode(',', $get_result_activity_master->ids);
+               
+                        foreach($activity_master_title as $key2 => $activity_master_titles)
+                        {
+                            $table .= '<tr><th style="text-align:left; background:yellow !important"><b>' . $activity_master_titles .'</b></th>';
+                         
+                            if(isset($get_result_activity_marks[$activity_master_title[$key2]]) && !empty($get_result_activity_marks[$activity_master_title[$key2]]))
+                            {
+                                foreach($get_result_activity_marks[$activity_master_title[$key2]] as $get_result_activity_mark)
+                                {
+                                    if(isset($get_result_activity_mark[0]) && $get_result_activity_mark[0]->activity_id==$activity_master_id[$key2])
+                                    {
+                                        $table .= '<th style="text-align:center; background:white !important;color:black;">&#10004</th>';
+                                    }
+                                    else
+                                    {
+                                        $table .= '<th style="text-align:center; background:white !important;color:black;"></th>'; 
+                                    }
+                                }
+                            }
+                            $table .= '</tr>';
+                        }
+                    }
+                }
+            }
+        }
+        $table .= '</tr>
+        </thead>
+        </table>';
+        $res['table'] = $table;
+        return $res;
+    }
 }
