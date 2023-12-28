@@ -305,8 +305,9 @@ die; */
         //$standard_array = ['I' => 1,'II' => 2,'III' => 3,'IV' => 4,'V' => 5,'VI' => 6,'VII' => 7,'VIII' => 8,'IX' => 9,'X' => 10,'XI' => 11,'XII' => 12];
         //$std = $standard_array[$value['short_standard_name']] ?? 0;
         $html_content = str_replace(htmlspecialchars("<<short_standard_name_in_word_value>>"), strtoupper($value['school_stream']), $html_content);
-        $html_content = str_replace(htmlspecialchars("<<subjects_studied_value>>"), strtoupper($get_standard_subjects->subject_name),
+        $html_content = str_replace(htmlspecialchars("<<subjects_studied_system>>"), strtoupper($get_standard_subjects->subject_name),
             $html_content);
+        $html_content = str_replace(htmlspecialchars("<<subjects_studied_value>>"),strtoupper($value['subjects_studied']), $html_content);
         $html_content = str_replace(htmlspecialchars("<<candidate_belongs_to_value>>"),
             strtoupper($value['candidate_belongs_to']), $html_content);
         $html_content = str_replace(htmlspecialchars("<<date_of_first_admission_value>>"),
@@ -317,8 +318,6 @@ die; */
             strtoupper($value['last_school_board']), $html_content);
         $html_content = str_replace(htmlspecialchars("<<whether_failed_value>>"), strtoupper($value['whether_failed']),
             $html_content);
-        /* $html_content = str_replace(htmlspecialchars("<<subjects_studied_value>>"),
-            strtoupper($value['subjects_studied']), $html_content); */
         $html_content = str_replace(htmlspecialchars("<<whether_qualified_value>>"),
             strtoupper($value['whether_qualified']), $html_content);
         $html_content = str_replace(htmlspecialchars("<<teacher_remark_value>>"),
@@ -342,10 +341,10 @@ if ($value['month_name'] != '' && isset($months[$value['month_name']])) {
             strtoupper($value['month_up_paid_school_dues']), $html_content);
         $html_content = str_replace(htmlspecialchars("<<admission_under_value>>"),
             strtoupper($value['admission_under']), $html_content);
-        $html_content = str_replace(htmlspecialchars("<<total_working_days_value>>"),
-            strtoupper($value['total_working_days']), $html_content);
-        $html_content = str_replace(htmlspecialchars("<<total_working_days_present_value>>"),
-            strtoupper($value['total_working_days_present']), $html_content);
+        $html_content = str_replace(htmlspecialchars("<<total_working_days_value>>"),strtoupper($value['total_working_days']), $html_content);
+        $html_content = str_replace(htmlspecialchars("<<total_working_days_present_value>>"),strtoupper($value['total_working_days_present']), $html_content);
+        $html_content = str_replace(htmlspecialchars("<<total_working_days_system>>"),strtoupper($value['total_working_days_system']), $html_content);
+        $html_content = str_replace(htmlspecialchars("<<total_working_days_present_system>>"),strtoupper($value['total_working_days_present_system']), $html_content);
         $html_content = str_replace(htmlspecialchars("<<games_played_value>>"), strtoupper($value['games_played']),
             $html_content);
         $html_content = str_replace(htmlspecialchars("<<general_conduct_value>>"),
