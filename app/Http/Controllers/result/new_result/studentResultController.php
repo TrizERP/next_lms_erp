@@ -2344,7 +2344,7 @@ $overall_total = $overall_total / 2;
 
                 foreach($sub_sub_title as $key1 => $value1)
                 {
-                    $table .= '<th style="text-align:left; background:#ddd !important;color:black;"><b>' . $value1->title . '</b></th>';
+                    $table .= '<th style="text-align:center; background:#ddd !important;color:black;"><b>' . $value1->title . '</b></th>';
 
                     $get_result_activity_masters = DB::table('result_activity_master')
                     ->selectRaw('*, group_concat(title) as activity_master_title,group_concat(id) as ids')
@@ -2378,7 +2378,7 @@ $overall_total = $overall_total / 2;
                
                         foreach($activity_master_title as $key2 => $activity_master_titles)
                         {
-                            $table .= '<tr><th style="text-align:left; background:yellow !important"><b>' . $activity_master_titles .'</b></th>';
+                            $table .= '<tr><th style="text-align:left; background:yellow !important; width:50%;"><b>' . $activity_master_titles .'</b></th>';
                          
                             if(isset($get_result_activity_marks[$activity_master_title[$key2]]) && !empty($get_result_activity_marks[$activity_master_title[$key2]]))
                             {
