@@ -2386,11 +2386,11 @@ $overall_total = $overall_total / 2;
                                 {
                                     if(isset($get_result_activity_mark[0]) && $get_result_activity_mark[0]->activity_id==$activity_master_id[$key2])
                                     {
-                                        $table .= '<th style="text-align:center; background:white !important;color:black;">&#10004</th>';
+                                        $table .= '<th style="text-align:center; background:white !important;color:black;width:10%;">&#10004</th>';
                                     }
                                     else
                                     {
-                                        $table .= '<th style="text-align:center; background:white !important;color:black;"></th>'; 
+                                        $table .= '<th style="text-align:center; background:white !important;color:black;width:10%;"></th>'; 
                                     }
                                 }
                             }
