@@ -2314,13 +2314,14 @@ $overall_total = $overall_total / 2;
             ->groupBy('main_title')
             ->orderByRaw('main_sort_order')
             ->get()->toArray();
-           
-        $table = '<style>.data_center{text-align:center !important;}</style><table class="aca-year"  style="width: 100%;border-collapse:collapse; border:1px solid #e68023;" cellspacing="0"  border="1">
-        <thead>
-        <tr>';
+        
+        $table = '';
 
         foreach($get_result_skillsets as $get_result_skillset)
         {
+            $table .= '<style>.data_center{text-align:center !important;}</style><table class="aca-year"  style="width: 100%;border-collapse:collapse; border:1px solid #e68023; margin-bottom:30px;" cellspacing="0"  border="1">
+            <thead>
+            <tr>';
             $style = '';
             $heading = $get_result_skillset->main_title;
             $sub_title_heading = $get_result_skillset->all_title;
@@ -2398,10 +2399,11 @@ $overall_total = $overall_total / 2;
                     }
                 }
             }
-        }
-        $table .= '</tr>
+            $table .= '</tr>
         </thead>
         </table>';
+        }
+        
         $res['table'] = $table;
         return $res;
     }

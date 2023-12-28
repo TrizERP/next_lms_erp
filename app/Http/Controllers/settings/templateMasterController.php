@@ -124,6 +124,7 @@ class templateMasterController extends Controller
         <li><b><< date_on_which_pupil_name_value >></b> : Date of application for certificate</li>
         <li><b><< date_of_application_for_certificate_value >></b> : Date on which pupil's name was struck off the rolls of the school</li>
         <li><b><< date_of_issue_of_certificate_new_value >></b> : Date of issue of certificate</li>
+        <li><b><< activity_tag_marks >></b> : Student Activity Report Marks</li>
         </ul>";
 
         return is_mobile($type, 'settings/view_all_tag', $data, "view");
