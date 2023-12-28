@@ -1455,8 +1455,10 @@ if (!function_exists('getStudents')) {
             $student_data[$value->id]['month_up_paid_school_dues'] = $value->month_up_paid_school_dues;
             $student_data[$value->id]['month_name'] = $value->month_name;
             $student_data[$value->id]['admission_under'] = $value->admission_under;
-            $student_data[$value->id]['total_working_days'] = $value->total_att_days;
-            $student_data[$value->id]['total_working_days_present'] = $value->present_att_days;
+            $student_data[$value->id]['total_working_days'] = $value->total_working_days;
+            $student_data[$value->id]['total_working_days_present'] = $value->total_working_days_present;
+            $student_data[$value->id]['total_working_days_system'] = $value->total_att_days;
+            $student_data[$value->id]['total_working_days_present_system'] = $value->present_att_days;
             $student_data[$value->id]['games_played'] = $value->games_played;
             $student_data[$value->id]['general_conduct'] = $value->general_conduct;
             $student_data[$value->id]['date_of_application_for_certificate'] = $value->date_of_application_for_certificate;
