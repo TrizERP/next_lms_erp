@@ -247,6 +247,14 @@ die; */
         ->orderBy('ssm.sort_order')
         ->first();
 
+        $get_student_attendances = DB::table('attendance_student')
+        ->select(DB::raw('COUNT(id) as total_att_days,sum(CASE WHEN attendance_code = "P" THEN 1 ELSE 0 END) as present_att_days'))
+        ->where('sub_institute_id', session()->get('sub_institute_id'))
+        ->where('syear', session()->get('syear'))
+        ->where('standard_id', $value['standard_id'])
+        ->where('student_id', $value['id'])
+        ->first();
+
         // for mr/miss and daughter/son 
         $html_content = str_replace(htmlspecialchars("<<mr_miss>>"), $mr_miss, $html_content); 
         $html_content = str_replace(htmlspecialchars("<<daughter_or_son>>"), $daughter_son, $html_content);
@@ -343,8 +351,8 @@ if ($value['month_name'] != '' && isset($months[$value['month_name']])) {
             strtoupper($value['admission_under']), $html_content);
         $html_content = str_replace(htmlspecialchars("<<total_working_days_value>>"),strtoupper($value['total_working_days']), $html_content);
         $html_content = str_replace(htmlspecialchars("<<total_working_days_present_value>>"),strtoupper($value['total_working_days_present']), $html_content);
-        $html_content = str_replace(htmlspecialchars("<<total_working_days_system>>"),strtoupper($value['total_working_days_system']), $html_content);
-        $html_content = str_replace(htmlspecialchars("<<total_working_days_present_system>>"),strtoupper($value['total_working_days_present_system']), $html_content);
+        $html_content = str_replace(htmlspecialchars("<<total_working_days_system>>"),strtoupper($get_student_attendances->total_att_days), $html_content);
+        $html_content = str_replace(htmlspecialchars("<<total_working_days_present_system>>"),strtoupper($get_student_attendances->present_att_days), $html_content);
         $html_content = str_replace(htmlspecialchars("<<games_played_value>>"), strtoupper($value['games_played']),
             $html_content);
         $html_content = str_replace(htmlspecialchars("<<general_conduct_value>>"),
