@@ -47,11 +47,11 @@ class cbse_1t5_result_controller extends Controller {
 
         $result_year = $syear . "-" . $next_year;
         if(session()->get('sub_institute_id')!=72){
-        session()->put('term_id', $academicTerms[0]->term_id);
-        session()->put('standard', $_REQUEST['standard']);
-    }else{
-         session()->put('standard', $_REQUEST['standard']);
-    }
+            session()->put('term_id', $academicTerms[0]->term_id);
+            session()->put('standard', $_REQUEST['standard']);
+        }else{
+            session()->put('standard', $_REQUEST['standard']);
+        }
         //getting year detail
         //getting all exam name with mark
         $all_exam = $this->getAllExam($_REQUEST['standard']);
