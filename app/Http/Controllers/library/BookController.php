@@ -29,6 +29,8 @@ class BookController extends Controller
         $subjects = LibraryBook::groupBy('subject')->pluck('subject', 'id');
         $publisher_names = LibraryBook::groupBy('publisher_name')->pluck('publisher_name', 'id');
         $author_names = LibraryBook::groupBy('author_name')->pluck('author_name', 'id');
+        
+        // ->with('items')
         if ($request->ajax()) {
             $sub_institute_id = session()->get('sub_institute_id');
             
@@ -41,6 +43,11 @@ class BookController extends Controller
             })
             ->when(request('author_name'),function($q){
                 $q->where('author_name',request('author_name'));
+            }) 
+            ->when(request('search_item'), function ($q) {
+                $q->whereHas('items', function ($subquery) {
+                    $subquery->where('item_code', request('search_item'));
+                });
             })
             ->when(request('type'),function($q){
                 $q->whereHas('book_circulations', function ($q) {
@@ -57,6 +64,8 @@ class BookController extends Controller
                     }
                 });
             })
+            ->select(['library_books.*', DB::raw('(SELECT GROUP_CONCAT(item_code) FROM library_items WHERE book_id = library_books.id) as item_codes')])
+            ->groupBy('library_books.id')
             ->latest()->get();
 
             return DataTables::of($data)
@@ -66,12 +75,15 @@ class BookController extends Controller
                 ->addColumn('image', function ($row) {
                     return '<img src="' . Storage::disk('books')->url($row->image) . '" height="100" width="100" alt="">';
                 })
+                ->addColumn('   ',function($row){
+                    return $row->item_codes;
+                })
                 ->addIndexColumn()
                 ->addColumn('action', function ($row) {
                     $actionBtn = '<a href="javascript:void(0)" class="show m-2 btn btn-success btn-library-item" title="Show Book" data-id="' . $row->id . '"><i class="fa fa-eye"></i></a><a href="javascript:void(0)" class="delete m-2 btn btn-danger btn-delete" title="Delete Book" data-id="' . $row->id . '"><i class="fa fa-trash"></i></a><a href="javascript:void(0)" class="m-2 btn btn-warning btn-edit ml-1" title="Edit Book" data-id="' . $row->id . '"><i class="fa fa-pencil"></i></a><a href="javascript:void(0)" class="m-2 btn btn-primary print-barcode ml-1" title="Print Barcode" data-id="' . $row->id . '"><i class="fa fa-barcode"></i></a><a href="javascript:void(0)" class="m-2 btn btn-info circulation ml-1" title="Issue/Return Book" data-id="' . $row->id . '"><i class="fa fa-retweet"></i></a>';
                     return $actionBtn;
                 })
-                ->rawColumns(['checkbox', 'image', 'action'])
+                ->rawColumns(['checkbox', 'image','item_codes', 'action'])
                 ->make(true);
         }
         return view('library.books',compact('subjects','publisher_names','author_names'));
