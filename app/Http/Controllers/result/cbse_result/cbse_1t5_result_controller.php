@@ -44,14 +44,14 @@ class cbse_1t5_result_controller extends Controller {
         $syear = session()->get('syear');
         $next_year = session()->get('syear') + 1;
         $academicTerms = session()->get('academicTerms');
-
+        $current_term = session()->get('term_id');
         $result_year = $syear . "-" . $next_year;
         if(session()->get('sub_institute_id')!=72){
-            session()->put('term_id', $academicTerms[0]->term_id);
-            session()->put('standard', $_REQUEST['standard']);
-        }else{
-            session()->put('standard', $_REQUEST['standard']);
-        }
+        session()->put('term_id', $academicTerms[0]->term_id);
+        session()->put('standard', $_REQUEST['standard']);
+    }else{
+         session()->put('standard', $_REQUEST['standard']);
+    }
         //getting year detail
         //getting all exam name with mark
         $all_exam = $this->getAllExam($_REQUEST['standard']);
@@ -196,6 +196,7 @@ class cbse_1t5_result_controller extends Controller {
         $data['term_id'] = session()->get('term_id');
 
         $type = $request->input('type');
+        session()->put('term_id',$current_term);
         // return session()->get('sub_institute_id');exit;
         if(session()->get('sub_institute_id')==61){
             return \App\Helpers\is_mobile($type, "result/cbse_result/1t5_s1_show", $data, "view");
