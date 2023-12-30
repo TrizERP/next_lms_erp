@@ -31,6 +31,10 @@
                     <div class="tab-pane show active" id="right-tab-2" role="tabpanel">
                         <div class="row">
                             <div class="col-lg-12 col-sm-3 col-xs-3 row">
+                                <div class="col-md-3  pull-right" >
+                                <label for="">Search Item</label>
+                                <input type="text" class="form-control" placeholder="Enter item code" id="search_item" name="search_item" onkeyup="getItemCode(this.value);">
+                                </div>
                                 <div class="col-md-3 pull-right">
                                     <label for="">Status</label>
                                     <select id="bookFilter" class="form-control" name="bookFilter"
@@ -94,6 +98,7 @@
                                                         name="" id="checkedAll"></th>
                                                 <th data-toggle="tooltip" title="No">No</th>
                                                 <th data-toggle="tooltip" title="Image">Image</th>
+                                                <th data-toggle="tooltip" title="item_codes">Item Code</th>
                                                 <th data-toggle="tooltip" title="Title">Title</th>
                                                 <th data-toggle="tooltip" title="Subject">Subject</th>
                                                 <th data-toggle="tooltip" title="Sub Title">Sub Title</th>
@@ -392,6 +397,9 @@
                 }, {
                     data: 'image',
                     name: 'image'
+                },{
+                    data: 'item_codes',
+                    name: 'item_codes'
                 },
                 {
                     data: 'title',
@@ -786,6 +794,9 @@
 
     function getPublishers(publisher) {
         $('#tblBooks').DataTable().ajax.url("?publisher_name=" + publisher).load();;
+    }
+    function getItemCode(publisher) {
+        $('#tblBooks').DataTable().ajax.url("?search_item=" + publisher).load();;
     }
 
     function getAuthors(author) {
