@@ -324,8 +324,7 @@
                             <div class="col-md-6">
                                 <label for="">Student Enroll No</label>
                                 <input type="hidden" name="bookId" id="bookId" value="">
-                                <input type="text" name="enroll_no" id="enroll_no" placeholder="Enter Enroll No."
-                                    class="form-control">
+                                <input type="text" name="enroll_no" id="enroll_no" placeholder="Enter Enroll No." class="form-control">
                             </div>
                             <div class="col-md-6">
                                 <button type="button" class="btn btn-primary mt-4 fetch-stud">Fetch Details</button>

@@ -422,6 +422,10 @@ Route::group(['middleware' => ['session', 'menu', 'logRoute']], function () {
 
     Route::resource('library_report', LibraryReportController::class);
     Route::post('show_library_report', [LibraryReportController::class, 'show_library_report'])->name('show_library_report');
+
+    Route::get('book_issue_report', [LibraryReportController::class, 'bookIssueDueReport'])->name('book_issue_report.index');
+
+    Route::post('book_issue_report/create', [LibraryReportController::class, 'bookIssueDueReportCreate'])->name('book_issue_report.create');    
     
 });
 
