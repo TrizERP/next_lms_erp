@@ -1402,6 +1402,7 @@ if (!function_exists('getStudents')) {
                 ->groupBy('fc.id')
                 ->orderBy('fc.id', 'desc')->limit(1)
                 ->whereIn('s.id', $student_ids)
+                ->orderBy('s.roll_no', 'ASC')
                 ->groupBy('s.id')->get()->toArray();
   
         $student_data = array();
