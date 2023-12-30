@@ -32,7 +32,7 @@
                     <td>{{ $item->book->title ?? '' }}</td>
                     <td>{{ \Carbon\Carbon::parse($item->issued_date)->format('d-m-Y') ?? '' }}</td>
                     <td>{{ \Carbon\Carbon::parse($item->due_date)->format('d-m-Y') ?? '' }}</td>
-                    <td>{{ \Carbon\Carbon::parse($item->return_date)->format('d-m-Y') ?? '' }}</td>
+                    <td>{{ isset($item->return_date) ? \Carbon\Carbon::parse($item->return_date)->format('d-m-Y') : '' }}</td>
                     <td><button type="button" class="btn btn-danger return-book" data-id="{{ $item->id }}">Return</button></td>
                 </tr>
             @endforeach

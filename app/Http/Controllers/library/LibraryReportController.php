@@ -124,4 +124,62 @@ class LibraryReportController extends Controller
             return is_mobile($type, "library/subject_show", $data, "view");
         }
     }
+
+
+    //book issue report
+    public function bookIssueDueReport(Request $request){
+        $type=$request->type;
+        $res =[];
+        if (session()->has('data')) {
+            $data_arr = session('data');
+            if (isset($data_arr['message'])) {
+                $res['status_code'] = $data_arr['status_code'];
+                $res['message'] = $data_arr['message'];                
+            }
+        }
+        return is_mobile($type, "library/reports/bookIssueDue", $res, "view");
+    }
+
+    public function bookIssueDueReportCreate(Request $request){
+        $type=$request->type;
+        $sub_institute_id = session()->get('sub_institute_id');
+        $syear = session()->get('syear');
+        $res['grade_id']=$grade_id = $request->grade;
+        $res['standard_id']=$standard_id = $request->standard;
+        $res['division_id']=$division_id = $request->division;        
+        $res['from_date']=$from_date= $request->from_date;
+        $res['to_date']=$to_date = $request->to_date;
+        $res['stu_name']= $name = $request->stu_name;
+        $res['grno']=$grno = $request->grno;
+        $res['mobile']=$mobile = $request->mobile;
+        $res['report_type']=$report_type = $request->report_type;
+      
+        $student_data = LibraryBookCirculation::join('tblstudent as s','s.id','=','library_book_circulations.student_id')
+        ->join('tblstudent_enrollment as se','se.student_id','=','s.id')
+        ->join('standard as std','std.id','=','se.standard_id')
+        ->join('division as d','d.id','=','se.section_id')        
+        ->join('library_items as li','li.book_id','=','library_book_circulations.book_id')
+        ->join('library_books as lb','lb.id','=','library_book_circulations.book_id')        
+        ->selectRaw('s.id as student_id,s.enrollment_no,concat_ws(" ",s.first_name,s.last_name,s.middle_name) as student_name,s.mobile,library_book_circulations.book_id,std.name as standard,d.name as division,li.item_code,lb.title as book_title,lb.sub_title as book_sub_title,lb.publisher_name,lb.author_name,library_book_circulations.issued_date,library_book_circulations.due_date,library_book_circulations.return_date')
+        ->when($name,function($q) use ($name) {
+            $q->where('s.first_name',$name)->oRwhere('s.last_name',$name)->oRwhere('s.middle_name',$name);
+        })
+        ->when($grno,function($q) use ($grno) {
+            $q->where('s.enrollment_no',$grno);
+        })
+        ->when($mobile,function($q) use ($mobile) {
+            $q->where('s.mobile',$mobile);
+        })
+        ->where('library_book_circulations.sub_institute_id',$sub_institute_id);
+        if($report_type=="overdue"){
+            $student_data->where('library_book_circulations.issued_date','>=',$from_date)->Where('library_book_circulations.due_date','<=',$to_date)->whereNull('library_book_circulations.return_date');
+        }else{
+            $student_data->where('library_book_circulations.issued_date','>=',$from_date)->Where('library_book_circulations.due_date','<=',$to_date);
+        }
+        $issue_overdue_data=$student_data->get()->toArray();
+        // echo "<pre>";print_r($student_data);exit;   
+        $res['details'] =  $issue_overdue_data;   
+        return is_mobile($type, "library/reports/bookIssueDue", $res, "view");
+        // return is_mobile($type, "book_issue_report.index", $res);
+    }
 }
