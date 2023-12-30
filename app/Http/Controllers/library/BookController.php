@@ -311,6 +311,7 @@ class BookController extends Controller
     public function issueBook(Request $request)
     {
         // echo "<pre>";print_r($request->all());exit;
+        $sub_institute_id = session()->get('sub_institute_id');
         $request->validate([
             'student_id' => 'required|exists:tblstudent,id',
             'bookId' => 'required|exists:library_books,id',
@@ -318,13 +319,18 @@ class BookController extends Controller
             'return_date' => 'required|date|after:issue_date',
         ]);
         $ids = $request->id;
-        $issueBook = LibraryBookCirculation::updateOrCreate([
-            'student_id'=> $request->student_id,
-            'book_id'=> $request->bookId,
-        ],[
-            'issued_date'=> $request->issue_date,
-            'due_date'=> $request->return_date
-        ]);
+        $issueBook = LibraryBookCirculation::updateOrCreate(
+            [
+                'student_id' => $request->student_id,
+                'book_id' => $request->bookId,
+            ],
+            [
+                'issued_date' => $request->issue_date,
+                'due_date' => $request->return_date,
+                'sub_institute_id' => $sub_institute_id,
+            ]
+        )->whereNull('return_date'); // Add this condition
+        
         $details = tblstudentModel::where('enrollment_no', $request->enroll_no)->with('issuedBook')->first();
         $view = View::make('library.user_detail', compact('details'))->render();
         return response()->json(['data' => $view], 200);
