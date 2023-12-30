@@ -1400,6 +1400,7 @@ if (!function_exists('getStudents')) {
                 ->where('s.sub_institute_id', $sub_institute_id)
                 ->where('se.syear', $syear)
                 ->whereIn('s.id', $student_ids)
+                ->orderBy('s.roll_no', 'ASC')
                 ->groupBy('s.id')->get()->toArray();
 
         $student_data = array();

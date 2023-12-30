@@ -7,16 +7,17 @@
         $sub_institute_id = session()->get('sub_institute_id');
         
 		@endphp
-		
-		<div class="row">
-			<div class="col-sm-5 text-right">
-				<input class="btn btn-warning mb-4" type="button" onclick="printDiv('printableArea');" value="Print Paper" />
-			</div>
-			<div class="col-sm-2 center"></div>
-			<div class="col-sm-5 text-left">
-				<input class="btn btn-danger mb-4" type="button" onclick="printMob('printableArea');" value="Print Mobile" />
-			</div>
-		</div>
+		@if(session()->get('user_profile_name') == 'Admin')
+            <div class="row">
+                <div class="col-sm-5 text-right">
+                    <input class="btn btn-warning mb-4" type="button" onclick="printDiv('printableArea');" value="Print Paper" />
+                </div>
+                <div class="col-sm-2 center"></div>
+                <div class="col-sm-5 text-left">
+                    <input class="btn btn-danger mb-4" type="button" onclick="printMob('printableArea');" value="Print Mobile" />
+                </div>
+            </div>
+        @endif
 		<div class="card">
 			<div class="row">
 				<div class="col-lg-12 col-sm-12 col-xs-12">
