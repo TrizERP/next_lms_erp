@@ -36,14 +36,11 @@ class ApplyLeaveController extends Controller
 
     public function getEmployees(Request $request)
     {
-	$sub_institute_id = session()->get('sub_institute_id');
-        $departmentId = $request->get('department_id');
+        $departmentId = $request->input('department_id');
+        $employees = tbluserModel::where('department_id', $departmentId)->get();
 
-        $employees = tbluserModel::where('department_id', $departmentId)->where('sub_institute_id', $sub_institute_id)->get();
-	
         return response()->json(['employees' => $employees]);
     }
-
 
     public function importLeave()
     {

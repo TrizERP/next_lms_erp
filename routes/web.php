@@ -138,7 +138,7 @@ Route::group([ 'middleware' => ['session', 'menu', 'logRoute']], function () {
     Route::post('/monthly-payroll-report', [PayrollController::class, 'monthlyPayrollReport'])->name('payroll.store_monthly_payroll_report');
 
     Route::post('/show-monthly-payroll-report', [PayrollController::class, 'monthlyPayrollReport'])->name('payroll.show_monthly_payroll_report');
-    Route::get('/monthly-payroll-report/pdf/{id}', [PayrollController::class, 'monthlyPayrollPdf']);
+    Route::get('/monthly-payroll-report/pdf/{id}/{month}/{year}', [PayrollController::class, 'monthlyPayrollPdf']);
 
     Route::get('/payroll-report', [PayrollController::class, 'payrollReport'])->name('payroll_report.index');
     Route::post('/payroll-report', [PayrollController::class, 'payrollReport'])->name('payroll.show_payroll_report');
@@ -163,7 +163,7 @@ Route::group([ 'middleware' => ['session', 'menu', 'logRoute']], function () {
     Route::post('hrms-attendance-in-time/store',[HrmsController::Class,'hrmsAttendanceInTimeStore'])->name('hrms_attendance_in_time.store');
     Route::post('hrms-attendance-out-time/store',[HrmsController::Class,'hrmsAttendanceOutTimeStore'])->name('hrms_attendance_out_time.store');
 
-    Route::get('hrms-attendance-report',[HrmsController::Class,'hrmsAttendanceReport'])->name('hrms_attendance_report.index');
+    Route::get('hrms-attendance-report',[HrmsController::Class,'hrmsAttendanceReportIndex'])->name('hrms_attendance_report.index');
     Route::post('/hrms-attendance-report', [HrmsController::class, 'hrmsAttendanceReport'])->name('hrms.show_hrms_attendance_report');
 
     Route::get('early-going-hrms-attendance-report',[HrmsController::Class,'earlyGoingHrmsAttendanceReport'])->name('hrms_attendance_report.early_going_report');

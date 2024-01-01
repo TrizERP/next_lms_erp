@@ -36,8 +36,8 @@
                             <div class="form-group div-emp d-none">
                                 <label for="">Employee</label>
                                 <select name="employee_id" id="employee_id" class="form-control">
-
-                                                                   </select>
+                                    
+                                </select>
                             </div>
                             <div class="form-group">
                                 <label for="">Leave Type</label>
@@ -57,12 +57,18 @@
                                 </select>
                             </div>
                             <div class="form-group">
-                                <label for="">From Date</label>
-                                <input type="date" name="from_date" id="from_date" class="form-control">
+                                <label>From Date</label>
+                                <div class="input-daterange input-group" id="date-range">
+                                    <input type="text" required class="form-control mydatepicker" placeholder="YYYY/MM/DD" name="from_date" id="from_date" autocomplete="off">
+                                    <span class="input-group-addon"><i class="icon-calender"></i></span>
+                                </div>
                             </div>
-                            <div class="form-group to_date">
-                                <label for="">To Date</label>
-                                <input type="date" name="to_date" id="to_date" class="form-control">
+                            <div class="form-group">
+                                <label>To Date</label>
+                                <div class="input-daterange input-group" id="date-range">
+                                    <input type="text" required class="form-control mydatepicker" placeholder="YYYY/MM/DD" name="to_date" id="to_date" autocomplete="off">
+                                    <span class="input-group-addon"><i class="icon-calender"></i></span>
+                                </div>
                             </div>
                             <div class="form-group slot">
                                 <label for="">Slot</label>
@@ -200,11 +206,11 @@
                 });
             }
         });
-
-	// Ajax call to get employees based on the selected department
+        
+        // Ajax call to get employees based on the selected department
         $(document).on("change", "#department_id", function(e) {
             var departmentId = $(this).val();
-	
+            
             $.ajax({
                 type: "post",
                 url: "{{ route('get-employees') }}",
