@@ -1349,6 +1349,7 @@ if (!function_exists('getStudents')) {
             $sub_institute_id = session()->get('sub_institute_id');
             $syear = session()->get('syear');
         }
+        
         //END 23-11-2021 Added FOR Add Homework API
 
         $stud_arr = implode(',', $student_ids);
@@ -1385,8 +1386,7 @@ if (!function_exists('getStudents')) {
             })->leftJoin('attendance_student as ats', function ($join) {
                 $join->whereRaw('ats.student_id = s.id AND ats.sub_institute_id = s.sub_institute_id');
             })->leftJoin('fees_collect as fc', function ($join) {
-                $join->whereRaw('fc.student_id = s.id AND fc.sub_institute_id = s.sub_institute_id')
-                ->where('fc.is_deleted', 'N');
+                $join->whereRaw('fc.student_id = s.id')->where('fc.is_deleted', 'N');
             })
             ->selectRaw("tc.*,s.*,se.syear,se.student_id,se.grade_id,se.standard_id,se.section_id,se.student_quota,
                 se.start_date,se.end_date,se.enrollment_code,se.drop_code,se.drop_remarks,se.drop_remarks,se.term_id,
@@ -1399,12 +1399,10 @@ if (!function_exists('getStudents')) {
                 tkr.from_distance,IF(tv.vehicle_type = 'Van',tkr.van_new,tkr.rick_new) AS distance_rate,s.first_name as student_first_name,s.middle_name as student_middle_name,s.last_name as student_last_name,rsam.teacher_remark,COUNT(ats.id) as total_att_days,sum(CASE WHEN ats.attendance_code = 'P' THEN 1 ELSE 0 END) as present_att_days, fc.term_id as month_name")
                 ->where('s.sub_institute_id', $sub_institute_id)
                 ->where('se.syear', $syear)
-                // ->groupBy('fc.id')
-                // ->orderBy('fc.id', 'desc')->limit(1)
                 ->whereIn('s.id', $student_ids)
                 ->orderBy('s.roll_no', 'ASC')
                 ->groupBy('s.id')->get()->toArray();
-  
+
         $student_data = array();
         foreach ($result as $key => $value) {
             $student_data[$value->id]['id'] = $value->id;
