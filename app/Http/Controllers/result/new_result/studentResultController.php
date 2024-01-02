@@ -219,7 +219,7 @@ class studentResultController extends Controller
             $he_she = 'she';
         }
         //Start Bonafide certificate Tags
-        $html_content = str_replace(htmlspecialchars("<<class_teacher_name>>"), $teacher_name->teacher_name, $html_content);
+        $html_content = str_replace(htmlspecialchars("<<class_teacher_name>>"), isset($teacher_name->teacher_name) ? $teacher_name->teacher_name : ' ', $html_content);
         $html_content = str_replace(htmlspecialchars("<<academic_years>>"), $display_year, $html_content);
         $html_content = str_replace(htmlspecialchars("<<student_image_value>>"), $student_image_path, $html_content);
         $html_content = str_replace(

@@ -96,9 +96,12 @@ class facultywisetimetableController extends Controller
         foreach ($result as $temp_id => $receipt_detail) {
             $receipt_book_arr = $receipt_detail;
         }
-
+if(isset($receipt_book_arr->receipt_logo) && $receipt_book_arr->receipt_logo!=''){
         $image_path = "http://".$_SERVER['HTTP_HOST']."/storage/fees/".$receipt_book_arr->receipt_logo;
-
+}
+else{
+    $image_path = '';
+}
         $period_data = periodModel::select('period.*', DB::raw('date_format(period.start_time,"%H:%i") as s_time,
             date_format(period.end_time,"%H:%i") as e_time'))
             ->where(['sub_institute_id' => $sub_institute_id])//, 'academic_section_id' => $academic_section_id
@@ -116,16 +119,16 @@ class facultywisetimetableController extends Controller
         // $html .= '    <img style="width: 100px;height: 90px;margin: 0;" src="' . $image_path . '" alt="SCHOOL LOGO">';
         $html .= '</td>';
         $html .= '<td colspan="3" style="text-align:center !important;" align="center"> ';
-        if ($receipt_book_arr->receipt_line_1 != '') {
+        if (isset($receipt_book_arr->receipt_line_1) && $receipt_book_arr->receipt_line_1 != '') {
             $html .= '<span style=" font-size: 26px;font-weight: 700;font-family: Arial, Helvetica, sans-serif !important;">'.$receipt_book_arr->receipt_line_1.'</span><br>';
         }
-        if ($receipt_book_arr->receipt_line_2 != '') {
+        if (isset($receipt_book_arr->receipt_line_2) && $receipt_book_arr->receipt_line_2 != '') {
             $html .= '<span style=" font-size: 18px;font-weight: 700;font-family: Arial, Helvetica, sans-serif !important">'.$receipt_book_arr->receipt_line_2.'</span><br>';
         }
-        if ($receipt_book_arr->receipt_line_3 != '') {
+        if (isset($receipt_book_arr->receipt_line_3) && $receipt_book_arr->receipt_line_3 != '') {
             $html .= '<span style=" font-size: 14px;font-weight: 600;font-family: Arial, Helvetica, sans-serif !important">'.$receipt_book_arr->receipt_line_3.'</span><br>';
         }
-        if ($receipt_book_arr->receipt_line_4 != '') {
+        if (isset($receipt_book_arr->receipt_line_4) && $receipt_book_arr->receipt_line_4 != '') {
             $html .= '<span style=" font-size: 14px;font-weight: 600;font-family: Arial, Helvetica, sans-serif !important;">'.$receipt_book_arr->receipt_line_4.'</span><br>';
         }
         $html .= '</td>';
