@@ -424,9 +424,11 @@ Route::group(['middleware' => ['session', 'menu', 'logRoute']], function () {
     Route::post('show_library_report', [LibraryReportController::class, 'show_library_report'])->name('show_library_report');
 
     Route::get('book_issue_report', [LibraryReportController::class, 'bookIssueDueReport'])->name('book_issue_report.index');
-
-    Route::post('book_issue_report/create', [LibraryReportController::class, 'bookIssueDueReportCreate'])->name('book_issue_report.create');    
+    Route::post('book_issue_report', [LibraryReportController::class, 'bookIssueDueReportCreate'])->name('book_issue_report.create');    
     
+    Route::get('print_barcode', [LibraryReportController::class, 'PrintBarcode'])->name('print_barcode.index');
+    Route::post('print_barcode', [LibraryReportController::class, 'PrintBarcodeCreate'])->name('print_barcode.create');
+    Route::post('generateBarcodePdf', [LibraryReportController::class, 'generateBarcodePdf'])->name('generateBarcodePdf');
 });
 
 Route::get('privacyPolicy', [dashboardController::class, 'privacyPolicy'])->name('privacyPolicy');

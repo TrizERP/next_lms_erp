@@ -12,6 +12,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use function App\Helpers\is_mobile;
 use function App\Helpers\SearchStudent;
+use Picqer\Barcode\BarcodeGeneratorPNG;
+use PDF;
 
 class LibraryReportController extends Controller
 {
@@ -181,5 +183,94 @@ class LibraryReportController extends Controller
         $res['details'] =  $issue_overdue_data;   
         return is_mobile($type, "library/reports/bookIssueDue", $res, "view");
         // return is_mobile($type, "book_issue_report.index", $res);
+    }
+
+    public function PrintBarcode(Request $request){
+        $type=$request->type;
+        $res=[];
+        return is_mobile($type, "library/reports/print_barcode", $res, "view");        
+    }
+
+    public function PrintBarcodeCreate(Request $request){
+        $type=$request->type;
+        $sub_institute_id=session()->get('sub_institute_id');
+        $syear = session()->get('syear');
+        $res['print_type']= $print_type = $request->print_type;
+        $res['search_by']= $search_by = $request->search_by;
+        // echo "<pre>";print_r($res);exit;
+        if($print_type=="member"){
+            $data = DB::table('tblstudent as s')
+            ->join('tblstudent_enrollment as se','s.id','=','se.student_id')
+            ->join('standard as std','std.id','=','se.standard_id')
+            ->join('division as d','d.id','=','se.section_id')            
+            ->selectRaw('s.id as student_id,s.enrollment_no,s.roll_no,concat_ws(" ",first_name,middle_name,last_name) as student_name,std.name as standard,d.name as division')
+            ->when($search_by,function ($q) use($search_by){
+                $q->where('s.enrollment_no',$search_by);
+            })
+            ->where('s.sub_institute_id',$sub_institute_id)
+            ->where('se.syear',$syear)       
+            ->whereNull('se.end_date');
+        }
+        else{
+            $data = DB::table('library_items as li')
+            ->join('library_books as lb','lb.id','=','li.book_id')
+            ->selectRaw('li.id,li.item_code,lb.title as book_title,lb.classification')
+            ->when($search_by,function ($q) use($search_by) {
+                $q->where('li.item_code',$search_by);
+            })
+            ->where('li.sub_institute_id',$sub_institute_id);
+        }
+        $data = $data->get()->toArray();
+        $res['details'] = $data;
+        return is_mobile($type, "library/reports/print_barcode", $res, "view");        
+    }
+
+    public function generateBarcodePdf(Request $request){
+       
+        $barcodes = [];
+
+        foreach ($request->check_id as $key => $value) {
+            $barcodeGenerator = new BarcodeGeneratorPNG();
+            // $barcode = $barcodeGenerator->getBarcode($value, $barcodeGenerator::TYPE_CODE_128);
+            $barcode = $barcodeGenerator->getBarcode($value, $barcodeGenerator::TYPE_CODE_128,2,60);
+            
+            $image = imagecreatefromstring($barcode);
+            $text = $value;
+            $fontSize = 16;
+            $fontColor = imagecolorallocate($image, 0, 0, 0); // Black color
+            $bgColor = imagecolorallocate($image, 255, 255, 255);
+            $imageWidth = imagesx($image);
+            $imageHeight = imagesy($image);
+                        
+            $textWidth = strlen($text) * $fontSize * 0.6;
+            if ($request->print_type == "member") {
+            $textWidth = strlen($text) * $fontSize * 0.3;                
+            }
+            $textX = ($imageWidth - $textWidth) / 2;
+            $textY = $imageHeight  - 10; 
+            $font = 1; 
+
+            imagefilledrectangle($image, $textX - 43, $textY - $fontSize + 14, $textX + $textWidth + 43, $textY + $fontSize - 0, $bgColor);
+            $textX = ($imageWidth - $textWidth) / 2;
+            $textY = $imageHeight - 10; //
+
+            imagestring($image, $font, $textX, $textY, $text, $fontColor);
+
+            ob_start();
+            imagepng($image);
+            $barcodeWithText = ob_get_clean();
+            imagedestroy($image);
+
+            if ($request->print_type == "member") {
+                $barcodes[] = ['code' => $value, 'image' => $barcodeWithText, 'title' => $request->print_text[$key],'other'=>$request->print_type];
+            } else {
+                $barcodes[] = ['code' => $value, 'image' => $barcodeWithText, 'title' => $request->print_text[$key], 'other' => $request->print_code[$key]];
+            }
+        }
+
+        // Generate PDF
+        $pdf = PDF::loadView('library.reports.barcodes', ['barcodes' => $barcodes]);
+        // Download the PDF
+        return $pdf->download('barcodes.pdf');
     }
 }
