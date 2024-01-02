@@ -1,7 +1,8 @@
-@include('../includes.headcss')
+{{--@include('../includes.headcss')
 @include('../includes.header')
-@include('../includes.sideNavigation')
-
+@include('../includes.sideNavigation')--}}
+@extends('layout')
+@section('container')
 
 <div id="page-wrapper">
     <div class="container-fluid">
@@ -48,18 +49,18 @@
                             <tr>
 
                                 <!--<td><input type="checkbox" name="@php echo 'sendsms['.$col_arr['mobile'].']'; @endphp" class="ckbox1">  </td>-->
-                                <td>@php echo $id+1; @endphp</td>
-                                <td>@php echo $col_arr['name']; @endphp</td>
-                                <td>@php echo $col_arr['stddiv']; @endphp</td>
-                                <td>@php echo $col_arr['mobile']; @endphp</td>
-                                <td>@php echo $col_arr['apply_date']; @endphp</td>
-                                <td>@php echo $col_arr['from_date']; @endphp</td>
-                                <td>@php echo $col_arr['to_date']; @endphp</td>
-                                <td>@php echo $col_arr['message']; @endphp</td>
-                                <td><textarea name="reply[<?php echo $col_arr['student_id']; ?>]" >@php echo $col_arr['reply']; @endphp</textarea></td>
+                                <td>{{$id+1}}</td>
+                                <td>{{$col_arr['name']}}</td>
+                                <td>{{$col_arr['stddiv']}}</td>
+                                <td>{{$col_arr['mobile']}}</td>
+                                <td>{{ $col_arr['apply_date']}}</td>
+                                <td>{{$col_arr['from_date']}}</td>
+                                <td>{{$col_arr['to_date']}}</td>
+                                <td>{{$col_arr['message']}}</td>
+                                <td><textarea name="reply[{{$col_arr['student_id']}}]" >{{$col_arr['reply']}}</textarea></td>
                                 <td>
-                                    <select name="status[<?php echo $col_arr['student_id']; ?>]" class="form-control" style="width: 135px;">
-                                        <?php
+                                    <select name="status[{{$col_arr['student_id']}}]" class="form-control" style="width: 135px;">
+                                        @php
                                         $ap_select = "";
                                         $rj_select = "";
                                         $mta_select = "";
@@ -76,13 +77,13 @@
                                         if ($col_arr['status'] == 'Meet To Principal') {
                                             $mtp_select = "selected=selcted";
                                         }
-                                        
-                                        ?>
+
+                                        @endphp
                                         <option value="">Select</option>
-                                        <option <?php echo $ap_select; ?> value="Approved">Approved</option>
-                                        <option <?php echo $rj_select; ?> value="Rejected">Rejected</option>
-                                        <option <?php echo $mta_select; ?> value="Meet To Administrators">Meet To Administrators</option>
-                                        <option <?php echo $mtp_select; ?> value="Meet To Principal">Meet To Principal</option>
+                                        <option {{$ap_select}} value="Approved">Approved</option>
+                                        <option {{$rj_select}} value="Rejected">Rejected</option>
+                                        <option {{$mta_select}} value="Meet To Administrators">Meet To Administrators</option>
+                                        <option {{$mtp_select}} value="Meet To Principal">Meet To Principal</option>
                                     </select>
                                 </td>
 
@@ -131,3 +132,4 @@
 //    });
 </script>
 @include('includes.footer')
+@endsection

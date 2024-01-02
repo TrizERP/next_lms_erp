@@ -1,15 +1,18 @@
-@include('../includes.headcss')
+{{--@include('../includes.headcss')--}}
 <link rel="stylesheet" href="../../../plugins/bower_components/dropify/dist/css/dropify.min.css">
+{{--
 @include('../includes.header')
 @include('../includes.sideNavigation')
-
+--}}
+@extends('layout')
+@section('container')
 
 <div id="page-wrapper">
     <div class="container-fluid">
-        <div class="row bg-title">            
-            <div class="col-lg-3 col-md-4 col-sm-4 col-xs-12">                
-                <h4 class="page-title">Fees Breackoff</h4>            
-            </div>                    
+        <div class="row bg-title">
+            <div class="col-lg-3 col-md-4 col-sm-4 col-xs-12">
+                <h4 class="page-title">Fees Breackoff</h4>
+            </div>
         </div>
 
         <div class="row">
@@ -165,3 +168,4 @@
     }
 </script>
 @include('includes.footer')
+@endsection

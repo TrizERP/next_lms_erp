@@ -1,8 +1,8 @@
-@include('../includes.headcss')
+{{--@include('../includes.headcss')
 @include('../includes.header')
-@include('../includes.sideNavigation')
-
-
+@include('../includes.sideNavigation')--}}
+@extends('layout')
+@section('container')
 <div id="page-wrapper">
     <div class="container-fluid">
         <div class="row" style=" margin-top: 25px;">
@@ -17,7 +17,7 @@
                     <form action="{{ route('manage_sms_api.store') }}" enctype="multipart/form-data" method="post">
                         {{ method_field("POST") }}
                         {{csrf_field()}}
-                        
+
                         <div class="col-md-6 form-group">
                             <label>URL</label>
                             <input type="text" id='url' required name="url" value="" class="form-control">
@@ -38,13 +38,13 @@
                             <label>Last Variable</label>
                             <input type="text" id='last_var' required name="last_var" value="" class="form-control">
                         </div>
-                        
+
 <!--                        <div class="col-md-12 form-group">
                             <label>Remark Status : </label>
                             <input type="radio" name="result_status" value="Y" checked> On
                             <input type="radio" name="result_status" value="N"> OFF
                         </div>-->
-                        
+
                         <div class="col-md-12 form-group">
                             <center>
                                 <input type="submit" name="submit" value="Save" class="btn btn-success" >
@@ -71,3 +71,4 @@
 
 @include('includes.footerJs')
 @include('includes.footer')
+@endsection

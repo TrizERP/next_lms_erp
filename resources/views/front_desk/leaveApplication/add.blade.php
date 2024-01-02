@@ -1,8 +1,9 @@
-@include('../includes.headcss')
+{{--@include('../includes.headcss')
 @include('../includes.header')
-@include('../includes.sideNavigation')
+@include('../includes.sideNavigation')--}}
 
-
+@extends('layout')
+@section('container')
 <div id="page-wrapper">
     <div class="container-fluid">
         <div class="row bg-title">
@@ -40,14 +41,14 @@
                                         <th>File</th>
                                         <th>Reply</th>
                                         <th>Reply By</th>
-                                        <th>Status</th>                                    
+                                        <th>Status</th>
                                     </tr>
                                 </thead>
                                 @php
                                 $arr = $data['stu_data'];
                                 foreach ($arr as $id=>$col_arr){
                                 @endphp
-                                <tbody>                                
+                                <tbody>
                                     <tr>
                                         <!--<td><input type="checkbox" name="@php echo 'sendsms['.$col_arr['mobile'].']'; @endphp" class="ckbox1">  </td>-->
                                         <td>{{ $id+1 }}</td>
@@ -73,7 +74,7 @@
                                             @endif
                                         </td>
                                         <td>
-                                           {{ $col_arr['reply_by'] }} 
+                                           {{ $col_arr['reply_by'] }}
                                         </td>
                                         <td>
                                         @if(!empty($col_arr['status']))
@@ -117,7 +118,7 @@
                     </ul>
                 </div>
                 @endif
-            </div>    
+            </div>
         </div>
     </div>
 </div>
@@ -136,7 +137,7 @@
     $('#example thead tr:eq(1) th').each( function (i) {
         var title = $(this).text();
         $(this).html( '<input type="text" size="4" style="color:black;" placeholder="Search '+title+'" />' );
- 
+
         $( 'input', this ).on( 'keyup change', function () {
             if ( table.column(i).search() !== this.value ) {
                 table
@@ -146,7 +147,7 @@
             }
         } );
     } );
- 
+
     var table = $('#example').DataTable( {
         orderCellsTop: true,
         fixedHeader: true,
@@ -162,3 +163,4 @@
 
 </script>
 @include('includes.footer')
+@endsection

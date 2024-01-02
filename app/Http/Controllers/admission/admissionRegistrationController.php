@@ -21,7 +21,7 @@ use function App\Helpers\is_mobile;
 class admissionRegistrationController extends Controller
 {
     /**
-     * Display a listing of the resource.
+     * Display a listing of the resource.calendar
      *
      * @return Response
      */
@@ -396,7 +396,7 @@ class admissionRegistrationController extends Controller
 			// 		   AND FIND_IN_SET ('" . $admission_standard_id . "',standards) ";
 
             // $get_prefix_result = DB::select($get_prefix);
-            
+
             $get_prefix_result = DB::table('enrollment_prefix_master')
                 ->select('enrollment_prefix_master.*')
                 ->whereRaw("sub_institute_id = '" . $sub_institute_id . "' AND FIND_IN_SET ('" . $admission_standard_id . "',standards) ")
