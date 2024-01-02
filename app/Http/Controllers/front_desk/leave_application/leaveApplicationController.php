@@ -254,6 +254,7 @@ class leaveApplicationController extends Controller
                             $gcmRegIds[] = $val1->gcm_regid;
                         }
                     }
+                    sendNotification($app_notification_content);
 
                     $bunch_arr = array_chunk($gcmRegIds, 1000);
                     if (! empty($bunch_arr)) {
@@ -268,7 +269,7 @@ class leaveApplicationController extends Controller
                                     'image' => $schoolLogo,
                                 );
                                 $pushStatus = send_FCM_Notification($val, $message, session()->get('sub_institute_id'));
-                                sendNotification($app_notification_content);
+                                // sendNotification($app_notification_content);
                                 }
                             }
                         }

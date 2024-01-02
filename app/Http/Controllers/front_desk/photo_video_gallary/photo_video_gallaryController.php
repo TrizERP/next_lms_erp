@@ -329,6 +329,7 @@ class photo_video_gallaryController extends Controller
                                                 array_push($gcmRegIds, $val1->gcm_regid);
                                             }
                                         }
+                                        sendNotification($app_notification_content);
 
                                         $bunch_arr = array_chunk($gcmRegIds, 1000);
                                         if (! empty($bunch_arr)) {
@@ -344,7 +345,7 @@ class photo_video_gallaryController extends Controller
                                                     Rajesh: stop push notification for photo-video gallery
                                                     $pushStatus = send_FCM_Notification($val, $message, $sub_institute_id);
                                                     */
-                                                    sendNotification($app_notification_content);
+                                                    // sendNotification($app_notification_content);
                                                 }
                                             }
                                         }
@@ -456,6 +457,7 @@ class photo_video_gallaryController extends Controller
                                         $gcmRegIds[] = $val1->gcm_regid;
                                     }
                                 }
+                                sendNotification($app_notification_content);
 
                                 $bunch_arr = array_chunk($gcmRegIds, 1000);
                                 if (! empty($bunch_arr)) {
@@ -471,7 +473,7 @@ class photo_video_gallaryController extends Controller
                                             Rajesh: stop push notification for photo-video gallery
                                             $pushStatus = send_FCM_Notification($val, $message, $sub_institute_id);
                                             */
-                                            sendNotification($app_notification_content);
+                                            // sendNotification($app_notification_content);
                                         }
                                     }
                                 }
