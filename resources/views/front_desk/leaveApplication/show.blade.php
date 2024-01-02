@@ -1,13 +1,14 @@
-@include('includes.headcss')
+{{--@include('includes.headcss')
 @include('includes.header')
-@include('includes.sideNavigation')
-
+@include('includes.sideNavigation')--}}
+@extends('layout')
+@section('container')
 <div id="page-wrapper">
     <div class="container-fluid">
-        <div class="row bg-title">            
-            <div class="col-lg-3 col-md-4 col-sm-4 col-xs-12">                
-                <h4 class="page-title">Leave Application</h4>            
-            </div>                    
+        <div class="row bg-title">
+            <div class="col-lg-3 col-md-4 col-sm-4 col-xs-12">
+                <h4 class="page-title">Leave Application</h4>
+            </div>
         </div>
         <div class="card">
             @if ($sessionData = Session::get('data'))
@@ -41,9 +42,10 @@
                     </div>
                 </div>
             </form>
-        </div>    
+        </div>
     </div>
 </div>
 
 @include('includes.footerJs')
 @include('includes.footer')
+@endsection
