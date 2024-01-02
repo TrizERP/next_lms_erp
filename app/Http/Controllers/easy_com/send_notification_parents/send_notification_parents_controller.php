@@ -142,6 +142,7 @@ class send_notification_parents_controller extends Controller
                     $pushMessage = $text;
 
                     $bunch_arr = array_chunk($gcmRegIds, 1000);
+                    sendNotification($app_notification_content);
                     
                     if (! empty($bunch_arr)) {
                         foreach ($bunch_arr as $val) {
@@ -152,7 +153,7 @@ class send_notification_parents_controller extends Controller
                                     'title' => $schoolName, 'image' => $schoolLogo,
                                 ];
                                 $pushStatus = send_FCM_Notification($val, $message, $sub_institute_id);
-                                sendNotification($app_notification_content);
+                                // sendNotification($app_notification_content);
                             }
                         }
                       

@@ -2218,6 +2218,7 @@ class adminapiController extends Controller
                 }
 
                 $pushMessage = $description;
+                sendNotification($app_notification_content);
 
                 $bunch_arr = array_chunk($gcmRegIds, 1000);
                 if (! empty($bunch_arr)) {
@@ -2233,7 +2234,7 @@ class adminapiController extends Controller
                             ];
 
                             $pushStatus = send_FCM_Notification($bval, $message, $sub_institute_id);
-                            sendNotification($app_notification_content);
+                            // sendNotification($app_notification_content);
                         }
                     }
                     $i++;
