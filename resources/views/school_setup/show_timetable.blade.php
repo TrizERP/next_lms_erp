@@ -1,6 +1,8 @@
-@include('includes.headcss')
+{{--@include('includes.headcss')
 @include('includes.header')
-@include('includes.sideNavigation')
+@include('includes.sideNavigation')--}}
+@extends('layout')
+@section('container')
 <style>
 .title{
     font-weight:200;
@@ -15,7 +17,7 @@
             </div>
         </div>
         <div class="card">
-   
+
             @if ($message = Session::get('data'))
             <div class="alert alert-success alert-block">
                 <button type="button" class="close" data-dismiss="alert">×</button>
@@ -237,3 +239,4 @@ $(".teacher_capacity_check").change(function () {
 })
 </script>
 @include('includes.footer')
+@endsection
