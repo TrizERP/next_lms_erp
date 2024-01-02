@@ -1099,8 +1099,16 @@ class AJAXController extends Controller
         $sub_institute_id = $request->session()->get('sub_institute_id');
 
         $mail = DB::table('smtp_details')->where('sub_institute_id', $sub_institute_id)->get()->toArray();
-        $mail = json_decode(json_encode($mail), true);
-        $smtp_details = $mail[0];
+
+        if (!empty($mail)) {
+            $mail = json_decode(json_encode($mail), true);
+            $smtp_details = $mail[0];
+            // Now you can use $smtp_details without the "Undefined array key 0" error
+        } else {
+            // Handle the case when no results are returned, e.g., provide a default value or show an error message.
+            $smtp_details = null; // or any default value
+        }
+
 
         if (count($mail) > 0) {
             $from = $smtp_details['gmail'];

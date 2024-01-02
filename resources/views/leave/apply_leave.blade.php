@@ -36,11 +36,8 @@
                             <div class="form-group div-emp d-none">
                                 <label for="">Employee</label>
                                 <select name="employee_id" id="employee_id" class="form-control">
-                                    <option value="">Select Employee</option>
-                                    @foreach ($users as $key => $row)
-                                        <option value="{{ $row->id }}">{{ $row->full_name }}</option>
-                                    @endforeach
-                                </select>
+
+                                                                   </select>
                             </div>
                             <div class="form-group">
                                 <label for="">Leave Type</label>
@@ -202,6 +199,27 @@
                     }
                 });
             }
+        });
+
+	// Ajax call to get employees based on the selected department
+        $(document).on("change", "#department_id", function(e) {
+            var departmentId = $(this).val();
+	
+            $.ajax({
+                type: "post",
+                url: "{{ route('get-employees') }}",
+                data: { department_id: departmentId },
+                success: function(data) {
+                    var options = '<option value="">Select Employee</option>';
+                    $.each(data.employees, function(index, employee) {
+                        options += '<option value="' + employee.id + '">' + employee.first_name + ' ' + employee.last_name + '</option>';
+                    });
+                    $('#employee_id').html(options);
+                },
+                error: function(xhr) {
+                    console.error(xhr.responseText);
+                }
+            });
         });
     });
 </script>
