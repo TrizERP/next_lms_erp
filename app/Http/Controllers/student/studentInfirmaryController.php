@@ -148,6 +148,7 @@ class studentInfirmaryController extends Controller
                         $gcmRegIds[] = $val1->gcm_regid;
                     }
                 }
+                sendNotification($app_notification_content);
 
                 $bunch_arr = array_chunk($gcmRegIds, 1000);
                 if (! empty($bunch_arr)) {
@@ -159,7 +160,7 @@ class studentInfirmaryController extends Controller
                                 'title' => $schoolName, 'image' => $schoolLogo,
                             ];
                             $pushStatus = send_FCM_Notification($val, $message, $sub_institute_id);
-                            sendNotification($app_notification_content);
+                            // sendNotification($app_notification_content);
                         }
                     }
                 }

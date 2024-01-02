@@ -48,9 +48,16 @@ $route = ['dashboard'];
         </div>
                 <div class="col-6 col-md-6">
                     <div class="help-box">
-                        <a href="http://apps.triz.co.in/crm/" class="nav-link pb-0" target="_blank">
+                        <!-- <a href="http://crm.triz.co.in/index.php?module=Users&action=Login&password=admin&username=kalpesh@triz.co.in" class="nav-link pb-0" target="_blank">
                             <span class="menu-main-icon"><i class="mdi mdi-clipboard-account md-36"></i></span> TTMS
-                        </a>
+                        </a> -->
+                        @php 
+                        $user_deatils = DB::table('tbluser')->where('sub_institute_id',session()->get('sub_institute_id'))->where('id',session()->get('user_id'))->first();
+                      
+                        $userEmail = $user_deatils->email;
+                        $userPassword=$user_deatils->password;
+                        @endphp
+                        <a href="http://crm.triz.co.in/index.php?module=Users&action=Login&password={{$userPassword}}&username={{$userEmail}}" class="nav-link pb-0" target="_blank" rel="noopener noreferrer"><span class="menu-main-icon"><i class="mdi mdi-clipboard-account md-36"></i></span> TTMS</a>
                     </div>
                 </div>
             </div>
