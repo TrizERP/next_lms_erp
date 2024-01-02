@@ -52,8 +52,23 @@ class resultActivityMarksController extends Controller
         $res['grade'] = $_REQUEST['grade'];
         $res['division'] = $_REQUEST['division'];
         $res['skillset_id'] = $_REQUEST['skillset_id'];
-        
-        $student_data = SearchStudent($_REQUEST['grade'], $_REQUEST['standard'], $_REQUEST['division']);
+
+        $student_datas = SearchStudent($_REQUEST['grade'], $_REQUEST['standard'], $_REQUEST['division']);
+
+        $get_activity_marks=[];
+        foreach($student_datas as $student_data)
+        {
+            $get_activity_marks[$student_data['id']] = DB::table('result_activity_marks as rams')
+            ->selectRaw('rams.*, rag.id as group_id, rag.title as group_title')
+            ->join('result_activity_master as ram', function ($join) {
+                $join->whereRaw("ram.id = rams.activity_id");
+            })
+            ->join('result_activity_group as rag', function ($join) {
+                $join->whereRaw("rag.id = rams.group_id");
+            })
+            ->where(['rams.sub_institute_id' => $sub_institute_id, 'rams.student_id' => $student_data['id'], 'rams.activity_id' => $request->activity_master])
+            ->first();
+        }
         
         $get_result_skillsets = DB::table('result_skillset')
             ->where('sub_institute_id', $sub_institute_id)
@@ -79,8 +94,9 @@ class resultActivityMarksController extends Controller
         
         $res['result_skillsets'] = $get_result_skillsets;
         $res['activity_value'] = $_REQUEST['activity_master'];
-        $res['student_datas'] = $student_data;
+        $res['student_datas'] = $student_datas;
         $res['result_activity_groups'] = $get_result_activity_groups;
+        $res['get_activity_marks'] = $get_activity_marks;
 
         return is_mobile($type, "result/result_activity_marks/add_result_activity_marks", $res, "view");
     }
@@ -114,7 +130,7 @@ class resultActivityMarksController extends Controller
         $activity_id = $request->get('activity_id');
         $group_id = $request->get('group_id');
         $activity_groups = $request->get('activity_group');
-        
+
         foreach($activity_groups as $key => $activity_group)
         {
             $finalArray = [
@@ -124,13 +140,21 @@ class resultActivityMarksController extends Controller
                 'sub_institute_id' => $sub_institute_id,
                 'created_by' => $user_id,
                 'created_at' => now(),
+                'updated_at' => now(),
             ];
-
-            DB::table('result_activity_marks')->insert($finalArray);
+            
+            DB::table('result_activity_marks')->updateOrInsert(
+                [
+                    'sub_institute_id' => $sub_institute_id,
+                    'student_id' => $key,
+                    'activity_id' => $activity_id,
+                ],
+                $finalArray
+            );
         }
-
+        
         $res['status_code'] = 1;
-        $res['message'] = "Result activity marks added successfully.";
+        $res['message'] = "Result activity marks added/updated successfully.";
 
         return is_mobile($type, "result_activity_marks.index", $res);
     }
