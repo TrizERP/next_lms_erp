@@ -726,35 +726,33 @@ else
         $division_id = $request->get('division_id');
         $syear = session()->get('syear');
         $sub_institute_id = session()->get('sub_institute_id');
+        $user_id = session()->get('user_id');
 
-        foreach($student_array as $key => $val)
-        {
-            $result_data['student_id'] = $val; 
-            $result_data['term_id'] = $term_id; 
-            $result_data['grade_id'] = $grade_id; 
-            $result_data['standard_id'] = $standard_id; 
-            $result_data['division_id'] = $division_id; 
-            $result_data['syear'] = $syear; 
-            $result_data['sub_institute_id'] = $sub_institute_id; 
-            $result_data['html'] = $request->get('html_'.$val); 
+        foreach ($student_array as $key => $val) {
+            $result_data['student_id'] = $val;
+            $result_data['term_id'] = $term_id;
+            $result_data['grade_id'] = $grade_id;
+            $result_data['standard_id'] = $standard_id;
+            $result_data['division_id'] = $division_id;
+            $result_data['syear'] = $syear;
+            $result_data['sub_institute_id'] = $sub_institute_id;
+            $result_data['created_by'] = $user_id;
+            $result_data['html'] = $request->get('html_' . $val);
 
-            $data = DB::select("SELECT * FROM result_html WHERE student_id = '".$val."' AND term_id = '".$request->get('term_id')."'
-                    AND grade_id = '".$request->get('grade_id')."'  AND standard_id = '".$request->get('standard_id')."'
-                     AND division_id = '".$request->get('division_id')."'  AND syear = '".$request->get('syear')."'
-                     AND sub_institute_id = '".session()->get('sub_institute_id')."'
+            $data = DB::select("SELECT * FROM result_html WHERE student_id = '" . $val . "' AND term_id = '" . $request->get('term_id') . "'
+                    AND grade_id = '" . $request->get('grade_id') . "'  AND standard_id = '" . $request->get('standard_id') . "'
+                     AND division_id = '" . $request->get('division_id') . "'  AND syear = '" . $request->get('syear') . "'
+                     AND sub_institute_id = '" . session()->get('sub_institute_id') . "'
                     ");
-            if(count($data) > 0)
-            {
-                $html = $request->get('html_'.$val);
+            if (count($data) > 0) {
+                $html = $request->get('html_' . $val);
                 $finalArray['html'] = $html;
-                $data = result_html_model::where(['student_id'=>$val,'term_id'=>$term_id,'grade_id'=>$grade_id,'standard_id'=>$standard_id,'division_id'=>$division_id,'syear'=>$syear])->update($finalArray);
+                $finalArray['updated_by'] = $user_id;
+                $finalArray['updated_on'] = NOW();
+                $data = DB::table('result_html')->where(['student_id' => $val, 'term_id' => $term_id, 'grade_id' => $grade_id, 'standard_id' => $standard_id, 'division_id' => $division_id, 'syear' => $syear])->update($finalArray);
 
-                // DB::table("result_html")->update(["html"=>$html])
-                // ->where(['student_id'=>$val,'term_id'=>$term_id,'grade_id'=>$grade_id,'standard_id'=>$standard_id,'division_id'=>$division_id,'syear'=>$syear]);        
-            }
-            else
-            {
-                DB::table("result_html")->insert($result_data);        
+            } else {
+                DB::table("result_html")->insert($result_data);
             }
         }
         return 1;

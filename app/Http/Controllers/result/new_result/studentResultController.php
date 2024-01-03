@@ -1034,7 +1034,7 @@ $overall_total = $overall_total / 2;
             $both_term_ob_mark = $both_term_ob_mark / 2;
 
             $grade_arr_mmis = $this->getGradeScale($standard_id, '');
-            $table .= '<td class="data_center" total="'.$overall_total.'" obtain="'.$both_term_ob_mark.'"><b>' . number_format($both_term_ob_mark, 2) . '</b></td>
+            $table .= '<td class="data_center"><b>' . number_format($both_term_ob_mark, 2) . '</b></td>
                         <td class="data_center"><b>' . $this->getGrade($grade_arr_mmis, $overall_total, $both_term_ob_mark) . '</b></td>';
             $get_all_ob_mark += $both_term_ob_mark;
             $get_all_tot_mark += $overall_total;
@@ -1107,7 +1107,7 @@ $overall_total = $overall_total / 2;
                         $result = 'Promoted';
                     }
                 }
-                $table.='<td style="text-align:center" colspan="'.(1 + $cols).'"><b>'.$val.'</b></td><td style="text-align:center"><b>'.$max.'</b></td><td count="'.count($term_exam_titles).'" total_col="'.$cols.'"" colspan='. (count($term_exam_titles) + $cols - $minus_cols) .' style="padding:0px !important">';
+                $table.='<td style="text-align:center" colspan="'.(1 + $cols).'"><b>'.$val.'</b></td><td style="text-align:center"><b>'.$max.'</b></td><td colspan='. (count($term_exam_titles) + $cols - $minus_cols) .' style="padding:0px !important">';
                
                 $table.='<table class="aca-year" style="border:none !important;width:100%;padding:0px !important">';
                 $border = 'border-top:none !important';
@@ -2269,6 +2269,7 @@ $overall_total = $overall_total / 2;
         $division_id = $request->get('division_id');
         $syear = session()->get('syear');
         $sub_institute_id = session()->get('sub_institute_id');
+        $user_id = session()->get('user_id');
 
         foreach ($student_array as $key => $val) {
             $result_data['student_id'] = $val;
@@ -2278,6 +2279,7 @@ $overall_total = $overall_total / 2;
             $result_data['division_id'] = $division_id;
             $result_data['syear'] = $syear;
             $result_data['sub_institute_id'] = $sub_institute_id;
+            $result_data['created_by'] = $user_id;
             $result_data['html'] = $request->get('html_' . $val);
 
             $data = DB::select("SELECT * FROM result_html WHERE student_id = '" . $val . "' AND term_id = '" . $request->get('term_id') . "'
@@ -2288,6 +2290,8 @@ $overall_total = $overall_total / 2;
             if (count($data) > 0) {
                 $html = $request->get('html_' . $val);
                 $finalArray['html'] = $html;
+                $finalArray['updated_by'] = $user_id;
+                $finalArray['updated_on'] = NOW();
                 $data = DB::table('result_html')->where(['student_id' => $val, 'term_id' => $term_id, 'grade_id' => $grade_id, 'standard_id' => $standard_id, 'division_id' => $division_id, 'syear' => $syear])->update($finalArray);
 
             } else {
