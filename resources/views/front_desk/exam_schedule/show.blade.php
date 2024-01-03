@@ -1,13 +1,14 @@
-@include('includes.headcss')
+{{--@include('includes.headcss')
 @include('includes.header')
-@include('includes.sideNavigation')
-
+@include('includes.sideNavigation')--}}
+@extends('layout')
+@section('container')
 <div id="page-wrapper">
     <div class="container-fluid">
-        <div class="row bg-title">            
-            <div class="col-lg-3 col-md-4 col-sm-4 col-xs-12">                
-                <h4 class="page-title">Exam Schedule</h4>            
-            </div>                    
+        <div class="row bg-title">
+            <div class="col-lg-3 col-md-4 col-sm-4 col-xs-12">
+                <h4 class="page-title">Exam Schedule</h4>
+            </div>
         </div>
         <div class="card">
             <form action="{{ route('exam_schedule.store') }}" enctype="multipart/form-data" method="post">
@@ -17,7 +18,7 @@
                     <div class="col-md-12 form-group">
                         <div class="row">
                             {{ App\Helpers\SearchChain('4','multiple','grade,std,div') }}
-                        </div>    
+                        </div>
                     </div>
                     <div class="col-md-4 form-group">
                         <label>Date</label>
@@ -36,9 +37,9 @@
                             <input type="submit" name="submit" value="Submit" class="btn btn-success" >
                         </center>
                     </div>
-                </div>    
+                </div>
             </form>
-        </div>  
+        </div>
         <div class="card">
             <div class="row">
                 <div class="col-lg-12 col-sm-12 col-xs-12">
@@ -61,14 +62,14 @@
                                 @endphp
                                 @if(isset($data['data']))
                                 @foreach($data['data'] as $key => $data)
-                                <tr>    
+                                <tr>
                                     <td>{{$j}}</td>
-                                    <td>{{$data->syear}}</td>  
-                                    <td>{{$data->title}}</td>  
+                                    <td>{{$data->syear}}</td>
+                                    <td>{{$data->title}}</td>
                                     <td>{{date('d-m-Y',strtotime($data->date_))}}</td>
-                                    <td>{{$data->std_name}}</td>  
-                                    <td>{{$data->division_name}}</td> 
-                                    <td><a href="<?php echo asset('storage/exam_schedule/' . $data->file_name); ?>" target="_blank">View</a> </td> 
+                                    <td>{{$data->std_name}}</td>
+                                    <td>{{$data->division_name}}</td>
+                                    <td><a href="<?php echo asset('storage/exam_schedule/' . $data->file_name); ?>" target="_blank">View</a> </td>
                                 </tr>
                                 @php
                                 $j++;
@@ -125,3 +126,4 @@
 //    $("#division").parent('.form-group').hide();
 </script>
 @include('includes.footer')
+@endsection

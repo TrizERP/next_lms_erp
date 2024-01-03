@@ -1,7 +1,8 @@
-@include('includes.headcss')
+{{--@include('includes.headcss')
 @include('includes.header')
-@include('includes.sideNavigation')
-
+@include('includes.sideNavigation')--}}
+@extends('layout')
+@section('container')
 <div id="page-wrapper">
     <div class="container-fluid">
         <div class="row bg-title">
@@ -17,7 +18,7 @@
 					@endif
                 </div>
                 <div class="col-lg-12 col-sm-12 col-xs-12">
-                    <div class="table-responsive">                            
+                    <div class="table-responsive">
                         <table id="example" class="table table-striped">
                             <thead>
                                 <tr>
@@ -41,7 +42,7 @@
                                         <div class="d-inline">
     									   <a href="{{ route('schooldetail.edit',$data->id)}}" class="btn btn-info btn-outline">
     										   <i class="ti-pencil-alt"></i>
-    									   </a>                                            
+    									   </a>
                                         </div>
                                         <form action="{{ route('schooldetail.destroy', $data->id)}}" method="post" class="d-inline">
                                             @csrf
@@ -76,3 +77,4 @@ $(document).ready(function () {
 });
 </script>
 @include('includes.footer')
+@endsection

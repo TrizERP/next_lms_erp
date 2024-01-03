@@ -1,13 +1,14 @@
-@include('includes.headcss')
+{{--@include('includes.headcss')
 @include('includes.header')
-@include('includes.sideNavigation')
-
+@include('includes.sideNavigation')--}}
+@extends('layout')
+@section('container')
 <div id="page-wrapper">
     <div class="container-fluid">
-        <div class="row bg-title">            
-            <div class="col-lg-3 col-md-4 col-sm-4 col-xs-12">                
-                <h4 class="page-title">Photo Video Gallery</h4>            
-            </div>                    
+        <div class="row bg-title">
+            <div class="col-lg-3 col-md-4 col-sm-4 col-xs-12">
+                <h4 class="page-title">Photo Video Gallery</h4>
+            </div>
         </div>
         <div class="card">
             <form action="{{ route('photo_video_gallary.store') }}" enctype="multipart/form-data" method="post">
@@ -79,27 +80,27 @@
                                 @endphp
                                 @if(isset($data['data']))
                                 @foreach($data['data'] as $key => $data)
-                                <tr>    
+                                <tr>
                                     <td>{{$j}}</td>
-                                    <td>{{$data->syear}}</td>  
-                                    <td>{{$data->title}}</td>  
-                                    <td>{{$data->album_title}}</td>  
-                                    <td>{{$data->type}}</td>  
-                                    <td>{{date('d-m-Y',strtotime($data->date_))}}</td>  
-                                    <td>{{$data->std_name}}</td>  
-                                    <td>{{$data->div_name}}</td>  
+                                    <td>{{$data->syear}}</td>
+                                    <td>{{$data->title}}</td>
+                                    <td>{{$data->album_title}}</td>
+                                    <td>{{$data->type}}</td>
+                                    <td>{{date('d-m-Y',strtotime($data->date_))}}</td>
+                                    <td>{{$data->std_name}}</td>
+                                    <td>{{$data->div_name}}</td>
                                     <?php if ($data->type == 'Video') { ?>
-                                    <td><a href="<?php echo "http://".$data->file_name; ?>" target="_blank" class="text-primary">View</a> </td>  
+                                    <td><a href="<?php echo "http://".$data->file_name; ?>" target="_blank" class="text-primary">View</a> </td>
                                     <?php } else { ?>
-                                    <td><a href="<?php echo asset('storage/photo_video_gallary/' . $data->file_name); ?>" target="_blank" class="text-primary">View</a> </td>  
+                                    <td><a href="<?php echo asset('storage/photo_video_gallary/' . $data->file_name); ?>" target="_blank" class="text-primary">View</a> </td>
                                     <?php } ?>
                                     <td>{{$data->ai}}</td>
                                     <td>
                                         <div class="d-inline">
                                             <a href="{{ route('photo_video_gallary.edit',$data->id)}}" class="btn btn-info btn-outline">
                                                <i class="mdi mdi-swap-horizontal"></i>
-                                            </a>   
-                                        </div>                                    
+                                            </a>
+                                        </div>
                                         <form action="{{ route('photo_video_gallary.destroy', $data->id)}}" method="post" class="d-inline">
                                             @csrf
                                             @method('DELETE')
@@ -146,3 +147,4 @@ $(document).ready(function () {
 </script>
 
 @include('includes.footer')
+@endsection
