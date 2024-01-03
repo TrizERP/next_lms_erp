@@ -831,11 +831,15 @@ class dashboardController extends Controller
                 $chart .= "]";
                 // for cn 
                 if($sub_institute_id==257){
+                    // db::enableQueryLog();
                 $cn_active_students  = DB::table('fees_collect as a')
                 ->select(
                     DB::raw('COUNT(DISTINCT a.student_id) as student_count'),
                     'a.term_id',
-                    DB::raw("GROUP_CONCAT(CONCAT_WS(' ', s.first_name, s.middle_name, s.last_name)) as name"),
+                    // DB::raw("GROUP_CONCAT(CONCAT_WS(' ', s.first_name, s.middle_name, s.last_name)) as name"),
+                    DB::raw("GROUP_CONCAT(s.first_name) as name"),
+                    DB::raw("GROUP_CONCAT(IFNULL(s.middle_name,' ')) as middle_name"),
+                    DB::raw("GROUP_CONCAT(IFNULL(s.last_name,' ')) as last_name"),
                     DB::raw("GROUP_CONCAT(DISTINCT a.student_id) as students"),
                     DB::raw("GROUP_CONCAT(s.mobile) as mobile"),
                     DB::raw("GROUP_CONCAT(std.name) as standard_name"),
@@ -853,7 +857,8 @@ class dashboardController extends Controller
                 ->groupBy('a.term_id')
                 ->orderBy('standard_name')
                 ->get();
-             
+                // dd(db::getQueryLog($cn_active_students));
+                // echo "<pre>";print_r($cn_active_students);exit;
                 $res['month_payout']= Carbon::now()->month.Carbon::now()->year;
                 $all_varibale = [
                     "sub_institute_id" => $sub_institute_id,
@@ -861,11 +866,11 @@ class dashboardController extends Controller
                     "selected_month" => $res['month_payout'],
                 ];
                 $cn_payout  = DB::select(DB::raw('
-                SELECT sum(CASE WHEN (house_name = "CN" OR house_name = "Other School") AND ( gender = "F" OR gender = "M") THEN 1 ELSE 0 END) as tot_stu,standard_name as sport,coach_name as coach,batch_name as batch,group_concat(standard_name) as standard_name,group_concat(coach_name) as coach_name,group_concat(batch_name) as batch_name, SUM(tot) AS tot,group_concat(first_name) as name,group_concat(mobile) as mobile,group_concat(student_id) as students
+                SELECT sum(CASE WHEN (house_name = "CN" OR house_name = "Other School") AND ( gender = "F" OR gender = "M") THEN 1 ELSE 0 END) as tot_stu,standard_name as sport,coach_name as coach,batch_name as batch,group_concat(standard_name) as standard_name,group_concat(coach_name) as coach_name,group_concat(batch_name) as batch_name, SUM(tot) AS tot,group_concat(first_name) as name,group_concat(ifnull(last_name," ")) as last_name,group_concat(ifnull(middle_name," ")) as middle_name,group_concat(mobile) as mobile,group_concat(student_id) as students
             FROM (
                 SELECT *,SUM(total_reg_paid) AS tot
                 FROM (
-                    SELECT hm.house_name,se.student_id,s.gender,s.first_name,s.mobile,sd.name AS standard_name,d.name AS coach_name,ifnull(b.title,"-") AS batch_name,SUM(fc.tution_fee) AS total_reg_paid,0 AS total_other_paid -- Initialize total_other_paid as 0 in this subquery
+                    SELECT hm.house_name,se.student_id,s.gender,s.first_name,s.last_name,s.middle_name,s.mobile,sd.name AS standard_name,d.name AS coach_name,ifnull(b.title,"-") AS batch_name,SUM(fc.tution_fee) AS total_reg_paid,0 AS total_other_paid -- Initialize total_other_paid as 0 in this subquery
                     FROM tblstudent_enrollment se
                     INNER JOIN tblstudent s ON s.id = se.student_id
                     INNER JOIN standard sd ON sd.id = se.standard_id
