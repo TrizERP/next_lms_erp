@@ -781,8 +781,7 @@ $(document).ready(function(){
 
     $('.get-details-link').on('click', function() {
     var details = JSON.parse($(this).attr('data-details'));
-    console.log('details');
-console.log(details);
+  
     $('#studentDetailsBody').empty();
 
     var students = details.students.split(',').map(function(student, index) {

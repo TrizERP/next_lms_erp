@@ -246,18 +246,18 @@ br {
                                         <div class="col-md-4 form-group">
                                             <span id="division_error_span"></span>
                                         </div> 
-                                        @php
-                                            $disable = " ";
-
+                                          @php
+                                            $disable =$readonly= " ";
                                         @endphp
                                         <div class="col-md-4 form-group">
                                             <label>{{App\Helpers\get_string('studentquota','request')}}<i class="mdi mdi-lead-pencil"></i></label>
                                             @php 
-                                            if(session()->get('sub_institute_id') == 257){                                                $disable = " ";
-                                            }elseif($data['check_fees'] == 0){
-                                                $disable = "disabled";}
+                                            if(session()->get('sub_institute_id') != 257){
+                                                $disable = "style=pointer-events:none";
+                                                $readonly = "readonly";
+                                            }
                                             @endphp
-                                            <select id='student_quota' required name="student_quota" class="form-control" {{$disable}}>
+                                            <select id='student_quota' required name="student_quota" class="form-control" {{$disable}} {{$readonly}}>
                                                 <option value="">--Select--</option>
                                                 
                                                     @if(isset($data['student_quota']))
