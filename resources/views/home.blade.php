@@ -781,12 +781,14 @@ $(document).ready(function(){
 
     $('.get-details-link').on('click', function() {
     var details = JSON.parse($(this).attr('data-details'));
-
+  
     $('#studentDetailsBody').empty();
 
     var students = details.students.split(',').map(function(student, index) {
         return {
             name: details.name.split(',')[index],
+            middle_name: details.middle_name.split(',')[index],
+            last_name: details.last_name.split(',')[index],
             sport: details.standard_name.split(',')[index],
             coach: details.coach_name.split(',')[index],
             batch: details.batch_name.split(',')[index],
@@ -824,8 +826,11 @@ $(document).ready(function(){
     });
 
     var j = 1;
+    // console.log(students);
     students.forEach(function(student) {
-        $('#studentDetailsBody').append('<tr><td>' + (j++) + '<td>' + student.name + '</td><td>' + student.sport + '</td><td>' + student.coach + '</td><td>' + student.batch + '</td><td>' + student.mobile + '</td></tr>');
+        // if(student.name!=undefined){
+        $('#studentDetailsBody').append('<tr><td>' + (j++) + '</td><td>' + student.name + ' ' + student.middle_name + ' ' + student.last_name + '</td><td>' + student.sport + '</td><td>' + student.coach + '</td><td>' + student.batch + '</td><td>' + student.mobile + '</td></tr>');
+        // }
     });
 
     $('#studentDetailModal').modal('show');

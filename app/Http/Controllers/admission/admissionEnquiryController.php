@@ -51,8 +51,8 @@ class admissionEnquiryController extends Controller
 
         $data = DB::table('admission_enquiry')
             ->leftJoin('admission_form as af', 'af.enquiry_id', '=', 'admission_enquiry.id')
-            ->leftJoin('tblstudent', 'tblstudent.admission_id', '=', 'admission_enquiry.id')
-            ->leftJoin('standard', 'standard.id', '=', 'admission_enquiry.admission_standard')
+            //->leftJoin('tblstudent', 'tblstudent.admission_id', '=', 'admission_enquiry.id') //Hide by 02-01-2024 rajesh loading issue
+            ->Join('standard', 'standard.id', '=', 'admission_enquiry.admission_standard')
             ->leftJoin('follow_up as fu', function ($join) {
                 $join->on('fu.id', '=', DB::raw('(SELECT id FROM follow_up AS fu1 WHERE fu1.enquiry_id = admission_enquiry.id ORDER BY fu1.id DESC LIMIT 1)'));
             })
@@ -61,7 +61,7 @@ class admissionEnquiryController extends Controller
                     WHEN admission_enquiry.followup_date = CURDATE() THEN "#f5f777"
                     WHEN fu.follow_up_date = CURDATE() THEN "#f5f777"
                 END AS current_status_color,
-                COUNT(tblstudent.id) AS total_student_count,
+                COUNT(af.enquiry_id) AS total_student_count,
                 standard.name as std_name,
                 IF(fu.status = "close","1","0") as enquiry_status,
                 fu.status as display_enquiry_status,
@@ -73,7 +73,7 @@ class admissionEnquiryController extends Controller
             ->where('admission_enquiry.syear', $syear)
             ->groupBy('admission_enquiry.id')
             ->orderByRaw('admission_enquiry.followup_date = CURDATE() desc')
-            ->get()->toArray();
+            ->get()->toArray();//COUNT(tblstudent.id) AS total_student_count, by rajesh update 'af.'
 
         $data = json_decode(json_encode($data), true);
 

@@ -33,10 +33,10 @@
                                                 @if(isset($list['employeeName']))
 
                                                     <option
-                                                        value="{{$employee->employee_id}}" {{$list['employeeName']['id'] == $employee->employee_id ? 'selected' :''}}>{{$employee->getUser->first_name .' '. $employee->getUser->last_name }}</option>
+                                                        value="{{$employee->employee_id}}" {{$list['employeeName']['id'] == $employee->employee_id ? 'selected' :''}}>{{$employee->getUser ? $employee->getUser->first_name .' '. $employee->getUser->last_name : ' '}}</option>
                                                 @else
                                                     <option
-                                                        value="{{$employee->employee_id}}">{{$employee->getUser->first_name .' '. $employee->getUser->last_name }}</option>
+                                                        value="{{$employee->employee_id}}">{{$employee->getUser ? $employee->getUser->first_name .' '. $employee->getUser->last_name : ' '}}</option>
                                                 @endif
                                             @endforeach
 
@@ -146,15 +146,13 @@
                                     @endforeach
                                 </tr>
                                 </tbody>
-
-
                             </table>
                             @if($hide_button)
                                 <input type="submit" name="save" value="save" class="btn btn-success">
                             @endif
                             @if(!$hide_button)
-                                <a href="{{url('monthly-payroll-report/pdf').'/'.$employeeName['id']}}"
-                                   class="btn btn-primary">pdf</a>
+                                <a href="{{url('monthly-payroll-report/pdf').'/'.$employeeName['id'].'/'.$list['month'].'/'.$list['year']}}"
+                                   class="btn btn-primary">pdf</a> 
                             @endif
                         </form>
                     </div>

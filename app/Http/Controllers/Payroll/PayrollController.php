@@ -323,10 +323,10 @@ class PayrollController extends Controller
 
     public function monthlyPayrollReport(Request $request)
     {
-
+        
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $payrollTypes = PayrollType::where('status', 1)->get();
-//        return $payrollTypes;
+        //        return $payrollTypes;
         $employeeDetails = EmployeeSalaryStructure::where('sub_institute_id', $sub_institute_id)->get();
         $header = [];
         $months = Helpers::getMonths();
@@ -375,7 +375,7 @@ class PayrollController extends Controller
 
                 $preparPayrollType = [];
                 foreach ($payrollTypes as $payrollType) {
-//                    return $employeeSalaryDetails;
+            //                    return $employeeSalaryDetails;
                     if(isset($employeeSalaryDetails[$payrollType->id]) && $payrollType->payroll_type == 1) {
                         $preparPayrollType[]['allowance'] = [$employeeSalaryDetails[$payrollType->id],$payrollType->amount_type,$payrollType->id,$payrollType->payroll_name];
                     } else if (isset($employeeSalaryDetails[$payrollType->id])) {
@@ -452,21 +452,35 @@ class PayrollController extends Controller
 
     }
 
-    public function monthlyPayrollPdf(Request $request,$id)
+    public function monthlyPayrollPdf(Request $request,$id, $month, $year)
     {
-//        return $request->all();
         $sub_institute_id = $request->session()->get('sub_institute_id');
-        $employeeSalaryData = EmployeeMonthlySalaryData::with('getUser')->where([['employee_id', $id],[ 'sub_institute_id', $sub_institute_id]])->first();
+        
+        $employeeSalaryData = EmployeeMonthlySalaryData::with('getUser')->where([['employee_id', $id],[ 'sub_institute_id', $sub_institute_id],['month', $month],['year', $year]])->first();
+
         $employeeSalaryStructure = EmployeeSalaryStructure::where([['employee_id', $id],[ 'sub_institute_id', $sub_institute_id]])->first();
+
+        $get_school_name = DB::table('school_setup')->select('ReceiptHeader')->where(['id' => $sub_institute_id])->first();
+
+        $get_user_detail = DB::table('tbluserprofilemaster as tum')
+            ->selectRaw('ts.*,tum.name as profile_name')
+            ->join('tbluser as ts', 'ts.user_profile_id', 'tum.id')
+            ->where(['tum.sub_institute_id' => $sub_institute_id, 'ts.id' => $id])
+            ->first();
+
         $payrollTypes = PayrollType::where('status', 1)->get();
         if ($employeeSalaryData) {
             $employeeData = [];
             $employeeData['name'] = $employeeSalaryData->getUser['first_name'] . ' '. $employeeSalaryData->getUser['last_name'];
             $employeeData['emp_code'] = $employeeSalaryData->employee_id;
-            $employeeData['bank_no'] = 123;
+            $employeeData['join_date'] = date('Y-m-d', strtotime($get_user_detail->joined_date));
+            $employeeData['profile_name'] = $get_user_detail->profile_name;
+            $employeeData['account_no'] = $get_user_detail->account_no;
             $employeeData['total_day'] = $employeeSalaryData->total_day;
             $employeeData['pf_no'] = 123;
             $employeeData['leave_without_pay'] = 1;
+            $employeeData['month'] = $employeeSalaryData->month;
+            $employeeData['year'] = $employeeSalaryData->year;
             $employeeData['total_payment'] = $employeeSalaryData->total_payment + $employeeSalaryData->total_deduction;
             $employeeData['deduction'] =  $employeeSalaryData->total_deduction;
             $employeeData['net_salary'] =  $employeeSalaryData->total_payment;
@@ -492,8 +506,9 @@ class PayrollController extends Controller
             }
             ksort($salaryData);
             $salaryData = array_chunk($salaryData,2);
-//            return $salaryData;
+                //            return $salaryData;
             $employeeData['salary_data'] = $salaryData;
+            $employeeData['school_name'] = $get_school_name;
             $employeeData['ruppee_in_word']= $this->displaywords($employeeData['net_salary']);
 
 
@@ -504,8 +519,6 @@ class PayrollController extends Controller
         } else{
             return redirect()->back();
         }
-
-
     }
 
     public function displaywords($num){

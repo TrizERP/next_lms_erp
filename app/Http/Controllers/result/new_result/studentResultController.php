@@ -133,12 +133,15 @@ class studentResultController extends Controller
     public function create_html_content($syear, $sub_institute_id, $html_content, $value, $template, $result_trust, $format)
     {
         // echo "<pre>";print_r($value);exit;
+        $height_large = array(47);
+        $height_medium = array(195,72);
+
         $logo_height = "50px !important";
         $photo_height = "90px !important";
-        if ($sub_institute_id == 47) {
+        if (in_array($sub_institute_id, $height_large)) {
             $logo_height = "120px !important";
             $photo_height = "100px !important";
-        }elseif($sub_institute_id == 195){
+        }elseif(in_array($sub_institute_id, $height_medium)){
             $logo_height = "90px !important";
             $photo_height = "100px !important";
         }else{
@@ -216,6 +219,7 @@ class studentResultController extends Controller
             $he_she = 'she';
         }
         //Start Bonafide certificate Tags
+        $html_content = str_replace(htmlspecialchars("<<class_teacher_name>>"), isset($teacher_name->teacher_name) ? $teacher_name->teacher_name : ' ', $html_content);
         $html_content = str_replace(htmlspecialchars("<<academic_years>>"), $display_year, $html_content);
         $html_content = str_replace(htmlspecialchars("<<student_image_value>>"), $student_image_path, $html_content);
         $html_content = str_replace(
@@ -636,7 +640,8 @@ class studentResultController extends Controller
         $sub_institute_id = session()->get('sub_institute_id');
         // sub_institute want foramt like lions 
         $format_sub_different = [61, 195];
-
+        $grade_arr = $this->getGradeScale($standard_id, '');
+        
         if ($format == "yearly") {
             $extra_term = "1=1";
             $extra_exam = "1=1";
@@ -1029,7 +1034,7 @@ $overall_total = $overall_total / 2;
             $both_term_ob_mark = $both_term_ob_mark / 2;
 
             $grade_arr_mmis = $this->getGradeScale($standard_id, '');
-            $table .= '<td class="data_center" total="'.$overall_total.'" obtain="'.$both_term_ob_mark.'"><b>' . number_format($both_term_ob_mark, 2) . '</b></td>
+            $table .= '<td class="data_center"><b>' . number_format($both_term_ob_mark, 2) . '</b></td>
                         <td class="data_center"><b>' . $this->getGrade($grade_arr_mmis, $overall_total, $both_term_ob_mark) . '</b></td>';
             $get_all_ob_mark += $both_term_ob_mark;
             $get_all_tot_mark += $overall_total;
@@ -1102,7 +1107,7 @@ $overall_total = $overall_total / 2;
                         $result = 'Promoted';
                     }
                 }
-                $table.='<td style="text-align:center" colspan="'.(1 + $cols).'"><b>'.$val.'</b></td><td style="text-align:center"><b>'.$max.'</b></td><td count="'.count($term_exam_titles).'" total_col="'.$cols.'"" colspan='. (count($term_exam_titles) + $cols - $minus_cols) .' style="padding:0px !important">';
+                $table.='<td style="text-align:center" colspan="'.(1 + $cols).'"><b>'.$val.'</b></td><td style="text-align:center"><b>'.$max.'</b></td><td colspan='. (count($term_exam_titles) + $cols - $minus_cols) .' style="padding:0px !important">';
                
                 $table.='<table class="aca-year" style="border:none !important;width:100%;padding:0px !important">';
                 $border = 'border-top:none !important';
@@ -2264,6 +2269,7 @@ $overall_total = $overall_total / 2;
         $division_id = $request->get('division_id');
         $syear = session()->get('syear');
         $sub_institute_id = session()->get('sub_institute_id');
+        $user_id = session()->get('user_id');
 
         foreach ($student_array as $key => $val) {
             $result_data['student_id'] = $val;
@@ -2273,6 +2279,7 @@ $overall_total = $overall_total / 2;
             $result_data['division_id'] = $division_id;
             $result_data['syear'] = $syear;
             $result_data['sub_institute_id'] = $sub_institute_id;
+            $result_data['created_by'] = $user_id;
             $result_data['html'] = $request->get('html_' . $val);
 
             $data = DB::select("SELECT * FROM result_html WHERE student_id = '" . $val . "' AND term_id = '" . $request->get('term_id') . "'
@@ -2283,6 +2290,8 @@ $overall_total = $overall_total / 2;
             if (count($data) > 0) {
                 $html = $request->get('html_' . $val);
                 $finalArray['html'] = $html;
+                $finalArray['updated_by'] = $user_id;
+                $finalArray['updated_on'] = NOW();
                 $data = DB::table('result_html')->where(['student_id' => $val, 'term_id' => $term_id, 'grade_id' => $grade_id, 'standard_id' => $standard_id, 'division_id' => $division_id, 'syear' => $syear])->update($finalArray);
 
             } else {
@@ -2319,8 +2328,8 @@ $overall_total = $overall_total / 2;
 
         foreach($get_result_skillsets as $get_result_skillset)
         {
-            $table .= '<style>.data_center{text-align:center !important;}</style><table class="aca-year"  style="width: 100%;border-collapse:collapse; border:1px solid #e68023; margin-bottom:30px;" cellspacing="0"  border="1">
-            <thead>
+            $table .= '<style>.data_center{text-align:center !important;}</style><table class="aca-year"  style="width: 100%;border-collapse:collapse; border:1px solid #000 !important; margin-bottom:30px;" cellspacing="0"  border="1">
+            <tbody>
             <tr>';
             $style = '';
             $heading = $get_result_skillset->main_title;
@@ -2332,19 +2341,19 @@ $overall_total = $overall_total / 2;
             $skill_ids = explode(',', $skillset_ids);
             $all_group = explode(',', $all_group);
 
-            $table .= '<th style="text-align:left;" colspan="5"><b>' . $heading . '</b></th>';
+            $table .= '<th style="text-align:left;font-size:large !important;background:white !important" colspan="5"><b>' . $heading . '</b></th></tr>';
 
             foreach($sub_title as $key => $value)
             {
                 $sub_sub_title = DB::table('result_activity_group as rag')->where(['rag.sub_institute_id' => $sub_institute_id])->where('rag.group', $all_group[$key])
                 ->get()->toArray();
 
-                $table .= '<tr><th style="text-align:left; background:none !important"><b>' . $value . '</b></th>';
+                $table .= '<tr><th style="text-align:left;font-size:medium !important;background:white !important;"><b>' . $value . '</b></th>';
                 $get_result_activity_marks = $sub_sub_id = [];  
 
                 foreach($sub_sub_title as $key1 => $value1)
                 {
-                    $table .= '<th style="text-align:center; background:#ddd !important;color:black;"><b>' . $value1->title . '</b></th>';
+                    $table .= '<th style="text-align:center;font-size:medium !important;color:black;background:white !important"><b>' . $value1->title . '</b></th>';
 
                     $get_result_activity_masters = DB::table('result_activity_master')
                     ->selectRaw('*, group_concat(title) as activity_master_title,group_concat(id) as ids')
@@ -2378,7 +2387,7 @@ $overall_total = $overall_total / 2;
                
                         foreach($activity_master_title as $key2 => $activity_master_titles)
                         {
-                            $table .= '<tr><th style="text-align:left; background:yellow !important; width:50%;"><b>' . $activity_master_titles .'</b></th>';
+                            $table .= '<tr><td style="text-align:left;font-size:medium !important;width:60%;background:white !important;">' . $activity_master_titles .'</td>';
                          
                             if(isset($get_result_activity_marks[$activity_master_title[$key2]]) && !empty($get_result_activity_marks[$activity_master_title[$key2]]))
                             {
@@ -2386,11 +2395,11 @@ $overall_total = $overall_total / 2;
                                 {
                                     if(isset($get_result_activity_mark[0]) && $get_result_activity_mark[0]->activity_id==$activity_master_id[$key2])
                                     {
-                                        $table .= '<th style="text-align:center; background:white !important;color:black;width:10%;">&#10004</th>';
+                                        $table .= '<td style="text-align:center;font-size:medium !important;background:white !important;color:black;width:10%;">&#10004</td>';
                                     }
                                     else
                                     {
-                                        $table .= '<th style="text-align:center; background:white !important;color:black;width:10%;"></th>'; 
+                                        $table .= '<td style="text-align:center;font-size:medium !important;background:white !important;color:black;width:10%;"></td>'; 
                                     }
                                 }
                             }
@@ -2399,9 +2408,7 @@ $overall_total = $overall_total / 2;
                     }
                 }
             }
-            $table .= '</tr>
-        </thead>
-        </table>';
+            $table .= '</tbody></table>';
         }
         
         $res['table'] = $table;

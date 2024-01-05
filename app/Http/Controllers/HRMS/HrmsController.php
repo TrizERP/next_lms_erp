@@ -254,36 +254,59 @@ class HrmsController extends Controller
        // return redirect('hrms-attendance')->with(['message' =>'check Out successfully']);
     }
 
-    public function hrmsAttendanceReport(Request $request) {
-
+    public function hrmsAttendanceReportIndex(Request $request) 
+    {
         $type = $request->input('type');
         if ($type == 'API') {
             $sub_institute_id = $request->input('sub_institute_id');
         } else {
             $sub_institute_id = $request->session()->get('sub_institute_id');
         }
+
+        $employeeLists = tbluserModel::where('sub_institute_id', $sub_institute_id)->where('status', 1)->get();
+
+        $from_date_formatted = Carbon::now()->format('Y-m-d');
+        $to_date_formatted = Carbon::now()->format('Y-m-d');
+        
+        return view('HRMS.hrms_attendance_report.index', compact('employeeLists', 'from_date_formatted', 'to_date_formatted'));
+    }
+
+    public function hrmsAttendanceReport(Request $request) 
+    {
+        $type = $request->input('type');
+        if ($type == 'API') {
+            $sub_institute_id = $request->input('sub_institute_id');
+        } else {
+            $sub_institute_id = $request->session()->get('sub_institute_id');
+        }
+
+        $from_date = $request->get('from_date');
+        $to_date = $request->get('to_date');
+        $employee_id = $request->input('employee_id');
+
+        // Parse and format the dates
+        $from_date_formatted = Carbon::createFromFormat('Y-m-d', $from_date)->format('Y-m-d');
+        $to_date_formatted = Carbon::createFromFormat('Y-m-d', $to_date)->format('Y-m-d');
+
         $employees = $employeeLists = tbluserModel::where('sub_institute_id', $sub_institute_id)->where('status', 1)->get();
         
         $hrmsList = HrmsAttendance::with('getUser');
 
-        if ($request->from_date && $request->end_date) {
-            $hrmsList = $hrmsList->where('punchin_time', '>=', $request->from_date . ' 00:00:00')->where('punchout_time', '<=', $request->end_date . ' 23:59:59');
-            $from_date = $request->from_date;
-            $end_date = $request->end_date;
+        if ($from_date_formatted && $to_date_formatted) {
+            $hrmsList = $hrmsList->where('punchin_time', '>=', $from_date_formatted . ' 00:00:00')->where('punchout_time', '<=', $to_date_formatted . ' 23:59:59');
         } else {
-            $from_date = Carbon::now();
-            $end_date = Carbon::now();
+            $from_date_formatted = Carbon::now()->format('Y-m-d');
+            $to_date_formatted = Carbon::now()->format('Y-m-d');
         }
-        if($request->employee_id) {
-            $employees = $employees->where('id', $request->employee_id);
-            $hrmsList = $hrmsList->where('user_id',$request->employee_id);
+
+        if ($employee_id) {
+            // Corrected variable name here
+            $hrmsList = $hrmsList->where('user_id', $employee_id);
         }
+
         $hrmsList = $hrmsList->get();
 
-        //return json_decode($employeeSalaryStructures[0]['employee_salary_data'], true);
-       return view('HRMS.hrms_attendance_report.index', compact('employees', 'employeeLists', 'from_date', 'end_date', 'hrmsList'));
-        //return is_mobile($type, "HRMS.hrms_attendance_report.index", compact('employees', 'employeeLists', 'from_date', 'end_date', 'hrmsList'), "view",'compact');
-
+       return view('HRMS.hrms_attendance_report.index', compact('employees', 'employeeLists', 'from_date_formatted', 'to_date_formatted', 'hrmsList', 'employee_id'));
     }
 
     public function earlyGoingHrmsAttendanceReport(Request $request) {

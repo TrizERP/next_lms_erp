@@ -44,7 +44,6 @@
                                     @endphp
                                 </select>
                             </div>
-                            
                             <div class="col-md-12 form-group">
                                 <center>
                                     <input type="submit" name="submit" value="Search" class="btn btn-success" >
@@ -75,9 +74,14 @@
                             <td>{{ $student_data['roll_no'] }}</td>
                             <td>{{ $student_data['first_name'] }} {{ $student_data['middle_name'] }} {{ $student_data['last_name'] }}</td>
                             @foreach($data['result_activity_groups'] as $result_activity_group)
+                            @php
+                            @endphp
                                 <td style="text-align:center;">
                                     <label>
-                                        <input type="radio" name="activity_group[{{ $student_data['id'] }}]" value="{{ $result_activity_group->id }}">
+                                    <input type="radio" name="activity_group[{{ $student_data['id'] }}]" value="{{ $result_activity_group->id }}"
+                                        @if(isset($data['get_activity_marks'][$student_data['id']]) && $data['get_activity_marks'][$student_data['id']]->group_id == $result_activity_group->id)
+                                            checked
+                                        @endif>
                                     </label>
                                     <input type="hidden" name="student_id" value="{{ $student_data['id'] }}">
                                     <input type="hidden" name="activity_id" value="{{ $data['activity_value'] }}">
