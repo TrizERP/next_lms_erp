@@ -595,7 +595,7 @@
                 @if(isset($data['teacherBirthdays']))
                 <div class="col-md-12 col-lg-6 col-sm-12 mb-4">
                     <div class="card h-100">
-                        <h3 class="card-title">Teachers Birthday (Up to 7 days)</h3>
+                        <h3 class="card-title">Teachers Birthday (Up to 3 days)</h3>
                         <div class="table-responsive">
                             <table class="table table-hover">
                                 <thead>
@@ -628,7 +628,7 @@
                 @if(isset($data['studentBirthdays']))
                 <div class="col-md-12 col-lg-6 col-sm-12 mb-4">
                     <div class="card h-100">
-                        <h3 class="card-title">Students Birthday (Up to 7 days)</h3>
+                        <h3 class="card-title">Students Birthday (Up to 3 days)</h3>
                         <div class="table-responsive">
                             <table class="table table-hover">
                                 <thead>
