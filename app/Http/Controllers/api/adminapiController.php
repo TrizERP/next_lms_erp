@@ -2285,8 +2285,8 @@ class adminapiController extends Controller
             'sub_institute_id' => 'required|numeric',
             'student_id'       => 'required|numeric',
             'syear'            => 'required',
-            'from_date'        => 'required|date',
-            'to_date'          => 'required|date',
+            'from_date'        => 'nullable',
+            'to_date'          => 'nullable',
             'exam_type'        => 'nullable',
         ]);
 
@@ -2609,19 +2609,17 @@ class adminapiController extends Controller
                 $data['title'] = 'WRT Progress Report';
                 $data['file_name'] = "https://".$_SERVER['SERVER_NAME']."/storage/WRT_result_pdf/".$pdf_filename;
 
-                $res['status'] = 1;
-                $res['message'] = "Success";
-                $res['data'] = $data;
+                $response['status'] = 1;
+                $response['message'] = "Success";
+                $response['data'] = $data;
 
             } else {
-                $res['status'] = 0;
-                $res['message'] = "No Record";
+                $response['status'] = 0;
+                $response['message'] = "No Record";
             }
-
-
         }
 
-        return json_encode($res);
+        return json_encode($response);
     }
 
     public function add_studentCapturePhotosAPI(Request $request)
