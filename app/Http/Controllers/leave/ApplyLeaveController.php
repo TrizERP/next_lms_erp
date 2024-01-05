@@ -34,7 +34,7 @@ class ApplyLeaveController extends Controller
         }
     }
 
-    public function getEmployees(Request $rzequest)
+    public function getEmployees(Request $request)
     {
 	$sub_institute_id = session()->get('sub_institute_id');
         $departmentId = $request->get('department_id');
