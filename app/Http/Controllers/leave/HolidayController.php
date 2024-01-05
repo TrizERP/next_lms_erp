@@ -73,7 +73,6 @@ class HolidayController extends Controller
      */
     public function store(Request $request)
     {
-        echo("hi");die;
         $request->validate([
             'holiday_name' => 'required',
             'from_date' => 'required|date',
