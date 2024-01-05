@@ -34,7 +34,7 @@ class ApplyLeaveController extends Controller
         }
     }
 
-    public function getEmployees(Request $rzequest)
+    public function getEmployees(Request $request)
     {
         $departmentId = $request->input('department_id');
         $employees = tbluserModel::where('department_id', $departmentId)->get();
