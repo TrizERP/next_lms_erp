@@ -13,51 +13,51 @@
             </div>
         </div>
         <div id="printPage" class="card">
-        <?php
+        @php
             $file_name = "icard/templates/template_1.html";
             $fin = fopen($file_name, 'r') or die("Selected Icard Template is not in proper format .");
             $string = fread($fin, filesize($file_name));
             fclose($fin);
-        ?>
+       @endphp
             <div class="row">
                 <div class="col-md-12 form-group">
                     <p>Template 1</p>
-                    <?php echo $string; ?>
+                    {{$string}} 
                 </div>
                 <div class="pagebreak"></div>
-        <?php
+        @php
             $file_name = "icard/templates/template_2.html";
             $fin = fopen($file_name, 'r') or die("Selected Icard Template is not in proper format .");
             $string = fread($fin, filesize($file_name));
             fclose($fin);
-        ?>
+        @endphp
                 <div class="col-md-12 form-group">
                     <p>Template 2</p>
-                    <?php echo $string; ?>
+                    {{$string}}
                 </div>
                 <div class="pagebreak"></div>
-        <?php
+        @php
             $file_name = "icard/templates/template_3.html";
             $fin = fopen($file_name, 'r') or die("Selected Icard Template is not in proper format .");
             $string = fread($fin, filesize($file_name));
             fclose($fin);
-        ?>
+        @endphp
 
                 <div class="col-md-12 form-group">
                     <p>Template 3</p>
-                    <?php echo $string; ?>
+                    {{$string}}
                 </div>
                 <div class="pagebreak"> </div>
-        <?php
+    @php
             $file_name = "icard/templates/template_4.html";
             $fin = fopen($file_name, 'r') or die("Selected Icard Template is not in proper format .");
             $string = fread($fin, filesize($file_name));
             fclose($fin);
-        ?>
+        @endphp
 
                 <div class="col-md-12 form-group">
                     <p>Template 4</p>
-                    <?php echo $string; ?>
+                    {{ $string}}
                 </div>
                 <div class="pagebreak"> </div>
             </div>

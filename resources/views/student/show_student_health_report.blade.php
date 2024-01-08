@@ -1,8 +1,8 @@
-@include('includes.headcss')
-
+{{--@include('includes.headcss')
 @include('includes.header')
-@include('includes.sideNavigation')
-
+@include('includes.sideNavigation')--}}
+@extends('layout')
+@section('container')
 <div id="page-wrapper">
     <div class="container-fluid">
         <div class="row bg-title">
@@ -82,33 +82,35 @@
             if(isset($data['health_data'])){
                 $health_data = $data['health_data'];
             }
+            $health =isset($data['health_type']) ? $data['health_type'] : '';
+            $from_date =isset($data['from_date']) ? date('d-m-Y', strtotime($data['from_date'])) : '';
+            $to_date = isset($data['to_date']) ? date('d-m-Y', strtotime($data['to_date'])) : '';
         @endphp
                         <div class="card">
                             <div class="table-responsive">
-                            @php
-                                echo App\Helpers\get_school_details($grade_id, $standard_id, $division_id);
-                                echo '<br><center><span style="font-size: 14px; font-weight: 600; font-family: Arial, Helvetica, sans-serif !important">';
-                                echo 'Health : ' . (isset($data['health_type']) ? $data['health_type'] : '');
-                                echo '</span> <span style="font-size: 14px; font-weight: 600; font-family: Arial, Helvetica, sans-serif !important">';
-                                echo 'From Date : ' . (isset($data['from_date']) ? date('d-m-Y', strtotime($data['from_date'])) : '') . ' - ';
-                                echo '</span><span style="font-size: 14px; font-weight: 600; font-family: Arial, Helvetica, sans-serif !important">';
-                                echo 'To Date : ' . (isset($data['to_date']) ? date('d-m-Y', strtotime($data['to_date'])) : '') . '</span></center><br>';
+                            {!! App\Helpers\get_school_details($grade_id, $standard_id, $division_id) !!}
+                               <br><center><span style="font-size: 14px; font-weight: 600; font-family: Arial, Helvetica, sans-serif !important">
+                              Health : {{$health}}
+                                </span> <span style="font-size: 14px; font-weight: 600; font-family: Arial, Helvetica, sans-serif !important">
+                              From Date : {{$from_date}};
+                             </span><span style="font-size: 14px; font-weight: 600; font-family: Arial, Helvetica, sans-serif !important">
+                              To Date : {{$to_date}}</span></center><br>
                             @endphp
                                 <table id="example" class="table table-striped">
                                     <thead>
                                     <tr>
-                                        @foreach($data['headers'] as $hkey => $header)
-                                <th> {{$header}} </th>
-                            @endforeach
+                                    @foreach($data['headers'] as $hkey => $header)
+                                        <th> {{$header}} </th>
+                                    @endforeach
                                     </tr>
                                     </thead>
                                     <tbody>
                                     @foreach($health_data as $key => $value)
-                                        <tr>
-                                            @foreach($data['headers'] as $hkey => $header)
-                                <td> {{$value->$hkey}} </td>
-                                            @endforeach
-                            </tr>
+                                    <tr>
+                                        @foreach($data['headers'] as $hkey => $header)
+                                            <td> {{$value->$hkey}} </td>
+                                        @endforeach
+                                     </tr>
                                     @endforeach
                     </tbody>
                 </table>
@@ -171,3 +173,4 @@
 </script>
 
 @include('includes.footer')
+@endsection

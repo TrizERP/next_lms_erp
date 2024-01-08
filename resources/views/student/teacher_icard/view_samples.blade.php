@@ -10,13 +10,13 @@
                     <h4 class="page-title">Teacher I-Card Samples</h4> </div>
             </div>
             <div id="printPage">
-                <?php
+                @php
                     $file_name = "icard/templates/teacher_template_3.html";
 
                     $fin = fopen($file_name, 'r') or die("Selected Icard Template is not in proper format .");
                     $string = fread($fin, filesize($file_name));
                     fclose($fin);
-                ?>
+                @endphp
 
                 <div class="card">
                     <div class="row">
@@ -24,7 +24,7 @@
                             <p>Template 1</p>
                             <br>
                             <br>
-                            <?php echo $string; ?>
+                           {{ $string }}
                         </div>
                     </div>
 

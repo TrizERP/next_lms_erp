@@ -1,8 +1,8 @@
-@include('includes.headcss')
-
+{{--@include('includes.headcss')
 @include('includes.header')
-@include('includes.sideNavigation')
-
+@include('includes.sideNavigation')--}}
+@extends('layout')
+@section('container')
 <div id="page-wrapper">
     <div class="container-fluid">
         <div class="row bg-title">
@@ -61,17 +61,16 @@
             if(isset($data['attendance_data'])){
                 $attendance_data = $data['attendance_data'];
             }
+           $token = isset($data['taken']) ? $data['taken'] : '';
+                            
         @endphp
                         <div class="card">
                             <div class="table-responsive">
-                                @php
-                                    echo App\Helpers\get_school_details("","","");
-                                    echo '<br><center><span style="font-size: 14px; font-weight: 600; font-family: Arial, Helvetica, sans-serif !important">';
-                                    echo 'From Date : ' . (isset($data['date']) ? date('d-m-Y', strtotime($data['date'])) : '');
-                                    echo '</span> <span style="font-size: 14px; font-weight: 600; font-family: Arial, Helvetica, sans-serif !important">';
-                                    echo 'Token : ' . (isset($data['taken']) ? $data['taken'] : '');
-                                    echo '</span></center><br>';
-                                @endphp
+                              {!! App\Helpers\get_school_details("","","") !!} 
+                              <br><center><span style="font-size: 14px; font-weight: 600; font-family: Arial, Helvetica, sans-serif !important">
+                              From Date : {{date('d-m-Y', strtotime($data['date'])) }}
+                               </span> <span style="font-size: 14px; font-weight: 600; font-family: Arial, Helvetica, sans-serif !important">
+                                Taken : {{$token}}   </span></center><br>
                                 <table id="daywise_attendance" class="table table-striped table-bordered" border="1"
                                        style="border-collapse: collapse;">
                                     <thead>
@@ -82,50 +81,50 @@
                                         <th colspan="3">Absent</th>
                                         <th rowspan="2">Taken</th>
                                         <th rowspan="2">Average</th>
-                            <th rowspan="2">Staff Signature</th>
-                        </tr>
-                        <tr>
-                            <th>B</th>
-                            <th>G</th>
-                            <th>T</th>
-                            <th>B</th>
-                            <th>G</th>
-                            <th>T</th>
-                            <th>B</th>
-                            <th>G</th>
-                            <th>T</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach($attendance_data as $key => $value)
-                            @php
-                                $TBGP = ($value->TBP + $value->TGP);
-                                $TBG = ($value->BOY + $value->GIRL);
-                                if($TBG > 0)
-                                {
-                                    $avg_b_g = ($value->TBP + $value->TGP) / ($value->BOY + $value->GIRL);
-                                    $per_b_g = number_format((100 * $avg_b_g),2);
-                                }else{
-                                    $per_b_g = 0;
-                                }
-                            @endphp
-                            <tr>
-                                <td> {{$value->standard_name}} </td>
-                                <td> {{$value->BOY}} </td>
-                                <td> {{$value->GIRL}} </td>
-                                <td> {{($value->BOY + $value->GIRL)}} </td>
-                                <td> {{$value->TBP}} </td>
-                                <td> {{$value->TGP}} </td>
-                                <td> {{($value->TBP + $value->TGP)}} </td>
-                                <td> {{$value->TBA}} </td>
-                                <td> {{$value->TGA}} </td>
-                                <td> {{($value->TBA + $value->TGA)}} </td>
-                                <td> {{ucfirst($data['taken'])}} </td>
-                                <td> {{$per_b_g}}% </td>
-                                <td> </td>
-                            </tr>
-                        @endforeach
-                    </tbody>
+                                        <th rowspan="2">Staff Signature</th>
+                                        </tr>
+                                        <tr>
+                                            <th>B</th>
+                                            <th>G</th>
+                                            <th>T</th>
+                                            <th>B</th>
+                                            <th>G</th>
+                                            <th>T</th>
+                                            <th>B</th>
+                                            <th>G</th>
+                                            <th>T</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach($attendance_data as $key => $value)
+                                            @php
+                                                $TBGP = ($value->TBP + $value->TGP);
+                                                $TBG = ($value->BOY + $value->GIRL);
+                                                if($TBG > 0)
+                                                {
+                                                    $avg_b_g = ($value->TBP + $value->TGP) / ($value->BOY + $value->GIRL);
+                                                    $per_b_g = number_format((100 * $avg_b_g),2);
+                                                }else{
+                                                    $per_b_g = 0;
+                                                }
+                                            @endphp
+                                            <tr>
+                                                <td> {{$value->standard_name}} </td>
+                                                <td> {{$value->BOY}} </td>
+                                                <td> {{$value->GIRL}} </td>
+                                                <td> {{($value->BOY + $value->GIRL)}} </td>
+                                                <td> {{$value->TBP}} </td>
+                                                <td> {{$value->TGP}} </td>
+                                                <td> {{($value->TBP + $value->TGP)}} </td>
+                                                <td> {{$value->TBA}} </td>
+                                                <td> {{$value->TGA}} </td>
+                                                <td> {{($value->TBA + $value->TGA)}} </td>
+                                                <td> {{ucfirst($data['taken'])}} </td>
+                                                <td> {{$per_b_g}}% </td>
+                                                <td> </td>
+                                            </tr>
+                                        @endforeach
+                                    </tbody>
                                 </table>
                                 <center>
                                     <button
@@ -174,3 +173,4 @@
     }
 </script>
 @include('includes.footer')
+@endsection

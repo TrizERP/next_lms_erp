@@ -20,16 +20,14 @@
             $division_id = $data['division_id'];
             }
 
-            @endphp
-            <?php
-$file_name = "icard/templates/" . $data['template'] . ".html";
+        $file_name = "icard/templates/" . $data['template'] . ".html";
 
-$fin = fopen($file_name, 'r') or die("Selected Icard Template is not in proper format .");
-$string = fread($fin, filesize($file_name));
-fclose($fin);
+        $fin = fopen($file_name, 'r') or die("Selected Icard Template is not in proper format .");
+        $string = fread($fin, filesize($file_name));
+        fclose($fin);
+        @endphp
 
-?>
-            @if(isset($data['data']))
+        @if(isset($data['data']))
             @php
             if(isset($data['data'])){
             $student_data = $data['data'];
@@ -41,32 +39,25 @@ fclose($fin);
             <div class="row">
                 <div class="white-box">
                     <div class="panel-body">
-                        @foreach($student_data as $key => $value)
+                    @foreach($student_data as $key => $value)
 
-
-                        <?php
-        // echo ('<pre>');dd($value);exit;
-$str = str_replace(htmlspecialchars("<<first_name>>"), $value->first_name, $string);
-$str = str_replace(htmlspecialchars("<<last_name>>"), $value->last_name, $str);
-$str = str_replace(htmlspecialchars("<<email>>"), $value->email, $str);
-$str = str_replace(htmlspecialchars("<<mobile>>"), $value->mobile, $str);
-$str = str_replace(htmlspecialchars("<<gender>>"), $value->gender, $str);
-$str = str_replace(htmlspecialchars("<<address>>"), $value->address, $str);
-
-?>
+                      @php
+                        $str = str_replace(htmlspecialchars("<<first_name>>"), $value->first_name, $string);
+                        $str = str_replace(htmlspecialchars("<<last_name>>"), $value->last_name, $str);
+                        $str = str_replace(htmlspecialchars("<<email>>"), $value->email, $str);
+                        $str = str_replace(htmlspecialchars("<<mobile>>"), $value->mobile, $str);
+                        $str = str_replace(htmlspecialchars("<<gender>>"), $value->gender, $str);
+                        $str = str_replace(htmlspecialchars("<<address>>"), $value->address, $str);
+                        @endphp
                         <div class="col-md-{{$bootstrapColumn}} form-group">
-                            <?php echo $str; ?>
+                            {{$str}}
                         </div>
-                        <?php
-if ($j == $pageBreakCount) {
-	?>
-                        <div class="pagebreak"> </div>
-                        <?php
-$j = 0;
-}
-$j++;
-
-?>
+                        @if($j == $pageBreakCount) 
+                            <div class="pagebreak"> </div>
+                            @php $j = 0; @endphp
+                           @endif
+                           @php  $j++; @endphp
+                           
                         @endforeach
                     </div>
                 </div>
