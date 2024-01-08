@@ -1,6 +1,8 @@
-@include('includes.headcss')
+{{-- @include('includes.headcss')
 @include('includes.header')
-@include('includes.sideNavigation')
+@include('includes.sideNavigation') --}}
+@extends('layout')
+@section('container')
 <style>
 .title{
     font-weight:200;
@@ -70,3 +72,4 @@
 
 @include('includes.footerJs')
 @include('includes.footer')
+@endsection

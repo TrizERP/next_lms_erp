@@ -1,9 +1,7 @@
-@include('../includes.headcss')
 <link rel="stylesheet" href="../../../plugins/bower_components/dropify/dist/css/dropify.min.css">
-@include('../includes.header')
-@include('../includes.sideNavigation')
-
-
+{{-- @include('includes.headcss') @include('includes.header') @include('includes.sideNavigation') --}} 
+@extends('layout')
+@section('container')
 <div id="page-wrapper">
     <div class="container-fluid">
         <div class="row" style=" margin-top: 25px;">
@@ -110,3 +108,4 @@ $(document).ready(function () {
 </script>
 
 @include('includes.footer')
+@endsection
