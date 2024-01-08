@@ -1,7 +1,8 @@
-@include('../includes.headcss')
-@include('../includes.header')
-@include('../includes.sideNavigation')
-
+{{--@include('includes.headcss')
+@include('includes.header')
+@include('includes.sideNavigation')--}}
+@extends('layout')
+@section('container')
 <style>
 
     page {
@@ -230,3 +231,4 @@
     }
 </script>
 @include('includes.footer')
+@endsection
