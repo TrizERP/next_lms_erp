@@ -1,6 +1,8 @@
-@include('includes.headcss')
-@include('includes.header')
-@include('includes.sideNavigation')
+{{--@include('../includes.headcss')
+@include('../includes.header')
+@include('../includes.sideNavigation')--}}
+@extends('layout')
+@section('container')
 
 <div id="page-wrapper">
     <div class="container-fluid">       
@@ -47,3 +49,4 @@
 
 @include('includes.footerJs')
 @include('includes.footer')
+@endsection
