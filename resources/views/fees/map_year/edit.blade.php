@@ -42,32 +42,18 @@
                                 <label>From Month</label>
                                 <select name="start_month" id="title" class="form-control van" required>
                                     <option value="">--Select--</option>
-                                    <?php
-                                    foreach ($data['data']['ddMonth'] as $id => $arr) {
-                                        if ($data['from_month'] == $id) {
-                                            $selected = "selected=selected";
-                                        } else {
-                                            $selected = "";
-                                        }
-                                        echo "<option $selected value='$id'>$arr</option>";
-                                    }
-                                    ?>
+                                    @foreach ($data['data']['ddMonth'] as $id => $arr) 
+                                       <option value='{{ $id}}' @if($data['from_month'] == $id) selected @endif>{{$arr}}</option>
+                                @endforeach
                                 </select>
                             </div>
                             <div class="col-md-3 form-group ml-0">
                                 <label>To Month</label>
                                 <select name="end_month" id="title" class="form-control van" required>
                                     <option value="">--Select--</option>
-                                    <?php
-                                    foreach ($data['data']['ddMonth'] as $id => $arr) {
-                                        if ($data['to_month'] == $id) {
-                                            $selected = "selected=selected";
-                                        } else {
-                                            $selected = "";
-                                        }
-                                        echo "<option $selected value='$id'>$arr</option>";
-                                    }
-                                    ?>
+                                   @foreach ($data['data']['ddMonth'] as $id => $arr) 
+                                        <option value='{{$id}}' @if($data['to_month'] == $id) selected @endif>{{$arr}}</option>";
+                                   @endforeach
                                 </select>
                             </div>
 

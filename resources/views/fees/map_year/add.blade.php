@@ -37,22 +37,18 @@
                                 <label>Starting Month</label>
                                 <select name="start_month" id="start_month" class="form-control" required>
                                     <option value="">--Select--</option>
-                                    <?php
-                                    foreach ($data['data']['ddMonth'] as $id => $arr) {
-                                        echo "<option value='$id'>$arr</option>";
-                                    }
-                                    ?>
+                                  @foreach ($data['data']['ddMonth'] as $id => $arr) 
+                                    <option value='{{$id}}'>{{$arr}}</option>";
+                                    @endforeach
                                 </select>
                             </div>
                             <div class="col-md-4 form-group ml-0">
                                 <label>Ending Month</label>
                                 <select name="end_month" id="end_month" class="form-control" required>
                                     <option value="">--Select--</option>
-                                    <?php
-                                    foreach ($data['data']['ddMonth'] as $id => $arr) {
-                                        echo "<option value='$id'>$arr</option>";
-                                    }
-                                    ?>
+                                   @foreach ($data['data']['ddMonth'] as $id => $arr) 
+                                        <option value='{{$id}}'>{{$arr}}</option>
+                                   @endforeach
                                 </select>
                             </div>
 
