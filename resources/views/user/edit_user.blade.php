@@ -1,7 +1,9 @@
-@include('includes.headcss')
-<link rel="stylesheet" href="../../../plugins/bower_components/dropify/dist/css/dropify.min.css">
+{{-- @include('includes.headcss')
 @include('includes.header')
-@include('includes.sideNavigation')
+@include('includes.sideNavigation') --}}
+<link rel="stylesheet" href="../../../plugins/bower_components/dropify/dist/css/dropify.min.css">
+@extends('layout')
+@section('container')
 <style type="text/css">
 br {
      display: block;
@@ -34,8 +36,6 @@ br {
                     $custom_fields = $data['custom_fields'];
                     $data_fields = $data['data_fields'];
                     $data = $data['data'];
-
-
                     @endphp
                     <form action="{{ route('add_user.update', $data['id']) }}" enctype="multipart/form-data" method="post">
                     {{ method_field("PUT") }}
@@ -565,3 +565,4 @@ br {
         }
     </script>
 @include('includes.footer')
+@endsection

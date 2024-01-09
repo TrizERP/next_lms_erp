@@ -1,7 +1,6 @@
-@include('includes.headcss')
-@include('includes.header')
-@include('includes.sideNavigation')
-
+{{-- @include('includes.headcss') @include('includes.header') @include('includes.sideNavigation') --}} 
+@extends('layout')
+@section('container')
 <div id="page-wrapper">
     <div class="container-fluid">
         <div class="card">
@@ -30,7 +29,7 @@
                                     <th>Result Remark</th>
                                     <th>Optional Subject Display</th>
                                     <th>Remove Fail Percentage</th>
-                                    <th>Action</th>
+                                    <th class="text-align">Action</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -80,3 +79,4 @@ $(document).ready(function () {
 
 </script>
 @include('includes.footer')
+@endsection

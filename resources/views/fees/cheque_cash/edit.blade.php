@@ -52,7 +52,7 @@
                                                         <td style="text-align: center;font-weight: inherit;">
                                                                 {{$quota_val}}
                                                         </td>
-                                                            <?php
+                                                        
                                                         @foreach ($data['data']['title_arr'] as $id => $val)
                                                             @php
                                                             $amount_val = 0;

@@ -1,8 +1,8 @@
-@include('../includes.headcss')
-@include('../includes.header')
-@include('../includes.sideNavigation')
-
-
+{{-- @include('includes.headcss')
+@include('includes.header')
+@include('includes.sideNavigation') --}}
+@extends('layout')
+@section('container')
 <div id="page-wrapper">
     <div class="container-fluid">
 		<div class="row bg-title">
@@ -18,15 +18,13 @@
                 </div>
                 @endif
                 <div class="col-lg-12 col-sm-12 col-xs-12">
-                    @php
-                    if(isset($data['stu_data'])){
-                    @endphp
+                    @if(isset($data['stu_data']))
                     <form action="{{ route('dicipline.store') }}" enctype="multipart/form-data" method="post">
                         {{ method_field("POST") }}
                         {{csrf_field()}}
-                        <input type="hidden" name="grade" value="<?php echo $data['grade']; ?>">
-                        <input type="hidden" name="standard" value="<?php echo $data['standard']; ?>">
-                        <input type="hidden" name="division" value="<?php echo $data['division']; ?>">
+                        <input type="hidden" name="grade" value="{{ $data['grade']}}">
+                        <input type="hidden" name="standard" value="{{ $data['standard']}}">
+                        <input type="hidden" name="division" value="{{ $data['division']}}">
                         
                        
                          <div class="table-responsive ">
@@ -40,39 +38,36 @@
 									<th>Division</th>
 									<th>Mobile</th>
 									<th>Select</th>
-									<th>Message</th>
+									<th class="text-left">Message</th>
 								</tr>
 							</thead>
                             @php
-
                             $arr = $data['stu_data'];
-                            foreach ($arr as $id=>$col_arr){
                             @endphp
+                            @foreach ($arr as $id=>$col_arr)                            
                             <tr>
 
-                                <td><input type="checkbox" name="@php echo 'values[stud_id]['.$col_arr['student_id'].']'; @endphp" class="ckbox1">  </td>
-                                <td>@php echo $id+1; @endphp</td>
-                                <td>@php echo $col_arr['name']; @endphp</td>
-                                <td>@php echo $col_arr['standard_name']; @endphp</td>
-                                <td>@php echo $col_arr['division_name']; @endphp</td>
-                                <td>@php echo $col_arr['mobile']; @endphp</td>
+                                <td><input type="checkbox" name="{{ 'values[stud_id]['.$col_arr['student_id'].']'}}" class="ckbox1">  </td>
+                                <td>{{ $id+1}}</td>
+                                <td>{{ $col_arr['name']}}</td>
+                                <td>{{ $col_arr['standard_name']}}</td>
+                                <td>{{ $col_arr['division_name']}}</td>
+                                <td>{{ $col_arr['mobile']}}</td>
                                 <td>
-                                    <select name="@php echo 'values[dd]['.$col_arr['student_id'].']'; @endphp"
+                                    <select name="{{ 'values[dd]['.$col_arr['student_id'].']'}}"
                                             class="form-control">
                                         <option value="">Select</option>
-                                        <?php foreach ($data['dd'] as $id => $name) { ?>
-                                            <option value="<?php echo $name; ?>"><?php echo $name; ?></option>
-                                        <?php } ?>
+                                        @foreach ($data['dd'] as $id => $name)
+                                            <option value="{{ $name}}">{{ $name}}</option>
+                                        @endforeach
                                     </select>
                                 </td>
                                 <td>
-                                    <textarea name="@php echo 'values[text]['.$col_arr['student_id'].']'; @endphp"
+                                    <textarea name="{{ 'values[text]['.$col_arr['student_id'].']'}}"
                                               class="form-control"></textarea>
                                 </td>
                             </tr>
-                            @php
-                            }
-                            @endphp
+                            @endforeach
                         </table>
 						</div>
 
@@ -83,11 +78,9 @@
                         </div>
 
                     </form>
-                    @php
-                    }else{
-                    echo "No Student Found.";
-                    }
-                    @endphp
+                    @else
+                    No Student Found.
+                    @endif
                 </div>
                 @if (count($errors) > 0)
                 <div class="alert alert-danger">
@@ -144,3 +137,4 @@ $(document).ready(function() {
 </script>
 
 @include('includes.footer')
+@endsection

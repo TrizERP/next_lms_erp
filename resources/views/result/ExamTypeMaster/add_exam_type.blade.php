@@ -1,6 +1,6 @@
-@include('includes.headcss')
-@include('includes.header')
-@include('includes.sideNavigation')
+{{-- @include('includes.headcss') @include('includes.header') @include('includes.sideNavigation') --}} 
+@extends('layout')
+@section('container')
 
 <div id="page-wrapper">
     <div class="container-fluid">       
@@ -31,14 +31,7 @@
                               <div class="col-md-6 form-group">
                                   <label>Code </label>
                                   <input type="text" id='Code' required name="Code" 
-                                         value="@php
-                                         if(isset($data->Code)){
-                                          echo $data->Code;
-                                         }else{
-                                         echo $data['Code'];
-                                         }
-                                         @endphp
-                                         " 
+                                         value="@if(isset($data->Code)){{ $data->Code }}@else{{ $data['Code'] }}@endif" 
                                          class="form-control">
                               </div>
                               <div class="col-md-6 form-group">
@@ -52,14 +45,7 @@
                               <div class="col-md-6 form-group">
                                   <label>Sort Order</label>
                                   <input type="text" id='SortOrder' required name="SortOrder" 
-                                      value="@php
-                                         if(isset($data->SortOrder)){
-                                          echo $data->SortOrder;
-                                         }else{
-                                         echo $data['SortOrder'];
-                                         }
-                                         @endphp
-                                         " 
+                                      value="@if(isset($data->SortOrder)){{ $data->SortOrder}}@else{{ $data['SortOrder']}}@endif" 
                                       class="form-control">
                               </div>
 
@@ -89,3 +75,4 @@
 
 @include('includes.footerJs')
 @include('includes.footer')
+@endsection

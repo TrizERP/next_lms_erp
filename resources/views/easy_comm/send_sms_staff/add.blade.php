@@ -1,8 +1,8 @@
-@include('../includes.headcss')
+{{--@include('../includes.headcss')
 @include('../includes.header')
-@include('../includes.sideNavigation')
-
-
+@include('../includes.sideNavigation')--}}
+@extends('layout')
+@section('container')
 <div id="page-wrapper">
     <div class="container-fluid">
         <div class="card">
@@ -14,13 +14,11 @@
             @endif
             <div class="row">
                 <div class="col-lg-12 col-sm-12 col-xs-12">
-                    @php
-                    if(isset($data['stu_data'])){
-                    @endphp
+                    @if(isset($data['stu_data']))
                     <form action="{{ route('send_sms_staff.store') }}" enctype="multipart/form-data" method="post">
                         {{ method_field("POST") }}
                         {{csrf_field()}}
-                        <input type="hidden" name="group_id" value="<?php echo $data['group_id']; ?>">
+                        <input type="hidden" name="group_id" value="{{$data['group_id']}}">
                         <div class="row">                            
                             <div class="col-md-4 form-group">
                                 <label>SMS Text</label>
@@ -41,11 +39,11 @@
                                 @endphp
                                 <tr>
                                     <td>
-                                        <input type="checkbox" name="@php echo 'sendsms['.$col_arr['mobile'].']'; @endphp" class="ckbox1">  
+                                        <input type="checkbox" name="sendsms[{{$col_arr['mobile']}}]" class="ckbox1">  
                                     </td>
-                                    <td>@php echo $id+1; @endphp</td>
-                                    <td>@php echo $col_arr['name']; @endphp</td>
-                                    <td>@php echo $col_arr['mobile']; @endphp</td>
+                                    <td>{{$id+1}}</td>
+                                    <td>{{$col_arr['name']}}</td>
+                                    <td>{{$col_arr['mobile']}}</td>
 
                                 </tr>
                                 @php
@@ -61,9 +59,7 @@
                             </div>
                         </div>    
                     </form>
-                    @php
-                    }else{
-                    @endphp
+                    @else
                         <div class="row">                            
                             <div class="col-md-12 form-group">
                                 <center>
@@ -71,9 +67,7 @@
                                 </center>
                             </div>
                         </div>
-                    @php
-                    }
-                    @endphp
+                    @endif
                 </div>
             </div>    
             @if (count($errors) > 0)
@@ -101,3 +95,4 @@
     });
 </script>
 @include('includes.footer')
+@endsection

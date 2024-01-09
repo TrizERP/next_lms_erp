@@ -106,9 +106,8 @@
                                             $j=1;
                                             @endphp
                                             @if(isset($data['data']))
-                                            <?PHP $i = 1; ?>
+                                            @php $i = 1; @endphp
                                             @foreach($data['data'] as $key => $value)
-
                                             <tr>
 
                                                 <td><input id="{{$key}}" value="{{$key}}" name="students[]"

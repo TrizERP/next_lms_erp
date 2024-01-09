@@ -1,8 +1,8 @@
-@include('../includes.headcss')
+{{--@include('../includes.headcss')
 @include('../includes.header')
-@include('../includes.sideNavigation')
-
-
+@include('../includes.sideNavigation')--}}
+@extends('layout')
+@section('container')
 <div id="page-wrapper">
     <div class="container-fluid">
         <div class="row" style=" margin-top: 25px;">
@@ -14,15 +14,13 @@
                 </div>
                 @endif
                 <div class="col-lg-12 col-sm-12 col-xs-12">
-                    @php
-                    if(isset($data['stu_data'])){
-                    @endphp
+                    @if(isset($data['stu_data']))
                     <form action="{{ route('send_email_parents.store') }}" enctype="multipart/form-data" method="post">
                         {{ method_field("POST") }}
                         {{csrf_field()}}
-                        <input type="hidden" name="grade" value="<?php echo $data['grade']; ?>">
-                        <input type="hidden" name="standard" value="<?php echo $data['standard']; ?>">
-                        <input type="hidden" name="division" value="<?php echo $data['division']; ?>">
+                        <input type="hidden" name="grade" value="{{$data['grade']}}">
+                        <input type="hidden" name="standard" value="{{$data['standard']}}">
+                        <input type="hidden" name="division" value="{{$data['division']}}">
                         
                         <table class="table-bordered table-responsive table" id="myTable" width="100%">
                             <tr>
@@ -38,10 +36,10 @@
                             @endphp
                             <tr>
 
-                                <td><input type="checkbox" name="@php echo 'sendsms['.$col_arr['email'].']'; @endphp" class="ckbox1">  </td>
-                                <td>@php echo $id+1; @endphp</td>
-                                <td>@php echo $col_arr['name']; @endphp</td>
-                                <td>@php echo $col_arr['mobile']; @endphp</td>
+                                <td><input type="checkbox" name="sendsms[{{$col_arr['email']}}]" class="ckbox1">  </td>
+                                <td>{{$id+1}}</td>
+                                <td>{{$col_arr['name']}}</td>
+                                <td>{{$col_arr['mobile']}}</td>
 
                             </tr>
                             @php
@@ -56,11 +54,9 @@
                         </div>
 
                     </form>
-                    @php
-                    }else{
-                    echo "No Student Found.";
-                    }
-                    @endphp
+                    @else
+                    No Student Found.
+                    @endif
                 </div>
                 @if (count($errors) > 0)
                 <div class="alert alert-danger">
@@ -88,3 +84,4 @@
     });
 </script>
 @include('includes.footer')
+@endsection

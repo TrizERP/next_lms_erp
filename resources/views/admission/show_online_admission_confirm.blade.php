@@ -202,8 +202,8 @@
                                             <select class="form-control" id="admin_status[{{$data->CHECKBOX}}]"
                                                     name="admin_status[{{$data->CHECKBOX}}]"
                                                     style="width: 100px !important;"
-                                                    @php echo $for_principal_disable; @endphp
-                                                    @php echo $for_account_disable; @endphp
+                                                  {{$for_principal_disable}} 
+                                                  {{ $for_account_disable}} 
                                                     @if($data->admin_status == 'Verified') disabled @endif
                                             >
                                                 <option>Select Status</option>
@@ -218,10 +218,9 @@
                                             <select class="form-control" id="principal_status[{{$data->CHECKBOX}}]"
                                                     name="principal_status[{{$data->CHECKBOX}}]"
                                                     style="width: 100px !important;"
-                                                    @php echo $for_admin_disable; @endphp
-                                                    @php echo $for_account_disable;
-                                            echo $not_varified_by_admin;
-                                                    @endphp
+                                                    {{$for_admin_disable}}
+                                                    {{ $for_account_disable }} {{$not_varified_by_admin}}
+                                                   
                                                     @if(isset($data->principal_status)) disabled @endif>
                                                 <option>Select Status</option>
                                                 <option value="Approved"
@@ -238,8 +237,9 @@
                                             <select class="form-control" id="account_status[{{$data->CHECKBOX}}]"
                                                     name="account_status[{{$data->CHECKBOX}}]"
                                                     style="width: 100px !important;"
-                                                    @php echo $for_admin_disable; echo $not_varified_by_principal; @endphp
-                                                    @php echo $for_principal_disable; @endphp
+                                                   {{ $for_admin_disable}}
+                                                    {{ $not_varified_by_principal}}
+                                                   {{ $for_principal_disable}}
                                                     @if(isset($data->account_status)) disabled @endif>
                                                 <option>Select Status</option>
                                                 <option value="Confirm"

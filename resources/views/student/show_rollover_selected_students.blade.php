@@ -1,6 +1,8 @@
-@include('includes.headcss')
+{{--@include('includes.headcss')
 @include('includes.header')
-@include('includes.sideNavigation')
+@include('includes.sideNavigation')--}}
+@extends('layout')
+@section('container')
 use DB;
 
 <div id="page-wrapper">
@@ -356,3 +358,4 @@ use DB;
 
 </script>
 @include('includes.footer')
+@endsection 

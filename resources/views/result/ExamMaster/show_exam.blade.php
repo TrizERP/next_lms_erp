@@ -1,6 +1,6 @@
-@include('includes.headcss')
-@include('includes.header')
-@include('includes.sideNavigation')
+{{-- @include('includes.headcss') @include('includes.header') @include('includes.sideNavigation') --}} 
+@extends('layout')
+@section('container')
 
 <div id="page-wrapper">
     <div class="container-fluid">       
@@ -26,7 +26,7 @@
                                     <th>Term</th>
                                     <th>Weightage</th>                                    
                                     <th>Sort Order</th>
-                                    <th>Action</th>
+                                    <th class="text-left">Action</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -75,3 +75,4 @@
     });
 </script>
 @include('includes.footer')
+@endsection

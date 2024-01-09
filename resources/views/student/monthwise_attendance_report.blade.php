@@ -1,7 +1,8 @@
-@include('includes.headcss')
+{{--@include('includes.headcss')
 @include('includes.header')
-@include('includes.sideNavigation')
-
+@include('includes.sideNavigation')--}}
+@extends('layout')
+@section('container')
 <div id="page-wrapper">
     <div class="container-fluid">
         <div class="row bg-title">
@@ -85,10 +86,8 @@
                                 }
                         @endphp
                         <div class="card">
-                    @php
-                        echo App\Helpers\get_school_details($grade_id,$standard_id,$division_id);
-                        echo '<br><center><span style=" font-size: 14px;font-weight: 600;font-family: Arial, Helvetica, sans-serif !important">Month : '.$month_name[$data['month']].' / </span><span style=" font-size: 14px;font-weight: 600;font-family: Arial, Helvetica, sans-serif !important">Year : '.$data['year'].'</span></center><br>';
-                    @endphp                        
+                   {!! App\Helpers\get_school_details($grade_id,$standard_id,$division_id); !!}
+                    <br><center><span style=" font-size: 14px;font-weight: 600;font-family: Arial, Helvetica, sans-serif !important">Month : {{$month_name[$data['month']]}} / </span><span style=" font-size: 14px;font-weight: 600;font-family: Arial, Helvetica, sans-serif !important">Year : {{$data['year']}}</span></center><br>
                             <div class="table-responsive">
                                 <table id="example" class="table display" style="border:none !important">
                                     <thead>
@@ -107,7 +106,7 @@
                                         @endfor
                                         <th>Total Working Days</th>
                                         <th>Total Presant</th>
-                                        <th>Total Absent</th>
+                                        <th class="text-left">Total Absent</th>
                                     </tr>
                                     </thead>
                                     <tbody>
@@ -119,7 +118,7 @@
                                             $totalA = 0;
                                             @endphp
                                             <td>{{$j++}}</td>
-                                            <td>@php echo $month_name[$data['month']] .'/'. $data['year']; @endphp</td>
+                                            <td>{{ $month_name[$data['month']] .'/'. $data['year']; }}</td>
                                             <td>{{ $value['standard_name'] . ' / ' . $value['division_name'] }}</td>
                                             <td>{{$value['enrollment_no']}}</td>
                                             <td>{{$value['first_name']." ".$value['middle_name']." ".$value['last_name']}}</td>
@@ -275,3 +274,4 @@ $(document).on('change', '#division', function () {
 
 </script>
 @include('includes.footer')
+@endsection
