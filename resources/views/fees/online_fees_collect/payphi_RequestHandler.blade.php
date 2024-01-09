@@ -6,10 +6,17 @@
     <script  src="https://code.jquery.com/jquery-3.2.1.js"  integrity="sha256-DZAnKJ/6XZ9si04Hgrsxu/8s717jcIzLy3oi35EouyE="  crossorigin="anonymous"></script>
 
     @php
-
-        $url = "Location: " . $data['send_response']['redirectURI'] ."?tranCtx=". $data['send_response']['tranCtx'];
+        if (isset($data['send_response']['redirectURI'])) {
+            $url = "Location: " . $data['send_response']['redirectURI'] ."?tranCtx=". $data['send_response']['tranCtx'];
             header($url, true);
             exit();
-    @endphp      
+        } else {
+            // Handle the case where 'redirectURI' is not set in the array
+            echo("<pre>");
+            print_r($data['send_response']);
+            echo("</pre>");
+            die;;
+        }
+    @endphp    
 </body>
 </html>

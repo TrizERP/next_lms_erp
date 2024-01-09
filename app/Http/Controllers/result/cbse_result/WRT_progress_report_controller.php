@@ -106,8 +106,8 @@ class WRT_progress_report_controller extends Controller
             $term_id = 149;
             $standard_id = $all_student[0]['standard_id'];
             $division_id = $all_student[0]['division_id'];
-            $from_date = $_REQUEST['from_date'];
-            $to_date = $_REQUEST['to_date'];
+            $from_date = isset($_REQUEST['from_date']) ? $_REQUEST['from_date'] : null;
+            $to_date = isset($_REQUEST['to_date']) ? $_REQUEST['to_date'] : null;
             $exam_type = isset($_REQUEST['exam_type']) ? $_REQUEST['exam_type'] : null;
         } else {
             $syear = session()->get('syear');
@@ -135,8 +135,11 @@ class WRT_progress_report_controller extends Controller
             ->where("e.sub_institute_id", "=", $sub_institute_id)
             ->where("e.syear", "=", $syear)
             ->where("e.standard_id", "=", $standard_id)
-            ->whereIn("student_id", $student_id_arr)
-            ->whereBetween("e.exam_date", [$from_date, $to_date]);
+            ->whereIn("student_id", $student_id_arr);
+            
+        if (!empty($from_date) && !empty($to_date)) {
+            $result = $result->whereBetween("e.exam_date", [$from_date, $to_date]);
+        }
 
         if ($exam_type != '') {
             $result = $result->where('e.exam_id', $exam_type);

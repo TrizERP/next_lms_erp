@@ -1684,7 +1684,7 @@ exit; */
         ksort($fields);
 
         $hash_input = '';
-        foreach($fields as $key=>$value) {
+        foreach($fields as $key_val=>$value) {
             if (strlen($value) > 0) { 
                 $hash_input .= $value; 
             }
@@ -1808,7 +1808,7 @@ exit; */
                 ksort($fields);
         
                 $hash_input = '';
-                foreach($fields as $key=>$value) {
+                foreach($fields as $key_val=>$value) {
                     if (strlen($value) > 0) { 
                         $hash_input .= $value; 
                     }
