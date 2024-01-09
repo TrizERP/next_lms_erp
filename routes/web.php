@@ -57,6 +57,7 @@ use App\Http\Controllers\library\LibraryReportController;
 use App\Http\Controllers\sqaa\sqaa_controller;
 use App\Http\Controllers\sqaa\sqaaReportController;
 use App\Http\Controllers\sqaa\sqaaScoreReportController;
+use App\Http\Controllers\leave\LeaveAuthorisationController;
 
 /*
 |--------------------------------------------------------------------------
@@ -169,7 +170,7 @@ Route::group([ 'middleware' => ['session', 'menu', 'logRoute']], function () {
 
     Route::get('early-going-hrms-attendance-report',[HrmsController::Class,'earlyGoingHrmsAttendanceReport'])->name('hrms_attendance_report.early_going_report');
     Route::post('/early-going-hrms-attendance-report', [HrmsController::class, 'earlyGoingHrmsAttendanceReport'])->name('hrms.show_early_going_hrms_attendance_report');
-    
+
     Route::resource('sqaa_master', sqaa_controller::class);
     Route::resource('sqaa_score_report', sqaaScoreReportController::class);
     Route::resource('sqaa_report_master', sqaaReportController::class);
@@ -411,6 +412,11 @@ Route::group(['middleware' => ['session', 'menu', 'logRoute']], function () {
     Route::post('import-leave', [ApplyLeaveController::class,'importOldLeave'])->name('import-leave');
     Route::get('holiday.weekdays', [HolidayController::class,'getWeekdays'])->name('holiday.weekdays');
     Route::post('holiday.weekdays', [HolidayController::class,'storeWeekdays'])->name('holiday.weekdays');
+
+    //Leave Authorisation
+    Route::resource('leave-authorisation', LeaveAuthorisationController::class);
+    Route::post('leave-authorisation', [LeaveAuthorisationController::class,'leaveAuthorisation'])->name('leave.authorisation.index');
+    Route::post('leave-authorisation-store', [LeaveAuthorisationController::class,'leaveAuthorisationStore'])->name('leave.authorisation.store');
 
     Route::resource('books', BookController::class);
     Route::get('books/{id}/barcode', [BookController::class,'generateBarcode'])->name('books.barcode');
