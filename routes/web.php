@@ -163,9 +163,9 @@ Route::group([ 'middleware' => ['session', 'menu', 'logRoute']], function () {
     Route::post('hrms-attendance-in-time/store',[HrmsController::Class,'hrmsAttendanceInTimeStore'])->name('hrms_attendance_in_time.store');
     Route::post('hrms-attendance-out-time/store',[HrmsController::Class,'hrmsAttendanceOutTimeStore'])->name('hrms_attendance_out_time.store');
 
-    Route::get('hrms-attendance-report',[HrmsController::Class,'hrmsAttendanceReport'])->name('hrms_attendance_report.index');
+    Route::get('hrms-attendance-report',[HrmsController::Class,'hrmsAttendanceReportIndex'])->name('hrms_attendance_report.index');
     Route::post('/hrms-attendance-report', [HrmsController::class, 'hrmsAttendanceReport'])->name('hrms.show_hrms_attendance_report');
-    Route::post('/get-employees-list', [HrmsController::class, 'getEmployeeLists'])->name('get-employees-list');
+    Route::post('/get-employees-list', [HrmsController::class, 'getEmployeeLists'])->name('get.employees.list');
 
     Route::get('early-going-hrms-attendance-report',[HrmsController::Class,'earlyGoingHrmsAttendanceReport'])->name('hrms_attendance_report.early_going_report');
     Route::post('/early-going-hrms-attendance-report', [HrmsController::class, 'earlyGoingHrmsAttendanceReport'])->name('hrms.show_early_going_hrms_attendance_report');
