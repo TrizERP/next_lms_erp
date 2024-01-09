@@ -21,11 +21,9 @@
                               <label>Fees Title</label>
                               <select name="fees_title_id" id="title" class="form-control van">
                                   <option value="">--Select--</option>
-                                  <?php
-                                    foreach ($data['data']['ddTtitle'] as $id => $arr) {
-                                  	 echo "<option value='$id'>$arr</option>";
-                                    }
-                                  ?>
+                                 @foreach ($data['data']['ddTtitle'] as $id => $arr) 
+                                  	<option value='{{$id}}'>{{$arr}}</option>
+                                @endforeach
                               </select>
                           </div>
                           <div class="col-md-3 form-group">

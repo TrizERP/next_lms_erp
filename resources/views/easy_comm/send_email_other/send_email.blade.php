@@ -1,6 +1,8 @@
-@include('../includes.headcss')
+{{--@include('../includes.headcss')
 @include('../includes.header')
-@include('../includes.sideNavigation')
+@include('../includes.sideNavigation')--}}
+@extends('layout')
+@section('container')
 
 <link href="{{ asset("/plugins/bower_components/dropzone-master/dist/dropzone.css") }}" rel="stylesheet">
 <link href="{{ asset("/plugins/bower_components/summernote/dist/summernote.css") }}" rel="stylesheet">
@@ -33,9 +35,7 @@
                     <form action="{{ route('send_other_mail') }}" enctype="multipart/form-data" method="post" onsubmit="return postForm();">
                             {{ method_field("POST") }}
                             {{csrf_field()}}
-                            <?php
-                                // $all_emails = implode(',',$data);
-                            ?>
+                           
                         <h4>To Email</h4>
                         <div class="form-group">
                             <input type="text" id="all_email" name="all_email" class="form-control" placeholder="To email">
@@ -109,3 +109,4 @@ $('#summernote').summernote({
     });
 </script>
 @include('includes.footer')
+@endsection

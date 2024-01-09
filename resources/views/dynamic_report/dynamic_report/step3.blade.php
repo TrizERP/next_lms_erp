@@ -1,7 +1,8 @@
-@include('includes.headcss')
-@include('includes.header')
-@include('includes.sideNavigation')
-
+{{--@include('../includes.headcss')
+@include('../includes.header')
+@include('../includes.sideNavigation')--}}
+@extends('layout')
+@section('container')
 <style>
     .breadcrumb1-arrow {
         min-height: 36px;
@@ -170,7 +171,7 @@
                     <form action="{{ route('dynamic_report.store') }}" enctype="multipart/form-data" method="post">
                         {{ method_field("POST") }}
                         {{csrf_field()}}
-                        <textarea name="old_data" style="display:none;"><?php echo serialize($data); ?></textarea>
+                        <textarea name="old_data" style="display:none;">{{serialize($data)}}</textarea>
                         <div class="form-group row">
                             <label class="col-form-label">All Conditions (All conditions must be met)</label>
                         </div>
@@ -179,9 +180,9 @@
                                 <div class="col-md-4">
                                     <select class="form-control" style="margin-bottom: 20px;" name="condition[must][field][]">
                                         <option value="">-Select Field-</option>
-                                        <?php foreach ($data["all_fields"] as $id => $val) { ?>
-                                            <option value="<?php echo $id; ?>"><?php echo $val; ?></option>
-                                        <?php } ?>
+                                        @foreach ($data["all_fields"] as $id => $val) 
+                                            <option value="{{$id}}">{{$val}}</option>
+                                        @endforeach
                                     </select>
                                 </div>
                                 <div class="col-md-4">
@@ -212,9 +213,9 @@
                                 <div class="col-md-4">
                                     <select class="form-control" style="margin-bottom: 20px;" name="condition[any][field][]">
                                         <option value="">-Select Field-</option>
-                                        <?php foreach ($data["all_fields"] as $id => $val) { ?>
-                                            <option value="<?php echo $id; ?>"><?php echo $val; ?></option>
-                                        <?php } ?>
+                                        @foreach ($data["all_fields"] as $id => $val)
+                                            <option value="{{$id}}">{{$val}}</option>
+                                            @endforeach
                                     </select>
                                 </div>
                                 <div class="col-md-4">
@@ -278,3 +279,4 @@
     }
 </script>
 @include('includes.footer')
+@endsection

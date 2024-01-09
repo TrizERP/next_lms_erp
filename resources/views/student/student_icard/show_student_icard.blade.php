@@ -114,12 +114,12 @@
                 $division_id = $data['division_id'];
             }
         @endphp
-        <?php
+        @php
             $file_name = "icard/templates/" . $data['template'] . ".html";
             $fin = fopen($file_name, 'r') or die("Selected Icard Template is not in proper format .");
             $string = fread($fin, filesize($file_name));
             fclose($fin);
-        ?>
+        @endphp
         @if(isset($data['data']))
         @php
             if(isset($data['data'])){
@@ -131,7 +131,7 @@
         @endphp
         <div class="row-{{$data['row']}}-column-{{$data['column']}}">
         @foreach($student_data as $key => $value)
-        <?php
+        @php
             $icard_icon = '';
             if(isset($value['icard_icon']) && $value['icard_icon'] != '')
             {
@@ -176,21 +176,16 @@
             $str = str_replace(htmlspecialchars("<<school_image>>"), "/storage/school/" . $value['school_image'], $str);
             $str = str_replace(htmlspecialchars("<<school_address>>"), $value['school_address'], $str);
             $str = str_replace(htmlspecialchars("<<years>>"), session()->get('syear') . "-" . (session()->get('syear') + 1), $str);
-        ?>
+        @endphp
                 <div class="item">
-                    <?php echo $str; ?>
+                    {{$str}}
                 </div>
-                <?php
-                if ($j == $pageBreakCount)
-                {
-                ?>
+               @if ($j == $pageBreakCount)
                     <div class="page-break-clear"></div>
                     <div class="page-break">&nbsp;</div>
-                <?php
-                    $j = 0;
-                }
-                    $j++;
-                ?>
+                @php $j = 0; @endphp
+                @endif
+                @php  $j++; @endphp
             @endforeach
             </div>
         </div>

@@ -209,38 +209,24 @@ class proxyController extends Controller
         )
             ->join('standard AS s', function ($join)  use($marking_period_id){
                 $join->on('s.id', '=', 'timetable.standard_id');
-                $join->on('s.sub_institute_id', '=', 'timetable.sub_institute_id');
-                // $join->when($marking_period_id,function($query) use($marking_period_id){
-                //     $query->where('s.marking_period_id',$marking_period_id);
-                // });
             })
             ->join('division AS d', function ($join) {
                 $join->on('d.id', '=', 'timetable.division_id');
-                $join->on('d.sub_institute_id', '=', 'timetable.sub_institute_id');
             })
             ->join('period AS p', function ($join) {
                 $join->on('p.id', '=', 'timetable.period_id');
-                $join->on('p.sub_institute_id', '=', 'timetable.sub_institute_id');
             })
             ->join('subject AS su', function ($join) {
                 $join->on('su.id', '=', 'timetable.subject_id');
-                $join->on('su.sub_institute_id', '=', 'timetable.sub_institute_id');
             })
             ->leftjoin('batch AS b', function ($join) {
                 $join->on('b.id', '=', 'timetable.batch_id');
-                $join->on('b.sub_institute_id', '=', 'timetable.sub_institute_id');
             })
             ->where([
                 'timetable.sub_institute_id' => $sub_institute_id, 'teacher_id' => $proxy_teacher_id,
                 'timetable.syear'            => $syear,
             ])
             ->whereIn('week_day', $days)
-            /* ->whereNotIn('timetable.id', function ($query) use ($sub_institute_id, $proxy_teacher_id, $from_date, $to_date) {
-                $query->select(DB::raw('ifnull(group_concat(timetable_id),0)'))
-                    ->from('proxy_master')
-                    ->whereRaw("sub_institute_id = $sub_institute_id  and teacher_id = $proxy_teacher_id")
-                    ->whereBetween('proxy_date', [$from_date, $to_date]);
-            }) */
             ->groupby('p.id')
             ->orderBy('week_day', 'asc')
             ->get()->toArray();
@@ -252,8 +238,6 @@ class proxyController extends Controller
                 'S' => 'Saturday',
             );
             foreach ($dates as $key => $val) {
-                //Get free teacher according to period and day
-
             $teacher_data = DB::table('tbluser as t')
                 ->select(DB::raw("CONCAT_WS(' ', t.first_name, t.middle_name, t.last_name) as teacher_name, t.id"))
                 ->join('tbluserprofilemaster as u', function ($join) use ($syear,$sub_institute_id) {
@@ -262,7 +246,6 @@ class proxyController extends Controller
                          ->where('u.sub_institute_id', '=', $sub_institute_id);
                 })
                 ->leftJoin('timetable as ti', 't.id', '=', 'ti.teacher_id')
-                // ->where('ti.period_id', '<>', $tval["period_id"])
                 ->where('ti.teacher_id', '<>', $proxy_teacher_id)
                 ->where('ti.syear', '<=', $syear)
                 ->where('ti.sub_institute_id', '=', $sub_institute_id)
@@ -272,7 +255,6 @@ class proxyController extends Controller
                           ->from('timetable as tt')
                           ->where('tt.syear', '=', $syear)
                           ->where('tt.sub_institute_id', '=', $sub_institute_id)
-                          // ->whereNull('tt.week_day')
                           ->where('tt.period_id', '=', $tval["period_id"])
                           ->where('tt.week_day', '=', $tval["week_day"]);
                 })
@@ -301,22 +283,29 @@ class proxyController extends Controller
 
         $user_data = tbluserModel::select(
             'tbluser.*',
-            DB::raw('concat(tbluser.first_name," ",tbluser.middle_name," ",tbluser.last_name) as teacher_name')
-        )
+            DB::raw('concat(tbluser.first_name," ",tbluser.middle_name," ",tbluser.last_name) as teacher_name'))
             ->join('tbluserprofilemaster', 'tbluserprofilemaster.id', "=", 'tbluser.user_profile_id')
             ->where(['tbluser.sub_institute_id' => $sub_institute_id, 'tbluserprofilemaster.name' => 'Teacher', 'tbluser.status' => 1])
             ->orderBy('tbluser.first_name')
             ->get();
 
+        $check_data = DB::table('proxy_master')
+            ->whereRaw('sub_institute_id='.$sub_institute_id.' and syear='.$syear.'')
+            ->whereBetween('proxy_date', [$from_date, $to_date])
+            ->get()
+            ->toArray();
+        $assigned_data=[];
+            foreach ($check_data as $key => $value) {
+                $assigned_data[$value->proxy_date][$value->period_id][$value->proxy_teacher_id][] = $value;
+            }
         $data['teacher_data'] = $user_data;
 
         $type = $request->input('type');
         $data['proxydata'] = $proxydata;
         $data['teacher'] = $proxy_teacher_id;
-        // echo "<pre>";print_r($data['teacher_data']);exit;
+        $data['check_data'] = $assigned_data;        
         $data['from_date'] = $from_date;
         $data['to_date'] = $to_date;
-// exit;
         return is_mobile($type, 'school_setup/add_proxy', $data, "view");
     }
 
@@ -439,26 +428,18 @@ class proxyController extends Controller
         )
             ->join('standard AS s', function ($join) use($marking_period_id) {
                 $join->on('s.id', '=', 'proxy_master.standard_id');
-                $join->on('s.sub_institute_id', '=', 'proxy_master.sub_institute_id');
-                // $join->when($marking_period_id,function($query) use($marking_period_id){
-                //     $query->where('s.marking_period_id',$marking_period_id);
-                // });
             })
             ->join('division AS d', function ($join) {
                 $join->on('d.id', '=', 'proxy_master.division_id');
-                $join->on('d.sub_institute_id', '=', 'proxy_master.sub_institute_id');
             })
             ->join('period AS p', function ($join) {
                 $join->on('p.id', '=', 'proxy_master.period_id');
-                $join->on('p.sub_institute_id', '=', 'proxy_master.sub_institute_id');
             })
             ->join('subject AS su', function ($join) {
                 $join->on('su.id', '=', 'proxy_master.subject_id');
-                $join->on('su.sub_institute_id', '=', 'proxy_master.sub_institute_id');
             })
             ->leftjoin('batch AS b', function ($join) {
                 $join->on('b.id', '=', 'proxy_master.batch_id');
-                $join->on('b.sub_institute_id', '=', 'proxy_master.sub_institute_id');
             })
             ->where(['proxy_master.sub_institute_id' => $sub_institute_id, 'proxy_master.id' => $id])
             ->get()->toArray();

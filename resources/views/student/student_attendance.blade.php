@@ -1,6 +1,9 @@
-@include('includes.headcss')
+{{-- @include('includes.headcss')
 @include('includes.header')
-@include('includes.sideNavigation')
+@include('includes.sideNavigation') --}}
+
+@extends('layout')
+@section('container')
 
 <style type="text/css">
     .Present {
@@ -93,7 +96,7 @@
                                         <th>Batch</th>
                                         @endif
                                         <th>Present <input id="checkall" name="attendance" onchange="checkAll(this,'Present');" type="radio"></th>
-                                        <th>Absent <input id="checkall" name="attendance" onchange="checkAll(this,'Absent');" type="radio"></th>
+                                        <th class="text-left">Absent <input id="checkall" name="attendance" onchange="checkAll(this,'Absent');" type="radio"></th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -199,3 +202,4 @@
 
 </script>
 @include('includes.footer')
+@endsection

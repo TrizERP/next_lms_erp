@@ -142,25 +142,51 @@ class lo_marks_entryController extends Controller
         $syear = $request->session()->get('syear');
 
         if (count($id_arr) != 0) {
-            $sql = "SELECT *, SUM(MARKS) AS total,".$getQuestionCases." FROM(
-            select CONCAT_WS(' ',s.last_name,s.first_name,s.middle_name) AS name,
-            s.enrollment_no as roll_no,stds.name AS STD,se.student_id,li.QUESTION_TITLE,li.QUESTION_OUT_OF,lo.MARKS,li.ID
-            from tblstudent s
-            inner join tblstudent_enrollment se on se.student_id = s.id
-            inner join standard stds on stds.id = se.standard_id
-            inner join division d on d.id = se.section_id
-            INNER JOIN learning_outcome_question_master li ON li.ID IN ($ids)
-            LEFT JOIN learning_outcome_student_marks lo ON se.student_id = lo.STUDENT_ID 
-                AND li.ID = lo.QUESTION_ID AND lo.DATE = '$from_date' 
-                AND lo.sub_institute_id = '$sub_institute_id'
-            WHERE se.syear = $syear AND s.sub_institute_id = '$sub_institute_id'
-                AND (stds.name like '%$std' and stds.name not like '%1$std')
-                AND d.name = '$div'
-            GROUP BY se.student_id,li.ID) as a
-            GROUP BY a.student_id
-            ORDER BY CAST(a.roll_no AS SIGNED)";
+            // $sql = "SELECT *, SUM(MARKS) AS total,".$getQuestionCases." FROM(
+            // select CONCAT_WS(' ',s.last_name,s.first_name,s.middle_name) AS name,
+            // s.enrollment_no as roll_no,stds.name AS STD,se.student_id,li.QUESTION_TITLE,li.QUESTION_OUT_OF,lo.MARKS,li.ID
+            // from tblstudent s
+            // inner join tblstudent_enrollment se on se.student_id = s.id
+            // inner join standard stds on stds.id = se.standard_id
+            // inner join division d on d.id = se.section_id
+            // INNER JOIN learning_outcome_question_master li ON li.ID IN ($ids)
+            // LEFT JOIN learning_outcome_student_marks lo ON se.student_id = lo.STUDENT_ID 
+            //     AND li.ID = lo.QUESTION_ID AND lo.DATE = '$from_date' 
+            //     AND lo.sub_institute_id = '$sub_institute_id'
+            // WHERE se.syear = $syear AND s.sub_institute_id = '$sub_institute_id'
+            //     AND (stds.name like '%$std' and stds.name not like '%1$std')
+            //     AND d.name = '$div'
+            // GROUP BY se.student_id,li.ID) as a
+            // GROUP BY a.student_id
+            // ORDER BY CAST(a.roll_no AS SIGNED)";
 
-            $students = DB::select(DB::raw($sql));
+            // $students = DB::select(DB::raw($sql));
+            $students = DB::table('tblstudent AS s')
+            ->selectRaw('CONCAT_WS(" ", s.last_name, s.first_name, s.middle_name) AS name, s.enrollment_no AS roll_no, stds.name AS STD, se.student_id, li.QUESTION_TITLE, li.QUESTION_OUT_OF, lo.MARKS, li.ID')
+            ->join('tblstudent_enrollment AS se', 'se.student_id', '=', 's.id')
+            ->join('standard AS stds', 'stds.id', '=', 'se.standard_id')
+            ->join('division AS d', 'd.id', '=', 'se.section_id')
+            ->join('learning_outcome_question_master AS li', function ($join) use ($ids) {
+                $join->on('li.ID', 'IN', DB::raw("($ids)"));
+            })
+            ->leftJoin('learning_outcome_student_marks AS lo', function ($join) use ($from_date, $sub_institute_id) {
+                $join->on('se.student_id', '=', 'lo.STUDENT_ID')
+                    ->on('li.ID', '=', 'lo.QUESTION_ID')
+                    ->where('lo.DATE', '=', $from_date)
+                    ->where('lo.sub_institute_id', '=', $sub_institute_id);
+            })
+            ->where('se.syear', '=', $syear)
+            ->where('s.sub_institute_id', '=', $sub_institute_id)
+            ->where(function ($query) use ($std) {
+                $query->where('stds.name', 'like', "%$std")
+                    ->orWhere('stds.name', 'not like', "%1$std");
+            })
+            ->where('d.name', '=', $div)
+            ->groupBy('se.student_id', 'li.ID')
+            ->groupByRaw('CONCAT_WS(" ", s.last_name, s.first_name, s.middle_name), s.enrollment_no, stds.name')
+            ->orderByRaw('CAST(s.enrollment_no AS SIGNED)')
+            ->get();
+
 
         } else {
             $students = [];

@@ -1,7 +1,6 @@
-@include('includes.headcss')
-@include('includes.header')
-@include('includes.sideNavigation')
-
+{{-- @include('includes.headcss') @include('includes.header') @include('includes.sideNavigation') --}} 
+@extends('layout')
+@section('container')
 <div id="page-wrapper">
     <div class="container-fluid">
         <div class="card">
@@ -23,7 +22,7 @@
                                     <th>Term Name</th>
                                     <th>Standard</th>
                                     <th>Total Working Day</th>
-                                    <th>Action</th>
+                                    <th class="text-align">Action</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -63,11 +62,12 @@
 <script src="https://cdn.datatables.net/1.10.19/js/jquery.dataTables.min.js"></script>
 <script src="https://cdn.datatables.net/1.10.19/js/dataTables.bootstrap.min.js"></script>
 <script>
-                                            $(document).ready(function () {
-                                                $('#example').DataTable({
+    $(document).ready(function () {
+        $('#example').DataTable({
 
-                                                });
-                                            });
+        });
+    });
 
 </script>
 @include('includes.footer')
+@endsection

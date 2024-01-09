@@ -144,7 +144,7 @@ class co_scholastic_marks_entry_controller extends Controller
         $responce_arr['co_scholastic_parent_dd'] = $this->get_co_scholastic_parent_dd();
         $responce_arr['co_scholastic_parent'] = $_REQUEST['co_scholastic_parent'];
         $responce_arr['co_scholastic_dd'] = $this->get_co_scholastic_dd($_REQUEST["term"],
-            $_REQUEST['co_scholastic_parent']);
+            $_REQUEST['co_scholastic_parent'],$_REQUEST["standard"]);
         $responce_arr['co_scholastic'] = $_REQUEST['co_scholastic'];
         foreach ($student_data as $id => $arr) {
             $temp_arr = array();
@@ -192,22 +192,28 @@ class co_scholastic_marks_entry_controller extends Controller
         $where = [
             "re.sub_institute_id" => session()->get('sub_institute_id'),
         ];
+      
 
         return DB::table('result_co_scholastic_parent as re')
             ->where($where)
             ->pluck('re.title', 're.id');
     }
 
-    public function get_co_scholastic_dd($term, $parent_id)
+    public function get_co_scholastic_dd($term, $parent_id,$standard='')
     {
         $where = [
             "re.sub_institute_id" => session()->get('sub_institute_id'),
             "re.parent_id"        => $parent_id,
             "re.term_id"          => $term,
         ];
-
+        $extra_where = '1=1';
+        if($standard!=''){
+            $extra_where .=' AND re.standard_id='.$standard.' ';
+        }
+        
         return DB::table('result_co_scholastic as re')
             ->where($where)
+            ->whereRaw($extra_where)            
             ->pluck('re.title', 're.id');
     }
 

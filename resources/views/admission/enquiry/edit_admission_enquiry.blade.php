@@ -47,7 +47,7 @@ if(isset($data['editData']))
                             @endphp
                             <div class="col-md-3 form-group">
                                 <label>Enquiry Number </label>
-                                <input type="text" id='enquiry_no' @if(isset($editData['enquiry_no'])) value="{{$editData['enquiry_no']}}" @endif required name="enquiry_no" class="form-control" @php echo $readonly; @endphp>
+                                <input type="text" id='enquiry_no' @if(isset($editData['enquiry_no'])) value="{{$editData['enquiry_no']}}" @endif required name="enquiry_no" class="form-control" {{ $readonly }}>
                             </div>
 
                             <div class="col-md-3 form-group">

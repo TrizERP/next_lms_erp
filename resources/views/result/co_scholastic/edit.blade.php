@@ -1,7 +1,7 @@
-@include('../includes.headcss')
 <link rel="stylesheet" href="../../../plugins/bower_components/dropify/dist/css/dropify.min.css">
-@include('../includes.header')
-@include('../includes.sideNavigation')
+{{-- @include('includes.headcss') @include('includes.header') @include('includes.sideNavigation') --}} 
+@extends('layout')
+@section('container')
 
 <div id="page-wrapper">
     <div class="container-fluid">
@@ -41,15 +41,9 @@
                                 <label>Parent Co-Scholastic: </label>
                                 <select name="parent_id" class="form-control">
                                     <option value="">--Select Parent--</option>
-                                    @php
-                                    foreach ($data['ddValue'] as $id=>$arr){
-                                    $selected = "";
-                                    if($data['parent_id'] == $arr['id']){
-                                    $selected = 'selected=selected';
-                                    }
-                                    echo "<option $selected value=$arr[id]>$arr[title]</option>";
-                                    }
-                                    @endphp
+                                    @foreach ($data['ddValue'] as $id=>$arr)
+                                    <option value={{$arr['id']}} @if($data['parent_id'] == $arr['id']) selected @endif>{{$arr['title']}}</option>
+                                    @endforeach
                                 </select>
                             </div>
                             <div class="col-md-4 form-group">
@@ -166,3 +160,4 @@
 
 @include('includes.footerJs')
 @include('includes.footer')
+@endsection

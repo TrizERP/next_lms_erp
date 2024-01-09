@@ -1,7 +1,8 @@
-@include('includes.headcss')
+{{--@include('includes.headcss')
 @include('includes.header')
-@include('includes.sideNavigation')
-<style>
+@include('includes.sideNavigation')--}}
+@extends('layout')
+@section('container')<style>
     h4 
     {    
         font-size: 13px !important;
@@ -109,3 +110,4 @@ $(document).ready(function () {
 });
 </script>
 @include('includes.footer')
+@endsection

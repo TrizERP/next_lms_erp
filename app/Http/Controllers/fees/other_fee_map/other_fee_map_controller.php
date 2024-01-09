@@ -4,6 +4,7 @@ namespace App\Http\Controllers\fees\other_fee_map;
 
 use App\Http\Controllers\Controller;
 use App\Models\fees\fees_title\fees_title;
+use App\Models\fees\other_fee_map\other_fee_map;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
@@ -114,20 +115,24 @@ class other_fee_map_controller extends Controller
             $responce_arr['stu_data'][$id]['div'] = $arr['division_name'];
             foreach ($mp_id as $key=>$month_id){   
             foreach ($fees_title['data'] as $temp_id => $vals) {
-                $amount = 0;
+                $amount = $paid= 0;
                 $month_name = $fees_title['month'][$temp_id];
                 foreach ($fees_breckoff as $bk_temp_id => $bk_vals) {
                     if ($arr['student_id'] == $bk_vals->student_id && $bk_vals->fee_type_id == $vals['other_fee_id'] && $month_id == $bk_vals->month_id) {
                         $amount = $bk_vals->amount;
                     }
                 }
-                
+                $check_paid = other_fee_map::where(['sub_institute_id'=>$sub_institute_id,'syear'=>$syear])->where('student_id',$arr['student_id'])->where('is_deleted','N')->where('month_id',$month_id)->first();
+                if(isset($check_paid) && $amount !=0){
+                    $paid = $check_paid->actual_amountpaid;
+                }
                 $responce_arr['stu_data'][$id][$month_id][$vals['display_name']]['amount'] = $amount;
+                $responce_arr['stu_data'][$id][$month_id][$vals['display_name']]['paid'] = $paid;                
             }
         }
         }
         $responce_arr['fees_title'] = $fees_title;
-        
+        // echo "<pre>";print_r($responce_arr['stu_data']);exit;
         return is_mobile($type, "fees/other_fee_map/add", $responce_arr, "view");
     }
 

@@ -1,8 +1,8 @@
-@include('../includes.headcss')
+{{--@include('../includes.headcss')
 @include('../includes.header')
-@include('../includes.sideNavigation')
-
-
+@include('../includes.sideNavigation')--}}
+@extends('layout')
+@section('container')
 <div id="page-wrapper">
     <div class="container-fluid">
             <div class="row bg-title">
@@ -40,18 +40,16 @@
                                             <td>{{$j}}</td>
                                             <td>{{$value->EMAIL}}</td>
                                             <td>{{$value->SUBJECT}}</td>
-                                            <?php
+                                            @php
                                                 $attechment = "-";
                                                 if($value->ATTECHMENT != ""){
                                                     $attechment_val = "/storage/email/";
                                                     $att_arr = explode('/',$value->ATTECHMENT);
                                                     $attechment_val .= $att_arr[count($att_arr)-1];
-                                                    // foreach($att_arr as $id=>$val){
-                                                    //     if($val == "")
-                                                    // }
+                                                    
                                                     $attechment = "<a href='$attechment_val'> Attachment </a>";
                                                 }
-                                            ?>
+                                            @endphp
                                             <td>{!!$attechment!!}</td>
                                             <td>{{$value->IP}}</td>
                                             <td>{{ date('d-M-y', strtotime($value->CREATED_ON)) }}</td>
@@ -127,3 +125,4 @@
 
 </script>
 @include('includes.footer')
+@endsection

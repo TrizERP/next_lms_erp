@@ -1,7 +1,9 @@
-@include('includes.headcss')
-<link href="/plugins/bower_components/clockpicker/dist/jquery-clockpicker.min.css" rel="stylesheet">
+{{--@include('includes.headcss')
 @include('includes.header')
-@include('includes.sideNavigation')
+@include('includes.sideNavigation')--}}
+@extends('layout')
+@section('container')
+<link href="/plugins/bower_components/clockpicker/dist/jquery-clockpicker.min.css" rel="stylesheet">
 
 <div id="page-wrapper">
     <div class="container-fluid">
@@ -40,3 +42,4 @@
 
 @include('includes.footerJs')
 @include('includes.footer')
+@endsection

@@ -1,6 +1,6 @@
-@include('includes.headcss')
-@include('includes.header')
-@include('includes.sideNavigation')
+{{-- @include('includes.headcss') @include('includes.header') @include('includes.sideNavigation') --}} 
+@extends('layout')
+@section('container')
 
 <div id="page-wrapper">
     <div class="container-fluid">
@@ -108,7 +108,7 @@
                                 <td>{{$data->div_name}}</td>
                                 <td>
                                 @if(isset($data->file_name))
-                                    <a href="<?php echo asset('storage/circular/' . $data->file_name); ?>" target="_blank">View</a>
+                                    <a href="{{ asset('storage/circular/' . $data->file_name)}}" target="_blank">View</a>
                                 @else
                                 -</td>
                                 @endif
@@ -191,3 +191,4 @@
 
 </script>
 @include('includes.footer')
+@endsection

@@ -28,15 +28,8 @@
                             <label>Fees Title</label>
                             <select name="fees_title_id" id="title" class="form-control van">
                                 <option value="">--Select--</option>
-                                <?php
-                                foreach ($data['data']['ddTtitle'] as $id => $arr) {
-                                    if ($data['fees_title_id'] == $id) {
-                                        $selected = "selected=selected";
-                                    } else {
-                                        $selected = "";
-                                    }
-                                    echo "<option $selected value='$id'>$arr</option>";
-                                }
+                                @foreach ($data['data']['ddTtitle'] as $id => $arr) 
+                                 <option value='{{$id}}' @if($data['fees_title_id'] == $id) selected @endif>{{$arr}}</option>
                                 ?>
                             </select>
                         </div>
@@ -48,11 +41,11 @@
                         <div class="col-md-6 form-group">
                             <label>Mandetory </label>
                             <div class="checkbox checkbox-info">
-                                <?php if ($data['mandatory'] == 1) { ?>
+                                @if ($data['mandatory'] == 1)
                                 <input id="mandatory" name="mandatory" value="1" type="checkbox" checked="checked">
-                                <?php } else { ?>
+                              @else 
                                     <input id="mandatory" name="mandatory" value="1" type="checkbox">
-                                <?php } ?>
+                               @endif
                                 <label for="mandatory"> Mandatory </label>
                             </div>
                         </div>

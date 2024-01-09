@@ -1279,11 +1279,20 @@ END as color_code
 	public function ajax_checkEmailExist(Request $request)
 	{
 		$email = $request->input("email");
-		$sql = "SELECT id,email,'student' as user_type FROM tblstudent WHERE email = '" . $email . "'
-                UNION
-                SELECT id,email,'user' as user_type FROM tbluser WHERE email = '" . $email . "' ";
+		// $sql = "SELECT id,email,'student' as user_type FROM tblstudent WHERE email = '" . $email . "'
+        //         UNION
+        //         SELECT id,email,'user' as user_type FROM tbluser WHERE email = '" . $email . "' ";
 
-		$check_user_sql = DB::select($sql);
+        // $check_user_sql = DB::select($sql);
+        $checkUser = DB::table('tblstudent')
+        ->select('id', 'email', DB::raw("'student' as user_type"))
+        ->where('email', $email)
+        ->union(
+            DB::table('tbluser')
+                ->select('id', 'email', DB::raw("'user' as user_type"))
+                ->where('email', $email)
+        )
+        ->get();
 
 		if (count($check_user_sql) == 0) {
 			return 0;
