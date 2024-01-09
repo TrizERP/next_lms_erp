@@ -48,7 +48,7 @@ class daily_voucherController extends Controller
                 INNER JOIN tblstudent s ON s.id=se.student_id
                 INNER JOIN standard st ON st.id = se.standard_id
                 WHERE (fp.is_deleted = 'N' OR fp.is_waved = 'Cheque Return') 
-                AND fp.syear = '".$syear."' AND se.syear = '".$syear."' AND fp.sub_institute_id = '".$sub_institute_id."' AND DATE_FORMAT(fp.receiptdate,'%Y-%m-%d') = '".$to_date."'
+                AND fp.sub_institute_id = '".$sub_institute_id."' AND DATE_FORMAT(fp.receiptdate,'%Y-%m-%d') = '".$to_date."'
                 UNION";
             } else {
                 $sql .= "
@@ -57,7 +57,7 @@ class daily_voucherController extends Controller
                 INNER JOIN tblstudent_enrollment se ON se.student_id=fp.student_id AND fp.syear=se.syear
                 INNER JOIN tblstudent s ON s.id=se.student_id
                 INNER JOIN standard st ON st.id = se.standard_id
-                WHERE fp.syear = '".$syear."' AND se.syear = '".$syear."' AND fp.sub_institute_id = '".$sub_institute_id."' AND DATE_FORMAT(fp.receiptdate,'%Y-%m-%d') = '".$to_date."'
+                WHERE fp.sub_institute_id = '".$sub_institute_id."' AND DATE_FORMAT(fp.receiptdate,'%Y-%m-%d') = '".$to_date."'
                 UNION";
             }
         }
@@ -76,7 +76,7 @@ class daily_voucherController extends Controller
                 INNER JOIN tblstudent_enrollment se ON se.student_id=fp.student_id AND fp.syear=se.syear
                 INNER JOIN tblstudent s ON s.id=se.student_id
                 INNER JOIN standard st ON st.id = se.standard_id
-                WHERE fp.syear = '".$syear."' AND se.syear = '".$syear."' AND (fp.is_deleted = 'N' OR fp.is_waved = 'Cheque Return') 
+                WHERE (fp.is_deleted = 'N' OR fp.is_waved = 'Cheque Return') 
                 AND fp.sub_institute_id = '".$sub_institute_id."' AND DATE_FORMAT(fp.receiptdate,'%Y-%m-%d') = '".$to_date."'
                 AND st.school_stream='".$sval['school_stream']."'
                 UNION";
