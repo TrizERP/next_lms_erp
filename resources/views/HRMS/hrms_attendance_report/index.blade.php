@@ -1,5 +1,24 @@
 @include('includes.headcss')
 @include('includes.header')
+<style>
+    .status-circle {
+        display: inline-block;
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        margin-right: 0px;
+        margin-bottom: -5px;
+        font
+    }
+
+    .absent { background-color: #FFB2B2; }
+    .latecomer { background-color: orange; }
+    .halfday { background-color: yellow; }
+    .ondutyleave { background-color: #9191c7; }
+    .weekend { background-color: #99D699; }
+    .holiday { background-color: #4591e0; }
+    .punchsame { background-color: red; }
+</style>
 @include('includes.sideNavigation')
 <div id="page-wrapper">
     <div class="container-fluid">
@@ -11,31 +30,38 @@
         <div class="card">
             <div class="card-body">
                 @if ($sessionData = Session::get('data'))
-                    @if($sessionData['status_code'] == 1)
+                    @if($sessionData->status_code == 1)
                         <div class="alert alert-success alert-block">
                     @else
                         <div class="alert alert-danger alert-block">
                     @endif
                         <button type="button" class="close" data-dismiss="alert">×</button>
-                        <strong>{{ $sessionData['message'] }}</strong>
+                        <strong>{{ $sessionData->message }}</strong>
                     </div>
                 @endif
                 <form action="{{route('hrms.show_hrms_attendance_report')}}" enctype="multipart/form-data" method="post">
                 @csrf
                     <div class="row">
                         <div class="col-md-3 form-group">
-                            <label>Employee List</label>
-                            <select id='employee_id' name="employee_id" class="form-control" required>
-                                <option value="">Select Employee</option>
-                                @foreach($employeeLists as $key => $employeeList)
-                                    <option value="{{$employeeList->id}}"
-                                    @if(isset($employee_id))
-                                        @if($employee_id == $employeeList->id)
+                            <label>Department List</label>
+                            <select id='department_id' name="department_id" class="form-control" required>
+                                <option value="">Select Department</option>
+                                @foreach($departments as $id => $department)
+                                    <option value="{{$id}}"
+                                    @if(isset($department_id))
+                                        @if($department_id == $id)
                                         selected='selected'
                                         @endif
                                     @endif
-                                    >{{ $employeeList['first_name'] }} {{ $employeeList['last_name'] }}</option>
+                                    >{{ $department }}</option>
                                 @endforeach
+                            </select>
+                        </div>
+                        <div class="col-md-3 form-group">
+                            <label>Employee List</label>
+                            <select id='employee_id' name="employee_id" class="form-control" >
+                                <option value="">Select Employee</option>
+                                
                             </select>
                         </div>
                         <div class="col-md-3 form-group">
@@ -59,36 +85,141 @@
                 </form>
             </div>
         </div>
-        @if(isset($hrmsList))
+        @if(isset($report_data))
             <div class="card">
+                <div class="col-lg-12 col-md-4 col-sm-4 col-xs-12 page-title">
+                    Colours Description =>
+                    Absent: <span class="status-circle absent"></span> 
+                    Latecomer: <span class="status-circle latecomer"></span> 
+                    HalfDay: <span class="status-circle halfday"></span> 
+                    On Duty Leave: <span class="status-circle ondutyleave"></span> 
+                    Weekend: <span class="status-circle weekend"></span> 
+                    Holiday: <span class="status-circle holiday"></span> 
+                    Punch-in and Punch-out time are same: <span class="status-circle punchsame"></span> 
+                </div><br>
                 <div class="table-responsive mt-20 tz-report-table">
                     <table id="example" class="table table-striped">
                         <thead>
                         <tr>
                             <th>Sr No.</th>
+                            <th>Date</th>
                             <th>Employee Id</th>
                             <th>Employee Name</th>
                             <th>In Time</th>
                             <th>Out Time</th>
-                            <th>Duration</th>
+                            <th class="text-left">Duration</th>
                         </tr>
                         </thead>
-                        <?php
+                        @php
                         $j = 1;
-                        ?>
+                        $holidays = [];
+                        $cl_leave = [];
+                        $on_duty_leave = [];
+                       @endphp
                         <form action="{{route('payroll.store_monthly_payroll_report')}}" method="post">
                             @csrf
                             <tbody>
-                            @foreach($hrmsList as $hrmsAttendance)
-                                <tr>
-                                    <td>{{$j++}}</td>
-                                    <td>{{$hrmsAttendance['user_id']}}</td>
-                                    <td>{{isset($hrmsAttendance['getUser']) ? $hrmsAttendance['getUser']['first_name'] .'-'.$hrmsAttendance['getUser']['last_name'] : ''}}</td>
-                                    <td>{{ $hrmsAttendance['punchin_time']}}</td>
-                                    <td>{{$hrmsAttendance['punchout_time']}}</td>
-                                    <td>{{$hrmsAttendance['timestamp_diff']}}</td>
-                                </tr>
-                            @endforeach
+                                @foreach($report_data as $date => $hrmsAttendance)
+                                    @php
+                                        $att_status='';
+                                        $get_format_punchin_time='';
+                                        $day_name='';
+
+                                        if (isset($hrmsAttendance[0]) && !empty($hrmsAttendance[0])) 
+                                        {
+                                            $hrmsAttendance = $hrmsAttendance[0];
+
+                                            $get_format_punchin_time = \Carbon\Carbon::parse($hrmsAttendance->punchin_time)->format('H:i:s');
+
+                                            $get_format_punchout_time = \Carbon\Carbon::parse($hrmsAttendance->punchout_time)->format('H:i:s');
+
+                                            if ($get_format_punchin_time == $get_format_punchout_time) 
+                                            {
+                                                $att_status = 'background-color: red;';
+                                            }
+                                            else if ($hrmsAttendance->timestamp_diff <= "04:00:00") 
+                                            {
+                                                $att_status = 'background-color: yellow;';
+                                            }
+                                            else if ($hrmsAttendance->monday_in_date < $get_format_punchin_time || $hrmsAttendance->tuesday_in_date < $get_format_punchin_time || $hrmsAttendance->wednesday_in_date < $get_format_punchin_time || $hrmsAttendance->thursday_in_date < $get_format_punchin_time || $hrmsAttendance->friday_in_date < $get_format_punchin_time || $hrmsAttendance->saturday_in_date < $get_format_punchin_time)
+                                            {
+                                                $att_status = 'background-color: orange;';
+                                            }
+                                             
+                                        }
+                                        else if(isset($hrmsAttendance['leave'][0]) && !empty($hrmsAttendance['leave'][0]))
+                                        {
+                                            $leaveData = $hrmsAttendance['leave'][0];
+
+                                            $from_date_cl = $leaveData->from_date;
+                                            $to_date_cl = $leaveData->to_date;
+
+                                            $from_date_on_duty_leave = $leaveData->from_date;
+                                            $to_date_on_duty_leave = $leaveData->to_date;
+
+                                            if ($leaveData->leave_type_id == 'LTY001' || $leaveData->leave_type_id == 'LTY002' || $leaveData->leave_type_id == 'LTY003' || $leaveData->leave_type_id == 'LTY005' || $leaveData->leave_type_id == 'LTY006') 
+                                            {
+                                                while (strtotime($from_date_cl) <= strtotime($to_date_cl)) 
+                                                {
+                                                    $cl_leave[] = $from_date_cl;
+                                                    $from_date_cl = date("Y-m-d", strtotime("+1 day", strtotime($from_date_cl)));
+                                                }
+                                            } 
+                                            else if ($leaveData->leave_type_id == 'LTY004') 
+                                            {
+                                                while (strtotime($from_date_on_duty_leave) <= strtotime($to_date_on_duty_leave)) 
+                                                {
+                                                    $on_duty_leave[] = $from_date_on_duty_leave;
+                                                    $from_date_on_duty_leave = date("Y-m-d", strtotime("+1 day", strtotime($from_date_on_duty_leave)));
+                                                }
+                                            }
+                                        }
+                                        else if(isset($hrmsAttendance['holiday'][0]) && !empty($hrmsAttendance['holiday'][0]))
+                                        {
+                                            $holidayData = $hrmsAttendance['holiday'][0];
+                                        
+                                            $from_date_new = $holidayData->from_date;
+                                            $to_date_new = $holidayData->to_date;
+
+                                            while (strtotime($from_date_new) <= strtotime($to_date_new)) 
+                                            {
+                                                $holidays[] = $from_date_new;
+                                                $from_date_new = date("Y-m-d", strtotime("+1 day", strtotime($from_date_new)));
+                                            }
+                                        }
+                                        
+                                        if (in_array($date, $holidays)) 
+                                        {
+                                            $att_status = 'background-color:#4591e0;';
+                                        }
+                                        if(in_array($date, $cl_leave)) 
+                                        {
+                                            $att_status = 'background-color:#FFB2B2;';
+                                        }
+                                        if(in_array($date, $on_duty_leave)) 
+                                        {
+                                            $att_status = 'background-color:#9191c7;';
+                                        }
+
+                                        $hrms_date = \Carbon\Carbon::createFromFormat('Y-m-d', $date);
+                                        $day_name =lcfirst($hrms_date->format('l'));
+
+                                        if($day_name ==  "sunday")
+                                        {
+                                            $att_status = 'background-color:#99D699;';
+                                        }
+                                    @endphp
+
+                                    <tr style="{{ $att_status }}">
+                                        <td>{{ $j++ }}</td>
+                                        <td>{{date('d-m-Y',strtotime($date))}}</td>
+                                        <td>{{ isset($hrmsAttendance->user_id) ? $hrmsAttendance->user_id : '' }}</td>
+                                        <td>{{ isset($hrmsAttendance->employee_name) ? $hrmsAttendance->employee_name : '' }}</td>
+                                        <td>{{ isset($hrmsAttendance->punchin_time) ? \Carbon\Carbon::parse($hrmsAttendance->punchin_time)->format('h:i A') : 'N/A' }}</td>
+                                        <td>{{ isset($hrmsAttendance->punchout_time) ? \Carbon\Carbon::parse($hrmsAttendance->punchout_time)->format('h:i A') : 'N/A' }}</td>
+                                        <td>{{ isset($hrmsAttendance->timestamp_diff) ? \Carbon\Carbon::parse($hrmsAttendance->timestamp_diff)->format('H:i') : '00:00' }}</td>
+                                    </tr>
+                                @endforeach
                             </tbody>
                         </form>
                     </table>
@@ -106,7 +237,7 @@
             select: true,
             lengthMenu: [
                 [100, 500, 1000, -1],
-                ['100', '500', '1000', 'Show All']
+                ->100', '500', '1000', 'Show All
             ],
             dom: 'Bfrtip',
             buttons: [
@@ -139,6 +270,28 @@
                         .column(i)
                         .search(this.value)
                         .draw();
+                }
+            });
+        });
+        
+        // Ajax call to get employees based on the selected department
+        $(document).on("change", "#department_id", function(e) {
+            var departmentId = $(this).val();
+            
+            $.ajax({
+                type: "post",
+                url: "{{ route('get-employees-list') }}",
+                data: { department_id: departmentId },
+                success: function(data) {
+                    var options = '<option value="">Select Employee</option>';
+                    $.each(data.employees, function(index, employee) {
+                        var selected = (employee.id == {{ $employee_id }}) ? 'selected' : '';
+                        options += '<option value="' + employee.id + '" ' + selected + '>' + employee.first_name + ' ' + employee.last_name + '</option>';
+                    });
+                    $('#employee_id').html(options);
+                },
+                error: function(xhr) {
+                    console.error(xhr.responseText);
                 }
             });
         });

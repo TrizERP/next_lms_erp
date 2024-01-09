@@ -4,6 +4,7 @@ namespace App\Http\Controllers\HRMS;
 
 use App\Http\Controllers\Controller;
 use App\Models\HrmsAttendance;
+use App\Models\HrmsDepartment;
 use App\Models\HrmsInOutTime;
 use App\Models\HrmsJobTitle;
 use App\Models\PayrollType;
@@ -11,6 +12,7 @@ use App\Models\user\tbluserModel;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use function App\Helpers\is_mobile;
+use DB;
 
 
 class HrmsController extends Controller
@@ -267,8 +269,20 @@ class HrmsController extends Controller
 
         $from_date_formatted = Carbon::now()->format('Y-m-d');
         $to_date_formatted = Carbon::now()->format('Y-m-d');
+
+        $departments = HrmsDepartment::where('status', true)->pluck('department', 'id');
         
-        return view('HRMS.hrms_attendance_report.index', compact('employeeLists', 'from_date_formatted', 'to_date_formatted'));
+        return view('HRMS.hrms_attendance_report.index', compact('employeeLists', 'from_date_formatted', 'to_date_formatted', 'departments'));
+    }
+
+    public function getEmployeeLists(Request $request)
+    {
+        $sub_institute_id = $request->session()->get('sub_institute_id');
+        $departmentId = $request->input('department_id');
+        
+        $employees = tbluserModel::where('sub_institute_id', $sub_institute_id)->where('department_id', $departmentId)->get();
+
+        return response()->json(['employees' => $employees]);
     }
 
     public function hrmsAttendanceReport(Request $request) 
@@ -282,31 +296,108 @@ class HrmsController extends Controller
 
         $from_date = $request->get('from_date');
         $to_date = $request->get('to_date');
-        $employee_id = $request->input('employee_id');
+        $employee_id = $request->get('employee_id');
+        $department_id = $request->get('department_id');
 
         // Parse and format the dates
         $from_date_formatted = Carbon::createFromFormat('Y-m-d', $from_date)->format('Y-m-d');
         $to_date_formatted = Carbon::createFromFormat('Y-m-d', $to_date)->format('Y-m-d');
 
-        $employees = $employeeLists = tbluserModel::where('sub_institute_id', $sub_institute_id)->where('status', 1)->get();
+        $departments = HrmsDepartment::where('status', true)->pluck('department', 'id');
+
+        $employees = tbluserModel::where('sub_institute_id', $sub_institute_id)->where('department_id', $department_id)->get()->toArray();
         
-        $hrmsList = HrmsAttendance::with('getUser');
+        $hrmsList = DB::table('hrms_attendances as ha')
+        ->join('tbluser as u', 'u.id', '=', 'ha.user_id')
+        ->selectRaw("DISTINCT ha.*, ha.id as atten_id,  u.*, CONCAT_WS(' ',u.first_name,u.last_name) AS employee_name ")
+        ->where('ha.sub_institute_id', $sub_institute_id)
+        ->whereBetween('ha.day', [$from_date_formatted, $to_date_formatted])
+        ->where('ha.user_id', $employee_id)
+        ->get()
+        ->toArray();
 
-        if ($from_date_formatted && $to_date_formatted) {
-            $hrmsList = $hrmsList->where('punchin_time', '>=', $from_date_formatted . ' 00:00:00')->where('punchout_time', '<=', $to_date_formatted . ' 23:59:59');
-        } else {
-            $from_date_formatted = Carbon::now()->format('Y-m-d');
-            $to_date_formatted = Carbon::now()->format('Y-m-d');
+        $get_hrms_emp_leaves = DB::table('hrms_emp_leaves as hel')
+        ->join('tbluser as u', 'u.id', '=', 'hel.user_id')
+        ->join('hrms_leave_types as hlt', 'hlt.id', '=', 'hel.leave_type_id')
+        ->selectRaw("hel.*, hlt.*, u.*, CONCAT_WS(' ',u.first_name,u.last_name) AS employee_name ,hel.leave_type_id as leave_id")
+        ->where('hel.sub_institute_id', $sub_institute_id)
+        ->where('hel.from_date','>=',$from_date_formatted)
+        ->where('hel.to_date','<=',$to_date_formatted)
+        ->where('hel.user_id', $employee_id)
+        ->get()->toArray();
+        
+        $get_hrms_holidays = DB::table('hrms_holidays')
+        ->where('sub_institute_id', $sub_institute_id)
+        ->where('from_date','>=',$from_date_formatted)
+        ->where('to_date','<=',$to_date_formatted)
+        ->get()->toArray();
+
+        $departments = HrmsDepartment::where('status', true)->pluck('department', 'id');
+
+        foreach ($hrmsList as $key => $value) 
+        {
+           $hrms_date = $value->day;
+           $hrms_date = Carbon::createFromFormat('Y-m-d', $hrms_date);
+
+            $day_name =lcfirst($hrms_date->format('l')); 
+            $hrmsList[$value->day][]=$value;
+            
+            $punchin_time = $value->punchin_time;
+            $punchin_time = Carbon::createFromFormat('Y-m-d H:i:s', $punchin_time);
+            $punchin_time = strtolower($punchin_time->format('H:i:s'));
+
+            $punchout_time = $value->punchout_time;
+            $punchout_time = Carbon::createFromFormat('Y-m-d H:i:s', $punchout_time);
+            $punchout_time = strtolower($punchout_time->format('H:i:s'));
+
+            $user_day_in = $day_name.'_in_date';
+            $user_in_set_time = $value->$user_day_in;
+            
+            $user_day_out = $day_name.'_out_date';
+            $user_out_set_time = $value->$user_day_out; 
+         }
+
+        foreach ($get_hrms_emp_leaves as $key => $value) 
+        {
+            $get_hrms_emp_leaves[$value->from_date][]=$value;
         }
 
-        if ($employee_id) {
-            // Corrected variable name here
-            $hrmsList = $hrmsList->where('user_id', $employee_id);
+        foreach ($get_hrms_holidays as $key => $value) 
+        {
+            $get_hrms_holidays[$value->from_date][]=$value;
         }
+        
+        $report_data=[];
+        $i=0;
+        $from_date_new = $from_date_formatted;
 
-        $hrmsList = $hrmsList->get();
+        while (strtotime($from_date_new) <= strtotime($to_date_formatted)) 
+        {
+            $i++;
 
-       return view('HRMS.hrms_attendance_report.index', compact('employees', 'employeeLists', 'from_date_formatted', 'to_date_formatted', 'hrmsList', 'employee_id'));
+            if (array_key_exists($from_date_new, $hrmsList)) 
+            {
+                $report_data[$from_date_new] = $hrmsList[$from_date_new];
+            }
+            else 
+            {
+                $report_data[$from_date_new] = array();
+            }
+
+            if (array_key_exists($from_date_new, $get_hrms_emp_leaves)) 
+            {
+                $report_data[$from_date_new]['leave'] = $get_hrms_emp_leaves[$from_date_new];
+            }
+
+            if (array_key_exists($from_date_new, $get_hrms_holidays)) 
+            {
+                $report_data[$from_date_new]['holiday'] = $get_hrms_holidays[$from_date_new];
+            }
+
+            $from_date_new = date("Y-m-d", strtotime("+1 day", strtotime($from_date_new)));
+        }
+ 
+       return view('HRMS.hrms_attendance_report.index', compact('employees', 'from_date_formatted', 'to_date_formatted', 'report_data', 'employee_id', 'department_id', 'departments'));
     }
 
     public function earlyGoingHrmsAttendanceReport(Request $request) {
