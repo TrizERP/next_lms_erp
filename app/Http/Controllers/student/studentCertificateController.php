@@ -192,8 +192,13 @@ die; */
         else
             $display_year = $syear."-".($syear + 1);
 
+        if($sub_institute_id == 254)
+            $logo_height = 'style="height: 50px !important;"';
+        else
+            $logo_height = 'style="width: 100px !important;height: 100px !important;"';
+
         $image_path1 = "http://".$_SERVER['HTTP_HOST']."/storage/fees/".$receipt_book_arr->receipt_logo;
-        $image_path = '<img src="'.$image_path1.'" alt="SCHOOL LOGO" style="width: 100px !important;height: 100px !important;">';
+        $image_path = '<img src="'.$image_path1.'" alt="SCHOOL LOGO" '.$logo_height.'>';
 
         $student_image_path1 = "http://".$_SERVER['HTTP_HOST']."/storage/student/".$value['image'];
         $student_image_path = '<img class="logo" src="'.$student_image_path1.'" alt="Student Logo" >';

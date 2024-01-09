@@ -33,6 +33,7 @@ class daily_voucherController extends Controller
 
         $fees_head = DB::table('fees_title')
             ->where('sub_institute_id', $sub_institute_id)
+            ->where('syear', $syear)
             ->whereNotIn('fees_title', ['tution_fee', 'term_fee'])->orderBy('sort_order')->get()->toArray();
 
         $fees_head = json_decode(json_encode($fees_head), true);
@@ -43,21 +44,20 @@ class daily_voucherController extends Controller
                 $sql .= "
                 SELECT '".strtoupper($val['display_name'])."' AS FEES_TYPE, IFNULL(SUM(fp.".$val['fees_title']."),0) AS AMOUNT
                 FROM fees_collect fp
-                INNER JOIN tblstudent_enrollment se ON se.student_id=fp.student_id
+                INNER JOIN tblstudent_enrollment se ON se.student_id=fp.student_id AND fp.syear=se.syear
                 INNER JOIN tblstudent s ON s.id=se.student_id
                 INNER JOIN standard st ON st.id = se.standard_id
-                WHERE fp.syear = '".$syear."' AND se.syear = '".$syear."' AND (fp.is_deleted = 'N' OR fp.is_waved = 'Cheque Return') 
-                AND fp.sub_institute_id = '".$sub_institute_id."' AND DATE_FORMAT(fp.receiptdate,'%Y-%m-%d') = '".$to_date."'
+                WHERE (fp.is_deleted = 'N' OR fp.is_waved = 'Cheque Return') 
+                AND fp.syear = '".$syear."' AND se.syear = '".$syear."' AND fp.sub_institute_id = '".$sub_institute_id."' AND DATE_FORMAT(fp.receiptdate,'%Y-%m-%d') = '".$to_date."'
                 UNION";
             } else {
                 $sql .= "
                 SELECT '".strtoupper($val['display_name'])."' AS FEES_TYPE, IFNULL(SUM(fp.".$val['fees_title']."),0) AS AMOUNT
                 FROM fees_paid_other fp
-                INNER JOIN tblstudent_enrollment se ON se.student_id=fp.student_id
+                INNER JOIN tblstudent_enrollment se ON se.student_id=fp.student_id AND fp.syear=se.syear
                 INNER JOIN tblstudent s ON s.id=se.student_id
                 INNER JOIN standard st ON st.id = se.standard_id
-                WHERE fp.syear = '".$syear."' AND se.syear = '".$syear."'
-                AND fp.sub_institute_id = '".$sub_institute_id."' AND DATE_FORMAT(fp.receiptdate,'%Y-%m-%d') = '".$to_date."'
+                WHERE fp.syear = '".$syear."' AND se.syear = '".$syear."' AND fp.sub_institute_id = '".$sub_institute_id."' AND DATE_FORMAT(fp.receiptdate,'%Y-%m-%d') = '".$to_date."'
                 UNION";
             }
         }
@@ -70,9 +70,10 @@ class daily_voucherController extends Controller
 
         foreach ($school_stream_arr as $skey => $sval) {
             $sql .= "
-                SELECT '".$sval['school_stream']." TUITION FEE' AS FEES_TYPE, IFNULL(SUM(fp.tution_fee),0) AS AMOUNT
+                SELECT '".$sval['school_stream']." TUITION FEE' AS FEES_TYPE, 
+                IFNULL(SUM(fp.tution_fee),0) + IFNULL(SUM(fp.term_fee),0) + IFNULL(SUM(fp.fees_discount),0) as AMOUNT
                 FROM fees_collect fp
-                INNER JOIN tblstudent_enrollment se ON se.student_id=fp.student_id
+                INNER JOIN tblstudent_enrollment se ON se.student_id=fp.student_id AND fp.syear=se.syear
                 INNER JOIN tblstudent s ON s.id=se.student_id
                 INNER JOIN standard st ON st.id = se.standard_id
                 WHERE fp.syear = '".$syear."' AND se.syear = '".$syear."' AND (fp.is_deleted = 'N' OR fp.is_waved = 'Cheque Return') 
