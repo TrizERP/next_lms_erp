@@ -1663,6 +1663,7 @@ class AJAXController extends Controller
 ->get()
 ->toArray();
 // }
+
          $fees_collection_data = json_decode(json_encode($get_data), true);
             if (count($fees_collection_data) > 1) {
                 $fees_receipt_html = $fees_collection_data;
@@ -2064,5 +2065,14 @@ class AJAXController extends Controller
         $std_sub_map = $std_sub_map->pluck('ram.title', 'ram.id');
 
         return response()->json($std_sub_map);
+    }
+
+    public function lmsDataApi(Request $request){
+        if($request->table){
+            $data = DB::table($request->table)->get()->toArray();
+        }else{
+            $data = DB::table('lms_data')->get()->toArray();
+        }
+        return response()->json($data);
     }
 }
