@@ -255,7 +255,7 @@ br {
                                         <div class="col-md-4 form-group">
                                             <label>{{App\Helpers\get_string('studentquota','request')}}<i class="mdi mdi-lead-pencil"></i></label>
                                             @php 
-                                            if(session()->get('sub_institute_id') != 257){
+                                            if(session()->get('sub_institute_id') != 257 && count($data['fees_data']) != 0) {
                                                 $disable = "style=pointer-events:none";
                                                 $readonly = "readonly";
                                             }

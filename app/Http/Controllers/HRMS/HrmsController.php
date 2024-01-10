@@ -265,24 +265,26 @@ class HrmsController extends Controller
             $sub_institute_id = $request->session()->get('sub_institute_id');
         }
 
-        $employeeLists = tbluserModel::where('sub_institute_id', $sub_institute_id)->where('status', 1)->get();
+	    $employee_id = $request->get('employee_id');
+        $department_id = $request->get('department_id');
 
         $from_date_formatted = Carbon::now()->format('Y-m-d');
         $to_date_formatted = Carbon::now()->format('Y-m-d');
 
         $departments = HrmsDepartment::where('status', true)->pluck('department', 'id');
         
-        return view('HRMS.hrms_attendance_report.index', compact('employeeLists', 'from_date_formatted', 'to_date_formatted', 'departments'));
+        return view('HRMS.hrms_attendance_report.index', compact('from_date_formatted', 'to_date_formatted', 'departments', 'employee_id', 'department_id'));
     }
 
     public function getEmployeeLists(Request $request)
     {
         $sub_institute_id = $request->session()->get('sub_institute_id');
-        $departmentId = $request->input('department_id');
+        $department_id = $request->input('department_id');
+	    $employee_id = $request->get('employee_id');
+	
+	    $employees = tbluserModel::where('sub_institute_id', $sub_institute_id)->where('department_id', $department_id)->get()->toArray();
         
-        $employees = tbluserModel::where('sub_institute_id', $sub_institute_id)->where('department_id', $departmentId)->get();
-
-        return response()->json(['employees' => $employees]);
+        return response()->json(['employees' => $employees, 'department_id' => $department_id, 'employee_id' =>$employee_id]);
     }
 
     public function hrmsAttendanceReport(Request $request) 
@@ -296,10 +298,9 @@ class HrmsController extends Controller
 
         $from_date = $request->get('from_date');
         $to_date = $request->get('to_date');
-        $employee_id = $request->get('employee_id');
         $department_id = $request->get('department_id');
-
-        // Parse and format the dates
+	    $employee_id = $request->input('employee_id');
+        
         $from_date_formatted = Carbon::createFromFormat('Y-m-d', $from_date)->format('Y-m-d');
         $to_date_formatted = Carbon::createFromFormat('Y-m-d', $to_date)->format('Y-m-d');
 
