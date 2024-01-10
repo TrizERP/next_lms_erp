@@ -62,7 +62,7 @@
                         <div class="col-md-3 form-group">
                             <label>Leave Status</label>
                             <select id='leave_status' name="leave_status[]" class="form-control" multiple required>
-                                <option value="Approved LWP" @if(isset($get_leave_status) && in_array("Approved LWP",$get_leave_status) ) selected @endif>Approved LWP</option>
+                                <option value="Approved_lwp" @if(isset($get_leave_status) && in_array("Approved_lwp",$get_leave_status) ) selected @endif>Approved LWP</option>
                                 <option value="Cancelled" @if(isset($get_leave_status) && in_array("Cancelled",$get_leave_status) ) selected @endif>Cancelled</option>
                                 <option value="Rejected" @if(isset($get_leave_status) && in_array("Rejected",$get_leave_status) ) selected @endif>Rejected</option>
                                 <option value="Pending" @if(isset($get_leave_status) && in_array("Pending",$get_leave_status) ) selected @endif>Pending Approval</option>
@@ -110,9 +110,39 @@
                                     <td>{{ $get_employee_leave_list->employee_name }}</td>
                                     <td>{{ $get_employee_leave_list->day_type }}</td>
                                     <td>{{ $get_employee_leave_list->leave_type }}</td>
-                                    <td>{{ $get_employee_leave_list->status }}</td>
+                                    <td>{{ ucfirst($get_employee_leave_list->hel_status) }}</td>
                                     <td>{{ $get_employee_leave_list->approved_by }}</td>
-                                    <td></td>
+
+                                    @if($get_employee_leave_list->leave_id == "1" || $get_employee_leave_list->leave_id == "2" || $get_employee_leave_list->leave_id == "3" || $get_employee_leave_list->leave_id == "4" || $get_employee_leave_list->leave_id == "5" || $get_employee_leave_list->leave_id == "6")
+                                        @php 
+                                            $get_monday_time = DB::table('tbluser')->where('sub_institute_id', session()->get('sub_institute_id'))->first();
+                                        @endphp
+
+                                        @if($get_employee_leave_list->day_type > '1')
+                                            <td>
+                                                @php 
+                                                    $mondayInDate = \Carbon\Carbon::parse($get_monday_time->monday_in_date);
+                                                    $mondayOutDate = \Carbon\Carbon::parse($get_monday_time->monday_out_date);
+                                                    $durationInMinutes = $mondayOutDate->diffInMinutes($mondayInDate);
+                                                    $totalHours = number_format($durationInMinutes * $get_employee_leave_list->day_type / 60, 2);
+                                                @endphp
+
+                                                {{ $totalHours }} Hours
+                                            </td>
+                                        @else
+                                            <td>
+                                                {{ \Carbon\Carbon::parse($get_monday_time->monday_in_date)->format('h:i') }} - {{ \Carbon\Carbon::parse($get_monday_time->monday_out_date)->format('h:i') }}
+                                            </td>
+                                        @endif
+                                    @elseif($get_employee_leave_list->leave_id == "7" || $get_employee_leave_list->leave_id == "8")
+                                        <td>
+                                            @php 
+                                                $get_punch_in_out_time = DB::table('hrms_attendances')->where('sub_institute_id', session()->get('sub_institute_id'))->where('user_id', $get_employee_leave_list->user_id)->where('day', '>=', $get_employee_leave_list->from_date)->where('day', '<=', $get_employee_leave_list->to_date)->first();
+                                            @endphp
+
+                                            {{ \Carbon\Carbon::parse($get_punch_in_out_time->punchin_time)->format('h:i') }} - {{ \Carbon\Carbon::parse($get_punch_in_out_time->punchout_time)->format('h:i') }}
+                                        </td>
+                                    @endif
                                     <td>{{ $get_employee_leave_list->comment }}</td>
                                     <td>{{ $get_employee_leave_list->hr_remarks }}</td>
                                     <td>{{ $get_employee_leave_list->hod_comment }}</td>
@@ -127,7 +157,6 @@
 </div>
 
 @include('includes.footerJs')
-
 <script>
     $(document).ready(function () {
         var table = $('#example').DataTable({
