@@ -1,7 +1,9 @@
-@include('includes.headcss')
-<link rel="stylesheet" href="../../../plugins/bower_components/dropify/dist/css/dropify.min.css">
+{{--@include('includes.headcss')
 @include('includes.header')
-@include('includes.sideNavigation')
+@include('includes.sideNavigation')--}}
+@extends('layout')
+@section('container')
+<link rel="stylesheet" href="../../../plugins/bower_components/dropify/dist/css/dropify.min.css">
 
 <div id="page-wrapper">
     <div class="container-fluid">
@@ -26,7 +28,7 @@
 <script src="https://code.highcharts.com/modules/export-data.js"></script>
 <script src="https://code.highcharts.com/modules/accessibility.js"></script> --}}
 <script>
-    var data = <?php echo $data['chartData']; ?>;
+   var data = {!! json_encode($data['chartData']) !!};
     console.log(data);
 // Splice in transparent for the center circle
 Highcharts.getOptions().colors.splice(0, 0, 'transparent');
@@ -96,3 +98,4 @@ Highcharts.chart('container', {
 });
 </script>
 @include('includes.footer')
+@endsection

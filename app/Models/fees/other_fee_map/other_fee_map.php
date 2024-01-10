@@ -7,4 +7,6 @@ use Illuminate\Database\Eloquent\Model;
 class other_fee_map extends Model
 {
     //
+    protected $table = "fees_paid_other";
+    public $timestamps = false;
 }

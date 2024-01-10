@@ -51,7 +51,7 @@
                 </div>
             </div>
 
-            <?php if (isset($data['stu_data'])) {?>
+           @if (isset($data['stu_data']))
             <div class="row">
                 <div class="white-box">
                     <div class="panel-body">
@@ -80,23 +80,13 @@
                                     </th>
                                 </tr>
 
-                                    <?php foreach ($data['stu_data'] as $id => $arr) {?>
+                            @foreach ($data['stu_data'] as $id => $arr)
                                 <tr>
-                                    <td>
-                                            <?php echo $id + 1; ?>
-                                    </td>
-                                    <td>
-                                            <?php echo $arr->first_name . ' ' . $arr->middle_name . ' ' . $arr->last_name; ?>
-                                    </td>
-                                    <td>
-                                            <?php echo $arr->standard_name; ?>
-                                    </td>
-                                    <td>
-                                            <?php echo $arr->standard_name; ?>
-                                    </td>
-                                    <td>
-                                            <?php echo $arr->mobile; ?>
-                                    </td>
+                                    <td>{{$id + 1}}</td>
+                                    <td>{{$arr->first_name . ' ' . $arr->middle_name . ' ' . $arr->last_name}}</td>
+                                    <td>{{$arr->standard_name}}</td>
+                                    <td>{{$arr->standard_name}}</td>
+                                    <td>{{$arr->mobile}}</td>
                                     <td>
                                         <a href="{{ route('college_fees_collect.edit',$arr->student_id)}}"><button
                                                 style="float:left;" type="button" class="btn btn-info btn-outline ">Collect
@@ -104,13 +94,13 @@
                                     </td>
 
                                 </tr>
-                                <?php }?>
+                                @endforeach
                             </table>
                         </form>
                     </div>
                 </div>
             </div>
-            <?php }?>
+           @endif
         </div>
     </div>
 

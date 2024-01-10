@@ -1,6 +1,6 @@
-@include('../includes.headcss')
-@include('../includes.header')
-@include('../includes.sideNavigation')
+{{-- @include('includes.headcss') @include('includes.header') @include('includes.sideNavigation') --}} 
+@extends('layout')
+@section('container')
 
 <div id="page-wrapper">
     <div class="container-fluid">
@@ -21,10 +21,9 @@
                                 <label>Grade : </label>
                                 <select name="grade_scale" class="form-control">
                                     <option value="">Select</option>
-                                    @php
-                                    foreach ($data['ddValue'] as $id=>$arr)
-                                    echo "<option value=$arr[id]>$arr[grade_name]</option>";
-                                    @endphp
+                                    @foreach ($data['ddValue'] as $id=>$arr)
+                                    <option value={{$arr['id']}}>{{$arr['grade_name']}}</option>
+                                    @endforeach
                                 </select>
                             </div>
                             {{ App\Helpers\SearchChain('4','multiple','grade,std') }}
@@ -60,3 +59,4 @@
     CKEDITOR.replace('line4');
 </script>
 @include('includes.footer')
+@endsection

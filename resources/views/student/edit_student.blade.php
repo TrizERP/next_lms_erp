@@ -1,9 +1,12 @@
-@include('includes.headcss')
+{{--@include('includes.headcss')
+@include('includes.header')
+@include('includes.sideNavigation')--}}
+@extends('layout')
+@section('container')
 <link rel="stylesheet" href="../../../plugins/bower_components/dropify/dist/css/dropify.min.css">
 <link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.3/css/select2.min.css" rel="stylesheet"/>
 <link rel="stylesheet" href="/plugins/bower_components/clockpicker/dist/jquery-clockpicker.min.css">
-@include('includes.header')
-@include('includes.sideNavigation')
+
 <style>
 .select2-dropdown.select2-dropdown--below {
   width: 460px !important;
@@ -252,7 +255,7 @@ br {
                                         <div class="col-md-4 form-group">
                                             <label>{{App\Helpers\get_string('studentquota','request')}}<i class="mdi mdi-lead-pencil"></i></label>
                                             @php 
-                                            if(session()->get('sub_institute_id') != 257){
+                                            if(session()->get('sub_institute_id') != 257 && count($data['fees_data']) != 0) {
                                                 $disable = "style=pointer-events:none";
                                                 $readonly = "readonly";
                                             }
@@ -321,7 +324,7 @@ br {
                                             <select id='optional_subject' name="optional_subject[]" multiple class="form-control">
                                                 @if(isset($data['optional_subject_data']))
                                                     @foreach($data['optional_subject_data'] as $key => $value)
-                                                        <option @php if( in_array($value['subject_id'],$data['student_optional_subject_data']) ){ echo "selected"; }@endphp value="{{ $value['subject_id'] }}">{{ $value['subject_name'] }}</option>
+                                                        <option @if( in_array($value['subject_id'],$data['student_optional_subject_data']) ) selected @endif value="{{ $value['subject_id'] }}">{{ $value['subject_name'] }}</option>
                                                     @endforeach
                                                 @endif                                                   
                                             </select>
@@ -1702,7 +1705,7 @@ br {
                                                         <tr>
                                                             <td>{{ $leaveData->title }}</td>
                                                             <td>{{ $leaveData->message }}</td>
-                                                            <td><a href="<?php echo asset('storage/leave_application/' . $leaveData->files); ?>" download>Download</a></td>
+                                                            <td><a href="{{ asset('storage/leave_application/' . $leaveData->files);}}" download>Download</a></td>
                                                             <td>{{ $leaveData->apply_date }}</td>
                                                             <td>{{ $leaveData->from_date }}</td>
                                                             <td>{{ $leaveData->to_date }}</td>
@@ -2496,3 +2499,4 @@ br {
         links[j].href = url;
     }
 </script>
+@endsection

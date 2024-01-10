@@ -93,9 +93,9 @@
     var standard = "<div class='form-group'>";
     standard = standard + "<label class='control-label'>Standard</label>";
     standard = standard + "    <select class='form-control' id='std' multiple name='standard[]' required>";
-    <?php foreach ($data['standardData'] as $id => $val) { ?>
-        standard = standard + "        <option value='<?php echo $id; ?>'><?php echo $val; ?></option>";
-    <?php } ?>
+   @foreach ($data['standardData'] as $id => $val) 
+        standard = standard + "<option value='{{$id}}'>{{$val}}</option>";
+   @endforeach
     standard = standard + "    </select></div>";
 
     // alert(standard);

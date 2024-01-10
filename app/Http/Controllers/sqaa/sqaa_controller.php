@@ -26,33 +26,34 @@ class sqaa_controller extends Controller
     }
 
     public function create(Request $request){
-
-        if($request->has('sel_level_3') && $request->input('sel_level_3')!=null){
-            $menu_id = $request->input('sel_level_3');
-        }else if($request->has('sel_level_2')  && $request->input('sel_level_2')!=null){
-            $menu_id = $request->input('sel_level_2');
-        }else if($request->has('sel_tabs') && $request->input('sel_tabs') !== null){
-            $menu_id = $request->input('sel_tabs');
+        // echo "<pre>";print_r($request->all());exit;
+        if($request->get('sel_level_3') !="Select Value" && $request->get('sel_level_3')!=null &&  $request->get('sel_level_3')!=''){
+            $menu_id = $request->get('sel_level_3');
+            $res['mark']=$request->get('mark');                  
+        }else if($request->get('sel_level_2') !="Select Value"   && $request->get('sel_level_2')!=null  && $request->get('sel_level_2')!=''){
+            $menu_id = $request->get('sel_level_2');
+        }else if($request->get('sel_tabs') !="Select Value"  && $request->get('sel_tabs') !== null && $request->get('sel_tabs') !== ''){
+            $menu_id = $request->get('sel_tabs');
         }        
-        else if($request->has('tabs_id') && $request->input('tabs_id') !== null){
-            $menu_id = $request->input('tabs_id');
+        else if($request->has('tabs_id') && $request->get('tabs_id') !== null && $request->get('tabs_id') !== ''){
+            $menu_id = $request->get('tabs_id');
         }
         else{
-            $menu_id = 0;
+            $menu_id = 0;   
         }
+        // echo "<pre>";print_r($request->all());exit;
         $type="";
         $sub_institute_id = session()->get('sub_institute_id');
          
         $res['level_1'] = sqaa_master::where(['level'=>1])->get()->toArray();
-        $res['level_2_val']=sqaa_master::where(['level'=>2,'parent_id'=>$request->input('tabs_id')])->get()->toArray();
-        $res['level_3_val']=sqaa_master::where(['level'=>3,'parent_id'=>$request->input('sel_level_1')])->get()->toArray();
-        $res['level_4_val']=sqaa_master::where(['level'=>4,'parent_id'=>$request->input('sel_level_2')])->get()->toArray();
+        $res['level_2_val']=sqaa_master::where(['level'=>2,'parent_id'=>$request->get('tabs_id')])->get()->toArray();
+        $res['level_3_val']=sqaa_master::where(['level'=>3,'parent_id'=>$request->get('sel_level_1')])->get()->toArray();
+        $res['level_4_val']=sqaa_master::where(['level'=>4,'parent_id'=>$request->get('sel_level_2')])->get()->toArray();
       
-        $res['selected_1']=$request->input('tabs_id');
-        $res['selected_2']=$request->input('sel_level_1');
-        $res['selected_3']=$request->input('sel_level_2');
-        $res['selected_4']=$request->input('sel_level_3');     
-        $res['mark']=$request->input('mark');      
+        $res['selected_1']=$request->get('tabs_id');
+        $res['selected_2']=$request->get('sel_level_1');
+        $res['selected_3']=$request->get('sel_level_2');
+        $res['selected_4']=$request->get('sel_level_3');     
         // DB::enableQueryLog();
         $res['document'] = DB::table('sqaa_documant_master AS sdm')
         ->select('sdm.id as document_id', 'sdm.menu_id', 'sdm.title', 'sd.availability', 'sd.file')
@@ -63,14 +64,14 @@ class sqaa_controller extends Controller
         })
         ->where('sdm.menu_id', '=', $menu_id)
         ->get();
-        $res['level_1_1']=$request->input('level_1');
-        $res['level_2']=$request->input('level_2');
-        $res['level_3']=$request->input('level_3');
-        $res['level_4']=$request->input('level_4');
-        $res['text_1']=$request->input('text_1');
-        $res['text_2']=$request->input('text_2');
-        $res['text_3']=$request->input('text_3');
-        $res['text_4']=$request->input('text_4');
+        $res['level_1_1']=$request->get('level_1');
+        $res['level_2']=$request->get('level_2');
+        $res['level_3']=$request->get('level_3');
+        $res['level_4']=$request->get('level_4');
+        $res['text_1']=$request->get('text_1');
+        $res['text_2']=$request->get('text_2');
+        $res['text_3']=$request->get('text_3');
+        $res['text_4']=$request->get('text_4');
         // dd(DB::getQueryLog($res['document']));
         // echo "<pre>";print_r($res['document']);exit;
         // return $request;exit;
@@ -132,25 +133,25 @@ class sqaa_controller extends Controller
         }
             $res['status_code']=1;
             $res['message']="Data inserted";
-            if (!empty($request->input('document'))) {
-                for ($i = 0; $i < count($request->input('document')); $i++) {
+            if (!empty($request->get('document'))) {
+                for ($i = 0; $i < count($request->get('document')); $i++) {
                     $documentData = [
-                        'document' => $request->input('document')[$i],
+                        'document' => $request->get('document')[$i],
                     ];
-                    $document = $request->input('document')[$i];
-                    $doc_id = $request->input('doc_id')[$i];
-                    $reasons = $request->input('reasons')[$i];
-                    $availability = $request->input('availability')[$i] ?? 'no';
+                    $document = $request->get('document')[$i];
+                    $doc_id = $request->get('doc_id')[$i];
+                    $reasons = $request->get('reasons')[$i];
+                    $availability = $request->get('availability')[$i] ?? 'no';
                     $file_have = '1=1';
-                    $filename= $request->input('files')[$i];
+                    $filename= $request->get('files')[$i];
                     // Check if a file is present for this row
-                    if ($request->input('availability')[$i] =="yes" && $request->hasFile('files') && $request->file('files')[$i]->isValid()) {
+                    if ($request->get('availability')[$i] =="yes" && $request->hasFile('files') && $request->file('files')[$i]->isValid()) {
                         $file = $request->file('files')[$i];
                         $filename = $file->getClientOriginalName();
                         $path = Storage::disk('digitalocean')->putFileAs('public/sqaa/', $file, $filename, 'public');
                     }else{
-                        if(isset($request->input('update_file')[$i])){
-                            $filename=$request->input('update_file')[$i];
+                        if(isset($request->get('update_file')[$i])){
+                            $filename=$request->get('update_file')[$i];
                         }
                     }
                 $doc_arr=[
@@ -212,9 +213,9 @@ class sqaa_controller extends Controller
 
     public function generatePdf(Request $request) {
         $sub_institute_id = session()->get('sub_institute_id');
-        $htmlContent = $request->input('html_content');
-        $menu_id = $request->input('menu_id_pdf');
-        $doc_id = $request->input('doc_id_pdf');
+        $htmlContent = $request->get('html_content');
+        $menu_id = $request->get('menu_id_pdf');
+        $doc_id = $request->get('doc_id_pdf');
         
         $pdf = PDF::loadHTML($htmlContent);
         $filename = $sub_institute_id.'_pdf_menu'.$menu_id.'_doc'.$doc_id.'.pdf';

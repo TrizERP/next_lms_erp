@@ -1,8 +1,11 @@
-@include('includes.headcss')
+{{--@include('includes.headcss')
+@include('includes.header')
+@include('includes.sideNavigation')--}}
+@extends('layout')
+@section('container')
 <link rel="stylesheet" href="../../../plugins/bower_components/dropify/dist/css/dropify.min.css">
 <link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.3/css/select2.min.css" rel="stylesheet"/>
-@include('includes.header')
-@include('includes.sideNavigation')
+
 <style>
 .select2-dropdown.select2-dropdown--below {
   width: 460px !important;
@@ -713,3 +716,4 @@
     });
 </script>
 @include('includes.footer')
+@endsection

@@ -5,9 +5,7 @@
 --}}
 @extends('layout')
 @section('container')
-    <?php
-// echo ('<pre>');print_r($data);exit;
-    ?>
+  
     <style>
         tr.spaceUnder>th {
             padding-bottom: 1em !important;
@@ -116,7 +114,7 @@
                                                         <td></td>
                                                         <td>Grand Total</td>
                                                         <td></td>
-                                                        <td><input type="text" id="grandTotal" readonly="" value="<?php echo 0; ?>"
+                                                        <td><input type="text" id="grandTotal" readonly="" value="0"
                                                                    class="form-control"></td>
                                                     </tr>
                                                     <tr>

@@ -19,23 +19,16 @@
             </div>
         </div>
         <div class="card">
-            <form action="<?php echo $data['redirect_url']; ?>" id="myForm" method="post">
+            <form action="{{$data['redirect_url']}}" id="myForm" method="post">
                 @csrf
-                <input type="hidden" name="student_id" value=<?php echo $data['student_id']; ?>>
+                <input type="hidden" name="student_id" value="{{$data['student_id']}}">
                 <div class="row">
                     <div class="col-md-4">
                         <label for="year">Choose Year:</label>
                         <select name="syear" id="year" onchange="this.form.submit();" class="form-control">
-                            <?php foreach ($data["dd_arr"] as $id => $val) {
-                                $selected = "";
-                                if ($val == $data["cur_year"]) {
-                                    $selected = "selected";
-                                } else {
-                                    $selected = "";
-                                }
-                                ?>
-                                <option {{$selected}} value={{$id}}>{{$val}}</option>
-                            <?php } ?>
+                           @foreach ($data["dd_arr"] as $id => $val) 
+                                <option value="{{$id}}" @if($val == $data["cur_year"]) selected @endif>{{$val}}</option>
+                            @endforeach
                         </select>
                     </div>
                 </div>
@@ -65,21 +58,25 @@
                                     <th>Paid</th>
                                     <th>Remaining</th>
                                 </tr>
-                                <?php
+                                @php
                                 $remainFees = 0;
                                 $feesDetails = [];
-                                foreach ($data['total_fees'] as $id => $arr) {
+                                @endphp
+                                
+                                @foreach ($data['total_fees'] as $id => $arr) 
+                                @php
                                 $feesDetails[$arr['month']] = $arr['remain'];
-                                ?>
+                                @endphp
                                 <tr>
-                                    <td><?php echo $arr['month']; ?></td>
-                                    <td><?php echo $arr['bk']; ?></td>
-                                    <td><?php echo $arr['paid']; ?></td>
-                                    <td><?php echo $arr['remain']; ?></td>
+                                    <td>{{$arr['month']}}</td>
+                                    <td>{{$arr['bk']}}</td>
+                                    <td>{{$arr['paid']}}</td>
+                                    <td>{{$arr['remain']}}</td>
                                 </tr>
-                                <?php
+                                @php
                                 $remainFees += $arr['remain'];
-                                } ?>
+                                @endphp
+                               @endforeach
                             </table>
                         </div>
                     </div>
@@ -91,19 +88,19 @@
                             <table class="table table-stripped">
                                 <tr>
                                     <td>{{ App\Helpers\get_string('uniqueid','request')}}</td>
-                                    <td><?php echo $data['stu_data']['student_id']; ?></td>
+                                    <td>{{$data['stu_data']['student_id']}}</td>
                                 </tr>
                                 <tr>
                                     <td>{{ App\Helpers\get_string('studentname','request')}}</td>
-                                    <td><?php echo $data['stu_data']['name']; ?></td>
+                                    <td>{{$data['stu_data']['name']}}</td>
                                 </tr>
                                 <tr>
                                     <td>Admission Year</td>
-                                    <td><?php echo $data['stu_data']['admission']; ?></td>
+                                    <td>{{$data['stu_data']['admission']}}</td>
                                 </tr>
                                 <tr>
                                     <td>Parent Email</td>
-                                    <td><?php echo $data['stu_data']['email']; ?></td>
+                                    <td>{{$data['stu_data']['email']}}</td>
                                 </tr>
                             </table>
                         </div>
@@ -111,35 +108,35 @@
                             <table class="table table-stripped">
                                 <tr>
                                     <td>{{ App\Helpers\get_string('grno','request')}}</td>
-                                    <td><?php echo $data['stu_data']['enrollment']; ?></td>
+                                    <td>{{ $data['stu_data']['enrollment'] }}</td>
                                 </tr>
                                 <tr>
                                     <td>{{ App\Helpers\get_string('std/div','request')}}</td>
-                                    <td><?php echo $data['stu_data']['stddiv']; ?></td>
+                                    <td>{{ $data['stu_data']['stddiv']}}</td>
                                 </tr>
                                 <tr>
                                     <td>Contact No</td>
-                                    <td><?php echo $data['stu_data']['mobile']; ?></td>
+                                    <td>{{ $data['stu_data']['mobile'] }}</td>
                                 </tr>
                                 <tr style="color: red;">
                                     <td>Pending Fees</td>
-                                    <td><?php echo $data['stu_data']['pending']; ?></td>
+                                    <td>{{ $data['stu_data']['pending'] }}</td>
                                 </tr>
                             </table>
                         </div>
                         <form action="{{ route('aggre_pay_request_handler') }}" enctype="multipart/form-data" method="post">
                             @csrf
-                            <input type="hidden" name="grade_id" value="<?php echo $data['stu_data']['grade_id']; ?>">
-                            <input type="hidden" name="standard_id" value="<?php echo $data['stu_data']['std_id']; ?>">
-                            <input type="hidden" name="div_id" value="<?php echo $data['stu_data']['div_id']; ?>">
-                            <input type="hidden" name="student_id" value="<?php echo $data['stu_data']['student_id']; ?>">
-                            <input type="hidden" name="std_div" value="<?php echo $data['stu_data']['stddiv']; ?>">
-                            <input type="hidden" name="full_name" value="<?php echo $data['stu_data']['name']; ?>">
+                            <input type="hidden" name="grade_id" value="{{ $data['stu_data']['grade_id']}}">
+                            <input type="hidden" name="standard_id" value="{{ $data['stu_data']['std_id']}}">
+                            <input type="hidden" name="div_id" value="{{ $data['stu_data']['div_id']}}">
+                            <input type="hidden" name="student_id" value="{{ $data['stu_data']['student_id']}}">
+                            <input type="hidden" name="std_div" value="{{ $data['stu_data']['stddiv']}}">
+                            <input type="hidden" name="full_name" value="{{ $data['stu_data']['name']}}">
 
                             <div class="table-responsive col-md-12" style="border-top: 2px solid black;">
                                 <table class="table table-stripped">
                                     <tr>
-                                        <?php
+                                        @php
                                         $no = 0;
                                         foreach ($data['month_arr'] as $id => $val) {
                                             $no++;
@@ -153,14 +150,14 @@
                                                 $slected = 'checked';
                                                
                                             }
-                                            ?>
+                                            @endphp
                                             <td>
                                                 <div class="checkbox checkbox-info">
-                                                    <input id="<?php echo $id; ?>" name="months[<?php echo $id; ?>]" value="<?php echo $id; ?>" <?php echo $slected; ?> class="months" type="checkbox" @php echo $disabled; echo 'data-no='.$no; @endphp>
-                                                    <label for="<?php echo $id; ?>"><?php echo $val; ?></label>
+                                                    <input id="{{$id}}" name="months[{{$id}}]" value="{{$id}}" {{$slected}}> class="months" type="checkbox" {{$disabled}} data-no="{{$no}}" @endphp>
+                                                    <label for="{{$id}}">{{$val}}</label>
                                                 </div>
                                             </td>
-                                        <?php } ?>
+                                        @php } @endphp
 
                                     </tr>
                                 </table>
@@ -174,32 +171,32 @@
                                                     <th align="center" style="width: 30%;padding-left: 15px;">Particular</th>
                                                     <th style="width: 10%;padding-left: 15px;">Amount</th>
                                                 </tr>
-                                                <?php foreach ($data['final_fee'] as $id => $val) { ?>
+                                               @foreach ($data['final_fee'] as $id => $val)
                                                     <tr>
-                                                        <td style="width: 20%"><?php echo $id; ?></td>
-                                                        <td style="width: 20%"><?php echo $val; ?></td>
+                                                        <td style="width: 20%">{{$id}}</td>
+                                                        <td style="width: 20%">{{$val}}</td>
 
-                                                        <?php
+                                                        @php
                                                         if ($id != 'Total') {
 
                                                         } else {
                                                             echo "<input type='hidden' id='totalVal' name='total' value=" . $val . " class='form-control'>";
                                                         }
-                                                        ?>
+                                                        @endphp
                                                     </tr>
-                                                <?php } ?>
+                                                @endforeach
 
                                             </table>
                                         </td>
                                     </tr>
-                                    <?php if ($data["fees_type"] != "fix") { ?>
+                                    @if ($data["fees_type"] != "fix") 
                                         <tr>
                                             <td></td>
                                             <td>Collection Amount</td>
                                             <td></td>
                                             <td><input type="number" id="pay_amount" name="pay_amount" max="{{$data['final_fee']['Total']}}" class="form-control" value="{{$data['final_fee']['Total']}}"></td>
                                         </tr>
-                                    <?php } ?>
+                                    @endif
                                 </table>
                             </div>
                             <div class="table-responsive col-md-12">
@@ -207,17 +204,11 @@
 
                                 </div>
                                 <div class="col-md-6 form-group">
-                                    <?php
-                                    if ($data['error'] == "") {
-                                        ?>
+                                  @if ($data['error'] == "") 
                                         <input type="submit" name="submit" value="Pay Now" class="btn btn-success">
-                                    <?php
-                                    } else {
-                                        ?>
+                                    @else 
                                         <label style="color:red;">Please pay previous year fees first.</label>
-                                    <?php
-                                    }
-                                    ?>
+                                 @endif
                                 </div>
                             </div>
                         </form>
@@ -396,8 +387,8 @@
 					url: "{{route('get-online-fees-list')}}",
 					data: {
                     checkedMonths: checkedMonths, 
-                    student_id: <?php echo $data['stu_data']['student_id']; ?>,
-                    fees_type: "<?php echo $data['fees_type']; ?>"
+                    student_id: {{$data['stu_data']['student_id']}},
+                    fees_type: "{{$data['fees_type']}}"
                     },
 					//--> send id of checked checkbox on other page
 					success: function(data) {

@@ -1,6 +1,9 @@
-@include('includes.headcss')
+{{-- @include('includes.headcss')
 @include('includes.header')
-@include('includes.sideNavigation')
+@include('includes.sideNavigation') --}}
+
+@extends('layout')
+@section('container')
 
 <div id="page-wrapper">
     <div class="container-fluid">
@@ -73,8 +76,6 @@
 </div>
 
 @include('includes.footerJs')
-
-<script src="{{ asset("/plugins/bower_components/datatables/datatables.min.js") }}"></script>
 <script>
 $(document).ready(function () {
     $('#example').DataTable();
@@ -82,3 +83,4 @@ $(document).ready(function () {
 
 </script>
 @include('includes.footer')
+@endsection

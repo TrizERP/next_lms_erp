@@ -21,18 +21,18 @@
                                 Online Fees
                             </div>
                             <div class="card-body text-center">
-                                <div><?php echo $data['student_name']; ?></div>
-                                <div><?php echo $data['medium']; ?></div>
+                                <div>{{$data['student_name']}}</div>
+                                <div>{{$data['medium']}}</div>
                                 <form action="https://erp.triz.co.in/fees/razorpay/online_fees_razorpayResponseHandler" method="POST" >
                                     @csrf
-                                    <input type="hidden" value ="<?php echo $data['student_id']; ?>" name="student_id">
-                                    <input type="hidden" value ="<?php echo $data['inserted_id']; ?>" name="inserted_id">
+                                    <input type="hidden" value ="{{$data['student_id']}}" name="student_id">
+                                    <input type="hidden" value ="{{$data['inserted_id']}}" name="inserted_id">
                                     <script src="https://checkout.razorpay.com/v1/checkout.js"
-                                            data-key="<?php echo $data['key']; ?>"
-                                            data-amount="<?php echo $data['amount']; ?>"
+                                            data-key="{{$data['key']}}"
+                                            data-amount="{{$data['amount']}}"
                                             data-buttontext="Pay Now"
-                                            data-name="<?php echo $data['student_name']; ?>"
-                                            data-description="<?php echo $data['medium']; ?>"
+                                            data-name="{{$data['student_name']}}"
+                                            data-description="{{$data['medium']}}"
                                             data-theme.color="#ff7529">
                                     </script>
                                 </form>

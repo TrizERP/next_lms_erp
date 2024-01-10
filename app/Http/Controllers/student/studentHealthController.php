@@ -220,11 +220,19 @@ class studentHealthController extends Controller
         $syear = $request->input("syear");
 
         if ($student_id != "" && $sub_institute_id != "" && $syear != "") {
-            $data = DB::select("SELECT doctor_name,doctor_contact,DATE_FORMAT(date,'%d-%m-%Y') AS date, if(file = '','',concat('https://".$_SERVER['SERVER_NAME']."/storage/frontdesk/',file)) as file
-            FROM student_health
-            WHERE syear = '".$syear."' AND sub_institute_id = '".$sub_institute_id."'
-            AND student_id = '".$student_id."'
-            ORDER BY date");
+            // $data = DB::select("SELECT doctor_name,doctor_contact,DATE_FORMAT(date,'%d-%m-%Y') AS date, if(file = '','',concat('https://".$_SERVER['SERVER_NAME']."/storage/frontdesk/',file)) as file
+            // FROM student_health
+            // WHERE syear = '".$syear."' AND sub_institute_id = '".$sub_institute_id."'
+            // AND student_id = '".$student_id."'
+            // ORDER BY date");
+            $data = DB::table('student_health')
+            ->select('doctor_name', 'doctor_contact', DB::raw("DATE_FORMAT(date, '%d-%m-%Y') AS date"), DB::raw("IF(file = '', '', CONCAT('https://".$_SERVER['SERVER_NAME']."/storage/frontdesk/', file)) AS file"))
+            ->where('syear', $syear)
+            ->where('sub_institute_id', $sub_institute_id)
+            ->where('student_id', $student_id)
+            ->orderBy('date')
+            ->get();
+
 
             $res['status'] = 1;
             $res['message'] = "Success";

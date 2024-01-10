@@ -70,8 +70,15 @@
                                             @foreach ($month as $key=>$month_id)
 
                                             @foreach ($arr_title['data'] as $ids=>$tit_arr)
-
-                                            <th><input type="text" value="@if(isset($col_arr[$month_id][$tit_arr['display_name']]['amount'])){{ $col_arr[$month_id][$tit_arr['display_name']]['amount']}}@endif" name="values[{{$col_arr['student_id']}}][{{$month_id}}][{{$tit_arr['fees_title']}}]"></th>
+                                            @php
+                                                $attr = '';
+                                                $set_amount = $col_arr[$month_id][$tit_arr['display_name']]['amount'];
+                                                $paid = $col_arr[$month_id][$tit_arr['display_name']]['paid'];
+                                                if($paid!=0){
+                                                    $attr="readonly";
+                                                }
+                                            @endphp
+                                            <th><input type="text" value="@if(isset($set_amount)){{ $set_amount}}@endif" name="values[{{$col_arr['student_id']}}][{{$month_id}}][{{$tit_arr['fees_title']}}]" {{$attr}}></th>
                                             @endforeach
                                         @endforeach
                                     </tr>

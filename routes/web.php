@@ -57,6 +57,8 @@ use App\Http\Controllers\library\LibraryReportController;
 use App\Http\Controllers\sqaa\sqaa_controller;
 use App\Http\Controllers\sqaa\sqaaReportController;
 use App\Http\Controllers\sqaa\sqaaScoreReportController;
+use App\Http\Controllers\leave\LeaveAuthorisationController;
+use App\Http\Controllers\leave\leave_report\LeaveReportController;
 
 /*
 |--------------------------------------------------------------------------
@@ -165,7 +167,7 @@ Route::group([ 'middleware' => ['session', 'menu', 'logRoute']], function () {
 
     Route::get('hrms-attendance-report',[HrmsController::Class,'hrmsAttendanceReportIndex'])->name('hrms_attendance_report.index');
     Route::post('/hrms-attendance-report', [HrmsController::class, 'hrmsAttendanceReport'])->name('hrms.show_hrms_attendance_report');
-    Route::post('/get-employees-list', [HrmsController::class, 'getEmployeeLists'])->name('get-employees-list');
+    Route::post('/get-employees-list', [HrmsController::class, 'getEmployeeLists'])->name('get.employees.list');
 
     Route::get('early-going-hrms-attendance-report',[HrmsController::Class,'earlyGoingHrmsAttendanceReport'])->name('hrms_attendance_report.early_going_report');
     Route::post('/early-going-hrms-attendance-report', [HrmsController::class, 'earlyGoingHrmsAttendanceReport'])->name('hrms.show_early_going_hrms_attendance_report');
@@ -411,6 +413,16 @@ Route::group(['middleware' => ['session', 'menu', 'logRoute']], function () {
     Route::post('import-leave', [ApplyLeaveController::class,'importOldLeave'])->name('import-leave');
     Route::get('holiday.weekdays', [HolidayController::class,'getWeekdays'])->name('holiday.weekdays');
     Route::post('holiday.weekdays', [HolidayController::class,'storeWeekdays'])->name('holiday.weekdays');
+
+    //Leave Authorisation
+    Route::resource('leave-authorisation', LeaveAuthorisationController::class);
+    Route::post('leave-authorisation', [LeaveAuthorisationController::class,'leaveAuthorisation'])->name('leave.authorisation.index');
+    Route::post('leave-authorisation-store', [LeaveAuthorisationController::class,'leaveAuthorisationStore'])->name('leave.authorisation.store');
+
+    //Leave Report
+    Route::get('leave-report', [LeaveReportController::class,'leaveReport'])->name('leave.report');
+    Route::post('leave-report-show', [LeaveReportController::class,'leaveReportShow'])->name('leave.report.show');
+    Route::post('/get-emp-list', [LeaveReportController::class, 'getEmployeeLists'])->name('get-emp-list');
 
     Route::resource('books', BookController::class);
     Route::get('books/{id}/barcode', [BookController::class,'generateBarcode'])->name('books.barcode');

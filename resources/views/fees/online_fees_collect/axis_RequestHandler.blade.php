@@ -7,7 +7,7 @@
     <!-- <form style="" name="Formdata" id="Formdata" method="POST" action="https://uat-etendering.axisbank.co.in/easypay2.0/frontend/api/payment" > -->
     	<form style="" name="Formdata" id="Formdata" method="POST" action="https://easypay.axisbank.co.in/index.php/api/payment" >
     
-        <input type="hidden" value = "<?php echo $data['send_data']; ?>" name="i" id="i">
+        <input type="hidden" value = "{{$data['send_data']}}" name="i" id="i">
         <!-- <textarea name="i" id="i"></textarea>
         <input class="btn btn-primary" type="submit" value="Submit" >        -->
     </form>

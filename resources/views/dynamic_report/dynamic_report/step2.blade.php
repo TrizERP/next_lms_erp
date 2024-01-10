@@ -1,7 +1,8 @@
-@include('includes.headcss')
-@include('includes.header')
-@include('includes.sideNavigation')
-
+{{--@include('../includes.headcss')
+@include('../includes.header')
+@include('../includes.sideNavigation')--}}
+@extends('layout')
+@section('container')
 <style>
     .breadcrumb1-arrow {
         min-height: 36px;
@@ -172,16 +173,16 @@
                     <form action="{{ route('dynamic_report_step3') }}" enctype="multipart/form-data" method="post">
                         {{ method_field("POST") }}
                         {{csrf_field()}}
-                        <textarea name="old_data" style="display:none;"><?php echo serialize($data); ?></textarea>
+                        <textarea name="old_data" style="display:none;">{{serialize($data)}}</textarea>
                         <div class="form-group row">
                             <label class="col-form-label">Select Fields</label>
                             <input type="hidden" name="selected_fields" >
                             <!-- <select class="form-control select2 select2-hidden-accessible" id="fieldSelect" name="selected_fields[]" multiple="" data-placeholder="Select a State" style="width: 100%;" tabindex="-1" aria-hidden="true"> -->
                             <select class="form-control select2-container" autofocus id="fieldSelect"  multiple=""  data-placeholder="Select a Field" style="width: 100%;">
                                 <!-- <option value="">-Select-</option> -->
-                                <?php foreach ($data["all_fields"] as $id => $val) { ?>
-                                    <option value="<?php echo $id; ?>"><?php echo $val; ?></option>
-                                <?php } ?>
+                                @foreach ($data["all_fields"] as $id => $val)
+                                    <option value="{{$id}}">{{$val}}</option>
+                                @endforeach
                             </select>
                         </div>
                         <div class="form-group row">
@@ -189,21 +190,21 @@
                                 <label class="col-form-label" style="padding-bottom: 10px;">Group By</label>
                                 <select class="form-control" style="margin-bottom: 20px;" id="g1" name="group_by1">
                                     <option value="">-Select-</option>
-                                    <?php foreach ($data["all_fields"] as $id => $val) { ?>
-                                        <option value="<?php echo $id; ?>"><?php echo $val; ?></option>
-                                    <?php } ?>
+                                   @foreach ($data["all_fields"] as $id => $val)
+                                        <option value="{{$id}}">{{$val}}</option>
+                                    @endforeach
                                 </select>
                                 <select class="form-control" style="margin-bottom: 20px;" id="g2" name="group_by2">
                                     <option value="">-Select-</option>
-                                    <?php foreach ($data["all_fields"] as $id => $val) { ?>
-                                        <option value="<?php echo $id; ?>"><?php echo $val; ?></option>
-                                    <?php } ?>
+                                   @foreach ($data["all_fields"] as $id => $val)
+                                        <option value="{{$id}}">{{$val}}</option>
+                                    @endforeach
                                 </select>
                                 <select class="form-control" style="margin-bottom: 20px;" id="g3" name="group_by3">
                                     <option value="">-Select-</option>
-                                    <?php foreach ($data["all_fields"] as $id => $val) { ?>
-                                        <option value="<?php echo $id; ?>"><?php echo $val; ?></option>
-                                    <?php } ?>
+                                    @foreach ($data["all_fields"] as $id => $val)
+                                        <option value="{{$id}}">{{$val}}</option>
+                                 @endforeach
                                 </select>
                             </div>
                             <div class="col-sm-6">
@@ -348,3 +349,4 @@
     }
 </script>
 @include('includes.footer')
+@endsection

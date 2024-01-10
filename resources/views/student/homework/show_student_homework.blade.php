@@ -117,23 +117,22 @@
                                 </div>
                                 <div class="col-md-12 form-group">
                                     <center>
-                                        <?php
-                                        if (isset($finalData['division_id'])) {
-                                            foreach ($finalData['division_id'] as $id=>$value) {
-                                                echo '<input type="hidden" name="division_id[]" value="' . $value . '">';
-                                            }
-                                        }
-                                        if (isset($finalData['standard_id'])) {
-                                            foreach ($finalData['standard_id'] as $id=>$value) {
-                                                echo '<input type="hidden" name="standard_id[]" value="' . $value . '">';
-                                            }
-                                        }
-                                        if (isset($finalData['standard_id'])) {
-                                            foreach ($finalData['standard_id'] as $id=>$value) {
-                                                echo '<input type="hidden" name="standard_id[]" id="sid" value="' . $value . '">';
-                                            }
-                                        }
-                                        ?>
+                                      
+                                        @if(isset($finalData['division_id'])) 
+                                            @foreach($finalData['division_id'] as $id=>$value) 
+                                               <input type="hidden" name="division_id[]" value="{{$value}}">
+                                            @endforeach
+                                        @endif
+                                        @if(isset($finalData['standard_id'])) 
+                                            @foreach($finalData['standard_id'] as $id=>$value) 
+                                             <input type="hidden" name="standard_id[]" value="{{$value}}">
+                                            @endforeach
+                                        @endif
+                                        @if(isset($finalData['standard_id'])) {
+                                            @foreach($finalData['standard_id'] as $id=>$value) {
+                                               <input type="hidden" name="standard_id[]" id="sid" value="{{$value}}">
+                                            @endforeach
+                                        @endif
 
                                         <input type="hidden" name="subject_id" @if(isset($finalData['subject'])) value="{{$finalData['subject']}}" @endif>
 

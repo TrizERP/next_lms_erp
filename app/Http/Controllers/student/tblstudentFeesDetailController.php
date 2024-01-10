@@ -74,12 +74,37 @@ class tblstudentFeesDetailController extends Controller
             if ($request->get('ac_number') != $studentfeesdetails[0]['ac_number']) {
                 //BACKUP Old record and update new Account Number
                 $is_registered = 'N';
-                $insLogSql = "INSERT INTO tblstudent_bank_detail_log
-                (student_id, ac_holder_name, ac_number, bank_name, bank_branch, ifsc_code, is_registered, created_by, AC_TYPE,UMRN,closure_date,status,reason,created_on,registration_date)
-                SELECT student_id, ac_holder_name, ac_number, bank_name, bank_branch, ifsc_code, is_registered, '".$user_id."',
-                    AC_TYPE,UMRN,closure_date,status,reason, created_on,registration_date
-                FROM tblstudent_bank_detail WHERE student_id = '".$request->get('student_id')."'";
-                DB::select($insLogSql);
+                // $insLogSql = "INSERT INTO tblstudent_bank_detail_log
+                // (student_id, ac_holder_name, ac_number, bank_name, bank_branch, ifsc_code, is_registered, created_by, AC_TYPE,UMRN,closure_date,status,reason,created_on,registration_date)
+                // SELECT student_id, ac_holder_name, ac_number, bank_name, bank_branch, ifsc_code, is_registered, '".$user_id."',
+                //     AC_TYPE,UMRN,closure_date,status,reason, created_on,registration_date
+                // FROM tblstudent_bank_detail WHERE student_id = '".$request->get('student_id')."'";
+                // DB::select($insLogSql);
+                $insLogData = DB::table('tblstudent_bank_detail')
+                ->where('student_id', $request->input('student_id'))
+                ->get();
+            
+            if ($insLogData->isNotEmpty()) {
+                $insLogData = $insLogData->first();
+                $insLogId = DB::table('tblstudent_bank_detail_log')->insertGetId([
+                    'student_id' => $insLogData->student_id,
+                    'ac_holder_name' => $insLogData->ac_holder_name,
+                    'ac_number' => $insLogData->ac_number,
+                    'bank_name' => $insLogData->bank_name,
+                    'bank_branch' => $insLogData->bank_branch,
+                    'ifsc_code' => $insLogData->ifsc_code,
+                    'is_registered' => $insLogData->is_registered,
+                    'created_by' => $user_id,
+                    'AC_TYPE' => $insLogData->AC_TYPE,
+                    'UMRN' => $insLogData->UMRN,
+                    'closure_date' => $insLogData->closure_date,
+                    'status' => $insLogData->status,
+                    'reason' => $insLogData->reason,
+                    'created_on' => $insLogData->created_on,
+                    'registration_date' => $insLogData->registration_date,
+                ]);
+            }            
+
             }
 
             if ($is_registered != '') {
