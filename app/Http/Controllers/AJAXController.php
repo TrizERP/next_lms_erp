@@ -2051,4 +2051,14 @@ if($receipt_id==41 && $sub_institute_id==49){
 
         return response()->json($std_sub_map);
     }
+
+    
+    public function lmsDataApi(Request $request){
+        if($request->table){
+            $data = DB::table($request->table)->get()->toArray();
+        }else{
+            $data = DB::table('lms_data')->get()->toArray();
+        }
+        return response()->json($data);
+    }
 }

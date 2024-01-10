@@ -440,3 +440,4 @@ Route::any('check_permissions',[AJAXController::class, 'check_access'])->name('c
 Route::any('check_access',[AJAXController::class, 'check_access'])->name('check_access');
 
 Route::any('chat',[AJAXController::class, 'chat'])->name('chat');
+Route::any('lms_data',[AJAXController::class, 'lmsDataApi'])->name('lms_data');
