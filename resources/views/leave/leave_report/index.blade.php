@@ -16,7 +16,7 @@
                     @else
                         <div class="alert alert-danger alert-block">
                     @endif
-                        <button type="button" class="close" data-dismiss="alert">Ã—</button>
+                        <button type="button" class="close" data-dismiss="alert">×</button>
                         <strong>{{ $sessionData->message }}</strong>
                     </div>
                 @endif
@@ -40,13 +40,9 @@
                         </div>
                         <div class="col-md-3 form-group">
                             <label>Employee List</label>
-                            <select id='employee_id' name="employee_id" class="form-control" required>
+                            <select id='employee_id' name="employee_id" class="form-control">
                                 <option value="">Select Employee</option>
-                                @if(!empty($employees))
-                                    @foreach($employees as $key=>$value)
-                                        <option value="{{$value['id']}}" @if(isset($employee_id) && $employee_id == $value['id']) selected @endif>{{$value['first_name'] ?? ''}} {{$value['last_name'] ?? ''}}</option>
-                                    @endforeach
-                                @endif
+                                
                             </select>
                         </div>
                         <div class="col-md-3 form-group">
@@ -144,9 +140,7 @@
                                                 $get_punch_in_out_time = DB::table('hrms_attendances')->where('sub_institute_id', session()->get('sub_institute_id'))->where('user_id', $get_employee_leave_list->user_id)->where('day', '>=', $get_employee_leave_list->from_date)->where('day', '<=', $get_employee_leave_list->to_date)->first();
                                             @endphp
 
-                                            @if ($get_punch_in_out_time)
-                                                {{ \Carbon\Carbon::parse($get_punch_in_out_time->punchin_time)->format('h:i') }} - {{ \Carbon\Carbon::parse($get_punch_in_out_time->punchout_time)->format('h:i') }}
-                                            @endif
+                                            {{ \Carbon\Carbon::parse($get_punch_in_out_time->punchin_time)->format('h:i') }} - {{ \Carbon\Carbon::parse($get_punch_in_out_time->punchout_time)->format('h:i') }}
                                         </td>
                                     @endif
                                     <td>{{ $get_employee_leave_list->comment }}</td>
@@ -206,27 +200,28 @@
                 }
             });
         });
-    });
-</script>
-<script>
-	$(document).on("change", "#department_id", function(e) {
-        $('#employee_id').empty();
-        var departmentId = $(this).val();
         
-        $.ajax({
-            type: "post",
-            url: "{{ route('get-emp-list') }}",
-            data: { department_id: departmentId },
-            success: function(data) {
-                var options = '';
-                $.each(data.employees, function(index, employee) {
-                    options += '<option value="' + employee.id + '" >' + employee.first_name + ' ' + employee.last_name + '</option>';
-                });
-                $('#employee_id').append(options);
-            },
-            error: function(xhr) {
-                console.error(xhr.responseText);
-            }
+        // Ajax call to get employees based on the selected department
+        $(document).on("change", "#department_id", function(e) {
+            $('#employee_id').empty();
+            var departmentId = $(this).val();
+            
+            $.ajax({
+                type: "post",
+                url: "{{ route('get-emp-list') }}",
+                data: { department_id: departmentId },
+                success: function(data) {
+                    var options = '<option value="">Select Employee</option>';
+                    $.each(data.employees, function(index, employee) {
+                        // var selected = (employee.id == {{ json_encode($employee_id) }}) ? 'selected' : '';
+                        options += '<option value="' + employee.id + '" >' + employee.first_name + ' ' + employee.last_name + '</option>';
+                    });
+                    $('#employee_id').html(options);
+                },
+                error: function(xhr) {
+                    console.error(xhr.responseText);
+                }
+            });
         });
     });
 </script>
