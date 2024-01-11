@@ -22,6 +22,7 @@ use function App\Helpers\OtherBreackOfMonth;
 use App\Models\school_setup\standardModel;
 use App\Models\school_setup\divisionModel;
 use App\Models\school_setup\academic_sectionModel;
+use App\Models\lmslmsData;
 use function App\Helpers\get_string;
 //use function App\Helpers\FeeBreakoffHeadWise;
 use GuzzleHttp\Client;
@@ -1369,15 +1370,17 @@ class AJAXController extends Controller
 
         $sub_institute_id = session()->get('sub_institute_id');
         $syear = session()->get('syear');
-        if($request->has('type') && $request->input('type')=="API"){
-            $sub_institute_id = $request->input('sub_institute_id');
-            $syear = $request->input('syear');
-        }
-
+      
         $student_id = $request->input('student_id');
         $receipt_id = $request->input('receipt_id_html');
         $action = $request->input('action');
         $paper_size = $request->input('paper_size');
+        if($request->has('type') && $request->input('type')=="API"){
+            $sub_institute_id = $request->input('sub_institute_id');
+            $syear = $request->input('syear');
+            $get_page_size = DB::table('fees_config_master')->where('sub_institute_id',$sub_institute_id)->where('syear',$syear)->first();
+            $paper_size = $get_page_size->fees_receipt_template;
+        }
 
         // $fees_receipt_html = $this->get_FeesHtml($student_id, $action, $receipt_id);
         $fees_receipt_html = $this->get_FeesHtml($student_id, $action, $receipt_id,$sub_institute_id,$syear);
@@ -2065,5 +2068,16 @@ class AJAXController extends Controller
         $std_sub_map = $std_sub_map->pluck('ram.title', 'ram.id');
 
         return response()->json($std_sub_map);
+    }
+
+    public function lmsDataApi(Request $request){
+
+        if($request->table){
+            $data = DB::table($request->table)->get()->toArray();
+        }else{
+           $data = DB::table('lms_data')->get()->toArray();
+            // $data = DB::select("SELECT * FROM lms_data");
+        }
+        return response()->json($data);
     }
 }
