@@ -44,8 +44,10 @@
                         </div>
                         <div class="col-md-3 form-group">
                             <label>Date</label>
-                            <input type="date" name="date" class="form-control"
-                                   value="{{ date('Y-m-d',strtotime($date)) }}">
+                            <div class="input-daterange input-group" id="date-range">
+                                <input type="text" required class="form-control mydatepicker" placeholder="YYYY/MM/DD" name="date" id="date" value="{{ $date }}" autocomplete="off">
+                                <span class="input-group-addon"><i class="icon-calender"></i></span>
+                            </div>
                         </div>
                         <div class="col-md-3 col-sm-offset-4 text-center form-group">
                             <input type="submit" name="submit" value="Search" class="btn btn-success">
