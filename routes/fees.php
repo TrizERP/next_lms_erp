@@ -148,7 +148,8 @@ Route::get('payphi', function ($id = null) {
         Route::post('fees_circular/show_circular', 'showCircular')->name('show_circular');
     });
 
-
+    // check_reciept_book
+    Route::get('get_receipt_book_data',[fees_collect_controller::class,'checkReceiptBookMaster'])->name('check_reciept_book');
     Route::resource('fees_cancel', feesCancelController::class);
     Route::controller(feesCancelController::class)->group(function () {
         Route::post('fees/fees_cancel', 'showFees')->name('show_cancel_fees');

@@ -2582,4 +2582,25 @@ class fees_collect_controller extends Controller
         // 9874632014
         return $res;
     }
+
+    public function checkReceiptBookMaster(Request $request){
+        $type = $request->type;
+        $sub_institute_id = session()->get('sub_institute_id');
+        $syear = session()->get('syear');
+        if($type=="API"){
+            $sub_institute_id = $request->sub_institute_id;
+            $syear = $request->syear;
+        }
+        $check_title = DB::table('fees_title')->where('sub_institute_id',$sub_institute_id)->where('syear',$syear)->where('display_name',$request->fees_title)->first();
+        $result = 0;
+        if(isset($check_title)){
+            $check_fees_config =DB::table('fees_receipt_book_master')->where('sub_institute_id',$sub_institute_id)->where('syear',$syear)->where('fees_head_id',$check_title->id)->where('standard_id',$request->standard_id)->first();
+            if(isset($check_fees_config)){
+                $result = 1;
+            }            
+        }
+
+        return [$result,$request->fees_title];
+    }
+
 }

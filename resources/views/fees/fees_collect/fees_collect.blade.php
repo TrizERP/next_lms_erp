@@ -22,6 +22,9 @@
 					<strong>{{ $sessionData['message'] }}</strong>
 				</div>
 				@endif
+				<div class="no_heads" id="no_heads" style="visibility: hidden">
+				<h5>No heads</h5>
+				</div>
 				<div class="row">
 					<div class="col-md-4 col-lg-4 col-sm-4 col-xs-4">
 						<div class="box-title">
@@ -468,6 +471,7 @@
 										<tbody id="table_data">
 										</tbody>
 									</table>
+									
 								</div>
 							</div>
 						</div>
@@ -475,7 +479,7 @@
 				</div>
 			</div>
 		</div>
-
+		
 		@include('includes.footerJs')
 		<script>
 			document.body.className = document.body.className.replace("fix-header", "fix-header show-sidebar hide-sidebar");
@@ -489,44 +493,116 @@
 
 
 			$(document).ready(function() {
-
-				console.log("hello");
 				monthCheck();
+
+					var sub = 0;
+					var full_bk = @json($data['final_fee']);
+					$.each(full_bk, function(index, value) {
+						if (value !== 0 && index!=='Total') {
+							$.ajax({
+								url : '{{route("check_reciept_book")}}',
+								data: {fees_title : index,standard_id:{{ $data['stu_data']['std_id'] }}},
+								type: 'GET',
+								success : function(result) {
+									if(result[0] == 0){
+										$('#no_heads').append(`<p>`+result[1]+`</p>`);
+									}
+								},
+							})
+						}
+					});
+				});
+
+			// function checkForm() {
+			// if ($('#payment_mode').val() == '') {
+			// 	alert("Please select Payment Mode.");
+			// 	return false;
+			// }
+			// if ($('#receiptdate').val() == '') {
+			// 	alert("Please select Receipt Date.");
+			// 	return false;
+			// }
+			// if ($('#payment_mode').val() != 'Cash') {
+			// 	if ($('#cheque_date').val() == '') {
+			// 	alert("Please select Cheque Date.");
+			// 	return false;
+			// 	}
+			// 	if ($('#cheque_no').val() == '') {
+			// 	alert("Please select Cheque Number.");
+			// 	return false;
+			// 	}
+			// 	if ($('#bank_name').val() == '') {
+			// 	alert("Please select Bank Name.");
+			// 	return false;
+			// 	}
+			// 	if ($('#bank_branch').val() == '') {
+			// 	alert("Please select Bank Branch.");
+			// 	return false;
+			// 	}
+			// }
+			// $('input[name="fees_data[]"]').each(function() {
+			// 	var feesTitle = $(this).attr('id');
+			// 	console.log(feesTitle);
+			// 	// Do something with feesTitle
+			// });
+	
+			// $('#formId').submit();
+
+			// // Prevent the default form submission
+			//return true;
+			// // return false;
+			
+			// }
+
+function checkForm() {
+
+    if ($('#no_heads').length != 0) {
+        var paragraphs = $('#no_heads').find('p');
+		if (paragraphs.length != 0) {		
+			paragraphs.each(function(index, element) {
+			alert('Head not added in Receipt Book Master : ' + $(element).text());
 			});
+			return false;	
+		}	
+    }
 
-			function checkForm() {
-			if ($('#payment_mode').val() == '') {
-				alert("Please select Payment Mode.");
-				return false;
-			}
-			if ($('#receiptdate').val() == '') {
-				alert("Please select Receipt Date.");
-				return false;
-			}
-			if ($('#payment_mode').val() != 'Cash') {
-				if ($('#cheque_date').val() == '') {
-				alert("Please select Cheque Date.");
-				return false;
-				}
-				if ($('#cheque_no').val() == '') {
-				alert("Please select Cheque Number.");
-				return false;
-				}
-				if ($('#bank_name').val() == '') {
-				alert("Please select Bank Name.");
-				return false;
-				}
-				if ($('#bank_branch').val() == '') {
-				alert("Please select Bank Branch.");
-				return false;
-				}
-			}
+    if ($('#payment_mode').val() == '') {
+        alert("Please select Payment Mode.");
+        return false;
+    }
+    if ($('#receiptdate').val() == '') {
+        alert("Please select Receipt Date.");
+        return false;
+    }
+    if ($('#payment_mode').val() != 'Cash') {
+        if ($('#cheque_date').val() == '') {
+            alert("Please select Cheque Date.");
+            return false;
+        }
+        if ($('#cheque_no').val() == '') {
+            alert("Please select Cheque Number.");
+            return false;
+        }
+        if ($('#bank_name').val() == '') {
+            alert("Please select Bank Name.");
+            return false;
+        }
+        if ($('#bank_branch').val() == '') {
+            alert("Please select Bank Branch.");
+            return false;
+        }
+    }
+	
+    // Submit the form
+	if(sub==0){
+    $('#formId').submit();
+    // Prevent the default form submission
+    return true;
+	}else{
+		return false;
+	}
+}
 
-			$('#formId').submit();
-
-			// Prevent the default form submission
-			return true;
-			}
 
 			$('#fees_head').on('change', '.allField1', function() {
 				var sum = 0;
@@ -706,11 +782,12 @@ $('.months').click(function() {
 				var new_total_amount = parseFloat(this.value);
 				var new_copy_total_amount = parseFloat(this.value);
 				var orginial_tot = parseFloat($("#hid_totalVal").val());
+				var all_total = $('#all_total').text();				
 
-				if (new_total_amount > orginial_tot) {
-					alert("Amount Cannot be greater than total amount");
-					$('#totalVal').val(orginial_tot);
-					$('#grandTotal').val(orginial_tot);
+				if (all_total < new_total_amount) {
+					alert("Amount Cannot be greater than total amount - "+all_total);
+					$('#totalVal').val(all_total);
+					$('#grandTotal').val(all_total);
 				} else {
 					$('.allField1').each(function() {
 						var new_name = "hid_" + $(this).attr('name');
