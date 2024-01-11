@@ -44,4 +44,4 @@ $(document).ready(function () {
 
 </script>
 @include('includes.footer')
-@endif
+@endsection

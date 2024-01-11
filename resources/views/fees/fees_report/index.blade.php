@@ -54,11 +54,11 @@
 					{{ App\Helpers\SearchChain('4','multiple','grade,std,div',$grade_id,$standard_id,$division_id) }}
 					<div class="col-md-4 form-group">
 						<label>From Date</label>
-						<input type="text" id="from_date" name="from_date" value="{{$from_date}}" class="form-control mydatepicker" autocomplete="off">
+						<input type="text" id="from_date" name="from_date" value="{{date('Y-m-d')}}" class="form-control mydatepicker" autocomplete="off">
 					</div>
 					<div class="col-md-4 form-group">
 						<label>To Date</label>
-						<input type="text" id="to_date" name="to_date" value="{{$to_date}}" class="form-control mydatepicker" autocomplete="off">
+						<input type="text" id="to_date" name="to_date" value="{{date('Y-m-d')}}" class="form-control mydatepicker" autocomplete="off">
 					</div>
 					@php
 						$payment_mode = '';
