@@ -59,6 +59,7 @@ use App\Http\Controllers\sqaa\sqaaReportController;
 use App\Http\Controllers\sqaa\sqaaScoreReportController;
 use App\Http\Controllers\leave\LeaveAuthorisationController;
 use App\Http\Controllers\leave\leave_report\LeaveReportController;
+use App\Http\Controllers\leave\leave_summary_report\LeaveSummaryReportController;
 
 /*
 |--------------------------------------------------------------------------
@@ -423,6 +424,11 @@ Route::group(['middleware' => ['session', 'menu', 'logRoute']], function () {
     Route::get('leave-report', [LeaveReportController::class,'leaveReport'])->name('leave.report');
     Route::post('leave-report-show', [LeaveReportController::class,'leaveReportShow'])->name('leave.report.show');
     Route::post('/get-emp-list', [LeaveReportController::class, 'getEmployeeLists'])->name('get-emp-list');
+
+    //Leave Summary Report
+    Route::get('leave-summary-report', [LeaveSummaryReportController::class,'leaveSummaryReport'])->name('leave.summary.report');
+    Route::post('leave-summary-report-show', [LeaveSummaryReportController::class,'leaveSummaryReportShow'])->name('leave.summary.report.show');
+    Route::post('/emp-list', [LeaveSummaryReportController::class, 'getEmployeeLists'])->name('emp-list');
 
     Route::resource('books', BookController::class);
     Route::get('books/{id}/barcode', [BookController::class,'generateBarcode'])->name('books.barcode');
