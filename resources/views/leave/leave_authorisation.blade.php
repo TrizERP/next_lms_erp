@@ -17,7 +17,7 @@
                     </div>
                 @endif
                 @php 
-                    $leave_status = ['Approved_lwp','Cancelled','Rejected','Pending Approval','Approved'];
+                    $leave_status = ['Approved_lwp','Cancelled','Rejected','Pending','Approved'];
                 @endphp
                 <form action="{{ route('leave.authorisation.index') }}" enctype="multipart/form-data" method="post">
                 @csrf
@@ -93,17 +93,17 @@
                                     <td>{{ $employee_leave_lists->day_type }}</td>
                                     <td>{{ $employee_leave_lists->leave_type }}</td>
                                     <td>
-                                        <input type="text" name="comment[{{ $employee_leave_lists->id }}]" value="{{ $employee_leave_lists->comment }}">
+                                        <input type="text" name="comment[{{ $employee_leave_lists->id }}]" value="{{ $employee_leave_lists->comment }}" style="width:150px;">
                                     </td>
                                     <td>
-                                        <input type="text" name="hod_comment[{{ $employee_leave_lists->id }}]" value="{{ $employee_leave_lists->hod_comment }}"></td>
+                                        <input type="text" name="hod_comment[{{ $employee_leave_lists->id }}]" value="{{ $employee_leave_lists->hod_comment }}" style="width:150px;"></td>
                                     <td>{{ $employee_leave_lists->hod_comment_date ?? 'N/A' }}</td>
                                     <td>
-                                        <input type="text" name="hr_remarks[{{ $employee_leave_lists->id }}]" value="{{ $employee_leave_lists->hr_remarks }}"></td>
+                                        <input type="text" name="hr_remarks[{{ $employee_leave_lists->id }}]" value="{{ $employee_leave_lists->hr_remarks }}" style="width:150px;"></td>
                                     <td>{{ $employee_leave_lists->hr_remark_date ?? 'N/A' }}</td>
                                     <td>{{ $employee_leave_lists->approved_by }}</td>
                                     <td>
-                                        <select id='single_leave_status' name="single_leave_status[{{ $employee_leave_lists->id }}]" class="form-control">
+                                        <select id='single_leave_status' name="single_leave_status[{{ $employee_leave_lists->id }}]" class="form-control" style="width:140px;">
                                             @foreach($leave_status as $leave)
                                                 <option value="{{ $leave }}" @if(isset($employee_leave_lists->status) && (lcfirst($leave) == $employee_leave_lists->status) ) selected @endif>
                                                     {{ $leave }}

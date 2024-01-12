@@ -143,8 +143,10 @@
                                             @php 
                                                 $get_punch_in_out_time = DB::table('hrms_attendances')->where('sub_institute_id', session()->get('sub_institute_id'))->where('user_id', $get_employee_leave_list->user_id)->where('day', '>=', $get_employee_leave_list->from_date)->where('day', '<=', $get_employee_leave_list->to_date)->first();
                                             @endphp
-
-                                            {{ \Carbon\Carbon::parse($get_punch_in_out_time->punchin_time)->format('h:i') }} - {{ \Carbon\Carbon::parse($get_punch_in_out_time->punchout_time)->format('h:i') }}
+                                            
+                                            @if ($get_punch_in_out_time)
+                                                {{ \Carbon\Carbon::parse($get_punch_in_out_time->punchin_time)->format('h:i') }} - {{ \Carbon\Carbon::parse($get_punch_in_out_time->punchout_time)->format('h:i') }}
+                                            @endif
                                         </td>
                                     @endif
                                     <td>{{ $get_employee_leave_list->comment }}</td>
