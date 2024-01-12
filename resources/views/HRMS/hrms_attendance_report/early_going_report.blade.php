@@ -25,83 +25,84 @@
                           method="post">
                         @csrf
                         <div class="col-md-3 form-group">
-                            <label>Employee List</label>
-
-                            <select id='employee_id' name="employee_id" class="form-control">
-                                <option value="0">Select Employee</option>
-                                @foreach($employeeLists as $key => $employeeList)
-                                @if($employee_id == $employeeList->id)
-                                <option
-                                    value="{{$employeeList->id}}"
-                                    selected>{{$employeeList->first_name .' '. $employeeList->last_name }}</option>
-                                @else
-                                <option
-                                    value="{{$employeeList->id}}">{{$employeeList->first_name .' '. $employeeList->last_name }}</option>
-                                @endif
+                            <label>Department List</label>
+                            <select id='department_id' name="department_id" class="form-control" required>
+                                <option value="">Select Department</option>
+                                @foreach($departments as $id => $department)
+                                    <option value="{{$id}}"
+                                    @if(isset($department_id))
+                                        @if($department_id == $id)
+                                        selected='selected'
+                                        @endif
+                                    @endif
+                                    >{{ $department }}</option>
                                 @endforeach
-
+                            </select>
+                        </div>
+                        <div class="col-md-3 form-group">
+                            <label>Employee List</label>
+                            <select id='employee_id' name="employee_id" class="form-control" required>
+                                <option value="">Select Employee</option>
+                                @if(!empty($employees))
+                                    @foreach($employees as $key=>$value)
+                                        <option value="{{$value['id']}}" @if(isset($employee_id) && $employee_id == $value['id']) selected @endif>{{$value['first_name'] ?? ''}} {{$value['last_name'] ?? ''}}</option>
+                                    @endforeach
+                                @endif
                             </select>
                         </div>
                         <div class="col-md-3 form-group">
                             <label>Date</label>
                             <div class="input-daterange input-group" id="date-range">
-                                <input type="text" required class="form-control mydatepicker" placeholder="YYYY/MM/DD" name="date" id="date" value="{{ $date }}" autocomplete="off">
+                                <input type="text" required class="form-control mydatepicker" placeholder="YYYY/MM/DD" name="date" id="date" value="{{ $date_formatted }}" autocomplete="off" required>
                                 <span class="input-group-addon"><i class="icon-calender"></i></span>
                             </div>
                         </div>
                         <div class="col-md-3 col-sm-offset-4 text-center form-group">
                             <input type="submit" name="submit" value="Search" class="btn btn-success">
                         </div>
-                </div>
-                <!-- Modal -->
-                <div class="modal fade bd-example-modal-lg" id="exampleModal" tabindex="-1"
-                     role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
-                    <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
-                        <div class="modal-content">
-                            <div class="modal-header">
-                                <h5 class="modal-title" id="exampleModalLabel">Choose Field</h5>
-                                <button type="button" class="close" data-dismiss="modal"
-                                        aria-label="Close">
-                                    <span aria-hidden="true">x</span>
-                                </button>
-                            </div>
-                        </div>
                     </div>
-                </div>
                 </form>
             </div>
         </div>
-    
-        <div class="card">
-            <div class="table-responsive mt-20 tz-report-table">
-                <table id="example" class="table table-striped">
-                    <thead>
-                    <tr style="text-align:center;">
-                        <th>Sr No.</th>
-                        <th>Employee Name</th>
-                        <th>Out Time</th>
-                        <th style="text-align:center;">Expected Out Time</th>
-                    </tr>
-                    </thead>
-                    <?php
-                    $j = 1;
-                    ?>
-                    <form method="post">
-                        @csrf
-                        <tbody>
-                        @foreach($hrmsList as $hrmsAttendance)
+        @if(isset($hrmsList))
+            <div class="card">
+                <div class="table-responsive mt-20 tz-report-table">
+                    <table id="example" class="table table-striped">
+                        <thead>
                         <tr style="text-align:center;">
-                            <td>{{$j++}}</td>
-                            <td>{{isset($hrmsAttendance['getUser']) ? $hrmsAttendance['getUser']['first_name'] .'-'.$hrmsAttendance['getUser']['last_name'] : ''}}</td>
-                            <td>{{ isset($hrmsAttendance->punchout_time) ? \Carbon\Carbon::parse($hrmsAttendance->punchout_time)->format('h:i A') : 'N/A' }}</td>
-                            <td>{{ isset($hrmsAttendance['getUser']['monday_out_date']) ? \Carbon\Carbon::parse($hrmsAttendance['getUser']['monday_out_date'])->format('h:i A') : 'N/A' }}</td>
+                            <th>Sr No.</th>
+                            <th>Employee Name</th>
+                            <th>Department Name</th>
+                            <th>Out Time</th>
+                            <th style="text-align:center;">Expected Out Time</th>
                         </tr>
-                        @endforeach
-                        </tbody>
-                    </form>
-                </table>
+                        </thead>
+                        <?php
+                        $j = 1;
+                        ?>
+                        <form method="post">
+                            @csrf
+                            <tbody>
+                            @foreach($hrmsList as $hrmsAttendance)
+                                @php 
+                                    $get_hrms_department = DB::table('hrms_departments')
+                                    ->where('id', $hrmsAttendance['getUser']['department_id'])
+                                    ->first();
+                                @endphp
+                                <tr style="text-align:center;">
+                                    <td>{{$j++}}</td>
+                                    <td>{{isset($hrmsAttendance['getUser']) ? $hrmsAttendance['getUser']['first_name'] .'-'.$hrmsAttendance['getUser']['last_name'] : ''}}</td>
+                                    <td>{{ $get_hrms_department->department }}</td>
+                                    <td>{{ isset($hrmsAttendance->punchout_time) ? \Carbon\Carbon::parse($hrmsAttendance->punchout_time)->format('h:i A') : 'N/A' }}</td>
+                                    <td>{{ isset($hrmsAttendance['getUser']['monday_out_date']) ? \Carbon\Carbon::parse($hrmsAttendance['getUser']['monday_out_date'])->format('h:i A') : 'N/A' }}</td>
+                                </tr>
+                            @endforeach
+                            </tbody>
+                        </form>
+                    </table>
+                </div>
             </div>
-        </div>
+        @endif
     </div>
 </div>
 
@@ -146,6 +147,29 @@
                         .column(i)
                         .search(this.value)
                         .draw();
+                }
+            });
+        });
+
+        // Ajax call to get employees based on the selected department
+        $(document).on("change", "#department_id", function(e) {
+            $('#employee_id').empty();
+            var departmentId = $(this).val();
+            
+            $.ajax({
+                type: "post",
+                url: "{{ route('get.employees.list') }}",
+                data: { department_id: departmentId },
+                success: function(data) {
+                    var options = '';
+                    $.each(data.employees, function(index, employee) {
+                        // var selected = (employee.id == {{ htmlspecialchars(json_encode($employee_id), ENT_QUOTES, 'UTF-8') }}) ? 'selected' : '';
+                        options += '<option value="' + employee.id + '" >' + employee.first_name + ' ' + employee.last_name + '</option>';
+                    });
+                    $('#employee_id').append(options);
+                },
+                error: function(xhr) {
+                    console.error(xhr.responseText);
                 }
             });
         });
