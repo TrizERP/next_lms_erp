@@ -150,9 +150,11 @@
                 }
             });
         });
-
-        // Ajax call to get employees based on the selected department
-        $(document).on("change", "#department_id", function(e) {
+    });
+</script>
+<script>
+    // Ajax call to get employees based on the selected department
+    $(document).on("change", "#department_id", function(e) {
             $('#employee_id').empty();
             var departmentId = $(this).val();
             
@@ -163,7 +165,6 @@
                 success: function(data) {
                     var options = '';
                     $.each(data.employees, function(index, employee) {
-                        // var selected = (employee.id == {{ htmlspecialchars(json_encode($employee_id), ENT_QUOTES, 'UTF-8') }}) ? 'selected' : '';
                         options += '<option value="' + employee.id + '" >' + employee.first_name + ' ' + employee.last_name + '</option>';
                     });
                     $('#employee_id').append(options);
@@ -173,6 +174,5 @@
                 }
             });
         });
-    });
 </script>
 @include('includes.footer')
