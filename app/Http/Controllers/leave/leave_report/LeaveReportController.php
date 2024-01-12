@@ -40,7 +40,7 @@ class LeaveReportController extends Controller
         return view('leave.leave_report.index', compact('from_date_formatted', 'to_date_formatted', 'departments', 'employee_id', 'department_id'));
     }
 
-    public function getEmployeeLists(Request $request)
+    public function getEmpLists(Request $request)
     {
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $department_id = $request->input('department_id');
@@ -80,7 +80,7 @@ class LeaveReportController extends Controller
         ->where('hel.sub_institute_id', $sub_institute_id)
         ->where('hel.from_date', '>=', $from_date_formatted)
         ->where('hel.to_date', '<=', $to_date_formatted)
-        ->where('hel.user_id', '1')
+        ->where('hel.user_id', $employee_id)
         ->whereIn('hel.status', $get_leave_status)
         ->get()->toArray();
 

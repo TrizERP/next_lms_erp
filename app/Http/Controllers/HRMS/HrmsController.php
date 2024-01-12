@@ -401,6 +401,28 @@ class HrmsController extends Controller
        return view('HRMS.hrms_attendance_report.index', compact('employees', 'from_date_formatted', 'to_date_formatted', 'report_data', 'employee_id', 'department_id', 'departments'));
     }
 
+    public function earlyGoingHrmsAttendanceReportIndex(Request $request) 
+    {
+        $type = $request->input('type');
+        if ($type == 'API') 
+        {
+            $sub_institute_id = $request->input('sub_institute_id');
+        } 
+        else 
+        {
+            $sub_institute_id = $request->session()->get('sub_institute_id');
+        }
+
+	    $employee_id = $request->get('employee_id');
+        $department_id = $request->get('department_id');
+
+        $date_formatted = Carbon::now()->format('Y-m-d');
+
+        $departments = HrmsDepartment::where('status', true)->pluck('department', 'id');
+        
+        return view('HRMS.hrms_attendance_report.early_going_report', compact('date_formatted', 'departments', 'employee_id', 'department_id'));
+    }
+
     public function earlyGoingHrmsAttendanceReport(Request $request) {
         $employee_id = 0;
         $type = $request->input('type');
@@ -409,69 +431,74 @@ class HrmsController extends Controller
         } else {
             $sub_institute_id = $request->session()->get('sub_institute_id');
         }
-        $employees = $employeeLists = tbluserModel::where('sub_institute_id', $sub_institute_id)->where('status', 1)->get();
-        $hrmsList = HrmsAttendance::with('getUser');
-        $date = $request->date ?? Carbon::now();
-        $timestamp = strtotime($date);
+
+        $department_id = $request->get('department_id');
+	    $employee_id = $request->get('employee_id');
+	    $date = $request->get('date');
+        
+        $date_formatted = Carbon::createFromFormat('Y-m-d', $date)->format('Y-m-d');
+        $timestamp = strtotime($date_formatted);
         $day = date('D', $timestamp);
-//        return  $request->all();
 
-        if($request->employee_id) {
-            $employee_id = $request->employee_id;
-            $hrmsList = $hrmsList->where('day', $date)->where('user_id',$request->employee_id)->get();
+        $departments = HrmsDepartment::where('status', true)->pluck('department', 'id');
+
+        $employees = tbluserModel::where('sub_institute_id', $sub_institute_id)->where('department_id', $department_id)->where('status', 1)->get();
+        
+        $hrmsList = HrmsAttendance::with('getUser');
+        
+        if($employee_id) {
+            $hrmsList = $hrmsList->where('day', $date_formatted)->where('user_id', $employee_id)->get();
         }else{
-            $hrmsList = $hrmsList->where('day', $date)->get();
-//            return $hrmsList;
+            $hrmsList = $hrmsList->where('day', $date_formatted)->get();
         }
-
-        $hrmsList = $hrmsList->map(function ($e) use ($day){
-            if($day =='Mon' && !$e->getUser['monday']) {
-                if($e->getUser['monday_out_date'] &&  $e->getUser['monday_out_date'] >=  date('H:i:s',strtotime($e->punchout_time))) {
+        
+        $hrmsList = $hrmsList->map(function ($e) use ($day)
+        {
+            if($day =='Mon' && $e->getUser['monday']) {
+                if($e->getUser['monday_out_date'] &&  $e->getUser['monday_out_date'] >  date('H:i:s',strtotime($e->punchout_time))) {
                     $e['is_late'] = 1;
                     $e['expected_time'] = $e->getUser['monday_out_date'];
                 }
             }
             if($day =='Tue' && !$e->getUser['tuesday']) {
-                if($e->getUser['tuesday_out_date'] &&  $e->getUser['tuesday_out_date'] >=  date('H:i:s',strtotime($e->punchout_time))) {
+                if($e->getUser['tuesday_out_date'] &&  $e->getUser['tuesday_out_date'] >  date('H:i:s',strtotime($e->punchout_time))) {
                     $e['is_late'] = 1;
                     $e['expected_time'] = $e->getUser['tuesday_out_date'];
                 }
             }
-            if($day =='Wed' && !$e->getUser['wednesday']) {
-                if($e->getUser['wednesday_out_date'] &&  $e->getUser['wednesday_out_date'] >=  date('H:i:s',strtotime($e->punchout_time))) {
+            if($day =='Wed' && $e->getUser['wednesday']) {
+                if($e->getUser['wednesday_out_date'] &&  $e->getUser['wednesday_out_date'] >  date('H:i:s',strtotime($e->punchout_time))) {
                     $e['is_late'] = 1;
                     $e['expected_time'] = $e->getUser['wednesday_out_date'];
                 }
             }
-            if($day =='Thu' && !$e->getUser['thursday']) {
-                if($e->getUser['thursday_out_date'] &&  $e->getUser['thursday_out_date'] >=  date('H:i:s',strtotime($e->punchout_time))) {
+            if($day =='Thu' && $e->getUser['thursday']) {
+                if($e->getUser['thursday_out_date'] &&  $e->getUser['thursday_out_date'] >  date('H:i:s',strtotime($e->punchout_time))) {
                     $e['is_late'] = 1;
                     $e['expected_time'] = $e->getUser['saturday_out_date'];
                 }
             }
-            if($day =='Fri' && !$e->getUser['friday']) {
-                if($e->getUser['friday_out_date'] &&  $e->getUser['friday_out_date'] >=  date('H:i:s',strtotime($e->punchout_time))) {
+            if($day =='Fri' && $e->getUser['friday']) {
+                if($e->getUser['friday_out_date'] &&  $e->getUser['friday_out_date'] >  date('H:i:s',strtotime($e->punchout_time))) {
                     $e['is_late'] = 1;
                     $e['expected_time'] = $e->getUser['friday_out_date'];
                 }
             }
-            if($day =='Sat' && !$e->getUser['saturday']) {
-                if($e->getUser['saturday_out_date'] &&  $e->getUser['saturday_out_date'] >=  date('H:i:s',strtotime($e->punchout_time))) {
+            if($day =='Sat' && $e->getUser['saturday']) {
+                if($e->getUser['saturday_out_date'] &&  $e->getUser['saturday_out_date'] >  date('H:i:s',strtotime($e->punchout_time))) {
                     $e['is_late'] = 1;
                     $e['expected_time'] = $e->getUser['saturday_out_date'];
                 }
             }
-            if($day =='Sun' && !$e->getUser['sunday']) {
-                if($e->getUser['sunday_out_date'] &&  $e->getUser['sunday_out_date'] >=  date('H:i:s',strtotime($e->punchout_time))) {
+            if($day =='Sun' && $e->getUser['sunday']) {
+                if($e->getUser['sunday_out_date'] &&  $e->getUser['sunday_out_date'] >  date('H:i:s',strtotime($e->punchout_time))) {
                     $e['is_late'] = 1;
                     $e['expected_time'] = $e->getUser['sunday_out_date'];
                 }
             }
             return $e;
         })->where('is_late',1);
-
-        //return is_mobile($type, "HRMS.hrms_attendance_report.early_going_report", compact('employees','employee_id','employeeLists','date','hrmsList'), "view",'compact');
-
-       return view('HRMS.hrms_attendance_report.early_going_report', compact('employees', 'employee_id',  'employeeLists', 'date', 'hrmsList', 'type'));
+        
+       return view('HRMS.hrms_attendance_report.early_going_report', compact('employees', 'employee_id', 'date_formatted', 'hrmsList', 'type', 'departments', 'department_id'));
     }
 }

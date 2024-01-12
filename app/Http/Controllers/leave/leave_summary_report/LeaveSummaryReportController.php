@@ -40,7 +40,7 @@ class LeaveSummaryReportController extends Controller
         // return view('leave.leave_summary_report.index', compact('departments', 'employee_id', 'department_id'));
     }
 
-    public function getEmployeeLists(Request $request)
+    public function EmpLists(Request $request)
     {
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $department_id = $request->input('department_id');
