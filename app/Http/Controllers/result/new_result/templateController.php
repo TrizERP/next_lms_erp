@@ -43,7 +43,8 @@ class templateController extends Controller
         <li><b><< student_uniqueid_value >></b>: Student Unique id</li>        
         <li><b><< student_roll_no_value >></b>: Student Roll Number</li>        
         <li><b><< student_standard_value >></b> : Student Standard</li>
-        <li><b><< short_standard_name >></b> : Standard in short form</li>                
+        <li><b><< short_standard_name >></b> : Standard in short form</li>   
+        <li><b><< next_std >></b> : Next Standard</li>                                     
         <li><b><< student_mobile_value >></b> : Student Mobile Number</li>
         <li><b><< admin_user >></b> : Logged User</li>
         <li><b><< student_image_value >></b> : Student Image</li>
@@ -79,7 +80,8 @@ class templateController extends Controller
         <li><b><< director_sign_value >></b> : directors's sign</li>
         <li><b><< school_open_date >></b> : Openning date of school</li>
         <li><b><< scholastic_marks_hills >></b> : Hills scholastic area for primary</li>
-        <li><b><< scholastic_marks_hills_upper >></b> : Hills scholastic area for upper primary</li> 
+        <li><b><< scholastic_marks_hills_upper >></b> : Hills scholastic area for upper primary</li>
+        <li><b><< scholastic_marks_hills_11 >></b> : Hills scholastic area for standard 11</li>          
         <li><b><< co_scholastic_marks_hills >></b> : Hills Co-scholastic area</li>     
         <li><b><< co_scholastic_marks_hills_upper >></b> : Hills Co-scholastic area for upper primary</li> 
         <li><b><< other_tags_hills >></b> : other values like skill data</li>
