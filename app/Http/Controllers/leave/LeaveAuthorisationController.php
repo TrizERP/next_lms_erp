@@ -64,7 +64,7 @@ class LeaveAuthorisationController extends Controller
         ->where('hel.to_date', '<=', $to_date_formatted)
         ->whereIn('hel.status', $get_leave_status)
         ->get()->toArray();
-
+        
         return view('leave.leave_authorisation', compact('get_employee_leave_lists', 'from_date_formatted', 'to_date_formatted', 'get_leave_status'));
     }
 

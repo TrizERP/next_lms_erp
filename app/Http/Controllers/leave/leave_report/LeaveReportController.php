@@ -80,7 +80,7 @@ class LeaveReportController extends Controller
         ->where('hel.sub_institute_id', $sub_institute_id)
         ->where('hel.from_date', '>=', $from_date_formatted)
         ->where('hel.to_date', '<=', $to_date_formatted)
-        ->where('hel.user_id', '1')
+        ->where('hel.user_id', $employee_id)
         ->whereIn('hel.status', $get_leave_status)
         ->get()->toArray();
 
