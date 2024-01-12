@@ -234,7 +234,12 @@
 </div>
 
 @include('includes.footerJs')
-<<<<<<< HEAD
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jquery-toast-plugin/1.3.2/jquery.toast.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-toast-plugin/1.3.2/jquery.toast.min.js"></script>
+<script type="text/javascript">
+    $(document).ready(function() {
+        $('[data-toggle="tooltip"]').tooltip();
+
 
 <script>
     $(document).ready(function () {
@@ -279,36 +284,6 @@
                 }
             });
         });
-        
-        // Ajax call to get employees based on the selected department
-        $(document).on("change", "#department_id", function(e) {
-            $('#employee_id').empty();
-            var departmentId = $(this).val();
-            
-            $.ajax({
-                type: "post",
-                url: "{{ route('get.employees.list') }}",
-                data: { department_id: departmentId },
-                success: function(data) {
-                    var options = '<option value="">Select Employee</option>';
-                    $.each(data.employees, function(index, employee) {
-                        // var selected = (employee.id == {{ json_encode($employee_id) }}) ? 'selected' : '';
-                        options += '<option value="' + employee.id + '" >' + employee.first_name + ' ' + employee.last_name + '</option>';
-                    });
-                    $('#employee_id').html(options);
-                },
-                error: function(xhr) {
-                    console.error(xhr.responseText);
-                }
-            });
-        });
-
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jquery-toast-plugin/1.3.2/jquery.toast.css">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-toast-plugin/1.3.2/jquery.toast.min.js"></script>
-<script type="text/javascript">
-    $(document).ready(function() {
-        $('[data-toggle="tooltip"]').tooltip();
-
     });
 </script>
 <script>

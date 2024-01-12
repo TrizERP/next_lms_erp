@@ -16,7 +16,7 @@
                     @else
                         <div class="alert alert-danger alert-block">
                     @endif
-                        <button type="button" class="close" data-dismiss="alert">×</button>
+                        <button type="button" class="close" data-dismiss="alert">Ã—</button>
                         <strong>{{ $sessionData->message }}</strong>
                     </div>
                 @endif
@@ -40,9 +40,13 @@
                         </div>
                         <div class="col-md-4 form-group">
                             <label>Employee List</label>
-                            <select id='employee_id' name="employee_id" class="form-control">
+                            <select id='employee_id' name="employee_id" class="form-control" required>
                                 <option value="">Select Employee</option>
-                                
+                                @if(!empty($data['employees']))
+                                    @foreach($data['employees'] as $key=>$value)
+                                        <option value="{{$value['id']}}" @if(isset($data['employee_id']) && $data['employee_id'] == $value['id']) selected @endif>{{$value['first_name'] ?? ''}} {{$value['last_name'] ?? ''}}</option>
+                                    @endforeach
+                                @endif
                             </select>
                         </div>
                         <div class="col-md-4 form-group">
@@ -127,14 +131,24 @@
                                             $total_op = 0; $total_taken = 0; $total_remain = 0;
                                         @endphp
                                         <td>
-                                            @if(isset($data['op_data'][$get_hrms_leave_type->leave_type]) && $data['op_data'][$get_hrms_leave_type->leave_type] != '')
-                                                @php 
-                                                    $total_op = $data['op_data'][$get_hrms_leave_type->leave_type];
-                                                @endphp
+                                            @if($get_probation_period_from <= now() && now() <= $get_probation_period_to)
+                                                @if(isset($data['op_data'][$get_hrms_leave_type->leave_type]) && $data['op_data'][$get_hrms_leave_type->leave_type] != '')
+                                                    @php 
+                                                        $total_op = 0;
+                                                    @endphp
 
-                                                {{ $total_op }}
+                                                    {{ $total_op }}
+                                                @endif
                                             @else
-                                                0
+                                                @if(isset($data['op_data'][$get_hrms_leave_type->leave_type]) && $data['op_data'][$get_hrms_leave_type->leave_type] != '')
+                                                    @php 
+                                                        $total_op = $data['op_data'][$get_hrms_leave_type->leave_type];
+                                                    @endphp
+
+                                                    {{ $total_op }}
+                                                @else
+                                                    0
+                                                @endif
                                             @endif
                                         </td>
                                         <td>
@@ -210,28 +224,27 @@
                 }
             });
         });
+    });
+</script>
+<script>
+	$(document).on("change", "#department_id", function(e) {
+        $('#employee_id').empty();
+        var departmentId = $(this).val();
         
-        // Ajax call to get employees based on the selected department
-        $(document).on("change", "#department_id", function(e) {
-            $('#employee_id').empty();
-            var departmentId = $(this).val();
-            
-            $.ajax({
-                type: "post",
-                url: "{{ route('emp-list') }}",
-                data: { department_id: departmentId },
-                success: function(data) {
-                    var options = '<option value="">Select Employee</option>';
-                    $.each(data.employees, function(index, employee) {
-                        // var selected = (employee.id == {{ json_encode($data['employee_id']) }}) ? 'selected' : '';
-                        options += '<option value="' + employee.id + '" >' + employee.first_name + ' ' + employee.last_name + '</option>';
-                    });
-                    $('#employee_id').html(options);
-                },
-                error: function(xhr) {
-                    console.error(xhr.responseText);
-                }
-            });
+        $.ajax({
+            type: "post",
+            url: "{{ route('emp-list') }}",
+            data: { department_id: departmentId },
+            success: function(data) {
+                var options = '';
+                $.each(data.employees, function(index, employee) {
+                    options += '<option value="' + employee.id + '" >' + employee.first_name + ' ' + employee.last_name + '</option>';
+                });
+                $('#employee_id').append(options);
+            },
+            error: function(xhr) {
+                console.error(xhr.responseText);
+            }
         });
     });
 </script>

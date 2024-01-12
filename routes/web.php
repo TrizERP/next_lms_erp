@@ -170,7 +170,7 @@ Route::group([ 'middleware' => ['session', 'menu', 'logRoute']], function () {
     Route::post('/hrms-attendance-report', [HrmsController::class, 'hrmsAttendanceReport'])->name('hrms.show_hrms_attendance_report');
     Route::post('/get-employees-list', [HrmsController::class, 'getEmployeeLists'])->name('get.employees.list');
 
-    Route::get('early-going-hrms-attendance-report',[HrmsController::Class,'earlyGoingHrmsAttendanceReport'])->name('hrms_attendance_report.early_going_report');
+    Route::get('early-going-hrms-attendance-report',[HrmsController::Class,'earlyGoingHrmsAttendanceReportIndex'])->name('hrms_attendance_report.early_going_report');
     Route::post('/early-going-hrms-attendance-report', [HrmsController::class, 'earlyGoingHrmsAttendanceReport'])->name('hrms.show_early_going_hrms_attendance_report');
     
     Route::resource('sqaa_master', sqaa_controller::class);
@@ -423,12 +423,12 @@ Route::group(['middleware' => ['session', 'menu', 'logRoute']], function () {
     //Leave Report
     Route::get('leave-report', [LeaveReportController::class,'leaveReport'])->name('leave.report');
     Route::post('leave-report-show', [LeaveReportController::class,'leaveReportShow'])->name('leave.report.show');
-    Route::post('/get-emp-list', [LeaveReportController::class, 'getEmployeeLists'])->name('get-emp-list');
+    Route::post('/get-emp-list', [LeaveReportController::class, 'getEmpLists'])->name('get-emp-list');
 
     //Leave Summary Report
     Route::get('leave-summary-report', [LeaveSummaryReportController::class,'leaveSummaryReport'])->name('leave.summary.report');
     Route::post('leave-summary-report-show', [LeaveSummaryReportController::class,'leaveSummaryReportShow'])->name('leave.summary.report.show');
-    Route::post('/emp-list', [LeaveSummaryReportController::class, 'getEmployeeLists'])->name('emp-list');
+    Route::post('/emp-list', [LeaveSummaryReportController::class, 'EmpLists'])->name('emp-list');
 
     Route::resource('books', BookController::class);
     Route::get('books/{id}/barcode', [BookController::class,'generateBarcode'])->name('books.barcode');
