@@ -49,6 +49,7 @@ use App\Http\Controllers\fees\fees_collect\fees_collect_controller;
 use App\Http\Controllers\fees\fees_report\feesReportController;
 use App\Http\Controllers\transportation\map_student\map_student_controller;
 use Illuminate\Support\Facades\Session;
+use GuzzleHttp\Client;
 
 class tblstudentController extends Controller
 {
@@ -755,11 +756,14 @@ die; */
 		}*/
 
 		// dd($dataStudentSiblingsNew);
+        
+        $total_distance = (double)number_format($this->distance($student_data->address),2);
 
 		$res['status_code'] = 1;
 		$res['message'] = "Success";
 		$res['data'] = $student_data;
-//		$res['student_data'] = $student_data;
+		$res['total_distance'] = $total_distance;
+        //$res['student_data'] = $student_data;
 		$res['custom_fields'] = $dataCustomFields;
 
         if (count($finalfieldsData) > 0) {
@@ -855,6 +859,55 @@ die; */
 
 		return is_mobile($type, "student/edit_student", $res, "view");
 	}
+
+    public function distance($stu_add)
+    {
+        $studentAddress = $stu_add;
+
+        if (!$stu_add) {
+            return 0; // or any default value you prefer
+        }
+
+        $apiKey = 'AIzaSyBR3wG6BAtSxwwstbYXnbLCXDxR8WX94iE';
+
+        // Get the school address
+        $schoolData = DB::table('school_setup')->where('id', session()->get('sub_institute_id'))->first();
+
+        if (!$schoolData || !property_exists($schoolData, 'ReceiptAddress')) {
+            // Handle the case where the school address is not found
+            return response()->json(['error' => 'School address not found']);
+        }
+
+        $schoolAddress = $schoolData->ReceiptAddress;
+
+        // Make a request to the Google Maps Distance Matrix API
+        $client = new Client();
+        $response = $client->get("https://maps.googleapis.com/maps/api/distancematrix/json", [
+            'query' => [
+                'origins' => $schoolAddress,
+                'destinations' => $studentAddress,
+                'key' => $apiKey,
+            ],
+        ]);
+
+        $data = json_decode($response->getBody(), true);
+        
+        // Check if the required data is present in the API response
+        if (isset($data['rows'][0]['elements'][0]['distance']['text'])) {
+            // Extract the distance value (in meters) from the response
+            $distanceText = $data['rows'][0]['elements'][0]['distance']['text'];
+
+            $numericDistance = floatval(explode(' ', $distanceText)[0]);
+    
+            // Return the distance value as a float
+            return $numericDistance;
+        } 
+        else 
+        {
+            // Handle the case where distance data is not found in the API response
+            return 0;
+        }
+    }
 
     public function update_transport(Request $request,$id){
 		$sub_institute_id = $request->session()->get('sub_institute_id');
