@@ -233,7 +233,7 @@ br {
                                         <div class="col-md-4 form-group">
                                             <label>Address</label>
                                             <input type="text" value="{{ $student_data->address }}" id='address' name="address" class="form-control">
-                                            <label>Distance from School: {{ $data['total_distance'] }} km</label>
+                                            <label>From Institute: {{ $data['total_distance'] }} (As per Google Map)</label>
                                         </div>
                                         <div class="col-md-4 form-group">
                                             <label>Pincode</label>

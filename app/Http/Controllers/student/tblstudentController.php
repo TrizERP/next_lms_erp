@@ -757,7 +757,7 @@ die; */
 
 		// dd($dataStudentSiblingsNew);
         
-        $total_distance = (double)number_format($this->distance($student_data->address),2);
+        $total_distance = ($this->distance($student_data->address));
 
 		$res['status_code'] = 1;
 		$res['message'] = "Success";
@@ -896,11 +896,11 @@ die; */
         if (isset($data['rows'][0]['elements'][0]['distance']['text'])) {
             // Extract the distance value (in meters) from the response
             $distanceText = $data['rows'][0]['elements'][0]['distance']['text'];
-
-            $numericDistance = floatval(explode(' ', $distanceText)[0]);
-    
+            
+            // $numericDistance = floatval(explode(' ', $distanceText)[0]);
+            
             // Return the distance value as a float
-            return $numericDistance;
+            return $distanceText;
         } 
         else 
         {
