@@ -233,6 +233,7 @@ br {
                                         <div class="col-md-4 form-group">
                                             <label>Address</label>
                                             <input type="text" value="{{ $student_data->address }}" id='address' name="address" class="form-control">
+                                            <label>Distance from School: {{ $data['total_distance'] }} km</label>
                                         </div>
                                         <div class="col-md-4 form-group">
                                             <label>Pincode</label>
@@ -2000,6 +2001,7 @@ br {
 <script src="/plugins/bower_components/clockpicker/dist/jquery-clockpicker.min.js"></script>
 <script src="../../../admin_dep/js/cbpFWTabs.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.3/js/select2.min.js"></script>
+<script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
 <script type="text/javascript">
     (function() {
         [].slice.call(document.querySelectorAll('.sttabs')).forEach(function(el) {
