@@ -289,11 +289,14 @@
                                 @php 
                                 $i=1;
                                 $all_student=0;
+                                $syear = session()->get('syear');
+                                $month_syear = ["1".$syear=>"Jan/".$syear,"2".$syear=>"Feb/".$syear,"3".$syear=>"Mar/".$syear,"4".$syear=>"Apr/".$syear,"5".$syear=>"May/".$syear,"6".$syear=>"June/".$syear,"7".$syear=>"Jul/".$syear,"8".$syear=>"Aug/".$syear,"9".$syear=>"Sep/".$syear,"10".$syear=>"Oct/".$syear,"11".$syear=>"Nov/".$syear,"12".$syear=>"Dec/".$syear];
+                               
                                 @endphp 
                                 @foreach($data['cn_monthwise_active'] as $key => $value)
                                 <tr>
                                 <td>{{$i++}}</td>
-                                <td>{{$data['months_name'][$value->term_id]}}</td>
+                                <td>{{ isset($data['months_name'][$value->term_id]) ? $data['months_name'][$value->term_id] : $month_syear[$value->term_id] }}</td>
                                 <td><a href="#" class="get-details-link" data-details="{{ json_encode($data['cn_monthwise_active'][$key]) }}">{{$value->student_count}}</a></td>
                                 </tr>
                                 @php 
@@ -322,7 +325,7 @@
                             <table class="table table-hover">
                                 <thead>
                                 <tr>
-                                <th colspan="5" class="text-center"><b>{{$data['months_name'][$data['month_payout']]}}</b></th>
+                                <th colspan="5" class="text-center"><b>{{isset($data['months_name'][$data['month_payout']]) ? $data['months_name'][$data['month_payout']] : ''}}</b></th>
                                 </tr>
                                     <tr>
                                         <th>No.</th>
@@ -388,7 +391,7 @@
                                 $total_2 += $value['total_2'];
                                 @endphp 
                                <tr>
-                               <td>{{$data['months_name'][$key]}}</td>
+                               <td>{{isset($data['months_name'][$key]) ? $data['months_name'][$key] :''}}</td>
                                <td>{{$value['total_tution_fee']}}</td>
                                <td>{{$value['total_discount']}}</td>
                                <td>{{$value['total_fine']}}</td>
