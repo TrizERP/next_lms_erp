@@ -298,9 +298,9 @@ class contentController extends Controller
         //return is_mobile($type, "content_master.index", $res, "redirect");
         // return redirect()->route('topic_master.index', ['id' => $request->get('hid_chapter_id')]);
         if ( $request->has('hid_topic_id') ) {
-            return redirect()->route('topic_master.index', ['id' => $request->get('hid_chapter_id'),'standard_id' => $chapter_data['standard_id']]);
+            return redirect()->route('topic_master.index', ['id' => $request->get('hid_chapter_id'),'standard_id' => $chapter_data['standard_id'],'perm'=>$sub_institute_id]);
         } else {
-            return redirect()->route('chapter_master.index', ['standard_id' => $chapter_data['standard_id'], 'subject_id' => $chapter_data['subject_id']]);
+            return redirect()->route('chapter_master.index', ['standard_id' => $chapter_data['standard_id'], 'subject_id' => $chapter_data['subject_id'],'perm'=>$sub_institute_id]);
         }
     }
 
@@ -405,7 +405,7 @@ class contentController extends Controller
 		);
         $type = $request->input('type');
         //return is_mobile($type, "content_master.index", $res, "redirect");
-        return redirect()->route('chapter_master.index', ['standard_id' => $request->get('hid_standard_id'), 'subject_id' => $request->get('hid_subject_id')]);
+        return redirect()->route('chapter_master.index', ['standard_id' => $request->get('hid_standard_id'), 'subject_id' => $request->get('hid_subject_id'),'perm'=>$sub_institute_id]);
     }
 		
     public function edit(Request $request,$id){
@@ -655,12 +655,12 @@ class contentController extends Controller
         $type = $request->input('type');
 
         // return redirect()->route('topic_master.index', ['id' => $request->get('chapter')]);
-        return redirect('/lms/chapter_master?standard_id='.$request->get('standard').'&subject_id='.$request->get('subject').' ');
+        return redirect('/lms/chapter_master?standard_id='.$request->get('standard').'&subject_id='.$request->get('subject').'&perm='.$sub_institute_id.' ');
     }
 
     public function destroy(Request $request,$id){
         $type = $request->input('type');
-        
+        $sub_institute_id = session()->get('sub_institute_id');
         $contentdata = contentModel::where(["id" => $id])->get()->toArray();
         $chapter_id = $contentdata[0]['chapter_id'];
         $std = $contentdata[0]['standard_id'];
@@ -668,7 +668,7 @@ class contentController extends Controller
         contentModel::where(["id" => $id])->delete();
         $res['status_code'] = "1";
         $res['message'] = "Content Deleted Successfully";
-        return redirect()->route('topic_master.index', ['id' => $chapter_id,'standard_id' => $std]);
+        return redirect()->route('topic_master.index', ['id' => $chapter_id,'standard_id' => $std,'perm'=>$sub_institute_id]);
     }
 	
     public function ajax_LMS_MappingValue(Request $request)

@@ -115,11 +115,11 @@ use DB;
                                         }
                                         $j++;
                                         $tab_name = str_replace(' ', '',$cval['category_name']);
-
+                                        $style="";
                                     @endphp
                                     <div class="tab-pane fade {{$active_body_tab}}" id="{{$tab_name}}" role="tabpanel"
                                          aria-labelledby="{{$tab_name}}-tab">
-                                        <div class="row">
+                                        <div class="row" class="content-row">
                                             @if(isset($data['lms_subject'][$cval['category_name']]))
                                                 @foreach($data['lms_subject'][$cval['category_name']] as $key => $val)
 
@@ -132,11 +132,18 @@ use DB;
                                                         $booklist_data = DB::select("SELECT * FROM book_list
                                                                                 WHERE standard_id = $standard_id AND subject_id = $subject_id AND chapter_id = 0 AND topic_id = 0 AND sub_institute_id = $sub_institute_id AND syear = $syear ");
                                                         $booklist_data = json_decode(json_encode($booklist_data),true);
+                                            if($val['sub_institute_id']!=$data['sub_institute_id']){
+                                                $style="style=padding:57px !important";
+                                            }
+                                            if($val['sub_institute_id']==$data['sub_institute_id']){
+                                                $style="";
+                                            }                                                        
                                     @endphp
 
                                     <div class="col-12 col-sm-6 col-md-6 col-lg-3 mb-3 mb-md-4">
-                                        <div class="card course-box">
+                                        <div class="card course-box" {{$style}}>
                                             <div class="course-img">
+                                            @if($val['sub_institute_id']==$data['sub_institute_id'])
                                             <div class="d-flex align-items-start px-3 @if(!empty($booklist_data)) justify-content-between @else justify-content-end @endif">
                                                 @if(!empty($booklist_data))
                                                     <div class="single-item position-relative">
@@ -172,16 +179,18 @@ use DB;
                                                          class="object-cover h-25">
                                                 </a>
                                             </div>
-                                                <a href="{{ route('chapter_master.index',['standard_id'=>$val['standard_id'],'subject_id'=>$val['subject_id']]) }}">
+                                            @endif                                            
+                                                <a href="{{ route('chapter_master.index',['standard_id'=>$val['standard_id'],'subject_id'=>$val['subject_id'],'perm'=>$val['sub_institute_id']]) }}">
                                                     <img src="../../../storage{{$val['display_image']}}" alt=""
                                                          width="25%">
                                                 </a>
                                             </div>
 
                                             <div class="course-name"><a
-                                                    href="{{ route('chapter_master.index',['standard_id'=>$val['standard_id'],'subject_id'=>$val['subject_id'],$pre_load ?? '']) }}">{{$val['subject_name']}}</a>
+                                                    href="{{ route('chapter_master.index',['standard_id'=>$val['standard_id'],'subject_id'=>$val['subject_id'],$pre_load ?? '','perm'=>$val['sub_institute_id']]) }}">{{$val['subject_name']}}</a>
                                                 <div>{{$val['standard_name']}}</div>
                                             </div><!-- [ {{$val['standard_name']}} ]-->
+                                            @if($val['sub_institute_id']==$data['sub_institute_id'])
                                             <div class="course-bottom">
                                                 @if($show_block == 'YES')
                                                 <div class="single-item">
@@ -224,6 +233,8 @@ use DB;
                                                     </div>
                                                 @endif
                                             </div>
+                                            @endif
+                                            
                                         </div>
                                     </div>
                                                 @endforeach
