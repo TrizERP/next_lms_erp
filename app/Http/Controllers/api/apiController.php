@@ -256,8 +256,12 @@ class apiController extends Controller
 			        "tblstudent.mother_mobile" => $_REQUEST['mobile'],
 			        "tblstudent.student_mobile" => $_REQUEST['mobile'],
 			    ])
-			    ->where(["tblstudent.otp" => $_REQUEST['otp']])
-			    ->where('tblstudent_enrollment.syear', function ($query) {
+			    ->where(["tblstudent.otp" => $_REQUEST['otp']]);
+
+			if($is_exist) {
+			    $query->whereColumn('school_setup.syear', '=', 'tblstudent_enrollment.syear');
+			}else{
+				$query->where('tblstudent_enrollment.syear', function ($query) {
 			        $query->select(DB::raw('tblstudent_enrollment.syear'))
 			            ->from('tblstudent_enrollment')
 			            ->whereRaw('tblstudent_enrollment.student_id = tblstudent.id')
@@ -265,9 +269,6 @@ class apiController extends Controller
 			            ->orderBy('tblstudent_enrollment.syear', 'DESC')
 			            ->take(1);
 			    });
-
-			if($is_exist) {
-			    $query->whereColumn('school_setup.syear', '=', 'tblstudent_enrollment.syear');
 			}
 
 			$data = $query
