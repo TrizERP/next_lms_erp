@@ -19,7 +19,9 @@ class chapterController extends Controller
     public function index(Request $request)
     {
         $data = $this->getData($request);
+        
         $type = $request->input('type');
+        $res['sub_institute_id'] = session()->get('sub_institute_id');
         $res['status_code'] = 1;
         $res['message'] = "SUCCESS";
         $res['data'] = $data['chapter_data'];
@@ -179,7 +181,7 @@ class chapterController extends Controller
 
         return redirect()->route('chapter_master.index',
             [
-                'standard_id' => $request->get('standard'), 'subject_id' => $request->get('subject'),
+                'standard_id' => $request->get('standard'), 'subject_id' => $request->get('subject'),'perm'=>$sub_institute_id
             ]);//->with(['data' => $res]);
     }
 
@@ -228,13 +230,14 @@ class chapterController extends Controller
 
         return redirect()->route('chapter_master.index',
             [
-                'subject_id' => $request->get('subject'), 'standard_id' => $request->get('standard'),
+                'subject_id' => $request->get('subject'), 'standard_id' => $request->get('standard'),'perm'=>$sub_institute_id
             ]);//->with(['data' => $res]);
     }
 
     public function destroy(Request $request, $id)
     {
         $type = $request->input('type');
+        $sub_institute_id = session()->get('sub_institute_id');
         $chapterdata = chapterModel::where(["id" => $id])->get()->toArray();
         $subject_id = $chapterdata[0]['subject_id'];
         $standard_id = $chapterdata[0]['standard_id'];
@@ -242,7 +245,7 @@ class chapterController extends Controller
         $res['status_code'] = "1";
         $res['message'] = "Chapter Deleted Successfully";
 
-        return redirect()->route('chapter_master.index', ['subject_id' => $subject_id, 'standard_id' => $standard_id]);
+        return redirect()->route('chapter_master.index', ['subject_id' => $subject_id, 'standard_id' => $standard_id,'perm'=>$sub_institute_id]);
     }
 
     public function StandardwiseSubject(Request $request)
