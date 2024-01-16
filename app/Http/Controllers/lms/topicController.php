@@ -23,6 +23,7 @@ class topicController extends Controller
         $res['content_data'] = $data['content_data'];
         $res['chapter_id'] = $request->input('id');
         $res['breadcrum_data'] = $data['breadcrum_data'];
+        $res['sub_institute_id'] = session()->get('sub_institute_id');
 
         return is_mobile($type, 'lms/show_topic', $res, "view");
     }
@@ -187,7 +188,7 @@ class topicController extends Controller
         ];
         $type = $request->input('type');
 
-        return redirect()->route('topic_master.index', ['id' => $request->get('hidchapter_id'),'standard_id' => $request->get('standard_id')]);
+        return redirect()->route('topic_master.index', ['id' => $request->get('hidchapter_id'),'standard_id' => $request->get('standard_id'),'perm'=>$sub_institute_id]);
       
 
     }
@@ -228,13 +229,13 @@ class topicController extends Controller
         ];
         $type = $request->input('type');
 
-        return redirect()->route('topic_master.index', ['id' => $request->get('hidchapter_id'),'standard_id' => $request->get('standard_id')]);
+        return redirect()->route('topic_master.index', ['id' => $request->get('hidchapter_id'),'standard_id' => $request->get('standard_id'),'perm'=>$sub_institute_id]);
     }
 
     public function destroy(Request $request, $id)
     {
         $type = $request->input('type');
-        
+        $sub_institute_id = session()->get('sub_institute_id');
         $topicdata = topicModel::where(["id" => $id])->get()->toArray();
         $chapter_id = $topicdata[0]['chapter_id'];
 
@@ -242,7 +243,7 @@ class topicController extends Controller
         $res['status_code'] = "1";
         $res['message'] = "Topic Deleted Successfully";
 
-        return redirect()->route('topic_master.index', ['id' => $chapter_id,'standard_id' => $request->get('standard_id')]);
+        return redirect()->route('topic_master.index', ['id' => $chapter_id,'standard_id' => $request->get('standard_id'),'perm'=>$sub_institute_id]);
     }
 
     public function StandardwiseSubject(Request $request)
@@ -279,12 +280,22 @@ class topicController extends Controller
         $content_data = contentModel::select('content_master.*')
             ->where(['content_master.sub_institute_id' => $sub_institute_id, 'content_master.id' => $content_id])
             ->get()->toArray();
-
-        $data['status_code'] = 1;
-        $data['message'] = "SUCCESS";
-        $data['content_data'] = $content_data[0];
-
-
+            // echo "<pre>";print_r($content_data);exit;
+            $data['status_code'] = 1;
+            $data['message'] = "SUCCESS";
+            if(empty($content_data)){
+                $content_data = contentModel::select('content_master.*')
+                ->where(['content_master.sub_institute_id' => 1, 'content_master.id' => $content_id])
+                ->get()->toArray();
+                if(empty($content_data)){
+                    return redirect()->route('topic_master.index', ['id' => $request->get('hidchapter_id'),'standard_id' => $request->get('standard_id'),'perm'=>1]);                
+                }
+                $data['status_code'] = 0;
+                $data['message'] = "No Data Found";
+            }
+       
+        $data['content_data'] = isset($content_data[0]) ? $content_data[0] : '';
+       
        
         if($content_data[0]['file_type'] == 'jpg' || $content_data[0]['file_type'] == 'gif' || $content_data[0]['file_type'] == 'png')
         {
@@ -293,12 +304,9 @@ class topicController extends Controller
         else if($content_data[0]['file_type'] == 'mp3' || $content_data[0]['file_type'] == 'mp4' || $content_data[0]['file_type'] == 'mkv')
         {
             return is_mobile($type, "lms/view_content_video", $data, "view");
+        }else{
+            return is_mobile($type, "lms/view_content_video", $data, "view");
         }
-        else
-        {//dd($data);
-            return is_mobile($type, "lms/view_content", $data, "view");
-        }
-        
     }
 
     public function addtopic(Request $request)
