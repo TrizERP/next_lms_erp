@@ -1775,7 +1775,7 @@ class fees_collect_controller extends Controller
     // function is used into getBk function to get data according to syear
     public function get_syear_data($syear,$sub_institute_id,$student_id, $fees_join, $paid_other_join){
         $termIdQuery = DB::table(function ($query) use ($syear,$sub_institute_id, $student_id, $fees_join, $paid_other_join) {
-            $query->selectRaw('SUM(fc.amount) + SUM(fc.fees_discount) as amount, fc.term_id')
+            $query->selectRaw('SUM(fc.amount) as amount, fc.term_id,SUM(fc.fees_discount) as fees_discount')
                 ->from('tblstudent as s')
                 ->join('fees_collect as fc', function ($join) use ($sub_institute_id) {
                     $join->on('fc.student_id', '=', 's.id')
@@ -1792,7 +1792,7 @@ class fees_collect_controller extends Controller
             }
 
             $query->unionAll(function ($subQuery) use ($syear,$sub_institute_id, $student_id, $paid_other_join) {
-                $subQuery->selectRaw('SUM(fpo.actual_amountpaid) + SUM(fpo.fees_discount) as amount, fpo.month_id')
+                $subQuery->selectRaw('SUM(fpo.actual_amountpaid) as amount, fpo.month_id,SUM(fpo.fees_discount) as fees_discount')
                     ->from('tblstudent as s')
                     ->join('fees_paid_other as fpo', function ($join) {
                         $join->on('fpo.student_id', '=', 's.id');
@@ -1808,10 +1808,10 @@ class fees_collect_controller extends Controller
                 }
             });
         }, 'temp_table')
-            ->selectRaw('SUM(amount) as amount, term_id')
+            ->selectRaw('SUM(amount) as amount, term_id,sum(fees_discount) as fees_discount')
             ->groupBy('term_id');
 
-        $paid_result = $termIdQuery->selectRaw('SUM(amount) as amount, term_id')
+        $paid_result = $termIdQuery->selectRaw('SUM(amount) as amount, term_id,sum(fees_discount) as fees_discount')
             ->groupBy('term_id')
             ->get();
             return $paid_result;
@@ -1891,16 +1891,19 @@ class fees_collect_controller extends Controller
         // get student data according to syear and conditions
        $paid_result = $this->get_syear_data($syear,$sub_institute_id,$student_id, $fees_join, $paid_other_join);
        $paid_result2 = $this->get_syear_data($last_syear,$sub_institute_id,$student_id, $fees_join, $paid_other_join);
-
-        $fees_paid_arr = [];
+        $fees_paid_arr = $discount_arr =[];
         foreach ($paid_result as $id => $arr) {
             $fees_paid_arr[$arr->term_id] = $arr->amount;
+            $discount_arr[$arr->term_id] = $arr->fees_discount;
         }
 
         $fees_paid_arr2 = [];
         foreach ($paid_result2 as $id => $arr) {
             $fees_paid_arr2[$arr->term_id] = $arr->amount;
+            $discount_arr[$arr->term_id] = $arr->fees_discount;
         }
+        // echo "<pre>";print_r($discount_arr);exit;
+
         // get fees breakoff of all years
         $reg_bk_off = FeeBreackoff($stu_arr, $request->standard,$syear,$sub_institute_id); //for current year
 
@@ -1951,6 +1954,7 @@ class fees_collect_controller extends Controller
         $fees_total = $fees_total_last = 0;
         $paid_total = $paid_total_last = 0;
         $remain_total = $remain_total_last = 0;
+        $discount_total = $discount_total_last = 0;
         // this foreach will create fees structure of student paid unpaid fees
         foreach ($merge_bk_month_wise as $id => $val) {
             if(isset($year_arr[$id])){
@@ -1969,15 +1973,25 @@ class fees_collect_controller extends Controller
             } else {
                 $left_bk_table[$i]['remain'] = $left_bk_table[$i]['bk'] - $left_bk_table[$i]['paid'];
             }
+            if (isset($discount_arr[$id]) && $discount_arr[$id] > 0) {
+                $left_bk_table[$i]['discount'] = $discount_arr[$id];
+                if( $left_bk_table[$i]['remain'] >= $discount_arr[$id])
+                {
+                    $left_bk_table[$i]['remain'] =  $left_bk_table[$i]['remain'] - $discount_arr[$id];
+                }
+            } else {
+                $left_bk_table[$i]['discount'] = 0;
+            }
 
             $fees_total = $fees_total + $left_bk_table[$i]['bk'];
             $paid_total = $paid_total + $left_bk_table[$i]['paid'];
             $remain_total = $remain_total + $left_bk_table[$i]['remain'];
+            $discount_total = $discount_total + $left_bk_table[$i]['discount'];
             $i = $i + 1;
         }
         }
         $pending_fees = 0;
-
+        
         foreach ($search_ids as $id => $val) {
             foreach ($left_bk_table as $temp_id => $arr) {
                 if ($arr['month_id'] == $val) {
@@ -2217,7 +2231,10 @@ class fees_collect_controller extends Controller
         }
 
 
-
+        /* echo("<pre>");
+        print_r($left_bk_table);
+        echo("</pre>");
+        die; */
         $full_bk["Total"] = $total;
         $full_bk_new["Total"] = $total;
 
@@ -2253,7 +2270,7 @@ class fees_collect_controller extends Controller
             $receipt_css = $fees_config[0]->css;
             $paper_size = 'A5';
         }
-
+// echo "<pre>";print_r($left_bk_table);exit;
         $res['receipt_css_data'] = $receipt_css;
         $res['paper_size'] = $paper_size;
         return $res;
