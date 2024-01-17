@@ -846,7 +846,9 @@ class dashboardController extends Controller
                     DB::raw("GROUP_CONCAT(d.name) as coach_name"),
                     DB::raw("GROUP_CONCAT(IFNULL(b.title, '-')) as batch_name")                    
                 )
-                ->join('tblstudent_enrollment as se', 'se.student_id', '=', 'a.student_id')
+                ->join('tblstudent_enrollment as se', function ($join) use ($syear){
+                    $join->on('se.student_id', '=', 'a.student_id')->where('se.syear',$syear);
+                })
                 ->join('tblstudent as s', 's.id', '=', 'se.student_id')
                 ->join('standard as std', 'std.id', '=', 'a.standard_id')
                 ->join('division as d', 'd.id', '=', 'se.section_id')

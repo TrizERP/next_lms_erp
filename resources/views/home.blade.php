@@ -270,7 +270,10 @@
                     </div>
                 </div>
                 @endif
-
+                @php
+                $syear = session()->get('syear');
+                $month_syear = ["1".$syear=>"Jan/".$syear,"2".$syear=>"Feb/".$syear,"3".$syear=>"Mar/".$syear,"4".$syear=>"Apr/".$syear,"5".$syear=>"May/".$syear,"6".$syear=>"June/".$syear,"7".$syear=>"Jul/".$syear,"8".$syear=>"Aug/".$syear,"9".$syear=>"Sep/".$syear,"10".$syear=>"Oct/".$syear,"11".$syear=>"Nov/".$syear,"12".$syear=>"Dec/".$syear];
+                @endphp
                 <!-- cn dashboard monthwise active student  -->
                 @if(session()->get('sub_institute_id')==257 && isset($data['cn_monthwise_active']))
                 <div class="col-md-6 mb-4">
@@ -289,9 +292,6 @@
                                 @php 
                                 $i=1;
                                 $all_student=0;
-                                $syear = session()->get('syear');
-                                $month_syear = ["1".$syear=>"Jan/".$syear,"2".$syear=>"Feb/".$syear,"3".$syear=>"Mar/".$syear,"4".$syear=>"Apr/".$syear,"5".$syear=>"May/".$syear,"6".$syear=>"June/".$syear,"7".$syear=>"Jul/".$syear,"8".$syear=>"Aug/".$syear,"9".$syear=>"Sep/".$syear,"10".$syear=>"Oct/".$syear,"11".$syear=>"Nov/".$syear,"12".$syear=>"Dec/".$syear];
-                               
                                 @endphp 
                                 @foreach($data['cn_monthwise_active'] as $key => $value)
                                 <tr>
@@ -325,7 +325,7 @@
                             <table class="table table-hover">
                                 <thead>
                                 <tr>
-                                <th colspan="5" class="text-center"><b>{{isset($data['months_name'][$data['month_payout']]) ? $data['months_name'][$data['month_payout']] : ''}}</b></th>
+                                <th colspan="5" class="text-center"><b>{{isset($data['months_name'][$data['month_payout']]) ? $data['months_name'][$data['month_payout']] : $month_syear[$data['month_payout']]}}</b></th>
                                 </tr>
                                     <tr>
                                         <th>No.</th>
@@ -391,7 +391,7 @@
                                 $total_2 += $value['total_2'];
                                 @endphp 
                                <tr>
-                               <td>{{isset($data['months_name'][$key]) ? $data['months_name'][$key] :''}}</td>
+                               <td>{{isset($data['months_name'][$key]) ? $data['months_name'][$key] :$month_syear[$key]}}</td>
                                <td>{{$value['total_tution_fee']}}</td>
                                <td>{{$value['total_discount']}}</td>
                                <td>{{$value['total_fine']}}</td>
@@ -433,7 +433,7 @@
                                     <th>Sport</th>
                                     <th>Coach</th>
                                     <th>Batch</th>
-                                    <th>Mobile</th>
+                                    <th class="text-left">Mobile</th>
                                 </tr>
                             </thead>
                             <tbody id="studentDetailsBody"></tbody>
