@@ -43,53 +43,51 @@
                                 </select>
                             </div>
 
-                                <input type="hidden" name="con_point" class="form-control" value="0">
-                         
-                                <input type="hidden" name="app_disp_status" value="Y" > 
+                            <input type="hidden" name="con_point" class="form-control" value="0">
+                        
+                            <input type="hidden" name="app_disp_status" value="Y" > 
 
                             <div class="col-md-12 form-group">
-                            <div class="table-responsive">
-                                <table id="myTable" class="table table-striped table-bordered">
-                                    <thead>
-                                        <tr>
-                                            <th>Name</th>
-                                            <th>Marks</th>
-                                            <th>Sort Order</th>
-                                            <th>Exam Date</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <tr>
-                                            <td>
-                                                <input type="text" name="title" class="form-control" />
-                                            </td>
-                                            <td>
-                                                <input type="text" name="points" class="form-control" />
-                                            </td>
-                                         
-                                <input type="hidden" name="marks_type" class="form-control" value="MARKS">
-                                <input type="hidden" name="report_card_status" class="form-control" value="Y">
-                                            
-                                          
-                                            <td>
-                                                <input type="text" name="sort_order" class="form-control" />
-                                            </td>
-                                            <td>
-                                                <input type="text" name="exam_date" class="form-control mydatepicker" autocomplete="off" />
-                                            </td>
-                                        </tr>
-                                    </tbody>
-                                    <tfoot>
-                                        <tr>
-                                        </tr>
-                                        <tr>
-                                        </tr>
-                                    </tfoot>
-                                </table>
-                            </div>
-                            </div>
+                                <div class="table-responsive">
+                                    <table id="myTable" class="table table-striped table-bordered">
+                                        <thead>
+                                            <tr>
+                                                <th>Name</th>
+                                                <th>Marks</th>
+                                                <th>Sort Order</th>
+                                                <th>Exam Date</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody class="addButtonCheckbox">
+                                            <tr>
+                                                <td>
+                                                    <input type="text" name="title[]" name="title[]" class="form-control" required/>
+                                                </td>
+                                                <td>
+                                                    <input type="text" name="points[]" name="points[]" class="form-control" />
+                                                </td>
 
+                                                <input type="hidden" name="marks_type" class="form-control" value="MARKS">
+                                                <input type="hidden" name="report_card_status" class="form-control" value="Y">
 
+                                                <td>
+                                                    <input type="text" name="sort_order[]" name="sort_order[]" class="form-control" />
+                                                </td>
+                                                <td>
+                                                    <input type="text" name="exam_date[]" name="exam_date[]" class="form-control mydatepicker" autocomplete="off" />
+                                                </td>
+                                                <td><a href="javascript:void(0);" onclick="addNewRow();" class="btn btn-success btn-sm mr-2 mb-0"><i class="mdi mdi-plus"></i></a></td>
+                                            </tr>
+                                        </tbody>
+                                        <tfoot>
+                                            <tr>
+                                            </tr>
+                                            <tr>
+                                            </tr>
+                                        </tfoot>
+                                    </table>
+                                </div>
+                            </div>
                             <div class="col-md-12 form-group">
                                 <center>
                                     <input type="submit" name="submit" value="Save" class="btn btn-success" >
@@ -201,37 +199,23 @@
 
 </script>
 <script>
-    $(document).ready(function () {
-        var counter = 0;
+    function addNewRow()
+    {
+        var html = '';
+        
+        html += '<tbody class="addButtonCheckbox">';
+        html += '<td><input type="text" name="title[]" class="form-control" /></td>';
+        html += '<td><input type="text" name="points[]" class="form-control" /></td>';
+        html += '<td><input type="text" name="sort_order[]" class="form-control" /></td>';
+        html += '<td><input type="text" name="exam_date[]" class="form-control mydatepicker" autocomplete="off"/></td>';
+        html += '<td><a href="javascript:void(0);" onclick="removeNewRow();" class="btn btn-danger btn-sm mr-2   mb-0"><i class="mdi mdi-minus"></i></a></td>';
+        html += '</tbody>';
+        $('.addButtonCheckbox:last').after(html);
+    }
 
-        $(".addrow").on("click", function () {
-            var newRow = $("<tr>");
-            var cols = "";
-
-            cols += '<td><input type="text" name="title[]" class="form-control" /></td>';
-            cols += '<td><input type="text" name="points[]" class="form-control" /></td>';
-            cols += '<td> <select name="marks_type[]" class="form-control"><option value="">Select</option><option value="CBSE">MARKS</option><option value="GSEB">GRADE</option></select></td>';
-            cols += '<td><select name="report_card_status[]" class="form-control"><option value="">Select</option><option value="Y">Yes</option><option value="N">No</option></select></td>';
-
-            cols += '<td><input type="text" name="sort_order[]" class="form-control" /></td>';
-            cols += '<td><input type="text" name="exam_date[]" class="form-control" /></td>';
-
-            cols += '<td><input type="button" class="ibtnDel btn btn-md btn-danger "  value="-"></td>';
-            newRow.append(cols);
-            $("table.order-list").append(newRow);
-            counter++;
-        });
-
-
-
-        $("table.order-list").on("click", ".ibtnDel", function (event) {
-            $(this).closest("tr").remove();
-            counter -= 1
-        });
-
-
-    });
-
+    function removeNewRow() {
+        $(".addButtonCheckbox:last" ).remove();
+    }
 </script>
 @include('includes.footer')
 @endsection

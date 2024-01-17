@@ -102,7 +102,10 @@ class exam_creation_controller extends Controller
         $con_points = "";
         $error_reson = "";
 
-            foreach ($request->get('subject') as $sub_id => $sub_val) {
+        foreach ($request->get('subject') as $sub_id => $sub_val) 
+        {
+            foreach ($request->get('title') as $key => $value) 
+            {
                 $data = exam_creation::where([
                     'syear'            => session()->get('syear'),
                     'sub_institute_id' => session()->get('sub_institute_id'),
@@ -110,13 +113,15 @@ class exam_creation_controller extends Controller
                     'exam_id'          => $request->get('exam'),
                     'standard_id'      => $request->get('standard'),
                     'subject_id'       => $sub_val,
-                    'title'            => $request->get('title'),
+                    'title'            => $value,
                 ])->get()->toArray();
 
                 if (count($data)) {
                     $eroor = true;
                     $error_reson = "Given Standard Have Exams.";
-                } else {
+                } 
+                else 
+                {
                     $data = exam_creation::where([
                         'syear'            => session()->get('syear'),
                         'sub_institute_id' => session()->get('sub_institute_id'),
@@ -125,26 +130,21 @@ class exam_creation_controller extends Controller
                         'standard_id'      => $request->get('standard'),
                         'subject_id'       => $sub_val,
                     ])->get()->toArray();
-                    // if (count($data)) {
-                    //     foreach ($data as $arr) {
-                    //         $con_points = $arr['con_point'];
-                    //     }
-                    // }
                 }
+            }
         }
+
         if ($eroor == false) {
             $sort = $request->get('sort_order');
+            
             $error_co_point = false;
-                foreach ($request->get('subject') as $sub_id => $sub_val) {
-                    // if ($request->get('con_point') != '') {
-                    //     if ($con_points != "") {
-                    //         if ($con_points != $request->get('con_point')) {
-                    //             $error_reson = "Convert Point Is Not Matching With Other Exam.";
-                    //             $error_co_point = true;
-                    //         }
-                    //     }
-                    // }
-                    if ($error_co_point == false) {
+
+            foreach ($request->get('subject') as $sub_id => $sub_val) 
+            {
+                foreach ($request->get('title') as $key => $value) 
+                {
+                    if ($error_co_point == false) 
+                    {
                         $data = new exam_creation([
                             'syear'              => session()->get('syear'),
                             'sub_institute_id'   => session()->get('sub_institute_id'),
@@ -154,17 +154,18 @@ class exam_creation_controller extends Controller
                             'standard_id'        => $request->get('standard'),
                             'app_disp_status'    => $request->get('app_disp_status'),
                             'subject_id'         => $sub_val,
-                            'title'              => $request->get('title'),
-                            'points'             => $request->get('points'),
+                            'title'              => $value,
+                            'points'             => $request->get('points')[$key] ?? 0,
                             'con_point'          => $request->get('con_point'),
                             'marks_type'         => $request->get('marks_type'),
                             'report_card_status' => $request->get('report_card_status'),
-                            'sort_order'         => $sort++,
-                            'exam_date'          => date("Y-m-d", strtotime($request->get('exam_date'))),
+                            'sort_order'         => $sort[$key] ?? 0,
+                            'exam_date'          => isset($request->get('exam_date')[$key]) ? date("Y-m-d", strtotime($request->get('exam_date')[$key])) : null,
                         ]);
                         $data->save();
                     }
                 }
+            }
         }
         if ($eroor || $error_co_point) {
             $res = [
