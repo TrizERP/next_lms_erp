@@ -11,7 +11,8 @@
 			</div>
 		</div>
 		@php
-		$grade_id = $standard_id = $division_id = $enrollment_no = $receipt_no = $from_date = $to_date = $name = $mb_no ='';
+		$grade_id = $standard_id = $division_id = $enrollment_no = $receipt_no = $name = $mb_no ='';
+		$from_date =  $to_date = date('Y-m-d');
 		if(isset($data['grade_id'])){ $grade_id = $data['grade_id']; $standard_id = $data['standard_id']; $division_id = $data['division_id'];
 		}
 		if(isset($data['enrollment_no'])) { $enrollment_no = $data['enrollment_no']; }
@@ -54,11 +55,11 @@
 					{{ App\Helpers\SearchChain('4','multiple','grade,std,div',$grade_id,$standard_id,$division_id) }}
 					<div class="col-md-4 form-group">
 						<label>From Date</label>
-						<input type="text" id="from_date" name="from_date" value="{{date('Y-m-d')}}" class="form-control mydatepicker" autocomplete="off">
+						<input type="text" id="from_date" name="from_date" value="{{$from_date}}" class="form-control mydatepicker" autocomplete="off">
 					</div>
 					<div class="col-md-4 form-group">
 						<label>To Date</label>
-						<input type="text" id="to_date" name="to_date" value="{{date('Y-m-d')}}" class="form-control mydatepicker" autocomplete="off">
+						<input type="text" id="to_date" name="to_date" value="{{$to_date}}" class="form-control mydatepicker" autocomplete="off">
 					</div>
 					@php
 						$payment_mode = '';
@@ -160,15 +161,23 @@
 							@if(isset($data['fees_data']))
 							@foreach($fees_data as $key => $value)
 							@php
+							
 							if($value['cheque_date']
 								!= '' && $value['cheque_date'] != '0000-00-00') { $cheque_date = date('d-m-Y',strtotime($value['cheque_date']));
 							}
-							else{
+							else
+							{
 								$cheque_date = '';
-								}
+							}
 
 							// Split the term_ids string into an array of term IDs
 							$term_ids = explode(',', $value['term_ids']);
+							
+							$syear = substr($term_ids[0],-4);
+							$next_year =($syear+1);
+
+							$month_syear = ["1".$syear=>"Jan/".$syear,"2".$syear=>"Feb/".$syear,"3".$syear=>"Mar/".$syear,"4".$syear=>"Apr/".$syear,"5".$syear=>"May/".$syear,"6".$syear=>"June/".$syear,"7".$syear=>"Jul/".$syear,"8".$syear=>"Aug/".$syear,"9".$syear=>"Sep/".$syear,"10".$syear=>"Oct/".$syear,"11".$syear=>"Nov/".$syear,"12".$syear=>"Dec/".$syear,"1".$next_year=>"Jan/".$next_year,"2".$next_year=>"Feb/".$next_year,"3".$next_year=>"Mar/".$next_year];
+							
 							// Initialize an array to store month names
 							$monthNames = [];
 
@@ -177,23 +186,29 @@
 								if (isset($data['months'][$term_id])) {
 									$monthNames[] = $data['months'][$term_id];
 								}
+								else if(isset($month_syear[$term_id]))
+								{
+									$monthNames[] = $month_syear[$term_id];
+								}
 							}
 
 							// Join the month names with a comma separator
 							$monthNamesString = implode(', ', $monthNames);
 							@endphp
+							
+							<input type="hidden" id="table_year" name="table_year" value="{{$value['syear']}}">
 							<tr>
 								<td>{{$j}}</td>
 								<td>{{$value['enrollment_no']}}</td>
 								<td>{{$value['student_name']}}</td>
 								<td>{{$value['standard_name']}} - {{$value['division_name']}} {{$value['batch']}}
-							@if (Session::get('sub_institute_id') == '257')
-							  {{$value['place_of_birth']}}
-							@endif
+								@if (Session::get('sub_institute_id') == '257')
+								{{$value['place_of_birth']}}
+								@endif
 								</td>
 								<td>{{$value['quota']}}</td>
 								<td>{{$value['uniqueid']}}</td>
-								<td>{{ $monthNamesString }}</td>
+								<td>{{ $monthNamesString}}</td>
 								<td>{{$value['receipt_no']}}</td>
 								<td>{{$value['payment_mode']}}</td>
 								@if(isset($data['groupby']))
@@ -205,7 +220,18 @@
 								<td>{{$value['cheque_no']}} {{$value['cheque_bank_name']}} {{$value['bank_branch']}}</td>
 								@endif
 								<!--<td>{{$cheque_date}}</td>-->
-								<td>{{$value['remarks']}}</td>
+
+								@php
+									$session_year = session()->get('syear');
+									$receipt_date = date('Y', strtotime($value['receiptdate']));
+								@endphp
+								
+								@if($session_year != $receipt_date)
+									<td>{{ $receipt_date }}</td>
+								@else
+									<td>{{ ' ' }}</td>
+								@endif
+								
 								<td>{{date('d-m-Y',strtotime($value['receiptdate']))}}</td>
 								<td>{{$value['user_name']}}</td>
 								<!--<td>{{date('d-m-Y h:i:s',strtotime($value['created_date']))}}</td>-->
