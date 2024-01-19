@@ -702,10 +702,14 @@ class AJAXController extends Controller
                     </tr>';
         foreach ($full_bk as $id => $val) {
             if($val!=0){
+                $ids ='';
+                if($id=="Total"){
+                    $ids='id="all_total"';
+                }
             $response .= "
                  <tr>
                     <td style='width: 20%'>$id</td>
-                    <td style='width: 20%'>$val</td>
+                    <td style='width: 20%' $ids>$val</td>
             ";
             if ($id != 'Total') {
                 // $response .= "<td style='width: 20%'><input type='number' min=0 max=$val  value='" . $val . "' name='fees_data[" . $final_bk_name[$id] . "]' class='form-control allField1'></td>";
