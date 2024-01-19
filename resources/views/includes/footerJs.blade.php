@@ -51,22 +51,25 @@ $route = ['dashboard'];
                         <!-- <a href="http://crm.triz.co.in/index.php?module=Users&action=Login&password=admin&username=kalpesh@triz.co.in" class="nav-link pb-0" target="_blank">
                             <span class="menu-main-icon"><i class="mdi mdi-clipboard-account md-36"></i></span> TTMS
                         </a> -->
-@php 
-    $user_details = DB::table('tbluser')
-        ->where('sub_institute_id', session()->get('sub_institute_id'))
-        ->where('id', session()->get('user_id'))
-        ->first();
+                        
+                        @php 
+                            $user_details = DB::table('tbluser')
+                                ->where('sub_institute_id', session()->get('sub_institute_id'))
+                                ->where('id', session()->get('user_id'))
+                                ->first();
 
-    if ($user_details) {
-        $userEmail = $user_details->email;
-        $userPassword = $user_details->password;
-    } else {
-        // Handle the case when no user details are found, e.g., provide a default value or show an error message.
-        $userEmail = null; // or any default value
-        $userPassword = null; // or any default value
-    }
-@endphp
-                        <a href="http://crm.triz.co.in/index.php?module=Users&action=Login&password={{$userPassword}}&username={{$userEmail}}" class="nav-link pb-0" target="_blank" rel="noopener noreferrer"><span class="menu-main-icon"><i class="mdi mdi-clipboard-account md-36"></i></span> TTMS</a>
+                            if ($user_details) {
+                                $userEmail = $user_details->email;
+                                $userPassword = $user_details->password;
+                            } else {
+                                // Handle the case when no user details are found, e.g., provide a default value or show an error message.
+                                $userEmail = null; // or any default value
+                                $userPassword = null; // or any default value
+                            }
+                        @endphp
+                        <a href='http://crm.triz.co.in/customerportal/index.php?api=Login&module=Portal&q={"password":"{{ $userPassword }}","username":"{{ $userEmail }}","language":"en_us"}&type=API' class="nav-link pb-0" target="_blank" rel="noopener noreferrer">
+                            <span class="menu-main-icon"><i class="mdi mdi-clipboard-account md-36"></i></span> TTMS
+                        </a>
                     </div>
                 </div>
             </div>
