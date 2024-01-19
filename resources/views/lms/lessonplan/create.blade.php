@@ -67,7 +67,7 @@ if(isset($_REQUEST['preload_lms'])){
                     <div class="row align-items-center">
                         <div class="col-md-3 form-group">
                             <label>Standard</label>
-                            <select name="standard" id="standard" class="form-control" required readonly>
+                            <select name="standard" id="standard" class="form-control" required {{$data['lessonplan_data']->standard_id ? 'readonly' : ''}}>
                                 <option value="">Select Standard</option>
                                 @if (isset($data['standards']))
                                     @foreach ($data['standards'] as $key => $value)
@@ -80,7 +80,7 @@ if(isset($_REQUEST['preload_lms'])){
                         </div>
                         <div class="col-md-3 form-group">
                             <label>Subject</label>
-                            <select name="subject" id="subject" class="form-control" required readonly>
+                            <select name="subject" id="subject" class="form-control"  onchange="get_chapters();" required {{$data['lessonplan_data']->subject_id ? 'readonly' : ''}}>
                                 <option value="">Select Subject</option>
                                 @if (isset($data['subjects']))
                                     @foreach ($data['subjects'] as $key => $value)
@@ -93,7 +93,7 @@ if(isset($_REQUEST['preload_lms'])){
                         </div>
                         <div class="col-md-3 form-group">
                             <label>Chapter</label>
-                            <select name="chapter" id="chapter" class="form-control" readonly>
+                            <select name="chapter" id="chapter" class="form-control" onchange="get_topic();" {{ $data['lessonplan_data']->chapter_id ? 'readonly' : '' }}>
                                 <option value="">Select Chapter</option>
                                 @if (isset($data['chapters']))
                                     @foreach ($data['chapters'] as $key => $value)
@@ -106,7 +106,7 @@ if(isset($_REQUEST['preload_lms'])){
                         </div>
                         <div class="col-md-3 form-group">
                             <label>Topic</label>
-                            <select name="topic" id="topic" class="form-control">
+                            <select name="topic" id="topic" class="form-control" {{$data['lessonplan_data']->topic_id ? 'readonly' : ''}}>
                                 <option value="">Select Topic</option>
                                 @if (isset($data['topics']))
                                     @foreach ($data['topics'] as $key => $value)
@@ -144,27 +144,27 @@ if(isset($_REQUEST['preload_lms'])){
                         <div class="col-md-6 form-group">
                             <label>Assessment Qualifying</label>
                             <textarea class="form-control tinymce" placeholder="Enter Assessment Qualifying" name="assessmentqualifying"
-                                id="assessmentqualifying" cols="60" rows="2">{{ $data['lessonplan_data']->assessmentqualifying }}</textarea>
+                                id="assessmentqualifying" cols="60" rows="2" required>{{ $data['lessonplan_data']->assessmentqualifying }}</textarea>
                         </div>
                         <div class="col-md-6 form-group">
                             <label>Focus point <span class="text-danger">*</span></label>
                             <textarea class="form-control tinymce" placeholder="Enter Focus point" name="focauspoint" id="focauspoint"
-                                cols="60" rows="2">{{ $data['lessonplan_data']->focauspoint }}</textarea>
+                                cols="60" rows="2" required>{{ $data['lessonplan_data']->focauspoint }}</textarea>
                         </div>
                         <div class="col-md-6 form-group">
                             <label>Pedagogical process <span class="text-danger">*</span></label>
                             <textarea class="form-control tinymce" placeholder="Enter Pedagogical process" name="pedagogicalprocess"
-                                id="pedagogicalprocess" cols="60" rows="2">{{ $data['lessonplan_data']->pedagogicalprocess }}</textarea>
+                                id="pedagogicalprocess" cols="60" rows="2" required>{{ $data['lessonplan_data']->pedagogicalprocess }}</textarea>
                         </div>
                         <div class="col-md-6 form-group">
                             <label>Resource <span class="text-danger">*</span></label>
                             <textarea class="form-control tinymce" placeholder="Enter Resource" name="resource" id="resource" cols="60"
-                                rows="2">{{ $data['lessonplan_data']->resource }}</textarea>
+                                rows="2" required>{{ $data['lessonplan_data']->resource }}</textarea>
                         </div>
                         <div class="col-md-12 form-group">
                             <label>Classroom presentation <span class="text-danger">*</span></label>
                             <textarea class="form-control tinymce" placeholder="Enter Classroom presentation" name="classroompresentation"
-                                id="classroompresentation" cols="60" rows="2">{{ $data['lessonplan_data']->classroompresentation }}</textarea>
+                                id="classroompresentation" cols="60" rows="2" required>{{ $data['lessonplan_data']->classroompresentation }}</textarea>
                         </div>
                         <div class="col-md-12 form-group">
                             <button type="button" class="btn btn-success add_activity" id="classroomactivity">Add
@@ -173,7 +173,7 @@ if(isset($_REQUEST['preload_lms'])){
                         <div class="col-md-6 form-group">
                             <label>Clasroom diversity <span class="text-danger">*</span></label>
                             <textarea class="form-control tinymce" placeholder="Enter Clasroom diversity" name="classroomdiversity"
-                                id="classroomdiversity" cols="60" rows="2">{{ $data['lessonplan_data']->classroomdiversity }}</textarea>
+                                id="classroomdiversity" cols="60" rows="2" required>{{ $data['lessonplan_data']->classroomdiversity }}</textarea>
                         </div>
                         <div class="col-md-6 form-group">
                             <label>Prerequisite lesson</label>
@@ -373,7 +373,6 @@ if(isset($_REQUEST['preload_lms'])){
         selfstudyactivity = selfstudyactivity.split(',') ?? [];
         assessmentactivity = assessmentactivity.split(',') ?? [];
 
-
         $(document).on('click', '.add-day', function() {
             day = parseInt($('#day_count').val());
             $('#day_count').val(day);
@@ -512,7 +511,44 @@ if(isset($_REQUEST['preload_lms'])){
             });
         });
     })
+    function get_chapters() {
+            // api/get-chapter-list
+            $('#chapter').empty();
+            var subject = $("#subject").val();
+            var standard = $("#standard").val();
 
+            // START Bind subject-wise chapter
+            var getchapter_path = "{{ route('ajax_LMS_SubjectwiseChapter') }}";
+            $('#chapter').find('option').remove().end().append('<option value="">Select Chapter</option>').val('');
+            $.ajax({
+                url:getchapter_path,
+                data:'sub_id='+subject+'&std_id='+standard,
+                success:function(result)
+                {
+                    for(var i=0;i < result.length;i++){
+                        $("#chapter").append($("<option></option>").val(result[i]['id']).html(result[i]['chapter_name']));
+                    }
+                }
+            });      
+        }
+
+        function get_topic() {
+            var chapter_id = $("#chapter").val();
+                var path = "{{ route('ajax_LMS_ChapterwiseTopic') }}";
+
+                $('#topic').find('option').remove().end().append('<option value="">Select Topic</option>').val('');
+
+                $.ajax({
+                    url: path,
+                    data:'chapter_id='+chapter_id,
+                    success: function(result){
+                    for(var i=0;i < result.length;i++){
+                        $("#topic").append($("<option></option>").val(result[i]['id']).html(result[i]['name']));
+                    }
+                }
+                });
+        }
+        
     function dayWiseDiv(day = 1, id = null) {
         let standard_id = $('#standard_id').val();
         let chapter_id = $('#chapter_id').val();
