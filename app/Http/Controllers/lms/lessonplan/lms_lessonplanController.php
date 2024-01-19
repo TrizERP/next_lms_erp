@@ -37,7 +37,7 @@ class lms_lessonplanController extends Controller
         $lessonData = LmsLessonPlan::when($id, function ($q) use ($id) {
             $q->whereId($id);
         })
-            ->when(is_null($id), function ($q) use ($request) {
+            ->when($id, function ($q) use ($request) {
                 $q->where('standard_id', $request->standard_id);
                 $q->where('subject_id', $request->subject_id);
                 $q->where('chapter_id', $request->chapter_id);
@@ -72,7 +72,8 @@ class lms_lessonplanController extends Controller
         $res['chapters'] = $chapters;
         $res['subjects'] = $subjects;
         $res['standards'] = $standards;
-        return is_mobile($type, 'lms/lessonplan/add_lessonplan', $res, "view");
+        // echo "<pre>";print_r($res['lessonplan_data']);exit;
+        return is_mobile($type, 'lms/lessonplan/add_lessonplan', $res, "view");        
     }
 
     public function create(Request $request)
@@ -348,7 +349,7 @@ class lms_lessonplanController extends Controller
 
     public function store(Request $request)
     {
-        // dd($request->all());
+        // echo "<pre>";print_r($request->all());exit;
         $request->validate([
             'focauspoint' => 'required',
             'pedagogicalprocess' => 'required',
@@ -362,8 +363,8 @@ class lms_lessonplanController extends Controller
             $objLessonPlan->sub_institute_id = session()->get('sub_institute_id');
             $objLessonPlan->syear = session()->get('syear');
             $objLessonPlan->standard_id = $request->standard_id;
-            $objLessonPlan->subject_id = $request->subject_id;
-            $objLessonPlan->chapter_id = $request->chapter_id;
+            $objLessonPlan->subject_id = $request->subject ?? $request->subject_id;
+            $objLessonPlan->chapter_id = $request->chapter ?? $request->chapter_id;
             $objLessonPlan->topic_id = $request->topic;
             $objLessonPlan->standard_id = $request->standard;
             $objLessonPlan->numberofperiod = $request->numberofperiod;
