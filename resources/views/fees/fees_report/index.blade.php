@@ -223,11 +223,11 @@
 
 								@php
 									$session_year = session()->get('syear');
-									$receipt_date = date('Y', strtotime($value['receiptdate']));
+									$receipt_date = $value['syear'];
 								@endphp
 								
 								@if($session_year != $receipt_date)
-									<td>{{ $receipt_date }}</td>
+									<td>{{ $value['syear'] }}</td>
 								@else
 									<td>{{ ' ' }}</td>
 								@endif
