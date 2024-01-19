@@ -72,24 +72,8 @@ class feesReportController extends Controller
         $enrollment_no = $request->input('enrollment_no');
         $name = $request->input('name');
         $mb_no = $request->input('mb_no');
-
         $from_date = $request->input('from_date');
         $to_date = $request->input('to_date');
-
-        // Convert strings to DateTime objects
-        $fromDateObj = \DateTime::createFromFormat('Y-m-d', $from_date);
-        $toDateObj = \DateTime::createFromFormat('Y-m-d', $to_date);
-
-        if ($fromDateObj && $toDateObj) 
-        {
-            $fromDateDayMonth = $fromDateObj->format('d-m');
-            $toDateDayMonth = $toDateObj->format('d-m');
-        } 
-        else 
-        {
-            $fromDateDayMonth = $toDateDayMonth = 'Invalid Date';
-        }
-
         $receipt_no = $request->input('receipt_no');
         $payment_mode = $request->input('payment_mode');
         $selected_user_name = $request->input('user_name');
@@ -149,8 +133,8 @@ class feesReportController extends Controller
         }
 
         if ($from_date != '' && $to_date != '') {
-            $extra_fp .= " AND DATE_FORMAT(fp.receiptdate, '%d-%m') BETWEEN '" . $fromDateDayMonth . "' AND '" . $toDateDayMonth . "'";
-            $extra_fo .= " AND DATE_FORMAT(fo.receiptdate, '%d-%m') BETWEEN '" . $fromDateDayMonth . "' AND '" . $toDateDayMonth . "'";
+            $extra_fp .= " AND DATE_FORMAT(fp.receiptdate,'%Y-%m-%d') between '" . $from_date . "' AND '" . $to_date . "' ";
+            $extra_fo .= " AND DATE_FORMAT(fo.receiptdate,'%Y-%m-%d') between '" . $from_date . "' AND '" . $to_date . "'";
         }
 
         if ($client_id == 6) {
