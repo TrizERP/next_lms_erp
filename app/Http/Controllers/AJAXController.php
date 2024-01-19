@@ -1514,7 +1514,11 @@ class AJAXController extends Controller
                 file_put_contents($html_file_path, $html);
 
                 if (($action == 'Bonafide' || $action == 'Character Certificate' || $action == 'other_fees_collect_receipt' || $action == 'imprest_fees_cancel_refund_receipt') && $sub_institute_id != 254) {
-                    htmlToPDFLandscapeCertificate($html_file_path, $pdf_file_path);
+                    if($sub_institute_id == 48){
+                        htmlToPDFPortrait($html_file_path, $pdf_file_path);
+                    }else{
+                        htmlToPDFLandscapeCertificate($html_file_path, $pdf_file_path);
+                    }
                 } else {
                     htmlToPDF($html_file_path, $pdf_file_path);
                 }
