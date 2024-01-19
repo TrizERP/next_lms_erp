@@ -278,10 +278,16 @@ class studentResultController extends Controller
             $html_content = str_replace(htmlspecialchars("<<co_scholastic_marks_hills_upper>>"), $co_result['co_scholastic'], $html_content);
             $html_content = str_replace(htmlspecialchars("<<other_tags_hills>>"), $co_result['other_tags'], $html_content);
         }
-        // student Result
+         // student Result
         if (strpos($html_content, htmlspecialchars('<<scholastic_marks_no_zero>>')) !== false) {
             $main_result = $this->get_scholastic($standard_id, $value['id'], $format, "no_zero");
             $html_content = str_replace(htmlspecialchars("<<scholastic_marks_no_zero>>"), $main_result['table'], $html_content);
+        } else if (strpos($html_content, htmlspecialchars('<<scholastic_marks_single_zero>>')) !== false) {
+            $main_result = $this->get_scholastic($standard_id, $value['id'], $format, "signle_zero");
+            $html_content = str_replace(htmlspecialchars("<<scholastic_marks_single_zero>>"), $main_result['table'], $html_content);
+        } else {
+            $main_result = $this->get_scholastic($standard_id, $value['id'], $format, "double_zero");
+            $html_content = str_replace(htmlspecialchars("<<scholastic_marks>>"), $main_result['table'], $html_content);
         }
         if (strpos($html_content, htmlspecialchars('<<scholastic_marks_mmis>>')) !== false) {
             $main_result = $this->get_scholastic_mmis($standard_id, $value['id'], $format, "no_zero");
@@ -539,7 +545,7 @@ class studentResultController extends Controller
         return $res;
 
     }
-    public function get_scholastic($standard_id, $student_id, $format, $digit)
+     public function get_scholastic($standard_id, $student_id, $format, $digit)
     {
 
         // echo "<pre>";print_r($student_id);exit;
@@ -547,8 +553,7 @@ class studentResultController extends Controller
         $sub_institute_id = session()->get('sub_institute_id');
         // sub_institute want foramt like lions 
         $format_sub_different = [61, 195];
-        $grade_arr = $this->getGradeScale($standard_id, '');
-        
+
         if ($format == "yearly") {
             $extra_term = "1=1";
             $extra_exam = "1=1";
@@ -803,6 +808,8 @@ class studentResultController extends Controller
         $res['table'] = $table;
         return $res;
     }
+
+    
     public function get_scholastic_altius($standard_id, $student_id, $format, $digit)
     {
         $syear = session()->get('syear');
