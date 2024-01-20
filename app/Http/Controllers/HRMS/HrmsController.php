@@ -268,15 +268,16 @@ class HrmsController extends Controller
             $sub_institute_id = $request->session()->get('sub_institute_id');
         }
 
-	    $employee_id = $request->get('employee_id');
-        $department_id = $request->get('department_id');
+	    $res['employee_id'] = $employee_id = $request->get('employee_id');
+        $res['department_id'] = $department_id = $request->get('department_id');
 
-        $from_date_formatted = Carbon::now()->format('Y-m-d');
-        $to_date_formatted = Carbon::now()->format('Y-m-d');
+        $res['from_date_formatted'] = $from_date_formatted = Carbon::now()->format('Y-m-d');
+        $res['to_date_formatted'] = $to_date_formatted = Carbon::now()->format('Y-m-d');
 
-        $departments = HrmsDepartment::where('status', true)->pluck('department', 'id');
-        
-        return view('HRMS.hrms_attendance_report.index', compact('from_date_formatted', 'to_date_formatted', 'departments', 'employee_id', 'department_id'));
+        $res['departments'] = $departments = HrmsDepartment::where('status', true)->pluck('department', 'id');
+
+        // return view('HRMS.hrms_attendance_report.index', compact('from_date_formatted', 'to_date_formatted', 'departments', 'employee_id', 'department_id'));
+        return is_mobile($type, "HRMS/hrms_attendance_report/index", $res, "view");
     }
 
     public function getEmployeeLists(Request $request)
@@ -302,7 +303,7 @@ class HrmsController extends Controller
         $from_date = $request->get('from_date');
         $to_date = $request->get('to_date');
         $department_id = $request->get('department_id');
-	    $employee_id = $request->input('employee_id');
+	    $employee_id = $request->get('employee_id');
         
         $from_date_formatted = Carbon::createFromFormat('Y-m-d', $from_date)->format('Y-m-d');
         $to_date_formatted = Carbon::createFromFormat('Y-m-d', $to_date)->format('Y-m-d');
@@ -400,8 +401,17 @@ class HrmsController extends Controller
 
             $from_date_new = date("Y-m-d", strtotime("+1 day", strtotime($from_date_new)));
         }
+        
+        $res['employees'] = $employees;
+        $res['from_date_formatted'] = $from_date_formatted;
+        $res['to_date_formatted'] = $to_date_formatted;
+        $res['report_data'] = $report_data;
+        $res['employee_id'] = $employee_id;
+        $res['department_id'] = $department_id;
+        $res['departments'] = $departments;
  
-       return view('HRMS.hrms_attendance_report.index', compact('employees', 'from_date_formatted', 'to_date_formatted', 'report_data', 'employee_id', 'department_id', 'departments'));
+        //return view('HRMS.hrms_attendance_report.index', compact('employees', 'from_date_formatted', 'to_date_formatted', 'report_data', 'employee_id', 'department_id', 'departments'));
+        return is_mobile($type, "HRMS/hrms_attendance_report/index", $res, "view");
     }
 
     public function earlyGoingHrmsAttendanceReportIndex(Request $request) 
@@ -422,8 +432,14 @@ class HrmsController extends Controller
         $date_formatted = Carbon::now()->format('Y-m-d');
 
         $departments = HrmsDepartment::where('status', true)->pluck('department', 'id');
+
+        $res['employee_id'] = $employee_id;
+        $res['department_id'] = $department_id;
+        $res['date_formatted'] = $date_formatted;
+        $res['departments'] = $departments;
         
-        return view('HRMS.hrms_attendance_report.early_going_report', compact('date_formatted', 'departments', 'employee_id', 'department_id'));
+        // return view('HRMS.hrms_attendance_report.early_going_report', compact('date_formatted', 'departments', 'employee_id', 'department_id'));
+        return is_mobile($type, "HRMS/hrms_attendance_report/early_going_report", $res, "view");
     }
 
     public function earlyGoingHrmsAttendanceReport(Request $request) {
@@ -501,7 +517,15 @@ class HrmsController extends Controller
             }
             return $e;
         })->where('is_late',1);
-        
-       return view('HRMS.hrms_attendance_report.early_going_report', compact('employees', 'employee_id', 'date_formatted', 'hrmsList', 'type', 'departments', 'department_id'));
+
+        $res['employees'] = $employees;
+        $res['date_formatted'] = $date_formatted;
+        $res['hrmsList'] = $hrmsList;
+        $res['employee_id'] = $employee_id;
+        $res['department_id'] = $department_id;
+        $res['departments'] = $departments;
+ 
+        //return view('HRMS.hrms_attendance_report.early_going_report', compact('employees', 'employee_id', 'date_formatted', 'hrmsList', 'type', 'departments', 'department_id'));
+        return is_mobile($type, "HRMS/hrms_attendance_report/early_going_report", $res, "view");
     }
 }
