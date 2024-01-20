@@ -5,6 +5,7 @@ namespace App\Http\Controllers\fees\fees_reconciliation;
 use App\Http\Controllers\Controller;
 use App\Models\lms\chapterModel;
 use App\Models\school_setup\sub_std_mapModel;
+use App\Models\fees\fees_collect;
 use Illuminate\Http\Request;
 use function App\Helpers\is_mobile;
 use function PHPUnit\Framework\fileExists;
@@ -110,10 +111,10 @@ class fees_reconciliation_upload_sheet_controller extends Controller
                         'VAN_NUMBER' => $row[23],
                         'student_id' => 'Null',
                         'term_id' => 'Null',
-                        'recept_no' => 'Null',
+                        'receipt_no' => 'Null',
                         'standard_id' => 'Null',
                         'paymode' => 'Null',
-                        'bank_detals' => 'Null',
+                        'bank_detail' => 'Null',
                         'amount' => 'Null',
                         'sub_institute_id' => session()->get('sub_institute_id'),
                         'created_at' => $now,
@@ -130,26 +131,41 @@ class fees_reconciliation_upload_sheet_controller extends Controller
                 if(!empty($check_fees))
                 {
                     // DB::enableQueryLog();
-                    $get_fees_collect = DB::table('fees_collect')->where(['cheque_no' => $row[1], 'sub_institute_id' => session()->get('sub_institute_id'), 'syear' => session()->get('syear')])->get()->toArray();
+                    $get_fees_collect = fees_collect::select([
+				        'student_id',
+				        DB::raw('GROUP_CONCAT(term_id) AS term_id'),
+				        'receipt_no',
+				        'standard_id',
+				        'payment_mode',
+				        'cheque_bank_name',
+				        DB::raw('SUM(amount) AS amount')
+				    ])
+                    ->where([
+                    	'cheque_no' => $row[1],
+                    	'sub_institute_id' => session()->get('sub_institute_id'),
+                    	'syear' => session()->get('syear')
+                    ])
+                    ->get()
+                    ->toArray();
 
                     if(!empty($get_fees_collect))
                     {
                         $student_id= $get_fees_collect[0]->student_id;
                         $term_id = $get_fees_collect[0]->term_id; 
-                        $recept_no = $get_fees_collect[0]->receipt_no;
+                        $receipt_no = $get_fees_collect[0]->receipt_no;
                         $standard_id = $get_fees_collect[0]->standard_id;
                         $paymode = $get_fees_collect[0]->payment_mode;
-                        $bank_detail = $get_fees_collect[0]->bank_name;
+                        $bank_detail = $get_fees_collect[0]->cheque_bank_name;
                         $amount = $get_fees_collect[0]->amount;
                         // dd(DB::getQueryLog($check_fees));
                         
                         DB::table('fees_reconciliation')->where('id', $check_fees[0]->id)->update([
                             'student_id' => $student_id,
                             'term_id' => $term_id,
-                            'recept_no' => $recept_no,
+                            'receipt_no' => $receipt_no,
                             'standard_id' => $standard_id,
                             'paymode' => $paymode,
-                            'bank_detals' => $bank_detail,
+                            'bank_detail' => $bank_detail,
                             'amount' => $amount,
                             'updated_at' => $now,
                         ]);

@@ -243,7 +243,7 @@ die; */
         }        
         
         $get_standard_subjects = DB::table('sub_std_map as ssm')
-        ->select(DB::raw('GROUP_CONCAT(ssm.display_name) as subject_name'))
+      ->select(DB::raw('GROUP_CONCAT(IFNULL(ssm.display_name, "-")) as subject_name'))
         ->join('standard as s', 's.id', '=', 'ssm.standard_id')
         ->where('ssm.sub_institute_id', session()->get('sub_institute_id'))
         ->where('ssm.standard_id', $value['standard_id'])
@@ -318,8 +318,7 @@ die; */
         //$standard_array = ['I' => 1,'II' => 2,'III' => 3,'IV' => 4,'V' => 5,'VI' => 6,'VII' => 7,'VIII' => 8,'IX' => 9,'X' => 10,'XI' => 11,'XII' => 12];
         //$std = $standard_array[$value['short_standard_name']] ?? 0;
         $html_content = str_replace(htmlspecialchars("<<short_standard_name_in_word_value>>"), strtoupper($value['school_stream']), $html_content);
-        $html_content = str_replace(htmlspecialchars("<<subjects_studied_system>>"), strtoupper($get_standard_subjects->subject_name),
-            $html_content);
+       $html_content = str_replace(htmlspecialchars("<<subjects_studied_system>>"),strtoupper(optional($get_standard_subjects)->subject_name ?? '-'),$html_content);
         $html_content = str_replace(htmlspecialchars("<<subjects_studied_value>>"),strtoupper($value['subjects_studied']), $html_content);
         $html_content = str_replace(htmlspecialchars("<<candidate_belongs_to_value>>"),
             strtoupper($value['candidate_belongs_to']), $html_content);
