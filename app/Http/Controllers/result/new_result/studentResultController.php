@@ -768,6 +768,8 @@ class studentResultController extends Controller
         // get overall percentage  
                 $overall_per = $this->getPer($all_ob_mark, $all_sub_mark);    
         // get overall grade  
+                $grade_arr = $this->getGradeScale($standard_id, '');
+
                 $all_grade = \App\Helpers\getGrade($grade_arr, 100, $overall_per);
                 $all_per = $overall_per . "%";
                 if ($keys == 0) {
@@ -978,7 +980,9 @@ $overall_total = $overall_total / 2;
                     $ov_sub_mark = $total_sub_marks[$terms->term_id];
                     //$max = 33*$ov_sub_mark/100;
                     $max = $total_sub_marks[$terms->term_id];     
-                    $per1 =$this->getPer($ov_ob_mark, $ov_sub_mark);   
+                    $per1 =$this->getPer($ov_ob_mark, $ov_sub_mark);  
+                    $grade_arr = $this->getGradeScale($standard_id, '');
+
                     $grade1=$this->getGrade($grade_arr, 100, $per1);  
                     $ov_headers = ['Half Yearly Obtained','Half Yearly Percent','Half Yearly Grade'];
                     $ov_mark = ['Half Yearly Obtained'=>$ov_ob_mark,'Half Yearly Percent'=>$per1."%",'Half Yearly Grade'=>$grade1]; 
