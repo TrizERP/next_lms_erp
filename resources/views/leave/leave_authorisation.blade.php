@@ -25,14 +25,14 @@
                         <div class="col-md-4 form-group">
                             <label>From Date</label>
                             <div class="input-daterange input-group" id="date-range">
-                                <input type="text" required class="form-control mydatepicker" placeholder="YYYY/MM/DD" name="from_date" id="from_date" value="{{ $from_date_formatted }}" autocomplete="off">
+                                <input type="text" required class="form-control mydatepicker" placeholder="YYYY/MM/DD" name="from_date" id="from_date" value="{{ $data['from_date_formatted'] }}" autocomplete="off">
                                 <span class="input-group-addon"><i class="icon-calender"></i></span>
                             </div>
                         </div>
                         <div class="col-md-4 form-group">
                             <label>End Date</label>
                             <div class="input-daterange input-group" id="date-range">
-                                <input type="text" required class="form-control mydatepicker" placeholder="YYYY/MM/DD" name="to_date" id="to_date" value="{{ $to_date_formatted }}" autocomplete="off">
+                                <input type="text" required class="form-control mydatepicker" placeholder="YYYY/MM/DD" name="to_date" id="to_date" value="{{ $data['to_date_formatted'] }}" autocomplete="off">
                                 <span class="input-group-addon"><i class="icon-calender"></i></span>
                             </div>
                         </div>
@@ -40,7 +40,7 @@
                             <label>Leave Status</label>
                             <select id='leave_status' name="leave_status[]" class="form-control" multiple required>
                                 @foreach($leave_status as $leave)
-                                    <option value="{{ $leave }}" @if(isset($get_leave_status) && in_array($leave,$get_leave_status) ) selected @endif>
+                                    <option value="{{ $leave }}" @if(isset($data['get_leave_status']) && in_array($leave,$data['get_leave_status']) ) selected @endif>
                                         {{ $leave }}
                                     </option>
                                 @endforeach
@@ -53,7 +53,7 @@
                 </form>
             </div>
         </div>
-        @if(isset($get_employee_leave_lists))
+        @if(isset($data['get_employee_leave_lists']))
             <div class="card">
                 <form action="{{ route('leave.authorisation.store') }}" method="post">
                 @csrf
@@ -79,6 +79,7 @@
                         </thead>
                         @php
                         $j = 1;
+                        $get_employee_leave_lists = $data['get_employee_leave_lists'];
                         @endphp
                         <tbody>
                             @foreach($get_employee_leave_lists as $key => $employee_leave_lists)

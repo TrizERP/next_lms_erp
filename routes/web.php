@@ -167,12 +167,12 @@ Route::group([ 'middleware' => ['session', 'menu', 'logRoute']], function () {
     Route::post('hrms-attendance-out-time/store',[HrmsController::Class,'hrmsAttendanceOutTimeStore'])->name('hrms_attendance_out_time.store');
 
     Route::get('hrms-attendance-report',[HrmsController::Class,'hrmsAttendanceReportIndex'])->name('hrms_attendance_report.index');
-    Route::post('/hrms-attendance-report', [HrmsController::class, 'hrmsAttendanceReport'])->name('hrms.show_hrms_attendance_report');
+    Route::post('/show-hrms-attendance-report', [HrmsController::class, 'hrmsAttendanceReport'])->name('hrms.show_hrms_attendance_report');
     Route::post('/get-employees-list', [HrmsController::class, 'getEmployeeLists'])->name('get.employees.list');
 
     Route::get('early-going-hrms-attendance-report',[HrmsController::Class,'earlyGoingHrmsAttendanceReportIndex'])->name('hrms_attendance_report.early_going_report');
-    Route::post('/early-going-hrms-attendance-report', [HrmsController::class, 'earlyGoingHrmsAttendanceReport'])->name('hrms.show_early_going_hrms_attendance_report');
-    
+
+    Route::post('/show-early-going-hrms-attendance-report', [HrmsController::class, 'earlyGoingHrmsAttendanceReport'])->name('hrms.show_early_going_hrms_attendance_report');
     Route::resource('sqaa_master', sqaa_controller::class);
     Route::resource('sqaa_score_report', sqaaScoreReportController::class);
     Route::resource('sqaa_report_master', sqaaReportController::class);
@@ -417,7 +417,7 @@ Route::group(['middleware' => ['session', 'menu', 'logRoute']], function () {
 
     //Leave Authorisation
     Route::resource('leave-authorisation', LeaveAuthorisationController::class);
-    Route::post('leave-authorisation', [LeaveAuthorisationController::class,'leaveAuthorisation'])->name('leave.authorisation.index');
+    Route::post('show-leave-authorisation', [LeaveAuthorisationController::class,'leaveAuthorisation'])->name('leave.authorisation.index');
     Route::post('leave-authorisation-store', [LeaveAuthorisationController::class,'leaveAuthorisationStore'])->name('leave.authorisation.store');
 
     //Leave Report
