@@ -100,7 +100,6 @@ class LeaveAuthorisationController extends Controller
         }
         $user_id = $request->session()->get('user_id');
         $res_user_id = $request->get('user_id');
-        $comments = $request->get('comment');
         $hodComments = $request->get('hod_comment');
         $hrRemarks = $request->get('hr_remarks');
         $leaveStatuses = $request->get('single_leave_status');
@@ -127,7 +126,6 @@ class LeaveAuthorisationController extends Controller
             DB::table('hrms_emp_leaves')
                 ->where('id', $leave_id)
                 ->update([
-                    'comment' => $comments,
                     'hod_comment' => $hodComments,
                     'hod_comment_date' => now(),
                     'hr_remarks' => $hrRemarks,
@@ -143,7 +141,6 @@ class LeaveAuthorisationController extends Controller
                 DB::table('hrms_emp_leaves')
                     ->where('id', $value)
                     ->update([
-                        'comment' => $comments[$value],
                         'hod_comment' => $hodComments[$value],
                         'hod_comment_date' => now(),
                         'hr_remarks' => $hrRemarks[$value],

@@ -56,7 +56,6 @@ $route = ['dashboard'];
                             $user_details = DB::table('tbluser')
                                 ->where('sub_institute_id', session()->get('sub_institute_id'))
                                 ->where('id', session()->get('user_id'))
-                                ->where('portal_user', 1)
                                 ->first();
 
                             if ($user_details) {

@@ -410,6 +410,7 @@ Route::group(['middleware' => ['session', 'menu', 'logRoute']], function () {
     Route::resource('leave-apply', ApplyLeaveController::class);
     Route::post('/get-employees', [ApplyLeaveController::class, 'getEmployees'])->name('get-employees');
     Route::get('my-leave', [ApplyLeaveController::class,'myLeave'])->name('my-leave');
+    Route::get('get-leave', [ApplyLeaveController::class,'getYearwiseleave'])->name('get-leave');
     Route::get('import-leave', [ApplyLeaveController::class,'importLeave'])->name('import-leave');
     Route::post('import-leave', [ApplyLeaveController::class,'importOldLeave'])->name('import-leave');
     Route::get('holiday.weekdays', [HolidayController::class,'getWeekdays'])->name('holiday.weekdays');
