@@ -94,7 +94,7 @@
                                     <td>{{ $employee_leave_lists->day_type }}</td>
                                     <td>{{ $employee_leave_lists->leave_type }}</td>
                                     <td>
-                                        <input type="text" name="comment[{{ $employee_leave_lists->id }}]" value="{{ $employee_leave_lists->comment }}" style="width:150px;">
+                                        {{ $employee_leave_lists->comment }}
                                     </td>
                                     <td>
                                         <input type="text" name="hod_comment[{{ $employee_leave_lists->id }}]" value="{{ $employee_leave_lists->hod_comment }}" style="width:150px;"></td>

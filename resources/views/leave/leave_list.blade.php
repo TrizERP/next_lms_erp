@@ -16,8 +16,9 @@
                 <div class="col-lg-12 col-sm-3 col-xs-3 row">
                     <div class="col-md-3 pull-right">
                         <select id="cmbyear" class="form-control" name="cmbyear"
-                            onchange="getyearwise_holiday(this.value);">
+                        onchange="getYearwiseLeave(this.value);">
                             <option value="">Select Year</option>
+                            <option value="2024">2024-2025</option>
                             <option value="2023">2023-2024</option>
                             <option value="2022">2022-2023</option>
                             <option value="2021">2021-2022</option>
@@ -68,142 +69,56 @@
         var table = $('#tblLeaves').DataTable({
             processing: true,
             serverSide: true,
-            ajax: "{{ route('my-leave') }}",
-            columns: [{
-                    data: 'DT_RowIndex',
-                    name: 'DT_RowIndex'
-                },
-                {
-                    data: 'from_date',
-                    name: 'from_date'
-                },
-                {
-                    data: 'to_date',
-                    name: 'to_date'
-                },
-                {
-                    data: 'days',
-                    name: 'days'
-                },
-                {
-                    data: 'leave_type',
-                    name: 'leave_type'
-                },
-                {
-                    data: 'comment',
-                    name: 'comment'
-                },
-                {
-                    data: 'hod_comment',
-                    name: 'hod_comment'
-                },
-                {
-                    data: 'hod_comment_date',
-                    name: 'hod_comment_date'
-                },
-                {
-                    data: 'hr_remarks',
-                    name: 'hr_remarks'
-                },
-                {
-                    data: 'hr_remark_date',
-                    name: 'hr_remark_date'
-                },
-                {
-                    data: 'approved_by',
-                    name: 'approved_by'
-                },
-                {
-                    data: 'status',
-                    name: 'status'
-                },
-            ]
-        });
-
-        $(document).on("submit", "#frmLeaveType", function(e) {
-            e.preventDefault();
-            var formData = $("#frmLeaveType").serialize();
-            /**Ajax code**/
-            $.ajax({
-                type: "post",
-                url: "{{ route('leave-type.store') }}",
-                data: formData,
-                success: function(data) {
-                    $('#addTypeMdl').modal('toggle');
-                    $('#tblLeaves').DataTable().ajax.reload();
-                },
-                error: function(xhr) {
-                    if (xhr.status == 422) {
-                        var errors = JSON.parse(xhr.responseText);
-                        $.each(errors.errors, function(i, error) {
-                            $('#' + i).after(
-                                '<span class="text-strong text-danger">' +
-                                error + '</span>')
-                        })
-                    }
-                }
-            });
-        });
-
-        $(document).on("click", ".btn-edit", function(e) {
-            e.preventDefault();
-            $('.error').remove()
-            var id = $(this).data('id');
-            var url = "{{ route('leave-type.edit', ':id') }}";
-            url = url.replace(':id', id);
-            /**Ajax code**/
-            $.ajax({
-                type: "get",
-                url: url,
-                data: {
-                    id: id
-                },
-                success: function(data) {
-                    $('#addTypeMdl').modal('toggle');
-                    $('#leave_type_name').val(data.data.leave_type);
-                    $('#leave_id').val(data.data.id);
-                },
-                error: function(xhr) {
-                    if (xhr.status == 422) {
-                        var errors = JSON.parse(xhr.responseText);
-                        $.each(errors.errors, function(i, error) {
-                            $('#' + i).after(
-                                '<span class="text-strong text-danger error">' +
-                                error + '</span>')
-                        })
-                    }
-                }
-            });
-        });
-        $(document).on("click", ".btn-delete", function(e) {
-            e.preventDefault();
-            var id = $(this).data('id');
-            var url = "{{ route('leave-type.destroy', ':id') }}";
-            url = url.replace(':id', id);
-            /**Ajax code**/
-            if (confirm('Are you sure to delete leave type')) {
-                $.ajax({
-                    type: "delete",
-                    url: url,
-                    data: {
-                        id: id
-                    },
-                    success: function(data) {
-                        $('#tblLeaves').DataTable().ajax.reload();
-                    },
-                    error: function(xhr) {
-                        if (xhr.status == 422) {
-                            var errors = JSON.parse(xhr.responseText);
-                            $.each(errors.errors, function(i, error) {
-                                $('#' + i).after(
-                                    '<span class="text-strong text-danger">' +
-                                    error + '</span>')
-                            })
-                        }
-                    }
-                });
-            }
         });
     });
 </script>
+<script>
+    function getYearwiseLeave(selectedYear) {
+        // Make an Ajax request
+        $.ajax({
+            type: 'GET',
+            url: '/get-leave',
+            data: { year: selectedYear },
+            success: function(data) {
+                // Update the table body with the received data
+                updateTableBody(data);
+            },
+            error: function(error) {
+                console.error('Error fetching data:', error);
+            }
+        });
+    }
+
+    function updateTableBody(data) {
+        var tableBody = $('#tblLeaves tbody');
+        tableBody.empty(); // Clear existing rows
+
+        if (data.length > 0) {
+            $.each(data, function(index, item) {
+                // Append a new row for each item in the data
+                var row = '<tr>' +
+                    '<td>' + (index + 1) + '</td>' +
+                    '<td>' + item.from_date + '</td>' +
+                    '<td>' + item.to_date + '</td>' +
+                    '<td>' + item.day_type + '</td>' +
+                    '<td>' + item.leave_type_name + '</td>' +
+                    '<td>' + item.comment + '</td>' +
+                    '<td>' + item.hod_comment + '</td>' +
+                    '<td>' + item.hod_comment_date + '</td>' +
+                    '<td>' + item.hr_remarks + '</td>' +
+                    '<td>' + item.hr_remark_date + '</td>' +
+                    '<td>' + item.approved_by + '</td>' +
+                    '<td>' + item.status + '</td>' +
+                    '</tr>';
+
+                tableBody.append(row);
+            });
+        } else {
+            // Display a message if there is no data for the selected year
+            var noDataRow = '<tr><td colspan="12">No data available for the selected year.</td></tr>';
+            tableBody.append(noDataRow);
+        }
+    }
+</script>
+
 @include('includes.footer')
