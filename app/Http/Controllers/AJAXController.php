@@ -702,6 +702,9 @@ class AJAXController extends Controller
                     </tr>';
         foreach ($full_bk as $id => $val) {
             if($val!=0){
+                if($id=="Total"){
+                    $ids="";
+                }
             $response .= "
                  <tr>
                     <td style='width: 20%'>$id</td>

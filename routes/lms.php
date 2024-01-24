@@ -176,7 +176,8 @@ Route::group(['prefix' => 'lms', 'middleware' => ['session', 'menu', 'logRoute']
     Route::GET('ajax_daywisedata', 'lms\lessonplan\lms_lessonplanController@ajax_DayWiseData')->name('ajax_daywisedata');
 
     Route::get('ajax_getTeacher', [lms_lessonplanController::class, 'ajax_getTeacher'])->name('ajax_getTeacher');
-
+    Route::get('get_chat_data', [lms_lessonplanController::class, 'getChatOutput'])->name('get_chat_data');    
+    
 Route::get('questionReport', [questionWiseReportController::class, 'index'])->name('question_wise_report');
 Route::post('show_question_wise_report',
     [questionWiseReportController::class, 'show_question_wise_report'])->name('show_question_wise_report');
