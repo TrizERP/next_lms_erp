@@ -702,13 +702,14 @@ class AJAXController extends Controller
                     </tr>';
         foreach ($full_bk as $id => $val) {
             if($val!=0){
+                $ids ='';
                 if($id=="Total"){
-                    $ids="";
+                    $ids='id="all_total"';
                 }
             $response .= "
                  <tr>
                     <td style='width: 20%'>$id</td>
-                    <td style='width: 20%'>$val</td>
+                    <td style='width: 20%' $ids>$val</td>
             ";
             if ($id != 'Total') {
                 // $response .= "<td style='width: 20%'><input type='number' min=0 max=$val  value='" . $val . "' name='fees_data[" . $final_bk_name[$id] . "]' class='form-control allField1'></td>";
@@ -1513,7 +1514,11 @@ class AJAXController extends Controller
                 file_put_contents($html_file_path, $html);
 
                 if (($action == 'Bonafide' || $action == 'Character Certificate' || $action == 'other_fees_collect_receipt' || $action == 'imprest_fees_cancel_refund_receipt') && $sub_institute_id != 254) {
-                    htmlToPDFLandscapeCertificate($html_file_path, $pdf_file_path);
+                    if($sub_institute_id == 48){
+                        htmlToPDFPortrait($html_file_path, $pdf_file_path);
+                    }else{
+                        htmlToPDFLandscapeCertificate($html_file_path, $pdf_file_path);
+                    }
                 } else {
                     htmlToPDF($html_file_path, $pdf_file_path);
                 }

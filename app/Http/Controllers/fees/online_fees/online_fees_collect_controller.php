@@ -1699,9 +1699,9 @@ exit; */
         $str = $medium_data[0]->student_name .'|'. $medium_data[0]->mobile .'|'. $student_id.'@gmail.com|' . $medium_data[0]->enrollment_no .'|'. $medium_data[0]->standard .'|'. $medium_data[0]->division .'|'. $medium_data[0]->batch .'|'. $student_id .'|'. $merchantId .'|'. $merchantTxnNo .'|'. $currencyCode .'|'. $amount .'|'.$payType .'|'. $transactionType .'|'. $txnDate .'|'. $returnURL .'|'. $secureHash;
 
         $curl = curl_init();
-
+//CURLOPT_URL => 'https://qa.phicommerce.com/pg/api/v2/initiateSale',
         curl_setopt_array($curl, array(
-            CURLOPT_URL => 'https://qa.phicommerce.com/pg/api/v2/initiateSale',
+            CURLOPT_URL => 'https://secure-ptg.payphi.com/pg/api/v2/initiateSale',
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_ENCODING => '',
             CURLOPT_MAXREDIRS => 10,
@@ -1830,9 +1830,9 @@ exit; */
                     'transactionType' => $transactionType,
                     'secureHash' => $secureHash,
                 ));
-
+//                    CURLOPT_URL => 'https://qa.phicommerce.com/pg/api/command',
                 curl_setopt_array($curl, array(
-                    CURLOPT_URL => 'https://qa.phicommerce.com/pg/api/command',
+                    CURLOPT_URL => 'https://secure-ptg.payphi.com/pg/api/command',
                     CURLOPT_RETURNTRANSFER => true,
                     CURLOPT_ENCODING => '',
                     CURLOPT_MAXREDIRS => 10,
@@ -1849,17 +1849,17 @@ exit; */
                 $response = curl_exec($curl);
               
                 curl_close($curl);
-            
+
                 $fetchResponseArray = json_decode($response, true);
-                
+
                 if (!empty($response)) 
                 {
-                    $status = $fetchResponseArray['txnStatus'];
-                    $txnResponseCode = $fetchResponseArray['txnResponseCode'];
+                    $status = isset($fetchResponseArray['txnStatus']) ? $fetchResponseArray['txnStatus'] : 'PR';
+                    $txnResponseCode = isset($fetchResponseArray['txnResponseCode']) ? $fetchResponseArray['txnResponseCode'] : $fetchResponseArray['responseCode'];
                    
                     $update_arr = array(
                         "payphi_payment_status" => $status,
-                        "payphi_response" => $fetchResponseArray,
+                        "payphi_response" => $response,
                         "updated_at" => now()
                     );
 

@@ -114,10 +114,10 @@
                                 <td>{{$get_fees_reconciliation->VAN_NUMBER}}</td>
                                 <td>{{$get_fees_reconciliation->student_id}}</td>
                                 <td>{{$get_fees_reconciliation->term_id}}</td>
-                                <td>{{$get_fees_reconciliation->recept_no}}</td>
+                                <td>{{$get_fees_reconciliation->receipt_no}}</td>
                                 <td>{{$get_fees_reconciliation->standard_id}}</td>
                                 <td>{{$get_fees_reconciliation->paymode}}</td>
-                                <td>{{$get_fees_reconciliation->bank_detals}}</td>
+                                <td>{{$get_fees_reconciliation->bank_detail}}</td>
                                 <td>{{$get_fees_reconciliation->amount}}</td>
                                 <td>{{$get_fees_reconciliation->sub_institute_id}}</td>
                             </tr>
@@ -139,7 +139,11 @@
                         @php 
                             $total_records = count($get_fees_reconciliations);
                             
-                            $get_success_reconciliations = DB::table('fees_collect')->where(['sub_institute_id' => session()->get('sub_institute_id'), 'syear' => session()->get('syear'), 'conciliation' => '1'])->get()->toArray();
+                            $get_success_reconciliations = DB::table('fees_collect')
+                                ->where(['sub_institute_id' => session()->get('sub_institute_id'), 'syear' => session()->get('syear'), 'conciliation' => '1'])
+                                ->groupBy('cheque_no')
+                                ->get()
+                                ->toArray();
                             $success_reconciliations = count($get_success_reconciliations);
 
                             $not_found_success_reconciliations = ($total_records) - ($success_reconciliations);
