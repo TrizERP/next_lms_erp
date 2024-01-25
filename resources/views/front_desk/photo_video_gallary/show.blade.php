@@ -90,7 +90,7 @@
                                     <td>{{$data->std_name}}</td>
                                     <td>{{$data->div_name}}</td>
                                     <?php if ($data->type == 'Video') { ?>
-                                    <td><a href="<?php echo "http://".$data->file_name; ?>" target="_blank" class="text-primary">View</a> </td>
+                                    <td><a href="<?php echo $data->file_name; ?>" target="_blank" class="text-primary">View</a> </td>
                                     <?php } else { ?>
                                     <td><a href="<?php echo asset('storage/photo_video_gallary/' . $data->file_name); ?>" target="_blank" class="text-primary">View</a> </td>
                                     <?php } ?>

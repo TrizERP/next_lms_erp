@@ -163,7 +163,7 @@
                             <div class=" text-center">
                                 <h3>{{$data['totalFees']}}</h3>
                             </div>
-                            <div class="text-overline mb-3 font-weight-bolder">Total Income</div>
+                            <div class="text-overline mb-3 font-weight-bolder">Today Income</div>
                             <div class="progress">
                                 <div class="progress-bar bg-danger" role="progressbar" style="width: 55%" aria-valuenow="{{$data['totalFees']}}" aria-valuemin="0" aria-valuemax="100"></div>
                             </div>

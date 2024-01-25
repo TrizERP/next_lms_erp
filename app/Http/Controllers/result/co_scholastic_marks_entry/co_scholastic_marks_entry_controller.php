@@ -23,6 +23,11 @@ class co_scholastic_marks_entry_controller extends Controller
      */
     public function index(Request $request)
     {
+
+        /* echo("<pre>");
+        print_r(session()->get('classTeacher'));
+        echo("</pre>");
+        die; */
         if (session()->has('data')) { // check if it exists
             $data_arr = session('data'); // to retrieve value
             if (isset($data_arr['message'])) {
