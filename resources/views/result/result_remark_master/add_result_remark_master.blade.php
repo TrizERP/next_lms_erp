@@ -16,7 +16,7 @@
                         {{ method_field("POST") }}
                         {{csrf_field()}}
                         <div class="row">                            
-                            {{ App\Helpers\TermDD() }}                            
+                            <!-- {{ App\Helpers\TermDD() }} -->                            
                             <div class="col-md-4 form-group">
                                 <label>Title</label>
                                 <input type="text" id='title' required name="title" value="" class="form-control">

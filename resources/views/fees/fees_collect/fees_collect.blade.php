@@ -54,8 +54,9 @@
 									<td>
 										@php $bk[] = $arr['bk']; echo $arr['bk'];  @endphp
 									</td>
+									@php $Paid_and_discount = $arr['paid'] + $arr['discount']; @endphp
 									<td>
-										@php $paid[] = $arr['paid']; echo $arr['paid']; @endphp
+										{{ $Paid_and_discount }}
 									</td>
 									<td>@php $discount[] = $arr['discount']; echo $arr['discount']; @endphp</td>
 									<td>

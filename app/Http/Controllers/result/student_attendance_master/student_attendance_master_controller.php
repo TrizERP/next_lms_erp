@@ -41,14 +41,14 @@ class student_attendance_master_controller extends Controller {
      * @return \Illuminate\Http\Response
      */
     public function create(Request $request) {
-//        echo "<pre>";
-//        print_r($_REQUEST);
-//        exit;
+        //        echo "<pre>";
+        //        print_r($_REQUEST);
+        //        exit;
         if (!isset($_REQUEST["term"]) || $_REQUEST["term"] == '' ||
                 !isset($_REQUEST["standard"]) || $_REQUEST["standard"] == '' ||
                 !isset($_REQUEST["grade"]) || $_REQUEST['grade'] == '' ||
                 !isset($_REQUEST["division"]) || $_REQUEST['division'] == '') {
-//            $data['message'] 
+        //            $data['message'] 
             $res = array(
                 "status_code" => 1,
                 "message" => "Please Select All Fields.",
@@ -101,9 +101,9 @@ class student_attendance_master_controller extends Controller {
             $type = $request->input('type');
             return \App\Helpers\is_mobile($type, "result/student_attendance_master/show", $res, "view");
         }
-//        echo "<pre>";
-//        print_r($working_day);
-//        exit;
+        //        echo "<pre>";
+        //        print_r($working_day);
+        //        exit;
 
         $remark_data = result_remark_master::
                 where($where_result_remark)
@@ -145,13 +145,13 @@ class student_attendance_master_controller extends Controller {
             $responce_arr['stu_data'][$id]['att_out'] = $working_day[0]['total_working_day'];
             $responce_arr['stu_data'][$id]['student_id'] = $arr['student_id'];
         }
-//        echo "<pre>";
-//        print_r($responce_arr);
-//        exit;
+        //        echo "<pre>";
+        //        print_r($responce_arr);
+        //        exit;
 
         return \App\Helpers\is_mobile($type, "result/student_attendance_master/add", $responce_arr, "view");
-//        print_r($student_data);
-//        exit;
+        //        print_r($student_data);
+        //        exit;
     }
 
     /**
@@ -162,9 +162,9 @@ class student_attendance_master_controller extends Controller {
      */
     public function store(Request $request) {
         //
-//        echo "<pre>";
-//        print_r($_REQUEST);
-//        exit;
+        //        echo "<pre>";
+        //        print_r($_REQUEST);
+        //        exit;
         foreach ($_REQUEST['values'] as $student_id => $arr) {
             student_attendance_master::where([
                 'sub_institute_id' => session()->get('sub_institute_id'),
