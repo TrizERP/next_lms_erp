@@ -496,8 +496,9 @@
 
 					var sub = 0;
 					var full_bk = @json($data['final_fee']);
+					// console.log(full_bk);
 					$.each(full_bk, function(index, value) {
-						if (value !== 0 && index!=='Total') {
+						if (value !== 0 && index!=='Total' && index!=='Previous Fees') {
 							$.ajax({
 								url : '{{route("check_reciept_book")}}',
 								data: {fees_title : index,standard_id:{{ $data['stu_data']['std_id'] }}},

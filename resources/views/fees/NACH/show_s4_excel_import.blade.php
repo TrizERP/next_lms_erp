@@ -68,7 +68,7 @@
                         <label>Select File</label>
 
                         <input type="file" id="s4file" name="s4file" class="form-control" required>
-                        <a href="../SAMPLE_NACH_S4_Import.xlsx" download class="text-primary h5">Sample S4 NACH File</a>
+                        <a href="../sample_sheet/SAMPLE_NACH_S4_Import.xlsx" download class="text-primary h5">Sample S4 NACH File</a>
                     </div>
                     <div class="col-sm-4 form-group ml-0 mt-4">
                     

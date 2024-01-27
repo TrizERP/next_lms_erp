@@ -67,8 +67,6 @@
 <script>
     $(document).ready(function() {
         var table = $('#tblLeaves').DataTable({
-            processing: true,
-            serverSide: true,
         });
     });
 </script>
