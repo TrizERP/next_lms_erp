@@ -21,6 +21,7 @@ use function App\Helpers\is_mobile;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\View;
+use Illuminate\Support\Facades\Http;
 
 class lms_lessonplanController extends Controller
 {
@@ -112,7 +113,7 @@ class lms_lessonplanController extends Controller
             ->where('sub_institute_id', $sub_institute_id)
             ->where('chapter_id', $lessonData->chapter_id)
             ->get();
-        // dd($lessonData);
+        // echo "<pre>";print_r($lessonData);exit;
         $res['status_code'] = 1;
         $res['message'] = "SUCCESS";
         $res['lessonplan_data'] = $lessonData;
@@ -155,7 +156,7 @@ class lms_lessonplanController extends Controller
             })
             ->get();
         $objDayWise = LmsLessonPlanDayWise::where('lpid', $id)->get();
-        $data = View::make('lms.lessonplan.day_wise_lesson_plan', compact('day', 'objDayWise', 'content_master', 'question_master'));
+        $data = View::make('lms.lessonplan.day_wise_lesson_plan', compact('day', 'objDayWise', 'content_master', 'question_master','id'));
         return $data;
     }
 
@@ -405,6 +406,7 @@ class lms_lessonplanController extends Controller
 
                 foreach ($inputDays as $i => $value) {
                     $objDayWise = LmsLessonPlanDayWise::where('days', $value)->where('lpid', $objLessonPlan->id)->first() ?? new LmsLessonPlanDayWise();
+                    $objDayWise->sub_institute_id = session()->get('sub_institute_id');            
                     $objDayWise->lpid = $objLessonPlan->id;
                     $objDayWise->days = $value;
                     $objDayWise->topicname = $request->topicname[$value] ?? '';
@@ -559,5 +561,45 @@ class lms_lessonplanController extends Controller
             }
         }
         return $counter;
+    }
+
+    public function getChatOutput(Request $request){
+        $extra_text ='';
+        if(isset($request->topic) && $request->topic !="Select Topic"){
+            $extra_text = ' and for topic="'.$request->topic.'"';
+        }
+        $main_prompt = $request->prompt." for standard name =".$request->standard." and subject name =".$request->subject." and chapter name =".$request->chapter.$extra_text." , In response array give Short and simple Answer";
+        $prompt = array($main_prompt);
+        $apiKey ='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';
+      
+        $endpoint = "https://api.openai.com/v1/chat/completions";
+
+        $data = [
+            'model' => 'gpt-3.5-turbo',
+            'messages' => [
+                [
+                    'role' => 'user',
+                    'content' => json_encode($prompt)
+                ]
+            ],
+            "temperature" => 0.7,
+            "max_tokens" => 256,
+            "top_p" => 1,
+            "frequency_penalty" => 0,
+            "presence_penalty" => 0,
+            "stop" => ["11."]
+        ];
+
+        $response = Http::withHeaders([
+            'Content-Type' => 'application/json',
+            'Authorization' => 'Bearer ' . $apiKey,
+        ])->post($endpoint, $data)->json();
+
+        if (isset($response['choices'][0]['message']['content'])) {
+            $res['answer'] = $response['choices'][0]['message']['content'];
+        }else{
+            $res['answer']['error'] = $response['error']['message'];
+        }
+       return $res['answer'];
     }
 }
