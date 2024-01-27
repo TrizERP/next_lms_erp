@@ -72,7 +72,7 @@ class student_attendance_master_controller extends Controller {
             'syear' => session()->get('syear')
         );
         $where_result_remark = array(
-            'marking_period_id' => $_REQUEST["term"],
+            //'marking_period_id' => $_REQUEST["term"],
             'sub_institute_id' => session()->get('sub_institute_id'),
             'syear' => session()->get('syear')
         );
