@@ -28,10 +28,10 @@
                             <label>Department List</label>
                             <select id='department_id' name="department_id" class="form-control" required>
                                 <option value="">Select Department</option>
-                                @foreach($departments as $id => $department)
+                                @foreach($data['departments'] as $id => $department)
                                     <option value="{{$id}}"
-                                    @if(isset($department_id))
-                                        @if($department_id == $id)
+                                    @if(isset($data['department_id']))
+                                        @if($data['department_id'] == $id)
                                         selected='selected'
                                         @endif
                                     @endif
@@ -43,9 +43,9 @@
                             <label>Employee List</label>
                             <select id='employee_id' name="employee_id" class="form-control" required>
                                 <option value="">Select Employee</option>
-                                @if(!empty($employees))
-                                    @foreach($employees as $key=>$value)
-                                        <option value="{{$value['id']}}" @if(isset($employee_id) && $employee_id == $value['id']) selected @endif>{{$value['first_name'] ?? ''}} {{$value['last_name'] ?? ''}}</option>
+                                @if(!empty($data['employees']))
+                                    @foreach($data['employees'] as $key=>$value)
+                                        <option value="{{$value['id']}}" @if(isset($data['employee_id']) && $data['employee_id'] == $value['id']) selected @endif>{{$value['first_name'] ?? ''}} {{$value['last_name'] ?? ''}}</option>
                                     @endforeach
                                 @endif
                             </select>
@@ -53,7 +53,7 @@
                         <div class="col-md-3 form-group">
                             <label>Date</label>
                             <div class="input-daterange input-group" id="date-range">
-                                <input type="text" required class="form-control mydatepicker" placeholder="YYYY/MM/DD" name="date" id="date" value="{{ $date_formatted }}" autocomplete="off" required>
+                                <input type="text" required class="form-control mydatepicker" placeholder="YYYY/MM/DD" name="date" id="date" value="{{ $data['date_formatted'] }}" autocomplete="off" required>
                                 <span class="input-group-addon"><i class="icon-calender"></i></span>
                             </div>
                         </div>
@@ -64,7 +64,7 @@
                 </form>
             </div>
         </div>
-        @if(isset($hrmsList))
+        @if(isset($data['hrmsList']))
             <div class="card">
                 <div class="table-responsive mt-20 tz-report-table">
                     <table id="example" class="table table-striped">
@@ -79,6 +79,10 @@
                         </thead>
                         <?php
                         $j = 1;
+                        if(isset($data['hrmsList']))
+                        {
+                            $hrmsList = $data['hrmsList'];
+                        }
                         ?>
                         <form method="post">
                             @csrf

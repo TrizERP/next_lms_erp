@@ -11,6 +11,8 @@ use App\Models\user\tbluserModel;
 use Illuminate\Http\Request;
 use Maatwebsite\Excel\Facades\Excel;
 use Yajra\DataTables\Facades\DataTables;
+use function App\Helpers\is_mobile;
+use DB;
 
 class ApplyLeaveController extends Controller
 {
@@ -74,6 +76,9 @@ class ApplyLeaveController extends Controller
      */
     public function store(Request $request)
     {
+        $type = $request->input('type');
+        $subInstituteId = $request->session()->get('sub_institute_id');
+
         $request->validate([
             'type_leave' => 'required',
             'employee_id' => 'required_if:type_leave,employee|nullable|exists:tbluser,id',
@@ -84,24 +89,27 @@ class ApplyLeaveController extends Controller
             'slot' => 'required_if:day_type,half',
             'comment' => 'required',
         ]);
-        try {
-            HrmsEmpLeave::updateOrCreate([
+
+        HrmsEmpLeave::updateOrCreate([
                 'user_id' => $request->employee_id ?? session()->get('user_id'),
                 'from_date' => $request->from_date,
             ],
-                [
-                    'department_id' => $request->department_id,
-                    'leave_type_id' => $request->leave_type,
-                    'day_type' => $request->day_type,
-                    'from_date' => $request->from_date,
-                    'to_date' => $request->to_date,
-                    'slot' => $request->slot,
-                    'comment' => $request->comment,
-                ]);
-            return response()->json(['message' => 'Holiday saved successfully !!'], 200);
-        } catch (Exception $e) {
-            return response()->json($e->getMessage(), 500);
-        }
+            [
+                'sub_institute_id' => $subInstituteId,
+                'department_id' => $request->department_id,
+                'leave_type_id' => $request->leave_type,
+                'day_type' => $request->day_type,
+                'from_date' => $request->from_date,
+                'to_date' => $request->to_date,
+                'slot' => $request->slot ?? 'NULL',
+                'comment' => $request->comment,
+            ]);
+
+        $res['status_code']=1;
+        $res['message']="Holiday saved successfully";
+        
+        return is_mobile($type, "leave-apply.index", $res, "redirect");
+        // return response()->json(['message' => 'Holiday saved successfully !!'], 200);
     }
 
     public function importOldLeave(Request $request)
@@ -165,7 +173,9 @@ class ApplyLeaveController extends Controller
 
     public function myLeave(Request $request)
     {
-        try {
+        $type = $request->input('type');
+    
+        /* try {
             if ($request->ajax()) {
                 $data = HrmsEmpLeave::where('user_id', session()->get('user_id'))
                     ->with('leave_type')->get();
@@ -193,6 +203,21 @@ class ApplyLeaveController extends Controller
             return view('leave.leave_list');
         } catch (Exception $e) {
             return response()->json($e->getMessage(), 500);
-        }
+        } */
+        
+        return is_mobile($type, "leave/leave_list", null, "view");
+    }
+
+    public function getYearwiseleave(Request $request)
+    {
+        $selectedYear = $request->input('year');
+
+        $data = DB::table('hrms_emp_leaves as hel')->selectRaw("hel.*, hlt.leave_type as leave_type_name")
+        ->join('hrms_leave_types as hlt', 'hlt.id', '=', 'hel.leave_type_id')
+        ->where('hel.user_id', session()->get('user_id'))
+        ->whereYear('hel.from_date', $selectedYear)
+        ->get()->toArray();
+        
+        return response()->json($data);
     }
 }

@@ -27,10 +27,10 @@
                             <label>Department List</label>
                             <select id='department_id' name="department_id" class="form-control" required>
                                 <option value="">Select Department</option>
-                                @foreach($departments as $id => $department)
+                                @foreach($data['departments'] as $id => $department)
                                     <option value="{{$id}}"
-                                    @if(isset($department_id))
-                                        @if($department_id == $id)
+                                    @if(isset($data['department_id']))
+                                        @if($data['department_id'] == $id)
                                         selected='selected'
                                         @endif
                                     @endif
@@ -42,9 +42,9 @@
                             <label>Employee List</label>
                             <select id='employee_id' name="employee_id" class="form-control" required>
                                 <option value="">Select Employee</option>
-                                @if(!empty($employees))
-                                    @foreach($employees as $key=>$value)
-                                        <option value="{{$value['id']}}" @if(isset($employee_id) && $employee_id == $value['id']) selected @endif>{{$value['first_name'] ?? ''}} {{$value['last_name'] ?? ''}}</option>
+                                @if(!empty($data['employees']))
+                                    @foreach($data['employees'] as $key=>$value)
+                                        <option value="{{$value['id']}}" @if(isset($data['employee_id']) && $data['employee_id'] == $value['id']) selected @endif>{{$value['first_name'] ?? ''}} {{$value['last_name'] ?? ''}}</option>
                                     @endforeach
                                 @endif
                             </select>
@@ -52,25 +52,25 @@
                         <div class="col-md-3 form-group">
                             <label>From Date</label>
                             <div class="input-daterange input-group" id="date-range">
-                                <input type="text" required class="form-control mydatepicker" placeholder="YYYY/MM/DD" name="from_date" id="from_date" value="{{ $from_date_formatted }}" autocomplete="off">
+                                <input type="text" required class="form-control mydatepicker" placeholder="YYYY/MM/DD" name="from_date" id="from_date" value="{{ $data['from_date_formatted'] }}" autocomplete="off">
                                 <span class="input-group-addon"><i class="icon-calender"></i></span>
                             </div>
                         </div>
                         <div class="col-md-3 form-group">
                             <label>End Date</label>
                             <div class="input-daterange input-group" id="date-range">
-                                <input type="text" required class="form-control mydatepicker" placeholder="YYYY/MM/DD" name="to_date" id="to_date" value="{{ $to_date_formatted }}" autocomplete="off">
+                                <input type="text" required class="form-control mydatepicker" placeholder="YYYY/MM/DD" name="to_date" id="to_date" value="{{ $data['to_date_formatted'] }}" autocomplete="off">
                                 <span class="input-group-addon"><i class="icon-calender"></i></span>
                             </div>
                         </div>
                         <div class="col-md-3 form-group">
                             <label>Leave Status</label>
                             <select id='leave_status' name="leave_status[]" class="form-control" multiple required>
-                                <option value="Approved_lwp" @if(isset($get_leave_status) && in_array("Approved_lwp",$get_leave_status) ) selected @endif>Approved LWP</option>
-                                <option value="Cancelled" @if(isset($get_leave_status) && in_array("Cancelled",$get_leave_status) ) selected @endif>Cancelled</option>
-                                <option value="Rejected" @if(isset($get_leave_status) && in_array("Rejected",$get_leave_status) ) selected @endif>Rejected</option>
-                                <option value="Pending" @if(isset($get_leave_status) && in_array("Pending",$get_leave_status) ) selected @endif>Pending Approval</option>
-                                <option value="Approved" @if(isset($get_leave_status) && in_array("Approved",$get_leave_status) ) selected @endif>Approved</option>
+                                <option value="Approved_lwp" @if(isset($data['get_leave_status']) && in_array("Approved_lwp",$data['get_leave_status']) ) selected @endif>Approved LWP</option>
+                                <option value="Cancelled" @if(isset($data['get_leave_status']) && in_array("Cancelled",$data['get_leave_status']) ) selected @endif>Cancelled</option>
+                                <option value="Rejected" @if(isset($data['get_leave_status']) && in_array("Rejected",$data['get_leave_status']) ) selected @endif>Rejected</option>
+                                <option value="Pending" @if(isset($data['get_leave_status']) && in_array("Pending",$data['get_leave_status']) ) selected @endif>Pending Approval</option>
+                                <option value="Approved" @if(isset($data['get_leave_status']) && in_array("Approved",$data['get_leave_status']) ) selected @endif>Approved</option>
                             </select>
                         </div>
                         <div class="col-md-3 col-sm-offset-4 text-center form-group">
@@ -80,7 +80,7 @@
                 </form>
             </div>
         </div>
-        @if(isset($get_employee_leave_lists))
+        @if(isset($data['get_employee_leave_lists']))
             <div class="card">
                 <div class="table-responsive mt-20 tz-report-table">
                     <table id="example" class="table table-striped">
@@ -103,6 +103,8 @@
                         </thead>
                         @php
                         $j = 1;
+
+                        $get_employee_leave_lists = $data['get_employee_leave_lists'];
                         @endphp
                         <tbody>
                             @foreach($get_employee_leave_lists as $get_employee_leave_list)

@@ -74,7 +74,7 @@ class LeaveSummaryReportController extends Controller
 
         $get_hrms_leave_types = DB::table('hrms_leave_types')->get()->toArray();
         
-        $get_hrms_leave_allocations = DB::table('hrms_leave_allocation')->where('sub_institute_id', $sub_institute_id)->get()->toArray();
+        $get_hrms_leave_allocations = DB::table('hrms_leave_allocation')->where('sub_institute_id', $sub_institute_id)->where('employee_id', $employee_id)->get()->toArray();
                    
         $get_employee_leave_lists = DB::table('hrms_emp_leaves as hel')
         ->selectRaw("hel.*, u.*,CONCAT_WS(' ',u.first_name,u.last_name) AS employee_name, group_concat(hlt.leave_type) as leave_type, hlt.id as leave_id, hel.status as hel_status, group_concat(hel.day_type) as total_day_type, hd.department as department_name")

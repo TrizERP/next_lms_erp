@@ -19,7 +19,6 @@
                         <table id="example" class="table table-striped">
                             <thead>
                                 <tr>
-                                    <th>Term</th>
                                     <th>Title</th>
                                     <th>Remark Status</th>
                                     <th>Sort Order</th>
@@ -29,7 +28,6 @@
                             <tbody>
                                 @foreach($data['data'] as $key => $data)
                                 <tr>    
-                                    <td>{{$data->term_name}}</td>
                                     <td>{{$data->title}}</td>
                                     <td>{{$data->remark_status}}</td>
                                     <td>{{$data->sort_order}}</td>                 

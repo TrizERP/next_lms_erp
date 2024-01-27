@@ -46,10 +46,10 @@
                             <label>Department List</label>
                             <select id='department_id' name="department_id" class="form-control" required>
                                 <option value="">Select Department</option>
-                                @foreach($departments as $id => $department)
+                                @foreach($data['departments'] as $id => $department)
                                     <option value="{{$id}}"
-                                    @if(isset($department_id))
-                                        @if($department_id == $id)
+                                    @if(isset($data['department_id']))
+                                        @if($data['department_id'] == $id)
                                         selected='selected'
                                         @endif
                                     @endif
@@ -61,9 +61,9 @@
                             <label>Employee List</label>
                             <select id='employee_id' name="employee_id" class="form-control" required>
                                 <option value="">Select Employee</option>
-                                @if(!empty($employees))
-                                    @foreach($employees as $key=>$value)
-                                        <option value="{{$value['id']}}" @if(isset($employee_id) && $employee_id == $value['id']) selected @endif>{{$value['first_name'] ?? ''}} {{$value['last_name'] ?? ''}}</option>
+                                @if(!empty($data['employees']))
+                                    @foreach($data['employees'] as $key=>$value)
+                                        <option value="{{$value['id']}}" @if(isset($data['employee_id']) && $data['employee_id'] == $value['id']) selected @endif>{{$value['first_name'] ?? ''}} {{$value['last_name'] ?? ''}}</option>
                                     @endforeach
                                 @endif
                             </select>
@@ -71,14 +71,14 @@
                         <div class="col-md-3 form-group">
                             <label>From Date</label>
                             <div class="input-daterange input-group" id="date-range">
-                                <input type="text" required class="form-control mydatepicker" placeholder="YYYY/MM/DD" name="from_date" id="from_date" value="{{ $from_date_formatted }}" autocomplete="off">
+                                <input type="text" required class="form-control mydatepicker" placeholder="YYYY/MM/DD" name="from_date" id="from_date" value="{{ $data['from_date_formatted'] }}" autocomplete="off">
                                 <span class="input-group-addon"><i class="icon-calender"></i></span>
                             </div>
                         </div>
                         <div class="col-md-3 form-group">
                             <label>End Date</label>
                             <div class="input-daterange input-group" id="date-range">
-                                <input type="text" required class="form-control mydatepicker" placeholder="YYYY/MM/DD" name="to_date" id="to_date" value="{{ $to_date_formatted }}" autocomplete="off">
+                                <input type="text" required class="form-control mydatepicker" placeholder="YYYY/MM/DD" name="to_date" id="to_date" value="{{ $data['to_date_formatted'] }}" autocomplete="off">
                                 <span class="input-group-addon"><i class="icon-calender"></i></span>
                             </div>
                         </div>
@@ -89,7 +89,7 @@
                 </form>
             </div>
         </div>
-        @if(isset($report_data))
+        @if(isset($data['report_data']))
             <div class="card">
                 <div class="col-lg-12 col-md-4 col-sm-4 col-xs-12 page-title">
                     Colours Description =>
@@ -119,6 +119,12 @@
                         $holidays = [];
                         $cl_leave = [];
                         $on_duty_leave = [];
+
+                        if(isset($data['report_data']))
+                        {
+                            $report_data = $data['report_data'];
+                        }
+
                        @endphp
                         <form action="{{route('payroll.store_monthly_payroll_report')}}" method="post">
                             @csrf
@@ -300,7 +306,7 @@ $(document).ready(function () {
             success: function(data) {
                 var options = '';
                 $.each(data.employees, function(index, employee) {
-                    // var selected = (employee.id == {{ htmlspecialchars(json_encode($employee_id), ENT_QUOTES, 'UTF-8') }}) ? 'selected' : '';
+                    
                     options += '<option value="' + employee.id + '" >' + employee.first_name + ' ' + employee.last_name + '</option>';
                 });
                 $('#employee_id').append(options);
