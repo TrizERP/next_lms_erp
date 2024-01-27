@@ -39,6 +39,7 @@ use App\Http\Controllers\result\GradeMaster\GradeMasterController;
 use App\Http\Controllers\result\marks_entry\marks_entry_controller;
 use App\Http\Controllers\result\result_book_master\result_book_master_controller;
 use App\Http\Controllers\result\result_master\result_master_controller;
+use App\Http\Controllers\result\result_api\resultAPIController;
 use App\Http\Controllers\result\result_remark_master\result_remark_master_controller;
 use App\Http\Controllers\result\std_grd_maping\std_grd_maping_controller;
 use App\Http\Controllers\result\student_attendance_master\student_attendance_master_controller;
@@ -100,7 +101,11 @@ Route::group(['prefix' => 'result', 'middleware' => ['session', 'menu', 'logRout
 
     Route::resource('upload_result', upload_result_controller::class);
     // Route::GET('student_homework_submission_report_index', 'student\studentHomeworkSubmissionController@studentHomeworkSubmissionReportIndex')->name("student_homework_submission_report_index");
+    
+    Route::get('result_personalize_marks', [resultAPIController::class,'resultPersonalize'])->name('result_personalize_marks');
 
+    Route::get('current_result', [resultAPIController::class,'currentResult'])->name('current_result');    
+    
 //    Route::post('cbse_1t5_result', 'result\cbse_result\cbse_1t5_result_controller');
 });
 
