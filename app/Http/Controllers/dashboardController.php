@@ -213,7 +213,7 @@ class dashboardController extends Controller
                     ->selectRaw("CONCAT_WS(' ', s.first_name, s.middle_name, s.last_name) as student_name, st.name as standard_name, d.name as division_name, DATE_FORMAT(s.dob, '%d-%m-%Y') as dob")
                     ->where("s.sub_institute_id", "=", $sub_institute_id)
                     ->whereNull("ts.end_date")
-                    ->whereRaw("DATE_FORMAT(s.dob, '%m-%d') >= DATE_FORMAT(NOW(), '%m-%d') and DATE_FORMAT(s.dob, '%m-%d') <= DATE_FORMAT((NOW() + INTERVAL +3 DAY), '%m-%d')")
+                    ->whereRaw("DATE_FORMAT(s.dob, '%m-%d') >= DATE_FORMAT(NOW(), '%m-%d') and DATE_FORMAT(s.dob, '%m-%d') <= DATE_FORMAT((NOW() + INTERVAL +7 DAY), '%m-%d')")
                     ->orderByRaw("DATE_FORMAT(s.dob, '%m-%d')")
                     ->get()->toArray();
 
@@ -224,7 +224,7 @@ class dashboardController extends Controller
                     ->selectRaw("CONCAT_WS(' ',s.first_name,s.middle_name,s.last_name) as teacher_name,tu.name as designation,s.mobile as contact_number, DATE_FORMAT(s.birthdate, '%d-%m-%Y') AS birthdate")
                     ->where("s.sub_institute_id", "=", $sub_institute_id)
                     ->where("s.status", "!=", 0)
-                    ->whereRaw("DATE_FORMAT(s.birthdate,'%m-%d') >= DATE_FORMAT(NOW(), '%m-%d') and DATE_FORMAT(s.birthdate, '%m-%d') <= DATE_FORMAT((NOW() + INTERVAL +3 DAY), '%m-%d')")
+                    ->whereRaw("DATE_FORMAT(s.birthdate,'%m-%d') >= DATE_FORMAT(NOW(), '%m-%d') and DATE_FORMAT(s.birthdate, '%m-%d') <= DATE_FORMAT((NOW() + INTERVAL +7 DAY), '%m-%d')")
                     ->orderByRaw("DATE_FORMAT(s.birthdate, '%m-%d')")
                     ->get()->toArray();
 
@@ -1280,7 +1280,7 @@ class dashboardController extends Controller
                 })
                 ->selectRaw("CONCAT_WS(' ',s.first_name,s.middle_name,s.last_name) as student_name,st.name as standard_name,d.name as division_name, DATE_FORMAT(s.dob, '%d-%m-%Y') AS dob")
                 ->where("s.sub_institute_id", "=", $sub_institute_id)
-                ->whereRaw("DATE_FORMAT(s.dob, '%m-%d') >= DATE_FORMAT(NOW(), '%m-%d') and DATE_FORMAT(s.dob, '%m-%d') <= DATE_FORMAT((NOW() + INTERVAL +3 DAY), '%m-%d')")
+                ->whereRaw("DATE_FORMAT(s.dob, '%m-%d') >= DATE_FORMAT(NOW(), '%m-%d') and DATE_FORMAT(s.dob, '%m-%d') <= DATE_FORMAT((NOW() + INTERVAL +7 DAY), '%m-%d')")
                 ->whereNull("ts.end_date")
                 ->orderByRaw("DATE_FORMAT(s.dob, '%m-%d')")
                 ->get()->toArray();
@@ -1292,7 +1292,7 @@ class dashboardController extends Controller
                 ->selectRaw("CONCAT_WS(' ',s.first_name,s.middle_name,s.last_name) as teacher_name,tu.name as designation,s.mobile as contact_number, DATE_FORMAT(s.birthdate, '%d-%m-%Y') AS birthdate")
                 ->where("s.sub_institute_id", "=", $sub_institute_id)
                 ->where("s.status", "!=", 0)
-                ->whereRaw("date_format(s.birthdate,'%m-%d') >= DATE_FORMAT(NOW(), '%m-%d') and DATE_FORMAT(s.birthdate, '%m-%d') <= DATE_FORMAT((NOW() + INTERVAL +3 DAY), '%m-%d')")
+                ->whereRaw("date_format(s.birthdate,'%m-%d') >= DATE_FORMAT(NOW(), '%m-%d') and DATE_FORMAT(s.birthdate, '%m-%d') <= DATE_FORMAT((NOW() + INTERVAL +7 DAY), '%m-%d')")
                 ->orderByRaw("DATE_FORMAT(s.birthdate, '%m-%d')")
                 ->get()->toArray();
 
@@ -1608,7 +1608,7 @@ class dashboardController extends Controller
                 ->selectRaw("CONCAT_WS(' ',s.first_name,s.middle_name,s.last_name) as student_name,st.name as standard_name,d.name as division_name, DATE_FORMAT(s.dob, '%d-%m-%Y') AS dob")
                 ->where("s.sub_institute_id", $sub_institute_id)
                 ->whereNull("ts.end_date")
-                ->whereRaw("DATE_FORMAT(s.dob, '%m-%d') >= DATE_FORMAT(NOW(), '%m-%d') and DATE_FORMAT(s.dob, '%m-%d') <= DATE_FORMAT((NOW() + INTERVAL +3 DAY), '%m-%d')")
+                ->whereRaw("DATE_FORMAT(s.dob, '%m-%d') >= DATE_FORMAT(NOW(), '%m-%d') and DATE_FORMAT(s.dob, '%m-%d') <= DATE_FORMAT((NOW() + INTERVAL +7 DAY), '%m-%d')")
                 ->orderByRaw("DATE_FORMAT(s.dob, '%m-%d')")
                 ->get()->toArray();
 
@@ -1619,7 +1619,7 @@ class dashboardController extends Controller
                 ->selectRaw("CONCAT_WS(' ',s.first_name,s.middle_name,s.last_name) as teacher_name,tu.name as designation,s.mobile as contact_number, DATE_FORMAT(s.birthdate, '%d-%m-%Y') AS birthdate")
                 ->where("s.sub_institute_id", $sub_institute_id)
                 ->where("s.status", "!=", 0)
-                ->whereRaw("date_format(s.birthdate,'%m-%d') >= DATE_FORMAT(NOW(), '%m-%d') and DATE_FORMAT(s.birthdate, '%m-%d') <= DATE_FORMAT((NOW() + INTERVAL +3 DAY), '%m-%d')")
+                ->whereRaw("date_format(s.birthdate,'%m-%d') >= DATE_FORMAT(NOW(), '%m-%d') and DATE_FORMAT(s.birthdate, '%m-%d') <= DATE_FORMAT((NOW() + INTERVAL +7 DAY), '%m-%d')")
                 ->orderByRaw("DATE_FORMAT(s.birthdate, '%m-%d')")
                 ->get()->toArray();
 
@@ -2296,7 +2296,7 @@ class dashboardController extends Controller
                 ->join('division as d', 'ts.section_id', '=', 'd.id')
                 ->where('tblstudent.sub_institute_id', $sub_institute_id)
                 ->whereNull('ts.end_date')
-                ->whereRaw("DATE_FORMAT(tblstudent.dob, '%m-%d') >= DATE_FORMAT(NOW(), '%m-%d') and DATE_FORMAT(tblstudent.dob, '%m-%d') <= DATE_FORMAT((NOW() + INTERVAL +3 DAY), '%m-%d')")
+                ->whereRaw("DATE_FORMAT(tblstudent.dob, '%m-%d') >= DATE_FORMAT(NOW(), '%m-%d') and DATE_FORMAT(tblstudent.dob, '%m-%d') <= DATE_FORMAT((NOW() + INTERVAL +7 DAY), '%m-%d')")
                 ->orderByRaw("DATE_FORMAT(tblstudent.dob, '%m-%d')")
                 ->get()
                 ->toArray();
@@ -2307,7 +2307,7 @@ class dashboardController extends Controller
                 ->selectRaw("CONCAT_WS(' ',tbluser.first_name, tbluser.middle_name, tbluser.last_name) as teacher_name, tu.name as designation, tbluser.mobile as contact_number, DATE_FORMAT(tbluser.birthdate, '%d-%m-%Y') AS birthdate")
                 ->where('tbluser.sub_institute_id', $sub_institute_id)
                 ->where('tbluser.status', '!=', 0)
-                ->whereBetween(DB::raw("DATE_FORMAT(tbluser.birthdate, '%m-%d')"), [now()->format('m-d'), now()->addDays(3)->format('m-d')])
+                ->whereBetween(DB::raw("DATE_FORMAT(tbluser.birthdate, '%m-%d')"), [now()->format('m-d'), now()->addDays(7)->format('m-d')])
                 ->orderByRaw("DATE_FORMAT(tbluser.birthdate, '%m-%d')")
                 ->get()
                 ->toArray();
