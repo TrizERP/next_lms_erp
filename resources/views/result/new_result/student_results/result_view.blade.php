@@ -68,6 +68,7 @@ $student_id_arr = implode(",",array_values($data['students_ids']));
             var html = studentData[studentId];
        		var stu_id = studentId;
             var ele_id = html;
+            // result_html = document.getElementById(stu_id).innerHTML;
             var result_html = document.getElementById(stu_id).outerHTML;       
             result_html = result_html.replaceAll("'","\"");
             $("#savehtml").append("<input type='hidden' name='html_"+stu_id+"' id='"+stu_id+"' value='"+result_html+"'>");
