@@ -84,29 +84,42 @@ class HrmsController extends Controller
         // echo "<pre>";print_r(session()->get('data'));exit;
         if ($type == 'API') $userId = $request->input('user_id');
         else $userId = $request->session()->get('user_id');
-        $hrmsInOutTimeDetails = HrmsInOutTime::where([['user_id', $userId], ['day', Carbon::now()->format('Y-m-d')]])->get();
+        $hrmsInOutTimeDetails = HrmsAttendance::where([['user_id', $userId], ['day', Carbon::now()->format('Y-m-d')]])->get();
+
         if (count($hrmsInOutTimeDetails) == 1) {
             $hrmsInOutTimeDetails = $hrmsInOutTimeDetails->first();
+            $hrmsInOutTime['hrms_attendance'] = $hrmsInOutTimeDetails;
             $hrmsInOutTime['button'] = 'out';
-            if ($hrmsInOutTimeDetails->out_time != null) {
-                $hrmsInOutTime['time'] = $hrmsInOutTimeDetails->out_time;
+            if ($hrmsInOutTimeDetails->punchout_time != null) {
+                $hrmsInOutTime['time'] = $hrmsInOutTimeDetails->punchout_time;
                 $hrmsInOutTime['button_disable'] = true;
-            } else {
-                $hrmsInOutTime['time'] = Carbon::now()->format('h:i:s');
+            } 
+            else 
+            {
+                $hrmsInOutTime['time'] = Carbon::now()->format('H:i:s');
                 $hrmsInOutTime['button_disable'] = false;
             }
 
-        } else {
+        } 
+        else 
+        {
+            $hrmsInOutTime['hrms_attendance'] = $hrmsInOutTimeDetails->isEmpty() ? null : $hrmsInOutTimeDetails;
             $hrmsInOutTime['button'] = 'in';
-            $hrmsInOutTime['time'] = Carbon::now()->format('h:i:s');
+            $hrmsInOutTime['time'] = Carbon::now()->format('H:i:s');
             $hrmsInOutTime['button_disable'] = false;
         }
         $hrmsInOutTime['date'] = Carbon::now()->format('d-m-Y');
         $hrmsInOutTime['id'] = 0;
+
+        /* echo("<pre>");
+        print_r($hrmsInOutTime);
+        echo("</pre>");
+        die; */
+        
         //return is_mobile($type, "HRMS.hrms_inout_time.index", compact('hrmsInOutTime'), "view",'compact');
        
         return is_mobile($type, "HRMS.hrms_inout_time.index", $hrmsInOutTime, "view");
-//        return view('HRMS.hrms_inout_time.index', compact('hrmsInOutTime'));
+        //return view('HRMS.hrms_inout_time.index', compact('hrmsInOutTime'));
     }
 
     public function hrmsInTimeStore(Request $request)
@@ -125,14 +138,16 @@ class HrmsController extends Controller
         $res['status_code']=0;
         $res['message']="Failed to time in";
         //return $request->all();
-        if ($request->indate && $request->intime) {
-            $hrmsInOutTime = new HrmsInOutTime();
+        if ($request->indate && $request->intime) 
+        {
+            $hrmsInOutTime = new HrmsAttendance();
             $hrmsInOutTime->user_id = $userId;
-            $hrmsInOutTime->in_time = Carbon::now()->format('h:i:s');
             $hrmsInOutTime->day = Carbon::parse($request->indate)->format('Y-m-d');
+            $hrmsInOutTime->punchin_time = Carbon::now()->format('Y-m-d H:i:s');
             $hrmsInOutTime->client_id = $clientId;
             $hrmsInOutTime->sub_institute_id = $subInstituteId;
             $hrmsInOutTime->save();
+
             $res['status_code']=1;
             $res['message']="Success to time in";
         }
@@ -146,13 +161,21 @@ class HrmsController extends Controller
         $type = $request->input('type');
         if ($type == 'API') $userId = $request->input('user_id');
         else $userId = $request->session()->get('user_id');
-        $hrmsInOutTime = HrmsInOutTime::where([['user_id', $userId], ['day', Carbon::now()->format('Y-m-d')], ['out_time', null]])->first();
+        $hrmsInOutTime = HrmsAttendance::where([['user_id', $userId], ['day', Carbon::now()->format('Y-m-d')], ['punchout_time', null]])->first();
         
         $res['status_code']=0;
         $res['message']="Failed to time out";
-        if ($hrmsInOutTime) {
-            $hrmsInOutTime->out_time = Carbon::now()->format('h:i:s');
+        if ($hrmsInOutTime) 
+        {
+            $punchout_time = Carbon::parse($request->outdate.''.$request->outtime);
+            $punchin_time = Carbon::parse($hrmsInOutTime->punchin_time);
+
+            $hrmsInOutTime->punchout_time = Carbon::parse($request->outdate .' '.$request->outtime)->format('Y-m-d H:i:s');
+            $Min = $punchout_time->diffInMinutes($punchin_time);
+            $diff= date('H:i', mktime(0,$Min));
+            $hrmsInOutTime->timestamp_diff = $diff;
             $hrmsInOutTime->save();
+
             $res['status_code']=1;
             $res['message']="Success to time out";
         }
@@ -163,18 +186,31 @@ class HrmsController extends Controller
     public function hrmsAttendance(Request $request)
     {
         $type = $request->input('type');
+        // $hrmsAttendanceDetails = '';
+
         if ($type == 'API') $subInstituteId = $request->input('sub_institute_id');
         else   $subInstituteId = $request->session()->get('sub_institute_id');
-        if ($request->employee_id) {
+
+        if ($request->employee_id) 
+        {
             $hrmsAttendanceInOutTime['employee_id'] = $request->employee_id;
             $date = $request->date ? Carbon::parse($request->date)->format('Y-m-d') : Carbon::now()->format('Y-m-d');
-            if ($date) {
-                $hrmsAttendanceDetails = HrmsAttendance::where([['user_id', $request->employee_id], ['day', $date]])->first();
+
+            if ($date) 
+            {
                 $hrmsAttendanceInOutTime['date'] = Carbon::parse($request->date);
-                if ($hrmsAttendanceDetails) {
+
+                $hrmsAttendanceDetails = HrmsAttendance::where([['user_id', $request->employee_id], ['day', $date]])->first();
+
+                if ($hrmsAttendanceDetails) 
+                {
+                    $hrmsAttendanceInOutTime['hrms_attendance'] = $hrmsAttendanceDetails ? $hrmsAttendanceDetails : null;
                     $hrmsAttendanceInOutTime['button'] = 'out';
                     $hrmsAttendanceInOutTime['note'] = 2;
-                } else {
+                } 
+                else 
+                {
+                    $hrmsAttendanceInOutTime['hrms_attendance'] = $hrmsAttendanceDetails ? $hrmsAttendanceDetails : null;
                     $hrmsAttendanceInOutTime['button'] = 'in';
                     $hrmsAttendanceInOutTime['note'] = 1;
                     //$hrmsAttendanceInOutTime['date'] = Carbon::now();
@@ -192,7 +228,7 @@ class HrmsController extends Controller
         $hrmsAttendanceInOutTime['id'] = 0;
         $hrmsAttendanceInOutTime['time'] = Carbon::now()->format('H:i:s');
         $hrmsAttendanceInOutTime['employeeLists'] = $employeeLists;
-//return $hrmsAttendanceInOutTime;
+        //return $hrmsAttendanceInOutTime;
         //return is_mobile($type, "HRMS.hrms_attendance.index", compact('hrmsAttendanceInOutTime','employeeLists'), "view",'compact');
         return is_mobile($type, "HRMS.hrms_attendance.index", $hrmsAttendanceInOutTime, "view");
         //return view('HRMS.hrms_attendance.index', compact('hrmsAttendanceInOutTime', 'employeeLists'));
@@ -205,8 +241,8 @@ class HrmsController extends Controller
             'indate' => 'required',
             'intime' => 'required'
         ]);
-//        return $request->all();
-//       return Carbon::parse($request->indate)->format('Y-m-d');
+        //return $request->all();
+        //return Carbon::parse($request->indate)->format('Y-m-d');
         $type = $request->input('type');
         if ($type == 'API') {
             $clientId = $request->input('client_id');
@@ -218,7 +254,7 @@ class HrmsController extends Controller
         $hrmsAttendanceInTime = new HrmsAttendance();
         $hrmsAttendanceInTime->user_id = $request->employee;
         $hrmsAttendanceInTime->punchin_time = Carbon::parse($request->indate .' '.$request->intime)->format('Y-m-d H:i:s');
-//        return $hrmsAttendanceInTime->punchin_time;
+        //return $hrmsAttendanceInTime->punchin_time;
         $hrmsAttendanceInTime->day = Carbon::parse($request->indate)->format('Y-m-d');
         $hrmsAttendanceInTime->in_note = 1;
         $hrmsAttendanceInTime->ipaddress_in = $request->ip();
@@ -304,7 +340,7 @@ class HrmsController extends Controller
         $to_date = $request->get('to_date');
         $department_id = $request->get('department_id');
 	    $employee_id = $request->get('employee_id');
-        
+
         $from_date_formatted = Carbon::createFromFormat('Y-m-d', $from_date)->format('Y-m-d');
         $to_date_formatted = Carbon::createFromFormat('Y-m-d', $to_date)->format('Y-m-d');
 

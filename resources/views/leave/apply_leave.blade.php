@@ -12,15 +12,34 @@
         </div>
 
         <div class="card">
+            @if ($message = session()->get('data'))
+                @if($message['status_code']==1)
+                    <div class="alert alert-success alert-block">
+                    @else
+                    <div class="alert alert-danger alert-block">
+                @endif                
+                    <button type="button" class="close" data-dismiss="alert">×</button>
+                    <strong>{{ $message['message'] }}</strong>
+                </div>
+            @endif
             <div class="col-md-12 mt-2">
                 <div class="col-md-4">
                     <form action="" id="frmApplyLeave" method="post">
                         <div class="modal-body">
                             <div class="form-group">
+                                @php 
+                                    $user_profile_name = DB::table('tbluser as u')
+                                    ->selectRaw("u.user_profile_id, um.name as user_profile_name")
+                                    ->join('tbluserprofilemaster as um', 'um.id', '=', 'u.user_profile_id')
+                                    ->where('u.id', session()->get('user_id'))
+                                    ->first();
+                                @endphp
                                 <label for="">Type Leave</label>
                                 <select name="type_leave" id="type_leave" class="form-control">
                                     <option value="">Select Type Leave</option>
-                                    <option value="employee">Employee</option>
+                                    @if($user_profile_name->user_profile_name != "Teacher")
+                                        <option value="employee">Employee</option>
+                                    @endif
                                     <option value="self">Self</option>
                                 </select>
                             </div>

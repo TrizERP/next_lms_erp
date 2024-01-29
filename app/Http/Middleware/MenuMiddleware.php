@@ -263,7 +263,7 @@ class MenuMiddleware
 
                 $subChildMenuData = tblmenumasterModel::where('parent_menu_id', '!=', 0)
                     ->whereRaw("find_in_set('$sub_institute_id',sub_institute_id) AND level = 3
-                        and id in (" . $rightsMenusIds . ") and status = 1 and menu_type != 'MASTER' or menu_type IS NULL ")->orderBy('sort_order')->get()->toArray();
+                        and id in (" . $rightsMenusIds . ") and status = 1 and (menu_type != 'MASTER' or menu_type IS NULL )")->orderBy('sort_order')->get()->toArray();
                 $i = 0;
                 foreach ($subChildMenuData as $key => $value) {
                     $finalSubChildMenu[$value['parent_menu_id']][$i] = $subChildMenuData[$key];

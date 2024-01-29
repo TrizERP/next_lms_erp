@@ -56,10 +56,10 @@ class s1excel_exportController extends Controller {
         $ret_enroll = json_decode(json_encode($ret_enroll),true);
 
         if($ret_enroll['ENR'] != ''){
-            $extra .= " AND s.enrollment_no NOT IN (".$ret_enroll['ENR'].")";
+            //$extra .= " AND s.enrollment_no NOT IN (".$ret_enroll['ENR'].")";
         }           
 		
-		if($from_date != null  && $to_date != null)
+		if(!empty($from_date) && !empty($to_date))
 		{
 			$extra .= " AND bd.registration_date between '".$from_date."' AND '".$to_date."'";
 		}
@@ -87,9 +87,14 @@ class s1excel_exportController extends Controller {
             // });
         })
         ->where('s.sub_institute_id', '=', $sub_institute_id)
+        ->where('bd.is_registered', '=', 'N')
         ->when($extra, function ($query) use ($extra) {
             return $query->whereRaw($extra);
         })
+        ->where(function ($query) {
+           $query->whereNull('UMRN')
+                 ->orWhere('UMRN', '');
+       })
         ->groupBy('pm.student_id')
         ->get();
 

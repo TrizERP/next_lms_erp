@@ -12,6 +12,7 @@ use Illuminate\Http\Request;
 use Maatwebsite\Excel\Facades\Excel;
 use Yajra\DataTables\Facades\DataTables;
 use Carbon\Carbon;
+use function App\Helpers\is_mobile;
 use DB;
 
 class LeaveAuthorisationController extends Controller
@@ -36,7 +37,11 @@ class LeaveAuthorisationController extends Controller
         $from_date_formatted = Carbon::now()->format('Y-m-d');
         $to_date_formatted = Carbon::now()->format('Y-m-d');
 
-        return view('leave.leave_authorisation', compact('from_date_formatted', 'to_date_formatted'));
+        $res['from_date_formatted'] = $from_date_formatted;
+        $res['to_date_formatted'] = $to_date_formatted;
+
+        // return view('leave.leave_authorisation', compact('from_date_formatted', 'to_date_formatted'));
+        return is_mobile($type, "leave/leave_authorisation", $res, "view");
     }
     
     /**
@@ -47,11 +52,17 @@ class LeaveAuthorisationController extends Controller
      */
     public function leaveAuthorisation(Request $request)
     {
-        $sub_institute_id = $request->session()->get('sub_institute_id');
+        $type = $request->input('type');
+        if ($type == 'API') {
+            $sub_institute_id = $request->input('sub_institute_id');
+        } else {
+            $sub_institute_id = $request->session()->get('sub_institute_id');
+        }
+
         $from_date = $request->get('from_date');
         $to_date = $request->get('to_date');
         $get_leave_status = $request->get('leave_status');
-        
+
         $from_date_formatted = Carbon::createFromFormat('Y-m-d', $from_date)->format('Y-m-d');
         $to_date_formatted = Carbon::createFromFormat('Y-m-d', $to_date)->format('Y-m-d');
 
@@ -62,44 +73,87 @@ class LeaveAuthorisationController extends Controller
         ->where('hel.sub_institute_id', $sub_institute_id)
         ->where('hel.from_date', '>=', $from_date_formatted)
         ->where('hel.to_date', '<=', $to_date_formatted)
-        ->whereIn('hel.status', $get_leave_status)
+        // ->whereIn('hel.status', [$get_leave_status])
+        ->when($type == "API", function ($query) use ($get_leave_status) {
+            return $query->whereIn('hel.status', [$get_leave_status]);
+        }, function ($query) use ($get_leave_status) {
+            return $query->whereIn('hel.status', $get_leave_status);
+        })
         ->get()->toArray();
+
+        $res['get_employee_leave_lists'] = $get_employee_leave_lists;
+        $res['from_date_formatted'] = $from_date_formatted;
+        $res['to_date_formatted'] = $to_date_formatted;
+        $res['get_leave_status'] = $get_leave_status;
         
-        return view('leave.leave_authorisation', compact('get_employee_leave_lists', 'from_date_formatted', 'to_date_formatted', 'get_leave_status'));
+        // return view('leave.leave_authorisation', compact('get_employee_leave_lists', 'from_date_formatted', 'to_date_formatted', 'get_leave_status'));
+        return is_mobile($type, "leave/leave_authorisation", $res, "view");
     }
 
     public function leaveAuthorisationStore(Request $request)
     {
-        $sub_institute_id = $request->session()->get('sub_institute_id');
+        $type = $request->input('type');
+        if ($type == 'API') {
+            $sub_institute_id = $request->input('sub_institute_id');
+        } else {
+            $sub_institute_id = $request->session()->get('sub_institute_id');
+        }
         $user_id = $request->session()->get('user_id');
-        $comments = $request->get('comment');
+        $res_user_id = $request->get('user_id');
         $hodComments = $request->get('hod_comment');
         $hrRemarks = $request->get('hr_remarks');
         $leaveStatuses = $request->get('single_leave_status');
         $employee_ids = $request->get('employee_id');
+        $leave_id = $request->get('id');
 
-        $user_name = DB::table('tbluser')
+        if($type == 'API')
+        {
+            $user_name = DB::table('tbluser')
+            ->selectRaw("CONCAT_WS(' ',first_name,last_name) AS employee_name")
+            ->where('sub_institute_id', $sub_institute_id)
+            ->where('id', $res_user_id)->first();
+        }
+        else
+        {
+            $user_name = DB::table('tbluser')
             ->selectRaw("CONCAT_WS(' ',first_name,last_name) AS employee_name")
             ->where('sub_institute_id', $sub_institute_id)
             ->where('id', $user_id)->first();
-
-        foreach($employee_ids as $key => $value)
+        }
+        
+        if($type == 'API')
         {
             DB::table('hrms_emp_leaves')
-                ->where('id', $value)
+                ->where('id', $leave_id)
                 ->update([
-                    'comment' => $comments[$value],
-                    'hod_comment' => $hodComments[$value],
+                    'hod_comment' => $hodComments,
                     'hod_comment_date' => now(),
-                    'hr_remarks' => $hrRemarks[$value],
+                    'hr_remarks' => $hrRemarks,
                     'hr_remark_date' => now(),
                     'approved_by' => $user_name->employee_name,
-                    'status' => $leaveStatuses[$value],
+                    'status' => $leaveStatuses,
                 ]);
         }
-
+        else
+        {
+            foreach($employee_ids as $key => $value)
+            {
+                DB::table('hrms_emp_leaves')
+                    ->where('id', $value)
+                    ->update([
+                        'hod_comment' => $hodComments[$value],
+                        'hod_comment_date' => now(),
+                        'hr_remarks' => $hrRemarks[$value],
+                        'hr_remark_date' => now(),
+                        'approved_by' => $user_name->employee_name,
+                        'status' => $leaveStatuses[$value],
+                    ]);
+            }
+        }
+        
         $request->session()->flash('success', 'Leave records updated successfully.');
         
-        return redirect()->route('leave-authorisation.index');
+        // return redirect()->route('leave-authorisation.index');
+        return is_mobile($type, "leave-authorisation.index", null, "redirect");
     }
 }
