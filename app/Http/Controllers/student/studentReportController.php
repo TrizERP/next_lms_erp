@@ -204,6 +204,8 @@ class studentReportController extends Controller
             $array[] = 'tblstudent.student_mobile as studentmobile';
             $array[] = 'GROUP_CONCAT(IFNULL(subject.subject_name, "-")) as optional_subjects';
             $array[] = 'batch.title as studentbatch';
+            if($sub_institute_id == 254)
+                $array[] = 'IF(tblstudent.admission_year = 2019,YEAR(tblstudent.admission_date),tblstudent.admission_year) AS admission_year';
         }
         $array[] = 'concat_ws(" ",tblstudent.first_name,tblstudent.middle_name,tblstudent.last_name) AS student_name';
 
@@ -224,7 +226,10 @@ class studentReportController extends Controller
             ->leftjoin('caste', 'caste.id', '=', 'tblstudent.cast')
             ->leftjoin('blood_group', 'blood_group.id', '=', 'tblstudent.bloodgroup')
             ->leftjoin('batch', 'tblstudent.studentbatch', '=', 'batch.id')
-            ->leftjoin('transport_map_student', 'transport_map_student.student_id', '=', 'tblstudent.id')
+            ->leftjoin('transport_map_student', function($join) {
+                $join->on('transport_map_student.student_id', '=', 'tblstudent.id')
+                     ->where('transport_map_student.syear', '=', session()->get('syear'));
+            })
             //->leftjoin('transport_vehicle', 'transport_vehicle.id', '=', 'transport_map_student.from_bus_id')
             ->leftjoin('transport_vehicle', function($join) {
                 $join->on('transport_vehicle.id', '=', 'transport_map_student.from_bus_id')
@@ -251,7 +256,6 @@ class studentReportController extends Controller
         $res['headers'] = $header;
 
         return is_mobile($type, "student/show_student_report", $res, "view");
-
     }
 
     public function underDevelopment()
