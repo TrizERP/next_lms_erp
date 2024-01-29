@@ -52,6 +52,10 @@ br {
 
                             <div class="row align-items-center">
                                 <div class="col-md-12">
+                                <div class="d-flex">                                
+                                    <input type="text" class="form-control" id="question_prompt" name="question_prompt" value="get 1 question for standard '{{$data['breadcrum_data']->standard_name}}' and subject '{{$data['breadcrum_data']->subject_name}}' and chapter '{{$data['breadcrum_data']->chapter_name}}' @isset($data['topic_id']) and for topic '{{$data['breadcrum_data']->topic_name}}' @endisset "><span onclick="question_prompt();" style="padding:2px 6px"><i class="mdi mdi-refresh"></i></span>
+                                </div>
+
                                     <div class="form-group">
                                         <textarea name="question_title" id="question_title" contenteditable="true" onchange="check_input(this)">
 
@@ -436,6 +440,7 @@ function getStandardwiseDivision(std_id){
 }
 
 $( document ).ready(function() {
+   question_prompt();
     $("#standard").change(function(){
         var std_id = $("#standard").val();
         var path = "{{ route('ajax_StandardwiseSubject') }}";
@@ -448,7 +453,39 @@ $( document ).ready(function() {
         });
     })
 });
+function question_prompt(){
+    $('#question_title').empty();
+    var editor = CKEDITOR.instances['question_title'];
+    if (editor) {
+        editor.setData('');
+    }
+    var subject = $("#subject_id").val();
+    var standard = $("#standard_id").val();
+    var chapter = "{{$_REQUEST['chapter_id']}}";
+    var topic = "{{$_REQUEST['topic_id']}}";
+    var question_prompt = $('#question_prompt').val();
+    
+    var search="question";
+    var path = "{{ route('chat') }}";
+    $.ajax({
+        url:path,
+        data: {standard:standard,subject_id:subject,chapter_id:chapter,topic_id:topic,question_prompt:question_prompt,search:search},
+        success:function(result){
+            if (editor) {
+                editor.setData('');
+            }
 
+            // Append the new content
+            $('#question_title').append(result);
+            check_input(result);
+            // Optionally, you can set the new content directly to CKEditor
+            if (editor) {
+                editor.setData(result);
+            }
+        }
+
+    })
+}
 //START Bind chapters
 $("#subject").change(function(){
     var subject = $("#subject").val();
@@ -521,9 +558,6 @@ $("#lomaster").change(function(){
 //END Bind LO Indicator
 </script>
 
-@php
-$std_name = DB::table('standard')->where(['id'=>$_REQUEST['standard_id'],'sub_institute_id'=>session()->get('sub_institute_id')])->first();
- @endphp
  <script>
 //map value
 
@@ -555,7 +589,7 @@ function check_input(inputElement) {
 
 // Get the content from the CKEditor instance
 var inputValue = editor.getData() ?? inputElement.value;
-    var std = "{!!$std_name->name!!}";
+    var std = "{{$data['breadcrum_data']->standard_name}}";
 
       var data = {
         "question": inputValue,
