@@ -1974,16 +1974,27 @@ $overall_total = $overall_total / 2;
             $skill_data = $criteria_data =$decipline_data =$co_data = [];
             // grade array to convert marks
             $get_grade = DB::table('result_co_scholatic_range')->where(['sub_institute_id' => $sub_institute_id, 'syear' => $syear])->get();
-            // echo "<pre>";print_r($ret_data);exit;
             foreach ($ret_data as $key => $value) {
                 if ($value->parent_title == "SKILL OBSERVATION") {
+                      if($value->obtain_grade=="0.00"){
+                         $value->obtain_grade = '-';
+                    }
                     $skill_data[] = $value;
                 }
                 if ($value->parent_title == "CRITERIA") {
+                    if($value->obtain_grade=="0.00"){
+                         $value->obtain_grade = '-';
+                    }
                     $criteria_data[] = $value;
                 }
                 if ($value->parent_title == "DISCIPLINE") {
-                    $decipline_data[] = $value;
+                     $per = $value->obtain_grade;
+                    if (!empty($get_grade) && $per != 0 && $per != '') {
+                        $value->obtain_grade = $this->getGrade($get_grade, $value->max_mark, $per, "co_scholastic");
+                    } else {
+                        $value->obtain_grade = '-';
+                    }
+                    $decipline_data[] = $value;   
                 }
                 if ($value->parent_title != "CRITERIA" && $value->parent_title != "SKILL OBSERVATION" && $value->parent_title != "DISCIPLINE") {
                     $per = $value->obtain_grade;
@@ -2099,18 +2110,40 @@ $overall_total = $overall_total / 2;
                 }
             $other_table .= '</tr>
             </thead>';
-        if (!empty($criteria_data)) {
+        // if (!empty($criteria_data)) {
+        //     foreach ($criteria_data as $key => $value) {
+        //         $other_table .= '<tr><td>' . $value->child_title . '</td>';
+        //         if($academic_type=="primary"){
+        //         foreach ($both_term as $keys => $terms) {
+        //             $grade = $termGrades[$terms->term_id] ?? '-';
+        //             $other_table .= '<td class="data_center co_term-' . $terms->term_id . ' mterm-' . $terms->term_id . ' ">' . $grade . '</td>';
+        //         }
+        //         }else{
+        //             $other_table .='<td class="data_center">' . $value->obtain_grade . '</td>';
+        //         }
+        //         $other_table .='</tr>';
+        //     }
+        // }
+
+         if (!empty($criteria_data)) {
+            $groupedData = [];
             foreach ($criteria_data as $key => $value) {
-                $other_table .= '<tr><td>' . $value->child_title . '</td>';
-                if($academic_type=="primary"){
-                foreach ($both_term as $keys => $terms) {
+                $groupedData[$value->child_title][$value->term_id] = $value->obtain_grade;
+            }
+
+            foreach ($groupedData as $childTitle => $termGrades) {
+                $other_table .= '<tr><td class="'.$value->co_scholastic_id.'">' . $childTitle . '</td>';
+             if($academic_type=="primary"){
+               foreach ($both_term as $keys => $terms) {
                     $grade = $termGrades[$terms->term_id] ?? '-';
                     $other_table .= '<td class="data_center co_term-' . $terms->term_id . ' mterm-' . $terms->term_id . ' ">' . $grade . '</td>';
                 }
                 }else{
                     $other_table .='<td class="data_center">' . $value->obtain_grade . '</td>';
                 }
-                $other_table .='</tr>';
+                
+
+                $other_table .= '</tr>';
             }
         }
         $other_table .= '<tboady></tboady>
@@ -2130,18 +2163,39 @@ $overall_total = $overall_total / 2;
                 }
             $other_table .= '</tr>
             </thead>';
-        if (!empty($skill_data)) {
+        // if (!empty($skill_data)) {
+        //     foreach ($skill_data as $key => $value) {
+        //         $other_table .= '<tr><td>' . $value->child_title . '</td>';
+        //         if($academic_type=="primary"){
+        //         foreach ($both_term as $keys => $terms) {
+        //             $grade = $termGrades[$terms->term_id] ?? '-';
+        //             $other_table .= '<td class="data_center co_term-' . $terms->term_id . ' mterm-' . $terms->term_id . ' ">' . $grade . '</td>';
+        //         }
+        //         }else{
+        //             $other_table .='<td class="data_center">' . $value->obtain_grade . '</td>';
+        //         }
+        //         $other_table .='</tr>';
+        //     }
+        // }
+             if (!empty($skill_data)) {
+            $groupedData = [];
             foreach ($skill_data as $key => $value) {
-                $other_table .= '<tr><td>' . $value->child_title . '</td>';
-                if($academic_type=="primary"){
-                foreach ($both_term as $keys => $terms) {
+                $groupedData[$value->child_title][$value->term_id] = $value->obtain_grade;
+            }
+
+            foreach ($groupedData as $childTitle => $termGrades) {
+                $other_table .= '<tr><td class="'.$value->co_scholastic_id.'">' . $childTitle . '</td>';
+             if($academic_type=="primary"){
+               foreach ($both_term as $keys => $terms) {
                     $grade = $termGrades[$terms->term_id] ?? '-';
                     $other_table .= '<td class="data_center co_term-' . $terms->term_id . ' mterm-' . $terms->term_id . ' ">' . $grade . '</td>';
                 }
                 }else{
                     $other_table .='<td class="data_center">' . $value->obtain_grade . '</td>';
                 }
-                $other_table .='</tr>';
+                
+
+                $other_table .= '</tr>';
             }
         }
         $other_table .= '<tboady></tboady>
@@ -2163,9 +2217,9 @@ $overall_total = $overall_total / 2;
         </thead>
         <tbody>
             <tr>
-                <td style="width: 82.50%;"><b>Discipline:[on a 5-point (A-E) Grading Scale]</b></td>';
-                if (!empty($skill_data)) {
-                    foreach ($skill_data as $key => $value) {
+                <td style="width: 82.50%;"><b>Discipline</b></td>';
+                if (!empty($decipline_data)) {
+                    foreach ($decipline_data as $key => $value) {
                 $other_table .='<td class="data_center">' . $value->obtain_grade . '</td>'; 
                     }
                 }           
