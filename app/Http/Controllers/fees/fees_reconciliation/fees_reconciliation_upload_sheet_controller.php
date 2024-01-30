@@ -5,7 +5,7 @@ namespace App\Http\Controllers\fees\fees_reconciliation;
 use App\Http\Controllers\Controller;
 use App\Models\lms\chapterModel;
 use App\Models\school_setup\sub_std_mapModel;
-use App\Models\fees\fees_collect;
+use App\Models\fees\fees_collect\fees_collect;
 use Illuminate\Http\Request;
 use function App\Helpers\is_mobile;
 use function PHPUnit\Framework\fileExists;
@@ -147,16 +147,16 @@ class fees_reconciliation_upload_sheet_controller extends Controller
                     ])
                     ->get()
                     ->toArray();
-
+                    // echo "<pre>";print_r($get_fees_collect[0]['student_id']);exit;
                     if(!empty($get_fees_collect))
                     {
-                        $student_id= $get_fees_collect[0]->student_id;
-                        $term_id = $get_fees_collect[0]->term_id; 
-                        $receipt_no = $get_fees_collect[0]->receipt_no;
-                        $standard_id = $get_fees_collect[0]->standard_id;
-                        $paymode = $get_fees_collect[0]->payment_mode;
-                        $bank_detail = $get_fees_collect[0]->cheque_bank_name;
-                        $amount = $get_fees_collect[0]->amount;
+                        $student_id= $get_fees_collect[0]['student_id'];
+                        $term_id = $get_fees_collect[0]['term_id']; 
+                        $receipt_no = $get_fees_collect[0]['receipt_no'];
+                        $standard_id = $get_fees_collect[0]['standard_id'];
+                        $paymode = $get_fees_collect[0]['payment_mode'];
+                        $bank_detail = $get_fees_collect[0]['cheque_bank_name'];
+                        $amount = $get_fees_collect[0]['amount'];
                         // dd(DB::getQueryLog($check_fees));
                         
                         DB::table('fees_reconciliation')->where('id', $check_fees[0]->id)->update([
