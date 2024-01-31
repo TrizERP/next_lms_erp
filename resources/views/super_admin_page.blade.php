@@ -181,7 +181,7 @@ $loginpage_backgrond = session()->get('loginpage_backgrond');
                                     <option value="">Select Institute</option>
                                     @foreach($get_institutes as $key => $get_institute)
                                         <option value="{{$get_institute->Id}}">{{$get_institute->SchoolName}}</option>
-                                    @endforeach   
+                                    @endforeach                                   
                                 </select>
                             </div>
                         </div>
