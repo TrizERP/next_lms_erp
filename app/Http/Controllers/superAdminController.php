@@ -36,9 +36,10 @@ class superAdminController extends Controller
         
         $res['get_clients'] = $get_clients;
         $res['get_institutes'] = $get_institutes;
-
+       
         return is_mobile($type, "super_admin_page", $res, "view");
     }
+
     public function store(Request $request) 
     {
         $type = $request->input('type');
