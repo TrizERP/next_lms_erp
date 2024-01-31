@@ -227,9 +227,9 @@
 								@endphp
 								
 								@if($session_year != $receipt_date)
-									<td>{{ $value['syear'] }}</td>
+									<td>{{ $value['syear'] }} - {{$value['remarks']}}</td>
 								@else
-									<td>{{ ' ' }}</td>
+									<td>{{ ' ' }} - {{$value['remarks']}}</td>
 								@endif
 								
 								<td>{{date('d-m-Y',strtotime($value['receiptdate']))}}</td>

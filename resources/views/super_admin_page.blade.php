@@ -155,6 +155,7 @@ $loginpage_backgrond = session()->get('loginpage_backgrond');
                         </div>
                         @php  
                             $get_clients = $data['get_clients'];
+                            $get_institutes = $data['get_institutes'];
                         @endphp
                         <div class="form-group  m-t-10">
                             <div class="col-xs-12">
@@ -178,7 +179,9 @@ $loginpage_backgrond = session()->get('loginpage_backgrond');
                                 <label>Select Institutes <span style="color: red;font-size: large;">*</span></label>
                                 <select class="form-control" name="institute_id[]" id="institute_id" multiple required>
                                     <option value="">Select Institute</option>
-                                                                                  
+                                    @foreach($get_institutes as $key => $get_institute)
+                                        <option value="{{$get_institute->Id}}">{{$get_institute->SchoolName}}</option>
+                                    @endforeach                                   
                                 </select>
                             </div>
                         </div>
@@ -194,32 +197,5 @@ $loginpage_backgrond = session()->get('loginpage_backgrond');
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="{{ asset("plugins/bower_components/bootstrap-datepicker/bootstrap-datepicker.min.js") }}"></script>
-
-    <script>
-        $(document).ready(function () {
-            $(document).on("change", "#client_id", function(e) {
-                $('#institute_id').empty();
-                var clientId = $(this).val();
-                
-                $.ajax({
-                    type: "post",
-                    url: "{{ route('get.institute') }}",
-                    data: { client_id: clientId },
-                    success: function(data) {
-                        var options = '';
-                        $.each(data.getInstitutes, function(index, getInstitute) {
-                            
-                            options += '<option value="' + getInstitute.Id + '" >' + getInstitute.SchoolName + '</option>';
-                        });
-                        $('#institute_id').append(options);
-                    },
-                    error: function(xhr) {
-                        console.error(xhr.responseText);
-                    }
-                });
-            });
-        });
-        </script>
 </body>
-
 </html>

@@ -237,7 +237,6 @@ Route::any('signup', [signupController::class, 'index'])->name('signup');
 //Route::get('aftersignuplogin', 'loginController@aftersignuplogin');
 
 Route::any('superAdmin', [superAdminController::class, 'index'])->name('superAdmin');
-Route::post('get-institute', [superAdminController::class, 'getInstitute'])->name('get.institute');
 Route::post('superAdmin-store', [superAdminController::class, 'store'])->name('superAdmin.store');
 
 Route::any('ajaxMenuSession', [loginController::class, 'ajaxMenuSession'])->name('ajaxMenuSession');
