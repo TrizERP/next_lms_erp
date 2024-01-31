@@ -199,7 +199,9 @@ class AJAXController extends Controller
         ];
 
         $explode = explode(',', $request->grade_id);
-
+        // menu_ids to get class teacher class only
+        $menu_ids = [68,80];
+        $getClass=DB::table('class_teacher')->whereRaw('sub_institute_id='.session()->get('sub_institute_id').' and teacher_id ='.session()->get('user_id').' and syear="'.session()->get('syear').'"')->first();
         if (count($explode) > 1) {
             $query = DB::table('standard');
             $query->whereIn('grade_id', $explode)->get();
@@ -213,14 +215,22 @@ class AJAXController extends Controller
                 $checkstd = '1=1';
             }
             if ($checkstd && $classTeacherStdArr != "" && !in_array($module_name, $module_array)) {
-                $query->whereIn('id', $classTeacherStdArr);
+                if(in_array(session()->get('right_menu_id'),$menu_ids) && session()->get('user_profile_name')=="Teacher"){
+                    $query->where('id', $getClass->standard_id);
+                }else{
+                    $query->whereIn('id', $classTeacherStdArr);
+                }
             }
             //END Check for class teacher assigned standards
 
             //START Check for subject teacher assigned
             $subjectTeacherStdArr = session()->get('subjectTeacherStdArr');
             if ($subjectTeacherStdArr != "" && ($classTeacherStdArr == "" || in_array($module_name, $module_array))) {
+                if(in_array(session()->get('right_menu_id'),$menu_ids) && session()->get('user_profile_name')=="Teacher"){
+                    $query->where('id', $getClass->standard_id);
+                }else{
                 $query->whereIn('id', $subjectTeacherStdArr);
+                }
             }
             //END Check for subject teacher assigned
 
@@ -238,19 +248,27 @@ class AJAXController extends Controller
                 $checkstd = '1=1';
             }
             if ($checkstd && $classTeacherStdArr != "" && !in_array($module_name, $module_array)) {
+                if(in_array(session()->get('right_menu_id'),$menu_ids) && session()->get('user_profile_name')=="Teacher"){
+                    $query->where('id', $getClass->standard_id);
+                }else{
                 $query->whereIn('id', $classTeacherStdArr);
+                }
             }
             //END Check for class teacher assigned standards
 
             //START Check for subject teacher assigned
             $subjectTeacherStdArr = session()->get('subjectTeacherStdArr');
             if ($subjectTeacherStdArr != "" && ($classTeacherStdArr == "" || in_array($module_name, $module_array))) {
+                if(in_array(session()->get('right_menu_id'),$menu_ids) && session()->get('user_profile_name')=="Teacher"){
+                    $query->where('id', $getClass->standard_id);
+                }else{
                 $query->whereIn('id', $subjectTeacherStdArr);
+                }
             }
             //END Check for subject teacher assigned
             $standard = $query->pluck("name", "id");
         }
-
+        // echo session()->get('right_menu_id')
         return response()->json($standard);
         // return $classTeacherStdArr;
     }
@@ -282,6 +300,9 @@ class AJAXController extends Controller
             '6' => 'parent_communication',
             '7' => 'question_paper',
         ];
+
+        $menu_ids = [68,80];
+        $getClass=DB::table('class_teacher')->whereRaw('sub_institute_id='.session()->get('sub_institute_id').' and teacher_id ='.session()->get('user_id').' and syear="'.session()->get('syear').'"')->first();
 
         $standard_id = $request->standard_id;
 
@@ -331,12 +352,17 @@ class AJAXController extends Controller
             //START Check for class teacher assigned standards
             $subjectTeacherDivArr = session()->get('subjectTeacherDivArr');
             if ($subjectTeacherDivArr != "" && ($classTeacherDivArr == "" || in_array($module_name, $module_array))) {
+                if(in_array(session()->get('right_menu_id'),$menu_ids) && session()->get('user_profile_name')=="Teacher"){
+                    $query->where('division.id',$getClass->division_id);
+                }else{
                 $query->whereIn('division.id', function ($sub_query) use ($standard_id) {
                     $sub_query->select('division_id')
                         ->from('timetable')
                         ->where('teacher_id', session()->get('user_id'))
-                        ->where('standard_id', $standard_id);
+                        ->where('standard_id', $standard_id)
+                        ->where('syear',session()->get('syear'));
                 });
+                }
             }
             //END Check for class teacher assigned standards
 

@@ -94,9 +94,11 @@ if (isset($_REQUEST['submit'])) {
         //$fieldQuery = rtrim($fieldQuery, ',');
         $fieldQuery = $fieldQuery.'SUB_INSTITUTE_ID';
         $fieldQuery .= ' ) VALUES ';
-
+        $all_error = array();
+// echo "<pre>";print_r($relationTable);exit;
         foreach ($dataArr as $key => $value) {
             $valueQuery .= ' (';
+            
             foreach ($valueFields1 as $kvf => $valueFields) {
                 /*if ($valueFields['field'] == "SYEAR" || $valueFields['field'] == "syear") {
                     $valueQuery .= "'2023',";
@@ -113,11 +115,11 @@ if (isset($_REQUEST['submit'])) {
                     $valueQuery .= "now(),";
                 } else if ($valueFields['field'] == "CREATED_IP_ADDRESS" || $valueFields['field'] == "created_ip_address") {
                     $valueQuery .= "'" . $_SERVER['REMOTE_ADDR'] . "',";
-                } else if ($valueFields['field'] == "admission_date" || $valueFields['field'] == "ADMISSION_DATE" || $valueFields['field'] == "dob" || $valueFields['field'] == "DOB" || $valueFields['field'] == "start_date" || $valueFields['field'] == "followup_date" || $valueFields['field'] == "date_of_birth" || $valueFields['field'] == "birthdate" || $valueFields['field'] == "from_date" || $valueFields['field'] == "to_date" || $valueFields['field'] == "day" || $valueFields['field'] == "punchin_time" || $valueFields['field'] == "punchout_time" || $valueFields['field'] == "receiptdate" || $valueFields['field'] == "attendance_date") {
-    
+                } else if ($valueFields['field'] == "admission_date" || $valueFields['field'] == "ADMISSION_DATE" || $valueFields['field'] == "dob" || $valueFields['field'] == "DOB" || $valueFields['field'] == "start_date" || $valueFields['field'] == "followup_date" || $valueFields['field'] == "date_of_birth" || $valueFields['field'] == "birthdate" || $valueFields['field'] == "from_date" || $valueFields['field'] == "to_date" || $valueFields['field'] == "day" || $valueFields['field'] == "punchin_time" || $valueFields['field'] == "punchout_time" || $valueFields['field'] == "receiptdate" || $valueFields['field'] == "attendance_date" || $valueFields['field'] == "issued_date" || $valueFields['field'] == "due_date" || $valueFields['field'] == "return_date") {
+                    // || $valueFields['field'] == "issued_date" || $valueFields['field'] == "due_date" || $valueFields['field'] == "return_date"
                     $excelDateTime = $value[$valueFields['field']];
 
-                    if ($valueFields['field'] == "punchin_time" || $valueFields['field'] == "punchout_time") {
+                    if ($valueFields['field'] == "punchin_time" || $valueFields['field'] == "punchout_time" || $valueFields['field'] == "issued_date" || $valueFields['field'] == "return_date") {
                         $timestamp = PHPExcel_Style_NumberFormat::toFormattedString($excelDateTime, 'YYYY-MM-DD HH:MM:SS'); // Convert Excel timestamp to formatted date and time string
                         $date = DateTime::createFromFormat('Y-m-d H:i:s', $timestamp);
                         if($date !== false){ // Create a DateTime object using the formatted string
@@ -130,8 +132,6 @@ if (isset($_REQUEST['submit'])) {
                     }
                 } else {
                     if (in_array($valueFields['field'], $relationFields)) {
-
-
                         if($relationTable[$valueFields['field']]['main_table']==="fees_breakoff_other"){
                         $relationQuery = "SELECT " . strtoupper($relationTable[$valueFields['field']]['INSERT_FIELD']) . " FROM " . $relationTable[$valueFields['field']]['TABLE_NAME'] . "  WHERE  " . $relationTable[$valueFields['field']]['TABLE_FIELD'] . " = '" . mysqli_real_escape_string($cn, $value[$valueFields['field']]) . "' AND sub_institute_id = '" . $_SESSION['SUB_INSTITUTE_ID'] . "'"; 
                          
@@ -155,15 +155,23 @@ if (isset($_REQUEST['submit'])) {
                         $getRelationValue = mysqli_fetch_assoc(mysqli_query($cn, $relationQuery));
 
                         $keyId = strtoupper($relationTable[$valueFields['field']]['INSERT_FIELD']);
-                        // print_r($getRelationValue);exit;
+                        // print_r($getRelationValue);
+                        //|| $relationTable[$valueFields['field']]['main_table']=="library_book_circulations"
          
                         if (isset($getRelationValue) && count($getRelationValue) > 0) {                            
                             $finalValue = $getRelationValue[$keyId];
                             $valueQuery .= "'" . $finalValue . "',";
+                            // echo $finalValue;
                         } else {
+                            // echo "error ".$value[$valueFields['field']];
+                            
                             if($relationTable[$valueFields['field']]['main_table']=="fees_breakoff_other"){
                                  $valueQuery .="'" . $value[$valueFields['field']] . "',";
-                            }else{
+                            }if($relationTable[$valueFields['field']]['main_table']=="library_book_circulations"){
+                                $valueQuery .="'no_value',";
+                                echo "<h5 style='color:red'>Problem Occurred while upload for <b style='color:black'>" . $valueFields['field'] . "</b> when value is <b style='color:black'>" . $value[$valueFields['field']] . "</b> please check and reupload the file.</h5>";
+                                $all_error[$valueFields['field']][] =$value[$valueFields['field']];
+                           }else{
                                     echo "<h5 style='color:red'>Problem Occurred while upload for <b style='color:black'>" . $valueFields['field'] . "</b> when value is <b style='color:black'>" . $value[$valueFields['field']] . "</b> please check and reupload the file.</h5>";
                             }
                            
@@ -178,12 +186,36 @@ if (isset($_REQUEST['submit'])) {
                     }
                 }
                
+                // echo ;
             }
+            // exit;
             $valueQuery = $valueQuery.$_SESSION['SUB_INSTITUTE_ID'];
             $valueQuery .= ' ),';
         }
+      if($_REQUEST['table']=="library_book_circulations"){
         $valueQuery = rtrim($valueQuery, ',');
-        //echo $insertQuery ." ". $fieldQuery ." ". $valueQuery ."<br/><br/>"; 
+        $rows = explode('),', $valueQuery);
+        $newRows = [];
+        foreach ($rows as $row) {
+            if (strpos($row, "'no_value'") === false) {
+                $newRows[] = $row . ')';
+            }
+        }
+        
+        // Join the modified rows back into a string
+        $valueQuery = implode(',', $newRows);
+        
+        // Ensure there is only one ')' at the end
+        $valueQuery = rtrim($valueQuery, ')') . ')';
+        
+        // echo $valueQuery;
+             
+    }else{
+        // Remove trailing comma
+        $valueQuery = rtrim($valueQuery, ',');
+    }
+// echo $valueQuery;exit;
+        // echo  $valueQuery ."<br/><br/>"; 
        $query = mysqli_query($cn, $insertQuery . $fieldQuery . $valueQuery) or die(mysqli_error($cn));
        if($query==true){
         echo "<h4 style='color:green'>Data Imported Successfully.</h4>";
@@ -197,17 +229,19 @@ if (isset($_REQUEST['submit'])) {
 $getTables = mysqli_query($cn, "SELECT * FROM import_table_fields where display_status=1 group by table_name order by id");
 ?>
 <form method="post" enctype="multipart/form-data">
-    <select name="table" id="table">
-        <option value=""> Select Module</option>
-        <?php
+	<select name="table" id="table">
+		<option value=""> Select Module</option>
+		<?php
         while ($value = mysqli_fetch_assoc($getTables)) {
             ?>
-            <option value="<?php echo $value['table_name'] ?>"><?php echo $value['display_table_name'] ?></option>
-            <?php
+		<option value="<?php echo $value['table_name'] ?>">
+			<?php echo $value['display_table_name'] ?>
+		</option>
+		<?php
         }
         ?>
-    </select>
+	</select>
 
-    <input type="file" name="filename" id="filename">
-    <input type="submit" name="submit" class="btn_medium" value="UPLOAD">
+	<input type="file" name="filename" id="filename">
+	<input type="submit" name="submit" class="btn_medium" value="UPLOAD">
 </form>
