@@ -62,6 +62,7 @@
                                             <option value="Character Certificate">Character Certificate</option>
                                             <option value="Transfer Certificate">Transfer Certificate</option>
                                             <option value="Fees Statement">Fees Statement</option>
+                                            <option value="No Dues Certificate">No Dues Certificate</option>
                                         </select>
                                     </div>
                                     <div class="col-md-4 form-group">
