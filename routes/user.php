@@ -25,7 +25,7 @@ Route::group(['prefix' => 'user', 'middleware' => ['session', 'menu', 'logRoute'
     Route::post('mobile_app_menu_rights/update', [tblmobileAppMenuRightsController::class, 'store'])->name("mobile_app_menu_rights.update");
 
     Route::post('show_user_report', [userReportController::class, 'searchUser'])->name("show_user_report");
-     Route::post('ajax_userProfile_Data_Create',
+    Route::post('ajax_userProfile_Data_Create',
         [tblgroupwise_rightsController::class, 'ajax_userProfile_Data_Create'])->name('ajax_userProfile_Data_Create');
     Route::get('ajax_groupwiserights',
         [tblgroupwise_rightsController::class, 'displayGroupwiseRights'])->name('ajax_groupwiserights');

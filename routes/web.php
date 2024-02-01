@@ -60,6 +60,7 @@ use App\Http\Controllers\sqaa\sqaaScoreReportController;
 use App\Http\Controllers\leave\LeaveAuthorisationController;
 use App\Http\Controllers\leave\leave_report\LeaveReportController;
 use App\Http\Controllers\leave\leave_summary_report\LeaveSummaryReportController;
+use App\Http\Controllers\superAdminController;
 
 /*
 |--------------------------------------------------------------------------
@@ -235,6 +236,10 @@ Route::any('login', [loginController::class, 'index'])->name('login');
 Route::any('signup', [signupController::class, 'index'])->name('signup');
 //Route::get('aftersignuplogin', 'loginController@aftersignuplogin');
 
+Route::any('superAdmin', [superAdminController::class, 'index'])->name('superAdmin');
+Route::post('get-institute', [superAdminController::class, 'getInstitute'])->name('get.institute');
+Route::post('superAdmin-store', [superAdminController::class, 'store'])->name('superAdmin.store');
+
 Route::any('ajaxMenuSession', [loginController::class, 'ajaxMenuSession'])->name('ajaxMenuSession');
 
 Route::any('/logout', [loginController::class, 'logout']);
@@ -330,8 +335,7 @@ Route::group(['prefix' => 'school_setup', 'middleware' => ['session', 'menu', 'l
 
     Route::get('google-analytics-summary', array('as' => 'google-analytics-summary', 'uses' => 'school_setup\HomeController@getAnalyticsSummary'));
 
-    Route::resource('used_storage_graph', used_storage_graphController::class);
-
+    Route::Resource('used_storage_graph', used_storage_graphController::class);
 });
 Route::post('get_proxy_master', [proxyController::class, 'getproxydata']);
 Route::get('school_setup/ajax_getTeacherDailyDetailsReport', [teacherdailyReportController::class, 'getTeacherDailyDetailsReport'])->name("ajax_getTeacherDailyDetailsReport");

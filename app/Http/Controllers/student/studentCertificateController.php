@@ -277,6 +277,8 @@ die; */
             $html_content);
         $html_content = str_replace(htmlspecialchars("<<student_enrollment_value>>"), $value['enrollment_no'],
             $html_content);
+        $html_content = str_replace(htmlspecialchars("<<student_roll_no_value>>"), $value['roll_no'],
+            $html_content);
         $html_content = str_replace(htmlspecialchars("<<student_standard_value>>"), $value['standard_name'],
             $html_content);
         $html_content = str_replace(htmlspecialchars("<<student_division_value>>"), $value['division_name'],
