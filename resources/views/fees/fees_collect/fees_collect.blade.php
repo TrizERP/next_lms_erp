@@ -40,13 +40,14 @@
 									<th>Remaining</th>
 								</tr>
 								@php
+
 									$remainFees = 0;
 									$feesDetails= [];
 									$bk=$paid=$remain=$discount=$Paid_and_discount=array();
 									foreach ($data['total_fees'] as $id => $arr) {
 									$feesDetails[$arr['month']] = $arr['remain'];
 									if(isset($arr['bk'])){
-                                @endphp
+               @endphp
 								<tr>
 									<td>
 										{{ $arr['month'] }}
@@ -66,6 +67,7 @@
 								@php
                                     }
                                         $remainFees += $arr['remain'];
+										$paidFees += $arr['paid'];
                                         }
 								@endphp
 								<tr>
