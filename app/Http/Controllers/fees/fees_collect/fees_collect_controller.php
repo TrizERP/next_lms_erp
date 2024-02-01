@@ -503,7 +503,7 @@ class fees_collect_controller extends Controller
             }
         }
 
-        // sort other breakoff month 
+        // sort other breakoff month date - 01/02/24
         uksort($other_bk_off_month_head_wise, function($a, $b) {
             $last4A = substr($a, -4);
             $last4B = substr($b, -4);
@@ -535,7 +535,7 @@ class fees_collect_controller extends Controller
                 }
             }
         }
-        
+    // end 01/02/24
         $new_insert_other_arr = [];
         foreach ($oth_insert_arr as $month_id => $arr) {
             foreach ($arr as $id => $val) {
@@ -1968,7 +1968,7 @@ class fees_collect_controller extends Controller
         $paid_total = $paid_total_last = 0;
         $remain_total = $remain_total_last = 0;
         $discount_total = $discount_total_last = 0;
-        // this foreach will create fees structure of student paid unpaid fees
+        // this foreach will create fees structure of student paid unpaid fees 01/02/24
         foreach ($merge_bk_month_wise as $id => $val) {
             if(isset($year_arr[$id])){
             $left_bk_table[$i]['month'] = $year_arr[$id];
@@ -2004,6 +2004,8 @@ class fees_collect_controller extends Controller
             $i = $i + 1;
         }
         }
+    // end 01/02/24
+        
         $pending_fees = 0;
         foreach ($search_ids as $id => $val) {
             foreach ($left_bk_table as $temp_id => $arr) {

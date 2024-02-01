@@ -1785,14 +1785,14 @@ $overall_total = $overall_total / 2;
        $table.="</tr>
                    <tr>
                    <th rowspan=2>Subject</th>
-                   <th rowspan=2  style='text-align:center'><b>Periodic Test <br> (". $periodic_test ."%)</b></th>
+                   <th rowspan=2  style='text-align:center'><b>Periodic Test <br> (". $periodic_test .")</b></th>
                    <th colspan='2'  style='text-align:center'><b>Year Exam</b></th>
                    <th rowspan=2 style='text-align:center'><b>Marks Obtained <br> (".($periodic_test + $practical + $theory)."%)</b></th>
                    <th rowspan=2 style='text-align:center'><b>Grade</b></th>    
                </tr>
                <tr>
-                   <th style='text-align:center'><b>Theory <br> (". $theory ."%)</b></th>            
-                   <th style='text-align:center'><b>Practical <br> (". $practical ."%)</b></th>
+                   <th style='text-align:center'><b>Theory <br> (". $theory .")</b></th>            
+                   <th style='text-align:center'><b>Practical <br> (". $practical .")</b></th>
                </tr>";
                $weigthage = '';
                $exam_heads = [];
