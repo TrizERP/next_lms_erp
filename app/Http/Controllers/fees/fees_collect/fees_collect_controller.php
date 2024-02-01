@@ -570,7 +570,6 @@ class fees_collect_controller extends Controller
                 $syears[$key] = ($syear - 1);
             }
         }
-
         // insert into fees_collect
         $regular_insert_arr=[];
         foreach ($new_insert_arr as $month_id => $arr) {
@@ -1983,8 +1982,8 @@ class fees_collect_controller extends Controller
                 $left_bk_table[$i]['paid'] = 0;
             }
             if ($left_bk_table[$i]['paid'] > $left_bk_table[$i]['bk']) {
-                // $left_bk_table[$i]['remain'] = 0;
                 $left_bk_table[$i]['remain'] = ($left_bk_table[$i]['bk'] - $left_bk_table[$i]['paid']);
+                // $left_bk_table[$i]['remain']=0;
             } else {
                 $left_bk_table[$i]['remain'] = $left_bk_table[$i]['bk'] - $left_bk_table[$i]['paid'];
             }
@@ -2008,7 +2007,6 @@ class fees_collect_controller extends Controller
     // end 01/02/24
         
         $pending_fees = 0;
-        
         foreach ($search_ids as $id => $val) {
             foreach ($left_bk_table as $temp_id => $arr) {
                 if ($arr['month_id'] == $val) {
@@ -2016,6 +2014,7 @@ class fees_collect_controller extends Controller
                 }
             }
         }
+        
         if (isset($reg_bk_off2) && $reg_bk_off2 != null) {
             $reg_bk_off_count2 = is_array($reg_bk_off2) ? count($reg_bk_off2) : $reg_bk_off2->count();
             if (count($reg_bk_off2) == 0) {
