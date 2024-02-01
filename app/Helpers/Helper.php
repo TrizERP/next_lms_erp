@@ -1367,7 +1367,7 @@ if (!function_exists('getStudents')) {
                 $join->whereRaw(' d.id = se.section_id');
             })->join('school_setup as ss', function ($join) {
                 $join->whereRaw('s.sub_institute_id = ss.Id');
-            })->join('blood_group as bg', function ($join) {
+            })->leftJoin('blood_group as bg', function ($join) {
                 $join->whereRaw('s.bloodgroup = bg.id');
             })->leftJoin('tblstudent_tc_details as tc', function ($join) {
                 $join->whereRaw('tc.sub_institute_id = s.sub_institute_id AND tc.student_id = s.id');
