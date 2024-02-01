@@ -40,11 +40,12 @@
 									<th>Remaining</th>
 								</tr>
 								@php
-                                        $remainFees = 0;
+                                        $remainFees = $paidFees = 0;
                                         $feesDetails= [];
                                         $bk=$paid=$remain=$discount=array();
-                                        foreach ($data['total_fees'] as $id => $arr) {
-										$feesDetails[$arr['month']] = $arr['remain'];
+                                    	  foreach ($data['total_fees'] as $id => $arr) {
+											$feesDetails[$arr['month']] = $arr['remain'];
+									
 										if(isset($arr['bk'])){
                                 @endphp
 								<tr>
@@ -66,6 +67,7 @@
 								@php
                                     }
                                         $remainFees += $arr['remain'];
+										$paidFees += $arr['paid'];
                                         }
 								@endphp
 								<tr>
@@ -74,7 +76,7 @@
 										{{ array_sum($bk) }}
 									</td>
 									<td>
-										{{array_sum($paid) }}
+										{{array_sum($paid).$paidFees }}
 									</td>
 									<td>{{array_sum($discount) }}</td>
 									<td>
@@ -215,7 +217,7 @@
                                                 }
 
                                                 $disabled = '';
-                                                if (isset($feesDetails[$val]) && $feesDetails[$val] == 0) {
+                                                if (isset($feesDetails[$val]) && $feesDetails[$val] <= 0) {
                                                     $disabled = 'disabled="disabled"';
                                                 }
                                         @endphp
