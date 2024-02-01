@@ -174,7 +174,7 @@
         buttons: [
             {
                 extend: 'pdfHtml5',
-                title: 'Fees Overall Report',
+                title: 'Fees Reconciliation Report',
                 orientation: 'landscape',
                 pageSize: 'LEGAL',
                 pageSize: 'A0',
@@ -182,9 +182,9 @@
                      columns: ':visible'
                 },
             },
-            { extend: 'csv', text: ' CSV', title: 'Fees Overall Report' },
-            { extend: 'excel', text: ' EXCEL', title: 'Fees Overall Report' },
-            { extend: 'print', text: ' PRINT', title: 'Fees Overall Report' },
+            { extend: 'csv', text: ' CSV', title: 'Fees Reconciliation Report' },
+            { extend: 'excel', text: ' EXCEL', title: 'Fees Reconciliation Report' },
+            { extend: 'print', text: ' PRINT', title: 'Fees Reconciliation Report' },
             'pageLength'
         ],
         });

@@ -503,16 +503,30 @@ class fees_collect_controller extends Controller
             }
         }
 
+        // sort other breakoff month date - 01/02/24
+        uksort($other_bk_off_month_head_wise, function($a, $b) {
+            $last4A = substr($a, -4);
+            $last4B = substr($b, -4);
+        
+            if ($last4A != $last4B) {
+                return $last4A - $last4B; // Sort by last 4 digits
+            } else {
+                return $a - $b; // If last 4 digits are the same, sort by the entire value
+            }
+        });
         $oth_insert_arr = [];
         foreach ($other_bk_off_month_head_wise as $month => $bk_off) {
             if (in_array($month, $oth_months_pay)) {
                 foreach ($bk_off as $title => $amount) {
                     if (array_key_exists($title, $_REQUEST['fees_data'])) {
                         $insert_amount = 0;
-                        if ($_REQUEST['fees_data'][$title] > $amount) {
+                        $checkPaidOther = DB::table('fees_paid_other')->selectRaw('sum(actual_amountpaid) as amt')->whereRaw('month_id= '.$month.' and student_id ='.$stu_arr[0].' and syear='.$syear.' and sub_institute_id='.$sub_institute_id.' and is_deleted="N" ')->groupBy('month_id')->first();
+                        if(isset($checkPaidOther->amt)){
+                            $insert_amount = $amount-$checkPaidOther->amt;
+                        }else if ($_REQUEST['fees_data'][$title] > $amount) {
                             $_REQUEST['fees_data'][$title] = $_REQUEST['fees_data'][$title] - $amount;
                             $insert_amount = $amount;
-                        } else {
+                        } else {                            
                             $insert_amount = $_REQUEST['fees_data'][$title];
                             $_REQUEST['fees_data'][$title] = 0;
                         }
@@ -521,7 +535,7 @@ class fees_collect_controller extends Controller
                 }
             }
         }
-
+    // end 01/02/24
         $new_insert_other_arr = [];
         foreach ($oth_insert_arr as $month_id => $arr) {
             foreach ($arr as $id => $val) {
@@ -1955,7 +1969,7 @@ class fees_collect_controller extends Controller
         $paid_total = $paid_total_last = 0;
         $remain_total = $remain_total_last = 0;
         $discount_total = $discount_total_last = 0;
-        // this foreach will create fees structure of student paid unpaid fees
+        // this foreach will create fees structure of student paid unpaid fees 01/02/24
         foreach ($merge_bk_month_wise as $id => $val) {
             if(isset($year_arr[$id])){
             $left_bk_table[$i]['month'] = $year_arr[$id];
@@ -1969,7 +1983,8 @@ class fees_collect_controller extends Controller
                 $left_bk_table[$i]['paid'] = 0;
             }
             if ($left_bk_table[$i]['paid'] > $left_bk_table[$i]['bk']) {
-                $left_bk_table[$i]['remain'] = 0;
+                // $left_bk_table[$i]['remain'] = 0;
+                $left_bk_table[$i]['remain'] = ($left_bk_table[$i]['bk'] - $left_bk_table[$i]['paid']);
             } else {
                 $left_bk_table[$i]['remain'] = $left_bk_table[$i]['bk'] - $left_bk_table[$i]['paid'];
             }
@@ -1990,6 +2005,8 @@ class fees_collect_controller extends Controller
             $i = $i + 1;
         }
         }
+    // end 01/02/24
+        
         $pending_fees = 0;
         
         foreach ($search_ids as $id => $val) {
