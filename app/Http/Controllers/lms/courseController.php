@@ -173,7 +173,7 @@ class courseController extends Controller
             $extra .= " AND STD.id = '".$standard."'";
         }
 
-        $arr = DB::select("SELECT STD.name AS standard_name,s.display_name AS subject_name,s.subject_id,STD.id AS standard_id,
+        $arr = DB::select("SELECT STD.name AS standard_name,s.display_name AS subject_name,s.subject_id,STD.id AS standard_id,s.sub_institute_id,
                 s.display_image,GROUP_CONCAT(DISTINCT(CONCAT_WS('/',cp.chapter_name,cp.id))) AS chapter_list,
                 ifnull(s.subject_category,'My Course') AS content_category
                 FROM sub_std_map s
@@ -200,6 +200,7 @@ class courseController extends Controller
         $res['message'] = "SUCCESS";
         $res['grade'] = $grade;
         $res['standard'] = $standard;
+		$res['sub_institute_id'] = $sub_institute_id;
 
         return is_mobile($type, 'lms/show_course', $res, "view");
     }

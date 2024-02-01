@@ -215,7 +215,7 @@
                                                 }
 
                                                 $disabled = '';
-                                                if (isset($feesDetails[$val]) && $feesDetails[$val] == 0) {
+                                                if (isset($feesDetails[$val]) && $feesDetails[$val] <= 0) {
                                                     $disabled = 'disabled="disabled"';
                                                 }
                                         @endphp
