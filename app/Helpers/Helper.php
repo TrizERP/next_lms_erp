@@ -1281,7 +1281,19 @@ if (!function_exists('OtherBreackOfMonthHead')) {
         $final_bk = [];
 
         foreach ($fees_breckoff as $id => $arr) {
-            $final_bk[$arr->month_id][$arr->fee_type_id] = $arr->tot_amount;
+            $fees_paid = DB::table('fees_paid_other')
+            ->selectRaw('*,sum(actual_amountpaid) as tot_amount')
+            ->where('sub_institute_id', $sub_institute_id)
+            ->where('syear', $syear)
+            ->where('student_id', $student_id)
+            ->where('month_id', $arr->month_id)
+            ->where('is_deleted','N')
+            ->groupByRaw('month_id')->first();
+            if(!empty($fees_paid)){
+                $final_bk[$arr->month_id][$arr->fee_type_id] = ($arr->tot_amount - $fees_paid->tot_amount );
+            }else{
+                $final_bk[$arr->month_id][$arr->fee_type_id] = $arr->tot_amount;
+            }
         }
 
         return $final_bk;

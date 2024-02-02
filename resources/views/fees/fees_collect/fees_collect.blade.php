@@ -36,7 +36,7 @@
 									<th>Remaining</th>
 								</tr>
 								@php
-									$remainFees = 0;
+				                    $remainFees = $paidFees = 0;
 									$feesDetails= [];
 									$bk=$paid=$remain=$discount=$Paid_and_discount=array();
 									foreach ($data['total_fees'] as $id => $arr) {

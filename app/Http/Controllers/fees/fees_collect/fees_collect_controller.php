@@ -508,21 +508,25 @@ class fees_collect_controller extends Controller
         $oth_insert_arr = [];
         foreach ($other_bk_off_month_head_wise as $month => $bk_off) {
             if (in_array($month, $oth_months_pay)) {
+                
                 foreach ($bk_off as $title => $amount) {
                     if (array_key_exists($title, $_REQUEST['fees_data'])) {
                         $insert_amount = 0;
-                         if ($_REQUEST['fees_data'][$title] > $amount) {
+                        if ($_REQUEST['fees_data'][$title] > $amount) {
                             $_REQUEST['fees_data'][$title] = $_REQUEST['fees_data'][$title] - $amount;
                             $insert_amount = $amount;
                         } else {                            
                             $insert_amount = $_REQUEST['fees_data'][$title];
                             $_REQUEST['fees_data'][$title] = 0;
                         }
+                        if($insert_amount>0){
                         $oth_insert_arr[$month][$title] = $insert_amount;
+                        }
                     }
                 }
             }
         }
+        // echo "<pre>";print_r($oth_insert_arr);exit;
     // end 01/02/24
         $new_insert_other_arr = [];
         foreach ($oth_insert_arr as $month_id => $arr) {
