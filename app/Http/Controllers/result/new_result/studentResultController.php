@@ -1823,7 +1823,7 @@ $overall_total = $overall_total / 2;
                 // get all subject name 
                 foreach ($get_subject as $val) {
                     $both_term_ob_mark = 0;
-                    $table .= '<tr><td>' . $val->subject_name .  '('.$val->subject_id.')</td>';
+                    $table .= '<tr><td>' . $val->subject_name .  '</td>';
                     // get term wise eam and marks 
                     foreach ($term_name as $keys => $terms) {
                         $obtained_marks = $to_marks = $to_weight = $title_exam = []; 
