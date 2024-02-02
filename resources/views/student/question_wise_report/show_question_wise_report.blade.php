@@ -258,7 +258,7 @@
                                             else
                                             {
                                                 //$colCountAns[$row][] = '';
-                                                $ans = '-';
+                                                $ans = '0';
                                             }
 
                                         @endphp
