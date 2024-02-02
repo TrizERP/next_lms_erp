@@ -503,27 +503,15 @@ class fees_collect_controller extends Controller
             }
         }
 
-        // sort other breakoff month date - 01/02/24
-        uksort($other_bk_off_month_head_wise, function($a, $b) {
-            $last4A = substr($a, -4);
-            $last4B = substr($b, -4);
-        
-            if ($last4A != $last4B) {
-                return $last4A - $last4B; // Sort by last 4 digits
-            } else {
-                return $a - $b; // If last 4 digits are the same, sort by the entire value
-            }
-        });
+        // sort other breakoff month date
+       
         $oth_insert_arr = [];
         foreach ($other_bk_off_month_head_wise as $month => $bk_off) {
             if (in_array($month, $oth_months_pay)) {
                 foreach ($bk_off as $title => $amount) {
                     if (array_key_exists($title, $_REQUEST['fees_data'])) {
                         $insert_amount = 0;
-                        $checkPaidOther = DB::table('fees_paid_other')->selectRaw('sum(actual_amountpaid) as amt')->whereRaw('month_id= '.$month.' and student_id ='.$stu_arr[0].' and syear='.$syear.' and sub_institute_id='.$sub_institute_id.' and is_deleted="N" ')->groupBy('month_id')->first();
-                        if(isset($checkPaidOther->amt)){
-                            $insert_amount = $amount-$checkPaidOther->amt;
-                        }else if ($_REQUEST['fees_data'][$title] > $amount) {
+                         if ($_REQUEST['fees_data'][$title] > $amount) {
                             $_REQUEST['fees_data'][$title] = $_REQUEST['fees_data'][$title] - $amount;
                             $insert_amount = $amount;
                         } else {                            
@@ -1982,8 +1970,8 @@ class fees_collect_controller extends Controller
                 $left_bk_table[$i]['paid'] = 0;
             }
             if ($left_bk_table[$i]['paid'] > $left_bk_table[$i]['bk']) {
-                $left_bk_table[$i]['remain'] = ($left_bk_table[$i]['bk'] - $left_bk_table[$i]['paid']);
-                // $left_bk_table[$i]['remain']=0;
+                // $left_bk_table[$i]['remain'] = ($left_bk_table[$i]['bk'] - $left_bk_table[$i]['paid']);
+                $left_bk_table[$i]['remain']=0;
             } else {
                 $left_bk_table[$i]['remain'] = $left_bk_table[$i]['bk'] - $left_bk_table[$i]['paid'];
             }
