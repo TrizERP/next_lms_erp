@@ -503,17 +503,8 @@ class fees_collect_controller extends Controller
             }
         }
 
-        // sort other breakoff month date - 01/02/24
-        uksort($other_bk_off_month_head_wise, function($a, $b) {
-            $last4A = substr($a, -4);
-            $last4B = substr($b, -4);
-        
-            if ($last4A != $last4B) {
-                return $last4A - $last4B; // Sort by last 4 digits
-            } else {
-                return $a - $b; // If last 4 digits are the same, sort by the entire value
-            }
-        });
+        // sort other breakoff month date
+       
         $oth_insert_arr = [];
         foreach ($other_bk_off_month_head_wise as $month => $bk_off) {
             if (in_array($month, $oth_months_pay)) {
@@ -1983,8 +1974,8 @@ class fees_collect_controller extends Controller
                 $left_bk_table[$i]['paid'] = 0;
             }
             if ($left_bk_table[$i]['paid'] > $left_bk_table[$i]['bk']) {
-                $left_bk_table[$i]['remain'] = ($left_bk_table[$i]['bk'] - $left_bk_table[$i]['paid']);
-                // $left_bk_table[$i]['remain']=0;
+                // $left_bk_table[$i]['remain'] = ($left_bk_table[$i]['bk'] - $left_bk_table[$i]['paid']);
+                $left_bk_table[$i]['remain']=0;
             } else {
                 $left_bk_table[$i]['remain'] = $left_bk_table[$i]['bk'] - $left_bk_table[$i]['paid'];
             }

@@ -31,23 +31,14 @@ class superAdminController extends Controller
         }
 
         $get_clients = DB::table('tblclient')->selectRaw("id as client_id,client_name")->get()->toArray();
+
+        $get_institutes = DB::table('school_setup')->get()->toArray();
         
         $res['get_clients'] = $get_clients;
-       
+        $res['get_institutes'] = $get_institutes;
+
         return is_mobile($type, "super_admin_page", $res, "view");
     }
-
-    public function getInstitute(Request $request)
-    {
-        $sub_institute_id = $request->session()->get('sub_institute_id');
-        $client_id = $request->input('client_id');
-	    $institute_id = $request->get('institute_id');
-	
-	    $getInstitutes = DB::table('school_setup')->where('client_id', $client_id)->get()->toArray();
-
-        return response()->json(['getInstitutes' => $getInstitutes, 'client_id' => $client_id, 'institute_id' =>$institute_id]);
-    }
-
     public function store(Request $request) 
     {
         $type = $request->input('type');
@@ -62,8 +53,15 @@ class superAdminController extends Controller
         $client_id = $request->input("client_id");
         $institute_ids = $request->input("institute_id");
 
+        foreach($institute_ids as $institute_id)
+        {
+            // update into school_setup table
+            SchoolModel::where("Id", $institute_id)->update(["client_id" => $client_id]);
+        }
+        
         // Insert into tbluserprofilemaster table
         $user_profile = new tbluserprofilemasterModel();
+        $user_profile->parent_id = 1;
         $user_profile->name = "Super Admin";
         $user_profile->description = "Super Admin";
         $user_profile->sort_order = 1;

@@ -125,58 +125,59 @@
             if(isset($data['data'])){
                 $student_data = $data['data'];
             }
-            $bootstrapColumn = 12 /$data['column'];
+            $bootstrapColumn = 12 / $data['column'];
             $pageBreakCount = $data['column'] * $data['row'];
             $j=1;
         @endphp
         <div class="row-{{$data['row']}}-column-{{$data['column']}}">
-        @foreach($student_data as $key => $value)
-        <?php
-            $icard_icon = '';
-            if(isset($value['icard_icon']) && $value['icard_icon'] != '')
-            {
-                $icard_icon = "/storage/driver/" . $value['icard_icon'];
-            }
+            @foreach($student_data as $key => $value)
+                <?php
+                    $icard_icon = '';
+                    if(isset($value['icard_icon']) && $value['icard_icon'] != '')
+                    {
+                        $icard_icon = "/storage/driver/" . $value['icard_icon'];
+                    }
 
-            $add_val = trim($value['address']);
-            $add_val = substr(strtoupper($add_val), 0,38).'..';
+                    $add_val = trim($value['address']);
+                    $add_val = substr(strtoupper($add_val), 0,38).'..';
 
-            $distance_rate = '';
-            if(isset($value['distance_rate']) && $value['distance_rate'] != '')
-            {
-                $distance_rate = 'Rs '.$value['distance_rate'];
-            }
+                    $distance_rate = '';
+                    if(isset($value['distance_rate']) && $value['distance_rate'] != '')
+                    {
+                        $distance_rate = 'Rs '.$value['distance_rate'];
+                    }
 
-            $from_distance = '';
-            if(isset($value['from_distance']) && $value['from_distance'] != '')
-            {
-                $from_distance = $value['from_distance'].'K.M.';
-            }
-
-            $str = str_replace(htmlspecialchars("<<student_name>>"), $value['student_name'], $string);
-            $str = str_replace(htmlspecialchars("<<short_student_name>>"), strtoupper($value['short_student_name']), $string);
-            $str = str_replace(htmlspecialchars("<<enrollment_no>>"), $value['enrollment_no'], $str);
-            $str = str_replace(htmlspecialchars("<<standard_name>>"), $value['standard_name'], $str);
-            $str = str_replace(htmlspecialchars("<<division_name>>"), $value['division_name'], $str);
-            $str = str_replace(htmlspecialchars("<<father_name>>"), $value['father_name'], $str);
-            $str = str_replace(htmlspecialchars("<<mother_name>>"), $value['mother_name'], $str);
-            $str = str_replace(htmlspecialchars("<<address>>"), $add_val, $str);
-            $str = str_replace(htmlspecialchars("<<mobile>>"), $value['mobile'], $str);
-            $str = str_replace(htmlspecialchars("<<mother_mobile>>"), $value['mother_mobile'], $str);
-            $str = str_replace(htmlspecialchars("<<student_image>>"), "/storage/student/" . $value['image'], $str);
-            $str = str_replace(htmlspecialchars("<<gender>>"), $value['gender'], $str);
-            $str = str_replace(htmlspecialchars("<<driver_name>>"), strtoupper($value['driver_name']), $str);
-            $str = str_replace(htmlspecialchars("<<driver_mobile>>"), $value['driver_mobile'], $str);
-            $str = str_replace(htmlspecialchars("<<icard_icon>>"), $icard_icon, $str);
-            $str = str_replace(htmlspecialchars("<<distance_from_school>>"), $value['distance_from_school'], $str);
-            $str = str_replace(htmlspecialchars("<<from_distance>>"), $from_distance, $str);
-            $str = str_replace(htmlspecialchars("<<distance_rate>>"), $distance_rate, $str);
-            $str = str_replace(htmlspecialchars("<<school_name>>"), $value['school_name'], $str);
-            $str = str_replace(htmlspecialchars("<<school_mobile>>"), $value['school_mobile'], $str);
-            $str = str_replace(htmlspecialchars("<<school_image>>"), "/storage/school/" . $value['school_image'], $str);
-            $str = str_replace(htmlspecialchars("<<school_address>>"), $value['school_address'], $str);
-            $str = str_replace(htmlspecialchars("<<years>>"), session()->get('syear') . "-" . (session()->get('syear') + 1), $str);
-        ?>
+                    $from_distance = '';
+                    if(isset($value['from_distance']) && $value['from_distance'] != '')
+                    {
+                        $from_distance = $value['from_distance'].'K.M.';
+                    }
+                    // echo $value['student_name'];exit;
+                    $str = str_replace(htmlspecialchars("<<student_name>>"), $value['student_name'], $string);
+                    $str = str_replace(htmlspecialchars("<<short_student_name>>"), strtoupper($value['short_student_name']), $str);
+                    $str = str_replace(htmlspecialchars("<<enrollment_no>>"), $value['enrollment_no'], $str);
+                    $str = str_replace(htmlspecialchars("<<standard_name>>"), $value['standard_name'], $str);
+                    $str = str_replace(htmlspecialchars("<<division_name>>"), $value['division_name'], $str);
+                    $str = str_replace(htmlspecialchars("<<father_name>>"), $value['father_name'], $str);
+                    $str = str_replace(htmlspecialchars("<<mother_name>>"), $value['mother_name'], $str);
+                    $str = str_replace(htmlspecialchars("<<address>>"), $add_val, $str);
+                    $str = str_replace(htmlspecialchars("<<mobile>>"), $value['mobile'], $str);
+                    $str = str_replace(htmlspecialchars("<<blood_group_name>>"), $value['blood_group_name'], $str);
+                    $str = str_replace(htmlspecialchars("<<mother_mobile>>"), $value['mother_mobile'], $str);
+                    $str = str_replace(htmlspecialchars("<<student_image>>"), "/storage/student/" . $value['image'], $str);
+                    $str = str_replace(htmlspecialchars("<<gender>>"), $value['gender'], $str);
+                    $str = str_replace(htmlspecialchars("<<driver_name>>"), strtoupper($value['driver_name']), $str);
+                    $str = str_replace(htmlspecialchars("<<driver_mobile>>"), $value['driver_mobile'], $str);
+                    $str = str_replace(htmlspecialchars("<<icard_icon>>"), $icard_icon, $str);
+                    $str = str_replace(htmlspecialchars("<<distance_from_school>>"), $value['distance_from_school'], $str);
+                    $str = str_replace(htmlspecialchars("<<from_distance>>"), $from_distance, $str);
+                    $str = str_replace(htmlspecialchars("<<distance_rate>>"), $distance_rate, $str);
+                    $str = str_replace(htmlspecialchars("<<school_name>>"), $value['school_name'], $str);
+                    $str = str_replace(htmlspecialchars("<<school_mobile>>"), $value['school_mobile'], $str);
+                    $str = str_replace(htmlspecialchars("<<school_image>>"), "/storage/school/" . $value['school_image'], $str);
+                    $str = str_replace(htmlspecialchars("<<school_address>>"), $value['school_address'], $str);
+                    $str = str_replace(htmlspecialchars("<<years>>"), session()->get('syear') . "-" . (session()->get('syear') + 1), $str);
+                ?>
                 <div class="item">
                     <?php echo $str; ?>
                 </div>
