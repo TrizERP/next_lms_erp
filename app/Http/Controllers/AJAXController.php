@@ -647,6 +647,7 @@ class AJAXController extends Controller
                 $final_bk_name[$arr['title']] = $head_name;
             }
         }
+        // echo "<pre>";print_r($other_bk_off);exit;
 
         $full_bk = array_merge($reg_bk_month_wise, $other_bk_off);
 
@@ -673,7 +674,7 @@ class AJAXController extends Controller
             $final_bk_name["Previous Fees"] = "previous_fees";
 
         }
-
+        // echo "<pre>";print_r($full_bk);exit;
         foreach ($full_bk as $id => $val) {
             $total = $total + $val;
         }
