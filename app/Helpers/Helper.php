@@ -1301,7 +1301,16 @@ if (!function_exists('OtherBreackOfMonthHead')) {
         if ($syear == '') {
             $syear = session()->get('syear');
         }
-
+        uksort($month_arr, function($a, $b) {
+            $last4A = substr($a, -4);
+            $last4B = substr($b, -4);
+        
+            if ($last4A != $last4B) {
+                return $last4A - $last4B; // Sort by last 4 digits
+            } else {
+                return $a - $b; // If last 4 digits are the same, sort by the entire value
+            }
+        });
         $fees_breckoff = DB::table('fees_breakoff_other')
             ->selectRaw('*,sum(amount) as tot_amount')
             ->where('sub_institute_id', $sub_institute_id)
@@ -1313,16 +1322,21 @@ if (!function_exists('OtherBreackOfMonthHead')) {
         $final_bk = [];
 
         foreach ($fees_breckoff as $id => $arr) {
+            $fees_title= $arr->fee_type_id;
+            // db::enableQueryLog();
             $fees_paid = DB::table('fees_paid_other')
-            ->selectRaw('*,sum(actual_amountpaid) as tot_amount')
+            ->selectRaw('*,sum(`'.$fees_title.'`) as tot_amount')
             ->where('sub_institute_id', $sub_institute_id)
             ->where('syear', $syear)
             ->where('student_id', $student_id)
             ->where('month_id', $arr->month_id)
             ->where('is_deleted','N')
-            ->groupByRaw('month_id')->first();
-            if(!empty($fees_paid)){
-                $final_bk[$arr->month_id][$arr->fee_type_id] = ($arr->tot_amount - $fees_paid->tot_amount );
+            ->where($fees_title,'!=','0')            
+            ->groupByRaw($fees_title.',month_id')->first();
+            // dd(db::getQueryLog($fees_paid));
+
+            if(isset($fees_paid->tot_amount)){
+                $final_bk[$arr->month_id][$arr->fee_type_id] = ($arr->tot_amount - $fees_paid->tot_amount);
             }else{
                 $final_bk[$arr->month_id][$arr->fee_type_id] = $arr->tot_amount;
             }
