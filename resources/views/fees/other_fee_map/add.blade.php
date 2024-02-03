@@ -47,9 +47,10 @@
                                         $arr_title = $data['month_head'];
                                         @endphp
                                         @foreach ($arr_title as $id=>$tit_arr)
-                                        <th class="text-left">{{$tit_arr}} </th>
+                                            @foreach ($tit_arr as $id2=>$tit_arr2)
+                                                <th class="text-left">{{$tit_arr2}} </th>
+                                            @endforeach
                                         @endforeach
-
                                     </tr>
                                 </thead>
                                 <tbody>

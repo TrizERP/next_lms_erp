@@ -1787,7 +1787,7 @@ $overall_total = $overall_total / 2;
                    <th rowspan=2>Subject</th>
                    <th rowspan=2  style='text-align:center'><b>Periodic Test <br> (". $periodic_test .")</b></th>
                    <th colspan='2'  style='text-align:center'><b>Year Exam</b></th>
-                   <th rowspan=2 style='text-align:center'><b>Marks Obtained <br> (".($periodic_test + $practical + $theory).")</b></th>
+                   <th rowspan=2 style='text-align:center'><b>Marks Obtained <br> (".($periodic_test + $practical + $theory)."%)</b></th>
                    <th rowspan=2 style='text-align:center'><b>Grade</b></th>    
                </tr>
                <tr>
@@ -1823,7 +1823,7 @@ $overall_total = $overall_total / 2;
                 // get all subject name 
                 foreach ($get_subject as $val) {
                     $both_term_ob_mark = 0;
-                    $table .= '<tr><td>' . $val->subject_name .  '</td>';
+                    $table .= '<tr><td>' . $val->subject_name . '</td>';
                     // get term wise eam and marks 
                     foreach ($term_name as $keys => $terms) {
                         $obtained_marks = $to_marks = $to_weight = $title_exam = []; 
@@ -1836,7 +1836,7 @@ $overall_total = $overall_total / 2;
                                 // all exam marks 
                                 foreach ($exam_marks as $index => $marks) {
                                     if ($title->id == $marks->exam_id) {
-                                        $to_marks[$title->exam_id][] = $title->points;
+                                        $to_marks[$title->exam_id][] = $title->weightage;
                                         $to_weight[$title->exam_id] = $title->weightage;
                                         // for AB,NA,EX
                                         if ($marks->points == "0.00" || $marks->points == "") {
@@ -1847,13 +1847,9 @@ $overall_total = $overall_total / 2;
                                             $obtained_marks[$title->exam_id][] = $ab_ex_na;
                                         } else {
                                             $ob_mark = $marks->points;
+                                            $ob_mark = ($ob_mark != 0) ? (($ob_mark / $title->points) * $title->weightage) : 0;
                                             // store marks in array to get best of 2 
-
-                                            // convert marks according to weightage
-                                            $ob_mark = ($ob_mark != 0) ? (($ob_mark / $title->points) * $title->weightage) : $ob_mark;
-
                                             $obtained_marks[$title->exam_id][] = $ob_mark;
-
                                             $foundMarks = true;
                                         }
                                         break;
@@ -1862,36 +1858,30 @@ $overall_total = $overall_total / 2;
                             }
                         }
                         $ob_main_mark = 0;
-                        
-                        // // for best of 2 exam wise 
+                        // echo "<pre>";print_r($obtained_marks);
+                        // for best of 2 exam wise 
                         if (!empty($title_exam)) {
                             foreach ($title_exam as $exam_id => $marksArray) {
                                 $w_m = $to_weight[$exam_id] ?? 0; // Check if the key exists
-                                $t_m = array_sum(array_intersect_key($to_marks[$exam_id] ?? [], $marksArray));
+                                $totalWeightage = $to_marks[$exam_id] ?? [];
                                 $obtained_mark_arr = $obtained_marks[$exam_id] ?? [];
-
                                 // Sort the array in descending order
                                 rsort($obtained_mark_arr);
-
                                 // get best 2 from array
                                 $best_two = array_slice($obtained_mark_arr, 0, 2);
-
-                                $to_weighatage = $w_m + $w_m;
-
                                 $obtained_mark_sum = array_sum($best_two);
-
+                                // get 2 weightage as total points
+                                $best_two_w = array_slice($totalWeightage, 0, 2);
+                                $totalWeightage_M = array_sum($best_two_w);
                                 // get all converted mark for subject wise total
-                                $ob_main_mark += ($t_m !== 0) ? (($obtained_mark_sum * $w_m) / $to_weighatage) : 0;
-
+                                $ob_main_mark += ($totalWeightage_M !== 0) ? (($obtained_mark_sum / $totalWeightage_M) * $w_m) : 0;
                                 // convert marks according to weightage
-                                // $convert_mark = ($obtained_mark_sum != 0) ? (($obtained_mark_sum / $t_m) * $w_m) : $obtained_mark_sum;
-
+                                $convert_mark = ($obtained_mark_sum != 0) ? (($obtained_mark_sum / $totalWeightage_M) * $w_m) : $obtained_mark_sum;
                                 // get percentage of converted mark for underline if < 33 
-                                $pt_per = ($ob_main_mark !== '0.00' && $w_m != 0) ? round(($ob_main_mark / $w_m) * 100, 0) : 0;
-
+                                $pt_per = ($convert_mark !== '0.00' && $w_m != 0) ? round(($convert_mark / $w_m) * 100, 0) : 0;
                                 $underline = ($pt_per < 33 && $academic_type == "upper") ? 'style="text-decoration: underline red 2px;"' : '';
                         
-                                $table .= '<td class="data_center" ' . $underline . ' ' . $exam_id . '>' . number_format($ob_main_mark, 2) . '</td>';
+                                $table .= '<td class="data_center" ' . $underline . ' ' . $exam_id . '>' . number_format($convert_mark, 2) . '</td>';
                             }
                         } else {
                             // If marks not found
@@ -1911,6 +1901,7 @@ $overall_total = $overall_total / 2;
                     $table .= '<td class="data_center tot_of_both">' . number_format($both_term_ob_mark, 2) . '</td><td class="data_center grade_of_both">' . $this->getGrade($grade_arr, $overall_total, $both_term_ob_mark) . '</td>';
                     $table .= '</tr>';
                 }
+                // exit;
                 $table .= '</tbody></table>';
        
             $res['scholastic'] = $table;
