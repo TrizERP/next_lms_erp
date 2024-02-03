@@ -82,7 +82,7 @@ class questionWiseReportController extends Controller
                             qp.id = qp2.id
                             AND FIND_IN_SET(lqm.id, qp.question_ids)
                     )');
-            })->join('lms_online_exam_answer as am', function ($join) use ($question_paper_id) {
+            })->leftJoin('lms_online_exam_answer as am', function ($join) use ($question_paper_id) {
                 $join->whereRaw("am.question_paper_id = qp.id and am.student_id = ts.id and am.question_id = lqm.id  
                     AND am.online_exam_id = (SELECT lo.id FROM lms_online_exam lo WHERE lo.question_paper_id = $question_paper_id 
                     AND lo.student_id = ts.id and lo.total_right = ( SELECT MAX(total_right)
@@ -105,7 +105,7 @@ class questionWiseReportController extends Controller
                 'tse.sub_institute_id' => $sub_institute_id,
                 'qp.id'                => $question_paper_id,
                 'qp.syear'             => $syear,
-            ])->orderBy('ts.roll_no')->get()->toArray();
+            ])->whereNULL('tse.end_date')->orderBy('ts.roll_no')->get()->toArray();
 // DB::enableQueryLog();
     //     $queryResult =  DB::table('tblstudent as ts')
     //         ->join('tblstudent_enrollment as tse', function ($join) {

@@ -128,8 +128,8 @@
                                              <input type="hidden" name="standard_id[]" value="{{$value}}">
                                             @endforeach
                                         @endif
-                                        @if(isset($finalData['standard_id'])) {
-                                            @foreach($finalData['standard_id'] as $id=>$value) {
+                                        @if(isset($finalData['standard_id']))
+                                            @foreach($finalData['standard_id'] as $id=>$value)
                                                <input type="hidden" name="standard_id[]" id="sid" value="{{$value}}">
                                             @endforeach
                                         @endif
