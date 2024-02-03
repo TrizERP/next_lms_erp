@@ -100,12 +100,13 @@ class other_fee_map_controller extends Controller
                 $month_id = $arr;
                 $month_name = $month_names[$month_id];
                 $fees_title['month'][] = $month_name . '/' . $fees_title_item['display_name'];
+                $fees_title['month_head'][$month_id][$fees_title_item['fees_title']] = $month_name . '/' . $fees_title_item['display_name'];                
                 $fees_title['month_id'][] = $month_id;                
             }
         }
 
-        $responce_arr['month_head'] = $fees_title['month'];
-        // return $fees_title;exit;
+        $responce_arr['month_head'] = $fees_title['month_head'];
+        // return $fees_title['month'];exit;
         foreach ($student_data as $id => $arr) {
             $responce_arr['stu_data'][$id]['sr.no'] = $id + 1;
             $responce_arr['stu_data'][$id]['name'] = $arr['first_name'] . ' ' . $arr['middle_name'] . ' ' . $arr['last_name'];
