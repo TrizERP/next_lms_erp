@@ -128,7 +128,7 @@ class LibraryReportController extends Controller
         {
             $get_subject = DB::table("library_books")
             ->where("sub_institute_id", "=", $sub_institute_id)
-            ->when($language,function($q) use($language){
+            ->when($subject,function($q) use($subject){
                 $q->where("subject", "=", $subject);
             })
             ->get()->toArray();
