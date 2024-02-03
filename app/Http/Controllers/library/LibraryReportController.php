@@ -58,7 +58,9 @@ class LibraryReportController extends Controller
         {
             $get_material_resources = DB::table("library_books")
             ->where("sub_institute_id", "=", $sub_institute_id)
-            ->where("material_resource_type", "=", $material_resource)
+            ->when($request->material_resource,function($q) use($material_resource){
+            $q->where("material_resource_type", "=", $material_resource);
+            })
             ->get()->toArray();
             
             $data['material_resources'] = $get_material_resources;
@@ -70,7 +72,9 @@ class LibraryReportController extends Controller
         {
             $get_author_names = DB::table("library_books")
             ->where("sub_institute_id", "=", $sub_institute_id)
-            ->where("author_name", "=", $author)
+            ->when($author,function($q) use($author){
+                $q->where("author_name", "=", $author);
+            })
             ->get()->toArray();
             
             $data['author_names'] = $get_author_names;
@@ -82,7 +86,9 @@ class LibraryReportController extends Controller
         {
             $get_publisher_names = DB::table("library_books")
             ->where("sub_institute_id", "=", $sub_institute_id)
-            ->where("publisher_name", "=", $publisher_name)
+            ->when($publisher_name,function($q) use($publisher_name){
+                $q->where("publisher_name", "=", $publisher_name);
+            })
             ->get()->toArray();
             
             $data['publisher_names'] = $get_publisher_names;
@@ -94,7 +100,9 @@ class LibraryReportController extends Controller
         {
             $get_publishing_places = DB::table("library_books")
             ->where("sub_institute_id", "=", $sub_institute_id)
-            ->where("publish_place", "=", $publishing_place)
+            ->when($publishing_place,function($q) use($publishing_place){
+                $q->where("publish_place", "=", $publishing_place);
+            })
             ->get()->toArray();
             
             $data['publishing_places'] = $get_publishing_places;
@@ -106,7 +114,9 @@ class LibraryReportController extends Controller
         {
             $get_language = DB::table("library_books")
             ->where("sub_institute_id", "=", $sub_institute_id)
-            ->where("language", "=", $language)
+            ->when($language,function($q) use($language){
+                $q->where("language", "=", $language);
+            })
             ->get()->toArray();
             
             $data['language'] = $get_language;
@@ -118,7 +128,9 @@ class LibraryReportController extends Controller
         {
             $get_subject = DB::table("library_books")
             ->where("sub_institute_id", "=", $sub_institute_id)
-            ->where("subject", "=", $subject)
+            ->when($language,function($q) use($language){
+                $q->where("subject", "=", $subject);
+            })
             ->get()->toArray();
             
             $data['subject'] = $get_subject;
