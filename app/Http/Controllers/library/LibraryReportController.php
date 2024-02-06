@@ -30,7 +30,7 @@ class LibraryReportController extends Controller
         $data['get_publisher_name'] = DB::table('library_books')->select('id','publisher_name')->where(['sub_institute_id' => $sub_institute_id])->groupBy('publisher_name')->get()->toArray();
 
         $data['get_publish_place'] = DB::table('library_books')->select('id','publish_place')->where(['sub_institute_id' => $sub_institute_id])->groupBy('publish_place')->get()->toArray();
-
+        
         $data['get_language'] = DB::table('library_books')->select('id','language')->where(['sub_institute_id' => $sub_institute_id])->groupBy('language')->get()->toArray();
 
         $data['get_subject'] = DB::table('library_books')->select('id','subject')->where(['sub_institute_id' => $sub_institute_id])->groupBy('subject')->get()->toArray();
