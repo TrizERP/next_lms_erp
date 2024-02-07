@@ -20,7 +20,7 @@
                             aria-controls="right-tab-2" aria-selected="true">Book List</a>
                     </li>
                     <li class="nav-item" role="presentation" data-toggle="tooltip" data-placement="top"
-                        title="Create Book">
+                        title="Create Book" id="create-book">
                         <a class="nav-link" data-toggle="tab" href="#right-tab-1" role="tab"
                             aria-controls="right-tab-1" aria-selected="false">Create Book</a>
                     </li>
@@ -523,15 +523,17 @@
                 }
             });
         });
-
+        $(document).on("click", "#create-book", function(e) {
+            $('input[name="id"]').remove();
+            // Empty all input fields
+            $('input[type="text"]').val('');
+        })
         $(document).on("click", ".btn-edit", function(e) {
-            $('#navLinkList').removeClass('active')
-            $('#navLinkCreate').addClass('active')
-            $('#right-tab-2').removeClass('active')
-            $('#right-tab-1').addClass('active')
+           
             var id = $(this).data('id')
             var url = "{{ route('books.edit', ':id') }}";
             var url = url.replace(':id', id);
+                        
             $.ajax({
                 type: "get",
                 url: url,
@@ -539,31 +541,48 @@
                 contentType: false,
                 processData: false,
                 success: function(data) {
-                    $('#title').val(data.data.title);
-                    $('#sub_title').val(data.data.sub_title);
-                    $('#material_resource_type').val(data.data.material_resource_type);
-                    $('#edition').val(data.data.edition);
-                    $('#tags').val(data.data.tags);
-                    $('#no_of_items').val(data.data.no_of_items);
-                    $('#author_name').val(data.data.author_name);
-                    $('#isbn_issn').val(data.data.isbn_issn);
-                    $('#classification').val(data.data.classification);
-                    $('#publisher_name').val(data.data.publisher_name);
-                    $('#publish_year').val(data.data.publish_year);
-                    $('#publish_place').val(data.data.publish_place);
-                    $('#collation').val(data.data.collation);
-                    $('#series_title').val(data.data.series_title);
-                    $('#call_number').val(data.data.call_number);
-                    $('#language').val(data.data.language);
-                    $('#source').val(data.data.source);
-                    $('#subject').val(data.data.subject);
-                    $('#price').val(data.data.price);
-                    $('#price_currency').val(data.data.price_currency);
-                    $('#notes').val(data.data.notes);
-                    $('#review').val(data.data.review);
-                    $('#image').val(data.data.image);
-                    $('#file_att').val(data.data.file_att);
                     console.log(data);
+                    if(data.data.length > 0){
+                        var newInput = $('<input>').attr({
+                            type: 'hidden',
+                            name: 'id', // Set a unique name for the new input
+                            class: 'form-control',
+                            value: data.data[0].id
+                        });
+
+                        // Add the new input element after the existing input with id 'title'
+                        $('#title').after(newInput);
+                        $('#navLinkList').removeClass('active')
+                        $('#navLinkCreate').addClass('active')
+                        $('#right-tab-2').removeClass('active')
+                        $('#right-tab-1').addClass('active')
+                        $('#title').val(data.data[0].title);
+                        $('#sub_title').val(data.data[0].sub_title);
+                        $('#material_resource_type').val(data.data[0].material_resource_type);
+                        $('#edition').val(data.data[0].edition);
+                        $('#tags').val(data.data[0].tags);
+                        $('#no_of_items').val(data.data[0].no_of_items);
+                        $('#author_name').val(data.data[0].author_name);
+                        $('#isbn_issn').val(data.data[0].isbn_issn);
+                        $('#classification').val(data.data[0].classification);
+                        $('#publisher_name').val(data.data[0].publisher_name);
+                        $('#publish_year').val(data.data[0].publish_year);
+                        $('#publish_place').val(data.data[0].publish_place);
+                        $('#collation').val(data.data[0].collation);
+                        $('#series_title').val(data.data[0].series_title);
+                        $('#call_number').val(data.data[0].call_number);
+                        $('#language').val(data.data[0].language);
+                        $('#source').val(data.data[0].source);
+                        $('#subject').val(data.data[0].subject);
+                        $('#price').val(data.data[0].price);
+                        $('#price_currency').val(data.data[0].price_currency);
+                        $('#notes').val(data.data[0].notes);
+                        $('#review').val(data.data[0].review);
+                        $('#image').val(data.data[0].image);
+                        $('#file_att').val(data.data[0].file_att);
+                    } else{
+                        alert('Something went wrong');
+                    }  
                 },
                 error: function(xhr) {
                     console.log(xhr);

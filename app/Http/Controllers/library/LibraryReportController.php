@@ -22,7 +22,13 @@ class LibraryReportController extends Controller
     public function index(Request $request)
     {
         $sub_institute_id = session()->get('sub_institute_id');
+        $data = $this->getSelects($sub_institute_id);
+    
+        $type = $request->input('type');
 
+        return is_mobile($type, "library/library_report", $data, "view");
+    }
+     public function getSelects($sub_institute_id){
         $data['get_material_resource_type'] = DB::table('library_books')->select('id','material_resource_type')->where(['sub_institute_id' => $sub_institute_id])->groupBy('material_resource_type')->get()->toArray();
 
         $data['get_author_name'] = DB::table('library_books')->select('id','author_name')->where(['sub_institute_id' => $sub_institute_id])->groupBy('author_name')->get()->toArray();
@@ -35,108 +41,55 @@ class LibraryReportController extends Controller
 
         $data['get_subject'] = DB::table('library_books')->select('id','subject')->where(['sub_institute_id' => $sub_institute_id])->groupBy('subject')->get()->toArray();
 
-        $type = $request->input('type');
-
-        return is_mobile($type, "library/library_report", $data, "view");
-    }
-
+        $data['report_list'] = ['material_resource'=>'Material Resource','author'=>'Author','publisher_name'=>'Publisher Name','publishing_place'=>'Publishing Place','language'=>'Language','subject'=>'Subject'];
+        return $data;
+     }
     public function show_library_report(Request $request)
     {
         $syear = session()->get('syear');
         $sub_institute_id = session()->get('sub_institute_id');
         $term_id = session()->get('term_id');
         $type = $request->input('type');
-        $report_of = $request->input('report_of');
-        $material_resource = $request->input('material_resource');
-        $author = $request->input('author');
-        $publisher_name = $request->input('publisher_name');
-        $publishing_place = $request->input('publishing_place');
-        $language = $request->input('language');
-        $subject = $request->input('subject');
-
-        if ($report_of == 'material_resource') 
-        {
-            $get_material_resources = DB::table("library_books")
-            ->where("sub_institute_id", "=", $sub_institute_id)
-            ->when($request->material_resource,function($q) use($material_resource){
-            $q->where("material_resource_type", "=", $material_resource);
+        $data = $this->getSelects($sub_institute_id);
+    
+        $data['report']=$report_of = $request->input('report_of');
+        $data['material_resource']=$material_resource = $request->input('material_resource');
+        $data['author']=$author = $request->input('author');
+        $data['publisher_name']=$publisher_name = $request->input('publisher_name');
+        $data['publishing_place']=$publishing_place = $request->input('publishing_place');
+        $data['language']=$language = $request->input('language');
+        $data['subject']=$subject = $request->input('subject');
+        // echo "<pre>";print_r($data['material_resource']);exit;
+        
+        $all_data = DB::table('library_books as lb')
+        ->join('library_items as li','li.book_id','=','lb.id')
+        ->where("lb.sub_institute_id", "=", $sub_institute_id)
+        ->when($request->material_resource,function($q) use($material_resource){
+            $q->where("lb.material_resource_type", "=", $material_resource);
             })
-            ->get()->toArray();
-            
-            $data['material_resources'] = $get_material_resources;
-
-            return is_mobile($type, "library/material_resource_show", $data, "view");
-        }
-
-        if ($report_of == 'author') 
-        {
-            $get_author_names = DB::table("library_books")
-            ->where("sub_institute_id", "=", $sub_institute_id)
-            ->when($author,function($q) use($author){
+        ->when($author,function($q) use($author){
                 $q->where("author_name", "=", $author);
             })
-            ->get()->toArray();
-            
-            $data['author_names'] = $get_author_names;
-
-            return is_mobile($type, "library/author_show", $data, "view");
-        }
-
-        if ($report_of == 'publisher_name') 
-        {
-            $get_publisher_names = DB::table("library_books")
-            ->where("sub_institute_id", "=", $sub_institute_id)
-            ->when($publisher_name,function($q) use($publisher_name){
+        ->when($publisher_name,function($q) use($publisher_name){
                 $q->where("publisher_name", "=", $publisher_name);
             })
-            ->get()->toArray();
-            
-            $data['publisher_names'] = $get_publisher_names;
-
-            return is_mobile($type, "library/publisher_name_show", $data, "view");
-        }
-
-        if ($report_of == 'publishing_place') 
-        {
-            $get_publishing_places = DB::table("library_books")
-            ->where("sub_institute_id", "=", $sub_institute_id)
-            ->when($publishing_place,function($q) use($publishing_place){
+        ->when($publishing_place,function($q) use($publishing_place){
                 $q->where("publish_place", "=", $publishing_place);
             })
-            ->get()->toArray();
-            
-            $data['publishing_places'] = $get_publishing_places;
-
-            return is_mobile($type, "library/publishing_place_show", $data, "view");
-        }
-
-        if ($report_of == 'language') 
-        {
-            $get_language = DB::table("library_books")
-            ->where("sub_institute_id", "=", $sub_institute_id)
-            ->when($language,function($q) use($language){
+        ->when($language,function($q) use($language){
                 $q->where("language", "=", $language);
             })
-            ->get()->toArray();
-            
-            $data['language'] = $get_language;
-
-            return is_mobile($type, "library/language_show", $data, "view");
-        }
-
-        if ($report_of == 'subject') 
-        {
-            $get_subject = DB::table("library_books")
-            ->where("sub_institute_id", "=", $sub_institute_id)
-            ->when($subject,function($q) use($subject){
+        ->when($subject,function($q) use($subject){
                 $q->where("subject", "=", $subject);
             })
-            ->get()->toArray();
-            
-            $data['subject'] = $get_subject;
+        ->get()->toArray();
+        $data['all_data']=$all_data;
 
-            return is_mobile($type, "library/subject_show", $data, "view");
+        if(empty($all_data)){
+            $data['message']='No Book Found For this '.$data['report'];
         }
+        
+        return is_mobile($type, "library/library_report", $data, "view");        
     }
 
 
