@@ -210,7 +210,11 @@ class BookController extends Controller
                     ]);
                 }
                 if ($objItem) {
-                    return response()->json(['message' => 'Book created Successfully !!', 'status' => true], 200);
+                    if(isset($request->id)){
+                    return response()->json(['message' => 'Book Updated Successfully !!', 'status' => true], 200);
+                    }else{
+                        return response()->json(['message' => 'Book created Successfully !!', 'status' => true], 200);
+                    }
                 }
             }
         } catch (Exception $e) {
@@ -244,6 +248,18 @@ class BookController extends Controller
     public function edit($id)
     {
         //
+        // return $id;exit;
+         $sub_institute_id=session()->get('sub_institute_id');
+        try {
+            $details = LibraryBook::where('library_books.sub_institute_id', $sub_institute_id)
+            ->where('library_books.id',$id)
+            ->select(['library_books.*', DB::raw('(SELECT GROUP_CONCAT(item_code) FROM library_items WHERE book_id = library_books.id) as item_codes')])
+            ->groupBy('library_books.id')->get()->toArray();
+            // return $details[0]['title'];exit;
+            return response()->json(['data' => $details], 200);
+        } catch (Exception $e) {
+            return response()->json($e->getMessage(), 500);
+        }
     }
 
     /**
