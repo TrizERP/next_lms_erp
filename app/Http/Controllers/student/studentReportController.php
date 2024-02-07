@@ -204,10 +204,11 @@ class studentReportController extends Controller
             $array[] = 'tblstudent.student_mobile as studentmobile';
             $array[] = 'GROUP_CONCAT(IFNULL(subject.subject_name, "-")) as optional_subjects';
             $array[] = 'batch.title as studentbatch';
+            
             if($sub_institute_id == 254)
                 $array[] = 'IF(tblstudent.admission_year = 2019,YEAR(tblstudent.admission_date),tblstudent.admission_year) AS admission_year';
-        }
-        $array[] = 'concat_ws(" ",tblstudent.first_name,tblstudent.middle_name,tblstudent.last_name) AS student_name';
+        	}
+        	$array[] = 'concat_ws(" ",tblstudent.first_name,tblstudent.middle_name,tblstudent.last_name) AS student_name';
 
         $student_data = DB::table('tblstudent')
             ->select(DB::raw(implode(',', $array)))
