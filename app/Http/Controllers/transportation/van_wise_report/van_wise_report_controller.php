@@ -158,7 +158,7 @@ class van_wise_report_controller extends Controller
             })
             ->selectRaw("ts.id AS student_id,CONCAT_WS(' ',ts.first_name,ts.middle_name,ts.last_name) name, 
     concat(s.name,'/',d.name) as stddiv,ts.mobile,ts.enrollment_no,ts.address, tr.route_name, tv.title as bus_name, st.stop_name,
-    dd.first_name driver, cd.first_name conductor")
+    dd.first_name driver, cd.first_name conductor, tm.amount as van_vise_amount")
             ->whereRaw($where)
             ->groupBy('student_id')
             ->get()->toarray();
