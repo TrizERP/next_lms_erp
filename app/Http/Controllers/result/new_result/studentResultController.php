@@ -824,7 +824,7 @@ class studentResultController extends Controller
         return $res;
     }
 
-     public function get_scholastic_saraswati($standard_id, $student_id, $format, $digit)
+    public function get_scholastic_saraswati($standard_id, $student_id, $format, $digit)
     {
         // echo "<pre>";print_r($student_id);exit;
         $syear = session()->get('syear');
@@ -1025,12 +1025,12 @@ class studentResultController extends Controller
             $table_all = str_replace(htmlspecialchars("<<grade>>"), $all_grade, $table_all);
             $table .= '<tr>' . $table_per . '<td><b>' . $overall_per . '</b></td><td colspan="2" class="data_center">' . $all_grade . '</td></tr></tbody></table>';
         $getStudentDetails = DB::table('tblstudent')->where('sub_institute_id',$sub_institute_id)->where('id',$student_id)->first();
-        $stu_detail='<table class="table table-bordered">
+        $stu_detail='<table class="aca-year" style="width:85%;border-collapse:collapse; border:1px solid #e68023;" cellspacing="0"  border="1" align="right">
         <tbody>
             <tr>
-                <td><b><span style="font-size: medium;"><b>Date of Birth</span></b></td>
-                <td><b><span style="font-size: medium;"><b>G.R.</span></b></td>
-                <td><b><span style="font-size: medium;"><b>Per.</span></b></td>
+                <th><b><span style="font-size: medium;"><b>Date of Birth</span></b></th>
+                <th><b><span style="font-size: medium;"><b>G.R.</span></b></th>
+                <th><b><span style="font-size: medium;"><b>Per.</span></b></th>
             </tr>
             <tr>
                 <td>'.$getStudentDetails->dob.'</td>
@@ -1038,9 +1038,9 @@ class studentResultController extends Controller
                 <td></td>
             </tr>
             <tr>
-                <td><b><span style="font-size: medium;"><b>Height</span></b></td>
-                <td><b><span style="font-size: medium;"><b>Weight</span></b></td>
-                <td><b><span style="font-size: medium;"><b>Att.</span></b></td>
+                <th><b><span style="font-size: medium;"><b>Height</span></b></th>
+                <th><b><span style="font-size: medium;"><b>Weight</span></b></th>
+                <th><b><span style="font-size: medium;"><b>Att.</span></b></th>
             </tr>
             <tr>
                 <td>'.$getStudentDetails->height.'</td>
@@ -1056,7 +1056,6 @@ class studentResultController extends Controller
         $res['saraswati_stu'] = $stu_detail;        
         return $res;
     }
-
     
     public function get_scholastic_altius($standard_id, $student_id, $format, $digit)
     {
@@ -1491,9 +1490,9 @@ $overall_total = $overall_total / 2;
             $co_table .= '</thead></table>';
 
         }
-        $res['scholastic'] = $table ?? 'No Co-Scholastic for scholastic Found';
+        $res['scholastic'] = $table ?? '<table style="width:100%;border:none !important"><tr><td style="border:none !important">No Co-Scholastic for scholastic Found</td></tr></table>';
         $res['grade_range'] = $table_range ?? 'No Co-Scholastic for grade Found';
-        $res['co_scholastic'] = $co_table ?? 'No Co-Scholastic Found';
+        $res['co_scholastic'] = $co_table ?? '<table style="width:100%;border:none !important"><tr><td style="border:none !important"> No Co-Scholastic Found</td></tr></table>';
         return $res;
     }
 
@@ -1893,19 +1892,22 @@ $overall_total = $overall_total / 2;
                                 }
                             }
                         }
+// echo $val->subject_name;echo "<pre>";print_r($to_weight);
+                        
                         $ob_main_mark = 0;
                         // for best of 2 exam wise 
                         if (!empty($title_exam)) {
-                            foreach ($title_exam as $exam_id => $marksArray) {
+                            foreach ($title_exam as $exam_id => $marksArray) {                                
                                 $w_m = $to_weight[$exam_id] ?? 0; // Check if the key exists
                                 $t_m = array_sum(array_intersect_key($to_marks[$exam_id] ?? [], $marksArray));
                                 $obtained_mark_arr = $obtained_marks[$exam_id] ?? [];
-                                // Sort the array in descending order
-                                rsort($obtained_mark_arr);
-                                // get best 2 from array
-                                $best_two = array_slice($obtained_mark_arr, 0, 2);
-                                $obtained_mark_sum = array_sum($best_two);
-
+                                // // Sort the array in descending order
+                                // rsort($obtained_mark_arr);
+                                // // get best 2 from array
+                                // $best_two = array_slice($obtained_mark_arr, 0, 2);
+                                // $obtained_mark_sum = array_sum($best_two);
+                                $obtained_mark_sum = array_sum($obtained_mark_arr);
+                                
                                 // get mark for total mark 
                                 $ob_main_mark += ($t_m !== 0) ? (($obtained_mark_sum / $t_m) * $w_m) : 0;
                                 // convert marks if best of 2
@@ -1915,7 +1917,9 @@ $overall_total = $overall_total / 2;
                         
                                 $underline = ($pt_per < 33 && $academic_type == "upper") ? 'style="text-decoration: underline red 2px;"' : '';
                         
-                                $table .= '<td class="data_center" ' . $underline . ' ' . $exam_id . '>' . number_format($convert_mark, 2) . '</td>';
+                                $table .= '<td class="data_center" ' . $underline . ' ' . $exam_id . '-'.$val->subject_id.'-'.$standard_id.'>' . number_format($convert_mark, 2) . '</td>';
+                        // echo $exam_id;echo "<pre>";print_r($obtained_mark_sum);
+                                
                             }
                         } else {
                             // If marks not found
@@ -1923,7 +1927,6 @@ $overall_total = $overall_total / 2;
                                 $table .= '<td class="data_center no_mark ' . $exam_id . '">0.00</td>';
                             }
                         }            
-
                         $obtained_mark_formatted = number_format($ob_main_mark, 2);
                         
                         if($academic_type=="primary"){
@@ -1955,7 +1958,7 @@ $overall_total = $overall_total / 2;
                         $join->on('wrkd.standard', '=', 'atd.standard')
                             ->on('wrkd.sub_institute_id', '=', 'atd.sub_institute_id');
                     })
-                    ->selectRaw("atd.student_id,wrkd.total_working_day,atd.attendance,GROUP_CONCAT(atd.teacher_remark SEPARATOR '|') as teacher_remark")
+                    ->selectRaw("atd.student_id,wrkd.total_working_day,atd.attendance,GROUP_CONCAT(Distinct atd.teacher_remark SEPARATOR '|') as teacher_remark")
                     ->where('atd.standard', $standard_id)
                     ->where('atd.sub_institute_id', $sub_institute_id)
                     ->where('atd.student_id', $student_id)
@@ -1963,9 +1966,11 @@ $overall_total = $overall_total / 2;
                     ->whereRaw($att_term)
                     ->groupBy('student_id')
                     ->first();
+                    
                 $res['teacher_remark'] = '';
                 if (!empty($ret_data)) {
-                    $res['teacher_remark'] = str_replace('|','',$ret_data->teacher_remark);
+                    $student_Remark = str_replace('|','',$ret_data->teacher_remark);
+                    $res['teacher_remark'] = $student_Remark;
                 }
 
        return $res;
@@ -2075,8 +2080,9 @@ $overall_total = $overall_total / 2;
                                 // all exam marks 
                                 foreach ($exam_marks as $index => $marks) {
                                     if ($title->id == $marks->exam_id) {
-                                        $to_marks[$title->exam_id][] = $title->weightage;
-                                        $to_weight[$title->exam_id] = $title->weightage;
+                                        $to_marks[$title->exam_id][] = $title->points;
+                                        // $to_weight[$title->exam_id] = $title->weightage;
+                                        $to_weight[$title->exam_id] = $title->weightage;                                        
                                         // for AB,NA,EX
                                         if ($marks->points == "0.00" || $marks->points == "") {
                                             $ab_ex_na = $marks->is_absent;
@@ -2086,7 +2092,7 @@ $overall_total = $overall_total / 2;
                                             $obtained_marks[$title->exam_id][] = $ab_ex_na;
                                         } else {
                                             $ob_mark = $marks->points;
-                                            $ob_mark = ($ob_mark != 0) ? (($ob_mark / $title->points) * $title->weightage) : 0;
+                                            // $ob_mark = ($ob_mark != 0) ? (($ob_mark / $title->points) * $title->weightage) : 0;
                                             // store marks in array to get best of 2 
                                             $obtained_marks[$title->exam_id][] = $ob_mark;
                                             $foundMarks = true;
@@ -2100,34 +2106,36 @@ $overall_total = $overall_total / 2;
                         // echo "<pre>";print_r($obtained_marks);
                         // for best of 2 exam wise 
                         if (!empty($title_exam)) {
-                            foreach ($title_exam as $exam_id => $marksArray) {
+                            foreach ($title_exam as $exam_id => $marksArray) {                                
                                 $w_m = $to_weight[$exam_id] ?? 0; // Check if the key exists
-                                $totalWeightage = $to_marks[$exam_id] ?? [];
+                                $t_m = array_sum(array_intersect_key($to_marks[$exam_id] ?? [], $marksArray));
                                 $obtained_mark_arr = $obtained_marks[$exam_id] ?? [];
-                                // Sort the array in descending order
-                                rsort($obtained_mark_arr);
-                                // get best 2 from array
-                                $best_two = array_slice($obtained_mark_arr, 0, 2);
-                                $obtained_mark_sum = array_sum($best_two);
-                                // get 2 weightage as total points
-                                $best_two_w = array_slice($totalWeightage, 0, 2);
-                                $totalWeightage_M = array_sum($best_two_w);
-                                // get all converted mark for subject wise total
-                                $ob_main_mark += ($totalWeightage_M !== 0) ? (($obtained_mark_sum / $totalWeightage_M) * $w_m) : 0;
-                                // convert marks according to weightage
-                                $convert_mark = ($obtained_mark_sum != 0) ? (($obtained_mark_sum / $totalWeightage_M) * $w_m) : $obtained_mark_sum;
-                                // get percentage of converted mark for underline if < 33 
+                                // // Sort the array in descending order
+                                // rsort($obtained_mark_arr);
+                                // // get best 2 from array
+                                // $best_two = array_slice($obtained_mark_arr, 0, 2);
+                                // $obtained_mark_sum = array_sum($best_two);
+                                $obtained_mark_sum = array_sum($obtained_mark_arr);
+                                
+                                // get mark for total mark 
+                                $ob_main_mark += ($t_m !== 0) ? (($obtained_mark_sum / $t_m) * $w_m) : 0;
+                                // convert marks if best of 2
+                                $convert_mark = ($obtained_mark_sum != 0) ? (($obtained_mark_sum / $t_m) * $w_m) : 0;
+                                
                                 $pt_per = ($convert_mark !== '0.00' && $w_m != 0) ? round(($convert_mark / $w_m) * 100, 0) : 0;
+                        
                                 $underline = ($pt_per < 33 && $academic_type == "upper") ? 'style="text-decoration: underline red 2px;"' : '';
                         
-                                $table .= '<td class="data_center" ' . $underline . ' ' . $exam_id . '>' . number_format($convert_mark, 2) . '</td>';
+                                $table .= '<td class="data_center" ' . $underline . ' ' . $exam_id . '-'.$val->subject_id.'-'.$standard_id.'>' . number_format($convert_mark, 2) . '</td>';
+                        // echo $exam_id;echo "<pre>";print_r($obtained_mark_sum);
+                                
                             }
                         } else {
                             // If marks not found
                             foreach ($title_exam as $exam_id => $marksArray) {
                                 $table .= '<td class="data_center no_mark ' . $exam_id . '">0.00</td>';
                             }
-                        }            
+                        }           
 
                         $obtained_mark_formatted = number_format($ob_main_mark, 2);
                         $both_term_ob_mark += $obtained_mark_formatted;
@@ -2145,22 +2153,24 @@ $overall_total = $overall_total / 2;
        
             $res['scholastic'] = $table;
             $ret_data = DB::table('result_student_attendance_master as atd')
-                ->join('result_working_day_master as wrkd', function ($join) use ($standard_id, $sub_institute_id) {
-                    $join->on('wrkd.standard', '=', 'atd.standard')
-                        ->on('wrkd.sub_institute_id', '=', 'atd.sub_institute_id');
-                })
-                ->select('atd.student_id', 'wrkd.total_working_day', 'atd.attendance', 'atd.teacher_remark')
-                ->where('atd.standard', $standard_id)
-                ->where('atd.sub_institute_id', $sub_institute_id)
-                ->where('atd.student_id', $student_id)
-                ->where('atd.syear', $syear)
-                ->whereRaw($att_term)
-                ->first();
-            $res['teacher_remark'] = '';
-            if (!empty($ret_data)) {
-                $res['teacher_remark'] = $ret_data->teacher_remark;
-            }
-
+            ->join('result_working_day_master as wrkd', function ($join) use ($standard_id, $sub_institute_id) {
+                $join->on('wrkd.standard', '=', 'atd.standard')
+                    ->on('wrkd.sub_institute_id', '=', 'atd.sub_institute_id');
+            })
+            ->selectRaw("atd.student_id,wrkd.total_working_day,atd.attendance,GROUP_CONCAT(Distinct atd.teacher_remark SEPARATOR '|') as teacher_remark")
+            ->where('atd.standard', $standard_id)
+            ->where('atd.sub_institute_id', $sub_institute_id)
+            ->where('atd.student_id', $student_id)
+            ->where('atd.syear', $syear)
+            ->whereRaw($att_term)
+            ->groupBy('student_id')
+            ->first();
+            
+        $res['teacher_remark'] = '';
+        if (!empty($ret_data)) {
+            $student_Remark = str_replace('|','',$ret_data->teacher_remark);
+            $res['teacher_remark'] = $student_Remark;
+        }
        return $res;
     }
 
@@ -2859,7 +2869,7 @@ $overall_total = $overall_total / 2;
                 $finalArray['updated_by'] = $user_id;
                 $finalArray['updated_on'] = NOW();
                 $data = DB::table('result_html')->where(['student_id' => $val, 'term_id' => $term_id, 'grade_id' => $grade_id, 'standard_id' => $standard_id, 'division_id' => $division_id, 'syear' => $syear])->update($finalArray);
-
+                echo "Updated for std-".$standard_id.' term_id-'.$term_id.' student_id-'.$val;
             } else {
                 DB::table("result_html")->insert($result_data);
             }
