@@ -141,6 +141,7 @@ class fees_reconciliation_upload_sheet_controller extends Controller
 				        DB::raw('SUM(amount) AS amount')
 				    ])
                     ->where([
+                        'is_deleted' => 'N',
                     	'cheque_no' => $row[1],
                     	'sub_institute_id' => session()->get('sub_institute_id'),
                     	'syear' => session()->get('syear')

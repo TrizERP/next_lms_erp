@@ -824,7 +824,7 @@ class studentResultController extends Controller
         return $res;
     }
 
-     public function get_scholastic_saraswati($standard_id, $student_id, $format, $digit)
+    public function get_scholastic_saraswati($standard_id, $student_id, $format, $digit)
     {
         // echo "<pre>";print_r($student_id);exit;
         $syear = session()->get('syear');
@@ -1025,12 +1025,12 @@ class studentResultController extends Controller
             $table_all = str_replace(htmlspecialchars("<<grade>>"), $all_grade, $table_all);
             $table .= '<tr>' . $table_per . '<td><b>' . $overall_per . '</b></td><td colspan="2" class="data_center">' . $all_grade . '</td></tr></tbody></table>';
         $getStudentDetails = DB::table('tblstudent')->where('sub_institute_id',$sub_institute_id)->where('id',$student_id)->first();
-        $stu_detail='<table class="table table-bordered">
+        $stu_detail='<table class="aca-year" style="width:85%;border-collapse:collapse; border:1px solid #e68023;" cellspacing="0"  border="1" align="right">
         <tbody>
             <tr>
-                <td><b><span style="font-size: medium;"><b>Date of Birth</span></b></td>
-                <td><b><span style="font-size: medium;"><b>G.R.</span></b></td>
-                <td><b><span style="font-size: medium;"><b>Per.</span></b></td>
+                <th><b><span style="font-size: medium;"><b>Date of Birth</span></b></th>
+                <th><b><span style="font-size: medium;"><b>G.R.</span></b></th>
+                <th><b><span style="font-size: medium;"><b>Per.</span></b></th>
             </tr>
             <tr>
                 <td>'.$getStudentDetails->dob.'</td>
@@ -1038,9 +1038,9 @@ class studentResultController extends Controller
                 <td></td>
             </tr>
             <tr>
-                <td><b><span style="font-size: medium;"><b>Height</span></b></td>
-                <td><b><span style="font-size: medium;"><b>Weight</span></b></td>
-                <td><b><span style="font-size: medium;"><b>Att.</span></b></td>
+                <th><b><span style="font-size: medium;"><b>Height</span></b></th>
+                <th><b><span style="font-size: medium;"><b>Weight</span></b></th>
+                <th><b><span style="font-size: medium;"><b>Att.</span></b></th>
             </tr>
             <tr>
                 <td>'.$getStudentDetails->height.'</td>
@@ -1491,9 +1491,9 @@ $overall_total = $overall_total / 2;
             $co_table .= '</thead></table>';
 
         }
-        $res['scholastic'] = $table ?? 'No Co-Scholastic for scholastic Found';
+        $res['scholastic'] = $table ?? '<table style="width:100%;border:none !important"><tr><td style="border:none !important">No Co-Scholastic for scholastic Found</td></tr></table>';
         $res['grade_range'] = $table_range ?? 'No Co-Scholastic for grade Found';
-        $res['co_scholastic'] = $co_table ?? 'No Co-Scholastic Found';
+        $res['co_scholastic'] = $co_table ?? '<table style="width:100%;border:none !important"><tr><td style="border:none !important"> No Co-Scholastic Found</td></tr></table>';
         return $res;
     }
 

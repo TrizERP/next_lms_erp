@@ -462,7 +462,7 @@ function question_prompt(){
     var subject = $("#subject_id").val();
     var standard = $("#standard_id").val();
     var chapter = "{{$_REQUEST['chapter_id']}}";
-    var topic = "{{$_REQUEST['topic_id'] ?? ''}}";
+    var topic = "{{$data['breadcrum_data']->topic_id ?? ''}}";
     var question_prompt = $('#question_prompt').val();
     
     var search="question";
