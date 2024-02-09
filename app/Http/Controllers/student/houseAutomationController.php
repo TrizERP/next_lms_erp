@@ -90,45 +90,63 @@ class houseAutomationController extends Controller
                 $studAllMCount = $studAllM->count();
                 $studAllF = $this->getStudent($syear,$sub_institute_id,'',$standard_id,'','F');
                 $studAllFCount = $studAllF->count();
+
+            // Fetching house details
+            $sectionArray = DB::table('std_div_map as sdm')->selectRaw('count(sdm.id) as total_div,GROUP_CONCAT(sdm.division_id) as section_id')
+            ->where('sdm.standard_id', $standard_id)
+            ->where('sdm.sub_institute_id', $sub_institute_id)
+            ->groupBy('sdm.standard_id')
+            ->get();
+            // echo "<pre>";print($sectionArray[0]->section_id);exit;
+            $sectionArray = explode(",", $sectionArray[0]->section_id);
+            $section_array=array_filter($sectionArray);               
+
+            $section_array = array_merge($section_array);
+            $res['total_div'] = $totalDiv = count($section_array) ?? 0;
+            // echo "<pre>";print_r($section_array);exit;
+
                 foreach ($houseResults as $houseResult) {
                     $studHouseM = $this->getStudent($syear,$sub_institute_id,$houseResult->id,$standard_id,'','M');
                     $studHouseMCount = $studHouseM->count();
-                    $studHouseF = $this->getStudent($syear,$sub_institute_id,$houseResult->id,$standard_id,'','F');
-                    $studHouseFCount = $studAllF->count();
-                foreach ($studHouseM as $key => $value) {
-                    $updateQuery = DB::table('tblstudent_enrollment')
-                        ->where('syear',$syear)
-                        ->where('student_id', $value->student_id)
-                        ->where('sub_institute_id', $sub_institute_id)                    
-                        ->whereNull('end_date')  
-                        ->update([
-                            'section_id' => $value->section_id,
-                            'house_id' => $value->house_id,
-                            ]);
-                }
-                foreach ($studHouseF as $key => $value) {
-                    $updateQuery = DB::table('tblstudent_enrollment')
-                        ->where('syear',$syear)
-                        ->where('student_id', $value->student_id)
-                        ->where('sub_institute_id', $sub_institute_id)                    
-                        ->whereNull('end_date')  
-                        ->update([
-                            'section_id' => $value->section_id,
-                            'house_id' => $value->house_id,
-                            ]);
-                }
-            }
+                   
+                    $counter2=0;
+                     for($s=1;$s<=$studHouseMCount;$s++){
+                        if($counter2==count($section_array)){
+                            $counter2=0;
+                         }                
+                         $section_id=$section_array[$counter2];
+                            $updateQuery = DB::table('tblstudent_enrollment')
+                                ->where('syear',$syear)
+                                ->where('student_id', $studHouseM[($s-1)]->student_id)
+                                ->where('sub_institute_id', $sub_institute_id)                    
+                                ->update([
+                                    'section_id' => $section_id,
+                                    'house_id' => $houseResult->id,
+                                    ]);
+                                $counter2++;
+                        }
+                        $studHouseF = $this->getStudent($syear,$sub_institute_id,$houseResult->id,$standard_id,'','F');
+                        $studHouseFCount = $studHouseF->count();
 
+                        $counter3=0;
+                        for($sf=1;$sf<=$studHouseFCount;$sf++){
+                            if($counter3==count($section_array)){
+                                $counter3=0;
+                             }                
+                            $section_id2=$section_array[$counter3];
+                            $updateQuery = DB::table('tblstudent_enrollment')
+                                ->where('syear',$syear)
+                                ->where('student_id', $studHouseF[($sf-1)]->student_id)
+                                ->where('sub_institute_id', $sub_institute_id)                    
+                                ->update([
+                                    'section_id' => $section_id2,
+                                    'house_id' => $houseResult->id,
+                                    ]);
+                                $counter3++;
+                        }
+                }
                 $formatArray = [];
-                // Fetching house details
-            $sectionArray = DB::table('std_div_map')->selectRaw('count(id) as total_div,GROUP_CONCAT(division_id) as section_id')
-                ->where('standard_id', $standard_id)
-                ->where('sub_institute_id', $sub_institute_id)
-                ->groupBy('standard_id')
-                ->first();
-            $res['total_div'] = $totalDiv =$sectionArray->total_div ?? 0;
-            // echo "<pre>";print();exit;
-            $sectionArray = array_filter(explode(",", $sectionArray->section_id));
+           
             $totalBoys=$totalGirls=0;
             
             foreach ($sectionArray as $sectionId) {
@@ -187,8 +205,7 @@ class houseAutomationController extends Controller
                     $join->on('s.id', '=', 'se.student_id');
                 })
                 ->join('student_optional_subject as sos', 'sos.student_id', '=', 'se.student_id')
-                ->join('subject as sub', 'sub.id', '=', 'sos.subject_id')
-                ->join('sub_std_map as ssm', 'ssm.subject_id', '=', 'sub.id')
+                ->join('sub_std_map as ssm', 'ssm.subject_id', '=', 'sos.subject_id')
                 ->where('se.syear', $syear)
                 ->where('s.sub_institute_id', $sub_institute_id)
                 ->where('se.standard_id', $standard_id)
@@ -212,19 +229,22 @@ class houseAutomationController extends Controller
             foreach ($subjectResult as $subject) {
                 $subject_id = $subject->subject_id;
 
-                $sectionResult = DB::table('sub_std_map as sos')
-                ->join('std_div_map as sdm','sdm.standard_id','=','sdm.standard_id')
-                ->select('division_id')
+                $sectionResult = DB::table('std_div_map as sdm')
+                ->join('sub_std_map as sos','sdm.standard_id','=','sdm.standard_id')
+                ->select('sdm.division_id')
                 ->distinct()
-                // ->where('sos.subject_id', $subject_id)
                 ->where('sos.elective_subject', "Yes")                
                 ->where('sos.standard_id', $standard_id)
-                ->where('sos.sub_institute_id', $sub_institute_id)
+                ->where('sos.subject_id',$subject_id)
+                ->where('sdm.sub_institute_id', $sub_institute_id)
                 ->orderBy('sos.sort_order')
+                ->groupBy('sdm.division_id')
                 ->get();
+                // echo "<pre>";print_r($sectionResult);exit;
             
                 $sectionArray = $sectionResult->pluck('division_id')->toArray();
-            
+                // echo "<pre>";print_r($sectionArray);exit;
+                // db::enableQueryLog();
                 $studentResultM = DB::table('student_optional_subject as sos')
                     ->select('sos.student_id', 'sos.subject_id', 'se.section_id','se.house_id')
                     ->join('tblstudent as s', 's.id', '=', 'sos.student_id')
@@ -234,25 +254,40 @@ class houseAutomationController extends Controller
                     ->where('se.sub_institute_id', $sub_institute_id)                    
                     ->where('se.standard_id', $standard_id)
                     ->where('sos.subject_id', $subject_id)
-                    ->where('ssm.elective_subject', "Yes") 
+                    // ->where('ssm.elective_subject', "Yes") 
                     ->whereNull('se.end_date')                                     
                     ->where('s.gender', '=', 'M')
-                    ->orderBy('sos.student_id')
+                    ->groupBy('sos.student_id')
                     ->distinct()
                     ->get();
-
+                // dd(DB::getQueryLog());
                 $studAllMCount = $studentResultM->count();
-
-                foreach ($studentResultM as $key => $value) {
-                    $updateQuery = DB::table('tblstudent_enrollment')
-                        ->where('syear',$syear)
-                        ->where('student_id', $value->student_id)
-                        ->where('sub_institute_id', $sub_institute_id)
-                        ->whereNull('end_date')  
-                        ->update([
-                                'section_id' => $value->section_id,
-                            ]);
-                }
+                    $ct=1;
+                    $sc=array();
+                    for($j=1;$j<=count($sectionResult);$j++){
+                        $section_id = $sectionResult[($j-1)]->division_id;
+                        //display_array($section_id);
+                        $sc[$j] = $section_id;
+                            
+                    }   
+                    //display_array($sc);
+                    for($s=1;$s<=count($studentResultM);$s++){
+                         $student_id = $studentResultM[($s-1)]->student_id;
+                         if($ct==count($sc)+1){
+                                $ct=1;
+                            }                            
+                            $section_id=$sc[$ct];
+                            $updateQuery = DB::table('tblstudent_enrollment')
+                            ->where('syear',$syear)
+                            ->where('student_id', $student_id)
+                            ->where('sub_institute_id', $sub_institute_id)                    
+                            ->update([
+                                'section_id' => $section_id,
+                                ]);
+                            
+                            $ct++;
+                        }
+            
                 $studentResultF = DB::table('student_optional_subject as sos')
                     ->select('sos.student_id', 'sos.subject_id', 'se.section_id','se.house_id')
                     ->join('tblstudent as s', 's.id', '=', 'sos.student_id')
@@ -262,23 +297,39 @@ class houseAutomationController extends Controller
                     ->where('se.sub_institute_id', $sub_institute_id)                                        
                     ->where('se.standard_id', $standard_id)
                     ->where('sos.subject_id', $subject_id)
-                    ->where('ssm.elective_subject', "Yes")
+                    // ->where('ssm.elective_subject', "Yes")
                     ->whereNull('se.end_date') 
                     ->where('s.gender', '=', 'F')
-                    ->orderBy('sos.student_id')
+                    ->groupBy('sos.student_id')
                     ->distinct()
                     ->get();
                 $studAllFCount = $studentResultF->count();
-                foreach ($studentResultF as $key => $value) {
-                    $updateQuery = DB::table('tblstudent_enrollment')
-                        ->where('syear',$syear)
-                        ->where('sub_institute_id', $sub_institute_id)                    
-                        ->where('student_id', $value->student_id)
-                        ->whereNull('end_date')  
-                        ->update([
-                            'section_id' => $value->section_id,
-                            ]);
-                }
+                $ct=1;
+                    $sc=array();
+                    for($j=1;$j<=count($sectionResult);$j++){
+                        $section_id = $sectionResult[($j-1)]->division_id;
+                        //display_array($section_id);
+                        $sc[$j] = $section_id;
+                            
+                    }   
+                    //display_array($sc);
+                    for($s=1;$s<=count($studentResultF);$s++){
+                         $student_id = $studentResultF[($s-1)]->student_id;
+                         if($ct==count($sc)+1){
+                                $ct=1;
+                            }                            
+                            $section_id=$sc[$ct];
+                            $updateQuery = DB::table('tblstudent_enrollment')
+                            ->where('syear',$syear)
+                            ->where('student_id', $student_id)
+                            ->where('sub_institute_id', $sub_institute_id)                    
+                            ->update([
+                                'section_id' => $section_id,
+                                ]);
+                            
+                            $ct++;
+                        }
+               
             }
             
             $formatArray = [];
