@@ -114,10 +114,10 @@
                                 <td>{{$get_fees_reconciliation->VAN_NUMBER}}</td>
                                 <td>{{$get_fees_reconciliation->student_id}}</td>
                                 <td>{{$get_fees_reconciliation->term_id}}</td>
-                                <td>{{$get_fees_reconciliation->receipt_no}}</td>
-                                <td>{{$get_fees_reconciliation->standard_id}}</td>
+                                <td>{{$get_fees_reconciliation->receipt_no ?? ''}}</td>
+                                <td>{{$get_fees_reconciliation->standard_id}} </td>
                                 <td>{{$get_fees_reconciliation->paymode}}</td>
-                                <td>{{$get_fees_reconciliation->bank_detail}}</td>
+                                <td>{{$get_fees_reconciliation->bank_detail ?? ''}}</td>
                                 <td>{{$get_fees_reconciliation->amount}}</td>
                                 <td>{{$get_fees_reconciliation->sub_institute_id}}</td>
                             </tr>
