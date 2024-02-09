@@ -164,12 +164,12 @@
                             <td>{{$fees_value['student_batch_name']}}</td>
                             <td>{{$fees_value['stu_qouta']}}</td>
                             <td>{{$fees_value['payment_mode']}}</td>
-                            <td>{{$fees_value['bank_name']}}</td>
+                            <td>{{$fees_value['cheque_bank_name']}}</td>
                             <td>{{$fees_value['bank_branch']}}</td>
                             <td>{{$fees_value['cheque_no']}}</td>
                             <td>{{$fees_value['cheque_date']}}</td>
                             <td>{{$fees_value['receipt_no']}}</td>
-                            <td>{{$fees_value['receipt_date']}}</td>
+                            <td>{{$fees_value['receiptdate']}}</td>
                             @if(isset($data['fees_heads']))
                                 @foreach($data['fees_heads'] as $k => $val)
                                     @php 
