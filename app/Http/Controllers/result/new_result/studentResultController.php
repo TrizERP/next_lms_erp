@@ -871,11 +871,13 @@ class studentResultController extends Controller
             $total_sub_marks[$terms->term_id] = 0;
             $all_colspan += count($term_exam_titles);
         }
-        
-        $table .= '<th colspan="2" style=' . $style . '><b>Total</b></th></tr>
+        if($format=="yearly"){
+        $table .= '<th colspan="2" style=' . $style . '><b>Total</b></th>';
+        }
+        $table.='</tr>
         <tr>
             <th><b>Subject</b></th>';
-        $weigthage = '';
+        $weigthage = '';$tot_sub=[];
         foreach ($term_name as $keys => $terms) {
             $total_mark = 0;
             foreach ($exam_title as $key => $title) {
@@ -890,83 +892,124 @@ class studentResultController extends Controller
                 }
             }
             $mark_tot = '(' . $total_mark . ')';
-            // Store the total marks for each term
+            
+            if($format=="yearly"){
             $table .= '<th class="data_center"><b>Marks Obtained <br>' . $mark_tot . ' </b></th>';
-            $overall_total += $total_mark;
-            $total_sub_marks[$terms->term_id]+= $total_mark;
             $table .= '<th class="data_center"><b>Grade (' . $terms->title . ')</b></th>';
+            }
+            // echo "<pre>";print_r($total_mark);
+            // Store the total marks for each term
+            $overall_total += $total_mark;
+           
+            // $total_sub_marks[$terms->term_id]+= $total_mark;
+            
         }
-        // echo "<pre>";print_r($total_sub_marks);
+        // exit;
         $table .= '<th class="data_center"><b>Total Marks <br>Obtained (' . $overall_total . ')</b></th><th><b>Grade</b></th></tr>
         </thead>
         <tbody>';
         $tot_ob_mark = $tot_sub_mark =$get_all_ob_mark = $get_all_tot_mark = 0;
+        // get subjets
         foreach ($get_subject as $val) {
             $both_term_ob_mark = 0;
             $table .= '<tr><td>' . $val->subject_name . '</td>';
+            // get term wise eam and marks 
             foreach ($term_name as $keys => $terms) {
-                $obtained_mark = $ob_mark = 0;
+                $obtained_marks = $to_marks = $to_weight = [];
+                $title_exam = []; 
+                
+                 // get marks by exam id wise
                 foreach ($exam_name as $key => $title) {
                     if ($title->subject_id == $val->subject_id && $terms->term_id == $title->term_id) {
+                        
                         $foundMarks = false;
-                        $arr = [];
+                        $ob_mark = 0;
+                        $title_exam[$title->exam_id][] = $title->ExamTitle;
+                        // all exam marks 
                         foreach ($exam_marks as $index => $marks) {
                             if ($title->id == $marks->exam_id) {
+                                $total_sub_marks[$terms->term_id] +=$title->weightage;
+                                //  echo "<pre>";print_r($total_sub_marks);
+                                
+                                // for AB,NA,EX
                                 if ($marks->points == "0.00" || $marks->points == "") {
                                     $ab_ex_na = $marks->is_absent;
                                     if ($marks->is_absent == '') {
                                         $ab_ex_na = 0;
                                     }
-                                    $table .= '<td class="data_center">' . $ab_ex_na . '</td>';
+                                    $obtained_marks[$title->exam_id][] = $ab_ex_na;
+                                    $to_marks[$title->exam_id][] = $title->points;
+                                    $to_weight[$title->exam_id] = $title->weightage;
+
                                 } else {
-                                    if ($digit == "no_zero") {
-                                        $ob_mark = intval($marks->points);
-                                    } else if ($digit == "signle_zero") {
-                                        $ob_mark = number_format(round($marks->points, 1), 1);
-                                    } else {
-                                        $ob_mark = $marks->points;
-                                        // connvert marks from weightage
-                                        $ob_mark = number_format((($ob_mark / $title->points) * $title->weightage), 2);
-                                    }
-                                   $obtained_mark += $ob_mark;
-                                 // echo "<pre>";print_r($arr);
-                                    $table .= '<td class="data_center ' . $title->exam_id . '">' . $ob_mark . '</td>';
+                                    $ob_mark = $marks->points;
+                                    // store marks in array to get best of 2 
+                                    $obtained_marks[$title->exam_id][] = $ob_mark;
+                                    $to_marks[$title->exam_id][] = $title->points;
+                                    $to_weight[$title->exam_id] = $title->weightage;
+
+                                    $foundMarks = true;
                                 }
-                                $foundMarks = true;
                                 break;
                             }
                         }
-                        if (!$foundMarks) {
-                            $table .= '<td>0</td>';
-                        }
                     }
                 }
-               
-                // echo $table;exit;
-                if ($digit == "no_zero") {
-                    $obtained_mark_formatted = $obtained_mark;
-                } else if ($digit == "single_zero") {
-                    $obtained_mark_formatted = number_format($obtained_mark, 1);
+
+                $ob_main_mark = 0;
+                // for best of 2 exam wise 
+                if (!empty($obtained_marks)) {
+                    foreach ($obtained_marks as $exam_id => $marksArray) {
+                        $t_m = 0;
+                        $tt = "";
+
+                        $w_m = isset($to_weight[$exam_id]) ? $to_weight[$exam_id] : 0; // Check if the key exists
+
+                        foreach ($marksArray as $index => $value) {
+                            if (isset($to_marks[$exam_id][$index])) {
+                                $t_m += $to_marks[$exam_id][$index];
+                                $tt = $title_exam[$exam_id][$index];
+                            }
+                        }
+                        $obtained_mark_sum = array_sum($marksArray);
+                        if ($t_m !== 0) {
+                            $ob_main_mark += (($obtained_mark_sum / $t_m) * $w_m);
+                        } else {
+                            $ob_main_mark += 0;
+                        }
+                        $convert_mark = (($obtained_mark_sum / $t_m) * $w_m);
+                       $table .= '<td class="data_center" '.$exam_id.' subject='.$val->subject_id.' std='.$standard_id.'>' . number_format($convert_mark,2) . '</td>';
+                    }
                 } else {
-                    $obtained_mark_formatted = number_format($obtained_mark, 2);
+                    // if marks not found 
+                    foreach ($title_exam as $exam_id => $marksArray) {
+                        $table .= '<td class="data_center no_mark '.$title->id.'">0.00</td>';
+                    }
+
                 }
-                $table .= '<td class="data_center">' . $obtained_mark_formatted . '</td>';
+
+                $obtained_mark_formatted = number_format($ob_main_mark, 2);
                 
+                // $table .= '<td class="data_center all_mark">' . $obtained_mark_formatted . '</td>';
                 $both_term_ob_mark += $obtained_mark_formatted;
-            // Update the total marks for the current term
-                $total_term_marks[$terms->term_id] += $obtained_mark;
-                // $total_sub_marks[$terms->term_id] += $total_mark;
-                $grade_arr = $this->getGradeScale($standard_id, '');
-                $table .= '<td class="data_center">' . $this->getGrade($grade_arr, $total_sub_marks[$terms->term_id], $obtained_mark_formatted) . '</td>';
+                // Update the total marks for the current term
+                $total_term_marks[$terms->term_id] += $ob_main_mark;
+               
+                // $grade_arr = $this->getGradeScale($standard_id, '');
+                if($format=="yearly"){
+                   $grade_arr = $this->getGradeScale($standard_id, '');
+                    $table .= '<td class="data_center tot_of_both">' . number_format($both_term_ob_mark, 2) . '</td><td class="data_center grade_of_both">' . $this->getGrade($grade_arr, $overall_total, $both_term_ob_mark) . '</td>';
+                }
             }
-                $grade_arr = $this->getGradeScale($standard_id, '');
-                $table .= '<td class="data_center">' . number_format($both_term_ob_mark, 2) . '</td><td class="data_center">' . $this->getGrade($grade_arr, $overall_total, $both_term_ob_mark) . '</td>';
-                $get_all_ob_mark += $both_term_ob_mark;
-                $get_all_tot_mark += $overall_total;
-            
+            // get percentage 
+            $grade_arr = $this->getGradeScale($standard_id, '');
+            $table .= '<td class="data_center tot_of_both">' . number_format($both_term_ob_mark, 2) . '</td><td class="data_center grade_of_both">' . $this->getGrade($grade_arr, $overall_total, $both_term_ob_mark) . '</td>';
+            $get_all_ob_mark += $both_term_ob_mark;
+            $get_all_tot_mark += $overall_total;
+
             $table .= '</tr>';
         }
-        // echo "<pre>";print_r($total_sub_marks);
+        // echo "<pre>";print_r($total_term_marks);
         // exit;
         $table .= '<tr>';
         $table_per = $rep_val = $table_all = '';
@@ -996,6 +1039,10 @@ class studentResultController extends Controller
                 $all_sub_mark += $total_sub_marks[$terms->term_id];
                 // get percentage   
                 $finalPer = $this->getPer($tot_ob_mark, $tot_sub_mark);  
+                // echo "<pre>";print_r($tot_ob_mark);
+                // echo "<pre>";print_r($tot_sub_mark);
+                // echo "<pre>";print_r($finalPer);
+                
                 // get overall percentage  
                 $overall_per = $this->getPer($all_ob_mark, $all_sub_mark);    
                 // get overall grade  
@@ -1016,14 +1063,24 @@ class studentResultController extends Controller
                         $result = 'Promoted';
                     }
                 }
-                
+                if($format=="yearly"){
                 $table_per .= '<td colspan="' . (count($term_exam_titles)) + $cols . '"><b>Percentage</b></td><td>' . $finalPer . '% </td></td></td>';
+                $col_per=1;
+                $col_grade=2;
+                }else{
+                    $table_per .="<td><b>Percentage</b></td>";
+                    $col_per=3;
+                    $col_grade=1;
+                    $overall_per= $finalPer."%";
+                }
             }
            
         // exit;
             $table_all = str_replace(htmlspecialchars("<<per>>"), $overall_per, $table_all);
             $table_all = str_replace(htmlspecialchars("<<grade>>"), $all_grade, $table_all);
-            $table .= '<tr>' . $table_per . '<td><b>' . $overall_per . '</b></td><td colspan="2" class="data_center">' . $all_grade . '</td></tr></tbody></table>';
+            $table .= '<tr>' . $table_per . '<td colspan="'.$col_per.'" ><b>' . $overall_per . '</b></td><td class="data_center" colspan="'.$col_grade.'" >' . $all_grade . '</td></tr></tbody></table>';
+
+
         $getStudentDetails = DB::table('tblstudent')->where('sub_institute_id',$sub_institute_id)->where('id',$student_id)->first();
         $stu_detail='<table class="aca-year" style="width:85%;border-collapse:collapse; border:1px solid #e68023;" cellspacing="0"  border="1" align="right">
         <tbody>
@@ -1033,7 +1090,7 @@ class studentResultController extends Controller
                 <th><b><span style="font-size: medium;"><b>Per.</span></b></th>
             </tr>
             <tr>
-                <td>'.$getStudentDetails->dob.'</td>
+                <td>'.\Carbon\Carbon::parse($getStudentDetails->dob)->format('d-m-Y').'</td>
                 <td>'.$getStudentDetails->enrollment_no.'</td>
                 <td></td>
             </tr>
@@ -2765,10 +2822,9 @@ $overall_total = $overall_total / 2;
     public function get_exam_name($sub_institute_id,$syear,$standard_id,$extra_exam,$best_of_2=''){
         $exam_name = DB::table('result_create_exam as rce')->join('result_exam_master as rem', 'rem.id', '=', 'rce.exam_id')->whereRaw($extra_exam)->where(['rce.sub_institute_id' => $sub_institute_id, 'rce.syear' => $syear, 'rce.standard_id' => $standard_id])
         ->selectRaw('rce.id,rce.title,rce.term_id,rce.standard_id,rem.weightage,rem.ExamTitle,rce.subject_id,rce.points,rce.con_point,rem.Id as ExamId,rce.exam_id');
-        if($best_of_2!=''){
         // get exam master name
         $exam_name->orderBy('rem.SortOrder');
-        }
+        
         $exam_name = $exam_name->get()->toArray();
         
         return $exam_name;
@@ -2777,10 +2833,9 @@ $overall_total = $overall_total / 2;
     public function get_exam_title($sub_institute_id,$syear,$standard_id,$extra_exam,$best_of_2=''){
         $exam_title = DB::table('result_create_exam as rce')->join('result_exam_master as rem', 'rem.id', '=', 'rce.exam_id')->whereRaw($extra_exam)->where(['rce.sub_institute_id' => $sub_institute_id, 'rce.syear' => $syear, 'rce.standard_id' => $standard_id])
         ->selectRaw('rce.id,rce.title,rce.term_id,rce.standard_id,rem.weightage,rem.ExamTitle,rce.subject_id,rce.points,rce.con_point,rem.Id as ExamId,rce.exam_id');
-        if($best_of_2!=''){
-             // get created exam name 
-             $exam_title->orderBy('rem.SortOrder');
-        }
+        // get created exam name 
+        $exam_title->orderBy('rem.SortOrder');
+        
         $exam_title = $exam_title->groupByRaw('exam_id,term_id')->get()->toArray();
         return $exam_title;
     }
