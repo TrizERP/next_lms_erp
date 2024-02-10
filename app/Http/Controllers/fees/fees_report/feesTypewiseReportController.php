@@ -60,38 +60,48 @@ class feesTypewiseReportController extends Controller
 
         if ($grade != '') {
             $extraSearchArrayRaw .= "  AND se.grade_id = " . $grade;
+            $extraSearchArrayRawfp .= "  AND se.grade_id = " . $grade;            
         }
 
         if ($standard != '') {
             $extraSearchArrayRaw .= "  AND se.standard_id = " . $standard;
+            $extraSearchArrayRawfp .="  AND se.standard_id = " . $standard;               
         }
 
         if ($division != '') {
             $extraSearchArrayRaw .= "  AND se.section_id = " . $division;
+            $extraSearchArrayRawfp .=" AND se.section_id = " . $division;           
+            
         }
 
         if ($enrollment_no != '') {
             $extraSearchArrayRaw .= "  AND ts.enrollment_no = " . $enrollment_no;
+            $extraSearchArrayRawfp .=" AND ts.enrollment_no = " . $enrollment_no;                    
         }
 
         if ($mobile_no != '') {
             $extraSearchArrayRaw .= "  AND ts.mobile = " . $mobile_no;
+            $extraSearchArrayRawfp .=" AND ts.mobile = " . $mobile_no;                     
         }
 
         if ($uniqueid != '') {
             $extraSearchArrayRaw .= "  AND ts.uniqueid = " . $uniqueid;
+            $extraSearchArrayRawfp .="  AND ts.uniqueid = " . $uniqueid;                    
         }
 
         if ($first_name != '') {
             $extraSearchArrayRaw .= "  AND ts.first_name like '%" . $first_name . "%' ";
+            $extraSearchArrayRawfp .="  AND ts.first_name like '%" . $first_name . "%' ";                          
         }
 
         if ($last_name != '') {
             $extraSearchArrayRaw .= "  AND ts.last_name like '%" . $last_name . "%' ";
+            $extraSearchArrayRawfp .=" AND ts.last_name like '%" . $last_name . "%' ";                            
         }
 
         if ($admission_year != '' && $admission_year != '--Select Admission Year--') {
             $extraSearchArrayRaw .= "  AND ts.admission_year  = '" . $admission_year . "'";
+            $extraSearchArrayRawfp .=" AND ts.admission_year  = '" . $admission_year . "'";                  
         }
 
         if ($from_date != '') {
@@ -103,7 +113,7 @@ class feesTypewiseReportController extends Controller
             $extraSearchArrayRaw .= "  AND fc.receiptdate <= '" . $to_date . "'";
             $extraSearchArrayRawfp .= "  AND fp.receiptdate <= '" . $to_date . "'";            
         }
-
+// echo "<pre>";print_r($extraSearchArrayRawfp);exit;
         $fees_heads = DB::table('fees_title as FT')
             ->where('FT.sub_institute_id', $sub_institute_id)
             // ->where('FT.other_fee_id', '=', 0)
