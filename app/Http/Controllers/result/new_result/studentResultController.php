@@ -2075,7 +2075,6 @@ $overall_total = $overall_total / 2;
         $colspan = 2;
         foreach ($term_name as $keys => $terms) {
             $term_exam_titles = array_filter($exam_title, function ($title) use ($terms, $total_weightage) {
-                $total_weightage += $title->weightage;
                 return $title->term_id == $terms->term_id;
             });
 
@@ -2084,7 +2083,7 @@ $overall_total = $overall_total / 2;
                     return $title->term_id == $terms->term_id;
                 }),
                 function ($carry, $title) {
-                    return $carry + $title->weightage;
+                    return $carry + $title->points;
                 },
                 0
             );
@@ -2105,8 +2104,8 @@ $overall_total = $overall_total / 2;
             foreach ($exam_title as $key => $title) {
                 $exam_head = $title->title;
                 if ($terms->term_id == $title->term_id) {
-                    $table .= '<th class="data_center"><b>' . $exam_head . '<br>(' . $title->weightage . ')</b></th>';
-                        $total_mark += $title->weightage;
+                    $table .= '<th class="data_center"><b>' . $exam_head . '<br>(' . $title->points . ')</b></th>';
+                        $total_mark += $title->points;
                 }
             }
             $mark_tot = '('.$total_mark.')';
@@ -2139,8 +2138,8 @@ $overall_total = $overall_total / 2;
                                 // all exam marks 
                                 foreach ($exam_marks as $index => $marks) {
                                     if ($title->id == $marks->exam_id) {
-                                        $to_marks[$title->exam_id][] = $title->points;
-                                        $to_weight[$title->exam_id] = $title->weightage;
+                                        $to_marks[$title->exam_id][] = $title->con_point;
+                                        $to_weight[$title->exam_id] = $title->points;
                                         // for AB,NA,EX
                                         if ($marks->points == "0.00" || $marks->points == "") {
                                             $ab_ex_na = $marks->is_absent;
