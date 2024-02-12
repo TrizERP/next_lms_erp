@@ -2039,6 +2039,7 @@ $overall_total = $overall_total / 2;
        return $res;
 
     }
+
     public function get_scholastic_lions($standard_id, $student_id, $format, $academic_type)
     {  // echo "<pre>";print_r($student_id);exit;
         $syear = session()->get('syear');
@@ -2074,10 +2075,9 @@ $overall_total = $overall_total / 2;
         $total_weightage_main ='';
         $colspan = 2;
         foreach ($term_name as $keys => $terms) {
-            $term_exam_titles = array_filter($exam_title, function ($title) use ($terms, $total_weightage) {
+            $term_exam_titles = array_filter($exam_title, function ($title) use ($terms) {
                 return $title->term_id == $terms->term_id;
             });
-
             $total_weightage = array_reduce(
                 array_filter($exam_title, function ($title) use ($terms) {
                     return $title->term_id == $terms->term_id;
@@ -2088,7 +2088,7 @@ $overall_total = $overall_total / 2;
                 0
             );
            
-            $table .= '<th colspan="' . (count($term_exam_titles) + $colspan) . '" style="text-align:center;' . $style . '"><b>' . $terms->title .'('. $total_weightage . ')</b></th>';
+            $table .= '<th colspan="' . (count($term_exam_titles) + $colspan) . '" style="text-align:center;' . $style . '"><b>' . $terms->title.'(' . $total_weightage . ')</b></th>';
             // Initialize the total marks for each term to zero
             $total_term_marks[$terms->term_id] = 0;
             $total_sub_marks[$terms->term_id] = 0;
@@ -2138,8 +2138,8 @@ $overall_total = $overall_total / 2;
                                 // all exam marks 
                                 foreach ($exam_marks as $index => $marks) {
                                     if ($title->id == $marks->exam_id) {
-                                        $to_marks[$title->exam_id][] = $title->con_point;
-                                        $to_weight[$title->exam_id] = $title->points;
+                                        $to_marks[$title->exam_id][] = $title->points;
+                                        $to_weight[$title->exam_id] = $title->con_point;
                                         // for AB,NA,EX
                                         if ($marks->points == "0.00" || $marks->points == "") {
                                             $ab_ex_na = $marks->is_absent;
@@ -2178,7 +2178,7 @@ $overall_total = $overall_total / 2;
                                 }
                               
                                 $table .= '<td class="data_center" '.$exam_id.'>' . $convert_mark . '</td>';
-
+                                
                             }
                         } else {
                             // If marks not found
@@ -2268,9 +2268,7 @@ $overall_total = $overall_total / 2;
         $res['result'] = $result;
         $table .= '</tr></tbody></table>';
         $res['table'] = $table;
-        return $res;
-    }
-
+        return $res;}
     public function get_scholastic_hills_11($standard_id, $student_id, $format, $academic_type)
     {
        $syear = session()->get('syear');
