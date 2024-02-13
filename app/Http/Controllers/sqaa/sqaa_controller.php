@@ -97,7 +97,7 @@ class sqaa_controller extends Controller
     }
 
     public function store(Request $request){
-        // return $request;exit;
+        // echo "<pre>";print_r($request->all());exit;
         $type=$request->type;
         $sub_institute_id = session()->get('sub_institute_id');
         $user_id = session()->get('user_id');
@@ -143,12 +143,17 @@ class sqaa_controller extends Controller
                     $reasons = $request->get('reasons')[$i];
                     $availability = $request->get('availability')[$i] ?? 'no';
                     $file_have = '1=1';
-                    $filename= $request->get('files')[$i];
+                    $filename = isset($request->get('doc_files')[$i]) ? $request->get('doc_files')[$i]->getClientOriginalName() : null;
+
                     // Check if a file is present for this row
-                    if ($request->get('availability')[$i] =="yes" && $request->hasFile('files') && $request->file('files')[$i]->isValid()) {
-                        $file = $request->file('files')[$i];
+                    $availability = $request->get('availability')[$i] ?? 'no';
+                    $filename = isset($request->get('doc_files')[$i]) ? $request->file('doc_files')[$i]->getClientOriginalName() : null;
+            
+                    // Check if a file is present for this row
+                    if ($availability == "yes" && $request->file('doc_files')[$i]->isValid()) {
+                        $file = $request->file('doc_files')[$i];
                         $filename = $file->getClientOriginalName();
-                        $path = Storage::disk('digitalocean')->putFileAs('public/sqaa/', $file, $filename, 'public');
+                        Storage::disk('digitalocean')->putFileAs('public/sqaa/', $file, $filename, 'public');
                     }else{
                         if(isset($request->get('update_file')[$i])){
                             $filename=$request->get('update_file')[$i];

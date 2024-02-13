@@ -117,10 +117,10 @@ class cbse_1t5_result_controller extends Controller {
             $responce_arr[$cur_student_id]['grade_range'] = $all_grd_data;
         }
         //RAJESH - Session temoarary extend HIDE 06_11_2023
-        /*if(session()->get('sub_institute_id')!=72){
+        if(session()->get('sub_institute_id')!=72){
         session()->put('term_id', $academicTerms[1]->term_id);
         }
-        */
+        
         //getting year detail
         //getting all exam name with mark
         $all_exam = $this->getAllExam($_REQUEST['standard']);
@@ -194,9 +194,9 @@ class cbse_1t5_result_controller extends Controller {
         $data['division_id'] = $_REQUEST['division'];
         $data['syear'] = session()->get('syear');
         $data['term_id'] = session()->get('term_id');
-
-        session()->put('term_id',$current_term);
-
+        // if(session()->get('sub_institute_id')==72){
+        // session()->put('term_id',$current_term);
+        // }
         $type = $request->input('type');
         session()->put('term_id',$current_term);
         // return session()->get('sub_institute_id');exit;
