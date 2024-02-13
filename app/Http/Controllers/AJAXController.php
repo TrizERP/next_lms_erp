@@ -2053,7 +2053,11 @@ class AJAXController extends Controller
             );
         }else if(isset($request->search) && $request->search=="question"){
             // db::enableQueryLog();
-           $getAllQuestion = DB::table('lms_question_master')->whereRaw('sub_institute_id = '.$sub_institute_id.' and standard_id='.$standard.' and chapter_id ='.$request->chapter_id.' and topic_id ='.$request->topic_id.' ')->pluck('question_title');
+            $topics='';
+            if(isset($request->topic_id) && $request->topic_id!=''){
+                $topics = " and topic_id ='".$request->topic_id."'";
+            }
+           $getAllQuestion = DB::table('lms_question_master')->whereRaw('sub_institute_id = '.$sub_institute_id.' and standard_id='.$standard.' and chapter_id ='.$request->chapter_id.$topics.' ')->pluck('question_title');
             $message=array($request->question_prompt,"search only 1 question from mentioned standard and subject and chapter and topic and get different question which are not in this '".$getAllQuestion."'");
             // return $message;exit;
         }else{

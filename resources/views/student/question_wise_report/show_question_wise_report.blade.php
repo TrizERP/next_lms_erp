@@ -260,7 +260,6 @@
                                                 //$colCountAns[$row][] = '';
                                                 $ans = '0';
                                             }
-
                                         @endphp
 
                                         <td class="" style="{{ ($ans === '0' ) ? 'background-color:#FFC7CE' : '' }}">{{ $ans }}</td>
@@ -293,10 +292,12 @@
                                             @endphp
                                             <td class="font-weight-bold" style="background-color: #ffe699;">{{ array_sum( $trueAnsCol ) }}</td>
                                         @endforeach
+                                        
                                         <td class="font-weight-bold" style="background-color: #b4c6e7;">{{ $calTrueAnsCount }}</td>
 
                                         @php
-                                            $total_marks = $numberOfStudent * $countQuestion;
+                                            $total_marks = $no_of_student * $countQuestion;
+                                            
                                             $fullPer = number_format( ( $calTrueAnsCount * 100 ) / $total_marks, 2 ) . '%';
                                         @endphp
                                         <td colspan="2" rowspan="2" class="text-center font-weight-bold" style="background-color: #a9d08e;">{{ $fullPer }}</td>
@@ -305,7 +306,7 @@
                                     <tr>
                                         <td colspan="2" class="text-right font-weight-bold" style="background-color: #ffe699;">Total Student</td>
                                         @for ($i = 1; $i <= $countQuestion; $i++)
-                                            <td class="font-weight-bold" style="background-color: #ffe699;">{{ $numberOfStudent }}</td>
+                                            <td class="font-weight-bold" style="background-color: #ffe699;">{{ $no_of_student }}</td>
                                         @endfor
                                         <td class="font-weight-bold" style="background-color: #b4c6e7;">{{ $total_marks }}</td>
                                     </tr>

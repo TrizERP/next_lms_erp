@@ -112,6 +112,7 @@ class tblstudentController extends Controller
             UNION ALL SELECT ".$syear - 2 ."
             UNION ALL SELECT ".$syear - 3 ."
             UNION ALL SELECT ".$syear - 4 ."
+            UNION ALL SELECT ".$syear - 5 ."
             ) AS subquery"))
             ->select('year')
             ->get();
@@ -810,6 +811,7 @@ die; */
         UNION ALL SELECT ".$syear - 2 ."
         UNION ALL SELECT ".$syear - 3 ."
         UNION ALL SELECT ".$syear - 4 ."
+        UNION ALL SELECT ".$syear - 5 ."
         ) AS subquery"))
         ->select('year')
         ->get();
@@ -1121,7 +1123,12 @@ CASE
     WHEN an.NOTIFICATION_TYPE = 'Homework' THEN 'https://" . $_SERVER['SERVER_NAME'] . "/storage/student/homework_side.png'
     WHEN an.NOTIFICATION_TYPE = 'Assignment' THEN 'https://" . $_SERVER['SERVER_NAME'] . "/storage/student/side.png'
     WHEN an.NOTIFICATION_TYPE = 'Circular' THEN 'https://" . $_SERVER['SERVER_NAME'] . "/storage/student/side.png'
-    WHEN an.NOTIFICATION_TYPE = 'Photo Gallery' THEN 'https://" . $_SERVER['SERVER_NAME'] . "/storage/student/side.png'
+    WHEN an.NOTIFICATION_TYPE = 'Photo Gallery' THEN 'https://" . $_SERVER['SERVER_NAME'] . "/storage/student/photo_side.png'
+    WHEN an.NOTIFICATION_TYPE = 'Video Gallery' THEN 'https://" . $_SERVER['SERVER_NAME'] . "/storage/student/video_side.png'
+    WHEN an.NOTIFICATION_TYPE = 'Notification' THEN 'https://" . $_SERVER['SERVER_NAME'] . "/storage/student/notification_side.png'
+    WHEN an.NOTIFICATION_TYPE = 'Student Remarks' THEN 'https://" . $_SERVER['SERVER_NAME'] . "/storage/student/remarks_side.png'
+    WHEN an.NOTIFICATION_TYPE = 'Leave Application' THEN 'https://" . $_SERVER['SERVER_NAME'] . "/storage/student/leave_side.png'
+    WHEN an.NOTIFICATION_TYPE = 'Parent Communication' THEN 'https://" . $_SERVER['SERVER_NAME'] . "/storage/student/parents_side.png'
     ELSE 'https://" . $_SERVER['SERVER_NAME'] . "/storage/student/noimages.png'
 END AS side_image,
 CASE

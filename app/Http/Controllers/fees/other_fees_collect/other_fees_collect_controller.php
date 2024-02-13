@@ -95,19 +95,20 @@ class other_fees_collect_controller extends Controller
         $extraSearchArray['student_quota.sub_institute_id'] = $sub_institute_id;
 
         $studentData = tblstudentModel::selectRaw("tblstudent.id AS student_id,CONCAT_WS(' ',tblstudent.first_name,tblstudent.middle_name,tblstudent.last_name) AS student_name,academic_section.title as grade,standard.name as standard_name,division.name as division_name,tblstudent.enrollment_no,tblstudent.mobile,tblstudent.uniqueid,student_quota.title as stu_quota,
-            IFNULL(SUM(fees_other_collection.deduction_amount),0) as paid_amt,(fees_other_head.amount - IFNULL(SUM(fees_other_collection.deduction_amount),0)) AS remaining_amt,fees_other_head.amount,fees_other_head.display_name,fees_other_collection.deduction_head_id,fees_paid_other.is_deleted AS fees_paid_other_is_deleted")
+            IFNULL(SUM(fees_other_collection.deduction_amount),0) as paid_amt,(fees_other_head.amount - IFNULL(SUM(fees_other_collection.deduction_amount),0)) AS remaining_amt,fees_other_head.amount,fees_other_head.display_name,fees_other_collection.deduction_head_id")
             ->join('tblstudent_enrollment', 'tblstudent.id', '=', 'tblstudent_enrollment.student_id')
+            /*,fees_paid_other.is_deleted AS fees_paid_other_is_deleted*/
             ->leftjoin('fees_other_head', 'fees_other_head.id', '=', DB::raw("'" . $other_fees_title_selected . "'"))
             ->leftjoin('fees_other_collection', function ($join) use ($other_fees_title_selected) {
                 $join->on('fees_other_collection.student_id', '=', 'tblstudent.id')
                     ->on('fees_other_collection.deduction_head_id', '=', DB::raw("'" . $other_fees_title_selected . "'"))
                     ->on('fees_other_collection.is_deleted', '=', DB::raw("'N'"));
             })
-            ->join('fees_paid_other', function ($join) use ($other_fees_title_selected) {
+            /*->join('fees_paid_other', function ($join) use ($other_fees_title_selected) {
                 $join->on('fees_paid_other.student_id', '=', 'tblstudent.id')
                     ->on('fees_paid_other.sub_institute_id', '=', 'tblstudent.sub_institute_id')
                     ->on('fees_paid_other.is_deleted', '=', DB::raw("'N'"));
-            })
+            })*/
             ->join('academic_section', 'academic_section.id', '=', 'tblstudent_enrollment.grade_id')
             ->join('standard', function ($join) use($marking_period_id) {
                 $join->on('standard.id', '=', 'tblstudent_enrollment.standard_id');

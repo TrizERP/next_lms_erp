@@ -131,23 +131,69 @@ class fees_reconciliation_upload_sheet_controller extends Controller
                 if(!empty($check_fees))
                 {
                     // DB::enableQueryLog();
-                    $get_fees_collect = fees_collect::select([
-				        'student_id',
-				        DB::raw('GROUP_CONCAT(term_id) AS term_id'),
-				        'receipt_no',
-				        'standard_id',
-				        'payment_mode',
-				        'cheque_bank_name',
-				        DB::raw('SUM(amount) AS amount')
-				    ])
-                    ->where([
-                    	'cheque_no' => $row[1],
-                    	'sub_institute_id' => session()->get('sub_institute_id'),
-                    	'syear' => session()->get('syear')
-                    ])
-                    ->get()
-                    ->toArray();
-                    // echo "<pre>";print_r($get_fees_collect[0]['student_id']);exit;
+                    // $get_fees_collect = fees_collect::select([
+				    //     'student_id',
+				    //     DB::raw('GROUP_CONCAT(term_id) AS term_id'),
+				    //     'receipt_no',
+				    //     'standard_id',
+				    //     'payment_mode',
+				    //     'cheque_bank_name',
+				    //     DB::raw('SUM(amount) AS amount')
+				    // ])
+                    // ->where([
+                    // 	'cheque_no' => $row[1],
+                    // 	'sub_institute_id' => session()->get('sub_institute_id'),
+                    // 	'syear' => session()->get('syear')
+                    // ])
+                    // ->get()
+                    // ->toArray();
+                    // db::enableQueryLog();
+
+                    $data2 =DB::table(function ($query) use ($row) {
+                        $query->select([
+                            'fc.student_id',
+                            DB::raw('GROUP_CONCAT(fc.term_id) AS term_id'),
+                            'fc.receipt_no',
+                            'fc.payment_mode',
+                            'te.standard_id',
+                            'fc.cheque_bank_name',
+                            DB::raw('SUM(fc.amount) AS amount')
+                        ])->from('fees_collect as fc')
+                        ->join('tblstudent_enrollment as te', function($join){
+                            $join->on('te.student_id', '=', 'fc.student_id');
+                        })
+                        ->where([
+                            'fc.cheque_no' => $row[1],
+                            'fc.sub_institute_id' => session()->get('sub_institute_id'),
+                            'fc.syear' => session()->get('syear'),
+                            'fc.is_deleted' => 'N'
+                        ])
+                        ->unionAll(function ($query) use ($row) {
+                            $query->select([
+                                'fpo.student_id',
+                                DB::raw('GROUP_CONCAT(fpo.month_id) AS term_id'),
+                                'fpo.reciept_id as receipt_no',
+                                'fpo.payment_mode',
+                                'te.standard_id',
+                                DB::raw('"cheque_bank_name" AS cheque_bank_name'),
+                                DB::raw('SUM(fpo.actual_amountpaid) AS amount'),
+                            ])->from('fees_paid_other as fpo')
+                            ->join('tblstudent_enrollment as te', function($join){
+                                $join->on('te.student_id', '=', 'fpo.student_id');
+                            })
+                            ->where([
+                                'fpo.cheque_dd_no' => $row[1],
+                                'fpo.sub_institute_id' => session()->get('sub_institute_id'),
+                                'fpo.syear' => session()->get('syear'),
+                                'fpo.is_deleted' => 'N'
+                            ]);
+                                   
+                        });
+                    })
+                    ->selectRaw('student_id, term_id,receipt_no,payment_mode,standard_id,cheque_bank_name,amount');
+                    $get_fees_collect = $data2->get()->toArray();
+                    $get_fees_collect = json_decode(json_encode($get_fees_collect), true);
+                    
                     if(!empty($get_fees_collect))
                     {
                         $student_id= $get_fees_collect[0]['student_id'];
@@ -156,7 +202,7 @@ class fees_reconciliation_upload_sheet_controller extends Controller
                         $standard_id = $get_fees_collect[0]['standard_id'];
                         $paymode = $get_fees_collect[0]['payment_mode'];
                         $bank_detail = $get_fees_collect[0]['cheque_bank_name'];
-                        $amount = $get_fees_collect[0]['amount'];
+                        $amount = $get_fees_collect[0]['amount'] + $get_fees_collect[0]['amount'];
                         // dd(DB::getQueryLog($check_fees));
                         
                         DB::table('fees_reconciliation')->where('id', $check_fees[0]->id)->update([
@@ -174,14 +220,14 @@ class fees_reconciliation_upload_sheet_controller extends Controller
                             'conciliation' => 1,
                         ]);
                     }
-                }
+                } 
             }
         } 
         else
         {
             $success=false;
         }
-        
+
         // Check if data insertion was successful
         if ($success) 
         {
