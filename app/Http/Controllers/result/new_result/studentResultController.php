@@ -3098,7 +3098,7 @@ $overall_total = $overall_total / 2;
         // get term_name 
         $term_name = DB::table('academic_year')->whereRaw($extra_term)->where(['sub_institute_id' => $sub_institute_id, 'syear' => $syear])->get()->toArray();
 
-        $get_result_skillsets = DB::table('result_skillset')->selectRaw('*,group_concat(title  order by sort_order) as all_title,group_concat(id) as all_id,group_concat(`group`) as all_group')
+        $get_result_skillsets = DB::table('result_skillset')->selectRaw('*,group_concat(title order by sort_order SEPARATOR "|") as all_title,group_concat(id) as all_id,group_concat(`group`) as all_group')
             ->where(['sub_institute_id' => $sub_institute_id])
             ->groupBy('main_title')
             ->orderByRaw('main_sort_order')
@@ -3117,7 +3117,7 @@ $overall_total = $overall_total / 2;
             $skillset_ids = $get_result_skillset->all_id;
             $all_group = $get_result_skillset->all_group;
 
-            $sub_title = explode(',', $sub_title_heading);
+            $sub_title = explode('|', $sub_title_heading);
             $skill_ids = explode(',', $skillset_ids);
             $all_group = explode(',', $all_group);
 
@@ -3144,7 +3144,7 @@ $overall_total = $overall_total / 2;
                     $table .= '<th style="text-align:center;font-size:medium !important;color:black;background:white !important"><b>' . $value1->title . '</b></th>';
 
                     $get_result_activity_masters = DB::table('result_activity_master')
-                    ->selectRaw('*, group_concat(title) as activity_master_title,group_concat(id) as ids')
+                    ->selectRaw('*, group_concat(title SEPARATOR "|") as activity_master_title,group_concat(id) as ids')
                     ->where(['sub_institute_id' => $sub_institute_id])
                     ->where('skill_id', $skill_ids[$key])
                     ->get()->toArray();
@@ -3152,7 +3152,7 @@ $overall_total = $overall_total / 2;
                     foreach($get_result_activity_masters as $get_result_activity_master)
                     {
                         $activity_master_id = explode(',', $get_result_activity_master->ids);
-                        $activity_master_title = explode(',', $get_result_activity_master->activity_master_title);
+                        $activity_master_title = explode('|', $get_result_activity_master->activity_master_title);
 
                         foreach($activity_master_id as $key2 => $activity_id)
                         {
@@ -3170,7 +3170,7 @@ $overall_total = $overall_total / 2;
                 {
                     foreach($get_result_activity_masters as $get_result_activity_master)
                     {
-                        $activity_master_title = explode(',', $get_result_activity_master->activity_master_title);
+                        $activity_master_title = explode('|', $get_result_activity_master->activity_master_title);
                         $activity_master_id = explode(',', $get_result_activity_master->ids);
                
                         foreach($activity_master_title as $key2 => $activity_master_titles)
