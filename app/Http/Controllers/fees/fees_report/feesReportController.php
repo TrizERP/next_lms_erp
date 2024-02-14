@@ -206,7 +206,7 @@ class feesReportController extends Controller
             });
         })
         ->selectRaw('student_id, enrollment_no, roll_no, uniqueid, place_of_birth, student_name, grade,standard_name, division_name,created_date, user_name, GROUP_CONCAT(term_id) AS term_ids, receiptdate, receipt_no,  payment_mode, cheque_bank_name, bank_branch, cheque_no, cheque_date, batch, quota, remarks, SUM(IFNULL(actual_amountpaid, 0)) AS actual_amountpaid, syear')
-        ->groupBy(['syear', 'student_id','receiptdate','payment_mode','cheque_bank_name','cheque_no']);
+        ->groupBy(['syear', 'student_id','receiptdate','payment_mode','cheque_no']);
             
         $data = $data->get()->toArray();
         // dd(DB::getQueryLog($data));
