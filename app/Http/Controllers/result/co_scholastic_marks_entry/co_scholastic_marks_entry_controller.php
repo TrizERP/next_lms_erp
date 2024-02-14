@@ -244,7 +244,7 @@ class co_scholastic_marks_entry_controller extends Controller
      */
     public function store(Request $request)
     {
-
+        // echo "<pre>";print_r($request->all());exit;
         $sub_institute_id = session()->get('sub_institute_id');
         $syear = session()->get('syear');
         $all_data = [];
@@ -265,6 +265,7 @@ class co_scholastic_marks_entry_controller extends Controller
                 'sub_institute_id' => $sub_institute_id,
                 'student_id'       => $student_id,
             ])->get()->toArray();
+            // echo "<pre>";print_r($arr['grade_opt']);
             if(!empty($check)){
                 $data = [
                     'grade_id'         => $arr['grade_id'],
@@ -276,8 +277,9 @@ class co_scholastic_marks_entry_controller extends Controller
                     'syear'            => $syear,
                 ];
                 $update = DB::table('result_co_scholastic_marks_entries')->where($data)->update([
-                'grade'=> $arr['grade'] ?? " ",
-                'points'=> $arr['points'] ?? " "
+                'grade'=> $arr['grade_opt'] ?? " ",
+                'points'=> $arr['points'] ?? " ",
+                'updated_at'=>now(),
                 ]);
             }else{
                 $data = new co_scholastic_marks_entry([ 
@@ -286,14 +288,16 @@ class co_scholastic_marks_entry_controller extends Controller
                     'term_id'          => $arr['term_id'],
                     'student_id'       => $student_id,
                     'co_scholastic_id' => $arr['co_scholastic'],
-                    'grade'            => $arr['grade'] ?? " ",
+                    'grade'            => $arr['grade_opt'] ?? " ",
                     'points'           => $arr['points'] ?? " ",
                     'sub_institute_id' => $sub_institute_id,
                     'syear'            => $syear,
+                    'created_at'       => now(),
                 ]);
                 $data->save();
+            }
         }
-        }
+        // exit;
         $res = [
             "status_code" => 1,
             "message"     => "Data Saved",
