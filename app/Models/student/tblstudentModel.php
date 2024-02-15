@@ -118,4 +118,11 @@ class tblstudentModel extends Model
         // return $this->hasMany(LibraryBookCirculation::class, 'student_id', 'id');
         return $this->hasMany(LibraryBookCirculation::class, 'student_id', 'id')->orderBy('id', 'desc');
     }
+
+    public function issuedBookItem(){
+        return $this->hasMany(LibraryBookCirculation::class, 'student_id', 'id')
+                    ->join('library_items', 'library_book_circulations.book_id', '=', 'library_items.book_id')
+                    ->selectRaw('*,library_book_circulations.id as main_id')    
+                    ->orderBy('library_book_circulations.id', 'desc');  
+    }
 }
