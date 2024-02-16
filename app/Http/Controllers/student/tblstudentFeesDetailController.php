@@ -95,7 +95,7 @@ class tblstudentFeesDetailController extends Controller
                     'ifsc_code' => $insLogData->ifsc_code,
                     'is_registered' => $insLogData->is_registered,
                     'created_by' => $user_id,
-                    'AC_TYPE' => $insLogData->AC_TYPE,
+                    'AC_TYPE' => $insLogData->ac_type,
                     'UMRN' => $insLogData->UMRN,
                     'closure_date' => $insLogData->closure_date,
                     'status' => $insLogData->status,

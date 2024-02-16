@@ -974,13 +974,15 @@ class AJAXController extends Controller
         $mobile = $_REQUEST["mobile_number"];
 
         $all_student = DB::table("tblstudent as s")
+        ->join('tblstudent_enrollment as se','se.student_id','=','s.id')
             ->join('fees_online_maping as fo', 'fo.sub_institute_id', '=', 's.sub_institute_id')
             ->join('school_setup as ss', 'ss.id', '=', 'fo.sub_institute_id')
             ->select(
                 DB::raw("CONCAT(s.first_name,' ',s.last_name,' - ',ss.shortcode) AS name"),
                 's.id',
                 'fo.bank_name',
-                's.sub_institute_id'
+                's.sub_institute_id',
+                'se.end_date'
             )
             ->where(['s.mobile' => $mobile]) //,'fo.sub_institute_id' => $sub_institute_id
             ->get();
@@ -2053,7 +2055,11 @@ class AJAXController extends Controller
             );
         }else if(isset($request->search) && $request->search=="question"){
             // db::enableQueryLog();
-           $getAllQuestion = DB::table('lms_question_master')->whereRaw('sub_institute_id = '.$sub_institute_id.' and standard_id='.$standard.' and chapter_id ='.$request->chapter_id.' and topic_id ='.$request->topic_id.' ')->pluck('question_title');
+            $topics='';
+            if(isset($request->topic_id) && $request->topic_id!=''){
+                $topics = " and topic_id ='".$request->topic_id."'";
+            }
+           $getAllQuestion = DB::table('lms_question_master')->whereRaw('sub_institute_id = '.$sub_institute_id.' and standard_id='.$standard.' and chapter_id ='.$request->chapter_id.$topics.' ')->pluck('question_title');
             $message=array($request->question_prompt,"search only 1 question from mentioned standard and subject and chapter and topic and get different question which are not in this '".$getAllQuestion."'");
             // return $message;exit;
         }else{

@@ -166,6 +166,17 @@ tbody {
         padding: 10px;
         width: 100% !important;
     }
+    .report-card-bg2 {
+        padding: 2px !important;
+        width: 100% !important;
+        margin: 0px !important;
+    }
+
+    .report-card-bg2>.main-table-hpc{
+        margin: 12px !important;
+        width: 96% !important;
+        background-position: center center !important;
+    }
 
     .report-card-bg>.main-table {
         padding: 0px !important;
@@ -292,7 +303,7 @@ table.report-card tr td {
     padding: 0px !important
 }
 
-.report-card-bg {
+.report-card-bg,.report-card-bg2 {
     padding: 20px;
     width: 90%;
     margin: 0 auto !important;
@@ -304,7 +315,7 @@ table.report-card tr td {
     font-family: 'Saira Semi Condensed', sans-serif !important;
 }
 
-.main-table {
+.main-table,.main-table-hpc {
     width: 100%;
     background-color: #d7d7d7;
     padding: 0px 8px 8px 8px;

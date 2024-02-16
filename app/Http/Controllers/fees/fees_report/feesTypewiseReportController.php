@@ -60,38 +60,48 @@ class feesTypewiseReportController extends Controller
 
         if ($grade != '') {
             $extraSearchArrayRaw .= "  AND se.grade_id = " . $grade;
+            $extraSearchArrayRawfp .= "  AND se.grade_id = " . $grade;            
         }
 
         if ($standard != '') {
             $extraSearchArrayRaw .= "  AND se.standard_id = " . $standard;
+            $extraSearchArrayRawfp .="  AND se.standard_id = " . $standard;               
         }
 
         if ($division != '') {
             $extraSearchArrayRaw .= "  AND se.section_id = " . $division;
+            $extraSearchArrayRawfp .=" AND se.section_id = " . $division;           
+            
         }
 
         if ($enrollment_no != '') {
             $extraSearchArrayRaw .= "  AND ts.enrollment_no = " . $enrollment_no;
+            $extraSearchArrayRawfp .=" AND ts.enrollment_no = " . $enrollment_no;                    
         }
 
         if ($mobile_no != '') {
             $extraSearchArrayRaw .= "  AND ts.mobile = " . $mobile_no;
+            $extraSearchArrayRawfp .=" AND ts.mobile = " . $mobile_no;                     
         }
 
         if ($uniqueid != '') {
             $extraSearchArrayRaw .= "  AND ts.uniqueid = " . $uniqueid;
+            $extraSearchArrayRawfp .="  AND ts.uniqueid = " . $uniqueid;                    
         }
 
         if ($first_name != '') {
             $extraSearchArrayRaw .= "  AND ts.first_name like '%" . $first_name . "%' ";
+            $extraSearchArrayRawfp .="  AND ts.first_name like '%" . $first_name . "%' ";                          
         }
 
         if ($last_name != '') {
             $extraSearchArrayRaw .= "  AND ts.last_name like '%" . $last_name . "%' ";
+            $extraSearchArrayRawfp .=" AND ts.last_name like '%" . $last_name . "%' ";                            
         }
 
         if ($admission_year != '' && $admission_year != '--Select Admission Year--') {
             $extraSearchArrayRaw .= "  AND ts.admission_year  = '" . $admission_year . "'";
+            $extraSearchArrayRawfp .=" AND ts.admission_year  = '" . $admission_year . "'";                  
         }
 
         if ($from_date != '') {
@@ -103,7 +113,7 @@ class feesTypewiseReportController extends Controller
             $extraSearchArrayRaw .= "  AND fc.receiptdate <= '" . $to_date . "'";
             $extraSearchArrayRawfp .= "  AND fp.receiptdate <= '" . $to_date . "'";            
         }
-
+// echo "<pre>";print_r($extraSearchArrayRawfp);exit;
         $fees_heads = DB::table('fees_title as FT')
             ->where('FT.sub_institute_id', $sub_institute_id)
             // ->where('FT.other_fee_id', '=', 0)
@@ -165,7 +175,7 @@ class feesTypewiseReportController extends Controller
             ->selectRaw("fc.id,fc.student_id,CONCAT_WS(' ',ts.first_name,ts.middle_name,ts.last_name) AS student_name,
                 ts.enrollment_no,ts.admission_year,ts.mobile,ts.email,date_format(ts.dob,'%d-%m-%Y') AS dob,a.title AS section,
                 s.name AS std_name,d.name AS div_name,sq.title AS stu_qouta, $fees_columns
-                fc.fine AS total_fine,fc.fees_discount AS tot_disc,fc.receipt_no,sum(fc.amount) as total_amt,b.title as student_batch_name,date_format(fc.receiptdate,'%d-%m-%Y') AS receipt_date,fc.payment_mode,fc.cheque_bank_name as bank_name,fc.bank_branch,fc.cheque_no,fc.cheque_date")
+                fc.fine AS total_fine,fc.fees_discount AS tot_disc,fc.receipt_no,sum(fc.amount) as total_amt,b.title as student_batch_name,date_format(fc.receiptdate,'%d-%m-%Y') AS receiptdate,fc.payment_mode,fc.cheque_bank_name,fc.bank_branch,fc.cheque_no,fc.cheque_date")
             ->whereRaw($extraSearchArrayRaw)
             ->where('se.syear', $syear)
             ->where('fc.syear', $syear)
@@ -175,7 +185,7 @@ class feesTypewiseReportController extends Controller
                 $query->selectRaw("fp.id,fp.student_id,CONCAT_WS(' ',ts.first_name,ts.middle_name,ts.last_name) AS student_name,
                 ts.enrollment_no,ts.admission_year,ts.mobile,ts.email,date_format(ts.dob,'%d-%m-%Y') AS dob,a.title AS section,
                 s.name AS std_name,d.name AS div_name,sq.title AS stu_qouta, $other_columns
-                fp.fine AS total_fine,fp.fees_discount AS tot_disc,fp.reciept_id as receipt_no,sum(fp.actual_amountpaid) as total_amt,b.title as student_batch_name,date_format(fp.receiptdate,'%d-%m-%Y') AS receipt_date,fp.payment_mode,fp.bank_name,fp.bank_branch,fp.cheque_dd_no as cheque_no,fp.cheque_dd_date as cheque_date")
+                fp.fine AS total_fine,fp.fees_discount AS tot_disc,fp.reciept_id as receipt_no,sum(fp.actual_amountpaid) as total_amt,b.title as student_batch_name,date_format(fp.receiptdate,'%d-%m-%Y') AS receiptdate,fp.payment_mode,fp.bank_name AS cheque_bank_name,fp.bank_branch,fp.cheque_dd_no as cheque_no,fp.cheque_dd_date as cheque_date")
                     ->from('fees_paid_other as fp')
                     ->join('tblstudent as ts', function ($join) {
                         $join->whereRaw('ts.id = fp.student_id AND ts.sub_institute_id = fp.sub_institute_id');
@@ -202,8 +212,8 @@ class feesTypewiseReportController extends Controller
         ->selectRaw("id,student_id,student_name,
         enrollment_no,admission_year,mobile,email,dob,section,
        std_name,div_name,stu_qouta, ".$columns."
-       total_fine,tot_disc,receipt_no,sum(total_amt) as amount,student_batch_name,receipt_date,payment_mode,bank_name,bank_branch,cheque_no,cheque_date")
-            ->groupBy(['student_id', 'receipt_no'])->get()->toArray();
+       total_fine,tot_disc,receipt_no,sum(total_amt) as amount,student_batch_name,receiptdate,payment_mode,cheque_bank_name,bank_branch,cheque_no,cheque_date")
+            ->groupBy(['student_id','receiptdate','payment_mode','cheque_bank_name','cheque_no'])->get()->toArray();
             // 7050
             // echo "<pre>";print_r($fees_data);exit;
         $fees_data = array_map(function ($value) {

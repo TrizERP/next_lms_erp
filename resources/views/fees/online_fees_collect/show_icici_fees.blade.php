@@ -234,7 +234,7 @@
                                             <td></td>
                                             <td>@if(in_array(session()->get('sub_institute_id'), $sub_institute_id))
                                                 <input type="text" name="fees_data[fine]" id="cheque_return_charges1" class="form-control cheque_return_charges1" value="@if(date('d') > 5 && isset($total_amt) && $total_amt!=0 && $data['admission_under'] == 'Old') {{  $data['fees_config_data'][0]['late_fees_amount'] }} @else {{ $cheque_return_charges0 ?? 0 }} @endif" readonly="readonly">
-                                                <input type="hidden" name="hidden_cheque_return_charges" id="hidden_cheque_return_charges" class="form-control cheque_return_charges1" value="{{ $data['fees_config_data'][0]['late_fees_amount'] }}">
+                                                <input type="hidden" name="hidden_cheque_return_charges" id="hidden_cheque_return_charges" class="form-control cheque_return_charges1" value="@if(date('d') > 5 && isset($total_amt) && $total_amt!=0 && $data['admission_under'] == 'Old') {{  $data['fees_config_data'][0]['late_fees_amount'] }} @else {{ $cheque_return_charges0 ?? 0 }} @endif">
                                             @else
                                                 <input type="text" name="fees_data[fine]" id="cheque_return_charges" class="form-control" value="@php if(isset($cheque_return_charges0)) echo $cheque_return_charges0; @endphp" readonly="readonly">
                                                 <input type="hidden" name="hidden_cheque_return_charges" id="hidden_cheque_return_charges" class="form-control" value="@if(isset($cheque_return_charges0)){{ $cheque_return_charges0 }}@endif">
@@ -245,7 +245,11 @@
                                             // START 30-12-2021 Added for include cheque return charges in grand total
 
                                             if (isset($cheque_return_charges) && $cheque_return_charges != '') {
-                                                $grand_total_with_cheque_charges = $data['final_fee']['Total'] + $cheque_return_charges;
+                                                if(in_array(session()->get('sub_institute_id'), $sub_institute_id) && $data['admission_under'] != 'Old'){
+                                                    $grand_total_with_cheque_charges = $data['final_fee']['Total'] + $cheque_return_charges0;
+                                                }else{
+                                                    $grand_total_with_cheque_charges = $data['final_fee']['Total'] + $cheque_return_charges;
+                                                }
                                             } else {
                                                 $grand_total_with_cheque_charges = $data['final_fee']['Total'];
                                             }
@@ -377,7 +381,10 @@
             tot = parseFloat($("#totalVal").val());
             fin = parseFloat($("#totalFin").val());
             dis = parseFloat($("#totalDis").val());
-
+            console.log('tot '+tot);
+            console.log('fin '+fin);
+            console.log('dis '+dis);
+            
             if({{session()->get('sub_institute_id')}} == 257){
 					cheque_return_charges = $("#cheque_return_charges1").val();
 				}else{

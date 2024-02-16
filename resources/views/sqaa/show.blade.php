@@ -45,7 +45,9 @@
 				<strong>{{ $sessionData['message'] }}</strong>
 			</div>
 			@endif
-
+			<div class="alert alert-secondary alert-secondary">
+				<strong>Please Select one tab below :</strong>
+			</div>
 			<div class="row">
 				<div class="col-lg-12 col-sm-12 col-xs-12">
 					<div class="sttabs tabs-style-linemove triz-verTab bg-white style2">
@@ -142,7 +144,7 @@
 					<input type="hidden" id="text_4" name="text_4" @if(isset($data[ 'text_4'])) value="{{$data['text_4']}}" @endif>
 					</form>
 
-					<form action="{{route('sqaa_master.store')}}" method="post" enctype="multiple/form-data" id="document_div">
+					<form action="{{route('sqaa_master.store')}}" method="post" enctype="multipart/form-data" id="document_div">
 					@csrf
 					<!-- add new row -->
 					<div class="addButtonCheckbox1" data-new="1">
@@ -192,7 +194,7 @@
 							<div class="col-md-2">
 								<div class="form-group">
 									<label for="topicAvailability2">Files</label>
-									<input type="file" class="form-control" name="files[]" data-new="{{$j}}" accept=".pdf,.xlsx,.doc,.docx" >
+									<input type="file" class="form-control" name="doc_files[]" data-new="{{$j}}" accept=".pdf,.xlsx,.doc,.docx" >
 									@if (!empty($document->file) && $document->file !=" ")
 									<input type="hidden" name="update_file[]" id="" value="{{$document->file}}">
 										<a href="https://s3-triz.fra1.digitaloceanspaces.com/public/sqaa/{{$document->file}}" target="_blank">View</a>

@@ -35,7 +35,7 @@
                                 <th>Bus</th>
                                 <th>Stop</th>
                                 <th>Driver</th>
-                                <th>Conductor</th>
+                                <th>Amount</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -55,7 +55,7 @@
                                 <td>{{$data->bus_name}}</td>
                                 <td>{{$data->stop_name}}</td>
                                 <td>{{$data->driver}}</td>
-                                <td>{{$data->conductor}}</td>
+                                <td>{{$data->van_vise_amount}}</td>
                             </tr>
                             @endforeach
 

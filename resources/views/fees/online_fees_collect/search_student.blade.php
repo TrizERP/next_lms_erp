@@ -174,7 +174,12 @@
                                 // console.log(key);
                             }
                         }
-                        $("#student_id").append('<option value=' + value.id + '>' + value.name +
+                        if(value.end_date === null){
+                            var act = " (Active)";
+                        }else{
+                            var act = "";
+                        }
+                        $("#student_id").append('<option value=' + value.id + '>' + value.name + act +
                             '</option>');
                         i = i + 1;
                     });

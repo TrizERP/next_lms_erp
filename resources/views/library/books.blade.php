@@ -1,7 +1,10 @@
-@include('includes.headcss')
-<link rel="stylesheet" href="../../../tooltip/enjoyhint/jquery.enjoyhint.css">
+
+{{--@include('includes.headcss')
 @include('includes.header')
-@include('includes.sideNavigation')
+@include('includes.sideNavigation')--}}
+@extends('layout')
+<link rel="stylesheet" href="../../../tooltip/enjoyhint/jquery.enjoyhint.css">
+@section('container')
 
 <div id="page-wrapper">
     <div class="container-fluid">
@@ -82,7 +85,7 @@
                                     </select>
                                 </div>
 
-                                <div class="col-md-4 mt-2">
+                                <div class="col-md-4 mt-2" style="display:none">
                                     <a class="btn btn-danger delete-all"><i class="fa fa-trash"></i>
                                         Delete </a>
                                     <a class="btn btn-info print-barcode"><i class="fa fa-barcode"></i>
@@ -822,3 +825,4 @@
     }
 </script>
 @include('includes.footer')
+@endsection
