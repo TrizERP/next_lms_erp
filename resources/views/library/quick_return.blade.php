@@ -29,7 +29,7 @@
                 <input type="text" class="form-control" name="item_code" id="item_code" @if(isset($data['item_code'])) value="{{$data['item_code']}}" @else placeholder="Enter Item Id" @endif>
                 </div>
                 <div class="form-group">
-                <input type="submit" value="Search" class="btn btn-primary ml-2">
+                <input type="submit" value="Return" class="btn btn-primary ml-2">
                 </div>
             </div>
         </form>
@@ -54,6 +54,7 @@
                     <th>Book Name</th>
                     <th>Issued Date</th>
                     <th>Due Date</th>  
+					<th>Return Date</th>                    
                     <th>Publisher Name</th>                    
                     <th class="text-left">Author Name</th>
                 </thead>
@@ -71,7 +72,8 @@
                     <td>{{$value->item_code}}</td>                    
                     <td>{{$value->book_name}}</td>                    
                     <td>{{ \Carbon\Carbon::parse($value->issued_date)->format('d-m-Y') }}</td>
-                    <td>{{ \Carbon\Carbon::parse($value->due_date)->format('d-m-Y') }}</td>                    
+                    <td>{{ \Carbon\Carbon::parse($value->due_date)->format('d-m-Y') }}</td>      
+                    <td>{{ \Carbon\Carbon::parse($value->return_date)->format('d-m-Y') }}</td>                                                      
                     <td>{{$value->publisher_name}}</td>                    
                     <td>{{$value->author_name}}</td>                    
                     </tr>

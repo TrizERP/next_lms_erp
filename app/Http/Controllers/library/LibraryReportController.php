@@ -137,14 +137,15 @@ class LibraryReportController extends Controller
         ->when($mobile,function($q) use ($mobile) {
             $q->where('s.mobile',$mobile);
         })
+        ->where('se.syear',$syear)
         ->where('library_book_circulations.sub_institute_id',$sub_institute_id);
         if($report_type=="overdue"){
             $student_data->where('library_book_circulations.issued_date','>=',$from_date)->Where('library_book_circulations.due_date','<=',$to_date)->whereNull('library_book_circulations.return_date');
         }else{
             $student_data->where('library_book_circulations.issued_date','>=',$from_date)->Where('library_book_circulations.due_date','<=',$to_date);
         }
-        $issue_overdue_data=$student_data->get()->toArray();
-        // echo "<pre>";print_r($student_data);exit;   
+        $issue_overdue_data = $student_data->get()->toArray();
+        // echo "<pre>";print_r($issue_overdue_data);exit;   
         $res['details'] =  $issue_overdue_data;   
         return is_mobile($type, "library/reports/bookIssueDue", $res, "view");
         // return is_mobile($type, "book_issue_report.index", $res);

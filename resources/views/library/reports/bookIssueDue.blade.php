@@ -113,7 +113,7 @@
 							<th>Item Code</th>							
 							<th>Issued Date</th>
 							<th>Due Date</th>
-							<th class="text-left">Return Date</th>
+							<th class="text-left">Return Date</th>	
 						</tr>
 					</thead>
 					<tbody>
@@ -126,9 +126,9 @@
 						<td>{{$value['standard'].'/'.$value['division']}}</td>						
 						<td>{{$value['book_title']}}</td>						
 						<td>{{$value['item_code']}}</td>						
-						<td>{{$value['issued_date']}}</td>						
-						<td>{{$value['due_date']}}</td>						
-						<td>{{$value['return_date']}}</td>						
+						<td>{{\Carbon\Carbon::parse($value['issued_date'])->format('d-m-Y') }}</td>						
+						<td>{{\Carbon\Carbon::parse($value['due_date'])->format('d-m-Y') }}</td>						
+						<td>{{\Carbon\Carbon::parse($value['return_date'])->format('d-m-Y') }}</td>						
 					</tr>
 					@endforeach
 					</tbody>
