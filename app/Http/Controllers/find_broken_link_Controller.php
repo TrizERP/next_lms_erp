@@ -36,7 +36,7 @@ class find_broken_link_Controller extends Controller
         $otherErrors = [];
         $routeNames = [];
 
-        $get_links = DB::table('tblmenumaster')->take(100)->where('link','!=','javascript:void(0);')->pluck('link')->toArray();
+        $get_links = DB::table('tblmenumaster')->where('link','!=','javascript:void(0);')->pluck('link')->toArray();
        
         // Get all route names
         foreach (app('router')->getRoutes() as $route) {
