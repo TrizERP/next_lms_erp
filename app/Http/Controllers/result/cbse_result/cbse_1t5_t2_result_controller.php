@@ -227,7 +227,7 @@ class cbse_1t5_t2_result_controller extends Controller {
                 AND e.syear = ' . session()->get('syear') . '  
                 AND e.standard_id = ' . $standard_id . '
                 AND e.report_card_status ="Y"
-                GROUP BY em.ExamTitle,e.title
+                GROUP BY em.ExamTitle
                 ORDER BY em.SortOrder';
 
         $result = DB::select(DB::raw($str));
