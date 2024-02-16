@@ -353,6 +353,308 @@ class PayrollController extends Controller
         // return $request->all();
     }
 
+    public function hrmsSalaryCertificateIndex(Request $request)
+    {
+        $type = $request->input('type');
+
+        if($type=="API"){
+            try {
+                if (!$this->jwtToken()->validate()) {
+                    $response = ['status' => '2', 'message' => 'Token Auth Failed', 'data' => []];
+    
+                    return response()->json($response, 401);
+                }
+            } catch (\Exception $e) {
+                $response = ['status' => '2', 'message' => $e->getMessage(), 'data' => []];
+    
+                return response()->json($response, 401);
+            }
+            $sub_institute_id = $request->get('sub_institute_id');
+        }
+       
+        $res['employee_id'] = $request->get('employee_id');
+        $res['month_ids'] = $request->input('month_id', []);
+
+        $res['departments'] = $departments = HrmsDepartment::where('status', true)->pluck('department', 'id');
+
+        $res['payrollTypes'] = PayrollType::where('status', 1)->where('payroll_type', 1)->get()->toArray();
+
+        return is_mobile($type, "payroll.salary_certificate.index", $res, "view");        
+    }
+
+    public function hrmsSalaryCertificateReport(Request $request)
+    {
+        $type = $request->input('type');
+        if ($type == 'API') {
+            $sub_institute_id = $request->input('sub_institute_id');
+        } else {
+            $sub_institute_id = $request->session()->get('sub_institute_id');
+        }
+
+        $department_id = $request->get('department_id');
+	    $employee_id = $request->get('employee_id');
+	    $year = $request->get('year');
+	    $month_ids = $request->get('month_id');
+	    $payroll_type_ids = $request->get('payroll_type_id');
+	    $reason = $request->get('reason');
+        
+        $get_salaray_certificate = DB::table('hrms_salary_certificate')->where(['departement_id' => $department_id, 'employee_id' => $employee_id, 'sub_institute_id' => $sub_institute_id, 'year' => $year])->first();
+
+        $filename = 'SC' . '_' . $year . '_' . $employee_id.'.pdf';
+        
+        $get_salary_certificate_html = $this->get_salary_certificate_html($employee_id,$year,$sub_institute_id,$month_ids,$department_id,$payroll_type_ids,$filename);
+
+        // return $get_salary_certificate_html;exit;
+
+        if($get_salaray_certificate)
+        {
+            DB::table('hrms_salary_certificate')->where(['departement_id' => $department_id, 'employee_id' => $employee_id, 'year' => $year,'sub_institute_id' => $sub_institute_id
+                ])->update([
+                    'month' => implode(',', $request->get('month_id')),
+                    'payroll_type_id' => implode(',', $request->get('payroll_type_id')),
+                    'reason' => $reason ?? '',
+                    'pdf_file_name' => $filename,
+                    'pdf_html' => $get_salary_certificate_html
+                ]);
+
+            $request->session()->flash('success', 'Salary Certificate Updated Successfully.');
+        }
+        else
+        {
+            // Record does not exist, insert a new one
+            DB::table('hrms_salary_certificate')->insert([
+                'departement_id' => $department_id,
+                'employee_id' => $employee_id,
+                'year' => $year,
+                'month' => implode(',', $request->get('month_id')),
+                'payroll_type_id' => implode(',', $request->get('payroll_type_id')),
+                'reason' => $reason ?? '',
+                'sub_institute_id' => $sub_institute_id,
+                'pdf_file_name' => $filename,
+                'pdf_html' => $get_salary_certificate_html,
+                'created_by' => session()->get('user_id')
+            ]);
+
+            $request->session()->flash('success', 'Salary Certificate Generated Successfully.');
+        }
+
+        $payrollTypes = PayrollType::where('status', 1)->where('payroll_type', 1)->get()->toArray();
+
+        $departments = HrmsDepartment::where('status', true)->pluck('department', 'id');
+
+        $employees = tbluserModel::where('sub_institute_id', $sub_institute_id)->where('department_id', $department_id)->get()->toArray();
+
+        $get_department_name = DB::table('hrms_departments as hd')
+            ->selectRaw('hd.department as department_name')
+            ->join('tbluser as u', 'u.department_id', 'hd.id')
+            ->where(['u.sub_institute_id' => $sub_institute_id, 'u.id' => $employee_id])
+            ->first();
+          
+        $res['employees'] = $employees;
+        $res['employee_id'] = $employee_id;
+        $res['department_id'] = $department_id;
+        $res['year'] = $year;
+        $res['month_ids'] = $month_ids;
+        $res['payroll_type_ids'] = $payroll_type_ids;
+        $res['reason'] = $reason;
+        $res['departments'] = $departments;
+        $res['department_name'] = $get_department_name;
+        $res['payrollTypes'] = $payrollTypes;
+        
+        return is_mobile($type, "payroll.salary_certificate.index", $res, "view");
+    }
+
+    public function SalaryCertificatePdfDownload(Request $request)
+    {
+        $employee_id = $request->get('emp_id');
+	    $year = $request->get('year');
+	    $sub_institute_id = $request->get('sub_institute_id');
+
+        $get_salary_certificate_pdf_file = DB::table('hrms_salary_certificate')->where([['employee_id', $employee_id], ['year', $year], ['sub_institute_id', $sub_institute_id]])->first();
+        
+        $pdf = PDF::loadHTML($get_salary_certificate_pdf_file->pdf_html);
+    
+        $filename = 'SC' . '_' . $year . '_' . $employee_id.'.pdf';
+       
+        return $pdf->download($filename);
+    }
+
+    public function get_salary_certificate_html($employee_id,$year,$sub_institute_id,$month_ids,$department_id,$payroll_type_ids,$filename)
+    {
+        $date = \Carbon\Carbon::now()->format('F jS, Y');
+
+        $get_all_details = DB::table('employee_salary_structures as ess')
+            ->selectRaw('ess.*,concat_ws(" ",u.first_name,u.middle_name,u.last_name) as employee_name,u.join_year as joining_year,hd.department as department_name,ss.SchoolName')
+            ->join('tbluser as u', 'u.id', '=', 'ess.employee_id')
+            ->join('hrms_departments as hd', 'hd.id', '=', 'u.department_id')
+            ->join('school_setup as ss', 'ss.id', '=', 'u.sub_institute_id')
+            ->where('ess.year', $year)                   
+            ->where('ess.employee_id', $employee_id)
+            ->where('ess.sub_institute_id', $sub_institute_id)
+            ->get()->toArray();
+
+        $pay_type= DB::table('payroll_types')->where('payroll_type', 1)->whereIn('id',$payroll_type_ids)->get()->pluck('payroll_name','id'); 
+
+        // Constructing the HTML string
+        $html = "<p>&nbsp;</p>";
+        $html .= "<p>&nbsp;</p>";
+        $html .= "<p>Date: <b>$date</b>,</p>";
+        $html .= "<p style='text-align:center;'><u>TO WHOMESOEVER IT MAY CONCERN</u></p>";
+        $html .= "<p>This is to certify that, <b>{$get_all_details[0]->employee_name}</b> is currently working with our institution as an <b>{$get_all_details[0]->department_name}</b> since <b>{$get_all_details[0]->joining_year}</b>. Her monthly salary breakup is as follows:</p>";
+
+        // HTML table for salary details
+        $html .= "<div style='margin: 0 auto; width: fit-content;'>";
+        $html .= "<table style='margin: 0 auto;' border='1'>";
+        $total_amt = $total = 0;
+
+        foreach ($get_all_details as $key => $value)
+        {
+            $arrayData = json_decode($value->employee_salary_data, true);
+
+            foreach($arrayData as $index => $val)
+            {
+                if ($index != 2) { // Check if the payment type is not PT
+                    $total = count($month_ids) * $val; // Multiply by the number of selected months
+                }
+                else 
+                {
+                    $total = $val; // For PT, keep the total as the value itself
+                }
+                
+                if(isset($pay_type[$index]))
+                {
+                    $html .= "<tr><td>$pay_type[$index]</td><td>".$total."</td></tr>";
+
+                    $total_amt += $total;
+                }
+            }
+        }
+        $html .= "<tr><td><strong>TOTAL GROSS MONTHLY SALARY:</strong></td><td>{$total_amt}</td></tr>";
+        $html .= "</table>";
+        $html .= "</div>";
+        $html .= "<p>Her Total Gross Yearly Salary is <b>Rs.{$total_amt}</b>/- (Rupees {$this->convert_number_to_words($total_amt)} Only) This certificate is issued as per her request and bears no financial responsibility on or behalf of any authorized signatory.</p>";
+        $html .= "<p>&nbsp;</p>";
+        $html .= "<p>Yours faithfully,";
+        $html .= "<br>{$get_all_details[0]->SchoolName},</p>";
+        $html .= "<p>Authorized Signatory.</p>";
+       
+        return $html;
+          
+    }
+
+    public function convert_number_to_words($number)
+    {
+        $hyphen = '-';
+        $conjunction = ' and ';
+        $separator = ', ';
+        $negative = 'negative ';
+        $decimal = ' point ';
+        $dictionary = [
+            0 => 'zero',
+            1 => 'one',
+            2 => 'two',
+            3 => 'three',
+            4 => 'four',
+            5 => 'five',
+            6 => 'six',
+            7 => 'seven',
+            8 => 'eight',
+            9 => 'nine',
+            10 => 'ten',
+            11 => 'eleven',
+            12 => 'twelve',
+            13 => 'thirteen',
+            14 => 'fourteen',
+            15 => 'fifteen',
+            16 => 'sixteen',
+            17 => 'seventeen',
+            18 => 'eighteen',
+            19 => 'nineteen',
+            20 => 'twenty',
+            30 => 'thirty',
+            40 => 'fourty',
+            50 => 'fifty',
+            60 => 'sixty',
+            70 => 'seventy',
+            80 => 'eighty',
+            90 => 'ninety',
+            100 => 'hundred',
+            1000 => 'thousand',
+            1000000 => 'million',
+            1000000000 => 'billion',
+            1000000000000 => 'trillion',
+            1000000000000000 => 'quadrillion',
+            1000000000000000000 => 'quintillion',
+        ];
+
+        if (!is_numeric($number)) {
+            return false;
+        }
+
+        if (($number >= 0 && (int)$number < 0) || (int)$number < 0 - PHP_INT_MAX) {
+            // overflow
+            trigger_error(
+                'convert_number_to_words only accepts numbers between -' . PHP_INT_MAX . ' and ' . PHP_INT_MAX,
+                E_USER_WARNING
+            );
+
+            return false;
+        }
+
+        if ($number < 0) {
+            return $negative . $this->convert_number_to_words(abs($number));
+        }
+
+        $string = $fraction = null;
+
+        if (strpos($number, '.') !== false) {
+            list($number, $fraction) = explode('.', $number);
+        }
+
+        switch (true) {
+            case $number < 21:
+                $string = $dictionary[$number];
+                break;
+            case $number < 100:
+                $tens = ((int)($number / 10)) * 10;
+                $units = $number % 10;
+                $string = $dictionary[$tens];
+                if ($units) {
+                    $string .= $hyphen . $dictionary[$units];
+                }
+                break;
+            case $number < 1000:
+                $hundreds = $number / 100;
+                $remainder = $number % 100;
+                $string = $dictionary[$hundreds] . ' ' . $dictionary[100];
+                if ($remainder) {
+                    $string .= $conjunction . $this->convert_number_to_words($remainder);
+                }
+                break;
+            default:
+                $baseUnit = pow(1000, floor(log($number, 1000)));
+                $numBaseUnits = (int)($number / $baseUnit);
+                $remainder = $number % $baseUnit;
+                $string = $this->convert_number_to_words($numBaseUnits) . ' ' . $dictionary[$baseUnit];
+                if ($remainder) {
+                    $string .= $remainder < 100 ? $conjunction : $separator;
+                    $string .= $this->convert_number_to_words($remainder);
+                }
+                break;
+        }
+
+        if (null !== $fraction && is_numeric($fraction)) {
+            $string .= $decimal;
+            $words = [];
+            foreach (str_split((string)$fraction) as $number) {
+                $words[] = $dictionary[$number];
+            }
+            $string .= implode(' ', $words);
+        }
+
+        return $string;
+    }
+
     public function payrollDeduction(Request $request)
     {
         $payrollTypes = [];
