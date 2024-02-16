@@ -606,7 +606,7 @@
                                                                     <source src="../../../storage{{$cval['file_folder']}}/{{$cval['filename']}}" type="video/mp4"/>
                                                                 </video>
                                                             </div>
-                                                            <a href="{{route('topic_master.show',$cval['id'])}}" target="_blank" class="view-box" yahi hai>
+                                                            <a href="{{route('topic_master.show',$cval['id'])}}" target="_blank" class="view-box">
                                                                 <i class="mdi mdi-eye-outline"></i>
                                                             </a>
                                                         </div>
