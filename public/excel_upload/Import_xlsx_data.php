@@ -169,10 +169,10 @@ if (isset($_REQUEST['submit'])) {
                                  $valueQuery .="'" . $value[$valueFields['field']] . "',";
                             }if($relationTable[$valueFields['field']]['main_table']=="library_book_circulations"){
                                 $valueQuery .="'no_value',";
-                                echo "<h5 style='color:red'>Problem Occurred while upload for <b style='color:black'>" . $valueFields['field'] . "</b> when value is <b style='color:black'>" . $value[$valueFields['field']] . "</b> please check and reupload the file.</h5>";
+                                echo "<h5 style='color:red'>Problem Occurred while upload for <b style='color:black'>" . $valueFields['field'] . "</b> when value is <b style='color:black'>" . $value[$valueFields['field']] . "</b> please check and reupload the file ON LINE ".$key.".</h5>";
                                 $all_error[$valueFields['field']][] =$value[$valueFields['field']];
                            }else{
-                                    echo "<h5 style='color:red'>Problem Occurred while upload for <b style='color:black'>" . $valueFields['field'] . "</b> when value is <b style='color:black'>" . $value[$valueFields['field']] . "</b> please check and reupload the file.</h5>";
+                                    echo "<h5 style='color:red'>Problem Occurred while upload for <b style='color:black'>" . $valueFields['field'] . "</b> when value is <b style='color:black'>" . $value[$valueFields['field']] . "</b> please check and reupload the file ON LINE ".$key.".</h5>";
                             }
                            
                         }

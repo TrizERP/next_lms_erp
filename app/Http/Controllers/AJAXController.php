@@ -974,13 +974,15 @@ class AJAXController extends Controller
         $mobile = $_REQUEST["mobile_number"];
 
         $all_student = DB::table("tblstudent as s")
+        ->join('tblstudent_enrollment as se','se.student_id','=','s.id')
             ->join('fees_online_maping as fo', 'fo.sub_institute_id', '=', 's.sub_institute_id')
             ->join('school_setup as ss', 'ss.id', '=', 'fo.sub_institute_id')
             ->select(
                 DB::raw("CONCAT(s.first_name,' ',s.last_name,' - ',ss.shortcode) AS name"),
                 's.id',
                 'fo.bank_name',
-                's.sub_institute_id'
+                's.sub_institute_id',
+                'se.end_date'
             )
             ->where(['s.mobile' => $mobile]) //,'fo.sub_institute_id' => $sub_institute_id
             ->get();
