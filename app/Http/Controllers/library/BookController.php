@@ -231,7 +231,8 @@ class BookController extends Controller
     public function show($enroll)
     {
         try {
-            $details = tblstudentModel::where('enrollment_no', $enroll)->with('issuedBook')->first();
+            $details = tblstudentModel::where('enrollment_no', $enroll)->with('issuedBookItem')->first();
+            // return($details);exit;
             $view = View::make('library.user_detail', compact('details'))->render();
             return response()->json(['data' => $view], 200);
         } catch (Exception $e) {
@@ -305,8 +306,12 @@ class BookController extends Controller
     public function returnBook($id, Request $request)
     {
         $enroll = $request->enroll_no;
-        $del = LibraryBook::where('id', $id)->delete();
-        $details = tblstudentModel::where('enrollment_no', $enroll)->with('issuedBook')->first();
+        $book = LibraryBookCirculation::find($id);
+        if ($book) {
+            $book->update(['return_date' => now()]); 
+        }
+        // return $book;exit;
+        $details = tblstudentModel::where('enrollment_no', $enroll)->with('issuedBookItem')->first();
         $view = View::make('library.user_detail', compact('details'))->render();
         return response()->json(['data' => $view], 200);
     }

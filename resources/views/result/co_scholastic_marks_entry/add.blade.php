@@ -125,8 +125,8 @@
                             @endif
                                 <input type="hidden" name="{{$name}}" value="{{$data['stu_data'][$id][$col_arr['student_id']]['grade_marks']}}">
                             <td>
-                                <select name=$name id='grade' class='form-control' {{$disable}}>
-                                    <option value=''>Select</option>";
+                                <select name="values[{{ $col_arr['student_id'] }}][grade_opt]" id='grade' class='form-control' {{$disable}}>
+                                    <option value=''>Select</option>"
                                     @foreach ($data["co_scholastic_grade_dd"] as $id_dd=>$arr_dd)
                                    <option value={{$id_dd}} @if($col_arr["grade"] == $id_dd) selected @endif>{{$arr_dd}}</option>
                                    @endforeach     

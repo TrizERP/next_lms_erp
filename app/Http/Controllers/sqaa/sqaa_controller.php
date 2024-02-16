@@ -11,6 +11,7 @@ use App\Models\sqaa\sqaa_document;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Http\Response;
+use Aws\S3\S3Client;
 use DB;
 use PDF;
 
@@ -148,15 +149,27 @@ class sqaa_controller extends Controller
                     // Check if a file is present for this row
                     $availability = $request->get('availability')[$i] ?? 'no';
                     $filename = isset($request->get('doc_files')[$i]) ? $request->file('doc_files')[$i]->getClientOriginalName() : null;
-            
+                  
                     // Check if a file is present for this row
-                    if ($availability == "yes" && $request->file('doc_files')[$i]->isValid()) {
+                    if ($availability == "yes" &&  isset($request->doc_files[$i]) && $request->file('doc_files')[$i]->isValid()) {
                         $file = $request->file('doc_files')[$i];
-                        $filename = $file->getClientOriginalName();
+                        $filename = $i.'_'.$file->getClientOriginalName();
                         Storage::disk('digitalocean')->putFileAs('public/sqaa/', $file, $filename, 'public');
                     }else{
-                        if(isset($request->get('update_file')[$i])){
+                        if(isset($request->get('update_file')[$i]) && $availability == "yes"){
                             $filename=$request->get('update_file')[$i];
+                        }else if (isset($request->get('update_file')[$i])){
+                            $filename=$request->get('update_file')[$i];
+                            $file_path = 'public/sqaa/' . $filename;
+                            if (Storage::disk('digitalocean')->exists($file_path)) {
+                                Storage::disk('digitalocean')->delete($file_path);
+                                if (!Storage::disk('digitalocean')->exists($file_path)) {
+                                    $filename=null;
+                                }   
+                            } 
+                            // echo "<pre>";print_r($i);exit;
+                        }else{
+                            $filename=null;
                         }
                     }
                 $doc_arr=[
