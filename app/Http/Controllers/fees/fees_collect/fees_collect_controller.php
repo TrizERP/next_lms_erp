@@ -52,6 +52,7 @@ class fees_collect_controller extends Controller
         }
         $school_data['data'] = [];
         $type = $request->input('type');
+        
         return is_mobile($type, "fees/fees_collect/show", $school_data, "view");
     }
 
