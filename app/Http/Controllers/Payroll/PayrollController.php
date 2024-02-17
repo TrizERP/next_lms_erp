@@ -484,7 +484,7 @@ class PayrollController extends Controller
         $date = \Carbon\Carbon::now()->format('F jS, Y');
 
         $get_all_details = DB::table('employee_salary_structures as ess')
-            ->selectRaw('ess.*,concat_ws(" ",u.first_name,u.middle_name,u.last_name) as employee_name,u.join_year as joining_year,hd.department as department_name,ss.SchoolName')
+            ->selectRaw('ess.*,concat_ws(" ",u.first_name,u.middle_name,u.last_name) as employee_name,u.join_year as joining_year,hd.department as department_name,ss.SchoolName,u.gender')
             ->join('tbluser as u', 'u.id', '=', 'ess.employee_id')
             ->join('hrms_departments as hd', 'hd.id', '=', 'u.department_id')
             ->join('school_setup as ss', 'ss.id', '=', 'u.sub_institute_id')
@@ -509,6 +509,15 @@ class PayrollController extends Controller
 
         foreach ($get_all_details as $key => $value)
         {
+            if($value->gender == 'M')
+            {
+                $his = "His";
+            }
+            else
+            {
+                $his = "Her";
+            }
+            
             $arrayData = json_decode($value->employee_salary_data, true);
 
             foreach($arrayData as $index => $val)
@@ -532,7 +541,7 @@ class PayrollController extends Controller
         $html .= "<tr><td><strong>TOTAL GROSS MONTHLY SALARY:</strong></td><td>{$total_amt}</td></tr>";
         $html .= "</table>";
         $html .= "</div>";
-        $html .= "<p>Her Total Gross Yearly Salary is <b>Rs.{$total_amt}</b>/- (Rupees {$this->convert_number_to_words($total_amt)} Only) This certificate is issued as per her request and bears no financial responsibility on or behalf of any authorized signatory.</p>";
+        $html .= "<p>{$his} Total Gross Yearly Salary is <b>Rs.{$total_amt}</b>/- (Rupees {$this->convert_number_to_words($total_amt)} Only) This certificate is issued as per her request and bears no financial responsibility on or behalf of any authorized signatory.</p>";
         $html .= "<p>&nbsp;</p>";
         $html .= "<p>Yours faithfully,";
         $html .= "<br>{$get_all_details[0]->SchoolName},</p>";

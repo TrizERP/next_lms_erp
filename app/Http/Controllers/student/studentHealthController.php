@@ -226,7 +226,7 @@ class studentHealthController extends Controller
             // AND student_id = '".$student_id."'
             // ORDER BY date");
             $data = DB::table('student_health')
-            ->select('doctor_name', 'doctor_contact', DB::raw("DATE_FORMAT(date, '%d-%m-%Y') AS date"), DB::raw("IF(file = '', '', CONCAT('https://".$_SERVER['SERVER_NAME']."/storage/frontdesk/', file)) AS file"))
+            ->select('doctor_name', 'doctor_contact', DB::raw("DATE_FORMAT(date, '%d-%m-%Y') AS date"), DB::raw("IF(file = '', CONCAT('https://".$_SERVER['SERVER_NAME']."/storage/frontdesk/noimages.png'), CONCAT('https://".$_SERVER['SERVER_NAME']."/storage/frontdesk/', file)) AS file"))
             ->where('syear', $syear)
             ->where('sub_institute_id', $sub_institute_id)
             ->where('student_id', $student_id)
