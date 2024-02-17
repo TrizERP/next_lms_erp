@@ -119,6 +119,12 @@
 					<tbody>
 					@foreach($data['details'] as $key=>$value)
 					<tr>
+					@php
+						$return_date = '';
+						if($value['return_date'] !='' && $value['return_date']!=null && $value['return_date']!="0000-00-00 00:00:00"){
+							$return_date= \Carbon\Carbon::parse($value['return_date'])->format('d-m-Y H:s:i');
+						}
+					@endphp
 						<td>{{$i++}}</td>
 						<td>{{$value['student_name']}}</td>	
 						<td>{{$value['enrollment_no']}}</td>						
@@ -128,7 +134,7 @@
 						<td>{{$value['item_code']}}</td>						
 						<td>{{\Carbon\Carbon::parse($value['issued_date'])->format('d-m-Y') }}</td>						
 						<td>{{\Carbon\Carbon::parse($value['due_date'])->format('d-m-Y') }}</td>						
-						<td>{{\Carbon\Carbon::parse($value['return_date'])->format('d-m-Y') }}</td>						
+						<td>{{ $return_date }}</td>						
 					</tr>
 					@endforeach
 					</tbody>
