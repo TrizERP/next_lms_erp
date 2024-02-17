@@ -126,7 +126,9 @@ class LibraryReportController extends Controller
         ->join('standard as std','std.id','=','se.standard_id')
         ->join('division as d','d.id','=','se.section_id')        
         ->join('library_items as li','li.book_id','=','library_book_circulations.book_id')
-        ->join('library_books as lb','lb.id','=','library_book_circulations.book_id')        
+        ->join('library_books as lb',function($join) use ($sub_institute_id) {
+            $join->on('lb.id','=','library_book_circulations.book_id')->where('lb.sub_institute_id','=',$sub_institute_id);
+        })
         ->selectRaw('s.id as student_id,s.enrollment_no,concat_ws(" ",s.first_name,s.last_name,s.middle_name) as student_name,s.mobile,library_book_circulations.book_id,std.name as standard,d.name as division,li.item_code,lb.title as book_title,lb.sub_title as book_sub_title,lb.publisher_name,lb.author_name,library_book_circulations.issued_date,library_book_circulations.due_date,library_book_circulations.return_date')
         ->when($name,function($q) use ($name) {
             $q->where('s.first_name',$name)->oRwhere('s.last_name',$name)->oRwhere('s.middle_name',$name);
@@ -140,7 +142,8 @@ class LibraryReportController extends Controller
         ->where('se.syear',$syear)
         ->where('library_book_circulations.sub_institute_id',$sub_institute_id);
         if($report_type=="overdue"){
-            $student_data->where('library_book_circulations.issued_date','>=',$from_date)->Where('library_book_circulations.due_date','<=',$to_date)->whereNull('library_book_circulations.return_date');
+            // $student_data->where('library_book_circulations.due_date','>=',$from_date)->Where('library_book_circulations.due_date','<=',$to_date)->whereNull('library_book_circulations.return_date');
+            $student_data->whereBetween('library_book_circulations.due_date',[$from_date,$to_date])->whereRaw(' (library_book_circulations.return_date IS NULL OR library_book_circulations.return_date like "0000-00%" )')  ;
         }else{
             $student_data->where('library_book_circulations.issued_date','>=',$from_date)->Where('library_book_circulations.due_date','<=',$to_date);
         }
