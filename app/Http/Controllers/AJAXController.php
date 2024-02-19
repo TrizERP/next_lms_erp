@@ -958,7 +958,7 @@ class AJAXController extends Controller
                 's.sub_institute_id',
                 'se.end_date'
             )
-            ->where(['s.mobile' => $mobile]) //,'fo.sub_institute_id' => $sub_institute_id
+            ->where(['s.mobile' => $mobile,'se.syear' => DB::raw('ss.syear')]) //,'fo.sub_institute_id' => $sub_institute_id
             ->get();
 
         return response()->json($all_student);
