@@ -34,6 +34,7 @@ class mapQuestion extends Command
         $questionMasters = DB::table('lms_question_master as lq')->leftJoin('lms_question_mapping as lqm','lq.id','=','lqm.questionmaster_id')->selectRaw('lq.id as id,lq.question_title,lq.standard_id')->whereRaw('lqm.id IS NULL')->groupBy('lq.question_title')->get();
         $controller = new AJAXController();
         $contentMappingType=[];
+        $i=1;
         if(!empty($questionMasters)){
         foreach ($questionMasters as $questionMaster) {
             // echo $questionMaster->id.",";
@@ -97,10 +98,12 @@ class mapQuestion extends Command
                 // lmsQuestionMappingModel::where(["questionmaster_id" => $questionMaster->id])->delete();
                if(!empty($contentMappingType)){
                 lmsQuestionMappingModel::insert($contentMappingType);
-                echo "<pre>";print_r($contentMappingType);
+                //echo "<pre>";print_r($contentMappingType);
+                $i++;
                }
             }
         }
+        echo $i;
     }else{
         echo "All Question Mapped Successfully !!";
     }
