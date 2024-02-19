@@ -474,13 +474,18 @@ function question_prompt(){
             if (editor) {
                 editor.setData('');
             }
-
+            console.log('question-'+result);
+            if(Array.isArray(result)){
+              var data =result[0].substring(1, result[0].length - 1);
+            }else{
+              var data = result;
+            }
             // Append the new content
-            $('#question_title').append(result);
-            check_input(result);
+            $('#question_title').append(data);
+            check_input(data);
             // Optionally, you can set the new content directly to CKEditor
             if (editor) {
-                editor.setData(result);
+                editor.setData(data);
             }
         }
 
@@ -616,7 +621,16 @@ var inputValue = editor.getData() ?? inputElement.value;
 
            var parsedResult = JSON.parse(result);
 
-        // Extract the values for answer_depth and answer_bloom
+       if (parsedResult && parsedResult.question_depth && parsedResult.reason_depth && parsedResult.question_bloom &&
+        parsedResult.reason_bloom && parsedResult.question_learning) {
+        // Extract the values
+        var answer_depth = parsedResult.question_depth;
+        var reason_depth = parsedResult.reason_depth;
+        var answer_bloom = parsedResult.question_bloom;
+        var reason_bloom = parsedResult.reason_bloom;
+        var answer_learning = parsedResult.question_learning;
+
+        }else{  
         var answer_depth = parsedResult[0].question_depth;
         var reason_depth = parsedResult[0].reason_depth;
         // console.log(reason_depth);
@@ -624,6 +638,7 @@ var inputValue = editor.getData() ?? inputElement.value;
         var reason_bloom = parsedResult[0].reason_bloom;
 
         var answer_learning = parsedResult[0].question_learning;
+        }
 
         var SelectElement_type1 = $('select[name="mapping_type[]"][data-new=1]');
         SelectElement_type1.val(9);
