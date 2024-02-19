@@ -215,8 +215,9 @@ $editData = array();
                                         @endforeach
                                     @endif
                                 </select>
+                                <span id="division_error_span"></span>
                             </div>
-                            <span id="division_error_span" style="text-align: right;margin-left: 18%;"></span>
+                            
                             @php
                             if (Session::get('sub_institute_id') == '47')
                             {
@@ -410,6 +411,8 @@ $editData = array();
 </div>
 
 @include('includes.footerJs')
+<script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.3/js/select2.min.js"></script>
+<script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
 <script type="text/javascript">
     function calculate_age(dateString) {
         var today = new Date();
@@ -432,52 +435,7 @@ $editData = array();
         }
     }
 
-     $('document').ready(function(){
-        //START Check Division Capacity Validation - 18/11/2021
-        var division_check = false;
-        document.getElementById('admission_division').addEventListener('change', function(){
-            var selected_division_id = $("#admission_division").val();
-            var selected_std_id = $("#admission_standard").val();
-
-            var path = "{{ route('ajax_checkDivisionCapacity') }}";
-            $.ajax({
-                url:path,
-                data:'std_id='+selected_std_id+'&division_id='+selected_division_id,
-                success:function(result){
-                    var capacity = result.split("/");
-                    if(capacity[1] != 0)
-                    {
-
-                        $("#division_error_span").removeClass().addClass("division_success").text('Total Capacity : '+capacity[0]+' / Remaining Capacity : '+capacity[1]);
-                        division_check = true;
-                    }
-                    else if(capacity[1] == '')
-                    {
-                        division_check = true;
-                    }
-                    else
-                    {
-                        $("#division_error_span").removeClass().addClass("division_error").text('Total Capacity : '+capacity[0]+' / Remaining Capacity : '+capacity[1]);
-                        division_check = false;
-                    }
-                }
-            });
-
-        });
-        //END Check Division Capacity Validation - 18/11/2021
-
-        $('.division_alert').on('click', function(){
-
-            if(division_check == true)
-            {
-                return true;
-            }else
-                alert('Please select other division.');
-                return false;
-            }
-
-        });
-    // });
+    
 
     function getDivision(standard_id) {
         var path = "{{ route('ajax_getDivision') }}";
@@ -494,6 +452,53 @@ $editData = array();
         });
     }
 
+</script>
+<script>
+$('document').ready(function(){
+    //START Check Division Capacity Validation - 18/11/2021
+    var division_check = false;
+    document.getElementById('admission_division').addEventListener('change', function(){
+        var selected_division_id = $("#admission_division").val();
+        var selected_std_id = $("#admission_standard").val();
+        var path = "{{ route('ajax_checkDivisionCapacity') }}";
+
+        $.ajax({
+            url:path,
+            data:'std_id='+selected_std_id+'&division_id='+selected_division_id,
+            success:function(result){
+                var capacity = result.split("/");
+                if(capacity[1] != 0)
+                {
+
+                    $("#division_error_span").removeClass().addClass("division_success").text('Total Capacity : '+capacity[0]+' / Remaining Capacity : '+capacity[1]);
+                    division_check = true;
+                }
+                else if(capacity[1] == '')
+                {
+                    division_check = true;
+                }
+                else
+                {
+                    $("#division_error_span").removeClass().addClass("division_error").text('Total Capacity : '+capacity[0]+' / Remaining Capacity : '+capacity[1]);
+                    division_check = false;
+                }
+            }
+        });
+    });
+    //END Check Division Capacity Validation - 18/11/2021
+
+    $('.division_alert').on('click', function(){
+
+        if(division_check == true)
+        {
+            return true;
+        }else{
+            alert('Please select other division.');
+            return false;
+        }
+
+    });
+});
 </script>
 @include('includes.footer')
 @endsection
