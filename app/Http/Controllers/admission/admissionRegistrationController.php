@@ -542,12 +542,12 @@ class admissionRegistrationController extends Controller
         $sub_institute_id = session()->get("sub_institute_id");
         $marking_period_id = session()->get('term_id');
         return DB::table('std_div_map as sdm')
-            ->join('standard ad s', function ($join) use($marking_period_id) {
+            ->join('standard as s', function ($join) use($marking_period_id) {
                 $join->whereRaw('s.id =sdm.standard_id AND s.sub_institute_id = sdm.sub_institute_id');
                 // ->when($marking_period_id,function($query) use ($marking_period_id){
                 //     $query->where('s.marking_period_id',$marking_period_id);
                 // });
-            })->join('division ad d', function ($join) {
+            })->join('division as d', function ($join) {
                 $join->whereRaw('d.id = sdm.division_id AND d.sub_institute_id = sdm.sub_institute_id');
             })->selectRaw("d.id,d.name,sdm.standard_id")
             ->where('sdm.sub_institute_id', $sub_institute_id)
