@@ -36,26 +36,19 @@ class FeesCancel extends Command
            foreach($last_feesCancel as $key => $value){
             //   echo $value->term_id;
                 $updateOrInsert = DB::table('fees_cancel')
-                        ->updateOrInsert([
+                        ->where([
                                 'reciept_id' => $value->reciept_id,                            
-                                'syear' => 2024,
                                 'sub_institute_id' => 257,
                                 'student_id'=>$value->student_id,
                                 'standard_id'=>$value->standard_id,
                                 'term_id' => $value->term_id
-                            ],
-                            [
-                                'amountpaid' => $value->amountpaid,
-                                'received_date' => $value->received_date,   
-                                'cancel_date' => $value->cancel_date,                                
-                                'cancel_type' => $value->cancel_type,                                
-                                'cancel_remark' => $value->cancel_remark,                                
-                                'cancelled_by' => $value->cancelled_by,
-                                'ip_address' => $value->ip_address,                                
+                            ])
+                            ->update([
+                                'syear' => 2024,                             
                             ]);
            }
        }
-           $message="Inserted successfully";                
+           $message="Updated successfully";                
        }else{
            $message="Already Inserted";
        }
