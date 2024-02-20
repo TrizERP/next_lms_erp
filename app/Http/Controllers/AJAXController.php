@@ -2117,7 +2117,9 @@ class AJAXController extends Controller
 
     public function lmsDataApi(Request $request){
 
-        if($request->table){
+        if($request->table && $request->sub_institute_id){
+            $data = DB::table($request->table)->where('sub_institute_id', $request->sub_institute_id)->get()->toArray();
+        }elseif($request->table){
             $data = DB::table($request->table)->get()->toArray();
         }else{
            $data = DB::table('lms_data')->get()->toArray();
