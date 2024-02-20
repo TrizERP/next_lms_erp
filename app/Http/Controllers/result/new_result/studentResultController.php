@@ -1559,6 +1559,7 @@ $overall_total = $overall_total / 2;
             return "-";
         }
         // echo $total_gain_mark."/".$total_mark."<br/>";
+        // if(session)
         $per = round((100 * $total_gain_mark) / $total_mark, 0);
         //echo "<pre>";print_r($per);
         foreach ($grade_arr as $id => $data) {
@@ -2273,6 +2274,7 @@ $overall_total = $overall_total / 2;
                $periodic_test = isset($titles_weight['Periodic Test']) ? $titles_weight['Periodic Test'] : 0 ;
                $theory = isset($titles_weight['Theory']) ? $titles_weight['Theory'] : 0 ;
                $practical = isset($titles_weight['Practical']) ? $titles_weight['Practical'] : 0 ;
+               $overall_total = $periodic_test + $theory + $practical;
 
        $table .= '<th colspan="' . (count($term_exam_titles) + $colspan + 2) . '" style="text-align:center;background:black;color:white"><b>ACADEMIC YEAR ('.($periodic_test + $practical + $theory).')</b></th>';
        $table.="</tr>
@@ -2305,9 +2307,8 @@ $overall_total = $overall_total / 2;
                         }
                     }
                     $mark_tot = '(' . $total_mark . ')';
-                    $overall_total += $total_mark;
                 }
-      
+    //   echo "<pre>";print_r($overall_total);exit;
                 $table .= '</tr></thead><tbody>';
                 $tot_ob_mark =  $tot_sub_mark = $get_all_ob_mark =  $get_all_tot_mark = 0;
                 // get grade array for grade 
