@@ -49,6 +49,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Import\ExcelDownloadController;
 use App\Http\Controllers\result\new_result\templateController;
 use App\Http\Controllers\result\new_result\studentResultController;
+use App\Http\Controllers\result\new_result\studentResultRemarksController;
 use App\Http\Controllers\result\approve_mobile_result\approve_mobile_result_controller;
 use App\Http\Controllers\result\result_skillset\resultSkillsetController;
 use App\Http\Controllers\result\result_activity_master\resultActivityMasterController;
@@ -75,8 +76,9 @@ Route::group(['prefix' => 'result', 'middleware' => ['session', 'menu', 'logRout
     Route::resource('cbse_1t5_t2_result', cbse_1t5_t2_result_controller::class);
     Route::resource('overall_mark_report', overall_mark_report_controller::class);
     Route::resource('result-marks-excel', ExcelDownloadController::class);
-    Route::resource('result-template', templateController::class);   
+    Route::resource('result-template', templateController::class);    
     Route::resource('student-result', studentResultController::class);    
+    Route::resource('student-result-remarks', studentResultRemarksController::class);    
     Route::get('view_all_result_tag', [templateController::class, 'viewAllTag'])->name('view_all_result_tag');
     Route::resource('approve_mobile_result', approve_mobile_result_controller::class);
     Route::resource('result_skillset', resultSkillsetController::class);
