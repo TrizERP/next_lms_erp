@@ -38,9 +38,11 @@ class lms_lessonplanController extends Controller
         $lessonData = LmsLessonPlan::when($id, function ($q) use ($id) {
             $q->whereId($id);
         })
-            ->when($id, function ($q) use ($request) {
+            ->when($request, function ($q) use ($request) {
                 $q->where('standard_id', $request->standard_id);
                 $q->where('subject_id', $request->subject_id);
+            })
+            ->when($request->chapter_id,function($q) use($request){
                 $q->where('chapter_id', $request->chapter_id);
             })
             ->with(['standard', 'subject', 'chapter', 'topic', 'lessonDays'])
@@ -67,7 +69,7 @@ class lms_lessonplanController extends Controller
         $res['status_code'] = 1;
         $res['message'] = "SUCCESS";
         $res['lessonplan_data'] = $lessonData;
-        // echo "<pre>";print_r($lessonData['lessonDays'][0]['selfstudyactivity']);exit;
+        // echo "<pre>";print_r($lessonData['lessonDays']);exit;
         $res['form_data'] = $formData;
         $res['topics'] = $topics;
         $res['chapters'] = $chapters;

@@ -130,9 +130,10 @@
                             @foreach($accordation_title as $key => $value)
                             <tr>
                                 @foreach($value as $key1 => $value1)                            
-                                <td data-key="{{$key1}}" data-count="{{$i}}"><a onclick="get_accordation('{{$key1}}','{{$value1}}','{{$i}}','single');">{{$value1}}</a></td>
+                                <td data-key="{{$key1}}" data-count="{{$i}}"onclick="get_accordation('{{$key1}}','{{$value1}}','{{$i}}','single');">{{$value1}}</td>
                                 @php
                                 $selfstudyact_data = isset($data['lessonplan_data']['lessonDays'][$i]['selfstudyactivity']) ? $data['lessonplan_data']['lessonDays'][$i]['selfstudyactivity'] ?? 0 : 0;
+
                                     $selfstudyact[$i] = DB::table('content_master')
                                     ->whereIn('id', explode(',', $selfstudyact_data)) ->where('sub_institute_id', session()->get('sub_institute_id')) ->where('syear', session()->get('syear'))
                                     ->selectRaw('id, title, file_folder, filename')
@@ -161,17 +162,18 @@
         if(single!=='' || value ==''){
             $('#accordion-container').empty();
         }
-      
-        var lessonplan_data = "{{ $data['lessonplan_data'] }}";
-            lessonplan_data = lessonplan_data.replace(/&quot;/ig, '"');
-            lessonplan_data = JSON.parse(lessonplan_data);
+    
+        var lessonplan_data = @json($data['lessonplan_data']);
+        console.log(lessonplan_data);
             var data = ''
             if(value=="Standard"){
-                var data = lessonplan_data[key]['name'];
+                var data = (lessonplan_data[key] && lessonplan_data[key]['name']) ? lessonplan_data[key]['name'] : 'No lesson Plan';
             }
             else if(value=="Subject" || value=="Chapter"){
                 name = key+'_name';
-                var data = lessonplan_data[key][name];
+                // var data = lessonplan_data[key][name];
+                var data = (lessonplan_data[key] && lessonplan_data[key][name]) ? lessonplan_data[key][name] : 'No lesson Plan';
+                
             }else if(key=='lesson_days'){
                var count_day = lessonplan_data.lesson_days[count];
                var selfstudyact_main = @json($selfstudyact);
@@ -197,7 +199,9 @@
                     </table>`;
                 
             }else if (typeof lessonplan_data[key] !== 'undefined' && lessonplan_data[key] !== null && lessonplan_data[key] !== '') {
-                var data = lessonplan_data[key];
+                // var data = lessonplan_data[key];
+                var data = (lessonplan_data[key]) ? lessonplan_data[key] : 'No lesson Plan';
+                
             }else{
                 var data = 'No Data Added For '+value;
             }
@@ -216,6 +220,7 @@
         </div>`);
         }
     }
+   
 
 function handleAddAll(columnIndex) {
     $('#accordion-container').empty();
