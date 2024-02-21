@@ -293,19 +293,19 @@ class map_student_controller extends Controller
                 INNER JOIN (
                 SELECT *
                 FROM transport_driver_detail
-                WHERE `type` = 'Driver') fd ON tvf.driver = fd.id
+                WHERE `type` = 'Driver' AND `status` = 'Active') fd ON tvf.driver = fd.id
                 INNER JOIN (
                 SELECT *
                 FROM transport_driver_detail
-                WHERE `type` = 'Driver') td ON tvt.driver = td.id
+                WHERE `type` = 'Driver' AND `status` = 'Active') td ON tvt.driver = td.id
                 INNER JOIN (
                 SELECT *
                 FROM transport_driver_detail
-                WHERE `type` = 'Conductor') fc ON tvf.conductor = fc.id
+                WHERE `type` = 'Conductor' AND `status` = 'Active') fc ON tvf.conductor = fc.id
                 INNER JOIN (
                 SELECT *
                 FROM transport_driver_detail
-                WHERE `type` = 'Conductor') tc ON tvt.conductor = tc.id
+                WHERE `type` = 'Conductor' AND `status` = 'Active') tc ON tvt.conductor = tc.id
                 WHERE tms.student_id = '$student_id' AND
                 tms.sub_institute_id = '$sub_institute_id' AND
                 tms.syear = '$syear'";

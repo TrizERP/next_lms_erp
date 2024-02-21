@@ -14,6 +14,7 @@ class add_driver extends Model {
         'mobile',
         'icard_icon',
         'type',
+        'status',
         'sub_institute_id',
         'created_at',
         'updated_at'

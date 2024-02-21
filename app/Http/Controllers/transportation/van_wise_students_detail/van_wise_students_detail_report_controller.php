@@ -189,10 +189,10 @@ class van_wise_students_detail_report_controller extends Controller
                 $join->whereRaw("tr.id = rb.route_id");
             })
             ->join('transport_driver_detail as dd', function ($join) {
-                $join->whereRaw("dd.id = tv.driver");
+                $join->whereRaw("dd.id = tv.driver")->where('dd.status', 'Active');
             })
             ->leftJoin('transport_driver_detail as cd', function ($join) {
-                $join->whereRaw("cd.id = tv.conductor");
+                $join->whereRaw("cd.id = tv.conductor")->where('dd.status', 'Active');
             })
             ->selectRaw("ts.id AS student_id,CONCAT_WS(' ',ts.first_name,ts.middle_name,ts.last_name) name, 
     concat(s.name,'/',d.name) as stddiv,ts.mobile,ts.enrollment_no,ts.address, tr.route_name, tv.title as bus_name, st.stop_name,

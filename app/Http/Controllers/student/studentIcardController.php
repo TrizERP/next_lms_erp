@@ -29,7 +29,7 @@ class studentIcardController extends Controller
         $sub_institute_id = session()->get('sub_institute_id');
 
         $driver_data = add_driver::where([
-            'sub_institute_id' => $sub_institute_id, 'type' => 'Driver',
+            'sub_institute_id' => $sub_institute_id, 'type' => 'Driver','status' => 'Active'
         ])->get()->toArray();
 
         $res['status_code'] = "1";
@@ -49,7 +49,7 @@ class studentIcardController extends Controller
         $driver_id = $request->input('driver_id');
 
         $driver_data = add_driver::where([
-            'sub_institute_id' => $sub_institute_id, 'type' => 'Driver',
+            'sub_institute_id' => $sub_institute_id, 'type' => 'Driver','status' => 'Active'
         ])->get()->toArray();
 
         $studentData = SearchStudent($grade, $standard, $division);
