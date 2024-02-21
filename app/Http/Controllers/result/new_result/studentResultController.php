@@ -1915,7 +1915,7 @@ $overall_total = $overall_total / 2;
                         $obtained_mark_formatted = number_format($ob_main_mark, 2);
                         
                         if($academic_type=="primary"){
-                            $table .= '<td class="data_center all_mark">' . $obtained_mark_formatted . '</td><td class="data_center grade_of_both">'. $this->getGrade($grade_arr,  $total_mark, $obtained_mark_formatted) . '</td>';
+                            $table .= '<td class="data_center all_mark">' . round($obtained_mark_formatted,0) . '</td><td class="data_center grade_of_both">'. $this->getGrade($grade_arr,  $total_mark, round($obtained_mark_formatted,0)) . '</td>';
                         }                
                         $both_term_ob_mark += $obtained_mark_formatted;
                         // Update the total marks for the current term
@@ -1925,7 +1925,7 @@ $overall_total = $overall_total / 2;
                     } 
                     // get percentage 
                     if( ($standard_id >= 3296 && $standard_id <=3307) || ($standard_id >= 3313 && $standard_id <=3316) && $academic_type=="upper"){            
-                    $table .= '<td class="data_center tot_of_both">' . number_format($both_term_ob_mark, 2) . '</td><td class="data_center grade_of_both">' . $this->getGrade($grade_arr, $overall_total, $both_term_ob_mark) . '</td>';
+                    $table .= '<td class="data_center tot_of_both">' . round($both_term_ob_mark, 0) . '</td><td class="data_center grade_of_both">' . $this->getGrade($grade_arr, $overall_total,round($both_term_ob_mark, 0)) . '</td>';
                     }
                     $get_all_ob_mark += $both_term_ob_mark;
                     $get_all_tot_mark += $overall_total;
@@ -2395,7 +2395,7 @@ $overall_total = $overall_total / 2;
                         // $grade_arr = $this->getGradeScale($standard_id, '');
                     } 
                     // get percentage 
-                    $table .= '<td class="data_center tot_of_both">' . number_format($both_term_ob_mark, 2) . '</td><td class="data_center grade_of_both">' . $this->getGrade($grade_arr, $overall_total, $both_term_ob_mark) . '</td>';
+                    $table .= '<td class="data_center tot_of_both">' . round($both_term_ob_mark, 0) . '</td><td class="data_center grade_of_both">' . $this->getGrade($grade_arr, $overall_total, round($both_term_ob_mark,0)). '</td>';
                     $table .= '</tr>';
                 }
                 // exit;
