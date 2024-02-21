@@ -295,7 +295,7 @@ class feesMonthlyReportController extends Controller
                 });
         })
         ->selectRaw( $columns .' fees_date,month_id')
-        ->groupBy('month_id');
+        ->groupBy('month_id');    
         
         $data = $data->get()->toArray();
         $data = json_decode(json_encode($data), true);
@@ -304,17 +304,20 @@ class feesMonthlyReportController extends Controller
             $processed_val = [];
             foreach ($val as $column_key => $column_value) {
                 $column_key = str_replace(['IFNULL(SUM(', '),0)'], '', $column_key);
-                $processed_val[$column_key] = $column_value;
+                if($column_key !="fees_date" && $column_key!="month_id"){
+                    $processed_val[$column_key] = $column_value;
+                }
             }
             $processed_data[$val['month_id']] = $processed_val;
         }
         
-        $final_data = $processed_data;
+        // $final_data = $processed_data;
+        // echo "<pre>";print_r($final_data);exit;
     
         $res['status_code'] = 1;
         $res['message'] = "Success";
         $res['heading_arr'] = $heading_arr;
-        $res['report_data'] = $final_data;
+        $res['report_data'] = $processed_data;
 
         return is_mobile($type, "fees/fees_report/fees_monthly_report", $res, "view");
     }

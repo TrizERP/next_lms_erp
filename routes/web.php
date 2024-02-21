@@ -154,6 +154,10 @@ Route::group([ 'middleware' => ['session', 'menu', 'logRoute']], function () {
     Route::get('/payroll-bank-wise-report', [PayrollController::class, 'payrollBankWiseReport'])->name('payroll_bankwise_report.index');
     Route::post('/payroll-bank-wise-report', [PayrollController::class, 'payrollBankWiseReport'])->name('payroll.show_payroll_bankwise_report');
 
+    Route::get('hrms-salary-certificate',[PayrollController::Class,'hrmsSalaryCertificateIndex'])->name('hrms_salary_certificate.index');
+    Route::post('/hrms-salary-certificate-report', [PayrollController::class, 'hrmsSalaryCertificateReport'])->name('hrms_salary_certificate.report');
+    Route::get('salary-certificate-pdf-download',[PayrollController::Class,'SalaryCertificatePdfDownload'])->name('salary_certificate_pdf_download');
+
     Route::get('hrms-job-title',[HrmsController::Class,'hrmsJobTitle']);
     Route::get('/hrms-job-title/create', [HrmsController::class, 'hrmsCreate'])->name('hrms_job_title.create');
     Route::get('/hrms-job-title/create/{id}', [HrmsController::class, 'hrmsCreate']);

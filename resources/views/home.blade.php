@@ -372,43 +372,47 @@
                                <tr>        
                                <th>Month</th>                        
                                 @foreach($data['cn_monthwise_collect']['heading_arr'] as $key => $value)
-                               <th class="text-left">{{$value}}</th>
+                               <th ><b>{{$value}}</b></th>
                                @endforeach
-                               <th>Total</th>
+                               <th class="text-left"><b>Total</b></th>
                                </tr>                               
                                 </thead>
                                 <tbody>
                                 @php 
                                 $i=1;
-                                $total_tut=$total_dis=$total_fine=$total_1=$total_2=$all_total=0;
+                                $totals = [];
                                 @endphp 
-                                @foreach($data['cn_monthwise_collect']['report_data'] as $key => $value)
+                               @foreach($data['cn_monthwise_collect']['report_data'] as $key => $value)
+                               <tr>                               
+                               <td class="text-left"><b>{{ isset($data['months_name'][$key]) ? $data['months_name'][$key] : $month_syear[$key] }}</b></td>
+                               @php 
+                               $col_total=0;
+                               @endphp                               
+                               @foreach($value as $key2 => $value2)
+                               <td>{{$value2}}</td>
+                               @php
+                                    $col_total += $value2;
+                                    if (!isset($totals[$key2])) {
+                                        $totals[$key2] = 0;
+                                    }   
+                                    $totals[$key2] += $value2;
+                                @endphp
+                               @endforeach
+                               <td>{{$col_total}}</td>  
                                 @php 
-                                $total_tut += $value['total_tution_fee'];
-                                $total_dis += $value['total_discount'];
-                                $total_fine += $value['total_fine'];
-                                $total_1 += $value['total_1'];
-                                $total_2 += $value['total_2'];
-                                @endphp 
-                               <tr>
-                               <td>{{isset($data['months_name'][$key]) ? $data['months_name'][$key] :$month_syear[$key]}}</td>
-                               <td>{{$value['total_tution_fee']}}</td>
-                               <td>{{$value['total_discount']}}</td>
-                               <td>{{$value['total_fine']}}</td>
-                               <td>{{$value['total_1']}}</td>
-                               <td>{{$value['total_2']}}</td>       
-                               <td>{{$value['total_tution_fee'] - $value['total_discount']+$value['total_fine']+$value['total_1']+$value['total_2']}}</td>
+                                if (!isset($totals['total'])) {
+                                        $totals['total'] = 0;
+                                    }  
+                                $totals['total'] += $col_total;
+                                @endphp                                              
                                </tr>
-                                @endforeach
-                                <tr>
+                               @endforeach
+                               <tr>
                                 <td><b>Total</b></td>
-                                <td><b>{{$total_tut}}</b></td>
-                                <td><b>{{$total_dis}}</b></td>
-                                <td><b>{{$total_fine}}</b></td>
-                                <td><b>{{$total_1}}</b></td>
-                                <td><b>{{$total_2}}</b></td> 
-                                <td><b>{{$total_tut - $total_dis + $total_fine + $total_1 + $total_2}}</b></td>
-                                </tr>
+                                @foreach($totals as $key => $value)
+                                <td>{{$value}}</td>                                
+                                @endforeach
+                               </tr>
                                 </tbody>
                             </table>
                         </div>
@@ -514,7 +518,7 @@
                             <h3 class="card-title">Recent fees collection</h3>
                             <div class="row sales-report mb-3">
                                 <div class="col-md-6 col-sm-6 col-xs-6">                                   
-                                    <div class="mt-0 h4">{{date('M Y')}}</div>
+                                    <!--<div class="mt-0 h4">{{date('M Y')}}</div>-->
                                     <p class="mb-0">FEES REPORT</p>
                                 </div>
                                 <div class="col-md-6 col-sm-6 col-xs-6">

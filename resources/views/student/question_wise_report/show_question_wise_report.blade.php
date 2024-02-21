@@ -214,6 +214,7 @@
                             <th>Obtain</th>
                             <th>Total</th>
                             <th>Per(%)</th>
+                            <th>Status</th>
                         </tr>
                         </thead>
                         <tbody>
@@ -225,6 +226,7 @@
                             // echo "<pre>"; print_r($student); exit;
                                 $row = 1;
                                 $totalRightAns = 0;
+                                $attempted = false;
                             @endphp --}}
                             @foreach ($studentValue1 as $keyNew => $student)
 
@@ -234,6 +236,7 @@
                                         $row = 1;
                                         $totalRightAns = 0;
                                         $no_of_student++;
+                                        $attempted = 'Attempt';
                                 @endphp
 
                                 <tr>
@@ -259,21 +262,27 @@
                                             {
                                                 //$colCountAns[$row][] = '';
                                                 $ans = '0';
+                                                $attempted = 'No Attempt';
                                             }
                                         @endphp
 
                                         <td class="" style="{{ ($ans === '0' ) ? 'background-color:#FFC7CE' : '' }}">{{ $ans }}</td>
-                                        @php $row++; @endphp
+                                        @php $row++; 
+
+                                        @endphp
                                     @endforeach
 
-                                                <td class="font-weight-bold" style="background-color: #ffe699;">{{ $totalRightAns }}</td>
-                                                <td class="font-weight-bold" style="background-color: #ffe699;">{{ $countQuestion }}</td>
+                                    <td class="font-weight-bold" style="background-color: #ffe699;">{{ $totalRightAns }}</td>
+                                    <td class="font-weight-bold" style="background-color: #ffe699;">{{ $countQuestion }}</td>
 
-                                                @php
-                                                    $percentage = number_format( ( $totalRightAns * 100 ) / $countQuestion, 2 ) . '%';
-                                                @endphp
-                                                <td class="font-weight-bold" style="background-color: #b4c6e7;">{{ $percentage }}</td>
-                                            </tr>
+                                    @php
+                                        $percentage = number_format( ( $totalRightAns * 100 ) / $countQuestion, 2 ) . '%';
+                                    @endphp
+                                    <td class="font-weight-bold" style="background-color: #b4c6e7;">{{ $percentage }}</td>
+                                    <td>
+                                       {{ $attempted }}
+                                    </td>
+                                </tr>
                             @endforeach
                         @endforeach
                                     @php

@@ -80,7 +80,7 @@ class BookController extends Controller
                 })
                 ->addIndexColumn()
                 ->addColumn('action', function ($row) {
-                    $actionBtn = '<a href="javascript:void(0)" class="show m-2 btn btn-success btn-library-item" title="Show Book" data-id="' . $row->id . '"><i class="fa fa-eye"></i></a><a href="javascript:void(0)" class="delete m-2 btn btn-danger btn-delete" title="Delete Book" data-id="' . $row->id . '"><i class="fa fa-trash"></i></a><a href="javascript:void(0)" class="m-2 btn btn-warning btn-edit ml-1" title="Edit Book" data-id="' . $row->id . '"><i class="fa fa-pencil"></i></a><a href="javascript:void(0)" class="m-2 btn btn-primary print-barcode ml-1" title="Print Barcode" data-id="' . $row->id . '"><i class="fa fa-barcode"></i></a><a href="javascript:void(0)" class="m-2 btn btn-info circulation ml-1" title="Issue/Return Book" data-id="' . $row->id . '"><i class="fa fa-retweet"></i></a>';
+                    $actionBtn = '<a href="javascript:void(0)" class="show m-2 btn btn-success btn-library-item" title="Show Book" data-id="' . $row->id . '"><i class="fa fa-eye"></i></a><a href="javascript:void(0)" class="delete m-2 btn btn-danger btn-delete d-none" title="Delete Book" data-id="' . $row->id . '"><i class="fa fa-trash"></i></a><a href="javascript:void(0)" class="m-2 btn btn-warning btn-edit ml-1" title="Edit Book" data-id="' . $row->id . '"><i class="fa fa-pencil"></i></a><a href="javascript:void(0)" class="m-2 btn btn-primary print-barcode ml-1 d-none" title="Print Barcode" data-id="' . $row->id . '"><i class="fa fa-barcode"></i></a><a href="javascript:void(0)" class="m-2 btn btn-info circulation ml-1" title="Issue/Return Book" data-id="' . $row->id . '"><i class="fa fa-retweet"></i></a>';
                     return $actionBtn;
                 })
                 ->rawColumns(['checkbox', 'image','item_codes', 'action'])
@@ -379,33 +379,41 @@ class BookController extends Controller
 
         $res['message'] = "This is item already returned or not exists in loan database";
         $res['status_code']=0;
-
-        $libraryCirculations = DB::table('library_book_circulations as lbc')
-        ->selectRaw('CONCAT_WS(" ", s.first_name, s.middle_name, s.last_name) as student_name,s.enrollment_no,s.mobile,std.name as standard,d.name as division, lbc.id as circulation_id, lbc.student_id, lbc.issued_date, lbc.due_date, lbc.return_date, li.item_code, li.received_date, li.order_date, li.order_no, li.item_status, lb.id as book_id, lb.title as book_name, lb.publisher_name, lb.author_name, lb.edition')
+        // db::enableQueryLog();
+        $check_data = DB::table('library_book_circulations as lbc')
+        ->selectRaw('lbc.id as circulation_id, lbc.student_id, lbc.issued_date, lbc.due_date, lbc.return_date, li.item_code, li.received_date, li.order_date, li.order_no, li.item_status, lb.id as book_id, lb.title as book_name, lb.publisher_name, lb.author_name, lb.edition')
         ->join('library_books as lb', 'lb.id', '=', 'lbc.book_id')
         ->join('library_items as li', 'lbc.book_id', '=', 'li.book_id')
-        ->join('tblstudent as s', 's.id', '=', 'lbc.student_id')
-        ->join('tblstudent_enrollment as se', 'se.student_id', '=', 's.id')
-        ->join('standard as std', 'std.id', '=', 'se.standard_id')
-        ->join('division as d', 'd.id', '=', 'se.section_id')
         ->where('lb.sub_institute_id', $sub_institute_id)
-        ->where('se.syear', $syear)
         ->where('li.item_code', $item_code)
-        ->whereNull('se.end_date')
-        ->whereNull('lbc.return_date')        
+        ->whereRaw(' (lbc.return_date IS NULL OR lbc.return_date like "0000-00%" )')   
         ->get();
-
+        // dd(db::getQueryLog($libraryCirculations));
         // echo "<pre>";print_r($libraryCirculations); exit;
-        if(!empty($libraryCirculations) && isset($libraryCirculations[0])){
-            $return_date = DB::table('library_book_circulations')->where(['book_id'=>$libraryCirculations[0]->book_id,'student_id'=>$libraryCirculations[0]->student_id,'id'=>$libraryCirculations[0]->circulation_id])->update([
+        $return_date = 0;
+        if(!empty($check_data) && isset($check_data[0])){
+            $return_date = DB::table('library_book_circulations')->where(['book_id'=>$check_data[0]->book_id,'student_id'=>$check_data[0]->student_id,'id'=>$check_data[0]->circulation_id])->update([
                 'return_date'=>now()
             ]);
-
             $res['message'] = "Book Return Successfully";
             $res['status_code']=1;
+
+            $libraryCirculations = DB::table('library_book_circulations as lbc')
+            ->selectRaw('CONCAT_WS(" ", s.first_name, s.middle_name, s.last_name) as student_name,s.enrollment_no,s.mobile,std.name as standard,d.name as division, lbc.id as circulation_id, lbc.student_id, lbc.issued_date, lbc.due_date, lbc.return_date, li.item_code, li.received_date, li.order_date, li.order_no, li.item_status, lb.id as book_id, lb.title as book_name, lb.publisher_name, lb.author_name, lb.edition')
+            ->join('library_books as lb', 'lb.id', '=', 'lbc.book_id')
+            ->join('library_items as li', 'lbc.book_id', '=', 'li.book_id')
+            ->join('tblstudent as s', 's.id', '=', 'lbc.student_id')
+            ->join('tblstudent_enrollment as se', 'se.student_id', '=', 's.id')
+            ->join('standard as std', 'std.id', '=', 'se.standard_id')
+            ->join('division as d', 'd.id', '=', 'se.section_id')
+            ->where('se.syear', $syear)
+            ->where(['lbc.book_id'=>$check_data[0]->book_id,'lbc.student_id'=>$check_data[0]->student_id,'lbc.id'=>$check_data[0]->circulation_id])
+            ->whereNull('se.end_date')
+            ->get();
+            $res['circulation_data'] = $libraryCirculations;
         }
+
         $res['item_code'] = $request->item_code;
-        $res['circulation_data'] = $libraryCirculations;
         return is_mobile($type, 'library/quick_return', $res, 'view');    
     }
 }

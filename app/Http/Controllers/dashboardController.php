@@ -861,7 +861,8 @@ class dashboardController extends Controller
                 ->get();
                 // dd(db::getQueryLog($cn_active_students));
                 // echo "<pre>";print_r($cn_active_students);exit;
-                $res['month_payout']= Carbon::now()->month.Carbon::now()->year;
+                //$res['month_payout']= Carbon::now()->month.Carbon::now()->year; BY RAJESH
+                $res['month_payout']= Carbon::now()->month.$syear;
                 $all_varibale = [
                     "sub_institute_id" => $sub_institute_id,
                     "syear" => $syear,
@@ -881,7 +882,7 @@ class dashboardController extends Controller
                     LEFT JOIN house_master hm ON hm.id = se.house_id                    
                     INNER JOIN fees_collect fc ON (
                         fc.student_id = se.student_id 
-                        AND fc.is_deleted = "N"
+                        AND fc.is_deleted = "N" AND se.syear=fc.syear
                     )
                     WHERE se.sub_institute_id = :sub_institute_id AND se.syear = :syear
                     AND fc.term_id = :selected_month
@@ -909,6 +910,7 @@ class dashboardController extends Controller
                 $res['status_code'] = 1;
                 $res['message'] = "Success";
                 $res['months_name'] = FeeMonthId();
+        //    echo "<pre>";print_r($res['months_name']);exit;
                
                 $res['totalUser'] = $users[0]['users'];
                 $res['totalStudent'] = $students[0]->students;

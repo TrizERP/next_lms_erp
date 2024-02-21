@@ -61,8 +61,14 @@
 
                 <tbody>
                 @if(!empty($data['circulation_data']))
-                @php $i=1; @endphp
+                @php $i=1;@endphp
                     @foreach($data['circulation_data'] as $key=>$value)
+                    @php 
+                        $return_date = '';
+						if($value->return_date !='' && $value->return_date!=null && $value->return_date!="0000-00-00 00:00:00"){
+							$return_date= \Carbon\Carbon::parse($value->return_date)->format('d-m-Y H:s:i');
+						}
+                    @endphp
                     <tr>
                     <td>{{$i++}}</td>
                     <td>{{$value->student_name}}</td>
@@ -73,7 +79,7 @@
                     <td>{{$value->book_name}}</td>                    
                     <td>{{ \Carbon\Carbon::parse($value->issued_date)->format('d-m-Y') }}</td>
                     <td>{{ \Carbon\Carbon::parse($value->due_date)->format('d-m-Y') }}</td>      
-                    <td>{{ \Carbon\Carbon::parse($value->return_date)->format('d-m-Y') }}</td>                                                      
+                    <td>{{ $return_date }}</td>                                                      
                     <td>{{$value->publisher_name}}</td>                    
                     <td>{{$value->author_name}}</td>                    
                     </tr>
