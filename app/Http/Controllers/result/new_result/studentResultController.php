@@ -3297,7 +3297,9 @@ $overall_total = $overall_total / 2;
                 if ($value->parent_title == "DISCIPLINE") {
                      $per = $value->obtain_grade;
                     if (!empty($get_grade) && $per != 0 && $per != '') {
-                        $value->obtain_grade = $this->getGrade($get_grade, $value->max_mark, $per, "co_scholastic");
+                        $value->obtain_grade = $this->getGrade($get_grade, $per, $value->max_mark, "co_scholastic");
+                        //  $value->obtain_grade = $this->getGrade($get_grade,  $value->max_mark, $per,"co_scholastic");
+                        // echo $value->child_title.'-marks-'.$per.'-grade-'.$value->obtain_grade.'<br>';                        
                     } else {
                         $value->obtain_grade = '-';
                     }
@@ -3306,7 +3308,9 @@ $overall_total = $overall_total / 2;
                 if ($value->parent_title != "CRITERIA" && $value->parent_title != "SKILL OBSERVATION" && $value->parent_title != "DISCIPLINE") {
                     $per = $value->obtain_grade;
                     if (!empty($get_grade) && $per != 0 && $per != '') {
-                        $value->obtain_grade = $this->getGrade($get_grade, $value->max_mark, $per, "co_scholastic");
+                        // $value->obtain_grade = $this->getGrade($get_grade,  $per, $value->max_mark,"co_scholastic");
+                         $value->obtain_grade = $this->getGrade($get_grade,  $value->max_mark, $per,"co_scholastic");
+                        // echo $value->child_title.'-marks-'.$per.'-grade-'.$value->obtain_grade.'<br>';
                     } else {
                         $value->obtain_grade = '-';
                     }
@@ -3314,7 +3318,7 @@ $overall_total = $overall_total / 2;
                 }
             }
         }
-
+// echo "<pre>";print_r($decipline_data);exit;
         if ($academic_type == "upper") {
             $term_name = "Grade";
             $flex = 'display:flex;flex-wrap:wrap';
@@ -3329,14 +3333,16 @@ $overall_total = $overall_total / 2;
                 <thead>
                     <tr>
                         <th><b>CO SCHOLASTIC</b></th>';
-                        if($academic_type=="primary"){
                         foreach ($both_term as $keys => $terms) {
+                        
+                        if($academic_type=="primary"){
                             $co_scholastic .= '<th class="data_center"><b>' . $terms->title . '</b></th>';
                             $term_ids[] = $terms->term_id;
-                        }
                         }else{
                             $co_scholastic .='<th class="data_center"><b>' . $term_name . '</b></th>';
                         }
+                    }
+                        
                     $co_scholastic .= '</tr>
                 </thead>
                 <tbody>';
@@ -3353,14 +3359,11 @@ $overall_total = $overall_total / 2;
                 $co_scholastic .= '<tr>';
                 if ($counter < 6) { 
                     $co_scholastic .= '<td class="'.$value->co_scholastic_id.'">' . $childTitle . '</td>';
-                    if($academic_type=="primary"){
                     foreach ($both_term as $keys => $terms) {
                         $grade = $termGrades[$terms->term_id] ?? '-';
                         $co_scholastic .= '<td class="data_center">' . $grade . '</td>';
                     }
-                    }else{
-                        $co_scholastic .='<td class="data_center">' . $value->obtain_grade . '</td>';
-                    }   
+                    
                 } else {
                     if ($counter === 6) {
                         $co_scholastic .= '</tr></tbody></table></div>';
