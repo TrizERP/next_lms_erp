@@ -486,7 +486,7 @@ class dynamic_report_controller extends Controller
                                     ];
                                     
                                     $this->query->join('transport_driver_detail as tdd', function($join){
-                                        $join->whereRaw('tv.driver = tdd.id or tv.conductor = tdd.id and tv.sub_institute_id');
+                                        $join->whereRaw('tv.driver = tdd.id or tv.conductor = tdd.id and tv.sub_institute_id')->where('tdd.status', 'Active');
                                     });
                                 }
                                 if ($arr->sub_module == "Route") {

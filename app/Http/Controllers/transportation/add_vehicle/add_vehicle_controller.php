@@ -44,6 +44,9 @@ class add_vehicle_controller extends Controller
             ->where([
                 'transport_vehicle.sub_institute_id' => session()->get('sub_institute_id'),
             ])
+            ->where([
+                'td.status' => 'Active',
+            ])
             ->select('transport_vehicle.id', 'title', 'vehicle_number', 'vehicle_type', 'sitting_capacity',
                 'shift_title', 'vehicle_identity_number', 'td.first_name', 'tc.first_name as cond')
             ->get();
@@ -62,6 +65,7 @@ class add_vehicle_controller extends Controller
             ->where([
                 "sub_institute_id" => session()->get('sub_institute_id'),
                 "type"             => 'Driver',
+                "status"             => 'Active',
             ])
             ->pluck('first_name', 'id');
     }
@@ -72,6 +76,7 @@ class add_vehicle_controller extends Controller
             ->where([
                 "sub_institute_id" => session()->get('sub_institute_id'),
                 "type"             => 'Conductor',
+                "status"             => 'Active',
             ])
             ->pluck('first_name', 'id');
     }

@@ -1406,7 +1406,7 @@ if (!function_exists('getStudents')) {
             })->leftJoin('transport_vehicle as tv', function ($join) {
                 $join->whereRaw('tv.id = tms.from_bus_id');
             })->leftJoin('transport_driver_detail as td', function ($join) {
-                $join->whereRaw('td.id = tv.driver');
+                $join->whereRaw('td.id = tv.driver')->where('td.status', 'Active');
             })->leftJoin('transport_kilometer_rate as tkr', function ($join) {
                 $join->whereRaw('tkr.id = s.distance_from_school');
             })->leftJoin('result_student_attendance_master as rsam', function ($join) {
