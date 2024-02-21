@@ -518,7 +518,7 @@
                             <h3 class="card-title">Recent fees collection</h3>
                             <div class="row sales-report mb-3">
                                 <div class="col-md-6 col-sm-6 col-xs-6">                                   
-                                    <div class="mt-0 h4">{{date('M Y')}}</div>
+                                    <!--<div class="mt-0 h4">{{date('M Y')}}</div>-->
                                     <p class="mb-0">FEES REPORT</p>
                                 </div>
                                 <div class="col-md-6 col-sm-6 col-xs-6">

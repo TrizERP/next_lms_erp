@@ -2848,6 +2848,8 @@
             "support": {
                 "issues": "https://github.com/thephpleague/flysystem/issues",
                 "source": "https://github.com/thephpleague/flysystem/tree/3.24.0"
+<<<<<<< HEAD
+=======
             },
             "funding": [
                 {
@@ -2913,6 +2915,7 @@
             ],
             "support": {
                 "source": "https://github.com/thephpleague/flysystem-aws-s3-v3/tree/3.24.0"
+>>>>>>> 4e9032c1fd5e64ac88630987e7abfd39b8dfc03a
             },
             "funding": [
                 {
@@ -2924,7 +2927,11 @@
                     "type": "github"
                 }
             ],
+<<<<<<< HEAD
+            "time": "2024-02-04T12:10:17+00:00"
+=======
             "time": "2024-01-26T18:43:21+00:00"
+>>>>>>> 4e9032c1fd5e64ac88630987e7abfd39b8dfc03a
         },
         {
             "name": "league/flysystem-local",
