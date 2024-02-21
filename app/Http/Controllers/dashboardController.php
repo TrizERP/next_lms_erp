@@ -910,6 +910,7 @@ class dashboardController extends Controller
                 $res['status_code'] = 1;
                 $res['message'] = "Success";
                 $res['months_name'] = FeeMonthId();
+        //    echo "<pre>";print_r($res['months_name']);exit;
                
                 $res['totalUser'] = $users[0]['users'];
                 $res['totalStudent'] = $students[0]->students;

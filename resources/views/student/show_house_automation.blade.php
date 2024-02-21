@@ -91,7 +91,7 @@
                     </tbody>
                 </table>
             </div>
-
+            @if($data['total_boys']!=0 && $data['total_girls']!=0)
           <div class="col-lg-12 col-sm-12 col-xs-12">
                 <div class="table-responsive">
                     <table id="example" class="table table-border">
@@ -124,17 +124,19 @@
                                 $all_stud=0;
                             @endphp
                             @foreach($data['house_data'] as $key1=>$value1) 
-                                @php 
-                                    $boy =$value1->house_name.'_b' ?? 0;
-                                    $girl = $value1->house_name.'_g' ?? 0;
-                                @endphp                           
-                            <td>{{$value[$boy]}}</td>
-                            <td>{{$value[$girl]}}</td>
-                            @php 
-                                $all_stud +=$value[$boy]+$value[$girl];
-                                $totBoy[$boy][] =$value[$boy];
-                                $totGirl[$girl][]=$value[$girl];                                
-                            @endphp
+                                @if(isset($value1->house_name))
+                                    @php 
+                                        $boy =$value1->house_name.'_b' ?? 0;
+                                        $girl = $value1->house_name.'_g' ?? 0;
+                                    @endphp                           
+                                    <td>{{$value[$boy]}}</td>
+                                    <td>{{$value[$girl]}}</td>
+                                    @php 
+                                        $all_stud +=$value[$boy]+$value[$girl];
+                                        $totBoy[$boy][] =$value[$boy];
+                                        $totGirl[$girl][]=$value[$girl];                                
+                                    @endphp
+                                @endif
                             @endforeach  
                             <td>{{$all_stud}}</td>   
                             @php 
@@ -154,10 +156,14 @@
                     <table>
                 </div>
             </div>
-
+            @else
+                <div class="alert alert-block alert-danger">
+                    <strong>No Optional Subject Found</strong>
+                </div>
          </div>
         @endif
-
+       
+        @endif
     </div>
 </div>
 @include('includes.footerJs')
