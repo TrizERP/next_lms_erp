@@ -13,39 +13,22 @@
 					<strong>{{ session('success') }}</strong>
 				</div>
 			@endif
+			@php
+            	$grade_id = $standard_id = $division_id = $term_id = '';
+				if(isset($data['grade_id'])){
+					$grade_id = $data['grade_id'];
+					$standard_id = $data['standard_id'];
+					$division_id = $data['division_id'];
+				}
+				if(isset($data['term_id'])){
+					$term_id = $data['term_id'];
+				}
+			@endphp
 			<form action="{{ route('student-result-remarks.create') }}">
 				<div class="row">
-					<div class="col-md-4 form-group">
-						<label>Standard </label>
-						<select id='standard_id' name="standard_id" required class="form-control">
-							<option value=""> Select Standard </option>
-							@foreach($data['get_standards'] as $key => $value)
-								<option value="{{$value['id']}}" @if(isset($data['standard_id'])) @if($data['standard_id'] == $value['id']) selected="selected" @endif @endif> {{$value['name']}} </option>
-							@endforeach
-						</select>
-					</div>
-					<div class="col-md-4 form-group">
-						<label>Division </label>
-						<select id='division_id' required="required" name="division_id" class="form-control">
-							<option value=""> Select Division </option>
-							@if(isset($data['get_divisions']))
-								@foreach($data['get_divisions'] as $key => $value)
-									<option value="{{$value->id}}" @if(isset($data['division_id'])) @if($data['division_id'] == $value->id) selected="selected" @endif @endif>{{$value->name}}</option>
-								@endforeach
-							@endif
-						</select>
-					</div>
-					<div class="col-md-4 form-group">
-						<label>Term</label>
-						<select class="form-control" name="all_term">
-							<option value=""> Select Term </option>
-							@if($data['all_term'])
-									@foreach($data['all_term'] as $id=>$term)
-										<option value="{{$term->term_id}}"  @if(isset($data['term_id'])) @if($data['term_id'] == $term->term_id) selected="selected" @endif @endif>{{$term->title}}</option>
-									@endforeach
-							@endif
-						</select>
-					</div>
+					{{ App\Helpers\SearchChain('4','single','grade,std,div',$grade_id,$standard_id,$division_id) }}
+                    {{ App\Helpers\TermDD($term_id) }}
+
 					<div class="col-md-12 form-group">
 						<center>
 							<input type="submit" name="submit" value="Search" class="btn btn-success">
@@ -57,7 +40,7 @@
 		@if(isset($data['get_students'])) 
 			<div class="card">
 				<form method="POST" action="{{route('student-result-remarks.store')}}">
-					@csrf
+				@csrf
 					<div class="row">
 						<div class="col-lg-12 col-sm-12 col-xs-12">
 							<div class="table-responsive">	
@@ -72,7 +55,6 @@
 										</tr>
 									</thead>
 									<tbody>
-
 										@php 
 											$i=1;
 											$remarks = ['Passed Promoted to class 10','Promoted with condition of improvement','Detained in class 9','*Passed with grace marks','Failed','Conditionally Promoted','Needs improvement'];
