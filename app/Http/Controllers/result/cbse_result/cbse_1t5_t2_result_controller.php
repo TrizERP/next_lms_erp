@@ -322,7 +322,7 @@ class cbse_1t5_t2_result_controller extends Controller {
 
          $str = 'SELECT exm.ExamTitle,ex.id,rm.student_id,s.subject_id,s.display_name,s.elective_subject,SUM(ex.points) total_points,ex.con_point,SUM(rm.points) points,exm.Id exam_id,rm.is_absent,ex.title
                  FROM result_marks rm
-                 INNER JOIN result_create_exam ex ON ex.id = rm.exam_id AND ex.term_id = '.session()->get('term_id').' 
+                 INNER JOIN result_create_exam ex ON ex.id = rm.exam_id AND ex.term_id = 150 
                  INNER JOIN result_exam_master exm on exm.Id = ex.exam_id
                  INNER JOIN sub_std_map s ON s.subject_id = ex.subject_id and s.standard_id = ex.standard_id
                  WHERE exm.Id IN (' . $exam_id . ') AND rm.student_id IN (' . $student_id . ') 
@@ -330,9 +330,11 @@ class cbse_1t5_t2_result_controller extends Controller {
                  GROUP BY rm.student_id,s.display_name,ex.title
                  ORDER BY rm.student_id,s.display_name,exm.Id
                  ';
-//          echo $str;die();
+        //  echo $str;die();
         $result = DB::select(DB::raw($str));
-
+//         if(session()->get('term_id')==150){
+// echo "<pre>";print_r($result);exit;
+// }
         // getting data and making readable format student wise
         $marks_arr = array();
         foreach ($result as $id => $arr) 
@@ -364,6 +366,7 @@ class cbse_1t5_t2_result_controller extends Controller {
             }            
            
         }
+        // echo "<pre>";print_r($marks_arr);exit;
         // die;
         //getting grade scale data
         $grade_arr = $this->getGradeScale();
