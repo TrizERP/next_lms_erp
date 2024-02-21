@@ -45,13 +45,13 @@ class van_wise_students_detail_report_controller extends Controller
     }
 
     public function retrieveDataByUserId(Request $request, $transport_vehicle_id, $transport_school_shift_id)
-{
-    $transport_vehicle_id = $transport_vehicle_id;
-    $transport_school_shift_id = $transport_school_shift_id;
-    $syear = $request->session()->get('syear');
-    $sub_institute_id = $request->session()->get('sub_institute_id');
-
-    $result = DB::table('tblstudent as s')
+    {
+        $transport_vehicle_id = $transport_vehicle_id;
+        $transport_school_shift_id = $transport_school_shift_id;
+        $syear = $request->session()->get('syear');
+        $sub_institute_id = $request->session()->get('sub_institute_id');
+        
+        $result = DB::table('tblstudent as s')
         ->join('tblstudent_enrollment as se', 'se.student_id', '=', 's.id')
         ->join('academic_section as g', 'g.id', '=', 'se.grade_id')
         ->join('standard as st', 'st.id', '=', 'se.standard_id')
@@ -68,7 +68,7 @@ class van_wise_students_detail_report_controller extends Controller
         ->where('tms.sub_institute_id', $sub_institute_id)
         ->where('tms.syear', $syear)
         ->get()->toArray();
-        
+
         $res['status_code'] = 1;
         $res['message'] = "Success";
         $res['fees_data'] = $result;

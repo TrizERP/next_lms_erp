@@ -373,11 +373,14 @@ class map_student_controller extends Controller
                 ->get()
                 ->first();
 
-            $totalReserveCapacity = DB::table('transport_map_student')
-                ->where('from_bus_id', $bus_id)
-                ->where('from_shift_id', $shift_id)
-                ->where('sub_institute_id', $sub_institute_id)
-                ->where('syear', $syear)
+            $totalReserveCapacity = DB::table('transport_map_student as tms')
+                ->join('tblstudent_enrollment as te', 'te.student_id', '=', 'tms.student_id')
+                ->where('tms.from_bus_id', $bus_id)
+                ->where('tms.from_shift_id', $shift_id)
+                ->where('tms.sub_institute_id', $sub_institute_id)
+                ->where('tms.syear', $syear)
+                ->where('te.syear', $syear)
+                ->whereNull('te.end_date')
                 ->count();
 
             $totalCapacity = $getTotalCapacity->sitting_capacity ?? '';
