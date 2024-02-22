@@ -526,7 +526,7 @@
                                            href="{{ route('lms_teacherResource.index',['standard_id'=>$list_topicvalue->standard_id,'subject_id'=>$list_topicvalue->subject_id,'chapter_id' => $_REQUEST['id'],'topic_id' => $list_topicvalue->id]) }}"
                                            class="btn btn-outline-dark  mx-1">Teacher Resource</a>
                                         <a target="_blank"
-                                           href="{{ route('lms_lessonplan.index',['standard_id'=>$list_topicvalue->standard_id,'subject_id'=>$list_topicvalue->subject_id,'title'=>$lp_title]) }}"
+                                           href="{{ route('lms_lessonplan.index',['standard_id'=>$list_topicvalue->standard_id,'subject_id'=>$list_topicvalue->subject_id,'title'=>$lp_title,'chapter_id' => $_REQUEST['id']]) }}"
                                            class="btn btn-outline-dark  mx-1">Lesson Planning</a>
                                         <a target="_blank"
                                            href="{{ route('lmsmapping.index',['topic_id'=>$list_topicvalue->id]) }}"

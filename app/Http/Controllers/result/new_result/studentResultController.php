@@ -129,8 +129,10 @@ class studentResultController extends Controller
 
     public function create_html_content($syear, $sub_institute_id, $html_content, $value, $template, $result_trust, $format)
     {
+        // echo "<pre>";print_r($value);exit;
         $height_large = array(47);
         $height_medium = array(195,72);
+        $grade_id = $value['grade_id'] ?? 0;
 
         $logo_height = "50px !important";
         $photo_height = "90px !important";
@@ -335,18 +337,26 @@ class studentResultController extends Controller
             $html_content = str_replace(htmlspecialchars("<<total_attendance_simple>>"), $atten['attendance'], $html_content);
             $html_content = str_replace(htmlspecialchars("<<class_teacher_remark_simple>>"), $atten['remark'], $html_content);
         }
+         if(strpos($html_content, htmlspecialchars('<<attandance_altius>>')) !== false){
         $atten = $this->get_attendance($standard_id, $value['id'], $format, "total_attendance");
         $html_content = str_replace(htmlspecialchars("<<total_attendance>>"), $atten['table'], $html_content);
         $html_content = str_replace(htmlspecialchars("<<class_teacher_remark>>"), $atten['remark'], $html_content);
         $html_content = str_replace(htmlspecialchars("<<class_teacher_remark_anual>>"), $atten['anual'], $html_content);
         $html_content = str_replace(htmlspecialchars("<<attandance_altius>>"), $atten['table'], $html_content);
+    }
         
         if (strpos($html_content, htmlspecialchars('<<total_attendance_manual>>')) !== false) {
             $atten = $this->get_attendance($standard_id, $value['id'], $format, "total_attendance_manual");
             $html_content = str_replace(htmlspecialchars("<<total_attendance_manual>>"), $atten['table'], $html_content);
         } else if (strpos($html_content, htmlspecialchars('<<attendance_hills_simple>>')) !== false) {
-            $atten = $this->get_attendance($standard_id, $value['id'], $format, "simple");
-            $html_content = str_replace(htmlspecialchars("<<attendance_hills_simple>>"),$atten['attendance'], $html_content);
+            $grade_ids = [851,852];
+            if(in_array($grade_id,$grade_ids)){
+                $atten = $this->get_attendance($standard_id, $value['id'], $format, "attendance_hills");
+                $html_content = str_replace(htmlspecialchars("<<attendance_hills_simple>>"), $atten['table'], $html_content);                
+            }else{
+                $atten = $this->get_attendance($standard_id, $value['id'], $format, "simple");  
+                $html_content = str_replace(htmlspecialchars("<<attendance_hills_simple>>"),$atten['attendance'], $html_content);
+            }
         }
         else if (strpos($html_content, htmlspecialchars('<<attendance_hills>>')) !== false) {
             $atten = $this->get_attendance($standard_id, $value['id'], $format, "attendance_hills");
@@ -1601,7 +1611,7 @@ $overall_total = $overall_total / 2;
 
     public function get_attendance($standard_id, $student_id, $format, $type)
     {
-        // dd($student_id);
+        // dd($type);
         $syear = session()->get('syear');
         $sub_institute_id = session()->get('sub_institute_id');
         $extra_term = "1=1";
@@ -1612,6 +1622,10 @@ $overall_total = $overall_total / 2;
         }
         if($standard_id >= 2898 && $sub_institute_id==61){
             $extra_term = "atd.term_id = 150";            
+        }
+        if($sub_institute_id==254 && $type=="simple"){ 
+            $extra_term = "atd.term_id = 2 and wrkd.term_id=2";      
+            // echo "hello";   exit;                  
         }
 
         // db::enableQueryLog();
@@ -1988,7 +2002,6 @@ $overall_total = $overall_total / 2;
                     $res['teacher_remark'] = $student_Remark;
                 }
 
-                if(in_array('Failed',$pass_fail)){
                     $get_remark = DB::table('result_remarks')
                     ->selectRaw("student_id,GROUP_CONCAT(Distinct term_id SEPARATOR '|') as term_id,GROUP_CONCAT(Distinct result_remarks SEPARATOR '|') as remark")
                     ->where('sub_institute_id', $sub_institute_id)
@@ -1999,20 +2012,18 @@ $overall_total = $overall_total / 2;
                     
                     if(isset($get_remark->remark)){
                         $pass_or_fail = str_replace('|','',$get_remark->remark);
-                    }else{
+                    }else if(in_array('Failed',$pass_fail)){
                         $pass_or_fail='Failed';
+                    }else{
+                        $get_next_std = DB::table('standard')->where('id',$standard_id)->first();
+                        if(isset($get_next_std->next_standard_id)){
+                        $next_std_name = DB::table('standard')->where('id',$get_next_std->next_standard_id)->first();
+                            $next_std =$next_std_name->name;
+                        }else{
+                            $next_std ='';
+                        }
+                        $pass_or_fail ='Passed Promoted to class '.$next_std;                     
                     }
-                    // echo "<pre>";print_r($pass_or_fail);exit;
-                }else{
-                    $get_next_std = DB::table('standard')->where('id',$standard_id)->first();
-                    if(isset($get_next_std->next_standard_id)){
-                      $next_std_name = DB::table('standard')->where('id',$get_next_std->next_standard_id)->first();
-                         $next_std =$next_std_name->name;
-                     }else{
-                         $next_std ='';
-                     }
-                    $pass_or_fail ='Pass & Promoted to Class : '.$next_std;                     
-                }
 
                 $res['pass_or_fail'] = $pass_or_fail;
 
@@ -2908,10 +2919,8 @@ $overall_total = $overall_total / 2;
             ->where('ex.syear', '=',$syear)
             ->where('ex.sub_institute_id', '=',$sub_institute_id)            
             ->where('ex.report_card_status', '=', 'Y')
-            ->groupBy('rm.student_id', 's.display_name', 'ex.title')
-            ->orderBy('rm.student_id')
-            ->orderBy('s.display_name')
-            ->orderBy('exm.Id')
+            ->groupBy('s.display_name', 'ex.title')
+            ->orderByRaw('s.display_name,exm.Id')
             ->get()->toArray();
           
             $marks_arr = array();
@@ -3195,32 +3204,28 @@ $overall_total = $overall_total / 2;
             $res['teacher_remark'] = $student_Remark;
         }
 
-        if(in_array('Failed',$pass_fail)){
-            $get_remark = DB::table('result_remarks')
-            ->selectRaw("student_id,GROUP_CONCAT(Distinct term_id SEPARATOR '|') as term_id,GROUP_CONCAT(Distinct result_remarks SEPARATOR '|') as remark")
-            ->where('sub_institute_id', $sub_institute_id)
-            ->where('student_id', $student_id)
-            ->where('syear', $syear)
-            ->groupBy('student_id')
-            ->first();
-            // echo "<pre>";print_r($student_id);exit;
-            
-            if(isset($get_remark->remark)){
-                $pass_or_fail = str_replace('|','',$get_remark->remark);
-            }
-                $pass_or_fail = "Failed";
-            
-            // echo "<pre>";print_r($pass_or_fail);exit;
+
+        $get_remark = DB::table('result_remarks')
+        ->selectRaw("student_id,GROUP_CONCAT(Distinct term_id SEPARATOR '|') as term_id,GROUP_CONCAT(Distinct result_remarks SEPARATOR '|') as remark")
+        ->where('sub_institute_id', $sub_institute_id)
+        ->where('student_id', $student_id)
+        ->where('syear', $syear)
+        ->groupBy('student_id')
+        ->first();
+        
+        if(isset($get_remark->remark)){
+            $pass_or_fail = str_replace('|','',$get_remark->remark);
+        }else if(in_array('Failed',$pass_fail)){
+            $pass_or_fail='Failed';
         }else{
             $get_next_std = DB::table('standard')->where('id',$standard_id)->first();
             if(isset($get_next_std->next_standard_id)){
-              $next_std_name = DB::table('standard')->where('id',$get_next_std->next_standard_id)->first();
-                 $next_std =$next_std_name->name;
-             }else{
-                 $next_std ='';
-             }
-            
-            $pass_or_fail ='Pass & Promoted to Class : '.$next_std;
+            $next_std_name = DB::table('standard')->where('id',$get_next_std->next_standard_id)->first();
+                $next_std =$next_std_name->name;
+            }else{
+                $next_std ='';
+            }
+            $pass_or_fail ='Passed Promoted to class '.$next_std;                     
         }
 
         $res['pass_or_fail'] = $pass_or_fail;
