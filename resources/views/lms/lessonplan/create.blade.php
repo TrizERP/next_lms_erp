@@ -559,7 +559,9 @@ if(isset($_REQUEST['preload_lms'])){
                 }
             });
         });
-
+        @if(isset($_REQUEST['chapter_id']))
+            all_input();
+        @endif
       
     })
     function get_chapters() {
