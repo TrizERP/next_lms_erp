@@ -1839,7 +1839,7 @@ $overall_total = $overall_total / 2;
                 }
                 // 9 to 12 
                 if($academic_type=="upper"){
-                    $table .= '<th colspan="' . (count($term_exam_titles) + $colspan + 2) . '" style="text-align:center;background:black;color:white"><b>ACADEMIC YEAR (100)</b></th>';
+                    $table .= '<th colspan="' . (count($term_exam_titles) + $colspan + 2) . '" style="text-align:center;background:black;color:white">&nbsp;</th>';//<b>ACADEMIC YEAR (100)</b> remove from rajesh 22_02_2024
                 }
                 $table .= '</tr><tr><th><b>Subject</b></th>';
                 $weigthage = '';
@@ -1968,8 +1968,11 @@ $overall_total = $overall_total / 2;
                         $grade_std = $this->getGrade($grade_arr, $overall_total,round($both_term_ob_mark, 0));   
                         if($grade_std=="E"){
                             $pass_fail[]='Failed';
-                        }      
-                    $table .= '<td class="data_center tot_of_both">' . round($both_term_ob_mark, 0) . '</td><td class="data_center grade_of_both">' . $grade_std . '</td>';
+                        }   
+                    
+                    $underline = ($grade_std == "E") ? 'style="text-decoration: underline red 2px;"' : ''; // added by rajesh 22_02_2024
+                    
+                    $table .= '<td class="data_center tot_of_both" ' . $underline . '>' . round($both_term_ob_mark, 0) . '</td><td class="data_center grade_of_both">' . $grade_std . '</td>';
                     }
                     $get_all_ob_mark += $both_term_ob_mark;
                     $get_all_tot_mark += $overall_total;
@@ -2018,11 +2021,11 @@ $overall_total = $overall_total / 2;
                         $get_next_std = DB::table('standard')->where('id',$standard_id)->first();
                         if(isset($get_next_std->next_standard_id)){
                         $next_std_name = DB::table('standard')->where('id',$get_next_std->next_standard_id)->first();
-                            $next_std =$next_std_name->name;
+                            $next_std =$next_std_name->short_name;
                         }else{
                             $next_std ='';
                         }
-                        $pass_or_fail ='Passed Promoted to class '.$next_std;                     
+                        $pass_or_fail ='Passed & Promoted to class : '.$next_std;
                     }
 
                 $res['pass_or_fail'] = $pass_or_fail;
@@ -3054,12 +3057,12 @@ $overall_total = $overall_total / 2;
                $practical = isset($titles_weight['Practical']) ? $titles_weight['Practical'] : 0 ;
                $overall_total = $periodic_test + $theory + $practical;
 
-       $table .= '<th colspan="' . (count($term_exam_titles) + $colspan + 2) . '" style="text-align:center;background:black;color:white"><b>ACADEMIC YEAR ('.($periodic_test + $practical + $theory).')</b></th>';
+       $table .= '<th colspan="' . (count($term_exam_titles) + $colspan + 2) . '" style="text-align:center;background:black;color:white">&nbsp;</th>';//<b>ACADEMIC YEAR ('.($periodic_test + $practical + $theory).')</b>
        $table.="</tr>
                    <tr>
                    <th rowspan=2>Subject</th>
                    <th rowspan=2  style='text-align:center'><b>Periodic Test <br> (". $periodic_test .")</b></th>
-                   <th colspan='2'  style='text-align:center'><b>Year Exam</b></th>
+                   <th colspan='2'  style='text-align:center'><b>Yearly Exam</b></th>
                    <th rowspan=2 style='text-align:center'><b>Marks Obtained <br> (".($periodic_test + $practical + $theory).")</b></th>
                    <th rowspan=2 style='text-align:center'><b>Grade</b></th>    
                </tr>
@@ -3177,7 +3180,10 @@ $overall_total = $overall_total / 2;
                     if($grade_std=="E"){
                         $pass_fail[]="Failed";
                     }
-                    $table .= '<td class="data_center tot_of_both">' . round($both_term_ob_mark, 0) . '</td><td class="data_center grade_of_both">' . $grade_std . '</td>';
+
+                    $underline = ($grade_std =="E") ? 'style="text-decoration: underline red 2px;"' : ''; // added by rajesh 22_02_2024
+
+                    $table .= '<td class="data_center tot_of_both" ' . $underline . '>' . round($both_term_ob_mark, 0) . '</td><td class="data_center grade_of_both">' . $grade_std . '</td>';
                     $table .= '</tr>';
                 }
                 // exit;
@@ -3221,11 +3227,11 @@ $overall_total = $overall_total / 2;
             $get_next_std = DB::table('standard')->where('id',$standard_id)->first();
             if(isset($get_next_std->next_standard_id)){
             $next_std_name = DB::table('standard')->where('id',$get_next_std->next_standard_id)->first();
-                $next_std =$next_std_name->name;
+                $next_std =$next_std_name->short_name;
             }else{
                 $next_std ='';
             }
-            $pass_or_fail ='Passed Promoted to class '.$next_std;                     
+            $pass_or_fail ='Passed & Promoted to class : '.$next_std;
         }
 
         $res['pass_or_fail'] = $pass_or_fail;
