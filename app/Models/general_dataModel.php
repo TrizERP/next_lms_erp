@@ -15,6 +15,7 @@ class general_dataModel extends Model
         'fieldvalue',
         'sub_institute_id',
         'client_id',
+        'type',
         'created_on'
     ];
 }
