@@ -13,6 +13,7 @@ use Maatwebsite\Excel\Facades\Excel;
 use Yajra\DataTables\Facades\DataTables;
 use function App\Helpers\is_mobile;
 use DB;
+use Carbon\Carbon;
 
 class ApplyLeaveController extends Controller
 {
@@ -71,6 +72,26 @@ class ApplyLeaveController extends Controller
         //
     }
 
+    public function getHolidays(Request $request)
+    {
+        $sub_institute_id = session()->get('sub_institute_id');
+        $fromDate = trim($request->get('fromDate'));
+        $toDate = trim($request->get('toDate'));
+
+        // Parse the date strings into the correct format
+        $from_date = date('Y-m-d', strtotime($fromDate));
+        $to_date = date('Y-m-d', strtotime($toDate));
+
+        $holidays = DB::table('hrms_holidays')
+            ->where('sub_institute_id', $sub_institute_id)
+            ->where('from_date', '>=', $from_date)
+            ->where('to_date', '<=', $to_date)
+            ->get()
+            ->toArray();
+            
+        return response()->json($holidays);
+    }
+
     /**
      * Store a newly created resource in storage.
      *
@@ -81,6 +102,7 @@ class ApplyLeaveController extends Controller
     {
         $type = $request->input('type');
         $subInstituteId = $request->session()->get('sub_institute_id');
+        $total_days = $request->get('total_days');
 
         $request->validate([
             'type_leave' => 'required',
@@ -101,7 +123,7 @@ class ApplyLeaveController extends Controller
                 'sub_institute_id' => $subInstituteId,
                 'department_id' => $request->department_id,
                 'leave_type_id' => $request->leave_type,
-                'day_type' => $request->day_type,
+                'day_type' => $total_days,
                 'from_date' => $request->from_date,
                 'to_date' => $request->to_date,
                 'slot' => $request->slot ?? 'NULL',
