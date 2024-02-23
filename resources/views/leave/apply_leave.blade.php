@@ -76,14 +76,20 @@
                                 </select>
                             </div>
                             <div class="form-group">
-                                <label for="">From Date</label>
-                                <input type="date" name="from_date" id="from_date" class="form-control">
+                                <label>From Date</label>
+                                <div class="input-daterange input-group" id="date-range">
+                                    <input type="text" required class="form-control mydatepicker" placeholder="YYYY/MM/DD" name="from_date" id="from_date" autocomplete="off">
+                                    <span class="input-group-addon"><i class="icon-calender"></i></span>
+                                </div>
                             </div>
-                            <div class="form-group to_date">
-                                <label for="">To Date</label>
-                                <input type="date" name="to_date" id="to_date" class="form-control">
+                            <div class="form-group">
+                                <label>To Date</label>
+                                <div class="input-daterange input-group" id="date-range">
+                                    <input type="text" required class="form-control mydatepicker" placeholder="YYYY/MM/DD" name="to_date" id="to_date" autocomplete="off">
+                                    <span class="input-group-addon"><i class="icon-calender"></i></span>
+                                </div>
                             </div>
-                            <div class="form-group slot">
+                            <div class="form-group slot d-none">
                                 <label for="">Slot</label>
                                 <select name="slot" id="slot" class="form-control">
                                     <option value="">Select Slot</option>

@@ -112,7 +112,7 @@
                 }
             @endphp
             <div class="card">
-                <h4 style="color:red;">NOTE: The system prohibits the cancellation of fees paid <u>Online</u>.</h4>
+                <h4 style="color:red;">NOTE: The system prohibits the cancellation of fees paid via <u>Online Portal</u>.</h4>
                 <form method="POST" action="{{ route('fees_cancel.store') }}">
                     <div class="row">
                         <div class="col-lg-12 col-sm-12 col-xs-12 p-0">
@@ -142,7 +142,7 @@
                                         @foreach($fees_data as $key => $value)
                                            
                                             <tr>
-                                                @if($value['payment_mode'] == "Online")
+                                                @if($value['payment_mode'] == "Online" && $value['bank_branch'] == "")
                                                     <td></td>
                                                 @else
                                                     <td><input id="{{$value['id']}}" value="{{$value['receipt_no']}}####{{$value['student_id']}}"

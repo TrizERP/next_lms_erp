@@ -126,7 +126,7 @@ class feesCancelController extends Controller
         $other_extraSearchArray['fees_paid_other.sub_institute_id'] = $sub_institute_id;
 
         $other_fees_paid = $feesData = tblstudentModel::selectRaw("'OTHER' as fees_type,fees_paid_other.id,fees_paid_other.reciept_id as
-            receipt_no,fees_paid_other.paid_fees_html,fees_paid_other.receiptdate,fees_paid_other.payment_mode,fees_paid_other.month_id as month_id,
+            receipt_no,fees_paid_other.paid_fees_html,fees_paid_other.receiptdate,fees_paid_other.payment_mode,fees_paid_other.bank_branch,fees_paid_other.month_id as month_id,
             SUM(fees_paid_other.actual_amountpaid) as total_amount,CONCAT_WS(' ',tblstudent.first_name,tblstudent.middle_name,
             tblstudent.last_name) AS student_name,academic_section.title as grade,standard.name as standard_name,division.name as
             division_name,tblstudent.enrollment_no,date_format(fees_paid_other.created_date,'%Y-%m-%d %H:%i:%s') as created_on,
@@ -145,7 +145,7 @@ class feesCancelController extends Controller
             ->whereRaw($other_extraSearchArrayRaw)
             ->groupby('fees_paid_other.syear', 'fees_paid_other.reciept_id', 'fees_paid_other.student_id');
 
-        $feesData = tblstudentModel::selectRaw("'REGULAR' as fees_type,fees_collect.id,fees_collect.receipt_no,fees_collect.fees_html,fees_collect.receiptdate,fees_collect.payment_mode ,fees_collect.term_id as month_id,
+        $feesData = tblstudentModel::selectRaw("'REGULAR' as fees_type,fees_collect.id,fees_collect.receipt_no,fees_collect.fees_html,fees_collect.receiptdate,fees_collect.payment_mode ,fees_collect.bank_branch,fees_collect.term_id as month_id,
             SUM(fees_collect.amount) as total_amount,CONCAT_WS(' ',tblstudent.first_name,tblstudent.middle_name,tblstudent.last_name) AS student_name,academic_section.title as grade,standard.name as standard_name,division.name as division_name,tblstudent.enrollment_no,date_format(fees_collect.created_date,'%Y-%m-%d %H:%i:%s') as created_on,tblstudent.id as student_id")
             ->join('tblstudent_enrollment', 'tblstudent.id', '=', 'tblstudent_enrollment.student_id')
             ->join('academic_section', 'academic_section.id', '=', 'tblstudent_enrollment.grade_id')

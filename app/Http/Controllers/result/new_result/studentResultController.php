@@ -191,8 +191,14 @@ class studentResultController extends Controller
                     $teacher_sign = '<img src="/storage/result/teacher_sign/' . $result_teacher['teacher_sign'] . '" alt="teacher_sign" style="height: 50px !important;">';
                 }
             }
-            $principal_sign = '<img src="/storage/result/principle_sign/' . $result_teacher['principal_sign'] . '" alt="principal_sign" style="height: 50px !important;">';
-            $director_signatiure = '<img src="/storage/result/director_sign/' . $result_teacher['director_signatiure'] . '" alt="director_signatiure" style="height: 50px !important;">';
+            $sign_width = "100%";
+            $sign_height = "50px";            
+            if($sub_institute_id==254){
+                $sign_width = "50%"; 
+                $sign_height = "30px";                                           
+            }
+            $principal_sign = '<img src="/storage/result/principle_sign/' . $result_teacher['principal_sign'] . '" alt="principal_sign" style="height: '.$sign_height.' !important;width:'.$sign_width.' !important">';
+            $director_signatiure = '<img src="/storage/result/director_sign/' . $result_teacher['director_signatiure'] . '" alt="director_signatiure" style="height: '.$sign_height.' !important;width:'.$sign_width.' !important">';
 
             $html_content = str_replace(htmlspecialchars("<<teacher_sign_value>>"), $teacher_sign, $html_content);
             $html_content = str_replace(htmlspecialchars("<<principle_sign_value>>"), $principal_sign, $html_content);
@@ -1465,10 +1471,10 @@ $overall_total = $overall_total / 2;
             $head_scholastic="SCHOLASTIC ";
             $head_co_scholastic="CO-SCHOLASTIC ";
         }
-        $table_range = '<table class="aca-year" style="width: 100%;border-collapse:collapse; border:1px solid #e68023;" cellspacing="0" cellpadding="0" border="1">
+        $table_range = '<table class="aca-year hills_co" style="width: 100%;border-collapse:collapse; border:1px solid #e68023;" cellspacing="0" cellpadding="0" border="1">
         <thead>
         <tr>
-        <th class="data_center"  style="width:312px"><b>'.$head_scholastic.' MARKS RANGE</b></th>';
+        <th class="data_center"  style="width:25%"><b>'.$head_scholastic.' MARKS RANGE</b></th>';
         if (!empty($get_grade_ranges)) {
             foreach ($get_grade_ranges['mark_range']['SCHOLASTIC_MARKS_RANGE'] as $key => $value) {
                 $table_range .= '<td class="data_center">' . $value . '</td>';
@@ -1476,7 +1482,7 @@ $overall_total = $overall_total / 2;
         }
         $table_range .= '</tr>
         <tr>
-        <th class="data_center" style="width:312px"><b>GRADE</b></th>';
+        <th class="data_center" style="width:20%"><b>GRADE</b></th>';
         if (!empty($get_grade_ranges)) {
             foreach ($get_grade_ranges['mark_range']['GRADE'] as $key => $value) {
                 $table_range .= '<td class="data_center">' . $value . '</td>';
@@ -1487,7 +1493,7 @@ $overall_total = $overall_total / 2;
 
         //co grade range
         if (!empty($co_grade_range)) {
-            $co_table = '<table class="aca-year" style="width: 100%;border-collapse:collapse; border:1px solid #e68023;" cellspacing="0" cellpadding="0" border="1">
+            $co_table = '<table class="aca-year hills_co" style="width: 100%;border-collapse:collapse; border:1px solid #e68023;" cellspacing="0" cellpadding="0" border="1">
             <thead>
             <tr>
             <th class="data_center"  style="width:312px"><b>'.$head_co_scholastic.' MARKS RANGE</b></th>';
@@ -3308,8 +3314,8 @@ $overall_total = $overall_total / 2;
                 if ($value->parent_title == "DISCIPLINE") {
                      $per = $value->obtain_grade;
                     if (!empty($get_grade) && $per != 0 && $per != '') {
-                        $value->obtain_grade = $this->getGrade($get_grade, $per, $value->max_mark, "co_scholastic");
-                        //  $value->obtain_grade = $this->getGrade($get_grade,  $value->max_mark, $per,"co_scholastic");
+                        // $value->obtain_grade = $this->getGrade($get_grade, $per, $value->max_mark, "co_scholastic");
+                         $value->obtain_grade = $this->getGrade($get_grade,  $value->max_mark, $per,"co_scholastic");
                         // echo $value->child_title.'-marks-'.$per.'-grade-'.$value->obtain_grade.'<br>';                        
                     } else {
                         $value->obtain_grade = '-';

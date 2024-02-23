@@ -57,7 +57,9 @@ tbody {
         /* background-color:black; */
 
     }
-
+.hills_co th{
+    width:200px !important;
+}
     /* vietnamese */
     @font-face {
         font-family: 'Saira Semi Condensed';
