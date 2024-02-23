@@ -89,7 +89,7 @@
                                     <span class="input-group-addon"><i class="icon-calender"></i></span>
                                 </div>
                             </div>
-                            <div class="form-group slot">
+                            <div class="form-group slot d-none">
                                 <label for="">Slot</label>
                                 <select name="slot" id="slot" class="form-control">
                                     <option value="">Select Slot</option>
