@@ -67,9 +67,9 @@ $route = ['dashboard'];
                                 $userPassword = null; // or any default value
                             }
                         @endphp
-                        <a href='http://crm.triz.co.in/customerportal/index.php?api=Login&module=Portal&q={"password":"{{ $userPassword }}","username":"{{ $userEmail }}","language":"en_us"}&type=API' class="nav-link pb-0" target="_blank" rel="noopener noreferrer">
-                            <span class="menu-main-icon"><i class="mdi mdi-clipboard-account md-36"></i></span> TTMS
-                        </a>
+                        <!-- <a href='http://crm.triz.co.in/customerportal/index.php?api=Login&module=Portal&q={"password":"{{ $userPassword }}","username":"{{ $userEmail }}","language":"en_us"}&type=API' class="nav-link pb-0" target="_blank" rel="noopener noreferrer"> -->
+                            <span class="menu-main-icon" onclick="openTTMS()"><i class="mdi mdi-clipboard-account md-36"></i></span> TTMS
+                        <!-- </a> -->
                     </div>
                 </div>
             </div>
@@ -532,6 +532,22 @@ $route = ['dashboard'];
             },
         });
 
+
     });
+    function openTTMS(){
+       var username = '{{$userEmail}}';
+       var password = '{{$userPassword}}';
+       var url = 'http://crm.triz.co.in/customerportal/index.php?api=Login&module=Portal&q=' +
+        encodeURIComponent(JSON.stringify({
+            "password": "{{$userPassword}}",
+            "username": "{{$userEmail}}",
+            "language": "en_us"
+        })) +
+        '&type=API';
+
+    // Open the URL in a new tab
+    window.open(url, '_blank');
+    }
+
 
 </script>
