@@ -33,6 +33,7 @@ use App\Http\Controllers\school_setup\timetableController;
 use App\Http\Controllers\school_setup\todaysproxyReportController;
 use App\Http\Controllers\school_setup\topicController;
 use App\Http\Controllers\school_setup\workflowController;
+use App\Http\Controllers\school_setup\subjectElectiveController;
 use App\Http\Controllers\signupController;
 use App\Http\Controllers\institute_detail;
 use App\Http\Controllers\normClatureController;
@@ -343,6 +344,9 @@ Route::group(['prefix' => 'school_setup', 'middleware' => ['session', 'menu', 'l
     Route::get('google-analytics-summary', array('as' => 'google-analytics-summary', 'uses' => 'school_setup\HomeController@getAnalyticsSummary'));
 
     Route::Resource('used_storage_graph', used_storage_graphController::class);
+
+    Route::Resource('subject_elective', subjectElectiveController::class);   
+    Route::get('optional_subject', [subjectElectiveController::class,'getOptionalSubject'])->name('optional_subject');       
 });
 Route::post('get_proxy_master', [proxyController::class, 'getproxydata']);
 Route::get('school_setup/ajax_getTeacherDailyDetailsReport', [teacherdailyReportController::class, 'getTeacherDailyDetailsReport'])->name("ajax_getTeacherDailyDetailsReport");
