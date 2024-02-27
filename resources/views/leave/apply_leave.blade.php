@@ -2,6 +2,22 @@
 <link rel="stylesheet" href="../../../tooltip/enjoyhint/jquery.enjoyhint.css">
 @include('includes.header')
 @include('includes.sideNavigation')
+<style type="text/css">
+.error {
+  width: 80%;
+  height: 35px;
+  font-size: 1.1em;
+  color: red;
+  font-weight: bold;
+}
+.success {
+    width: 80%;
+    height: 35px;
+    font-size: 1.1em;
+    color: green;
+    font-weight: bold;
+}
+</style>
 
 <div id="page-wrapper">
     <div class="container-fluid">
@@ -82,14 +98,28 @@
                                     <span class="input-group-addon"><i class="icon-calender"></i></span>
                                 </div>
                             </div>
+                            @php 
+                                $get_general_datas = DB::table('general_data')->where('sub_institute_id', session()->get('sub_institute_id'))->where('fieldname', 'sandwich_leave')->first();
+
+                                $get_general_datas2 = DB::table('general_data')->where('sub_institute_id', session()->get('sub_institute_id'))->where('fieldname', 'casual_leave_apply')->first();
+                            @endphp
                             <div class="form-group">
                                 <label>To Date</label>
                                 <div class="input-daterange input-group" id="date-range">
                                     <input type="text" required class="form-control mydatepicker" placeholder="YYYY/MM/DD" name="to_date" id="to_date" autocomplete="off">
                                     <span class="input-group-addon"><i class="icon-calender"></i></span>
                                 </div>
+                                @if($get_general_datas->fieldvalue == 'Yes')
+                                    <span id="total_appear_days"></span>
+                                    <input type="hidden" id="total_days" name="total_days" value="">
+                                    <span id="criteria_validation"></span>
+                                @else
+                                    <span id="without_sandwich_total_appear_days"></span>
+                                    <span id="without_sandwich_criteria_validation"></span>
+                                    <input type="hidden" id="total_days" name="total_days" value="">
+                                @endif
                             </div>
-                            <div class="form-group slot">
+                            <div class="form-group slot d-none">
                                 <label for="">Slot</label>
                                 <select name="slot" id="slot" class="form-control">
                                     <option value="">Select Slot</option>
@@ -246,6 +276,149 @@
                 }
             });
         });
+
+        
+    });
+</script>
+<script>
+    $(document).on('change', '#to_date', function() 
+    {
+        var fromDateValue = $('#from_date').val();
+        var toDateValue = $(this).val();
+        var leaveType = $('#leave_type').val();
+        
+        // Manually parse the date strings into a format compatible with the Date constructor
+        var fromParts = fromDateValue.split('-');
+        var fromDate = new Date(fromParts[2], fromParts[1] - 1, fromParts[0]); // Year, Month (0-indexed), Day
+
+        var toParts = toDateValue.split('-');
+        var toDate = new Date(toParts[2], toParts[1] - 1, toParts[0]); // Year, Month (0-indexed), Day
+
+        if (isNaN(fromDate.getTime()) || isNaN(toDate.getTime())) {
+            alert("Invalid date format!");
+            return;
+        }
+
+        // Calculate the difference in days, including both start and end dates
+        var timeDiff = toDate.getTime() - fromDate.getTime();
+        var diffDays = Math.ceil(timeDiff / (1000 * 3600 * 24)) + 1;
+
+        var getGeneralDatas = {!! json_encode($get_general_datas) !!};
+        var getGeneralDatas2 = {!! json_encode($get_general_datas2) !!};
+        
+        if(leaveType == '1')
+        {
+            if (getGeneralDatas.fieldvalue == 'Yes' && getGeneralDatas2.fieldvalue == '2') 
+            {
+                if (diffDays <= getGeneralDatas2.fieldvalue) {
+                    $('#criteria_validation').empty();
+                    $('#total_appear_days').addClass("success").text('Appear leave - ' + diffDays + ' days');
+                    $('#total_days').val(diffDays); // Set the value of the hidden input field to diffDays
+                } 
+                else if (diffDays >= getGeneralDatas2.fieldvalue) {
+                    $('#total_appear_days').empty();
+                    $('#criteria_validation').addClass("error").text('The system will not allow more than the ' + getGeneralDatas2.fieldvalue + ' criteria set by the institute.');
+                }
+            }
+            else
+            {
+                $('#total_appear_days').addClass("success").text('Appear leave - ' + diffDays + ' days');
+                $('#total_days').val(diffDays); // Set the value of the hidden input field to diffDays
+            }
+        }
+        else
+        {
+            if (getGeneralDatas.fieldvalue == 'Yes')
+            {
+                $('#total_appear_days').addClass("success").text('Appear leave - ' + diffDays + ' days');
+                $('#total_days').val(diffDays); // Set the value of the hidden input field to diffDays
+            }
+        }
+        
+        if(leaveType == '1')
+        {
+            if (getGeneralDatas.fieldvalue == 'No' && getGeneralDatas2.fieldvalue == '2') 
+            {
+                $.ajax({
+                    url: '/getHolidays',
+                    type: 'GET',
+                    data: {
+                        fromDate: fromDateValue,
+                        toDate: toDateValue
+                    },
+                    success: function(response) {
+                        var holidays = response; // Use the response directly
+                        var holidaysCount = holidays.length;
+
+                        // Subtract Saturdays and Sundays
+                        var saturdaysSundaysCount = 0;
+
+                        for (var date = new Date(fromDate); date <= toDate; date.setDate(date.getDate() + 1)) {
+                            var dayOfWeek = date.getDay();
+                            if (dayOfWeek === 0 || dayOfWeek === 6) // 0 is Sunday, 6 is Saturday
+                            { 
+                                saturdaysSundaysCount++;
+                            }
+                        }
+
+                        diffDays -= (holidaysCount + saturdaysSundaysCount);
+
+                        if (diffDays <= getGeneralDatas2.fieldvalue) {
+                            $('#without_sandwich_criteria_validation').empty();
+                            $('#without_sandwich_total_appear_days').addClass("success").text('Appear leave - ' + diffDays + ' days');
+                            $('#total_days').val(diffDays); // Set the value of the hidden input field to diffDays
+                        } 
+                        else if (diffDays >= getGeneralDatas2.fieldvalue) {
+                            $('#without_sandwich_total_appear_days').empty();
+                            $('#without_sandwich_criteria_validation').addClass("error").text('The system will not allow more than the ' + getGeneralDatas2.fieldvalue + ' criteria set by the institute.');
+                        }
+                    },
+                    error: function(xhr, status, error) {
+                        console.error(error);
+                    }
+                });
+            }
+            else
+            {
+                $('#without_sandwich_total_appear_days').addClass("success").text('Appear leave - ' + diffDays + ' days');
+                $('#total_days').val(diffDays); // Set the value of the hidden input field to diffDays
+            }
+        }
+        else
+        {
+            $.ajax({
+                url: '/getHolidays',
+                type: 'GET',
+                data: {
+                    fromDate: fromDateValue,
+                    toDate: toDateValue
+                },
+                success: function(response) {
+                    var holidays = response; // Use the response directly
+                    var holidaysCount = holidays.length;
+
+                    // Subtract Saturdays and Sundays
+                    var saturdaysSundaysCount = 0;
+
+                    for (var date = new Date(fromDate); date <= toDate; date.setDate(date.getDate() + 1)) {
+                        var dayOfWeek = date.getDay();
+                        if (dayOfWeek === 0 || dayOfWeek === 6) // 0 is Sunday, 6 is Saturday
+                        { 
+                            saturdaysSundaysCount++;
+                        }
+                    }
+
+                    diffDays -= (holidaysCount + saturdaysSundaysCount);
+
+                    $('#without_sandwich_total_appear_days').addClass("success").text('Appear leave - ' + diffDays + ' days');
+                    $('#total_days').val(diffDays); // Set the value of the hidden input field to diffDays
+                    
+                },
+                error: function(xhr, status, error) {
+                    console.error(error);
+                }
+            });
+        }
     });
 </script>
 @include('includes.footer')

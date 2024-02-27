@@ -5,10 +5,6 @@ namespace App\Http\Controllers\result\new_result;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use function App\Helpers\is_mobile;
-use App\Models\result\result_template;
-use App\Models\school_setup\standardModel;
-use function App\Helpers\SearchStudent;
-use function App\Helpers\getStudents;
 use DB;
 
 class studentResultRemarksController extends Controller
@@ -16,17 +12,8 @@ class studentResultRemarksController extends Controller
     public function index(Request $request)
     {
         $type = $request->input('type');
-        $sub_institute_id = session()->get('sub_institute_id');
-        $syear = session()->get('syear');
-
-        $all_term = DB::table('academic_year')->where('sub_institute_id', $sub_institute_id)->where('syear', $syear)->get()->toArray();
-       
-        $get_standards = standardModel::where(['sub_institute_id' => $sub_institute_id])->get()->toArray();
-        $get_divisions = DB::table('division')->where(['sub_institute_id' => $sub_institute_id])->get()->toArray();
-
-        $res['get_standards'] = $get_standards;
-        $res['get_divisions'] = $get_divisions;
-        $res['all_term'] = $all_term;
+        $res['sub_institute_id'] = session()->get('sub_institute_id');
+        $res['syear'] = session()->get('syear');
 
         return is_mobile($type, "result/new_result/student_result_remarks/show", $res, "view");
     }
@@ -36,15 +23,10 @@ class studentResultRemarksController extends Controller
         $type = $request->input('type');
         $sub_institute_id = session()->get('sub_institute_id');
         $syear = session()->get('syear');
-        $standard_id = $request->input('standard_id');
-        $division_id = $request->input('division_id');
-        $term_id = $request->input('all_term') ?? 0;
-
-        $all_term = DB::table('academic_year')->where('sub_institute_id', $sub_institute_id)->where('syear', $syear)->get()->toArray();
-
-        $get_standards = standardModel::where(['sub_institute_id' => $sub_institute_id])->get()->toArray();
-        
-        $get_divisions = DB::table('division')->where(['sub_institute_id' => $sub_institute_id])->get()->toArray();
+        $grade = $request->input('grade');
+        $standard_id = $request->input('standard');
+        $division_id = $request->input('division');
+        $term = $request->input('term');
 
         $get_students = DB::table('tblstudent_enrollment as te')
             ->selectRaw('u.*, te.id as gr_number, rr.result_remarks')
@@ -62,14 +44,12 @@ class studentResultRemarksController extends Controller
             ->whereNull('te.end_date')
             ->orderBy('u.roll_no', 'asc')
             ->get()->toArray();
-            
-        $res['get_standards'] = $get_standards;
-        $res['get_divisions'] = $get_divisions;
-        $res['all_term'] = $all_term;
+        
+        $res['grade_id'] = $grade;
         $res['standard_id'] = $standard_id;
         $res['division_id'] = $division_id;
+        $res['term_id'] = $term;
         $res['get_students'] = $get_students;
-        $res['term_id'] = $term_id;
 
         return is_mobile($type, "result/new_result/student_result_remarks/show", $res, "view");
     }
@@ -82,7 +62,10 @@ class studentResultRemarksController extends Controller
         $user_id = $request->session()->get('user_id');
         $student_ids = $request->get('student_id');
         $result_remarks = $request->get('result_remarks');
-        $term_id = $request->input('term_id') ?? 0;
+        $grade_id = $request->get('grade_id');
+        $standard_id = $request->get('standard_id');
+        $division_id = $request->get('division_id');
+        $term_id = $request->get('term_id');
 
         foreach($student_ids as $student_id)
         {

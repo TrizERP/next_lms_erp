@@ -78,6 +78,7 @@ class add_driver_controller extends Controller
             "first_name"       => $request->get('first_name'),
             "last_name"        => $request->get('last_name'),
             "mobile"           => $request->get('mobile'),
+            "status"             => $request->get('status'),
             "type"             => $request->get('type'),
             'icard_icon'       => $file_name,
             'sub_institute_id' => $sub_institute_id,
@@ -137,6 +138,7 @@ class add_driver_controller extends Controller
                 "last_name"  => $request->get('last_name'),
                 "mobile"     => $request->get('mobile'),
                 "type"       => $request->get('type'),
+                "status"       => $request->get('status'),
             ],
         );
         $data1 = $data1[0];

@@ -49,6 +49,10 @@
                                 <label>Date</label>
                                 <input type="text" id='date' name="date" value="{{date('Y-m-d'); }}" class="form-control mydatepicker" autocomplete="off">
                             </div>
+                            <div class="col-md-4 form-group ml-0 mr-0">
+                                <label>Remarks</label>
+                                <textarea id="remarks" name="remarks" class="form-control" rows="3"></textarea>
+                            </div>
                             <div class="col-md-4 form-group ml-0">
                                 <label for="input-file-now">File</label>
     							<input type="file" name="file" id="input-file-now" class="dropify" />

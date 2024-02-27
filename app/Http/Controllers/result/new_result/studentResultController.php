@@ -191,8 +191,14 @@ class studentResultController extends Controller
                     $teacher_sign = '<img src="/storage/result/teacher_sign/' . $result_teacher['teacher_sign'] . '" alt="teacher_sign" style="height: 50px !important;">';
                 }
             }
-            $principal_sign = '<img src="/storage/result/principle_sign/' . $result_teacher['principal_sign'] . '" alt="principal_sign" style="height: 50px !important;">';
-            $director_signatiure = '<img src="/storage/result/director_sign/' . $result_teacher['director_signatiure'] . '" alt="director_signatiure" style="height: 50px !important;">';
+            $sign_width = "100%";
+            $sign_height = "50px";            
+            if($sub_institute_id==254){
+                $sign_width = "50%"; 
+                $sign_height = "30px";                                           
+            }
+            $principal_sign = '<img src="/storage/result/principle_sign/' . $result_teacher['principal_sign'] . '" alt="principal_sign" style="height: '.$sign_height.' !important;width:'.$sign_width.' !important">';
+            $director_signatiure = '<img src="/storage/result/director_sign/' . $result_teacher['director_signatiure'] . '" alt="director_signatiure" style="height: '.$sign_height.' !important;width:'.$sign_width.' !important">';
 
             $html_content = str_replace(htmlspecialchars("<<teacher_sign_value>>"), $teacher_sign, $html_content);
             $html_content = str_replace(htmlspecialchars("<<principle_sign_value>>"), $principal_sign, $html_content);
@@ -1465,10 +1471,10 @@ $overall_total = $overall_total / 2;
             $head_scholastic="SCHOLASTIC ";
             $head_co_scholastic="CO-SCHOLASTIC ";
         }
-        $table_range = '<table class="aca-year" style="width: 100%;border-collapse:collapse; border:1px solid #e68023;" cellspacing="0" cellpadding="0" border="1">
+        $table_range = '<table class="aca-year hills_co" style="width: 100%;border-collapse:collapse; border:1px solid #e68023;" cellspacing="0" cellpadding="0" border="1">
         <thead>
         <tr>
-        <th class="data_center"  style="width:312px"><b>'.$head_scholastic.' MARKS RANGE</b></th>';
+        <th class="data_center"  style="width:25%"><b>'.$head_scholastic.' MARKS RANGE</b></th>';
         if (!empty($get_grade_ranges)) {
             foreach ($get_grade_ranges['mark_range']['SCHOLASTIC_MARKS_RANGE'] as $key => $value) {
                 $table_range .= '<td class="data_center">' . $value . '</td>';
@@ -1476,7 +1482,7 @@ $overall_total = $overall_total / 2;
         }
         $table_range .= '</tr>
         <tr>
-        <th class="data_center" style="width:312px"><b>GRADE</b></th>';
+        <th class="data_center" style="width:20%"><b>GRADE</b></th>';
         if (!empty($get_grade_ranges)) {
             foreach ($get_grade_ranges['mark_range']['GRADE'] as $key => $value) {
                 $table_range .= '<td class="data_center">' . $value . '</td>';
@@ -1487,7 +1493,7 @@ $overall_total = $overall_total / 2;
 
         //co grade range
         if (!empty($co_grade_range)) {
-            $co_table = '<table class="aca-year" style="width: 100%;border-collapse:collapse; border:1px solid #e68023;" cellspacing="0" cellpadding="0" border="1">
+            $co_table = '<table class="aca-year hills_co" style="width: 100%;border-collapse:collapse; border:1px solid #e68023;" cellspacing="0" cellpadding="0" border="1">
             <thead>
             <tr>
             <th class="data_center"  style="width:312px"><b>'.$head_co_scholastic.' MARKS RANGE</b></th>';
@@ -1839,7 +1845,7 @@ $overall_total = $overall_total / 2;
                 }
                 // 9 to 12 
                 if($academic_type=="upper"){
-                    $table .= '<th colspan="' . (count($term_exam_titles) + $colspan + 2) . '" style="text-align:center;background:black;color:white"><b>ACADEMIC YEAR (100)</b></th>';
+                    $table .= '<th colspan="' . (count($term_exam_titles) + $colspan + 2) . '" style="text-align:center;background:black;color:white">&nbsp;</th>';//<b>ACADEMIC YEAR (100)</b> remove from rajesh 22_02_2024
                 }
                 $table .= '</tr><tr><th><b>Subject</b></th>';
                 $weigthage = '';
@@ -1968,8 +1974,11 @@ $overall_total = $overall_total / 2;
                         $grade_std = $this->getGrade($grade_arr, $overall_total,round($both_term_ob_mark, 0));   
                         if($grade_std=="E"){
                             $pass_fail[]='Failed';
-                        }      
-                    $table .= '<td class="data_center tot_of_both">' . round($both_term_ob_mark, 0) . '</td><td class="data_center grade_of_both">' . $grade_std . '</td>';
+                        }   
+                    
+                    $underline = ($grade_std == "E") ? 'style="text-decoration: underline red 2px;"' : ''; // added by rajesh 22_02_2024
+                    
+                    $table .= '<td class="data_center tot_of_both" ' . $underline . '>' . round($both_term_ob_mark, 0) . '</td><td class="data_center grade_of_both">' . $grade_std . '</td>';
                     }
                     $get_all_ob_mark += $both_term_ob_mark;
                     $get_all_tot_mark += $overall_total;
@@ -2018,11 +2027,11 @@ $overall_total = $overall_total / 2;
                         $get_next_std = DB::table('standard')->where('id',$standard_id)->first();
                         if(isset($get_next_std->next_standard_id)){
                         $next_std_name = DB::table('standard')->where('id',$get_next_std->next_standard_id)->first();
-                            $next_std =$next_std_name->name;
+                            $next_std =$next_std_name->short_name;
                         }else{
                             $next_std ='';
                         }
-                        $pass_or_fail ='Passed Promoted to class '.$next_std;                     
+                        $pass_or_fail ='Passed & Promoted to class : '.$next_std;
                     }
 
                 $res['pass_or_fail'] = $pass_or_fail;
@@ -2785,12 +2794,12 @@ $overall_total = $overall_total / 2;
                $practical = isset($titles_weight['Practical']) ? $titles_weight['Practical'] : 0 ;
                $overall_total = $periodic_test + $theory + $practical;
 
-       $table .= '<th colspan="' . (count($term_exam_titles) + $colspan + 2) . '" style="text-align:center;background:black;color:white"><b>ACADEMIC YEAR ('.($periodic_test + $practical + $theory).')</b></th>';
+       $table .= '<th colspan="' . (count($term_exam_titles) + $colspan + 2) . '" style="text-align:center;background:black;color:white">&nbsp;</th>';//<b>ACADEMIC YEAR ('.($periodic_test + $practical + $theory).')</b>
        $table.="</tr>
                    <tr>
                    <th rowspan=2>Subject</th>
                    <th rowspan=2  style='text-align:center'><b>Periodic Test <br> (". $periodic_test .")</b></th>
-                   <th colspan='2'  style='text-align:center'><b>Year Exam</b></th>
+                   <th colspan='2'  style='text-align:center'><b>Yearly Exam</b></th>
                    <th rowspan=2 style='text-align:center'><b>Marks Obtained <br> (".($periodic_test + $practical + $theory).")</b></th>
                    <th rowspan=2 style='text-align:center'><b>Grade</b></th>    
                </tr>
@@ -2908,7 +2917,10 @@ $overall_total = $overall_total / 2;
                     if($grade_std=="E"){
                         $pass_fail[]="Failed";
                     }
-                    $table .= '<td class="data_center tot_of_both">' . round($both_term_ob_mark, 0) . '</td><td class="data_center grade_of_both">' . $grade_std . '</td>';
+
+                    $underline = ($grade_std =="E") ? 'style="text-decoration: underline red 2px;"' : ''; // added by rajesh 22_02_2024
+
+                    $table .= '<td class="data_center tot_of_both" ' . $underline . '>' . round($both_term_ob_mark, 0) . '</td><td class="data_center grade_of_both">' . $grade_std . '</td>';
                     $table .= '</tr>';
                 }
                 // exit;
@@ -2952,11 +2964,11 @@ $overall_total = $overall_total / 2;
             $get_next_std = DB::table('standard')->where('id',$standard_id)->first();
             if(isset($get_next_std->next_standard_id)){
             $next_std_name = DB::table('standard')->where('id',$get_next_std->next_standard_id)->first();
-                $next_std =$next_std_name->name;
+                $next_std =$next_std_name->short_name;
             }else{
                 $next_std ='';
             }
-            $pass_or_fail ='Passed Promoted to class '.$next_std;                     
+            $pass_or_fail ='Passed & Promoted to class : '.$next_std;
         }
 
         $res['pass_or_fail'] = $pass_or_fail;
@@ -3033,8 +3045,8 @@ $overall_total = $overall_total / 2;
                 if ($value->parent_title == "DISCIPLINE") {
                      $per = $value->obtain_grade;
                     if (!empty($get_grade) && $per != 0 && $per != '') {
-                        $value->obtain_grade = $this->getGrade($get_grade, $per, $value->max_mark, "co_scholastic");
-                        //  $value->obtain_grade = $this->getGrade($get_grade,  $value->max_mark, $per,"co_scholastic");
+                        // $value->obtain_grade = $this->getGrade($get_grade, $per, $value->max_mark, "co_scholastic");
+                         $value->obtain_grade = $this->getGrade($get_grade,  $value->max_mark, $per,"co_scholastic");
                         // echo $value->child_title.'-marks-'.$per.'-grade-'.$value->obtain_grade.'<br>';                        
                     } else {
                         $value->obtain_grade = '-';

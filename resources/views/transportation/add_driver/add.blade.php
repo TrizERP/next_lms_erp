@@ -47,6 +47,14 @@
                                     <option value="Conductor">Conductor</option>
                                 </select>
                             </div>
+                            <div class="col-md-4 form-group">
+                                <label>Status</label>
+                                <select name ="status" class="form-control" required>
+                                    <option value="">--Select--</option>
+                                    <option value="Active">Active</option>
+                                    <option value="Inactive">Inactive</option>
+                                </select>
+                            </div>
                             <div class="col-md-4 form-group mt-4">                            
                                 <input type="submit" name="submit" value="Save" class="btn btn-success" >                            
                             </div>

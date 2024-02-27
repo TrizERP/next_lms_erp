@@ -8,6 +8,7 @@ use App\Models\HrmsDepartment;
 use App\Models\HrmsInOutTime;
 use App\Models\HrmsJobTitle;
 use App\Models\PayrollType;
+use App\Models\general_dataModel;
 use App\Models\user\tbluserModel;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -179,7 +180,7 @@ class HrmsController extends Controller
             $res['status_code']=1;
             $res['message']="Success to time out";
         }
-        return is_mobile($type, "hrms_inout_time.index", $res, "redirect");
+        return is_mobile($type, "hrms_inout_time.index", $res, "view");
         //return redirect('hrms-inout-time')->with(['message' =>'check Out successfully']);
     }
 
@@ -448,6 +449,65 @@ class HrmsController extends Controller
  
         //return view('HRMS.hrms_attendance_report.index', compact('employees', 'from_date_formatted', 'to_date_formatted', 'report_data', 'employee_id', 'department_id', 'departments'));
         return is_mobile($type, "HRMS/hrms_attendance_report/index", $res, "view");
+    }
+
+    public function generalSettingIndex(Request $request) 
+    {
+        $type = $request->input('type');
+        if ($type == 'API') 
+        {
+            $res['sub_institute_id'] = $request->input('sub_institute_id');
+        } 
+        else 
+        {
+            $res['sub_institute_id'] = $request->session()->get('sub_institute_id');
+        }
+
+        return is_mobile($type, "HRMS/general_setting/general_setting", $res, "view");
+    }
+
+    public function generalSettingStore(Request $request)
+    {
+        $type = $request->input('type');
+        if ($type == 'API'){
+            $userId = $request->input('user_id');
+            $clientId = $request->input('client_id');
+            $subInstituteId = $request->input('sub_institute_id');
+        } else{
+            $userId = $request->session()->get('user_id');
+            $clientId = $request->session()->get('client_id');
+            $subInstituteId = $request->session()->get('sub_institute_id');
+        }
+        
+        $sandwich_leave = $request->input('sandwich_leave');
+        $casual_leave_at_one_time = $request->input('casual_leave_at_one_time');
+
+        if($sandwich_leave)
+        {
+            $general_data = new general_dataModel();
+            $general_data->fieldname = 'sandwich_leave';
+            $general_data->fieldvalue = $sandwich_leave;
+            $general_data->sub_institute_id = $subInstituteId;
+            $general_data->client_id = $clientId;
+            $general_data->type = 'hrms';
+            $general_data->save();
+        }
+        
+        if($casual_leave_at_one_time)
+        {
+            $general_data = new general_dataModel();
+            $general_data->fieldname = 'casual_leave_apply';
+            $general_data->fieldvalue = $casual_leave_at_one_time;
+            $general_data->sub_institute_id = $subInstituteId;
+            $general_data->client_id = $clientId;
+            $general_data->type = 'hrms';
+            $general_data->save();
+        }
+
+        $res['status_code']=1;
+        $res['message']="General setting information save successfully";
+        
+        return is_mobile($type, "hrms_general_setting.index", $res, "redirect");
     }
 
     public function earlyGoingHrmsAttendanceReportIndex(Request $request) 

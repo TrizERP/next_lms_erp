@@ -293,19 +293,19 @@ class map_student_controller extends Controller
                 INNER JOIN (
                 SELECT *
                 FROM transport_driver_detail
-                WHERE `type` = 'Driver') fd ON tvf.driver = fd.id
+                WHERE `type` = 'Driver' AND `status` = 'Active') fd ON tvf.driver = fd.id
                 INNER JOIN (
                 SELECT *
                 FROM transport_driver_detail
-                WHERE `type` = 'Driver') td ON tvt.driver = td.id
+                WHERE `type` = 'Driver' AND `status` = 'Active') td ON tvt.driver = td.id
                 INNER JOIN (
                 SELECT *
                 FROM transport_driver_detail
-                WHERE `type` = 'Conductor') fc ON tvf.conductor = fc.id
+                WHERE `type` = 'Conductor' AND `status` = 'Active') fc ON tvf.conductor = fc.id
                 INNER JOIN (
                 SELECT *
                 FROM transport_driver_detail
-                WHERE `type` = 'Conductor') tc ON tvt.conductor = tc.id
+                WHERE `type` = 'Conductor' AND `status` = 'Active') tc ON tvt.conductor = tc.id
                 WHERE tms.student_id = '$student_id' AND
                 tms.sub_institute_id = '$sub_institute_id' AND
                 tms.syear = '$syear'";
@@ -373,11 +373,14 @@ class map_student_controller extends Controller
                 ->get()
                 ->first();
 
-            $totalReserveCapacity = DB::table('transport_map_student')
-                ->where('from_bus_id', $bus_id)
-                ->where('from_shift_id', $shift_id)
-                ->where('sub_institute_id', $sub_institute_id)
-                ->where('syear', $syear)
+            $totalReserveCapacity = DB::table('transport_map_student as tms')
+                ->join('tblstudent_enrollment as te', 'te.student_id', '=', 'tms.student_id')
+                ->where('tms.from_bus_id', $bus_id)
+                ->where('tms.from_shift_id', $shift_id)
+                ->where('tms.sub_institute_id', $sub_institute_id)
+                ->where('tms.syear', $syear)
+                ->where('te.syear', $syear)
+                ->whereNull('te.end_date')
                 ->count();
 
             $totalCapacity = $getTotalCapacity->sitting_capacity ?? '';

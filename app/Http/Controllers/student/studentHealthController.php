@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 use function App\Helpers\is_mobile;
 use function App\Helpers\get_string;
+use Log;
 
 class studentHealthController extends Controller
 {
@@ -74,10 +75,18 @@ class studentHealthController extends Controller
         $user_id = $request->session()->get('user_id');
 
         $finalArray = $request->except('_method', '_token', 'submit', 'file');
-
+        
         $STUDENT = $request->input("student_id");
-        $STUDENT = explode("-", $STUDENT);
-        $finalArray['student_id'] = trim($STUDENT[1]);
+        if (is_string($STUDENT)) {
+            $STUDENT = explode("-", $STUDENT);
+            if (isset($STUDENT[1])) {
+                $finalArray['student_id'] = trim($STUDENT[1]);
+            } else {
+                Log::error('Array key 1 is undefined in $STUDENT array');
+            }
+        } else {
+            Log::error('Input for "student_id" is not a string');
+        }
 
         $file_name = $ext = $file_size = "";
         if ($request->hasFile('file')) {
@@ -226,7 +235,7 @@ class studentHealthController extends Controller
             // AND student_id = '".$student_id."'
             // ORDER BY date");
             $data = DB::table('student_health')
-            ->select('doctor_name', 'doctor_contact', DB::raw("DATE_FORMAT(date, '%d-%m-%Y') AS date"), DB::raw("IF(file = '', CONCAT('https://".$_SERVER['SERVER_NAME']."/storage/frontdesk/noimages.png'), CONCAT('https://".$_SERVER['SERVER_NAME']."/storage/frontdesk/', file)) AS file"))
+            ->select('doctor_name', 'doctor_contact', 'remarks', DB::raw("DATE_FORMAT(date, '%d-%m-%Y') AS date"), DB::raw("IF(file = '', CONCAT('https://".$_SERVER['SERVER_NAME']."/storage/frontdesk/noimages.png'), CONCAT('https://".$_SERVER['SERVER_NAME']."/storage/frontdesk/', file)) AS file"))
             ->where('syear', $syear)
             ->where('sub_institute_id', $sub_institute_id)
             ->where('student_id', $student_id)

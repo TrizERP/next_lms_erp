@@ -31,15 +31,13 @@ class van_wise_students_detail_report_controller extends Controller
                 $join->whereRaw("tms.from_shift_id = tss.id");
                 $join->whereRaw("tms.from_bus_id = tv.id");
             })
+            ->join('tblstudent_enrollment as se', 'se.student_id', '=', 'tms.student_id')
             ->select('tv.id as transport_vehicle_id', 'tss.id as transport_school_shift_id', 'tv.title as bus_name', 'tss.shift_title', DB::raw('count(tms.student_id) as student_count'))
             ->where('tv.sub_institute_id', $sub_institute_id)
             ->where('tms.syear', $syear)
+            ->where('se.syear', $syear)
             ->groupBy('tv.title', 'tss.shift_title')
             ->get()->toarray();
-           /* echo "<pre>";
-            print_r($student_datas);
-            echo "</pre>";
-            die; */
  
         $res['student_datas'] = $student_datas;
 
@@ -47,13 +45,13 @@ class van_wise_students_detail_report_controller extends Controller
     }
 
     public function retrieveDataByUserId(Request $request, $transport_vehicle_id, $transport_school_shift_id)
-{
-    $transport_vehicle_id = $transport_vehicle_id;
-    $transport_school_shift_id = $transport_school_shift_id;
-    $syear = $request->session()->get('syear');
-    $sub_institute_id = $request->session()->get('sub_institute_id');
-
-    $result = DB::table('tblstudent as s')
+    {
+        $transport_vehicle_id = $transport_vehicle_id;
+        $transport_school_shift_id = $transport_school_shift_id;
+        $syear = $request->session()->get('syear');
+        $sub_institute_id = $request->session()->get('sub_institute_id');
+        
+        $result = DB::table('tblstudent as s')
         ->join('tblstudent_enrollment as se', 'se.student_id', '=', 's.id')
         ->join('academic_section as g', 'g.id', '=', 'se.grade_id')
         ->join('standard as st', 'st.id', '=', 'se.standard_id')
@@ -70,11 +68,6 @@ class van_wise_students_detail_report_controller extends Controller
         ->where('tms.sub_institute_id', $sub_institute_id)
         ->where('tms.syear', $syear)
         ->get()->toArray();
-
-        /* echo "<pre>";
-print_r($result);
-echo "</pre>";
-die; */
 
         $res['status_code'] = 1;
         $res['message'] = "Success";
@@ -196,10 +189,10 @@ die; */
                 $join->whereRaw("tr.id = rb.route_id");
             })
             ->join('transport_driver_detail as dd', function ($join) {
-                $join->whereRaw("dd.id = tv.driver");
+                $join->whereRaw("dd.id = tv.driver")->where('dd.status', 'Active');
             })
             ->leftJoin('transport_driver_detail as cd', function ($join) {
-                $join->whereRaw("cd.id = tv.conductor");
+                $join->whereRaw("cd.id = tv.conductor")->where('dd.status', 'Active');
             })
             ->selectRaw("ts.id AS student_id,CONCAT_WS(' ',ts.first_name,ts.middle_name,ts.last_name) name, 
     concat(s.name,'/',d.name) as stddiv,ts.mobile,ts.enrollment_no,ts.address, tr.route_name, tv.title as bus_name, st.stop_name,

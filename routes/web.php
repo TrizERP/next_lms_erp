@@ -180,6 +180,9 @@ Route::group([ 'middleware' => ['session', 'menu', 'logRoute']], function () {
     Route::get('early-going-hrms-attendance-report',[HrmsController::Class,'earlyGoingHrmsAttendanceReportIndex'])->name('hrms_attendance_report.early_going_report');
 
     Route::post('/show-early-going-hrms-attendance-report', [HrmsController::class, 'earlyGoingHrmsAttendanceReport'])->name('hrms.show_early_going_hrms_attendance_report');
+    Route::get('hrms-general-setting',[HrmsController::Class,'generalSettingIndex'])->name('hrms_general_setting.index');
+    Route::post('hrms-general-setting/store',[HrmsController::Class,'generalSettingStore'])->name('hrms_general_setting.store');
+
     Route::resource('sqaa_master', sqaa_controller::class);
     Route::resource('sqaa_score_report', sqaaScoreReportController::class);
     Route::resource('sqaa_report_master', sqaaReportController::class);
@@ -427,6 +430,9 @@ Route::group(['middleware' => ['session', 'menu', 'logRoute']], function () {
     Route::post('import-leave', [ApplyLeaveController::class,'importOldLeave'])->name('import-leave');
     Route::get('holiday.weekdays', [HolidayController::class,'getWeekdays'])->name('holiday.weekdays');
     Route::post('holiday.weekdays', [HolidayController::class,'storeWeekdays'])->name('holiday.weekdays');
+    
+    //Get Holiday Ajax
+    Route::get('/getHolidays',[ApplyLeaveController::Class,'getHolidays'])->name('getHolidays');
 
     //Leave Authorisation
     Route::resource('leave-authorisation', LeaveAuthorisationController::class);
