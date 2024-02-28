@@ -92,7 +92,11 @@
             // Get the selected date from issue_date input
             get_date(selectedDate);
         });
-
+        // check book already issued or not
+        var item_code = $('#item_codes').val();
+        if(item_code!==''){
+            checkIssue();   
+        }
         // Date Picker
         jQuery('.mydatepicker, #datepicker').datepicker({
             changeMonth: true,
@@ -115,8 +119,9 @@
             todayHighlight: true
         });
 
-
     });
+
+    // check book already issued or not
 
     function checkIssue(){
         $('#check_msg').empty();
