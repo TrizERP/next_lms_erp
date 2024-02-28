@@ -46,6 +46,7 @@ class LibraryReportController extends Controller
      }
     public function show_library_report(Request $request)
     {
+        // echo "<pre>";print_r($request->all());exit;
         $syear = session()->get('syear');
         $sub_institute_id = session()->get('sub_institute_id');
         $term_id = session()->get('term_id');
@@ -60,7 +61,7 @@ class LibraryReportController extends Controller
         $data['language']=$language = $request->input('language');
         $data['subject']=$subject = $request->input('subject');
         // echo "<pre>";print_r($data['material_resource']);exit;
-        
+        // db::enableQueryLog();
         $all_data = DB::table('library_books as lb')
         ->join('library_items as li','li.book_id','=','lb.id')
         ->where("lb.sub_institute_id", "=", $sub_institute_id)
@@ -83,6 +84,7 @@ class LibraryReportController extends Controller
                 $q->where("subject", "=", $subject);
             })
         ->get()->toArray();
+        // dd(db::getQueryLog($all_data));
         $data['all_data']=$all_data;
 
         if(empty($all_data)){
@@ -125,7 +127,9 @@ class LibraryReportController extends Controller
         ->join('tblstudent_enrollment as se','se.student_id','=','s.id')
         ->join('standard as std','std.id','=','se.standard_id')
         ->join('division as d','d.id','=','se.section_id')        
-        ->join('library_items as li','li.book_id','=','library_book_circulations.book_id')
+        ->join('library_items as li',function($join) use ($sub_institute_id) {
+            $join->on('li.book_id','=','library_book_circulations.book_id')->on('library_book_circulations.item_code', '=', 'li.id');
+        })
         ->join('library_books as lb',function($join) use ($sub_institute_id) {
             $join->on('lb.id','=','library_book_circulations.book_id')->where('lb.sub_institute_id','=',$sub_institute_id);
         })
