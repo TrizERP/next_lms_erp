@@ -456,12 +456,23 @@ class HrmsController extends Controller
         $type = $request->input('type');
         if ($type == 'API') 
         {
-            $res['sub_institute_id'] = $request->input('sub_institute_id');
+            $sub_institute_id = $request->input('sub_institute_id');
         } 
         else 
         {
-            $res['sub_institute_id'] = $request->session()->get('sub_institute_id');
+            $sub_institute_id = $request->session()->get('sub_institute_id');
         }
+
+        $get_sandwich_leave_data = DB::table('general_data')->where(['fieldname' => 'sandwich_leave', 'sub_institute_id' => $sub_institute_id])->first();
+
+        $get_casual_leave_data = DB::table('general_data')->where(['fieldname' => 'casual_leave_apply', 'sub_institute_id' => $sub_institute_id])->first();
+        // echo("<pre>");
+        // print_r($get_sandwich_leave_data);echo("<br>");
+        // print_r($get_casual_leave_data);
+        // echo("</pre>");
+        // die;
+        $res['get_sandwich_leave_data'] = $get_sandwich_leave_data;
+        $res['get_casual_leave_data'] = $get_casual_leave_data;
 
         return is_mobile($type, "HRMS/general_setting/general_setting", $res, "view");
     }
@@ -482,30 +493,52 @@ class HrmsController extends Controller
         $sandwich_leave = $request->input('sandwich_leave');
         $casual_leave_at_one_time = $request->input('casual_leave_at_one_time');
 
-        if($sandwich_leave)
-        {
-            $general_data = new general_dataModel();
-            $general_data->fieldname = 'sandwich_leave';
-            $general_data->fieldvalue = $sandwich_leave;
-            $general_data->sub_institute_id = $subInstituteId;
-            $general_data->client_id = $clientId;
-            $general_data->type = 'hrms';
-            $general_data->save();
+        if ($sandwich_leave !== null) {
+            // Check if a record with fieldname 'sandwich_leave' and sub_institute_id exists
+            $existingSandwichLeave = general_dataModel::where('fieldname', 'sandwich_leave')
+                ->where('sub_institute_id', $subInstituteId)
+                ->first();
+        
+            if ($existingSandwichLeave) {
+                // If exists, update the record
+                $existingSandwichLeave->fieldvalue = $sandwich_leave;
+                $existingSandwichLeave->save();
+            } else {
+                // If not exists, insert a new record
+                $general_data = new general_dataModel();
+                $general_data->fieldname = 'sandwich_leave';
+                $general_data->fieldvalue = $sandwich_leave;
+                $general_data->sub_institute_id = $subInstituteId;
+                $general_data->client_id = $clientId;
+                $general_data->type = 'hrms';
+                $general_data->save();
+            }
         }
         
-        if($casual_leave_at_one_time)
-        {
-            $general_data = new general_dataModel();
-            $general_data->fieldname = 'casual_leave_apply';
-            $general_data->fieldvalue = $casual_leave_at_one_time;
-            $general_data->sub_institute_id = $subInstituteId;
-            $general_data->client_id = $clientId;
-            $general_data->type = 'hrms';
-            $general_data->save();
+        if ($casual_leave_at_one_time !== null) {
+            // Check if a record with fieldname 'casual_leave_apply' and sub_institute_id exists
+            $existingCasualLeaveApply = general_dataModel::where('fieldname', 'casual_leave_apply')
+                ->where('sub_institute_id', $subInstituteId)
+                ->first();
+        
+            if ($existingCasualLeaveApply) {
+                // If exists, update the record
+                $existingCasualLeaveApply->fieldvalue = $casual_leave_at_one_time;
+                $existingCasualLeaveApply->save();
+            } else {
+                // If not exists, insert a new record
+                $general_data = new general_dataModel();
+                $general_data->fieldname = 'casual_leave_apply';
+                $general_data->fieldvalue = $casual_leave_at_one_time ?? 0;
+                $general_data->sub_institute_id = $subInstituteId;
+                $general_data->client_id = $clientId;
+                $general_data->type = 'hrms';
+                $general_data->save();
+            }
         }
 
         $res['status_code']=1;
-        $res['message']="General setting information save successfully";
+        $res['message']="General setting information add/updated successfully";
         
         return is_mobile($type, "hrms_general_setting.index", $res, "redirect");
     }

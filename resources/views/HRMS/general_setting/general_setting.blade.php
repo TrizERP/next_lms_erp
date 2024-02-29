@@ -33,8 +33,8 @@
                                         <div class="col-md-4 form-group" style="margin-left: 0px !important">
                                             <select id='sandwich_leave' name="sandwich_leave" class="form-control" style="margin-left: 50px;">
                                                 <option>-- Select --</option>
-                                                <option value="Yes" name="yes">Yes</option>
-                                                <option value="No" name="no">No</option>
+                                                <option value="Yes" <?php if ($data['get_sandwich_leave_data'] !== null && $data['get_sandwich_leave_data']->fieldvalue === 'Yes') echo "selected"; ?>>Yes</option>
+                                                <option value="No" <?php if ($data['get_sandwich_leave_data'] !== null && $data['get_sandwich_leave_data']->fieldvalue === 'No') echo "selected"; ?>>No</option>
                                             </select>
                                         </div>
                                     </div>
@@ -46,13 +46,13 @@
                                     <div class="row">
                                         <div class="col-md-4 form-group" style="margin-left: 0px !important">
                                             <select id='casual_leave_at_one_time' name="casual_leave_at_one_time" class="form-control" style="margin-left: 50px;">
-                                                <option>-- Select --</option>
-                                                <option value="0" name="0">0</option>
-                                                <option value="1" name="1">1</option>
-                                                <option value="2" name="2">2</option>
-                                                <option value="3" name="3">3</option>
-                                                <option value="4" name="4">4</option>
-                                                <option value="5" name="5">5</option>
+                                                <option value = "0">-- Select --</option>
+                                                <option value="0" <?php if ($data['get_casual_leave_data'] !== null && $data['get_casual_leave_data']->fieldvalue === '0') echo "selected"; ?>>0</option>
+                                                <option value="1" <?php if ($data['get_casual_leave_data'] !== null && $data['get_casual_leave_data']->fieldvalue === '1') echo "selected"; ?>>1</option>
+                                                <option value="2" <?php if ($data['get_casual_leave_data'] !== null && $data['get_casual_leave_data']->fieldvalue === '2') echo "selected"; ?>>2</option>
+                                                <option value="3" <?php if ($data['get_casual_leave_data'] !== null && $data['get_casual_leave_data']->fieldvalue === '3') echo "selected"; ?>>3</option>
+                                                <option value="4" <?php if ($data['get_casual_leave_data'] !== null && $data['get_casual_leave_data']->fieldvalue === '4') echo "selected"; ?>>4</option>
+                                                <option value="5" <?php if ($data['get_casual_leave_data'] !== null && $data['get_casual_leave_data']->fieldvalue === '5') echo "selected"; ?>>5</option>
                                             </select>
                                         </div>
                                     </div>
