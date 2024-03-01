@@ -39,7 +39,7 @@
                             <tr>
                                 <td>Can all students inactive</td>
                                 <td>
-                                    <input type="checkbox" id="student_bluk_update" value="1" name="tables">
+                                    <input type="checkbox" id="student_bluk_update" name="tables" >
                                 </td>
                             </tr>
                             <tr>
@@ -47,7 +47,7 @@
                                 <td>	
                                     <div class="col-md-4 form-group" style="margin-left: 0px !important">
                                         <select id='bk_month' name="bk_month[]" class="form-control" multiple>
-                                            <option>--Select BK Month--</option>
+                                            <option disabled selected>--Select BK Month--</option>
                                             @if(isset($data['bk_month'])) 
                                             @foreach($data['bk_month'] as $key => $value)
                                             <option value="{{$key}}" @if(isset($field['sel_bk_month']) && in_array($key,$field  ['sel_bk_month'])) selected @endif>{{$value}}</option>
@@ -63,17 +63,40 @@
                                     <div class="row">
                                         <div class="col-md-4" style="margin-left: 0px !important">
                                             <select id='student_active_inactive_excel' name="student_active_inactive_excel" class="form-control">
-                                                <option>-- Select --</option>
+                                                <option disabled selected>-- Select --</option>
                                                 <option value="Active" name="active">Active</option>
                                                 <option value="Inactive" name="inactive">Inactive</option>
                                             </select>
                                         </div>
                                         <div class="col-md-4" style="margin-left: 0px !important">
                                             <div class="custom-file">
-                                                <input type="file" class="form-control" name="attachment" id="attachment" required>
+                                                <input type="file" class="form-control" name="attachment" id="attachment">
                                             </div>
                                         </div>
                                     </div>
+                                </td>
+                            </tr>
+                            <!-- for roll no update  -->
+                            <tr>
+                                <td>Update Student Roll No : </td>
+                                <td>
+                                <div class="row">
+                                    <div class="col-md-4">
+                                    <label for="">Select Standard</label>
+                                    <select name="rollno_standard" id="standard" class="form-control">
+                                        <option disabled selected>Select Standard</option>
+                                        @foreach($data['standard_arr'] as $key => $value)
+                                        <option value="{{$value->standard_id}}">{{$value->standard_name}}</option>
+                                        @endforeach
+                                    </select>
+                                    </div>
+                                    <div class="col-md-4">
+                                    <label for="">Select Division</label>
+                                    <select name="division" id="division" class="form-control">
+                                            <option disabled>Select Division</option>
+                                    </select>
+                                    </div>
+                                </div>
                                 </td>
                             </tr>
                         </tbody>
@@ -81,7 +104,7 @@
                 </div>
                 <div class="col-sm-12 form-group mt-3">
                     <center>
-                        <input type="submit" name="submit" value="Submit" class="btn btn-success">
+                        <input type="submit" name="submit" value="Submit" class="btn btn-success" id="formBtn">
                     </center>
                 </div>
             </form>
@@ -90,5 +113,38 @@
 </div>
 
 @include('includes.footerJs')
+<script>
+$(document).ready(function() {
+    $('#attachment').prop('required', true);
+   
+    $('#standard').change(function() {
+        var standard = $('#standard').val();
+       if(standard !==''){
+        $('#division').prop('required', true);
+        $('#attachment').prop('required',false);        
+       }
+    })
+    $('#bk_month').change(function() {
+        var standard = $('#bk_month').val();
+       if(standard !==''){
+        $('#attachment').prop('required',false);        
+       }
+    })
+    
+})
+
+function checked_input(){
+    var student_bluk_update = $('#student_bluk_update').val(); 
+    if(student_bluk_update===''){
+    } 
+    else if(student_bluk_update==1){
+        $('#student_bluk_update').val(0);  
+        $('#attachment').prop('required',true);                         
+    }else{
+        $('#student_bluk_update').val(1); 
+        $('#attachment').prop('required',false);                 
+    }
+}
+</script>
 @include('includes.footer')
 @endsection

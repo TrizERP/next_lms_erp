@@ -468,6 +468,7 @@
         $(document).on("submit", "#frmCirculation", function(e) {
             e.preventDefault();
             $('.error').remove()
+          
             var url = "{{ route('books.issue') }}";
             var formData = new FormData($("#frmCirculation")[0]);
             /**Ajax code**/
@@ -625,14 +626,17 @@
             $('.error').remove()
             var url = "{{ route('books.return', ':id') }}";
             url = url.replace(':id', $(this).data('id'));
-            var enroll_no = $('#enroll_no').val()
+            var enroll_no = $('#enroll_no').val();
+            var book_id = $('#bookId').val();
+
             /**Ajax code**/
             $.ajax({
                 type: "get",
                 url: url,
                 dataType: 'json',
                 data: {
-                    enroll_no: enroll_no
+                    enroll_no: enroll_no,
+                    book_id : book_id,
                 },
                 success: function(data) {
                     $('.divUserDetail').html(data.data);
@@ -653,10 +657,12 @@
             $('.error').remove()
             var url = "{{ route('books.show', ':id') }}";
             url = url.replace(':id', $('#enroll_no').val());
+            var book_id = $('#bookId').val();
+          
             /**Ajax code**/
             $.ajax({
                 type: "get",
-                url: url,
+                url: url+'?book_id='+book_id,
                 dataType: 'json',
                 success: function(data) {
                     $('.divUserDetail').html(data.data);
@@ -701,6 +707,9 @@
             e.preventDefault();
             var id = $(this).data('id');
             var name = $(this).data('name');
+            $('.divUserDetail').empty();
+            $('#enroll_no').val('');            
+            
             $('#modalTitle').text(name);
             $('#bookId').val(id);
             $('#mdlCirculation').modal('toggle');

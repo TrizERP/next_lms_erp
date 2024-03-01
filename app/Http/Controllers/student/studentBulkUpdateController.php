@@ -36,6 +36,14 @@ class studentBulkUpdateController extends Controller
 
         $get_student_enrollments = tblstudentEnrollmentModel::where(['sub_institute_id' => $sub_institute_id, 'syear' => $syear])->whereNull('end_date')->get()->toArray();
 
+        $res['standard_arr'] = DB::table('standard as std')
+        ->join('academic_section as grade', 'grade.id', '=', 'std.grade_id')
+        ->select('std.name as standard_name', 'std.id as standard_id', 'grade.title as grade_name', 'grade.id as grade_id')
+        ->where('grade.title', 'not like', '%PRE%')
+        ->where('std.sub_institute_id', $sub_institute_id)
+        ->get()
+        ->toArray();
+
         $res['get_student_enrollments'] = $get_student_enrollments;
         $res['bk_month'] = FeeMonthId(); 
         return is_mobile($type, "student/student_bluk_update", $res, "view");
@@ -56,7 +64,7 @@ class studentBulkUpdateController extends Controller
         $type = $request->get('type');
         $bk_months=$request->bk_month;
         // return $request;exit;
-        if($request->has('tables')){
+        if($request->has('tables') && $request->tables==1){
           $get_student_enrollments = tblstudentEnrollmentModel::where(['sub_institute_id' => $sub_institute_id, 'syear' => $syear])->whereNull('end_date')->get();
             foreach ($get_student_enrollments as $get_student_enrollment) {
             $get_student_enrollment->end_date = date('Y-m-d');
@@ -257,6 +265,29 @@ class studentBulkUpdateController extends Controller
                 $res['status'] = 1;
 				$res['message'] = nl2br($mess);
             } 
+        }
+        else if (isset($request->rollno_standard)){
+            $students_arr = DB::table('tblstudent as s')
+            ->join('tblstudent_enrollment as se','s.id','=','se.student_id')
+            ->selectRaw('s.first_name,s.roll_no,se.student_id,se.standard_id,se.section_id')
+            ->where(['s.sub_institute_id'=>$sub_institute_id,'se.syear'=>$syear])
+            ->where('se.standard_id',$request->rollno_standard)
+            ->where('se.section_id',$request->division)            
+            ->whereNull('se.end_date')
+            ->orderBy('s.first_name')
+            ->get()->toArray();
+            if(!empty($students_arr)){
+                $roll_no = 1;
+                foreach ($students_arr as $key => $value) {
+                    $update=DB::table('tblstudent')->where('id',$value->student_id)->update([
+                        'roll_no'=>$roll_no,
+                    ]);
+                    $roll_no++;
+                }
+
+            }
+            $res['status'] = 1;
+            $res['message'] = "Roll No Updated Successfully !!";
         }
         else
         {
