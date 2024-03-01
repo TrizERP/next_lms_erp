@@ -75,7 +75,7 @@ use App\Http\Controllers\superAdminController;
 */
 
 if (isset($_REQUEST['sub_institute_id']) && $_REQUEST['sub_institute_id'] != '') {
-    $sub_institute_id = $_REQUEST['sub_institute_id'];
+/*    $sub_institute_id = $_REQUEST['sub_institute_id'];
 
     $get_general_data = general_dataModel::where(['sub_institute_id' => $sub_institute_id])->get()->toArray();
 
@@ -94,6 +94,41 @@ if (isset($_REQUEST['sub_institute_id']) && $_REQUEST['sub_institute_id'] != '')
         session(['loginpage_favicon' => $loginpage_favicon]);
         session(['loginpage_backgrond' => $loginpage_backgrond]);
     }
+*/
+	$sub_institute_id = $_REQUEST['sub_institute_id'];
+
+	$get_general_data = general_dataModel::where(['sub_institute_id' => $sub_institute_id,'type' => 'cms'])->get()->toArray();
+
+	if (count($get_general_data) > 0) {
+	    foreach ($get_general_data as $data) {
+	        if (isset($data['fieldvalue'])) {
+	            switch ($data['fieldname']) {
+	                case 'loginpage_link':
+	                    session(['loginpage_link' => $data['fieldvalue']]);
+	                    break;
+	                case 'loginpage_logo':
+	                    session(['loginpage_logo' => $data['fieldvalue']]);
+	                    break;
+	                case 'loginpage_title':
+	                    session(['loginpage_title' => $data['fieldvalue']]);
+	                    break;
+	                case 'loginpage_description':
+	                    session(['loginpage_description' => $data['fieldvalue']]);
+	                    break;
+	                case 'loginpage_favicon':
+	                    session(['loginpage_favicon' => $data['fieldvalue']]);
+	                    break;
+	                case 'loginpage_backgrond':
+	                    session(['loginpage_backgrond' => $data['fieldvalue']]);
+	                    break;
+	                default:
+	                    // handle unknown fieldname
+	                    break;
+	            }
+	        }
+	    }
+	}
+
 } else {
     Route::get('/', function (Request $request) {
         $user_id = $request->session()->get('user_id');
