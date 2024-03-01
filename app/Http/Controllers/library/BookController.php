@@ -64,7 +64,7 @@ class BookController extends Controller
                     }
                 });
             })
-            ->select(['library_books.*', DB::raw('(SELECT GROUP_CONCAT(item_code) FROM library_items WHERE book_id = library_books.id) as item_codes')])
+            ->select(['library_books.*', DB::raw('(SELECT GROUP_CONCAT(item_code) FROM library_items WHERE book_id = library_books.id  and sub_institute_id = '.$sub_institute_id.') as item_codes')])
             ->groupBy('library_books.id')
             ->latest()->get();
 
@@ -228,12 +228,15 @@ class BookController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function show($enroll)
+    public function show($enroll,Request $request)
     {
+        // echo "<pre>";print_r($request->all());exit;
         try {
+            $message ='';
+            $sub_institute_id = session()->get('sub_institute_id');            
             $details = tblstudentModel::where('enrollment_no', $enroll)->with('issuedBookItem')->first();
-            // return($details);exit;
-            $view = View::make('library.user_detail', compact('details'))->render();
+            $item_codes= DB::table('library_items')->where('book_id',$request->book_id)->where('sub_institute_id',$sub_institute_id)->get()->toArray();
+            $view = View::make('library.user_detail', compact('details','item_codes','message'))->render();
             return response()->json(['data' => $view], 200);
         } catch (Exception $e) {
             return response()->json($e->getMessage(), 500);
@@ -306,13 +309,19 @@ class BookController extends Controller
     public function returnBook($id, Request $request)
     {
         $enroll = $request->enroll_no;
+        $book_id=$request->book_id;
+        $sub_institute_id=session()->get('sub_institute_id');
         $book = LibraryBookCirculation::find($id);
+        $message='';
         if ($book) {
             $book->update(['return_date' => now()]); 
+            $message='Return Date Updated Successfully !!';
         }
+
         // return $book;exit;
         $details = tblstudentModel::where('enrollment_no', $enroll)->with('issuedBookItem')->first();
-        $view = View::make('library.user_detail', compact('details'))->render();
+        $item_codes= DB::table('library_items')->where('book_id',$book_id)->where('sub_institute_id',$sub_institute_id)->get()->toArray();
+        $view = View::make('library.user_detail', compact('details','item_codes','message'))->render();
         return response()->json(['data' => $view], 200);
     }
 
@@ -344,16 +353,25 @@ class BookController extends Controller
             [
                 'student_id' => $request->student_id,
                 'book_id' => $request->bookId,
+                'item_code' => $request->item_codes,                                
             ],
             [
-                'issued_date' => $request->issue_date,
-                'due_date' => $request->return_date,
+                'issued_date' => \Carbon\Carbon::parse($request->issue_date)->format('Y-m-d'),
+                'due_date' => \Carbon\Carbon::parse($request->return_date)->format('Y-m-d'),
                 'sub_institute_id' => $sub_institute_id,
             ]
         )->whereNull('return_date'); // Add this condition
+        // echo "<pre>";print_r($issueBook);exit;
+        $message = "";
+        if(!empty($issueBook)){
+            $message = "Book Issued Successfully";
+        }
         
         $details = tblstudentModel::where('enrollment_no', $request->enroll_no)->with('issuedBook')->first();
-        $view = View::make('library.user_detail', compact('details'))->render();
+        $item_codes= DB::table('library_items')->where('book_id',$request->bookId)->where('sub_institute_id',$sub_institute_id)->get()->toArray();
+        $view = View::make('library.user_detail', compact('details','item_codes','message'))->render();
+        // $view = View::make('library.user_detail')->with(['details' => $details, 'message' => $message])->render();
+
         return response()->json(['data' => $view], 200);
     }
 
@@ -383,7 +401,9 @@ class BookController extends Controller
         $check_data = DB::table('library_book_circulations as lbc')
         ->selectRaw('lbc.id as circulation_id, lbc.student_id, lbc.issued_date, lbc.due_date, lbc.return_date, li.item_code, li.received_date, li.order_date, li.order_no, li.item_status, lb.id as book_id, lb.title as book_name, lb.publisher_name, lb.author_name, lb.edition')
         ->join('library_books as lb', 'lb.id', '=', 'lbc.book_id')
-        ->join('library_items as li', 'lbc.book_id', '=', 'li.book_id')
+        ->join('library_items as li', function($join){
+            $join->on('lbc.book_id', '=', 'li.book_id')->on('lbc.item_code', '=', 'li.id');
+        })
         ->where('lb.sub_institute_id', $sub_institute_id)
         ->where('li.item_code', $item_code)
         ->whereRaw(' (lbc.return_date IS NULL OR lbc.return_date like "0000-00%" )')   
@@ -401,7 +421,9 @@ class BookController extends Controller
             $libraryCirculations = DB::table('library_book_circulations as lbc')
             ->selectRaw('CONCAT_WS(" ", s.first_name, s.middle_name, s.last_name) as student_name,s.enrollment_no,s.mobile,std.name as standard,d.name as division, lbc.id as circulation_id, lbc.student_id, lbc.issued_date, lbc.due_date, lbc.return_date, li.item_code, li.received_date, li.order_date, li.order_no, li.item_status, lb.id as book_id, lb.title as book_name, lb.publisher_name, lb.author_name, lb.edition')
             ->join('library_books as lb', 'lb.id', '=', 'lbc.book_id')
-            ->join('library_items as li', 'lbc.book_id', '=', 'li.book_id')
+            ->join('library_items as li', function($join){
+                $join->on('lbc.book_id', '=', 'li.book_id')->on('lbc.item_code', '=', 'li.id');
+            })
             ->join('tblstudent as s', 's.id', '=', 'lbc.student_id')
             ->join('tblstudent_enrollment as se', 'se.student_id', '=', 's.id')
             ->join('standard as std', 'std.id', '=', 'se.standard_id')
@@ -415,5 +437,30 @@ class BookController extends Controller
 
         $res['item_code'] = $request->item_code;
         return is_mobile($type, 'library/quick_return', $res, 'view');    
+    }
+
+    public function checkIssue(Request $request){
+        $syear= session()->get('syear');
+        $sub_institute_id = session()->get('sub_institute_id');
+        // db::enableQueryLog();
+        $issuedBookDetails = DB::table('library_items as li')
+        ->selectRaw('CONCAT_WS(" ", s.first_name, s.middle_name, s.last_name) as student_name,s.enrollment_no,s.mobile,std.name as standard,d.name as division, lbc.id as circulation_id, lbc.student_id, lbc.issued_date, lbc.due_date, lbc.return_date, li.item_code, li.received_date, li.order_date, li.order_no, li.item_status, lb.id as book_id, lb.title as book_name, lb.publisher_name, lb.author_name, lb.edition')
+        ->join('library_book_circulations as lbc',function($join){
+            $join->on('lbc.book_id', '=', 'li.book_id')->on('lbc.item_code', '=', 'li.id');
+        } )
+        ->join('library_books as lb', 'lb.id', '=', 'lbc.book_id')        
+        ->join('tblstudent as s', 's.id', '=', 'lbc.student_id')
+        ->join('tblstudent_enrollment as se', 'se.student_id', '=', 's.id')
+        ->join('standard as std', 'std.id', '=', 'se.standard_id')
+        ->join('division as d', 'd.id', '=', 'se.section_id')
+        // ->where('se.syear', $syear)
+        ->where(['lbc.book_id'=>$request->book_id,'s.enrollment_no'=>$request->enrollment_no,'li.id'=>$request->item_code])
+        ->whereNull('lbc.return_date')
+        // ->whereRaw('lbc.return_date IS NOT NULL')
+        ->whereNull('se.end_date')
+        ->get();
+        // dd(db::getQueryLog($issuedBookDetails));
+        // echo "<pre>";print_r($request->all());exit;
+        return $issuedBookDetails;
     }
 }

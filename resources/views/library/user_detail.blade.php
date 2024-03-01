@@ -1,3 +1,15 @@
+@if($message !='')
+<div class="col-md-12 mt-3">
+    <div class="alert alert-success alert-block">
+        <button type="button" class="close" data-dismiss="alert">×</button>
+        <strong>{{ $message }}</strong>
+    </div>
+</div>
+@endif
+<div id="check_msg">
+</div>
+
+<input type="hidden" name="library_book_id" id='library_book_id'>
 <div class="col-md-6 mt-3">
     <div class="form-group">
         <label for="">Student Name</label>
@@ -5,6 +17,23 @@
         <label for="" class="form-control">{{ $details->full_name }}</label>
     </div>
 </div>
+
+<div class="col-md-6 mt-3">
+    <div class="form-group">
+        <label for="">Item Code</label>
+        <select name="item_codes" id="item_codes" class="form-control" onchange="checkIssue()" required>
+        @if(count($item_codes)>1)
+            <option value="" disabled selected>Select Item Code</option>
+            @foreach($item_codes as $key=>$value)
+                <option value="{{$value->id}}">{{$value->item_code}}</option>
+            @endforeach
+        @else
+            <option value="{{$item_codes[0]->id}}">{{$item_codes[0]->item_code}}</option>
+        @endif
+        </select>
+    </div>
+</div>
+
 <div class="col-md-6 mt-3">
     <div class="form-group">
         <label for="">Issue Date</label>
@@ -41,7 +70,7 @@
                     <td>{{ \Carbon\Carbon::parse($item->issued_date)->format('d-m-Y') ?? '' }}</td>
                     <td>{{ \Carbon\Carbon::parse($item->due_date)->format('d-m-Y') ?? '' }}</td>
                     <td>{{ $return_date }}</td>
-                    <td>@if( $return_date == null )<button type="button" class="btn btn-danger return-book" data-id="{{ $item->main_id }}">Return</button>@endif</td>
+                    <td>@if( $return_date == null )<button type="button" class="btn btn-danger return-book" data-id="{{ $item->main_id }}" data-itemid="{{ $item->item_code_id }}">Return</button>@endif</td>
                 </tr>
             @endforeach
         </tbody>
@@ -50,6 +79,9 @@
 <script>
     $(document).ready(function(){
         // Listen for change event on issue_date
+        var book_id =$('#bookId').val();
+        $('#library_book_id').empty();
+        $('#library_book_id').val(book_id);
         var selectedDate = $('#issue_date').val();
         
         get_date(selectedDate);
@@ -60,7 +92,11 @@
             // Get the selected date from issue_date input
             get_date(selectedDate);
         });
-
+        // check book already issued or not
+        var item_code = $('#item_codes').val();
+        if(item_code!==''){
+            checkIssue();   
+        }
         // Date Picker
         jQuery('.mydatepicker, #datepicker').datepicker({
             changeMonth: true,
@@ -83,25 +119,32 @@
             todayHighlight: true
         });
 
-
     });
 
-    // function get_date(selectedDate){
-    //     if(selectedDate){
-    //         var parsedDate = selectedDate.split("-").reverse().join("-");
-    //         var returnDate = new Date(parsedDate);
-            
-    //         // Add 10 days to the returnDate
-    //         returnDate.setDate(returnDate.getDate() + 10);
+    // check book already issued or not
 
-    //         // Format the return date as 'dd-mm-yyyy'
-    //         var formattedReturnDate = returnDate.toLocaleDateString('en-GB');
-
-    //         // Update the return_date input value
-    //         $('#return_date').val(formattedReturnDate);
-    //     }
-    // }
-
+    function checkIssue(){
+        $('#check_msg').empty();
+        var book_id = $('#bookId').val();
+        var student_gr = $('#enroll_no').val();        
+        // alert(book_id);
+        var item_code = $('#item_codes').val();
+        $.ajax({
+            url : '/check_issue?book_id='+book_id+'&enrollment_no='+student_gr+'&item_code='+item_code,
+            type:'GET',
+            success : function (result){
+                console.log(result);
+                if(result.length>0){
+                    $('#check_msg').append(`<div class="col-md-12 mt-3">
+                        <div class="alert alert-danger alert-block">
+                            <button type="button" class="close" data-dismiss="alert">×</button>
+                            <strong>This Book already assigned to student - `+result[0].student_name+` of standard `+result[0].standard+`/`+result[0].division+`</strong>
+                        </div>
+                    </div>`);
+                }
+            }
+        });
+    }
      function get_date(selectedDate){
         if(selectedDate){
             // Split the selected date into day, month, and year

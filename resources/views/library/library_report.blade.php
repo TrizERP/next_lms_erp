@@ -33,7 +33,7 @@
                             </select>
                         </div>
                           
-                        <div class="col-md-4 form-group" style="display: none;" id="for_material_resource">
+                        <div class="col-md-4 form-group" id="for_material_resource">
                             <label for="">Material Resource</label>
                             <select id="material_resource" class="form-control" name="material_resource">
                                 <option value="">All</option>
@@ -45,7 +45,7 @@
                             </select>
                         </div>
 
-                        <div class="col-md-4 form-group" style="display: none;" id="for_author">
+                        <div class="col-md-4 form-group" id="for_author">
                             <label for="">Author</label>
                             <select id="author" class="form-control" name="author">
                                 <option value="">All</option>
@@ -57,7 +57,7 @@
                             </select>
                         </div>
 
-                        <div class="col-md-4 form-group" style="display: none;" id="for_publisher_name">
+                        <div class="col-md-4 form-group" id="for_publisher_name">
                             <label for="">Publisher Name</label>
                             <select id="publisher_name" class="form-control" name="publisher_name">
                                 <option value="">All</option>
@@ -69,7 +69,7 @@
                             </select>
                         </div>
 
-                        <div class="col-md-4 form-group" style="display: none;" id="for_publishing_place">
+                        <div class="col-md-4 form-group" id="for_publishing_place">
                             <label for="">Publishing Place</label>
                             <select id="publishing_place" class="form-control" name="publishing_place">
                                 <option value="">All</option>
@@ -81,7 +81,7 @@
                             </select>
                         </div>
 
-                        <div class="col-md-4 form-group" style="display: none;" id="for_language">
+                        <div class="col-md-4 form-group" id="for_language">
                             <label for="">Language</label>
                             <select id="language" class="form-control" name="language">
                                 <option value="">All</option>
@@ -93,7 +93,7 @@
                             </select>
                         </div>
 
-                        <div class="col-md-4 form-group" style="display: none;" id="for_subject">
+                        <div class="col-md-4 form-group" id="for_subject">
                             <label for="">Subject</label>
                             <select id="subject" class="form-control" name="subject">
                                 <option value="">All</option>
@@ -195,70 +195,44 @@
         </div>
     </div>
 </div>
-@if(isset($data['report']) && $data['report']!='')
-            <script>
-                   var reportValue = '{!! $data["report"] !!}'; // Convert to string
-                    // alert('for_' + reportValue);
-                    document.getElementById('for_' + reportValue).style.display = 'block';
-            </script>
-    @endif
+ 
 @include('includes.footerJs')
-<script type="text/javascript">
+<script>
+    var ids = ['#for_material_resource','#for_author','#for_publisher_name','#for_publishing_place','#for_language','#for_subject'];
+    @if(isset($data['report']) && $data['report']!='')
+            var reportValue = '#for_'+'{!! $data["report"] !!}'; // Convert to string
+          
+            ids.forEach(element => {
+                if(reportValue !== element){
+                    $(element).hide();
+                    var selectName = element.replace('#for_', '');
+                    $('#'+selectName+' option').removeAttr('selected');
+                }else{
+                    $(element).show();
+                }
+       });
+@else
+    $(document).ready(function(){
+       ids.forEach(element => {
+           $(element).hide();
+       });
+    })
+@endif
 
-    function check_report (report_val) {
-        if (report_val == 'material_resource') {
-            document.getElementById('for_material_resource').style.display = 'block';
-            document.getElementById('for_author').style.display = 'none';
-            document.getElementById('for_publisher_name').style.display = 'none';
-            document.getElementById('for_publishing_place').style.display = 'none';
-            document.getElementById('for_language').style.display = 'none';
-            document.getElementById('for_subject').style.display = 'none';
-        }
-
-        if (report_val == 'author') {
-            document.getElementById('for_material_resource').style.display = 'none';
-            document.getElementById('for_author').style.display = 'block';
-            document.getElementById('for_publisher_name').style.display = 'none';
-            document.getElementById('for_publishing_place').style.display = 'none';
-            document.getElementById('for_language').style.display = 'none';
-            document.getElementById('for_subject').style.display = 'none';
-        }
-
-        if (report_val == 'publisher_name') {
-            document.getElementById('for_material_resource').style.display = 'none';
-            document.getElementById('for_author').style.display = 'none';
-            document.getElementById('for_publisher_name').style.display = 'block';
-            document.getElementById('for_publishing_place').style.display = 'none';
-            document.getElementById('for_language').style.display = 'none';
-            document.getElementById('for_subject').style.display = 'none';
-        }
-
-        if (report_val == 'publishing_place') {
-            document.getElementById('for_material_resource').style.display = 'none';
-            document.getElementById('for_author').style.display = 'none';
-            document.getElementById('for_publisher_name').style.display = 'none';
-            document.getElementById('for_publishing_place').style.display = 'block';
-            document.getElementById('for_language').style.display = 'none';
-            document.getElementById('for_subject').style.display = 'none';
-        }
-
-        if (report_val == 'language') {
-            document.getElementById('for_material_resource').style.display = 'none';
-            document.getElementById('for_author').style.display = 'none';
-            document.getElementById('for_publisher_name').style.display = 'none';
-            document.getElementById('for_publishing_place').style.display = 'none';
-            document.getElementById('for_language').style.display = 'block';
-            document.getElementById('for_subject').style.display = 'none';
-        }
-
-        if (report_val == 'subject') {
-            document.getElementById('for_material_resource').style.display = 'none';
-            document.getElementById('for_author').style.display = 'none';
-            document.getElementById('for_publisher_name').style.display = 'none';
-            document.getElementById('for_publishing_place').style.display = 'none';
-            document.getElementById('for_language').style.display = 'none';
-            document.getElementById('for_subject').style.display = 'block';
-        }
+  function check_report(report_val) {
+    var ids = ['#for_material_resource', '#for_author', '#for_publisher_name', '#for_publishing_place', '#for_language', '#for_subject'];
+    var reportValue = '#for_'+report_val;
+        ids.forEach(element => {
+            if (reportValue !== element) {
+                $(element).hide();
+                var selectName = element.replace('#for_', '');
+                // alert('#'+selectName+' option');
+                $('#'+selectName+' option').removeAttr('selected');
+            }else{
+                $(element).show();
+            }
+        });
     }
+
 </script>
 @include('includes.footer')
