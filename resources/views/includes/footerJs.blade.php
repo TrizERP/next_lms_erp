@@ -55,17 +55,14 @@ $route = ['dashboard'];
                         @php 
                             $user_details = DB::table('tbluser')
                                 ->where('sub_institute_id', session()->get('sub_institute_id'))
-                                ->where('id', session()->get('user_id'))
+                                ->where('portal_user', 1)
+                                ->orderBy('id','desc')
                                 ->first();
-
+                            $userEmail = $userPassword ='';
                             if ($user_details) {
                                 $userEmail = $user_details->email;
                                 $userPassword = $user_details->password;
-                            } else {
-                                // Handle the case when no user details are found, e.g., provide a default value or show an error message.
-                                $userEmail = null; // or any default value
-                                $userPassword = null; // or any default value
-                            }
+                            } 
                         @endphp
                         <!-- <a href='http://crm.triz.co.in/customerportal/index.php?api=Login&module=Portal&q={"password":"{{ $userPassword }}","username":"{{ $userEmail }}","language":"en_us"}&type=API' class="nav-link pb-0" target="_blank" rel="noopener noreferrer"> -->
                             <span class="menu-main-icon" onclick="openTTMS()"><i class="mdi mdi-clipboard-account md-36"></i></span> TTMS
