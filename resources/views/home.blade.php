@@ -85,6 +85,13 @@
             <strong>{{ $sessionData['message'] }}</strong>
         </div>
         @endif
+
+        @if(isset($_REQUEST['err']) && $_REQUEST['err'] == 1)
+        <div class="alert alert-danger alert-block" style="width:fit-content !important;padding:0.25rem" id="err_msg">
+            <button type="button" class="close" data-dismiss="alert">×</button>
+            <strong>{{ $_REQUEST['err_msg'] }}</strong>
+        </div>
+        @endif
         
         @if(Session::get('is_admin') == 1 && Session::get('sub_institute_id') == 0)
             <div class="px-4 bg-dark mb-3 pb-5 rounded mt-3">
@@ -756,6 +763,13 @@
 
 <script type="text/javascript">
 $(document).ready(function(){
+    if (window.location.search) {
+    // Get the current URL without the query string
+    var baseUrl = window.location.href.split('?')[0];
+
+    // Use replaceState to update the URL without refreshing the page
+    window.history.replaceState({}, document.title, baseUrl);
+}
     $('[data-toggle="tooltip"]').tooltip();  
 // for modal box 
 //     $('.get-details-link').on('click', function() {
