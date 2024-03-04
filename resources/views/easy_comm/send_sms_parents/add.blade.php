@@ -42,13 +42,8 @@
                                     <th>Division</th>
                                     <th>Mobile</th>
                                 </tr>
-                                @php
-
-                                $arr = $data['stu_data'];
-                                foreach ($arr as $id=>$col_arr){
-                                @endphp
+                                @foreach ($data['stu_data'] as $id=>$col_arr)
                                 <tr>
-
                                     <td><input type="checkbox" name="sendsms[{{$col_arr['mobile']}}]" class="ckbox1">  </td>
                                     <td>{{$id+1}}</td>
                                     <td>{{$col_arr['name']}}</td>
@@ -57,7 +52,7 @@
                                     <td>{{$col_arr['mobile']}}</td>
 
                                 </tr>
-                                @endif
+                                @endforeach
                             </table>
                         </div>  
                         <div class="row">                            
@@ -68,9 +63,7 @@
                             </div>
                         </div>  
                     </form>
-                    @php
-                    }else{
-                    @endphp
+                    @else
                         <div class="row">                            
                             <div class="col-md-12 form-group">
                                 <center>
@@ -78,9 +71,7 @@
                                 </center>
                             </div>
                         </div>
-                    @php
-                    }
-                    @endphp
+                    @endif
                 </div>
             </div>    
                 @if (count($errors) > 0)

@@ -256,7 +256,9 @@ class houseAutomationController extends Controller
                     $join->on('HSS.id', '=', 'SJOS.student_id');
                 })
                 ->join('tblstudent_enrollment as SE', 'HSS.id', '=', 'SE.student_id')
-                ->join('subject_elective as CE', 'CE.subject_id', '=', 'SJOS.subject_id')
+                ->join('subject_elective as CE',function($join) {
+                    $join->on('CE.subject_id', '=', 'SJOS.subject_id')->on('SJOS.syear','=','CE.syear');
+                })
                 ->where('SE.syear', '=', $syear)
                 ->where('SE.standard_id', '=', $standard_id)
                 ->where('SJOS.subject_id', '=', $subject_id)
@@ -305,7 +307,9 @@ class houseAutomationController extends Controller
                     $join->on('HSS.id', '=', 'SJOS.student_id');
                 })
                 ->join('tblstudent_enrollment as SE', 'HSS.id', '=', 'SE.student_id')
-                ->join('subject_elective as CE', 'CE.subject_id', '=', 'SJOS.subject_id')
+                ->join('subject_elective as CE',function($join) {
+                    $join->on('CE.subject_id', '=', 'SJOS.subject_id')->on('SJOS.syear','=','CE.syear');
+                })
                 ->where('SE.syear', '=', $syear)
                 ->where('SE.standard_id', '=', $standard_id)
                 ->where('SJOS.subject_id', '=', $subject_id)
@@ -313,7 +317,7 @@ class houseAutomationController extends Controller
                 ->where('HSS.gender', '=', 'F')
                 ->orderBy('SJOS.student_id')
                 ->get();
-                // echo "<pre>";print_r($studentResultF);exit;
+                // echo "<pre>";print_r($studentResultF);
 
                 $studAllFCount = $studentResultF->count();
                 $ct=1;
@@ -343,7 +347,7 @@ class houseAutomationController extends Controller
                         }
                
             }
-            
+// exit;
             $formatArray = [];
             $formatArrayIncrementer = 0;
             
