@@ -54,7 +54,7 @@
                         $('#opt_sub').append('<option value="0">N/A</option>');
                         result.forEach(element => {
                             console.log(element);
-                            $('#opt_sub').append('<option value='+element.id+'>'+element.display_name+'</option>');                            
+                            $('#opt_sub').append('<option value='+element.subject_id+'>'+element.display_name+'</option>');                            
                         });
                     }
                 }
