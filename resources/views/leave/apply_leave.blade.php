@@ -109,7 +109,7 @@
                                     <input type="text" required class="form-control mydatepicker" placeholder="YYYY/MM/DD" name="to_date" id="to_date" autocomplete="off">
                                     <span class="input-group-addon"><i class="icon-calender"></i></span>
                                 </div>
-                                @if($get_general_datas->fieldvalue == 'Yes')
+                                @if($get_general_datas && $get_general_datas->fieldvalue == 'Yes')
                                     <span id="total_appear_days"></span>
                                     <input type="hidden" id="total_days" name="total_days" value="">
                                     <span id="criteria_validation"></span>

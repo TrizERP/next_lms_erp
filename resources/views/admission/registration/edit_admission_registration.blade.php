@@ -456,7 +456,7 @@ $editData = array();
 <script>
 $('document').ready(function(){
     //START Check Division Capacity Validation - 18/11/2021
-    var division_check = false;
+    var division_check = true;
     document.getElementById('admission_division').addEventListener('change', function(){
         var selected_division_id = $("#admission_division").val();
         var selected_std_id = $("#admission_standard").val();
