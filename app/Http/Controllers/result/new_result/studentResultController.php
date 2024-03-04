@@ -3607,10 +3607,29 @@ $overall_total = $overall_total / 2;
             ->get()->toArray();
         
         $table = '';
-
-        foreach($get_result_skillsets as $get_result_skillset)
+    //     <table width="100%" cellspacing="0" cellpadding="0">
+    //     <tbody>
+    //         <tr>
+    //             <td align="center" width="50%"><b>&lt;&lt;class_teacher_name&gt;&gt;<br>Class Teacher</b></td>
+    //             <td align="center" width="50%"><b>P.P.Jose<br>Principal</b></td>
+    //         </tr>
+    //     </tbody>
+    // </table>
+        foreach($get_result_skillsets as $key=>$get_result_skillset)
         {
-            $table .= '<style>.data_center{text-align:center !important;}</style><table class="aca-year"  style="width: 100%;border-collapse:collapse; border:1px solid #000 !important; margin-bottom:55px;" cellspacing="0"  border="1">
+            $margin_bottom='8px';
+            if($key==0){
+                $margin_bottom="60px;margin-top:30px !important";
+            }
+            if($key==1){
+                $margin_bottom="20px";
+            }
+            
+            if($key==5){
+                $margin_bottom="0px !important";
+            }
+            
+            $table .= '<style>.data_center{text-align:center !important;}</style><table class="aca-year"  style="width: 100%;border-collapse:collapse; border:1px solid #000 !important; margin-bottom:'.$margin_bottom.';" cellspacing="0"  border="1">
             <tbody>
             <tr>';
             $style = '';

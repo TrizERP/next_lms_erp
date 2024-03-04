@@ -861,6 +861,9 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
                                 $fees_arr[$month_id][$receipt_id]['fine'] = 0;
                             }
                             $fees_arr[$month_id][$receipt_id]['fine'] = $fees_arr[$month_id][$receipt_id]['fine'] + $fin;
+                            if(isset($fees_arr[$month_id][$receipt_id]['actual_amountpaid'])){
+                                $fees_arr[$month_id][$receipt_id]['actual_amountpaid'] = $fees_arr[$month_id][$receipt_id]['actual_amountpaid'] + $fees_arr[$month_id][$receipt_id]['fine'];
+                            }
                             unset($fine_data[$title]);
                             unset($_REQUEST['hidden_cheque_return_charges']);
                         }
