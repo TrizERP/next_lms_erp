@@ -79,6 +79,9 @@
 <script>
     $(document).ready(function(){
         // Listen for change event on issue_date
+        @if($message !='')
+        $('#check_msg').hide();
+        @endif        
         var book_id =$('#bookId').val();
         $('#library_book_id').empty();
         $('#library_book_id').val(book_id);
@@ -124,6 +127,7 @@
     // check book already issued or not
 
     function checkIssue(){
+        $("#issue_book_check").prop("disabled", false);        
         $('#check_msg').empty();
         var book_id = $('#bookId').val();
         var student_gr = $('#enroll_no').val();        
@@ -135,12 +139,15 @@
             success : function (result){
                 console.log(result);
                 if(result.length>0){
+                    $('.alert-success').hide();
+                    $('#check_msg').show();
                     $('#check_msg').append(`<div class="col-md-12 mt-3">
                         <div class="alert alert-danger alert-block">
                             <button type="button" class="close" data-dismiss="alert">×</button>
                             <strong>This Book already assigned to student - `+result[0].student_name+` of standard `+result[0].standard+`/`+result[0].division+`</strong>
                         </div>
                     </div>`);
+                    $("#issue_book_check").prop("disabled", true);
                 }
             }
         });
