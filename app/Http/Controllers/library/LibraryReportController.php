@@ -65,6 +65,7 @@ class LibraryReportController extends Controller
         $all_data = DB::table('library_books as lb')
         ->join('library_items as li','li.book_id','=','lb.id')
         ->where("lb.sub_institute_id", "=", $sub_institute_id)
+        ->where("li.sub_institute_id", "=", $sub_institute_id)        
         ->when($request->material_resource,function($q) use($material_resource){
             $q->where("lb.material_resource_type", "=", $material_resource);
             })
@@ -83,6 +84,7 @@ class LibraryReportController extends Controller
         ->when($subject,function($q) use($subject){
                 $q->where("subject", "=", $subject);
             })
+        ->whereNull('li.deleted_at')
         ->get()->toArray();
         // dd(db::getQueryLog($all_data));
         $data['all_data']=$all_data;
@@ -144,6 +146,8 @@ class LibraryReportController extends Controller
             $q->where('s.mobile',$mobile);
         })
         ->where('se.syear',$syear)
+        ->whereNull('li.deleted_at')        
+        ->where("li.sub_institute_id", "=", $sub_institute_id)                
         ->where('library_book_circulations.sub_institute_id',$sub_institute_id);
         if($report_type=="overdue"){
             // $student_data->where('library_book_circulations.due_date','>=',$from_date)->Where('library_book_circulations.due_date','<=',$to_date)->whereNull('library_book_circulations.return_date');
@@ -191,6 +195,7 @@ class LibraryReportController extends Controller
             ->when($search_by,function ($q) use($search_by) {
                 $q->where('li.item_code',$search_by);
             })
+            ->whereNull('li.deleted_at')            
             ->where('li.sub_institute_id',$sub_institute_id);
         }
         $data = $data->get()->toArray();

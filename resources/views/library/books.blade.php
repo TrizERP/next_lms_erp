@@ -170,7 +170,8 @@
                                         <div class="form-group">
                                             <label for="">No Of Items</label>
                                             <input type="number" name="no_of_items" id="no_of_items"
-                                                class="form-control" placeholder="Enter No Of Items">
+                                                class="form-control" value="Enter No Of Items">
+
                                         </div>
                                     </div>
                                     <div class="col-md-4">
@@ -337,7 +338,7 @@
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-                        <button type="submit" class="btn btn-primary">Issue Book</button>
+                        <button type="submit" class="btn btn-primary" id="issue_book_check">Issue Book</button>
                     </div>
                 </form>
             </div>
@@ -531,6 +532,10 @@
             $('input[name="id"]').remove();
             // Empty all input fields
             $('input[type="text"]').val('');
+            $('input[type="number"]').val('');   
+            $('#no_span').remove();               
+
+           $('#title,#sub_title,#material_resource_type,#no_of_items,#author_name,#isbn_issn,#classification,#publisher_name,#publish_year,#publish_place,#collation,#series_title,#call_number,#language,#source,#subject,#price,#price_currency,#notes,#review, #edition, #tags, #no_of_items').prop('required', true);               
         })
         $(document).on("click", ".btn-edit", function(e) {
            
@@ -556,6 +561,8 @@
 
                         // Add the new input element after the existing input with id 'title'
                         $('#title').after(newInput);
+                        $('#no_span').remove();                                       
+                        $('#no_of_items').after(`<span id="no_span" style="color:red;font-size:12px">To Add new Item Code "No Of Items" must be greater then 0 <span>`);
                         $('#navLinkList').removeClass('active')
                         $('#navLinkCreate').addClass('active')
                         $('#right-tab-2').removeClass('active')
@@ -565,7 +572,7 @@
                         $('#material_resource_type').val(data.data[0].material_resource_type);
                         $('#edition').val(data.data[0].edition);
                         $('#tags').val(data.data[0].tags);
-                        $('#no_of_items').val(data.data[0].no_of_items);
+                        $('#no_of_items').val('0');
                         $('#author_name').val(data.data[0].author_name);
                         $('#isbn_issn').val(data.data[0].isbn_issn);
                         $('#classification').val(data.data[0].classification);
@@ -605,8 +612,9 @@
                         id: id
                     },
                     success: function(data) {
-                        console.log(data.book_id);
+                        // console.log(data.book_id);
                         $('#mdlItemBook').modal('toggle');
+                        $('.modal-backdrop').remove();
                         showItemByBook(data.book_id)
                     },
                     error: function(xhr) {
@@ -816,6 +824,10 @@
 
     function getyearwise_holiday(year) {
         $('#tblBooks').DataTable().ajax.url("?year=" + year).load();;
+    }
+
+    function getBooks(status) {
+        $('#tblBooks').DataTable().ajax.url("?book_status=" + status).load();;
     }
 
     function getSubjects(subject) {

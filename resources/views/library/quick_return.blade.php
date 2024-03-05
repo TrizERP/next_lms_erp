@@ -14,15 +14,15 @@
         @if(!empty($data['message']))
             @if(!empty($data['status_code']) && $data['status_code'] == 1)
                 <div class="alert alert-success alert-block">
-                    @else
-                        <div class="alert alert-danger alert-block">
-                            @endif
-                            <button type="button" class="close" data-dismiss="alert">×</button>
-                            <strong>{{ $data['message'] }}</strong>
-                        </div>
+            @else
+                <div class="alert alert-danger alert-block">
+            @endif
+                    <button type="button" class="close" data-dismiss="alert">×</button>
+                    <strong>{{ $data['message'] }}</strong>
+                </div>
             @endif
         <div class="row">
-        <form action="{{route('quick_return.create')}}" method="POST">
+        <form action="{{route('quick_return.create')}}" method="POST" class="ml-4">
         <label for="" style="font-size:1rem"><b>Item Id : </b></label>
             <div class="d-flex">
                 <div class="form-group">                
@@ -37,7 +37,7 @@
         <!-- row ends  -->
         </div>
         <!-- card ends  -->
-
+        @if(!empty($data['circulation_data']))
         <div class="card">
         <div>   
         <label for="student details"><b>Student's Who Returned Book :</b></label>
@@ -60,7 +60,6 @@
                 </thead>
 
                 <tbody>
-                @if(!empty($data['circulation_data']))
                 @php $i=1;@endphp
                     @foreach($data['circulation_data'] as $key=>$value)
                     @php 
@@ -85,12 +84,13 @@
                     </tr>
                     @endforeach
                
-                @endif
                 </tbody>
                 </table>
             </div>
             <!-- TABLE DIV ENDS -->
         </div>  
+        @endif
+        
         <!-- card end  -->
     </div>
 </div>        
