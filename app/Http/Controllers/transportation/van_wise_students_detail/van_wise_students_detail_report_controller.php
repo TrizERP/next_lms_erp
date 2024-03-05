@@ -36,6 +36,7 @@ class van_wise_students_detail_report_controller extends Controller
             ->where('tv.sub_institute_id', $sub_institute_id)
             ->where('tms.syear', $syear)
             ->where('se.syear', $syear)
+            ->whereNull('se.end_date')
             ->groupBy('tv.title', 'tss.shift_title')
             ->get()->toarray();
  
@@ -65,6 +66,7 @@ class van_wise_students_detail_report_controller extends Controller
         ->selectRaw('CONCAT_WS(" ", s.first_name, s.last_name) as student_name, s.enrollment_no, s.mobile, s.address, se.syear, se.student_id, se.grade_id, se.standard_id, se.section_id, st.name as standard_name, d.name as division_name, tv.title as bus_name')
         ->where('s.sub_institute_id', $sub_institute_id)
         ->where('se.syear', $syear)
+        ->whereNull('se.end_date')
         ->where('tms.sub_institute_id', $sub_institute_id)
         ->where('tms.syear', $syear)
         ->get()->toArray();

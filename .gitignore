@@ -51,3 +51,6 @@ Homestead.json
 vendor
 storage
 public
+
+# laravel application
+app/Exceptions/Handler.php
