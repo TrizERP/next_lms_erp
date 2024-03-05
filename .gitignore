@@ -53,4 +53,4 @@ storage
 public
 
 # laravel application
-app/Exceptions/Handler.php
+/app/Exceptions/Handler.php
