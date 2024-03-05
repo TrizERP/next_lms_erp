@@ -79,6 +79,9 @@
 <script>
     $(document).ready(function(){
         // Listen for change event on issue_date
+        @if($message !='')
+        $('#check_msg').hide();
+        @endif        
         var book_id =$('#bookId').val();
         $('#library_book_id').empty();
         $('#library_book_id').val(book_id);
@@ -136,6 +139,8 @@
             success : function (result){
                 console.log(result);
                 if(result.length>0){
+                    $('.alert-success').hide();
+                    $('#check_msg').show();
                     $('#check_msg').append(`<div class="col-md-12 mt-3">
                         <div class="alert alert-danger alert-block">
                             <button type="button" class="close" data-dismiss="alert">×</button>
