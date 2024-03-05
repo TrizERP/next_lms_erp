@@ -324,7 +324,7 @@ class online_fees_collect_controller extends Controller
 
     public function icici_request_handler(Request $request)
     {
-        //echo '<pre>'; print_r($_REQUEST); exit;
+        // echo '<pre>'; print_r($_REQUEST); exit;
         $student_id = $_REQUEST["student_id"];
         $fine = isset($_REQUEST["fees_data"]["fine"]) ? $_REQUEST["fees_data"]["fine"] : 0;
         //echo '<pre>'; print_r($fine); exit;

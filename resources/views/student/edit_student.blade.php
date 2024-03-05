@@ -1800,6 +1800,9 @@ br {
                                             $total_amt = ($distance == 0) ? 0 : $shift_rate + ($distance * $km_amount);
                                             @endphp
                                             <input type="text" id='amount' name="amount"  class="form-control" value="{{ $total_amt}}" readonly>
+                                            @if(isset($val['total_amount']) && $val['total_amount'] != $total_amt)
+                                            <label><span style="color: red;font-style: italic;">Field  value is {{ $val['total_amount'] }}, you can click Submit button.</span></label>
+                                            @endif
                                         </div>
                                         @endforeach
                                         </div>

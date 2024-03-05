@@ -108,7 +108,7 @@ class Handler extends ExceptionHandler
                 return response()->view('errors.'.'404', [], 404);
             }
         }
-        else {
+        else if ($exception->getStatusCode() != 302){
             // Redirect to dashboard with error message, filename, and line number
             $type='';
             $res['status_error']=0;
