@@ -124,6 +124,7 @@
     // check book already issued or not
 
     function checkIssue(){
+        $("#issue_book_check").prop("disabled", false);        
         $('#check_msg').empty();
         var book_id = $('#bookId').val();
         var student_gr = $('#enroll_no').val();        
@@ -141,6 +142,7 @@
                             <strong>This Book already assigned to student - `+result[0].student_name+` of standard `+result[0].standard+`/`+result[0].division+`</strong>
                         </div>
                     </div>`);
+                    $("#issue_book_check").prop("disabled", true);
                 }
             }
         });

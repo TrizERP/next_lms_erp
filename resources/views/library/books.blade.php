@@ -337,7 +337,7 @@
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-                        <button type="submit" class="btn btn-primary">Issue Book</button>
+                        <button type="submit" class="btn btn-primary" id="issue_book_check">Issue Book</button>
                     </div>
                 </form>
             </div>
@@ -531,6 +531,7 @@
             $('input[name="id"]').remove();
             // Empty all input fields
             $('input[type="text"]').val('');
+           $('#title,#sub_title,#material_resource_type,#no_of_items,#author_name,#isbn_issn,#classification,#publisher_name,#publish_year,#publish_place,#collation,#series_title,#call_number,#language,#source,#subject,#price,#price_currency,#notes,#review, #edition, #tags, #no_of_items').prop('required', true);               
         })
         $(document).on("click", ".btn-edit", function(e) {
            
@@ -605,8 +606,9 @@
                         id: id
                     },
                     success: function(data) {
-                        console.log(data.book_id);
+                        // console.log(data.book_id);
                         $('#mdlItemBook').modal('toggle');
+                        $('.modal-backdrop').remove();
                         showItemByBook(data.book_id)
                     },
                     error: function(xhr) {

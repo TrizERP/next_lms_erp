@@ -64,7 +64,7 @@ class BookController extends Controller
                     }
                 });
             })
-            ->select(['library_books.*', DB::raw('(SELECT GROUP_CONCAT(item_code) FROM library_items WHERE book_id = library_books.id  and sub_institute_id = '.$sub_institute_id.') as item_codes')])
+            ->select(['library_books.*', DB::raw('(SELECT GROUP_CONCAT(item_code) FROM library_items WHERE book_id = library_books.id  and sub_institute_id = '.$sub_institute_id.' and deleted_at IS NULL) as item_codes')])
             ->groupBy('library_books.id')
             ->latest()->get();
 
@@ -125,30 +125,9 @@ class BookController extends Controller
      */
     public function store(Request $request)
     {
-        $request->validate([
-            "title" => "required|string",
-            "sub_title" => "required|string",
-            "material_resource_type" => "required|in:book,magazine,reference,comic,class_book,newspaper,other",
-            "edition" => "required|string",
-            "tags" => "required|string",
-            "no_of_items" => "required|numeric",
-            "author_name" => "required|string",
-            "isbn_issn" => "required|string",
-            "classification" => "required|string",
-            "publisher_name" => "required|string",
-            "publish_year" => "required|numeric",
-            "publish_place" => "required|string",
-            "collation" => "required|numeric",
-            "series_title" => "required|string",
-            "call_number" => "required|numeric",
-            "language" => "required|string",
-            "source" => "required|string",
-            "subject" => "required|string",
-            "price" => "required|numeric",
-            "price_currency" => "required|string",
-            "notes" => "required|string",
-            "review" => "required|string",
-        ]);
+       
+        // echo "<pre>";print_r($request->all());exit;
+        
         try {
             $createBook = LibraryBook::find($request->id) ?? new LibraryBook();
             $createBook->title = $request->title;
@@ -207,6 +186,7 @@ class BookController extends Controller
                         'book_id' => $createBook->id,
                         'call_number' => $createBook->call_number,
                         'item_code' => $nextItemCode,
+                        'sub_institute_id'=>$sub_institute_id,
                     ]);
                 }
                 if ($objItem) {
@@ -296,8 +276,11 @@ class BookController extends Controller
         $book_id = $del->book_id;
         if($del){
             $del->delete();
+            $message = 'Book Item Deleted Successfully !';
+        }else{
+            $message = 'failed!';
         }
-        return response()->json(['message'=>'Book Item Deleted Successfully !','book_id'=>$book_id],200);
+        return response()->json(['message'=>$message,'book_id'=>$book_id],200);
     }
     
     /**
@@ -320,14 +303,15 @@ class BookController extends Controller
 
         // return $book;exit;
         $details = tblstudentModel::where('enrollment_no', $enroll)->with('issuedBookItem')->first();
-        $item_codes= DB::table('library_items')->where('book_id',$book_id)->where('sub_institute_id',$sub_institute_id)->get()->toArray();
+        $item_codes= DB::table('library_items')->where('book_id',$book_id)->where('sub_institute_id',$sub_institute_id)->whereNull('deleted_at')->get()->toArray();
         $view = View::make('library.user_detail', compact('details','item_codes','message'))->render();
         return response()->json(['data' => $view], 200);
     }
 
     public function item($id)
     {
-        $book = LibraryBook::with('items')->findOrFail($id);
+        $sub_institute_id = session()->get('sub_institute_id');
+        $book = LibraryBook::with('items')->where('sub_institute_id',$sub_institute_id)->findOrFail($id);
         $view = View::make('library.item_detail', compact('book'))->render();
         return response()->json(['data' => $view], 200);
     }
@@ -368,7 +352,7 @@ class BookController extends Controller
         }
         
         $details = tblstudentModel::where('enrollment_no', $request->enroll_no)->with('issuedBook')->first();
-        $item_codes= DB::table('library_items')->where('book_id',$request->bookId)->where('sub_institute_id',$sub_institute_id)->get()->toArray();
+        $item_codes= DB::table('library_items')->where('book_id',$request->bookId)->where('sub_institute_id',$sub_institute_id)->whereNull('deleted_at')->get()->toArray();
         $view = View::make('library.user_detail', compact('details','item_codes','message'))->render();
         // $view = View::make('library.user_detail')->with(['details' => $details, 'message' => $message])->render();
 

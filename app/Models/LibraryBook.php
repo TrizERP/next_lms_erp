@@ -12,7 +12,8 @@ class LibraryBook extends Model
     protected $guarded = ['id'];
 
     public function items(){
-        return $this->hasMany(LibraryItem::class,'book_id');
+        $sub_institute_id = session()->get('sub_institute_id');
+        return $this->hasMany(LibraryItem::class,'book_id')->where(['sub_institute_id'=>$sub_institute_id])->whereNull('deleted_at');
     }
     public function book_circulations(){
         return $this->hasMany(LibraryBookCirculation::class,'book_id');
