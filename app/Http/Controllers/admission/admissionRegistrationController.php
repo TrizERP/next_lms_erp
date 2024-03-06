@@ -32,7 +32,6 @@ class admissionRegistrationController extends Controller
         $type = $request->input('type');
         $sub_institute_id = $request->session()->get("sub_institute_id");
         $syear = session()->get("syear");
-        $marking_period_id = session()->get('term_id');
         if($type=="API"){
             try {
                 if (!$this->jwtToken()->validate()) {
@@ -51,18 +50,17 @@ class admissionRegistrationController extends Controller
 
         $data = DB::table('admission_enquiry as ae')
             ->join('admission_form as af', function ($join) {
-                $join->whereRaw('ae.id = af.enquiry_id');
+                $join->on('ae.id', '=', 'af.enquiry_id');
             })->leftJoin('tblstudent as ts', function ($join) {
-                $join->whereRaw('ts.admission_id = ae.id AND ts.admission_year = ae.syear AND ts.sub_institute_id = ae.sub_institute_id');
-            })->leftJoin('standard as s', function ($join) use($marking_period_id) {
-                $join->whereRaw('ts.admission_id = ae.id AND ts.admission_year = ae.syear AND ts.sub_institute_id = ae.sub_institute_id');
-                // ->when($marking_period_id,function($query) use ($marking_period_id){
-                //     $query->where('s.marking_period_id',$marking_period_id);
-                // });
+                $join->on('ts.admission_id', '=', 'ae.id')->on('ts.admission_year', '=', 'ae.syear')->on('ts.sub_institute_id', '=', 'ae.sub_institute_id');
+            })->Join('standard as s', function ($join) {
+                $join->on('s.id', '=', 'ae.admission_standard')->on('ts.sub_institute_id', '=', 'ae.sub_institute_id');
             })
             ->selectRaw("ae.*,COUNT(ts.id) AS total_student_count,ae.remarks AS enquiry_remark,s.name AS std_name")
             ->where('ae.sub_institute_id', $sub_institute_id)
-            ->where('ae.syear', $syear)->groupBy('ae.id')->get()->toArray();
+            ->where('ae.syear', $syear)
+            ->groupBy(['ae.first_name','ae.middle_name','ae.last_name'])
+            ->get()->toArray();
 
         $data = array_map(function ($value) {
             return (array) $value;
