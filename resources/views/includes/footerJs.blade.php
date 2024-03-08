@@ -200,9 +200,52 @@ $route = ['dashboard'];
 <script src="{{ asset("/admin_dep/js/jquery-ui.js") }}" defer></script>
 
 <script src="{{ asset("/admin_dep/js/bootstrap.min.js") }}" defer></script>
+<script src="{{ asset("/admin_dep/js/generativeAI.js") }}" defer></script>
 <script src="{{ asset("/admin_dep/js/bootstrap-select.min.js") }}" defer></script>
 
 <script>
+   
+    // AI 
+//     var i = 1;
+// var isFirstCharTyped = false;
+
+// $(document).on('keydown', '.note-editable', function(e) {
+//     if (e.key === 'Enter') {
+//         $('.textInput').remove();
+//         $('.note-editable').append('<input class="textInput form-control" id="textInput_'+i+'" placeholder="Press ‘space’ for AI, ‘/’ for commands'+i+'" >');
+//         $('#textInput_'+i).focus();
+//         i++;
+//         isFirstCharTyped = false; // Reset for a new input
+//     }
+// });
+
+// $(document).on('keydown', '.textInput', function(e) {    
+//     const inputValue = $('.textInput').val();
+//      // Use this.id to get the current input 
+//      if(!isFirstCharTyped){
+//         if (e.key === '/') {
+//             $('.textInput').after(`
+//             <ul class="list-group lists_text" id="lists_text" style="width:50%">
+//             <li class="list-group-item" id="first_one"><a onclick="aiChat(1)">An item</a></li>
+//             <li class="list-group-item">A second item</li>
+//             <li class="list-group-item">A third item</li>
+//             <li class="list-group-item">A fourth item</li>
+//             <li class="list-group-item">And a fifth one</li>
+//             </ul>`);
+//             $('.lists_text li:first-child').focus();
+
+//             $('.textInput').val("");
+//         } else if (e.key === 'Space') {
+//             $('.textInput').val("space entered");
+//         }
+//         else if (e.key === ' ') {
+//             $('.textInput').val("space entered");
+//         }
+
+//         isFirstCharTyped = true;
+//     }
+// });
+
     $(document).ready(function () {
         $.ajaxSetup({
             headers:
