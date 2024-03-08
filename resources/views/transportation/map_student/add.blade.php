@@ -52,7 +52,7 @@
                                     <td>@php echo $col_arr['name']; @endphp</td>
                                     <td>{{$col_arr['std-div']}}</td>
                                     <td>{{$col_arr['enrollment_no']}}</td>
-                                    <td>@php echo $col_arr['mobile']; @endphp</td>
+                                    <td class="{{ $col_arr['from_shift_id'] }}">@php echo $col_arr['mobile']; @endphp</td>
                                     <td>
                                         <select name="values[{{$col_arr['student_id']}}][from_shift]" disabled="true" id="from_shift" data-from_shift="$col_arr['from_shift_id']" class="form-control from_shift" required>
                                             <option value="">--Select--</option>

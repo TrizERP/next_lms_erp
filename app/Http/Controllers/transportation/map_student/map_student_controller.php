@@ -85,7 +85,8 @@ class map_student_controller extends Controller
         ->where("a.id", "=", $grade)
         ->get()->toArray();
 
-        $default_shift_id = !empty($result) ? $result[0]->shift_id : '';
+        //$default_shift_id = !empty($result) ? $result[0]->shift_id : ''; //Hide by rajesh becoz map_student selected issue from hills 08_03_2024
+        $default_shift_id = '';
 
         $responce_arr = [];
 
@@ -119,7 +120,7 @@ class map_student_controller extends Controller
                 $responce_arr['stu_data'][$id]['to_bus_id'] = $results[0]['to_bus_id'];
                 $responce_arr['stu_data'][$id]['to_stop'] = $results[0]['to_stop'];
                 $responce_arr['stu_data'][$id]['total_amount'] = $results[0]['amount'];
-                $responce_arr['stu_data'][$id]['distance'] = $results[0]['distance'];     
+                $responce_arr['stu_data'][$id]['distance'] = $results[0]['distance'];
                 $shift = DB::table('transport_school_shift')->where(['id'=>$results[0]['from_shift_id'],'sub_institute_id'=>$sub_institute_id])->get()->toArray();
                 if (count($shift) > 0 && isset($request->id) ) {
                 $responce_arr['stu_data'][$id]['shift_rate'] = $shift[0]->shift_rate;
@@ -141,6 +142,7 @@ class map_student_controller extends Controller
 
                 $bus = DB::table('transport_vehicle as tv')
                     ->where($where)
+                    ->orderBy('tv.title')
                     ->pluck('tv.title', 'tv.id');
                 $responce_arr['stu_data'][$id]['ddFromBus'] = $bus;
 
@@ -152,6 +154,7 @@ class map_student_controller extends Controller
 
                 $bus = DB::table('transport_vehicle as tv')
                     ->where($where)
+                    ->orderBy('tv.title')
                     ->pluck('tv.title', 'tv.id');
                 $responce_arr['stu_data'][$id]['ddToBus'] = $bus;
 
@@ -205,6 +208,7 @@ class map_student_controller extends Controller
         
                 $bus = DB::table('transport_vehicle as tv')
                     ->where($where)
+                    ->orderBy('tv.title')
                     ->pluck('tv.title', 'tv.id');
                 //END to fill from bus and to bus by default                    
 
@@ -249,6 +253,7 @@ class map_student_controller extends Controller
             ->select('transport_school_shift.shift_title', 'transport_school_shift.id', 'transport_vehicle.id as vid', 'transport_vehicle.vehicle_number')
             ->join('transport_school_shift', 'transport_school_shift.id', '=', 'transport_vehicle.school_shift')
             ->where("transport_school_shift.sub_institute_id", session()->get('sub_institute_id'))
+            ->orderBy('transport_vehicle.title')
             ->get();
     
         $result = [];

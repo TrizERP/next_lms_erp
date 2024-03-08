@@ -527,6 +527,7 @@ class AJAXController extends Controller
 
         $bus = DB::table('transport_vehicle as tv')
             ->where($where)
+            ->orderBy('tv.title')
             ->pluck('tv.title', 'tv.id');
 
         return response()->json($bus);

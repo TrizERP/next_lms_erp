@@ -32,6 +32,7 @@
                                 <th>Mobile</th>
                                 <th>Address</th>
                                 <th>Route Name</th>
+                                <th>Shift</th>
                                 <th>Bus</th>
                                 <th>Stop</th>
                                 <th>Driver</th>
@@ -52,6 +53,7 @@
                                 <td>{{$data->mobile}}</td>
                                 <td>{{$data->address}}</td>
                                 <td>{{$data->route_name}}</td>
+                                <td>{{$data->shift_title}}</td>
                                 <td>{{$data->bus_name}}</td>
                                 <td>{{$data->stop_name}}</td>
                                 <td>{{$data->driver}}</td>

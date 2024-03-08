@@ -53,7 +53,7 @@ class admissionRegistrationController extends Controller
                 $join->on('ae.id', '=', 'af.enquiry_id');
             })->leftJoin('tblstudent as ts', function ($join) {
                 $join->on('ts.admission_id', '=', 'ae.id')->on('ts.admission_year', '=', 'ae.syear')->on('ts.sub_institute_id', '=', 'ae.sub_institute_id');
-            })->Join('standard as s', function ($join) {
+            })->leftJoin('standard as s', function ($join) {
                 $join->on('s.id', '=', 'ae.admission_standard')->on('ts.sub_institute_id', '=', 'ae.sub_institute_id');
             })
             ->selectRaw("ae.*,COUNT(ts.id) AS total_student_count,ae.remarks AS enquiry_remark,s.name AS std_name")
