@@ -30,6 +30,7 @@ use Illuminate\Support\Facades\Http;
 use function App\Helpers\is_mobile;
 use Symfony\Component\Process\Process;
 use Spatie\Async\Pool;
+use Gemini\Laravel\Facades\Gemini;
 
 class AJAXController extends Controller
 {
@@ -2106,6 +2107,20 @@ class AJAXController extends Controller
             $res['answer'] = $response;
         }
        return $res['answer'];
+    }
+
+    public function geminiAI(Request $request){
+        if(isset($request->search) && $request->search=="summernote"){
+            $lang='';
+            if($request->sub_val!=''){
+                $lang=' translate into '.$request->sub_val;
+            }
+            $message = array("my prompt is ".$request->prompt.$lang.", for given prompt create html div with style make ".$request->searchType." without background color and font color must be only black in html, Also give only main contents not extra paras from your side. i dont want paras like 'This HTML code ' or '```html' and '```' ");
+        }
+        $result = Gemini::geminiPro()->generateContent($message);
+
+        $text = $result->text(); // Hello! How can I assist you today?
+        return $text;
     }
 
     public function getActivityMasterList(Request $request)
