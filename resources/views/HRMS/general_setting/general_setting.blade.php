@@ -12,7 +12,12 @@
         <div class="card">
             <div class="row mb-2">     
             </div>  
-                @php $field = Session::get('data'); @endphp
+                @php 
+                    $field = Session::get('data');
+                    $parent_communication = ['N'=>"Subject Wise","Y"=>"Class Teacher wise"];
+                    $sandwich_leave = ["Yes","No"];
+                    $casual_leave = [0,1,2,3,4,5];                    
+                @endphp 
                 @if ($sessionData = Session::get('data'))
                     @if (isset($sessionData['status_code']))
                         <div class="alert alert-{{ $sessionData['status_code'] == 1 ? 'success' : 'danger' }} alert-block">
@@ -33,8 +38,9 @@
                                         <div class="col-md-4 form-group" style="margin-left: 0px !important">
                                             <select id='sandwich_leave' name="sandwich_leave" class="form-control" style="margin-left: 50px;">
                                                 <option>-- Select --</option>
-                                                <option value="Yes" <?php if ($data['get_sandwich_leave_data'] !== null && $data['get_sandwich_leave_data']->fieldvalue === 'Yes') echo "selected"; ?>>Yes</option>
-                                                <option value="No" <?php if ($data['get_sandwich_leave_data'] !== null && $data['get_sandwich_leave_data']->fieldvalue === 'No') echo "selected"; ?>>No</option>
+                                                @foreach($sandwich_leave as $key=>$value)
+                                                    <option value="{{$value}}" @if(isset($data['get_sandwich_leave_data']->fieldvalue) && $data['get_sandwich_leave_data']->fieldvalue === $value) selected @endif>{{$value}}</option>
+                                                @endforeach
                                             </select>
                                         </div>
                                     </div>
@@ -46,13 +52,24 @@
                                     <div class="row">
                                         <div class="col-md-4 form-group" style="margin-left: 0px !important">
                                             <select id='casual_leave_at_one_time' name="casual_leave_at_one_time" class="form-control" style="margin-left: 50px;">
-                                                <option value = "0">-- Select --</option>
-                                                <option value="0" <?php if ($data['get_casual_leave_data'] !== null && $data['get_casual_leave_data']->fieldvalue === '0') echo "selected"; ?>>0</option>
-                                                <option value="1" <?php if ($data['get_casual_leave_data'] !== null && $data['get_casual_leave_data']->fieldvalue === '1') echo "selected"; ?>>1</option>
-                                                <option value="2" <?php if ($data['get_casual_leave_data'] !== null && $data['get_casual_leave_data']->fieldvalue === '2') echo "selected"; ?>>2</option>
-                                                <option value="3" <?php if ($data['get_casual_leave_data'] !== null && $data['get_casual_leave_data']->fieldvalue === '3') echo "selected"; ?>>3</option>
-                                                <option value="4" <?php if ($data['get_casual_leave_data'] !== null && $data['get_casual_leave_data']->fieldvalue === '4') echo "selected"; ?>>4</option>
-                                                <option value="5" <?php if ($data['get_casual_leave_data'] !== null && $data['get_casual_leave_data']->fieldvalue === '5') echo "selected"; ?>>5</option>
+                                            @foreach($casual_leave as $key=>$value)
+                                                    <option value="{{$value}}" @if(isset($data['get_casual_leave_data']->fieldvalue) && $data['get_casual_leave_data']->fieldvalue === $value) selected @endif>{{$value}}</option>
+                                            @endforeach
+                                            </select>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <th>System to display parent communication class-teacher wise</th>
+                                <td>
+                                    <div class="row">
+                                        <div class="col-md-4 form-group" style="margin-left: 0px !important">
+                                            <select id='parent_communication' name="parent_communication" class="form-control" style="margin-left: 50px;">
+                                            <option>-- Select --</option>
+                                              @foreach($parent_communication as $key => $value)
+                                              <option value="{{$key}}" @if(isset($data['get_parent_communication']->fieldvalue) && $data['get_parent_communication']->fieldvalue === $key)  selected @endif>{{$value}}</option>
+                                              @endforeach
                                             </select>
                                         </div>
                                     </div>
