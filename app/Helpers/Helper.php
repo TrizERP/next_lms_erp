@@ -1411,9 +1411,9 @@ if (!function_exists('getStudents')) {
         //END 23-11-2021 Added FOR Add Homework API
 
         $stud_arr = implode(',', $student_ids);
-
+        
         $extra_where = "s.id in (" . $stud_arr . ")";
-
+        // whenever add new table, make join with function and all where condition within function not outside
         $result = DB::table('tblstudent as s')
             ->join('tblstudent_enrollment as se', function ($join) {
                 $join->whereRaw('se.student_id = s.id');
@@ -1442,7 +1442,7 @@ if (!function_exists('getStudents')) {
             })->leftJoin('transport_kilometer_rate as tkr', function ($join) {
                 $join->whereRaw('tkr.id = s.distance_from_school');
             })->leftJoin('result_student_attendance_master as rsam', function ($join) {
-                $join->whereRaw('rsam.student_id = s.id AND rsam.sub_institute_id = s.sub_institute_id');
+                $join->on('rsam.student_id','=', 's.id')->where('rsam.term_id', '2');
             })->leftJoin('attendance_student as ats', function ($join) {
                 $join->whereRaw('ats.student_id = s.id AND ats.sub_institute_id = s.sub_institute_id');
             })->leftJoin('fees_collect as fc', function ($join) {
@@ -1462,7 +1462,7 @@ if (!function_exists('getStudents')) {
                 ->whereIn('s.id', $student_ids)
                 ->orderBy('s.roll_no', 'ASC')
                 ->groupBy('s.id')->get()->toArray();
-
+                
         $student_data = array();
         foreach ($result as $key => $value) {
             $student_data[$value->id]['id'] = $value->id;
