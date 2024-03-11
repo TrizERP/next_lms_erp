@@ -28,6 +28,9 @@ use function App\Helpers\get_string;
 use GuzzleHttp\Client;
 use Illuminate\Support\Facades\Http;
 use function App\Helpers\is_mobile;
+use Symfony\Component\Process\Process;
+use Spatie\Async\Pool;
+use Gemini\Laravel\Facades\Gemini;
 
 class AJAXController extends Controller
 {
@@ -2037,6 +2040,12 @@ class AJAXController extends Controller
            $getAllQuestion = DB::table('lms_question_master')->whereRaw('sub_institute_id = '.$sub_institute_id.' and standard_id='.$standard.' and chapter_id ='.$request->chapter_id.$topics.' ')->pluck('question_title');
             $message=array($request->question_prompt,"search only 1 question from mentioned standard and subject and chapter and topic and get different question which are not in this '".$getAllQuestion."'");
             // return $message;exit;
+        }else if(isset($request->search) && $request->search=="summernote"){
+            $lang='';
+            if($request->sub_val!=''){
+                $lang=' translate into '.$request->sub_val;
+            }
+            $message = array("my prompt is ".$request->prompt.$lang.", for given prompt create html div with style make ".$request->searchType." without background color and font color must be only black in html, Also give only main contents not extra paras from your side. i dont want paras like 'This HTML code ' ");
         }else{
             $message = array($request->message);            
         }
@@ -2072,6 +2081,20 @@ class AJAXController extends Controller
             $res['answer'] = $response;
         }
        return $res['answer'];
+    }
+
+    public function geminiAI(Request $request){
+        if(isset($request->search) && $request->search=="summernote"){
+            $lang='';
+            if($request->sub_val!=''){
+                $lang=' translate into '.$request->sub_val;
+            }
+            $message = array("my prompt is ".$request->prompt.$lang.", for given prompt create html div with style make ".$request->searchType." without background color and font color must be only black in html, Also give only main contents not extra paras from your side. i dont want paras like 'This HTML code ' or '```html' and '```' ");
+        }
+        $result = Gemini::geminiPro()->generateContent($message);
+
+        $text = $result->text(); // Hello! How can I assist you today?
+        return $text;
     }
 
     public function getActivityMasterList(Request $request)
