@@ -59,12 +59,11 @@ class parentCommunicationController extends Controller
             $syear = session()->get('syear');
         }
 
-        //START Check for class teacher assigned standards
+        // check_subject wise or class teacher
+        $typeWaise=DB::table('general_data')->where('sub_institute_id',$sub_institute_id)->where('fieldname','parent_communication')->latest('created_on')->get()->toArray();
 
-        //END Check for class teacher assigned standards
-
-
-        $result = DB::table("tblstudent as s")
+        // get all messages
+        $query = DB::table("tblstudent as s")
             ->join('tblstudent_enrollment as se', function ($join) {
                 $join->whereRaw("se.student_id = s.id");
             })
@@ -98,7 +97,7 @@ class parentCommunicationController extends Controller
                 if (isset($_REQUEST['to_date'])) {
                     $q->where("pc.date_", "<=", $_REQUEST['to_date']);
                 }
-            })
+            });
             /* Rajesh 08_11_2023 ClassTeacher also map with Subject so display Own class too.
             ->where(function ($q) {
                 $classTeacherStdArr = session()->get('classTeacherStdArr');
@@ -113,23 +112,40 @@ class parentCommunicationController extends Controller
                     $q->whereRaw("se.section_id IN (".implode(",", $classTeacherDivArr).")");
                 }
             })*/
-            ->where(function ($q) {
-                $subjectTeacherStdArr = session()->get('subjectTeacherStdArr');
-                if (isset($subjectTeacherStdArr)) {
-                    if (count($subjectTeacherStdArr) > 0) {
-                        $q->whereRaw("se.standard_id IN (".implode(",", $subjectTeacherStdArr).")");
-                    }/* else {
-                        $q->whereRaw("se.standard_id IN (' ')");
-                    }*/
-                }
+            if(isset($typeWaise[0]) && $typeWaise[0]->fieldvalue=="Y"){
+                $query->where(function ($q) {
+                    $classTeacherStdArr = session()->get('classTeacherStdArr');
+                    if (isset($classTeacherStdArr)) {
+                        if (count($classTeacherStdArr) > 0) {
+                            $q->whereRaw("se.standard_id IN (".implode(",", $classTeacherStdArr).")");
+                        }/* else {
+                            $q->whereRaw("se.standard_id IN (' ')");
+                        }*/
+                    }
 
-                $subjectTeacherDivArr = session()->get('subjectTeacherDivArr');
-                if (isset($subjectTeacherStdArr) && count($subjectTeacherDivArr) > 0) {
-                    $q->whereRaw("se.section_id IN (".implode(",", $subjectTeacherDivArr).")");
-                }
-            })
-            ->orderBy('pc.id', 'desc')
-            ->get()->toarray();
+                    $classTeacherDivArr = session()->get('classTeacherDivArr');
+                    if (isset($classTeacherDivArr) && count($classTeacherDivArr) > 0) {
+                        $q->whereRaw("se.section_id IN (".implode(",", $classTeacherDivArr).")");
+                    }
+                });
+            }else{
+                $query->where(function ($q) {
+                    $subjectTeacherStdArr = session()->get('subjectTeacherStdArr');
+                    if (isset($subjectTeacherStdArr)) {
+                        if (count($subjectTeacherStdArr) > 0) {
+                            $q->whereRaw("se.standard_id IN (".implode(",", $subjectTeacherStdArr).")");
+                        }/* else {
+                            $q->whereRaw("se.standard_id IN (' ')");
+                        }*/
+                    }
+
+                    $subjectTeacherDivArr = session()->get('subjectTeacherDivArr');
+                    if (isset($subjectTeacherStdArr) && count($subjectTeacherDivArr) > 0) {
+                        $q->whereRaw("se.section_id IN (".implode(",", $subjectTeacherDivArr).")");
+                    }
+                });
+            }
+           $result = $query->orderBy('pc.id', 'desc')->get()->toarray();
 
         $responce_arr = [];
         foreach ($result as $id => $arr) {

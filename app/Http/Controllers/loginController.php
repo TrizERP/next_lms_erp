@@ -129,9 +129,9 @@ class loginController extends Controller
 
                 $rightsQuery = DB::table('tblstudent as u')
                     ->leftJoin('tblindividual_rights as i', function ($join) {
-                        $join->whereRaw('u.id = i.user_id AND u.sub_institute_id = i.sub_institute_id');
+                        $join->on('u.id', '=', 'i.user_id')->on('u.sub_institute_id', '=', 'i.sub_institute_id');
                     })->leftJoin('tblgroupwise_rights as g', function ($join) {
-                        $join->whereRaw('u.user_profile_id = g.profile_id AND u.sub_institute_id = g.sub_institute_id');
+                        $join->on('u.user_profile_id', '=', 'g.profile_id')->on('u.sub_institute_id', '=', 'g.sub_institute_id');
                     })->join('tblmenumaster as m', function ($join) use ($udata) {
                         $join->whereRaw("(i.menu_id = m.id OR g.menu_id = m.id) AND FIND_IN_SET(" . $udata['sub_institute_id'] . ",
                         m.sub_institute_id)");
@@ -145,9 +145,9 @@ class loginController extends Controller
                 if ($udata['sub_institute_id'] == 0 && $udata['client_id'] != '' && $udata['is_admin'] == 1) {
                     $rightsQuery = DB::table('tbluser as u')
                         ->leftJoin('tblindividual_rights as i', function ($join) {
-                            $join->whereRaw('u.id = i.user_id AND u.sub_institute_id = i.sub_institute_id');
+                            $join->on('u.id', '=', 'i.user_id')->on('u.sub_institute_id', '=', 'i.sub_institute_id');
                         })->leftJoin('tblgroupwise_rights as g', function ($join) {
-                            $join->whereRaw('u.user_profile_id = g.profile_id AND u.sub_institute_id = g.sub_institute_id');
+                            $join->on('u.user_profile_id', '=', 'g.profile_id')->on('u.sub_institute_id', '=', 'g.sub_institute_id');
                         })->join('tblmenumaster as m', function ($join) use ($udata) {
                             $join->whereRaw("(i.menu_id = m.id OR g.menu_id = m.id) AND FIND_IN_SET(" . $udata['client_id'] . ",
                         m.client_id)");
@@ -158,9 +158,9 @@ class loginController extends Controller
                 } else {
                     $rightsQuery = DB::table('tbluser as u')
                         ->leftJoin('tblindividual_rights as i', function ($join) {
-                            $join->whereRaw('u.id = i.user_id AND u.sub_institute_id = i.sub_institute_id');
+                            $join->on('u.id', '=', 'i.user_id')->on('u.sub_institute_id', '=', 'i.sub_institute_id');
                         })->leftJoin('tblgroupwise_rights as g', function ($join) {
-                            $join->whereRaw('u.user_profile_id = g.profile_id AND u.sub_institute_id = g.sub_institute_id');
+                            $join->on('u.user_profile_id', '=', 'g.profile_id')->on('u.sub_institute_id', '=', 'g.sub_institute_id');
                         })->join('tblmenumaster as m', function ($join) use ($udata) {
                             $join->whereRaw("(i.menu_id = m.id OR g.menu_id = m.id) AND FIND_IN_SET(" . $udata['sub_institute_id'] . ",
                         m.sub_institute_id)");
@@ -318,7 +318,7 @@ class loginController extends Controller
 
 
                         $hrms_rights = DB::table('school_setup as s')->join('tblclient as c', function ($join) {
-                            $join->whereRaw('c.id = s.client_id');
+                            $join->on('c.id','=', 's.client_id');
                         })->selectRaw('if(db_hrms is null,0,1) as rights')
                             ->where('s.Id', $user['sub_institute_id'])->get()->toArray();
                         $given_hrms_rights = $hrms_rights[0]->rights;
@@ -417,9 +417,9 @@ class loginController extends Controller
         if ($mobile_number != '') {
             $data = DB::table('tbluser as u')
                 ->join('tbluserprofilemaster as um', function ($join) {
-                    $join->whereRaw('u.user_profile_id = um.id');
+                    $join->on('u.user_profile_id', '=', 'um.id');
                 })->join('school_setup as s', function ($join) {
-                    $join->whereRaw('.sub_institute_id = s.Id');
+                    $join->on('.sub_institute_id', '=', 's.Id');
                 })->selectRaw('u.*,um.name AS profile,s.SchoolName AS school_name')
                 ->where('u.mobile', $mobile_number)->get()->toArray();
 
