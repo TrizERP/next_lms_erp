@@ -67,7 +67,10 @@ class studentCertificateController extends Controller
         $standard_id = $request->input('standard_id');
 
         $data = getStudents($student_ids);
-
+//         echo("<pre>");
+// print_r($data);
+// echo("</pre>");
+// die;
         // START Dynamic Template Logic
         $tData = DB::table('template_master')
             ->where('module_name', $template)
