@@ -1379,9 +1379,9 @@ if (!function_exists('getStudents')) {
         //END 23-11-2021 Added FOR Add Homework API
 
         $stud_arr = implode(',', $student_ids);
-
+        
         $extra_where = "s.id in (" . $stud_arr . ")";
-
+        // whenever add new table, make join with function and all where condition within function not outside
         $result = DB::table('tblstudent as s')
             ->join('tblstudent_enrollment as se', function ($join) {
                 $join->whereRaw('se.student_id = s.id');
@@ -1410,7 +1410,7 @@ if (!function_exists('getStudents')) {
             })->leftJoin('transport_kilometer_rate as tkr', function ($join) {
                 $join->whereRaw('tkr.id = s.distance_from_school');
             })->leftJoin('result_student_attendance_master as rsam', function ($join) {
-                $join->whereRaw('rsam.student_id = s.id AND rsam.sub_institute_id = s.sub_institute_id');
+                $join->on('rsam.student_id','=', 's.id')->where('rsam.term_id', '2');
             })->leftJoin('attendance_student as ats', function ($join) {
                 $join->whereRaw('ats.student_id = s.id AND ats.sub_institute_id = s.sub_institute_id');
             })->leftJoin('fees_collect as fc', function ($join) {
@@ -1427,11 +1427,10 @@ if (!function_exists('getStudents')) {
                 tkr.from_distance,IF(tv.vehicle_type = 'Van',tkr.van_new,tkr.rick_new) AS distance_rate,s.first_name as student_first_name,s.middle_name as student_middle_name,s.last_name as student_last_name,rsam.teacher_remark,COUNT(ats.id) as total_att_days,sum(CASE WHEN ats.attendance_code = 'P' THEN 1 ELSE 0 END) as present_att_days, fc.term_id as month_name, bg.bloodgroup as blood_group_name")
                 ->where('s.sub_institute_id', $sub_institute_id)
                 ->where('se.syear', $syear)
-                ->where('rsam.term_id', '2')
                 ->whereIn('s.id', $student_ids)
                 ->orderBy('s.roll_no', 'ASC')
                 ->groupBy('s.id')->get()->toArray();
-
+                
         $student_data = array();
         foreach ($result as $key => $value) {
             $student_data[$value->id]['id'] = $value->id;
