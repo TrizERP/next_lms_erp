@@ -466,13 +466,12 @@ class HrmsController extends Controller
         $get_sandwich_leave_data = DB::table('general_data')->where(['fieldname' => 'sandwich_leave', 'sub_institute_id' => $sub_institute_id])->first();
 
         $get_casual_leave_data = DB::table('general_data')->where(['fieldname' => 'casual_leave_apply', 'sub_institute_id' => $sub_institute_id])->first();
-        // echo("<pre>");
-        // print_r($get_sandwich_leave_data);echo("<br>");
-        // print_r($get_casual_leave_data);
-        // echo("</pre>");
-        // die;
+
+        $get_parent_communication = DB::table('general_data')->where(['fieldname' => 'parent_communication', 'sub_institute_id' => $sub_institute_id])->first();
+      
         $res['get_sandwich_leave_data'] = $get_sandwich_leave_data;
         $res['get_casual_leave_data'] = $get_casual_leave_data;
+        $res['get_parent_communication']=$get_parent_communication;
 
         return is_mobile($type, "HRMS/general_setting/general_setting", $res, "view");
     }
@@ -492,7 +491,8 @@ class HrmsController extends Controller
         
         $sandwich_leave = $request->input('sandwich_leave');
         $casual_leave_at_one_time = $request->input('casual_leave_at_one_time');
-
+        $parent_communication = $request->input('parent_communication');
+        
         if ($sandwich_leave !== null) {
             // Check if a record with fieldname 'sandwich_leave' and sub_institute_id exists
             $existingSandwichLeave = general_dataModel::where('fieldname', 'sandwich_leave')
@@ -536,7 +536,27 @@ class HrmsController extends Controller
                 $general_data->save();
             }
         }
-
+        // for parent communication
+        if ($parent_communication !== "Y") {
+            $parent_communication = 'N';
+        }
+        $existingParentCommunication = general_dataModel::where('fieldname', 'parent_communication')
+        ->where('sub_institute_id', $subInstituteId)
+        ->first();
+        $general_data = new general_dataModel();
+        
+    if($existingParentCommunication){
+        $existingParentCommunication->fieldvalue = $parent_communication;
+        $existingParentCommunication->save();
+    }else{
+        $general_data->fieldname = 'parent_communication';
+        $general_data->fieldvalue = $parent_communication;
+        $general_data->sub_institute_id = $subInstituteId;
+        $general_data->client_id = $clientId;
+        $general_data->type = 'hrms';
+        $general_data->save();        
+    }
+        
         $res['status_code']=1;
         $res['message']="General setting information add/updated successfully";
         
