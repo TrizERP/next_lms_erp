@@ -1741,7 +1741,7 @@ br {
                                         </div>
                                         <div class="col-md-4 form-group">
                                         <label>Area </label>                                        
-                                        <select name="values[{{$val['student_id']}}][from_stop]" id="from_stop" class="from_stop form-control" required data-studentid="{{$val['student_id']}}">
+                                        <select name="values[{{$val['student_id']}}][from_stop]" id="from_stop" class="from_stop form-control" required data-studentid="{{$val['student_id']}}" style="pointer-events:none">
                                             <option value="">--Select--</option>
                                             @php
                                             if(isset($val['area'])){
@@ -1770,7 +1770,7 @@ br {
                                         </div> -->
                                         <div class="col-md-4 form-group">
                                             <label>Van </label>
-                                            <select name="values[{{$val['student_id']}}][van-shift]" id="van-shift" data-from_bus="$val['van-shift']" class="from_bus form-control" required data-studentid="{{$val['student_id']}}">
+                                            <select name="values[{{$val['student_id']}}][van-shift]" id="van-shift" data-from_bus="$val['van-shift']" class="from_bus form-control" required data-studentid="{{$val['student_id']}}" style="pointer-events:none">
                                             <option value="">--Select--</option>
                                             @php
                                             if(isset($val['van_shift'])){

@@ -243,9 +243,8 @@ class map_student_controller extends Controller
     public function ddShift()
     {
         return DB::table('transport_school_shift')
-            ->select('transport_school_shift.shift_title', 'transport_school_shift.id')
             ->where("transport_school_shift.sub_institute_id", session()->get('sub_institute_id'))
-            ->pluck('shift_title', 'id');
+            ->get()->toArray();
     }
     public function van_shift()
     {
@@ -328,6 +327,7 @@ class map_student_controller extends Controller
 
     public function store(Request $request)
     {
+        // echo "<pre>";print_r($request->all());exit;
         if (isset($_REQUEST['values'])) {
             foreach ($_REQUEST['values'] as $student_id => $arr) {
                 if (isset($arr['ckbox'])) {
@@ -347,6 +347,8 @@ class map_student_controller extends Controller
                         "to_shift_id"      => $arr['to_shift'],
                         "to_bus_id"        => $arr['to_bus'],
                         "to_stop"          => $arr['to_stop'],
+                        "distance"         => $arr['distance'],                        
+                        "amount"          => $arr['distance_amount'],                        
                         'sub_institute_id' => session()->get('sub_institute_id'),
                     ]);
                     $exam->save();
