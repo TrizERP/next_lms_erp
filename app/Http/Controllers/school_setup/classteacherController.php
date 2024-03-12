@@ -53,6 +53,9 @@ class classteacherController extends Controller
             ->join('division as d', 'd.id', '=', 'ct.division_id')
             ->join('tbluser as u', 'u.id', '=', 'ct.teacher_id')
             ->where(['ct.sub_institute_id' => $sub_institute_id, 'ct.syear' => $syear])
+            ->orderBy('a.sort_order')
+            ->orderBy('s.sort_order')
+            ->orderBy('d.name')
             ->get();
     }
 
