@@ -37,6 +37,7 @@
                                     <th>Mobile</th>
                                     <th>From Shift</th>
                                     <th>From Bus</th>
+                                    <th>Amount Dist.</th>
                                     <th>From</th>
                                     <th>To Shift</th>
                                     <th>To Bus</th>
@@ -56,14 +57,9 @@
                                     <td>
                                         <select name="values[{{$col_arr['student_id']}}][from_shift]" disabled="true" id="from_shift" data-from_shift="$col_arr['from_shift_id']" class="form-control from_shift" required>
                                             <option value="">--Select--</option>
-                                            @php
-                                            foreach ($col_arr['ddShift'] as $id => $arr) {
-                                                $selected = "";
-                                                if ($id == $col_arr['from_shift_id'])
-                                                    $selected = "selected=selected";
-                                                echo "<option $selected value='$id'>$arr</option>";
-                                            }
-                                            @endphp
+                                            @foreach ($col_arr['ddShift'] as $id => $arr) 
+                                                <option @if($arr->id == $col_arr['from_shift_id']) selected @endif value='{{$arr->id}}' data-fromshiftkm="{{$arr->km_amount}}" data-fromshiftrate="{{$arr->shift_rate}}" data-stud="{{$col_arr['student_id']}}">{{$arr->shift_title}}</option>
+                                            @endforeach
                                         </select>
                                     </td>
                                     <td>
@@ -81,6 +77,11 @@
                                         <span class="remain_capacity_success"></span>
                                     </td>
                                     <td>
+                                        <input type="hidden" class="form-control distance" disabled="true" name="values[{{ $col_arr['student_id'] }}][distance]" id="distance_{{ $col_arr['student_id'] }}" value="{{ $col_arr['distance']?? 1 }}" readonly>
+
+                                        <input type="text" class="form-control distance_amount" disabled="true" name="values[{{ $col_arr['student_id'] }}][distance_amount]" id="distance_amount_{{ $col_arr['student_id'] }}" value="{{ $col_arr['total_amount']?? 0}}" readonly>
+                                    </td>
+                                    <td>
                                         <select name="values[{{ $col_arr['student_id'] }}][from_stop]" disabled="true" id="from_stop" class="from_stop form-control" required data-studentid="{{$col_arr['student_id']}}">
                                             <option value="">--Select--</option>
                                             @php
@@ -96,14 +97,10 @@
                                     <td>
                                         <select name="values[{{$col_arr['student_id']}}][to_shift]" disabled="true" id="to_shift" class="form-control to_shift" required>
                                             <option value="">--Select--</option>
-                                            @php
-                                            foreach ($col_arr['ddShift'] as $id => $arr) {
-                                                $selected = "";
-                                                if ($id == $col_arr['to_shift_id'])
-                                                    $selected = "selected=selected";
-                                                echo "<option $selected value='$id'>$arr</option>";
-                                            }
-                                            @endphp
+                                           
+                                            @foreach ($col_arr['ddShift'] as $id => $arr)
+                                                <option @if($arr->id == $col_arr['to_shift_id']) selected @endif value='{{$arr->id}}' data-toshiftkm="{{$arr->km_amount}}" data-toshiftrate="{{$arr->shift_rate}}">{{$arr->shift_title}}</option>
+                                            @endforeach
                                         </select>
                                     </td>
                                     <td>
@@ -185,6 +182,8 @@
             var to_bus = row.find('.to_bus'); // get the other select in the same row
             var to_shift = row.find('.to_shift'); // get the other select in the same row
             var to_stop = row.find('.to_stop'); // get the other select in the same row
+            var distance = row.find('.distance'); // get the other select in the same row
+            var distance_amount = row.find('.distance_amount'); // get the other select in the same row            
 
             from_bus.prop('disabled', function (i, v) {
                 return !v;
@@ -202,6 +201,12 @@
                 return !v;
             });
             to_stop.prop('disabled', function (i, v) {
+                return !v;
+            });
+            distance.prop('disabled', function (i, v) {
+                return !v;
+            });
+            distance_amount.prop('disabled', function (i, v) {
                 return !v;
             });
 //            $($tblChkBox).prop('checked', $(this).prop('checked'));
@@ -305,6 +310,8 @@
                         }
 
                         targetMSG.css('color', textColor);
+                      
+                                                                                                               
                     }
                     // console.log(res);
                     /* if (res) {
@@ -407,8 +414,38 @@
         //END SET from stop value in to stop combo box
     });
 
+    // $('#myTable').on('change', '.from_shift', function () {
+    //     console.log('change event called');
+          
+    //     var km_amount =$(this).data("fromshiftkm");
+    //     var shift_rate = $(this).data("fromshiftrate");
+    //     var stu_id = $(this).data("stud");
+        
+    //     var shifts =$(this).val()
+    //     var distance = $('#distance\\[' + stu_id + '\\]').val();
+
+    //     console.log(stu_id);                    
+    //     console.log(distance);                    
+
+    //     var distance_amt = (shift_rate + (distance * km_amount) );
+    //     $('#distance_amount\\[' + stu_id + '\\]').val(distance_amt);
+    // })
     $('#myTable').on('change', '.from_shift', function () {
-        console.log('change event called');
-    })
+    console.log('change event called');
+    
+    var selectedOption = $(this).find(':selected');
+    
+    var km_amount = selectedOption.data("fromshiftkm");
+    var shift_rate = selectedOption.data("fromshiftrate");
+    var stu_id = selectedOption.data("stud");
+    
+    var shifts = selectedOption.val();
+    var distance = $('#distance_' + stu_id).val();
+    
+    var distance_amt = (shift_rate + (distance * km_amount));
+    console.log(distance_amt);
+    $('#distance_amount_' + stu_id).val(distance_amt);
+});
+
 </script>
 @include('includes.footer')
