@@ -574,7 +574,7 @@ class feesRefundController extends Controller
         }
 
         $feesRefundLog['amount'] = $total_refund_amt;
-        $feesRefundLog['created_date'] = date('Y-m-d h:i:s');
+        $feesRefundLog['created_date'] = date('Y-m-d H:i:s');
         $feesRefundLog['created_by'] = $user_id;
         $feesRefundLog['created_ip_address'] = $_SERVER['REMOTE_ADDR'];
 
