@@ -60,7 +60,7 @@ class InactiveStudentReportController extends Controller
         $tblcustom_fields['mother_mobile'] = 'Mother Mobile';
         $tblcustom_fields['email'] = 'Email';
         $tblcustom_fields['username'] = 'Username';
-        $tblcustom_fields['admission_year'] = 'Admission Year';
+        $tblcustom_fields['admission_year'] = 'Fees Year';
         $tblcustom_fields['admission_date'] = 'Admission Date';
         $tblcustom_fields['address'] = 'Address';
         $tblcustom_fields['city'] = 'City';
