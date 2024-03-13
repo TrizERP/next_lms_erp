@@ -37,7 +37,7 @@
                                     <th>Mobile</th>
                                     <th>From Shift</th>
                                     <th>From Bus</th>
-                                    <th>Amount Dist.</th>
+                                    <th>Amount</th>
                                     <th>From</th>
                                     <th>To Shift</th>
                                     <th>To Bus</th>
@@ -77,11 +77,6 @@
                                         <span class="remain_capacity_success"></span>
                                     </td>
                                     <td>
-                                        <input type="hidden" class="form-control distance" disabled="true" name="values[{{ $col_arr['student_id'] }}][distance]" id="distance_{{ $col_arr['student_id'] }}" value="{{ $col_arr['distance']?? 1 }}" readonly>
-
-                                        <input type="text" class="form-control distance_amount" disabled="true" name="values[{{ $col_arr['student_id'] }}][distance_amount]" id="distance_amount_{{ $col_arr['student_id'] }}" value="{{ $col_arr['total_amount']?? 0}}" readonly>
-                                    </td>
-                                    <td>
                                         <select name="values[{{ $col_arr['student_id'] }}][from_stop]" disabled="true" id="from_stop" class="from_stop form-control" required data-studentid="{{$col_arr['student_id']}}">
                                             <option value="">--Select--</option>
                                             @php
@@ -94,6 +89,11 @@
                                             @endphp
                                         </select>
                                     </td>
+                                    <td>
+                                        <input type="hidden" class="form-control distance" disabled="true" name="values[{{ $col_arr['student_id'] }}][distance]" id="distance_{{ $col_arr['student_id'] }}" value="{{ $col_arr['distance']?? 1 }}" readonly>
+
+                                        <input type="text" class="form-control distance_amount" disabled="true" name="values[{{ $col_arr['student_id'] }}][distance_amount]" id="distance_amount_{{ $col_arr['student_id'] }}" value="{{ $col_arr['total_amount']?? 0}}" readonly>
+                                    </td>                                    
                                     <td>
                                         <select name="values[{{$col_arr['student_id']}}][to_shift]" disabled="true" id="to_shift" class="form-control to_shift" required>
                                             <option value="">--Select--</option>

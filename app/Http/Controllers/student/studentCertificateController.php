@@ -342,10 +342,16 @@ die; */
 $months = FeeMonthId();
 $month = '';
 
-if ($value['month_name'] != '' && isset($months[$value['month_name']])) {
-    $month = $months[$value['month_name']];
+if ($value['month_name'] != '') {
+    $monthsArray = explode(',', $value['month_name']);
+    $monthsArray = array_filter($monthsArray);
+    $lastMonth = end($monthsArray);
+    if (isset($months[$lastMonth])) {
+        $month = $months[$lastMonth];
+    } else {
+        $month = 'No';
+    }
 } else {
-    //Handle the case where the key does not exist, for example:
     $month = 'No';
 }
 

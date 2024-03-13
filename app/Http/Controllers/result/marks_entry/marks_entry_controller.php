@@ -621,6 +621,7 @@ class marks_entry_controller extends Controller
                         'comment'          => $arr['comment'],
                         'is_absent'        => $arr['points'],
                         'sub_institute_id' => $sub_institute_id,
+                        'updated_at'       => now(),
                     ]; 
                 }else{
                     $data =[
@@ -632,6 +633,7 @@ class marks_entry_controller extends Controller
                         'comment'          => $arr['comment'],
                         'is_absent'        => "AB",
                         'sub_institute_id' => $sub_institute_id,
+                        'updated_at'       => now(),
                     ];   
                     }
                     marks_entry::where([
@@ -652,6 +654,7 @@ class marks_entry_controller extends Controller
                         'is_absent'        => '',
                         'comment'          => $arr['comment'],
                         'sub_institute_id' => $sub_institute_id,
+                        'updated_at'       => now(),
                     ];
                     marks_entry::where([
                         'sub_institute_id' => $sub_institute_id,

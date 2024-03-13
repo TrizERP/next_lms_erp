@@ -2151,4 +2151,33 @@ class AJAXController extends Controller
         }
         return response()->json($data);
     }
+
+    public function pythonTimetable(){
+      $pythonScriptPath =public_path('python/timetable.py');
+ 
+      $command = "python3 {$pythonScriptPath} 2>&1";
+ 
+  
+      // Execute the command and capture the output
+      exec($command, $output, $returnValue);
+  
+      // Check the return value to determine if the command was successful
+     
+          return response()->json([ 'output' => $output]);
+      
+     }
+
+     public function pythonFeesPredicition(){
+        $pythonScriptPath ='/home/fees_analysis_1.py';
+   
+        $command = "python3 {$pythonScriptPath} 2>&1";
+   
+    
+        // Execute the command and capture the output
+        exec($command, $output, $returnValue);
+    
+        // Check the return value to determine if the command was successful
+            return response()->json(['status' => 'success', 'output' => $output]);
+        
+       }
 }

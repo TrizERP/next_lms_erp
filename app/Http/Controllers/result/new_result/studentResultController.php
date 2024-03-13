@@ -104,7 +104,7 @@ class studentResultController extends Controller
         foreach ($data as $key => $value) {
             $html_content = $tData[0]['html_content'];
             $class = '';
-            if ($sub_institute_id == 254 && $template!=18) {
+            if ($sub_institute_id == 254) {
                 $class = 'class="report-card-bg"';
             }
             $new_html_content = '<div id="' . $value['id'] . '" ' . $class . ' style="page-break:always !important;">' . $this->create_html_content($syear, $sub_institute_id, $html_content, $value, $template, $result_trust, $format) . '</div>';
@@ -194,7 +194,11 @@ class studentResultController extends Controller
             $sign_width = "100%";
             $sign_height = "50px";            
             if($sub_institute_id==254){
-                $sign_width = "50%"; 
+                if($template==18){
+                    $sign_width = "20%";
+                }else{
+                    $sign_width = "50%";
+                } 
                 $sign_height = "30px";                                           
             }
             $principal_sign = '<img src="/storage/result/principle_sign/' . $result_teacher['principal_sign'] . '" alt="principal_sign" style="height: '.$sign_height.' !important;width:'.$sign_width.' !important">';
@@ -3617,16 +3621,18 @@ $overall_total = $overall_total / 2;
     // </table>
         foreach($get_result_skillsets as $key=>$get_result_skillset)
         {
-            $margin_bottom='8px';
-            if($key==0){
-                $margin_bottom="60px;margin-top:30px !important";
-            }
-            if($key==1){
-                $margin_bottom="20px";
-            }
-            
-            if($key==5){
-                $margin_bottom="0px !important";
+            $margin_bottom='40px';
+
+            if($sub_institute_id==254){
+                if($key==0){
+                    $margin_bottom="20px;margin-top:10px !important";
+                }
+                if($key==1){
+                    $margin_bottom="80px";
+                }
+                if($key==2){
+                    $margin_bottom="20px";
+                }
             }
             
             $table .= '<style>.data_center{text-align:center !important;}</style><table class="aca-year"  style="width: 100%;border-collapse:collapse; border:1px solid #000 !important; margin-bottom:'.$margin_bottom.';" cellspacing="0"  border="1">
@@ -3665,9 +3671,10 @@ $overall_total = $overall_total / 2;
                     $table .= '<th style="text-align:center;font-size:medium !important;color:black;background:white !important"><b>' . $value1->title . '</b></th>';
 
                     $get_result_activity_masters = DB::table('result_activity_master')
-                    ->selectRaw('*, group_concat(title SEPARATOR "|") as activity_master_title,group_concat(id) as ids')
+                    ->selectRaw('*, group_concat(title ORDER BY sort_order ASC SEPARATOR "|") as activity_master_title,group_concat(id) as ids')
                     ->where(['sub_institute_id' => $sub_institute_id])
                     ->where('skill_id', $skill_ids[$key])
+                    ->orderBy('sort_order')
                     ->get()->toArray();
 
                     foreach($get_result_activity_masters as $get_result_activity_master)

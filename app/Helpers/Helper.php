@@ -1411,9 +1411,10 @@ if (!function_exists('getStudents')) {
         //END 23-11-2021 Added FOR Add Homework API
 
         $stud_arr = implode(',', $student_ids);
-
+        
         $extra_where = "s.id in (" . $stud_arr . ")";
-
+        // whenever add new table, make join with function and all where condition within function not outside
+        // db::enableQueryLog();
         $result = DB::table('tblstudent as s')
             ->join('tblstudent_enrollment as se', function ($join) {
                 $join->whereRaw('se.student_id = s.id');
@@ -1442,11 +1443,11 @@ if (!function_exists('getStudents')) {
             })->leftJoin('transport_kilometer_rate as tkr', function ($join) {
                 $join->whereRaw('tkr.id = s.distance_from_school');
             })->leftJoin('result_student_attendance_master as rsam', function ($join) {
-                $join->whereRaw('rsam.student_id = s.id AND rsam.sub_institute_id = s.sub_institute_id');
+                $join->on('rsam.student_id','=', 's.id')->where('rsam.term_id', '2');
             })->leftJoin('attendance_student as ats', function ($join) {
                 $join->whereRaw('ats.student_id = s.id AND ats.sub_institute_id = s.sub_institute_id');
             })->leftJoin('fees_collect as fc', function ($join) {
-                $join->whereRaw('fc.student_id = s.id')->where('fc.is_deleted', 'N');
+                $join->on('fc.student_id', '=', 's.id')->on('se.syear','=','fc.syear')->where('fc.is_deleted', 'N')->groupBy('fc.term_id');
             })
             ->selectRaw("tc.*,s.*,se.syear,se.student_id,se.grade_id,se.standard_id,se.section_id,se.student_quota,
                 se.start_date,se.end_date,se.enrollment_code,se.drop_code,se.drop_remarks,se.drop_remarks,se.term_id,
@@ -1456,13 +1457,13 @@ if (!function_exists('getStudents')) {
                 r.religion_name,c.caste_name,s.subcast,s.affiliation_no,s.school_code,s.admission_date,td.first_name AS driver_name,
                 td.mobile AS driver_mobile,td.icard_icon,s.mother_mobile,CONCAT_WS(' ',s.first_name,CONCAT(SUBSTRING(s.father_name,1,1),'.'),
                 s.last_name) as short_student_name,tv.vehicle_type,tkr.id as distance_from_school_id,tkr.distance_from_school,
-                tkr.from_distance,IF(tv.vehicle_type = 'Van',tkr.van_new,tkr.rick_new) AS distance_rate,s.first_name as student_first_name,s.middle_name as student_middle_name,s.last_name as student_last_name,rsam.teacher_remark,COUNT(ats.id) as total_att_days,sum(CASE WHEN ats.attendance_code = 'P' THEN 1 ELSE 0 END) as present_att_days, fc.term_id as month_name, bg.bloodgroup as blood_group_name")
+                tkr.from_distance,IF(tv.vehicle_type = 'Van',tkr.van_new,tkr.rick_new) AS distance_rate,s.first_name as student_first_name,s.middle_name as student_middle_name,s.last_name as student_last_name,rsam.teacher_remark,COUNT(ats.id) as total_att_days,sum(CASE WHEN ats.attendance_code = 'P' THEN 1 ELSE 0 END) as present_att_days, group_concat(fc.term_id) as month_name, bg.bloodgroup as blood_group_name")
                 ->where('s.sub_institute_id', $sub_institute_id)
                 ->where('se.syear', $syear)
                 ->whereIn('s.id', $student_ids)
                 ->orderBy('s.roll_no', 'ASC')
                 ->groupBy('s.id')->get()->toArray();
-
+                // dd(db::getQueryLog($result));
         $student_data = array();
         foreach ($result as $key => $value) {
             $student_data[$value->id]['id'] = $value->id;
