@@ -67,10 +67,7 @@ class studentCertificateController extends Controller
         $standard_id = $request->input('standard_id');
 
         $data = getStudents($student_ids);
-//         echo("<pre>");
-// print_r($data);
-// echo("</pre>");
-// die;
+
         // START Dynamic Template Logic
         $tData = DB::table('template_master')
             ->where('module_name', $template)
@@ -345,10 +342,16 @@ die; */
 $months = FeeMonthId();
 $month = '';
 
-if ($value['month_name'] != '' && isset($months[$value['month_name']])) {
-    $month = $months[$value['month_name']];
+if ($value['month_name'] != '') {
+    $monthsArray = explode(',', $value['month_name']);
+    $monthsArray = array_filter($monthsArray);
+    $lastMonth = end($monthsArray);
+    if (isset($months[$lastMonth])) {
+        $month = $months[$lastMonth];
+    } else {
+        $month = 'No';
+    }
 } else {
-    //Handle the case where the key does not exist, for example:
     $month = 'No';
 }
 
