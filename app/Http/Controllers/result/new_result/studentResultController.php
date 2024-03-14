@@ -105,7 +105,13 @@ class studentResultController extends Controller
             $html_content = $tData[0]['html_content'];
             $class = '';
             if ($sub_institute_id == 254) {
-                $class = 'class="report-card-bg"';
+                if($template==18){
+                    $class = 'class="report-card-bg2"';
+
+                }else{
+                    $class = 'class="report-card-bg"';
+
+                }
             }
             $new_html_content = '<div id="' . $value['id'] . '" ' . $class . ' style="page-break:always !important;">' . $this->create_html_content($syear, $sub_institute_id, $html_content, $value, $template, $result_trust, $format) . '</div>';
             $new_html .= $new_html_content;
@@ -3621,18 +3627,21 @@ $overall_total = $overall_total / 2;
     // </table>
         foreach($get_result_skillsets as $key=>$get_result_skillset)
         {
-            $margin_bottom='40px';
+            $margin_bottom='30px';
 
             if($sub_institute_id==254){
-                if($key==0){
-                    $margin_bottom="20px;margin-top:10px !important";
-                }
-                if($key==1){
-                    $margin_bottom="80px";
-                }
+                // if($key==0){
+                //     $margin_bottom ="60px;margin-top:30px !important";
+                // }
+                // if($key==1){
+                //     $margin_bottom="40px";
+                // }
                 if($key==2){
-                    $margin_bottom="20px";
+                    $margin_bottom="50px";
                 }
+                // if($key==3 || $key==4 || $key==5){
+                    // $margin_bottom="40px";
+                // }
             }
             
             $table .= '<style>.data_center{text-align:center !important;}</style><table class="aca-year"  style="width: 100%;border-collapse:collapse; border:1px solid #000 !important; margin-bottom:'.$margin_bottom.';" cellspacing="0"  border="1">
