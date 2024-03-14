@@ -169,15 +169,15 @@ tbody {
         width: 100% !important;
     }
     .report-card-bg2 {
-        padding: 2px !important;
+        padding: 4px !important;
         width: 100% !important;
         margin: 0px !important;
     }
 
     .report-card-bg2>.main-table-hpc{
-        margin: 12px !important;
-        width: 96% !important;
-        background-position: center center !important;
+        margin: 14px !important;
+        width: 95% !important;
+        background-position: center !important;
     }
 
     .report-card-bg>.main-table {
