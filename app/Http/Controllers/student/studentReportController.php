@@ -86,7 +86,7 @@ class studentReportController extends Controller
         $tblcustom_fields['email'] = 'Email';
         $tblcustom_fields['username'] = 'Username';
         $tblcustom_fields['uniqueid'] = get_string('uniqueid','request');
-        $tblcustom_fields['admission_year'] = 'Admission Year';
+        $tblcustom_fields['admission_year'] = 'Fees Year';
         $tblcustom_fields['admission_date'] = 'Admission Date';
         $tblcustom_fields['religion'] = 'Religion';
         $tblcustom_fields['student_quota'] = 'Student Quota';
@@ -180,8 +180,8 @@ class studentReportController extends Controller
             // $res['message'] = "Please select one checkbox atlease to view report";
             // return is_mobile($type, "student_report.index", $res);
         } else {
-            $searchArr1 = ['first_name', 'last_name', 'place_of_birth', 'student_mobile','optional_subjects'];
-            $replaceArr1 = ['First Name', 'Surname', get_string('birthplace','request'), get_string('studentmobile','request'),'Optional Subjects'];
+            $searchArr1 = ['first_name', 'last_name', 'place_of_birth', 'student_mobile','optional_subjects','admission_year'];
+            $replaceArr1 = ['First Name', 'Surname', get_string('birthplace','request'), get_string('studentmobile','request'),'Optional Subjects','Fees Year'];
 
             foreach ($request->input('dynamicFields') as $key => $value) {
                 if ($value != "bloodgroup" && $value != "van" && $value != "optional_subjects") {
@@ -206,7 +206,7 @@ class studentReportController extends Controller
             $array[] = 'batch.title as studentbatch';
             
             if($sub_institute_id == 254)
-                $array[] = 'IF(tblstudent.admission_year = 2019,YEAR(tblstudent.admission_date),tblstudent.admission_year) AS admission_year';
+                $array[] = 'IF(tblstudent.admission_year = 2019,YEAR(tblstudent.admission_date),tblstudent.admission_year) AS fees_year';
         	}
         	$array[] = 'concat_ws(" ",tblstudent.first_name,tblstudent.middle_name,tblstudent.last_name) AS student_name';
 
