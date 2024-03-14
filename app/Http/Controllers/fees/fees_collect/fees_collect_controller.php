@@ -2092,6 +2092,7 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
             "name" => $reg_bk_off[0]->first_name . " " . $reg_bk_off[0]->middle_name . " " . $reg_bk_off[0]->last_name,
             "stddiv" => $reg_bk_off[0]->standard_name . "/" . $reg_bk_off[0]->division_name,
             "admission" => $reg_bk_off[0]->admission_year,
+            "admission_year"=>  \Carbon\Carbon::parse($reg_bk_off[0]->admission_date)->format('Y'),
             "email" => $reg_bk_off[0]->email,
             "medium" => $reg_bk_off[0]->medium,
             "father_name" => $reg_bk_off[0]->father_name,

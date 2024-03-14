@@ -132,20 +132,43 @@ class otherNewfeesReportController extends Controller
         $other_fees_title_id = $get_imprest_head[0]->fees_title;
         $other_fees_title = $get_imprest_head[0]->display_name;
 
-        $sql = DB::select('SELECT fp.receiptdate AS tran_date,fp.reciept_id as receipt_id,
-                    "' . $other_fees_title . '" AS particluars,
-                    fp.' . $other_fees_title_id . ' AS credit_amt,"" AS debit_amt,"" AS balance
-                    FROM fees_paid_other fp
-                    WHERE fp.sub_institute_id = "' . $sub_institute_id . '" AND fp.student_id = "' . $student_id . '" AND fp.syear = "' . $syear . '"
-                    UNION
-                    SELECT fc.deduction_date AS tran_date,fc.receipt_id,
-                    fh.display_name AS particluars,
-                    "" AS credit_amt,fc.deduction_amount AS debit_amt,"" AS balance
-                    FROM fees_other_collection fc
-                    INNER JOIN fees_other_head fh ON fh.id = fc.deduction_head_id AND fh.include_imprest = "Y"
-                    WHERE fc.sub_institute_id = "' . $sub_institute_id . '" AND fc.student_id = "' . $student_id . '" AND fc.syear = "' . $syear . '" ');
+        // $sql = DB::select('SELECT fp.receiptdate AS tran_date,fp.reciept_id as receipt_id,
+        //             "' . $other_fees_title . '" AS particluars,
+        //             fp.' . $other_fees_title_id . ' AS credit_amt,"" AS debit_amt,"" AS balance
+        //             FROM fees_paid_other fp
+        //             WHERE fp.sub_institute_id = "' . $sub_institute_id . '" AND fp.student_id = "' . $student_id . '" AND fp.syear = "' . $syear . '"
+        //             UNION
+        //             SELECT fc.deduction_date AS tran_date,fc.receipt_id,
+        //             fh.display_name AS particluars,
+        //             "" AS credit_amt,fc.deduction_amount AS debit_amt,"" AS balance
+        //             FROM fees_other_collection fc
+        //             INNER JOIN fees_other_head fh ON fh.id = fc.deduction_head_id AND fh.include_imprest = "Y"
+        //             WHERE fc.sub_institute_id = "' . $sub_institute_id . '" AND fc.student_id = "' . $student_id . '" AND fc.syear = "' . $syear . '" ');
 
-        $data = json_decode(json_encode($sql), true);
+        // $data = json_decode(json_encode($sql), true);
+
+        // add on 13/03/24
+            $data = DB::table('fees_paid_other AS fp')
+            ->select(DB::raw("fp.receiptdate AS tran_date, fp.reciept_id AS receipt_id,
+                            '{$other_fees_title}' AS particluars,
+                        fp.{$other_fees_title_id} AS credit_amt, '' AS debit_amt, '' AS balance"))
+            ->where('fp.sub_institute_id', $sub_institute_id)
+            ->where('fp.student_id', $student_id)
+            ->union(function ($query) use ($sub_institute_id, $student_id, $syear, $other_fees_title_id) {
+                $query->select(DB::raw("fc.deduction_date AS tran_date, fc.receipt_id,
+                            fh.display_name AS particluars,
+                            '' AS credit_amt, fc.deduction_amount AS debit_amt, '' AS balance"))
+                    ->from('fees_other_collection AS fc')
+                    ->join('fees_other_head AS fh', 'fh.id', '=', 'fc.deduction_head_id')
+                    ->where('fh.include_imprest', 'Y')
+                    ->where('fc.sub_institute_id', $sub_institute_id)
+                    ->where('fc.student_id', $student_id);
+            })
+            ->orderBy('tran_date')
+            ->get();    
+
+        $data = json_decode(json_encode($data), true);
+
         $stu_arry = array($student_id);
         $student_data = getStudents($stu_arry);
 

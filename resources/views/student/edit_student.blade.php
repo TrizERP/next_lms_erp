@@ -179,7 +179,7 @@ br {
                                             <span><br><b>{{ $student_data->enquiry_no ? $student_data->enquiry_no : '-'}}</b></span>
                                         </div>
                                         <div class="col-md-4 form-group">
-                                            <label>Admission Year</label>
+                                            <label>Fees Year</label>
                                             <select id='admission_year' name="admission_year" class="form-control" required>
                                                 <option value="">--Select--</option>  
                                                 @if(isset($data['admission_year']))

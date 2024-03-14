@@ -114,7 +114,7 @@
 										<tr>
 											<td>Admission Year</td>
 											<td>
-												{{ $data['stu_data']['admission']; }}
+												{{ $data['stu_data']['admission_year']; }}
 											</td>
 										</tr>
 										<tr>

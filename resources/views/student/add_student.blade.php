@@ -150,7 +150,7 @@
                                 <span id="email_error_span"></span>
                             </div>
                             <div class="col-md-4 form-group text-left">
-                                <label>Admission Year</label>
+                                <label>Fees Year</label>
                                 <select id='admission_year' name="admission_year" class="form-control">
                                 @if(isset($data['admission_year']))
                                     @foreach($data['admission_year'] as $key => $value)
