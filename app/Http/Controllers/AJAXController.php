@@ -2084,12 +2084,21 @@ class AJAXController extends Controller
     }
 
     public function geminiAI(Request $request){
+        $message="Hello";
         if(isset($request->search) && $request->search=="summernote"){
             $lang='';
             if($request->sub_val!=''){
                 $lang=' translate into '.$request->sub_val;
             }
             $message = array("my prompt is ".$request->prompt.$lang.", for given prompt create html div with style make ".$request->searchType." without background color and font color must be only black in html, Also give only main contents not extra paras from your side. i dont want paras like 'This HTML code ' or '```html' and '```' ");
+        }
+        else if($request->search=="lessonplan"){
+            $extra_text ='';
+            if(isset($request->topic) && $request->topic !="Select Topic"){
+                $extra_text = ' and for topic="'.$request->topic.'"';
+            }
+            $main_prompt = $request->prompt." for standard name =".$request->standard." and subject name =".$request->subject." and chapter name =".$request->chapter.$extra_text." , In response array give Short and simple Answer";
+            $message = array($main_prompt);
         }
         $result = Gemini::geminiPro()->generateContent($message);
 

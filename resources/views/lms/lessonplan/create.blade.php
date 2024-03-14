@@ -623,8 +623,34 @@ if(isset($_REQUEST['preload_lms'])){
             var inputValue = $('input[data-target="' + selectedId + '"]').val();
             $.ajax({
             type: 'get',  // Change to 'GET' if needed
+            url: '{{route("geminiAI")}}',  // Specify your AJAX handler URL
+            data: {standard:selectedStd,subject:selectedSub,chapter:selectedChap,topic:selectedTopic,prompt:inputValue,search:'lessonplan'},
+            success: function(response) {
+                if (response['error']) {
+                    getAIoutputChat(selectedId);
+                }else{
+                    $('#'+selectedId).empty();                    
+                    $('#' + selectedId).val(response);
+                }
+            },
+            error: function(xhr, status, error) {
+                 error =1;
+                 alert(JSON.parse(xhr.responseText).message);
+            }
+            });
+        }
+
+         // get chat data 
+         function getAIoutputChat(selectedId){
+            var selectedStd = $('#standard option:selected').text();
+            var selectedSub = $('#subject option:selected').text();
+            var selectedChap = $('#chapter option:selected').text();
+            var selectedTopic = $('#topic option:selected').text();     
+            var inputValue = $('input[data-target="' + selectedId + '"]').val();
+            $.ajax({
+            type: 'get',  // Change to 'GET' if needed
             url: '{{route("get_chat_data")}}',  // Specify your AJAX handler URL
-            data: {standard:selectedStd,subject:selectedSub,chapter:selectedChap,topic:selectedTopic,prompt:inputValue},
+            data: {standard:selectedStd,subject:selectedSub,chapter:selectedChap,topic:selectedTopic,prompt:inputValue,search:'lessonplan'},
             success: function(response) {
                 if (response['error']) {
                     alert(response['error']);
@@ -658,12 +684,11 @@ if(isset($_REQUEST['preload_lms'])){
 
             var ajaxPromise = $.ajax({
                 type: 'get',
-                url: '{{route("get_chat_data")}}',
-                data: {standard: selectedStd, subject: selectedSub, chapter: selectedChap, topic: selectedTopic, prompt: inputValue},
+                url: '{{route("geminiAI")}}',
+                data: {standard: selectedStd, subject: selectedSub, chapter: selectedChap, topic: selectedTopic, prompt: inputValue, search : "lessonplan"},
                 success: function (response) {
                     if (response['error']) {
-                        error = 1;
-                        msg = response['error'];
+                        getAIoutputChat(inputId);
                     } else {
                         $('#' + inputId).empty();
                         $('#' + inputId).val(response);
