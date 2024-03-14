@@ -1663,7 +1663,7 @@ exit; */
         $transactionType = "SALE";
         $txnDate = date('YmdHis');
         $PgRefNo = $orderId;
-        $returnURL = $this->site_name() . "/fees/payphi/online_fees_payphiResponseHandler";
+        $returnURL = $this->site_name() . "fees/payphi/online_fees_payphiResponseHandler";
         $amount = number_format($amount, 2, '.', '');
         $customerEmailID = $student_id.'@gmail.com';
 
@@ -1777,6 +1777,7 @@ exit; */
                     });
             })
             ->whereNotNull('fp.payphi_order_id')
+            ->whereBetween('fp.created_at', [now()->subDays(3), now()->subMinutes(30)])
             ->groupBy('fp.id')
             ->get();
             
@@ -1866,7 +1867,7 @@ exit; */
                     DB::table("fees_payment")
                     ->where('id', $id)
                     ->update($update_arr);
-                
+
                     $request->merge([
                         '_key' => csrf_token(),
                         'student_id' => $student_id,
@@ -1878,7 +1879,7 @@ exit; */
 
                     if($status == 'SUC' && $txnResponseCode == "0000")
                     {
-                        $check = DB::table('fees_collect')->whereRaw('cheque_no='.$payment_id.' AND student_id='.$student_id.' AND syear='.$data->syear.' AND sub_institute_id='.$data->sub_institute_id)->get()->toArray();
+                        $check = DB::table('fees_collect')->whereRaw('cheque_no="'.$payment_id.'" AND student_id='.$student_id.' AND syear='.$data->syear.' AND sub_institute_id='.$data->sub_institute_id)->get()->toArray();
 
                         if(count($check) == 0)
                         {

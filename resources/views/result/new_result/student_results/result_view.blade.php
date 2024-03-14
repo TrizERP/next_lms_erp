@@ -9,7 +9,7 @@
         $sub_institute_id = session()->get('sub_institute_id');
         
 		@endphp
-		@if(session()->get('user_profile_name') == 'Admin')
+		@if(session()->get('user_profile_name') == 'Admin' || session()->get('user_profile_name') == 'School Admin')
             <div class="row">
                 <div class="col-sm-5 text-right">
                     <input class="btn btn-warning mb-4" type="button" onclick="printDiv('printableArea');" value="Print Paper" />
