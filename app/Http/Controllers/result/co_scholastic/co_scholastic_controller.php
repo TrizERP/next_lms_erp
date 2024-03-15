@@ -204,11 +204,7 @@ class co_scholastic_controller extends Controller
      */
     public function update(Request $request, $id)
     {
-
         $data = co_scholastic::find($id)->toArray();
-
-        co_scholastic_grade::where(["map_id" => $data['co_grade']])->delete();
-
         $max_id = "";
 
         if ($data['co_grade'] == "") {
@@ -221,20 +217,34 @@ class co_scholastic_controller extends Controller
         } else {
             $max_id = $data['co_grade'];
         }
-
+       
         foreach ($_REQUEST['co_grade'] as $ids => $arr) {
-            if ($arr['title'] != "" && $arr['break_off'] != "") {
-                $exam = new co_scholastic_grade([
-                    "map_id"           => $max_id,
-                    "title"            => $arr['title'],
-                    "break_off"        => $arr['break_off'],
-                    'sub_institute_id' => session()->get('sub_institute_id'),
-                ]);
-                $exam->save();
-            }
+            if(isset($arr['id']) && $arr['id']!=''){
+                $check_exists = co_scholastic_grade::where('sub_institute_id',session()->get('sub_institute_id'))->where('id',$arr['id'])->get()->toArray();
+                if ($arr['title'] != "" && $arr['break_off'] != "") {
+                    $exam = co_scholastic_grade::where('id',$arr['id'])->update([
+                        "map_id"           => $max_id,
+                        "title"            => $arr['title'],
+                        "break_off"        => $arr['break_off'],
+                        'sub_institute_id' => session()->get('sub_institute_id'),
+                    ]);
+                }else{
+                    co_scholastic_grade::where('sub_institute_id',session()->get('sub_institute_id'))->where('id',$arr['id'])->delete();
+                }
+             }else{
+                if ($arr['title'] != "" && $arr['break_off'] != "") {
+                    $exam = new co_scholastic_grade([
+                        "map_id"           => $max_id,
+                        "title"            => $arr['title'],
+                        "break_off"        => $arr['break_off'],
+                        'sub_institute_id' => session()->get('sub_institute_id'),
+                    ]);
+                    $exam->save();
+                }
+             }
         }
 
-        $data1 = [
+     $data1 = [
             "term_id"    => $request->get('term'),
             "title"      => $request->get('title'),
             "sort_order" => $request->get('sort_order'),
@@ -243,10 +253,10 @@ class co_scholastic_controller extends Controller
             "max_mark"   => $request->get('max_mark'),
             "standard_id"   => $request->get('standard'),            
         ];
+        
         if ($request->get('mark_type') == "GRADE") {
             $data1['co_grade'] = $max_id;
         }
-
 
         co_scholastic::where(["id" => $id])->update($data1);
 
