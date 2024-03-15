@@ -219,7 +219,7 @@ class studentResultController extends Controller
             */
             $sign_height = "50px";            
             if($sub_institute_id==254){
-                $sign_height = "45px";                                           
+                $sign_height = "40px";                                           
             }
             $principal_sign = '<img src="/storage/result/principle_sign/' . $result_teacher['principal_sign'] . '" alt="principal_sign" style="height: '.$sign_height.' !important;">';//width:'.$sign_width.' !important
             $director_signatiure = '<img src="/storage/result/director_sign/' . $result_teacher['director_signatiure'] . '" alt="director_signatiure" style="height: '.$sign_height.' !important;">';//width:'.$sign_width.' !important
@@ -1451,7 +1451,7 @@ $overall_total = $overall_total / 2;
                 }
             }
         }
-        if (in_array($sub_institute_id, $format_sub_different)) {
+        if (in_array($sub_institute_id, $format_sub_different) && !empty($responce_arr)) {
             $table = '<table class="aca-year" style="width: 100%;border-collapse:collapse; border:1px solid #e68023;" cellspacing="0" cellpadding="0" border="1">
                 <thead>
                 <tr>';
@@ -1461,7 +1461,7 @@ $overall_total = $overall_total / 2;
                         <b>Co-Scholastic Areas</b></th>';
                     $optional_head = "Optional Subject";
     
-            }
+                }
             $table .= '</tr><tr>  <th width="50%" style="text-align: left;"><b>'.$optional_head.'</b></th>';
 
             $col = 1;
@@ -1547,9 +1547,9 @@ $overall_total = $overall_total / 2;
             $co_table .= '</thead></table>';
 
         }
-        $res['scholastic'] = $table ?? '<table style="width:100%;border:none !important"><tr><td style="border:none !important">No Co-Scholastic for scholastic Found</td></tr></table>';
-        $res['grade_range'] = $table_range ?? 'No Co-Scholastic for grade Found';
-        $res['co_scholastic'] = $co_table ?? '<table style="width:100%;border:none !important"><tr><td style="border:none !important"> No Co-Scholastic Found</td></tr></table>';
+        $res['scholastic'] = $table ?? '';
+        $res['grade_range'] = $table_range ?? '';
+        $res['co_scholastic'] = $co_table ?? '';
         return $res;
     }
 
@@ -1668,7 +1668,8 @@ $overall_total = $overall_total / 2;
         $ret_data = DB::table('result_student_attendance_master as atd')
                 ->join('result_working_day_master as wrkd', function ($join) use ($standard_id, $sub_institute_id) {
                     $join->on('wrkd.standard', '=', 'atd.standard')
-                         ->on('wrkd.syear', '=', 'atd.syear'); // Added condition here
+                         ->on('wrkd.syear', '=', 'atd.syear')
+                         ->on('wrkd.term_id', '=', 'atd.term_id');
                 })
               ->select(
                 'atd.student_id',
@@ -2445,8 +2446,10 @@ $overall_total = $overall_total / 2;
                                     if ($mark->title == "Practical/ASL/Project" || $mark->title == "Yearly") {
                                         $total_practical += $mark->points;
                                     }
-                                    $avg_total += $mark->points;
-                                    $avg_max += $mark->total_points;
+                                    if($mark->display_name != "APP MATHS"){
+                                        $avg_total += $mark->points;
+                                        $avg_max += $mark->total_points;
+                                    }
                                 }
                             }
                         }
@@ -2458,14 +2461,16 @@ $overall_total = $overall_total / 2;
                     if (($value == "UT1" || $value == "UT2") && $val->subject_name != "MATHEMATICS") {
                         $table .=   '<td class="data_center">AB</td>';
                     } elseif ($val->subject_name != "MATHEMATICS") {
-                        $table .= '<td class="data_center">' . array_sum($tot_points[$value]) . '</td class="data_center"><td>AB</td>';
+                        $table .= '<td class="data_center">' . array_sum($tot_points[$value]) . '</td><td class="data_center">AB</td>';
                     }
+                    $prac_yearly_tot +=array_sum($tot_points[$value]);                            
+                    
                 } elseif ($naFlag == 1) {
                     $total_marks += 0;
                     if (($value == "UT1" || $value == "UT2") && $val->subject_name != "MATHEMATICS") {
                         $table .=   '<td class="data_center">N.A.</td>';
                     } elseif ($val->subject_name != "MATHEMATICS") {
-                        $table .= '<td class="data_center">' . array_sum($tot_points[$value]) . '</td class="data_center"><td>N.A.</td>';
+                        $table .= '<td class="data_center">' . array_sum($tot_points[$value]) . '</td><td class="data_center">N.A.</td>';
                     }
                     if(count($na_points[$val->subject_name])>1){
                         $avg_max += $na_points[$val->subject_name][0];
@@ -2481,20 +2486,41 @@ $overall_total = $overall_total / 2;
                         $avg_max += $ex_points[$val->subject_name][0];
                     }
                 } elseif (isset($ob_marks[$value])  && $val->subject_name != "MATHEMATICS") {
-                    if ($value == "UT1" || $value == "UT2") {
-                        $obt_mark = number_format(array_sum($ob_marks[$value]), 0); 
-                        $table .= '<td ' . $val->subject_id . ' ' . $value . ' class="data_center">' .  $obt_mark . '</td>';
-                        $total_marks += $obt_mark;
-                    } else{
-                        $obt_mark = number_format(array_sum($ob_marks[$value]), 0);
-                        $table .= '<td class="data_center">' . array_sum($tot_points[$value]) . '</td>';
-                        $table .= '<td ' . $val->subject_id . ' ' . $value . ' class="data_center">' . $obt_mark .'</td>';
-                        $total_marks += $obt_mark;
+                    // app maths
+                    if($val->subject_name == "APP MATHS"){
+                        if ($value == "UT1" || $value == "UT2") {
+                            $table .= '<td class="data_center">-</td>';
+                        }else if($value == "Half Yearly"){
+                            $table .= '<td class="data_center">-</td><td class="data_center">-</td>';                                                                                    
+                        }else{
+                            $obt_mark = number_format(array_sum($ob_marks[$value]), 0);
+                            $table .= '<td class="data_center">' . array_sum($tot_points[$value]) . '</td>';
+                            $table .= '<td ' . $val->subject_id . ' ' . $value . ' class="data_center">' . $obt_mark .'</td>';
+                            $total_marks += $obt_mark;
+                            $avg_total += $obt_mark;
+                            $avg_max += array_sum($tot_points[$value]);                       
+                            if($value!="Practical/ASL/Project"){
+                                $prac_yearly +=$obt_mark;                            
+                                $prac_yearly_tot +=array_sum($tot_points[$value]); 
+                            }
+                        }
+                    }else{
+                        if ($value == "UT1" || $value == "UT2") {
+                            $obt_mark = number_format(array_sum($ob_marks[$value]), 0); 
+                            $table .= '<td ' . $val->subject_id . ' ' . $value . ' class="data_center">' .  $obt_mark . '</td>';
+                            $total_marks += $obt_mark;
+                        } else{
+                            $obt_mark = number_format(array_sum($ob_marks[$value]), 0);
+                            $table .= '<td class="data_center">' . array_sum($tot_points[$value]) . '</td>';
+                            $table .= '<td ' . $val->subject_id . ' ' . $value . ' class="data_center">' . $obt_mark .'</td>';
+                            $total_marks += $obt_mark;
+                        }
+                        if($value!="Practical/ASL/Project"){
+                            $prac_yearly +=$obt_mark;                            
+                            $prac_yearly_tot +=array_sum($tot_points[$value]);                            
+                        }
                     }
-                    if($value!="Practical/ASL/Project"){
-                        $prac_yearly +=$obt_mark;                            
-                        $prac_yearly_tot +=array_sum($tot_points[$value]);                            
-                    }
+                  
                 } else if ($val->subject_name != "MATHEMATICS") {
                     $get_points = DB::table('result_create_exam')
                         ->where('exam_id', $total_points[$key])
@@ -2536,7 +2562,7 @@ $overall_total = $overall_total / 2;
                     $prac_yearly_tot += $math_yearly;
                 }
             }
-            
+            // .'-'.$prac_yearly.'/'.$prac_yearly_tot.
             $avg_mark = round(($avg_total * 100 / $avg_max));
             $table .= "<td  class='data_center'>" . $total_practical."</td>";
             $table .= "<td  class='data_center'>" . $total_marks ."</td>";
