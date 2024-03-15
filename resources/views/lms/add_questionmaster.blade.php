@@ -466,7 +466,7 @@ function question_prompt(){
     var question_prompt = $('#question_prompt').val();
     
     var search="question";
-    var path = "{{ route('chat') }}";
+    var path = "{{ route('geminiAI') }}";
     $.ajax({
         url:path,
         data: {standard:standard,subject_id:subject,chapter_id:chapter,topic_id:topic,question_prompt:question_prompt,search:search},
@@ -591,9 +591,9 @@ function check_input(inputElement) {
 
     var inputValue = inputElement.value;
     var editor = CKEDITOR.instances['question_title'];
-
+   
 // Get the content from the CKEditor instance
-var inputValue = editor.getData() ?? inputElement.value;
+   var inputValue = $('#question_title').val();
     var std = "{{$data['breadcrum_data']->standard_name}}";
 
       var data = {
@@ -604,7 +604,7 @@ var inputValue = editor.getData() ?? inputElement.value;
         "type_learning":"learn",
     };
 
-    var path = "{{ route('chat') }}";
+    var path = "{{ route('geminiAI') }}";
     $.ajax({
         url:path,
         data: data,
@@ -621,23 +621,20 @@ var inputValue = editor.getData() ?? inputElement.value;
 
            var parsedResult = JSON.parse(result);
 
-       if (parsedResult && parsedResult.question_depth && parsedResult.reason_depth && parsedResult.question_bloom &&
-        parsedResult.reason_bloom && parsedResult.question_learning) {
-        // Extract the values
-        var answer_depth = parsedResult.question_depth;
-        var reason_depth = parsedResult.reason_depth;
-        var answer_bloom = parsedResult.question_bloom;
-        var reason_bloom = parsedResult.reason_bloom;
-        var answer_learning = parsedResult.question_learning;
+       if (parsedResult[0]) {
+            var answer_depth = parsedResult[0].question_depth;
+            var reason_depth = parsedResult[0].reason_depth;
+            // console.log(reason_depth);
+            var answer_bloom = parsedResult[0].question_bloom;
+            var reason_bloom = parsedResult[0].reason_bloom;
 
-        }else{  
-        var answer_depth = parsedResult[0].question_depth;
-        var reason_depth = parsedResult[0].reason_depth;
-        // console.log(reason_depth);
-        var answer_bloom = parsedResult[0].question_bloom;
-        var reason_bloom = parsedResult[0].reason_bloom;
-
-        var answer_learning = parsedResult[0].question_learning;
+            var answer_learning = parsedResult[0].question_learning;
+        }else{
+            var answer_depth = parsedResult.question_depth;
+            var reason_depth = parsedResult.reason_depth;
+            var answer_bloom = parsedResult.question_bloom;
+            var reason_bloom = parsedResult.reason_bloom;
+            var answer_learning = parsedResult.question_learning;
         }
 
         var SelectElement_type1 = $('select[name="mapping_type[]"][data-new=1]');
@@ -676,6 +673,10 @@ var inputValue = editor.getData() ?? inputElement.value;
 
             }
 
+        },
+        error: function(xhr, status, error) {
+            // Handle error
+            console.error('Error occurred:', error);
         }
     });
 

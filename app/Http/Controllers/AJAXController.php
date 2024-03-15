@@ -2110,15 +2110,53 @@ class AJAXController extends Controller
     }
 
     public function geminiAI(Request $request){
-        $message="Hello";
-        if(isset($request->search) && $request->search=="summernote"){
+        $question = $request->question;
+        $standard = $request->standard;
+        $type_name = $request->type_depth;
+        $type_bloom = $request->type_bloom;
+        $type_learning = $request->type_learning;
+        $sub_institute_id = session()->get('sub_institute_id');
+        $message=$request->message;
+
+        if($request->has('question') && $question!==''){
+            $depth = $reason_depth= $bloom =$reason_bloom=$learning='';
+            if($request->type_depth){
+                $options = DB::table('lms_mapping_type')->select(DB::raw('group_concat(name) as type_name'))->where('parent_id',$request->type_depth)->first();                
+                $depth = "'".$question."' give answer from given options in one word this question for standard '".$standard."' student from these options $options->type_name ";
+                $reason_depth = "if its one of $options->type_name then why it is give reason";
+            }
+            // echo "<pre>";print_r($request->all());exit;
+            
+             if ($request->type_bloom){
+                $options = DB::table('lms_mapping_type')->select(DB::raw('group_concat(name) as type_name'))->where('parent_id',$request->type_bloom)->first();
+                $bloom = "'".$question."' give answer from given options in one word this question for Blooms Taxonomy? from these options $options->type_name";
+                $reason_bloom = "if its one of $options->type_name then why it is give reason from this reasons 'factual','conceptual','procedural','metacoganitive'";                
+            }
+            if ($request->type_learning){
+                $learning = "'".$question."' according to this question What will be the learning outcome for standard '".$standard."' student ?";
+            }
+            $data = array(
+                "give response in array"=>array(
+                "question_depth"=>$depth,
+                "reason_depth"=>$reason_depth,                
+                "question_bloom"=>$bloom,
+                "reason_bloom"=>$reason_bloom,                
+                "question_learning"=>$learning
+            )
+        );
+            
+            $message = array(
+                json_encode($data),
+            );
+        }
+        else if(isset($request->search) && $request->search=="summernote"){
             $lang='';
             if($request->sub_val!=''){
                 $lang=' translate into '.$request->sub_val;
             }
             $message = array("my prompt is ".$request->prompt.$lang.", for given prompt create html div with style make ".$request->searchType." without background color and font color must be only black in html, Also give only main contents not extra paras from your side. i dont want paras like 'This HTML code ' or '```html' and '```' ");
         }
-        else if($request->search=="lessonplan"){
+        else if(isset($request->search) && $request->search=="lessonplan"){
             $extra_text ='';
             if(isset($request->topic) && $request->topic !="Select Topic"){
                 $extra_text = ' and for topic="'.$request->topic.'"';
@@ -2126,6 +2164,19 @@ class AJAXController extends Controller
             $main_prompt = $request->prompt." for standard name =".$request->standard." and subject name =".$request->subject." and chapter name =".$request->chapter.$extra_text." , In response array give Short and simple Answer";
             $message = array($main_prompt);
         }
+        else if(isset($request->search) && $request->search=="question"){
+            // db::enableQueryLog();
+            $topics='';
+            if(isset($request->topic_id) && $request->topic_id!=''){
+                $topics = " and topic_id ='".$request->topic_id."'";
+            }
+           $getAllQuestion = DB::table('lms_question_master')->whereRaw('sub_institute_id = '.$sub_institute_id.' and standard_id='.$standard.' and chapter_id ='.$request->chapter_id.$topics.' ')->pluck('question_title');
+            
+           $message=array($request->question_prompt,"search only 1 question from mentioned standard and subject and chapter and topic and get different question which are not in this '".$getAllQuestion."'");
+            // return $message;exit;
+        }
+        
+
         $result = Gemini::geminiPro()->generateContent($message);
 
         $text = $result->text(); // Hello! How can I assist you today?
