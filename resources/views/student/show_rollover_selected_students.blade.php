@@ -73,7 +73,7 @@ use DB;
                             </div>
                         @endif
 
-                        <form action="{{ route('rollover.create') }}" method="post">
+                        <form action="{{ route('rollover.create') }}">
                             @csrf
                             <div class="row" id="form_for_selected_students">
                                 <div class="col-md-6">
@@ -309,12 +309,15 @@ use DB;
 
         });
 
-        function getToStandard(to_academic_section) {
+         function getToStandard(to_academic_section) {
             var to_academic_section = $("#to_academic_section").val();
             var path = "{{ route('ajax_toStandards') }}";
             $('#to_standard').find('option').remove().end().append('<option value="">Select</option>').val('');
             $.ajax({
-                url: path, data: 'to_academic_section=' + to_academic_section, success: function (result) {
+                url: path, 
+                data: 'to_academic_section=' + to_academic_section, 
+                type: 'POST',
+                success: function (result) {
                     for (var i = 0; i < result.length; i++) {
                         $("#to_standard").append($("<option></option>").val(result[i]['id']).html(result[i]['name']));
                     }
@@ -326,7 +329,10 @@ use DB;
             var to_standard = $("#to_standard").val();
             var path = "{{ route('ajax_toDivisions') }}";
         $('#to_division').find('option').remove().end().append('<option value="">Select</option>').val('');
-        $.ajax({url: path,data:'to_standard='+to_standard, success: function(result){
+        $.ajax({url: path,
+        data:'to_standard='+to_standard, 
+        type: 'POST',
+        success: function(result){
             for(var i=0;i < result.length;i++){
                 $("#to_division").append($("<option></option>").val(result[i]['id']).html(result[i]['name']));
             }

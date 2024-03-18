@@ -400,25 +400,38 @@ class parentCommunicationController extends Controller
         $sub_institute_id = $request->input("sub_institute_id");
         $syear = $request->input("syear");
 
+        // 16-03-24 by uma
+        $typeWaise=DB::table('general_data')->where('sub_institute_id',$sub_institute_id)->where('fieldname','parent_communication')->latest('created_on')->get()->toArray();
+        // end 
+        
         if ($teacher_id != "" && $sub_institute_id != "" && $syear != "") {
-            $data = DB::table("class_teacher as ct")
-                ->join('standard as s', function ($join) {
-                    $join->whereRaw("ct.standard_id = s.id AND ct.sub_institute_id = s.sub_institute_id");
+            // 16-03-24 by uma
+            if(isset($typeWaise[0]) && $typeWaise[0]->fieldvalue=="Y"){
+                $data = DB::table("class_teacher as ct");
+            }else{
+               $data =  DB::table('subject as sub')
+                ->join('timetable as ct', function ($join) {
+                    $join->on('ct.subject_id', '=', 'sub.id')->on('ct.sub_institute_id', '=', 'sub.sub_institute_id');
+                });
+            }
+            // end
+           $data = $data->join('standard as s', function ($join) {
+                    $join->on("ct.standard_id", "=", "s.id")->on("ct.sub_institute_id", "=", "s.sub_institute_id");
                 })
                 ->join('division as d', function ($join) {
-                    $join->whereRaw("d.id = ct.division_id AND d.sub_institute_id = ct.sub_institute_id");
+                    $join->on("d.id", "=", "ct.division_id")->on("d.sub_institute_id", "=", "ct.sub_institute_id");
                 })
                 ->join('tblstudent_enrollment as se', function ($join) {
-                    $join->whereRaw("se.standard_id = ct.standard_id AND se.section_id = ct.division_id AND se.sub_institute_id = ct.sub_institute_id");
+                    $join->on("se.standard_id", "=", "ct.standard_id")->on("se.section_id", "=", "ct.division_id")->on("se.sub_institute_id", "=", "ct.sub_institute_id");
                 })
                 ->join('tblstudent as ts', function ($join) {
-                    $join->whereRaw("ts.id = se.student_id AND ts.sub_institute_id = ct.sub_institute_id");
+                    $join->on("ts.id", "=", "se.student_id")->on("ts.sub_institute_id", "=", "ct.sub_institute_id");
                 })
                 ->join('parent_communication as pc', function ($join) {
-                    $join->whereRaw("pc.student_id = ts.id AND pc.sub_institute_id = ct.sub_institute_id");
+                    $join->on("pc.student_id", "=", "ts.id")->on("pc.sub_institute_id", "=", "ct.sub_institute_id");
                 })
                 ->leftJoin('tbluser as tu', function ($join) {
-                    $join->whereRaw("tu.id = pc.reply_by AND tu.sub_institute_id = pc.sub_institute_id");
+                    $join->on("tu.id", "=", "pc.reply_by")->on("tu.sub_institute_id", "=", "pc.sub_institute_id");
                 })
                 ->selectRaw("pc.id as parent_comm_id,concat_ws(' ',ts.first_name,ts.middle_name,ts.last_name) as student_name,
                 if(ts.image = '','',concat('https://".$_SERVER['SERVER_NAME']."/storage/student/',ts.image)) as student_image,
@@ -431,8 +444,9 @@ class parentCommunicationController extends Controller
                 ->where("pc.syear", "=", $syear)
                 ->where("ct.teacher_id", "=", $teacher_id)
                 ->orderBy('student_name')
+                ->groupBy('pc.id')
                 ->get()->toarray();
-
+                
             if (count($data) > 0) {
                 $res['status'] = 1;
                 $res['message'] = "Success";
