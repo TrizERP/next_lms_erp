@@ -145,8 +145,7 @@
                                                 @if($value['payment_mode'] == "Online" && $value['bank_branch'] == "")
                                                     <td></td>
                                                 @else
-                                                    <td><input id="{{$value['id']}}" value="{{$value['receipt_no']}}####{{$value['student_id']}}"
-                                                               name="receipt_no[]" type="checkbox"></td>
+                                                    <td><input id="{{$value['id']}}" value="{{$value['receipt_no']}}####{{$value['student_id']}}" name="receipt_no[]" type="checkbox" class="ckbox1"></td>
                                                 @endif
                                                 <td>{{$value['enrollment_no']}}</td>
                                                 <td>{{$value['student_name']}}</td>
@@ -173,7 +172,7 @@
                                                 @if($value['fees_type'] == "REGULAR")
                                                     <td>
                                                         <select name="cancel_type[{{$value['receipt_no']}}/{{$value['student_id']}}]"
-                                                                class="form-control">
+                                                                class="form-control cancel_type">
                                                             <option value="">Select Cancel Type</option>
                                                             @foreach($data['fees_cancel_type'] as $fctId => $fctTitle)
                                                                 <option value="{{$fctTitle}}/">{{$fctTitle}}</option>
@@ -181,10 +180,7 @@
                                                         </select>
                                                     </td>
                                                     <td>
-                                                        <input type="text"
-                                                               name="cancel_remark[{{$value['receipt_no']}}/{{$value['student_id']}}]"
-                                                               class="form-control"
-                                                               placeholder="Please enter cancel remark">
+                                                        <input type="text" name="cancel_remark[{{$value['receipt_no']}}/{{$value['student_id']}}]" class="form-control cancel_remark" placeholder="Please enter cancel remark">
                                                     </td>
                                                 @else
                                                     <td>-</td>
@@ -277,7 +273,27 @@
         //     popupWin.document.write('<body onload="window.print()">' + divToPrint.innerHTML + '</html>');
         //     popupWin.document.close();
         // }
+        $(function(){
+            $(".ckbox1").on("click", function () {
+                    var row = $(this).closest('tr');
+                    var cancel_type = row.find('.cancel_type'); // get the other select in the same row
+                    var cancel_remark = row.find('.cancel_remark'); // get the other select in the same row
+                        
+                    // cancel_type.prop('disabled', function (i, v) {
+                    //     return !v;
+                    // });
+                    // cancel_remark.prop('disabled', function (i, v) {
+                    //     return !v;
+                    // });
 
+                    cancel_type.prop('required', function (i, v) {
+                        return !v;
+                    });
+                    cancel_remark.prop('required', function (i, v) {
+                        return !v;
+                    });
+                });
+        })
         function add_data(fees_collect_id, student_id, receipt_no) {
             var css = "{{$data['receipt_css_data']}}";
             var recepit_css = "<style>" + css + "</style>";
