@@ -1606,6 +1606,16 @@ if (!function_exists('htmlToPDF')) {
     }
 }
 
+if (!function_exists('htmlToPDFPortraitLetter')) {
+    function htmlToPDFPortraitLetter($htmlPath, $pdfPath)
+    {
+        $command = '/usr/local/bin/wkhtmltopdf -L 0 -R 0 -B 0 -T 0.5 -s letter ';
+        $command .= " $htmlPath ";
+        $command .= " $pdfPath ";
+        return exec($command);
+    }
+}
+
 if (!function_exists('htmlToPDFPortrait')) {
     function htmlToPDFPortrait($htmlPath, $pdfPath)
     {
@@ -1616,6 +1626,7 @@ if (!function_exists('htmlToPDFPortrait')) {
         return exec($command);
     }
 }
+
 
 if (!function_exists('htmlToPDFLandscape')) {
     function htmlToPDFLandscape($htmlPath, $pdfPath)

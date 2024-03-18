@@ -1931,17 +1931,22 @@ $overall_total = $overall_total / 2;
                                 foreach ($exam_marks as $index => $marks) {
                                     if ($title->id == $marks->exam_id) {
 
-                                        $to_marks[$title->exam_id][] = $title->points;
-                                        $to_weight[$title->exam_id] = $title->weightage;
-
                                         // for AB,NA,EX
-                                        if ($marks->points == "0.00" || $marks->points == "") {
+                                        if ($marks->is_absent != "") {
                                             $ab_ex_na = $marks->is_absent;
-                                            if ($marks->is_absent == '') {
-                                                $ab_ex_na = 0;
-                                            }
+                                            // if ($marks->is_absent == '') {
+                                            //     $ab_ex_na = 0;
+                                            // }
                                             $obtained_marks[$title->exam_id][] = $ab_ex_na;
+
+                                            if($ab_ex_na=="AB"){
+                                                $to_marks[$title->exam_id][] = $title->points;
+                                                $to_weight[$title->exam_id] = $title->weightage;
+                                            }
                                         } else {
+                                            $to_marks[$title->exam_id][] = $title->points;
+                                            $to_weight[$title->exam_id] = $title->weightage;
+
                                             $ob_mark = $marks->points;
                                             // store marks in array to get best of 2 
                                             $obtained_marks[$title->exam_id][] = $ob_mark;
@@ -1953,7 +1958,7 @@ $overall_total = $overall_total / 2;
                             }
                         }
        
-                        $ob_main_mark = 0;
+                        $ob_main_mark = $ab_ex_na = $total_marks = 0;
                         // for best of 2 exam wise 
                         if (!empty($title_exam)) {
                             foreach ($title_exam as $exam_id => $marksArray) {                                
@@ -1975,8 +1980,16 @@ $overall_total = $overall_total / 2;
                                 $pt_per = ($convert_mark !== '0.00' && $w_m != 0) ? round(($convert_mark / $w_m) * 100, 0) : 0;
                         
                                 $underline = ($pt_per < 33 && $academic_type == "upper") ? 'style="text-decoration: underline red 2px;"' : '';
-                        
-                                $table .= '<td class="data_center" ' . $underline . ' ' . $exam_id . '-'.$val->subject_id.'-'.$standard_id.'>' . number_format($convert_mark, 2) . '</td>';
+                                if(count($obtained_mark_arr) > 1){
+                                    $total_marks += $w_m;
+                                    $table .= '<td class="data_center" ' . $underline . ' ' . $exam_id . '-'.$val->subject_id.'-'.$standard_id.'>' . number_format($convert_mark, 2) . '</td>';
+                                }else{
+                                    if($obtained_mark_arr[0]!='N.A.' || $obtained_mark_arr[0]!='EX'){
+                                        $total_marks += $w_m;
+                                    }
+                                    $table .= '<td class="data_center" '. $exam_id . '-'.$val->subject_id.'-'.$standard_id.'>' . $obtained_mark_arr[0] .'</td>';
+                                }
+                                
                         // echo $exam_id;echo "<pre>";print_r($obtained_mark_sum);
                                 
                             }
@@ -1989,7 +2002,13 @@ $overall_total = $overall_total / 2;
                         $obtained_mark_formatted = number_format($ob_main_mark, 2);
                         
                         if($academic_type=="primary"){
-                            $grade_std = $this->getGrade($grade_arr,  $total_mark, round($obtained_mark_formatted,0));
+                            $total_obt_mark =  round($obtained_mark_formatted,0);
+                            if($total_obt_mark==0){
+                                $grade_std = $this->getGrade($grade_arr, 0,$total_obt_mark);
+                            }else{
+                                $grade_std = $this->getGrade($grade_arr,  $total_marks,$total_obt_mark);
+                            }
+                            // $grade_std = $this->getGrade($grade_arr,  $total_mark,$total_obt_mark);
                             if($grade_std=="E"){
                                 $pass_fail[]='Failed';
                             }
@@ -2003,7 +2022,13 @@ $overall_total = $overall_total / 2;
                     } 
                     // get percentage 
                     if( ($standard_id >= 3296 && $standard_id <=3307) || ($standard_id >= 3313 && $standard_id <=3316) && $academic_type=="upper"){   
-                        $grade_std = $this->getGrade($grade_arr, $overall_total,round($both_term_ob_mark, 0));   
+                        $total_obt_mark =  round($obtained_mark_formatted,0);
+                        if($total_obt_mark==0){
+                            $grade_std = $this->getGrade($grade_arr, 0,$total_obt_mark);
+                        }else{
+                            $grade_std = $this->getGrade($grade_arr,  $overall_total,$total_obt_mark);
+                        }
+                        // $grade_std = $this->getGrade($grade_arr, $overall_total,round($both_term_ob_mark, 0));   
                         if($grade_std=="E"){
                             $pass_fail[]='Failed';
                         }   
@@ -2852,7 +2877,7 @@ $overall_total = $overall_total / 2;
                                         // $to_weight[$title->exam_id] = $title->weightage;
                                         $to_weight[$title->exam_id] = $title->weightage;                                        
                                         // for AB,NA,EX
-                                        if ($marks->points == "0.00" || $marks->points == "") {
+                                        if ($marks->is_absent != "") {
                                             $ab_ex_na = $marks->is_absent;
                                             if ($marks->is_absent == '') {
                                                 $ab_ex_na = 0;
@@ -2870,7 +2895,7 @@ $overall_total = $overall_total / 2;
                                 }
                             }
                         }
-                        $ob_main_mark = 0;
+                        $ob_main_mark = $ab_ex_na = $total_marks = 0;
                         // echo "<pre>";print_r($obtained_marks);
                         // for best of 2 exam wise 
                         if (!empty($title_exam)) {
@@ -2893,8 +2918,16 @@ $overall_total = $overall_total / 2;
                                 $pt_per = ($convert_mark !== '0.00' && $w_m != 0) ? round(($convert_mark / $w_m) * 100, 0) : 0;
                         
                                 $underline = ($pt_per < 33 && $academic_type == "upper") ? 'style="text-decoration: underline red 2px;"' : '';
-                        
-                                $table .= '<td class="data_center" ' . $underline . ' ' . $exam_id . '-'.$val->subject_id.'-'.$standard_id.'>' . number_format($convert_mark, 2) . '</td>';
+                                if(count($obtained_mark_arr)>1){
+                                    $total_marks = $w_m;                                    
+                                    $table .= '<td class="data_center" ' . $underline . ' ' . $exam_id . '-'.$val->subject_id.'-'.$standard_id.'>' . number_format($convert_mark, 2) . '</td>';
+                                }else{
+                                    if($obtained_mark_arr[0]!='N.A.' || $obtained_mark_arr[0]!='EX'){
+                                        $total_marks = $w_m;
+                                    }
+
+                                    $table .= '<td class="data_center" ' . $underline . ' ' . $exam_id . '-'.$val->subject_id.'-'.$standard_id.'>' .$obtained_mark_arr[0] . '</td>';
+                                }
                         // echo $exam_id;echo "<pre>";print_r($obtained_mark_sum);
                                 
                             }
@@ -2913,7 +2946,12 @@ $overall_total = $overall_total / 2;
                         // $grade_arr = $this->getGradeScale($standard_id, '');
                     } 
                     // get percentage 
-                    $grade_std=$this->getGrade($grade_arr, $overall_total, round($both_term_ob_mark,0));
+                    $total_obt_mark =round($both_term_ob_mark,0);
+                    if($total_obt_mark==0){
+                        $grade_std=$this->getGrade($grade_arr,0, $total_obt_mark);
+                    }else{
+                        $grade_std=$this->getGrade($grade_arr, $overall_total, $total_obt_mark);                        
+                    }
                     if($grade_std=="E"){
                         $pass_fail[]="Failed";
                     }
