@@ -15,6 +15,7 @@ use function App\Helpers\htmlToPDF;
 use function App\Helpers\htmlToPDFLandscape;
 use function App\Helpers\htmlToPDFLandscapeCertificate;
 use function App\Helpers\htmlToPDFPortrait;
+use function App\Helpers\htmlToPDFPortraitLetter;
 use function App\Helpers\OtherBreackOff;
 use function App\Helpers\OtherBreackOffHead;
 // use function App\Helpers\OtherBreackOffHeadlast;
@@ -1526,6 +1527,9 @@ class AJAXController extends Controller
                     }else{
                         htmlToPDFLandscapeCertificate($html_file_path, $pdf_file_path);
                     }
+                }else if($sub_institute_id==254 && $action == 'Transfer Certificate'){
+                   htmlToPDFPortraitLetter($html_file_path, $pdf_file_path);
+                //    echo '<pre>';print_r($letter);exit;
                 } else {
                     htmlToPDF($html_file_path, $pdf_file_path);
                 }
@@ -1868,6 +1872,9 @@ class AJAXController extends Controller
             htmlToPDFLandscape($html_file_path, $pdf_file_path);
         } elseif ($paper_size == "A4DB") {
             htmlToPDFPortrait($html_file_path, $pdf_file_path);
+        } 
+        elseif ($paper_size == "letter") {
+            htmlToPDFPortraitLetter($html_file_path, $pdf_file_path);
         } else {
             htmlToPDF($html_file_path, $pdf_file_path);
         }
@@ -2149,7 +2156,6 @@ class AJAXController extends Controller
            $message=array($request->question_prompt,"search only 1 question from mentioned standard and subject and chapter and topic and get different question which are not in this '".$getAllQuestion."'");
             // return $message;exit;
         }
-        
 
         $result = Gemini::geminiPro()->generateContent($message);
 
