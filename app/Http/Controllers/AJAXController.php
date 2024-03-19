@@ -15,6 +15,7 @@ use function App\Helpers\htmlToPDF;
 use function App\Helpers\htmlToPDFLandscape;
 use function App\Helpers\htmlToPDFLandscapeCertificate;
 use function App\Helpers\htmlToPDFPortrait;
+use function App\Helpers\htmlToPDFPortraitLetter;
 use function App\Helpers\OtherBreackOff;
 use function App\Helpers\OtherBreackOffHead;
 // use function App\Helpers\OtherBreackOffHeadlast;
@@ -199,11 +200,12 @@ class AJAXController extends Controller
             '5' => 'questionReport',
             '6' => 'parent_communication',
             '7' => 'question_paper',
+            '8' => 'co_scholastic_marks_entry',                        
         ];
 
         $explode = explode(',', $request->grade_id);
         // menu_ids to get class teacher class only
-        $menu_ids = [68,80];
+        $menu_ids = [80];
         $getClass=DB::table('class_teacher')->whereRaw('sub_institute_id='.session()->get('sub_institute_id').' and teacher_id ='.session()->get('user_id').' and syear="'.session()->get('syear').'"')->first();
         if (count($explode) > 1) {
             $query = DB::table('standard');
@@ -302,9 +304,10 @@ class AJAXController extends Controller
             '5' => 'questionReport',
             '6' => 'parent_communication',
             '7' => 'question_paper',
+            '8' => 'co_scholastic_marks_entry',            
         ];
 
-        $menu_ids = [68,80];
+        $menu_ids = [80];
         $getClass=DB::table('class_teacher')->whereRaw('sub_institute_id='.session()->get('sub_institute_id').' and teacher_id ='.session()->get('user_id').' and syear="'.session()->get('syear').'"')->first();
 
         $standard_id = $request->standard_id;
@@ -1552,6 +1555,9 @@ class AJAXController extends Controller
                     }else{
                         htmlToPDFLandscapeCertificate($html_file_path, $pdf_file_path);
                     }
+                }else if($sub_institute_id==254 && $action == 'Transfer Certificate'){
+                   htmlToPDFPortraitLetter($html_file_path, $pdf_file_path);
+                //    echo '<pre>';print_r($letter);exit;
                 } else {
                     htmlToPDF($html_file_path, $pdf_file_path);
                 }
@@ -1894,6 +1900,9 @@ class AJAXController extends Controller
             htmlToPDFLandscape($html_file_path, $pdf_file_path);
         } elseif ($paper_size == "A4DB") {
             htmlToPDFPortrait($html_file_path, $pdf_file_path);
+        } 
+        elseif ($paper_size == "letter") {
+            htmlToPDFPortraitLetter($html_file_path, $pdf_file_path);
         } else {
             htmlToPDF($html_file_path, $pdf_file_path);
         }
@@ -2075,7 +2084,7 @@ class AJAXController extends Controller
         }else{
             $message = array($request->message);            
         }
-        $apiKey ='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';
+        $apiKey ='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';//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
       
         $endpoint = "https://api.openai.com/v1/chat/completions";
 
@@ -2175,7 +2184,6 @@ class AJAXController extends Controller
            $message=array($request->question_prompt,"search only 1 question from mentioned standard and subject and chapter and topic and get different question which are not in this '".$getAllQuestion."'");
             // return $message;exit;
         }
-        
 
         $result = Gemini::geminiPro()->generateContent($message);
 
@@ -2211,33 +2219,4 @@ class AJAXController extends Controller
         }
         return response()->json($data);
     }
-
-    public function pythonTimetable(){
-      $pythonScriptPath =public_path('python/timetable.py');
- 
-      $command = "python3 {$pythonScriptPath} 2>&1";
- 
-  
-      // Execute the command and capture the output
-      exec($command, $output, $returnValue);
-  
-      // Check the return value to determine if the command was successful
-     
-          return response()->json([ 'output' => $output]);
-      
-     }
-
-     public function pythonFeesPredicition(){
-        $pythonScriptPath ='/home/fees_analysis_1.py';
-   
-        $command = "python3 {$pythonScriptPath} 2>&1";
-   
-    
-        // Execute the command and capture the output
-        exec($command, $output, $returnValue);
-    
-        // Check the return value to determine if the command was successful
-            return response()->json(['status' => 'success', 'output' => $output]);
-        
-       }
 }

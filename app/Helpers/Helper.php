@@ -162,10 +162,11 @@ if (!function_exists('SearchChain')) {
             '5' => 'questionReport',
             '6' => 'parent_communication',
             '7' => 'question_paper',
+            '8' => 'co_scholastic_marks_entry',                        
         ];
 
         // menu_ids to get class teacher class only
-        $menu_ids = [68,80];
+        $menu_ids = [80];
         $getClass=DB::table('class_teacher')->whereRaw('sub_institute_id='.session()->get('sub_institute_id').' and teacher_id ='.session()->get('user_id').' and syear="'.session()->get('syear').'"')->first();
         // START 07/09/2021 code for getting standard , grade , division according to timetable wise for homework module
         if (session()->get('user_profile_name') == 'Teacher') {
@@ -1610,6 +1611,17 @@ if (!function_exists('htmlToPDFPortrait')) {
     function htmlToPDFPortrait($htmlPath, $pdfPath)
     {
         $command = '/usr/local/bin/wkhtmltopdf -L 0 -R 0 -B 0 -T 0.5 -s A4 '; // --page-height 297mm //-L 0 -R 0 -B 0 -T 0 -s A4
+        $command .= " $htmlPath ";
+        $command .= " $pdfPath ";
+
+        return exec($command);
+    }
+}
+
+if (!function_exists('htmlToPDFPortraitLetter')) {
+    function htmlToPDFPortraitLetter($htmlPath, $pdfPath)
+    {
+        $command = '/usr/local/bin/wkhtmltopdf -L 0 -R 0 -B 0 -T 0.5 -s letter '; // --page-height 297mm //-L 0 -R 0 -B 0 -T 0 -s A4
         $command .= " $htmlPath ";
         $command .= " $pdfPath ";
 
