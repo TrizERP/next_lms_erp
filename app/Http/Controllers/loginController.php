@@ -387,7 +387,23 @@ class loginController extends Controller
                     $res['data'] = $user;
                     $res['academicTerms'] = $getAcademicTerms;
                     $res['academicYears'] = $getAcademicYear;
-                    
+
+                    // Get server hostname and IP address
+                    $hostname = gethostname();
+                    $ip = gethostbyname($hostname);
+
+                    // Check if multi-login is enabled
+                    $check_multilogin = DB::table('general_data')
+                        ->where(['fieldname' => 'multi_login', 'sub_institute_id' => $user['sub_institute_id']])
+                        ->value('fieldvalue');
+
+                    // If multi-login is disabled, update user's login IP
+                    if ($check_multilogin === "No") {
+                        DB::table('tbluser')
+                            ->where(['sub_institute_id' => $user['sub_institute_id'], 'id' => $user['id']])
+                            ->update(["login_ip" => $ip]);
+                    }
+
                     if(session()->get('is_admin') == 1){
                         return is_mobile($type, "dashboard", $res);
                     }elseif($schoolData[0]['expire_date'] == null){
@@ -457,4 +473,25 @@ class loginController extends Controller
         return is_mobile($type, "implementation", $res);
     }
 
+    public function check_multilogins(){
+        $sub_institute_id = session('sub_institute_id');
+        $user_id = session('user_id');
+        $status = "logging";
+    
+        $check_multilogin = DB::table('general_data')
+            ->where(['fieldname' => 'multi_login', 'sub_institute_id' => $sub_institute_id])
+            ->value('fieldvalue');
+    
+        if ($check_multilogin === "No") {
+            $hostname = gethostname();
+            $ip = gethostbyname($hostname);
+            $stored_ip = DB::table('tbluser')->where('id', $user_id)->value('login_ip');
+    
+            if ($stored_ip !== '' && $stored_ip !== $ip) {
+                $status = "logout";            
+            }
+        }
+        return $status;
+    }
+    
 }
