@@ -466,7 +466,7 @@ function question_prompt(){
     var question_prompt = $('#question_prompt').val();
     
     var search="question";
-    var path = "{{ route('geminiAI') }}";
+    var path = "{{ route('chat') }}";
     $.ajax({
         url:path,
         data: {standard:standard,subject_id:subject,chapter_id:chapter,topic_id:topic,question_prompt:question_prompt,search:search},
@@ -604,7 +604,7 @@ function check_input(inputElement) {
         "type_learning":"learn",
     };
 
-    var path = "{{ route('geminiAI') }}";
+    var path = "{{ route('chat') }}";
     $.ajax({
         url:path,
         data: data,

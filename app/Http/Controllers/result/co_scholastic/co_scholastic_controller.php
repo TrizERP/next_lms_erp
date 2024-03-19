@@ -229,7 +229,8 @@ class co_scholastic_controller extends Controller
                         'sub_institute_id' => session()->get('sub_institute_id'),
                     ]);
                 }else{
-                    co_scholastic_grade::where('sub_institute_id',session()->get('sub_institute_id'))->where('id',$arr['id'])->delete();
+                    //By Rajesh Delete function not using in any menu, just update it
+                    //co_scholastic_grade::where('sub_institute_id',session()->get('sub_institute_id'))->where('id',$arr['id'])->delete();
                 }
              }else{
                 if ($arr['title'] != "" && $arr['break_off'] != "") {

@@ -57,7 +57,7 @@
 									<tbody>
 										@php 
 											$i=1;
-											$remarks = ['Passed Promoted to class 10','Promoted with condition of improvement','Detained in class 9','*Passed with grace marks','Failed','Conditionally Promoted','Needs improvement'];
+											$remarks = ['Passed & Promoted','Promoted with condition of improvement','Detained in class 9','*Passed with grace marks','Failed','Conditionally Promoted','Needs improvement','Passed Promoted to class 10'];
 										@endphp
 
 										@foreach($data['get_students'] as $key => $value)
@@ -70,7 +70,7 @@
 												<td>{{ $value->first_name.' '.$value->middle_name.' '.$value->last_name }}</td>
 												<td>
 													<select id='result_remarks' name="result_remarks[{{ $value->id }}]" class="form-control" style="width:300px;">	
-														<option value=""> Result Remarks </option>
+														<option value="">--Select Result Remarks--</option>
 														@foreach($remarks as $remark)
 															<option value="{{ $remark }}" @if(isset($value->result_remarks)) @if($value->result_remarks == $remark) selected="selected" @endif @endif>{{ $remark }}</option>
 														@endforeach

@@ -623,7 +623,7 @@ if(isset($_REQUEST['preload_lms'])){
             var inputValue = $('input[data-target="' + selectedId + '"]').val();
             $.ajax({
             type: 'get',  // Change to 'GET' if needed
-            url: '{{route("geminiAI")}}',  // Specify your AJAX handler URL
+            url: '{{route("get_chat_data")}}',  // Specify your AJAX handler URL
             data: {standard:selectedStd,subject:selectedSub,chapter:selectedChap,topic:selectedTopic,prompt:inputValue,search:'lessonplan'},
             success: function(response) {
                 if (response['error']) {
@@ -649,7 +649,7 @@ if(isset($_REQUEST['preload_lms'])){
             var inputValue = $('input[data-target="' + selectedId + '"]').val();
             $.ajax({
             type: 'get',  // Change to 'GET' if needed
-            url: '{{route("get_chat_data")}}',  // Specify your AJAX handler URL
+            url: '{{route("geminiAI")}}',  // Specify your AJAX handler URL
             data: {standard:selectedStd,subject:selectedSub,chapter:selectedChap,topic:selectedTopic,prompt:inputValue,search:'lessonplan'},
             success: function(response) {
                 if (response['error']) {
@@ -684,7 +684,7 @@ if(isset($_REQUEST['preload_lms'])){
 
             var ajaxPromise = $.ajax({
                 type: 'get',
-                url: '{{route("geminiAI")}}',
+                url: '{{route("get_chat_data")}}',
                 data: {standard: selectedStd, subject: selectedSub, chapter: selectedChap, topic: selectedTopic, prompt: inputValue, search : "lessonplan"},
                 success: function (response) {
                     if (response['error']) {
