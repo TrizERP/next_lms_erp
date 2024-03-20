@@ -116,7 +116,7 @@
                                         <input name="main_title_color_code[${item['screen_name']}][]" id="rights_${item['main_title_color_code']}" value="${item['main_title_color_code']}" type="hidden">
                                         <input name="main_title_background_image[${item['screen_name']}][]" id="rights_${item['main_title_background_image']}" value="${item['main_title_background_image']}" type="hidden">
                                         <input name="sub_title_of_main[${item['screen_name']}][]" id="rights_${item['sub_title_of_main']}" value="${item['sub_title_of_main']}" type="hidden">
-                                        <input name="sub_title_icon[${item['screen_name']}][]" id="rights_${item['sub_title_icon']}" value="${item['main_title_background_image']}" type="hidden">
+                                        <input name="sub_title_icon[${item['screen_name']}][]" id="rights_${item['sub_title_icon']}" value="${item['sub_title_icon']}" type="hidden">
                                         <input name="sub_title_api[${item['screen_name']}][]" id="rights_${item['sub_title_api']}" value="${item['sub_title_api']}" type="hidden">
                                         <input name="sub_title_api_param[${item['screen_name']}][]" id="rights_${item['sub_title_api_param']}" value="${item['sub_title_api_param']}" type="hidden">
                                         <input name="main_sort_order[${item['screen_name']}][]" id="rights_${item['main_sort_order']}" value="${item['main_sort_order']}" type="hidden">

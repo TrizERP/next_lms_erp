@@ -37,8 +37,8 @@
                                     <th>Mobile</th>
                                     <th>From Shift</th>
                                     <th>From Bus</th>
-                                    <th>Amount</th>
                                     <th>From</th>
+                                    <th>Amount</th>
                                     <th>To Shift</th>
                                     <th>To Bus</th>
                                     <th>To</th>

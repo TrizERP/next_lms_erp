@@ -391,6 +391,13 @@ class loginController extends Controller
                     // Get server hostname and IP address
                     $hostname = gethostname();
                     $ip = gethostbyname($hostname);
+<<<<<<< HEAD
+=======
+
+                    $user_token = rand().'_'.$user['id'];
+                    $request->session()->put('user_token', $user_token);
+                    
+>>>>>>> 7a4a51e74c364c712970b51099928940bccfacb6
                     // Check if multi-login is enabled
                     $check_multilogin = DB::table('general_data')
                         ->where(['fieldname' => 'multi_login', 'sub_institute_id' => $user['sub_institute_id']])
@@ -400,7 +407,7 @@ class loginController extends Controller
                     if ($check_multilogin === "No") {
                         DB::table('tbluser')
                             ->where(['sub_institute_id' => $user['sub_institute_id'], 'id' => $user['id']])
-                            ->update(["login_ip" => $ip]);
+                            ->update(["login_ip" => $user_token]);
                     }
 
                     if(session()->get('is_admin') == 1){
@@ -475,6 +482,8 @@ class loginController extends Controller
     public function check_multilogins(){
         $sub_institute_id = session('sub_institute_id');
         $user_id = session('user_id');
+        $user_token = session()->get('user_token');
+        
         $status = "logging";
     
         $check_multilogin = DB::table('general_data')
@@ -486,7 +495,7 @@ class loginController extends Controller
             $ip = gethostbyname($hostname);
             $stored_ip = DB::table('tbluser')->where('id', $user_id)->value('login_ip');
     
-            if ($stored_ip !== '' && $stored_ip !== $ip) {
+            if ($stored_ip !== '' && $stored_ip !== $user_token) {
                 $status = "logout";            
             }
         }
