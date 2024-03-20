@@ -1577,7 +1577,8 @@ if (!function_exists('htmlToPDF')) {
 if (!function_exists('htmlToPDFPortraitLetter')) {
     function htmlToPDFPortraitLetter($htmlPath, $pdfPath)
     {
-        $command = '/usr/local/bin/wkhtmltopdf -L 0 -R 0 -B 0 -T 0.5 -s letter ';
+        $command = '/usr/local/bin/wkhtmltopdf -L 5 -R 10 -B 5 -T 5 -s letter ';
+        // $command = '/usr/local/bin/wkhtmltopdf -L 0 -R 0 -B 0 -T 0.5 --page-height 350mm --page-width 250mm ';
         $command .= " $htmlPath ";
         $command .= " $pdfPath ";
         return exec($command);

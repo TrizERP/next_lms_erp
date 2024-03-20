@@ -294,7 +294,27 @@ die; */
         $html_content = str_replace(htmlspecialchars("<<he_she_value>>"), $he_she, $html_content);
         $html_content = str_replace(htmlspecialchars("<<certificate_reason>>"), $certificate_reason, $html_content);
         //END Bonafide certificate Tags
-        
+        // transfer certificate detals
+        $candidate_belongs_to = $last_school_board=$whether_failed = $whether_qualified = $general_conduct = $games_played = $any_other_remarks="<br>";
+        $transfer_details = DB::table('tblstudent_tc_details')->where(['sub_institute_id'=>$sub_institute_id,'syear'=>$syear])->where('student_id',$value['id'])->first();
+        if(isset($transfer_details->student_id)){
+            $candidate_belongs_to = $transfer_details->candidate_belongs_to;
+            $whether_failed =$transfer_details->whether_failed;
+            $whether_qualified =$transfer_details->whether_qualified;
+            $general_conduct =$transfer_details->general_conduct;
+            $games_played =$transfer_details->games_played;
+            $any_other_remarks=$transfer_details->any_other_remarks;
+            $last_school_board = $transfer_details->last_school_board;
+        }
+
+        $html_content = str_replace(htmlspecialchars("<<candidate_belongs_to>>"), $candidate_belongs_to,$html_content);
+        $html_content = str_replace(htmlspecialchars("<<whether_failed>>"), $whether_failed,$html_content);
+        $html_content = str_replace(htmlspecialchars("<<whether_qualified>>"), $whether_qualified,$html_content);
+        $html_content = str_replace(htmlspecialchars("<<general_conduct>>"), $general_conduct,$html_content);
+        $html_content = str_replace(htmlspecialchars("<<games_played>>"), $games_played,$html_content);
+        $html_content = str_replace(htmlspecialchars("<<any_other_remarks>>"), $any_other_remarks,$html_content);
+        $html_content = str_replace(htmlspecialchars("<<last_school_board>>"), $last_school_board,$html_content);        
+
         //Start Transfer certificate Tags
         $html_content = str_replace(htmlspecialchars("<<affiliation_no_value>>"), strtoupper($value['affiliation_no']),
             $html_content);
@@ -363,8 +383,74 @@ if ($value['month_name'] != '') {
             strtoupper($value['admission_under']), $html_content);
         $html_content = str_replace(htmlspecialchars("<<total_working_days_value>>"),strtoupper($value['total_working_days']), $html_content);
         $html_content = str_replace(htmlspecialchars("<<total_working_days_present_value>>"),strtoupper($value['total_working_days_present']), $html_content);
-        $html_content = str_replace(htmlspecialchars("<<total_working_days_system>>"),strtoupper($get_student_attendances->total_att_days), $html_content);
-        $html_content = str_replace(htmlspecialchars("<<total_working_days_present_system>>"),strtoupper($get_student_attendances->present_att_days), $html_content);
+
+       
+        $standard_id = $value['standard_id'];
+        $student_id = $value['id'];
+
+        $get_term = DB::table('academic_year')->selectRaw('group_concat(id) as id,group_concat(term_id) as term_id,group_concat(title) as title,group_concat(start_date) as start_date,group_concat(end_date) as end_date,group_concat(post_start_date) as post_start_date,group_concat(post_end_date) as post_end_date')->where(['sub_institute_id' => $sub_institute_id, 'syear' => $syear])->groupBy('syear')->first();
+        // echo "<pre>";print_r($student_id);exit;
+        $post_start_date_ex = explode(',',$get_term->post_start_date);
+        $post_end_date_ex = explode(',',$get_term->post_end_date);
+        $post_start_date_final_ex = explode(',',$get_term->post_start_date);
+        $post_end_date_final_ex = explode(',',$get_term->post_end_date);
+
+        $post_start_date = $post_start_date_ex[0];
+        $post_end_date = isset($post_end_date_ex[1]) ? $post_end_date_ex[1] : $post_end_date_ex[0];
+        $post_start_date_final =  $post_start_date_final_ex[0];
+        $post_end_date_final = isset($post_end_date_final_ex) ? $post_end_date_final_ex[1] : $post_end_date_final_ex[0];
+
+        $cal_event = DB::table('calendar_events as ce')
+            ->join('academic_year as ay', 'ce.syear', '=', 'ay.syear')
+            ->where(['ce.sub_institute_id' => $sub_institute_id, 'ce.syear' => $syear])
+            ->WhereRaw("FIND_IN_SET('$standard_id', ce.standard) AND ce.event_type in ('holiday','vacation')")
+            ->whereBetween('ce.school_date', [$post_start_date, $post_end_date])
+            ->groupBy('ce.school_date')
+            ->get()
+            ->toArray();
+
+        $calArr = array();
+        foreach ($cal_event as $calRow) {
+            $calArr[] = $calRow->school_date;
+        }
+
+        $attTotDays = 0;
+        while ($post_start_date <= $post_end_date) {
+            if (date('w', strtotime($post_start_date)) != 0) {
+                $attTotDays++;
+            }
+            $post_start_date = date('Y-m-d', strtotime($post_start_date . ' +1 day'));
+        }
+        $attTotDays = $attTotDays - count($calArr);
+
+        $attarray = DB::table('attendance_student as ap')
+            ->join('tblstudent as s', 'ap.student_id', '=', 's.id')
+            ->join('tblstudent_enrollment as se', function ($join) {
+                $join->on('s.id', '=', 'se.student_id')
+                    ->whereNull('se.end_date');
+            })
+            ->select('s.id', 's.first_name', DB::raw('COUNT(DISTINCT ap.attendance_date) AS present_day'))
+            ->where('se.sub_institute_id', $sub_institute_id)
+            ->where('se.syear', $syear)
+            ->where('se.standard_id', $standard_id)
+            ->where('ap.student_id', $student_id)
+            ->where('ap.attendance_code', 'P')
+            ->whereBetween('ap.attendance_date', [$post_start_date_final, $post_end_date_final])
+            ->groupBy('s.id')
+            ->get();
+        $attarray = $attarray->pluck('present_day', 'id')->all();
+
+        if($sub_institute_id==254){
+            $working_day =  $attTotDays;
+            $present_day = $attarray[$student_id];
+        }else{
+            $working_day = $get_student_attendances->total_att_days;
+            $present_day = $get_student_attendances->present_att_days;
+        }
+
+        $html_content = str_replace(htmlspecialchars("<<total_working_days_system>>"),strtoupper($working_day), $html_content);
+        $html_content = str_replace(htmlspecialchars("<<total_working_days_present_system>>"),strtoupper($present_day), $html_content);
+
         $html_content = str_replace(htmlspecialchars("<<games_played_value>>"), strtoupper($value['games_played']),
             $html_content);
         $html_content = str_replace(htmlspecialchars("<<general_conduct_value>>"),

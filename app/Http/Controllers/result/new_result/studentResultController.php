@@ -2194,11 +2194,8 @@ $overall_total = $overall_total / 2;
                                 $to_marks[$title->exam_id][] = $title->points;
                                 $to_weight[$title->exam_id] = $title->weightage;
                                 // for AB,NA,EX
-                                if ($marks->points == "0.00" || $marks->points == "") {
+                                if ($marks->is_absent != "") {
                                     $ab_ex_na = $marks->is_absent;
-                                    if ($marks->is_absent == '') {
-                                        $ab_ex_na = 0;
-                                    }
                                     $obtained_marks[$title->exam_id][] = $ab_ex_na;
                                 } else {
                                     // store marks in array to get best of 2 
@@ -2221,22 +2218,25 @@ $overall_total = $overall_total / 2;
                         
                         $obtained_mark_sum = end($obtained_mark_arr);
                         $t_m = end($t_m);                                                                        
-                        
-                    //    echo "<pre>";print_r($obtained_mark_arr); echo '-'.$exam_id.'-';
-                        if($obtained_mark_sum=="AB" || $obtained_mark_sum=="EX" || $obtained_mark_sum=="N.A." || $obtained_mark_sum=="A.B"){
-                            $convert_mark = $obtained_mark_sum;
-                        }else{
-                            $ob_main_mark += ($obtained_mark_sum !=0 ) ? ($obtained_mark_sum / $t_m) * $w_m : 0;
-                            $convert_mark = ($obtained_mark_sum !=0 ) ?  number_format(($obtained_mark_sum / $t_m) * $w_m,0) : '0';
-                        }
-                        
-                        $table .= '<td class="data_center" '.$exam_id.' '.$val->subject_id.'>' . $convert_mark . '</td>';
                         if(!isset($subject_total[$terms->term_id])){
                             $subject_total[$terms->term_id] = 0;
                         }
-                        if($convert_mark!=0){
-                            $subject_total[$terms->term_id] += $w_m;
+                    //    echo "<pre>";print_r($obtained_mark_arr); echo '-'.$exam_id.'-';
+                        if($obtained_mark_sum=="AB" || $obtained_mark_sum=="EX" || $obtained_mark_sum=="N.A." || $obtained_mark_sum=="A.B"){
+                            $convert_mark = $obtained_mark_sum;
+                            if($obtained_mark_sum=="A.B" || $obtained_mark_sum=="AB"){
+                                $subject_total[$terms->term_id] += $w_m;    
+                            }                        
+                        }else{
+                            $ob_main_mark += ($obtained_mark_sum !=0 ) ? number_format(($obtained_mark_sum / $t_m) * $w_m,0) : 0;
+                            $convert_mark = ($obtained_mark_sum !=0 ) ?  number_format(($obtained_mark_sum / $t_m) * $w_m,0) : '0';
+                            $subject_total[$terms->term_id] += $w_m;                            
                         }
+                        
+                        $table .= '<td class="data_center" '.$exam_id.' '.$val->subject_id.'>' . $convert_mark .'</td>';
+                       
+                        // if($convert_mark!=0){
+                        // }
                     }
                 } else {
                     // If marks not found
