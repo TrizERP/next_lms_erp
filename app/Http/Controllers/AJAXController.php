@@ -200,11 +200,12 @@ class AJAXController extends Controller
             '5' => 'questionReport',
             '6' => 'parent_communication',
             '7' => 'question_paper',
+            '8' => 'co_scholastic_marks_entry',                        
         ];
 
         $explode = explode(',', $request->grade_id);
         // menu_ids to get class teacher class only
-        $menu_ids = [68,80];
+        $menu_ids = [80];
         $getClass=DB::table('class_teacher')->whereRaw('sub_institute_id='.session()->get('sub_institute_id').' and teacher_id ='.session()->get('user_id').' and syear="'.session()->get('syear').'"')->first();
         if (count($explode) > 1) {
             $query = DB::table('standard');
@@ -303,9 +304,10 @@ class AJAXController extends Controller
             '5' => 'questionReport',
             '6' => 'parent_communication',
             '7' => 'question_paper',
+            '8' => 'co_scholastic_marks_entry',            
         ];
 
-        $menu_ids = [68,80];
+        $menu_ids = [80];
         $getClass=DB::table('class_teacher')->whereRaw('sub_institute_id='.session()->get('sub_institute_id').' and teacher_id ='.session()->get('user_id').' and syear="'.session()->get('syear').'"')->first();
 
         $standard_id = $request->standard_id;
@@ -2217,33 +2219,4 @@ class AJAXController extends Controller
         }
         return response()->json($data);
     }
-
-    public function pythonTimetable(){
-      $pythonScriptPath =public_path('python/timetable.py');
- 
-      $command = "python3 {$pythonScriptPath} 2>&1";
- 
-  
-      // Execute the command and capture the output
-      exec($command, $output, $returnValue);
-  
-      // Check the return value to determine if the command was successful
-     
-          return response()->json([ 'output' => $output]);
-      
-     }
-
-     public function pythonFeesPredicition(){
-        $pythonScriptPath ='/home/fees_analysis_1.py';
-   
-        $command = "python3 {$pythonScriptPath} 2>&1";
-   
-    
-        // Execute the command and capture the output
-        exec($command, $output, $returnValue);
-    
-        // Check the return value to determine if the command was successful
-            return response()->json(['status' => 'success', 'output' => $output]);
-        
-       }
 }
