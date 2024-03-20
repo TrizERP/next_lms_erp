@@ -391,7 +391,6 @@ class loginController extends Controller
                     // Get server hostname and IP address
                     $hostname = gethostname();
                     $ip = gethostbyname($hostname);
-
                     // Check if multi-login is enabled
                     $check_multilogin = DB::table('general_data')
                         ->where(['fieldname' => 'multi_login', 'sub_institute_id' => $user['sub_institute_id']])
