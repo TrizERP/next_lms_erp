@@ -391,13 +391,10 @@ class loginController extends Controller
                     // Get server hostname and IP address
                     $hostname = gethostname();
                     $ip = gethostbyname($hostname);
-<<<<<<< HEAD
-=======
 
                     $user_token = rand().'_'.$user['id'];
                     $request->session()->put('user_token', $user_token);
                     
->>>>>>> 7a4a51e74c364c712970b51099928940bccfacb6
                     // Check if multi-login is enabled
                     $check_multilogin = DB::table('general_data')
                         ->where(['fieldname' => 'multi_login', 'sub_institute_id' => $user['sub_institute_id']])
