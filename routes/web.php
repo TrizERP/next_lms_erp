@@ -232,6 +232,8 @@ Route::group([ 'middleware' => ['session', 'menu', 'logRoute']], function () {
     Route::POST('download-pdf', [sqaa_controller::class,'generatePdf'])->name('download-pdf');     
     
     Route::resource('questionExcelDownload', questionExcelDownloadController::class);
+    Route::get('check_multilogin', [loginController::class,'check_multilogins'])->name('check_multilogin');
+    
 });
 
 Route::get('/import-data',[ImportController::class,'getImport'])->name('import.data');

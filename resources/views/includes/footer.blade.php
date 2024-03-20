@@ -15,6 +15,22 @@
 			$(".tab-pane.active").removeClass("result_hover");
 			}
 		);
+
+		// if multi user
+		var url = "{{route('check_multilogin')}}";
+            $.ajax({
+                url : url,
+                type: 'get',
+                success : function (result){
+                    // when multi login is "No" and ip addres not match
+                    if(result === "logout"){
+                        window.location.href = "/logout"; 
+                    }
+                }, 
+                error: function(xhr, status, error) {
+                    console.log(error);
+                }
+            })
 	});
 </script>
 </body>

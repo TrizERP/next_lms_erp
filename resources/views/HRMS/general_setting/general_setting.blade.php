@@ -15,7 +15,7 @@
                 @php 
                     $field = Session::get('data');
                     $parent_communication = ['N'=>"Subject Wise","Y"=>"Class Teacher wise"];
-                    $sandwich_leave = ["Yes","No"];
+                    $sandwich_leave = $multi_login = ["Yes","No"];
                     $casual_leave = [0,1,2,3,4,5];                    
                 @endphp 
                 @if ($sessionData = Session::get('data'))
@@ -70,6 +70,23 @@
                                               @foreach($parent_communication as $key => $value)
                                               <option value="{{$key}}" @if(isset($data['get_parent_communication']->fieldvalue) && $data['get_parent_communication']->fieldvalue === $key)  selected @endif>{{$value}}</option>
                                               @endforeach
+                                            </select>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <th>Do you want to enable multiple logins?</th>
+                                <td>
+                                    <div class="row">
+                                        <div class="col-md-4 form-group" style="margin-left: 0px !important">
+                                            <select id='multi_login' name="multi_login" class="form-control" style="margin-left: 50px;">
+                                            @foreach($multi_login as $value)
+                                                <option value="{{ $value }}" {{ isset($data['get_multi_login']->fieldvalue) && $data['get_multi_login']->fieldvalue === $value ? 'selected' : '' }}>
+                                                    {{ $value }}
+                                                </option>
+                                            @endforeach
+
                                             </select>
                                         </div>
                                     </div>
