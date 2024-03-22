@@ -10,6 +10,7 @@ use function App\Helpers\getStudents;
 use function App\Helpers\is_mobile;
 use function App\Helpers\FeeMonthId;
 use function App\Helpers\SearchStudent;
+use App\Http\Controllers\result\new_result\studentResultController;
 
 class studentCertificateController extends Controller
 {
@@ -183,10 +184,12 @@ class studentCertificateController extends Controller
     }
 
     public function create_html_content($syear,$sub_institute_id,$html_content,$value,$receipt_book_arr,$template,$certificate_no,$certificate_reason) {
-        /* echo("<pre>");
-print_r($value);
-echo("</pre>");
-die; */
+//         if($sub_institute_id==254 && $value['id']==187555){
+//             echo("<pre>");
+//     print_r($value);
+//     echo("</pre>");
+//     die;
+// }
         if($sub_institute_id == 61)
             $display_year = "Apr-".$syear." to Mar-".($syear + 1);
         else
@@ -240,8 +243,16 @@ die; */
             $he_she = 'she';
             $mr_miss = 'Miss.';
             $daughter_son = 'daughter';            
-        }        
-        
+        }    
+        $resultController = new studentResultController;
+        $getSub = $resultController->get_subject($sub_institute_id,$syear,$value['id'],$value['standard_id']);
+        $subject_names="";
+        if(!empty($getSub)){
+            $subject_names = array_map(function($subject) {
+                return $subject->subject_name;
+            }, $getSub);
+            $subject_names = implode(',',$subject_names);
+        }
         $get_standard_subjects = DB::table('sub_std_map as ssm')
       ->select(DB::raw('GROUP_CONCAT(IFNULL(ssm.display_name, "-")) as subject_name'))
         ->join('standard as s', 's.id', '=', 'ssm.standard_id')
@@ -340,7 +351,12 @@ die; */
         //$standard_array = ['I' => 1,'II' => 2,'III' => 3,'IV' => 4,'V' => 5,'VI' => 6,'VII' => 7,'VIII' => 8,'IX' => 9,'X' => 10,'XI' => 11,'XII' => 12];
         //$std = $standard_array[$value['short_standard_name']] ?? 0;
         $html_content = str_replace(htmlspecialchars("<<short_standard_name_in_word_value>>"), strtoupper($value['school_stream']), $html_content);
-       $html_content = str_replace(htmlspecialchars("<<subjects_studied_system>>"),strtoupper(optional($get_standard_subjects)->subject_name ?? '-'),$html_content);
+        if($sub_institute_id==254){
+            $html_content = str_replace(htmlspecialchars("<<subjects_studied_system>>"),strtoupper($subject_names),$html_content);
+        }else{
+            $html_content = str_replace(htmlspecialchars("<<subjects_studied_system>>"),strtoupper(optional($get_standard_subjects)->subject_name ?? '-'),$html_content);
+        }
+       
         $html_content = str_replace(htmlspecialchars("<<subjects_studied_value>>"),strtoupper($value['subjects_studied']), $html_content);
         $html_content = str_replace(htmlspecialchars("<<candidate_belongs_to_value>>"),
             strtoupper($value['candidate_belongs_to']), $html_content);
@@ -359,21 +375,21 @@ die; */
         $html_content = str_replace(htmlspecialchars("<<if_to_which_class_value>>"),
             strtoupper($value['if_to_which_class']), $html_content);
 
-$months = FeeMonthId();
-$month = '';
+    $months = FeeMonthId();
+    $month = '';
 
-if ($value['month_name'] != '') {
-    $monthsArray = explode(',', $value['month_name']);
-    $monthsArray = array_filter($monthsArray);
-    $lastMonth = end($monthsArray);
-    if (isset($months[$lastMonth])) {
-        $month = $months[$lastMonth];
+    if ($value['month_name'] != '') {
+        $monthsArray = explode(',', $value['month_name']);
+        $monthsArray = array_filter($monthsArray);
+        $lastMonth = end($monthsArray);
+        if (isset($months[$lastMonth])) {
+            $month = $months[$lastMonth];
+        } else {
+            $month = 'No Fees Details Found';
+        }
     } else {
-        $month = 'No';
+        $month = 'No Fees Details Found';
     }
-} else {
-    $month = 'No';
-}
 
         $html_content = str_replace(htmlspecialchars("<<month_name_value>>"),
             strtoupper($month), $html_content);

@@ -57,7 +57,17 @@
 									<tbody>
 										@php 
 											$i=1;
-											$remarks = ['Passed & Promoted','Promoted with condition of improvement','Detained in class 9','*Passed with grace marks','Failed','Conditionally Promoted','Needs improvement','Passed Promoted to class 10'];
+											$remarks = [
+												'Passed & Promoted',
+												'Promoted with condition of improvement',
+												'Detained in class 9',
+												'*Passed with grace marks',
+												'Failed',
+												'Conditionally Promoted',
+												'Needs improvement',
+												'Passed Promoted to class 10',
+												'Detain'
+												];
 										@endphp
 
 										@foreach($data['get_students'] as $key => $value)
