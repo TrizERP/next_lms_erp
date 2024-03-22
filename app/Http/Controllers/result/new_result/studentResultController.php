@@ -403,8 +403,9 @@ class studentResultController extends Controller
             $html_content = str_replace(htmlspecialchars("<<scholastic_marks_altius>>"), $main_result['table'], $html_content);
         }
         if(isset($main_result['result'])){
-        $html_content = str_replace(htmlspecialchars("<<result>>"), strtoupper($main_result['result']), $html_content);
-    }
+        //$html_content = str_replace(htmlspecialchars("<<result>>"), strtoupper($main_result['result']), $html_content);
+            $html_content = str_replace(htmlspecialchars("<<result>>"), $main_result['result'], $html_content);
+        }
         $html_content = str_replace(htmlspecialchars("<<school_open_date>>"), $reopen_date, $html_content);
 
         if (strpos($html_content, htmlspecialchars('<<activity_tag_marks>>')) !== false) {
@@ -1263,7 +1264,7 @@ $overall_total = $overall_total / 2;
         $table_per = $rep_val =  $table_all = '';
         $ov_ob_mark = $ov_sub_mark = $per1=$per2= $ov_ob_mark2 = $ov_sub_mark2 = $grade1 = $grade2= 0;
         $ov_headers = $ov_mark=$annual_grade=[];
-        $result = "Pass";
+        $pass_fail[] = "";
     // Calculate the total marks for each term
 
             foreach ($term_name as $keys => $terms) {
@@ -1316,12 +1317,12 @@ $overall_total = $overall_total / 2;
                 if ($keys == 0) {
                     $rep_val = "&lt;&lt;per&gt;&gt;";
                     if ($finalPer < 33) {
-                        $result = 'Promoted';
+                        $pass_fail[] = 'Promoted';
                     }
                 } else {
                     $rep_val = "&lt;&lt;grade&gt;&gt;";
                     if ($finalPer < 33) {
-                        $result = 'Promoted';
+                        $pass_fail[] = 'Promoted';
                     }
                 }
                 $table.='<td style="text-align:center" colspan="'.(1 + $cols).'"><b>'.$val.'</b></td><td style="text-align:center"><b>'.$max.'</b></td><td colspan='. (count($term_exam_titles) + $cols - $minus_cols) .' style="padding:0px !important">';
@@ -1370,6 +1371,33 @@ $overall_total = $overall_total / 2;
             $table.='</table></td>';
     
            $table.='</tr>';
+
+//Start Result Remark added by rajesh
+            $get_remark = DB::table('result_remarks')
+                    ->selectRaw("student_id,GROUP_CONCAT(Distinct term_id SEPARATOR '|') as term_id,GROUP_CONCAT(Distinct result_remarks SEPARATOR '|') as remark")
+                    ->where('sub_institute_id', $sub_institute_id)
+                    ->where('student_id', $student_id)
+                    ->where('syear', $syear)
+                    ->groupBy('student_id')
+                    ->first();
+                    
+                    $get_next_std = DB::table('standard')->where('id',$standard_id)->first();
+                        if(isset($get_next_std->next_standard_id)){
+                        $next_std_name = DB::table('standard')->where('id',$get_next_std->next_standard_id)->first();
+                            $next_std =$next_std_name->short_name;
+                        }else{
+                            $next_std ='';
+                        }
+
+                    if(isset($get_remark->remark)){
+                        $result = str_replace('|','',$get_remark->remark);
+                    }else if(in_array('Promoted',$pass_fail)){
+                        $result='Promoted to Grade : '.$next_std;
+                    }else{
+                        $result ='Passed & Promoted to Grade : '.$next_std;
+                    }
+//End Result Remark added by rajesh           
+
         $res['remark'] = \App\Helpers\getGradeComment($grade_arr, 100, $overall_per) ?? '';
         $res['result'] = $result;
         $table .= '</tr></tbody></table>';
@@ -1776,20 +1804,20 @@ $overall_total = $overall_total / 2;
         <tr>
         <td>Attendance</td>';
         if(isset($ret_data->total_working_day) && isset($ret_data->attendance)){
-            $table .= '<td>'.$ret_data->attendance . '/' . $ret_data->total_working_day.'</td>';
+            $table .= '<td><b>'.$ret_data->attendance . '/' . $ret_data->total_working_day.'</b></td>';
         }
         $table .= '</tr>
         <tr>
         <td>Height (cm) </td>';
         if(isset($student_details)){
-            $table .= '<td>'.$student_details->height.'</td>';
+            $table .= '<td><b>'.$student_details->height.'</b></td>';
         }
         $table .= '</tr>
 
         <tr>
         <td>Weight (kg)</td>';
         if(isset($student_details)){
-            $table .= '<td>'.$student_details->weight.'</td>';
+            $table .= '<td><b>'.$student_details->weight.'</b></td>';
         }
         $table .= '</tr>
         </tbody></table>';
