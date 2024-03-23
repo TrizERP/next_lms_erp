@@ -297,7 +297,7 @@ class timetableController extends Controller
             })
             ->where(['tbluser.sub_institute_id' => $sub_institute_id, 'tbluserprofilemaster.name' => 'Teacher'])
             ->where('tbluser.status', 1)
-            ->where('tbluser.id', $teacher_id)                
+            // ->where('tbluser.id', $teacher_id)                
             ->groupby("tbluser.id")
             ->orderby("tbluser.first_name")
             ->get();

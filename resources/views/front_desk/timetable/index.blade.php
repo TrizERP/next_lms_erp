@@ -61,7 +61,7 @@
                         <div class="col-md-4">
                             <div class="form-group">
                                 <label for="">Week Load</label>
-                                <input type="number" name="week_load[0]" class="form-control" id="week_load" data-val="0" value="{{ isset($data['week_load']) ? $data['week_load'] : '' }}" required>
+                                <input type="number" name="week_load[0]" class="form-control" id="week_load" data-val="0" required>
                             </div>
                         </div>
                         <!-- days selections -->
@@ -98,7 +98,7 @@
                         <div class="col-md-4">
                         <div class="buttons-action d-block">
                                 <div class="add m-2">
-                                <input type="button" name="add_teacher" id="add_teacher0"  data-val="0" value="+" class="btn btn-primary" onclick="addNewTeacher(0)">
+                                <input type="button" name="add_teacher" id="add_teacher0"  data-val="0" value="+" class="btn btn-primary add_teacher" onclick="addNewTeacher(0)">
                                 </div>
                                 <div class="remove m-2">
                                 <input type="button" name="remove_teacher" id="remove_teacher0" data-val="0" value="-" class="btn btn-primary" onclick="RemoveNewTeacher(0)">
@@ -447,7 +447,8 @@
     var newIndex = nameVal + 1;
     // alert(newIndex);
     var newTeacherSection = $("#teacherSection").clone();
-        
+        newTeacherSection.attr("data-divid", newIndex);
+
         // Update names of elements inside the cloned section
         newTeacherSection.find("[name^='select_teacher']").each(function(index) {
             $(this).attr("name", $(this).attr("name").replace(/\[\d+\]/, "[" + newIndex + "]"));
@@ -478,7 +479,12 @@
             $(this).attr("onclick", updatedOnClick);
             $(this).attr("data-val", newIndex);                      
             $(this).attr("id", "add_teacher" + newIndex);
-
+            if(nameVal!==newIndex){
+               var elementsToRemove = $('#add_teacher'+nameVal);
+            //    alert('#add_teacher'+nameVal);                
+                // elementsToRemove.prop('disabled',true);
+                elementsToRemove.remove();
+            }
         });
 
         newTeacherSection.find("[name^='remove_teacher']").each(function(index) {
@@ -492,42 +498,13 @@
         
         // Append the cloned section to the container
         $("#newAddedTeacher").append(newTeacherSection);
-        $('#add_teacher'+nameVal).remove();
+        // $('#add_teacher'+nameVal).remove();
+   
     }
 
  function RemoveNewTeacher(nameVal){
-    if ($('#select_teacher').attr('data-val') == nameVal) {
-        // Remove the element with id "select_teacher"
-        $('#select_teacher').remove();
-    }
-    if ($('#week_load').attr('data-val') == nameVal) {
-        // Remove the element with id "select_teacher"
-        $('#week_load').remove();
-    }
-    if ($('#select_day').attr('data-val') == nameVal) {
-        // Remove the element with id "select_teacher"
-        $('#select_day').remove();
-    }
-    if ($('#select_period').attr('data-val') == nameVal) {
-        // Remove the element with id "select_teacher"
-        $('#select_period').remove();
-    }
-    if ($('#select_subject').attr('data-val') == nameVal) {
-        // Remove the element with id "select_teacher"
-        $('#select_subject').remove();
-    }
-    if ($('#add_teacher'+nameVal).attr('data-val') == nameVal) {             
-        var newAdd = '<input type="button" name="add_teacher" id="add_teacher0" data-val="0" value="+" class="btn btn-primary" onclick="addNewTeacher('+(nameVal-1)+')">';
-        $('#remove_teacher'+nameVal).before(newAdd);
-        $('#add_teacher'+nameVal).remove();
-    }
-
-    if ($('#remove_teacher'+nameVal).attr('data-val') == nameVal) {
-        // Remove the element with id "select_teacher"
-        $('#remove_teacher'+nameVal).remove();
-    }
-
-     
+    var elementsToRemove = $('#teacherSection[data-divid="' + nameVal + '"]');
+    elementsToRemove.remove();
  }    
 </script>
 
