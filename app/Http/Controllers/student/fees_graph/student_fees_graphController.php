@@ -58,9 +58,9 @@ class student_fees_graphController extends Controller
         })
         ->where('s.sub_institute_id', '=', $sub_institute_id)
         ->groupBy('se.grade_id', 'se.standard_id', 'se.section_id')
-        ->select('acs.title', 'sm.name as standard_name', 'dm.name as division_name', 'se.standard_id', 'se.section_id', DB::raw('count(se.student_id) as tot_amount'), DB::raw('sum(fb.amount) as tot_amount'), 'fp.tot_paid');
+        ->select(DB::raw('concat_ws("",s.first_name,s.last_name) as student_name'),'acs.title', 'sm.name as standard_name', 'dm.name as division_name', 'se.standard_id', 'se.section_id', DB::raw('count(se.student_id) as tot_amount'), DB::raw('sum(fb.amount) as tot_amount'), 'fp.tot_paid');
     
-    $data = $query->get();
+    $data = $query->limit(15)->get();
     
         foreach ($data as $id => $arr) {
             if (
@@ -154,6 +154,7 @@ class student_fees_graphController extends Controller
         $chart_data .= "];";
 
         $res['chartData'] = $chart_data;
+        $res['data'] = $data;        
 
         return is_mobile($type, "student/fees_graph/view", $res, "view");
     }
