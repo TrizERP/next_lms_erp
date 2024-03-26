@@ -190,8 +190,8 @@
                                                 </tr>
 												<?php
                                                 $total = [];
-                                                $cheque_return_charges0 = $data['cheque_return_charges'][0]; 
-                                                $cheque_return_charges = $data['fees_config_data'][0]['late_fees_amount'];
+                                                $cheque_return_charges0 = $data['cheque_return_charges'][0] ?? 0; 
+                                                $cheque_return_charges = $data['fees_config_data'][0]['late_fees_amount'] ?? 0;
 									            $sub_institute_id=[257];
                                                  foreach ($data['final_fee'] as $id => $val) { ?>
                                                     
