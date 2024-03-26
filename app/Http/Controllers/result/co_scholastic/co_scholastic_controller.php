@@ -221,7 +221,9 @@ class co_scholastic_controller extends Controller
         foreach ($_REQUEST['co_grade'] as $ids => $arr) {
             if(isset($arr['id']) && $arr['id']!=''){
                 $check_exists = co_scholastic_grade::where('sub_institute_id',session()->get('sub_institute_id'))->where('id',$arr['id'])->get()->toArray();
-                if ($arr['title'] != "" && $arr['break_off'] != "") {
+                if ($arr['title'] != "" && $arr['break_off'] != "" && !empty($check_exists)) {
+                // echo "<pre>";print_r($arr);
+                    
                     $exam = co_scholastic_grade::where('id',$arr['id'])->update([
                         "map_id"           => $max_id,
                         "title"            => $arr['title'],
@@ -229,6 +231,8 @@ class co_scholastic_controller extends Controller
                         'sub_institute_id' => session()->get('sub_institute_id'),
                     ]);
                 }else{
+                // echo "1 <pre>";print_r($arr);
+                    
                     //By Rajesh Delete function not using in any menu, just update it
                     //co_scholastic_grade::where('sub_institute_id',session()->get('sub_institute_id'))->where('id',$arr['id'])->delete();
                 }
@@ -244,7 +248,7 @@ class co_scholastic_controller extends Controller
                 }
              }
         }
-
+        // exit;
      $data1 = [
             "term_id"    => $request->get('term'),
             "title"      => $request->get('title'),
