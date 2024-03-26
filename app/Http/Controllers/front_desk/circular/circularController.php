@@ -43,6 +43,7 @@ class circularController extends Controller
         }
 
         $data = $this->getData();
+        // echo "<pre>";print_r($data);exit;
         $school_data['data'] = $data['data'];
         $school_data['circular_type'] = $data['circular_type'];
 
@@ -53,7 +54,11 @@ class circularController extends Controller
 
     function getData()
     {
-        $result['data'] = DB::table("circular as c")
+        $classTeacherStdArr = session()->get('classTeacherStdArr');
+        $classTeacherDivArr = session()->get('classTeacherDivArr');
+        
+// return $classTeacherGrdArr;exit;
+        $query = DB::table("circular as c")
             ->join('standard as s', function ($join) {
                 $join->whereRaw("s.id = c.standard_id");
             })
@@ -62,13 +67,24 @@ class circularController extends Controller
             })
             ->join('division as d', function ($join) {
                 $join->whereRaw("d.id = c.division_id AND d.sub_institute_id = c.sub_institute_id");
-            })
-            ->selectRaw('c.*,s.name as std_name,t.type as circular_type,d.name as div_name')
+            });
+
+            if (isset($classTeacherStdArr)) {
+                if (count($classTeacherStdArr) > 0) {
+                    $query->whereIn('s.id', $classTeacherStdArr);
+                }
+            }
+            if (isset($classTeacherDivArr)) {
+                if (count($classTeacherDivArr) > 0) {
+                    $query->whereIn('d.id', $classTeacherDivArr);
+                }
+            }
+           $query = $query->selectRaw('c.*,s.name as std_name,t.type as circular_type,d.name as div_name')
             ->where("c.syear", "=", session()->get('syear'))
             ->where("c.sub_institute_id", "=", session()->get('sub_institute_id'))
             ->orderBy('c.id', 'DESC')->limit(400)
             ->get()->toArray();
-
+        $result['data'] = $query;
         $result['circular_type'] = DB::table('circular_type')->get()->toArray();
 
         return $result;

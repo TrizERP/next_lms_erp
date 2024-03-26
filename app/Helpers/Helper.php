@@ -166,7 +166,7 @@ if (!function_exists('SearchChain')) {
         ];
 
         // menu_ids to get class teacher class only
-        $menu_ids = [80];
+        $menu_ids = [80,102,156];
         $getClass=DB::table('class_teacher')->whereRaw('sub_institute_id='.session()->get('sub_institute_id').' and teacher_id ='.session()->get('user_id').' and syear="'.session()->get('syear').'"')->first();
         // START 07/09/2021 code for getting standard , grade , division according to timetable wise for homework module
         if (session()->get('user_profile_name') == 'Teacher') {
