@@ -243,13 +243,33 @@ class apiController extends Controller
             if($otherExists){
                 $studentData[] = $this->studentData(0,$_REQUEST,$otherExists);            
             }
-        
-            $data = [];
+
+            $data=$findStudent= [];
+           
             foreach ($studentData as $key => $value) {
                 foreach ($value as $key1 => $value1) {
-                    $data[]=$value1;
-                }                
+                    // added on 26-03-2024
+                    if(in_array($value1->sub_institute_id, [201, 202, 203, 204, 254])){
+                        // if student is in hills high and nursery then display only hills high standard
+                        if(!isset($findStudent[$value1->first_name])){
+                            $findStudent[$value1->first_name][$value1->sub_institute_id][] = $value1;
+                        }
+
+                        if(array_key_exists(254,$findStudent[$value1->first_name])){
+                            if($value1->sub_institute_id==254){
+                                $data[] = $findStudent[$value1->first_name][$value1->sub_institute_id][0];
+                            }
+                        }
+                        else if(!array_key_exists(254,$findStudent[$value1->first_name])){
+                            $data[]=$value1;
+                        }
+                    
+                    } else {
+                        $data[] = $value1;
+                    }
+                }        
             }
+            // echo "<pre>";print_r($studentData);exit;
             // end by saroj uma 08/03/024
             
             $send_data = [];
