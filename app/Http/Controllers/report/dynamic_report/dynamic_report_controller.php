@@ -550,6 +550,7 @@ class dynamic_report_controller extends Controller
                                     $tblstudent_join = [
                                         'fp.student_id'       => 'se.student_id',
                                         'fp.sub_institute_id' => 'se.sub_institute_id',
+                                        'fp.syear' => 'se.syear',
                                         //'fp.syear' => session()->get('syear'),
                                     ];
                                     $this->query->join('tblstudent_enrollment as se', $enrollment_join);
@@ -972,7 +973,6 @@ echo("<pre>");print_r($val); */
         }
     }
 
-
         // echo "<pre>";print_r($col);exit;
         // $this->query->select($col);
         // if(isset($counts) && $counts == "counts"){
@@ -991,7 +991,7 @@ echo("<pre>");print_r($val); */
             } else {
                 $temp_val = $field_arr[0];
                 $field_arr = explode(".", $temp_val);
-                $tbl_detail[] = $field_arr[1];
+                $tbl_detail[] = $field_arr[1] ?? [];
             }
         }
         $tbl_heading = [];
