@@ -44,9 +44,9 @@
                             </div>
                         </div>
                         </div>                        
-                        <div id="teacherSection" class="row">                        
+                        <div class="row teacherSection" id="teacherSection" data-divid="0" class="row">                        
                         <!-- select teacher -->
-                        <div class="col-md-4">
+                        <div class="col-md-2">
                             <div class="form-group">
                             <label for="">Teacher</label>                            
                                 <select name="select_teacher[0]" id="select_teacher" class="form-control" data-val="0" required>
@@ -58,14 +58,14 @@
                             </div>
                         </div>
                         <!-- week load -->
-                        <div class="col-md-4">
+                        <div class="col-md-2">
                             <div class="form-group">
                                 <label for="">Week Load</label>
                                 <input type="number" name="week_load[0]" class="form-control" id="week_load" data-val="0" required>
                             </div>
                         </div>
                         <!-- days selections -->
-                        <div class="col-md-4">
+                        <div class="col-md-2">
                             <div class="form-group">
                                 <label for="">Days</label>                            
                                 <select name="select_day[0][]" id="select_day" class="form-control" data-val="0" multiple required>
@@ -76,7 +76,7 @@
                             </div>
                         </div>
                         <!-- Periods selections -->
-                        <div class="col-md-4">
+                        <div class="col-md-2">
                             <div class="form-group">
                                 <label for="">Periods</label>                            
                                 <select name="select_period[0][]" id="select_period" class="form-control" data-val="0" multiple required>
@@ -87,7 +87,7 @@
                             </div>
                         </div>
                         <!-- Subject selections -->
-                        <div class="col-md-4">
+                        <div class="col-md-2">
                             <div class="form-group">
                             <label for="">Subject</label>                            
                                 <select name="select_subject[0][]" id="select_subject" class="form-control" data-val="0" multiple required>
@@ -95,13 +95,13 @@
                                 </select>
                             </div>
                         </div>  
-                        <div class="col-md-4">
+                        <div class="col-md-2">
                         <div class="buttons-action d-block">
                                 <div class="add m-2">
-                                <input type="button" name="add_teacher" id="add_teacher0"  data-val="0" value="+" class="btn btn-primary add_teacher" onclick="addNewTeacher(0)">
+                                <input type="button" name="add_teacher"  data-val="0" value="+" class="btn btn-primary add_teacher" onclick="addNewTeacher(0)">
                                 </div>
                                 <div class="remove m-2">
-                                <input type="button" name="remove_teacher" id="remove_teacher0" data-val="0" value="-" class="btn btn-primary" onclick="RemoveNewTeacher(0)">
+                                <input type="button" name="remove_teacher" id="remove_teacher0" data-val="0" value="-" class="btn btn-primary remove_teacher" onclick="RemoveNewTeacher(0)" disabled>
                                 </div>
                             </div>
                         </div>
@@ -271,7 +271,7 @@
                                                     <!-- // division -->
                                                         @if(!empty($data['timetableData']['divData']))
                                                     <div class="form-group">
-                                                    <select class="form-control mb-2" name="periods[{{$value->id}}][{{$shortday}}][divisions][{{$index}}]">
+                                                    <select class="form-control mb-2" name="periods[{{$value->id}}][{{$shortday}}][divisions][0]">
                                                         <option value="-">--Division--</option>
                                                         @foreach($data['timetableData']['divData'] as $std => $values)
                                                         <option value="{{$values['id']}}">{{$values['name']}}</option>
@@ -436,75 +436,64 @@
 
 @endif
 
- function addNewTeacher(nameVal){
-     var standard = $('#standard').val();
-     if(standard===''){
+function addNewTeacher(nameVal) {
+    var standard = $('#standard').val();
+    if (standard === '') {
         alert('Before Clone please select standard');
         return false;
-     }
-
-    // Increment the maximum index by one
-    var newIndex = nameVal + 1;
-    // alert(newIndex);
-    var newTeacherSection = $("#teacherSection").clone();
-        newTeacherSection.attr("data-divid", newIndex);
-
-        // Update names of elements inside the cloned section
-        newTeacherSection.find("[name^='select_teacher']").each(function(index) {
-            $(this).attr("name", $(this).attr("name").replace(/\[\d+\]/, "[" + newIndex + "]"));
-            $(this).attr("data-val", newIndex);
-        });
-        newTeacherSection.find("[name^='week_load']").each(function(index) {
-            $(this).attr("name", $(this).attr("name").replace(/\[\d+\]/, "[" + newIndex + "]"));
-            $(this).attr("data-val", newIndex);            
-        });
-        newTeacherSection.find("[name^='select_day']").each(function(index) {
-            $(this).attr("name", $(this).attr("name").replace(/\[\d+\]/, "[" + newIndex + "]"));
-            $(this).attr("data-val", newIndex);            
-        });
-        newTeacherSection.find("[name^='select_period']").each(function(index) {
-            $(this).attr("name", $(this).attr("name").replace(/\[\d+\]/, "[" + newIndex + "]"));
-            $(this).attr("data-val", newIndex);            
-        });
-        // Update names of select_subject elements
-        newTeacherSection.find("[name^='select_subject']").each(function(index) {
-            $(this).attr("name", $(this).attr("name").replace(/\[\d+\]/, "[" + newIndex + "]"));
-            $(this).attr("data-val", newIndex);            
-        });
-
-       newTeacherSection.find("[name^='add_teacher']").each(function(index) {
-            var currentOnClick = $(this).attr("onclick");
-            var newIndex2 = "(" + newIndex + ")";
-            var updatedOnClick = currentOnClick.replace(/\(\d+\)/, newIndex2);
-            $(this).attr("onclick", updatedOnClick);
-            $(this).attr("data-val", newIndex);                      
-            $(this).attr("id", "add_teacher" + newIndex);
-            if(nameVal!==newIndex){
-               var elementsToRemove = $('#add_teacher'+nameVal);
-            //    alert('#add_teacher'+nameVal);                
-                // elementsToRemove.prop('disabled',true);
-                elementsToRemove.remove();
-            }
-        });
-
-        newTeacherSection.find("[name^='remove_teacher']").each(function(index) {
-            var currentOnClick = $(this).attr("onclick");
-            var newIndex2 = "(" + newIndex + ")";
-            var updatedOnClick = currentOnClick.replace(/\(\d+\)/, newIndex2);
-            $(this).attr("onclick", updatedOnClick);
-            $(this).attr("data-val", newIndex);     
-            $(this).attr("id", "remove_teacher" + newIndex);       
-        });
-        
-        // Append the cloned section to the container
-        $("#newAddedTeacher").append(newTeacherSection);
-        // $('#add_teacher'+nameVal).remove();
-   
     }
+    // Get the last div element with the class teacherSection
+    var getLastTeacherSection = $(".teacherSection:last");
+    var lastTeacherSection = parseInt(getLastTeacherSection.attr("data-divid"));
+
+    var newIndex = (lastTeacherSection + 1);
+
+    var newTeacherSection = $('#teacherSection[data-divid="' + lastTeacherSection + '"]').clone();
+    newTeacherSection.attr("data-divid", newIndex);
+
+    // Update names and data attributes of elements inside the cloned section
+    newTeacherSection.find("[name^='select_teacher'], [name^='week_load'], [name^='select_day'], [name^='select_period'], [name^='select_subject']").each(function() {
+        $(this).attr("name", function(i, val) {
+            return val.replace(/\[\d+\]/, "[" + newIndex + "]");
+        }).attr("data-val", newIndex);
+    });
+
+    newTeacherSection.find("[name^='add_teacher']").each(function() {
+        var currentOnClick = $(this).attr("onclick");
+        var updatedOnClick = currentOnClick.replace(/\(\d+\)/, "(" + newIndex + ")");
+        $(this).attr({
+            "onclick": updatedOnClick,
+            "data-val": newIndex
+        });
+    });
+
+    $('.add_teacher[data-val="' + lastTeacherSection + '"]').prop('disabled', true); // Disable the previous button
+
+    newTeacherSection.find("[name^='remove_teacher']").each(function() {
+        var currentOnClick = $(this).attr("onclick");
+        var updatedOnClick = currentOnClick.replace(/\(\d+\)/, "(" + newIndex + ")");
+        $(this).attr({
+            "onclick": updatedOnClick,
+            "data-val": newIndex,
+            "id": "remove_teacher" + newIndex,
+            'disabled':false
+        });
+    });
+
+    $(".teacherSection:last").after(newTeacherSection);
+}
 
  function RemoveNewTeacher(nameVal){
-    var elementsToRemove = $('#teacherSection[data-divid="' + nameVal + '"]');
-    elementsToRemove.remove();
+    var getLastTeacherSection = $(".teacherSection:last");
+    var lastTeacherSection = parseInt(getLastTeacherSection.attr("data-divid"));
+    // alert(lastTeacherSection);
+     if(lastTeacherSection!==0){
+        var elementsToRemove = $('#teacherSection[data-divid="' + nameVal + '"]');
+        elementsToRemove.remove();
+    }else{
+        alert('Can not remove last fields !');
+    }   
+    
  }    
 </script>
 
