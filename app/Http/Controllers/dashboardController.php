@@ -291,7 +291,7 @@ class dashboardController extends Controller
                     ->join('standard as s', function ($join) {
                         $join->whereRaw("s.id = se.standard_id");
                     })
-                    ->whereRaw('DATE_FORMAT(fc.receiptdate, "%Y-%m-%d") = ' . $today . ' and fc.sub_institute_id = ' . $sub_institute_id . ' group by se.standard_id')
+                    ->whereRaw('fc.is_deleted = "N" AND fc.receiptdate = ' . $today . ' and fc.sub_institute_id = ' . $sub_institute_id . ' group by se.standard_id')
                     ->get()->toArray();
 
                 $parameters = array(
@@ -437,15 +437,10 @@ class dashboardController extends Controller
                 $fees_chart2_bkoff_data = DB::table('tblstudent as s')
                     ->join('tblstudent_enrollment as se', function ($join) {
                         $join->whereRaw("se.student_id = s.id");
-                    })
-                    ->join('academic_section as g', function ($join) {
+                    })->join('academic_section as g', function ($join) {
                         $join->whereRaw("g.id = se.grade_id");
-                    })
-                    ->join('standard as st', function ($join) {
+                    })->join('standard as st', function ($join) {
                         $join->whereRaw("st.id = se.standard_id");
-                    })
-                    ->leftJoin('division as d', function ($join) {
-                        $join->whereRaw("d.id = se.section_id");
                     })->join('fees_breackoff as fb', function ($join) use ($syear, $sub_institute_id) {
                         $join->whereRaw("fb.syear = " . $syear . " AND fb.admission_year = s.admission_year AND fb.quota = se.student_quota AND fb.grade_id = se.grade_id AND fb.standard_id = se.standard_id AND fb.sub_institute_id = " . $sub_institute_id);
                     })
@@ -467,15 +462,10 @@ class dashboardController extends Controller
                 $fees_chart2_fees_data = DB::table('tblstudent as s')
                     ->join('tblstudent_enrollment as se', function ($join) {
                         $join->whereRaw("se.student_id = s.id");
-                    })
-                    ->join('academic_section as g', function ($join) {
+                    })->join('academic_section as g', function ($join) {
                         $join->whereRaw("g.id = se.grade_id");
-                    })
-                    ->join('standard as st', function ($join) {
+                    })->join('standard as st', function ($join) {
                         $join->whereRaw("st.id = se.standard_id");
-                    })
-                    ->leftJoin('division as d', function ($join) {
-                        $join->whereRaw("d.id = se.section_id");
                     })->join('fees_collect as fc', function ($join) use ($syear, $sub_institute_id) {
                         $join->whereRaw("fc.student_id = s.id AND fc.syear = " . $syear . " AND fc.sub_institute_id = " . $sub_institute_id);
                     })
@@ -1683,7 +1673,7 @@ class dashboardController extends Controller
                     $join->whereRaw("s.id = se.standard_id");
                 })
                 ->selectRaw("sum(fc.amount) amount,s.name")
-                ->whereRaw('DATE_FORMAT(fc.receiptdate, "%Y-%m-%d") = ' . $today . ' and fc.sub_institute_id = ' . $sub_institute_id)
+                ->whereRaw('fc.is_deleted = "N" AND fc.receiptdate = ' . $today . ' and fc.sub_institute_id = ' . $sub_institute_id)
                 ->groupBy('se.standard_id')->get()->toArray();
 
             $parameters = array(
@@ -1761,7 +1751,7 @@ class dashboardController extends Controller
                     $join->whereRaw("s.id = se.standard_id");
                 })
                 ->selectRaw("fc.amount,s.name")
-                ->whereRaw('DATE_FORMAT(fc.receiptdate, "%Y-%m-%d") = ' . $today . ' and fc.sub_institute_id = ' . $sub_institute_id)
+                ->whereRaw('fc.is_deleted = "N" AND fc.receiptdate = ' . $today . ' and fc.sub_institute_id = ' . $sub_institute_id)
                 ->where('payment_mode', 'cash')
                 ->groupBy('se.standard_id')->get()->toArray();
 
@@ -1781,7 +1771,7 @@ class dashboardController extends Controller
                     $join->whereRaw("s.id = se.standard_id");
                 })
                 ->selectRaw("fc.amount,s.name")
-                ->whereRaw('DATE_FORMAT(fc.receiptdate, "%Y-%m-%d") = ' . $today . ' and fc.sub_institute_id = ' . $sub_institute_id)
+                ->whereRaw('fc.is_deleted = "N" AND fc.receiptdate = ' . $today . ' and fc.sub_institute_id = ' . $sub_institute_id)
                 ->where('payment_mode', 'cheque')
                 ->get()->toArray();
 
@@ -1836,8 +1826,6 @@ class dashboardController extends Controller
                     $join->whereRaw("g.id = se.grade_id");
                 })->join('standard as st', function ($join) {
                     $join->whereRaw("st.id = se.standard_id");
-                })->leftJoin('division as d', function ($join) {
-                    $join->whereRaw("d.id = se.section_id");
                 })->join('fees_breackoff as fb', function ($join) use ($syear, $sub_institute_id) {
                     $join->whereRaw("fb.syear = " . $syear . " AND fb.admission_year = s.admission_year AND fb.quota = se.student_quota AND
                         fb.grade_id = se.grade_id AND fb.standard_id = se.standard_id AND fb.sub_institute_id = " . $sub_institute_id);
@@ -1866,8 +1854,6 @@ class dashboardController extends Controller
                     $join->whereRaw("g.id = se.grade_id");
                 })->join('standard as st', function ($join) {
                     $join->whereRaw("st.id = se.standard_id");
-                })->leftJoin('division as d', function ($join) {
-                    $join->whereRaw("d.id = se.section_id");
                 })->join('fees_collect as fc', function ($join) use ($syear, $sub_institute_id) {
                     $join->whereRaw("fc.student_id = s.id AND fc.sub_institute_id = " . $sub_institute_id . " AND fc.syear = " . $syear);
                 })
