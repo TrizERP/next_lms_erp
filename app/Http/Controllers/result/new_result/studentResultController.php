@@ -2348,8 +2348,8 @@ $overall_total = $overall_total / 2;
             $result="Promoted";
         }
 
-        $res['remark'] = \App\Helpers\getGradeComment($grade_arr, 100, $finalPer) ?? '-';
-        $res['result'] = $result;
+        $res['remark'] = \App\Helpers\getGradeComment($grade_arr, 100, $main_per) ?? '-'; //$finalPer by rajesh 23-03-2024
+        $res['result'] = $result;//.'-'.$main_per
         $res['table'] = $table;
         return $res;
     }
