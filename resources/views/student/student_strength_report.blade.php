@@ -155,29 +155,30 @@
                 @if(count($data['result'])>0)
                     <thead>
                         <tr>
-                            <th rowspan="3">Date</th>
+                            <th rowspan="3">
+                            <div class="text-center"> Date </div></th>
                             <th rowspan="3">{{ App\Helpers\get_string('standard','request')}}</th>
                             <th rowspan="3">Total</th>
                             <!-- general -->
                             @if(isset($data['general']))
-                                <th colspan="{{ count($data['general'])+2 }}"  class="text-center">General</th>
+                                <th colspan="{{ (count($data['general'])*2)+1 }}"  class="text-center">General</th>
                             @endif
 
                             <!-- religion -->
                             @if(isset($data['religion']))
-                                <th colspan="{{ count($data['religion'])+2 }}"  class="text-center">Religion</th>
+                                <th colspan="{{ (count($data['religion'])*2)+1 }}"  class="text-center">Religion</th>
                             @endif
                             <!-- strength -->
                             @if(isset($data['strength']))
-                                <th colspan="{{ count($data['strength'])+2 }}" class="text-center">Strength</th>
+                                <th colspan="{{ (count($data['strength']))+1 }}" class="text-center">Strength</th>
                             @endif
                             <!-- cast -->
                             @if(isset($data['cast']))
-                                <th colspan="{{ count($data['cast'])+2 }}" class="text-center">Cast</th>
+                                <th colspan="{{ (count($data['cast'])*2)+1 }}" class="text-center">Cast</th>
                             @endif
                             <!-- quota -->
                             @if(isset($data['quota']))
-                                <th colspan="{{ count($data['quota'])+2 }}" class="text-center">Quota</th>
+                                <th colspan="{{ (count($data['quota'])*2)+1 }}" class="text-center">Quota</th>
                             @endif
                         </tr>
                         <tr>
@@ -199,7 +200,7 @@
                                 <!-- strength -->
                                 @if(isset($data['strength']))
                                     @foreach($data['strength'] as $strength)
-                                        <th colspan="2">{{ $strength }}</th>
+                                        <th rowspan="2">{{ $strength }}</th>
                                     @endforeach
                                     <th rowspan="2">Total</th>
                                 @endif
@@ -241,14 +242,14 @@
                                 @endforeach
                             @endif
 
-                            @if(isset($data['quota']))
-                                @foreach($data['quota'] as $key => $quotaId)
-                                    @if($quotaId == $quot[$key]->id)
-                                        <th>M</th>
-                                        <th>F</th>
-                                    @endif
-                                @endforeach
-                            @endif
+                           @if(isset($data['quota']))
+                                    @foreach($data['quota'] as $key => $quotaId)
+                                        @if($quotaId == $quot[$key]->id)
+                                            <th>M</th>
+                                            <th>F</th>                                            
+                                        @endif
+                                    @endforeach
+                                @endif
                         </tr>
                     </thead>
                     <tbody>
