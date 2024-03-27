@@ -127,13 +127,13 @@ class dashboardController extends Controller
 
                 $admissionBlock = DB::table("standard as s")
                     ->leftJoin("admission_enquiry as e", function ($join) {
-                        $join->whereRaw('s.id = e.admission_standard and e.sub_institute_id=s.sub_institute_id');
+                        $join->on('s.id', "=", "e.admission_standard")->on('e.sub_institute_id', '=', 's.sub_institute_id');
                     })
                     ->leftJoin("admission_form as f", function ($join) {
-                        $join->whereRaw('f.admission_standard = s.id and f.sub_institute_id = s.sub_institute_id and e.enquiry_no = f.enquiry_no');
+                        $join->on('f.admission_standard', "=", "s.id")->on('f.sub_institute_id', '=', 's.sub_institute_id')->on('e.enquiry_no', '=', 'f.enquiry_no');
                     })
                     ->leftJoin("admission_registration as r", function ($join) {
-                        $join->whereRaw('r.enquiry_no = f.enquiry_no and r.sub_institute_id = s.sub_institute_id');
+                        $join->on('r.enquiry_no', "=", "f.enquiry_no")->on('r.sub_institute_id', '=', 's.sub_institute_id');
                     })
                     ->selectRaw("COUNT(e.id) as total_enquiry, COUNT(f.id) as total_form, COUNT(r.id) as total_registration, s.name as standard_name")
                     ->where("s.sub_institute_id", "=", $sub_institute_id)
@@ -141,7 +141,7 @@ class dashboardController extends Controller
 
                 $visitorBlock = DB::table("visitor_master as v")
                     ->join("tbluser as u", function ($join) {
-                        $join->whereRaw("u.id = v.to_meet");
+                        $join->on("u.id", "=", "v.to_meet");
                     })
                     ->selectRaw("appointment_type, CONCAT(u.first_name, ' ', u.middle_name, ' ', u.last_name) as staff_name, name, contact")
                     ->where("v.sub_institute_id", "=", $sub_institute_id)
@@ -202,13 +202,13 @@ class dashboardController extends Controller
 
                 $studentBirthdays = DB::table("tblstudent as s")
                     ->join("tblstudent_enrollment as ts", function ($join) use ($syear) {
-                        $join->whereRaw("s.id = ts.student_id and ts.syear = " . $syear);
+                        $join->on("s.id", "=", "ts.student_id")->whereRaw("ts.syear = " . $syear);
                     })
                     ->join("standard as st", function ($join) {
-                        $join->whereRaw("ts.standard_id = st.id");
+                        $join->on("ts.standard_id", "=", "st.id");
                     })
                     ->join("division as d", function ($join) {
-                        $join->whereRaw("ts.section_id = d.id");
+                        $join->on("ts.section_id", "=", "d.id");
                     })
                     ->selectRaw("CONCAT_WS(' ', s.first_name, s.middle_name, s.last_name) as student_name, st.name as standard_name, d.name as division_name, DATE_FORMAT(s.dob, '%d-%m-%Y') as dob")
                     ->where("s.sub_institute_id", "=", $sub_institute_id)
@@ -219,7 +219,7 @@ class dashboardController extends Controller
 
                 $teacherBirthdays = DB::table("tbluser as s")
                     ->join("tbluserprofilemaster as tu", function ($join) use ($syear) {
-                        $join->whereRaw("s.user_profile_id = tu.id");
+                        $join->on("s.user_profile_id", "=", "tu.id");
                     })
                     ->selectRaw("CONCAT_WS(' ',s.first_name,s.middle_name,s.last_name) as teacher_name,tu.name as designation,s.mobile as contact_number, DATE_FORMAT(s.birthdate, '%d-%m-%Y') AS birthdate")
                     ->where("s.sub_institute_id", "=", $sub_institute_id)
@@ -236,16 +236,16 @@ class dashboardController extends Controller
 
                 $studentLeaves = DB::table("leave_applications as l")
                     ->join("tblstudent as s", function ($join) {
-                        $join->whereRaw("l.student_id = s.id");
+                        $join->on("l.student_id", "=", "s.id");
                     })
                     ->join("tblstudent_enrollment as se", function ($join) use ($syear) {
-                        $join->whereRaw("s.id = se.student_id AND se.syear = " . $syear);
+                        $join->on("s.id", "=", "se.student_id")->whereRaw("se.syear = " . $syear);
                     })
                     ->join("standard as st", function ($join) {
-                        $join->whereRaw("st.id = se.standard_id");
+                        $join->on("st.id", "=", "se.standard_id");
                     })
                     ->join("division as dt", function ($join) {
-                        $join->whereRaw("dt.id = se.section_id");
+                        $join->on("dt.id", "=", "se.section_id");
                     })
                     ->selectRaw("l.*, CONCAT_WS(' ',s.first_name,s.middle_name,s.last_name) AS student_name,st.name AS standard_name,
             dt.name AS division_name")
@@ -260,10 +260,10 @@ class dashboardController extends Controller
 
                 $attendanceCharts = DB::table("attendance_student as s")
                     ->join("standard as st", function ($join) {
-                        $join->whereRaw("s.standard_id = st.id");
+                        $join->on("s.standard_id", "=", "st.id");
                     })
                     ->join("division as dt", function ($join) {
-                        $join->whereRaw("s.section_id = dt.id");
+                        $join->on("s.section_id", "=", "dt.id");
                     })
                     ->selectRaw("st.name as standard, dt.name, s.attendance_code, SUM(CASE WHEN s.attendance_code = 'A' THEN 1 ELSE 0 END) as absent, SUM(CASE WHEN s.attendance_code = 'P' THEN 1 ELSE 0 END) as present")
                     ->where("s.sub_institute_id", "=", $sub_institute_id)
@@ -286,10 +286,10 @@ class dashboardController extends Controller
 
                 $fees_chart_data = DB::table('fees_collect as fc')
                     ->join('tblstudent_enrollment as se', function ($join) use ($syear) {
-                        $join->whereRaw("se.student_id = fc.student_id and se.syear = " . $syear);
+                        $join->on("se.student_id", "=", "fc.student_id")->whereRaw("se.syear = " . $syear);
                     })
                     ->join('standard as s', function ($join) {
-                        $join->whereRaw("s.id = se.standard_id");
+                        $join->on("s.id", "=", "se.standard_id");
                     })
                     ->whereRaw('DATE_FORMAT(fc.receiptdate, "%Y-%m-%d") = ' . $today . ' and fc.sub_institute_id = ' . $sub_institute_id . ' group by se.standard_id')
                     ->get()->toArray();
@@ -301,7 +301,7 @@ class dashboardController extends Controller
 
                 $student_chart_data = DB::table('tblstudent_enrollment as se')
                     ->join('standard as s', function ($join) {
-                        $join->whereRaw("s.id = se.standard_id");
+                        $join->on("s.id", "=", "se.standard_id");
                     })
                     ->selectRaw('COUNT(se.student_id) total_student,s.name')
                     ->where('se.sub_institute_id', '=', $sub_institute_id)
@@ -364,10 +364,10 @@ class dashboardController extends Controller
 
                 $fees_chart1_cash_data = DB::table('fees_collect as fc')
                     ->join('tblstudent_enrollment as se', function ($join) use ($syear) {
-                        $join->whereRaw("se.student_id = fc.student_id and se.syear = " . $syear);
+                        $join->on("se.student_id", "=", "fc.student_id")->whereRaw("se.syear = " . $syear);
                     })
                     ->join('standard as s', function ($join) use ($syear) {
-                        $join->whereRaw("s.id = se.standard_id");
+                        $join->on("s.id", "=", "se.standard_id");
                     })->whereDate('fc.receiptdate', $today)
                     ->where("fc.sub_institute_id", "=", $sub_institute_id)
                     ->where("fc.payment_mode", "=", "cash")
@@ -383,10 +383,10 @@ class dashboardController extends Controller
 
                 $fees_chart1_cheque_data = DB::table('fees_collect as fc')
                     ->join('tblstudent_enrollment as se', function ($join) use ($syear) {
-                        $join->whereRaw("se.student_id = fc.student_id and se.syear = " . $syear);
+                        $join->on("se.student_id", "=", "fc.student_id")->whereRaw("se.syear = " . $syear);
                     })
                     ->join('standard as s', function ($join) {
-                        $join->whereRaw("s.id = se.standard_id");
+                        $join->on("s.id", "=", "se.standard_id");
                     })->whereDate('fc.receiptdate', $today)
                     ->where("fc.sub_institute_id", "=", $sub_institute_id)
                     ->where("fc.payment_mode", "=", "cheque")
@@ -433,26 +433,28 @@ class dashboardController extends Controller
                 }
                 $final_chart1_data = rtrim($final_chart1_data, ",");
                 $final_chart1_data .= '];';
-
+                // db::enableQueryLog();
                 $fees_chart2_bkoff_data = DB::table('tblstudent as s')
-                    ->join('tblstudent_enrollment as se', function ($join) {
-                        $join->whereRaw("se.student_id = s.id");
-                    })
-                    ->join('academic_section as g', function ($join) {
-                        $join->whereRaw("g.id = se.grade_id");
-                    })
-                    ->join('standard as st', function ($join) {
-                        $join->whereRaw("st.id = se.standard_id");
-                    })
-                    ->leftJoin('division as d', function ($join) {
-                        $join->whereRaw("d.id = se.section_id");
-                    })->join('fees_breackoff as fb', function ($join) use ($syear, $sub_institute_id) {
-                        $join->whereRaw("fb.syear = " . $syear . " AND fb.admission_year = s.admission_year AND fb.quota = se.student_quota AND fb.grade_id = se.grade_id AND fb.standard_id = se.standard_id AND fb.sub_institute_id = " . $sub_institute_id);
-                    })
-                    ->selectRaw("SUM(fb.amount) amt,st.name")
-                    ->where("s.sub_institute_id", '=', $sub_institute_id)->where("se.syear", "=", $syear)
-                    ->groupBy('st.id')->orderBy("st.id")->get()->toArray();
-
+                ->join('tblstudent_enrollment as se', 'se.student_id', '=', 's.id')
+                ->join('academic_section as g', 'g.id', '=', 'se.grade_id')
+                ->join('standard as st', 'st.id', '=', 'se.standard_id')
+                ->Join('division as d', 'd.id', '=', 'se.section_id')
+                ->join('fees_breackoff as fb', function ($join) use ($syear, $sub_institute_id) {
+                    $join->on('fb.admission_year', '=', 's.admission_year')
+                         ->on('fb.quota', '=', 'se.student_quota')
+                         ->on('fb.grade_id', '=', 'se.grade_id')
+                         ->on('fb.standard_id', '=', 'se.standard_id')
+                         ->where('fb.syear', $syear)
+                         ->where('fb.sub_institute_id', $sub_institute_id);
+                })
+                ->selectRaw('SUM(fb.amount) as amt, st.name')
+                ->where('s.sub_institute_id', $sub_institute_id)
+                ->where('se.syear', $syear)
+                ->groupBy('st.id')
+                ->orderBy('st.id')
+                ->get()
+                ->toArray();
+                // dd(DB::getQueryLog($fees_chart2_bkoff_data));
                 $unpaid_data = "[";
                 $std_data = "[";
                 foreach ($fees_chart2_bkoff_data as $id => $arr) {
@@ -466,18 +468,18 @@ class dashboardController extends Controller
 
                 $fees_chart2_fees_data = DB::table('tblstudent as s')
                     ->join('tblstudent_enrollment as se', function ($join) {
-                        $join->whereRaw("se.student_id = s.id");
+                        $join->on("se.student_id", "=", "s.id");
                     })
                     ->join('academic_section as g', function ($join) {
-                        $join->whereRaw("g.id = se.grade_id");
+                        $join->on("g.id", "=", "se.grade_id");
                     })
                     ->join('standard as st', function ($join) {
-                        $join->whereRaw("st.id = se.standard_id");
+                        $join->on("st.id", "=", "se.standard_id");
                     })
                     ->leftJoin('division as d', function ($join) {
-                        $join->whereRaw("d.id = se.section_id");
+                        $join->on("d.id", "=", "se.section_id");
                     })->join('fees_collect as fc', function ($join) use ($syear, $sub_institute_id) {
-                        $join->whereRaw("fc.student_id = s.id AND fc.syear = " . $syear . " AND fc.sub_institute_id = " . $sub_institute_id);
+                        $join->on("fc.student_id", "=", "s.id")->whereRaw("fc.syear = " . $syear . " AND fc.sub_institute_id = " . $sub_institute_id);
                     })
                     ->selectRaw("SUM(fc.amount) + SUM(fc.fees_discount) as amount,st.name")
                     ->where("s.sub_institute_id", '=', $sub_institute_id)
@@ -520,7 +522,7 @@ class dashboardController extends Controller
 
                 $chartStudents = DB::table('tblstudent as s')
                     ->join('tblstudent_enrollment as se', function ($join) {
-                        $join->whereRaw("s.id = se.student_id");
+                        $join->on("s.id", "=", "se.student_id");
                     })
                     ->selectRaw("s.id,se.grade_id,se.standard_id")
                     ->where('s.sub_institute_id', '=', $sub_institute_id)
@@ -541,10 +543,10 @@ class dashboardController extends Controller
 
                 $chartFees = DB::table('fees_collect as fc')
                     ->join('tblstudent_enrollment as se', function ($join) use ($syear) {
-                        $join->whereRaw("se.student_id = fc.student_id AND se.syear = " . $syear);
+                        $join->on("se.student_id", "=", "fc.student_id")->whereRaw("se.syear = " . $syear);
                     })
                     ->join('standard as s', function ($join) use ($syear) {
-                        $join->whereRaw("s.id = se.standard_id");
+                        $join->on("s.id", "=", "se.standard_id");
                     })
                     ->selectRaw("fc.amount,s.name,se.grade_id,se.standard_id")
                     ->where('s.sub_institute_id', '=', $sub_institute_id)
@@ -1127,10 +1129,10 @@ class dashboardController extends Controller
 
             $students = DB::table("tblstudent as ts")
                 ->join("tblstudent_enrollment as se", function ($join) {
-                    $join->whereRaw("se.student_id = ts.id AND se.sub_institute_id = se.sub_institute_id");
+                    $join->on("se.student_id", "=", "ts.id");
                 })
                 ->join("standard as s", function ($join) {
-                    $join->whereRaw("s.id = se.standard_id AND se.sub_institute_id = s.sub_institute_id");
+                    $join->on("s.id", "=", "se.standard_id");
                 })
                 ->selectRaw("COUNT(ts.id) as students")
                 ->where("ts.sub_institute_id", "=", $sub_institute_id)
@@ -1155,7 +1157,7 @@ class dashboardController extends Controller
             if ($user_profile_name == 'Student') {
                 $parentCommunication = DB::table('parent_communication as p')
                     ->join('tblstudent as s', function ($join) {
-                        $join->whereRaw('p.student_id = s.id');
+                        $join->on('p.student_id", "=", "s.id');
                     })
                     ->selectRaw("p.*,CONCAT_WS(' ',s.first_name,s.last_name) as student_name, s.image as student_image")
                     ->whereDate('p.date_', '=', $date)->where('p.sub_institute_id', '=', $sub_institute_id)
@@ -1163,7 +1165,7 @@ class dashboardController extends Controller
             } else {
                 $parentCommunication = DB::table('parent_communication as p')
                     ->join('tblstudent as s', function ($join) {
-                        $join->whereRaw('p.student_id = s.id');
+                        $join->on('p.student_id", "=", "s.id');
                     })
                     ->selectRaw("p.*,CONCAT_WS(' ',s.first_name,s.last_name) as student_name,s.image as student_image")
                     ->whereDate('p.date_', '=', $date)->where('p.sub_institute_id', '=', $sub_institute_id)
@@ -1175,10 +1177,10 @@ class dashboardController extends Controller
 
             $attendanceCharts = DB::table("attendance_student as s")
                 ->join("standard as st", function ($join) {
-                    $join->whereRaw("s.standard_id = st.id");
+                    $join->on("s.standard_id", "=", "st.id");
                 })
                 ->join("division as dt", function ($join) {
-                    $join->whereRaw("s.section_id = dt.id");
+                    $join->on("s.section_id", "=", "dt.id");
                 })
                 ->selectRaw("st.name as standard,dt.name,s.attendance_code, SUM(CASE WHEN s.attendance_code = 'A' THEN 1 ELSE 0 END) AS absent,
                     SUM(CASE WHEN s.attendance_code = 'P' THEN 1 ELSE 0 END) AS present")
@@ -1196,14 +1198,13 @@ class dashboardController extends Controller
 
             $admissionBlock = DB::table("standard as s")
                 ->leftJoin("admission_enquiry as e", function ($join) {
-                    $join->whereRaw("s.id = e.admission_standard and e.sub_institute_id=s.sub_institute_id");
+                    $join->on("s.id", "=", "e.admission_standard");
                 })
                 ->leftJoin("admission_form as f", function ($join) {
-                    $join->whereRaw("f.admission_standard = s.id and f.sub_institute_id = s.sub_institute_id and e.enquiry_no = f.enquiry_no");
-
+                    $join->on("f.admission_standard", "=", "s.id")->on("f.sub_institute_id", "=", "s.sub_institute_id")->on("e.enquiry_no", "=", "f.enquiry_no");
                 })
                 ->leftJoin("admission_registration as r", function ($join) {
-                    $join->whereRaw("r.enquiry_no = f.enquiry_no and r.sub_institute_id = s.sub_institute_id");
+                    $join->on("r.enquiry_no", "=", "f.enquiry_no");
                 })
                 ->selectRaw("COUNT(e.id) AS total_enquiry, COUNT(f.id) AS total_form ,COUNT(r.id) as total_registration,
                     s.name AS standard_name")
@@ -1213,7 +1214,7 @@ class dashboardController extends Controller
 
             $visitorBlock = DB::table("visitor_master as v")
                 ->join("tbluser as u", function ($join) {
-                    $join->whereRaw("u.id = v.to_meet");
+                    $join->on("u.id", "=", "v.to_meet");
                 })
                 ->selectRaw("appointment_type, CONCAT(u.first_name,' ',u.middle_name,' ',u.last_name) as staff_name,name,contact")
                 ->where("v.sub_institute_id", "=", $sub_institute_id)
@@ -1272,13 +1273,13 @@ class dashboardController extends Controller
 
             $studentBirthdays = DB::table("tblstudent as s")
                 ->join("tblstudent_enrollment as ts", function ($join) use ($syear) {
-                    $join->whereRaw("s.id = ts.student_id and ts.syear = '" . $syear . "'");
+                    $join->on("s.id", "=", "ts.student_id")->whereRaw("ts.syear = '" . $syear . "'");
                 })
                 ->join("standard as st", function ($join) {
-                    $join->whereRaw("ts.standard_id = st.id");
+                    $join->on("ts.standard_id", "=", "st.id");
                 })
                 ->join("division as d", function ($join) {
-                    $join->whereRaw("ts.section_id = d.id");
+                    $join->on("ts.section_id", "=", "d.id");
                 })
                 ->selectRaw("CONCAT_WS(' ',s.first_name,s.middle_name,s.last_name) as student_name,st.name as standard_name,d.name as division_name, DATE_FORMAT(s.dob, '%d-%m-%Y') AS dob")
                 ->where("s.sub_institute_id", "=", $sub_institute_id)
@@ -1289,7 +1290,7 @@ class dashboardController extends Controller
 
             $teacherBirthdays = DB::table("tbluser as s")
                 ->join("tbluserprofilemaster as tu", function ($join) {
-                    $join->whereRaw("s.user_profile_id = tu.id");
+                    $join->on("s.user_profile_id", "=", "tu.id");
                 })
                 ->selectRaw("CONCAT_WS(' ',s.first_name,s.middle_name,s.last_name) as teacher_name,tu.name as designation,s.mobile as contact_number, DATE_FORMAT(s.birthdate, '%d-%m-%Y') AS birthdate")
                 ->where("s.sub_institute_id", "=", $sub_institute_id)
@@ -1300,16 +1301,16 @@ class dashboardController extends Controller
 
   $studentLeaves = DB::table("leave_applications as l")
                     ->join("tblstudent as s", function ($join) {
-                        $join->whereRaw("l.student_id = s.id");
+                        $join->on("l.student_id", "=", "s.id");
                     })
                     ->join("tblstudent_enrollment as se", function ($join) use ($syear) {
-                        $join->whereRaw("s.id = se.student_id AND se.syear = " . $syear);
+                        $join->on("s.id", "=", "se.student_id")->whereRaw("se.syear = " . $syear);
                     })
                     ->join("standard as st", function ($join) {
-                        $join->whereRaw("st.id = se.standard_id");
+                        $join->on("st.id", "=", "se.standard_id");
                     })
                     ->join("division as dt", function ($join) {
-                        $join->whereRaw("dt.id = se.section_id");
+                        $join->on("dt.id", "=", "se.section_id");
                     })
                     ->selectRaw("l.*, CONCAT_WS(' ',s.first_name,s.middle_name,s.last_name) AS student_name,st.name AS standard_name,
             dt.name AS division_name")
@@ -1331,7 +1332,7 @@ class dashboardController extends Controller
             if ($user_profile_name == 'Student') {
                 $stu_homework = DB::table('homework as h')
                     ->join('tblstudent as s', function ($join) {
-                        $join->whereRaw("s.id = h.student_id AND s.sub_institute_id = h.sub_institute_id");
+                        $join->on("s.id", "=", "h.student_id");
                     })
                     ->selectRaw("h.*,CONCAT_WS(' ',s.first_name,s.last_name) as student_name, s.image as student_image")
                     ->where('h.sub_institute_id', $sub_institute_id)
@@ -1394,10 +1395,10 @@ class dashboardController extends Controller
 
             $get_photo_data = DB::table("photo_video_gallary as p")
                 ->join('tblstudent_enrollment as se', function ($join) {
-                    $join->whereRaw("se.standard_id = p.standard_id AND se.section_id = p.division_id AND se.sub_institute_id = p.sub_institute_id");
+                    $join->on("se.standard_id", "=", "p.standard_id")->on("se.section_id", "=", "p.division_id")->on("se.sub_institute_id", "=", "p.sub_institute_id");
                 })
                 ->join('tblstudent as s', function ($join) {
-                    $join->whereRaw("s.id = se.student_id AND s.sub_institute_id = se.sub_institute_id");
+                    $join->on("s.id", "=", "se.student_id");
                 })
                 ->selectRaw("SUM(IFNULL(p.file_size,0)) AS file_size")
                 ->where("p.sub_institute_id", $sub_institute_id)->where('s.id', $user_id)->get()->toArray();
@@ -1408,7 +1409,7 @@ class dashboardController extends Controller
 
             $get_leave_app_data = DB::table("leave_applications as l")
                 ->join('tblstudent as s', function ($join) {
-                    $join->whereRaw("s.id = l.student_id AND s.sub_institute_id = l.sub_institute_id");
+                    $join->on("s.id", "=", "l.student_id")->on("s.sub_institute_id", "=", "l.sub_institute_id");
                 })
                 ->selectRaw("SUM(IFNULL(l.file_size,0)) AS file_size")
                 ->where("l.sub_institute_id", $sub_institute_id)->where('s.id', $user_id)->get()->toArray();
@@ -1419,10 +1420,10 @@ class dashboardController extends Controller
 
             $get_exam_schedule_data = DB::table("exam_schedule as e")
                 ->join('tblstudent_enrollment as se', function ($join) {
-                    $join->whereRaw("se.standard_id = e.standard_id AND se.section_id = e.division_id AND se.sub_institute_id = e.sub_institute_id");
+                    $join->on("se.standard_id", "=", "e.standard_id")->on("se.section_id", "=", "e.division_id")->on("se.sub_institute_id", "=", "e.sub_institute_id");
                 })
                 ->join('tblstudent as s', function ($join) {
-                    $join->whereRaw("s.id = se.student_id AND s.sub_institute_id = se.sub_institute_id");
+                    $join->on("s.id", "=", "se.student_id");
                 })
                 ->selectRaw("SUM(IFNULL(e.file_size,0)) AS file_size")
                 ->where("e.sub_institute_id", $sub_institute_id)->where('s.id', $user_id)->get()->toArray();
@@ -1435,7 +1436,7 @@ class dashboardController extends Controller
 
                 $homework_data = DB::table("homework as p")
                     ->join('tblstudent as s', function ($join) {
-                        $join->whereRaw("s.id = p.student_id AND s.sub_institute_id = p.sub_institute_id");
+                        $join->on("s.id", "=", "p.student_id");
                     })
                     ->selectRaw("IFNULL(SUM(DISTINCT p.image_size),0) AS file_size, CONCAT_WS(' ',s.first_name,s.last_name) AS user_name,
                         p.image_size")
@@ -1454,7 +1455,7 @@ class dashboardController extends Controller
             if ($user_profile_name == 'Student') {
                 $homework_submission_data = DB::table("homework as p")
                     ->join('tblstudent as s', function ($join) {
-                        $join->whereRaw("s.id = p.student_id AND s.sub_institute_id = p.sub_institute_id");
+                        $join->on("s.id", "=", "p.student_id");
                     })
                     ->selectRaw("IFNULL(SUM(DISTINCT p.submission_image_size),0) AS file_size, CONCAT_WS(' ',s.first_name,s.last_name) AS user_name, p.submission_image_size")
                     ->where("p.sub_institute_id", $sub_institute_id)->where('s.id', $user_id)->get()->toArray();
@@ -1551,10 +1552,10 @@ class dashboardController extends Controller
 
             $students = DB::table('tblstudent as ts')
                 ->join('tblstudent_enrollment as se', function ($join) {
-                    $join->whereRaw("se.student_id = ts.id AND se.sub_institute_id = se.sub_institute_id");
+                    $join->on("se.student_id", "=", "ts.id");
                 })
                 ->join('standard as s', function ($join) {
-                    $join->whereRaw("s.id = se.standard_id AND se.sub_institute_id = s.sub_institute_id");
+                    $join->on("s.id", "=", "se.standard_id");
                 })
                 ->selectRaw("COUNT(ts.id) students")
                 ->where("ts.sub_institute_id", "=", $sub_institute_id)
@@ -1582,7 +1583,7 @@ class dashboardController extends Controller
 
             $parentCommunication = DB::table('parent_communication as p')
                 ->join('tblstudent as s', function ($join) {
-                    $join->whereRaw("p.student_id = s.id");
+                    $join->on("p.student_id", "=", "s.id");
                 })
                 ->selectRaw("p.*,CONCAT_WS(' ',s.first_name,s.last_name) as student_name,s.image as student_image")
                 ->where('p.sub_institute_id', '=', $sub_institute_id)
@@ -1599,13 +1600,13 @@ class dashboardController extends Controller
             
             $studentBirthdays = DB::table('tblstudent as s')
                 ->join('tblstudent_enrollment as ts', function ($join) use ($syear) {
-                    $join->whereRaw("s.id = ts.student_id and ts.syear = '" . $syear . "'");
+                    $join->on("s.id", "=", "ts.student_id")->whereRaw("ts.syear = '" . $syear . "'");
                 })
                 ->join('standard as st', function ($join) {
-                    $join->whereRaw("ts.standard_id = st.id");
+                    $join->on("ts.standard_id", "=", "st.id");
                 })
                 ->join('division as d', function ($join) {
-                    $join->whereRaw("ts.section_id = d.id");
+                    $join->on("ts.section_id", "=", "d.id");
                 })
                 ->selectRaw("CONCAT_WS(' ',s.first_name,s.middle_name,s.last_name) as student_name,st.name as standard_name,d.name as division_name, DATE_FORMAT(s.dob, '%d-%m-%Y') AS dob")
                 ->where("s.sub_institute_id", $sub_institute_id)
@@ -1616,7 +1617,7 @@ class dashboardController extends Controller
 
             $teacherBirthdays = DB::table('tbluser as s')
                 ->join('tbluserprofilemaster as tu', function ($join) {
-                    $join->whereRaw("s.user_profile_id = tu.id");
+                    $join->on("s.user_profile_id", "=", "tu.id");
                 })
                 ->selectRaw("CONCAT_WS(' ',s.first_name,s.middle_name,s.last_name) as teacher_name,tu.name as designation,s.mobile as contact_number, DATE_FORMAT(s.birthdate, '%d-%m-%Y') AS birthdate")
                 ->where("s.sub_institute_id", $sub_institute_id)
@@ -1630,16 +1631,16 @@ class dashboardController extends Controller
 
             $studentLeaves = DB::table('leave_applications as l')
                 ->join('tblstudent as s', function ($join) {
-                    $join->whereRaw("l.student_id = s.id");
+                    $join->on("l.student_id", "=", "s.id");
                 })
                 ->join('tblstudent_enrollment as se', function ($join) use ($syear) {
-                    $join->whereRaw("s.id = se.id AND se.syear = '" . $syear . "'");
+                    $join->on("s.id", "=", "se.id")->whereRaw("se.syear = '" . $syear . "'");
                 })
                 ->join('standard as st', function ($join) {
-                    $join->whereRaw("st.id = se.standard_id");
+                    $join->on("st.id", "=", "se.standard_id");
                 })
                 ->join('division as dt', function ($join) {
-                    $join->whereRaw("dt.id = se.section_id");
+                    $join->on("dt.id", "=", "se.section_id");
                 })
                 ->selectRaw("l.*, CONCAT_WS(' ',s.first_name,s.middle_name,s.last_name) AS student_name,st.name AS standard_name,dt.name AS division_name")
                 ->whereRaw("l.sub_institute_id = '" . $sub_institute_id . "' AND '" . $date . "' BETWEEN from_date AND to_date")
@@ -1651,10 +1652,10 @@ class dashboardController extends Controller
 
             $attendanceCharts = DB::table('attendance_student as s')
                 ->join('standard as st', function ($join) {
-                    $join->whereRaw("s.standard_id = st.id");
+                    $join->on("s.standard_id", "=", "st.id");
                 })
                 ->join('division as dt', function ($join) {
-                    $join->whereRaw("s.section_id = dt.id");
+                    $join->on("s.section_id", "=", "dt.id");
                 })
                 ->selectRaw("st.name as standard,dt.name,s.attendance_code, SUM(CASE WHEN s.attendance_code = 'A' THEN 1 ELSE 0 END) AS absent, SUM(CASE WHEN s.attendance_code = 'P' THEN 1 ELSE 0 END) AS present")
                 ->where("s.sub_institute_id", '=', $sub_institute_id)
@@ -1677,10 +1678,10 @@ class dashboardController extends Controller
 
             $fees_chart_data = DB::table('fees_collect as fc')
                 ->join('tblstudent_enrollment as se', function ($join) use ($syear) {
-                    $join->whereRaw("se.student_id = fc.student_id and se.syear = " . $syear);
+                    $join->on("se.student_id", "=", "fc.student_id")->whereRaw("se.syear = " . $syear);
                 })
                 ->join('standard as s', function ($join) {
-                    $join->whereRaw("s.id = se.standard_id");
+                    $join->on("s.id", "=", "se.standard_id");
                 })
                 ->selectRaw("sum(fc.amount) amount,s.name")
                 ->whereRaw('DATE_FORMAT(fc.receiptdate, "%Y-%m-%d") = ' . $today . ' and fc.sub_institute_id = ' . $sub_institute_id)
@@ -1693,7 +1694,7 @@ class dashboardController extends Controller
 
             $student_chart_data = DB::table('tblstudent_enrollment as se')
                 ->join('standard as s', function ($join) {
-                    $join->whereRaw("s.id = se.standard_id");
+                    $join->on("s.id", "=", "se.standard_id");
                 })
                 ->selectRaw("count(se.student_id) total_student,s.name")
                 ->where('se.sub_institute_id', $sub_institute_id)
@@ -1755,10 +1756,10 @@ class dashboardController extends Controller
 
             $fees_chart1_cash_data = DB::table('fees_collect as fc')
                 ->join('tblstudent_enrollment as se', function ($join) use ($syear) {
-                    $join->whereRaw("se.student_id = fc.student_id and se.syear = " . $syear);
+                    $join->on("se.student_id", "=", "fc.student_id")->whereRaw("se.syear = " . $syear);
                 })
                 ->join('standard as s', function ($join) {
-                    $join->whereRaw("s.id = se.standard_id");
+                    $join->on("s.id", "=", "se.standard_id");
                 })
                 ->selectRaw("fc.amount,s.name")
                 ->whereRaw('DATE_FORMAT(fc.receiptdate, "%Y-%m-%d") = ' . $today . ' and fc.sub_institute_id = ' . $sub_institute_id)
@@ -1775,10 +1776,10 @@ class dashboardController extends Controller
 
             $fees_chart1_cheque_data = DB::table('fees_collect as fc')
                 ->join('tblstudent_enrollment as se', function ($join) use ($syear) {
-                    $join->whereRaw("se.student_id = fc.student_id and se.syear = " . $syear);
+                    $join->on("se.student_id", "=", "fc.student_id")->whereRaw("se.syear = " . $syear);
                 })
                 ->join('standard as s', function ($join) {
-                    $join->whereRaw("s.id = se.standard_id");
+                    $join->on("s.id", "=", "se.standard_id");
                 })
                 ->selectRaw("fc.amount,s.name")
                 ->whereRaw('DATE_FORMAT(fc.receiptdate, "%Y-%m-%d") = ' . $today . ' and fc.sub_institute_id = ' . $sub_institute_id)
@@ -1831,16 +1832,19 @@ class dashboardController extends Controller
 
             $fees_chart2_bkoff_data = DB::table('tblstudent as s')
                 ->join('tblstudent_enrollment as se', function ($join) use ($syear) {
-                    $join->whereRaw("se.student_id = s.id");
+                    $join->on("se.student_id", "=", "s.id");
                 })->join('academic_section as g', function ($join) {
-                    $join->whereRaw("g.id = se.grade_id");
+                    $join->on("g.id", "=", "se.grade_id");
                 })->join('standard as st', function ($join) {
-                    $join->whereRaw("st.id = se.standard_id");
+                    $join->on("st.id", "=", "se.standard_id");
                 })->leftJoin('division as d', function ($join) {
-                    $join->whereRaw("d.id = se.section_id");
+                    $join->on("d.id", "=", "se.section_id");
                 })->join('fees_breackoff as fb', function ($join) use ($syear, $sub_institute_id) {
-                    $join->whereRaw("fb.syear = " . $syear . " AND fb.admission_year = s.admission_year AND fb.quota = se.student_quota AND
-                        fb.grade_id = se.grade_id AND fb.standard_id = se.standard_id AND fb.sub_institute_id = " . $sub_institute_id);
+                    $join->on("fb.admission_year", "=", "s.admission_year")
+                    ->on("fb.quota", "=", "se.student_quota")
+                    ->on("fb.grade_id", "=", "se.grade_id")
+                    ->on("fb.standard_id", "=", "se.standard_id")
+                    ->whereRaw("fb.syear = " . $syear . " AND fb.sub_institute_id = " . $sub_institute_id);
                 })
                 ->selectRaw("SUM(fb.amount) amt,st.name")
                 ->where('s.sub_institute_id', $sub_institute_id)
@@ -1861,15 +1865,16 @@ class dashboardController extends Controller
             $fees_chart2_fees_data =
                 DB::table('tblstudent as s')
                 ->join('tblstudent_enrollment as se', function ($join) use ($syear) {
-                    $join->whereRaw("se.student_id = s.id");
+                    $join->on("se.student_id", "=", "s.id");
                 })->join('academic_section as g', function ($join) {
-                    $join->whereRaw("g.id = se.grade_id");
+                    $join->on("g.id", "=", "se.grade_id");
                 })->join('standard as st', function ($join) {
-                    $join->whereRaw("st.id = se.standard_id");
+                    $join->on("st.id", "=", "se.standard_id");
                 })->leftJoin('division as d', function ($join) {
-                    $join->whereRaw("d.id = se.section_id");
+                    $join->on("d.id", "=", "se.section_id");
                 })->join('fees_collect as fc', function ($join) use ($syear, $sub_institute_id) {
-                    $join->whereRaw("fc.student_id = s.id AND fc.sub_institute_id = " . $sub_institute_id . " AND fc.syear = " . $syear);
+                    $join->on("fc.student_id", "=", "s.id")
+                    ->whereRaw("fc.sub_institute_id = " . $sub_institute_id . " AND fc.syear = " . $syear);
                 })
                 ->selectRaw("SUM(fc.amount)+ SUM(fc.fees_discount) amount,st.name")
                 ->where('s.sub_institute_id', $sub_institute_id)
@@ -1909,7 +1914,7 @@ class dashboardController extends Controller
 
             $chartStudents = DB::table('tblstudent as s')
                 ->join('tblstudent_enrollment as se', function ($join) {
-                    $join->whereRaw("s.id = se.student_id");
+                    $join->on("s.id", "=", "se.student_id");
                 })
                 ->selectRaw('s.id,se.grade_id,se.standard_id')
                 ->where('s.sub_institute_id', $sub_institute_id)
@@ -1928,9 +1933,10 @@ class dashboardController extends Controller
 
             $chartFees = DB::table('fees_collect as fc')
                 ->join('tblstudent_enrollment as se', function ($join) use ($syear) {
-                    $join->whereRaw("se.student_id = fc.student_id AND se.syear = " . $syear);
+                    $join->on("se.student_id", "=", "fc.student_id")
+                    ->whereRaw("se.syear = " . $syear);
                 })->join('standard as s', function ($join) {
-                    $join->whereRaw("s.id = se.standard_id");
+                    $join->on("s.id", "=", "se.standard_id");
                 })
                 ->selectRaw("fc.amount,s.name,se.grade_id,se.standard_id")
                 ->where('s.sub_institute_id', $sub_institute_id)->get()->toArray();
@@ -2246,9 +2252,9 @@ class dashboardController extends Controller
 
             $students = DB::table('tblstudent as ts')
                 ->join('tblstudent_enrollment as se', function ($join) {
-                    $join->whereRaw("se.student_id = ts.id AND se.sub_institute_id = se.sub_institute_id");
+                    $join->on("se.student_id", "=", "ts.id");
                 })->join('standard as s', function ($join) {
-                    $join->whereRaw("s.id = se.standard_id AND se.sub_institute_id = s.sub_institute_id");
+                    $join->on("s.id", "=", "se.standard_id");
                 })
                 ->selectRaw("COUNT(ts.id) students")
                 ->where('ts.sub_institute_id', $sub_institute_id)
