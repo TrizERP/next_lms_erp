@@ -436,9 +436,7 @@ class dashboardController extends Controller
                 // db::enableQueryLog();
                 $fees_chart2_bkoff_data = DB::table('tblstudent as s')
                 ->join('tblstudent_enrollment as se', 'se.student_id', '=', 's.id')
-                ->join('academic_section as g', 'g.id', '=', 'se.grade_id')
                 ->join('standard as st', 'st.id', '=', 'se.standard_id')
-                ->Join('division as d', 'd.id', '=', 'se.section_id')
                 ->join('fees_breackoff as fb', function ($join) use ($syear, $sub_institute_id) {
                     $join->on('fb.admission_year', '=', 's.admission_year')
                          ->on('fb.quota', '=', 'se.student_quota')
