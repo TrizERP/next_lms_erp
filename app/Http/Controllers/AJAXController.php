@@ -30,8 +30,10 @@ use GuzzleHttp\Client;
 use Illuminate\Support\Facades\Http;
 use function App\Helpers\is_mobile;
 use Symfony\Component\Process\Process;
+use Symfony\Component\Process\Exception\ProcessFailedException;
 use Spatie\Async\Pool;
 use Gemini\Laravel\Facades\Gemini;
+use Log;
 
 class AJAXController extends Controller
 {
@@ -2199,5 +2201,36 @@ class AJAXController extends Controller
             // $data = DB::select("SELECT * FROM lms_data");
         }
         return response()->json($data);
+    }
+
+    public function pythonTimetable(){
+        // $file_response = shell_exec('python3 /home/fees_analysis_1.py');
+        $file_response = shell_exec('python3 /home/fees_analysis_1.py');
+
+        // Decode the JSON string
+        $json_data = json_decode($file_response, true);
+
+        // Check if decoding was successful
+        if ($json_data === null) {
+            // Handle error if JSON decoding failed
+            $errorMessage = "Error: Unable to decode JSON data. Error: " . json_last_error_msg();
+            Log::error($errorMessage);
+            return $errorMessage;
+        }
+        
+        // Check if 'analysis' key exists in the decoded data
+        if (!isset($json_data['analysis'])) {
+            // Handle error if 'analysis' key is not found
+            $errorMessage = "Error: 'analysis' key not found in JSON data.";
+            Log::error($errorMessage);
+            return $errorMessage;
+        }
+
+        // Extract the 'analysis' data
+        $analysis_data = $json_data['analysis'];
+
+        // Return the analysis data
+        return $analysis_data;
+
     }
 }

@@ -54,7 +54,7 @@ use App\Http\Controllers\fees\fees_breackoff\monthlyBreakoffController;
 use App\Http\Controllers\fees\fees_month_header\feesMonthHeadercontroller;
 use App\Http\Controllers\fees\fees_report\studentBreakoffReportController;
 use App\Http\Controllers\fees\fees_reconciliation\fees_reconciliation_upload_sheet_controller;
-
+use App\Http\Controllers\fees\feesAIController;
 use Illuminate\Support\Facades\Route;
 
 Route::group(['prefix' => 'fees', 'middleware' => ['session', 'menu', 'logRoute']], function () {
@@ -107,6 +107,7 @@ Route::group(['prefix' => 'fees', 'middleware' => ['session', 'menu', 'logRoute'
     Route::resource('online_fees', online_fees_settigs_controller::class);
     Route::resource('online_fees_split', online_fees_split_controller::class);
     Route::resource('cheque_reconciliation', ChequeReconciliationController::class);
+    Route::resource('feesAI', feesAIController::class);    
 
     // Route::get('online_fees\show_online_type', 'fees\online_fees\online_fees_collect_controller@showTypes')->name('online_show_type');
     Route::get('show_details', [ChequeReconciliationController::class, 'show_details'])->name('show_details');

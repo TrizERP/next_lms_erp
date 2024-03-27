@@ -16,7 +16,10 @@ use App\Models\school_setup\sub_std_mapModel;
 use App\Models\school_setup\std_div_mappingModel;
 use App\Models\school_setup\timetableModel;
 use App\Models\front_desk\create_timetable;
+use Symfony\Component\Process\Process;
+use Symfony\Component\Process\Exception\ProcessFailedException;
 use DB;
+use File;
 
 class timetableController extends Controller
 {
@@ -69,26 +72,26 @@ class timetableController extends Controller
         $data[] = array(
                     "teacher_id" => $teacher_details->teacher_id,
                     "teacher_name" => $teacher_details->teacher_name,
-                    "days" => $days,
-                    "work_load" => $week_load,
+                    "days" => $days[$key],
+                    "week_load" => $week_load[$key],
                     "periods" => $period_details,
                     "subjects" => $subject_details,
                 );
         $main_data=array(
-            "minimum_periods_per_day" => $number_period,
+            "num_periods_per_day" => $number_period,
             "subjects_per_period" => $subject_per_period,
-            "teacher_availability" => array($data)
+            "teacher_availability" => $data
         );
     }
 
         $request_to_sent = json_encode($main_data,JSON_PRETTY_PRINT);
 // echo "<pre>";print_r($request_to_sent);exit;
         $file_path = public_path('lms/ai/timetable/post.php');
-        // $file_path= 'http://dev.triz.co.in/lms/ai/timetable/post_old.php';
-        if (file_exists($file_path)) {
-            unlink($file_path);
-        } 
-
+        // $content =  file_get_contents($file_path);
+       
+        if (File::exists($file_path)) {
+            File::delete($file_path);
+        }
         $file_data = "<?php 
         echo '".$request_to_sent."'; 
         ?>";
@@ -96,9 +99,29 @@ class timetableController extends Controller
         file_put_contents($file_path, $file_data);
         $content =  file_get_contents($file_path);
         // dd($content);exit;
+    // $process = new Process(['python3', '/home/timetable.py']);
+    
+    // try {
+    //     // Run the command
+    //     $process->mustRun();
         
+    //     // Get the output of the command
+    //     $output = $process->getOutput();
+        
+    //     // Do something with the output if needed
+    //     return $output;
+    // } catch (ProcessFailedException $exception) {
+    //     // Handle if the process failed
+    //     return $exception->getMessage();
+    // }
+    // exit;
+
         $generated_timetable = shell_exec('python3 /home/timetable.py');
+        echo "<pre>";print_r($generated_timetable);exit;
         $res['response'] = json_decode($generated_timetable, true); 
+// echo "<pre>";print_r($res['response']);exit;        
+        
+        // echo "<pre>";print_r($generated_timetable);exit;
         // python code not working in local sso to test use dummy data and comment $generated_timetable and $res['response']
         // $dummy_data = '{
         //     "timetable": [
