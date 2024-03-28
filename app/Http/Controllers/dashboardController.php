@@ -291,7 +291,7 @@ class dashboardController extends Controller
                     ->join('standard as s', function ($join) {
                         $join->on("s.id", "=", "se.standard_id");
                     })
-                    ->whereRaw('DATE_FORMAT(fc.receiptdate, "%Y-%m-%d") = ' . $today . ' and fc.sub_institute_id = ' . $sub_institute_id . ' group by se.standard_id')
+                    ->whereRaw('fc.is_deleted = "N" AND fc.receiptdate = ' . $today . ' and fc.sub_institute_id = ' . $sub_institute_id . ' group by se.standard_id')
                     ->get()->toArray();
 
                 $parameters = array(
@@ -1682,7 +1682,7 @@ class dashboardController extends Controller
                     $join->on("s.id", "=", "se.standard_id");
                 })
                 ->selectRaw("sum(fc.amount) amount,s.name")
-                ->whereRaw('DATE_FORMAT(fc.receiptdate, "%Y-%m-%d") = ' . $today . ' and fc.sub_institute_id = ' . $sub_institute_id)
+                ->whereRaw('fc.is_deleted = "N" AND fc.receiptdate = ' . $today . ' and fc.sub_institute_id = ' . $sub_institute_id)
                 ->groupBy('se.standard_id')->get()->toArray();
 
             $parameters = array(
@@ -1760,7 +1760,7 @@ class dashboardController extends Controller
                     $join->on("s.id", "=", "se.standard_id");
                 })
                 ->selectRaw("fc.amount,s.name")
-                ->whereRaw('DATE_FORMAT(fc.receiptdate, "%Y-%m-%d") = ' . $today . ' and fc.sub_institute_id = ' . $sub_institute_id)
+                ->whereRaw('fc.is_deleted = "N" AND fc.receiptdate = ' . $today . ' and fc.sub_institute_id = ' . $sub_institute_id)
                 ->where('payment_mode', 'cash')
                 ->groupBy('se.standard_id')->get()->toArray();
 
@@ -1780,7 +1780,7 @@ class dashboardController extends Controller
                     $join->on("s.id", "=", "se.standard_id");
                 })
                 ->selectRaw("fc.amount,s.name")
-                ->whereRaw('DATE_FORMAT(fc.receiptdate, "%Y-%m-%d") = ' . $today . ' and fc.sub_institute_id = ' . $sub_institute_id)
+                ->whereRaw('fc.is_deleted = "N" AND fc.receiptdate = ' . $today . ' and fc.sub_institute_id = ' . $sub_institute_id)
                 ->where('payment_mode', 'cheque')
                 ->get()->toArray();
 
