@@ -171,14 +171,27 @@ class ImportController extends Controller
             array_pop($fileDetails);
         }
 
-        // array_pop($fileDetails);
+        // Clean the data to remove any non-UTF-8 characters
+        $fileDetailsCleaned = array_map(function($row) {
+            return array_map('utf8_encode', $row);
+        }, $fileDetails);
+
+        // Encode the cleaned data as JSON
+        $fileDetailsjson = json_encode($fileDetailsCleaned);
+
+        // Check for JSON encoding errors
+        $error_code = json_last_error();
+        if ($error_code !== JSON_ERROR_NONE) {
+            $error_message = json_last_error_msg();
+        } 
 
         if (count($fileDetails) > 0) {
             $csv_data = $fileDetails[0];
             $csv_data_id = DB::table('csv_data')->insertGetId([
                 'csv_filename' => $request->file('csv_file')->getClientOriginalName(),
                 'csv_header' => $request->has('header'),
-                'csv_data' => json_encode($fileDetails),
+                'csv_data' => $fileDetailsjson ?? $csv_data,
+                'created_at' => now(),
             ]);
 
             if ($request->tablename == 'tblstudent') {
@@ -352,8 +365,9 @@ class ImportController extends Controller
                             }
                         }
                         if (!$found) {
+                            $prepareData['created_date'] = now();
                             $fees_id = DB::table($request->table_name)->insertGetId($prepareData);
-                            $fees_receipt_data['FEES_ID'] = $fees_id;
+                            $fees_receipt_data['FEES_ID'] = $fees_id;                 
                             DB::table('fees_receipt')->insert($fees_receipt_data);
                             $totalInsertRecordCount = $totalInsertRecordCount + 1;
                         }
