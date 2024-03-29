@@ -470,12 +470,16 @@ class HrmsController extends Controller
         $get_parent_communication = DB::table('general_data')->where(['fieldname' => 'parent_communication', 'sub_institute_id' => $sub_institute_id])->first();
 
         $get_multi_login = DB::table('general_data')->where(['fieldname' => 'multi_login', 'sub_institute_id' => $sub_institute_id])->first();
+
+        $get_timetable_teacher = DB::table('general_data')->where(['fieldname' => 'timetable_teacher', 'sub_institute_id' => $sub_institute_id])->first();
         
         $res['get_sandwich_leave_data'] = $get_sandwich_leave_data;
         $res['get_casual_leave_data'] = $get_casual_leave_data;
         $res['get_parent_communication']=$get_parent_communication;
         $res['get_multi_login']=$get_multi_login;
-        // echo "<pre>";print_r($res);exit;
+        $res['get_timetable_teacher']=$get_timetable_teacher;
+        
+        // echo "<pre>";print_r($res);exit; 
 
         return is_mobile($type, "HRMS/general_setting/general_setting", $res, "view");
     }
@@ -497,7 +501,8 @@ class HrmsController extends Controller
         $sandwich_leave = $request->input('sandwich_leave');
         $casual_leave_at_one_time = $request->input('casual_leave_at_one_time');
         $parent_communication = $request->input('parent_communication');
-        $multi_login = $request->input('multi_login');        
+        $multi_login = $request->input('multi_login');   
+        $timetable_teacher = $request->input('timetable_teacher');                     
         
         if ($sandwich_leave !== null) {
             // Check if a record with fieldname 'sandwich_leave' and sub_institute_id exists
@@ -582,7 +587,23 @@ class HrmsController extends Controller
             $general_data->type = 'hrms';
             $general_data->save();        
         }
+        // get_timetable_teacher
+        $existingTimetableTeacher = general_dataModel::where('fieldname', 'timetable_teacher')
+        ->where('sub_institute_id', $subInstituteId)
+        ->first();
+        $general_data = new general_dataModel();
         
+        if($existingTimetableTeacher){
+            $existingTimetableTeacher->fieldvalue = $timetable_teacher;
+            $existingTimetableTeacher->save();
+        }else{
+            $general_data->fieldname = 'timetable_teacher';
+            $general_data->fieldvalue = ($timetable_teacher=='Yes') ? $timetable_teacher : 'No';
+            $general_data->sub_institute_id = $subInstituteId;
+            $general_data->client_id = $clientId;
+            $general_data->type = 'hrms';
+            $general_data->save();        
+        }
         $res['status_code']=1;
         $res['message']="General setting information add/updated successfully";
         
