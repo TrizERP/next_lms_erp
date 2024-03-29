@@ -15,7 +15,7 @@
                 @php 
                     $field = Session::get('data');
                     $parent_communication = ['N'=>"Subject Wise","Y"=>"Class Teacher wise"];
-                    $sandwich_leave = $multi_login = ["Yes","No"];
+                    $sandwich_leave = $multi_login =$timeTableTeacher = ["Yes","No"];
                     $casual_leave = [0,1,2,3,4,5];                    
                 @endphp 
                 @if ($sessionData = Session::get('data'))
@@ -92,6 +92,25 @@
                                     </div>
                                 </td>
                             </tr>
+                            <tr>
+                                <th>Display all teachers in creating timetable? </th>
+                                <td>
+                                    <div class="row">
+                                        <div class="col-md-4 form-group" style="margin-left: 0px !important">
+                                            <select id='timetable_teacher' name="timetable_teacher" class="form-control" style="margin-left: 50px;">
+                                            <option>--Select--</option>
+                                            @foreach($timeTableTeacher as $value)
+                                                <option value="{{ $value }}" {{ isset($data['get_timetable_teacher']->fieldvalue) && $data['get_timetable_teacher']->fieldvalue === $value ? 'selected' : '' }}>
+                                                    {{ $value }}
+                                                </option>
+                                            @endforeach
+
+                                            </select>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+
                         </tbody>
                     </table>
                 </div>
