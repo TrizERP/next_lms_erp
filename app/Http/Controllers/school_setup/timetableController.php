@@ -287,15 +287,8 @@ class timetableController extends Controller
         return is_mobile($type, "timetable.index", $res, "redirect");
     }
 
-    public function getTimetable_data(
-        Request $request,
-        $academic_section_id,
-        $standard_id,
-        $division_id,
-        $sub_institute_id,
-        $syear,
-        $marking_period_id=''
-    ) {
+    public function getTimetable_data(Request $request,$academic_section_id,$standard_id,$division_id,$sub_institute_id,$syear,$marking_period_id='') 
+    {
         $html = "";
         $timetable_data = timetableModel::
         where([
@@ -307,6 +300,10 @@ class timetableController extends Controller
             //'marking_period_id'   => $marking_period_id,            
         ])->get()->toArray();
 
+        // check_permission in general data 
+        $check_general_data = DB::table('general_data')->where(['sub_institute_id'=>$sub_institute_id,'fieldname'=>'timetable_teacher'])->first();
+        
+        // echo "<pre>";print_r($check_general_data);exit;
         foreach ($timetable_data as $k => $p) {
             $old_timetable_data[$p['week_day']][$p['period_id']]['SUBJECT_ID'][] = $p['subject_id'];
             $old_timetable_data[$p['week_day']][$p['period_id']]['TEACHER_ID'][] = $p['teacher_id'];
@@ -448,7 +445,7 @@ class timetableController extends Controller
                         }
                         $old_assigned_teacher_ids = implode(",", $old_assigned_teacher_id_array);
                         $extra_where = '';
-                        if ($old_assigned_teacher_ids != '') {
+                        if ($old_assigned_teacher_ids != '' && (empty($check_general_data) || $check_general_data->fieldvalue!='Yes')) {
                             $extra_where = 'AND tbluser.id NOT IN (' . $old_assigned_teacher_ids . ') ';
                         }
 
