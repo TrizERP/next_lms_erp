@@ -2205,13 +2205,15 @@ class AJAXController extends Controller
 
     public function pythonTimetable(Request $request){
         $sub_institute_id = session()->get('sub_institute_id');
-        $file_response = shell_exec('python3 /home/Timetable AI latest (3).py');
-        if($file_response==null){
-            echo "file has no response";
-        }else{
-            echo "<pre>";print_r($file_response);
-        }
-        exit; 
+        if($request->file=='feesAI'){
+            $file_response = shell_exec('python3 /home/fees_analysis_1.py');
+            if($file_response==null){
+                echo "file has no response";
+            }else{
+                echo "<pre>";print_r($file_response);
+            }
+            exit; 
+        }        
         $file_response = shell_exec('python3 /home/fees_analysis_1.py ' . escapeshellarg($sub_institute_id));
 
         // Decode the JSON string

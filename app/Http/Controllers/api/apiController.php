@@ -321,10 +321,11 @@ class apiController extends Controller
                         'student_id'        => strtoupper($arr->id),
                         'sub_institute_id'  => strtoupper($arr->sub_institute_id),
                         'mobile'            => $arr->mobile,
+                        'otp'               => $arr->otp,
                         'first_name'        => $arr->first_name,
                         'middle_name'       => $arr->middle_name,
-                        'father_name'       => isset($arr->father_name) ? $arr->father_name : '-',
-                        'mother_name'       => isset($arr->mother_name) ? $arr->mother_name : '-',
+                        'father_name'       => isset($arr->father_name) ? 'Mr.' . $arr->father_name : '-',
+                        'mother_name'       => isset($arr->mother_name) ? 'Mrs.' . $arr->mother_name : '-',
                         'image_path'        => $image_path,
                         'image'             => $image,
                         'last_name'         => $arr->last_name,
@@ -374,6 +375,7 @@ public function studentData($is_exist,$request,$student_id){
         "tblstudent.last_name",
         "tblstudent.sub_institute_id",
         "tblstudent.mobile",
+        "tblstudent.otp",
         "tblstudent.roll_no",
         "standard.name as std_name",
         "division.name as division",
@@ -463,7 +465,7 @@ public function studentData($is_exist,$request,$student_id){
                     $join->whereRaw("d.id = c.division_id AND d.sub_institute_id = c.sub_institute_id");
                 })
                 ->selectRaw("u.id,u.user_name,u.first_name,u.middle_name,u.last_name,u.sub_institute_id,u.email,
-                    u.mobile,u.birthdate,u.address,u.gender,u.join_year,if(u.image = '','https://".$_SERVER['SERVER_NAME']."/storage/student/noimages.png',concat('https://".$_SERVER['SERVER_NAME']."/storage/user/',u.image)) as image,p.name as user_profile_name,
+                    u.mobile,u.otp,u.birthdate,u.address,u.gender,u.join_year,if(u.image = '','https://".$_SERVER['SERVER_NAME']."/storage/student/noimages.png',concat('https://".$_SERVER['SERVER_NAME']."/storage/user/',u.image)) as image,p.name as user_profile_name,
                     u.user_profile_id,group_concat(concat_ws('||',c.standard_id,c.division_id)) as standard_division,
                     group_concat(concat_ws('||',s.name,d.name)) as standard_division_title,ss.syear,ss.SchoolName,ss.Logo")
                 ->where('u.mobile', $_REQUEST['mobile'])
@@ -502,6 +504,7 @@ public function studentData($is_exist,$request,$student_id){
                     'standard_division_title' => $data['standard_division_title'],
                     'email'                   => $data['email'],
                     'mobile'                  => $data['mobile'],
+                    'otp'                  => $data['otp'],
                     'birthdate'               => $data['birthdate'],
                     'address'                 => $data['address'],
                     'gender'                  => $data['gender'],
