@@ -46,13 +46,7 @@ class PayrollController extends Controller
 
     public function payrollStore(Request $request)
     {
-        $request->validate([
-            'type' => 'required',
-            'payroll_name' => 'required|regex:/^[a-zA-Z]+$/u|unique:payroll_types,payroll_name,'.$request->id,
-            'amount_type' => 'required',
-            'status' => 'required',
-        ]);
-
+        // echo "<pre>";print_r($re);exit;
         if ($request->id > 0) {
             $payrollType = PayrollType::find($request->id);
         } else {
@@ -207,7 +201,7 @@ class PayrollController extends Controller
     {
         $sub_institute_id = session()->get('sub_institute_id');
 
-        $employeeDetails = EmployeeSalaryStructure::where('sub_institute_id', $sub_institute_id)->get();
+        $employeeDetails = EmployeeSalaryStructure::with('getUser')->where('sub_institute_id', $sub_institute_id)->groupBy('employee_id')->get();
         
         return view('payroll.salary_structure_report.index', ['employees' => $employeeDetails]);
     }
@@ -219,15 +213,15 @@ class PayrollController extends Controller
         foreach ($payrollTypes as $payrollType) {
             $header[$payrollType->id] = $payrollType->payroll_name;
         }
-        if ($request->employee_id > 0) {
-            $employeeDetails = EmployeeSalaryStructure::with('getUser')->where('employee_id', $request->employee_id)->get();
+        if (isset($request->employee_id) && $request->employee_id!='') {
+            $employeeDetails = EmployeeSalaryStructure::with('getUser')->where('employee_id', $request->employee_id)->groupBy('employee_id')->get();
         } else {
-            $employeeDetails = EmployeeSalaryStructure::with('getUser')->get();
+            $employeeDetails = EmployeeSalaryStructure::with('getUser')->where('sub_institute_id', $sub_institute_id)->groupBy('employee_id')->get();
         }
         $employeeDetails = $employeeDetails->map(function ($employee) {
             $data = [];
             $data['employee_id'] = $employee->employee_id;
-            $data['employee_name'] = $employee->getUser->first_name . ' ' . $employee->getUser->middle_name . ' ' . $employee->getUser->last_name;
+            $data['employee_name'] = ($employee->getUser->first_name ?? '-'). ' ' .($employee->getUser->middle_name ?? '-'). ' ' . ($employee->getUser->last_name ?? '-');
             $data['data'] = json_decode($employee->employee_salary_data, true);
             return $data;
         });

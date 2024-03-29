@@ -30,8 +30,8 @@
                                 <th>{{ App\Helpers\get_string('grno')}}</th>
                                 <th>Mobile</th>                                
                                 <th>{{ App\Helpers\get_string('std/div')}}</th>
-                                <th>Prediction</th>
-                                <th>True Label</th>
+                                <th>AI Pre-Process Amount</th>
+                                <th>AI Prediction Amount</th>
                             </tr>
                         </thead>
                         @foreach($data['student_details'] as $key => $student_val)
