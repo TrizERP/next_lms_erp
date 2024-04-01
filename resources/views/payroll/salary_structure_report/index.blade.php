@@ -29,8 +29,13 @@
                                         <select id='employee_id' name="employee_id" class="form-control">
                                             <option value="0">Select Employee</option>
                                             @foreach($employees as $employee)
-                                                <option
-                                                    value="{{$employee->employee_id}}">{{$employee->getUser->first_name .' '. $employee->getUser->last_name }}</option>
+                                            @if($employee->employee_id !=0 && $employee->employee_id!='')
+                                            @php
+                                                $first_name = $employee->getUser->first_name ?? '-';
+                                                $last_name = $employee->getUser->last_name ?? '-';
+                                            @endphp                                                
+                                                <option value="{{$employee->employee_id}}">{{$first_name .' '. $last_name }}</option>
+                                            @endif
                                             @endforeach
 
                                         </select>
@@ -87,7 +92,7 @@
                                 <tr>
                                     <td>{{$value['employee_name']}}</td>
                                     @foreach($data['headers'] as $hkey => $header)
-                                        @if($hkey)
+                                        @if(isset($value['data'][$hkey]))
                                             <td>{{$value['data'][$hkey]}}</td>
                                         @endif
                                     @endforeach

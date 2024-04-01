@@ -126,7 +126,7 @@ class adminapiController extends Controller
                     $join->whereRaw("ss.id = u.sub_institute_id");
                 })
                 ->selectRaw("u.id,u.user_name,u.first_name,u.middle_name,u.last_name,u.sub_institute_id,
-                    u.email,u.mobile,u.birthdate,u.address,u.gender,u.join_year,
+                    u.email,u.mobile,u.otp,u.birthdate,u.address,u.gender,u.join_year,
                     if(u.image = '','',concat('https://".$_SERVER['SERVER_NAME']."/storage/user/',u.image)) as image,
                     p.name as user_profile_name,u.user_profile_id,ss.syear,ss.SchoolName,ss.Logo")
                 ->where('u.status', '1')
@@ -163,6 +163,7 @@ class adminapiController extends Controller
                     'sub_institute_id'  => $data['sub_institute_id'],
                     'email'             => $data['email'],
                     'mobile'            => $data['mobile'],
+                    'otp'            => $data['otp'],
                     'birthdate'         => $data['birthdate'],
                     'address'           => $data['address'],
                     'gender'            => $data['gender'],

@@ -54,7 +54,7 @@
 
                     <div class="col-md-4 form-group">
                         <label>Payroll Type Name </label>
-                        <input type="text" id='payroll_name' required name="payroll_name" class="form-control" value="{{$payrollType['payroll_name']}}">
+                        <input type="text" id='payroll_name' required name="payroll_name" class="form-control" value="{{$payrollType['payroll_name']}}" required>
                         @error('payroll_name')
                         <span style="color: red">{{$message}}</span>
                         @enderror
@@ -74,7 +74,7 @@
                     </div>
                     <div class="col-md-4 form-group">
                         <label>Amount Type</label>
-                        <select name="amount_type" id="amount_type" class="form-control">
+                        <select name="amount_type" id="amount_type" class="form-control" require>
                             @if($payrollType['amount_type'] == 1)
                             <option value="1" selected> Flat </option>
                             <option value="2"> Percentage </option>
@@ -90,7 +90,7 @@
 
                     <div class="col-md-4 form-group">
                         <label>Status</label>
-                        <select name="status" id="status" class="form-control">
+                        <select name="status" id="status" class="form-control" require>
                             @if($payrollType['status'] == 1)
                             <option value="0"> Disable </option>
                             <option value="1" selected> Enable </option>

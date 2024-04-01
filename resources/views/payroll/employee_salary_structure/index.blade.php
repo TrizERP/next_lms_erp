@@ -32,6 +32,7 @@
                                         <select id='employee_id' name="employee_id" class="form-control">
                                             <option value="0">Select Employee</option>
                                             @foreach($data['employeeLists'] as $key => $employeeList)
+                                            @if($employeeList->id!=0 && $employeeList->id!='')
                                                 @if(is_array($data['employees']) && count($data['employees']) == 1 || $data['selected_emp'] == $employeeList->id)
                                                     <option
                                                         value="{{$employeeList->id}}"
@@ -40,6 +41,7 @@
                                                     <option
                                                         value="{{$employeeList->id}}" >{{$employeeList->first_name .' '. $employeeList->last_name }}</option>
                                                 @endif
+                                            @endif                                            
                                             @endforeach
 
                                         </select>

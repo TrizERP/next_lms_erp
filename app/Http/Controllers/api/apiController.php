@@ -211,8 +211,11 @@ class apiController extends Controller
             // added by saroj uma 08/03/024
                 $otherExists = DB::table('tblstudent')
                 ->selectRaw('tblstudent.sub_institute_id, tblstudent.id')
-                ->join('school_setup', 'school_setup.id', '=', 'tblstudent.sub_institute_id')
                 ->join('tblstudent_enrollment', 'tblstudent_enrollment.student_id', '=', 'tblstudent.id')
+                ->join('school_setup',function($join){
+                	$join->on('school_setup.id', '=', 'tblstudent.sub_institute_id')
+                	->on('school_setup.syear','=','tblstudent_enrollment.syear');
+                })
                 ->join('academic_section', 'tblstudent_enrollment.grade_id', '=', 'academic_section.id')
                 ->join('standard', 'standard.id', '=', 'tblstudent_enrollment.standard_id')
                 ->join('division', 'division.id', '=', 'tblstudent_enrollment.section_id')
@@ -223,6 +226,7 @@ class apiController extends Controller
                 ])
                 ->where('tblstudent.sub_institute_id', '!=', 254)
                 ->where(["tblstudent.otp" => $_REQUEST['otp']])
+                ->where('tblstudent_enrollment.end_date', NULL)
                 ->orderBy('tblstudent_enrollment.syear','DESC')              
                 ->get()
                 ->pluck('id')
@@ -250,17 +254,18 @@ class apiController extends Controller
                 foreach ($value as $key1 => $value1) {
                     // added on 26-03-2024
                     if(in_array($value1->sub_institute_id, [201, 202, 203, 204, 254])){
+                    	$first_name = strtoupper($value1->first_name);
                         // if student is in hills high and nursery then display only hills high standard
-                        if(!isset($findStudent[$value1->first_name])){
-                            $findStudent[$value1->first_name][$value1->sub_institute_id][] = $value1;
+                        if(!isset($findStudent[$first_name])){
+                            $findStudent[$first_name][$value1->sub_institute_id][] = $value1;
                         }
 
-                        if(array_key_exists(254,$findStudent[$value1->first_name])){
+                        if(array_key_exists(254,$findStudent[$first_name])){
                             if($value1->sub_institute_id==254){
-                                $data[] = $findStudent[$value1->first_name][$value1->sub_institute_id][0];
+                                $data[] = $findStudent[$first_name][$value1->sub_institute_id][0];
                             }
                         }
-                        else if(!array_key_exists(254,$findStudent[$value1->first_name])){
+                        else if(!array_key_exists(254,$findStudent[$first_name])){
                             $data[]=$value1;
                         }
                     
@@ -316,10 +321,11 @@ class apiController extends Controller
                         'student_id'        => strtoupper($arr->id),
                         'sub_institute_id'  => strtoupper($arr->sub_institute_id),
                         'mobile'            => $arr->mobile,
+                        'otp'               => $arr->otp,
                         'first_name'        => $arr->first_name,
                         'middle_name'       => $arr->middle_name,
-                        'father_name'       => isset($arr->father_name) ? $arr->father_name : '-',
-                        'mother_name'       => isset($arr->mother_name) ? $arr->mother_name : '-',
+                        'father_name'       => isset($arr->father_name) ? 'Mr.' . $arr->father_name : '-',
+                        'mother_name'       => isset($arr->mother_name) ? 'Mrs.' . $arr->mother_name : '-',
                         'image_path'        => $image_path,
                         'image'             => $image,
                         'last_name'         => $arr->last_name,
@@ -369,6 +375,7 @@ public function studentData($is_exist,$request,$student_id){
         "tblstudent.last_name",
         "tblstudent.sub_institute_id",
         "tblstudent.mobile",
+        "tblstudent.otp",
         "tblstudent.roll_no",
         "standard.name as std_name",
         "division.name as division",
@@ -458,7 +465,7 @@ public function studentData($is_exist,$request,$student_id){
                     $join->whereRaw("d.id = c.division_id AND d.sub_institute_id = c.sub_institute_id");
                 })
                 ->selectRaw("u.id,u.user_name,u.first_name,u.middle_name,u.last_name,u.sub_institute_id,u.email,
-                    u.mobile,u.birthdate,u.address,u.gender,u.join_year,if(u.image = '','https://".$_SERVER['SERVER_NAME']."/storage/student/noimages.png',concat('https://".$_SERVER['SERVER_NAME']."/storage/user/',u.image)) as image,p.name as user_profile_name,
+                    u.mobile,u.otp,u.birthdate,u.address,u.gender,u.join_year,if(u.image = '','https://".$_SERVER['SERVER_NAME']."/storage/student/noimages.png',concat('https://".$_SERVER['SERVER_NAME']."/storage/user/',u.image)) as image,p.name as user_profile_name,
                     u.user_profile_id,group_concat(concat_ws('||',c.standard_id,c.division_id)) as standard_division,
                     group_concat(concat_ws('||',s.name,d.name)) as standard_division_title,ss.syear,ss.SchoolName,ss.Logo")
                 ->where('u.mobile', $_REQUEST['mobile'])
@@ -497,6 +504,7 @@ public function studentData($is_exist,$request,$student_id){
                     'standard_division_title' => $data['standard_division_title'],
                     'email'                   => $data['email'],
                     'mobile'                  => $data['mobile'],
+                    'otp'                  => $data['otp'],
                     'birthdate'               => $data['birthdate'],
                     'address'                 => $data['address'],
                     'gender'                  => $data['gender'],

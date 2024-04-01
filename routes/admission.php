@@ -16,6 +16,8 @@ Route::group(['prefix' => 'admission', 'middleware' => ['session', 'menu', 'logR
     Route::resource('admission_follow_up', admissionFollowUpController::class);
     Route::resource('online_admission_confirm', onlineAdmissionConfirmController::class);
 
+    Route::get('admissionAI', [admissionEnquiryController::class,'admissionAI'])->name('admissionAI');
+
     Route::controller(admissionRegistrationController::class)->group(function () {
         Route::post('admission_student', 'saveStudent')->name('admission_student');
     });
