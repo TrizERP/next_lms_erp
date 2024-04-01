@@ -786,4 +786,32 @@ class admissionEnquiryController extends Controller
         return $check_calendar_data[0]->total_rec;
 
     }
+
+    public function admissionAI(Request $request){
+        $type = $request->type;
+        $file_response = shell_exec('python3 /home/admission.py');
+        if($file_response==null){
+            echo "file has no response";
+        }else{
+            $studentData = [];
+            $fileData = json_decode($file_response,true);
+            foreach ($fileData as $key => $value) {
+                # code...
+                $getStudent = DB::table('admission_enquiry as ae')
+                    ->join('standard as s','s.id','=','ae.admission_standard')
+                    ->selectRaw('ae.id,ae.enquiry_no,ae.admission_standard,s.name as standard_name,concat_ws(" ",COALESCE(first_name,"-"),COALESCE(middle_name,"-"),COALESCE(last_name,"-")) as student_name')
+                    ->where('ae.id',$value['enquiry_id'])->first();
+                if(!empty($getStudent)){
+                    $value['standard'] = $getStudent->standard_name;
+                    $value['enquiry_no']=$getStudent->enquiry_no;
+                    $value['student_name']=$getStudent->student_name;                    
+                    $studentData[]=$value;
+                }
+            }
+            $res['admissionData'] = $studentData;
+            // echo "<pre>";print_r($res);exit;
+            return is_mobile($type, 'admission/admissionAI', $res, 'view');
+        }
+    }
+
 }

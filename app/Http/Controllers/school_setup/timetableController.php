@@ -559,7 +559,7 @@ class timetableController extends Controller
                     //END Check Allocated Teachers - 16/11/2021
 
                     $extra_where = '';
-                    if ($assigned_teacher_ids != '') {
+                    if ($assigned_teacher_ids != ''  && (empty($check_general_data) || $check_general_data->fieldvalue!='Yes')) {
                         $extra_where = 'AND tbluser.id NOT IN (' . $assigned_teacher_ids . ') ';
                     }
 

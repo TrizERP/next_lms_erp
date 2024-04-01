@@ -1155,7 +1155,7 @@ class dashboardController extends Controller
             if ($user_profile_name == 'Student') {
                 $parentCommunication = DB::table('parent_communication as p')
                     ->join('tblstudent as s', function ($join) {
-                        $join->on('p.student_id', "=", 's.id');
+                        $join->on("p.student_id", "=", "s.id");
                     })
                     ->selectRaw("p.*,CONCAT_WS(' ',s.first_name,s.last_name) as student_name, s.image as student_image")
                     ->whereDate('p.date_', '=', $date)->where('p.sub_institute_id', '=', $sub_institute_id)
@@ -1163,7 +1163,7 @@ class dashboardController extends Controller
             } else {
                 $parentCommunication = DB::table('parent_communication as p')
                     ->join('tblstudent as s', function ($join) {
-                        $join->on('p.student_id', "=", 's.id');
+                        $join->on("p.student_id", "=", "s.id");
                     })
                     ->selectRaw("p.*,CONCAT_WS(' ',s.first_name,s.last_name) as student_name,s.image as student_image")
                     ->whereDate('p.date_', '=', $date)->where('p.sub_institute_id', '=', $sub_institute_id)
