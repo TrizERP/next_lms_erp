@@ -393,8 +393,10 @@ class AJAXController extends Controller
             }
         }
         $refer_arr = explode('/', $HTTP_REFERER);
+        $requestUri = $request->server->get('REQUEST_URI');
 
-        if ($refer_arr[count($refer_arr) - 2] == 'exam_creation' || in_array('marks_entry', $refer_arr)) {
+        // echo "<pre>";print_r($standard_id);exit;
+        if (strpos($requestUri, 'lms/pal') !== false || (isset($refer_arr[count($refer_arr) - 2]) || $refer_arr[count($refer_arr) - 2] == 'exam_creation') || in_array('marks_entry', $refer_arr)) {
             $where = array(
                 "sub_std_map.sub_institute_id" => session()->get('sub_institute_id'),
                 "sub_std_map.allow_grades" => "Yes",
