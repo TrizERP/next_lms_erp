@@ -336,6 +336,7 @@ class apiController extends Controller
                         'address'           => $arr->address,
                         'email'             => $arr->email,
                         'gender'            => $arr->gender,
+                        'house'             => $arr->house,
                         'birthday'          => date('d-m-Y', strtotime($arr->dob)),
                         'is_lms'            => $arr->is_lms,
                         'school_logo'       => $school_logo,
@@ -386,6 +387,7 @@ public function studentData($is_exist,$request,$student_id){
         "tblstudent.image as image",
         "tblstudent.email",
         "tblstudent.gender",
+        DB::raw("IFNULL(house_master.house_name, '-') as house"),
         "academic_section.title as academic_section",
         "school_setup.is_lms",
         "school_setup.SchoolName",
@@ -404,6 +406,7 @@ public function studentData($is_exist,$request,$student_id){
         ->join('standard', 'standard.id', '=', 'tblstudent_enrollment.standard_id')
         ->join('division', 'division.id', '=', 'tblstudent_enrollment.section_id')
         ->join('tbluserprofilemaster', 'tbluserprofilemaster.id', '=', 'tblstudent.user_profile_id')
+        ->leftjoin('house_master', 'house_master.id', '=', 'tblstudent_enrollment.house_id')
         ->orWhere([
             "tblstudent.mobile" => $_REQUEST['mobile'],
             "tblstudent.mother_mobile" => $_REQUEST['mobile'],

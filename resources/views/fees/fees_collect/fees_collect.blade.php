@@ -507,6 +507,8 @@
 								success : function(result) {
 									if(result[0] == 0){
 										$('#no_heads').append(`<p>`+result[1]+`</p>`);
+										$('#no_heads').css('visibility', 'visible');
+										return false;
 									}
 								},
 							})
