@@ -54,6 +54,7 @@ use App\Http\Controllers\result\approve_mobile_result\approve_mobile_result_cont
 use App\Http\Controllers\result\result_skillset\resultSkillsetController;
 use App\Http\Controllers\result\result_activity_master\resultActivityMasterController;
 use App\Http\Controllers\result\result_activity_marks\resultActivityMarksController;
+use App\Http\Controllers\lms\pal\resultPersonalizeMarksController;
 
 Route::group(['prefix' => 'result', 'middleware' => ['session', 'menu', 'logRoute']], function () {
     Route::resource('exam_type_master', ExamTypeMasterController::class);
@@ -212,4 +213,6 @@ Route::post('studentResultPDFAPI', [cbse_1t5_result_controller::class, 'studentR
 //});
 
 Route::get('cbse_1t5_result/download_overall_report', [result_report_controller::class, 'downloadOverAllReportExcel']);
+Route::get('resul_personal_marks_api', [resultPersonalizeMarksController::class, 'resulPersonalMarksApi']);
+Route::get('question_lists_api', [resultPersonalizeMarksController::class, 'questionListsAPI']);
 //Route::resource('result-template', result_TemplateController::class);
