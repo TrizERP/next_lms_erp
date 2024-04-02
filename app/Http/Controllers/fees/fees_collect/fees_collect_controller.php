@@ -214,6 +214,8 @@ class fees_collect_controller extends Controller
 
                 if ($previous < 0) {
                     $arr->bkoff = ($remain - $previous);
+                }else if($previous > 0 && $sub_institute_id==48){
+                    $arr->bkoff = ($remain - $previous);                    
                 } else {
                     if ($remain > 0){
                     $arr->bkoff = $remain;
@@ -223,7 +225,7 @@ class fees_collect_controller extends Controller
                 }
             }
         }
-
+        
         if (empty($result)) {
 
             // if student details are missing then this code will give missing detail in message

@@ -200,6 +200,7 @@
                             $total_unpaid += $fees_value['-']['remain'] ?? 0;
                             @endphp
                             @endforeach
+                         
                             <tr class="font-weight-bold">
                                 <td>{{$j++}}</td>
                                 <td></td>
@@ -211,12 +212,9 @@
                                 <td></td>
                                 <td></td>
                                 <td></td>
-                                <td></td>
-                                <td></td>
-                                <td></td>
-                                <td></td>
-                                <td></td>
-                                <td></td>
+                               @foreach($data['fees_titles'] as $key => $value)
+                               <td></td>                               
+                               @endforeach
                                 <td>Total</td>
                                 <td>{{$total_breakoff}}</td>
                                 <td>{{$total_paid}}</td>
