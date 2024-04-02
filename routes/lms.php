@@ -42,7 +42,7 @@ use App\Http\Controllers\lms\topicController;
 use App\Http\Controllers\lms\questionWiseReportController;
 use App\Http\Controllers\bazar\bulkUploadSheetController;
 use App\Http\Controllers\bazar\bulkUploadedReportController;
-
+use App\Http\Controllers\lms\pal\palController;
 use App\Http\Controllers\lms\virtualclassroomController;
 use App\Http\Controllers\school_setup\sub_std_mapController;
 use Illuminate\Support\Facades\Route;
@@ -105,6 +105,8 @@ Route::group(['prefix' => 'lms', 'middleware' => ['session', 'menu', 'logRoute']
     Route::resource('bulk_chapter_upload', bulk_chapter_uploadController::class);
     Route::get('ajax_SubjectwiseQuestion', [questionpaperController::class, 'ajax_SubjectwiseQuestion'])->name('ajax_SubjectwiseQuestion');
 
+    // palController
+    Route::resource('pal', palController::class);
 
     Route::get('ajax_LMS_MappingValue', [contentController::class, 'ajax_LMS_MappingValue'])->name('ajax_LMS_MappingValue');
 

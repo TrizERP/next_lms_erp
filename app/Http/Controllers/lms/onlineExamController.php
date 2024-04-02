@@ -177,8 +177,7 @@ class onlineExamController extends Controller
         //END Insert into lms_online_exam_answer table
 
         //return is_mobile($type,'lms/online_exam_result',$res,"view");
-        return redirect()->route('online_exam.show',
-            [$request->get('questionpaper_id'),"online_exam_id"=> $online_exam_id]);
+        return redirect()->route('online_exam.show',[$request->get('questionpaper_id'),"online_exam_id"=> $online_exam_id]);
     }
 
 
