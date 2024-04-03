@@ -456,7 +456,7 @@ class BookController extends Controller
         ->join('tblstudent_enrollment as se', 'se.student_id', '=', 's.id')
         ->join('standard as std', 'std.id', '=', 'se.standard_id')
         ->join('division as d', 'd.id', '=', 'se.section_id')
-        ->where(['lbc.book_id'=>$request->book_id,'s.enrollment_no'=>$request->enrollment_no,'li.id'=>$request->item_code])
+        ->where(['lbc.book_id'=>$request->book_id,'li.id'=>$request->item_code])
         ->whereNull('lbc.return_date')
         ->whereNull('se.end_date')
         ->get();
