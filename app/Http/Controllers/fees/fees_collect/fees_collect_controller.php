@@ -2406,15 +2406,15 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
             $data['PENDING'] = $new_pending_arr;
             //END Get Fees pending array
 
-            //START Get Fees paid array
+            //START Get Fees paid array 03-04-24 by uma
             $paid_data = DB::table('fees_collect as c')
                 ->selectRaw('c.receipt_no,c.receiptdate,c.payment_mode,c.bank_branch,c.bank_branch,c.bank_name,c.fees_html,
-                    c.cheque_date,c.cheque_no,c.cheque_bank_name,SUM(amount) as paid_amount')
+                    c.cheque_date,c.cheque_no,c.cheque_bank_name,SUM(amount) as paid_amount,c.syear')
                 ->where('c.student_id', $student_id)
-                ->where('c.syear', $syear)
+                // ->where('c.syear', $syear)
                 ->where('c.is_deleted', 'N')
                 ->where('c.sub_institute_id', $sub_institute_id)
-                ->groupBy('receipt_no')->get()->toArray();
+                ->groupBy('receipt_no')->orderBy('syear','desc')->get()->toArray();
 
             $data['PAID'] = $paid_data;
             //END Get Fees paid array
