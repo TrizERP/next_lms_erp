@@ -2089,7 +2089,7 @@ class AJAXController extends Controller
         }else{
             $message = array($request->message);            
         }
-        $apiKey ='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';//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
+        $apiKey ='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'; //'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';
       
         $endpoint = "https://api.openai.com/v1/chat/completions";
 
