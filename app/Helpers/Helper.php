@@ -2181,4 +2181,17 @@ if (!function_exists('get_string')) {
         }
         return $get_month_head;
     }
+
+    if (!function_exists('MappedStdDiv')) {
+
+        function MappedStdDiv($syear = '',$sub_institute_id='')
+        {
+            return DB::table('std_div_map as sdm')
+            ->join('standard as std','std.id','=','sdm.standard_id')
+            ->join('division as d','d.id','=','sdm.division_id')
+            ->selectRaw('std.id as std_id,std.name as standard_name,d.id as div_id,d.name as division_name,std.grade_id')   
+            ->where('sdm.sub_institute_id',$sub_institute_id)         
+            ->get()->toArray();
+        }
+    }
 }

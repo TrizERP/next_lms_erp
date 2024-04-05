@@ -22,13 +22,11 @@
     <div class="form-group">
         <label for="">Item Code</label>
         <select name="item_codes" id="item_codes" class="form-control" onchange="checkIssue()" required>
-        @if(count($item_codes)>1)
+        @if(count($item_codes)>0)
             <option value="" disabled selected>Select Item Code</option>
             @foreach($item_codes as $key=>$value)
                 <option value="{{$value->id}}">{{$value->item_code}}</option>
             @endforeach
-        @else
-            <option value="{{$item_codes[0]->id}}">{{$item_codes[0]->item_code}}</option>
         @endif
         </select>
     </div>
@@ -78,10 +76,7 @@
 </div>
 <script>
     $(document).ready(function(){
-        // Listen for change event on issue_date
-        @if($message !='')
-        $('#check_msg').hide();
-        @endif        
+        // Listen for change event on issue_date      
         var book_id =$('#bookId').val();
         $('#library_book_id').empty();
         $('#library_book_id').val(book_id);
@@ -95,11 +90,7 @@
             // Get the selected date from issue_date input
             get_date(selectedDate);
         });
-        // check book already issued or not
-        var item_code = $('#item_codes').val();
-        if(item_code!==''){
-            checkIssue();   
-        }
+
         // Date Picker
         jQuery('.mydatepicker, #datepicker').datepicker({
             changeMonth: true,
