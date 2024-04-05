@@ -68,6 +68,7 @@ class manage_sms_api_controller extends Controller
             'text_var'         => $request->get('text_var'),
             'last_var'         => $request->get('last_var'),
             'sub_institute_id' => session()->get('sub_institute_id'),
+            'is_active'        => 1,
         ]);
         $school->save();
 
@@ -123,6 +124,7 @@ class manage_sms_api_controller extends Controller
                 'text_var'         => $request->get('text_var'),
                 'last_var'         => $request->get('last_var'),
                 'sub_institute_id' => session()->get('sub_institute_id'),
+                'is_active'        => 1,                
             ],
         );
 

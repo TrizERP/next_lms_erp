@@ -43,8 +43,13 @@ class notification_report_controller extends Controller
         $mobile_no = $request->input('mobile_no');
         $from_date = $request->input('from_date');
         $to_date = $request->input('to_date');
-        $syear = $request->session()->get('syear');
-        $sub_institute_id = $request->session()->get('sub_institute_id');
+        if($type=='API'){
+            $sub_institute_id = $request->sub_institute_id;
+            $syear = $request->syear;
+        }else{
+            $sub_institute_id = $request->session()->get('sub_institute_id');
+            $syear = $request->session()->get('syear');            
+        }
         $marking_period_id = session()->get('term_id');
 
         $data = DB::table('app_notification as an')

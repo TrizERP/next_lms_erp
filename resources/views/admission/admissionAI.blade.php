@@ -81,6 +81,7 @@
                 title: 'Inactive Student Report',
                 customize: function (win) {
                     $(win.document.body).prepend(`{!! App\Helpers\get_school_details() !!}`);
+                    $(win.document.body).append(`<div style="text-align: right;margin-top:20px">Printed on: {{date('d-m-Y H:i:s')}}</div>`);
                 }
             },
             'pageLength' 

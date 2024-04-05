@@ -266,7 +266,7 @@
 						</tbody>
 					</table>
 				</div>
-                <div class="mt-4" style="display:inline-grid;justify-content:center;width:100%">
+                <div class="mt-4" style="display:inline-grid;justify-content:center;width:100%" id="paymentDetails">
 					<div class="table-responsive">
 						<table class="table table-striped">
 							@php
@@ -428,6 +428,9 @@
 								</div>
 							@endif
 						`);
+							var paymentDetails = $('#paymentDetails').clone();
+							$(win.document.body).append(paymentDetails);
+							$(win.document.body).append(`<div style="text-align: right;margin-top:20px">Printed on: {{date('d-m-Y H:i:s')}}</div>`);
                         }
                     },
                     'pageLength'
