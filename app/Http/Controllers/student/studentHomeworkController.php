@@ -299,8 +299,13 @@ class studentHomeworkController extends Controller
     public function studentHomeworkReport(Request $request)
     {
         $type = $request->input('type');
-        $sub_institute_id = $request->session()->get('sub_institute_id');
-        $syear = $request->session()->get('syear');
+        if($type=='API'){
+            $sub_institute_id = $request->get('sub_institute_id');
+            $syear = $request->get('syear');
+        }else{
+            $sub_institute_id = $request->session()->get('sub_institute_id');
+            $syear = $request->session()->get('syear');
+        }
         $subject = $request->input('subject');
         $grade = $request->input('grade');
         $standard = $request->input('standard');

@@ -55,6 +55,7 @@ use App\Http\Controllers\result\result_skillset\resultSkillsetController;
 use App\Http\Controllers\result\result_activity_master\resultActivityMasterController;
 use App\Http\Controllers\result\result_activity_marks\resultActivityMarksController;
 use App\Http\Controllers\lms\pal\resultPersonalizeMarksController;
+use App\Http\Controllers\result\new_result\allResultController;
 
 Route::group(['prefix' => 'result', 'middleware' => ['session', 'menu', 'logRoute']], function () {
     Route::resource('exam_type_master', ExamTypeMasterController::class);
@@ -85,6 +86,7 @@ Route::group(['prefix' => 'result', 'middleware' => ['session', 'menu', 'logRout
     Route::resource('result_skillset', resultSkillsetController::class);
     Route::resource('result_activity_master', resultActivityMasterController::class);
     Route::resource('result_activity_marks', resultActivityMarksController::class);
+    Route::resource('all_results', allResultController::class);    
 
     Route::post('cbse_1t5_result/show_result', ['as' => 'cbse_1t5_result.show_result', 'uses' => 'result\cbse_result\cbse_1t5_result_controller@show_result']);
     Route::post('cbse_1t5_t2_result/show_result', ['as' => 'cbse_1t5_t2_result.show_result', 'uses' => 'result\cbse_result\cbse_1t5_t2_result_controller@show_result']);
@@ -215,4 +217,5 @@ Route::post('studentResultPDFAPI', [cbse_1t5_result_controller::class, 'studentR
 Route::get('cbse_1t5_result/download_overall_report', [result_report_controller::class, 'downloadOverAllReportExcel']);
 Route::get('resul_personal_marks_api', [resultPersonalizeMarksController::class, 'resulPersonalMarksApi']);
 Route::get('question_lists_api', [resultPersonalizeMarksController::class, 'questionListsAPI']);
+Route::resource('result_personalize_marks', resultPersonalizeMarksController::class);
 //Route::resource('result-template', result_TemplateController::class);

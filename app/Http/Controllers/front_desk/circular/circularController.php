@@ -41,8 +41,15 @@ class circularController extends Controller
                 $school_data['message'] = $data_arr['message'];
             }
         }
-
-        $data = $this->getData();
+        $type = $request->type;
+        if($type=='API'){
+            $sub_institute_id = $request->sub_institute_id;
+            $syear = $request->syear;
+        }else{
+            $sub_institute_id = session()->get('sub_institute_id');
+            $syear = session()->get('syear');            
+        }
+        $data = $this->getData($syear,$sub_institute_id,$request);
         // echo "<pre>";print_r($data);exit;
         $school_data['data'] = $data['data'];
         $school_data['circular_type'] = $data['circular_type'];
@@ -52,10 +59,10 @@ class circularController extends Controller
         return is_mobile($type, "front_desk/circular/show", $school_data, "view");
     }
 
-    function getData()
+    function getData($syear,$sub_institute_id,$request)
     {
-        $classTeacherStdArr = session()->get('classTeacherStdArr');
-        $classTeacherDivArr = session()->get('classTeacherDivArr');
+        $classTeacherStdArr = session()->get('classTeacherStdArr') ?? $request->standard_id;
+        $classTeacherDivArr = session()->get('classTeacherDivArr') ?? $request->division_id;
         
 // return $classTeacherGrdArr;exit;
         $query = DB::table("circular as c")
@@ -80,8 +87,8 @@ class circularController extends Controller
                 }
             }
            $query = $query->selectRaw('c.*,s.name as std_name,t.type as circular_type,d.name as div_name')
-            ->where("c.syear", "=", session()->get('syear'))
-            ->where("c.sub_institute_id", "=", session()->get('sub_institute_id'))
+            ->where("c.syear", "=", $syear)
+            ->where("c.sub_institute_id", "=", $sub_institute_id)
             ->orderBy('c.id', 'DESC')->limit(400)
             ->get()->toArray();
         $result['data'] = $query;
