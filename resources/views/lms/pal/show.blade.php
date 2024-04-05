@@ -27,10 +27,6 @@
                             <div class="col-md-4 mb-2 chp-details" data-toggle="collapse" href="#subject_{{$subject_id}}" role="button" aria-expanded="false" aria-controls="subject_{{$subject_id}}">
                                 <div class="count">{{$i++}}</div>
                                 <div class="title">
-                                <input type="hidden" name="subject" id="subject" data-val="{{$subject_id}}" value="{{$subject_id}}">
-                                <input type="hidden" name="standard" id="standard" value="{{$data['studentDetails']['standard_id']}}" data-val="{{$subject_id}}"> 
-                                <input type="hidden" name="grade_id" id="grade_id" value="{{$data['studentDetails']['grade_id']}}" data-val="{{$subject_id}}">                                
-                                                               
                                     {{$subject_name}}
                                 </div>
                             </div>
@@ -41,16 +37,56 @@
                             @if(!empty($data['chapterList'][$subject_id]))
                                 @foreach($data['chapterList'][$subject_id] as $chapter_id=>$chapter_name)
                                     <div class="row card single-chp mb-2" style="left:5% !important;">
-                                        <div class="col-md-4 mb-2 chp-details" data-toggle="collapse" href="" role="button" aria-expanded="false" aria-controls="">
-                                            <div class="count">{{$j++}}</div>
+                                        <div class="col-md-4 mb-2 chp-details" data-toggle="collapse" href="#quiz_{{$j}}" role="button" aria-expanded="false" aria-controls="quiz_{{$j}}">
+                                            <div class="count">{{$j}}</div>
                                             <div class="title">
-                                            <span onclick='generateExam({{$subject_id}})'>
-                                                <input type="hidden" name="chapter" id="chapter" data-val="{{$subject_id}}" value="{{$chapter_id}}">
                                                 {{$chapter_name}}
-                                            </span>
                                             </div>
                                         </div>
-                                    </div>                                        
+                                    </div>  
+                                    <!-- quiz lists -->
+                                    @php 
+                                    $k=1; 
+                                    @endphp                                     
+                                    
+                                    @foreach($data['attemptExams'] as $examKey=>$examValue)
+                                    @if($chapter_id == $examValue['paper_desc'])
+                                    <div class="collapse" id="quiz_{{$j}}">
+                                        <div class="row card single-chp mb-2" style="left:10% !important;width:90%">
+                                            <div class="col-md-4 mb-2 chp-details" data-toggle="collapse" href="" role="button" aria-expanded="false" aria-controls="">
+                                                <div class="title">
+                                                <input type="hidden" name="quiz_no" id="quiz_no" data-val="{{$subject_id}}" value="{{$k}}">
+                                                    <span>Quiz {{$k++}}</span>
+                                                </div>
+                                            </div>
+                                            @php
+                                                $total = ($examValue['total_right'] + $examValue['total_wrong']);
+                                                $per= (($examValue['total_right'] * 100) / $total) ?? 0
+                                            @endphp
+                                            <div class="col-md-4 progress_bar">
+                                            <p style="margin-bottom:0px !important">Progress</p>
+                                            <div class="progress">
+                                                <div class="progress-bar" role="progressbar" style="width: {{$per}}%" aria-valuenow="{{$per}}" aria-valuemin="0" aria-valuemax="100"></div>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-4 marks text-right">
+                                                {{$examValue['total_right']}} / {{$total}}
+                                            </div>
+                                        </div>  
+                                    </div> 
+                                    @endif                                     
+                                    @endforeach      
+                                    <div class="collapse" id="quiz_{{$j}}">
+                                        <div class="row card single-chp mb-2" style="left:10% !important;width:90%">
+                                            <div class="col-md-4 mb-2 chp-details" data-toggle="collapse" href="" role="button" aria-expanded="false" aria-controls="">
+                                                <div class="title">
+                                                    <span style="color:green" onclick="generateExam({{$data['studentDetails']['grade_id']}},{{$subject_id}},{{$chapter_id}},{{$data['studentDetails']['standard_id']}})">Quiz {{$k}} <i class="fa fa-arrow-right" aria-hidden="true"></i> </span>
+                                                </div>
+                                            </div>
+                                        </div>  
+                                    </div> 
+                                    @php $j++; @endphp                                     
+                                    <!-- end quiz list  -->
                                 @endforeach      
                             @endif 
                         </div>
@@ -64,15 +100,10 @@
 </div>
 @include('includes.lmsfooterJs')
 <script>
-function generateExam(subject_id){
-    var chapter_id = $('#chapter[data-val="'+subject_id+'"]').val();
-    var standard = $('#standard[data-val="'+subject_id+'"]').val();
-    var grade_id = $('#grade_id[data-val="'+subject_id+'"]').val(); 
-        
-    if (chapter_id !== '' && chapter_id !== 'undefined') {
-        window.location.href = '/lms/pal/create?subject_id='+subject_id+'&chapter_id='+chapter_id+'&grade_id='+grade_id+'&standard_id='+standard;
+function generateExam(grade_id,subject_id,chapter_id,standard_id){
+      if (chapter_id !== '' && chapter_id !== 'undefined') {
+        window.location.href = '/lms/pal/create?subject_id='+subject_id+'&chapter_id='+chapter_id+'&grade_id='+grade_id+'&standard_id='+standard_id;
     }
-
 }
 </script>
 

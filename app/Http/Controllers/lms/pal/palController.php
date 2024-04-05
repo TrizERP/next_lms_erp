@@ -53,7 +53,9 @@ class palController extends Controller
         }
         $res['studentDetails'] = $newData;
         $res['subjectList'] =$getSubjectList;
-        $res['chapterList'] =$getchapterList;        
+        $res['chapterList'] =$getchapterList;  
+        $res['attemptExams'] = questionpaperModel::join('lms_online_exam_student as loes','loes.question_paper_id','=','question_paper.id')
+        ->where('question_paper.created_by',$student_id)->where(['question_paper.sub_institute_id'=>$sub_institute_id,'question_paper.syear'=>$syear])->where('question_paper.exam_type','PAL')->get()->toArray();
         // echo "<pre>";print_r($res['studentDetails']);exit;
         return is_mobile($type, 'lms/pal/show', $res, "view");        
     }
@@ -154,7 +156,7 @@ class palController extends Controller
             'standard_id'=>$standard_id,
             'subject_id'=>$subject_id,
             'paper_name'=>$paper_name,
-            'paper_desc'=>'chapter-'.$getChaptername->chapter_name.' exam_name-'.$paper_name,
+            'paper_desc'=>$request->chapter_id,
             'timelimit_enable'=>1,
             'time_allowed' =>$allowed_time,
             'total_marks' =>$total_marks,
