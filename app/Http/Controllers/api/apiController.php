@@ -35,6 +35,7 @@ class apiController extends Controller
                 "tblstudent.last_name",
                 "tblstudent.sub_institute_id",
                 "tblstudent.mobile",
+                "tblstudent.otp",
                 "tblstudent.roll_no",
                 "standard.name as std_name",
                 "division.name as division",
@@ -67,7 +68,14 @@ class apiController extends Controller
                 ->get($select);
 
             if (isset($data[0])) {
-                $otp = rand(100000, 999999);
+            	//Start Added by rajesh 02-04-2024 same OTP send in exist mobile
+            	if($data[0]->otp == null || $data[0]->otp == ''){
+                	$otp = rand(100000, 999999);
+            	}else{
+            		$otp = $data[0]->otp;
+            	}
+				//End Added by rajesh 02-04-2024 same OTP send in exist mobile
+                
                 $sub_institute_id = $data[0]->sub_institute_id;
                 if ($_REQUEST['mobile'] == '9979176562') {
                     $otp = "123456";
@@ -76,6 +84,9 @@ class apiController extends Controller
                     if ($sub_institute_id == 49 || $sub_institute_id == 232 || $sub_institute_id == 233) {
                         $text = "Dear Student Your Application Login OTP is ".$otp;
                     } //"Dear Student your OTP is ".$otp;
+                    else if($sub_institute_id == 47){
+                        $text = "Dear Parent, Your OTP is ".$otp." MULJIM";
+                    }
                     else {
                         $text = "OTP for login is ".$otp." and is valid for 5 minutes";
                     }
@@ -183,7 +194,7 @@ class apiController extends Controller
     public function check_otp(Request $request, JwtToken $jwt)
     {
         $send_data = [];
-        $response = ['status' => '0', 'message' => 'Invalid', 'data' => $send_data];
+        $response = ['status' => '0', 'message' => 'Already logged in other device', 'data' => $send_data];
 
         $validator = Validator::make($request->all(), [
             'mobile' => 'required|numeric',
@@ -198,7 +209,7 @@ class apiController extends Controller
                     "tblstudent.mother_mobile"  => $_REQUEST['mobile'],
                     "tblstudent.student_mobile" => $_REQUEST['mobile'],
                 ])
-                ->where('sub_institute_id', [254])
+                ->whereIn('sub_institute_id', [254,195])
                 ->get()
                 ->pluck('id')
                 ->toArray();
@@ -225,6 +236,7 @@ class apiController extends Controller
                     "tblstudent.student_mobile" => $_REQUEST['mobile'],
                 ])
                 ->where('tblstudent.sub_institute_id', '!=', 254)
+                ->where('tblstudent.sub_institute_id', '!=', 195)
                 ->where(["tblstudent.otp" => $_REQUEST['otp']])
                 ->where('tblstudent_enrollment.end_date', NULL)
                 ->orderBy('tblstudent_enrollment.syear','DESC')              
@@ -400,8 +412,11 @@ public function studentData($is_exist,$request,$student_id){
     ];
 
     $query = DB::table("tblstudent")
-        ->join('school_setup', 'school_setup.id', '=', 'tblstudent.sub_institute_id')
         ->join('tblstudent_enrollment', 'tblstudent_enrollment.student_id', '=', 'tblstudent.id')
+         ->join('school_setup', function($query){
+        $query->on('school_setup.id', '=', 'tblstudent.sub_institute_id')
+        ->on('school_setup.syear', '=', 'tblstudent_enrollment.syear');
+    	})
         ->join('academic_section', 'tblstudent_enrollment.grade_id', '=', 'academic_section.id')
         ->join('standard', 'standard.id', '=', 'tblstudent_enrollment.standard_id')
         ->join('division', 'division.id', '=', 'tblstudent_enrollment.section_id')
@@ -415,18 +430,18 @@ public function studentData($is_exist,$request,$student_id){
         ->where(["tblstudent.otp" => $_REQUEST['otp']])
         ->whereIn('tblstudent.id',$student_id);
 
-    if($is_exist==1) {
-        $query->whereColumn('school_setup.syear', '=', 'tblstudent_enrollment.syear');
-    }else{
-        $query->where('tblstudent_enrollment.syear', function ($query) {
-            $query->select(DB::raw('tblstudent_enrollment.syear'))
-                ->from('tblstudent_enrollment')
-                ->whereRaw('tblstudent_enrollment.student_id = tblstudent.id')
-                ->whereRaw('tblstudent_enrollment.end_date is NULL')
-                ->orderBy('tblstudent_enrollment.syear', 'DESC')
-                ->take(1);
-        });
-    }
+    // if($is_exist==1) {
+    //     $query->whereColumn('school_setup.syear', '=', 'tblstudent_enrollment.syear');
+    // }else{
+    //     $query->where('tblstudent_enrollment.syear', function ($query) {
+    //         $query->select(DB::raw('tblstudent_enrollment.syear'))
+    //             ->from('tblstudent_enrollment')
+    //             ->whereRaw('tblstudent_enrollment.student_id = tblstudent.id')
+    //             ->whereRaw('tblstudent_enrollment.end_date is NULL')
+    //             ->orderBy('tblstudent_enrollment.syear', 'DESC')
+    //             ->take(1);
+    //     });
+    // }
     
     $data = $query
     ->groupBy('tblstudent.id')
