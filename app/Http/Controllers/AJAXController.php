@@ -706,8 +706,8 @@ class AJAXController extends Controller
         
         $previous = array_sum($full_bk2);
 
-        // if ($previous > 0 && session()->get('sub_institute_id')!=48) {
-        if ($previous > 0) {            
+        if ($previous > 0 && session()->get('sub_institute_id')!=48) {
+        // if ($previous > 0) {            
             $full_bk['Previous Fees'] = $previous;
             $final_bk_name["Previous Fees"] = "previous_fees";
 
@@ -2089,7 +2089,7 @@ class AJAXController extends Controller
         }else{
             $message = array($request->message);            
         }
-        $apiKey ='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';//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
+        $apiKey ='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'; //'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';
       
         $endpoint = "https://api.openai.com/v1/chat/completions";
 
@@ -2227,7 +2227,7 @@ class AJAXController extends Controller
 
     public function pythonTimetable(Request $request){
         $sub_institute_id = session()->get('sub_institute_id');
-        $file_response = shell_exec('python3 /home/admission.py');
+        $file_response = shell_exec('python3 /home/fees_analysis_new.py');
         if($file_response==null){
             echo "file has no response";
         }else{

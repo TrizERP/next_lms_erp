@@ -129,7 +129,7 @@ class LibraryReportController extends Controller
         ->join('tblstudent_enrollment as se','se.student_id','=','s.id')
         ->join('standard as std','std.id','=','se.standard_id')
         ->join('division as d','d.id','=','se.section_id')        
-        ->join('library_items as li',function($join) use ($sub_institute_id) {
+        ->leftJoin('library_items as li',function($join) use ($sub_institute_id) {
             $join->on('li.book_id','=','library_book_circulations.book_id')->on('library_book_circulations.item_code', '=', 'li.id');
         })
         ->join('library_books as lb',function($join) use ($sub_institute_id) {
