@@ -177,7 +177,6 @@ class co_scholastic_controller extends Controller
     {
         $type = $request->input('type');
         $data = co_scholastic::find($id)->toArray();
-
         $where = [
             'map_id'           => $data['co_grade'],
             'sub_institute_id' => session()->get('sub_institute_id'),
@@ -207,7 +206,7 @@ class co_scholastic_controller extends Controller
         $data = co_scholastic::find($id)->toArray();
         $max_id = "";
 
-        if ($data['co_grade'] == "") {
+        if($data['mark_type']!==$request->mark_type && $request->mark_type=="GRADE"){
             $max_id = co_scholastic_grade::max('map_id');
             if ($max_id == "") {
                 $max_id = 1;

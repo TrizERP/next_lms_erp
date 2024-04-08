@@ -130,12 +130,14 @@ class LibraryReportController extends Controller
         ->join('standard as std','std.id','=','se.standard_id')
         ->join('division as d','d.id','=','se.section_id')        
         ->leftJoin('library_items as li',function($join) use ($sub_institute_id) {
-            $join->on('li.book_id','=','library_book_circulations.book_id')->on('library_book_circulations.item_code', '=', 'li.id');
+            $join->on('li.book_id','=','library_book_circulations.book_id')->on('library_book_circulations.item_code', '=', 'li.id')
+            ->whereNull('li.deleted_at')        
+        ->where("li.sub_institute_id", "=", $sub_institute_id);
         })
         ->join('library_books as lb',function($join) use ($sub_institute_id) {
             $join->on('lb.id','=','library_book_circulations.book_id')->where('lb.sub_institute_id','=',$sub_institute_id);
         })
-        ->selectRaw('s.id as student_id,s.enrollment_no,concat_ws(" ",s.first_name,s.last_name,s.middle_name) as student_name,s.mobile,library_book_circulations.book_id,std.name as standard,d.name as division,li.item_code,lb.title as book_title,lb.sub_title as book_sub_title,lb.publisher_name,lb.author_name,library_book_circulations.issued_date,library_book_circulations.due_date,library_book_circulations.return_date')
+        ->selectRaw('s.id as student_id,s.enrollment_no,concat_ws(" ",s.first_name,s.last_name,s.middle_name) as student_name,s.mobile,library_book_circulations.book_id,std.name as standard,d.name as division,IFNULL(li.item_code,"-") as item_code,lb.title as book_title,lb.sub_title as book_sub_title,lb.publisher_name,lb.author_name,library_book_circulations.issued_date,library_book_circulations.due_date,library_book_circulations.return_date')
         ->when($name,function($q) use ($name) {
             $q->where('s.first_name',$name)->oRwhere('s.last_name',$name)->oRwhere('s.middle_name',$name);
         })
@@ -145,9 +147,7 @@ class LibraryReportController extends Controller
         ->when($mobile,function($q) use ($mobile) {
             $q->where('s.mobile',$mobile);
         })
-        ->where('se.syear',$syear)
-        ->whereNull('li.deleted_at')        
-        ->where("li.sub_institute_id", "=", $sub_institute_id)                
+        // ->where('se.syear',$syear)
         ->where('library_book_circulations.sub_institute_id',$sub_institute_id);
         if($report_type=="overdue"){
             // $student_data->where('library_book_circulations.due_date','>=',$from_date)->Where('library_book_circulations.due_date','<=',$to_date)->whereNull('library_book_circulations.return_date');
@@ -155,7 +155,7 @@ class LibraryReportController extends Controller
         }else{
             $student_data->where('library_book_circulations.issued_date','>=',$from_date)->Where('library_book_circulations.due_date','<=',$to_date);
         }
-        $issue_overdue_data = $student_data->get()->toArray();
+        $issue_overdue_data = $student_data->orderBy('library_book_circulations.id','DESC')->groupBy('library_book_circulations.id')->get()->toArray();
         // echo "<pre>";print_r($issue_overdue_data);exit;   
         $res['details'] =  $issue_overdue_data;   
         return is_mobile($type, "library/reports/bookIssueDue", $res, "view");
