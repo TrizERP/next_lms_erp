@@ -87,7 +87,7 @@ class allResultController extends Controller
         $res['division_id'] = $res['result_data']->division_id;
         $res['term_id'] = $res['result_data']->term_id;
         $res['syear'] = $res['result_data']->syear;
-        $res['all_stud_html'] = $dom;
+        $res['all_stud_html'][$request->id] = $res['result_data']->html;
         $res['students_ids'][] = $res['result_data']->student_id;
     }
         return is_mobile($type, "result/new_result/student_results/result_view", $res, "view");
