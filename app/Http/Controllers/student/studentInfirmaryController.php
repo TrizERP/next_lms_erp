@@ -56,6 +56,7 @@ class studentInfirmaryController extends Controller
      */
     public function create(Request $request)
     {
+        $type= $request->type;
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $syear = $request->session()->get('syear');
         
@@ -65,8 +66,13 @@ class studentInfirmaryController extends Controller
             ->where("syear", "=", $syear)
             ->get()->toArray();
 
-        view()->share('medical_case_no', $medical_case_no[0]->medical_case_no);
-        return view('student/infirmary/add_student_infirmary');
+        $res['medical_case_no'] = $medical_case_no[0]->medical_case_no;
+        $res['user_name'] = session()->get('name');
+
+        // view()->share('medical_case_no', $medical_case_no[0]->medical_case_no);
+        // return view('student/infirmary/add_student_infirmary');
+        return is_mobile($type, "student/infirmary/add_student_infirmary", $res, "view");
+
     }
 
     /**
@@ -148,7 +154,7 @@ class studentInfirmaryController extends Controller
                         $gcmRegIds[] = $val1->gcm_regid;
                     }
                 }
-                sendNotification($app_notification_content);
+                // sendNotification($app_notification_content);
 
                 $bunch_arr = array_chunk($gcmRegIds, 1000);
                 if (! empty($bunch_arr)) {
@@ -159,7 +165,7 @@ class studentInfirmaryController extends Controller
                                 'body'  => $pushMessage, 'TYPE' => $type, 'USER_ID' => $student_id,
                                 'title' => $schoolName, 'image' => $schoolLogo,
                             ];
-                            $pushStatus = send_FCM_Notification($val, $message, $sub_institute_id);
+                            // $pushStatus = send_FCM_Notification($val, $message, $sub_institute_id);
                             // sendNotification($app_notification_content);
                         }
                     }
