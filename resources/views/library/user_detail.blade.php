@@ -6,6 +6,16 @@
     </div>
 </div>
 @endif
+
+@if(isset($issue_status[0]) && $issue_status[0] !='')
+<div class="col-md-12 mt-3">
+    <div class="alert alert-danger alert-block">
+        <button type="button" class="close" data-dismiss="alert">×</button>
+        <strong>This Book already assigned to student -{{$issue_status[0]->student_name}} of standard {{$issue_status[0]->standard}} / {{$issue_status[0]->division}}</strong>
+    </div>
+</div>
+@endif
+
 <div id="check_msg">
 </div>
 
@@ -22,10 +32,9 @@
     <div class="form-group">
         <label for="">Item Code</label>
         <select name="item_codes" id="item_codes" class="form-control" onchange="checkIssue()" required>
-        @if(count($item_codes)>0)
-            <option value="" disabled selected>Select Item Code</option>
+        @if(count($item_codes)==1)
             @foreach($item_codes as $key=>$value)
-                <option value="{{$value->id}}">{{$value->item_code}}</option>
+                <option value="{{$value->id}}" selected>{{$value->item_code}}</option>
             @endforeach
         @endif
         </select>
@@ -113,6 +122,12 @@
             todayHighlight: true
         });
 
+        @if(isset($issue_status[0]) && $issue_status[0] !='')
+            $("#issue_book_check").prop("disabled", true);
+        @else
+            $("#issue_book_check").prop("disabled", false);
+         @endif
+
     });
 
     // check book already issued or not
@@ -125,7 +140,7 @@
         // alert(book_id);
         var item_code = $('#item_codes').val();
         $.ajax({
-            url : '/check_issue?book_id='+book_id+'&enrollment_no='+student_gr+'&item_code='+item_code,
+            url : '/check_issue?book_id='+book_id,
             type:'GET',
             success : function (result){
                 console.log(result);

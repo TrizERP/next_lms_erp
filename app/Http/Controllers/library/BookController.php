@@ -211,10 +211,11 @@ class BookController extends Controller
     {
         try {
             $message ='';
+            $issue_status = $this->checkIssue($request->book_id);            
             $sub_institute_id = session()->get('sub_institute_id');            
             $details = tblstudentModel::where('enrollment_no', $enroll)->with('issuedBookItem')->first();
             $item_codes= DB::table('library_items')->where('book_id',$request->book_id)->where('sub_institute_id',$sub_institute_id)->get()->toArray();
-            $view = View::make('library.user_detail', compact('details','item_codes','message'))->render();
+            $view = View::make('library.user_detail', compact('details','item_codes','message','issue_status'))->render();
             return response()->json(['data' => $view], 200);
         } catch (Exception $e) {
             return response()->json($e->getMessage(), 500);
@@ -443,7 +444,7 @@ class BookController extends Controller
         return is_mobile($type, 'library/quick_return', $res, 'view');    
     }
 
-    public function checkIssue(Request $request){
+    public function checkIssue($book_id){
         $syear= session()->get('syear');
         $sub_institute_id = session()->get('sub_institute_id');
         $issuedBookDetails = DB::table('library_items as li')
@@ -456,7 +457,7 @@ class BookController extends Controller
         ->join('tblstudent_enrollment as se', 'se.student_id', '=', 's.id')
         ->join('standard as std', 'std.id', '=', 'se.standard_id')
         ->join('division as d', 'd.id', '=', 'se.section_id')
-        ->where(['lbc.book_id'=>$request->book_id,'li.id'=>$request->item_code])
+        ->where('lbc.book_id',$book_id)
         ->whereNull('lbc.return_date')
         ->whereNull('se.end_date')
         ->get();
