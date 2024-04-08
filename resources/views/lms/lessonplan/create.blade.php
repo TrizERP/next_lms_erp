@@ -653,7 +653,7 @@ if(isset($_REQUEST['preload_lms'])){
             data: {standard:selectedStd,subject:selectedSub,chapter:selectedChap,topic:selectedTopic,prompt:inputValue,search:'lessonplan'},
             success: function(response) {
                 if (response['error']) {
-                    alert(response['error']);
+                    console.log(response['error']);
                 }else{
                     $('#'+selectedId).empty();                    
                     $('#' + selectedId).val(response);
@@ -661,7 +661,7 @@ if(isset($_REQUEST['preload_lms'])){
             },
             error: function(xhr, status, error) {
                  error =1;
-                 alert(JSON.parse(xhr.responseText).message);
+                 console.log(JSON.parse(xhr.responseText).message);
             }
             });
         }

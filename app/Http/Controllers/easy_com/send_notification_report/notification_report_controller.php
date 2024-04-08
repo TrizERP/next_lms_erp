@@ -64,8 +64,9 @@ class notification_report_controller extends Controller
                 // });
             })->join('academic_section as aa', function ($join) {
                 $join->whereRaw('aa.id=ss.grade_id');
-            })->join('gcm_users as gu', function ($join) {
-                $join->whereRaw('gu.mobile_no = s.mobile');
+            })->leftJoin('gcm_users as gu', function ($join) use($sub_institute_id){
+                $join->whereRaw('gu.mobile_no = s.mobile')
+                ->where('gu.sub_institute_id', $sub_institute_id);
             })->join('division as dd', function ($join) {
                 $join->whereRaw('dd.id=se.section_id');
             })->selectRaw("s.id AS student_id,CONCAT_WS(' ',s.first_name,s.middle_name,s.last_name) AS stu_name, 
@@ -74,7 +75,6 @@ class notification_report_controller extends Controller
                 DATE_FORMAT(an.NOTIFICATION_DATE,'%d-%m-%Y') AS NOTOFICATION_DATE,an.NOTIFICATION_DESCRIPTION, 
                 CASE WHEN an.Status = 1 THEN 'Read' WHEN an.Status =0 THEN 'Un-Read' ELSE 'N/A' END AS NOTIFICATION_STATUS")
             ->where('se.SYEAR', $syear)
-            ->where('gu.sub_institute_id', $sub_institute_id)
             ->where('an.sub_institute_id', $sub_institute_id)
             ->where(function ($q) use ($mobile_no, $from_date, $to_date) {
                 if ($mobile_no != '') {
@@ -89,6 +89,7 @@ class notification_report_controller extends Controller
                 }
             })
             ->groupBy(['an.STUDENT_ID','an.NOTIFICATION_TYPE','an.NOTIFICATION_DATE','an.NOTIFICATION_DESCRIPTION','gu.imei_no'])
+            ->orderBy('an.id','DESC')
             ->get()->toArray();
 
         $data = array_map(function ($value) {
