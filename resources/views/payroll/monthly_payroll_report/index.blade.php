@@ -31,15 +31,22 @@
                                             <option value="0">Select Employee</option>
                                             @foreach($employees as $employee)
                                                 @if(isset($list['employeeName']))
-
-                                                    <option
-                                                        value="{{$employee->employee_id}}" {{$list['employeeName']['id'] == $employee->employee_id ? 'selected' :''}}>{{$employee->getUser ? $employee->getUser->first_name .' '. $employee->getUser->last_name : ' '}}</option>
+                                                    @php
+                                                        $selected = $list['employeeName']['id'] == $employee->employee_id ? 'selected' : '';
+                                                    @endphp
                                                 @else
-                                                    <option
-                                                        value="{{$employee->employee_id}}">{{$employee->getUser ? $employee->getUser->first_name .' '. $employee->getUser->last_name : ' '}}</option>
+                                                    @php
+                                                        $selected = '';
+                                                    @endphp
                                                 @endif
+                                                <option value="{{$employee->employee_id}}" {{$selected}}>
+                                                    @if($employee->getUser) {{-- Check if getUser is not null --}}
+                                                        {{$employee->getUser->first_name .' '. $employee->getUser->last_name }}
+                                                    @else
+                                                        Unknown User {{-- Or any default value you want to display --}}
+                                                    @endif
+                                                </option>
                                             @endforeach
-
                                         </select>
                                     </div>
                                     <div class="col-md-3 form-group">

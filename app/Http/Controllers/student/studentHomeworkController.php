@@ -358,7 +358,7 @@ class studentHomeworkController extends Controller
             $result = $result->where('h.date', '<=', $to_date);
         }
 
-        $result = $result->get()->toArray();
+        $result = $result->orderBy('h.id','DESC')->get()->toArray();
 
         $result = array_map(function ($value) {
             return (array) $value;
