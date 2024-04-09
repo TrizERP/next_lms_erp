@@ -98,7 +98,7 @@ class resultPersonalizeMarksController extends Controller
         $enrollment_no = $request->enrollment_no;
         $standard = $request->standard;
 
-        $res['student_data'] = DB::table('result_personalize_marks')->where(['sub_institute_id'=>$sub_institute_id,'syear'=>$syear,'enrollment_no'=>$enrollment_no,'standard'=>$standard])->get();
+        $res['student_data'] = DB::table('result_personalize_marks')->where(['sub_institute_id'=>$sub_institute_id,'enrollment_no'=>$enrollment_no])->get();
 
         $res['sub_institute_id'] = $sub_institute_id;
         return is_mobile($type, 'lms/pal/show', $res, "view");                
@@ -147,6 +147,7 @@ class resultPersonalizeMarksController extends Controller
         ->where('lqm.standard_id', $standard_id)
         ->where('lqm.subject_id', $subject_id)
         ->where('lqm.chapter_id', $chapter_id)
+        ->where('lqm.question_type_id','1')
         ->groupBy(['lqm.id'])
         ->get();
 
