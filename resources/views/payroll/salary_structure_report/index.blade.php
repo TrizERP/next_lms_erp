@@ -26,24 +26,20 @@
                                 <div class="row">
                                     <div class="col-md-3 form-group">
                                         <label>Employee List</label>
-                                        <select id='employee_id' name="employee_id" class="form-control">
+                                        <select id='employee_id' name="employee_id" class="form-control" required>
                                             <option value="0">Select Employee</option>
-                                            @foreach($employees as $employee)
-                                            @if($employee->employee_id !=0 && $employee->employee_id!='')
-                                            @php
-                                                $first_name = $employee->getUser->first_name ?? '-';
-                                                $last_name = $employee->getUser->last_name ?? '-';
-                                            @endphp                                                
-                                                <option value="{{$employee->employee_id}}">{{$first_name .' '. $last_name }}</option>
-                                            @endif
+                                            @foreach($data['employeeDetails'] as $employee)
+                                                <option value="{{$employee['id']}}" @if(isset($data['emp_id']) && $employee['id']==$data['emp_id']) selected @endif>{{$employee['first_name'] .' '. $employee['last_name'] }} ({{$employee['user_profile']}})</option>
                                             @endforeach
-
                                         </select>
                                     </div>
                                     <div class="col-md-3 form-group">
                                         <label>Select Year</label>
                                         <select id='year' name="year" class="form-control">
-                                            <option>Select Year</option>
+                                            <option value="0">Select Year</option>
+                                            @foreach($data['years'] as $key => $value)
+                                                <option value="{{$key}}" @if(isset($data['year']) && $key==$data['year']) selected @endif>{{$value}}</option>
+                                            @endforeach
                                         </select>
                                     </div>
                                     <div class="col-md-3 col-sm-offset-4 text-center form-group">
@@ -68,32 +64,28 @@
                             </form>
                         </div>
             </div>
-            @if(isset($data['employee_data']))
-                @php
-                    if(isset($data['employee_data'])){
-                        $employeeData = $data['employee_data'];
-                    }
-
-                @endphp
-
+            @if(isset($data['salaryStructure']))
                 <div class="card">
                     <div class="table-responsive mt-20 tz-report-table">
                         <table id="example" class="table table-striped">
                             <thead>
                             <tr>
                                 <th>Employee Name</th>
+                                <th>Year</th>
                                 @foreach($data['headers'] as $hkey => $header)
-                                    <th> {{$header}} </th>
+                                    <th class="text-left"> {{$header}} </th>
                                 @endforeach
                             </tr>
                             </thead>
                             <tbody>
-                            @foreach($employeeData as $key => $value)
+                            @foreach($data['salaryStructure'] as $key => $value)
                                 <tr>
                                     <td>{{$value['employee_name']}}</td>
+                                    <td>{{$value['year']}}</td>
+                                    @php $jsonData = json_decode($value['employee_salary_data'],true); @endphp
                                     @foreach($data['headers'] as $hkey => $header)
-                                        @if(isset($value['data'][$hkey]))
-                                            <td>{{$value['data'][$hkey]}}</td>
+                                        @if(isset($jsonData[$hkey]))
+                                            <td>{{$jsonData[$hkey]}}</td>
                                         @endif
                                     @endforeach
                                 </tr>

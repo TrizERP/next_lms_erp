@@ -29,17 +29,9 @@
                                         <label>Employee List</label>
                                         <select id='employee_id' name="employee_id" class="form-control">
                                             <option value="0">Select Employee</option>
-                                            @foreach($employees as $employee)
-                                                @if(isset($list['employeeName']))
-
-                                                    <option
-                                                        value="{{$employee->employee_id}}" {{$list['employeeName']['id'] == $employee->employee_id ? 'selected' :''}}>{{$employee->getUser ? $employee->getUser->first_name .' '. $employee->getUser->last_name : ' '}}</option>
-                                                @else
-                                                    <option
-                                                        value="{{$employee->employee_id}}">{{$employee->getUser ? $employee->getUser->first_name .' '. $employee->getUser->last_name : ' '}}</option>
-                                                @endif
+                                            @foreach($employees as $key => $employee)
+                                                    <option value="{{$employee['id']}}" @if(isset($employee_id) && $employee_id==$employee['id']) @endif>{{$employee['first_name'] .' '. $employee['last_name']}} ({{$employee['user_profile']}})</option>
                                             @endforeach
-
                                         </select>
                                     </div>
                                     <div class="col-md-3 form-group">
@@ -134,6 +126,7 @@
                                                    value="{{$employeeSalaryDetails[$hkey]}}">
                                             <td>{{$employeeSalaryDetails[$hkey]}}</td>
                                         @else
+                                        
                                             @if($hkey == 'total_deduction')
                                                 <input type="hidden" name="emp[{{$hkey}}]" value="{{$totaldeduction}}">
                                                 <td>{{$totaldeduction}}</td>

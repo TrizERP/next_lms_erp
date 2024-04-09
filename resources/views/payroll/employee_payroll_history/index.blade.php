@@ -30,14 +30,7 @@
                                         <select id='employee_id' name="employee_id" class="form-control">
                                             <option value="0">Select Employee</option>
                                             @foreach($employeeLists as $employee)
-                                                @if(isset($list['employee_id']))
-                                                    <option
-                                                        value="{{$employee->id}}" {{$list['employee_id'] == $employee->id ? 'selected':''}}>{{$employee->first_name .' '. $employee->last_name }}</option>
-                                                @else
-                                                    <option
-                                                        value="{{$employee->id}}">{{$employee->first_name .' '. $employee->last_name }}</option>
-                                                    @endif
-
+                                                <option value="{{$employee['id']}}" @if(isset($list['employee_id']) && $list['employee_id']==$employee['id']) selected @endif>{{$employee['first_name'] .' '. $employee['last_name'] }} ({{$employee['user_profile']}}) </option>
                                             @endforeach
 
                                         </select>
@@ -47,11 +40,7 @@
                                         <select id='year' name="year" class="form-control">
                                             <option value="0">Select Year</option>
                                             @foreach($years as $year)
-                                                @if(isset($list['year']) && $list['year'] == $year)
-                                                    <option selected>{{$year}}</option>
-                                                @else
-                                                    <option>{{$year}}</option>
-                                                @endif
+                                                <option @if(isset($list['year']) && $list['year'] == $year) selected @endif>{{$year}}</option>
                                             @endforeach
                                         </select>
                                     </div>

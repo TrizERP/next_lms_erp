@@ -248,14 +248,14 @@
         </div>
         <div class="card">
             <div class="card-body">
-                @if ($sessionData = Session::get('data'))
-                    @if($sessionData['status_code'] == 1)
+                @if (isset($data['status_code']))
+                    @if($data['status_code'] == 1)
                         <div class="alert alert-success alert-block">
                     @else
                         <div class="alert alert-danger alert-block">
                     @endif
                             <button type="button" class="close" data-dismiss="alert">×</button>
-                            <strong>{{ $sessionData['message'] }}</strong>
+                            <strong>{{ $data['message'] }}</strong>
                         </div>
                 @endif
                 <form action="{{ route('form16.report') }}" enctype="multipart/form-data" method="post">
@@ -290,11 +290,10 @@
                         <div class="col-md-3 form-group">
                             <label>Select Year</label>
                             <select id='syear' name="syear" class="form-control">
-                                <option>Select Year</option>
-                                <option value="2020" @if(isset($data['syear']) && $data['syear'] == '2020') selected @endif>2020-2021</option>
-                                <option value="2021" @if(isset($data['syear']) && $data['syear'] == '2021') selected @endif>2021-2022</option>
-                                <option value="2022" @if(isset($data['syear']) && $data['syear'] == '2022') selected @endif>2022-2023</option>
-                                <option value="2023" @if(isset($data['syear']) && $data['syear'] == '2023') selected @endif>2023-2024</option>
+                            <option>Select Year</option>
+                                @foreach($data['years'] as $key => $value)
+                                <option value="{{$key}}" @if(isset($data['syear']) && $data['syear'] == $key) selected @endif>{{$value}}</option>
+                                @endforeach
                             </select>
                         </div>
                         <div class="col-md-3 col-sm-offset-4 text-center form-group">
@@ -339,7 +338,7 @@
             </div>
         </div>
     </div>
-    @if($data['employee_id'])
+    @if($data['employee_id'] && !empty($data['get_employee_salary']))
         <table style="border-collapse:collapse;" id="table_60" width="100%" cellspacing="0" cellpadding="0">
             <tbody><tr>
                 <td>
@@ -414,27 +413,20 @@
                 </td>
             </tr>
             @php 
-                $get_employee_salary = DB::table('employee_salary_structures')->where(['employee_id' => $data['employee_id'], 'sub_institute_id' => session()->get('sub_institute_id')])->first();
-
-                $amount = json_decode($get_employee_salary->employee_salary_data, true);
-
+                $amount = json_decode($data['get_employee_salary']->employee_salary_data, true);
                 $total = $total_allowances = $tot_pf = $total_deductions = $total_ps = $total_pt = 0;
-
                 foreach($data['selected_allowances'] as $key => $allowances)
                 {
                     $total +=  $amount[$allowances];
 
                     $total_allowances = $total * 12;
                 }
-
-                $deductions_titles = [];
-                $total_deductions = [];
+                $deductions_titles = $total_deductions = [];
 
                 foreach($data['selected_deductions'] as $key => $deductions)
                 {
                     $get_payroll_names = DB::table('payroll_types')->where('id', $deductions)->first(['payroll_name']);
                     $deductions_titles[] = $get_payroll_names->payroll_name;
-
                     if($deductions == 1)
                     {
                         $tot_pf += $amount[$deductions];
@@ -1488,10 +1480,18 @@
         });
     </script>
 <script>
+    @if(isset($data['department_id']) && $data['department_id']!=='')
+        var departmentId = "{{$data['department_id']}}";
+        getEmpList(departmentId);
+    @endif
+
     $(document).on("change", "#department_id", function(e) {
-        $('#employee_id').empty();
         var departmentId = $(this).val();
-        
+        getEmpList(departmentId);
+    });
+
+    function getEmpList(departmentId){
+        $('#employee_id').empty();
         $.ajax({
             type: "post",
             url: "{{ route('form16.get.employees.list') }}",
@@ -1499,7 +1499,7 @@
             success: function(data) {
                 var options = '';
                 $.each(data.employees, function(index, employee) {
-                    options += '<option value="' + employee.id + '" >' + employee.first_name + ' ' + employee.last_name + '</option>';
+                    options += '<option value="' + employee.id + '" >' + employee.first_name + ' ' + employee.last_name + '  ('+employee.user_profile+')</option>';
                 });
                 $('#employee_id').append(options);
             },
@@ -1507,7 +1507,7 @@
                 console.error(xhr.responseText);
             }
         });
-    });
+    }
 </script>
 <script>
     function printDiv(divName) 

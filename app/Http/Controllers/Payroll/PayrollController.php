@@ -13,6 +13,7 @@ use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use function App\Helpers\is_mobile;
+use function App\Helpers\employeeDetails;
 use GenTux\Jwt\GetsJwtToken;
 use DB;
 use PDF;
@@ -74,6 +75,9 @@ class PayrollController extends Controller
     {
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $type=$request->input('type');
+        $sub_institute_id=session()->get('sub_institute_id');
+        $syear = session()->get('syear');
+        $employee_id=$request->employee_id ?? '';
         if($type=="API"){
             try {
                 if (!$this->jwtToken()->validate()) {
@@ -87,17 +91,14 @@ class PayrollController extends Controller
                 return response()->json($response, 401);
             }
             $sub_institute_id = $request->get('sub_institute_id');
+            $syear = $request->get('syear');
         }
-        $employees = $employeeLists = tbluserModel::where('sub_institute_id', $sub_institute_id)->where('status', 1)->get();
-        if ($request->employee_id) {
-            $employees = $employees->where('id', $request->employee_id);
-        }
+        $employees =$employeeLists= employeeDetails($sub_institute_id,$employee_id);
+       
         $payrollTypes = PayrollType::where('status', 1)->get();
         
-        $employeeSalaryStructures = EmployeeSalaryStructure::get();
-        // $employeeSalaryStructures = $employeeSalaryStructures->map(function ($employee) {
-        //     return json_decode($employee->employee_salary_data, true);
-        // });
+        $employeeSalaryStructures = EmployeeSalaryStructure::where('sub_institute_id',$sub_institute_id)->where('year',$syear)->get();
+       
         $employeeSalaryStructures = $employeeSalaryStructures->map(function ($employee) {
             $employee['employee_salary_data'] = json_decode($employee['employee_salary_data'], true);
             return $employee;
@@ -107,7 +108,7 @@ class PayrollController extends Controller
         $res['payrollTypes']=$payrollTypes;
         $res['employeeSalaryStructures']=$employeeSalaryStructures;
         $res['employeeLists']=$employeeLists;
-        $res['selected_emp']=$request->employee_id;
+        $res['selected_emp']=$employee_id;
         // echo "<pre>";print_r($employeeSalaryStructures[7011]);exit;
         //return json_decode($employeeSalaryStructures[0]['employee_salary_data'], true);
         return is_mobile($type, "payroll.employee_salary_structure.index", $res, "view");
@@ -118,7 +119,8 @@ class PayrollController extends Controller
     public function employeeSalaryStructureStore(Request $request)
     {
         // return $request->all();exit;
-        $year = Carbon::now()->format('Y');
+        // $year = Carbon::now()->format('Y');
+        $year = session()->get('syear');
         $sub_institute_id =$request->session()->get('sub_institute_id');
         $type=$request->input('type');
         if($type=="API"){
@@ -134,20 +136,34 @@ class PayrollController extends Controller
                 return response()->json($response, 401);
             }
             $sub_institute_id = $request->get('sub_institute_id');
+            $year = Carbon::now()->format('Y');
         }
         
         $res['status_code']=0;
         $res['message']="Failed to Save";   
-        if ($request->emp) {
-            foreach ($request->emp as $employee) {
+        // remove datas with value 0
+        $empDetails =[];
+        $totalAllowance = 0;
+        if (!empty($request->emp)){
+            $makeJson = [];
+            foreach ($request->emp as $emp_id => $salaryData) {
+                if($salaryData[2][1]!=0 || $salaryData[3][1]!=0){
+                    $empDetails[$emp_id]=$salaryData;
+                }
+               
+            }
+        }
+        
+        if (!empty($empDetails)) {
+            foreach ($empDetails as $employee) {
                 $totalAllowance = 0;
                 $employeeDetails = [];
                 foreach ($employee as $key => $data) {
                     if ($key == 0) $employeeDetails['id'] = $data;
                     if ($key > 0) {
-                        $employeeDetails['data'][$data[0]] = $data[1] ?? [];
-                        $emp_data = $data['3'] ?? '';
-                        if ($emp_data == 1) {
+                        $employeeDetails['data'][$data[0]] = ($data[1]!=0) ? $data[1] : 0;
+                        $emp_data = ($data[1]!=0) ? $data['3'] : '';
+                        if ($emp_data == 1 && $data[1]!=0) {
                             $totalAllowance = $totalAllowance + $data[1];
                         }
                     }
@@ -167,16 +183,20 @@ class PayrollController extends Controller
                     'sub_institute_id' => $sub_institute_id
                 ])->get()->toArray();
                 if(!empty($find)){
-                    EmployeeSalaryStructure::where(['employee_id' => $employeeDetails['id'],'year' => $year,'sub_institute_id' => $sub_institute_id
-                    ])->update([
-                        'employee_id' => $employeeDetails['id'], 
-                        'employee_salary_data' => $employeeDetails['data'],
-                        'year' => $year,
-                        'sub_institute_id' => $sub_institute_id
-                    ]);
-                    $res['message']="Updated Successfully";
+                    if(!empty($employeeDetails['data'])){
+                        EmployeeSalaryStructure::where(['employee_id' => $employeeDetails['id'],'year' => $year,'sub_institute_id' => $sub_institute_id
+                        ])->update([
+                            'employee_id' => $employeeDetails['id'], 
+                            'employee_salary_data' => $employeeDetails['data'],
+                            'year' => $year,
+                            'sub_institute_id' => $sub_institute_id,
+                            'updated_at'=>now(),
+                        ]);
+                        $res['message']="Updated Successfully";
+                    }
                 }
                 else{
+                    if(!empty($employeeDetails['data'])){
                     EmployeeSalaryStructure::where(['employee_id' => $employeeDetails['id'], 'year' => $year], [
                         'year' => $year,
                         'sub_institute_id' => $sub_institute_id
@@ -184,9 +204,11 @@ class PayrollController extends Controller
                         'employee_id' => $employeeDetails['id'],
                         'employee_salary_data' => json_encode($employeeDetails['data']),
                         'year' => $year,
-                        'sub_institute_id' => $sub_institute_id
+                        'sub_institute_id' => $sub_institute_id,
+                        'created_at' => now(),
                     ]);
-                    $res['message']="Added Successfully";                    
+                    $res['message']="Added Successfully"; 
+                    }                   
                 }
                 $res['status_code']=1;
             }
@@ -200,42 +222,50 @@ class PayrollController extends Controller
     public function salaryStructureReport(Request $request)
     {
         $sub_institute_id = session()->get('sub_institute_id');
-
-        $employeeDetails = EmployeeSalaryStructure::with('getUser')->where('sub_institute_id', $sub_institute_id)->groupBy('employee_id')->get();
-        
-        return view('payroll.salary_structure_report.index', ['employees' => $employeeDetails]);
+        $type = $request->type;
+        // $employeeDetails = EmployeeSalaryStructure::with('getUser')->where('sub_institute_id', $sub_institute_id)->groupBy('employee_id')->get();
+        $res['employeeDetails']=employeeDetails($sub_institute_id);
+        $res['years'] = Helpers::getPairYears();
+        return is_mobile($type, "payroll/salary_structure_report/index", $res, "view");
+        // return view('payroll.salary_structure_report.index', ['employees' => $employeeDetails]);
     }
 
     public function showSalaryStructureReport(Request $request)
     {
+        // echo "<pre>";print_r($request->all());exit;
+        $type = $request->type;
+        $res['year'] = $year = $request->year;
+        $res['emp_id'] = $emp_id = $request->employee_id;
+
+        $sub_institute_id = session()->get('sub_institute_id');
         $payrollTypes = PayrollType::where('status', 1)->get();
+
         $header = [];
         foreach ($payrollTypes as $payrollType) {
             $header[$payrollType->id] = $payrollType->payroll_name;
         }
-        if (isset($request->employee_id) && $request->employee_id!='') {
-            $employeeDetails = EmployeeSalaryStructure::with('getUser')->where('employee_id', $request->employee_id)->groupBy('employee_id')->get();
-        } else {
-            $employeeDetails = EmployeeSalaryStructure::with('getUser')->where('sub_institute_id', $sub_institute_id)->groupBy('employee_id')->get();
-        }
-        $employeeDetails = $employeeDetails->map(function ($employee) {
-            $data = [];
-            $data['employee_id'] = $employee->employee_id;
-            $data['employee_name'] = ($employee->getUser->first_name ?? '-'). ' ' .($employee->getUser->middle_name ?? '-'). ' ' . ($employee->getUser->last_name ?? '-');
-            $data['data'] = json_decode($employee->employee_salary_data, true);
-            return $data;
-        });
+        $res['employeeDetails']=employeeDetails($sub_institute_id);
 
-        $res['employee_data'] = $employeeDetails;
         $res['headers'] = $header;
-        $employeeDetails = EmployeeSalaryStructure::with('getUser')->get();
+        $res['years'] = Helpers::getPairYears();
 
-        return view('payroll.salary_structure_report.index', ['data' => $res, 'employees' => $employeeDetails]);
+        $res['salaryStructure'] = EmployeeSalaryStructure::join('tbluser as u','u.id','=','employee_salary_structures.employee_id')
+        ->select('employee_salary_structures.*', DB::raw('CONCAT_ws(" ",COALESCE(u.first_name,"-"), COALESCE(u.last_name,"-")) as employee_name'))
+        ->where('employee_salary_structures.employee_id', $emp_id)
+        ->where('employee_salary_structures.sub_institute_id', $sub_institute_id)
+        ->when($year!=0, function($query) use($year) {
+            $query->where('employee_salary_structures.year', $year);
+        })
+        ->orderBy('employee_salary_structures.year','Desc')
+        ->get();
+        // echo "<pre>";print_r($res['salaryStructure']);exit;
+        return is_mobile($type, "payroll/salary_structure_report/index", $res, "view");
     }
 
     public function form16(Request $request)
     {
         $type = $request->input('type');
+        $sub_institute_id = session()->get('sub_institute_id');
         if($type=="API"){
             try {
                 if (!$this->jwtToken()->validate()) {
@@ -257,10 +287,10 @@ class PayrollController extends Controller
         $res['departments'] = $departments = HrmsDepartment::where('status', true)->pluck('department', 'id');
 
         $res['payrollTypes'] = PayrollType::where('status', 1)->get();
-
+        $res['academic_years'] = DB::table('academic_year')->where('sub_institute_id',$sub_institute_id)->groupBy('syear')->orderBy('id','DESC')->get()->pluck('syear');
         $res['allowance'] = $res['payrollTypes']->where('payroll_type', 1);
         $res['deduction'] = $res['payrollTypes']->where('payroll_type', 2);
-        
+        $res['years'] = Helpers::getPairYears();
         return is_mobile($type, "payroll.form16.index", $res, "view");        
         // return view('payroll.form16.index', ['employees' => $employeeDetails, 'payrollTypes' => $result]);
     }
@@ -271,7 +301,14 @@ class PayrollController extends Controller
         $department_id = $request->input('department_id');
 	    $employee_id = $request->get('employee_id');
 	
-	    $employees = tbluserModel::where('sub_institute_id', $sub_institute_id)->where('department_id', $department_id)->get()->toArray();
+        $employees = tbluserModel::join('tbluserprofilemaster as upm', 'upm.id', '=', 'tbluser.user_profile_id')
+        ->selectRaw('tbluser.id,IfNULL(tbluser.first_name, "-") as first_name, IFNULL(tbluser.last_name, "-") as last_name, tbluser.sub_institute_id, IfNULL(upm.name,"-") as user_profile')
+        ->where('tbluser.sub_institute_id', $sub_institute_id)
+        ->where('tbluser.department_id', $department_id)
+        ->where('tbluser.status', 1)
+        ->orderBy('tbluser.first_name')
+        ->get()
+        ->toArray();   
 
         return response()->json(['employees' => $employees, 'department_id' => $department_id, 'employee_id' =>$employee_id]);
     }
@@ -332,7 +369,10 @@ class PayrollController extends Controller
             ->join('tbluser as u', 'u.department_id', 'hd.id')
             ->where(['u.sub_institute_id' => $sub_institute_id, 'u.id' => $employee_id])
             ->first();
-          
+            
+        $res['get_employee_salary'] = DB::table('employee_salary_structures')->where(['employee_id' => $employee_id, 'sub_institute_id' => session()->get('sub_institute_id'),'year'=>$syear])->first();
+        $res['academic_years'] = DB::table('academic_year')->where('sub_institute_id',$sub_institute_id)->groupBy('syear')->orderBy('id','DESC')->get()->pluck('syear');
+        $res['years'] = Helpers::getPairYears();
         $res['employees'] = $employees;
         $res['employee_id'] = $employee_id;
         $res['department_id'] = $department_id;
@@ -341,7 +381,11 @@ class PayrollController extends Controller
         $res['from_date'] = $from_date;
         $res['to_date'] = $to_date;
         $res['department_name'] = $get_department_name;
-        
+
+        if(empty($res['get_employee_salary'])){
+            $res['status_code'] = 0;
+            $res['message']='Please Add Salary Structure for selected year !!';
+        }
         return is_mobile($type, "payroll.form16.index", $res, "view");
 
         // return $request->all();
@@ -715,7 +759,7 @@ class PayrollController extends Controller
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $payrollTypes = PayrollType::where('status', 1)->get();
         //        return $payrollTypes;
-        $employeeDetails = EmployeeSalaryStructure::where('sub_institute_id', $sub_institute_id)->get();
+        $employeeDetails = employeeDetails($sub_institute_id);
         $header = [];
         $months = Helpers::getMonths();
         $years = Helpers::getYears();
@@ -758,7 +802,9 @@ class PayrollController extends Controller
             } else {
                 //return $request->all();
                 $employeeSalaryDetails = EmployeeSalaryStructure::where([['employee_id', $request->employee_id], ['sub_institute_id', $request->session()->get('sub_institute_id')]])->first();
-
+                if(empty($employeeSalaryDetails)){
+                    return view('payroll.monthly_payroll_report.index', ['employees' => $employeeDetails,'hide_button'=>$hide_button, 'header' => $header, 'list' => $list, 'total_day' => $totalDay, 'hideButton' => $hide_button,'totaldeduction'=> $totaldeduction,'totalallowance' => $totalallowance,'months' => $months,'years' => $years,'employee_id'=>$request->employee_id])->with(['message' => 'Salary Structure Not Found For this User','employee_id'=>$request->employee_id]);
+                }
                 $employeeSalaryDetails = json_decode($employeeSalaryDetails->employee_salary_data, true);
 
                 $preparPayrollType = [];
@@ -799,7 +845,7 @@ class PayrollController extends Controller
         }
 
         if ($request->total_day > 31) {
-            return view('payroll.monthly_payroll_report.index', ['employees' => $employeeDetails,'hide_button'=>$hide_button, 'header' => $header, 'list' => $list, 'employeeSalaryDetails' => $employeeSalaryDetails, 'total_day' => $totalDay, 'hideButton' => $hide_button,'totaldeduction'=> $totaldeduction,'totalallowance' => $totalallowance,'months' => $months,'years' => $years])->with(['message' => 'please enter valid days']);
+            return view('payroll.monthly_payroll_report.index', ['employees' => $employeeDetails,'hide_button'=>$hide_button, 'header' => $header, 'list' => $list, 'employeeSalaryDetails' => $employeeSalaryDetails, 'total_day' => $totalDay, 'hideButton' => $hide_button,'totaldeduction'=> $totaldeduction,'totalallowance' => $totalallowance,'months' => $months,'years' => $years])->with(['message' => 'please enter valid days','employee_id'=>$request->employee_id]);
         }
 
         if ($request->emp && $request->save) {
@@ -821,7 +867,7 @@ class PayrollController extends Controller
             $hide_button = false;
         }
 
-        return view('payroll.monthly_payroll_report.index', ['employees' => $employeeDetails,'hide_button'=>$hide_button, 'header' => $header, 'list' => $list, 'employeeSalaryDetails' => $employeeSalaryDetails, 'total_day' => $totalDay, 'hideButton' => $hide_button,'totaldeduction'=> $totaldeduction,'totalallowance' => $totalallowance,'months' => $months,'years' => $years]);
+        return view('payroll.monthly_payroll_report.index', ['employees' => $employeeDetails,'hide_button'=>$hide_button, 'header' => $header, 'list' => $list, 'employeeSalaryDetails' => $employeeSalaryDetails, 'total_day' => $totalDay, 'hideButton' => $hide_button,'totaldeduction'=> $totaldeduction,'totalallowance' => $totalallowance,'months' => $months,'years' => $years,'employee_id'=>$request->employee_id]);
     }
 
     public function payrollBankWiseReport(Request $request) {
@@ -992,7 +1038,7 @@ class PayrollController extends Controller
     {
         //return $request->all();
         $sub_institute_id = $request->session()->get('sub_institute_id');
-        $employeeLists = tbluserModel::where('sub_institute_id', $sub_institute_id)->where('status', 1)->get();
+        $employeeLists = employeeDetails($sub_institute_id);
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $payrollTypes = PayrollType::where('status', 1)->get();
         $currentYearemployeeDetails = [];
