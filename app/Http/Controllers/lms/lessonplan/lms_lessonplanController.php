@@ -572,7 +572,7 @@ class lms_lessonplanController extends Controller
         }
         $main_prompt = $request->prompt." for standard name =".$request->standard." and subject name =".$request->subject." and chapter name =".$request->chapter.$extra_text." , In response array give Short and simple Answer";
         $prompt = array($main_prompt);
-        $apiKey ='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';
+        $apiKey ='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';
       
         $endpoint = "https://api.openai.com/v1/chat/completions";
 

@@ -227,6 +227,7 @@ class circularController extends Controller
                 ->where("c.standard_id", "=", $standard_id)
                 ->where("c.syear", "=", $syear)
                 ->where("c.sub_institute_id", "=", $sub_institute_id)
+                ->orderBy('c.id','DESC')
                 ->get()->toArray();
 
             $response['data'] = $result_data;
