@@ -79,7 +79,7 @@
                                     <th>{{$col}} </th>
                                 @endforeach
                                 <th>Total Deduction</th>
-                                <th>Total Payment</th>
+                                <th class="text-left">Total Payment</th>
                             </tr>
                             </thead>
                             <form action="{{route('payroll.store_monthly_payroll_report')}}" method="post">
@@ -100,7 +100,7 @@
                                     @endforeach
 
 
-                                    @foreach($nextYearemployeeDetails as $employee)
+                               {{--     @foreach($nextYearemployeeDetails as $employee)
                                         <tr>
                                         <td>{{$employee['month'] .'/'. $employee['year']}}</td>
                                         <td>{{$employee['employee_id']}}</td>
@@ -111,7 +111,7 @@
                                         <td>{{$employee['total_deduction']}}</td>
                                         <td>{{$employee['total_payment']}}</td>
                                         </tr>
-                                    @endforeach
+                                    @endforeach --}}
 
                                 </tbody>
                             </form>

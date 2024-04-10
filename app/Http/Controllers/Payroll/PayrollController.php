@@ -1043,7 +1043,7 @@ class PayrollController extends Controller
         $payrollTypes = PayrollType::where('status', 1)->get();
         $currentYearemployeeDetails = [];
         $nextYearemployeeDetails = [];
-        $years = Helpers::getPairYears();
+        $years = Helpers::getYears();
         $header = [];
         $list = [];
         $employeeDetails = [];
@@ -1053,9 +1053,9 @@ class PayrollController extends Controller
 
         if ($request->employee_id && $request->year) {
             $year = explode('-',$request->year);
-            $startYear = $year[0];
-            $endYear = $year[1];
-            $currentYearemployeeDetails = EmployeeMonthlySalaryData::whereIn('month',['Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'])->where([['year',$startYear],['employee_id',$request->employee_id],['sub_institute_id',$sub_institute_id]])->get();
+            // $startYear = $year[0];
+            // $endYear = $year[1];
+            $currentYearemployeeDetails = EmployeeMonthlySalaryData::whereIn('month',['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'])->where([['year',$year],['employee_id',$request->employee_id],['sub_institute_id',$sub_institute_id]])->get();
             $currentYearemployeeDetails = $currentYearemployeeDetails->map(function($employee){
                 $data = [];
                 $data['employee_id'] = $employee->employee_id;
@@ -1068,25 +1068,25 @@ class PayrollController extends Controller
                 $data['total_payment'] =$employee->total_payment;
                 return $data;
             });
-            $nextYearemployeeDetails = EmployeeMonthlySalaryData::whereIn('month',['Jan','Feb','Mar'])->where([['year',$endYear],['sub_institute_id',$sub_institute_id],['employee_id',$request->employee_id]])->get();
-            $nextYearemployeeDetails = $nextYearemployeeDetails->map(function($employee){
-                $data = [];
-                $data['employee_id'] = $employee->employee_id;
-                $data['employee_name'] = $employee->getUser->first_name . ' ' . $employee->getUser->middle_name . ' ' . $employee->getUser->last_name;
-                $data['data'] = json_decode($employee->employee_salary_data, true);
-                $data['total_day'] =$employee->total_day;
-                $data['month'] =$employee->month;
-                $data['year'] =$employee->year;
-                $data['total_deduction'] =$employee->total_deduction;
-                $data['total_payment'] =$employee->total_payment;
-                return $data;
-            });
+            // $nextYearemployeeDetails = EmployeeMonthlySalaryData::whereIn('month',[])->where([['year',$endYear],['sub_institute_id',$sub_institute_id],['employee_id',$request->employee_id]])->get();
+            // $nextYearemployeeDetails = $nextYearemployeeDetails->map(function($employee){
+            //     $data = [];
+            //     $data['employee_id'] = $employee->employee_id;
+            //     $data['employee_name'] = $employee->getUser->first_name . ' ' . $employee->getUser->middle_name . ' ' . $employee->getUser->last_name;
+            //     $data['data'] = json_decode($employee->employee_salary_data, true);
+            //     $data['total_day'] =$employee->total_day;
+            //     $data['month'] =$employee->month;
+            //     $data['year'] =$employee->year;
+            //     $data['total_deduction'] =$employee->total_deduction;
+            //     $data['total_payment'] =$employee->total_payment;
+            //     return $data;
+            // }); 'nextYearemployeeDetails'=>$nextYearemployeeDetails, 
             $list['month'] = $request->month;
             $list['year'] = $request->year;
             $list['employee_id'] = $request->employee_id;
             //return $list;
         }
 
-        return view('payroll.employee_payroll_history.index', ['employeeLists' => $employeeLists,'currentYearemployeeDetails' => $currentYearemployeeDetails,'nextYearemployeeDetails'=>$nextYearemployeeDetails, 'header' => $header, 'list' => $list,'years' => $years]);
+        return view('payroll.employee_payroll_history.index', ['employeeLists' => $employeeLists,'currentYearemployeeDetails' => $currentYearemployeeDetails,'header' => $header, 'list' => $list,'years' => $years]);
     }
 }
