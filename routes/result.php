@@ -215,7 +215,7 @@ Route::post('studentResultPDFAPI', [cbse_1t5_result_controller::class, 'studentR
 //});
 
 Route::get('cbse_1t5_result/download_overall_report', [result_report_controller::class, 'downloadOverAllReportExcel']);
-Route::get('resul_personal_marks_api', [resultPersonalizeMarksController::class, 'resulPersonalMarksApi']);
+Route::get('result_personal_marks_api', [resultPersonalizeMarksController::class, 'resultPersonalMarksApi']);
 Route::get('question_lists_api', [resultPersonalizeMarksController::class, 'questionListsAPI']);
 Route::resource('result_personalize_marks', resultPersonalizeMarksController::class);
 //Route::resource('result-template', result_TemplateController::class);

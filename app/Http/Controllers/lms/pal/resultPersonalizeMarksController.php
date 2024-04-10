@@ -86,7 +86,7 @@ class resultPersonalizeMarksController extends Controller
         return is_mobile($type, 'result_personalize_marks.index', $res, "redirect");                        
     }
 
-    public function resulPersonalMarksApi(Request $request){
+    public function resultPersonalMarksApi(Request $request){
         $type= $request->type;
         if($type=='API'){
             $sub_institute_id = $request->get('sub_institute_id');
