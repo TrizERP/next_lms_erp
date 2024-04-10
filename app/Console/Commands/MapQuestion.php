@@ -31,7 +31,21 @@ class mapQuestion extends Command
      */
     public function handle()
     {
+        /* Origginal Query - Hide by rajesh
         $questionMasters = DB::table('lms_question_master as lq')->leftJoin('lms_question_mapping as lqm','lq.id','=','lqm.questionmaster_id')->selectRaw('lq.id as id,lq.question_title,lq.standard_id')->whereRaw('lqm.id IS NULL')->groupBy('lq.question_title')->get();
+        */
+
+        $questionMasters = DB::table('lms_question_master as lq')
+		    ->select('lq.id as id', 'lq.question_title', 'lq.standard_id')
+		    ->leftJoin('lms_question_mapping as lqm', function ($join) {
+		        $join->on('lq.id', '=', 'lqm.questionmaster_id')
+		             ->where('lqm.mapping_type_id', '=', 9);
+		    })
+		    ->where('lq.question_type_id', 1)
+		    ->whereNull('lqm.id')
+		    ->where('sub_institute_id', 1)
+		    ->get();
+
         $controller = new AJAXController();
         $contentMappingType=[];
         $i=1;
@@ -47,7 +61,7 @@ class mapQuestion extends Command
             $question = $questionMaster->question_title;
             $standard = $std_name->name;
             $type_depth = 9;
-            $type_bloom = 82;
+            //$type_bloom = 82;
             $type_learning = 'learn';
 
             // Create a new instance of Request
@@ -58,28 +72,28 @@ class mapQuestion extends Command
                 'question' => $question,
                 'standard' => $standard,
                 'type_depth' => $type_depth,
-                'type_bloom' => $type_bloom,
+                //'type_bloom' => $type_bloom,
                 'type_learning' => $type_learning,
             ]);
 
             // Use the request in your controller
             $response = $controller->chat($request);
-
-            if ($response) {
+            //    echo "<pre>";print_r($response);exit; 
+            if (is_string($response)) {
                 $response = json_decode($response, true);
                 if(isset($response[0]['question_depth'])){
 
                 $questionDepthValueId = DB::table('lms_mapping_type')->where('name', $response[0]['question_depth'])->value('id');
                 }
-                if( isset($response[0]['question_bloom'])){
+                /*if( isset($response[0]['question_bloom'])){
                 $questionBloomValueId = DB::table('lms_mapping_type')->where('name', $response[0]['question_bloom'])->value('id');
-                }
+                }*/
                 if( isset($response[0]['question_learning'])){                
                 DB::table('lms_question_master')->where('id', $questionMaster->id)->update([
                     'learning_outcome' => $response[0]['question_learning'],
                 ]);
                 }
-                if(isset($questionDepthValueId) && isset($questionBloomValueId)){
+                if(isset($questionDepthValueId)){// && isset($questionBloomValueId)
                 $contentMappingType = [
                     [
                         'questionmaster_id' => $questionMaster->id,
@@ -87,23 +101,22 @@ class mapQuestion extends Command
                         'mapping_value_id' => $questionDepthValueId,
                         'reasons' => $response[0]['reason_depth'] ?? '',
                     ],
-                    [
+                    /*[
                         'questionmaster_id' => $questionMaster->id,
                         'mapping_type_id' => 82,
                         'mapping_value_id' => $questionBloomValueId,
                         'reasons' => $response[0]['reason_bloom'] ?? '',
-                    ],
+                    ],*/
                 ];
             }
                 // lmsQuestionMappingModel::where(["questionmaster_id" => $questionMaster->id])->delete();
                if(!empty($contentMappingType)){
                 lmsQuestionMappingModel::insert($contentMappingType);
-                //echo "<pre>";print_r($contentMappingType);
+                echo "<pre>";print_r($contentMappingType);
                 $i++;
                }
             }
         }
-        echo $i;
     }else{
         echo "All Question Mapped Successfully !!";
     }
