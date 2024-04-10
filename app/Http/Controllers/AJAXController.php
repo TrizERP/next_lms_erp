@@ -2226,14 +2226,26 @@ class AJAXController extends Controller
     }
 
     public function pythonTimetable(Request $request){
-        $sub_institute_id = session()->get('sub_institute_id');
-        $file_response = shell_exec('python3 /home/fees_analysis_new.py');
+        $sub_institute_id = 1;
+        $syear = 2021;
+        $type = 'API';
+        $standard_id = 39;
+        $subject_id = 3975;
+        $chapter_id = 26;
+        
+        // Construct the command string with parameters
+        $command = "python3 /home/pal/pal.py $sub_institute_id $syear \"$type\" $standard_id $subject_id $chapter_id";
+
+        // Execute the command and capture the response
+        $file_response = shell_exec($command);
+
         if($file_response==null){
             echo "file has no response";
         }else{
             echo "<pre>";print_r($file_response);
         }
         exit; 
+        
         $file_response = shell_exec('python3 /home/fees_analysis_1.py ' . escapeshellarg($sub_institute_id));
 
         // Decode the JSON string
