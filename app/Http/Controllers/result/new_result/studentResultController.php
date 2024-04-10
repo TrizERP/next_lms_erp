@@ -3126,7 +3126,7 @@ $overall_total = $overall_total / 2;
                 // get all subject name 
                 foreach ($get_subject as $val) {
                     $both_term_ob_mark = 0;
-                    $table .= '<tr><td>' . $val->subject_name . '</td>';
+                    $table .= '<tr><td>' . $val->subject_name .  '</td>';
                     // get term wise eam and marks 
                     foreach ($term_name as $keys => $terms) {
                         $obtained_marks = $to_marks = $to_weight = $title_exam = []; 
@@ -3153,7 +3153,12 @@ $overall_total = $overall_total / 2;
                                             $ob_mark = $marks->points;
                                             // $ob_mark = ($ob_mark != 0) ? (($ob_mark / $title->points) * $title->weightage) : 0;
                                             // store marks in array to get best of 2 
+
+                                            // convert marks according to weightage
+                                            $ob_mark = ($ob_mark != 0) ? (($ob_mark / $title->points) * $title->weightage) : $ob_mark;
+
                                             $obtained_marks[$title->exam_id][] = $ob_mark;
+
                                             $foundMarks = true;
                                         }
                                         break;
@@ -3227,7 +3232,6 @@ $overall_total = $overall_total / 2;
                     $table .= '<td class="data_center tot_of_both" ' . $underline . '>' . round($both_term_ob_mark, 0) . '</td><td class="data_center grade_of_both">' . $grade_std . '</td>';
                     $table .= '</tr>';
                 }
-                // exit;
                 $table .= '</tbody></table>';
        
             $res['scholastic'] = $table;

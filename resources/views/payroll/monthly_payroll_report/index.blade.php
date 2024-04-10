@@ -29,23 +29,8 @@
                                         <label>Employee List</label>
                                         <select id='employee_id' name="employee_id" class="form-control">
                                             <option value="0">Select Employee</option>
-                                            @foreach($employees as $employee)
-                                                @if(isset($list['employeeName']))
-                                                    @php
-                                                        $selected = $list['employeeName']['id'] == $employee->employee_id ? 'selected' : '';
-                                                    @endphp
-                                                @else
-                                                    @php
-                                                        $selected = '';
-                                                    @endphp
-                                                @endif
-                                                <option value="{{$employee->employee_id}}" {{$selected}}>
-                                                    @if($employee->getUser) {{-- Check if getUser is not null --}}
-                                                        {{$employee->getUser->first_name .' '. $employee->getUser->last_name }}
-                                                    @else
-                                                        Unknown User {{-- Or any default value you want to display --}}
-                                                    @endif
-                                                </option>
+                                            @foreach($employees as $key => $employee)
+                                                    <option value="{{$employee['id']}}" @if(isset($employee_id) && $employee_id==$employee['id']) @endif>{{$employee['first_name'] .' '. $employee['last_name']}} ({{$employee['user_profile']}})</option>
                                             @endforeach
                                         </select>
                                     </div>
@@ -141,6 +126,7 @@
                                                    value="{{$employeeSalaryDetails[$hkey]}}">
                                             <td>{{$employeeSalaryDetails[$hkey]}}</td>
                                         @else
+                                        
                                             @if($hkey == 'total_deduction')
                                                 <input type="hidden" name="emp[{{$hkey}}]" value="{{$totaldeduction}}">
                                                 <td>{{$totaldeduction}}</td>
