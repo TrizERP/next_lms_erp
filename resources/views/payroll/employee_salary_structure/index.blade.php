@@ -21,7 +21,7 @@
                                     <strong>{{ $sessionData['message'] }}</strong>
                                 </div>
                             @endif
-                            <form action="{{route('payroll.show_employee_salary_structure')}}"
+                            <form action="{{route('employee_salary_structure.index')}}"
                                   enctype="multipart/form-data"
                                   method="post">
                                 @csrf
@@ -31,17 +31,8 @@
 
                                         <select id='employee_id' name="employee_id" class="form-control">
                                             <option value="0">Select Employee</option>
-                                            @foreach($data['employeeLists'] as $key => $employeeList)
-                                            @if($employeeList->id!=0 && $employeeList->id!='')
-                                                @if(is_array($data['employees']) && count($data['employees']) == 1 || $data['selected_emp'] == $employeeList->id)
-                                                    <option
-                                                        value="{{$employeeList->id}}"
-                                                        @if(isset($data['selected_emp'])==$employeeList->id) selected @endif>{{$employeeList->first_name .' '. $employeeList->last_name }}</option>
-                                                @else
-                                                    <option
-                                                        value="{{$employeeList->id}}" >{{$employeeList->first_name .' '. $employeeList->last_name }}</option>
-                                                @endif
-                                            @endif                                            
+                                            @foreach($data['employees'] as $key => $employeeList)
+                                            <option value="{{$employeeList['id']}}" @if(isset($data['selected_emp']) && $data['selected_emp']==$employeeList['id']) selected @endif>{{$employeeList['first_name'] .' '. $employeeList['last_name'] }} ({{$employeeList['user_profile']}})</option>                              
                                             @endforeach
 
                                         </select>
@@ -77,44 +68,44 @@
                             <table id="example" class="table table-striped">
                                 <thead>
                                 <tr>
+                                    <th>Sr No.</th>
                                     <th>Emp Id</th>
                                     <th>Emp Name</th>
                                     <th>Gender</th>
                                     @foreach ($data['payrollTypes'] as $payrollType)
-                                        <th>{{$payrollType->payroll_name}}</th>
+                                        <th class="text-left">{{$payrollType->payroll_name}}</th>
                                     @endforeach
                                 </tr>
                                 </thead>
                                 <tbody>
-                                @php
-                                    $j=1;
-                                @endphp
+                                @php $j=1; @endphp
                                 @foreach($data['employees'] as $key => $value)
                                     <tr>
-                                        <td>{{$value->id}}</td>
-                                        <td>{{$value->first_name .' '. $value->middle_name .' '.$value->last_name}}</td>
-                                        <td>{{$value->gender}}</td>
-                                        <input type="hidden" name="emp[{{$value->id}}][]" value="{{$value->id}}"> 
+                                        <td>{{$key+1}}</td>
+                                        <td>{{$value['id']}}</td>
+                                        <td>{{$value['first_name'] .' '. $value['middle_name'] .' '.$value['last_name']}}  ({{$employeeList['user_profile']}})</td>
+                                        <td>{{$value['gender']}}</td>
+                                        <input type="hidden" name="emp[{{$value['id']}}][]" value="{{$value['id']}}"> 
                                         @foreach ($data['payrollTypes'] as $payrollType)
                                             @if($payrollType->payroll_name == 'PF' || $payrollType->payroll_name == 'Pro.Tax')
-                                                <input type="hidden" name="emp[{{$value->id}}][{{$payrollType->id}}][]"
+                                                <input type="hidden" name="emp[{{$value['id']}}][{{$payrollType->id}}][]"
                                                        value="{{$payrollType->id}}">
                                                 <td><input type="text" disabled
-                                                           value="{{$data['employeeSalaryStructures'][$value->id][$payrollType->id] ?? 0}}">
-                                                    <input type="hidden" name="emp[{{$value->id}}][{{$payrollType->id}}][]"
-                                                           value="{{$data['employeeSalaryStructures'][$value->id][$payrollType->id] ?? 0}}">
-                                                    <input type="hidden" name="emp[{{$value->id}}][{{$payrollType->id}}][]"
+                                                           value="{{$data['employeeSalaryStructures'][$value['id']][$payrollType->id] ?? 0}}">
+                                                    <input type="hidden" name="emp[{{$value['id']}}][{{$payrollType->id}}][]"
+                                                           value="{{$data['employeeSalaryStructures'][$value['id']][$payrollType->id] ?? 0}}">
+                                                    <input type="hidden" name="emp[{{$value['id']}}][{{$payrollType->id}}][]"
                                                            value="{{$payrollType->payroll_name}}">
-                                                    <input type="hidden" name="emp[{{$value->id}}][{{$payrollType->id}}][]"
+                                                    <input type="hidden" name="emp[{{$value['id']}}][{{$payrollType->id}}][]"
                                                            value="{{$payrollType->payroll_type}}">
                                                 </td>
                                             @else
-                                                <input type="hidden" name="emp[{{$value->id}}][{{$payrollType->id}}][]"
+                                                <input type="hidden" name="emp[{{$value['id']}}][{{$payrollType->id}}][]"
                                                        value="{{$payrollType->id}}">
-                                                <td><input type="text" name="emp[{{$value->id}}][{{$payrollType->id}}][]"
-                                                           value="{{$data['employeeSalaryStructures'][$value->id][$payrollType->id] ?? 0}}">
-                                                    <input type="hidden" name="emp[{{$value->id}}][{{$payrollType->id}}][]"
-                                                           value="{{$payrollType->payroll_name}}"> <input type="hidden" name="emp[{{$value->id}}][{{$payrollType->id}}][]"
+                                                <td><input type="text" name="emp[{{$value['id']}}][{{$payrollType->id}}][]"
+                                                           value="{{$data['employeeSalaryStructures'][$value['id']][$payrollType->id] ?? 0}}">
+                                                    <input type="hidden" name="emp[{{$value['id']}}][{{$payrollType->id}}][]"
+                                                           value="{{$payrollType->payroll_name}}"> <input type="hidden" name="emp[{{$value['id']}}][{{$payrollType->id}}][]"
                                                            value="{{$payrollType->payroll_type}}">
                                                 </td>
                                             @endif

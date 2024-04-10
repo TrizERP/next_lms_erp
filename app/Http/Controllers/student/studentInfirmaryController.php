@@ -56,7 +56,6 @@ class studentInfirmaryController extends Controller
      */
     public function create(Request $request)
     {
-        $type= $request->type;
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $syear = $request->session()->get('syear');
         
@@ -66,13 +65,8 @@ class studentInfirmaryController extends Controller
             ->where("syear", "=", $syear)
             ->get()->toArray();
 
-        $res['medical_case_no'] = $medical_case_no[0]->medical_case_no;
-        $res['user_name'] = session()->get('name');
-
-        // view()->share('medical_case_no', $medical_case_no[0]->medical_case_no);
-        // return view('student/infirmary/add_student_infirmary');
-        return is_mobile($type, "student/infirmary/add_student_infirmary", $res, "view");
-
+        view()->share('medical_case_no', $medical_case_no[0]->medical_case_no);
+        return view('student/infirmary/add_student_infirmary');
     }
 
     /**

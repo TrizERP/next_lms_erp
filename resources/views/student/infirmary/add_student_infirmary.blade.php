@@ -40,11 +40,11 @@
                                         <div class="col-md-4 form-group">
                                             <label>{{ App\Helpers\get_string('caseno','request')}}</label>
                                             <input type="text" id='medical_case_no' name="medical_case_no"
-                                                   class="form-control" value="{{$data['medical_case_no']}}" readonly="readonly">
+                                                   class="form-control" value="{{$medical_case_no}}" readonly="readonly">
                                         </div>
                                         <div class="col-md-4 form-group">
                                             <label>{{ App\Helpers\get_string('doctorname','request')}}</label>
-                                            <input type="text" id='doctor_name' name="doctor_name" value="{{$data['user_name']}}" class="form-control">
+                                            <input type="text" id='doctor_name' name="doctor_name" class="form-control">
                                         </div>
                                         <div class="col-md-4 form-group">
                                             <label>{{ App\Helpers\get_string('doctorcontact','request')}}</label>

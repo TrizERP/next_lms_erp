@@ -6,6 +6,7 @@ namespace App\Helpers;
 use App\Models\easy_com\manage_sms_api\manage_sms_api;
 use App\Models\fees\fees_title\fees_title;
 use App\Models\normClature;
+use App\Models\user\tbluserModel;
 use App\Models\fees\map_year\map_year;
 use App\Models\student\appNotificationModel;
 use App\Models\student\tblstudentModel;
@@ -166,7 +167,7 @@ if (!function_exists('SearchChain')) {
         ];
 
         // menu_ids to get class teacher class only
-        $menu_ids = [80,102,156,82];
+        $menu_ids = [80,102,156];
         $getClass=DB::table('class_teacher')->whereRaw('sub_institute_id='.session()->get('sub_institute_id').' and teacher_id ='.session()->get('user_id').' and syear="'.session()->get('syear').'"')->first();
         // START 07/09/2021 code for getting standard , grade , division according to timetable wise for homework module
         if (session()->get('user_profile_name') == 'Teacher') {
@@ -1461,6 +1462,8 @@ if (!function_exists('getStudents')) {
                 tkr.from_distance,IF(tv.vehicle_type = 'Van',tkr.van_new,tkr.rick_new) AS distance_rate,s.first_name as student_first_name,s.middle_name as student_middle_name,s.last_name as student_last_name,rsam.teacher_remark,COUNT(ats.id) as total_att_days,sum(CASE WHEN ats.attendance_code = 'P' THEN 1 ELSE 0 END) as present_att_days, group_concat(DISTINCT  fc.term_id) as month_name, bg.bloodgroup as blood_group_name")
                 ->where('s.sub_institute_id', $sub_institute_id)
                 ->where('se.syear', $syear)
+                // ->groupBy('fc.id')
+                // ->orderBy('fc.id', 'desc')->limit(1)
                 ->whereIn('s.id', $student_ids)
                 ->orderBy('s.roll_no', 'ASC')
                 ->groupBy('s.id')->get()->toArray();
@@ -2194,4 +2197,22 @@ if (!function_exists('get_string')) {
             ->get()->toArray();
         }
     }
+
+    if (!function_exists('employeeDetails')) {
+
+        function employeeDetails($sub_institute_id='',$employee_id='')
+        {
+            return tbluserModel::join('tbluserprofilemaster as upm', 'upm.id', '=', 'tbluser.user_profile_id')
+            ->selectRaw('tbluser.*,IfNULL(tbluser.first_name, "-") as first_name, IFNULL(tbluser.last_name, "-") as last_name,IFNULL(tbluser.last_name, "-") as middle_name, tbluser.sub_institute_id, IfNULL(upm.name,"-") as user_profile')
+            ->where('tbluser.sub_institute_id', $sub_institute_id)
+            ->where('tbluser.status', 1)
+            ->when($employee_id!='',function($query) use($employee_id){
+                $query->where('tbluser.id',$employee_id);
+            })
+            ->orderBy('tbluser.first_name')
+            ->get()
+            ->toArray();
+        }
+    }
+    
 }
