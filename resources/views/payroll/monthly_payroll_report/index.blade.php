@@ -160,7 +160,7 @@
                                 <input type="submit" name="save" value="save" class="btn btn-success">
                             @endif
                             @if(!$hide_button)
-                                <a href="{{url('monthly-payroll-report/pdf').'/'.$employeeName['id']}}"
+                                <a href="{{url('monthly-payroll-report/pdf').'/'.$employeeName['id'].'/'.$list['month'].'/'.$list['year']}}"
                                    class="btn btn-primary">pdf</a>
                             @endif
                         </form>
