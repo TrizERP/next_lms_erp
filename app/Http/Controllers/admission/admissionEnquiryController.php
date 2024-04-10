@@ -797,19 +797,21 @@ class admissionEnquiryController extends Controller
             $fileData = json_decode($file_response,true);
             foreach ($fileData as $key => $value) {
                 # code...
-                $getStudent = DB::table('admission_enquiry as ae')
-                    ->join('standard as s','s.id','=','ae.admission_standard')
-                    ->selectRaw('ae.id,ae.enquiry_no,ae.admission_standard,s.name as standard_name,concat_ws(" ",COALESCE(first_name,"-"),COALESCE(middle_name,"-"),COALESCE(last_name,"-")) as student_name')
-                    ->where('ae.id',$value['enquiry_id'])->first();
+                $getStudent =DB::table('standard')->where('id',$value['admission_standard'])->first();
                 if(!empty($getStudent)){
-                    $value['standard'] = $getStudent->standard_name;
-                    $value['enquiry_no']=$getStudent->enquiry_no;
-                    $value['student_name']=$getStudent->student_name;                    
+                    $value['standard_name'] = $getStudent->name;                
                     $studentData[]=$value;
                 }
             }
+
+            $getYears = function ($subarray) {
+                return array_unique(array_filter(array_keys($subarray), function ($key) {
+                    return is_numeric($key); // Filter numeric keys
+                }));
+            };
+            $res['yearHeads'] = array_unique(call_user_func_array('array_merge', array_map($getYears, $studentData)));
             $res['admissionData'] = $studentData;
-            // echo "<pre>";print_r($res);exit;
+            // echo "<pre>";print_r($res['yearHeads']);exit;
             return is_mobile($type, 'admission/admissionAI', $res, 'view');
         }
     }
