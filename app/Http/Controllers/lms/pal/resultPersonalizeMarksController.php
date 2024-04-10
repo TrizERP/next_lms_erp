@@ -147,6 +147,7 @@ class resultPersonalizeMarksController extends Controller
         ->where('lqm.standard_id', $standard_id)
         ->where('lqm.subject_id', $subject_id)
         ->where('lqm.chapter_id', $chapter_id)
+        ->where('lqm.question_type_id','1')
         ->groupBy(['lqm.id'])
         ->get();
 

@@ -279,7 +279,6 @@ class studentCertificateController extends Controller
         $html_content = str_replace(htmlspecialchars("<<student_image_value>>"), $student_image_path, $html_content);
         $html_content = str_replace(htmlspecialchars("<<student_name_value>>"), strtoupper($value['student_full_name']),
             $html_content);
-
         $html_content = str_replace(htmlspecialchars("<<student_first_name_value>>"), strtoupper($value['student_first_name']),
         $html_content);
         $html_content = str_replace(htmlspecialchars("<<student_middle_name_value>>"), strtoupper($value['student_middle_name']),

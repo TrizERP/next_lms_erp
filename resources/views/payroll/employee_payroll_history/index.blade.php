@@ -30,14 +30,7 @@
                                         <select id='employee_id' name="employee_id" class="form-control">
                                             <option value="0">Select Employee</option>
                                             @foreach($employeeLists as $employee)
-                                                @if(isset($list['employee_id']))
-                                                    <option
-                                                        value="{{$employee->id}}" {{$list['employee_id'] == $employee->id ? 'selected':''}}>{{$employee->first_name .' '. $employee->last_name }}</option>
-                                                @else
-                                                    <option
-                                                        value="{{$employee->id}}">{{$employee->first_name .' '. $employee->last_name }}</option>
-                                                    @endif
-
+                                                <option value="{{$employee['id']}}" @if(isset($list['employee_id']) && $list['employee_id']==$employee['id']) selected @endif>{{$employee['first_name'] .' '. $employee['last_name'] }} ({{$employee['user_profile']}}) </option>
                                             @endforeach
 
                                         </select>
@@ -47,11 +40,7 @@
                                         <select id='year' name="year" class="form-control">
                                             <option value="0">Select Year</option>
                                             @foreach($years as $year)
-                                                @if(isset($list['year']) && $list['year'] == $year)
-                                                    <option selected>{{$year}}</option>
-                                                @else
-                                                    <option>{{$year}}</option>
-                                                @endif
+                                                <option @if(isset($list['year']) && $list['year'] == $year) selected @endif>{{$year}}</option>
                                             @endforeach
                                         </select>
                                     </div>
@@ -90,7 +79,7 @@
                                     <th>{{$col}} </th>
                                 @endforeach
                                 <th>Total Deduction</th>
-                                <th>Total Payment</th>
+                                <th class="text-left">Total Payment</th>
                             </tr>
                             </thead>
                             <form action="{{route('payroll.store_monthly_payroll_report')}}" method="post">
@@ -111,7 +100,7 @@
                                     @endforeach
 
 
-                                    @foreach($nextYearemployeeDetails as $employee)
+                               {{--     @foreach($nextYearemployeeDetails as $employee)
                                         <tr>
                                         <td>{{$employee['month'] .'/'. $employee['year']}}</td>
                                         <td>{{$employee['employee_id']}}</td>
@@ -122,7 +111,7 @@
                                         <td>{{$employee['total_deduction']}}</td>
                                         <td>{{$employee['total_payment']}}</td>
                                         </tr>
-                                    @endforeach
+                                    @endforeach --}}
 
                                 </tbody>
                             </form>

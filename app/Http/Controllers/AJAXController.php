@@ -207,7 +207,7 @@ class AJAXController extends Controller
 
         $explode = explode(',', $request->grade_id);
         // menu_ids to get class teacher class only
-        $menu_ids = [80,102,156,82];
+        $menu_ids = [80,102,156];
         $getClass=DB::table('class_teacher')->whereRaw('sub_institute_id='.session()->get('sub_institute_id').' and teacher_id ='.session()->get('user_id').' and syear="'.session()->get('syear').'"')->first();
         if (count($explode) > 1) {
             $query = DB::table('standard');
@@ -309,7 +309,7 @@ class AJAXController extends Controller
             '8' => 'co_scholastic_marks_entry',            
         ];
 
-        $menu_ids = [80,102,156,82];
+        $menu_ids = [80,102,156];
         $getClass=DB::table('class_teacher')->whereRaw('sub_institute_id='.session()->get('sub_institute_id').' and teacher_id ='.session()->get('user_id').' and syear="'.session()->get('syear').'"')->first();
 
         $standard_id = $request->standard_id;
