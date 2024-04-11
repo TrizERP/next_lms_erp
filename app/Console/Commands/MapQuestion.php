@@ -78,7 +78,7 @@ class mapQuestion extends Command
 
             // Use the request in your controller
             $response = $controller->chat($request);
-            //    echo "<pre>";print_r($response);exit; 
+
             if (is_string($response)) {
                 $response = json_decode($response, true);
                 if(isset($response[0]['question_depth'])){

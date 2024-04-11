@@ -515,32 +515,46 @@ class leaveApplicationController extends Controller
             return response()->json($response, 401);
         }
 
-        $type = $request->input("type");
-        $teacher_id = $request->input("teacher_id");
-        $leave_app_id = $request->input("leave_app_id");
-        $reply = $request->input("reply");
-        $status = $request->input("status");
-        $sub_institute_id = $request->input("sub_institute_id");
-        $syear = $request->input("syear");
+        $validator = Validator::make($request->all(), [
+            'reply' => 'required',
+            'status' => 'required|in:Approved,Rejected',
+            // Add any other validation rules for other fields if needed
+        ]);
 
-        if ($teacher_id != "" && $sub_institute_id != "" && $syear != "" && $leave_app_id != "" && $reply != "" && $status != "") {
-            DB::table('leave_applications')
-                ->where('id', $leave_app_id)
-                ->where('sub_institute_id', $sub_institute_id)
-                ->where('syear', $syear)
-                ->update([
-                    'reply'    => $reply,
-                    'status'   => $status,
-                    'reply_on' => date('Y-m-d H:i:s'),
-                    'reply_by' => $teacher_id,
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => '0',
+                'message' => $validator->errors()->first(),
+            ], 422);
+        }else{
 
-                ]);
+            $type = $request->input("type");
+            $teacher_id = $request->input("teacher_id");
+            $leave_app_id = $request->input("leave_app_id");
+            $reply = $request->input("reply");
+            $status = $request->input("status");
+            $sub_institute_id = $request->input("sub_institute_id");
+            $syear = $request->input("syear");
 
-            $res['status'] = 1;
-            $res['message'] = "Success";
-        } else {
-            $res['status'] = 0;
-            $res['message'] = "Parameter Missing";
+            if ($teacher_id != "" && $sub_institute_id != "" && $syear != "" && $leave_app_id != "" && $reply != "" && $status != "") {
+                DB::table('leave_applications')
+                    ->where('id', $leave_app_id)
+                    ->where('sub_institute_id', $sub_institute_id)
+                    ->where('syear', $syear)
+                    ->update([
+                        'reply'    => $reply,
+                        'status'   => $status,
+                        'reply_on' => date('Y-m-d H:i:s'),
+                        'reply_by' => $teacher_id,
+
+                    ]);
+
+                $res['status'] = 1;
+                $res['message'] = "Success";
+            } else {
+                $res['status'] = 0;
+                $res['message'] = "Parameter Missing";
+            }
         }
 
         return json_encode($res);

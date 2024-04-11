@@ -27,23 +27,30 @@
                         <tr>
                             <th>Sr No.</th>
                             <th>Standard</th>
-                            <th>Enquriy No</th>
-                            <th>Student Name</th>
-                            <th>AI Process Admission</th>
-                            <th class="text-left">AI Prediction</th>
+                           @if(!empty($data['yearHeads']))
+                           @php $date = date('Y'); @endphp
+                           @foreach($data['yearHeads'] as $key=>$value)
+                            <th class="text-left">{{$value}}@if($value > $date) (AI Predicted) @endif</th>
+                           @endforeach
+                           @endif
                         </tr>
                     </thead>
                     <tbody>
+                    @if(!empty($data['admissionData']))
                     @foreach($data['admissionData'] as $key => $value)
                         <tr>
                             <td>{{$key+1}}</td>
-                            <td>{{$value['standard']}}</td>
-                            <td>{{$value['enquiry_no']}}</td>
-                            <td>{{$value['student_name']}}</td>
-                            <td>{{$value['AI_process_admission']}}</td>
-                            <td>{{$value['AI_prediction']}}</td>                                
+                            <td>{{$value['standard_name']}}</td>
+                           @foreach($data['yearHeads'] as $key2=>$value2)
+                                @if(isset($value[$value2]))
+                                    <td>{{$value[$value2]}}</td>
+                                @else 
+                                    <td>-</td>
+                                @endif
+                           @endforeach                
                         </tr>
                     @endforeach
+                    @endif
                     </tbody>
                 </table>
             </div>
