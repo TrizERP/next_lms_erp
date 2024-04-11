@@ -194,7 +194,7 @@ class apiController extends Controller
     public function check_otp(Request $request, JwtToken $jwt)
     {
         $send_data = [];
-        $response = ['status' => '0', 'message' => 'Already logged in other device', 'data' => $send_data];
+        $response = ['status' => '0', 'message' => 'Invalid', 'data' => $send_data];
 
         $validator = Validator::make($request->all(), [
             'mobile' => 'required|numeric',
@@ -246,8 +246,20 @@ class apiController extends Controller
             // end by saroj uma 08/03/024       
          
         if ($validator->fails()) {
+
             $response['status'] = '0';
-            $response['message'] = $validator->messages();
+			// Retrieve the error messages from the MessageBag object
+			$messages = $validator->messages();
+
+			// Initialize an empty string to hold the concatenated error messages
+			$message = '';
+
+			// Concatenate each error message into the string
+			foreach ($messages->all() as $error) {
+			    $message .= $error . ' '; // Append each error message with a space
+			}
+			$response['message'] = trim($message);
+            //$response['message'] = $validator->messages(); Added by Rajesh Object to String
         } else {
             // added by saroj uma 08/03/024
             

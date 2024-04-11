@@ -2044,7 +2044,7 @@ class AJAXController extends Controller
         $question = $request->question;
         $standard = $request->standard;
         $type_name = $request->type_depth;
-        $type_bloom = $request->type_bloom;
+        //$type_bloom = $request->type_bloom;
         $type_learning = $request->type_learning;
         $sub_institute_id=session()->get('sub_institute_id');
         $bloom = $depth = $learning = $reason_bloom =$reason_depth= '';
@@ -2054,11 +2054,11 @@ class AJAXController extends Controller
                 $depth = "'".$question."' give answer from given options in one word this question for standard '".$standard."' student from these options $options->type_name ";
                 $reason_depth = "if its one of $options->type_name then why it is give reason";
             }
-             if ($request->type_bloom){
+             /*if ($request->type_bloom){
                 $options = DB::table('lms_mapping_type')->select(DB::raw('group_concat(name) as type_name'))->where('parent_id',$request->type_bloom)->first();
                 $bloom = "'".$question."' give answer from given options in one word this question for Blooms Taxonomy? from these options $options->type_name";
                 $reason_bloom = "if its one of $options->type_name then why it is give reason from this reasons 'factual','conceptual','procedural','metacoganitive'";                
-            }
+            }*/
             if ($request->type_learning){
                 // $options = DB::table('lms_mapping_type')->select(DB::raw('group_concat(name) as type_name'))->where('parent_id',$request->type_learning)->first();
                 $learning = "'".$question."' according to this question What will be the learning outcome for standard '".$standard."' student ?";
@@ -2067,8 +2067,8 @@ class AJAXController extends Controller
             $message = array(
                 array("question_depth"=>$depth,
                 "reason_depth"=>$reason_depth,                
-                "question_bloom"=>$bloom,
-                "reason_bloom"=>$reason_bloom,                
+                //"question_bloom"=>$bloom,
+                //"reason_bloom"=>$reason_bloom,                
                 "question_learning"=>$learning),              
             );
         }else if(isset($request->search) && $request->search=="question"){
@@ -2226,14 +2226,33 @@ class AJAXController extends Controller
     }
 
     public function pythonTimetable(Request $request){
-        $sub_institute_id = session()->get('sub_institute_id');
-        $file_response = shell_exec('python3 /home/fees_analysis_new.py');
+        $sub_institute_id = 1;
+        $syear = 2021;
+        $type = 'API';
+        $standard_id = 39;
+        $subject_id = 3976;
+        $chapter_id = 43;
+        $enrollment_no = 101;
+
+        if($request->file_name=="fees"){
+            $command = 'python3 /home/fees_analysis_10_04.py';
+        }else if ($request->file_name=="timetable"){
+            $command = 'python3 /home/timetable_10_04.py';
+        }else{
+            // Construct the command string with parameters
+            $command = "python3 /home/pal/pal.py $sub_institute_id $syear \"$type\" $standard_id $subject_id $chapter_id $enrollment_no";
+        }
+      
+        // Execute the command and capture the response
+        $file_response = shell_exec($command);
+
         if($file_response==null){
             echo "file has no response";
         }else{
             echo "<pre>";print_r($file_response);
         }
         exit; 
+        
         $file_response = shell_exec('python3 /home/fees_analysis_1.py ' . escapeshellarg($sub_institute_id));
 
         // Decode the JSON string

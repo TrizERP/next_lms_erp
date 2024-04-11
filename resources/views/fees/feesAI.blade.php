@@ -19,32 +19,29 @@
                 </div>
             @endif
 
-            @if(!empty($data['student_details']))
+            @if(!empty($data['standard_data']))
                 <div class="table-responsive mt-20 tz-report-table">
                     {!! App\Helpers\get_school_details() !!}
-                    <table id="example" class="table table-striped">
+                    <table id="example" class="table">
                         <thead>
                             <tr>
-                                <th>Sr No.</th>
-                                <th>{{ App\Helpers\get_string('studentname')}}</th>
-                                <th>{{ App\Helpers\get_string('grno')}}</th>
-                                <th>Mobile</th>                                
-                                <th>{{ App\Helpers\get_string('std/div')}}</th>
-                                <th>AI Pre-Process Amount</th>
-                                <th>AI Prediction Amount</th>
+                                <th class="text-center">Standard</th>
+                                <th class="text-center" colspan="2">Months</th>
                             </tr>
                         </thead>
-                        @foreach($data['student_details'] as $key => $student_val)
-                            @foreach($student_val as $student_id => $value)
+                        @foreach($data['standard_data'] as $std_name => $values)
+                        <tr style="background:#ddd !important">
+                            <td class="text-center" >{{$std_name}}</td>
+                            <td class="text-left" colspan="2">{{$values['total_prediction']}}</td>
+                        </tr>
+                            @foreach($values['all_data'] as $key => $value)
+                            @if($std_name == $value['standard_name'])
                             <tr>
-                                <td>{{$key+1}}</td>
-                                <td>{{$value['student_name']}}</td>  
-                                <td>{{$value['enrollment_no']}}</td>
-                                <td>{{$value['mobile']}}</td>
-                                <td>{{$value['standard_name'].'/'.$value['division_name']}}</td>
-                                <td>{{$value['prediction']}}</td>     
-                                <td>{{$value['true_label']}}</td>
+                                <td class="border-none"></td>
+                                <td>{{$value['month_name']}}</td>
+                                <td>{{$value['Prediction']}}</td>     
                             </tr>
+                            @endif
                             @endforeach
                         @endforeach
                     </table>
