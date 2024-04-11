@@ -224,7 +224,18 @@
 
                     <div class="col-md-4 form-group">
                         <label>Department Id</label>
-                        <input type="text" id='department_id' name="department_id" class="form-control">
+                        <select id='department_id' name="department_id" class="form-control">
+                            <option value="0">Select Department</option>
+                            @foreach($departments as $title)
+                                    <option value="{{$title->id}}">{{$title->department}}</option>
+                            @endforeach
+                        </select>
+                        <!-- <input type="text" id='department_id' name="department_id" class="form-control"> -->
+                    </div>
+
+                    <div class="col-md-4 form-group">
+                        <label>Employee Id</label>
+                        <input type="text" id='employee_no' name="employee_no" class="form-control">
                     </div>
 
                     <div class="col-md-4 form-group">
@@ -512,7 +523,7 @@
 
     //START Unique Email Validation
     var email_state = false;
-    $("#email").on("blur", function (event) {
+    $("#email").on("change", function (event) {
         email_val = this.value;
         var path = "{{ route('ajax_checkEmailExist') }}";
         $.ajax({

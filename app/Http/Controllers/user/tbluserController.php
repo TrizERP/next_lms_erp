@@ -51,7 +51,7 @@ class tbluserController extends Controller
         $subject_data = subjectModel::where(['sub_institute_id' => $sub_institute_id])->get();
         $employees = tbluserModel::where('sub_institute_id',$sub_institute_id)->where('status',1)->get();
         $job_titles = HrmsJobTitle::where('sub_institute_id',$sub_institute_id)->get();
-
+        $departments = DB::table('hrms_departments')->where('status',1)->get()->toArray();
         $fieldsData = tblfields_dataModel::get()->toArray();
         $i = 0;
         $finalfieldsData = [];
@@ -69,6 +69,7 @@ class tbluserController extends Controller
         view()->share('user_profiles', $data);
         view()->share('job_titles', $job_titles);
         view()->share('employees', $employees);
+        view()->share('departments', $departments);
 
         return view('user/add_user');
     }
@@ -226,6 +227,7 @@ class tbluserController extends Controller
         if (count($finalfieldsData) > 0) {
             $res['data_fields'] = $finalfieldsData;
         }
+        $res['departments'] = DB::table('hrms_departments')->where('status',1)->get()->toArray();
         $res['employees'] = tbluserModel::where('sub_institute_id',$sub_institute_id)->get();
         $res['job_titles'] = HrmsJobTitle::where('sub_institute_id',$sub_institute_id)->get();
         $res['custom_fields'] = $dataCustomFields;
@@ -233,7 +235,7 @@ class tbluserController extends Controller
         $res['subject_data_selected_arr'] = $subject_data_selected_arr;
         $res['user_profiles'] = $data;
         $res['data'] = $editData;
-
+        // echo "<pre>";print_r($res);exit;
         return is_mobile($type, "user/edit_user", $res, "view");
     }
 
