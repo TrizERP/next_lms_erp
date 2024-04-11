@@ -11,12 +11,18 @@
             </div>
         </div>
         @php
-        $grade_id = $standard_id = $division_id = '';
+        $grade_id = $standard_id = $division_id = $from_date = $to_date='';
 
             if(isset($data['grade_id'])){
                 $grade_id = $data['grade_id'];
                 $standard_id = $data['standard_id'];
                 $division_id = $data['division_id'];
+            }
+            if(isset($data['from_date'])){
+                $from_date = $data['from_date'];
+            }
+            if(isset($data['to_date'])){
+                $to_date = $data['to_date'];
             }
         @endphp
         <div class="card">
@@ -57,15 +63,14 @@
                                         </option>
                                     </select>
                     </div>
-                    <div class="col-md-4 form-group">
-                        <label>From Date </label>
-                        <input type="text" id='from_date' value="@if(isset($data['from_date'])) {{$data['from_date']}} @endif" required name='from_date' class="form-control mydatepicker" autocomplete="off">
-                    </div>
-                    <div class="col-md-4 form-group">
-                        <label>To Date </label>
-                        <input type="text" id='to_date' value="@if(isset($data['to_date'])) {{$data['to_date']}} @endif"
-                               required name='to_date' class="form-control mydatepicker" autocomplete="off">
-                    </div>
+                        <div class="col-md-4 form-group">
+                            <label>From Date </label>
+                            <input type="text" id='from_date' @if(isset($from_date)) value="{{$from_date}}" @endif name='from_date' class="form-control mydatepicker">
+                        </div>
+                        <div class="col-md-4 form-group">
+                            <label>To Date </label>
+                            <input type="text" id='to_date' @if(isset($to_date)) value="{{$to_date}}" @endif name='to_date' class="form-control mydatepicker" >
+                        </div>
 
                                 <div class="col-md-12 form-group">
                                     <center>
@@ -77,7 +82,7 @@
                         </form>
                     </div>
 
-                    @if(isset($data['health_data']))
+        @if(isset($data['health_data']))
         @php
             if(isset($data['health_data'])){
                 $health_data = $data['health_data'];
@@ -95,7 +100,7 @@
                               From Date : {{$from_date}};
                              </span><span style="font-size: 14px; font-weight: 600; font-family: Arial, Helvetica, sans-serif !important">
                               To Date : {{$to_date}}</span></center><br>
-                            @endphp
+                            
                                 <table id="example" class="table table-striped">
                                     <thead>
                                     <tr>

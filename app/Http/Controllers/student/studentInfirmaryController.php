@@ -275,9 +275,10 @@ class studentInfirmaryController extends Controller
 
         $result = DB::table($req['health_type']." as si")
             ->join('tblstudent as s', function ($join) use($marking_period_id){
-                $join->whereRaw("si.student_id = s.id")->when(function($query) use($marking_period_id){
-                    $query->where('s.marking_period_id',$marking_period_id);
-                });
+                $join->whereRaw("si.student_id = s.id");
+                // ->when(function($query) use($marking_period_id){
+                //     $query->where('s.marking_period_id',$marking_period_id);
+                // });
             })->join('tblstudent_enrollment as se', function ($join) use ($syear) {
                 $join->whereRaw("se.student_id = s.id and se.syear = '".$syear."'");
             })->selectRaw("si.*, CONCAT_WS(' ',s.first_name,s.middle_name,s.last_name) AS student_name")
@@ -340,7 +341,7 @@ class studentInfirmaryController extends Controller
         }
 
         $result = $result->orderBy('si.id', 'DESC')->get()->toArray();
-
+        // echo "<pre>";print_r($request->all());exit;
         $res['status_code'] = 1;
         $res['message'] = "Success";
         $res['health_data'] = $result;
@@ -349,8 +350,8 @@ class studentInfirmaryController extends Controller
         $res['standard_id'] = $req['standard'];
         $res['division_id'] = $req['division'];
         $res['health_type'] = $req['health_type'];
-        $res['from_date'] = $req['from_date'];
-        $res['to_date'] = $req['to_date'];
+        $res['from_date'] = $request->from_date;
+        $res['to_date'] = $request->to_date;
 
         return is_mobile($type, "student/show_student_health_report", $res, "view");
     }

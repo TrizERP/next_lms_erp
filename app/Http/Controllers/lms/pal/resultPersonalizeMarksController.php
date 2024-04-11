@@ -118,20 +118,9 @@ class resultPersonalizeMarksController extends Controller
         $standard_id = $res['standard_id'] = $request->standard_id;
         $subject_id = $res['subject_id']= $request->subject_id;
         $chapter_id = $res['chapter_id']= $request->chapter_id;
-
-        $res['questionList'] = DB::table('lms_question_master AS lqm')
-        ->select('lqm.sub_institute_id', 'ss.SchoolName AS institute_name', 'lqm.grade_id AS section_id', 'acs.title AS academic_section', 'lqm.standard_id', 's.name AS standard', 'lqm.subject_id', 'ssm.display_name AS subject', 'lqm.chapter_id', 'cm.chapter_name AS chapter', 'qtm.question_type', 'lqm.id AS id', 'lqm.question_title AS title', DB::raw('group_concat(Distinct lmt.id) as type_id'), DB::raw('
-        CASE 
-            WHEN FIND_IN_SET(82, group_concat(Distinct lmt.id)) THEN 
-                (SELECT name FROM lms_mapping_type WHERE parent_id = 82 LIMIT 1)
-            ELSE NULL 
-        END AS "Blooms Taxonomy"'),
-    DB::raw('
-        CASE 
-            WHEN FIND_IN_SET(9, group_concat(Distinct lmt.id)) THEN 
-                (SELECT name FROM lms_mapping_type WHERE parent_id = 9 LIMIT 1)
-            ELSE NULL 
-        END AS "Cognitive Difficulty"'))
+        
+        $result = DB::table('lms_question_master AS lqm')
+        ->select('lqm.sub_institute_id', 'ss.SchoolName AS institute_name', 'lqm.grade_id AS section_id', 'acs.title AS academic_section', 'lqm.standard_id', 's.name AS standard', 'lqm.subject_id', 'ssm.display_name AS subject', 'lqm.chapter_id', 'cm.chapter_name AS chapter', 'qtm.question_type', 'lqm.id AS id', 'lqm.question_title AS title', DB::raw('group_concat(Distinct lqmt.mapping_type_id) as type_id'), DB::raw('group_concat(Distinct lqmt.mapping_value_id) as value_id'), DB::raw('group_concat(Distinct lmt.name) as types_name'), DB::raw('group_concat(Distinct lmt1.name) as values_name'))
         ->join('question_type_master AS qtm', 'qtm.id', '=', 'lqm.question_type_id')
         ->join('school_setup AS ss', 'ss.Id', '=', 'lqm.sub_institute_id')
         ->join('academic_section AS acs', 'acs.id', '=', 'lqm.grade_id')
@@ -143,6 +132,9 @@ class resultPersonalizeMarksController extends Controller
         })
         ->join('lms_question_mapping AS lqmt', 'lqmt.questionmaster_id', '=', 'lqm.id')
         ->join('lms_mapping_type AS lmt', 'lmt.id', '=', 'lqmt.mapping_type_id')
+        ->join('lms_mapping_type AS lmt1',function($join){
+            $join->on( 'lmt1.id', '=', 'lqmt.mapping_value_id')->on('lmt1.parent_id','=','lmt.id');
+        })
         ->where('lqm.sub_institute_id', $sub_institute_id)
         ->where('lqm.standard_id', $standard_id)
         ->where('lqm.subject_id', $subject_id)
@@ -151,6 +143,35 @@ class resultPersonalizeMarksController extends Controller
         ->groupBy(['lqm.id'])
         ->get();
 
+        $all_questions = [];
+        foreach ($result as $key => $value) {
+            $map_types = explode(',',$value->type_id);
+            $map_valueId = explode(',',$value->value_id);
+            $map_values = explode(',',$value->values_name);
+            $bloom_val = $depth_val =$skill_val = null;
+            if(in_array(9,$map_types)){
+                $keys = array_keys($map_types, 9);
+                $depth_val=$map_values[$keys[0]];
+            }
+
+            if(in_array(82,$map_types)){
+                $keys = array_keys($map_types, 82);
+                $bloom_val=$map_values[$keys[0]];
+            }
+
+            if(in_array(73548,$map_types)){
+                $keys = array_keys($map_types, 73548);
+                $skill_val=$map_values[$keys[0]];
+            }
+            $value->bloom_taxonomy = $bloom_val;
+            $value->cognitive_difficulty = $depth_val;
+            $value->competency_skill = $skill_val;
+
+            $all_questions[] = $value;
+        }
+        // exit;
+        $res['questionList'] =$all_questions;
+        // echo "<pre>";print_r($res['questionList']);exit;
         return is_mobile($type, 'lms/pal/show', $res, "view");                        
     }
 }
