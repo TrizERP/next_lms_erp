@@ -78,7 +78,7 @@ class timetableController extends Controller
                     "subjects" => $subject_details,
                 );
         $main_data=array(
-            "num_periods_per_day" => $number_period,
+            "minimum_periods_per_day" => $number_period,
             "subjects_per_period" => $subject_per_period,
             "teacher_availability" => $data
         );
@@ -116,9 +116,10 @@ class timetableController extends Controller
     // }
     // exit;
 
-        $generated_timetable = shell_exec('python3 /home/timetable.py');
-        echo "<pre>";print_r($generated_timetable);exit;
+        $generated_timetable = shell_exec('python3 /home/timetable_10_04.py');
         $res['response'] = json_decode($generated_timetable, true); 
+        echo "<pre>";print_r($res['response']);exit;
+
 // echo "<pre>";print_r($res['response']);exit;        
         
         // echo "<pre>";print_r($generated_timetable);exit;
@@ -177,7 +178,7 @@ class timetableController extends Controller
         // $res['response'] = json_decode($dummy_data, true); // Decode JSON string into an associative array
         
         if ($res['response'] !== null) {
-            foreach ($res['response']['timetable'] as $day) {
+            foreach ($res['response'] as $day) {
                 foreach ($day['periods'] as $period) {
                     $insert_data=[
                         "sub_institute_id"=>$sub_institute_id,
@@ -187,7 +188,7 @@ class timetableController extends Controller
                         "division_id"=>$division_id,
                         "period_id"=>$period['period_id'],
                         "subject_id"=>$period['subject_id'],
-                        "teacher_id"=>$period['teacher_id'],
+                        "teacher_id"=>$period['teacher_id teacher_name']['teacher_id'],
                         "week_day"=>$day['day'],
                     ];
                     $check_exists = create_timetable::where($insert_data)->first();
@@ -197,6 +198,8 @@ class timetableController extends Controller
                     }
                 }
             }
+        }else{
+            echo "<pre>";print_r('no data');exit;
         }
         $res['timetableData'] = $this->timetableData($request);
 
