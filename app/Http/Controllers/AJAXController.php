@@ -2047,7 +2047,7 @@ class AJAXController extends Controller
         //$type_bloom = $request->type_bloom;
         $type_learning = $request->type_learning;
         $sub_institute_id=session()->get('sub_institute_id');
-
+        $bloom = $depth = $learning = $reason_bloom =$reason_depth= '';
         if($request->has('question') && $question!==''){
             if($request->type_depth){
                 $options = DB::table('lms_mapping_type')->select(DB::raw('group_concat(name) as type_name'))->where('parent_id',$request->type_depth)->first();                
