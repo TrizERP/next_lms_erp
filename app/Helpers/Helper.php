@@ -2175,7 +2175,7 @@ if (!function_exists('get_string')) {
         function employeeDetails($sub_institute_id='',$employee_id='')
         {
             return tbluserModel::join('tbluserprofilemaster as upm', 'upm.id', '=', 'tbluser.user_profile_id')
-            ->selectRaw('tbluser.*,IfNULL(tbluser.first_name, "-") as first_name, IFNULL(tbluser.last_name, "-") as last_name,IFNULL(tbluser.last_name, "-") as middle_name, tbluser.sub_institute_id, IfNULL(upm.name,"-") as user_profile')
+            ->selectRaw('tbluser.*,IfNULL(tbluser.first_name, "-") as first_name, IFNULL(tbluser.last_name, "-") as last_name,IFNULL(tbluser.middle_name, "-") as middle_name, tbluser.sub_institute_id, IfNULL(upm.name,"-") as user_profile')
             ->where('tbluser.sub_institute_id', $sub_institute_id)
             ->where('tbluser.status', 1)
             ->when($employee_id!='',function($query) use($employee_id){
