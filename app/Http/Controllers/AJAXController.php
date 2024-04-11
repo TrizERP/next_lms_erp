@@ -2230,12 +2230,19 @@ class AJAXController extends Controller
         $syear = 2021;
         $type = 'API';
         $standard_id = 39;
-        $subject_id = 3975;
-        $chapter_id = 26;
-        
-        // Construct the command string with parameters
-        $command = "python3 /home/pal/pal.py $sub_institute_id $syear \"$type\" $standard_id $subject_id $chapter_id";
+        $subject_id = 3976;
+        $chapter_id = 43;
+        $enrollment_no = 101;
 
+        if($request->file_name=="fees"){
+            $command = 'python3 /home/fees_analysis_10_04.py';
+        }else if ($request->file_name=="timetable"){
+            $command = 'python3 /home/timetable_10_04.py';
+        }else{
+            // Construct the command string with parameters
+            $command = "python3 /home/pal/pal.py $sub_institute_id $syear \"$type\" $standard_id $subject_id $chapter_id $enrollment_no";
+        }
+      
         // Execute the command and capture the response
         $file_response = shell_exec($command);
 
