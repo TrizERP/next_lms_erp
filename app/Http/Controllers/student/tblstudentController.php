@@ -1344,7 +1344,7 @@ END as color_code
         //         SELECT id,email,'user' as user_type FROM tbluser WHERE email = '" . $email . "' ";
 
         // $check_user_sql = DB::select($sql);
-        $checkUser = DB::table('tblstudent')
+        $check_user_sql = DB::table('tblstudent')
         ->select('id', 'email', DB::raw("'student' as user_type"))
         ->where('email', $email)
         ->union(

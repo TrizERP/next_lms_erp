@@ -1560,7 +1560,7 @@ class AJAXController extends Controller
                     }else{
                         htmlToPDFLandscapeCertificate($html_file_path, $pdf_file_path);
                     }
-                }else if($sub_institute_id==254 && $action == 'Transfer Certificate'){
+                }else if(in_array($sub_institute_id,[254,47]) && $action == 'Transfer Certificate'){
                    htmlToPDFPortraitLetter($html_file_path, $pdf_file_path);
                 //    echo '<pre>';print_r($letter);exit;
                 } else {
