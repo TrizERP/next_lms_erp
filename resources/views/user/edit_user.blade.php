@@ -28,6 +28,7 @@ br {
             <div class="row">
                 <div class="col-lg-12 col-sm-12 col-xs-12">
                     @php
+                    $departments = $data['departments'];
                     $employees = $data['employees'];
                     $job_titles = $data['job_titles'];
                     $user_profiles = $data['user_profiles'];
@@ -235,9 +236,18 @@ br {
 
                             <div class="col-md-4 form-group">
                                 <label>Department Id</label>
-                                <input type="text" id='department_id' name="department_id" value="{{$data['department_id']}}" class="form-control">
+                                <select id='department_id' name="department_id" class="form-control">
+                                    <option value="0">Select Title</option>
+                                    @foreach($departments as $title)
+                                            <option value="{{$title->id}}" @if($data['department_id'] == $title->id) selected @endif>{{$title->department}}</option>
+                                    @endforeach
+                                </select>
+                                <!-- <input type="text" id='department_id' name="department_id" value="{{$data['department_id']}}" class="form-control"> -->
                             </div>
-
+                            <div class="col-md-4 form-group">
+                                <label>Employee Id</label>
+                                <input type="text" id='employee_no' name="employee_no" class="form-control"  @if($data['employee_no']!=0) value="{{$data['employee_no']}}" @endif>
+                            </div>
                             <div class="col-md-4 form-group">
                                 <label>Joining Date</label>
                                 <input type="date" id='joined_date' name="joined_date" value="{{ $data['joined_date'] ? date('Y-m-d',strtotime($data['joined_date'])) : '' }}" class="form-control">
