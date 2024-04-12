@@ -1452,6 +1452,7 @@ if (!function_exists('getStudents')) {
             $student_data[$value->id]['student_full_name'] = $value->first_name . " " . $value->middle_name . " " . $value->last_name;
             $student_data[$value->id]['gender'] = $value->gender;
             $student_data[$value->id]['mobile'] = $value->mobile;
+            $student_data[$value->id]['adharnumber'] = $value->adharnumber;
             $student_data[$value->id]['blood_group_name'] = $value->blood_group_name;
             $student_data[$value->id]['dob'] = $value->dob;
             $student_data[$value->id]['admission_year'] = $value->admission_year;
