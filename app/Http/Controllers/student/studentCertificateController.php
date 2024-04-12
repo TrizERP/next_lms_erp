@@ -96,28 +96,46 @@ class studentCertificateController extends Controller
         $insert_ids = '';
         $i = 0;
         foreach ($data as $key => $value) {
+            // check exists or not
+            $CheckExistCertificate = DB::table('certificate_history as c')
+            ->where('c.sub_institute_id', $sub_institute_id)
+            ->where('certificate_type', $template)
+            ->where('student_id',$value['id'])
+            ->where('syear', $syear)->first();
 
+            // get certificate new number 
             $certificate_no_result = DB::table('certificate_history as c')
                 ->selectRaw('(IFNULL(MAX(cast(c.certificate_number AS UNSIGNED)),0) + 1) AS certificate_no')
                 ->where('c.sub_institute_id', $sub_institute_id)
                 ->where('certificate_type', $template)
                 ->where('syear', $syear)->get()->toArray();
             $certificate_no = $certificate_no_result[0]->certificate_no;
-            $certificate_no1 = $certificate_no + $i;
-            $i++;
+            
+            if ($template == 'Transfer Certificate' && !empty($CheckExistCertificate)) 
+            {
+                $certificate_no1 = $CheckExistCertificate->certificate_number;
+            }else{
+                $certificate_no1 = $certificate_no + $i;
+                $i++;
+            }
+
             if(!isset($tData[0]['html_content']) || empty($tData[0]['html_content']) || $tData[0]['html_content']==null){
                 $res['status_code'] = 0;
                 $res['message'] = "Please Set Template For ".$request->template;
                 return is_mobile($type, "student/student_certificate/show_student", $res, "view");                
             }
             else{
-            $html_content = $tData[0]['html_content'];                
+                $html_content = $tData[0]['html_content'];                
             }
             $new_html_content = $this->create_html_content($syear, $sub_institute_id, $html_content, $value,
-                $receipt_book_arr, $template, $certificate_no1, $certificate_reason);
+            $receipt_book_arr, $template, $certificate_no1, $certificate_reason);
 
             if ($template == 'Transfer Certificate') 
             {
+                if(!empty($CheckExistCertificate)){
+                    $new_html_content = $CheckExistCertificate->certificate_html.'<br><h6 style="width:100%;text-align:right !important">Duplicate</h6>';
+                }
+
                 $new_html .= '<div class="row" style="margin-right: 2% !important;margin-left: 2% !important;">'.$new_html_content.'</div>
                               <div class="pagebreak"></div>';
             }
@@ -185,10 +203,10 @@ class studentCertificateController extends Controller
 
     public function create_html_content($syear,$sub_institute_id,$html_content,$value,$receipt_book_arr,$template,$certificate_no,$certificate_reason) {
 //         if($sub_institute_id==254 && $value['id']==187555){
-//             echo("<pre>");
-//     print_r($value);
-//     echo("</pre>");
-//     die;
+    //         echo("<pre>");
+    // print_r($value);
+    // echo("</pre>");
+    // die;
 // }
         if($sub_institute_id == 61)
             $display_year = "Apr-".$syear." to Mar-".($syear + 1);
@@ -207,6 +225,7 @@ class studentCertificateController extends Controller
         $student_image_path = '<img class="logo" src="'.$student_image_path1.'" alt="Student Logo" >';
 
         $html_content = str_replace(htmlspecialchars("<<receipt_logo>>"), $image_path, $html_content);
+
         if ($receipt_book_arr->receipt_line_1 != '') {
             $html_content = str_replace(htmlspecialchars("<<receipt_line_1>>"), $receipt_book_arr->receipt_line_1,
                 $html_content);
@@ -294,6 +313,8 @@ class studentCertificateController extends Controller
         $html_content = str_replace(htmlspecialchars("<<student_division_value>>"), $value['division_name'],
             $html_content);
         $html_content = str_replace(htmlspecialchars("<<student_year_value>>"), $display_year, $html_content);
+        $html_content = str_replace(htmlspecialchars("<<aadhar_number>>"), $value['adharnumber'], $html_content);
+        $html_content = str_replace(htmlspecialchars("<<student_unique_id>>"), $value['unique_id'], $html_content);
         $html_content = str_replace(htmlspecialchars("<<student_mobile_value>>"), $value['mobile'],$html_content);
         $html_content = str_replace(htmlspecialchars("<<student_dob_value>>"), date('d-m-Y', strtotime($value['dob'])),$html_content);
         $html_content = str_replace(htmlspecialchars("<<current_date>>"), date('d-M-Y'), $html_content);
@@ -305,7 +326,7 @@ class studentCertificateController extends Controller
         $html_content = str_replace(htmlspecialchars("<<certificate_reason>>"), $certificate_reason, $html_content);
         //END Bonafide certificate Tags
         // transfer certificate detals
-        $candidate_belongs_to = $last_school_board=$whether_failed = $whether_qualified = $general_conduct = $games_played = $any_other_remarks="<br>";
+        $candidate_belongs_to = $last_school_board=$whether_failed = $whether_qualified = $general_conduct = $games_played = $any_other_remarks= $reason_for_leave="<br>";
         $transfer_details = DB::table('tblstudent_tc_details')->where(['sub_institute_id'=>$sub_institute_id,'syear'=>$syear])->where('student_id',$value['id'])->first();
         if(isset($transfer_details->student_id)){
             $candidate_belongs_to = $transfer_details->candidate_belongs_to;
@@ -315,6 +336,7 @@ class studentCertificateController extends Controller
             $games_played =$transfer_details->games_played;
             $any_other_remarks=$transfer_details->any_other_remarks;
             $last_school_board = $transfer_details->last_school_board;
+            $reason_for_leave = $transfer_details->reason_leaving_school;
         }
 
         $html_content = str_replace(htmlspecialchars("<<candidate_belongs_to>>"), $candidate_belongs_to,$html_content);
@@ -323,7 +345,8 @@ class studentCertificateController extends Controller
         $html_content = str_replace(htmlspecialchars("<<general_conduct>>"), $general_conduct,$html_content);
         $html_content = str_replace(htmlspecialchars("<<games_played>>"), $games_played,$html_content);
         $html_content = str_replace(htmlspecialchars("<<any_other_remarks>>"), $any_other_remarks,$html_content);
-        $html_content = str_replace(htmlspecialchars("<<last_school_board>>"), $last_school_board,$html_content);        
+        $html_content = str_replace(htmlspecialchars("<<last_school_board>>"), $last_school_board,$html_content);  
+        $html_content = str_replace(htmlspecialchars("<<reason_to_leave>>"), $reason_for_leave,$html_content);        
 
         //Start Transfer certificate Tags
         $html_content = str_replace(htmlspecialchars("<<affiliation_no_value>>"), strtoupper($value['affiliation_no']),
@@ -344,6 +367,8 @@ class studentCertificateController extends Controller
             $html_content);
         $html_content = str_replace(htmlspecialchars("<<subcast_value>>"), strtoupper($value['subcast']),
             $html_content);
+            $admission_std = '';
+            
         $html_content = str_replace(htmlspecialchars("<<admission_date_value>>"), date('d-m-Y', strtotime($value['admission_date'])),
             $html_content);
 		$html_content = str_replace(htmlspecialchars("<<short_standard_name_value>>"), strtoupper($value['short_standard_name']), $html_content);
@@ -622,6 +647,16 @@ class studentCertificateController extends Controller
 
         $last_insert_ids = '';
         foreach ($data as $key => $value) {
+            
+        $CheckExistCertificate = [];
+        if($template=="Transfer Certificate"){
+            $CheckExistCertificate = DB::table('certificate_history as c') 
+            ->where('c.sub_institute_id', $sub_institute_id)
+            ->where('certificate_type', $template)
+            ->where('student_id',$value['id'])
+            ->where('syear', $syear)->first();
+        }
+        if(empty($CheckExistCertificate)){
             $certificate_no_result = DB::table('certificate_history as c')
                 ->selectRaw('(IFNULL(MAX(cast(c.certificate_number AS UNSIGNED)),0) + 1) AS certificate_no')
                 ->where('c.sub_institute_id', $sub_institute_id)
@@ -634,19 +669,23 @@ class studentCertificateController extends Controller
             
             $new_html_content = $this->create_html_content($syear, $sub_institute_id, $html_content, $value,
                 $receipt_book_arr, $template, $certificate_no, $certificate_reason);
-            DB::table('certificate_history')->insert([
-                'syear'              => $syear,
-                'student_id'         => $value['id'],
-                'certificate_type'   => $template,
-                'sub_institute_id'   => $sub_institute_id,
-                'certificate_number' => $certificate_no,
-                'certificate_html'   => $new_html_content,
-                'created_at'         => now(),
-                'updated_at'         => now(),
-            ]);
-            $last_inserted_id = DB::getPdo()->lastInsertId();
-            $last_insert_ids .= $last_inserted_id.',';
+                
+                DB::table('certificate_history')->insert([
+                    'syear'              => $syear,
+                    'student_id'         => $value['id'],
+                    'certificate_type'   => $template,
+                    'sub_institute_id'   => $sub_institute_id,
+                    'certificate_number' => $certificate_no,
+                    'certificate_html'   => $new_html_content,
+                    'created_at'         => now(),
+                    'updated_at'         => now(),
+                ]);
+                $last_inserted_id = DB::getPdo()->lastInsertId();
+                $last_insert_ids .= $last_inserted_id.',';
+        }else{
+            $last_insert_ids .=$CheckExistCertificate->id.',';
         }
+    }
 
         return rtrim($last_insert_ids, ',');
     }
