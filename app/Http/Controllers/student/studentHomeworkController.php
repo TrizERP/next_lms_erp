@@ -159,6 +159,7 @@ class studentHomeworkController extends Controller
 
     public function store(Request $request)
     {
+
         $type = $request->get('type');
         if ($type == "API") {
             $sub_institute_id = $request->input('sub_institute_id');
@@ -168,69 +169,77 @@ class studentHomeworkController extends Controller
             $syear = session()->get('syear');
         }
 
+       
         $students = $request->get('students');
         $student_details = getStudents($students, $sub_institute_id, $syear);
-        $title = $request->get('title');
-        $description = $request->get('description');
-        $submission_date = $request->get('submission_date');
-        $division_id = $request->get('division_id');
-        $standard_id = $request->get('standard_id');
-        $subject_id = $request->get('subject_id');
-        $created_by = ($request->session()->get('user_id') ? $request->session()->get('user_id') : $request->get('teacher_id'));
+        
+        if(empty($student_details)){
+            $res['status_code'] = "0";
+            $res['message'] = "Students Not Found ".json_encode($students,true);
+        }else{
+                $title = $request->get('title');
+                $description = $request->get('description');
+                $submission_date = $request->get('submission_date');
+                $division_id = $request->get('division_id');
+                $standard_id = $request->get('standard_id');
+                $subject_id = $request->get('subject_id');
+                $created_by = ($request->session()->get('user_id') ? $request->session()->get('user_id') : $request->get('teacher_id'));
 
-        $file_name = $file_size = $ext = "";
-        if ($request->hasFile('image')) {
-            $file = $request->file('image');
-            $originalname = $file->getClientOriginalName();
-            $file_size = $file->getSize();
-            $name = "homework-".$request->get('user_name').date('YmdHis');
-            $ext = File::extension($originalname);
-            $file_name = $name.'.'.$ext;
-            $path = $file->storeAs('public/student/', $file_name);
+                $file_name = $file_size = $ext = "";
+                if ($request->hasFile('image')) {
+                    $file = $request->file('image');
+                    $originalname = $file->getClientOriginalName();
+                    $file_size = $file->getSize();
+                    $name = "homework-".$request->get('user_name').date('YmdHis');
+                    $ext = File::extension($originalname);
+                    $file_name = $name.'.'.$ext;
+                    $path = $file->storeAs('public/student/', $file_name);
+                }
+
+                foreach ($student_details as $id => $arr) {
+                    
+                    $student_id = $arr['id'];
+                    $standard_id = $arr['standard_id'];
+                    $division_id = $arr['section_id'];
+                    $addhomeworkArray = [];
+                    $addhomeworkArray['student_id'] = $student_id;
+                    $addhomeworkArray['sub_institute_id'] = $sub_institute_id;
+                    $addhomeworkArray['title'] = $title;
+                    $addhomeworkArray['description'] = $description;
+                    $addhomeworkArray['standard_id'] = $standard_id;
+                    $addhomeworkArray['division_id'] = $division_id;
+                    $addhomeworkArray['subject_id'] = $subject_id;
+                    $addhomeworkArray['date'] = date('Y-m-d');
+                    $addhomeworkArray['submission_date'] = $submission_date;
+                    $addhomeworkArray['syear'] = $syear;
+                    $addhomeworkArray['type'] = "Homework";
+                    $addhomeworkArray['image'] = $file_name;
+                    $addhomeworkArray['image_size'] = $file_size;
+                    $addhomeworkArray['image_type'] = $ext;
+                    $addhomeworkArray['created_ip'] = $_SERVER['REMOTE_ADDR'];
+                    $addhomeworkArray['created_by'] = $created_by;
+                    studentHomeworkModel::insert($addhomeworkArray);
+
+                    //START Send Notification Code
+                    $app_notification_content = [
+                        'NOTIFICATION_TYPE'        => 'Homework',
+                        'NOTIFICATION_DATE'        => date('Y-m-d'),
+                        'STUDENT_ID'               => $student_id,
+                        'NOTIFICATION_DESCRIPTION' => $title,
+                        'STATUS'                   => 0,
+                        'SUB_INSTITUTE_ID'         => $sub_institute_id,
+                        'SYEAR'                    => $syear,
+                        'SCREEN_NAME'              => 'home_work',
+                        'CREATED_BY'               => $created_by,
+                        'CREATED_IP'               => $_SERVER['REMOTE_ADDR'],
+                    ];
+                    sendNotification($app_notification_content);
+                    //END Send Notification Code
+            }
+
+            $res['status_code'] = "1";
+            $res['message'] = "Homework Added successfully";
         }
-
-        foreach ($student_details as $id => $arr) {
-            $student_id = $arr['id'];
-            $standard_id = $arr['standard_id'];
-            $division_id = $arr['section_id'];
-            $addhomeworkArray = [];
-            $addhomeworkArray['student_id'] = $student_id;
-            $addhomeworkArray['sub_institute_id'] = $sub_institute_id;
-            $addhomeworkArray['title'] = $title;
-            $addhomeworkArray['description'] = $description;
-            $addhomeworkArray['standard_id'] = $standard_id;
-            $addhomeworkArray['division_id'] = $division_id;
-            $addhomeworkArray['subject_id'] = $subject_id;
-            $addhomeworkArray['date'] = date('Y-m-d');
-            $addhomeworkArray['submission_date'] = $submission_date;
-            $addhomeworkArray['syear'] = $syear;
-            $addhomeworkArray['type'] = "Homework";
-            $addhomeworkArray['image'] = $file_name;
-            $addhomeworkArray['image_size'] = $file_size;
-            $addhomeworkArray['image_type'] = $ext;
-            $addhomeworkArray['created_ip'] = $_SERVER['REMOTE_ADDR'];
-            $addhomeworkArray['created_by'] = $created_by;
-            studentHomeworkModel::insert($addhomeworkArray);
-
-            //START Send Notification Code
-            $app_notification_content = [
-                'NOTIFICATION_TYPE'        => 'Homework',
-                'NOTIFICATION_DATE'        => date('Y-m-d'),
-                'STUDENT_ID'               => $student_id,
-                'NOTIFICATION_DESCRIPTION' => $title,
-                'STATUS'                   => 0,
-                'SUB_INSTITUTE_ID'         => $sub_institute_id,
-                'SYEAR'                    => $syear,
-                'SCREEN_NAME'              => 'home_work',
-                'CREATED_BY'               => $created_by,
-                'CREATED_IP'               => $_SERVER['REMOTE_ADDR'],
-            ];
-            sendNotification($app_notification_content);
-            //END Send Notification Code
-        }
-
-        $res['status_code'] = "1";
-        $res['message'] = "Homework Added successfully";
 
         return is_mobile($type, "student_homework.index", $res);
     }
