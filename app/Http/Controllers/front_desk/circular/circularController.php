@@ -231,8 +231,13 @@ class circularController extends Controller
                 ->get()->toArray();
 
             $response['data'] = $result_data;
-            $response['message'] = "Success";
-            $response['status'] = "1";
+            if(!empty($result_data)){
+                $response['message'] = "Success";
+                $response['status'] = "1";
+            }else{
+                $response['message'] = "Circular Not Found with syear ".$syear;
+                $response['status'] = "0";
+            }
         }
 
         return json_encode($response);
