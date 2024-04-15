@@ -111,7 +111,7 @@ class studentCertificateController extends Controller
                 ->where('syear', $syear)->get()->toArray();
             $certificate_no = $certificate_no_result[0]->certificate_no;
             
-            if ($template == 'Transfer Certificate' && !empty($CheckExistCertificate)) 
+            if ($template == 'Transfer Certificate' && !empty($CheckExistCertificate) && $sub_institute_id==47) 
             {
                 $certificate_no1 = $CheckExistCertificate->certificate_number;
             }else{
@@ -132,7 +132,7 @@ class studentCertificateController extends Controller
 
             if ($template == 'Transfer Certificate') 
             {
-                if(!empty($CheckExistCertificate)){
+                if(!empty($CheckExistCertificate) && $sub_institute_id==47){
                     $new_html_content = $CheckExistCertificate->certificate_html.'<br><h6 style="width:100%;text-align:right !important">Duplicate</h6>';
                 }
 
@@ -401,19 +401,26 @@ class studentCertificateController extends Controller
 
     $months = FeeMonthId();
     $month = '';
+    // added on 15-04-2024 by uma to get last paid fees month
+    $getLastFeesPaid = DB::table('fees_collect')->where('student_id',$value['id'])->where('sub_institute_id',$sub_institute_id)->where('syear',$syear)->latest('created_date')->first();
 
-    if ($value['month_name'] != '') {
-        $monthsArray = explode(',', $value['month_name']);
-        $monthsArray = array_filter($monthsArray);
-        $lastMonth = end($monthsArray);
-        if (isset($months[$lastMonth])) {
-            $month = $months[$lastMonth];
-        } else {
-            $month = 'No Fees Details Found';
-        }
-    } else {
-        $month = 'No Fees Details Found';
+    if(isset($getLastFeesPaid->term_id)){
+        $month = $months[$getLastFeesPaid->term_id];
     }
+    // end 15-04-2024
+   
+    // if ($value['month_name'] != '') {
+    //     $monthsArray = explode(',', $value['month_name']);
+    //     $monthsArray = array_filter($monthsArray);
+    //     $lastMonth = end($monthsArray);
+    //     if (isset($months[$lastMonth])) {
+    //         $month = $months[$lastMonth];
+    //     } else {
+    //         $month = 'No Fees Details Found';
+    //     }
+    // } else {
+    //     $month = 'No Fees Details Found';
+    // }
 
         $html_content = str_replace(htmlspecialchars("<<month_name_value>>"),
             strtoupper($month), $html_content);
@@ -649,7 +656,7 @@ class studentCertificateController extends Controller
         foreach ($data as $key => $value) {
             
         $CheckExistCertificate = [];
-        if($template=="Transfer Certificate"){
+        if($template=="Transfer Certificate" && $sub_institute_id==47){
             $CheckExistCertificate = DB::table('certificate_history as c') 
             ->where('c.sub_institute_id', $sub_institute_id)
             ->where('certificate_type', $template)
