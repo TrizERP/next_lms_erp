@@ -2180,7 +2180,7 @@ class adminapiController extends Controller
             $schoolName = $schoolData[0]['SchoolName'];
             $schoolLogo = '';
 
-            $i = 0;
+            $i =$j= 0;
             foreach ($student_id as $key => $val) {
                 $student_data = DB::table('tblstudent_enrollment as se')
                     ->join('tblstudent as s', function ($join) {
@@ -2191,54 +2191,57 @@ class adminapiController extends Controller
                     ->where('se.syear', $syear)
                     ->whereNull('se.end_date')
                     ->where('se.sub_institute_id', $sub_institute_id)->get()->toArray();
+                if(!empty($student_data)){
+                    $student_mobile = $student_data[0]->mobile;
 
-                $student_mobile = $student_data[0]->mobile;
+                    $app_notification_content = [
+                        'NOTIFICATION_TYPE'        => 'Notification',
+                        'NOTIFICATION_DATE'        => now(),
+                        'STUDENT_ID'               => $val,
+                        'NOTIFICATION_DESCRIPTION' => $description,
+                        'STATUS'                   => 0,
+                        'SUB_INSTITUTE_ID'         => $sub_institute_id,
+                        'SYEAR'                    => $syear,
+                        'SCREEN_NAME'              => 'general',
+                        'CREATED_BY'               => $user_id,
+                        'CREATED_IP'               => $_SERVER['REMOTE_ADDR'],
+                    ];
 
-                $app_notification_content = [
-                    'NOTIFICATION_TYPE'        => 'Notification',
-                    'NOTIFICATION_DATE'        => now(),
-                    'STUDENT_ID'               => $val,
-                    'NOTIFICATION_DESCRIPTION' => $description,
-                    'STATUS'                   => 0,
-                    'SUB_INSTITUTE_ID'         => $sub_institute_id,
-                    'SYEAR'                    => $syear,
-                    'SCREEN_NAME'              => 'general',
-                    'CREATED_BY'               => $user_id,
-                    'CREATED_IP'               => $_SERVER['REMOTE_ADDR'],
-                ];
+                    $gcm_data = DB::table('gcm_users')
+                        ->where('mobile_no', $student_mobile)
+                        ->where('sub_institute_id', $sub_institute_id)->get()->toArray();
 
-                $gcm_data = DB::table('gcm_users')
-                    ->where('mobile_no', $student_mobile)
-                    ->where('sub_institute_id', $sub_institute_id)->get()->toArray();
-
-                $gcmRegIds = [];
-                if (count($gcm_data) > 0) {
-                    foreach ($gcm_data as $key1 => $val1) {
-                        $gcmRegIds[] = $val1->gcm_regid;
-                    }
-                }
-
-                $pushMessage = $description;
-                sendNotification($app_notification_content);
-
-                $bunch_arr = array_chunk($gcmRegIds, 1000);
-                if (! empty($bunch_arr)) {
-                    foreach ($bunch_arr as $bval) {
-                        if (isset($bval, $pushMessage)) {
-                            $type = 'Notification';
-                            $message = [
-                                'body'    => $pushMessage,
-                                'TYPE'    => $type,
-                                'USER_ID' => $student_id,
-                                'title'   => $schoolName,
-                                'image'   => $schoolLogo,
-                            ];
-
-                            $pushStatus = send_FCM_Notification($bval, $message, $sub_institute_id);
-                            // sendNotification($app_notification_content);
+                    $gcmRegIds = [];
+                    if (count($gcm_data) > 0) {
+                        foreach ($gcm_data as $key1 => $val1) {
+                            $gcmRegIds[] = $val1->gcm_regid;
                         }
                     }
-                    $i++;
+
+                    $pushMessage = $description;
+                    sendNotification($app_notification_content);
+
+                    $bunch_arr = array_chunk($gcmRegIds, 1000);
+                    if (! empty($bunch_arr)) {
+                        foreach ($bunch_arr as $bval) {
+                            if (isset($bval, $pushMessage)) {
+                                $type = 'Notification';
+                                $message = [
+                                    'body'    => $pushMessage,
+                                    'TYPE'    => $type,
+                                    'USER_ID' => $student_id,
+                                    'title'   => $schoolName,
+                                    'image'   => $schoolLogo,
+                                ];
+
+                                $pushStatus = send_FCM_Notification($bval, $message, $sub_institute_id);
+                                // sendNotification($app_notification_content);
+                            }
+                        }
+                        $i++;
+                    }
+                }else{
+                    $j++;
                 }
             }
             if (! empty($i)) {
@@ -2246,7 +2249,12 @@ class adminapiController extends Controller
                     "status"  => 1,
                     "message" => "Notification Sent successfully.",
                 ];
-            } else {
+            } else if(! empty($j)) {
+                $response = [
+                    "status"  => 0,
+                    "message" => "Student Not Found with syear ".$_REQUEST['syear'],
+                ];
+            }else{
                 $response = [
                     "status"  => 0,
                     "message" => "Notification Not Sent.",

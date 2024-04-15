@@ -175,7 +175,8 @@ class studentHomeworkController extends Controller
         
         if(empty($student_details)){
             $res['status_code'] = "0";
-            $res['message'] = "Students Not Found ".json_encode($students,true);
+            $res['message'] = "Students Not Found with syear ".$syear;
+            // ." and student_ids".json_encode($students,true) currently not required
         }else{
                 $title = $request->get('title');
                 $description = $request->get('description');
