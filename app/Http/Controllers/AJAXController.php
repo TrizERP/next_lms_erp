@@ -2047,7 +2047,7 @@ class AJAXController extends Controller
         //$type_bloom = $request->type_bloom;
         $type_learning = $request->type_learning;
         $sub_institute_id=session()->get('sub_institute_id');
-        $bloom = $depth = $learning = $reason_bloom =$reason_depth= '';
+
         if($request->has('question') && $question!==''){
             if($request->type_depth){
                 $options = DB::table('lms_mapping_type')->select(DB::raw('group_concat(name) as type_name'))->where('parent_id',$request->type_depth)->first();                
@@ -2237,20 +2237,20 @@ class AJAXController extends Controller
         if($request->file_name=="fees"){
             $command = 'python3 /home/fees_analysis_10_04.py';
         }else if ($request->file_name=="timetable"){
-            $command = 'python3 /home/timetable_10_04.py';
+            $command = 'python3 /home/timetable.py';
         }else{
             // Construct the command string with parameters
-            $command = "python3 /home/pal/pal.py $sub_institute_id $syear \"$type\" $standard_id $subject_id $chapter_id $enrollment_no";
+            $command = "python3 /home/pal/pal.py $sub_institute_id $syear $standard_id $subject_id $chapter_id $enrollment_no";
         }
       
         // Execute the command and capture the response
         $file_response = shell_exec($command);
 
-        if($file_response==null){
-            echo "file has no response";
-        }else{
+        // if($file_response==null){
+        //     echo $command;
+        // }else{
             echo "<pre>";print_r($file_response);
-        }
+        // }
         exit; 
         
         $file_response = shell_exec('python3 /home/fees_analysis_1.py ' . escapeshellarg($sub_institute_id));

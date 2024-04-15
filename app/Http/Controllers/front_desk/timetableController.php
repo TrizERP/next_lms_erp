@@ -118,7 +118,7 @@ class timetableController extends Controller
 
         $generated_timetable = shell_exec('python3 /home/timetable_10_04.py');
         $res['response'] = json_decode($generated_timetable, true); 
-        echo "<pre>";print_r($res['response']);exit;
+        echo "<pre>";print_r($res['response']['timetable']);exit;
 
 // echo "<pre>";print_r($res['response']);exit;        
         
