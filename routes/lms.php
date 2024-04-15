@@ -87,7 +87,7 @@ Route::group(['prefix' => 'lms', 'middleware' => ['session', 'menu', 'logRoute']
     Route::get('ajax_LoMasterwiseLoIndicator', [loindicatorController::class, 'ajax_LoMasterwiseLoIndicator'])
         ->name('ajax_LoMasterwiseLoIndicator');
 
-    
+
     Route::resource('question_master', questionmasterController::class);
     Route::post('ajaxdestroyanswer_master', [questionmasterController::class, 'ajaxdestroyanswer_master'])->name('ajaxdestroyanswer_master');
     Route::get('question_chapter_master', [questionmasterController::class, 'indexChapter'])->name('question_chapter_master');
@@ -166,7 +166,7 @@ Route::group(['prefix' => 'lms', 'middleware' => ['session', 'menu', 'logRoute']
     Route::GET('ajax_contentmasterdata', 'lms\lessonplan\lms_lessonplanController@ajax_contentMasterData')->name('ajax_contentmasterdata');
     Route::GET('ajax_questionpaperdata', 'lms\lessonplan\lms_lessonplanController@ajax_questionPaperData')->name('ajax_questionpaperdata');
     Route::GET('ajax_daywisedata', 'lms\lessonplan\lms_lessonplanController@ajax_DayWiseData')->name('ajax_daywisedata');
-   
+
     Route::get('ajax_getTeacher', [lms_lessonplanController::class, 'ajax_getTeacher'])->name('ajax_getTeacher');
 
 Route::get('questionReport', [questionWiseReportController::class, 'index'])->name('question_wise_report');

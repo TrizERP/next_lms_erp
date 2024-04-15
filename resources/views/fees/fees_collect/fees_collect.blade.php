@@ -353,7 +353,7 @@
                                                 $grand_total_with_cheque_charges = $data['final_fee']['Total'];
                                             }
                                             // for send sms to parent
-   											$fees_config =App\Helpers\fees_config();											
+   											$fees_config =App\Helpers\fees_config();
                                     @endphp
 									<tr style="border-bottom: 2px solid black;">
 										<td></td>

@@ -56,6 +56,7 @@ use App\Http\Controllers\library\BookController;
 use App\Http\Controllers\sqaa\sqaa_controller;
 use App\Http\Controllers\sqaa\sqaaReportController;
 use App\Http\Controllers\sqaa\sqaaScoreReportController;
+use App\Http\Controllers\WhatsappController;
 
 /*
 |--------------------------------------------------------------------------
@@ -99,7 +100,7 @@ if (isset($_REQUEST['sub_institute_id']) && $_REQUEST['sub_institute_id'] != '')
             }else{
                 return redirect()->route('setup-institute-details');
             }
-           
+
         } else {
             return view('login');
         }
@@ -109,6 +110,19 @@ if (isset($_REQUEST['sub_institute_id']) && $_REQUEST['sub_institute_id'] != '')
 
 //PAYROLL SYSTEM
 Route::group([ 'middleware' => ['session', 'menu', 'logRoute']], function () {
+    Route::get('/whatsapp-user-details', [WhatsappController::class, 'whatsapp_user_details']);
+    Route::get('/whatsapp-user-details/create', [WhatsappController::class, 'whatsappUserDetailsCreate'])->name('whatsapp_user_details.create');
+    Route::get('/whatsapp-user-details/create/{id}', [WhatsappController::class, 'whatsappUserDetailsCreate']);
+    Route::post('/whatsapp-user-details/store', [WhatsappController::class, 'whatsappUserDetailsStore'])->name('whatsapp_user_details.store');
+    Route::delete('/whatsapp-user-details/destroy/{id}', [WhatsappController::class, 'whatsappUserDetailsDestroy'])->name('whatsapp_user_details.destroy');
+
+    Route::get('/whatsapp-send-messages', [WhatsappController::class, 'whatsapp_send_messages']);
+    Route::get('/whatsapp-send-messages/create', [WhatsappController::class, 'whatsappSendMessageCreate'])->name('whatsapp_send_message.create');
+    Route::get('/whatsapp-send-messages/create/{id}', [WhatsappController::class, 'whatsappSendMessageCreate']);
+    Route::post('/whatsapp-send-messages/store', [WhatsappController::class, 'whatsappSendMessageStore'])->name('send_whatsapp_message.store');
+    Route::delete('/whatsapp-send-messages/destroy/{id}', [WhatsappController::class, 'whatsappSendMessageDestroy'])->name('whatsapp_send_message.destroy');
+
+
     Route::get('/payroll-type', [PayrollController::class, 'payrollType'])->name('payroll_type.index');
     Route::get('/payroll-type/create', [PayrollController::class, 'payrollCreate'])->name('payroll_type.create');
     Route::post('/payroll-type/store', [PayrollController::class, 'payrollStore'])->name('payroll_type.store');
@@ -120,7 +134,7 @@ Route::group([ 'middleware' => ['session', 'menu', 'logRoute']], function () {
     Route::get('/roll-over', [PayrollController::class, 'rollOver'])->name('employee_salary_structure.rollover');
     Route::post('/employee-salary-structure/store', [PayrollController::class, 'employeeSalaryStructureStore'])->name('employee_salary_structure.store');
     Route::post('/rollover-employee-salary-structure/store', [PayrollController::class, 'rolloverEmployeeSalaryStructure'])->name('rollover_employee_salary_structure.store');
-    
+
     Route::get('setup-institute-details', [dashboardController::class, 'setup_details'])->name('setup-institute-details');
 
     Route::get('/salary-structure-report', [PayrollController::class, 'salaryStructureReport'])->name('salary_structure_report.index');
@@ -167,20 +181,20 @@ Route::group([ 'middleware' => ['session', 'menu', 'logRoute']], function () {
 
     Route::get('early-going-hrms-attendance-report',[HrmsController::Class,'earlyGoingHrmsAttendanceReport'])->name('hrms_attendance_report.early_going_report');
     Route::post('/early-going-hrms-attendance-report', [HrmsController::class, 'earlyGoingHrmsAttendanceReport'])->name('hrms.show_early_going_hrms_attendance_report');
-    
+
     Route::resource('sqaa_master', sqaa_controller::class);
     Route::resource('sqaa_score_report', sqaaScoreReportController::class);
     Route::resource('sqaa_report_master', sqaaReportController::class);
     Route::get('sqaa_report_master/{id}/edit', 'sqaaReportController@edit')->name('sqaa_report_master.edit');
     Route::put('sqaa_report_master/{id}', 'sqaaReportController@update')->name('sqaa_report_master.update');
 
-    Route::get('get-level', [sqaa_controller::class,'get_level'])->name('get-level'); 
+    Route::get('get-level', [sqaa_controller::class,'get_level'])->name('get-level');
     Route::get('gen-pdf', [sqaa_controller::class,'edit_gen_pdf'])->name('gen-pdf');
-    Route::post('gen-pdf-down', [sqaa_controller::class,'edit_gen_pdf'])->name('gen-pdf-down');    
+    Route::post('gen-pdf-down', [sqaa_controller::class,'edit_gen_pdf'])->name('gen-pdf-down');
     Route::post('unlink-file', [sqaa_controller::class,'unlink_file'])->name('unlink-file');
-    
-    Route::POST('download-pdf', [sqaa_controller::class,'generatePdf'])->name('download-pdf');     
-    
+
+    Route::POST('download-pdf', [sqaa_controller::class,'generatePdf'])->name('download-pdf');
+
     Route::resource('questionExcelDownload', questionExcelDownloadController::class);
 });
 
@@ -196,7 +210,7 @@ Route::any('/knowledge-base', [dashboardController::class, 'knowledge_base'])->n
 Route::any('/knowledge-base-detail/{id}/{title}', [dashboardController::class, 'knowledge_base_detail'])->name('knowledge_base_detail')->middleware('session', 'menu');
 
 Route::get('dashboard', [dashboardController::class, 'index'])->name('dashboard')->middleware('session', 'menu', 'logRoute');
-// add by uma 
+// add by uma
 Route::resource('norm-clature', normClatureController::class);
 Route::resource('add-institute-details', institute_detail::class);
 
@@ -416,7 +430,7 @@ Route::group(['middleware' => ['session', 'menu', 'logRoute']], function () {
     Route::get('books.circulation', [BookController::class,'circulation'])->name('books.circulation');
     Route::get('books/{id}/item', [BookController::class,'item'])->name('books.item');
     Route::delete('books/{id}/item/delete', [BookController::class,'deleteItem'])->name('books.items.destroy');
-    
+
 });
 
 Route::get('privacyPolicy', [dashboardController::class, 'privacyPolicy'])->name('privacyPolicy');
