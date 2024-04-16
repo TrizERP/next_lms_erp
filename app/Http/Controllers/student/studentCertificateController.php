@@ -402,25 +402,23 @@ class studentCertificateController extends Controller
     $months = FeeMonthId();
     $month = '';
     // added on 15-04-2024 by uma to get last paid fees month
-    $getLastFeesPaid = DB::table('fees_collect')->where('student_id',$value['id'])->where('sub_institute_id',$sub_institute_id)->where('syear',$syear)->latest('created_date')->first();
+        $getLastFeesPaid = DB::table('fees_collect')->where('sub_institute_id',$sub_institute_id)->where('syear',$syear)->where('student_id',$value['id'])->where('is_deleted','N')->groupBy('term_id')->get();
 
-    if(isset($getLastFeesPaid->term_id)){
-        $month = $months[$getLastFeesPaid->term_id];
-    }
-    // end 15-04-2024
-   
-    // if ($value['month_name'] != '') {
-    //     $monthsArray = explode(',', $value['month_name']);
-    //     $monthsArray = array_filter($monthsArray);
-    //     $lastMonth = end($monthsArray);
-    //     if (isset($months[$lastMonth])) {
-    //         $month = $months[$lastMonth];
-    //     } else {
-    //         $month = 'No Fees Details Found';
-    //     }
-    // } else {
-    //     $month = 'No Fees Details Found';
-    // }
+        $lastPaidfees = [];
+        foreach ($getLastFeesPaid as $key => $values) {
+            $term_id = $values->term_id; 
+            $FeesYear = substr($term_id, -4);
+            $FeesMonth = substr($term_id, 0,-4);
+            $lastPaidfees[$term_id] = ($FeesYear * 12) + $FeesMonth;
+        }
+        if(!empty($lastPaidfees)){
+            $maxMonth = array_keys($lastPaidfees, max($lastPaidfees))[0];
+            if(isset($months[$maxMonth])){
+                $month = $months[$maxMonth];    
+            }
+        }
+        // echo "<pre>";print_r($month);exit;
+        // end 15-04-2024
 
         $html_content = str_replace(htmlspecialchars("<<month_name_value>>"),
             strtoupper($month), $html_content);
