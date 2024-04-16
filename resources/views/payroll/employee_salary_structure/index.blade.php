@@ -39,8 +39,8 @@
                                     <div class="col-md-3 form-group">
                                         <label>Employee Status</label>
                                         <select id='emp_status' name="emp_status" class="form-control">
-                                            <option @if(isset(data['emp_status']) && $data['emp_status']==1) selected @endif value="1">Active</option>
-                                            <option @if(isset(data['emp_status']) && $data['emp_status']==0) selected @endif value="0">In-active</option>
+                                            <option @if(isset($data['emp_status']) && $data['emp_status']==1) selected @endif value="1">Active</option>
+                                            <option @if(isset($data['emp_status']) && $data['emp_status']==0) selected @endif value="0">In-active</option>
                                         </select>
                                     </div>
                                     <div class="col-md-3 col-sm-offset-4 text-center form-group">
@@ -84,8 +84,7 @@
                                 </tr>
                                 </thead>
                                 <tbody>
-                                @php $j=1; 
-                                echo "<pre>";print_r($data['employees']);exit; @endphp
+                                @php $j=1; @endphp
                                 @foreach($data['employees'] as $key => $value)
                                     <tr>
                                         <td>{{$key+1}}</td>
