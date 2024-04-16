@@ -84,19 +84,20 @@ class classteacherController extends Controller
         $syear = $request->session()->get('syear');
 
         //check for exisiting classteacher
-        $data = classteacherModel::select('*')
+        $data = classteacherModel::Join('tbluser as u','u.id','=','class_teacher.teacher_id')
             ->where([
-                'sub_institute_id' => $sub_institute_id,
-                'grade_id'         => $request->get('grade'),
-                'standard_id'      => $request->get('standard'),
-                'division_id'      => $request->get('division'),
-                'syear'            => $syear,
+                'class_teacher.sub_institute_id' => $sub_institute_id,
+                'class_teacher.grade_id'         => $request->get('grade'),
+                'class_teacher.standard_id'      => $request->get('standard'),
+                'class_teacher.division_id'      => $request->get('division'),
+                'class_teacher.syear'            => $syear,
             ])
-            ->get();
-        if (isset($data) && count($data) > 0) {
+            ->first();
+        // display teacher name whom lecture is assigned
+        if (!empty($data) && isset($data->first_name)) {
             $res = [
                 "status_code" => 1,
-                "message"     => "Class Teacher Already Exist",
+                "message"     => "Class Teacher Already Exist to teacher ".$data->first_name.' '.$data->last_name,
                 "class"       => "alert-danger",
             ];
         } else {

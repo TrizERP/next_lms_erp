@@ -401,19 +401,26 @@ class studentCertificateController extends Controller
 
     $months = FeeMonthId();
     $month = '';
+    // added on 15-04-2024 by uma to get last paid fees month
+    $getLastFeesPaid = DB::table('fees_collect')->where('student_id',$value['id'])->where('sub_institute_id',$sub_institute_id)->where('syear',$syear)->latest('created_date')->first();
 
-    if ($value['month_name'] != '') {
-        $monthsArray = explode(',', $value['month_name']);
-        $monthsArray = array_filter($monthsArray);
-        $lastMonth = end($monthsArray);
-        if (isset($months[$lastMonth])) {
-            $month = $months[$lastMonth];
-        } else {
-            $month = 'No Fees Details Found';
-        }
-    } else {
-        $month = 'No Fees Details Found';
+    if(isset($getLastFeesPaid->term_id)){
+        $month = $months[$getLastFeesPaid->term_id];
     }
+    // end 15-04-2024
+   
+    // if ($value['month_name'] != '') {
+    //     $monthsArray = explode(',', $value['month_name']);
+    //     $monthsArray = array_filter($monthsArray);
+    //     $lastMonth = end($monthsArray);
+    //     if (isset($months[$lastMonth])) {
+    //         $month = $months[$lastMonth];
+    //     } else {
+    //         $month = 'No Fees Details Found';
+    //     }
+    // } else {
+    //     $month = 'No Fees Details Found';
+    // }
 
         $html_content = str_replace(htmlspecialchars("<<month_name_value>>"),
             strtoupper($month), $html_content);

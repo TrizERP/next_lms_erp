@@ -29,7 +29,7 @@
                                         <select id='employee_id' name="employee_id" class="form-control" required>
                                             <option value="0">Select Employee</option>
                                             @foreach($data['employeeDetails'] as $employee)
-                                                <option value="{{$employee['id']}}" @if(isset($data['emp_id']) && $employee['id']==$data['emp_id']) selected @endif>{{$employee['first_name'] .' '. $employee['last_name'] }} ({{$employee['user_profile']}})</option>
+                                                <option value="{{$employee['id']}}" @if(isset($data['emp_id']) && $employee['id']==$data['emp_id']) selected @endif>{{$employee['first_name'] .' '. $employee['last_name'] }} ({{$employee['department']}})</option>
                                             @endforeach
                                         </select>
                                     </div>
