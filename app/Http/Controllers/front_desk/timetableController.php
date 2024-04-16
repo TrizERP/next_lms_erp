@@ -54,7 +54,8 @@ class timetableController extends Controller
         $res['select_day'] = $days = $request->select_day;
         $res['select_period'] = $periods = $request->select_period;
         $res['select_subject'] = $subjects = $request->select_subject;     
-
+        // delete data in table create_timetable
+        create_timetable::where('sub_institute_id',$sub_institute_id)->delete();
         $main_data=[];
         foreach ($teachers as $key => $teacher_id) {
             # code...
@@ -73,7 +74,7 @@ class timetableController extends Controller
                     "teacher_id" => $teacher_details->teacher_id,
                     "teacher_name" => $teacher_details->teacher_name,
                     "days" => $days[$key],
-                    "week_load" => $week_load[$key],
+                    "work_load" => $week_load[$key],
                     "periods" => $period_details,
                     "subjects" => $subject_details,
                 );
@@ -85,40 +86,21 @@ class timetableController extends Controller
     }
 
         $request_to_sent = json_encode($main_data,JSON_PRETTY_PRINT);
-// echo "<pre>";print_r($request_to_sent);exit;
         $file_path = public_path('lms/ai/timetable/post.php');
-        // $content =  file_get_contents($file_path);
        
         if (File::exists($file_path)) {
             File::delete($file_path);
         }
+        $inputData = '$inputData';
         $file_data = "<?php 
-        echo '".$request_to_sent."'; 
+        echo $inputData='".$request_to_sent."'; 
         ?>";
         // Write PHP code to file
         file_put_contents($file_path, $file_data);
         $content =  file_get_contents($file_path);
-        // dd($content);exit;
-    // $process = new Process(['python3', '/home/timetable.py']);
-    
-    // try {
-    //     // Run the command
-    //     $process->mustRun();
-        
-    //     // Get the output of the command
-    //     $output = $process->getOutput();
-        
-    //     // Do something with the output if needed
-    //     return $output;
-    // } catch (ProcessFailedException $exception) {
-    //     // Handle if the process failed
-    //     return $exception->getMessage();
-    // }
-    // exit;
 
-        $generated_timetable = shell_exec('python3 /home/timetable_10_04.py');
-        $res['response'] = json_decode($generated_timetable, true); 
-        echo "<pre>";print_r($res['response']['timetable']);exit;
+    $generated_timetable = shell_exec('python3 /home/timetable.py');
+    $res['response'] = json_decode($generated_timetable, true);
 
 // echo "<pre>";print_r($res['response']);exit;        
         
@@ -178,7 +160,7 @@ class timetableController extends Controller
         // $res['response'] = json_decode($dummy_data, true); // Decode JSON string into an associative array
         
         if ($res['response'] !== null) {
-            foreach ($res['response'] as $day) {
+            foreach ($res['response']['timetable'] as $day) {
                 foreach ($day['periods'] as $period) {
                     $insert_data=[
                         "sub_institute_id"=>$sub_institute_id,
@@ -199,7 +181,8 @@ class timetableController extends Controller
                 }
             }
         }else{
-            echo "<pre>";print_r('no data');exit;
+          $res['status_code'] = "0";
+          $res['message']="Failed to get Data";
         }
         $res['timetableData'] = $this->timetableData($request);
 
