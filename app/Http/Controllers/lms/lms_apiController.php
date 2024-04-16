@@ -551,39 +551,46 @@ class lms_apiController extends Controller
                 ->where('student_id', $student_id)
                 ->where('question_paper_id', $question_paper_id)
                 ->orderBy('start_time')->get()->toArray();
+                
+                // Check if $data['attempted_data'] is empty
+                if (empty($data['attempted_data'])) {
+                    $res['status'] = 0;
+                    $res['message'] = "No attempted data found for the specified parameters.";
+                } else{
+                    $data['attempted_data'] = json_decode(json_encode($data['attempted_data']), true);
+        //Rajesh = Hide PROGRESSBAR_DATA because API take too much time, and not required in mobile app....future perpective data display 
+        /*
+                    foreach ($data['attempted_data'] as $key => $val) {
+                        $pdata = DB::select("SELECT *,'100' as total_percentage,
+                            round(((a.right_answer*100)/total_question),2) as obtained_percentage from (
+                            SELECT lt.parent_id,plt.name as parent_name,lt.id,lt.name,COUNT(mapping_type_id) as total_question,group_concat(e.question_id) as ques_list,
+                            sum((case when e.ans_status = 'right' then '1' end)) as right_answer
+                            FROM lms_question_mapping l
+                            INNER JOIN lms_mapping_type lt ON lt.id = l.mapping_value_id
+                            INNER JOIN lms_mapping_type plt ON plt.id = lt.parent_id
+                            LEFT JOIN lms_online_exam_answer e on e.question_id = l.questionmaster_id and e.question_paper_id = '" . $val['question_paper_id'] . "' AND
+                            e.student_id = '" . $val['student_id'] . "' and e.online_exam_id = '" . $val['id'] . "'
+                            WHERE questionmaster_id IN (
+                                    SELECT question_id
+                                    FROM lms_online_exam_answer
+                                    WHERE question_paper_id = '" . $val['question_paper_id'] . "' AND student_id = '" . $val['student_id'] . "'
+                                    AND online_exam_id = '".$val['id']."'
+                                )
+                            GROUP BY mapping_value_id
+                            ORDER BY mapping_type_id,mapping_value_id) as a
+                        ");
 
-            $data['attempted_data'] = json_decode(json_encode($data['attempted_data']), true);
-//Rajesh = Hide PROGRESSBAR_DATA because API take too much time, and not required in mobile app....future perpective data display 
-/*
-            foreach ($data['attempted_data'] as $key => $val) {
-                $pdata = DB::select("SELECT *,'100' as total_percentage,
-                    round(((a.right_answer*100)/total_question),2) as obtained_percentage from (
-                    SELECT lt.parent_id,plt.name as parent_name,lt.id,lt.name,COUNT(mapping_type_id) as total_question,group_concat(e.question_id) as ques_list,
-                    sum((case when e.ans_status = 'right' then '1' end)) as right_answer
-                    FROM lms_question_mapping l
-                    INNER JOIN lms_mapping_type lt ON lt.id = l.mapping_value_id
-                    INNER JOIN lms_mapping_type plt ON plt.id = lt.parent_id
-                    LEFT JOIN lms_online_exam_answer e on e.question_id = l.questionmaster_id and e.question_paper_id = '" . $val['question_paper_id'] . "' AND
-                    e.student_id = '" . $val['student_id'] . "' and e.online_exam_id = '" . $val['id'] . "'
-                    WHERE questionmaster_id IN (
-                            SELECT question_id
-                            FROM lms_online_exam_answer
-                            WHERE question_paper_id = '" . $val['question_paper_id'] . "' AND student_id = '" . $val['student_id'] . "'
-                            AND online_exam_id = '".$val['id']."'
-                        )
-                    GROUP BY mapping_value_id
-                    ORDER BY mapping_type_id,mapping_value_id) as a
-                ");
-
-                $pdata_new = json_decode(json_encode($pdata), true);
-                foreach ($pdata_new as $pkey => $pval) {
-                    $data['attempted_data'][$key]['PROGRESSBAR_DATA'][$pval['parent_name']][] = $pval;
+                        $pdata_new = json_decode(json_encode($pdata), true);
+                        foreach ($pdata_new as $pkey => $pval) {
+                            $data['attempted_data'][$key]['PROGRESSBAR_DATA'][$pval['parent_name']][] = $pval;
+                        }
+                    }
+        */
+                    $res['status'] = 1;
+                    $res['message'] = "Success";
+                    $res['data'] = $data;
                 }
-            }
-*/
-            $res['status'] = 1;
-            $res['message'] = "Success";
-            $res['data'] = $data;
+
         } else {
             $res['status'] = 0;
             $res['message'] = "Parameter Missing";
@@ -1028,6 +1035,8 @@ class lms_apiController extends Controller
                  FROM lms_online_exam le
                  INNER JOIN question_paper qp ON qp.id = le.question_paper_id AND qp.sub_institute_id = '".$sub_institute_id."' AND qp.syear = '".$syear."'
                  WHERE student_id = '".$student_id."' AND le.id = '".$online_exam_id."'");
+
+
             $online_answer_data = DB::select("SELECT a.*, GROUP_CONCAT(am.answer) AS actual_answer,q.question_type_id,q.multiple_answer,
                 (
                 CASE
@@ -1037,22 +1046,19 @@ class lms_apiController extends Controller
                 END
                 ) AS right_wrong ,q.question_title
                 FROM (
-                SELECT loem.question_id,loem.ans_status,IFNULL(loem.narrative_answer, GROUP_CONCAT(lam.answer)) AS given_answer
+                SELECT loem.question_id,loem.ans_status,IFNULL(loem.narrative_answer, GROUP_CONCAT(IFNULL(lam.answer,'Not Attempted'))) AS given_answer
                 FROM lms_online_exam_answer loem
-                INNER JOIN answer_master lam ON lam.question_id = loem.question_id AND lam.id = loem.answer_id
+                LEFT JOIN answer_master lam ON lam.question_id = loem.question_id AND lam.id = loem.answer_id
                 WHERE loem.online_exam_id = '".$online_exam_id."' AND loem.student_id = '".$student_id."'
                 GROUP BY loem.question_id) AS a
                 INNER JOIN lms_question_master q ON q.id = a.question_id
                 LEFT JOIN answer_master am ON a.question_id = am.question_id AND correct_answer = 1
                 GROUP BY am.question_id,a.question_id
             ");
-
+            
+            $data1 = []; // Define $data1 as an empty array before the loop
             foreach ($online_answer_data as $key => $val) {
                 $new = array();
-                // $data['online_answer_data'][$val->question_id]['QUESTION_TEXT'] = $val->question_title;
-                // $data['online_answer_data'][$val->question_id]['RIGHT_WRONG'] = $val->right_wrong;
-                // $data['online_answer_data'][$val->question_id]['ACTUAL_ANSWER'] = $val->actual_answer;
-                // $data['online_answer_data'][$val->question_id]['GIVEN_ANSWER'] = $val->given_answer;
 
                 $new[$val->question_id]['QUESTION_TEXT'] = $val->question_title;
                 $new[$val->question_id]['RIGHT_WRONG'] = $val->right_wrong;
@@ -1061,12 +1067,18 @@ class lms_apiController extends Controller
 
                 $data1[] = (object) $new;
             }
-
             $data['online_answer_data'] = $data1;
 
-            $res['status'] = 1;
-            $res['message'] = "Success";
-            $res['data'] = $data;
+            // Check if $data['attempted_data'] is empty
+                if (empty($data['attempted_data']) || empty($data['online_answer_data'])) {
+                    $res['status'] = 0;
+                    $res['message'] = "No attempted data found for the specified parameters.";
+                } else{
+                    $res['status'] = 1;
+                    $res['message'] = "Success";
+                    $res['data'] = $data;
+                }
+
         } else {
             $res['status'] = 0;
             $res['message'] = "Parameter Missing";

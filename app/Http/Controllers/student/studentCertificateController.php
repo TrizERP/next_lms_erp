@@ -111,7 +111,7 @@ class studentCertificateController extends Controller
                 ->where('syear', $syear)->get()->toArray();
             $certificate_no = $certificate_no_result[0]->certificate_no;
             
-            if ($template == 'Transfer Certificate' && !empty($CheckExistCertificate)) 
+            if ($template == 'Transfer Certificate' && !empty($CheckExistCertificate) && $sub_institute_id==47) 
             {
                 $certificate_no1 = $CheckExistCertificate->certificate_number;
             }else{
@@ -132,7 +132,7 @@ class studentCertificateController extends Controller
 
             if ($template == 'Transfer Certificate') 
             {
-                if(!empty($CheckExistCertificate)){
+                if(!empty($CheckExistCertificate) && $sub_institute_id==47){
                     $new_html_content = $CheckExistCertificate->certificate_html.'<br><h6 style="width:100%;text-align:right !important">Duplicate</h6>';
                 }
 
@@ -649,7 +649,7 @@ class studentCertificateController extends Controller
         foreach ($data as $key => $value) {
             
         $CheckExistCertificate = [];
-        if($template=="Transfer Certificate"){
+        if($template=="Transfer Certificate" && $sub_institute_id==47){
             $CheckExistCertificate = DB::table('certificate_history as c') 
             ->where('c.sub_institute_id', $sub_institute_id)
             ->where('certificate_type', $template)
