@@ -28,13 +28,19 @@
                                 <div class="row">
                                     <div class="col-md-3 form-group">
                                         <label>Employee List</label>
-
                                         <select id='employee_id' name="employee_id" class="form-control">
                                             <option value="0">Select Employee</option>
                                             @foreach($data['employees'] as $key => $employeeList)
-                                            <option value="{{$employeeList['id']}}" @if(isset($data['selected_emp']) && $data['selected_emp']==$employeeList['id']) selected @endif>{{$employeeList['first_name'] .' '. $employeeList['last_name'] }} ({{$employeeList['user_profile']}})</option>                              
+                                            <option value="{{$employeeList['id']}}" @if(isset($data['selected_emp']) && $data['selected_emp']==$employeeList['id']) selected @endif>{{$employeeList['first_name'] .' '. $employeeList['last_name'] }} ({{$employeeList['department']}}) </option>                              
                                             @endforeach
+                                        </select>
+                                    </div>
 
+                                    <div class="col-md-3 form-group">
+                                        <label>Employee Status</label>
+                                        <select id='emp_status' name="emp_status" class="form-control">
+                                            <option @if(isset(data['emp_status']) && $data['emp_status']==1) selected @endif value="1">Active</option>
+                                            <option @if(isset(data['emp_status']) && $data['emp_status']==0) selected @endif value="0">In-active</option>
                                         </select>
                                     </div>
                                     <div class="col-md-3 col-sm-offset-4 text-center form-group">
@@ -78,19 +84,23 @@
                                 </tr>
                                 </thead>
                                 <tbody>
-                                @php $j=1; @endphp
+                                @php $j=1; 
+                                echo "<pre>";print_r($data['employees']);exit; @endphp
                                 @foreach($data['employees'] as $key => $value)
                                     <tr>
                                         <td>{{$key+1}}</td>
                                         <td>{{$value['id']}}</td>
-                                        <td>{{$value['first_name'] .' '. $value['middle_name'] .' '.$value['last_name']}}  ({{$employeeList['user_profile']}})</td>
-                                        <td>{{$value['gender']}}</td>
-                                        <input type="hidden" name="emp[{{$value['id']}}][]" value="{{$value['id']}}"> 
+                                        <td>{{$value['first_name'] .' '. $value['middle_name'] .' '.$value['last_name']}} ({{$value['department']}}) </td>
+                                        <td>{{$value['gender']}}<input type="hidden" name="emp[{{$value['id']}}][]" value="{{$value['id']}}"></td>
+                                         
                                         @foreach ($data['payrollTypes'] as $payrollType)
                                             @if($payrollType->payroll_name == 'PF' || $payrollType->payroll_name == 'Pro.Tax')
-                                                <input type="hidden" name="emp[{{$value['id']}}][{{$payrollType->id}}][]"
+                                                
+                                                <td>
+                                                    <input type="hidden" name="emp[{{$value['id']}}][{{$payrollType->id}}][]"
                                                        value="{{$payrollType->id}}">
-                                                <td><input type="text" disabled
+                                                       <span id="all_values" style="display:none">{{$data['employeeSalaryStructures'][$value['id']][$payrollType->id] ?? 0}}</span>
+                                                       <input type="text" disabled
                                                            value="{{$data['employeeSalaryStructures'][$value['id']][$payrollType->id] ?? 0}}">
                                                     <input type="hidden" name="emp[{{$value['id']}}][{{$payrollType->id}}][]"
                                                            value="{{$data['employeeSalaryStructures'][$value['id']][$payrollType->id] ?? 0}}">
@@ -100,9 +110,13 @@
                                                            value="{{$payrollType->payroll_type}}">
                                                 </td>
                                             @else
-                                                <input type="hidden" name="emp[{{$value['id']}}][{{$payrollType->id}}][]"
+                                                
+                                                <td>
+                                                    <input type="hidden" name="emp[{{$value['id']}}][{{$payrollType->id}}][]"
                                                        value="{{$payrollType->id}}">
-                                                <td><input type="text" name="emp[{{$value['id']}}][{{$payrollType->id}}][]"
+                                                       <span id="all_values" style="display:none">{{$data['employeeSalaryStructures'][$value['id']][$payrollType->id] ?? 0}}</span>
+
+                                                       <input type="text" name="emp[{{$value['id']}}][{{$payrollType->id}}][]"
                                                            value="{{$data['employeeSalaryStructures'][$value['id']][$payrollType->id] ?? 0}}">
                                                     <input type="hidden" name="emp[{{$value['id']}}][{{$payrollType->id}}][]"
                                                            value="{{$payrollType->payroll_name}}"> <input type="hidden" name="emp[{{$value['id']}}][{{$payrollType->id}}][]"
@@ -133,7 +147,13 @@
 </div>
 
 @include('includes.footerJs')
-
+<style>
+    @media print {
+    .flex-on-print {
+        display: flex !important;
+    }
+}
+</style>
 <script>
     $(document).ready(function () {
         var table = $('#example').DataTable({
@@ -147,7 +167,7 @@
             buttons: [
                 {
                     extend: 'pdfHtml5',
-                    title: 'Student Report',
+                    title: 'Salary Structure Report',
                     orientation: 'landscape',
                     pageSize: 'LEGAL',
                     pageSize: 'A0',
@@ -155,13 +175,20 @@
                         columns: ':visible'
                     },
                 },
-                {extend: 'csv', text: ' CSV', title: 'Student Report'},
-                {extend: 'excel', text: ' EXCEL', title: 'Student Report'},
-                {extend: 'print', text: ' PRINT', title: 'Student Report'},
+                {extend: 'csv', text: ' CSV', title: 'Salary Structure Report'},
+                {extend: 'excel', text: ' EXCEL', title: 'Salary Structure Report'},
+                {
+                    extend: 'print', 
+                    text: ' PRINT', 
+                    title: 'Salary Structure Report',
+                    customize: function (win) {
+                        $(win.document.body).append(`<div style="text-align: right;margin-top:20px">Printed on: {{date('d-m-Y H:i:s')}}</div>`);
+                        $('#all_values').addClass('flex-on-print');
+                    }
+                },
                 'pageLength'
             ],
         });
-        //table.buttons().container().appendTo('#example_wrapper .col-md-6:eq(0)');
 
         $('#example thead tr').clone(true).appendTo('#example thead');
         $('#example thead tr:eq(1) th').each(function (i) {

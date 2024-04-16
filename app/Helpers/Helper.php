@@ -2201,18 +2201,33 @@ if (!function_exists('get_string')) {
 
     if (!function_exists('employeeDetails')) {
 
-        function employeeDetails($sub_institute_id='',$employee_id='')
+        function employeeDetails($sub_institute_id='',$employee_id='',$status='')
         {
-            return tbluserModel::join('tbluserprofilemaster as upm', 'upm.id', '=', 'tbluser.user_profile_id')
-            ->selectRaw('tbluser.*,IfNULL(tbluser.first_name, "-") as first_name, IFNULL(tbluser.last_name, "-") as last_name,IFNULL(tbluser.middle_name, "-") as middle_name, tbluser.sub_institute_id, IfNULL(upm.name,"-") as user_profile')
-            ->where('tbluser.sub_institute_id', $sub_institute_id)
-            ->where('tbluser.status', 1)
-            ->when($employee_id!='',function($query) use($employee_id){
+            // return $status;exit;
+            $empData= tbluserModel::join('tbluserprofilemaster as upm', 'upm.id', '=', 'tbluser.user_profile_id')
+            ->selectRaw('tbluser.*,IfNULL(tbluser.first_name, "-") as first_name, IFNULL(tbluser.last_name, "-") as last_name,IFNULL(tbluser.middle_name, "-") as middle_name, tbluser.sub_institute_id, IfNULL(upm.name,"-") as user_profile,tbluser.department_id as department_id')
+            ->where('tbluser.sub_institute_id', $sub_institute_id);
+
+            if($status!==0){
+                $empData->where('tbluser.status', 1);
+            }
+
+            $empData = $empData->when($employee_id!='',function($query) use($employee_id){
                 $query->where('tbluser.id',$employee_id);
             })
             ->orderBy('tbluser.first_name')
+            // ->take(20)  
+            ->groupBy('tbluser.id')
             ->get()
             ->toArray();
+
+            $empDatas=[];
+            foreach($empData as $key => $value){
+                $dep = DB::table('hrms_departments')->where('id',$value['department_id'])->where('status',1)->first();
+                $empDatas[$key] = $value;
+                $empDatas[$key]['department'] = (isset($dep->department)) ? $dep->department : '-';
+            }
+            return $empDatas;
         }
     }
     
