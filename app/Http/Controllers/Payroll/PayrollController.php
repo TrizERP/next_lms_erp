@@ -75,6 +75,7 @@ class PayrollController extends Controller
     {
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $type=$request->input('type');
+        $status=$request->input('emp_status') ?? 1;
         $sub_institute_id=session()->get('sub_institute_id');
         $syear = session()->get('syear');
         $employee_id=$request->employee_id ?? '';
@@ -93,8 +94,8 @@ class PayrollController extends Controller
             $sub_institute_id = $request->get('sub_institute_id');
             $syear = $request->get('syear');
         }
-        $employees =$employeeLists= employeeDetails($sub_institute_id,$employee_id);
-       
+        $employees =$employeeLists= employeeDetails($sub_institute_id,$employee_id,$status);
+    //    echo "<pre>";print_r($employees);exit;
         $payrollTypes = PayrollType::where('status', 1)->get();
         
         $employeeSalaryStructures = EmployeeSalaryStructure::where('sub_institute_id',$sub_institute_id)->where('year',$syear)->get();
@@ -109,6 +110,7 @@ class PayrollController extends Controller
         $res['employeeSalaryStructures']=$employeeSalaryStructures;
         $res['employeeLists']=$employeeLists;
         $res['selected_emp']=$employee_id;
+        $res['emp_status'] = $status;
         // echo "<pre>";print_r($employeeSalaryStructures[7011]);exit;
         //return json_decode($employeeSalaryStructures[0]['employee_salary_data'], true);
         return is_mobile($type, "payroll.employee_salary_structure.index", $res, "view");
