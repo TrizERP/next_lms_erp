@@ -42,7 +42,7 @@
                 <div class="col-md-4 form-group">
                     <label>User whatsapp No </label>
                     <input type="text" id='user_whatsapp_no' required name="user_whatsapp_no" class="form-control"
-                           value="{{$WhatsappUserDetail['user_whatsapp_no']}}">
+                           value="{{$data['user_whatsapp_no']}}">
                     @error('user_whatsapp_no')
                     <span style="color: red">{{$message}}</span>
                     @enderror
@@ -50,7 +50,7 @@
                 <div class="col-md-4 form-group">
                     <label>User Whatsapp Sid</label>
                     <input type="text" id='user_whatsapp_sid' required name="user_whatsapp_sid" class="form-control"
-                           value="{{$WhatsappUserDetail['user_whatsapp_sid']}}">
+                           value="{{$data['user_whatsapp_sid']}}">
                     @error('user_whatsapp_sid')
                     <span style="color: red">{{$message}}</span>
                     @enderror
@@ -58,12 +58,12 @@
                 <div class="col-md-4 form-group">
                     <label>User Whatsapp Token</label>
                     <input type="text" id='user_whatsapp_token' required name="user_whatsapp_token" class="form-control"
-                           value="{{$WhatsappUserDetail['user_whatsapp_token']}}">
+                           value="{{$data['user_whatsapp_token']}}">
                     @error('user_whatsapp_token')
                     <span style="color: red">{{$message}}</span>
                     @enderror
                 </div>
-                <input type="hidden" name="id" value="{{$WhatsappUserDetail['id']}}">
+                <input type="hidden" name="id" value="{{$data['id']}}">
                 <div class="col-md-12 form-group">
                     <center>
                         <input type="submit" name="submit" id="Submit" value="Save" class="btn btn-success">

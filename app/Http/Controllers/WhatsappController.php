@@ -18,46 +18,59 @@ class WhatsappController extends Controller
 {
     public function whatsapp_user_details(Request $request)
     {
+        $type = $request->type ?? '';
         $data['data'] = WhatappUserDetail::all();
         $data['is_hidden'] = false;
         if (WhatappUserDetail::where('sub_institute_id', session()->get('sub_institute_id'))->count()) {
             $data['is_hidden'] = true;
         }
-        return view('whatsapp.whatsapp_user_details.index', ["data" => $data]);
+        return is_mobile($type, 'whatsapp.whatsapp_user_details.index', $data, "view");
     }
 
     public function whatsapp_send_messages(Request $request)
     {
+        $type = $request->type ?? '';
         $data['data'] = WhatsappSentMessage::all();
-        return view('whatsapp.whatsapp_send_messages.index', ["data" => $data]);
+        //return view('whatsapp.whatsapp_send_messages.index', ["data" => $data]);
+        return is_mobile($type, 'whatsapp.whatsapp_send_messages.index', $data, "view");
     }
 
-    public function whatsappUserDetailsCreate(Request $request, $id)
+    public function whatsappUserDetailsCreate(Request $request, $id = 0)
     {
+        $type = $request->type ?? '';
+
         if ($id) {
             $WhatsappUserDetail = WhatappUserDetail::find($id);
-            return view('whatsapp.whatsapp_user_details.create', compact('WhatsappUserDetail'));
+            //eturn view('whatsapp.whatsapp_user_details.create', compact('WhatsappUserDetail'));
+            return is_mobile($type, 'whatsapp.whatsapp_user_details.create', $WhatsappUserDetail, "view");
+
         }
         $WhatsappUserDetail['user_whatsapp_no'] = '';
         $WhatsappUserDetail['user_whatsapp_sid'] = '';
         $WhatsappUserDetail['user_whatsapp_token'] = '';
         $WhatsappUserDetail['created_by'] = '';
         $WhatsappUserDetail['id'] = 0;
-        return view('whatsapp.whatsapp_user_details.create', compact('WhatsappUserDetail'));
+        //return view('whatsapp.whatsapp_user_details.create', compact('WhatsappUserDetail'));
+        return is_mobile($type, 'whatsapp.whatsapp_user_details.create', $WhatsappUserDetail, "view");
     }
 
     public function whatsappSendMessageCreate(Request $request, $id = 0)
     {
+        $type = $request->type ?? '';
         if ($id) {
             $WhatsappUserDetail = WhatsappSentMessage::find($id);
-            return view('whatsapp.whatsapp_user_details.create', compact('WhatsappUserDetail'));
+            //return view('whatsapp.whatsapp_user_details.create', compact('WhatsappUserDetail'));
+            return is_mobile($type, 'whatsapp.whatsapp_user_details.create', $WhatsappUserDetail, "view");
+
         }
-        return view('whatsapp.whatsapp_send_messages.create');
+        //return view('whatsapp.whatsapp_send_messages.create');
+        return is_mobile($type, 'whatsapp.whatsapp_send_messages.create', [], "view");
+
     }
 
     public function whatsappUserDetailsStore(Request $request)
     {
-
+        $type = $request->type ?? '';
         $request->validate([
             'user_whatsapp_no' => 'required',
             'user_whatsapp_sid' => 'required',
@@ -76,19 +89,20 @@ class WhatsappController extends Controller
         $payrollType->created_by_name = session()->get('name');
         $payrollType->save();
 
-        return redirect('whatsapp-user-details');
+        return is_mobile($type, 'whatsapp-user-details', [], "redirect");
     }
 
 
     public function whatsappSendMessageStore(Request $request)
     {
+        $type = $request->type ?? '';
         $request->validate([
             'message' => 'required'
         ]);
 
         $token = WhatappUserDetail::where('sub_institute_id', session()->get('sub_institute_id'))->first();
-        //$searchStudent = SearchStudent($request->grade,$request->standard,$request->division,session()->get('sub_institute_id'));
-        $searchStudent = SearchStudent();
+        $searchStudent = SearchStudent($request->grade,$request->standard,$request->division,session()->get('sub_institute_id'));
+        //$searchStudent = SearchStudent();
 
         $studentIds = [];
         foreach ($searchStudent as $student) {
@@ -101,7 +115,7 @@ class WhatsappController extends Controller
                     [
                         "contentSid" => "HX02a86c824bbf747808744e76ac5795d3",
                         "messagingServiceSid" => $messagingServiceSid,
-                        "from" => "whatsapp:+919909906512",
+                        "from" => "whatsapp:".$token['user_whatsapp_no'],
                         "contentVariables" => json_encode([
                             "1" => $request->message
                         ])
@@ -121,7 +135,7 @@ class WhatsappController extends Controller
         $saveMesasge->created_by_name = session()->get('name');
         $saveMesasge->save();
 
-        return redirect('whatsapp-send-messages');
+        return is_mobile($type, 'whatsapp-send-messages', [], "redirect");
 
     }
 
