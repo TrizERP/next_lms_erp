@@ -266,7 +266,7 @@
                 async: false,
                 success: function(result) {
 
-                    if (result > 0) {
+                    if (result != 0) {
                         alert("You cannot delete Exam.Exam is having dependencies in Other Module");
                         error = 1;
                     } else {
@@ -299,7 +299,7 @@
             async: false,
             success: function(result) {
 
-                if (result > 0) {
+                if (result != 0) {
                     alert("You cannot edit Exam as Exam is already attempted");
                     error = 1;
                 } else {

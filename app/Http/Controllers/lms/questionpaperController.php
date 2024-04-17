@@ -1008,8 +1008,11 @@ public function search_question($all_data){
         $data = DB::table("lms_".$exam_type."_exam")
             ->selectRaw('count(*) as total')
             ->where('question_paper_id', $id)->get()->toArray();
-
-        return $data[0]->total;
+        $count = 0;
+        if(isset($data[0]->total)){
+            $count =$data[0]->total;
+        }
+        return $count;
     }
 
 }
