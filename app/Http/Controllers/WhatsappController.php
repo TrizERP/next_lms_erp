@@ -30,7 +30,7 @@ class WhatsappController extends Controller
     public function whatsapp_send_messages(Request $request)
     {
         $type = $request->type ?? '';
-        $data['data'] = WhatsappSentMessage::all();
+        $data['data'] = WhatsappSentMessage::with('student')->get();
         //return view('whatsapp.whatsapp_send_messages.index', ["data" => $data]);
         return is_mobile($type, 'whatsapp.whatsapp_send_messages.index', $data, "view");
     }

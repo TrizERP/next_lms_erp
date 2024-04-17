@@ -68,7 +68,7 @@ class TestFunction extends Command
 // Send the message using the template
         try {
             $message = $client->messages->create(
-                'whatsapp:+917621070302',
+                'whatsapp:+919638141767',
                 [
                     "contentSid" => "HX02a86c824bbf747808744e76ac5795d3",
                     "messagingServiceSid" => $messagingServiceSid,
@@ -81,7 +81,7 @@ class TestFunction extends Command
         } catch (Exception $exception) {
             report($exception);
         }
-        dd($message);
+        dd($message->status());
 
 // Output the message SID for reference
         echo 'Message SID: ' . $message->sid;

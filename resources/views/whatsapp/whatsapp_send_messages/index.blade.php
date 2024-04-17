@@ -23,6 +23,7 @@
                             <th>Standard</th>
                             <th>Division</th>
                             <th>Student Id</th>
+                            <th>Mobile Number</th>
                             <th>Created By</th>
                             <th>Date</th>
                             <th>Message</th>
@@ -38,6 +39,7 @@
                                 <td>{{$data->standard_id}}</td>
                                 <td>{{$data->division_id}}</td>
                                 <td>{{$data['student_id']}}</td>
+                                <td>{{$data['student']->mobile}}</td>
                                 <td>{{$data->created_by_name ?? '-'}}</td>
                                 <td>{{$data->created_at ?? '-'}}</td>
                                 <td>{{$data->message ?? '-'}}</td>
