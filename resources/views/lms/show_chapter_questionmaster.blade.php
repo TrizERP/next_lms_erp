@@ -22,7 +22,7 @@
                 </nav>
             </div>
             <div class="col-md-3 mb-4 text-md-right">
-                <a id="multiDelete" class="btn btn-danger"><i class="fa fa-trash"></i> Delete</a>
+                <!-- <a id="multiDelete" class="btn btn-danger"><i class="fa fa-trash"></i> Delete</a> -->
                 <a href="{{ route('question_master.create', ['chapter_id' => $_REQUEST['chapter_id'],'standard_id'=>$_REQUEST['standard_id']]) }}"
                     class="btn btn-info add-new"><i class="fa fa-plus"></i> Add Question</a>
             </div>
@@ -99,6 +99,7 @@
                                                         @endif
                                                     </td>
                                                     <td>
+                                                        @if($quesdata->attempt_question==0)
                                                         <div class="d-flex align-items-center justify-content-end">
                                                             <a class="btn btn-outline-success"
                                                                href="{{ route('question_master.edit', $quesdata->id) }}">
@@ -114,6 +115,7 @@
                                                                         class="ti-trash"></i></button>
                                                             </form>
                                                         </div>
+                                                         @endif
                                                     </td>
                                                 </tr>
                                             @endforeach
