@@ -43,6 +43,16 @@
                                         </select>
                                     </div>
                                 @endif
+                                <!-- added on 17-04-24 by uma -->
+                                <div class="col-md-3 form-group ml-0">
+                                        <label>Status</label>
+                                        <select name="status" id="status" required="required" class="form-control">
+                                          <option value="1">Active</option>
+                                          <option @if(isset($data['status']) && $data['status']==0) selected @endif value="0">In-Active</option>
+                                        </select>
+                                    </div>
+                                <!-- end by uma -->
+
                                 <div class="col-md-12 form-group">
                                     <div class="checkbox checkbox-info">
                                         <input id="checkall" onclick="checkedAll();" name="checkall" type="checkbox">
