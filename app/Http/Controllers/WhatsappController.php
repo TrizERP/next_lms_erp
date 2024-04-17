@@ -104,9 +104,7 @@ class WhatsappController extends Controller
         $searchStudent = SearchStudent($request->grade,$request->standard,$request->division,session()->get('sub_institute_id'));
         //$searchStudent = SearchStudent();
 
-        $studentIds = [];
         foreach ($searchStudent as $student) {
-            $studentIds[] = $student['id'];
             if (!empty($token)) {
                 $messagingServiceSid = 'MGdec43b1bbd9428a72fa0c7a633905319';
                 $client = new Client($token['user_whatsapp_sid'], $token['user_whatsapp_token']);
@@ -121,19 +119,21 @@ class WhatsappController extends Controller
                         ])
                     ]
                 );
+                $saveMesasge = new WhatsappSentMessage();
+                $saveMesasge->sub_institute_id = session()->get('sub_institute_id');
+                $saveMesasge->syear = session()->get('syear');
+                $saveMesasge->standard_id = $request->standard;
+                $saveMesasge->division_id = $request->division;
+                $saveMesasge->student_id = $student['id'];
+                $saveMesasge->message = $request->message;
+                $saveMesasge->sent_date = Carbon::today();
+                $saveMesasge->created_by = session()->get('user_profile_id');
+                $saveMesasge->created_by_name = session()->get('name');
+                $saveMesasge->save();
+
             }
         }
-        $saveMesasge = new WhatsappSentMessage();
-        $saveMesasge->sub_institute_id = session()->get('sub_institute_id');
-        $saveMesasge->syear = session()->get('syear');
-        $saveMesasge->standard_id = $request->standard;
-        $saveMesasge->division_id = $request->division;
-        $saveMesasge->student_id = json_encode($studentIds);
-        $saveMesasge->message = $request->message;
-        $saveMesasge->sent_date = Carbon::today();
-        $saveMesasge->created_by = session()->get('user_profile_id');
-        $saveMesasge->created_by_name = session()->get('name');
-        $saveMesasge->save();
+
 
         return is_mobile($type, 'whatsapp-send-messages', [], "redirect");
 

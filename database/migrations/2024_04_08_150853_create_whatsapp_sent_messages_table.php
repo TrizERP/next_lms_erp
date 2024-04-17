@@ -19,7 +19,7 @@ return new class extends Migration
             $table->integer('syear');
             $table->unsignedBigInteger('standard_id');
             $table->unsignedBigInteger('division_id');
-            $table->json('student_id');
+            $table->unsignedBigInteger('student_id');
             $table->unsignedBigInteger('created_by');
             $table->string('created_by_name');
             $table->text('message')->nullable();
