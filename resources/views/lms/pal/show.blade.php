@@ -80,7 +80,7 @@
                                         <div class="row card single-chp mb-2" style="left:10% !important;width:90%">
                                             <div class="col-md-4 mb-2 chp-details" data-toggle="collapse" href="" role="button" aria-expanded="false" aria-controls="">
                                                 <div class="title">
-                                                    <span style="color:green" onclick="generateExam({{$data['studentDetails']['grade_id']}},{{$subject_id}},{{$chapter_id}},{{$data['studentDetails']['standard_id']}})">Quiz {{$k}} <i class="fa fa-arrow-right" aria-hidden="true"></i> </span>
+                                                    <span style="color:green" onclick="generateExam({{$data['studentDetails']['grade_id']}},{{$subject_id}},{{$chapter_id}},{{$data['studentDetails']['standard_id']}},{{$data['studentDetails']['enrollment_no']}})">Quiz {{$k}} <i class="fa fa-arrow-right" aria-hidden="true"></i> </span>
                                                 </div>
                                             </div>
                                         </div>  
@@ -100,9 +100,9 @@
 </div>
 @include('includes.lmsfooterJs')
 <script>
-function generateExam(grade_id,subject_id,chapter_id,standard_id){
+function generateExam(grade_id,subject_id,chapter_id,standard_id,enrollment_no){
       if (chapter_id !== '' && chapter_id !== 'undefined') {
-        window.location.href = '/lms/pal/create?subject_id='+subject_id+'&chapter_id='+chapter_id+'&grade_id='+grade_id+'&standard_id='+standard_id;
+        window.location.href = '/lms/pal/create?subject_id='+subject_id+'&chapter_id='+chapter_id+'&grade_id='+grade_id+'&standard_id='+standard_id+'&enrollment_no='+enrollment_no;
     }
 }
 </script>

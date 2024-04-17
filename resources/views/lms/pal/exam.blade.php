@@ -36,7 +36,7 @@ html {
                                         @endphp                           
                                         @foreach($data['question_arr'] as $quesid => $quesarr)
                                             <li class="nav-item">
-                                                <a href="#question-{{$quesarr['id']}}-tab">{{$i++}}</a>
+                                                <a href="#question-{{$quesarr['question_id']}}-tab">{{$i++}}</a>
                                             </li>
                                         @endforeach    
                                     </ul>
@@ -68,14 +68,14 @@ html {
                             $i = 1;                           
                             @endphp                           
                             @foreach($data['question_arr'] as $quesid => $quesarr)
-                           <input type="hidden" name="question_ids[]" id="question_ids" value="{{$quesarr['id']}}">                    
-                            <div class="row mb-3" id="question-{{$quesarr['id']}}-tab">
+                           <input type="hidden" name="question_ids[]" id="question_ids" value="{{$quesarr['question_id']}}">                    
+                            <div class="row mb-3" id="question-{{$quesarr['question_id']}}-tab">
                                 <div class="col-2">
                                     <div class="quiz-box-count">
                                         <div class="count">{{$i++}}</div>
                                         <div class="quiz-con">
-                                            <div class="text-secondary mb-2">Marked out of <b>{{$quesarr['points']}}</b></div>
-                                            <!-- <div class="text-secondary mb-2">{{$quesarr['points']}}</div> -->
+                                            <div class="text-secondary mb-2">Marked out of <b>1</b></div>
+                                            <!-- <div class="text-secondary mb-2">1</div> -->
                                             @if(isset($quesarr['hint_text']))
                                             <div class="text-secondary"><i data-toggle="tooltip" title="{{$quesarr['hint_text']}}" class="mdi mdi-alert-circle"></i></div><!--mdi-flag-outline-->
                                             @endif
@@ -88,28 +88,16 @@ html {
                                             <!-- <a href="javascript:void(0)" class="float-right" data-container="body" data-toggle="popover" data-placement="left" data-content="Vivamus sagittis lacus vel augue laoreet rutrum faucibus." data-trigger="hover">
                                                 <i class="mdi mdi-alert-circle-outline"></i>
                                             </a> -->
-                                            <div class="quiz-title">{!!$quesarr['question_title']!!}</div>
-                                            @if($quesarr['question_type_id'] == "2") <!--Narrative Question-->
+                                            <div class="quiz-title">{!!$quesarr['question_text']!!}</div>
+                                          
                                             <div class="quiz-option">
-                                                <textarea type="text" rows="4" placeholder="Enter Answer" class="form-control" name="answer_narrative[{{$quesarr['id']}}]"></textarea>
-                                            </div>
-                                            @elseif($quesarr['question_type_id'] == "1") <!--Multple Option Question-->
-                                            <div class="quiz-option">
-                                                 @if(isset($data['answer_arr'][$quesarr['id']]))                     
-                                                    @foreach($data['answer_arr'][$quesarr['id']] as $ansid => $ansarr)
+                                                 @if(isset($data['answer_arr'][$quesarr['question_id']]))                     
+                                                    @foreach($data['answer_arr'][$quesarr['question_id']] as $ansid => $ansarr)
                                                     <ul>
                                                         @php
-                                                        if($quesarr['multiple_answer'] == 1)
-                                                        {
                                                             $btnclass = "square";
                                                             $type = "checkbox";
-                                                            $name = "answer_multiple[".$quesarr['id']."][]";//[".$ansarr['id']."]";
-                                                        }
-                                                        else{                                                
-                                                            $btnclass = "dot";
-                                                            $type = "radio";
-                                                            $name = "answer_single[".$quesarr['id']."]";
-                                                        }
+                                                            $name = "answer_multiple[".$quesarr['question_id']."][]";//[".$ansarr['id']."]";
                                                         @endphp
                                                         <li>
                                                             <div>
@@ -121,8 +109,7 @@ html {
                                                     @endforeach
                                                 @endif
                                             </div>
-
-                                            @endif                         
+                    
                                         </div>
                                     </div>
                                 </div>
