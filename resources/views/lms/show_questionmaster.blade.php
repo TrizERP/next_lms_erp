@@ -97,6 +97,7 @@
                                                     @endif
                                                 </td>
                                                 <td>
+                                                @if($quesdata->attempt_question==0)
                                                     <div class="d-flex align-items-center justify-content-end">
                                                         <a class="btn btn-outline-success"
                                                            href="{{ route('question_master.edit',$quesdata->id)}}">
@@ -112,6 +113,7 @@
                                                                     class="ti-trash"></i></button>
                                                         </form>
                                                     </div>
+                                                @endif
                                                 </td>
                                             </tr>
                                         @endforeach

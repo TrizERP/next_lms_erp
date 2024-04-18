@@ -235,14 +235,19 @@ if (!function_exists('SearchChain')) {
         }
         //  END Check for class teacher assigned standards      
 
+        // added on 17-04-24 by uma, when menu where class teacher can see only their class students
+        if(in_array(session()->get('right_menu_id'),$menu_ids) && session()->get('user_profile_name') == 'Teacher'){
+            $query->whereIn('id', [$getClass->grade_id ?? 0 ]);
+        }else{
         //START Check for subject teacher assigned
-        $subjectTeacherGrdArr = session()->get('subjectTeacherGrdArr');
-        if (isset($subjectTeacherGrdArr) && (!isset($classTeacherGrdArr) || in_array($module_name, $module_array))) {
-            if (count($subjectTeacherGrdArr) > 0) {
-                $query->whereIn('id', $subjectTeacherGrdArr);
-            } else {
+            $subjectTeacherGrdArr = session()->get('subjectTeacherGrdArr');
+            if (isset($subjectTeacherGrdArr) && (!isset($classTeacherGrdArr) || in_array($module_name, $module_array))) {
+                if (count($subjectTeacherGrdArr) > 0) {
+                    $query->whereIn('id', $subjectTeacherGrdArr);
+                } else {
 
-                $query->oRwhere('id', null);
+                    $query->oRwhere('id', null);
+                }
             }
         }
         //END Check for subject teacher assigned
