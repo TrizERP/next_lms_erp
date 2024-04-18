@@ -9,14 +9,10 @@
 		
 		@if ($sessionData = Session::get('data'))
         @if (isset($sessionData['status_code']))
-        <div class="card">
-			<div class="row mb-2">
-				<div class="alert alert-{{ $sessionData['status_code'] == 1 ? 'success' : 'danger' }} alert-block">
-					<button type="button" class="close" data-dismiss="alert">×</button>
-					<strong>{!! $sessionData['message'] !!}</strong>
-				</div>
-	        </div>
-		</div>
+            <div class="col-md-12 alert alert-{{ $sessionData['status_code'] == 1 ? 'success' : 'danger' }} alert-block">
+                <button type="button" class="close" data-dismiss="alert">×</button>
+                <strong>{!! $sessionData['message'] !!}</strong>
+            </div>
         @endif @endif
 			<!-- csubjects  -->
 			<div class="container-fluid mb-5">
@@ -105,6 +101,7 @@ function generateExam(grade_id,subject_id,chapter_id,standard_id,enrollment_no){
         window.location.href = '/lms/pal/create?subject_id='+subject_id+'&chapter_id='+chapter_id+'&grade_id='+grade_id+'&standard_id='+standard_id+'&enrollment_no='+enrollment_no;
     }
 }
+
 </script>
 
 @include('includes.footer')
