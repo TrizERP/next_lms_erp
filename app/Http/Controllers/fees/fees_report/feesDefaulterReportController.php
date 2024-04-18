@@ -97,7 +97,7 @@ class feesDefaulterReportController extends Controller
             ->join('division', 'division.id', '=', 'tblstudent_enrollment.section_id')
             ->where($extraSearchArray)
             ->whereRaw($extraSearchArrayRaw)
-            ->orderByRaw('standard.sort_order, division.id, tblstudent.roll_no')
+            ->orderByRaw('standard.sort_order, division.id, tblstudent_enrollment.roll_no')
             ->get()
             ->toArray();
 

@@ -90,7 +90,7 @@ class questionWiseReportController extends Controller
                                     WHERE question_paper_id = $question_paper_id
                                     AND student_id = ts.id
                                     AND question_id = lqm.id) ORDER BY id DESC LIMIT 1)");
-            })->selectRaw("ts.id,CONCAT_WS(' ',ts.first_name,ts.middle_name,ts.last_name) as student_name,ts.roll_no,
+            })->selectRaw("ts.id,CONCAT_WS(' ',ts.first_name,ts.middle_name,ts.last_name) as student_name,tse.roll_no,
                 std.name as standerd_name,divi.name as division_name,sub.subject_name as subject_name,qp.paper_name as 
                 question_paper_name,qp.total_ques as total_question,qp.id as question_paper_id,lqm.id as question_id,
                 am.online_exam_id as online_exam_id,lqm.question_title as questions,am.ans_status as ans_status")
@@ -105,7 +105,7 @@ class questionWiseReportController extends Controller
                 'tse.sub_institute_id' => $sub_institute_id,
                 'qp.id'                => $question_paper_id,
                 'qp.syear'             => $syear,
-            ])->whereNULL('tse.end_date')->orderBy('ts.roll_no')->get()->toArray();
+            ])->whereNULL('tse.end_date')->orderBy('tse.roll_no')->get()->toArray();
 // DB::enableQueryLog();
     //     $queryResult =  DB::table('tblstudent as ts')
     //         ->join('tblstudent_enrollment as tse', function ($join) {

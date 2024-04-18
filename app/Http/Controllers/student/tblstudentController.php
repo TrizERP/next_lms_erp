@@ -243,6 +243,7 @@ class tblstudentController extends Controller
 		$studentEnrollment['term_id'] = $term_id;
 		$studentEnrollment['enrollment_code'] = 1;
 		$studentEnrollment['sub_institute_id'] = $sub_institute_id;
+        $studentEnrollment['roll_no'] = $request->roll_no;
 
 		tblstudentEnrollmentModel::insert($studentEnrollment);
 
@@ -1046,6 +1047,7 @@ die; */
 		$studentEnrollment['enrollment_code'] = 1;
 		$studentEnrollment['sub_institute_id'] = $sub_institute_id;
 		$studentEnrollment['updated_on'] = date('Y-m-d H:i:s');
+		$studentEnrollment['roll_no'] = $request->roll_no;
 		// dd($studentEnrollment);
 		tblstudentEnrollmentModel::where(['student_id' => $student_id, 'syear' => $syear])->update($studentEnrollment);
 
@@ -1183,12 +1185,12 @@ END as color_code
                 })->join('tblstudent as ts', function ($join) {
                     $join->whereRaw("ts.id = se.student_id AND ts.sub_institute_id = ct.sub_institute_id");
                 })->selectRaw("ts.id,concat_ws(' ',ts.first_name,ts.last_name) as student_name,
-                    ts.enrollment_no,ts.roll_no,ts.mobile,ts.email,ct.standard_id,ct.division_id,s.name AS standard_name,
+                    ts.enrollment_no,se.roll_no,ts.mobile,ts.email,ct.standard_id,ct.division_id,s.name AS standard_name,
                     d.name AS division_name")
                 ->where('ct.sub_institute_id', $sub_institute_id)
                 ->where('ct.syear', $syear)
                 ->where('se.syear', $syear)
-                ->where('ct.teacher_id', $teacher_id)->orderBy('ts.roll_no', 'ASC')->get()->toArray();//ts.middle_name,
+                ->where('ct.teacher_id', $teacher_id)->orderBy('se.roll_no', 'ASC')->get()->toArray();//ts.middle_name,
 
             $res['status'] = 1;
             $res['message'] = "Success";
@@ -1230,7 +1232,7 @@ END as color_code
                 })->join('division as d', function ($join) {
                     $join->whereRaw("d.id = se.section_id AND d.sub_institute_id = se.sub_institute_id");
                 })->selectRaw("ts.id,concat_ws(' ',ts.first_name,ts.last_name) as student_name,
-                    ts.enrollment_no,ts.roll_no,ts.dob,ts.address,ts.mobile,ts.email,if(ts.image = '','https://".$_SERVER['SERVER_NAME']."/storage/student/noimages.png',concat('https://".$_SERVER['SERVER_NAME']."/storage/student/',ts.image)) as student_image,se.standard_id,
+                    ts.enrollment_no,se.roll_no,ts.dob,ts.address,ts.mobile,ts.email,if(ts.image = '','https://".$_SERVER['SERVER_NAME']."/storage/student/noimages.png',concat('https://".$_SERVER['SERVER_NAME']."/storage/student/',ts.image)) as student_image,se.standard_id,
                     se.section_id AS division_id,s.name AS standard_name,d.name AS division_name")
                 ->where('ts.sub_institute_id', $sub_institute_id)
                 ->where('se.syear', $syear);//ts.middle_name,
@@ -1241,7 +1243,7 @@ END as color_code
                 $data = $data->where('se.section_id', $division_id);
             }
 
-            $data = $data->orderBy('ts.roll_no', 'ASC')->get()->toArray();
+            $data = $data->orderBy('se.roll_no', 'ASC')->get()->toArray();
 
             if (count($data) > 0) {
                 $res['status'] = 1;

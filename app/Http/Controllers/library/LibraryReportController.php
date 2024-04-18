@@ -180,7 +180,7 @@ class LibraryReportController extends Controller
             ->join('tblstudent_enrollment as se','s.id','=','se.student_id')
             ->join('standard as std','std.id','=','se.standard_id')
             ->join('division as d','d.id','=','se.section_id')            
-            ->selectRaw('s.id as student_id,s.enrollment_no,s.roll_no,concat_ws(" ",first_name,middle_name,last_name) as student_name,std.name as standard,d.name as division')
+            ->selectRaw('s.id as student_id,s.enrollment_no,se.roll_no,concat_ws(" ",first_name,middle_name,last_name) as student_name,std.name as standard,d.name as division')
             ->when($search_by,function ($q) use($search_by){
                 $q->where('s.enrollment_no',$search_by);
             })

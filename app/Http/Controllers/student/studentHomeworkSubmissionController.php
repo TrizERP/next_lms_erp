@@ -64,7 +64,7 @@ class studentHomeworkSubmissionController extends Controller
                 // });
             })->join('division as ss', function ($join) {
                 $join->whereRaw('(ss.id = ah.division_id)');
-            })->selectRaw("ah.id AS CHECKBOX,s.roll_no,s.enrollment_no, CONCAT_WS(' ',s.last_name,s.first_name,s.middle_name) AS
+            })->selectRaw("ah.id AS CHECKBOX,se.roll_no,s.enrollment_no, CONCAT_WS(' ',s.last_name,s.first_name,s.middle_name) AS
                 student_name,cs.name AS standard,ss.name as division,s.email,s.mobile,ah.id, ah.title,ah.description,ah.image,
                 DATE_FORMAT(ah.submission_date,'%d-%m-%Y') AS SUBMISSION_DATE,DATE_FORMAT(ah.date,'%d-%m-%Y') AS HOMEWORK_DATE,
                 '' REMARKS,submission_remarks")

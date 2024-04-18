@@ -840,12 +840,12 @@ if (!function_exists('SearchStudent')) {
 
 
         if ($roll_no != '') {
-            $extraRaw .= " AND ts.roll_no = '" . $roll_no . "' ";
+            $extraRaw .= " AND se.roll_no = '" . $roll_no . "' ";
         }
 
         $query->whereraw($extraRaw);
 
-        $query->orderByRaw('s.sort_order, d.id, ts.roll_no');
+        $query->orderByRaw('s.sort_order, d.id, se.roll_no');
 
         return $query->get($columns)->toArray();
     }
@@ -1470,7 +1470,7 @@ if (!function_exists('getStudents')) {
                 // ->groupBy('fc.id')
                 // ->orderBy('fc.id', 'desc')->limit(1)
                 ->whereIn('s.id', $student_ids)
-                ->orderBy('s.roll_no', 'ASC')
+                ->orderBy('se.roll_no', 'ASC')
                 ->groupBy('s.id')->get()->toArray();
                 // dd(db::getQueryLog($result));
         $student_data = array();
