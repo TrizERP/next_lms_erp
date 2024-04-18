@@ -82,6 +82,8 @@ class palController extends Controller
         $command = "python3 /home/pal/pal.py $sub_institute_id $syear $standard_id $subject_id $chapter_id $enrollment_no";
         $getLists = shell_exec($command);
         $questionList=json_decode($getLists,true);
+        // echo "<pre>";print_r($request->all());exit;
+
         // $questionList = lmsQuestionMasterModel::where(['sub_institute_id'=>$sub_institute_id,'standard_id'=>$standard_id,'subject_id'=>$subject_id,'chapter_id'=>$chapter_id])->take(10)->orderBy('id','DESC')->get()->toArray();
         $answer=[];
         if(!empty($questionList)){
