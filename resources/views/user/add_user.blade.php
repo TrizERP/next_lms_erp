@@ -222,6 +222,13 @@
                         </select>
                     </div>
 
+                    <!-- employee load  -->
+                    <div class="col-md-4 form-group">
+                        <label>Week Load</label>
+                        <input type="number" id='load' name="load" class="form-control">
+                    </div>
+
+                    <!-- employee department  -->
                     <div class="col-md-4 form-group">
                         <label>Department Id</label>
                         <select id='department_id' name="department_id" class="form-control">

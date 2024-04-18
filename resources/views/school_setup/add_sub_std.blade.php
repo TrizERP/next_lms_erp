@@ -110,6 +110,12 @@
                             <label>Sort Order</label>
                             <input type="number" id='sort_order' name="sort_order" value="@if(isset($data['mapped_data']['sort_order'])){{$data['mapped_data']['sort_order']}}@endif" class="form-control">
                         </div>
+                        <!-- load  -->
+                        <div class="col-md-3 form-group">
+                            <label>Subject Load</label>
+                            <input type="number" id='load' name="load" value="@if(isset($data['mapped_data']['load'])){{$data['mapped_data']['load']}}@endif" class="form-control">
+                        </div>
+
                         <div class="col-md-6 form-group">
                             <label>Display Image</label>
                             <input type="file" name="display_image" id="display_image">
