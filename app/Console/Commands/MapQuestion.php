@@ -98,8 +98,8 @@ class mapQuestion extends Command
                     [
                         'questionmaster_id' => $questionMaster->id,
                         'mapping_type_id' => 9,
-                        'mapping_value_id' => $questionDepthValueId,
-                        'reasons' => $response[0]['reason_depth'] ?? '',
+                        'mapping_value_id' => rand(10,12),
+                        'reasons' => $response[0]['reason_depth'] ?? $questionDepthValueId,
                     ],
                     /*[
                         'questionmaster_id' => $questionMaster->id,
@@ -112,7 +112,8 @@ class mapQuestion extends Command
                 // lmsQuestionMappingModel::where(["questionmaster_id" => $questionMaster->id])->delete();
                if(!empty($contentMappingType)){
                 lmsQuestionMappingModel::insert($contentMappingType);
-                echo "<pre>";print_r($contentMappingType);
+                //echo "<pre>";print_r($contentMappingType);
+                echo ".";
                 $i++;
                }
             }
