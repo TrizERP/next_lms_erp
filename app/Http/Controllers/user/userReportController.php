@@ -138,6 +138,7 @@ class userReportController extends Controller
     public function searchUser(Request $request)
     {
         $profile = $request->input("profile");
+        $status = $request->input("status");
         $type = $request->input('type');
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $syear = $request->session()->get('syear');
@@ -162,13 +163,14 @@ class userReportController extends Controller
         }
         $extraSearchArray = [];
         $extraSearchArray['tbluser.sub_institute_id'] = $sub_institute_id;
-        $extraSearchArray['tbluser.status'] = 1;
+        $extraSearchArray['tbluser.status'] = $status;
         $extraSearchArray['tbluser.user_profile_id'] = $profile;
+
         $user_data = tbluserModel::select('tbluser.*')
             ->join('tbluserprofilemaster', 'tbluser.user_profile_id', '=', 'tbluserprofilemaster.id')
             ->where($extraSearchArray)
             ->get();
-
+        
         $res['status_code'] = 1;
         $res['message'] = "Student List";
         $res['user_data'] = $user_data;
@@ -176,6 +178,7 @@ class userReportController extends Controller
         $res['headers'] = $header;
         $res['profiles'] = $tblProfiles;
         $res['profile'] = $profile;
+        $res['status'] = $status;
 
         return is_mobile($type, "user/show_user_report", $res, "view");
 

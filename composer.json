@@ -28,6 +28,7 @@
         "picqer/php-barcode-generator": "^2.2",
         "razorpay/razorpay": "^2.8",
         "spatie/async": "^1.6",
+        "twilio/sdk": "^8.0",
         "yajra/laravel-datatables-oracle": "^10.4"
     },
     "require-dev": {

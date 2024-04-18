@@ -188,7 +188,7 @@ class questionpaperController extends Controller
             $open_date = date('Y-m-d H:i:s', strtotime($_REQUEST['open_date']));
         }
         if ($request['close_date'] != "") {
-            $close_date = date('Y-m-d H:i:s', strtotime($_REQUEST['close_date']));
+            $close_date = date('Y-m-d 23:59:59', strtotime($_REQUEST['close_date']));
         }
 
         $sub_institute_id = $request['sub_institute_id'];
@@ -511,7 +511,7 @@ foreach ($questionData as $key => $val) {
             $questionpaper['open_date'] = $open_date;
         }
         if ($_REQUEST['close_date'] != "") {
-            $close_date = date('Y-m-d H:i:s', strtotime($_REQUEST['close_date']));
+            $close_date = date('Y-m-d 23:59:59', strtotime($_REQUEST['close_date']));
             $questionpaper['close_date'] = $close_date;
         }
 
