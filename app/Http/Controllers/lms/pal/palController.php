@@ -56,7 +56,7 @@ class palController extends Controller
         $res['chapterList'] =$getchapterList;  
         $res['attemptExams'] = questionpaperModel::join('lms_online_exam_student as loes','loes.question_paper_id','=','question_paper.id')
         ->where('question_paper.created_by',$student_id)->where(['question_paper.sub_institute_id'=>$sub_institute_id,'question_paper.syear'=>$syear])->where('question_paper.exam_type','PAL')->get()->toArray();
-        // echo "<pre>";print_r($res['studentDetails']);exit;
+        // echo "<pre>";print_r($newData);exit;
         return is_mobile($type, 'lms/pal/show', $res, "view");        
     }
 
@@ -66,6 +66,7 @@ class palController extends Controller
         $standard_id = $res['standard_id'] = $request->standard_id;
         $subject_id = $res['subject_id']= $request->subject_id;
         $chapter_id = $res['chapter_id']= $request->chapter_id;
+        $enrollment_no = $res['enrollment_no'] = $request->enrollment_no;
         $res['message'] = "no data";
 
         if($type=='API'){
@@ -78,47 +79,36 @@ class palController extends Controller
             $syear = session()->get('syear');   
         }
 
-        $questionList = lmsQuestionMasterModel::where(['sub_institute_id'=>$sub_institute_id,'standard_id'=>$standard_id,'subject_id'=>$subject_id,'chapter_id'=>$chapter_id])->take(10)->orderBy('id','DESC')->get()->toArray();
+        $command = "python3 /home/pal/pal.py $sub_institute_id $syear $standard_id $subject_id $chapter_id $enrollment_no";
+        $getLists = shell_exec($command);
+        $questionList=json_decode($getLists,true);
+        // echo "<pre>";print_r($request->all());exit;
+
+        // $questionList = lmsQuestionMasterModel::where(['sub_institute_id'=>$sub_institute_id,'standard_id'=>$standard_id,'subject_id'=>$subject_id,'chapter_id'=>$chapter_id])->take(10)->orderBy('id','DESC')->get()->toArray();
         $answer=[];
+        if(!empty($questionList)){
         foreach ($questionList as $key => $val) {
             $answer_arr = answermasterModel::where([
-                "question_id"      => $val['id'],
+                "question_id"      => $val['question_id'],
                 "sub_institute_id" => $sub_institute_id,
             ])->get()->toArray();
             if (count($answer_arr) > 0) {
                 foreach ($answer_arr as $anskey => $ansval) {
-                    $answer[$val['id']][] = $ansval;
+                    $answer[$val['question_id']][] = $ansval;
                 }
             }
         }
-        // $questionList = DB::table('lms_question_master AS lqm')
-        // ->select('lqm.sub_institute_id','ss.SchoolName AS institute_name','lqm.grade_id AS section_id','acs.title AS academic_section','lqm.standard_id','s.name AS standard','lqm.subject_id','ssm.display_name AS subject','lqm.chapter_id','cm.chapter_name AS chapter','qtm.question_type','lqm.id AS id','lqm.question_title AS title',DB::raw('CASE WHEN lmt.name = "Blooms Taxonomy" THEN IFNULL(lmtv.name, "-") END AS "Blooms Taxonomy"'),DB::raw('CASE WHEN lmt.name = "Depth of Knowledge" THEN IFNULL(lmtv.name, "-") END AS "Cognitive Difficulty"')
-        // )
-        // ->join('question_type_master AS qtm', 'qtm.id', '=', 'lqm.question_type_id')
-        // ->join('school_setup AS ss', 'ss.Id', '=', 'lqm.sub_institute_id')
-        // ->join('academic_section AS acs', 'acs.id', '=', 'lqm.grade_id')
-        // ->join('standard AS s', 's.id', '=', 'lqm.standard_id')
-        // ->join('sub_std_map AS ssm', 'ssm.subject_id', '=', 'lqm.subject_id')
-        // ->join('chapter_master AS cm', function ($join) use($syear) {
-        //     $join->on('cm.id', '=', 'lqm.chapter_id')
-        //         ->where('cm.syear', '=', $syear);
-        // })
-        // ->join('lms_question_mapping AS lqmt', 'lqmt.questionmaster_id', '=', 'lqm.id')
-        // ->join('lms_mapping_type AS lmt', 'lmt.id', '=', 'lqmt.mapping_type_id')
-        // ->join('lms_mapping_type AS lmtv', 'lmtv.id', '=', 'lqmt.mapping_value_id')
-        // ->leftJoin('lms_mapping_type AS lmtv2', function ($join) {
-        //     $join->on('lmt.id', '=', 'lmtv2.parent_id');
-        // })
-        // ->where('lqm.sub_institute_id', $sub_institute_id)
-        // ->where('lqm.standard_id', $standard_id)
-        // ->where('lqm.subject_id', $subject_id)
-        // ->where('lqm.chapter_id',$chapter_id)
-        // ->groupBy(['lqm.id'])
-        // ->get();
-
+    }
+    if(empty($questionList)){
+        $res['status_code'] = 0;
+        $res['message'] = 'Questions Not Found';
+        return is_mobile($type, 'pal.index', $res, "redirect");exit;          
+    }
+        // echo "<pre>";print_r($answer);exit;
+        
         $res['question_arr'] = $questionList;
         $res['answer_arr'] = $answer;        
-        $res['questionpaper_data']['total_marks'] = 1;
+        $res['questionpaper_data']['total_marks'] = 10;
         $res['questionpaper_data']['time_allowed'] = 20;
         $res['questionpaper_data']['paper_name'] = "PAL Test";        
         // send request to python file 

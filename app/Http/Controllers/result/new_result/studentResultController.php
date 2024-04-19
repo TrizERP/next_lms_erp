@@ -2253,7 +2253,7 @@ $overall_total = $overall_total / 2;
                                     if($obtained_mark_arr[0]!='N.A.' || $obtained_mark_arr[0]!='EX'){
                                         $total_marks += $w_m;
                                     }
-                                    $table .= '<td class="data_center" '. $exam_id . '-'.$val->subject_id.'-'.$standard_id.'>' . $obtained_mark_arr[0] .'</td>';
+                                    $table .= '<td class="data_center" '. $exam_id . '-'.$val->subject_id.'-'.$standard_id.'>' . number_format($obtained_mark_arr[0],2) .'</td>';
                                 }
                                 
                         // echo $exam_id;echo "<pre>";print_r($obtained_mark_sum);
@@ -3181,8 +3181,6 @@ $overall_total = $overall_total / 2;
                                 // $obtained_mark_sum = array_sum($best_two);
                                 $obtained_mark_sum = array_sum($obtained_mark_arr);
                                 
-                                // get mark for total mark 
-                                $ob_main_mark += ($t_m !== 0) ? (($obtained_mark_sum / $t_m) * $w_m) : 0;
                                 // convert marks if best of 2
                                 $convert_mark = ($obtained_mark_sum != 0) ? (($obtained_mark_sum / $t_m) * $w_m) : 0;
                                 
@@ -3192,12 +3190,13 @@ $overall_total = $overall_total / 2;
                                 if(count($obtained_mark_arr)>1){
                                     $total_marks = $w_m;                                    
                                     $table .= '<td class="data_center" ' . $underline . ' ' . $exam_id . '-'.$val->subject_id.'-'.$standard_id.'>' . number_format($convert_mark, 2) . '</td>';
+                                    $ob_main_mark += ($t_m !== 0) ? (($obtained_mark_sum / $t_m) * $w_m) : 0;
                                 }else{
                                     if($obtained_mark_arr[0]!='N.A.' || $obtained_mark_arr[0]!='EX'){
                                         $total_marks = $w_m;
                                     }
-
-                                    $table .= '<td class="data_center" ' . $underline . ' ' . $exam_id . '-'.$val->subject_id.'-'.$standard_id.'>' .$obtained_mark_arr[0] . '</td>';
+                                    $table .= '<td class="data_center" ' . $underline . ' ' . $exam_id . '-'.$val->subject_id.'-'.$standard_id.'>' .number_format($obtained_mark_arr[0],2) . '</td>';
+                                    $ob_main_mark += ($obtained_mark_arr[0] !== 0) ? $obtained_mark_arr[0] : 0;
                                 }
                         // echo $exam_id;echo "<pre>";print_r($obtained_mark_sum);
                                 
