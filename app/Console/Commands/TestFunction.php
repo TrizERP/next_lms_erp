@@ -28,19 +28,109 @@ class TestFunction extends Command
      *
      * @return int
      */
+
+    public function mediaFound($message)
+    {
+        // Extract text parts outside anchor tags and concatenate each section
+        $textPattern = '/(^|<\/a>)(.*?)(<a href="|$)/';
+        $textMatches = [];
+        preg_match_all($textPattern, $message, $textMatches);
+
+        $textSections = [];
+        $currentSection = '';
+
+        foreach ($textMatches[2] as $match) {
+            if (!empty(trim($match))) {
+                $currentSection .= $match;
+            } else {
+                if (!empty($currentSection)) {
+                    $textSections[] = $currentSection;
+                    $currentSection = '';
+                }
+            }
+        }
+        if (!empty($currentSection)) {
+            $textSections[] = $currentSection;
+        }
+        $hrefPattern = '/<a href="(.*?)">/';
+        $hrefMatches = [];
+        preg_match_all($hrefPattern, $message, $hrefMatches);
+        $hrefLinks = $hrefMatches[1]; // $matches[1] contains all href links found
+        foreach ($hrefMatches[1] as $href) {
+            // Use parse_url to parse the URL
+            $parsedUrl = parse_url($href);
+
+            // We want to keep the path part after the domain, remove the domain part
+            if (isset($parsedUrl['path'])) {
+                $path =ltrim($parsedUrl['path'], '/');
+
+                // Concatenate the query and fragment part if they exist
+                if (isset($parsedUrl['query'])) {
+                    $path .= '?' . $parsedUrl['query'];
+                }
+                if (isset($parsedUrl['fragment'])) {
+                    $path .= '#' . $parsedUrl['fragment'];
+                }
+
+                // Add the modified path to the hrefLinks array
+                $hrefLinks[] = $path;
+            } else {
+                // If there is no path, keep the full href
+                $hrefLinks[] = $href;
+            }
+        }
+
+        return [$textSections,$hrefLinks];
+    }
     public function handle()
     {
-       /*$sid    = env('TWILIO_SID');
-        $token  = env('TWILIO_AUTH_TOKEN');
-        $twilio = new Client($sid, $token);
-        $d = $twilio->messages->create(
-            'whatsapp:+917621070302', // recipient's phone number
+
+        $message = "Hello this is test message for me<a href=\"https://erp.triz.co.in/Images/logo.png\">https://erp.triz.co.in/Images/logo.png</a> for me";
+        list($textArray, $hrefArray) = $this->mediaFound($message);
+        if (count($hrefArray) == 0) {
+            $prepareMessageBody['contentVariables'] = json_encode([
+                "1" => $textArray,
+            ]);
+            $prepareMessageBody['contentSid'] = "HX8a883dc4cbb2c566933248ed9baa6f2d";
+        } else {
+            $prepareMessageBody['contentVariables'] = json_encode([
+                "1" => $hrefArray[0],
+                "2" => isset($textArray[0]) ? $textArray[0] : " ",
+
+            ]);
+
+            $prepareMessageBody['contentSid'] = "HX865d745b08b3a55e94c4a43c97fbabc5";
+        }
+        dd($prepareMessageBody['contentVariables']);
+
+
+        $messagingServiceSid = 'MGdec43b1bbd9428a72fa0c7a633905319';
+        $accountSid = env('TWILIO_SID');
+        $authToken = env('TWILIO_AUTH_TOKEN');
+
+        $client = new Client($accountSid, $authToken);
+        $res= $client->messages->create(
+            'whatsapp:+919638141767',
             [
-                'from' => 'whatsapp:+919909906512', // your Twilio phone number
-                'body' => 'This is a test message from Twilio in Laravel.',
+                "contentSid" => $prepareMessageBody['contentSid'],
+                "messagingServiceSid" => $messagingServiceSid,
+                "from" => "whatsapp:+919909906512",
+                "contentVariables" => $prepareMessageBody['contentVariables']
             ]
         );
-        dd($d);*/
+        dd($res);
+
+        /*$sid    = env('TWILIO_SID');
+         $token  = env('TWILIO_AUTH_TOKEN');
+         $twilio = new Client($sid, $token);
+         $d = $twilio->messages->create(
+             'whatsapp:+917621070302', // recipient's phone number
+             [
+                 'from' => 'whatsapp:+919909906512', // your Twilio phone number
+                 'body' => 'This is a test message from Twilio in Laravel.',
+             ]
+         );
+         dd($d);*/
 
         $accountSid = env('TWILIO_SID');
         $authToken = env('TWILIO_AUTH_TOKEN');
@@ -69,15 +159,28 @@ class TestFunction extends Command
         try {
             $message = $client->messages->create(
                 'whatsapp:+919638141767',
-                [
+               /* [
                     "contentSid" => "HX02a86c824bbf747808744e76ac5795d3",
                     "messagingServiceSid" => $messagingServiceSid,
-                        "from" => "whatsapp:+919909906512",
+                    "from" => "whatsapp:+919909906512",
                     "contentVariables" => json_encode([
-                        "1" => "Name"
+                        "1" => "hello world"
+                    ])
+                ]*/
+                [
+                    "contentSid" => "HX865d745b08b3a55e94c4a43c97fbabc5",
+                    "messagingServiceSid" => $messagingServiceSid,
+                        "from" => "whatsapp:+919909906512",
+                    //"body" => 'test',
+                    "contentVariables" => json_encode([
+                        //"1" => " ",
+                        "2" => 'test',
+
                     ])
                 ]
+
             );
+            dd($message);
         } catch (Exception $exception) {
             report($exception);
         }
