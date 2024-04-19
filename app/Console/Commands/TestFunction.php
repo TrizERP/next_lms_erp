@@ -53,9 +53,9 @@ class TestFunction extends Command
             $textSections[] = $currentSection;
         }
         $hrefPattern = '/<a href="(.*?)">/';
-        $hrefMatches = [];
+        $hrefMatches = $hrefLinks = [];
         preg_match_all($hrefPattern, $message, $hrefMatches);
-        $hrefLinks = $hrefMatches[1]; // $matches[1] contains all href links found
+        //$hrefLinks = $hrefMatches[1]; // $matches[1] contains all href links found
         foreach ($hrefMatches[1] as $href) {
             // Use parse_url to parse the URL
             $parsedUrl = parse_url($href);
@@ -85,8 +85,9 @@ class TestFunction extends Command
     public function handle()
     {
 
-        $message = "Hello this is test message for me<a href=\"https://erp.triz.co.in/Images/logo.png\">https://erp.triz.co.in/Images/logo.png</a> for me";
+        $message = "Hello this is test message for me<a href=\"https://erp.triz.co.in/Images/logo.png\">https://erp.triz.co.in/Images/logo.png</a> for me ";
         list($textArray, $hrefArray) = $this->mediaFound($message);
+
         if (count($hrefArray) == 0) {
             $prepareMessageBody['contentVariables'] = json_encode([
                 "1" => $textArray,
@@ -101,7 +102,6 @@ class TestFunction extends Command
 
             $prepareMessageBody['contentSid'] = "HX865d745b08b3a55e94c4a43c97fbabc5";
         }
-        dd($prepareMessageBody['contentVariables']);
 
 
         $messagingServiceSid = 'MGdec43b1bbd9428a72fa0c7a633905319';
@@ -110,7 +110,7 @@ class TestFunction extends Command
 
         $client = new Client($accountSid, $authToken);
         $res= $client->messages->create(
-            'whatsapp:+919638141767',
+            'whatsapp:+917621070302',
             [
                 "contentSid" => $prepareMessageBody['contentSid'],
                 "messagingServiceSid" => $messagingServiceSid,

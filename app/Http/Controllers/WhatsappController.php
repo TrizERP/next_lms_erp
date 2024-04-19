@@ -146,9 +146,9 @@ class WhatsappController extends Controller
             $textSections[] = $currentSection;
         }
         $hrefPattern = '/<a href="(.*?)">/';
-        $hrefMatches = [];
+        $hrefMatches = $hrefLinks = [];
         preg_match_all($hrefPattern, $message, $hrefMatches);
-        $hrefLinks = $hrefMatches[1]; // $matches[1] contains all href links found
+        //$hrefLinks = $hrefMatches[1]; // $matches[1] contains all href links found
         foreach ($hrefMatches[1] as $href) {
             // Use parse_url to parse the URL
             $parsedUrl = parse_url($href);
