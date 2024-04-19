@@ -281,7 +281,18 @@ class tblstudentController extends Controller
                 }
                 $finalArray[$key] = $value;
             }
+            // added on 19-04-24 by uma 
+            if($key=="enrollment_no"){
+                $maxEnrollment = DB::table('tblstudent')->selectRaw("(MAX(CAST(enrollment_no AS INT)) + 1) AS new_enrollment_no")
+                ->where('sub_institute_id', $sub_institute_id)->orderBy('id')->limit(1)->get()->toArray();
 
+                $maxEnrollment = array_map(function ($value) {
+                    return (array) $value;
+                }, $maxEnrollment);
+
+                $finalArray[$key] = $maxEnrollment['0']['new_enrollment_no'];
+            }
+            // 19-04-24
             // 05-04-2022 START if city is not exist in table then insert city in table
             if ($key == 'state') {
                 $get_state_data = tblstateModel::where(['state_name' => $value])->get()->toArray();
