@@ -99,6 +99,7 @@ class sub_std_mapController extends Controller
             //$img->move(public_path().'/lms_content_file/',$newfilename);
             $img->storeAs('public/SubStdMapping/', $newfilename);
         }
+
         foreach ($standard_id as $key => $stdval) {
             sub_std_mapModel::updateOrCreate(
                 [
@@ -118,6 +119,7 @@ class sub_std_mapController extends Controller
                     'sub_institute_id' => $sub_institute_id,
                     'sort_order'       => $request->get('sort_order'),
                     'status'           => "1",
+                    "load"             => $request->get('load'),
                 ]
             );
 
@@ -192,7 +194,7 @@ class sub_std_mapController extends Controller
                 'add_content'      => $request->get('add_content'),
                 'sort_order'       => $request->get('sort_order'),
                 'status'           => "1",
-
+                'load'             => $request->get('load'),
             ];
         } else {
             $data = [
@@ -208,7 +210,7 @@ class sub_std_mapController extends Controller
                 'sort_order'       => $request->get('sort_order'),
                 'add_content'      => $request->get('add_content'),
                 'status'           => "1",
-
+                'load'             => $request->get('load'),
             ];
         }
 

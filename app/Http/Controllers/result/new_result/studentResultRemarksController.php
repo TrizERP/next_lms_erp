@@ -42,7 +42,7 @@ class studentResultRemarksController extends Controller
             ->where(['te.syear' => $syear])
             ->where(['te.sub_institute_id' => $sub_institute_id])
             ->whereNull('te.end_date')
-            ->orderBy('u.roll_no', 'asc')
+            ->orderBy('te.roll_no', 'asc')
             ->get()->toArray();
         
         $res['grade_id'] = $grade;

@@ -954,7 +954,7 @@ class result_report_controller extends Controller
                 $join->whereRaw("rc.id = rm.exam_id AND rc.sub_institute_id = rm.sub_institute_id
     AND rc.standard_id = se.standard_id AND rc.syear = '" . $syear . "' AND rc.term_id = '" . $term_id . "'");
             })
-            ->selectRaw("s.id AS student_id,s.roll_no,concat_ws(' ',s.first_name,s.middle_name,s.last_name) as student_name,
+            ->selectRaw("s.id AS student_id,se.roll_no,concat_ws(' ',s.first_name,s.middle_name,s.last_name) as student_name,
     SUM(IFNULL(rm.points,0)) AS obtainedMarks,SUM(IFNULL(rc.points,0)) AS totalMarks,
     ((SUM(IFNULL(rm.points,0))/ SUM(IFNULL(rc.points,0)))*100) AS percentage,COUNT(if(((IFNULL(rm.points,0)/rc.points)*100)
     < " . $passing_ratio . ",1, NULL)) AS failed")
@@ -970,7 +970,7 @@ class result_report_controller extends Controller
         }
 
         $rank_data = $rank_data->limit($top_students)->groupBy('s.id')
-            ->orderByRaw('percentage DESC,s.roll_no ASC')
+            ->orderByRaw('percentage DESC,se.roll_no ASC')
             ->get()->toarray();
 
         $rank_data = json_decode(json_encode($rank_data), true);

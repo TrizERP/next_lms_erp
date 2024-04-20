@@ -269,7 +269,7 @@ class studentBulkUpdateController extends Controller
         else if (isset($request->rollno_standard)){
             $students_arr = DB::table('tblstudent as s')
             ->join('tblstudent_enrollment as se','s.id','=','se.student_id')
-            ->selectRaw('s.first_name,s.roll_no,se.student_id,se.standard_id,se.section_id')
+            ->selectRaw('s.first_name,se.roll_no,se.student_id,se.standard_id,se.section_id')
             ->where(['s.sub_institute_id'=>$sub_institute_id,'se.syear'=>$syear])
             ->where('se.standard_id',$request->rollno_standard)
             ->where('se.section_id',$request->division)            

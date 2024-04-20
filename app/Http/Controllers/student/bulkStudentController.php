@@ -238,7 +238,7 @@ class bulkStudentController extends Controller
         } elseif ($order_by != '' && $order_by == 'enrollment_no') {
             $extra_order_by = 'CONVERT(tblstudent.enrollment_no, SIGNED)';
         } elseif ($order_by != '' && $order_by == 'roll_no') {
-            $extra_order_by = 'CAST(tblstudent.roll_no AS INT)';
+            $extra_order_by = 'CAST(tblstudent_enrollment.roll_no AS INT)';
         } else {
             $extra_order_by = 'tblstudent.first_name';
         }
@@ -246,7 +246,7 @@ class bulkStudentController extends Controller
         $array = [
             'tblstudent_enrollment.standard_id as standard',
             'tblstudent_enrollment.section_id as division',
-            'tblstudent_enrollment.grade_id as grade', 'tblstudent.id as id',
+            'tblstudent_enrollment.grade_id as grade','tblstudent_enrollment.roll_no as roll_no', 'tblstudent.id as id',
         ];
         //$header = array('student_name' => 'Student Name');
         $header = [
@@ -269,7 +269,7 @@ class bulkStudentController extends Controller
         $keyQuotes = '';
 
         foreach ($request->input('dynamicFields') as $key => $value) {
-            if ($value != 'standard' && $value != 'grade' && $value != 'division') {
+            if ($value != 'standard' && $value != 'grade' && $value != 'division' && $value != 'roll_no') {
                 $array[] = $value;
             }
             $value1 = str_replace($searchArr, $replaceArr, $value);

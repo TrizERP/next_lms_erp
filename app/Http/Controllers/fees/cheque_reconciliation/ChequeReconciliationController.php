@@ -46,7 +46,7 @@ class ChequeReconciliationController extends Controller
                     // });
             })->leftJoin('division as d', function ($join) {
                 $join->whereRaw('d.id = se.section_id');
-            })->selectRaw("fc.id as collect_id,fc.standard_id,fc.student_id,fc.term_id,fc.created_by,fc.payment_mode,fc.bank_branch,fc.receiptdate,fc.receipt_no,fc.cheque_no,fc.bank_name,fc.cheque_date,fc.cheque_bank_name,fc.amount,fc.is_deleted,fc.fine,fc.fees_discount,fc.is_waved,fc.created_by,s.enrollment_no,CONCAT_WS(' ',s.first_name,s.middle_name,s.last_name) AS student_name,s.mobile,s.roll_no,st.medium,st.name as standard_name,d.id,d.name as divison_name,t.title as term_name,se.term_id as sterm_id")
+            })->selectRaw("fc.id as collect_id,fc.standard_id,fc.student_id,fc.term_id,fc.created_by,fc.payment_mode,fc.bank_branch,fc.receiptdate,fc.receipt_no,fc.cheque_no,fc.bank_name,fc.cheque_date,fc.cheque_bank_name,fc.amount,fc.is_deleted,fc.fine,fc.fees_discount,fc.is_waved,fc.created_by,s.enrollment_no,CONCAT_WS(' ',s.first_name,s.middle_name,s.last_name) AS student_name,s.mobile,se.roll_no,st.medium,st.name as standard_name,d.id,d.name as divison_name,t.title as term_name,se.term_id as sterm_id")
             ->whereRaw('fc.payment_mode = "cheque" AND fc.sub_institute_id = "' . $sub_institute_id . '" AND fc.syear = "' . $syear . '" AND fc.is_deleted = "N" ')
             ->whereBetween("fc.cheque_date", [$from_date, $to_date])->get()->toArray();
 
@@ -213,7 +213,7 @@ class ChequeReconciliationController extends Controller
                         // });
                 })->leftJoin('division as d', function ($join) {
                     $join->whereRaw('d.id = se.section_id');
-                })->selectRaw("fc.id as collect_id,fc.standard_id,fc.student_id,fc.term_id,fc.created_by,fc.payment_mode,fc.bank_branch,fc.receiptdate,fc.receipt_no,fc.cheque_no,fc.bank_name,fc.cheque_date,fc.cheque_bank_name,fc.amount as amountpaid,fc.payment_mode as cancel_type,fc.created_date as cancel_date,fc.remarks as cancel_remark,fc.is_deleted,fc.fine,fc.fees_discount,fc.is_waved,fc.created_by,s.enrollment_no,CONCAT_WS(' ',s.first_name,s.middle_name,s.last_name) AS student_name,s.mobile,s.roll_no,st.medium,st.name as standard_name,d.id,d.name as divison_name,t.title as term_name,se.term_id as sterm_id")
+                })->selectRaw("fc.id as collect_id,fc.standard_id,fc.student_id,fc.term_id,fc.created_by,fc.payment_mode,fc.bank_branch,fc.receiptdate,fc.receipt_no,fc.cheque_no,fc.bank_name,fc.cheque_date,fc.cheque_bank_name,fc.amount as amountpaid,fc.payment_mode as cancel_type,fc.created_date as cancel_date,fc.remarks as cancel_remark,fc.is_deleted,fc.fine,fc.fees_discount,fc.is_waved,fc.created_by,s.enrollment_no,CONCAT_WS(' ',s.first_name,s.middle_name,s.last_name) AS student_name,s.mobile,se.roll_no,st.medium,st.name as standard_name,d.id,d.name as divison_name,t.title as term_name,se.term_id as sterm_id")
                 ->whereRaw('fc.payment_mode = "cheque" AND fc.sub_institute_id = "' . $sub_institute_id . '" AND fc.syear = "' . $syear . '" AND fc.is_deleted = "Y" ')
                 ->whereBetween("fc.cheque_date", [$from_date, $to_date])->get()->toArray();
 
@@ -234,7 +234,7 @@ class ChequeReconciliationController extends Controller
                         // });
                 })->leftJoin('division as d', function ($join) {
                     $join->whereRaw('d.id = se.section_id');
-                })->selectRaw("fc.*,fct.cheque_bank_name,fct.bank_branch,fct.cheque_no,fct.cheque_date,s.enrollment_no,CONCAT_WS(' ',s.first_name,s.middle_name,s.last_name) AS student_name,s.mobile,s.roll_no,st.medium,st.name as standard_name,d.id,d.name as divison_name,t.title as term_name,se.term_id as sterm_id")
+                })->selectRaw("fc.*,fct.cheque_bank_name,fct.bank_branch,fct.cheque_no,fct.cheque_date,s.enrollment_no,CONCAT_WS(' ',s.first_name,s.middle_name,s.last_name) AS student_name,s.mobile,se.roll_no,st.medium,st.name as standard_name,d.id,d.name as divison_name,t.title as term_name,se.term_id as sterm_id")
                 ->where(['fc.sub_institute_id' => $sub_institute_id, 'fc.syear' => $syear])
                 ->whereBetween("fc.cancel_date", [$from_date, $to_date])
                 ->get()->toArray();

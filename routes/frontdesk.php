@@ -12,6 +12,7 @@ use App\Http\Controllers\frontdesk\PettyCashMasterController;
 use App\Http\Controllers\frontdesk\PettyCashReportController;
 use App\Http\Controllers\frontdesk\taskController;
 use App\Http\Controllers\front_desk\timetableController;
+use App\Http\Controllers\front_desk\timetableAiController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\school_setup\timetableController as oldtimetableController;
 
@@ -39,6 +40,7 @@ Route::group(['prefix' => 'frontdesk', 'middleware' => ['session', 'menu', 'logR
 
 Route::group(['prefix' => 'front_desk', 'middleware' => ['session', 'menu', 'logRoute']], function () {
 	Route::resource('timetableAI', timetableController::class);	
+	Route::resource('timetableAIV1', timetableAiController::class);	
 	Route::resource('create-timetable', oldtimetableController::class);
     Route::get('add_remove_Batch_Timetable', [oldtimetableController::class, 'getBatchTimetable'])->name('add_remove_Batch_Timetable');
 	Route::get('Delete_Timetable', [oldtimetableController::class, 'deleteTimetable'])->name('Delete_Timetable');

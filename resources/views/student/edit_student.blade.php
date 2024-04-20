@@ -461,7 +461,7 @@ br {
                                         <div class="col-md-4 form-group" id="end_date_div" @if(isset($student_data->end_date)) style="display: block;" @else style="display: none;" @endif>
                                             <label>Inactive Date</label>
                                             <div class="input-daterange input-group" >
-                                                <input type="text" value="{{ $student_data->end_date }}" class="form-control mydatepicker" placeholder="yyyy-mm-dd" name="end_date" autocomplete="off">
+                                                <input type="text" value="{{ $student_data->end_date }}" class="form-control mydatepicker end_date" placeholder="yyyy-mm-dd" name="end_date" autocomplete="off">
                                                 <span class="input-group-addon"><i class="icon-calender"></i></span>
                                             </div>
                                         </div>
@@ -2236,12 +2236,14 @@ br {
                 document.getElementById("end_date_div").required = true;
                 document.getElementById("remarks_div").style.display = 'block';
                 document.getElementById("remarks_div").required = true;
+                $('.end_date').prop('required',true);
 
             }else{
                 document.getElementById("end_date_div").style.display = 'none';
                 document.getElementById("end_date_div").required = false;
                 document.getElementById("remarks_div").style.display = 'none';
                 document.getElementById("remarks_div").required = false;
+                $('.end_date').prop('required',false);
             }
         }
 </script>

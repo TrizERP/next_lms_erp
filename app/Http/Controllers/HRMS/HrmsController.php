@@ -473,11 +473,14 @@ class HrmsController extends Controller
 
         $get_timetable_teacher = DB::table('general_data')->where(['fieldname' => 'timetable_teacher', 'sub_institute_id' => $sub_institute_id])->first();
         
+        $get_timetable_ai = DB::table('general_data')->where(['fieldname' => 'timetable_ai', 'sub_institute_id' => $sub_institute_id])->first();
+
         $res['get_sandwich_leave_data'] = $get_sandwich_leave_data;
         $res['get_casual_leave_data'] = $get_casual_leave_data;
         $res['get_parent_communication']=$get_parent_communication;
         $res['get_multi_login']=$get_multi_login;
         $res['get_timetable_teacher']=$get_timetable_teacher;
+        $res['get_timetable_ai']=$get_timetable_ai;
         
         // echo "<pre>";print_r($res);exit; 
 
@@ -604,6 +607,26 @@ class HrmsController extends Controller
             $general_data->type = 'hrms';
             $general_data->save();        
         }
+
+        // timetable AI
+         // get_timetable_teacher
+         $existingTimetableTeacher = general_dataModel::where('fieldname', 'timetable_ai')
+         ->where('sub_institute_id', $subInstituteId)
+         ->first();
+         $general_data = new general_dataModel();
+         
+         if($existingTimetableTeacher){
+             $existingTimetableTeacher->fieldvalue = $request->timetable_ai;
+             $existingTimetableTeacher->save();
+         }else{
+             $general_data->fieldname = 'timetable_ai';
+             $general_data->fieldvalue = $request->timetable_ai;
+             $general_data->sub_institute_id = $subInstituteId;
+             $general_data->client_id = $clientId;
+             $general_data->type = 'hrms';
+             $general_data->save();        
+         }
+
         $res['status_code']=1;
         $res['message']="General setting information add/updated successfully";
         
