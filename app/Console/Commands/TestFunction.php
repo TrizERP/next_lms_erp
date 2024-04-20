@@ -55,7 +55,7 @@ class TestFunction extends Command
         $languageCode = 'en'; // Specify language code (e.g., 'en' for English)
 
 // Recipient phone number in international format (e.g., +1234567890)
-        $recipientPhone = 'whatsapp:+917621070302';
+        $recipientPhone = 'whatsapp:+919979176562';
 
 // Sender phone number in international format (e.g., +0987654321)
         $senderPhone = 'whatsapp:+919909906512';
@@ -68,7 +68,7 @@ class TestFunction extends Command
 // Send the message using the template
         try {
             $message = $client->messages->create(
-                'whatsapp:+917621070302',
+                'whatsapp:+919979176562',
                 [
                     "contentSid" => "HX02a86c824bbf747808744e76ac5795d3",
                     "messagingServiceSid" => $messagingServiceSid,
@@ -81,18 +81,11 @@ class TestFunction extends Command
         } catch (Exception $exception) {
             report($exception);
         }
-        dd($message);
+        //dd($message);
 
 // Output the message SID for reference
-        echo 'Message SID: ' . $message->sid;
-
-
-
+        //echo 'Message SID: ' . $message->sid;
         dd('done');
-
-
-
-
     }
 }
 
