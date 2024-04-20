@@ -15,6 +15,7 @@
                 @php 
                     $field = Session::get('data');
                     $parent_communication = ['N'=>"Subject Wise","Y"=>"Class Teacher wise"];
+                    $timetable_ai = ["0"=>"Standard Wise","1"=>"Teacher wise"];
                     $sandwich_leave = $multi_login =$timeTableTeacher = ["Yes","No"];
                     $casual_leave = [0,1,2,3,4,5];                    
                 @endphp 
@@ -31,6 +32,7 @@
                 <div class="table-responsive">
                     <table class="table table-box table-bordered">
                         <tbody>
+                            <!-- sandwich leave  -->
                             <tr>
                                 <th>Are you applying for sandwich leave in your institute?</th>
                                 <td>
@@ -46,6 +48,7 @@
                                     </div>
                                 </td>
                             </tr>
+                            <!-- causual leave  -->
                             <tr>
                                 <th>How Many days allowed for casual leave at one time?</th>
                                 <td>
@@ -60,6 +63,7 @@
                                     </div>
                                 </td>
                             </tr>
+                            <!-- parent communication  -->
                             <tr>
                                 <th>System to display parent communication class-teacher wise</th>
                                 <td>
@@ -75,6 +79,7 @@
                                     </div>
                                 </td>
                             </tr>
+                            <!-- multiple login or not  -->
                             <tr>
                                 <th>Do you want to enable multiple logins?</th>
                                 <td>
@@ -92,6 +97,7 @@
                                     </div>
                                 </td>
                             </tr>
+                            <!-- timetable  -->
                             <tr>
                                 <th>Display all teachers in creating timetable? </th>
                                 <td>
@@ -104,7 +110,24 @@
                                                     {{ $value }}
                                                 </option>
                                             @endforeach
-
+                                            </select>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                            <!-- timetable AI-->
+                            <tr>
+                                <th>Display all teachers in creating timetable? </th>
+                                <td>
+                                    <div class="row">
+                                        <div class="col-md-4 form-group" style="margin-left: 0px !important">
+                                            <select id='timetable_ai' name="timetable_ai" class="form-control" style="margin-left: 50px;">
+                                            <option>--Select--</option>
+                                            @foreach($timetable_ai as $key=>$value)
+                                                <option value="{{ $key }}" @if(isset($data['get_timetable_ai']->fieldvalue) && $data['get_timetable_ai']->fieldvalue == $key) selected @endif >
+                                                    {{ $value }}
+                                                </option>
+                                            @endforeach
                                             </select>
                                         </div>
                                     </div>

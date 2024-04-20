@@ -153,7 +153,7 @@ class feesReportController extends Controller
         // DB::enableQueryLog();
         $data = DB::table(function ($query) use ($sub_institute_id, $syear, $extra_fo, $extra_fp) 
         {
-            $query->selectRaw('t.id as student_id,te.syear, t.enrollment_no, t.roll_no, t.uniqueid, t.place_of_birth, '
+            $query->selectRaw('t.id as student_id,te.syear, t.enrollment_no, te.roll_no, t.uniqueid, t.place_of_birth, '
                 . DB::raw("CONCAT_WS(' ', t.first_name, t.middle_name, t.last_name) as student_name") . ', g.title as grade, s.name as standard_name, d.name as division_name, fp.created_date, '
                 . DB::raw('CONCAT_WS(" ", u.first_name, u.last_name) AS user_name, fp.term_id, fp.receiptdate, fp.receipt_no, fp.payment_mode, '
                 . 'fp.cheque_bank_name, fp.bank_branch, fp.cheque_no, fp.cheque_date, b.title as batch, sq.title as quota, fp.remarks, '
@@ -179,7 +179,7 @@ class feesReportController extends Controller
             ->whereRaw("1=1 " . $extra_fp)
 
             ->unionAll(function ($query) use ($sub_institute_id, $syear, $extra_fo, $extra_fp) {
-                $query->selectRaw('t.id as student_id,te.syear, t.enrollment_no, t.roll_no, t.uniqueid, t.place_of_birth, '
+                $query->selectRaw('t.id as student_id,te.syear, t.enrollment_no, te.roll_no, t.uniqueid, t.place_of_birth, '
                     . DB::raw("CONCAT_WS(' ', t.first_name, t.middle_name, t.last_name) as student_name") . ', g.title as grade, s.name as standard_name, d.name as division_name, NULL AS created_date, '
                     . DB::raw('CONCAT_WS(" ", u.first_name, u.last_name) AS user_name, fo.month_id AS term_id, fo.receiptdate AS receiptdate, fo.reciept_id AS receipt_no, fo.payment_mode AS payment_mode, '
                     . 'fo.bank_name as cheque_bank_name, fo.bank_branch, fo.cheque_dd_no as cheque_no, fo.cheque_dd_date AS cheque_date, b.title as batch, sq.title as quota, NULL as remarks, '

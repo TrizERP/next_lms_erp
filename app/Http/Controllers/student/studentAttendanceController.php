@@ -181,7 +181,7 @@ class studentAttendanceController extends Controller
             ->leftJoin('batch','batch.id','=','tblstudent.studentbatch')
             ->where($extraSearchArray)
             ->whereRaw($extraRaw)
-            ->orderby('tblstudent.roll_no')
+            ->orderby('tblstudent_enrollment.roll_no')
             ->get()->toArray();
         if (count($student_data) == 0) {
             $res['status_code'] = 0;

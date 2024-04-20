@@ -67,7 +67,7 @@ class studentReportController extends Controller
         $sub_institute_id = $request->session()->get('sub_institute_id');
         //$tblcustom_fields['enrollment_no'] = get_string('grno','request');
         //$tblcustom_fields['student_name'] = 'Student Name';
-        $tblcustom_fields['roll_no'] = 'Roll No';
+        $tblcustom_fields['roll_no'] = 'Roll No';                                                                                                                                                                                    
         $tblcustom_fields['first_name'] = 'First Name';
         $tblcustom_fields['middle_name'] = 'Middle Name';
         $tblcustom_fields['last_name'] = 'Surname';
@@ -151,14 +151,14 @@ class studentReportController extends Controller
         } elseif ($order_by != '' && $order_by == 'enrollment_no') {
             $extra_order_by = 'CONVERT(tblstudent.enrollment_no, SIGNED)';
         } elseif ($order_by != '' && $order_by == 'roll_no') {
-            $extra_order_by = 'CAST(tblstudent.roll_no AS INT)';
+            $extra_order_by = 'CAST(tblstudent_enrollment.roll_no AS INT)';
         } else {
             $extra_order_by = 'tblstudent.first_name';
         }
 
 
         $array = [
-            'tblstudent.enrollment_no as enrollment_no', 'tblstudent.id as id', 'standard.name as standard', 'division.name as division',// 'academic_section.title as grade',
+            'tblstudent.enrollment_no as enrollment_no','tblstudent.roll_no as roll_no', 'tblstudent.id as id', 'standard.name as standard', 'division.name as division',// 'academic_section.title as grade',
         ];
         $header = [
             'enrollment_no' => get_string('grno','request'), 'student_name' => 'Student Name', 'standard' => get_string('standard','request'), 'division' => get_string('division','request'),// 'grade' => get_string('academicsection','request'),
@@ -170,7 +170,7 @@ class studentReportController extends Controller
 
         if ($request->input('dynamicFields') == '') {
             $array = [
-                'tblstudent.enrollment_no as enrollment_no', 'tblstudent.id as id', 'standard.name as standard', 'division.name as division',// 'academic_section.title as grade',
+                'tblstudent.enrollment_no as enrollment_no','tblstudent.roll_no as roll_no', 'tblstudent.id as id', 'standard.name as standard', 'division.name as division',// 'academic_section.title as grade',
             ];
             $header = [
                 'enrollment_no' => get_string('grno','request'), 'student_name' => 'Student Name', 'standard' => get_string('standard','request'), 'division' => get_string('division','request'),// 'grade' => get_string('academicsection','request'),
@@ -184,7 +184,7 @@ class studentReportController extends Controller
             $replaceArr1 = ['First Name', 'Surname', get_string('birthplace','request'), get_string('studentmobile','request'),'Optional Subjects','Fees Year'];
 
             foreach ($request->input('dynamicFields') as $key => $value) {
-                if ($value != "bloodgroup" && $value != "van" && $value != "optional_subjects") {
+                if ($value != "bloodgroup" && $value != "van" && $value != "optional_subjects" && $value != "roll_no") {
                     $array[] = $value;
                 }
                 $value1 = str_replace($searchArr1, $replaceArr1, $value);

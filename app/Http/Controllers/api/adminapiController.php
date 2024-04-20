@@ -451,7 +451,7 @@ class adminapiController extends Controller
                 })->join('division as d', function ($join) {
                     $join->whereRaw('d.id = se.section_id');
                 })->selectRaw("s.id, CONCAT_WS(' ',s.first_name,s.middle_name,s.last_name) AS student_name,
-                    se.syear,s.enrollment_no,s.roll_no,s.dob,s.address,s.mobile,s.email,
+                    se.syear,s.enrollment_no,se.roll_no,s.dob,s.address,s.mobile,s.email,
                     if(s.image = '','https://".$_SERVER['SERVER_NAME']."/storage/student/noimages.png',
                     concat('https://".$_SERVER['SERVER_NAME']."/storage/student/',s.image)) as student_image,se.standard_id,
                     se.section_id AS division_id,ac.title AS academic_section,st.name AS standard_name,d.name AS division_name,
@@ -468,7 +468,7 @@ class adminapiController extends Controller
                     if ($division_id != '') {
                         $q->where('se.section_id', $division_id);
                     }
-                })->groupBy('s.roll_no')->get()->toArray();
+                })->groupBy('s.id')->get()->toArray();
 
             if (count($data) > 0) {
                 $response['status'] = 1;
@@ -2314,7 +2314,7 @@ class adminapiController extends Controller
                     $join->whereRaw('d.id = se.section_id');
                 })
                 ->selectRaw("s.id,s.id AS student_id,CONCAT_WS(' ',s.first_name,s.middle_name,s.last_name) AS student_name,
-                    se.syear,s.enrollment_no,s.roll_no,s.dob,s.address,s.mobile,s.email,if(s.image = '','',
+                    se.syear,s.enrollment_no,se.roll_no,s.dob,s.address,s.mobile,s.email,if(s.image = '','',
                     concat('https://".$_SERVER['SERVER_NAME']."/storage/student/',s.image)) as student_image,se.standard_id,
                     se.section_id AS division_id,ac.title AS academic_section,st.name AS standard_name,d.name AS division_name,
                     s.gender,s.admission_year,s.mother_name,s.father_name")

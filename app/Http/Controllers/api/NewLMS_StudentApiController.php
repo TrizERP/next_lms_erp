@@ -181,7 +181,7 @@ class NewLMS_StudentApiController extends Controller
                             "tblstudent.last_name",
                             "tblstudent.sub_institute_id",
                             "tblstudent.mobile",
-                            "tblstudent.roll_no",
+                            "tblstudent_enrollment.roll_no",
                             "standard.name as std_name",
                             "division.name as division",
                             "tblstudent.dob",

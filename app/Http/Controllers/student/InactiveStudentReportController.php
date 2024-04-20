@@ -133,7 +133,7 @@ class InactiveStudentReportController extends Controller
         } elseif ($order_by != '' && $order_by == 'enrollment_no') {
             $extra_order_by = 'CONVERT(tblstudent.enrollment_no, SIGNED)';
         } elseif ($order_by != '' && $order_by == 'roll_no') {
-            $extra_order_by = 'CAST(tblstudent.roll_no AS INT)';
+            $extra_order_by = 'CAST(tblstudent_enrollment.roll_no AS INT)';
         } else {
             $extra_order_by = 'tblstudent.first_name';
         }
@@ -166,7 +166,7 @@ class InactiveStudentReportController extends Controller
             $searchArr1 = ['enrollment_no', 'first_name', 'last_name'];
             $replaceArr1 = ['Gr No', 'First Name', 'Surname'];
             foreach ($request->input('dynamicFields') as $key => $value) {
-                if ($value != "bloodgroup" && $value != "van") {
+                if ($value != "bloodgroup" && $value != "van"  && $value != "roll_no") {
                     $array[] = $value;
                 }
                 $value1 = str_replace($searchArr1, $replaceArr1, $value);

@@ -34,6 +34,7 @@ use App\Http\Controllers\school_setup\todaysproxyReportController;
 use App\Http\Controllers\school_setup\topicController;
 use App\Http\Controllers\school_setup\workflowController;
 use App\Http\Controllers\school_setup\subjectElectiveController;
+use App\Http\Controllers\school_setup\mapTeacherController;
 use App\Http\Controllers\signupController;
 use App\Http\Controllers\institute_detail;
 use App\Http\Controllers\normClatureController;
@@ -336,6 +337,8 @@ Route::group(['prefix' => 'school_setup', 'middleware' => ['session', 'menu', 'l
     Route::resource('period_master', periodController::class);
     Route::resource('change_password', changePasswordController::class);
     Route::resource('dashboard_setting', dashboardSettingController::class);
+    Route::resource('map_teacher', mapTeacherController::class);
+
     Route::get('device_check', [changePasswordController::class, 'device_check'])->name('device_check');
 
     Route::resource('erp_status', erpstatusController::class);
