@@ -167,8 +167,14 @@ if (!function_exists('SearchChain')) {
         ];
 
         // menu_ids to get class teacher class only
-        $menu_ids = [80,102,156];
-        $getClass=DB::table('class_teacher')->whereRaw('sub_institute_id='.session()->get('sub_institute_id').' and teacher_id ='.session()->get('user_id').' and syear="'.session()->get('syear').'"')->first();
+        if(session()->get('sub_institute_id')==195){
+            $menu_ids = [80,102];
+        }else{
+            $menu_ids = [80,102,156];
+        }
+
+        $getClass=DB::table('class_teacher')->whereRaw('sub_institute_id='.session()->get('sub_institute_id').' and teacher_id ='.session()->get('user_id').' and syear="'.session()->get('syear').'"')->groupBy('teacher_id')->first();
+
         // START 07/09/2021 code for getting standard , grade , division according to timetable wise for homework module
         if (session()->get('user_profile_name') == 'Teacher') {
             $teacher_id = session()->get('user_id');
@@ -272,15 +278,11 @@ if (!function_exists('SearchChain')) {
         $std_option = "<option value=''>Select</option>";
         if ($grade_val != "") {
             if (is_array($grade_val)) {
-                // echo session()->get('right_menu_id');exit;
+
                 $query = DB::table('standard');
                 $classTeacherStdArr = session()->get('classTeacherStdArr');
                 if($std_val!='' && is_array($std_val) && !empty($classTeacherStdArr)){
-                    if(in_array(session()->get('right_menu_id'),$menu_ids) && session()->get('user_profile_name')=="Teacher"){
-                        $query->where('id', $getClass->standard_id);
-                    }else{
-                    $query->whereIn("id", $std_val)->whereIn('grade_id',$g_id);
-                    }                    
+                    $query->whereIn("id", $std_val)->whereIn('grade_id',$g_id);                    
                 }else{
                     $query->whereIn("grade_id", $grade_val);
                 }
@@ -288,11 +290,7 @@ if (!function_exists('SearchChain')) {
                 //START Check for class teacher assigned standards
                 if (isset($classTeacherStdArr) && !in_array($module_name, $module_array)) {
                     if (count($classTeacherStdArr) > 0 && $std_val=='') {
-                        if(in_array(session()->get('right_menu_id'),$menu_ids) && session()->get('user_profile_name')=="Teacher"){
-                            $query->where('id', $getClass->standard_id);
-                        }else{
                         $query->whereIn('id', $classTeacherStdArr);
-                        }
                     }
                 }
                 //END Check for class teacher assigned standards
@@ -301,11 +299,7 @@ if (!function_exists('SearchChain')) {
                 $subjectTeacherStdArr = session()->get('subjectTeacherStdArr');
                 if (isset($subjectTeacherStdArr) && (!isset($classTeacherStdArr) || in_array($module_name, $module_array))) {
                     if (count($subjectTeacherStdArr) > 0 && $std_val=='') {
-                        if(in_array(session()->get('right_menu_id'),$menu_ids) && session()->get('user_profile_name')=="Teacher"){
-                            $query->where('id', $getClass->standard_id);
-                        }else{
                         $query->orwhereIn('id', $subjectTeacherStdArr);
-                        }
                     } else {
                         $query->oRwhere('id', null);
                     }
@@ -320,11 +314,7 @@ if (!function_exists('SearchChain')) {
                 $classTeacherStdArr = session()->get('classTeacherStdArr');
                 if (isset($classTeacherStdArr) && !in_array($module_name, $module_array)) {
                     if (count($classTeacherStdArr) > 0) {
-                        if(in_array(session()->get('right_menu_id'),$menu_ids) && session()->get('user_profile_name')=="Teacher"){
-                            $query->where('id', $getClass->standard_id);
-                        }else{
                         $query->whereIn('id', $classTeacherStdArr);
-                        }
                     } else {
                         $query->oRwhere('id', null);
                     }
@@ -336,11 +326,7 @@ if (!function_exists('SearchChain')) {
                 if (isset($subjectTeacherStdArr) && (!isset($classTeacherStdArr) || in_array($module_name, $module_array))) {
                     if (count($subjectTeacherStdArr) > 0) {
                         // $query->orwhereIn('id',$subjectTeacherStdArr);
-                        if(in_array(session()->get('right_menu_id'),$menu_ids) && session()->get('user_profile_name')=="Teacher"){
-                            $query->where('id', $getClass->standard_id);
-                        }else{
                         $query->whereIn('id', $subjectTeacherStdArr);
-                        }
                     } else {
                         // $query->orwhere('id',null);
                         $query->oRwhere('id', null);
@@ -419,20 +405,11 @@ if (!function_exists('SearchChain')) {
                     // print_r($subjectTeacherDivArr); exit('here');
                     if (count($subjectTeacherDivArr) > 0) {
                         // $query->orwhereIn('division.id',$subjectTeacherDivArr);
-                        if(in_array(session()->get('right_menu_id'),$menu_ids) && session()->get('user_profile_name')=="Teacher"){
-                            $query->where('division.id',$getClass->division_id);
-                        }else{
-                        $query->whereIn('division.id', function ($sub_query) use ($std_val) {
-                            $sub_query->select('division_id')
-                                ->from('timetable')
-                                ->where('teacher_id', session()->get('user_id'))
-                                ->where('standard_id', $std_val)
-                                ->where('syear',session()->get('syear'));
-                        });
-                        }
+                        $query->whereIn('division.id', $subjectTeacherDivArr);
                     }
                 }
                 //END Check for subject teacher assigned
+
                 $division = $query->pluck('division.name', 'division.id');
                 // $division = DB::table('std_div_map')
                 // ->join('division', 'division.id', '=', 'std_div_map.division_id')
