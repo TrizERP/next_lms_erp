@@ -636,7 +636,10 @@ die; */
         if (isset($student_data->city) && $student_data->city != '') {
             $city_name = $student_data->city;
         }
-        $cityData = tblcityModel::where(['state_name' => $state_name, 'city_name' => $city_name])->get()->toArray();
+        // added on 19-04-24 by uma
+        $cityData = tblcityModel::where(['state_name' => $state_name])->get()->toArray();
+
+        // $cityData = tblcityModel::where(['state_name' => $state_name, 'city_name' => $city_name])->get()->toArray();
 
         //START if once fees is paid for current year admission year,standard,student quota,academic section can't be edited
         $studentfees_paid = DB::table('fees_collect as c')

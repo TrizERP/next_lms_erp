@@ -230,10 +230,10 @@ class circularController extends Controller
                 ->orderBy('c.id','DESC')
                 ->get()->toArray();
 
-            $response['data'] = $result_data;
             if(!empty($result_data)){
                 $response['message'] = "Success";
                 $response['status'] = "1";
+                $response['data'] = $result_data;
             }else{
                 $response['message'] = "Circular Not Found with syear ".$syear;
                 $response['status'] = "0";

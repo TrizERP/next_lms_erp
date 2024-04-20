@@ -487,7 +487,7 @@ class studentCertificateController extends Controller
 
         if($sub_institute_id==254){
             $working_day =  $attTotDays;
-            $present_day = $attarray[$student_id];
+            $present_day = isset($attarray[$student_id]) ? $attarray[$student_id] : '-';
         }else{
             $working_day = $get_student_attendances->total_att_days;
             $present_day = $get_student_attendances->present_att_days;
