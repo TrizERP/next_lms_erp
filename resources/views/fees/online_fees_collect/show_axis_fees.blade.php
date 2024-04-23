@@ -162,7 +162,7 @@
                                           @endphp
                                             <td>
                                                 <div class="checkbox checkbox-info">
-                                                <input id="{{$id}}" name="months[{{$id}}]" value="{{$id}}" {{$slected}}> class="months" type="checkbox" {{$disabled}} data-no="{{$no}}" @endphp>
+                                                <input id="{{$id}}" name="months[{{$id}}]" value="{{$id}}" {{$slected}} class="months" type="checkbox" @php echo $disabled; echo 'data-no='.$no; @endphp>
                                                     <label for="{{$id}}">{{$val}}</label>
                                                 </div>
                                             </td>
