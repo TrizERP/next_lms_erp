@@ -44,17 +44,17 @@ class timetableAiController extends Controller
         $type = $request->type;   
         $sub_institute_id = session()->get('sub_institute_id');     
         $syear = session()->get('syear');             
-        $getDay = $this->getDays();
+        $res['days'] = $getDay = $this->getDays();
         $getPeriod = $this->getPeriods();
         // requested values
         $res['grade_id'] = $grade_id = $request->grade;
         $res['standard_id'] = $standard_id = $request->standard;
         $res['division_id'] = $division_id = $request->division; 
         $general_data = DB::table('general_data')->where('fieldname','timetable_ai')->where('sub_institute_id',$sub_institute_id)->first();
-   
+        create_timetable::where('sub_institute_id',$sub_institute_id)->delete();
         $main_data = [
-            "num_periods_per_day" => count($getPeriod),
-            "subjects_per_period" => "1",
+            "minimum_periods_per_day" => count($getPeriod),
+            "subjects_per_period" => 1,
             "teacher_availability" => []
         ];
         $teacherData=[];
@@ -76,11 +76,11 @@ class timetableAiController extends Controller
                             ->where('id', $mapData->teacher_id)
                             ->value('teacher_name'),
                         "days" => array_keys($getDay), // Assuming 'M' as the day for now
-                        "week_load" => $mapData->load ?? 0,
+                        "work_load" => "{$mapData->load}" ?? '',
                         "periods" => $getPeriod,
                         "subjects" => [],
-                        "standards" => [],
-                        "division" => [],
+                        // "standards" => [],
+                        // "division" => [],
                     ];
                 }
                 // get subject
@@ -94,20 +94,20 @@ class timetableAiController extends Controller
                     $teacherData[$mapData->teacher_id]["subjects"][] = [
                         'subject_id' => $mapData->subject_id,
                         'subject_name' => $subject_ids->display_name,
-                        'subject_load'=> $subject_ids->load,
+                        // 'subject_load'=> $subject_ids->load,
                     ];
                 }
 
-                $teacherData[$mapData->teacher_id]["standards"][] = [
-                    "standard_id" => $mapData->standard_id,
-                    "standard_name" => DB::table('standard')->where('id', $mapData->standard_id)->value('name')
-                ];
-                foreach ($request->division as $key => $division) {
-                    $teacherData[$mapData->teacher_id]["division"][] = [
-                        "division_id" => $division,
-                        "division_name" => DB::table('division')->where('id', $division)->value('name')
-                    ];
-                }
+                // $teacherData[$mapData->teacher_id]["standards"][] = [
+                //     "standard_id" => $mapData->standard_id,
+                //     "standard_name" => DB::table('standard')->where('id', $mapData->standard_id)->value('name')
+                // ];
+                // foreach ($request->division as $key => $division) {
+                //     $teacherData[$mapData->teacher_id]["division"][] = [
+                //         "division_id" => $division,
+                //         "division_name" => DB::table('division')->where('id', $division)->value('name')
+                //     ];
+                // }
 
             }
             // fill data for post.php 
@@ -124,11 +124,11 @@ class timetableAiController extends Controller
                         "teacher_id" => $teacherDetail->id,
                         "teacher_name" => $teacherDetail->teacher_name,
                         "days" => array_keys($getDay), // Assuming 'M' as the day for now
-                        "week_load" => $teacherDetail->load,
+                        "work_load" => $teacherDetail->load,
                         "periods" => $getPeriod,
                         "subjects" => [],
-                        "standards" => [],
-                        "division" => [],
+                        // "standards" => [],
+                        // "division" => [],
                     ];
 
                   $subject_ids = explode(',',$teacherDetail->subject_ids);
@@ -144,23 +144,23 @@ class timetableAiController extends Controller
                         $teacherData[$teacherDetail->id]["subjects"][] = [
                             'subject_id'=>$subject_id,
                             'subject_name' => isset($subjectData->display_name) ? $subjectData->display_name : '-' ,
-                            'subject_load'=> isset($subjectData->load) ? $subjectData->load : '0',
+                            // 'subject_load'=> isset($subjectData->load) ? $subjectData->load : '0',
                         ];
                     }
 
-                    foreach ($request->standard as $key => $standard) {
-                        $teacherData[$teacherDetail->id]["standards"][] = [
-                            "standard_id" => $standard,
-                            "standard_name" => DB::table('standard')->where('id', $standard)->value('name')
-                        ];
-                    }
+                    // /foreach ($request->standard as $key => $standard) {
+                    //     $teacherData[$teacherDetail->id]["standards"][] = [
+                    //         "standard_id" => $standard,
+                    //         "standard_name" => DB::table('standard')->where('id', $standard)->value('name')
+                    //     ];
+                    // }
 
-                    foreach ($request->division as $key => $division) {
-                        $teacherData[$teacherDetail->id]["division"][] = [
-                            "division_id" => $division,
-                            "division_name" => DB::table('division')->select('name')->where('id', $division)->value('name')
-                        ];
-                    }
+                    // foreach ($request->division as $key => $division) {
+                    //     $teacherData[$teacherDetail->id]["division"][] = [
+                    //         "division_id" => $division,
+                    //         "division_name" => DB::table('division')->select('name')->where('id', $division)->value('name')
+                    //     ];
+                    // }
 
                 // echo "<pre>";print_r($standard);
                 $main_data['teacher_availability'] = array_values($teacherData);
@@ -186,17 +186,23 @@ class timetableAiController extends Controller
         // dd($content);exit;
         $generated_timetable = shell_exec('python3 /home/timetable.py');
         $res['response'] = json_decode($generated_timetable, true); 
-        // echo "<pre>";print_r($res['response']['timetable']);exit;
+        // echo "<pre>";print_r($res['response']);exit;
 
         if ($res['response'] !== null) {
             foreach ($res['response']['timetable'] as $day) {
                 foreach ($day['periods'] as $period) {
+                    foreach ($grade_id as $grd => $gradeId) {   
+
+                    foreach ($standard_id as $std => $stdId) {   
+                     foreach ($division_id as $div => $divId) {
+                            
+                        # code...
                     $insert_data=[
                         "sub_institute_id"=>$sub_institute_id,
                         "syear"=>$syear,
-                        "academic_section_id"=>$grade_id,
-                        "standard_id"=>$standard_id,
-                        "division_id"=>$division_id,
+                        "academic_section_id"=>$gradeId,
+                        "standard_id"=>$stdId,
+                        "division_id"=>$divId,
                         "period_id"=>$period['period_id'],
                         "subject_id"=>$period['subject_id'],
                         "teacher_id"=>$period['teacher_id teacher_name']['teacher_id'],
@@ -204,17 +210,24 @@ class timetableAiController extends Controller
                     ];
                     $check_exists = create_timetable::where($insert_data)->first();
                     $insert_data["created_at"]=now();
+                    // echo "<pre>";print_r($insert_data);
                     if(empty($check_exists)){
                         $insertCreateTimetable = create_timetable::insert($insert_data);
                     }
+                }
+            }
+        }
+        
+
                 }
             }
         }else{
           $res['status_code'] = "0";
           $res['message']="Failed to get Data";
         }
+        // exit;
         $res['timetableData'] = $this->timetableData($request);
-
+        // echo "<pre>";print_r($res['timetableData']);exit;
         return is_mobile($type, "front_desk/timetable/indexV1", $res, "view");               
     }
 
@@ -292,9 +305,6 @@ class timetableAiController extends Controller
 
         $timetable_data= create_timetable::where([
             'sub_institute_id'    => $sub_institute_id,
-            'academic_section_id' => $academic_section_id,
-            'standard_id'         => $standard_id,
-            'division_id'         => $division_id,
             'syear'               => $syear,
         ])->get()->toArray();
         foreach ($timetable_data as $k => $p) {
