@@ -73,9 +73,8 @@
                                             <thead>
                                             <tr>
                                                 <th>Id</th>
-                                                <th>Standard</th>
-                                                <th>Division</th>
-                                                <th>Student Id</th>
+                                                <th>Gr No</th>
+                                                <th>Student Name</th>
                                                 <th>Mobile Number</th>
                                                 <th>Created By</th>
                                                 <th>Date</th>
@@ -89,9 +88,8 @@
                                             @foreach($data['stu_data'] as $key => $data)
                                                 <tr>
                                                     <td>{{$j}}</td>
-                                                    <td>{{$data->standard_id}}</td>
-                                                    <td>{{$data->division_id}}</td>
-                                                    <td>{{$data['student_id']}}</td>
+                                                    <td>{{$data['student']['enrollment_no']}}</td>
+                                                    <td>{{$data['student']['first_name']}}- {{$data['student']['last_name']}}</td>
                                                     <td>{{$data['student']->mobile}}</td>
                                                     <td>{{$data->created_by_name ?? '-'}}</td>
                                                     <td>{{$data->created_at ?? '-'}}</td>

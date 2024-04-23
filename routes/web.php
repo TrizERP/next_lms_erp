@@ -117,7 +117,9 @@ Route::group([ 'middleware' => ['session', 'menu', 'logRoute']], function () {
     Route::delete('/whatsapp-user-details/destroy/{id}', [WhatsappController::class, 'whatsappUserDetailsDestroy'])->name('whatsapp_user_details.destroy');
 
     Route::get('/whatsapp-send-messages', [WhatsappController::class, 'whatsapp_send_messages'])->name('whatsapp-send-messages');
-    Route::get('/whatsapp-send-messages/create', [WhatsappController::class, 'whatsappSendMessageCreate'])->name('whatsapp_send_message.create');
+    Route::get('/whatsapp-send-messages/create', [WhatsappController::class, 'index'])->name('whatsapp_send_message.create');
+    Route::get('/whatsapp-send-messages/add', [WhatsappController::class, 'create'])->name('send_whatsapp_message.create');
+
     Route::get('/whatsapp-send-messages/create/{id}', [WhatsappController::class, 'whatsappSendMessageCreate']);
     Route::post('/whatsapp-send-messages/store', [WhatsappController::class, 'whatsappSendMessageStore'])->name('send_whatsapp_message.store');
     Route::delete('/whatsapp-send-messages/destroy/{id}', [WhatsappController::class, 'whatsappSendMessageDestroy'])->name('whatsapp_send_message.destroy');

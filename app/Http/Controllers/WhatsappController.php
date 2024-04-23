@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\PayrollType;
+use App\Models\student\tblstudentModel;
 use App\Models\user\tbluserModel;
 use App\Models\WhatappUserDetail;
 use App\Models\WhatsappSentMessage;
@@ -39,7 +40,7 @@ class WhatsappController extends Controller
 
         $type = $request->type ?? '';
 
-        $data = WhatsappSentMessage::query();
+        $data = WhatsappSentMessage::with('student');
 
         if ($request->standard) {
             $data->where('standard_id', $request->standard);
@@ -176,10 +177,45 @@ class WhatsappController extends Controller
         return [$textSections,$hrefLinks];
     }
 
+    public function index(Request $request)
+    {
+        if (session()->has('data')) { // check if it exists
+            $data_arr = session('data'); // to retrieve value
+            if (isset($data_arr['message'])) {
+                $data['message'] = $data_arr['message'];
+            }
+        }
+
+        $data['data'] = array();
+        $type = $request->input('type');
+
+        return is_mobile($type, "whatsapp/whatsapp_send_messages/create", $data, "view");
+    }
+    public function create(Request $request)
+    {
+
+        $type = $request->input('type');
+        $student_data = SearchStudent($request->get('grade'), $request->get('standard'), $request->get('division'));
+        $responce_arr['grade'] = $request->get('grade');
+        $responce_arr['standard'] = $request->get('standard');
+        $responce_arr['division'] = $request->get('division');
+
+        foreach ($student_data as $id => $arr) {
+
+            $responce_arr['stu_data'][$id]['sr.no'] = $id + 1;
+            $responce_arr['stu_data'][$id]['enrollment_no'] = $arr['enrollment_no'];
+            $responce_arr['stu_data'][$id]['name'] = $arr['first_name'].' '.$arr['middle_name'].' '.$arr['last_name'];
+            $responce_arr['stu_data'][$id]['student_id'] = $arr['student_id'];
+            $responce_arr['stu_data'][$id]['mobile'] = $arr['mobile'];
+        }
+
+        return is_mobile($type, "whatsapp/whatsapp_send_messages/add", $responce_arr, "view");
+    }
+
 
     public function whatsappSendMessageStore(Request $request)
     {
-        return $request->all();
+        //return $request->all();
         $type = $request->type ?? '';
         $request->validate([
             'message' => 'required'
@@ -188,6 +224,7 @@ class WhatsappController extends Controller
         $token = WhatappUserDetail::where('sub_institute_id', session()->get('sub_institute_id'))->first();
         $searchStudent = SearchStudent($request->grade, $request->standard, $request->division, session()->get('sub_institute_id'));
         //$searchStudent = SearchStudent();
+
 
         list($textArray, $hrefArray) = $this->mediaFound($request->message);
         if (count($hrefArray) == 0) {
@@ -204,7 +241,35 @@ class WhatsappController extends Controller
 
             $prepareMessageBody['contentSid'] = "HX865d745b08b3a55e94c4a43c97fbabc5";
         }
-        foreach ($searchStudent as $student) {
+
+        foreach ($request->sendNotification as $gr_no => $on) {
+            $student = tblstudentModel::where([['enrollment_no',$gr_no],['sub_institute_id',session()->get('sub_institute_id')]])->first();
+            if (!empty($token) && !empty($student)) {
+                $messagingServiceSid = 'MGdec43b1bbd9428a72fa0c7a633905319';
+                $client = new Client($token['user_whatsapp_sid'], $token['user_whatsapp_token']);
+                $client->messages->create(
+                    'whatsapp:+91' . $student['mobile'],
+                    [
+                        "contentSid" => $prepareMessageBody['contentSid'],
+                        "messagingServiceSid" => $messagingServiceSid,
+                        "from" => "whatsapp:" . $token['user_whatsapp_no'],
+                        "contentVariables" => $prepareMessageBody['contentVariables']
+                    ]
+                );
+                $saveMesasge = new WhatsappSentMessage();
+                $saveMesasge->sub_institute_id = session()->get('sub_institute_id');
+                $saveMesasge->syear = session()->get('syear');
+                $saveMesasge->standard_id = $request->standard;
+                $saveMesasge->division_id = $request->division;
+                $saveMesasge->student_id = $student['id'];
+                $saveMesasge->message = $request->message;
+                $saveMesasge->sent_date = Carbon::today();
+                $saveMesasge->created_by = session()->get('user_profile_id');
+                $saveMesasge->created_by_name = session()->get('name');
+                $saveMesasge->save();
+            }
+        }
+       /* foreach ($searchStudent as $student) {
             if (!empty($token)) {
                 $messagingServiceSid = 'MGdec43b1bbd9428a72fa0c7a633905319';
                 $client = new Client($token['user_whatsapp_sid'], $token['user_whatsapp_token']);
@@ -230,7 +295,7 @@ class WhatsappController extends Controller
                 $saveMesasge->save();
 
             }
-        }
+        }*/
 
 
         return is_mobile($type, 'whatsapp-send-messages', [], "redirect");
