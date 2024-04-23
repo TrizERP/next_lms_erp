@@ -45,8 +45,7 @@ class tbluserController extends Controller
         $data = tbluserprofilemasterModel::where(['sub_institute_id' => $sub_institute_id, 'status' => '1'])->get()->toArray();
         $dataCustomFields = tblcustomfieldsModel::where([
             'sub_institute_id' => $sub_institute_id, 'status' => "1", 'table_name' => "tbluser",
-        ])
-            ->get();
+        ])->get();
 
         $subject_data = subjectModel::where(['sub_institute_id' => $sub_institute_id])->get();
         $employees = tbluserModel::where('sub_institute_id',$sub_institute_id)->where('status',1)->get();
@@ -64,6 +63,19 @@ class tbluserController extends Controller
         if (count($finalfieldsData) > 0) {
             view()->share('data_fields', $finalfieldsData);
         }
+
+        // auto increament 20-04-24
+        $maxEmpCode = DB::table('tbluser')->selectRaw("MAX(CAST(employee_no AS INT)) AS new_emp_code")
+        ->where('sub_institute_id', $sub_institute_id)->whereRaw('employee_no is not null')->limit(1)->orderBy('id')->get()->toArray();
+
+            $maxEmpCode = array_map(function ($value) {
+                return (array) $value;
+            }, $maxEmpCode);
+
+        $new_emp_code = ($maxEmpCode['0']['new_emp_code'] + 1) ?? 1;
+     
+        view()->share('new_emp_code', $new_emp_code);
+        // end 20-04-24
         view()->share('custom_fields', $dataCustomFields);
         view()->share('subject_data', $subject_data);
         view()->share('user_profiles', $data);
@@ -227,6 +239,23 @@ class tbluserController extends Controller
         if (count($finalfieldsData) > 0) {
             $res['data_fields'] = $finalfieldsData;
         }
+
+        // auto increament 20-04-24
+        $empCode = DB::table('tbluser')->where('id',$id)->first();
+
+        if(!isset($empCode->employee_no) || $empCode->employee_no=='' || $empCode->employee_no==null){
+            $maxEmpCode = DB::table('tbluser')->selectRaw("MAX(CAST(employee_no AS INT)) AS new_emp_code")
+            ->where('sub_institute_id', $sub_institute_id)->whereRaw('employee_no is not null')->limit(1)->orderBy('id')->get()->toArray();
+
+            $maxEmpCode = array_map(function ($value) {
+                    return (array) $value;
+                }, $maxEmpCode);
+
+            $new_emp_code = ($maxEmpCode['0']['new_emp_code'] + 1) ?? 1;
+        }else{
+            $new_emp_code = $empCode->employee_no ? $empCode->employee_no : 1;
+        }
+        // end  20-04-24
         $res['departments'] = DB::table('hrms_departments')->where('status',1)->get()->toArray();
         $res['employees'] = tbluserModel::where('sub_institute_id',$sub_institute_id)->get();
         $res['job_titles'] = HrmsJobTitle::where('sub_institute_id',$sub_institute_id)->get();
@@ -234,6 +263,7 @@ class tbluserController extends Controller
         $res['subject_data'] = $subject_data;
         $res['subject_data_selected_arr'] = $subject_data_selected_arr;
         $res['user_profiles'] = $data;
+        $res['new_emp_code'] = $new_emp_code;
         $res['data'] = $editData;
         // echo "<pre>";print_r($res);exit;
         return is_mobile($type, "user/edit_user", $res, "view");
@@ -258,7 +288,7 @@ class tbluserController extends Controller
         }
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $type = $request->input('type');
-
+        // echo "<pre>";print_r($request->all());exit;
         $file_name = "";
         if ($request->hasFile('user_image')) {
             $file = $request->file('user_image');

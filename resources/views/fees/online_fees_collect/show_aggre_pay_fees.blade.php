@@ -153,7 +153,10 @@
                                             @endphp
                                             <td>
                                                 <div class="checkbox checkbox-info">
-                                                    <input id="{{$id}}" name="months[{{$id}}]" value="{{$id}}" {{$slected}}> class="months" type="checkbox" {{$disabled}} data-no="{{$no}}" @endphp>
+                                                    {{-- <input type="checkbox" id="{{$id}}" name="months[{{$id}}]" value="{{$id}}" {{$slected}}> class="months" type="checkbox" {{$disabled}} data-no="{{$no}}">
+                                                    <label for="{{$id}}">{{$val}}</label> --}}
+                                                    <!-- 22-04-24 by uma  -->
+                                                    <input id="{{$id}}" name="months[{{$id}}]" value="{{$id}}" {{$slected}} class="months" type="checkbox" @php echo $disabled; echo 'data-no='.$no; @endphp>
                                                     <label for="{{$id}}">{{$val}}</label>
                                                 </div>
                                             </td>

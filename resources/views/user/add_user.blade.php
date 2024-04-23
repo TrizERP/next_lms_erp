@@ -242,7 +242,7 @@
 
                     <div class="col-md-4 form-group">
                         <label>Employee Id</label>
-                        <input type="text" id='employee_no' name="employee_no" class="form-control">
+                        <input type="text" id='employee_no' name="employee_no" class="form-control" value="{{$new_emp_code}}">
                     </div>
 
                     <div class="col-md-4 form-group">

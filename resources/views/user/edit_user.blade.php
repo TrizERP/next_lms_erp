@@ -29,6 +29,7 @@ br {
                 <div class="col-lg-12 col-sm-12 col-xs-12">
                     @php
                     $departments = $data['departments'];
+                    $new_emp_code = $data['new_emp_code'];
                     $employees = $data['employees'];
                     $job_titles = $data['job_titles'];
                     $user_profiles = $data['user_profiles'];
@@ -252,7 +253,7 @@ br {
                             </div>
                             <div class="col-md-4 form-group">
                                 <label>Employee Id</label>
-                                <input type="text" id='employee_no' name="employee_no" class="form-control"  @if($data['employee_no']!=0) value="{{$data['employee_no']}}" @endif>
+                                <input type="text" id='employee_no' name="employee_no" class="form-control"  value="{{$new_emp_code}}">
                             </div>
                             <div class="col-md-4 form-group">
                                 <label>Joining Date</label>
