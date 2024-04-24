@@ -323,7 +323,7 @@ class HrmsController extends Controller
         $department_id = $request->input('department_id');
 	    $employee_id = $request->get('employee_id');
 	
-	    $employees = tbluserModel::where('sub_institute_id', $sub_institute_id)->where('department_id', $department_id)->get()->toArray();
+	    $employees = tbluserModel::where('sub_institute_id', $sub_institute_id)->where('status',1)->where('department_id', $department_id)->get()->toArray(); // 23-04-24 by uma
 
         return response()->json(['employees' => $employees, 'department_id' => $department_id, 'employee_id' =>$employee_id]);
     }
@@ -347,7 +347,7 @@ class HrmsController extends Controller
 
         $departments = HrmsDepartment::where('status', true)->pluck('department', 'id');
 
-        $employees = tbluserModel::where('sub_institute_id', $sub_institute_id)->where('department_id', $department_id)->get()->toArray();
+        $employees = tbluserModel::where('sub_institute_id', $sub_institute_id)->where('status',1)->where('department_id', $department_id)->get()->toArray();  // 23-04-24 by uma
         
         $hrmsList = DB::table('hrms_attendances as ha')
         ->join('tbluser as u', 'u.id', '=', 'ha.user_id')
@@ -355,6 +355,7 @@ class HrmsController extends Controller
         ->where('ha.sub_institute_id', $sub_institute_id)
         ->whereBetween('ha.day', [$from_date_formatted, $to_date_formatted])
         ->where('ha.user_id', $employee_id)
+        ->where('u.status',1)  // 23-04-24 by uma
         ->get()
         ->toArray();
 
@@ -366,6 +367,7 @@ class HrmsController extends Controller
         ->where('hel.from_date','>=',$from_date_formatted)
         ->where('hel.to_date','<=',$to_date_formatted)
         ->where('hel.user_id', $employee_id)
+        ->where('u.status',1)  // 23-04-24 by uma
         ->get()->toArray();
         
         $get_hrms_holidays = DB::table('hrms_holidays')

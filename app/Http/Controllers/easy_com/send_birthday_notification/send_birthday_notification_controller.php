@@ -36,7 +36,7 @@ class send_birthday_notification_controller extends Controller
             ->join('gcm_users', function ($join) {
                 $join->on('tbluser.mobile', '=', 'gcm_users.mobile_no')
                     ->on('tbluser.sub_institute_id', '=', 'gcm_users.sub_institute_id');
-            })->where('status', 1)
+            })->where('tbluser.status', 1) // 23-04-24 by uma
             ->where(DB::raw('DAY(birthdate)'), DB::raw('DAY(CURDATE())'))
             ->where(DB::raw('MONTH(birthdate)'), DB::raw('MONTH(CURDATE())'))
             ->get();

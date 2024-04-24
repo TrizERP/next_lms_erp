@@ -11,6 +11,6 @@ class EmployeeMonthlySalaryData extends Model
     use HasFactory;
     public $fillable =['employee_id','employee_salary_data','year','sub_institute_id','month','year','total_deduction','total_payment','received_by','total_day'];
     public function getUser(){
-        return $this->hasOne(tbluserModel::class,'id','employee_id');
+        return $this->hasOne(tbluserModel::class,'id','employee_id')->where('status',1); // 23-04-24 by uma
     }
 }

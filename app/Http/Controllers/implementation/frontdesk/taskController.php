@@ -34,10 +34,10 @@ class taskController extends Controller
 
         $data = DB::table("task as t")
             ->join('tbluser as u', function ($join) use ($sub_institute_id) {
-                $join->whereRaw("t.TASK_ALLOCATED = u.id AND u.sub_institute_id = '".$sub_institute_id."'");
+                $join->whereRaw("t.TASK_ALLOCATED = u.id AND u.sub_institute_id = '".$sub_institute_id."'")->where('u.status',1);  // 23-04-24 by uma
             })
             ->join('tbluser as u2', function ($join) use ($sub_institute_id) {
-                $join->whereRaw("t.TASK_ALLOCATED_TO = u2.id AND u2.sub_institute_id = '".$sub_institute_id."'");
+                $join->whereRaw("t.TASK_ALLOCATED_TO = u2.id AND u2.sub_institute_id = '".$sub_institute_id."'")->where('u2.status',1);  // 23-04-24 by uma
             })
             ->selectRaw("t.*, CONCAT_WS(' ',u.first_name,u.middle_name,u.last_name) AS ALLOCATOR, CONCAT_WS(' ',u2.first_name,u2.middle_name,u2.last_name) AS ALLOCATED_TO")
             ->where("t.SYEAR", "=", $syear);
@@ -77,7 +77,7 @@ class taskController extends Controller
         $syear = $request->session()->get("syear");
         $user_id = $request->session()->get("user_id");
 
-        $users = tbluserModel::where(["sub_institute_id" => $sub_institute_id])->whereRaw("id != '".$user_id."'")->get()->toArray();
+        $users = tbluserModel::where(["sub_institute_id" => $sub_institute_id])->where('status',1)->whereRaw("id != '".$user_id."'")->get()->toArray();  // 23-04-24 by uma
 
         $res['status_code'] = 1;
         $res['message'] = "Success";
@@ -161,10 +161,10 @@ class taskController extends Controller
 
         $result = DB::table("task as t")
             ->join('tbluser as u', function ($join) use ($sub_institute_id) {
-                $join->whereRaw("t.TASK_ALLOCATED = u.id AND u.sub_institute_id = '".$sub_institute_id."'");
+                $join->whereRaw("t.TASK_ALLOCATED = u.id AND u.sub_institute_id = '".$sub_institute_id."'")->where('u.status',1);  // 23-04-24 by uma
             })
             ->join('tbluser as u2', function ($join) use ($sub_institute_id) {
-                $join->whereRaw("t.TASK_ALLOCATED_TO = u2.id AND u2.sub_institute_id = '".$sub_institute_id."'");
+                $join->whereRaw("t.TASK_ALLOCATED_TO = u2.id AND u2.sub_institute_id = '".$sub_institute_id."'")->where('u2.status',1);  // 23-04-24 by uma
             })
             ->selectRaw("t.*, CONCAT_WS(' ',u.first_name,u.middle_name,u.last_name) AS ALLOCATOR, 
             CONCAT_WS(' ',u2.first_name,u2.middle_name,u2.last_name) AS ALLOCATED_TO")
@@ -177,7 +177,7 @@ class taskController extends Controller
 
         $editData = $result[0];
 
-        $users = tbluserModel::where(["sub_institute_id" => $sub_institute_id])->whereRaw("id != '".$user_id."'")->get()->toArray();
+        $users = tbluserModel::where(["sub_institute_id" => $sub_institute_id])->where('status',1)->whereRaw("id != '".$user_id."'")->get()->toArray();  // 23-04-24 by uma
 
         $dataResult = DB::table("complaint_status")
             ->where("TYPE", "=", 'TASK')

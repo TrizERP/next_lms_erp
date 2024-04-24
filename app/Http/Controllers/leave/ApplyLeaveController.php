@@ -28,7 +28,7 @@ class ApplyLeaveController extends Controller
 
         try {
             $departments = HrmsDepartment::where('status', true)->pluck('department', 'id');
-            $users = tbluserModel::where('sub_institute_id', $sub_institute_id)->get();
+            $users = tbluserModel::where('sub_institute_id', $sub_institute_id)->where('status',1)->get();   // 23-04-24 by uma
             //echo("<pre>");print_r($users);exit;
             $leave_types = HrmsLeaveType::get();
             return view('leave.apply_leave', compact('departments', 'users', 'leave_types'));
@@ -40,7 +40,7 @@ class ApplyLeaveController extends Controller
     public function getEmployees(Request $request)
     {
         $departmentId = $request->input('department_id');
-        $employees = tbluserModel::where('department_id', $departmentId)->get();
+        $employees = tbluserModel::where('department_id', $departmentId)->where('status',1)->get();
 
         return response()->json(['employees' => $employees]);
     }
@@ -51,7 +51,7 @@ class ApplyLeaveController extends Controller
 
         try {
             $departments = HrmsDepartment::where('status', true)->pluck('department', 'id');
-            $users = tbluserModel::where('sub_institute_id', $sub_institute_id)->get();
+            $users = tbluserModel::where('sub_institute_id', $sub_institute_id)->where('status',1)->get();  // 23-04-24 by uma
             $leave_types = HrmsLeaveType::get();
             return view('leave.import_leave', compact('departments', 'users', 'leave_types'));
         } catch (Exception $e) {

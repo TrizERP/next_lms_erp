@@ -106,7 +106,7 @@ class leaveApplicationController extends Controller
                 $join->whereRaw("pc.student_id = s.id AND se.syear = pc.syear");
             })
             ->leftJoin('tbluser as u', function ($join) {
-                $join->whereRaw("u.id = pc.reply_by");
+                $join->whereRaw("u.id = pc.reply_by")->where('u.status',1);  // 23-04-24 by uma
             })
             ->selectRaw("s.*,se.syear,se.student_id,se.grade_id,se.standard_id,se.section_id,se.student_quota,
                     se.start_date,se.end_date,se.enrollment_code,se.drop_code,se.drop_remarks,se.drop_remarks,se.term_id,se.remarks,
@@ -477,7 +477,7 @@ class leaveApplicationController extends Controller
                     $join->whereRaw("ct.standard_id = se.standard_id and ct.division_id = se.section_id and se.sub_institute_id = ct.sub_institute_id");
                 })
                 ->leftJoin('tbluser as u', function ($join) {
-                    $join->whereRaw("u.id=la.reply_by AND u.sub_institute_id = la.sub_institute_id");
+                    $join->whereRaw("u.id=la.reply_by AND u.sub_institute_id = la.sub_institute_id")->where('u.status',1);  // 23-04-24 by uma
                 })
                 ->selectRaw("la.id as leave_app_id,concat_ws(' ',s.first_name,s.middle_name,s.last_name) as student_name,
                     if(s.image = '','',concat('https://".$_SERVER['SERVER_NAME']."/storage/student/',s.image)) as student_image,

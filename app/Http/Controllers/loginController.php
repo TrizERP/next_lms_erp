@@ -153,6 +153,7 @@ class loginController extends Controller
                         m.client_id)");
                         })->selectRaw('GROUP_CONCAT(distinct m.id) AS MID')
                         ->whereIn('u.sub_institute_id', explode(',', $udata['sub_institute_id']))
+                        ->where('u.status',1) // 23-04-24 by uma
                         ->where('u.id', $udata['id'])->get()->toArray();
                     //END FOR MULTI-INSTITUTE
                 } else {
@@ -166,6 +167,7 @@ class loginController extends Controller
                         m.sub_institute_id)");
                         })->selectRaw('GROUP_CONCAT(distinct m.id) AS MID')
                         ->whereIn('u.sub_institute_id', explode(',', $udata['sub_institute_id']))
+                        ->where('u.status',1) // 23-04-24 by uma
                         ->where('u.id', $udata['id'])->get()->toArray();
                 }
             }
@@ -440,7 +442,7 @@ class loginController extends Controller
                 })->join('school_setup as s', function ($join) {
                     $join->on('.sub_institute_id', '=', 's.Id');
                 })->selectRaw('u.*,um.name AS profile,s.SchoolName AS school_name')
-                ->where('u.mobile', $mobile_number)->get()->toArray();
+                ->where('u.mobile', $mobile_number)->where('u.status',1)->get()->toArray(); // 23-04-24 by uma
 
             $data = array_map(function ($value) {
                 return (array) $value;
@@ -489,8 +491,8 @@ class loginController extends Controller
     
         if ($check_multilogin === "No") {
             $hostname = gethostname();
-            $ip = gethostbyname($hostname);
-            $stored_ip = DB::table('tbluser')->where('id', $user_id)->value('login_ip');
+            $ip = gethostbyname($hostname); 
+            $stored_ip = DB::table('tbluser')->where('status',1)->where('id', $user_id)->value('login_ip'); // 23-04-24 by uma
     
             if ($stored_ip !== '' && $stored_ip !== $user_token) {
                 $status = "logout";            

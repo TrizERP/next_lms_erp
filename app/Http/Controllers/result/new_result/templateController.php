@@ -13,7 +13,13 @@ class templateController extends Controller
     public function index(Request $request)
     {   $type = $request->input('type');
         $sub_institute_id = session()->get('sub_institute_id');
-        $data['data'] =result_template::join('tbluser','tbluser.id','=','result_template_master.created_by')->where('result_template_master.sub_institute_id',$sub_institute_id)->orderBy('result_template_master.sort_order')->selectRaw('result_template_master.id as id,result_template_master.module_name,result_template_master.title,result_template_master.html_content,result_template_master.created_by,result_template_master.created_at,result_template_master.status,CONCAT(tbluser.first_name," ",tbluser.middle_name," ",tbluser.last_name) as user_created')->get()->toArray();
+        $data['data'] =result_template::join('tbluser',function($join){
+            $join->on('tbluser.id','=','result_template_master.created_by')->where('tbluser.status',1);  // 23-04-24 by uma
+        })
+        ->where('result_template_master.sub_institute_id',$sub_institute_id)
+        ->orderBy('result_template_master.sort_order')
+        ->selectRaw('result_template_master.id as id,result_template_master.module_name,result_template_master.title,result_template_master.html_content,result_template_master.created_by,result_template_master.created_at,result_template_master.status,CONCAT(tbluser.first_name," ",tbluser.middle_name," ",tbluser.last_name) as user_created')
+        ->get()->toArray();
         $data['status_code'] = 1;
         $data['message'] = "SUCCESS";
         // echo "<pre>";print_r($data['data']);exit;

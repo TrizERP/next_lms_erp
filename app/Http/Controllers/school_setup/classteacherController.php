@@ -51,7 +51,9 @@ class classteacherController extends Controller
                 // });
             })
             ->join('division as d', 'd.id', '=', 'ct.division_id')
-            ->join('tbluser as u', 'u.id', '=', 'ct.teacher_id')
+            ->join('tbluser as u',function($join){
+                $join->on('u.id', '=', 'ct.teacher_id')->where('u.status',1);  // 23-04-24 by uma
+            })
             ->where(['ct.sub_institute_id' => $sub_institute_id, 'ct.syear' => $syear])
             ->orderBy('a.sort_order')
             ->orderBy('s.sort_order')
@@ -92,6 +94,7 @@ class classteacherController extends Controller
                 'class_teacher.division_id'      => $request->get('division'),
                 'class_teacher.syear'            => $syear,
             ])
+            ->where('u.status',1)   // 23-04-24 by uma
             ->first();
         // display teacher name whom lecture is assigned
         if (!empty($data) && isset($data->first_name)) {

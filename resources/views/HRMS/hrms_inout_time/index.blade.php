@@ -118,7 +118,7 @@
                         $user_id = $data['hrms_attendance']->user_id ?? '';
                         $sub_institute_id = $data['hrms_attendance']->sub_institute_id ?? '';
 
-                        $get_employe_name = DB::table('tbluser')->where(['id' => $user_id, 'sub_institute_id' => $sub_institute_id])->first();
+                        $get_employe_name = DB::table('tbluser')->where(['id' => $user_id, 'sub_institute_id' => $sub_institute_id])->where('status',1)->first();
                     }
                     @endphp
                     <tbody>

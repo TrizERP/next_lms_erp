@@ -629,7 +629,9 @@ class studentAttendanceController extends Controller
                     DB::raw("IF(u.image = '', 'https://" . $_SERVER['SERVER_NAME'] . "/storage/student/noimages.png', CONCAT('https://" . $_SERVER['SERVER_NAME'] . "/storage/user/', u.image)) AS image"),
                     'u.mobile',
                     DB::raw("GROUP_CONCAT(DISTINCT s.display_name) AS subject_name")
-                )->join('tbluser as u', 'u.id', '=', 't.teacher_id')
+                )->join('tbluser as u',function($join){
+                    $join->on('u.id', '=', 't.teacher_id')->where('u.status',1);  // 23-04-24 by uma
+                })
                 ->join('sub_std_map as s', 's.subject_id', '=', 't.subject_id')
                 ->where('t.syear', '=', $syear)
                 ->where('t.sub_institute_id', '=', $sub_institute_id)

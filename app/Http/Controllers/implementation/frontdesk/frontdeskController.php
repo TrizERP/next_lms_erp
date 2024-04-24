@@ -33,7 +33,7 @@ class frontdeskController extends Controller
                 $join->whereRaw("s.id = fd.STUDENT_ID");
             })
             ->join('tbluser as u', function ($join) {
-                $join->whereRaw("u.id = fd.TO_WHOM_MEET");
+                $join->whereRaw("u.id = fd.TO_WHOM_MEET")->where('u.status',1);  // 23-04-24 by uma
             })
             ->selectRaw("fd.*,CONCAT_WS(' ',s.first_name,s.middle_name,s.last_name) as student_name,CONCAT_WS(' ',u.first_name,u.middle_name,u.last_name) as user_name")
             ->where("fd.SUB_INSTITUTE_ID", "=", $sub_institute_id);
@@ -63,7 +63,7 @@ class frontdeskController extends Controller
         $syear = $request->session()->get("syear");
         $user_id = $request->session()->get("user_id");
 
-        $users = tbluserModel::where(["sub_institute_id" => $sub_institute_id])->whereRaw("id != '".$user_id."'")->get()->toArray();
+        $users = tbluserModel::where(["sub_institute_id" => $sub_institute_id])->whereRaw("id != '".$user_id."'")->where('status',1)->get()->toArray();  // 23-04-24 by uma
 
         $res['status_code'] = 1;
         $res['message'] = "Success";
@@ -152,7 +152,7 @@ class frontdeskController extends Controller
                 $join->whereRaw("s.id = fd.STUDENT_ID");
             })
             ->join('tbluser as u', function ($join) {
-                $join->whereRaw("u.id = fd.TO_WHOM_MEET");
+                $join->whereRaw("u.id = fd.TO_WHOM_MEET")->where('u.status',1);  // 23-04-24 by uma
             })
             ->selectRaw("fd.*,CONCAT_WS(' ',s.first_name,s.middle_name,s.last_name) as student_name,
                 CONCAT_WS(' ',u.first_name,u.middle_name,u.last_name) as user_name")
@@ -167,7 +167,7 @@ class frontdeskController extends Controller
 
         $editData = $result[0];
 
-        $users = tbluserModel::where(["sub_institute_id" => $sub_institute_id])->whereRaw("id != '".$user_id."'")->get()->toArray();
+        $users = tbluserModel::where(["sub_institute_id" => $sub_institute_id])->whereRaw("id != '".$user_id."'")->where('status',1)->get()->toArray();  // 23-04-24 by uma
 
         return view('frontdesk/edit_frontdesk', ['data' => $editData, 'userList' => $users]);
     }
@@ -266,7 +266,7 @@ class frontdeskController extends Controller
                 $join->whereRaw("f.STUDENT_ID = s.id AND f.SUB_INSTITUTE_ID = s.sub_institute_id");
             })
             ->join('tbluser as u', function ($join) {
-                $join->whereRaw("u.id = f.TO_WHOM_MEET");
+                $join->whereRaw("u.id = f.TO_WHOM_MEET")->where('u.status',1); // 23-04-24 by uma
             })
             ->selectRaw("f.*, CONCAT_WS(' ',s.first_name,s.last_name) AS student_name, CONCAT_WS(' ',u.first_name,u.last_name) AS staff_name")
             ->where("f.SUB_INSTITUTE_ID", "=", $sub_institute_id)

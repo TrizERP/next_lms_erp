@@ -478,7 +478,7 @@ class studentHomeworkController extends Controller
                 })->join('subject as ss', function ($join) {
                     $join->whereRaw('ss.id = h.subject_id AND ss.sub_institute_id = h.sub_institute_id');
                 })->leftJoin('tbluser as tu', function ($join) {
-                    $join->whereRaw('tu.id = h.created_by');
+                    $join->whereRaw('tu.id = h.created_by')->where('tu.status',1);   // 23-04-24 by uma
                 })->selectRaw("h.id,h.title,h.description,h.created_by,DATE_FORMAT(h.date,'%d-%m-%Y') AS date, 
                     if(h.image = '','',concat('https://".$_SERVER['SERVER_NAME']."/storage/student/',h.image)) as file_name,
                     s.name AS standard_name,d.name AS division_name,ss.subject_name, 
@@ -542,7 +542,7 @@ class studentHomeworkController extends Controller
                     ->join('sub_std_map as s', function ($join) {
                         $join->where('s.subject_id = t.subject_id');
                     })->join('tbluser as tu', function ($join) {
-                        $join->where('tu.id = t.teacher_id');
+                        $join->where('tu.id = t.teacher_id')->where('tu.status',1);   // 23-04-24 by uma
                     })->selectRaw("display_name AS subject_name,elective_subject,allow_grades,t.teacher_id,
                         concat_ws(' ',tu.first_name,tu.middle_name,tu.last_name) as teacher_name")
                     ->where('t.syear', $syear)

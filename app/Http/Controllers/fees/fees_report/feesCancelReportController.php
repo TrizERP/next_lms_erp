@@ -63,7 +63,7 @@ class feesCancelReportController extends Controller
                 //     $query->where('s.marking_period_id',$marking_period_id);
                 // });
             })->join('tbluser as u', function ($join) {
-                $join->whereRaw('u.id = fc.cancelled_by');
+                $join->whereRaw('u.id = fc.cancelled_by')->where('u.status',1); // 23-04-24 by uma
             })->selectRaw("fc.id,fc.reciept_id,ts.enrollment_no, CONCAT_WS(' ',ts.first_name,ts.middle_name,ts.last_name)
                 AS student_name,ts.admission_year,te.student_quota,s.name as std_name,fc.amountpaid,fc.cancel_type,
                 fc.cancel_remark, DATE_FORMAT(fc.cancel_date,'%d-%m-%Y') AS cancel_date, CONCAT_WS(' ',u.first_name,u.middle_name,

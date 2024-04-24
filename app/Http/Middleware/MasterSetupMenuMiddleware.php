@@ -34,6 +34,7 @@ class MasterSetupMenuMiddleware
             })
             ->selectRaw('GROUP_CONCAT(distinct m.id) AS MID')
             ->where('u.sub_institute_id', $sub_institute_id)
+            ->where('u.status',1) // 23-04-24 by uma
             ->where('u.id', $user_id)->get()->toArray();
 
         $rightsQuery = array_map(function ($value) {

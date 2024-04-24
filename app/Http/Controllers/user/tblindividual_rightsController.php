@@ -16,7 +16,9 @@ class tblindividual_rightsController extends Controller {
     public function index(Request $request) {
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $user_data = tblindividual_rightsModel::select('tblindividual_rights.*', 'tbluserprofilemaster.name as profile_name', 'tblmenumaster.name as menu_name', 'tbluser.user_name as user_name')
-            ->join('tbluser', 'tblindividual_rights.user_id', '=', 'tbluser.id')
+            ->join('tbluser',function($join){
+                $join->on('tblindividual_rights.user_id', '=', 'tbluser.id')->where('tbluser.status',1); // 23-04-24 by uma
+            })
             ->join('tbluserprofilemaster', 'tblindividual_rights.profile_id', '=', 'tbluserprofilemaster.id')
             ->join('tblmenumaster', 'tblindividual_rights.menu_id', '=', 'tblmenumaster.id')
             ->where(['tblindividual_rights.sub_institute_id' => $sub_institute_id])

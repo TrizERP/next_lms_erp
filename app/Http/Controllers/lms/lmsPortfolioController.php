@@ -60,7 +60,8 @@ class lmsPortfolioController extends Controller
                 CONCAT_WS(" ",u.first_name,u.middle_name,u.last_name) as teacher_name'))
                 ->leftjoin("tbluser as u", function ($join) {
                     $join->on("u.id", "=", "lms_portfolio.feedback_by")
-                        ->on("u.sub_institute_id", "=", "lms_portfolio.sub_institute_id");
+                        ->on("u.sub_institute_id", "=", "lms_portfolio.sub_institute_id")
+                        ->where('u.status',1);  // 23-04-24 by uma
                 })
                 ->where([
                     'lms_portfolio.sub_institute_id' => $sub_institute_id, 'lms_portfolio.user_id' => $user_id,

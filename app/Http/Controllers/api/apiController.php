@@ -180,6 +180,7 @@ class apiController extends Controller
                 $data = DB::table("tbluser AS tu")
                     ->join('tbluserprofilemaster AS tpm', 'tpm.id', '=', 'tu.user_profile_id')
                     ->where(["tu.mobile" => $_REQUEST['mobile'], "tpm.name" => 'Teacher'])
+                    ->where('tu.status',1) // 23-04-24 by uma
                     ->update(["tu.otp" => $otp]);
 
                 $response['status'] = '1';
@@ -499,6 +500,7 @@ public function studentData($is_exist,$request,$student_id){
                     u.user_profile_id,group_concat(concat_ws('||',c.standard_id,c.division_id)) as standard_division,
                     group_concat(concat_ws('||',s.name,d.name)) as standard_division_title,ss.syear,ss.SchoolName,ss.Logo")
                 ->where('u.mobile', $_REQUEST['mobile'])
+                ->where('u.status',1) // 23-04-24 by uma
                 ->where('u.otp', $_REQUEST['otp'])->get()->toArray();
 
             $data = json_decode(json_encode($data), true);

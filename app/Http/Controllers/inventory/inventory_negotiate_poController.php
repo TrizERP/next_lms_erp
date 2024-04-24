@@ -34,7 +34,7 @@ class inventory_negotiate_poController extends Controller
                 $join->whereRaw("`inventory_generate_po_details`.`po_number` = `inventory_negotiate_po_details`.`po_number`");
             })
             ->leftJoin('tbluser', function ($join) {
-                $join->whereRaw("`tbluser`.`id` = `inventory_generate_po_details`.`po_approved_by`");
+                $join->whereRaw("`tbluser`.`id` = `inventory_generate_po_details`.`po_approved_by`")->where('tbluser.status',1);  // 23-04-24 by uma
             })
             ->leftJoin('inventory_requisition_status_master', function ($join) {
                 $join->whereRaw("`inventory_generate_po_details`.`po_approval_status` = `inventory_requisition_status_master`.`id`");

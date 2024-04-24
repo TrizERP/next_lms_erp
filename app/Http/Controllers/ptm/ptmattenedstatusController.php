@@ -388,7 +388,7 @@ class ptmattenedstatusController extends Controller
                     $join->whereRaw("cp.standard_id = se.standard_id");
                 })
                 ->join('tbluser as s', function ($join) use ($sub_institute_id) {
-                    $join->whereRaw("s.id= cp.teacher_id AND s.sub_institute_id = '".$sub_institute_id."'");
+                    $join->whereRaw("s.id= cp.teacher_id AND s.sub_institute_id = '".$sub_institute_id."'")->where('s.status',1);  // 23-04-24 by uma
                 })
                 ->join('tbluserprofilemaster as tup', function ($join) {
                     $join->whereRaw("tup.id = s.user_profile_id AND tup.name = 'Teacher'");
