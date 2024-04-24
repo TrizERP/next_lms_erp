@@ -170,24 +170,28 @@ class dashboardController extends Controller
                 $homeworkBlock = DB::table("homework as s")
                     ->selectRaw("COUNT(*) as total_homework")
                     ->where("s.sub_institute_id", "=", $sub_institute_id)
+                    ->where("s.syear", "=", $syear)
                     ->where("s.date", "=", date('Y-m-d'))
                     ->get()->toArray();
 
                 $circularBlock = DB::table("circular as s")
                     ->selectRaw("COUNT(*) as total_circular")
                     ->where("s.sub_institute_id", "=", $sub_institute_id)
+                    ->where("s.syear", "=", $syear)
                     ->where("s.date_", "=", date('Y-m-d'))
                     ->get()->toArray();
 
                 $diciplineBlock = DB::table("dicipline as s")
                     ->selectRaw("COUNT(*) as total_dicipline")
                     ->where("s.sub_institute_id", "=", $sub_institute_id)
+                    ->where("s.syear", "=", $syear)
                     ->where("s.date_", "=", date('Y-m-d'))
                     ->get()->toArray();
 
                 $NotificationBlock = DB::table("app_notification")
                     ->selectRaw("COUNT(*) as total_notification, notification_type")
                     ->where("sub_institute_id", "=", $sub_institute_id)
+                    ->where("syear", "=", $syear)
                     ->groupBy('notification_type')->get()->toArray();
 
                 if (count($NotificationBlock) > 0) {
@@ -250,6 +254,7 @@ class dashboardController extends Controller
                     ->selectRaw("l.*, CONCAT_WS(' ',s.first_name,s.middle_name,s.last_name) AS student_name,st.name AS standard_name,
             dt.name AS division_name")
                     ->where("l.sub_institute_id", "=", $sub_institute_id)
+                    ->where("l.syear", "=", $syear)
                     ->where("l.apply_date", "=", $date)
                     ->limit(10)
                     ->get()->toArray();
@@ -267,6 +272,7 @@ class dashboardController extends Controller
                     })
                     ->selectRaw("st.name as standard, dt.name, s.attendance_code, SUM(CASE WHEN s.attendance_code = 'A' THEN 1 ELSE 0 END) as absent, SUM(CASE WHEN s.attendance_code = 'P' THEN 1 ELSE 0 END) as present")
                     ->where("s.sub_institute_id", "=", $sub_institute_id)
+                    ->where("s.syear", "=", $syear)
                     ->where("s.attendance_date", "=", $date)
                     ->groupBy("s.standard_id")
                     ->get()->toArray();
@@ -1158,7 +1164,9 @@ class dashboardController extends Controller
                         $join->on("p.student_id", "=", "s.id");
                     })
                     ->selectRaw("p.*,CONCAT_WS(' ',s.first_name,s.last_name) as student_name, s.image as student_image")
-                    ->whereDate('p.date_', '=', $date)->where('p.sub_institute_id', '=', $sub_institute_id)
+                    ->whereDate('p.date_', '=', $date)
+                    ->where('p.sub_institute_id', '=', $sub_institute_id)
+                    ->where('p.syear', '=', $syear)
                     ->where('s.id', '=', $user_id)->orderBy('p.id', 'DESC')->limit(10)->get()->toArray();
             } else {
                 $parentCommunication = DB::table('parent_communication as p')
@@ -1166,7 +1174,9 @@ class dashboardController extends Controller
                         $join->on("p.student_id", "=", "s.id");
                     })
                     ->selectRaw("p.*,CONCAT_WS(' ',s.first_name,s.last_name) as student_name,s.image as student_image")
-                    ->whereDate('p.date_', '=', $date)->where('p.sub_institute_id', '=', $sub_institute_id)
+                    ->whereDate('p.date_', '=', $date)
+                    ->where('p.sub_institute_id', '=', $sub_institute_id)
+                    ->where('p.syear', '=', $syear)
                     ->orderBy('p.id', 'DESC')->limit(10)->get()->toArray();
             }
 
@@ -1183,6 +1193,7 @@ class dashboardController extends Controller
                 ->selectRaw("st.name as standard,dt.name,s.attendance_code, SUM(CASE WHEN s.attendance_code = 'A' THEN 1 ELSE 0 END) AS absent,
                     SUM(CASE WHEN s.attendance_code = 'P' THEN 1 ELSE 0 END) AS present")
                 ->where("s.sub_institute_id", "=", $sub_institute_id)
+                ->where("s.syear", "=", $syear)
                 ->where("s.attendance_date", "=", $date)
                 ->groupBy("s.standard_id")
                 ->get()->toArray();
@@ -1207,6 +1218,7 @@ class dashboardController extends Controller
                 ->selectRaw("COUNT(e.id) AS total_enquiry, COUNT(f.id) AS total_form ,COUNT(r.id) as total_registration,
                     s.name AS standard_name")
                 ->where("s.sub_institute_id", "=", $sub_institute_id)
+                ->where("e.syear", "=", $syear)
                 ->groupBy("s.id")->having('total_enquiry', '<>', 0)
                 ->get()->toArray();
 
@@ -1221,13 +1233,19 @@ class dashboardController extends Controller
                 ->get()->toArray();
 
             $smsParentBlock = DB::table('sms_sent_parents')->selectRaw('COUNT(*) as total_sms_parents')
-                ->where('sub_institute_id', $sub_institute_id)->get()->toArray();
+                ->where('sub_institute_id', $sub_institute_id)
+                ->where('syear', $syear)
+                ->get()->toArray();
 
             $smsStaffBlock = DB::table('sms_sent_staff')->selectRaw('COUNT(*) as total_sms_staff')
-                ->where('sub_institute_id', $sub_institute_id)->get()->toArray();
+                ->where('sub_institute_id', $sub_institute_id)
+                ->where('syear', $syear)
+                ->get()->toArray();
 
             $emailParentBlock = DB::table('email_sent_parents')->selectRaw('COUNT(*) as total_email_parents')
-                ->where('sub_institute_id', $sub_institute_id)->get()->toArray();
+                ->where('sub_institute_id', $sub_institute_id)
+                ->where('syear', $syear)
+                ->get()->toArray();
 
             $smsNotificationBlock['Total Sms Parents'] = $smsParentBlock[0]->total_sms_parents;
             $smsNotificationBlock['Total Sms Staff'] = $smsStaffBlock[0]->total_sms_staff;
@@ -1235,23 +1253,27 @@ class dashboardController extends Controller
 
             $homeworkBlock = DB::table('homework')->selectRaw('COUNT(*) as total_homework')
                 ->where('sub_institute_id', $sub_institute_id)
+                ->where('syear', $syear)
                 ->where('date', date('Y-m-d'))
                 ->where('created_by', $user_id)
                 ->get()->toArray();
 
             $circularBlock = DB::table('circular')->selectRaw('COUNT(*) as total_circular')
                 ->where('sub_institute_id', $sub_institute_id)
+                ->where('syear', $syear)
                 ->where('date_', date('Y-m-d'))
                 ->get()->toArray();
 
             $diciplineBlock = DB::table('dicipline')->selectRaw('COUNT(*) as total_dicipline')
                 ->where('sub_institute_id', $sub_institute_id)
+                ->where('syear', $syear)
                 ->where('date_', date('Y-m-d'))
                 ->where('created_by', $user_id)
                 ->get()->toArray();
 
             $NotificationBlock = DB::table('app_notification')->selectRaw('count(*) as total_notification,notification_type')
                 ->where('sub_institute_id', $sub_institute_id)
+                ->where('syear', $syear)
                 ->where(function ($q) use ($user_id) {
                     $q->where('student_id', $user_id)->orWhereNull('student_id');
                 })
@@ -1334,6 +1356,7 @@ class dashboardController extends Controller
                     })
                     ->selectRaw("h.*,CONCAT_WS(' ',s.first_name,s.last_name) as student_name, s.image as student_image")
                     ->where('h.sub_institute_id', $sub_institute_id)
+                    ->where('h.syear', $syear)
                     ->where('h.date', date('Y-m-d'))
                     ->where('h.student_id', $user_id)->get()->toArray();
 
@@ -1585,6 +1608,7 @@ class dashboardController extends Controller
                 })
                 ->selectRaw("p.*,CONCAT_WS(' ',s.first_name,s.last_name) as student_name,s.image as student_image")
                 ->where('p.sub_institute_id', '=', $sub_institute_id)
+                ->where('p.syear', '=', $syear)
                 ->where('p.date_', '=', $date)
                 ->orderBy('p.id')->limit(10)->get()->toArray();
 
@@ -1624,7 +1648,9 @@ class dashboardController extends Controller
                 ->orderByRaw("DATE_FORMAT(s.birthdate, '%m-%d')")
                 ->get()->toArray();
 
-            $calendarEvents = DB::table('calendar_events')->where('sub_institute_id', $sub_institute_id)
+            $calendarEvents = DB::table('calendar_events')
+            ->where('sub_institute_id', $sub_institute_id)
+            ->where('syear', $syear)
                 ->where('school_date', '>=', $date)->where('school_date', '<=', $date15)->get()->toArray();
 
             $studentLeaves = DB::table('leave_applications as l')
