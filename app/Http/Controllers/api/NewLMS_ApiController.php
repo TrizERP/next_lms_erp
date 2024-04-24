@@ -433,6 +433,7 @@ class NewLMS_ApiController extends Controller
                     ->selectRaw("id,user_name,mobile,email,password,first_name,last_name,
                     'https://erp.triz.co.in' as URL, gender,birthdate,sub_institute_id")
                     ->where('id', $new_user_id)
+                    ->where('status',1) // 23-04-24 by uma
                     ->where('sub_institute_id', $sub_institute_id)->get()->toArray();
 
                 $response['status'] = '1';
@@ -484,7 +485,8 @@ class NewLMS_ApiController extends Controller
     {
         $query = DB::table('tbluser')->selectRaw("id,email,'user' as user_type")
             ->where('mobile', $mobile_no)
-            ->where('email', $email);
+            ->where('email', $email)
+            ->where('status',1); // 23-04-24 by uma
 
         $check_user_sql = DB::table('tblstudent')
             ->selectRaw("id,email,'student' as user_type")

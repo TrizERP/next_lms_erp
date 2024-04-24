@@ -136,7 +136,7 @@ class co_scholastic_marks_entry_controller extends Controller
         $check_approve = DB::table('result_exam_approve')->where($approve_status)->first();
         // print_r($check_approve);exit;
         if(isset($check_approve->created_by)){
-            $approved_user = DB::table('tbluser')->where('id',$check_approve->created_by)->first();
+            $approved_user = DB::table('tbluser')->where('id',$check_approve->created_by)->where('status',1)->first();   // 23-04-24 by uma
         }
         $responce_arr['approve_status'] = $check_approve;
         $responce_arr['approved_user'] = $approved_user ?? '';    

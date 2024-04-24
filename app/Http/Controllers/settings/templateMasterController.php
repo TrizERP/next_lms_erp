@@ -29,7 +29,9 @@ class templateMasterController extends Controller
 
         $data['template_data'] = templateMasterModel::select('template_master.*',
             DB::raw('concat_ws(" ",u.first_name,u.middle_name,u.last_name) as created_by'))
-            ->join('tbluser as u', 'u.id', '=', 'template_master.created_by')
+            ->join('tbluser as u', function($join){
+                $join->on('u.id', '=', 'template_master.created_by')->where('u.status',1);   // 23-04-24 by uma
+            })
             ->where(['template_master.sub_institute_id' => $sub_institute_id])
             ->get()->toArray();
 

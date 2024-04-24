@@ -66,7 +66,7 @@ class inventory_item_wise_reportController extends Controller
                 $join->whereRaw("IM.ID=IRD.ITEM_ID");
             })
             ->join('tbluser as u', function ($join) {
-                $join->whereRaw("u.id = IRD.requisition_by");
+                $join->whereRaw("u.id = IRD.requisition_by")->where('u.status',1);   // 23-04-24 by uma
             })
             ->selectRaw('CONCAT_WS(" ",u.first_name,u.middle_name,u.last_name) AS REQUISITION_BY_NAME,IRD.REQUISITION_NO,
                 IRD.REQUISITION_BY,IRD.ITEM_ID,IRD.ITEM_QTY,IRD.APPROVED_QTY, DATE_FORMAT(IRD.REQUISITION_APPROVED_DATE, "%d-%m-%Y") 

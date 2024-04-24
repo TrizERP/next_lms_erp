@@ -89,8 +89,9 @@ class otherNew_CancelFeesReportController extends Controller
             })->join('division as d', function ($join) {
                 $join->whereRaw('se.section_id = d.id');
             })->join('tbluser as u', function ($join) {
-                $join->whereRaw('u.id = c.created_by AND u.sub_institute_id = c.sub_institute_id');
-            })->selectRaw(" CONCAT_WS(' ',s.first_name,s.middle_name,s.last_name) AS student_name,s.enrollment_no,s.mobile,
+                $join->whereRaw('u.id = c.created_by AND u.sub_institute_id = c.sub_institute_id')->where('u.status',1);  // 23-04-24 by uma
+            })
+            ->selectRaw(" CONCAT_WS(' ',s.first_name,s.middle_name,s.last_name) AS student_name,s.enrollment_no,s.mobile,
                 c.student_id, st.name AS standard_name,d.name AS division_name,h.display_name AS fees_head,c.cancellation_date,
                 c.cancellation_remarks,c.cancellation_amount,c.receipt_id, CONCAT_WS(' ',u.first_name,u.middle_name,u.last_name)
                 AS cancelled_by")

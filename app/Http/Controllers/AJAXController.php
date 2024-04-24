@@ -1059,6 +1059,7 @@ class AJAXController extends Controller
             })
             ->selectRaw('distinct(m.id),m.*,mm.link')
             ->where('u.sub_institute_id', $sub_institute_id)
+            ->where('u.status',1) // 23-04-24 by uma
             ->where('u.id', $user_id)
             ->where('m.main_menu_id', $main_menu_id)->get()->toArray();
 
@@ -1927,7 +1928,9 @@ class AJAXController extends Controller
             })->join('tblmenumaster as m', function ($join) use ($sub_institute_id) {
                 $join->whereRaw("(i.menu_id = m.id OR g.menu_id = m.id) AND FIND_IN_SET(" . $sub_institute_id . ", m.sub_institute_id)");
             })->selectRaw('GROUP_CONCAT(distinct m.id) AS MID')
-            ->where('u.sub_institute_id', $sub_institute_id)->where('u.id', $user_id)->get()->toArray();
+            ->where('u.sub_institute_id', $sub_institute_id)
+            ->where('u.status',1) // 23-04-24 by uma
+            ->where('u.id', $user_id)->get()->toArray();
 
         $rightsQuery = array_map(function ($value) {
             return (array)$value;

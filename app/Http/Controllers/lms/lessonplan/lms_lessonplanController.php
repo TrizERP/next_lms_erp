@@ -451,11 +451,11 @@ class lms_lessonplanController extends Controller
 
         $teacherData = DB::select("SELECT DISTINCT(teacher_id), CONCAT_WS(' ',u.first_name,u.middle_name,u.last_name) AS teacher_name,u.user_profile_id
             FROM timetable t
-            INNER JOIN tbluser u ON u.id = t.teacher_id AND u.sub_institute_id = t.sub_institute_id
+            INNER JOIN tbluser u ON u.id = t.teacher_id AND u.sub_institute_id = t.sub_institute_id AND u.status = 1
             WHERE t.sub_institute_id = '" . $sub_institute_id . "' AND t.standard_id = '" . $standard_id . "'
             AND t.division_id = '" . $division_id . "' AND t.subject_id = '" . $subject_id . "' AND t.syear = '" . $syear . "'
             ORDER BY first_name asc
-        ");
+        "); // 23-04-24 by uma
         $teacherData = json_decode(json_encode($teacherData), true);
 
         return $teacherData;

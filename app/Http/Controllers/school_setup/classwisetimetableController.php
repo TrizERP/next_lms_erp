@@ -65,7 +65,9 @@ class classwisetimetableController extends Controller
             'subject.subject_name', 'subject.subject_code', 'batch.title as batch_name')
             ->join('academic_section', 'academic_section.id', "=", 'timetable.academic_section_id')
             ->join('subject', 'subject.id', "=", 'timetable.subject_id')
-            ->join('tbluser', 'tbluser.id', "=", 'timetable.teacher_id')
+            ->join('tbluser',function($join){
+                $join->on('tbluser.id', "=", 'timetable.teacher_id')->where('tbluser.status',1);   // 23-04-24 by uma
+            })
             ->leftJoin('batch', 'batch.id', "=", 'timetable.batch_id')
             ->where([
                 'timetable.sub_institute_id'    => $sub_institute_id,
@@ -276,7 +278,7 @@ class classwisetimetableController extends Controller
                 })->join('subject as sub', function ($join) {
                     $join->whereRaw("sub.id = t.subject_id AND sub.sub_institute_id = t.sub_institute_id");
                 })->join('tbluser as u', function ($join) {
-                    $join->whereRaw("u.id = t.teacher_id AND u.sub_institute_id = t.sub_institute_id");
+                    $join->whereRaw("u.id = t.teacher_id AND u.sub_institute_id = t.sub_institute_id")->where('u.status',1);  // 23-04-24 by uma
                 })->leftJoin('period as p', function ($join) {
                     $join->whereRaw("p.id = t.period_id AND p.sub_institute_id = t.sub_institute_id");
                 })->leftJoin('batch as b', function ($join) {

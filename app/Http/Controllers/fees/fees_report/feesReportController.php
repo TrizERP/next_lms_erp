@@ -51,6 +51,7 @@ class feesReportController extends Controller
         ->join('tbluser as u', 'fc.created_by', '=', 'u.id')
         ->where('fc.syear', '=', $syear)
         ->where('fc.sub_institute_id', '=', $sub_institute_id)
+        ->where('u.status',1) // 23-04-24 by uma
         ->selectRaw('u.id, u.user_name')
         ->groupBy('fc.created_by')
         ->get()->toArray();
@@ -175,7 +176,9 @@ class feesReportController extends Controller
                         ->whereRaw('b.syear = te.syear');
                 })
             // ->Join('fees_collect as fp', 'fp.student_id', '=', 'te.student_id')
-            ->leftJoin('tbluser as u', 'fp.created_by', '=', 'u.id')
+            ->leftJoin('tbluser as u',function($join){
+                $join->on('fp.created_by', '=', 'u.id')->where('u.status',1); // 23-04-24 by uma
+            })
             ->whereRaw("1=1 " . $extra_fp)
 
             ->unionAll(function ($query) use ($sub_institute_id, $syear, $extra_fo, $extra_fp) {
@@ -201,7 +204,9 @@ class feesReportController extends Controller
                             ->whereRaw('b.syear = te.syear');
                     })
                 // ->leftJoin('fees_paid_other as fo', 'fo.student_id', '=', 'te.student_id')
-                ->leftJoin('tbluser as u', 'fo.created_by', '=', 'u.id')
+                ->leftJoin('tbluser as u',function($join){
+                    $join->on('fo.created_by', '=', 'u.id')->where('u.status',1); // 23-04-24 by uma
+                })
                 ->whereRaw("1=1 " . $extra_fo);
             });
         })
@@ -216,6 +221,7 @@ class feesReportController extends Controller
         ->join('tbluser as u', 'fc.created_by', '=', 'u.id')
         ->where('fc.syear', '=', $syear)
         ->where('fc.sub_institute_id', '=', $sub_institute_id)
+        ->where('u.status',1)  // 23-04-24 by uma
         ->selectRaw('u.id, u.user_name')
         ->groupBy('fc.created_by')
         ->get()->toArray();

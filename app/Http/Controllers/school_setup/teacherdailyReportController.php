@@ -27,6 +27,7 @@ class teacherdailyReportController extends Controller
         return tbluserModel::select('tbluser.*',
             DB::raw('concat(tbluser.first_name," ",tbluser.middle_name," ",tbluser.last_name) as teacher_name'))
             ->join('tbluserprofilemaster', 'tbluserprofilemaster.id', "=", 'tbluser.user_profile_id')
+            ->where('tbluser.status',1)   // 23-04-24 by uma
             ->where(['tbluser.sub_institute_id' => $sub_institute_id, 'tbluserprofilemaster.name' => 'Teacher'])
             ->get();
     }
@@ -68,8 +69,8 @@ class teacherdailyReportController extends Controller
                 JOIN standard cs ON cs.id = tt.standard_id
                 JOIN division ss ON ss.id = tt.division_id
                 JOIN academic_section sg ON sg.id = tt.academic_section_id
-                WHERE 1=1 AND tt.syear='".$syear."' AND ts.sub_institute_id = '".$sub_institute_id."'
-                ";
+                WHERE 1=1 AND tt.syear='".$syear."' AND ts.sub_institute_id = '".$sub_institute_id."' AND ts.status=1
+                ";   // 23-04-24 by uma
 
         if ($status == 'N') {
             $sql .= "AND (((

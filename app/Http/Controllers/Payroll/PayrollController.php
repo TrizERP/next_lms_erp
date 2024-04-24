@@ -251,7 +251,9 @@ class PayrollController extends Controller
         $res['headers'] = $header;
         $res['years'] = Helpers::getPairYears();
 
-        $res['salaryStructure'] = EmployeeSalaryStructure::join('tbluser as u','u.id','=','employee_salary_structures.employee_id')
+        $res['salaryStructure'] = EmployeeSalaryStructure::join('tbluser as u',function($join){
+            $join->on('u.id','=','employee_salary_structures.employee_id')->where('u.status',1); // 23-04-24 by uma
+        })
         ->select('employee_salary_structures.*', DB::raw('CONCAT_ws(" ",COALESCE(u.first_name,"-"), COALESCE(u.last_name,"-")) as employee_name'))
         ->where('employee_salary_structures.employee_id', $emp_id)
         ->where('employee_salary_structures.sub_institute_id', $sub_institute_id)
@@ -353,7 +355,7 @@ class PayrollController extends Controller
 
         $departments = HrmsDepartment::where('status', true)->pluck('department', 'id');
 
-        $employees = tbluserModel::where('sub_institute_id', $sub_institute_id)->where('department_id', $department_id)->get()->toArray();
+        $employees = tbluserModel::where('sub_institute_id', $sub_institute_id)->where('department_id', $department_id)->where('status',1)->get()->toArray(); // 23-04-24 by uma
 
         $get_map_year = DB::table('fees_map_years')->selectRaw('from_month, to_month')->where(['sub_institute_id' => $sub_institute_id, 'syear' => $syear])->first();
 
@@ -369,6 +371,7 @@ class PayrollController extends Controller
         $get_department_name = DB::table('hrms_departments as hd')
             ->selectRaw('hd.department as department_name')
             ->join('tbluser as u', 'u.department_id', 'hd.id')
+            ->where('u.status',1) // 23-04-24 by uma
             ->where(['u.sub_institute_id' => $sub_institute_id, 'u.id' => $employee_id])
             ->first();
             
@@ -482,7 +485,7 @@ class PayrollController extends Controller
 
         $departments = HrmsDepartment::where('status', true)->pluck('department', 'id');
 
-        $employees = tbluserModel::where('sub_institute_id', $sub_institute_id)->where('department_id', $department_id)->get()->toArray();
+        $employees = tbluserModel::where('sub_institute_id', $sub_institute_id)->where('department_id', $department_id)->where('status',1)->get()->toArray(); // 23-04-24 by uma
 
         $get_department_name = DB::table('hrms_departments as hd')
             ->selectRaw('hd.department as department_name')
@@ -900,7 +903,9 @@ class PayrollController extends Controller
 
         $get_user_detail = DB::table('tbluserprofilemaster as tum')
             ->selectRaw('ts.*,tum.name as profile_name')
-            ->join('tbluser as ts', 'ts.user_profile_id', 'tum.id')
+            ->join('tbluser as ts',function($join){
+                $join('ts.user_profile_id', 'tum.id')->where('ts.status',1);  // 23-04-24 by uma
+            })
             ->where(['tum.sub_institute_id' => $sub_institute_id, 'ts.id' => $id])
             ->first();
 

@@ -91,6 +91,7 @@ class adminapiController extends Controller
 //DB::enableQueryLog();
                 $data = DB::table("tbluser AS tu")
                     ->join('tbluserprofilemaster AS tpm', 'tpm.id', '=', 'tu.user_profile_id')
+                    ->where('tu.status',1) // 23-04-24 by uma
                     ->where(["tu.mobile" => $_REQUEST['mobile'], "tpm.parent_id" => '1'])
                     ->update(["tu.otp" => $otp]);
 //dd(DB::getQueryLog($data));                    
@@ -517,6 +518,7 @@ class adminapiController extends Controller
                     u.join_year,if(u.image = '','',concat('https://".$_SERVER['SERVER_NAME']."/storage/user/',u.image)) as image,
                     up.name as user_profile_name,u.user_profile_id")
                 ->where('u.sub_institute_id', $sub_institute_id)
+                ->where('u.status',1) // 23-04-24 by uma
                 ->where('up.name', 'like', '%Teacher%')->get()->toArray();
 
             if (count($data) > 0) {
@@ -567,7 +569,7 @@ class adminapiController extends Controller
                 })->join('division as di', function ($join) {
                     $join->whereRaw("di.id = se.section_id");
                 })->leftJoin('tbluser as u', function ($join) {
-                    $join->whereRaw("u.id = la.reply_by");
+                    $join->whereRaw("u.id = la.reply_by")->where('u.status',1); // 23-04-24 by uma
                 })
                 ->selectRaw("la.id as leave_app_id,concat_ws(' ',s.first_name,s.middle_name,s.last_name) as student_name,
                     if(s.image = '','',concat('https://".$_SERVER['SERVER_NAME']."/storage/student/',s.image)) as student_image,
@@ -677,7 +679,7 @@ class adminapiController extends Controller
                 })->join('division as d', function ($join) {
                     $join->whereRaw("d.id = se.section_id");
                 })->leftJoin('tbluser as tu', function ($join) {
-                    $join->whereRaw("tu.id = pc.reply_by");
+                    $join->whereRaw("tu.id = pc.reply_by")->where('tu.status',1); // 23-04-24 by uma
                 })
                 ->selectRaw("pc.id as parent_comm_id,concat_ws(' ',ts.first_name,ts.middle_name,ts.last_name) as student_name,
                     if(ts.image = '','',concat('https://".$_SERVER['SERVER_NAME']."/storage/student/',ts.image)) as student_image,
@@ -911,7 +913,7 @@ class adminapiController extends Controller
                 })->join('tblstudent_enrollment as se', function ($join) {
                     $join->whereRaw('se.student_id = s.id and se.sub_institute_id = s.sub_institute_id AND se.end_date is NULL');
                 })->leftJoin('tbluser as u', function ($join) {
-                    $join->whereRaw('u.id = pb.PTM_ATTENDED_BY and u.sub_institute_id = pb.SUB_INSTITUTE_ID');
+                    $join->whereRaw('u.id = pb.PTM_ATTENDED_BY and u.sub_institute_id = pb.SUB_INSTITUTE_ID')->where('u.status',1); // 23-04-24 by uma
                 })
                 ->selectRaw("pb.ID,pb.DATE,pb.TEACHER_ID,pb.TIME_SLOT_ID,pb.CONFIRM_STATUS,pb.STUDENT_ID,pb.CREATED_ON,
                     pb.SUB_INSTITUTE_ID,CONCAT_WS(' ',u.first_name,u.middle_name,u.last_name) as PTM_ATTENDED_BY_NAME,
@@ -965,7 +967,7 @@ class adminapiController extends Controller
                 ->join('visitor_type as vt', function ($join) {
                     $join->whereRaw('vt.id = v.visitor_type AND vt.sub_institute_id = v.sub_institute_id AND vt.status = 1');
                 })->join('tbluser as u', function ($join) {
-                    $join->whereRaw('u.id = v.to_meet AND u.sub_institute_id = v.sub_institute_id');
+                    $join->whereRaw('u.id = v.to_meet AND u.sub_institute_id = v.sub_institute_id')->where('u.status',1); // 23-04-24 by uma
                 })
                 ->selectRaw("v.*,CONCAT_WS(' ',u.first_name,u.middle_name,u.last_name) as staff_name,vt.title as visitor_type_name,
                     if(v.photo = '','',concat('https://".$_SERVER['SERVER_NAME']."/storage/visitor_photo/',v.photo)) as visitor_photo")
@@ -1508,11 +1510,11 @@ class adminapiController extends Controller
 
             $data = DB::table('task as t')
                 ->join('tbluser as u', function ($join) {
-                    $join->whereRaw('t.TASK_ALLOCATED = u.id AND u.sub_institute_id = t.sub_institute_id');
+                    $join->whereRaw('t.TASK_ALLOCATED = u.id AND u.sub_institute_id = t.sub_institute_id')->where('u.status',1); // 23-04-24 by uma
                 })->join('tbluser as u2', function ($join) {
-                    $join->whereRaw('t.TASK_ALLOCATED_TO = u2.id AND u2.sub_institute_id = t.sub_institute_id');
+                    $join->whereRaw('t.TASK_ALLOCATED_TO = u2.id AND u2.sub_institute_id = t.sub_institute_id')->where('u2.status',1); // 23-04-24 by uma
                 })->leftJoin('tbluser as u3', function ($join) {
-                    $join->whereRaw('t.approved_by = u3.id AND u3.sub_institute_id = t.sub_institute_id');
+                    $join->whereRaw('t.approved_by = u3.id AND u3.sub_institute_id = t.sub_institute_id')->where('u3.status',1); // 23-04-24 by uma
                 })
                 ->selectRaw("t.*, CONCAT_WS(' ',u.first_name,u.middle_name,u.last_name) AS ALLOCATOR, 
                     CONCAT_WS(' ',u2.first_name,u2.middle_name,u2.last_name) AS ALLOCATED_TO,
@@ -1632,9 +1634,9 @@ class adminapiController extends Controller
 
             $data = DB::table('complaint as t')
                 ->join('tbluser as u', function ($join) {
-                    $join->whereRaw('t.COMPLAINT_BY = u.id AND u.sub_institute_id = t.sub_institute_id');
+                    $join->whereRaw('t.COMPLAINT_BY = u.id AND u.sub_institute_id = t.sub_institute_id')->where('u.status',1); // 23-04-24 by uma
                 })->join('tbluser as u3', function ($join) {
-                    $join->whereRaw('t.COMPLAINT_SOLUTION_BY = u3.id AND u3.sub_institute_id = t.sub_institute_id');
+                    $join->whereRaw('t.COMPLAINT_SOLUTION_BY = u3.id AND u3.sub_institute_id = t.sub_institute_id')->where('u3.status',1); // 23-04-24 by uma
                 })
                 ->selectRaw("t.*, CONCAT_WS(' ',u.first_name,u.middle_name,u.last_name) AS COMPLAINT_BY,
                     CONCAT_WS(' ',u3.first_name,u3.middle_name,u3.last_name) AS COMPLAINT_SOLUTION_BY,
@@ -1752,9 +1754,9 @@ class adminapiController extends Controller
 
             $data = DB::table('inventory_requisition_details as ir')
                 ->join('tbluser as tu', function ($join) {
-                    $join->whereRaw("tu.id = ir.requisition_by");
+                    $join->whereRaw("tu.id = ir.requisition_by")->where('tu.status',1); // 23-04-24 by uma
                 })->leftJoin('tbluser as ira', function ($join) {
-                    $join->whereRaw("ira.id = ir.requisition_approved_by");
+                    $join->whereRaw("ira.id = ir.requisition_approved_by")->where('ira.status',1); // 23-04-24 by uma
                 })->join('inventory_item_master as i', function ($join) {
                     $join->whereRaw("i.id = ir.item_id");
                 })->join('inventory_requisition_status_master as irs', function ($join) {
@@ -1806,7 +1808,7 @@ class adminapiController extends Controller
         } else {
             $data = DB::table('tbluser')
                 ->selectRaw("id as user_id,user_name,CONCAT_WS(' ',first_name,middle_name,last_name) AS requisition_name,mobile,email")
-                ->where('sub_institute_id', $sub_institute_id)->get()->toArray();
+                ->where('sub_institute_id', $sub_institute_id)->where('status',1)->get()->toArray();
 
             if (count($data) > 0) {
                 $response['status'] = 1;

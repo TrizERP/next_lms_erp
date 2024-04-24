@@ -169,7 +169,7 @@ class teacherapiController extends Controller
                 foreach ($doubtdata as $key => $val) {
                     $unionQuery = DB::table('lms_doubt_conversation as l')
                         ->join('tbluser as u', function ($join) {
-                            $join->whereRaw('u.id = l.user_id');
+                            $join->whereRaw('u.id = l.user_id')->where('u.status',1); // 23-04-24 by uma
                         })
                         ->selectRaw('l.*,CONCAT_WS(" ",u.first_name,u.middle_name,u.last_name) AS student_name,                    
                             CONCAT("'.$path.'user/",IFNULL(u.image,"no-image.jpg")) as image,
@@ -236,7 +236,7 @@ class teacherapiController extends Controller
             $response['response'] = $validator->messages();
         } else {
             $teacher_id = $request->input("teacher_id");
-            $user_data = tbluserModel::select("*")->where('id', "=", $teacher_id)->get()->toArray();
+            $user_data = tbluserModel::select("*")->where('id', "=", $teacher_id)->where('status',1)->get()->toArray(); // 23-04-24 by uma
             $user_profile_id = $user_data[0]['user_profile_id'];
 
             $data = [
@@ -446,7 +446,7 @@ class teacherapiController extends Controller
                 })->join('topic_master as t', function ($join) {
                     $join->whereRaw('t.id = v.topic_id AND t.sub_institute_id = v.sub_institute_id');
                 })->join('tbluser as u', function ($join) {
-                    $join->whereRaw('u.id = v.created_by');
+                    $join->whereRaw('u.id = v.created_by')->where('u.status',1); // 23-04-24 by uma
                 })->selectRaw("st.name AS standard_name,sub.subject_name,c.chapter_name,t.name AS topic_name,v.syear,
                     v.sub_institute_id,v.room_name,v.description,v.event_date,v.from_time,v.to_time,v.recurring,v.url,v.password,
                     CONCAT_WS(' ',u.first_name,u.middle_name,u.last_name) AS teacher_name")
@@ -554,7 +554,7 @@ class teacherapiController extends Controller
                 })->join('topic_master as t', function ($join) {
                     $join->whereRaw('t.id = v.topic_id AND t.sub_institute_id = v.sub_institute_id');
                 })->join('tbluser as u', function ($join) {
-                    $join->whereRaw('u.id = v.created_by');
+                    $join->whereRaw('u.id = v.created_by')->where('u.status',1); // 23-04-24 by uma
                 })->selectRaw("v.syear,v.sub_institute_id,st.name AS standard_name,sub.subject_name,c.chapter_name,
                     t.name AS topic_name,v.title,if(v.file_name = '','',concat('https://".$_SERVER['SERVER_NAME']."/storage/lms_teacher_resource/',
                     v.file_name)) as file_name,CONCAT_WS(' ',u.first_name,u.middle_name,u.last_name) AS teacher_name")
@@ -777,7 +777,7 @@ class teacherapiController extends Controller
             $response['response'] = $validator->messages();
         } else {
             $result = DB::table('tbluser')->selectRaw("CONCAT(first_name,' ',last_name) as name")
-                ->where('id', $request->get('teacher_id'))->get()->toArray();
+                ->where('id', $request->get('teacher_id'))->where('status',1)->get()->toArray(); // 23-04-24 by uma
 
             $teacher_name = $result[0]->name;
 
@@ -1498,11 +1498,11 @@ class teacherapiController extends Controller
         } else {
             $data = DB::table('task as t')
                 ->join('tbluser as u', function ($join) {
-                    $join->whereRaw('t.TASK_ALLOCATED = u.id AND u.sub_institute_id = t.sub_institute_id');
+                    $join->whereRaw('t.TASK_ALLOCATED = u.id AND u.sub_institute_id = t.sub_institute_id')->where('u.status',1); // 23-04-24 by uma
                 })->join('tbluser as u2', function ($join) {
-                    $join->whereRaw('t.TASK_ALLOCATED_TO = u2.id AND u2.sub_institute_id = t.sub_institute_id');
+                    $join->whereRaw('t.TASK_ALLOCATED_TO = u2.id AND u2.sub_institute_id = t.sub_institute_id')->where('u2.status',1); // 23-04-24 by uma
                 })->join('tbluser as u3', function ($join) {
-                    $join->whereRaw('t.approved_by = u3.id AND u3.sub_institute_id = t.sub_institute_id');
+                    $join->whereRaw('t.approved_by = u3.id AND u3.sub_institute_id = t.sub_institute_id')->where('u3.status',1); // 23-04-24 by uma
                 })
                 ->selectRaw("t.*, CONCAT_WS(' ',u.first_name,u.middle_name,u.last_name) AS ALLOCATOR, 
                     CONCAT_WS(' ',u2.first_name,u2.middle_name,u2.last_name) AS ALLOCATED_TO,
@@ -1625,9 +1625,9 @@ class teacherapiController extends Controller
 
             $data = DB::table('inventory_requisition_details as ir')
                 ->join('tbluser as tu', function ($join) {
-                    $join->whereRaw('tu.id = ir.requisition_by');
+                    $join->whereRaw('tu.id = ir.requisition_by')->where('u.status',1);// 23-04-24 by uma
                 })->leftJoin('tbluser as ira', function ($join) {
-                    $join->whereRaw('ira.id = ir.requisition_approved_by');
+                    $join->whereRaw('ira.id = ir.requisition_approved_by')->where('ira.status',1);// 23-04-24 by uma
                 })->join('inventory_item_master as i', function ($join) {
                     $join->whereRaw('i.id = ir.item_id');
                 })->join('inventory_requisition_status_master as irs', function ($join) {
@@ -1761,10 +1761,10 @@ class teacherapiController extends Controller
         } else {
             $data = DB::table('complaint as t')
                 ->join('tbluser as u', function ($join) {
-                    $join->whereRaw('t.COMPLAINT_BY = u.id AND u.sub_institute_id = t.sub_institute_id');
+                    $join->whereRaw('t.COMPLAINT_BY = u.id AND u.sub_institute_id = t.sub_institute_id')->where('u.status',1); // 23-04-24 by uma
                 })
                 ->leftJoin('tbluser as u3', function ($join) {
-                    $join->whereRaw('t.COMPLAINT_SOLUTION_BY = u3.id AND u3.sub_institute_id = t.sub_institute_id');
+                    $join->whereRaw('t.COMPLAINT_SOLUTION_BY = u3.id AND u3.sub_institute_id = t.sub_institute_id')->where('u3.status',1);// 23-04-24 by uma
                 })
                 ->selectRaw("t.*, CONCAT_WS(' ',u.first_name,u.middle_name,u.last_name) AS COMPLAINT_BY,
                     CONCAT_WS(' ',u3.first_name,u3.middle_name,u3.last_name) AS COMPLAINT_SOLUTION_BY,

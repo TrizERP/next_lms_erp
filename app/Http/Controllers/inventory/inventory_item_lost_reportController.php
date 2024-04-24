@@ -68,7 +68,7 @@ class inventory_item_lost_reportController extends Controller
                 $join->whereRaw("IM.ID=IILD.ITEM_ID");
             })
             ->join('tbluser as u', function ($join) {
-                $join->whereRaw("u.id = IRD.requisition_by");
+                $join->whereRaw("u.id = IRD.requisition_by")->where('u.status',1);  // 23-04-24 by uma
             })
             ->selectRaw('CONCAT_WS(" ",u.first_name,u.middle_name,u.last_name) AS REQUISITION_BY_NAME,IRD.USER_GROUP_ID,
                 IILD.REQUISITION_BY,IILD.ITEM_ID,IM.title as ITEM_NAME,IRD.ITEM_QTY, DATE_FORMAT(IILD.LOST_DATE, "%d-%m-%Y") AS LOST_DATE')

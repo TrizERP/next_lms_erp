@@ -39,8 +39,12 @@ class todaysproxyReportController extends Controller
                 // });
             })
             ->join('division as d', 'd.id', '=', 'proxy_master.division_id')
-            ->join('tbluser as u', 'u.id', '=', 'proxy_master.teacher_id')
-            ->join('tbluser as u1', 'u1.id', '=', 'proxy_master.proxy_teacher_id')
+            ->join('tbluser as u', function($join){
+                $join->on('u.id', '=', 'proxy_master.teacher_id')->where('u.status',1);  // 23-04-24 by uma
+            })
+            ->join('tbluser as u1',function($join){
+                $join->on( 'u1.id', '=', 'proxy_master.proxy_teacher_id')->where('u1.status',1);  // 23-04-24 by uma
+            })
             ->join('period as p', 'p.id', '=', 'proxy_master.period_id')
             ->join('subject as sub', 'sub.id', '=', 'proxy_master.subject_id')
             ->where(['proxy_master.sub_institute_id' => $sub_institute_id])

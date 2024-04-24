@@ -83,8 +83,9 @@ class imprestRefundReportController extends Controller
             })->join('division as d', function ($join) {
                 $join->whereRaw('se.section_id = d.id');
             })->join('tbluser as u', function ($join) {
-                $join->whereRaw('u.id = c.cancelled_by AND u.sub_institute_id = c.sub_institute_id');
-            })->selectRaw("CONCAT_WS(' ',s.first_name,s.middle_name,s.last_name) AS student_name,
+                $join->whereRaw('u.id = c.cancelled_by AND u.sub_institute_id = c.sub_institute_id')->where('u.status',1);  // 23-04-24 by uma
+            })
+            ->selectRaw("CONCAT_WS(' ',s.first_name,s.middle_name,s.last_name) AS student_name,
                 s.enrollment_no,s.mobile,c.student_id, st.name AS standard_name,
                 d.name AS division_name,c.cancel_date,c.cancel_remark,c.cancel_amount,c.cancel_type,
                 c.reciept_id, CONCAT_WS(' ',u.first_name,u.middle_name,u.last_name) AS cancelled_by")

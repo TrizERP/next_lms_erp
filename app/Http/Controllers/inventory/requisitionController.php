@@ -29,10 +29,10 @@ class requisitionController extends Controller
 
         $data = DB::table("inventory_requisition_details as ir")
             ->join('tbluser as tu', function ($join) {
-                $join->whereRaw("tu.id = ir.requisition_by");
+                $join->whereRaw("tu.id = ir.requisition_by")->where('tu.status',1);   // 23-04-24 by uma
             })
             ->leftJoin('tbluser as ira', function ($join) {
-                $join->whereRaw("ira.id = ir.requisition_approved_by");
+                $join->whereRaw("ira.id = ir.requisition_approved_by")->where('ira.status',1);   // 23-04-24 by uma
             })
             ->join('inventory_item_master as i', function ($join) {
                 $join->whereRaw("i.id = ir.item_id");
@@ -82,7 +82,9 @@ class requisitionController extends Controller
                 if ($user_profile != 'admin') {
                     $q->where('id', $user_id);
                 }
-            })->get()->toArray();
+            })
+            ->where('status',1)  // 23-04-24 by uma
+            ->get()->toArray();
 
         $item_data = DB::table('inventory_item_master')
             ->where('sub_institute_id', $sub_institute_id)
@@ -185,6 +187,7 @@ class requisitionController extends Controller
         $user_data = DB::table("tbluser")
             ->selectRaw('*,concat_ws(" ",first_name,middle_name,last_name) as requisition_name')
             ->where("sub_institute_id", "=", $sub_institute_id)
+            ->where('status',1)  // 23-04-24 by uma
             ->get()->toArray();
 
         $item_data = DB::table("inventory_item_master")
