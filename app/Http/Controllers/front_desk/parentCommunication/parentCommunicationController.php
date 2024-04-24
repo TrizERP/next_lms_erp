@@ -80,7 +80,7 @@ class parentCommunicationController extends Controller
                 $join->whereRaw("pc.student_id = s.id");
             })
             ->leftJoin('tbluser as u', function ($join) {
-                $join->whereRaw("u.id = pc.reply_by");
+                $join->whereRaw("u.id = pc.reply_by")->where('u.status',1); // 23-04-24 by uma
             })
             ->selectRaw("s.*,se.syear,se.student_id,se.grade_id,se.standard_id,se.section_id,se.student_quota,se.start_date,
         se.end_date,se.enrollment_code,se.drop_code,se.drop_remarks,se.drop_remarks,se.term_id,se.remarks,se.admission_fees,
@@ -431,7 +431,7 @@ class parentCommunicationController extends Controller
                     $join->on("pc.student_id", "=", "ts.id")->on("pc.sub_institute_id", "=", "ct.sub_institute_id");
                 })
                 ->leftJoin('tbluser as tu', function ($join) {
-                    $join->on("tu.id", "=", "pc.reply_by")->on("tu.sub_institute_id", "=", "pc.sub_institute_id");
+                    $join->on("tu.id", "=", "pc.reply_by")->on("tu.sub_institute_id", "=", "pc.sub_institute_id")->where('tu.status',1);  // 23-04-24 by uma
                 })
                 ->selectRaw("pc.id as parent_comm_id,concat_ws(' ',ts.first_name,ts.middle_name,ts.last_name) as student_name,
                 if(ts.image = '','',concat('https://".$_SERVER['SERVER_NAME']."/storage/student/',ts.image)) as student_image,
@@ -528,7 +528,7 @@ class parentCommunicationController extends Controller
         if ($student_id != "" && $sub_institute_id != "" && $syear != "") {
             $data = DB::table("parent_communication as pc")
                 ->leftJoin('tbluser as u', function ($join) {
-                    $join->whereRaw("u.id = pc.reply_by");
+                    $join->whereRaw("u.id = pc.reply_by")->where('u.status',1); // 23-04-24 by uma
                 })
                 ->selectRaw("pc.title,pc.message,pc.created_at,pc.reply,DATE_FORMAT(pc.reply_on,'%d-%m-%Y') AS reply_on,
                         CONCAT_WS(' ',u.first_name,u.middle_name,u.last_name) as reply_by")

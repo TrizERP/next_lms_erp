@@ -45,15 +45,15 @@ class inventory_requisition_reportController extends Controller
 
         $sql = "SELECT CONCAT_WS(' ',u.first_name,u.middle_name,u.last_name) AS REQUISITION_BY_NAME,REQUISITION_BY,DATE_FORMAT(REQUISITION_DATE, '%d-%m-%Y') AS REQUISITION_DATE, REQUISITION_NO,IM.title as ITEM_NAME, ITEM_ID, ITEM_QTY,DATE_FORMAT(EXPECTED_DELIVERY_TIME, '%d-%m-%Y') AS EXPECTED_DELIVERY_TIME, REMARKS,IRS.title as REQUISITION_STATUS,APPROVED_QTY,CONCAT_WS(' ',tu.first_name,tu.middle_name,tu.last_name) as REQUISITION_APPROVED_BY,REQUISITION_APPROVED_REMARKS,REQUISITION_APPROVED_DATE,IRD.ID,IRD.USER_GROUP_ID
 			FROM inventory_requisition_details IRD
-			INNER JOIN tbluser u ON u.id = IRD.requisition_by
+			INNER JOIN tbluser u ON u.id = IRD.requisition_by AND u.status = 1
 			INNER JOIN inventory_item_master IM ON IM.ID=IRD.ITEM_ID
 			INNER JOIN inventory_requisition_status_master IRS ON IRS.id = IRD.requisition_status
-			LEFT JOIN tbluser tu ON tu.id = IRD.requisition_approved_by
-            WHERE 1=1 AND IRD.sub_institute_id = '".$sub_institute_id."'"; // AND IRD.syear = '".$syear."' 
+			LEFT JOIN tbluser tu ON tu.id = IRD.requisition_approved_by AND tu.status = 1
+            WHERE 1=1 AND IRD.sub_institute_id = '".$sub_institute_id."'"; // AND IRD.syear = '".$syear."'   // 23-04-24 by uma
 
         $result = DB::table("inventory_requisition_details as IRD")
             ->join('tbluser as u', function ($join) {
-                $join->whereRaw("u.id = IRD.requisition_by");
+                $join->whereRaw("u.id = IRD.requisition_by")->where('u.status',1);  // 23-04-24 by uma
             })
             ->join('inventory_item_master as IM', function ($join) {
                 $join->whereRaw("IM.ID=IRD.ITEM_ID");
@@ -62,7 +62,7 @@ class inventory_requisition_reportController extends Controller
                 $join->whereRaw("IRS.id = IRD.requisition_status");
             })
             ->leftJoin('tbluser as tu', function ($join) {
-                $join->whereRaw("tu.id = IRD.requisition_approved_by");
+                $join->whereRaw("tu.id = IRD.requisition_approved_by")->where('tu.status',1);   // 23-04-24 by uma
             })
             ->selectRaw('CONCAT_WS(" ",u.first_name,u.middle_name,u.last_name) AS REQUISITION_BY_NAME,REQUISITION_BY,
                 DATE_FORMAT(REQUISITION_DATE, "%d-%m-%Y") AS REQUISITION_DATE, REQUISITION_NO,IM.title as ITEM_NAME, ITEM_ID, ITEM_QTY,

@@ -111,6 +111,7 @@ class LeaveAuthorisationController extends Controller
             $user_name = DB::table('tbluser')
             ->selectRaw("CONCAT_WS(' ',first_name,last_name) AS employee_name")
             ->where('sub_institute_id', $sub_institute_id)
+            ->where('status',1)  // 23-04-24 by uma
             ->where('id', $res_user_id)->first();
         }
         else
@@ -118,6 +119,7 @@ class LeaveAuthorisationController extends Controller
             $user_name = DB::table('tbluser')
             ->selectRaw("CONCAT_WS(' ',first_name,last_name) AS employee_name")
             ->where('sub_institute_id', $sub_institute_id)
+            ->where('status',1)  // 23-04-24 by uma
             ->where('id', $user_id)->first();
         }
         

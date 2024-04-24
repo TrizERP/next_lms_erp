@@ -23,7 +23,7 @@ class changePasswordController extends Controller
         $sub_institute_id = $request->session()->get('sub_institute_id');
 
         $getSchoolData = SchoolModel::where(['id' => $sub_institute_id])->get()->toArray();
-        $getUserData = tbluserModel::where(['sub_institute_id' => $sub_institute_id])->get()->toArray();
+        $getUserData = tbluserModel::where(['sub_institute_id' => $sub_institute_id])->where('status',1)->get()->toArray();   // 23-04-24 by uma
 
         $res['status_code'] = 1;
         $res['message'] = "Success";

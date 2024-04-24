@@ -10,6 +10,6 @@ class HrmsAttendance extends Model
 {
     use HasFactory;
     public function getUser(){
-        return $this->hasOne(tbluserModel::class,'id','user_id');
+        return $this->hasOne(tbluserModel::class,'id','user_id')->where('status',1); // 23-04-24 by uma
     }
 }

@@ -26,15 +26,15 @@ class inventory_item_defectiveController extends Controller
         $item = DB::select("SELECT ir.*,im.title AS item_name,concat_ws(' ',tu.first_name,tu.middle_name,tu.last_name) as created_by
                 FROM inventory_item_defective_details ir
                 INNER JOIN inventory_item_master im ON im.id = ir.ITEM_ID AND im.sub_institute_id = ir.SUB_INSTITUTE_ID
-                INNER JOIN tbluser tu ON tu.id = ir.CREATED_BY
-                WHERE ir.sub_institute_id = '".$sub_institute_id."' AND ir.syear = '".$syear."' ");
+                INNER JOIN tbluser tu ON tu.id = ir.CREATED_BY AND tu.status = 1 
+                WHERE ir.sub_institute_id = '".$sub_institute_id."' AND ir.syear = '".$syear."' ");  // 23-04-24 by uma status
 
         $item = DB::table("inventory_item_defective_details as ir")
             ->join('inventory_item_master as im', function ($join) {
                 $join->whereRaw("im.id = ir.ITEM_ID AND im.sub_institute_id = ir.SUB_INSTITUTE_ID");
             })
             ->join('tbluser as tu', function ($join) {
-                $join->whereRaw("tu.id = ir.CREATED_BY");
+                $join->whereRaw("tu.id = ir.CREATED_BY")->where('tu.status',1);  // 23-04-24 by uma
             })
             ->selectRaw('ir.*,im.title AS item_name,concat_ws(" ",tu.first_name,tu.middle_name,tu.last_name) as created_by')
             ->where("ir.sub_institute_id", "=", $sub_institute_id)

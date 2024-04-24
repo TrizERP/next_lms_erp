@@ -48,6 +48,7 @@
                                     ->selectRaw("u.user_profile_id, um.name as user_profile_name")
                                     ->join('tbluserprofilemaster as um', 'um.id', '=', 'u.user_profile_id')
                                     ->where('u.id', session()->get('user_id'))
+                                    ->where('u.status',1)
                                     ->first();
                                 @endphp
                                 <label for="">Type Leave</label>

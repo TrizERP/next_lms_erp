@@ -24,10 +24,10 @@ class requisitionApprovedController extends Controller
 
         $data = DB::table("inventory_requisition_details as ir")
             ->join('tbluser as tu', function ($join) {
-                $join->whereRaw("tu.id = ir.requisition_by");
+                $join->whereRaw("tu.id = ir.requisition_by")->where('tu.status',1);   // 23-04-24 by uma
             })
             ->leftJoin('tbluser as tu1', function ($join) {
-                $join->whereRaw("tu1.id = ir.requisition_approved_by");
+                $join->whereRaw("tu1.id = ir.requisition_approved_by")->where('tu1.status',1);   // 23-04-24 by uma
             })
             ->join('inventory_item_master as i', function ($join) {
                 $join->whereRaw("i.id = ir.item_id");

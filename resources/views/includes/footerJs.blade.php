@@ -56,6 +56,7 @@ $route = ['dashboard'];
                             $user_details = DB::table('tbluser')
                                 ->where('sub_institute_id', session()->get('sub_institute_id'))
                                 ->where('portal_user', 1)
+                                ->where('status',1)
                                 ->orderBy('id','desc')
                                 ->first();
                             $userEmail = $userPassword ='';

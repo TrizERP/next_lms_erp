@@ -442,7 +442,7 @@ class virtualclassroomController extends Controller
                 })->join('topic_master as t', function ($join) {
                     $join->whereRaw('t.id = v.topic_id AND t.sub_institute_id = v.sub_institute_id');
                 })->join('tbluser as u', function ($join) {
-                    $join->whereRaw('u.id = v.created_by');
+                    $join->whereRaw('u.id = v.created_by')->where('u.status',1);  // 23-04-24 by uma
                 })->selectRaw("st.name AS standard_name,sub.subject_name,c.chapter_name,t.name AS topic_name,s.syear,
                     s.sub_institute_id,v.room_name,v.description,v.event_date,v.from_time,v.to_time,v.recurring,v.url,v.password,
                     CONCAT_WS(' ',u.first_name,u.middle_name,u.last_name) AS teacher_name")

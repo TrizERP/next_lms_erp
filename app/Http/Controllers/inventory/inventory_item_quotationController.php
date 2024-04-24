@@ -38,7 +38,7 @@ class inventory_item_quotationController extends Controller
             ->where([
                 'inventory_item_quotation_details.sub_institute_id' => $sub_institute_id,
                 'inventory_item_quotation_details.syear'            => $syear,
-            ])->get();
+            ])->where('tbluser.status',1)->get();   // 23-04-24 by uma
 
         $item_data['status_code'] = 1;
         $item_data['data'] = $data;

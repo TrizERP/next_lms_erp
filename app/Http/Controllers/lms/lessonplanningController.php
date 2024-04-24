@@ -163,6 +163,7 @@ class lessonplanningController extends Controller
             ->join('subject as sub', 'sub.id', '=', 'lp.subject_id')
             ->join('tbluser as t', 't.id', '=', 'lp.teacher_id')
             ->leftjoin('lessonplan_execution as l', 'l.lessonplan_id', '=', 'lp.id')
+            ->where('t.status',1) // 23-04-24 by uma
             ->where($extra)
             ->get()->toArray();
     }

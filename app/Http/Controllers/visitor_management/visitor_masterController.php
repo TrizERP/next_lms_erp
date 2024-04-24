@@ -31,7 +31,9 @@ class visitor_masterController extends Controller
             DB::raw('concat(u.first_name," ",u.middle_name," ",u.last_name) as staff_name'),
             DB::raw('if(out_time = "00:00:00","green","") as status'),
             'vt.title as visitor_type_name')
-            ->join('tbluser as u', 'u.id', '=', 'visitor_master.to_meet')
+            ->join('tbluser as u',function($join){
+                $join->on('u.id', '=', 'visitor_master.to_meet')->where('u.status',1); // 23-04-24 by uma
+            })
             ->join('visitor_type as vt', 'vt.id', '=', 'visitor_master.visitor_type')
             ->where(['visitor_master.sub_institute_id' => $sub_institute_id, 'meet_date' => date('Y-m-d')])
             ->get();
@@ -74,7 +76,9 @@ class visitor_masterController extends Controller
         $data = visitor_masterModel::select('visitor_master.*',
             DB::raw('concat(u.first_name," ",u.middle_name," ",u.last_name) as staff_name'),
             'vt.title as visitor_type_name')
-            ->join('tbluser as u', 'u.id', '=', 'visitor_master.to_meet')
+            ->join('tbluser as u', function($join){
+                $join->on('u.id', '=', 'visitor_master.to_meet')->where('u.status',1); // 23-04-24 by uma
+            })
             ->join('visitor_type as vt', 'vt.id', '=', 'visitor_master.visitor_type')
             ->where(['visitor_master.sub_institute_id' => $sub_institute_id])
             ->whereBetween('meet_date', array($from_date, $to_date))
@@ -276,7 +280,7 @@ class visitor_masterController extends Controller
 
         $data = DB::table("visitor_master as v")
             ->join('tbluser as u', function ($join) {
-                $join->whereRaw("v.to_meet = u.id");
+                $join->whereRaw("v.to_meet = u.id")->where('u.status',1);// 23-04-24 by uma
             })
             ->leftJoin('sms_api_details as s', function ($join) {
                 $join->whereRaw("s.sub_institute_id = v.sub_institute_id");
@@ -378,6 +382,7 @@ class visitor_masterController extends Controller
 
         $data['to_meet_array'] = tbluserModel::select('id',
             DB::raw('concat(first_name," ",middle_name," ",last_name) as staff_name'))
+            ->where('status',1) // 23-04-24 by uma
             ->where(['sub_institute_id' => $sub_institute_id])->get();
 
         return json_encode($data);
@@ -414,7 +419,7 @@ class visitor_masterController extends Controller
         } else {
             $data = DB::table("visitor_master as v")
                 ->join('tbluser AS u', function ($join) {
-                    $join->whereRaw("u.id = v.to_meet AND u.sub_institute_id = v.sub_institute_id");
+                    $join->whereRaw("u.id = v.to_meet AND u.sub_institute_id = v.sub_institute_id")->where('u.status',1); // 23-04-24 by uma
                 })
                 ->join('visitor_type as vt', function ($join) {
                     $join->whereRaw("vt.id = v.visitor_type AND vt.sub_institute_id = v.sub_institute_id");
