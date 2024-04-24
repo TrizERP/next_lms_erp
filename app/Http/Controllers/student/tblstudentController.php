@@ -281,8 +281,8 @@ class tblstudentController extends Controller
                 }
                 $finalArray[$key] = $value;
             }
-            // added on 19-04-24 by uma 
-            if($key=="enrollment_no"){
+            // added on 19-04-24 by uma for cn
+            if($key=="enrollment_no" && $sub_institute_id==257){
                 $maxEnrollment = DB::table('tblstudent')->selectRaw("(MAX(CAST(enrollment_no AS INT)) + 1) AS new_enrollment_no")
                 ->where('sub_institute_id', $sub_institute_id)->orderBy('id')->limit(1)->get()->toArray();
 
@@ -632,7 +632,7 @@ class tblstudentController extends Controller
 
 		$studentfeesdetails = tblstudentFeesDetailModel::where(['sub_institute_id' => $sub_institute_id, 'student_id' => $id])->get()->toArray();
         
-        $getAnacdotals = Anacdotal::where(['sub_institute_id' => $sub_institute_id, 'student_id' => $id, 'syear' => $syear])->get()->toArray();
+        $getAnacdotals = Anacdotal::where(['sub_institute_id' => $sub_institute_id, 'student_id' => $id])->get()->toArray();
         /* echo "<pre>";
 print_r($get_anacdotals);
 echo "</pre>";
@@ -648,7 +648,10 @@ die; */
         if (isset($student_data->city) && $student_data->city != '') {
             $city_name = $student_data->city;
         }
-        $cityData = tblcityModel::where(['state_name' => $state_name, 'city_name' => $city_name])->get()->toArray();
+        // added on 19-04-24 by uma
+        $cityData = tblcityModel::where(['state_name' => $state_name])->get()->toArray();
+
+        // $cityData = tblcityModel::where(['state_name' => $state_name, 'city_name' => $city_name])->get()->toArray();
 
         //START if once fees is paid for current year admission year,standard,student quota,academic section can't be edited
         $studentfees_paid = DB::table('fees_collect as c')
@@ -770,7 +773,7 @@ die; */
 
 		// dd($dataStudentSiblingsNew);
         
-        $total_distance = ($this->distance($student_data->address));
+        $total_distance = ($this->distance($student_data->address ?? ' '));
 
 		$res['status_code'] = 1;
 		$res['message'] = "Success";
