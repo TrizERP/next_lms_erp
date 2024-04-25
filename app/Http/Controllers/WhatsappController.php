@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\PayrollType;
+use App\Models\student\tblstudentModel;
 use App\Models\user\tbluserModel;
 use App\Models\WhatappUserDetail;
 use App\Models\WhatsappSentMessage;
@@ -19,7 +20,7 @@ class WhatsappController extends Controller
     public function whatsapp_user_details(Request $request)
     {
         $type = $request->type ?? '';
-        $data['data'] = WhatappUserDetail::where('sub_institute_id', session()->get('sub_institute_id'))->get();
+        $data['data'] = WhatappUserDetail::all();
         $data['is_hidden'] = false;
         if (WhatappUserDetail::where('sub_institute_id', session()->get('sub_institute_id'))->count()) {
             $data['is_hidden'] = true;
@@ -27,14 +28,45 @@ class WhatsappController extends Controller
         return is_mobile($type, 'whatsapp.whatsapp_user_details.index', $data, "view");
     }
 
+    public function whatsappSentGenerateReport(Request $request)
+    {
+        $type = $request->type ?? '';
+        $res = session()->get('data');
+        return is_mobile($type, 'whatsapp.whatsapp_send_messages.generate_report', [], "view");
+    }
+
+    public function whatsappSentGenerateReportDetails(Request $request)
+    {
+
+        $type = $request->type ?? '';
+
+        $data = WhatsappSentMessage::with('student');
+
+        if ($request->standard) {
+            $data->where('standard_id', $request->standard);
+        }
+
+        if ($request->division) {
+            $data->where('division_id', $request->division);
+        }
+
+        if ($request->from_date && $request->to_date) {
+            $data->whereBetween('created_at', [$request->from_date, $request->to_date]);
+        }
+        $data = $data->get();
+        $result['stu_data'] = $data;
+        $result['grade_id'] = $request->grade;
+        $result['standard_id'] = $request->standard;
+        $result['division_id'] = $request->division;
+        $result['from_date'] = $request->from_date;
+        $result['to_date'] = $request->to_date;
+        return is_mobile($type, 'whatsapp.whatsapp_send_messages.generate_report', $result, "view");
+    }
+
     public function whatsapp_send_messages(Request $request)
     {
         $type = $request->type ?? '';
-        $sub_institute_id = session()->get('sub_institute_id');
-        $syear = session()->get('syear');
-        $data['data'] = DB::table('whatsapp_sent_messages as wsm')->join('tblstudent as s','s.id','=','wsm.student_id')
-        ->selectRaw('wsm.*,IfNULL(s.first_name, "-") as first_name, IFNULL(s.last_name, "-") as last_name,IFNULL(s.middle_name, "-") as middle_name,s.mobile')->where('wsm.sub_institute_id',$sub_institute_id)->where('wsm.syear',$syear)->orderBy('wsm.id','DESC')->get()->toArray();
-        // echo "<pre>";print_r($data['data']);exit;
+        $data['data'] = WhatsappSentMessage::with('student')->get();
         //return view('whatsapp.whatsapp_send_messages.index', ["data" => $data]);
         return is_mobile($type, 'whatsapp.whatsapp_send_messages.index', $data, "view");
     }
@@ -89,41 +121,144 @@ class WhatsappController extends Controller
         $payrollType->user_whatsapp_sid = $request->user_whatsapp_sid;
         $payrollType->user_whatsapp_token = $request->user_whatsapp_token;
         $payrollType->sub_institute_id = session()->get('sub_institute_id');
-        $payrollType->created_by = session()->get('user_id');
+        $payrollType->created_by = session()->get('user_profile_id');
         $payrollType->created_by_name = session()->get('name');
         $payrollType->save();
 
         return is_mobile($type, 'whatsapp-user-details', [], "redirect");
     }
 
+    public function mediaFound($message)
+    {
+        // Extract text parts outside anchor tags and concatenate each section
+        $textPattern = '/(^|<\/a>)(.*?)(<a href="|$)/';
+        $textMatches = [];
+        preg_match_all($textPattern, $message, $textMatches);
+
+        $textSections = [];
+        $currentSection = '';
+
+        foreach ($textMatches[2] as $match) {
+            if (!empty(trim($match))) {
+                $currentSection .= $match;
+            } else {
+                if (!empty($currentSection)) {
+                    $textSections[] = $currentSection;
+                    $currentSection = '';
+                }
+            }
+        }
+        if (!empty($currentSection)) {
+            $textSections[] = $currentSection;
+        }
+        $hrefPattern = '/<a href="(.*?)">/';
+        $hrefMatches = $hrefLinks = [];
+        preg_match_all($hrefPattern, $message, $hrefMatches);
+        //$hrefLinks = $hrefMatches[1]; // $matches[1] contains all href links found
+        foreach ($hrefMatches[1] as $href) {
+            // Use parse_url to parse the URL
+            $parsedUrl = parse_url($href);
+
+            // We want to keep the path part after the domain, remove the domain part
+            if (isset($parsedUrl['path'])) {
+                $path =ltrim($parsedUrl['path'], '/');
+
+                // Concatenate the query and fragment part if they exist
+                if (isset($parsedUrl['query'])) {
+                    $path .= '?' . $parsedUrl['query'];
+                }
+                if (isset($parsedUrl['fragment'])) {
+                    $path .= '#' . $parsedUrl['fragment'];
+                }
+
+                // Add the modified path to the hrefLinks array
+                $hrefLinks[] = $path;
+            } else {
+                // If there is no path, keep the full href
+                $hrefLinks[] = $href;
+            }
+        }
+
+        return [$textSections,$hrefLinks];
+    }
+
+    public function index(Request $request)
+    {
+        if (session()->has('data')) { // check if it exists
+            $data_arr = session('data'); // to retrieve value
+            if (isset($data_arr['message'])) {
+                $data['message'] = $data_arr['message'];
+            }
+        }
+
+        $data['data'] = array();
+        $type = $request->input('type');
+
+        return is_mobile($type, "whatsapp/whatsapp_send_messages/create", $data, "view");
+    }
+    public function create(Request $request)
+    {
+
+        $type = $request->input('type');
+        $student_data = SearchStudent($request->get('grade'), $request->get('standard'), $request->get('division'));
+        $responce_arr['grade'] = $request->get('grade');
+        $responce_arr['standard'] = $request->get('standard');
+        $responce_arr['division'] = $request->get('division');
+
+        foreach ($student_data as $id => $arr) {
+
+            $responce_arr['stu_data'][$id]['sr.no'] = $id + 1;
+            $responce_arr['stu_data'][$id]['enrollment_no'] = $arr['enrollment_no'];
+            $responce_arr['stu_data'][$id]['name'] = $arr['first_name'].' '.$arr['middle_name'].' '.$arr['last_name'];
+            $responce_arr['stu_data'][$id]['student_id'] = $arr['student_id'];
+            $responce_arr['stu_data'][$id]['mobile'] = $arr['mobile'];
+        }
+
+        return is_mobile($type, "whatsapp/whatsapp_send_messages/add", $responce_arr, "view");
+    }
+
 
     public function whatsappSendMessageStore(Request $request)
     {
+        //return $request->all();
         $type = $request->type ?? '';
         $request->validate([
             'message' => 'required'
         ]);
 
         $token = WhatappUserDetail::where('sub_institute_id', session()->get('sub_institute_id'))->first();
-        $searchStudent = SearchStudent($request->grade,$request->standard,$request->division,session()->get('sub_institute_id'));
-
+        $searchStudent = SearchStudent($request->grade, $request->standard, $request->division, session()->get('sub_institute_id'));
         //$searchStudent = SearchStudent();
-        // echo "<pre>";print_r($searchStudent);exit;
-        $studentIds = [];
-        foreach ($searchStudent as $student) {
-            $studentIds[] = $student['id'];
-            if (!empty($token)) {
+
+
+        list($textArray, $hrefArray) = $this->mediaFound($request->message);
+        if (count($hrefArray) == 0) {
+            $prepareMessageBody['contentVariables'] = json_encode([
+                "1" => $textArray,
+            ]);
+            $prepareMessageBody['contentSid'] = "HX8a883dc4cbb2c566933248ed9baa6f2d";
+        } else {
+            $prepareMessageBody['contentVariables'] = json_encode([
+                "1" => $hrefArray[0],
+                "2" => isset($textArray[0]) ? $textArray[0] : " ",
+
+            ]);
+
+            $prepareMessageBody['contentSid'] = "HX865d745b08b3a55e94c4a43c97fbabc5";
+        }
+
+        foreach ($request->sendNotification as $gr_no => $on) {
+            $student = tblstudentModel::where([['enrollment_no',$gr_no],['sub_institute_id',session()->get('sub_institute_id')]])->first();
+            if (!empty($token) && !empty($student)) {
                 $messagingServiceSid = 'MGdec43b1bbd9428a72fa0c7a633905319';
                 $client = new Client($token['user_whatsapp_sid'], $token['user_whatsapp_token']);
                 $client->messages->create(
                     'whatsapp:+91' . $student['mobile'],
                     [
-                        "contentSid" => "HX02a86c824bbf747808744e76ac5795d3",
+                        "contentSid" => $prepareMessageBody['contentSid'],
                         "messagingServiceSid" => $messagingServiceSid,
-                        "from" => "whatsapp:+91".$token['user_whatsapp_no'],
-                        "contentVariables" => json_encode([
-                            "1" => $request->message
-                        ])
+                        "from" => "whatsapp:" . $token['user_whatsapp_no'],
+                        "contentVariables" => $prepareMessageBody['contentVariables']
                     ]
                 );
                 $saveMesasge = new WhatsappSentMessage();
@@ -134,20 +269,41 @@ class WhatsappController extends Controller
                 $saveMesasge->student_id = $student['id'];
                 $saveMesasge->message = $request->message;
                 $saveMesasge->sent_date = Carbon::today();
-                $saveMesasge->created_by = session()->get('user_id');
+                $saveMesasge->created_by = session()->get('user_profile_id');
                 $saveMesasge->created_by_name = session()->get('name');
                 $saveMesasge->save();
             }
         }
-        // added by uma 17-04-24 
-        if(!empty($studentIds)){
-            $res['status_code'] = 1;
-            $res['message'] = "Message Sent Successfully";
-        }else{
-            $res['status_code'] = 0;
-            $res['message'] = "Failed to Send Message";
-        }
-        return is_mobile($type, 'whatsapp-send-messages', $res, "redirect");
+       /* foreach ($searchStudent as $student) {
+            if (!empty($token)) {
+                $messagingServiceSid = 'MGdec43b1bbd9428a72fa0c7a633905319';
+                $client = new Client($token['user_whatsapp_sid'], $token['user_whatsapp_token']);
+                $client->messages->create(
+                    'whatsapp:+91' . $student['mobile'],
+                    [
+                        "contentSid" => $prepareMessageBody['contentSid'],
+                        "messagingServiceSid" => $messagingServiceSid,
+                        "from" => "whatsapp:" . $token['user_whatsapp_no'],
+                        "contentVariables" => $prepareMessageBody['contentVariables']
+                    ]
+                );
+                $saveMesasge = new WhatsappSentMessage();
+                $saveMesasge->sub_institute_id = session()->get('sub_institute_id');
+                $saveMesasge->syear = session()->get('syear');
+                $saveMesasge->standard_id = $request->standard;
+                $saveMesasge->division_id = $request->division;
+                $saveMesasge->student_id = $student['id'];
+                $saveMesasge->message = $request->message;
+                $saveMesasge->sent_date = Carbon::today();
+                $saveMesasge->created_by = session()->get('user_profile_id');
+                $saveMesasge->created_by_name = session()->get('name');
+                $saveMesasge->save();
+
+            }
+        }*/
+
+
+        return is_mobile($type, 'whatsapp-send-messages', [], "redirect");
 
     }
 
