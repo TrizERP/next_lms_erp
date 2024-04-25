@@ -420,6 +420,9 @@ class bulkStudentController extends Controller
             if (isset($value['house'])) {
                 $studentEnrollment['house_id'] = $value['house'];
             }
+            if (isset($value['roll_no'])) {
+                $studentEnrollment['roll_no'] = $value['roll_no'];
+            }
 
             if (count($studentEnrollment) > 0) {               
                 
