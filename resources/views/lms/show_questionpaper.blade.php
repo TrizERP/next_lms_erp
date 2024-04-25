@@ -119,11 +119,12 @@
 
                                                             @php
                                                                 $show_attempt_exam = 'no';
+                                                                $attempt_allowed = 'no';
 
-                                                                if ($quespaper->attempt_allowed == 'unlimited') {
-                                                                    $show_attempt_exam = 'yes';
-                                                                } elseif ($quespaper->attempt_allowed != 'unlimited' && $quespaper->attempt_allowed > $quespaper->total_attempt) {
-                                                                    $show_attempt_exam = 'yes';
+                                                                if ($quespaper->attempt_allowed == 0) {
+                                                                    $attempt_allowed = 'yes';
+                                                                } elseif ($quespaper->attempt_allowed != 0 && $quespaper->attempt_allowed > $quespaper->total_attempt) {
+                                                                    $attempt_allowed = 'yes';
                                                                 }
 
                                                                 if ($quespaper->open_date != '' && $quespaper->close_date != '') {
@@ -136,15 +137,14 @@
 
                                                             @endphp
 
-                                                            @if ($show_attempt_exam == 'yes')
+                                                            @if ($show_attempt_exam == 'yes' && $attempt_allowed == 'yes')
                                                                 <a target="_blank"
                                                                     href="{{ route('online_exam.index', ['questionpaper_id' => $quespaper->id]) }}"
-                                                                    class="btn btn-info btn-outline btn m-r-5">Attempt
-                                                                    Exam</a>
+                                                                    class="btn btn-info btn-outline btn m-r-5">Attempt Exam</a>
+                                                            @elseif ($show_attempt_exam == 'no')
+                                                                <div class="btn btn-danger m-r-5" style="pointer-events: none;">Closed Exam</div>
                                                             @else
-                                                                <div class="btn btn-danger m-r-5"
-                                                                     style="pointer-events: none;">Closed Exam
-                                                                </div>
+                                                                <div class="btn btn-warning m-r-5" style="pointer-events: none;">No more attempts</div>
                                                             @endif
                                                         </div>
                                                     @endif
