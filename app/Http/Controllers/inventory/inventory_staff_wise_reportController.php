@@ -54,7 +54,7 @@ class inventory_staff_wise_reportController extends Controller
                 $join->whereRaw("IIC.ID = IIM.CATEGORY_ID");
             })
             ->join('tbluser as u', function ($join) {
-                $join->whereRaw("u.id = IRD.requisition_by");
+                $join->whereRaw("u.id = IRD.requisition_by")->where('u.status',1);   // 23-04-24 by uma
             })
             ->where("IRD.sub_institute_id", "=", $sub_institute_id)
             ->where(function ($q) use ($from_date, $to_date, $requisition_by) {

@@ -48,7 +48,9 @@ class lmsVirtualClassroomController extends Controller
                 })
                 ->join('chapter_master', 'chapter_master.id', '=', 'lms_virtual_classroom.chapter_id')
                 ->join('topic_master', 'topic_master.id', '=', 'lms_virtual_classroom.topic_id')
-                ->join('tbluser', 'tbluser.id', '=', 'lms_virtual_classroom.created_by')
+                ->join('tbluser', function($join){
+                    $join->on('tbluser.id', '=', 'lms_virtual_classroom.created_by')->where('tbluser.status',1);  // 23-04-24 by uma
+                })
                 ->where([
                     'lms_virtual_classroom.sub_institute_id' => $sub_institute_id,
                     'lms_virtual_classroom.syear'            => $syear, 'timetable.teacher_id' => $user_id,
@@ -63,7 +65,9 @@ class lmsVirtualClassroomController extends Controller
                 ->join('sub_std_map', 'sub_std_map.subject_id', '=', 'lms_virtual_classroom.subject_id')
                 ->join('chapter_master', 'chapter_master.id', '=', 'lms_virtual_classroom.chapter_id')
                 ->join('topic_master', 'topic_master.id', '=', 'lms_virtual_classroom.topic_id')
-                ->join('tbluser', 'tbluser.id', '=', 'lms_virtual_classroom.created_by')
+                ->join('tbluser', function($join){
+                    $join->on('tbluser.id', '=', 'lms_virtual_classroom.created_by')->where('tbluser.status',1);  // 23-04-24 by uma
+                })
                 ->where([
                     'lms_virtual_classroom.sub_institute_id' => $sub_institute_id,
                     'lms_virtual_classroom.syear'            => $syear,

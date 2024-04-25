@@ -41,7 +41,7 @@ class inventory_item_direct_purchaseController extends Controller
                 $join->whereRaw("im.id = idp.item_id AND im.sub_institute_id = idp.sub_institute_id");
             })
             ->join('tbluser as tu', function ($join) {
-                $join->whereRaw("tu.id = idp.created_by AND tu.sub_institute_id = idp.sub_institute_id");
+                $join->whereRaw("tu.id = idp.created_by AND tu.sub_institute_id = idp.sub_institute_id")->where('tu.status',1);  // 23-04-24 by uma 
             })
             ->selectRaw('idp.*,iv.vendor_name,ic.title AS catergory_name,ics.title AS sub_catergory_name,im.title AS item_name,
                 CONCAT_WS(" ",tu.first_name,tu.middle_name,tu.last_name) AS created_by')

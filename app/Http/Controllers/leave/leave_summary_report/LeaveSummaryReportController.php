@@ -46,7 +46,7 @@ class LeaveSummaryReportController extends Controller
         $department_id = $request->input('department_id');
 	    $employee_id = $request->get('employee_id');
 	
-	    $employees = tbluserModel::where('sub_institute_id', $sub_institute_id)->where('department_id', $department_id)->get()->toArray();
+	    $employees = tbluserModel::where('sub_institute_id', $sub_institute_id)->where('department_id', $department_id)->where('status',1)->get()->toArray();   // 23-04-24 by uma
 
         return response()->json(['employees' => $employees, 'department_id' => $department_id, 'employee_id' =>$employee_id]);
     }
@@ -70,7 +70,7 @@ class LeaveSummaryReportController extends Controller
         
         $departments = HrmsDepartment::where('status', true)->pluck('department', 'id');
 
-        $employees = tbluserModel::where('sub_institute_id', $sub_institute_id)->where('department_id', $department_id)->get()->toArray();
+        $employees = tbluserModel::where('sub_institute_id', $sub_institute_id)->where('status',1)->where('department_id', $department_id)->get()->toArray();   // 23-04-24 by uma
 
         $get_hrms_leave_types = DB::table('hrms_leave_types')->get()->toArray();
         
@@ -83,6 +83,7 @@ class LeaveSummaryReportController extends Controller
         ->join('hrms_departments as hd', 'hd.id', '=', 'u.department_id')
         ->where('hel.sub_institute_id', $sub_institute_id)
         ->where('hel.user_id', $employee_id)
+        ->where('u.status',1)   // 23-04-24 by uma
         ->where(function ($query) use ($year1) {
             $query->whereYear('hel.from_date', '=', $year1);
         })

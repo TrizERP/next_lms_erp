@@ -632,7 +632,7 @@ class tblstudentController extends Controller
 
 		$studentfeesdetails = tblstudentFeesDetailModel::where(['sub_institute_id' => $sub_institute_id, 'student_id' => $id])->get()->toArray();
         
-        $getAnacdotals = Anacdotal::where(['sub_institute_id' => $sub_institute_id, 'student_id' => $id, 'syear' => $syear])->get()->toArray();
+        $getAnacdotals = Anacdotal::where(['sub_institute_id' => $sub_institute_id, 'student_id' => $id])->get()->toArray();
         /* echo "<pre>";
 print_r($get_anacdotals);
 echo "</pre>";
@@ -773,7 +773,7 @@ die; */
 
 		// dd($dataStudentSiblingsNew);
         
-        $total_distance = ($this->distance($student_data->address));
+        $total_distance = ($this->distance($student_data->address ?? ' '));
 
 		$res['status_code'] = 1;
 		$res['message'] = "Success";

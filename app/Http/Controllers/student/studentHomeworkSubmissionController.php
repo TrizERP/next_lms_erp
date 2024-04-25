@@ -261,7 +261,7 @@ class studentHomeworkSubmissionController extends Controller
             })->join('division as ss', function ($join) {
                 $join->whereRaw('(ss.id = ah.division_id)');
             })->join('tbluser as tu', function ($join) {
-                $join->whereRaw('tu.id = ah.created_by');
+                $join->whereRaw('tu.id = ah.created_by')->where('tu.status',1);   // 23-04-24 by uma
             })->selectRaw("ah.*,s.enrollment_no, CONCAT_WS(' ',s.last_name,s.first_name,s.middle_name) AS student_name,
                 concat_ws('-',cs.name,ss.name) as std_div,s.mobile,DATE_FORMAT(ah.date,'%d-%m-%Y') AS HOMEWORK_DATE,ah.title,
                 ah.description,ah.image,DATE_FORMAT(ah.submission_date,'%d-%m-%Y') AS SUBMISSION_DATE,ah.submission_remarks,

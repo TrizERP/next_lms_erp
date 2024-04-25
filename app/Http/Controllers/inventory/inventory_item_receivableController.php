@@ -63,7 +63,7 @@ class inventory_item_receivableController extends Controller
                 $join->whereRaw("ir.PURCHASE_ORDER_NO = inp.po_number AND ir.ITEM_ID = inp.item_id AND ir.ITEM_ID = i.id");
             })
             ->leftJoin('tbluser as tu', function ($join) {
-                $join->whereRaw("tu.id = ir.RECEIVED_BY");
+                $join->whereRaw("tu.id = ir.RECEIVED_BY")->where('tu.status',1);  // 23-04-24 by uma
             })
             ->selectRaw('inp.id,inp.po_number,inp.item_id,i.title AS item_name,inp.qty, 
                 IFNULL(ir.PREVIOUS_RECEIVED_QTY,0) AS previous_receive_qty,ir.ACTUAL_RECEIVED_QTY,IFNULL(ir.PENDING_QTY,0) AS pending_qty,

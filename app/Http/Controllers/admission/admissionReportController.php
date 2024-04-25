@@ -30,6 +30,7 @@ class admissionReportController extends Controller
                 $query->select(DB::raw('distinct(created_by)'))
                     ->from('admission_registration');
             })
+            ->where('status',1) // 23-04-24 by uma
             ->get();
 
         if (isset($report)) {
@@ -42,7 +43,7 @@ class admissionReportController extends Controller
             
             $getQuery = DB::table('admission_enquiry as ai')
                 ->join('tbluser as ts', function ($join) {
-                    $join->whereRaw('ts.id = ai.created_by AND ts.sub_institute_id = ai.sub_institute_id');
+                    $join->whereRaw('ts.id = ai.created_by AND ts.sub_institute_id = ai.sub_institute_id')->where('ts.status',1); // 23-04-24 by uma
                 })->leftJoin('caste as cs', function ($join) {
                     $join->whereRaw('cs.id = ai.category');
                 })->leftJoin('follow_up as fu', function ($join) {
@@ -347,7 +348,7 @@ class admissionReportController extends Controller
                 ->join('admission_enquiry as ai', function ($join) {
                     $join->whereRaw('ar.enquiry_id = ai.id');
                 })->join('tbluser as ts', function ($join) {
-                    $join->whereRaw('ts.id = ar.created_by AND ts.sub_institute_id = ai.sub_institute_id');
+                    $join->whereRaw('ts.id = ar.created_by AND ts.sub_institute_id = ai.sub_institute_id')->where('ts.status',1); // 23-04-24 by uma
                 })->join('standard as s', function ($join) use($marking_period_id) {
                     $join->whereRaw('s.id = ai.admission_standard AND s.sub_institute_id = ai.sub_institute_id');
                     // ->when($marking_period_id,function($query) use($marking_period_id){

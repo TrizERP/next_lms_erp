@@ -121,7 +121,7 @@
 
                                     @if($get_employee_leave_list->leave_id == "1" || $get_employee_leave_list->leave_id == "2" || $get_employee_leave_list->leave_id == "3" || $get_employee_leave_list->leave_id == "4" || $get_employee_leave_list->leave_id == "5" || $get_employee_leave_list->leave_id == "6")
                                         @php 
-                                            $get_monday_time = DB::table('tbluser')->where('sub_institute_id', session()->get('sub_institute_id'))->first();
+                                            $get_monday_time = DB::table('tbluser')->where('sub_institute_id', session()->get('sub_institute_id'))->where('status',1)->first();
                                         @endphp
 
                                         @if($get_employee_leave_list->day_type > '1')

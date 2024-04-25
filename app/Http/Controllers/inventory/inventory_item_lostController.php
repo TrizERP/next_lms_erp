@@ -28,7 +28,7 @@ class inventory_item_lostController extends Controller
                 $join->whereRaw("ii.id = il.ITEM_ID AND ii.sub_institute_id = il.SUB_INSTITUTE_ID");
             })
             ->join('tbluser as u', function ($join) {
-                $join->whereRaw("u.id = il.REQUISITION_BY");
+                $join->whereRaw("u.id = il.REQUISITION_BY")->where('u.status',1);  // 23-04-24 by uma
             })
             ->selectRaw('il.*,ii.title as ITEM_NAME,concat_ws(" ",u.first_name,u.middle_name,u.last_name) as requisition_name,il.REMARKS')
             ->where("il.SUB_INSTITUTE_ID", "=", $sub_institute_id)
@@ -47,7 +47,7 @@ class inventory_item_lostController extends Controller
     {
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $item_data = inventory_item_masterModel::where(['sub_institute_id' => $sub_institute_id])->get()->toArray();
-        $user_data = tbluserModel::where(['sub_institute_id' => $sub_institute_id])->get()->toArray();
+        $user_data = tbluserModel::where(['sub_institute_id' => $sub_institute_id])->where('status',1)->get()->toArray();   // 23-04-24 by uma
 
         return view('inventory/add_inventory_item_lost', ['item' => $item_data, 'users' => $user_data]);
     }
@@ -89,7 +89,7 @@ class inventory_item_lostController extends Controller
         $data = inventory_item_lostModel::find($id);
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $edit_item_data = inventory_item_masterModel::where(['sub_institute_id' => $sub_institute_id])->get();
-        $edit_user_data = tbluserModel::where(['sub_institute_id' => $sub_institute_id])->get();
+        $edit_user_data = tbluserModel::where(['sub_institute_id' => $sub_institute_id])->where('status',1)->get();   // 23-04-24 by uma
         view()->share('edit_item_data', $edit_item_data);
         view()->share('edit_user_data', $edit_user_data);
 

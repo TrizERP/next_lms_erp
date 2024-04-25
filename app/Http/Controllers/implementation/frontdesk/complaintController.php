@@ -32,10 +32,10 @@ class complaintController extends Controller
 
         $data = DB::table("complaint as c")
             ->join('tbluser as u', function ($join) use ($sub_institute_id) {
-                $join->whereRaw("c.COMPLAINT_BY = u.id AND u.sub_institute_id = '".$sub_institute_id."'");
+                $join->whereRaw("c.COMPLAINT_BY = u.id AND u.sub_institute_id = '".$sub_institute_id."'")->where('u.status',1); // 23-04-24 by uma
             })
             ->leftJoin('tbluser as u2', function ($join) use ($sub_institute_id) {
-                $join->whereRaw("c.COMPLAINT_SOLUTION_BY = u2.id AND u2.sub_institute_id = '".$sub_institute_id."'");
+                $join->whereRaw("c.COMPLAINT_SOLUTION_BY = u2.id AND u2.sub_institute_id = '".$sub_institute_id."'")->where('u2.status',1); // 23-04-24 by uma
             })
             ->selectRaw("c.*, CONCAT_WS(' ',u.first_name,u.middle_name,u.last_name) AS COMPLAINT_BY,
 		    CONCAT_WS(' ',u2.first_name,u2.middle_name,u2.last_name) AS COMPLAINT_SOLUTION_BY")
@@ -73,7 +73,7 @@ class complaintController extends Controller
         $syear = $request->session()->get("syear");
         $user_id = $request->session()->get("user_id");
 
-        $users = tbluserModel::where(["sub_institute_id" => $sub_institute_id])->whereRaw("id != '".$user_id."'")->get()->toArray();
+        $users = tbluserModel::where(["sub_institute_id" => $sub_institute_id])->whereRaw("id != '".$user_id."'")->where('status',1)->get()->toArray();  // 23-04-24 by uma
 
         $res['status_code'] = 1;
         $res['message'] = "Success";
@@ -152,10 +152,10 @@ class complaintController extends Controller
 
         $result = DB::table("complaint as c")
             ->join('tbluser as u', function ($join) use ($sub_institute_id) {
-                $join->whereRaw("c.COMPLAINT_BY = u.id AND u.sub_institute_id = '".$sub_institute_id."'");
+                $join->whereRaw("c.COMPLAINT_BY = u.id AND u.sub_institute_id = '".$sub_institute_id."'")->where('u.status',1); // 23-04-24 by uma
             })
             ->leftJoin('tbluser as u2', function ($join) use ($sub_institute_id) {
-                $join->whereRaw("c.COMPLAINT_SOLUTION_BY = u2.id AND u2.sub_institute_id = '".$sub_institute_id."'");
+                $join->whereRaw("c.COMPLAINT_SOLUTION_BY = u2.id AND u2.sub_institute_id = '".$sub_institute_id."'")->where('u2.status',1); // 23-04-24 by uma
             })
             ->selectRaw("c.*, CONCAT_WS(' ',u.first_name,u.middle_name,u.last_name) AS COMPLAINT_BY, 
 			    CONCAT_WS(' ',u2.first_name,u2.middle_name,u2.last_name) AS COMPLAINT_SOLUTION_BY")
@@ -181,7 +181,7 @@ class complaintController extends Controller
 
         $complaintStatus = $dataResult;
 
-        $users = tbluserModel::where(["sub_institute_id" => $sub_institute_id])->get()->toArray();
+        $users = tbluserModel::where(["sub_institute_id" => $sub_institute_id])->where('status',1)->get()->toArray();
 
         return view('frontdesk/edit_complaint',
             ['data' => $editData, 'complaint_status' => $complaintStatus, 'userList' => $users]);

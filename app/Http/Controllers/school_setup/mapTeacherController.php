@@ -17,7 +17,9 @@ class mapTeacherController extends Controller
 
         $res = session()->get('data');
         $res['details'] = DB::table('mapped_teachers as mt')
-        ->join('tbluser as u','u.id','=','mt.teacher_id')
+        ->join('tbluser as u',function($join){
+            $join->on('u.id','=','mt.teacher_id')->where('u.status',1);  // 23-04-24 by uma
+        })
         ->join('standard as s','s.id','=','mt.standard_id')
         ->join('sub_std_map as ssm','ssm.subject_id','=','mt.subject_id')
         ->selectRaw('mt.*,ssm.display_name as subject_name,s.name as standard_name,concat_ws(" ",COALESCE(u.first_name,"-"),COALESCE(u.last_name,"-")) as teacher_name')

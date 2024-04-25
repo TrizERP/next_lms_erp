@@ -42,7 +42,9 @@ class PettyCashReportController extends Controller
             ->select('p.*', 'pm.title as title_name', db::raw('date_format(p.created_on,"%Y-%m-%d") as bill_date'),
                 DB::raw('concat(u.first_name," ",u.middle_name," ",u.last_name) as user_name'))
             ->join('petty_cash_master as pm', 'pm.id', '=', 'p.title_id')
-            ->join('tbluser as u', 'u.id', '=', 'p.user_id')
+            ->join('tbluser as u',function($join){
+                 $join->on('u.id', '=', 'p.user_id')->where('u.status',1); // 23-04-24 by uma
+            })
             ->where(['p.sub_institute_id' => $sub_institute_id, 'p.title_id' => $title_id])
             ->whereBetween('p.created_on', array($from_date, $to_date))
             ->get();

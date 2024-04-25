@@ -46,7 +46,7 @@ class tourController extends Controller
 
         $getSchoolData = SchoolModel::where(['id' => $sub_institute_id])->get()->toArray();
 
-        $getUserData = tbluserModel::where(['sub_institute_id' => $sub_institute_id])->get()->toArray();
+        $getUserData = tbluserModel::where(['sub_institute_id' => $sub_institute_id])->where('status',1)->get()->toArray(); // 23-04-24 by uma
 
         if (isset($getSchoolData)) {
             $res['schooldata'] = $getSchoolData[0];
@@ -151,6 +151,7 @@ class tourController extends Controller
         ->selectRaw('GROUP_CONCAT(distinct m.id) AS MID')
         ->where('u.sub_institute_id', $sub_institute_id)
         ->where('u.id', $user_id)
+        ->where('u.status',1) // 23-04-24 by uma
         ->get()
         ->toArray();    
 
@@ -225,7 +226,7 @@ class tourController extends Controller
         $database_table = tblmenumasterModel::select('database_table')->whereRaw("find_in_set('$sub_institute_id',sub_institute_id)")->where('status',1)->get();
         $getSchoolData = SchoolModel::where(['id' => $sub_institute_id])->get()->toArray();
 
-        $getUserData = tbluserModel::where(['sub_institute_id' => $sub_institute_id])->get()->toArray();
+        $getUserData = tbluserModel::where(['sub_institute_id' => $sub_institute_id])->where('status',1)->get()->toArray(); // 23-04-24 by uma
 
         if (isset($getSchoolData)) {
             $res['schooldata'] = $getSchoolData[0];

@@ -141,7 +141,7 @@ class dashboardController extends Controller
 
                 $visitorBlock = DB::table("visitor_master as v")
                     ->join("tbluser as u", function ($join) {
-                        $join->on("u.id", "=", "v.to_meet");
+                        $join->on("u.id", "=", "v.to_meet")->where('u.status',1); // 23-04-24 by uma
                     })
                     ->selectRaw("appointment_type, CONCAT(u.first_name, ' ', u.middle_name, ' ', u.last_name) as staff_name, name, contact")
                     ->where("v.sub_institute_id", "=", $sub_institute_id)
@@ -1212,7 +1212,7 @@ class dashboardController extends Controller
 
             $visitorBlock = DB::table("visitor_master as v")
                 ->join("tbluser as u", function ($join) {
-                    $join->on("u.id", "=", "v.to_meet");
+                    $join->on("u.id", "=", "v.to_meet")->where('u.status',1); // 23-04-24 by uma
                 })
                 ->selectRaw("appointment_type, CONCAT(u.first_name,' ',u.middle_name,' ',u.last_name) as staff_name,name,contact")
                 ->where("v.sub_institute_id", "=", $sub_institute_id)
@@ -2342,7 +2342,8 @@ class dashboardController extends Controller
         $rightsQuery = DB::table('tbluser as u')
             ->leftJoin('tblindividual_rights as i', function ($join) {
                 $join->on('u.id', '=', 'i.user_id')
-                    ->whereColumn('u.sub_institute_id', '=', 'i.sub_institute_id');
+                    ->whereColumn('u.sub_institute_id', '=', 'i.sub_institute_id')
+                    ->where('u.status',1);// 23-04-24 by uma
             })
             ->leftJoin('tblgroupwise_rights as g', function ($join) {
                 $join->on('u.user_profile_id', '=', 'g.profile_id')
@@ -2504,7 +2505,8 @@ class dashboardController extends Controller
         $rightsQuery = DB::table('tbluser as u')
         ->leftJoin('tblindividual_rights as i', function ($join) {
             $join->on('u.id', '=', 'i.user_id')
-                ->whereColumn('u.sub_institute_id', '=', 'i.sub_institute_id');
+                ->whereColumn('u.sub_institute_id', '=', 'i.sub_institute_id')
+                ->where('u.status',1); // 23-04-24 by uma
         })
         ->leftJoin('tblgroupwise_rights as g', function ($join) {
             $join->on('u.user_profile_id', '=', 'g.profile_id')

@@ -59,7 +59,7 @@ class delete_consent_masterController extends Controller
             })->join('division as SS', function ($join) {
                 $join->whereRaw("SS.id = SE.section_id");
             })->join('tbluser as ta', function ($join) {
-                $join->whereRaw("ta.id = CM.created_by");
+                $join->whereRaw("ta.id = CM.created_by")->where('ta.status',1); // 23-04-24 by uma
             })->selectRaw("CM.ID AS CHECKBOX,CM.*,s.enrollment_no, CONCAT_WS(' ',s.first_name,s.middle_name,s.last_name)
                 AS FULL_NAME,s.mobile AS SMS_NO, SG.title AS GRADE_ID, CONCAT_WS('/',CS.name,SS.name) AS STANDARD,
 		        CONCAT_WS(' ',ta.first_name,ta.last_name) AS created_by, DATE_FORMAT(CM.date,'%d-%m-%Y') AS consent_date,

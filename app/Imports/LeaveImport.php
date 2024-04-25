@@ -21,6 +21,7 @@ class LeaveImport implements ToModel, WithHeadingRow
         $user_id = tbluserModel::
             where('first_name', explode(' ', $row['employee_name'])[0] ?? '')
             ->orwhere('last_name', explode(' ', $row['employee_name'])[1] ?? '')
+            ->where('status',1) // 23-04-24 by uma
             ->first()->id ?? '';
         $leave_type_id = HrmsLeaveType::where('leave_type', 'like', '%' . $row['type'] . '%')->first()->id ?? '';
         $leave_Date = \PhpOffice\PhpSpreadsheet\Shared\Date::excelToDateTimeObject($row['leave_date']);
