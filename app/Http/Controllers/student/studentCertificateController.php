@@ -19,14 +19,14 @@ class studentCertificateController extends Controller
     public function index(Request $request)
     {
         $type = $request->input('type');
-        $res="";
-        if (session()->has('data')) { 
-            $data_arr = session('data'); 
-            if (isset($data_arr['message']) && is_array($data_arr['message'])) {
-                $res['message'] = $data_arr['message'];
-                $res['status_code'] = $data_arr['status_code'] ;                
-            }
-        }
+        $res=session()->has('data');
+        // if (session()->has('data')) { 
+        //     $data_arr = session('data'); 
+        //     if (isset($data_arr['message']) && is_array($data_arr['message'])) {
+        //         $res['message'] = $data_arr['message'];
+        //         $res['status_code'] = $data_arr['status_code'] ;                
+        //     }
+        // }
         return is_mobile($type, "student/student_certificate/show_student", $res, "view");
     }
 
@@ -59,14 +59,33 @@ class studentCertificateController extends Controller
     {
         $type = $request->input('type');
         $template = $request->input('template');
-        //echo("<pre>");print_r($template);exit;
         $certificate_reason = $request->input('certificate_reason');
         $student_ids = $request->input('students');
         $syear = $request->session()->get('syear');
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $grade_id = $request->input('grade_id');
         $standard_id = $request->input('standard_id');
+        $studentEnroll=[];
 
+        foreach ($student_ids as $key => $value) {
+            # code...
+            $studentDetails = DB::table('certificate_history as a')
+            ->join('tblstudent as s','s.id','=','a.student_id')
+            ->selectRaw('a.certificate_number')
+            ->where(['a.sub_institute_id'=>$sub_institute_id,'a.syear'=>$syear])
+            ->where('a.student_id',$value)
+            ->first();
+
+            if(isset($studentDetails->certificate_number) && !in_array($studentDetails->certificate_number,$studentEnroll)){
+                $studentEnroll[] = $studentDetails->certificate_number;
+            }
+        }
+
+        if(!empty($studentEnroll) && $template == 'Transfer Certificate'){
+            $res['status_code'] = 0;
+            $res['message'] = "Certificate is already Issued with Certificate No ".implode(',',$studentEnroll).". Please check in Student Certificate Report.";
+            return is_mobile($type, "student/student_certificate/show_student", $res, "view");     
+        }
         $data = getStudents($student_ids);
 
         // START Dynamic Template Logic
@@ -487,7 +506,7 @@ class studentCertificateController extends Controller
 
         if($sub_institute_id==254){
             $working_day =  $attTotDays;
-            $present_day = $attarray[$student_id];
+            $present_day = isset($attarray[$student_id]) ? $attarray[$student_id] : '-';
         }else{
             $working_day = $get_student_attendances->total_att_days;
             $present_day = $get_student_attendances->present_att_days;

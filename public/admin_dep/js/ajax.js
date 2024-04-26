@@ -496,6 +496,12 @@ if ($("#ajax_PDF_Certificate").length != 0)
 {
     $('#ajax_PDF_Certificate').on('click', function () 
     {
+        var confirmation = confirm("Are you sure you want to submit?");
+        
+        // If the user confirms, return true to proceed with form submission
+        if (!confirmation) {
+            return false;
+        } else{
         $("#overlay").css("display","block");
         var action = $("#action").val();
         var insert_student_ids = $("#insert_ids").val();
@@ -514,6 +520,7 @@ if ($("#ajax_PDF_Certificate").length != 0)
                     });   
                 }
         });
+        }
     });
 }
 /* End Open Student Certificate Bulk PDF instead of print receipt */
