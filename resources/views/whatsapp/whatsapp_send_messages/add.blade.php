@@ -59,7 +59,7 @@
                                 @endphp
                                 <tr>
 
-                                    <td><input type="checkbox" name="@php echo 'sendNotification['.$col_arr['enrollment_no'].']'; @endphp" class="ckbox1">  </td>
+                                    <td><input type="checkbox" name="@php echo 'sendNotification['.$col_arr['student_id'].']'; @endphp" class="ckbox1">  </td>
                                     <td>@php echo $id+1; @endphp</td>
                                     <td>@php echo $col_arr['name']; @endphp</td>
                                     <td>@php echo $col_arr['enrollment_no']; @endphp</td>

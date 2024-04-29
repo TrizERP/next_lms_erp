@@ -85,23 +85,26 @@ class TestFunction extends Command
     public function handle()
     {
 
-        $message = "Hello this is test message for me<a href=\"https://erp.triz.co.in/Images/logo.png\">https://erp.triz.co.in/Images/logo.png</a> for me ";
+        //$message = "Hello this is test message for me<a href=\"https://erp.triz.co.in/Images/logo.png\">https://erp.triz.co.in/Images/logo.png</a> for me ";
+        $message = "Triz ";
         list($textArray, $hrefArray) = $this->mediaFound($message);
 
         if (count($hrefArray) == 0) {
             $prepareMessageBody['contentVariables'] = json_encode([
-                "1" => $textArray,
+                "1" => $textArray[0],
             ]);
-            $prepareMessageBody['contentSid'] = "HX8a883dc4cbb2c566933248ed9baa6f2d";
+            $prepareMessageBody['contentSid'] = "HX3a292a1ee72924adb532e807a2ed9b36";
         } else {
             $prepareMessageBody['contentVariables'] = json_encode([
                 "1" => $hrefArray[0],
                 "2" => isset($textArray[0]) ? $textArray[0] : " ",
 
             ]);
-
-            $prepareMessageBody['contentSid'] = "HX865d745b08b3a55e94c4a43c97fbabc5";
+            $prepareMessageBody['contentSid'] = "HXe0114bc20670d1b3f92c854106ec4a81";
         }
+
+
+
 
 
         $messagingServiceSid = 'MGdec43b1bbd9428a72fa0c7a633905319';
@@ -110,10 +113,12 @@ class TestFunction extends Command
 
         $client = new Client($accountSid, $authToken);
         $res= $client->messages->create(
-            'whatsapp:+917621070302',
+            'whatsapp:+919638141767',
+            //'whatsapp:+917621070302',
             [
                 "contentSid" => $prepareMessageBody['contentSid'],
                 "messagingServiceSid" => $messagingServiceSid,
+                "body" => $prepareMessageBody['contentVariables'],
                 "from" => "whatsapp:+919909906512",
                 "contentVariables" => $prepareMessageBody['contentVariables']
             ]
