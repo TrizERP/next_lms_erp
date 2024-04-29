@@ -176,8 +176,12 @@
                             <div class="col-md-4 form-group text-left">                   
                                 <label>State</label>
                                 <select class="form-control" name="state" id="state" onchange="getStatewiseCity(this.value);">
+                                @if(empty($data['city_data']) && session()->get('sub_institute_id')==257)
                                     <option value="Gujarat">Gujarat</option>
+                                    @endif
+
                                 @if(!empty($data['state_data']))  
+                                <option value="">Select State</option> 
                                 @foreach($data['state_data'] as $key => $value)
                                     <option value="{{ $value['state_name'] }}" @if(isset($data->state)) {{ $data->state == $value['state_name'] ? 'selected' : '' }} @endif> {{ $value['state_name'] }} </option>
                                 @endforeach
@@ -187,10 +191,11 @@
                             <div class="col-md-4 form-group">                   
                                 <label>City</label>
                                 <select class="form-control" name="city" id="city">
-                                   @if(empty($data['city_data']))
+                                   @if(empty($data['city_data']) && session()->get('sub_institute_id')==257)
                                     <option value="Ahmedabad">Ahmedabad</option>
                                     @endif
-                                @if(!empty($data['city_data']))  
+                                @if(!empty($data['city_data'])) 
+                                <option value="">Select City</option> 
                                 @foreach($data['city_data'] as $k1 => $v1)
                                     <option value="{{ $v1['city_name'] }}" @if(isset($data->city)) {{ $data->city == $v1['city_name'] ? 'selected' : '' }} @endif> {{ $v1['city_name'] }} </option>
                                 @endforeach
