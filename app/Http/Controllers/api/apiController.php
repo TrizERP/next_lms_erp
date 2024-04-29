@@ -162,8 +162,10 @@ class apiController extends Controller
                 } else {
 
                     if ($sub_institute_id == 49 || $sub_institute_id == 232 || $sub_institute_id == 233) {
-                        $text = "Dear Teacher your 0TP is ".$otp;
-                    } else {
+                        $text = "Dear Teacher your OTP is ".$otp;
+                    }else if($sub_institute_id == 47){
+                        $text = "Dear Parent, Your OTP is ".$otp." MULJIM";
+                    }else {
                         $text = "OTP for login is ".$otp." and is valid for 5 minutes";
                     }
 
