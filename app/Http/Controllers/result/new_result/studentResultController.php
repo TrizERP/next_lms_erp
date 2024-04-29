@@ -466,9 +466,9 @@ class studentResultController extends Controller
 
         // get subject
        $get_subject = $this->get_subject($sub_institute_id,$syear,$student_id,$standard_id);
-       $exam_name = $this->get_exam_name($sub_institute_id,$syear,$standard_id,$extra_exam,'best_of_2');
+       $exam_name = $this->get_exam_name($sub_institute_id,$syear,$standard_id,$extra_exam);
        // get exam title 
-       $exam_title = $this->get_exam_title($sub_institute_id,$syear,$standard_id,$extra_exam,'best_of_2');
+       $exam_title = $this->get_exam_title($sub_institute_id,$syear,$standard_id,$extra_exam);
        //get exam marks
        $exam_marks = $this->get_exam_marks($sub_institute_id,$student_id,'best_of_2');
         
@@ -538,7 +538,7 @@ class studentResultController extends Controller
                         $title_exam[$title->exam_id][] = $title->ExamTitle;
                         // all exam marks 
                         foreach ($exam_marks as $index => $marks) {
-                            $obtained_marks[$title->exam_id][] = $ab_ex_na;
+                            $obtained_marks[$title->exam_id][] = $ab_ex_na ?? 0;
                             $to_marks[$title->exam_id][] = $title->points;
                             $to_weight[$title->exam_id] = $title->weightage;
                             if ($title->id == $marks->exam_id) {
@@ -572,7 +572,7 @@ class studentResultController extends Controller
                         foreach ($marksArray as $index => $value) {
                             if (isset($to_marks[$exam_id][$index])) {
                                 $t_m += $to_marks[$exam_id][$index];
-                                $tt = $title_exam[$exam_id][$index];
+                                $tt = isset($title_exam[$exam_id][$index]) ? $title_exam[$exam_id][$index] : 0;
                             }
                         }
                         $obtained_mark_sum = array_sum($marksArray);
@@ -2338,9 +2338,9 @@ $overall_total = $overall_total / 2;
        // get subject
        $get_subject = $this->get_subject($sub_institute_id,$syear,$student_id,$standard_id);
        // get exam master name
-       $exam_name = $this->get_exam_name($sub_institute_id,$syear,$standard_id,$extra_exam,'best_of_2');
+       $exam_name = $this->get_exam_name($sub_institute_id,$syear,$standard_id,$extra_exam);
       // get exam title 
-      $exam_title = $this->get_exam_title($sub_institute_id,$syear,$standard_id,$extra_exam,'best_of_2');
+      $exam_title = $this->get_exam_title($sub_institute_id,$syear,$standard_id,$extra_exam);
       //get exam marks
       $exam_marks = $this->get_exam_marks($sub_institute_id,$student_id,'best_of_2');
        
@@ -3282,9 +3282,9 @@ $overall_total = $overall_total / 2;
        // get subject
        $get_subject = $this->get_subject($sub_institute_id,$syear,$student_id,$standard_id);
        // get exam master name
-       $exam_name = $this->get_exam_name($sub_institute_id,$syear,$standard_id,$extra_exam,'best_of_2');
+       $exam_name = $this->get_exam_name($sub_institute_id,$syear,$standard_id,$extra_exam);
        // get exam title 
-       $exam_title = $this->get_exam_title($sub_institute_id,$syear,$standard_id,$extra_exam,'best_of_2');
+       $exam_title = $this->get_exam_title($sub_institute_id,$syear,$standard_id,$extra_exam);
        //get exam marks
        $exam_marks = $this->get_exam_marks($sub_institute_id,$student_id,'best_of_2');
         
