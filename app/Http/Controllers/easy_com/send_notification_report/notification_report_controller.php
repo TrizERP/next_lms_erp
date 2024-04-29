@@ -7,6 +7,7 @@ use GenTux\Jwt\GetsJwtToken;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Validator;
 use function App\Helpers\is_mobile;
 
 
@@ -95,13 +96,17 @@ class notification_report_controller extends Controller
         $data = array_map(function ($value) {
             return (array) $value;
         }, $data);
-
-        $res['status_code'] = 1;
-        $res['message'] = "Success";
-        $res['data'] = $data;
-        $res['mobile_no'] = $mobile_no;
-        $res['from_date'] = $from_date;
-        $res['to_date'] = $to_date;
+        if(!empty($data)){
+            $res['status_code'] = 1;
+            $res['message'] = "Success";
+            $res['data'] = $data;
+            $res['mobile_no'] = $mobile_no;
+            $res['from_date'] = $from_date;
+            $res['to_date'] = $to_date;
+        }else{
+            $res['status_code'] = 0;
+            $res['message'] = "No notification found";
+        }
 
         return is_mobile($type, "easy_comm/send_notification_report/show_notification_report", $res, "view");
     }

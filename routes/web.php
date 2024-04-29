@@ -160,11 +160,15 @@ Route::group([ 'middleware' => ['session', 'menu', 'logRoute']], function () {
     Route::delete('/whatsapp-user-details/destroy/{id}', [WhatsappController::class, 'whatsappUserDetailsDestroy'])->name('whatsapp_user_details.destroy');
 
     Route::get('/whatsapp-send-messages', [WhatsappController::class, 'whatsapp_send_messages'])->name('whatsapp-send-messages');
-    Route::get('/whatsapp-send-messages/create', [WhatsappController::class, 'whatsappSendMessageCreate'])->name('whatsapp_send_message.create');
+    Route::get('/whatsapp-send-messages/create', [WhatsappController::class, 'index'])->name('whatsapp_send_message.create');
+    Route::get('/whatsapp-send-messages/add', [WhatsappController::class, 'create'])->name('send_whatsapp_message.create');
+
     Route::get('/whatsapp-send-messages/create/{id}', [WhatsappController::class, 'whatsappSendMessageCreate']);
     Route::post('/whatsapp-send-messages/store', [WhatsappController::class, 'whatsappSendMessageStore'])->name('send_whatsapp_message.store');
     Route::delete('/whatsapp-send-messages/destroy/{id}', [WhatsappController::class, 'whatsappSendMessageDestroy'])->name('whatsapp_send_message.destroy');
-  
+    Route::get('/whatsapp-sent-generate-report', [WhatsappController::class, 'whatsappSentGenerateReport']);
+    Route::post('/whatsapp-sent-generate-show-report', [WhatsappController::class, 'whatsappSentGenerateReportDetails'])->name('whatsapp_sent_generate_report_details');
+
     Route::get('/payroll-type', [PayrollController::class, 'payrollType'])->name('payroll_type.index');
     Route::get('/payroll-type/create', [PayrollController::class, 'payrollCreate'])->name('payroll_type.create');
     Route::post('/payroll-type/store', [PayrollController::class, 'payrollStore'])->name('payroll_type.store');
