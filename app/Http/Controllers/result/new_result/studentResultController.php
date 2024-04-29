@@ -466,9 +466,9 @@ class studentResultController extends Controller
 
         // get subject
        $get_subject = $this->get_subject($sub_institute_id,$syear,$student_id,$standard_id);
-       $exam_name = $this->get_exam_name($sub_institute_id,$syear,$standard_id,$extra_exam,'best_of_2');
+       $exam_name = $this->get_exam_name($sub_institute_id,$syear,$standard_id,$extra_exam);
        // get exam title 
-       $exam_title = $this->get_exam_title($sub_institute_id,$syear,$standard_id,$extra_exam,'best_of_2');
+       $exam_title = $this->get_exam_title($sub_institute_id,$syear,$standard_id,$extra_exam);
        //get exam marks
        $exam_marks = $this->get_exam_marks($sub_institute_id,$student_id,'best_of_2');
         
@@ -538,7 +538,7 @@ class studentResultController extends Controller
                         $title_exam[$title->exam_id][] = $title->ExamTitle;
                         // all exam marks 
                         foreach ($exam_marks as $index => $marks) {
-                            $obtained_marks[$title->exam_id][] = $ab_ex_na;
+                            $obtained_marks[$title->exam_id][] = $ab_ex_na ?? 0;
                             $to_marks[$title->exam_id][] = $title->points;
                             $to_weight[$title->exam_id] = $title->weightage;
                             if ($title->id == $marks->exam_id) {
@@ -572,7 +572,7 @@ class studentResultController extends Controller
                         foreach ($marksArray as $index => $value) {
                             if (isset($to_marks[$exam_id][$index])) {
                                 $t_m += $to_marks[$exam_id][$index];
-                                $tt = $title_exam[$exam_id][$index];
+                                $tt = isset($title_exam[$exam_id][$index]) ? $title_exam[$exam_id][$index] : 0;
                             }
                         }
                         $obtained_mark_sum = array_sum($marksArray);
@@ -1141,6 +1141,8 @@ class studentResultController extends Controller
         }
         $exam_title = DB::table('result_exam_master')->whereRaw("ExamTitle IN ('FA1','FA2','SA1','SA2')")->where(['SubInstituteId'=>$sub_institute_id,'standard_id'=>$standard_id])->orderBy('SortOrder')->get()->toArray();
 
+        $term_name = DB::table('academic_year')->whereRaw($extra_term)->where(['sub_institute_id' => $sub_institute_id, 'syear' => $syear])->orderBy('sort_order')->get()->toArray();
+        
         $get_subject = DB::table("sub_std_map as ssm")->join('subject as sub', 'ssm.subject_id', '=', 'sub.id')->selectRaw('ssm.id as map_id,sub.id as subject_id,ssm.display_name as subject_name,ssm.elective_subject,ssm.allow_grades')->where(['ssm.sub_institute_id' => $sub_institute_id, 'ssm.standard_id' => $standard_id, 'allow_grades' => "Yes"])->orderBy('ssm.sort_order')->get()->toArray();
         // Filter the elective subjects based on the condition
              $get_subject = array_filter($get_subject, function ($value) use ($student_id, $syear) {
@@ -1192,7 +1194,7 @@ class studentResultController extends Controller
                 //marks
                 $mark = $exam_marks->points ?? 0;
                 $total = $exam_marks->total ?? 0;
-                $ob_marks = round(($mark/$total) * $exam->weightage,1);
+                $ob_marks = ($total!=0) ? round(($mark/$total) * $exam->weightage,1) : 0;
                 // total subject wise
                 $total_ob_mark +=$ob_marks;
                 $total_sub_mark  += $exam->weightage;
@@ -1321,34 +1323,67 @@ class studentResultController extends Controller
                     $getCoScholastic[$key]->ob_mark = $ob_mark;
                 }
         // echo "<pre>";print_r($getCoScholastic);exit;
-        if(!empty($getCoScholastic)){
-            $co_scholastic = '<table  class="aca-year" style="width:100%;border-collapse:collapse; border:1px solid #e68023;margin-bottom:10px" cellspacing="0"  border="1" align="right"><tr>';
-            foreach ($getCoScholastic as $key => $value) {
-                if($key <=2){
-                    $co_scholastic.='<th>'.$value->child_title.'</th>';
-                }
-            }
-            $co_scholastic.='</tr><tr>';
-            foreach ($getCoScholastic as $key => $value) {
-                if($key <=2){
-                    $co_scholastic.='<td>'.$value->ob_mark.'</td>';
-                }
-            }
-            $co_scholastic.='</tr><tr>';
-            foreach ($getCoScholastic as $key => $value) {
-                if($key >2){
-                    $co_scholastic.='<th>'.$value->child_title.'</th>';
-                }
-            }
-            $co_scholastic.='</tr><tr>';
-            foreach ($getCoScholastic as $key => $value) {
-                if($key >2){
-                    $co_scholastic.='<td>'.$value->ob_mark.'</td>';
-                }
-            }
+        // if(!empty($getCoScholastic)){
+        //     $co_scholastic = '<table  class="aca-year" style="width:100%;border-collapse:collapse; border:1px solid #e68023;margin-bottom:10px" cellspacing="0"  border="1" align="right"><tr>';
+        //     foreach ($getCoScholastic as $key => $value) {
+        //         if($key <=2){
+        //             $co_scholastic.='<th>'.$value->child_title.'</th>';
+        //         }
+        //     }
+        //     $co_scholastic.='</tr><tr>';
+        //     foreach ($getCoScholastic as $key => $value) {
+        //         if($key <=2){
+        //             $co_scholastic.='<td>'.$value->ob_mark.'</td>';
+        //         }
+        //     }
+        //     $co_scholastic.='</tr><tr>';
+        //     foreach ($getCoScholastic as $key => $value) {
+        //         if($key >2){
+        //             $co_scholastic.='<th>'.$value->child_title.'</th>';
+        //         }
+        //     }
+        //     $co_scholastic.='</tr><tr>';
+        //     foreach ($getCoScholastic as $key => $value) {
+        //         if($key >2){
+        //             $co_scholastic.='<td>'.$value->ob_mark.'</td>';
+        //         }
+        //     }
            
-            $co_scholastic .='</tr></table>';
-        }
+        //     $co_scholastic .='</tr></table>';
+        // }
+        $groupedData = [];
+                foreach ($getCoScholastic as $key => $value) {
+                    $groupedData[$value->child_title][$value->term_id] = $value->ob_mark;
+                }
+        // echo "<pre>";print_r($groupedData);exit;
+        if(!empty($groupedData)){
+            $co_scholastic = '<table  class="aca-year" style="width:100%;border-collapse:collapse; border:1px solid #e68023;margin-bottom:10px" cellspacing="0"  border="1" align="right">
+            <tr>
+                <th></th>';
+            foreach ($term_name as $key => $terms) {
+                if($terms->title=='TERM-1'){
+                    $co_scholastic.='<th>Gujarati</th>';
+                }elseif($terms->title=='TERM-2'){
+                    $co_scholastic.='<th>Hindi</th>';
+                }elseif($terms->title=='TERM-3'){
+                    $co_scholastic.='<th>English</th>';
+                }
+            }
+
+            $co_scholastic.='</tr>';
+            $coTitle=[];
+            foreach ($groupedData as $key => $value) {
+               $co_scholastic.='<tr>
+                <th>'.$key.'</th>';
+                foreach ($term_name as $termskey => $terms) {
+                    if(isset($value[$terms->term_id])){
+                        $co_scholastic.='<td>'.$value[$terms->term_id].'</td>';
+                    }
+                }
+               $co_scholastic.='</tr>';
+            }
+            $co_scholastic .='</table>';
+    }
 
         $res['table'] = $table;
         $res['saraswati_stu'] = $stu_detail;  
@@ -1367,6 +1402,8 @@ class studentResultController extends Controller
             $extra_exam = "rce.term_id = " . $format;
         }
         $exam_title = DB::table('result_exam_master')->whereRaw("ExamTitle IN ('FA1','FA2','SA1','SA2')")->where(['SubInstituteId'=>$sub_institute_id,'standard_id'=>$standard_id])->orderBy('SortOrder')->get()->toArray();
+
+        $term_name = DB::table('academic_year')->whereRaw($extra_term)->where(['sub_institute_id' => $sub_institute_id, 'syear' => $syear])->orderBy('sort_order')->get()->toArray();
 
         $get_subject = DB::table("sub_std_map as ssm")->join('subject as sub', 'ssm.subject_id', '=', 'sub.id')->selectRaw('ssm.id as map_id,sub.id as subject_id,ssm.display_name as subject_name,ssm.elective_subject,ssm.allow_grades')->where(['ssm.sub_institute_id' => $sub_institute_id, 'ssm.standard_id' => $standard_id, 'allow_grades' => "Yes"])->orderBy('ssm.sort_order')->get()->toArray();
         // Filter the elective subjects based on the condition
@@ -1525,7 +1562,7 @@ class studentResultController extends Controller
                     });
                     
                 $grade_arr_co = DB::table('result_co_scholastic_grades')->whereIN('map_id',$grade_map)->where(['sub_institute_id' => $sub_institute_id])->get()->toArray();
-                                
+                   
                 foreach ($getCoScholastic as $key => $value) 
                 {
                     $ob_mark=0;
@@ -1544,20 +1581,65 @@ class studentResultController extends Controller
                     }
                     $getCoScholastic[$key]->ob_mark = $ob_mark;
                 }
-        // echo "<pre>";print_r($getCoScholastic);exit;
-        if(!empty($getCoScholastic)){
-            $co_scholastic = '<table  class="aca-year" style="width:80%;border-collapse:collapse; border:1px solid #e68023;margin-bottom:10px" cellspacing="0"  border="1">
-            <tr>
-                <th class="data_center"><b>Co-curricular Activities</b></th>
-                <th class="data_center"><b>Participation</b></th>
-            </tr>';
-            foreach ($getCoScholastic as $key => $value) {
-                $co_scholastic.=' <tr><td class="data_center"><b>'.$value->child_title.'</b></td>
-                                <td class="data_center"><b>'.$value->ob_mark.'</b></td></tr>';
-            }
-            $co_scholastic .='</table>';
+
+                $groupedData = [];
+                foreach ($getCoScholastic as $key => $value) {
+                    $groupedData[$value->child_title][$value->term_id] = $value->ob_mark;
+                }
+        // echo "<pre>";print_r($groupedData);exit;
+        if(!empty($groupedData)){
+                $co_scholastic = '<table  class="aca-year" style="width:100%;border-collapse:collapse; border:1px solid #e68023;margin-bottom:10px" cellspacing="0"  border="1" align="right">
+                <tr>
+                    <th></th>';
+                // foreach ($getCoScholastic as $key => $value) {
+                //     if($key <=2){
+                //         $co_scholastic.='<th>'.$value->child_title.'</th>';
+                //     }
+                // }
+                // $co_scholastic.='</tr><tr>';
+                // foreach ($getCoScholastic as $key => $value) {
+                //     if($key <=2){
+                //         $co_scholastic.='<td>'.$value->ob_mark.'</td>';
+                //     }
+                // }
+                // $co_scholastic.='</tr><tr>';
+                // foreach ($getCoScholastic as $key => $value) {
+                //     if($key >2){
+                //         $co_scholastic.='<th>'.$value->child_title.'</th>';
+                //     }
+                // }
+                // $co_scholastic.='</tr><tr>';
+                // foreach ($getCoScholastic as $key => $value) {
+                //     if($key >2){
+                //         $co_scholastic.='<td>'.$value->ob_mark.'</td>';
+                //     }
+                // }
+                    
+                foreach ($term_name as $key => $terms) {
+                    if($terms->title=='TERM-1'){
+                        $co_scholastic.='<th>Gujarati</th>';
+                    }elseif($terms->title=='TERM-2'){
+                        $co_scholastic.='<th>Hindi</th>';
+                    }elseif($terms->title=='TERM-3'){
+                        $co_scholastic.='<th>English</th>';
+                    }
+                }
+
+                $co_scholastic.='</tr>';
+                $coTitle=[];
+                foreach ($groupedData as $key => $value) {
+                   $co_scholastic.='<tr>
+                    <th>'.$key.'</th>';
+                    foreach ($term_name as $termskey => $terms) {
+                        if(isset($value[$terms->term_id])){
+                            $co_scholastic.='<td>'.$value[$terms->term_id].'</td>';
+                        }
+                    }
+                   $co_scholastic.='</tr>';
+                }
+                $co_scholastic .='</table>';
         }
-        // echo "<pre>";print_r($co_scholastic);exit;
+        // echo "<pre>";print_r($co_scholastic);
         $get_grade_ranges = $this->getGradeRange($standard_id);
         $grade_range = '';
         if (!empty($get_grade_ranges['mark_range'])) {
@@ -1581,7 +1663,7 @@ class studentResultController extends Controller
         
             $grade_range .= '</tr></table>';
         }        
-        
+        // exit;
         // echo "<pre>";print_r($grade_range);exit;
         $res['table'] = $table;
         $res['co_scholastic'] = $co_scholastic;     
@@ -2338,9 +2420,9 @@ $overall_total = $overall_total / 2;
        // get subject
        $get_subject = $this->get_subject($sub_institute_id,$syear,$student_id,$standard_id);
        // get exam master name
-       $exam_name = $this->get_exam_name($sub_institute_id,$syear,$standard_id,$extra_exam,'best_of_2');
+       $exam_name = $this->get_exam_name($sub_institute_id,$syear,$standard_id,$extra_exam);
       // get exam title 
-      $exam_title = $this->get_exam_title($sub_institute_id,$syear,$standard_id,$extra_exam,'best_of_2');
+      $exam_title = $this->get_exam_title($sub_institute_id,$syear,$standard_id,$extra_exam);
       //get exam marks
       $exam_marks = $this->get_exam_marks($sub_institute_id,$student_id,'best_of_2');
        
@@ -3282,9 +3364,9 @@ $overall_total = $overall_total / 2;
        // get subject
        $get_subject = $this->get_subject($sub_institute_id,$syear,$student_id,$standard_id);
        // get exam master name
-       $exam_name = $this->get_exam_name($sub_institute_id,$syear,$standard_id,$extra_exam,'best_of_2');
+       $exam_name = $this->get_exam_name($sub_institute_id,$syear,$standard_id,$extra_exam);
        // get exam title 
-       $exam_title = $this->get_exam_title($sub_institute_id,$syear,$standard_id,$extra_exam,'best_of_2');
+       $exam_title = $this->get_exam_title($sub_institute_id,$syear,$standard_id,$extra_exam);
        //get exam marks
        $exam_marks = $this->get_exam_marks($sub_institute_id,$student_id,'best_of_2');
         
